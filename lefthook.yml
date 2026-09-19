@@ -9,12 +9,10 @@ pre-commit:
       run: mise exec -- npm run lint --prefix ./webview_panels
     prettier:
       glob: "*.{js,css,html,json}"
-      run: mise exec -- npx prettier --check {staged_files}
+      run: mise exec -- npm run check:format
     markdown:
       glob: "*.md"
-      run: >-
-        mise exec -- dprint check {staged_files} &&
-        mise exec -- rumdl check {staged_files}
+      run: mise exec -- npm run check:markdown
 
 pre-push:
   commands:

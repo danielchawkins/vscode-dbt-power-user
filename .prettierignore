@@ -1,4 +1,10 @@
 node_modules
 *.md
+dist
+out
+coverage
 media
 altimate_packages
+src/lib
+webview_panels/dist
+webview_panels/src/lib

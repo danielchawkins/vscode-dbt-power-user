@@ -1,6 +1,6 @@
 ---
 name: Feature request
-description: Suggest an idea for dbt Power User
+description: Suggest an idea for Fusion Power User
 labels: enhancement
 body:
   - type: textarea

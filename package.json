@@ -1229,7 +1229,7 @@
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
     "check:markdown": "dprint check && rumdl check .",
-    "check": "npm run compile && npm run lint && npm run lint --prefix ./webview_panels && npm run check:lockfiles && npm run test:unit && npm run check:markdown",
+    "check": "npm run compile && npm run lint && npm run lint --prefix ./webview_panels && npm run check:format && npm run check:lockfiles && npm run test:unit && npm run check:markdown",
     "build-vsix": "vsce package",
     "panel:webviews": "npm run build --prefix ./webview_panels",
     "install:panels": "npm ci --prefix ./webview_panels",
@@ -1240,7 +1240,9 @@
     "pretest": "npm run clean && npm run compile",
     "clean": "rimraf out coverage",
     "compile": "tsc -p ./",
-    "check:lockfiles": "lockfile-lint --path package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity && lockfile-lint --path webview_panels/package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity"
+    "check:lockfiles": "lockfile-lint --path package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity && lockfile-lint --path webview_panels/package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity",
+    "format:code": "prettier --write \"**/*.{js,css,html,json}\"",
+    "check:format": "prettier --check \"**/*.{js,css,html,json}\""
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^1.0.2",

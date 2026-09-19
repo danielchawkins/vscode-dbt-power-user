@@ -1,6 +1,6 @@
 ---
 name: Bug report
-description: Report a bug or an issue you've found with dbt Power User
+description: Report a bug in Fusion Power User
 labels: bug
 body:
   - type: textarea
@@ -56,8 +56,8 @@ body:
       required: true
   - type: input
     attributes:
-      label: dbt Power User version
-      description: "What dbt Power User version are you using?"
+      label: Fusion Power User version
+      description: "What Fusion Power User version are you using?"
     validations:
       required: true
   - type: checkboxes

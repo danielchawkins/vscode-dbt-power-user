@@ -32,15 +32,23 @@
       "name": "comment.block.jinja",
       "begin": "\\{#",
       "end": "#\\}",
-      "beginCaptures": { "0": { "name": "punctuation.definition.comment.begin.jinja" } },
-      "endCaptures": { "0": { "name": "punctuation.definition.comment.end.jinja" } }
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.comment.begin.jinja" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.comment.end.jinja" }
+      }
     },
     "jinja-statement": {
       "name": "meta.statement.jinja",
       "begin": "\\{%-?",
       "end": "-?%\\}",
-      "beginCaptures": { "0": { "name": "punctuation.definition.tag.begin.jinja" } },
-      "endCaptures": { "0": { "name": "punctuation.definition.tag.end.jinja" } },
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.tag.begin.jinja" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.tag.end.jinja" }
+      },
       "patterns": [
         { "include": "#jinja-keyword" },
         { "include": "#jinja-dbt-function" },
@@ -57,8 +65,12 @@
       "name": "meta.expression.jinja",
       "begin": "\\{\\{-?",
       "end": "-?\\}\\}",
-      "beginCaptures": { "0": { "name": "punctuation.definition.expression.begin.jinja" } },
-      "endCaptures": { "0": { "name": "punctuation.definition.expression.end.jinja" } },
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.expression.begin.jinja" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.expression.end.jinja" }
+      },
       "patterns": [
         { "include": "#jinja-dbt-function" },
         { "include": "#jinja-filter" },
@@ -122,8 +134,12 @@
       "name": "comment.block.sql",
       "begin": "/\\*",
       "end": "\\*/",
-      "beginCaptures": { "0": { "name": "punctuation.definition.comment.begin.sql" } },
-      "endCaptures": { "0": { "name": "punctuation.definition.comment.end.sql" } }
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.comment.begin.sql" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.comment.end.sql" }
+      }
     },
     "sql-string-single": {
       "name": "string.quoted.single.sql",
@@ -138,9 +154,7 @@
       "name": "string.quoted.double.sql",
       "begin": "\"",
       "end": "\"",
-      "patterns": [
-        { "match": "\"\"", "name": "constant.character.escape.sql" }
-      ]
+      "patterns": [{ "match": "\"\"", "name": "constant.character.escape.sql" }]
     },
     "sql-number": {
       "match": "\\b\\d+(\\.\\d+)?([eE][+-]?\\d+)?\\b",

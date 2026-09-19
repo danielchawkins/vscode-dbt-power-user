@@ -11,6 +11,7 @@ setup:
     lefthook install
 
 fmt:
+    npm run format:code
     npm run lint:fix
     dprint fmt
     rumdl fmt .
@@ -18,6 +19,8 @@ fmt:
 lint:
     npm run lint
     npm run lint --prefix ./webview_panels
+    npm run check:format
+    npm run check:lockfiles
     npm run check:markdown
 
 check:
