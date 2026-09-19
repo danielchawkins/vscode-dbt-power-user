@@ -1,5 +1,7 @@
 set shell := ["bash", "-euo", "pipefail", "-c"]
 
+export PATH := `mise bin-paths 2>/dev/null | tr '\n' ':' || true` + env("PATH")
+
 default:
     @just --list
 
