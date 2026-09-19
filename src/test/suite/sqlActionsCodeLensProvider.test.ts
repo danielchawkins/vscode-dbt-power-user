@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
+import { afterEach, describe, expect, it } from "@jest/globals";
 import { CodeLens, extensions } from "vscode";
 import { SqlActionsCodeLensProvider } from "../../code_lens_provider/sqlActionsCodeLensProvider";
 

@@ -10,6 +10,10 @@ exclude = [
   "webview_panels/**",
   ".github/**",
   "CLAUDE.md",
+  # Vendored sample dbt projects and formatter fixtures. Their Markdown is test input,
+  # not prose this repository owns.
+  "test-fixtures/**",
+  "src/test/fixtures/**",
 ]
 
 [MD013]

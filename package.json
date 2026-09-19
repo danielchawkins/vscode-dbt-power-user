@@ -1239,10 +1239,7 @@
     "test:coverage": "jest --coverage",
     "pretest": "npm run clean && npm run compile",
     "clean": "rimraf out coverage",
-    "compile": "tsc -p ./",
-    "docker:deploy": "./docker-setup/deploy.sh",
-    "docker:logs": "cd docker-setup && docker compose logs -f || docker-compose logs -f",
-    "docker:stop": "cd docker-setup && docker compose down || docker-compose down"
+    "compile": "tsc -p ./"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^1.0.2",

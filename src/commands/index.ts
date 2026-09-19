@@ -198,7 +198,8 @@ export class VSCodeCommands implements Disposable {
                 cl.command?.command === "dbtPowerUser.profileCtes",
             );
             ctes = profileLens?.command?.arguments?.[1] as
-              CteInfo[] | undefined;
+              | CteInfo[]
+              | undefined;
 
             if (!ctes || ctes.length === 0) {
               window.showInformationMessage(

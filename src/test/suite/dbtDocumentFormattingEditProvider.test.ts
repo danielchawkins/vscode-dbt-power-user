@@ -15,10 +15,7 @@ function makeTelemetry() {
   } as any;
 }
 
-function makeExecution(result: {
-  stderr?: string;
-  reject?: Error;
-}) {
+function makeExecution(result: { stderr?: string; reject?: Error }) {
   return {
     createCommandProcessExecution: jest.fn(() => ({
       complete: jest.fn(() =>
@@ -85,9 +82,12 @@ describe("DbtDocumentFormattingEditProvider sqlfmt telemetry", () => {
     const edits = await (provider as any).executeSqlFmt(doc);
 
     expect(edits).toEqual([]);
-    expect(telemetry.sendTelemetryEvent).toHaveBeenCalledWith("formatDbtModel", {
-      sqlFmtPath: "path",
-    });
+    expect(telemetry.sendTelemetryEvent).toHaveBeenCalledWith(
+      "formatDbtModel",
+      {
+        sqlFmtPath: "path",
+      },
+    );
     expect(telemetry.sendTelemetryEvent).not.toHaveBeenCalledWith(
       "formatDbtModelSqlfmtNotInstalled",
     );

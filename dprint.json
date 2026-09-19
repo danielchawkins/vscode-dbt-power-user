@@ -17,6 +17,8 @@
     "media/**",
     "webview_panels/**",
     ".github/**",
+    "test-fixtures/**",
+    "src/test/fixtures/**",
     "CLAUDE.md"
   ],
   "plugins": [

@@ -6,6 +6,7 @@ src/**
 !dist/node_modules/**
 .gitignore
 vsc-extension-quickstart.md
+test-fixtures/**
 **/tsconfig.json
 **/.eslintrc.json
 **/*.map
@@ -16,6 +17,7 @@ webview_panels
 
 # Contributor tooling. The shipped extension is tool-manager-neutral and must not
 # carry mise, Just, or lint configuration into a Consumer Repository.
+.prettierignore
 mise.toml
 mise.lock
 justfile
