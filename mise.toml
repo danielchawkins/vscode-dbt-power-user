@@ -1,0 +1,13 @@
+# Contributor tooling only. None of this ships in the VSIX, and the extension must
+# never invoke mise. Fusion is pinned to the minimum version the product claims, so a
+# failing integration test is attributable to the extension rather than a Fusion upgrade.
+[tools]
+node = "22"
+just = "latest"
+lefthook = "latest"
+"aqua:dprint/dprint" = "latest"
+"aqua:rvben/rumdl" = "latest"
+"aqua:getdbt.com/dbt-fusion" = "2.0.5"
+
+[settings]
+lockfile = true

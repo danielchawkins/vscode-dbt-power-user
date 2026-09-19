@@ -1,0 +1,19 @@
+pre-commit:
+  parallel: true
+  commands:
+    typescript:
+      glob: "*.{ts,tsx}"
+      run: mise exec -- npx eslint --max-warnings=0 {staged_files}
+    prettier:
+      glob: "*.{js,css,html,json}"
+      run: mise exec -- npx prettier --check {staged_files}
+    markdown:
+      glob: "*.md"
+      run: >-
+        mise exec -- dprint check {staged_files} &&
+        mise exec -- rumdl check {staged_files}
+
+pre-push:
+  commands:
+    check:
+      run: mise exec -- just check

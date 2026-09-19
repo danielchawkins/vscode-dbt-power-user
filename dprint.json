@@ -1,0 +1,25 @@
+{
+  "$schema": "https://dprint.dev/schemas/v0.json",
+  "lineWidth": 119,
+  "markdown": {
+    "emphasisKind": "asterisks",
+    "textWrap": "always"
+  },
+  "includes": [
+    "./AGENTS.md",
+    "./CONTEXT.md",
+    "./README.md",
+    "docs/**/*.md",
+    ".agents/**/*.md"
+  ],
+  "excludes": [
+    "altimate_packages/**",
+    "media/**",
+    "webview_panels/**",
+    ".github/**",
+    "CLAUDE.md"
+  ],
+  "plugins": [
+    "https://plugins.dprint.dev/markdown-0.22.1.wasm"
+  ]
+}

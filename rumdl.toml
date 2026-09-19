@@ -1,0 +1,16 @@
+# Upstream Altimate Markdown that is slated for deletion rather than repair stays
+# excluded. CLAUDE.md is a symlink to AGENTS.md and would otherwise be checked twice.
+flavor = "github"
+line-length = 119
+respect-gitignore = true
+disable = ["MD029"]
+exclude = [
+  "media/**",
+  "altimate_packages/**",
+  "webview_panels/**",
+  ".github/**",
+  "CLAUDE.md",
+]
+
+[MD013]
+code-blocks = false

@@ -1,1 +1,5 @@
 node_modules
+*.md
+documentation
+media
+altimate_packages

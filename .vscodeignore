@@ -11,28 +11,24 @@ vsc-extension-quickstart.md
 **/*.map
 **/*.ts
 .github
-.claude
-.mcp.json
-.playwright-mcp
-docker-setup
-**/*.test.*
-CLAUDE.md
 webview_panels
 !webview_panels/dist
 
-# Non-runtime directories (docs site, test fixtures, monitoring, git hooks)
-documentation
-test-fixtures
-monitoring
-.husky
-patches
-
-# Dev/CI config files not needed in the installed extension
+# Contributor tooling. The shipped extension is tool-manager-neutral and must not
+# carry mise, Just, or lint configuration into a Consumer Repository.
+mise.toml
+mise.lock
+justfile
+lefthook.yml
+dprint.json
+rumdl.toml
+.rumdl_cache/**
+.agents/**
+.claude/**
+docs/**
 jest.config.js
-.gitpod.yml
-.nycrc.json
-codecov.yml
-.prettierignore
-sweep.yaml
+postInstall.js
 prepareBuild.js
-CONTRIBUTING.md
+AGENTS.md
+CLAUDE.md
+CONTEXT.md

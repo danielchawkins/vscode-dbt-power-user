@@ -26,8 +26,11 @@ test-workspace/
 # IDE and editor files
 *.swp
 *.swo
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
 *.code-workspace
+mise.local.toml
 
 # OS generated files
 .DS_Store
@@ -50,3 +53,6 @@ docker-setup/.env
 
 # GitHub issues dashboard cache
 monitoring/github_issues/.cache/
+
+# Markdown lint cache
+.rumdl_cache/

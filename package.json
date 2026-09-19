@@ -1,22 +1,22 @@
 {
-  "name": "vscode-dbt-power-user",
-  "displayName": "Power User for dbt",
-  "description": "a.k.a. dbt power user makes vscode work seamlessly with dbt™ core and dbt™ cloud: auto-complete, preview, column lineage, AI docs generation, health checks, cost estimation etc",
+  "name": "fusion-power-user",
+  "displayName": "Fusion Power User",
+  "description": "Local-first dbt Fusion development for VS Code and Cursor, powered by the native dbt language server. No account, no hosted services, no telemetry.",
   "icon": "media/images/dbt.png",
-  "publisher": "innoverio",
+  "publisher": "danielchawkins",
   "license": "MIT",
-  "homepage": "https://www.altimate.ai/vscode?utm_source=dbt-power-user&utm_medium=marketplace",
+  "homepage": "https://github.com/danielchawkins/vscode-dbt-power-user",
   "repository": {
     "type": "git",
-    "url": "https://github.com/AltimateAI/vscode-dbt-power-user.git"
+    "url": "https://github.com/danielchawkins/vscode-dbt-power-user.git"
   },
   "bugs": {
-    "url": "https://github.com/AltimateAI/vscode-dbt-power-user/issues"
+    "url": "https://github.com/danielchawkins/vscode-dbt-power-user/issues"
   },
-  "version": "0.64.6",
+  "version": "0.1.0-alpha.0",
   "engines": {
     "vscode": "^1.95.0",
-    "node": ">=20.0.0"
+    "node": ">=22.12.0"
   },
   "capabilities": {
     "hoverProvider": true
@@ -31,9 +31,10 @@
   ],
   "keywords": [
     "dbt",
+    "dbt fusion",
     "sql",
     "jinja-sql",
-    "dbt power user"
+    "lsp"
   ],
   "activationEvents": [
     "workspaceContains:**/dbt_project.yml"
@@ -1220,7 +1221,6 @@
   },
   "scripts": {
     "postinstall": "node postInstall.js",
-    "prepare": "husky",
     "vscode:prepublish": "npm run panel:webviews && rsbuild build && node prepareBuild.js",
     "build": "npm run panel:webviews && rsbuild build",
     "build-dev": "npm run panel:webviews && rsbuild build --mode development",
@@ -1228,9 +1228,9 @@
     "test-compile": "tsc -p ./",
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
-    "deploy-vscode": "vsce publish",
+    "check:markdown": "dprint check && rumdl check .",
+    "check": "npm run compile && npm run lint && npm run lint --prefix ./webview_panels && npm run test:unit && npm run check:markdown",
     "build-vsix": "vsce package",
-    "deploy-openvsx": "ovsx publish",
     "panel:webviews": "npm run build --prefix ./webview_panels",
     "install:panels": "npm install --prefix ./webview_panels",
     "test": "jest",
@@ -1270,13 +1270,10 @@
     "file-loader": "^6.1.0",
     "glob": "^10.4.2",
     "glob-parent": "^6.0.2",
-    "husky": "^9.1.4",
     "istanbul-lib-coverage": "^3.2.2",
     "istanbul-lib-instrument": "^6.0.3",
     "jest": "^29.5.0",
-    "lint-staged": "^15.2.5",
     "mocha": "^11.7.5",
-    "ovsx": "^0.10.11",
     "prettier": "^3.3.3",
     "prettier-eslint": "^16.4.2",
     "prettier-plugin-organize-imports": "^3.2.4",
@@ -1289,9 +1286,7 @@
     "webpack": "^5.106.2"
   },
   "extensionDependencies": [
-    "samuelcolvin.jinjahtml",
-    "ms-python.python",
-    "altimateai.vscode-altimate-mcp-server"
+    "samuelcolvin.jinjahtml"
   ],
   "dependencies": {
     "@altimateai/dbt-integration": "^0.3.13",
@@ -1322,22 +1317,11 @@
     "zod": "^3.25.28",
     "zod-to-json-schema": "^3.25.2"
   },
-  "lint-staged": {
-    "**/webview_panels/**/*.{ts,tsx}": [
-      "cross-env PRE_COMMIT=true npm run lint --fix --prefix webview_panels",
-      "prettier -w"
-    ],
-    "*.ts": [
-      "eslint src --ext ts --fix",
-      "eslint --max-warnings=0"
-    ],
-    "*.{js,css,md,html,json}": "prettier --cache --write"
-  },
   "overrides": {
     "uuid": "^14.0.0",
     "serialize-javascript": "^7.0.0",
     "diff": "^8.0.3",
     "brace-expansion": "^2.0.2"
   },
-  "packageManager": "yarn@1.22.22+sha512.a6b2f7906b721bba3d67d4aff083df04dad64c399707841b7acf00f6b133b7ac24255f2652fa22ae3534329dc6180534e98d17432037ff6fd140556e2bb3137e"
+  "packageManager": "npm@10.9.4"
 }
