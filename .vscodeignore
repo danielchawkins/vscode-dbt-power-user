@@ -17,6 +17,13 @@ webview_panels
 
 # Contributor tooling. The shipped extension is tool-manager-neutral and must not
 # carry mise, Just, or lint configuration into a Consumer Repository.
+.git-dotfiles
+.workspace-dotfiles
+.typescript-dotfiles
+.python-dotfiles
+.mcp.json
+.nvmrc
+.prettierrc
 .prettierignore
 mise.toml
 mise.lock
@@ -26,6 +33,7 @@ dprint.json
 rumdl.toml
 .rumdl_cache/**
 .agents/**
+.claude
 .claude/**
 docs/**
 jest.config.js

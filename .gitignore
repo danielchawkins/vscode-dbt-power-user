@@ -10,7 +10,6 @@ __pycache__/
 *.pyc
 *.pyo
 *.pyd
-.claude
 
 # Build and dependencies
 src/lib/notebooks/
@@ -44,15 +43,8 @@ Thumbs.db
 certs
 mcp.json
 
-# Docker setup
-docker-setup/*.vsix
-docker-setup/.env
-
 # Playwright MCP
 .playwright-mcp/
-
-# GitHub issues dashboard cache
-monitoring/github_issues/.cache/
 
 # Markdown lint cache
 .rumdl_cache/

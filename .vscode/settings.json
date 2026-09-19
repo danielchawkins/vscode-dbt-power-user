@@ -41,16 +41,19 @@
   "typescript.preferences.importModuleSpecifier": "relative",
 
   //////////////////////////////////////////////////////////////////////////////
-  // Noise. Build output, caches, and vendored trees. `out/` stays visible
-  // because the extension host debugger runs from it.
+  // Noise. Build output, caches, generated dependencies, and compatibility links.
   //////////////////////////////////////////////////////////////////////////////
   "files.exclude": {
     "**/__pycache__": true,
+    "**/.claude": true,
     "**/.nyc_output": true,
     "**/.rumdl_cache": true,
     "**/.vscode-test": true,
     "**/coverage": true,
     "**/dist": true,
+    "**/node_modules": true,
+    "**/out": true,
+    "**/CLAUDE.md": true,
     "*.vsix": true
   },
   "search.exclude": {
@@ -68,14 +71,16 @@
   },
 
   //////////////////////////////////////////////////////////////////////////////
-  // File nesting. Collapses the root into three anchors: the npm package, the
-  // contributor toolchain, and the docs.
+  // File nesting. Empty anchor files are deliberate Explorer group headings,
+  // matching the finance-pipelines workspace convention.
   //////////////////////////////////////////////////////////////////////////////
   "explorer.fileNesting.enabled": true,
   "explorer.fileNesting.expand": false,
   "explorer.fileNesting.patterns": {
-    "package.json": "package-lock.json, .npmrc, .nvmrc, tsconfig.json, typings.d.ts, webpack.config.js, jest.config.js, postInstall.js, prepareBuild.js, package.nls.json, .eslintrc.json, .prettierignore, .nycrc.json, .vscodeignore",
-    "mise.toml": "mise.lock, mise.local.toml, justfile, lefthook.yml, dprint.json, rumdl.toml",
-    "README.md": "AGENTS.md, CLAUDE.md, CONTEXT.md, CONTRIBUTING.md, LICENSE, *.md"
+    ".git-dotfiles": ".gitignore, .gitattributes, .vscodeignore, lefthook.yml",
+    ".workspace-dotfiles": "justfile, dprint.json, mise.toml, mise.lock, mise.local.toml, rumdl.toml, .mcp.json, .nvmrc",
+    ".typescript-dotfiles": "package.json, package-lock.json, package.nls.json, tsconfig.json, typings.d.ts, rsbuild.config.ts, jest.config.js, .eslintrc.json, .prettierignore, .prettierrc, postInstall.js, prepareBuild.js",
+    ".python-dotfiles": "altimate_notebook_kernel.py",
+    "README.md": "AGENTS.md, CLAUDE.md, CONTEXT.md, LICENSE, *.md"
   }
 }
