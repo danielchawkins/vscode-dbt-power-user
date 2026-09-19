@@ -2,8 +2,11 @@ pre-commit:
   parallel: true
   commands:
     typescript:
-      glob: "*.{ts,tsx}"
-      run: mise exec -- npx eslint --max-warnings=0 {staged_files}
+      glob: "src/**/*.{ts,tsx}"
+      run: mise exec -- npm run lint
+    webview:
+      glob: "webview_panels/src/**/*.{ts,tsx}"
+      run: mise exec -- npm run lint --prefix ./webview_panels
     prettier:
       glob: "*.{js,css,html,json}"
       run: mise exec -- npx prettier --check {staged_files}

@@ -1,7 +1,7 @@
 {
   "name": "fusion-power-user",
   "displayName": "Fusion Power User",
-  "description": "Local-first dbt Fusion development for VS Code and Cursor, powered by the native dbt language server. No account, no hosted services, no telemetry.",
+  "description": "An independent dbt Power User fork being rebuilt for local dbt Fusion development. Developer alpha; not yet local-only.",
   "icon": "media/images/dbt.png",
   "publisher": "danielchawkins",
   "license": "MIT",
@@ -1229,17 +1229,18 @@
     "lint": "eslint src --ext ts",
     "lint:fix": "eslint src --ext ts --fix",
     "check:markdown": "dprint check && rumdl check .",
-    "check": "npm run compile && npm run lint && npm run lint --prefix ./webview_panels && npm run test:unit && npm run check:markdown",
+    "check": "npm run compile && npm run lint && npm run lint --prefix ./webview_panels && npm run check:lockfiles && npm run test:unit && npm run check:markdown",
     "build-vsix": "vsce package",
     "panel:webviews": "npm run build --prefix ./webview_panels",
-    "install:panels": "npm install --prefix ./webview_panels",
+    "install:panels": "npm ci --prefix ./webview_panels",
     "test": "jest",
     "test:unit": "jest",
     "test:integration": "npm run test-compile && node out/test/integration/runTests.js",
     "test:coverage": "jest --coverage",
     "pretest": "npm run clean && npm run compile",
     "clean": "rimraf out coverage",
-    "compile": "tsc -p ./"
+    "compile": "tsc -p ./",
+    "check:lockfiles": "lockfile-lint --path package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity && lockfile-lint --path webview_panels/package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity"
   },
   "devDependencies": {
     "@istanbuljs/nyc-config-typescript": "^1.0.2",
@@ -1270,6 +1271,7 @@
     "istanbul-lib-coverage": "^3.2.2",
     "istanbul-lib-instrument": "^6.0.3",
     "jest": "^29.5.0",
+    "lockfile-lint": "4.14.1",
     "mocha": "^11.7.5",
     "prettier": "^3.3.3",
     "prettier-eslint": "^16.4.2",

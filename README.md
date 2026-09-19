@@ -1,45 +1,32 @@
 # Fusion Power User
 
-A local-first VS Code / Cursor extension for [dbt Fusion](https://docs.getdbt.com/docs/fusion/about-fusion) projects.
-The native dbt Fusion language server owns editor intelligence — completion, diagnostics, hover, navigation, rename,
-and formatting all come from the same engine that builds your project.
+Fusion Power User is an independent fork of
+[`vscode-dbt-power-user`](https://github.com/AltimateAI/vscode-dbt-power-user) being rebuilt as a local-first VS Code
+and Cursor extension for [dbt Fusion](https://docs.getdbt.com/docs/fusion/about-fusion).
 
-No account, no API key, no hosted services, no telemetry. Every feature works against your local dbt Fusion
-installation and your own warehouse credentials.
+> **Status: developer alpha.** Repository identity and contributor tooling are in place, but the runtime is still the
+> upstream implementation. It still contains dbt Core, dbt Cloud, hosted Altimate, telemetry, AI, MCP, and notebook
+> paths. Do not install this build as a local-only replacement yet.
 
-> **Status: pre-release.** This is an independent fork of
-> [`vscode-dbt-power-user`](https://github.com/AltimateAI/vscode-dbt-power-user), rebuilt around the Fusion language
-> server. It is macOS-only and under active development.
+## Target
 
-## Requirements
+The completed product will support dbt Fusion 2.0.5 and later on macOS. The native Fusion language server will own
+completion, diagnostics, hover, navigation, rename, formatting, and semantic information. Retained panels and commands
+will use local LSP commands, Fusion artifacts, or the local Fusion CLI.
 
-- dbt Fusion 2.0.5 or later on your `PATH`, or configured via `fusionPowerUser.dbtPath`
-- macOS
-- VS Code 1.95 or later, or a matching Cursor build
+The target extension will not install dbt, call hosted services, require an extension-specific account, or collect
+telemetry. Those guarantees become true only as the corresponding refactor phases land.
 
-The extension does not install, update, or manage dbt. Install Fusion however you prefer — mise, Homebrew, or the
-official installer — and the extension will use it.
-
-## Install
-
-Download the `.vsix` from [Releases](https://github.com/danielchawkins/vscode-dbt-power-user/releases), verify the
-published SHA-256 checksum, and install it:
+## Development
 
 ```bash
-code --install-extension fusion-power-user-<version>.vsix
-# or
-cursor --install-extension fusion-power-user-<version>.vsix
+just setup
+just check
+just package
 ```
 
-Uninstall `innoverio.vscode-dbt-power-user` first. Both extensions claim the same files, and Fusion Power User refuses
-to start while the upstream extension is present.
-
-## Scope
-
-Supported: local dbt Fusion projects — compile and preview, query execution and analysis, run / build / test, model and
-column lineage, project trees, and local documentation editing.
-
-Not supported, by design: dbt Core, dbt Cloud, hosted APIs, AI features, collaboration, MCP, and notebooks.
+`just setup` installs the pinned contributor tools and npm dependencies. The shipped extension remains
+tool-manager-neutral and must never invoke mise or Just.
 
 ## Contributing
 

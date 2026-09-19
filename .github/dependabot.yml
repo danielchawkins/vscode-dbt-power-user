@@ -1,8 +1,14 @@
 version: 2
 updates:
-  # python dependencies
   - package-ecosystem: "npm"
     directory: "/"
+    schedule:
+      interval: "daily"
+    rebase-strategy: "disabled"
+    labels:
+      - "dependencies"
+  - package-ecosystem: "npm"
+    directory: "/webview_panels"
     schedule:
       interval: "daily"
     rebase-strategy: "disabled"

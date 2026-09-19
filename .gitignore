@@ -27,7 +27,9 @@ test-workspace/
 *.swo
 .vscode/*
 !.vscode/extensions.json
+!.vscode/launch.json
 !.vscode/settings.json
+!.vscode/tasks.json
 *.code-workspace
 mise.local.toml
 

@@ -49,9 +49,11 @@ url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.5-x86_64-unknown-linux-gnu.t
 url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.5-x86_64-unknown-linux-musl.tar.gz"
 
 [tools."aqua:getdbt.com/dbt-fusion"."platforms.macos-arm64"]
+checksum = "sha256:fcbe6a3e1296564f7099b9a72b9f7bbc366f0fe9eca247e2a36eeab65a90cef2"
 url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.5-aarch64-apple-darwin.tar.gz"
 
 [tools."aqua:getdbt.com/dbt-fusion"."platforms.macos-x64"]
+checksum = "sha256:485d416570900d84264acadf1ff86d1cd7f488565e75c75d686f8c431eb6ecad"
 url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.5-x86_64-apple-darwin.tar.gz"
 
 [[tools."aqua:rvben/rumdl"]]
