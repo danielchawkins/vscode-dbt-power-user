@@ -42,14 +42,15 @@ an account, collect telemetry, install or update dbt, or recursively discover ev
 ```bash
 just setup    # pin tools via mise, install npm dependencies
 just fmt      # write lint and format fixes
-just lint     # read-only lint
-just check    # compile, lint, unit tests, Markdown
+just lint     # read-only lint, format, lockfile, and Markdown checks
+just check    # lint plus compile and unit tests
 just package  # build the VSIX
 just --list
 ```
 
-`fmt` writes fixes, `lint` verifies without writing, `check` is `lint` plus compile and tests. `just check` is the only
-gate: CI, hooks, and humans all call it.
+`fmt` writes fixes; `lint` verifies code, formatting, lockfiles, and Markdown without writing; `check` adds compile and
+unit tests. `just check` is the only full gate: CI, the pre-push hook, and humans call it; pre-commit runs relevant
+subsets from that gate.
 
 Recipes are thin facades over npm scripts, which remain the authoritative implementation. The verbs take no file
 arguments — each tool resolves its own scope from its own config (`.eslintrc.json`, `dprint.json`, `rumdl.toml`).
@@ -58,7 +59,7 @@ formatters. Copied skills under `.agents/skills/` must pass the Markdown checks.
 
 ## Architecture
 
-Two build outputs from one repository: the extension host bundle (TypeScript, webpack) and the webview panels (React
+Two build outputs from one repository: the extension host bundle (TypeScript, rsbuild) and the webview panels (React
 18 + Vite + Redux Toolkit, built separately under `webview_panels/`). They communicate through VS Code's webview
 messaging with typed message contracts.
 

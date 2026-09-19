@@ -90,20 +90,21 @@ Executors: work the steps in order. Each step is one commit that compiles and ha
 
 ### 2.3 Verified facts about the current fork
 
-Branch `fusion-lsp-client` is at upstream `0.58.7`. No LSP code exists; `vscode-languageclient` is not a dependency.
-`src` is ~34k lines of TypeScript across 25 directories; `webview_panels/src` is ~125k lines. `package.json`
-contributes 56 commands and 32 configuration properties, and still carries the upstream identity (`innoverio` /
-`vscode-dbt-power-user` / `Power User for dbt`).
+Branch `fusion-lsp-client` is based on upstream `0.64.6`. No LSP code exists; `vscode-languageclient` is not a
+dependency. `src` is ~44k lines of TypeScript; `webview_panels/src` is ~19k lines of TypeScript and TSX. `package.json`
+contributes 66 commands and 33 configuration properties. The package identity is `danielchawkins.fusion-power-user` /
+`Fusion Power User` at `0.1.0-alpha.0`; command IDs and settings intentionally retain their upstream namespaces until
+Phase 9.
 
-**The tooling baseline is already green and must not be redone.** In place: `mise.toml` pinning `node = 22`, `just`,
-`aqua:dprint/dprint`, and `aqua:rvben/rumdl` with `lockfile = true`, plus `mise.lock`; a `justfile` with `setup`,
-`fmt`, `lint`, `check`, and `package` as npm facades; `dprint.json` and `rumdl.toml` at a 119-character width, with
-`documentation/`, `webview_panels/`, `README.md`, `CONTRIBUTING.md`, and `.github/` excluded for now; `npm run check`
-chaining compile, `src` lint, webview lint, unit tests, and Markdown checks; and a single-job `ci.yml` on
-`macos-latest` using `jdx/mise-action` with SHA-pinned actions that runs `just check`, `just package`, a SHA-256
-checksum, and a VSIX artifact upload. The three-OS matrix, the marketplace and OpenVSX publish jobs, the Slack steps,
-`tests.yml`, and the docs-to-S3 workflow are deleted. Husky and `lint-staged` are retained. `.agents/skills/` carries
-copies of the `configure-mise`, `justfile-expert`, and `write-skill` skills.
+**The tooling baseline is green and must not be redone.** In place: `mise.toml` pinning Node 22, dbt Fusion 2.0.5,
+Just, Lefthook, dprint, and rumdl with a committed lock; a `justfile` with `setup`, `fmt`, `lint`, `check`, and
+`package` as npm facades; dprint and rumdl owning the 19 maintained Markdown files; and `npm run check` chaining
+compile, root and webview lint, code-format checks, both npm lockfile validations, 637 unit tests, and Markdown checks.
+Root and webview dependencies install with `npm ci`. The single macOS CI job uses SHA-pinned actions, runs the same
+checks and package gate, emits a SHA-256 checksum, uploads the VSIX, and cancels superseded runs. Marketplace, OpenVSX,
+Slack, hosted Altimate dispatches, the upstream documentation site, and upstream contributor automations are deleted.
+Lefthook replaces Husky and lint-staged; `.agents/skills/` carries only `configure-mise`, `justfile-expert`, and
+`write-skill`.
 
 Load-bearing product structure the plan depends on:
 
@@ -230,7 +231,7 @@ documentation lens survives; the source-model-creation lens follows the feature.
 
 ### 2.7 Open decisions
 
-**D1 — Reuse of consumer setup conveniences. Mostly settled and already landed; confirm the remainder.**
+**D1 — Reuse of consumer setup conveniences. Resolved.**
 
 The tooling baseline in Section 2.3 is the realized answer: `mise` with a lockfile, `just` as the verb layer, `dprint`
 plus `rumdl` for Markdown, a macOS-only CI job with SHA-pinned actions, and `just check` as the single gate. Left
@@ -238,27 +239,13 @@ behind, correctly: uv and Python packaging, the Snowflake CLI and key configurat
 tasks, the dbt module and `local_packages` layout, Dagster, the Sigma CLI, the dbt JSON schemas, the multi-root
 `.code-workspace`, pytest conventions, and the branch-deploy CI shape.
 
-Three items remain open:
+The repository pins dbt Fusion 2.0.5 while the Consumer Repository tracks `latest`; this deliberately separates
+minimum-version compatibility tests from consumer update testing. Lefthook replaces Husky and lint-staged, and its
+commands dispatch the same lint gates as `just check`. Add `test`, `test-integration`, `smoke`, and `release` recipes
+only when the first phase that needs each one lands.
 
-1. **Pin dbt Fusion in `mise.toml`. Recommended: yes, and this is the one genuinely load-bearing gap.** The integration
-   and VSIX smoke suites assert behavior against a specific Fusion version; without
-   `"aqua:getdbt.com/dbt-fusion" = "2.0.5"` pinned and locked, a test failure cannot be attributed to the extension
-   rather than to a Fusion upgrade. Note the consumer pins `latest`, so the two repositories will diverge deliberately:
-   the fork pins the version it claims as its minimum.
-2. **`lefthook` versus the retained Husky and `lint-staged`. Recommended: keep Husky.** It works, CI already runs
-   `just check`, and swapping hook runners buys nothing the refactor needs. Revisit only if the staged globs start
-   diverging from `just lint`.
-3. **`justfile` recipes still missing: `test`, `test-integration`, `smoke`, `release`.** Add each in the step that
-   first needs it, rather than in one speculative commit.
-
-**D2 — Fork base version. Confirm before any other product work.** The branch is at `0.58.7`; upstream is at `0.64.6`,
-and the consumer's patch script is written against `0.64.x` bundle shapes. Recommendation: rebase onto `0.64.6` as a
-single mechanical commit, before Phase 1. Reasons: the consumer's seven characterization cases describe `0.64.x`
-behavior; the drift will otherwise have to be cherry-picked one fix at a time against code that is being deleted
-anyway; and every later "delete this file" step is cheaper on the newer tree. The cost is one conflict-heavy rebase,
-which is why it should happen now, while the only local changes are documents and tooling. If the rebase exceeds
-roughly a day, abandon it and stay on `0.58.7`, noting that the version gate and the project-scoping work must then be
-validated against `0.58.7` behavior rather than the patch script's anchors.
+**D2 — Fork base version. Resolved.** The branch is rebased onto upstream 0.64.6. The inherited suite now contains 48
+test suites and 637 passing tests, and the consumer's characterization cases describe the same upstream generation.
 
 **D3 — Dependency diagnostics policy.** Provisional: suppress diagnostics whose URI lies under the packages install
 path, while surfacing one project-level blocker on `dbt_project.yml` when a dependency fails to parse. Resolve
@@ -273,39 +260,38 @@ case fails in Phase 10.
 
 Each step is one commit. Every step lists the files it touches, the contract at its seam, and its verification.
 
-### Phase 0 — Close the tooling baseline
+### Phase 0 — Close the tooling baseline — **complete**
 
-**0.1 — Rebase onto the chosen base.** Gated on **D2**. Mechanical; no plan-specific content. Verify:
-`npm ci && just check` green, and `git log --oneline -1 upstream/master` matches the chosen tag.
+**0.1 — Rebase onto the chosen base — complete.** The branch is based on upstream 0.64.6. Root and webview dependencies
+install with `npm ci`; `just check` and `just package` pass.
 
-**0.2 — Pin Fusion and record the tooling decision.** Gated on **D1** item 1. Add
-`"aqua:getdbt.com/dbt-fusion" = "2.0.5"` to `mise.toml` and refresh `mise.lock`. Write
-`docs/adr/0004-repository-tooling.md` recording the **D1** outcome — what was reused from the consumer repository, what
-was left behind, and why the fork pins an exact Fusion while the consumer tracks `latest`. Keep it to the length of the
-existing ADRs: one paragraph of decision, not an inventory.
+**0.2 — Pin Fusion and record the tooling decision — complete.** `mise.toml` pins dbt Fusion 2.0.5, `mise.lock` records
+both supported macOS archive checksums, and [`0004-repository-tooling.md`](../adr/0004-repository-tooling.md) records
+the decision.
 
 Verify: `mise install` resolves 2.0.5; `dbt --version` under `mise exec` prints `dbt 2.0.5`; `just check` green.
 
 ### Phase 1 — Identity and activation gates
 
-**1.1 — Product identity.** Touch `package.json` (`name`, `displayName`, `publisher`, `description`, `version` →
-`0.1.0-alpha.0`, `icon`, `repository`, `homepage`, `bugs`, `categories`, `keywords`; drop `extensionDependencies` on
-`ms-python.python` and `altimateai.vscode-altimate-mcp-server`, keep `samuelcolvin.jinjahtml`; remove the
-`deploy-vscode` and `deploy-openvsx` scripts and the `ovsx` devDependency), `package.nls.json`, `README.md` (rewrite:
-local-only Fusion product, macOS, minimum Fusion 2.0.5, VSIX install from releases), `LICENSE` (retain MIT and upstream
-copyright, add the fork's), `media/` icon assets, and `CONTRIBUTING.md` (rewrite or delete). Delete `sweep.yaml`,
-`codecov.yml`, `.gitpod.yml`, `.nycrc.json`, and `documentation/`. Once `README.md` and `CONTRIBUTING.md` are
-rewritten, drop them from the `rumdl.toml` exclude list, and drop `documentation/` from it too.
+**1.1 — Product identity — package metadata complete.** Touch `package.json` (`name`, `displayName`, `publisher`,
+`description`, `version` → `0.1.0-alpha.0`, `icon`, `repository`, `homepage`, `bugs`, `categories`, `keywords`; drop
+`extensionDependencies` on `ms-python.python` and `altimateai.vscode-altimate-mcp-server`, keep
+`samuelcolvin.jinjahtml`; remove the `deploy-vscode` and `deploy-openvsx` scripts and the `ovsx` devDependency), delete
+the unused `package.nls.json`, and rewrite `README.md` to distinguish the current developer alpha from the local-only
+target. Retain the MIT and upstream copyright in `LICENSE`, remove stale Altimate identity assets, and delete
+`CONTRIBUTING.md`, `sweep.yaml`, `codecov.yml`, `.gitpod.yml`, `.nycrc.json`, and `documentation/`.
 
 Leave command IDs and setting keys on `dbtPowerUser.*` / `dbt.*` for now; they move in Phase 9 as one coordinated
 rename.
 
-Contract: the extension identifier becomes `danielchawkins.fusion-power-user`. Nothing may read the old identifier.
+Contract: the package identifier is `danielchawkins.fusion-power-user`. Runtime references to the upstream identifier
+remain only where later phases remove hosted behavior or add the explicit conflict guard; Phase 9 completes the
+coordinated command, setting, URI, and marker namespace rename.
 
-Verify: `just package` produces `fusion-power-user-0.1.0-alpha.0.vsix`; `grep -ri innoverio` and `grep -ri altimate`
-over `package.json` and `README.md` return nothing; `just check` green.
+Verify: `just package` produces `fusion-power-user-0.1.0-alpha.0.vsix`; `package.json` carries only the fork package,
+publisher, repository, homepage, and bug tracker identity; `just check` is green.
 
-**1.2 — Fusion version gate.** Replace `DBTFusionCommandDetection.detectDBT` in
+**1.2 — Fusion version gate — next.** Replace `DBTFusionCommandDetection.detectDBT` in
 `src/dbt_client/dbtFusionCommandIntegration.ts` with a version resolver.
 
 Contract, in a new `src/fusion/fusionVersion.ts`:
@@ -420,7 +406,7 @@ green; integration test on `single-project` still activates.
 `dbtPowerUser.showNotebook*` and `dbtPowerUser.createDatapilotNotebook` commands in `package.json`, and
 `postInstall.js` and `prepareBuild.js`. Drop the dependencies `@jupyterlab/coreutils`, `@jupyterlab/nbformat`,
 `@jupyterlab/services`, `@nteract/messaging`, `zeromq`, and the devDependency `@vscode/zeromq`; remove the
-`postinstall` script and the `@lib` path alias from `tsconfig.json`, `webpack.config.js`, and `jest.config.js`, and
+`postinstall` script and the `@lib` path alias from `tsconfig.json`, `rsbuild.config.ts`, and `jest.config.js`, and
 delete `src/test/mock/lib.ts`.
 
 Contract: the built VSIX contains no native binaries. This is also what makes a single-platform VSIX honest.
@@ -1071,8 +1057,8 @@ and the `engines.vscode` floor, so it must precede the dependency being added. T
 
 ### Checkpoints — stop and confirm
 
-- **Before any product code:** **D2**, the fork base version. Everything downstream anchors on it.
-- **Before Phase 0 step 0.2:** **D1** items 1 and 2 — the Fusion pin and the Husky-versus-lefthook call.
+**D1** and **D2** are resolved; Phase 0 and Phase 1.1 are complete.
+
 - **Before Phase 5 step 5.5:** **D3**, resolved by **S1**.
 - **Before Phase 7:** the **S2** command inventory, with any retained feature that has no backing command named
   explicitly. This is the point where the comprehensive target either holds or must be amended.

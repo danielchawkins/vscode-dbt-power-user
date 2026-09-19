@@ -20,7 +20,7 @@ Add a small contributor layer:
 - one root `justfile` exposes `setup`, `fmt`, `lint`, `check`, and `package` as short npm facades;
 - dprint and rumdl own Markdown only;
 - `AGENTS.md` becomes the concise canonical contributor and agent guide;
-- `CLAUDE.md` becomes a short pointer to `AGENTS.md`, `CONTEXT.md`, ADRs, and refactor docs;
+- `CLAUDE.md` and `.claude/` become compatibility symlinks to `AGENTS.md` and `.agents/`;
 - `.vscode/extensions.json` and `.vscode/settings.json` recommend and configure the repository's actual tools;
 - selected reusable skills live under `.agents/skills/`; and
 - CI pins actions, uses the same Node version, runs the same checks, builds the VSIX, and emits a checksum.
@@ -122,8 +122,7 @@ Retain and simplify rather than replace:
 - package lockfiles;
 - ESLint and Prettier configuration;
 - Jest configuration and mocks;
-- webpack/Vite while retained webviews require them; and
-- the existing common-build action where extending it is smaller than replacement.
+- rsbuild/Vite while retained extension and webview bundles require them.
 
 ## Do not adopt
 
@@ -148,3 +147,10 @@ Do not copy:
 7. Harden CI and prove the unchanged upstream extension still builds, tests, and packages.
 
 Product refactoring starts only after this baseline is green.
+
+## Status
+
+Complete. The branch is based on upstream 0.64.6. Root and webview dependencies install with `npm ci`; `just check`
+compiles, lints, checks code formatting, validates both npm lockfiles, runs 637 unit tests, and checks Markdown;
+`just package` builds the VSIX. The macOS CI job uses the same commands, uploads the VSIX and checksum, and limits
+duplicate runs with a concurrency group. The next work is the Fusion version gate in Phase 1.2 of the refactor plan.
