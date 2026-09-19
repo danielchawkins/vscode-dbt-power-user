@@ -15,9 +15,9 @@ export default defineConfig({
       //     return outputAsset.fileName !== 'assets/style.css';
       // }
       jsAssetsFilterFunction: function customJsAssetsfilterFunction(
-        outputChunk,
+        outputChunk: { fileName: string },
       ) {
-        return outputChunk.fileName == "assets/renderer.js";
+        return outputChunk.fileName === "assets/renderer.js";
       },
     }),
   ],

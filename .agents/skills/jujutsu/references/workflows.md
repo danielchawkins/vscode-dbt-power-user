@@ -13,7 +13,7 @@ Adopt jj after the Git working tree is clean. Initialization snapshots all unign
    ```
 
    Colocation is the current default, but the explicit flag records the intended Git interoperability.
-4. Copy Git identity and set remotes and trunk to match this clone. Use the actual default-branch bookmark (`main`, `master`, or another name) and include extra fetch remotes only when they exist:
+4. Copy Git identity and set the push remote and trunk to match this clone. Use the actual default-branch bookmark (`main`, `master`, or another name):
 
    ```bash
    jj config set --repo user.name "$(git config user.name)"
@@ -22,11 +22,11 @@ Adopt jj after the Git working tree is clean. Initialization snapshots all unign
    jj config set --repo 'revset-aliases."trunk()"' 'main@origin'
    ```
 
-   Extra remotes belong in `git.fetch` only when they exist.
+   Add a remote to `git.fetch` only when routine fetches should import it. A large upstream can create hundreds of untracked remote bookmarks.
 5. Inspect imported bookmarks and track only those that should move with their remote:
 
    ```bash
-   jj bookmark list --all-remotes
+   jj bookmark list --remote origin
    jj bookmark track main --remote origin
    ```
 
@@ -82,7 +82,7 @@ jj git push --bookmark feature-name --remote origin
 gh pr create --head feature-name
 ```
 
-Or name and push in one step with `jj git push --named feature-name=@- --remote origin`. For an existing bookmark, move it to the intended change and push:
+Or name and push in one step with `jj git push --named feature-name=@- --remote origin`. If a remote branch predates jj adoption, track it once with `jj bookmark track feature-name --remote origin`. For an existing bookmark, move it to the intended change and push:
 
 ```bash
 jj bookmark move feature-name --to @-
