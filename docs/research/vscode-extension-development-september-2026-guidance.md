@@ -11,15 +11,9 @@ Confidence describes the recommendation, not the authority of every underlying s
 
 ## 1. Current baseline and engine strategy
 
-**Fact.** VS Code stable is 1.137.0, released 2026-09-09
-[[1]](vscode-extension-development-september-2026-sources.md#1-visual-studio-code-1137). Its tagged source uses
-Electron 42.10.0 and the Node 24.18 line
-[[2]](vscode-extension-development-september-2026-sources.md#2-vs-code-1137-runtime-pins).
+**Fact.** VS Code stable is 1.137.0, released 2026-09-09 [[1]](vscode-extension-development-september-2026-sources.md#1-visual-studio-code-1137). Its tagged source uses Electron 42.10.0 and the Node 24.18 line [[2]](vscode-extension-development-september-2026-sources.md#2-vs-code-1137-runtime-pins).
 
-**Fact.** Installed Cursor 3.20.14 declares `vscodeVersion: 1.128.0`
-[[4]](vscode-extension-development-september-2026-sources.md#4-installed-cursor-product-inspection). A later September
-3.21.4 version report still declares Extension API 1.128.0
-[[5]](vscode-extension-development-september-2026-sources.md#5-cursor-3214-version-report).
+**Fact.** Installed Cursor 3.20.14 declares `vscodeVersion: 1.128.0` [[4]](vscode-extension-development-september-2026-sources.md#4-installed-cursor-product-inspection). A later September 3.21.4 version report still declares Extension API 1.128.0 [[5]](vscode-extension-development-september-2026-sources.md#5-cursor-3214-version-report).
 
 **Recommendation — high.**
 
@@ -29,56 +23,45 @@ Electron 42.10.0 and the Node 24.18 line
 - Use a current TypeScript compiler and Node 24 types only for runtime APIs actually present in both hosts.
 - Re-evaluate the floor when Cursor's stable declared API moves, not merely when VS Code releases.
 
-**Why.** The manifest says `engines.vscode` must match compatible versions
-[[8]](vscode-extension-development-september-2026-sources.md#8-extension-manifest-engine-contract). The lower host sets
-the shared installable surface. Long-tail support does not justify using 1.137-only APIs that make the current Cursor
-target ineligible.
+**Why.** The manifest says `engines.vscode` must match compatible versions [[8]](vscode-extension-development-september-2026-sources.md#8-extension-manifest-engine-contract). The lower host sets the shared installable surface. Long-tail support does not justify using 1.137-only APIs that make the current Cursor target ineligible.
 
-**Caveat.** `engines.vscode` does not certify behavior. Cursor staff says declared API compatibility can diverge from
-editor internals [[7]](vscode-extension-development-september-2026-sources.md#7-cursor-extension-api-cadence).
+**Caveat.** `engines.vscode` does not certify behavior. Cursor staff says declared API compatibility can diverge from editor internals [[7]](vscode-extension-development-september-2026-sources.md#7-cursor-extension-api-cadence).
 
 ## 2. Extension-host topology and native-process boundary
 
 ### Running location
 
-**Fact.** Desktop VS Code can run local and web extension hosts; remote windows add a remote Node host
-[[9]](vscode-extension-development-september-2026-sources.md#9-extension-host-topology). Workspace extensions run where
-the workspace lives [[10]](vscode-extension-development-september-2026-sources.md#10-remote-extension-behavior).
+**Fact.** Desktop VS Code can run local and web extension hosts; remote windows add a remote Node host [[9]](vscode-extension-development-september-2026-sources.md#9-extension-host-topology). Workspace extensions run where the workspace lives [[10]](vscode-extension-development-september-2026-sources.md#10-remote-extension-behavior).
 
 **Recommendation — high.**
 
 - Provide only `main`, not `browser`; a native executable makes this a Node extension.
 - Use `extensionKind: ["workspace"]`.
-- Declare virtual-workspace support as false or limited because a native local dbt project needs filesystem/process
-  semantics that virtual workspaces do not guarantee.
+- Declare virtual-workspace support as false or limited because a native local dbt project needs filesystem/process semantics that virtual workspaces do not guarantee.
 - Decide remote behavior explicitly:
   - **Support remote**: resolve and launch `dbt` in the remote extension host, and test a Dev Container or SSH target.
   - **Local-only**: disable process-backed features when `vscode.env.remoteName` is set and explain the limitation.
 
-**Caveat.** `extensionKind: ["ui"]` would keep execution close to the desktop but loses direct access to remote
-workspace files and tools. That is not a compatibility shortcut.
+**Caveat.** `extensionKind: ["ui"]` would keep execution close to the desktop but loses direct access to remote workspace files and tools. That is not a compatibility shortcut.
 
 ### Workspace Trust
 
 **Recommendation — high.**
 
 - Declare `capabilities.untrustedWorkspaces.supported: "limited"`.
-- Put executable path, extra arguments, environment overrides, project hooks, and any config that affects execution in
-  `restrictedConfigurations`.
+- Put executable path, extra arguments, environment overrides, project hooks, and any config that affects execution in `restrictedConfigurations`.
 - In Restricted Mode, allow passive syntax/UI that cannot execute workspace content.
 - Do not discover, probe, start, or send workspace-derived arguments to `dbt`.
 - Hide unavailable actions with `isWorkspaceTrusted`, then enforce `workspace.isTrusted` again in handlers.
 - Start sessions from `onDidGrantWorkspaceTrust`; stop or rebuild sessions when relevant configuration changes.
 
-**Evidence.** Workspace Trust exists to address unintended code execution, and hidden commands remain callable
-[[11]](vscode-extension-development-september-2026-sources.md#11-workspace-trust).
+**Evidence.** Workspace Trust exists to address unintended code execution, and hidden commands remain callable [[11]](vscode-extension-development-september-2026-sources.md#11-workspace-trust).
 
 ### Activation, cancellation, disposal, and logging
 
 **Recommendation — high.**
 
-- Activate from contributed commands, views, and the dbt language/project marker needed for the product. Avoid `*` and
-  `onStartupFinished` unless measured behavior requires them.
+- Activate from contributed commands, views, and the dbt language/project marker needed for the product. Avoid `*` and `onStartupFinished` unless measured behavior requires them.
 - Keep activation cheap: register UI and project discovery, then start a server only for an eligible trusted project.
 - Push all VS Code registrations into `context.subscriptions`.
 - Give each project session one cancellation source for startup and long-running operations.
@@ -87,8 +70,7 @@ workspace files and tools. That is not a compatibility shortcut.
 - Use one `LogOutputChannel` per extension or a clearly named channel per project when logs must be separated.
 - Prefix records with project identity and lifecycle state; never log environment values wholesale.
 
-**Evidence.** Targeted activation is preferred, and asynchronous cleanup must return a Promise
-[[12]](vscode-extension-development-september-2026-sources.md#12-activation-and-asynchronous-cleanup).
+**Evidence.** Targeted activation is preferred, and asynchronous cleanup must return a Promise [[12]](vscode-extension-development-september-2026-sources.md#12-activation-and-asynchronous-cleanup).
 
 ### Process execution
 
@@ -103,12 +85,9 @@ workspace files and tools. That is not a compatibility shortcut.
 - Do not detach a server intended to die with the extension host.
 - Redact paths or values only where they contain secrets; do not erase useful local diagnostics by default.
 
-**Evidence.** Node 24 `spawn` supports AbortSignal, defaults to no shell, and uses `SIGTERM` as the default kill signal
-[[18]](vscode-extension-development-september-2026-sources.md#18-node-24-child-process-api).
+**Evidence.** Node 24 `spawn` supports AbortSignal, defaults to no shell, and uses `SIGTERM` as the default kill signal [[18]](vscode-extension-development-september-2026-sources.md#18-node-24-child-process-api).
 
-**Product boundary.** Runtime resolution must not invoke mise, asdf, Homebrew, or repository task runners. A user can
-arrange `PATH` with any tool manager before launching the editor; the extension only sees the resulting executable
-environment.
+**Product boundary.** Runtime resolution must not invoke mise, asdf, Homebrew, or repository task runners. A user can arrange `PATH` with any tool manager before launching the editor; the extension only sees the resulting executable environment.
 
 ## 3. Multi-root and configuration
 
@@ -117,8 +96,7 @@ environment.
 - Treat each supported dbt project as a project session, not as global extension state.
 - Never use `workspaceFolders[0]` as an implicit project.
 - Resolve documents with `workspace.getWorkspaceFolder(uri)` plus the product's explicit project-scoping rule.
-- Add/remove sessions on `onDidChangeWorkspaceFolders`; cancel startup and dispose diagnostics/client/process on
-  removal.
+- Add/remove sessions on `onDidChangeWorkspaceFolders`; cancel startup and dispose diagnostics/client/process on removal.
 - Read resource settings with the relevant folder/document URI.
 - Keep project-derived caches under `storageUri`; keep cross-workspace state under `globalStorageUri`.
 
@@ -130,9 +108,7 @@ environment.
 - Window-wide presentation: `window`.
 - Language-specific editor behavior: `language-overridable` only when users genuinely need it.
 
-**Evidence.** Machine values are not synchronized, resource settings can be folder-scoped
-[[13]](vscode-extension-development-september-2026-sources.md#13-configuration-scopes), and multi-root folders can have
-independent `.vscode` settings [[14]](vscode-extension-development-september-2026-sources.md#14-multi-root-settings).
+**Evidence.** Machine values are not synchronized, resource settings can be folder-scoped [[13]](vscode-extension-development-september-2026-sources.md#13-configuration-scopes), and multi-root folders can have independent `.vscode` settings [[14]](vscode-extension-development-september-2026-sources.md#14-multi-root-settings).
 
 **Checklist.**
 
@@ -157,40 +133,29 @@ independent `.vscode` settings [[14]](vscode-extension-development-september-202
 - Register custom request/notification handlers before `start`.
 - Await `client.start()`; call `client.dispose()` during final teardown.
 
-**Evidence.** Current official guidance awaits start and disposes on deactivate
-[[15]](vscode-extension-development-september-2026-sources.md#15-current-language-server-extension-guide).
-LanguageClient 10 changed start/stop to Promises
-[16](vscode-extension-development-september-2026-sources.md#16-languageclient-10-lifecycle).
+**Evidence.** Current official guidance awaits start and disposes on deactivate [[15]](vscode-extension-development-september-2026-sources.md#15-current-language-server-extension-guide). LanguageClient 10 changed start/stop to Promises [16](vscode-extension-development-september-2026-sources.md#16-languageclient-10-lifecycle).
 
 ### Transport and supervision
 
 **Recommendation — high.**
 
-- Prefer stdio for an external native dbt Fusion process: no port allocation, no listener exposure, and native
-  LanguageClient support.
+- Prefer stdio for an external native dbt Fusion process: no port allocation, no listener exposure, and native LanguageClient support.
 - Do not parse or log stdout outside the protocol framing.
 - Route stderr line-by-line to the client log channel.
-- Preserve the default bounded restart policy initially. It restarts up to the configured count and stops after a crash
-  loop.
+- Preserve the default bounded restart policy initially. It restarts up to the configured count and stops after a crash loop.
 - Add a user-visible restart command and session status.
 - Suppress restart after deliberate stop, project removal, trust loss, or configuration-driven replacement.
 - Record exit code/signal and restart count.
 
-**Evidence.** Current client 10.1.1 exposes stdio, IPC, pipe, and socket transports and forwards server streams to its
-output channel. Its default restart handler is bounded.
-[17](vscode-extension-development-september-2026-sources.md#17-vscode-languageclient-transports)
-[16](vscode-extension-development-september-2026-sources.md#16-languageclient-10-lifecycle)
+**Evidence.** Current client 10.1.1 exposes stdio, IPC, pipe, and socket transports and forwards server streams to its output channel. Its default restart handler is bounded. [17](vscode-extension-development-september-2026-sources.md#17-vscode-languageclient-transports) [16](vscode-extension-development-september-2026-sources.md#16-languageclient-10-lifecycle)
 
-**Caveat.** The official `lsp-sample` and multi-server sample lag current LanguageClient lifecycle versions. Use their
-selector/session patterns, not their dependency versions or un-awaited starts
-[[30]](vscode-extension-development-september-2026-sources.md#30-microsoftvscode-extension-samples).
+**Caveat.** The official `lsp-sample` and multi-server sample lag current LanguageClient lifecycle versions. Use their selector/session patterns, not their dependency versions or un-awaited starts [[30]](vscode-extension-development-september-2026-sources.md#30-microsoftvscode-extension-samples).
 
 ### Diagnostics, commands, and cancellation
 
 **Recommendation — high.**
 
-- Let the LSP own language diagnostics and capabilities. Avoid duplicate VS Code providers for capabilities already
-  served by dbt Fusion.
+- Let the LSP own language diagnostics and capabilities. Avoid duplicate VS Code providers for capabilities already served by dbt Fusion.
 - Namespace custom methods and commands under the extension identity.
 - Define runtime schemas/type guards for custom LSP payloads. TypeScript types are not trust-boundary validation.
 - Pass `CancellationToken` to custom requests and stop follow-on work when cancellation wins.
@@ -220,15 +185,9 @@ selector/session patterns, not their dependency versions or un-awaited starts
 - Fail on unresolved dynamic-require warnings.
 - Keep the current bundler if it meets this contract under test.
 
-**Evidence.** VS Code recommends bundling and excluding `vscode` from the bundle
-[[19]](vscode-extension-development-september-2026-sources.md#19-bundling-extensions). The same page demonstrates
-esbuild and notes that esbuild does not type-check. That is a property of the demonstrated tool, not a ranking of
-bundlers. This research does not establish that esbuild is required or superior to rsbuild, Rspack, webpack, or another
-current bundler.
+**Evidence.** VS Code recommends bundling and excluding `vscode` from the bundle [[19]](vscode-extension-development-september-2026-sources.md#19-bundling-extensions). The same page demonstrates esbuild and notes that esbuild does not type-check. That is a property of the demonstrated tool, not a ranking of bundlers. This research does not establish that esbuild is required or superior to rsbuild, Rspack, webpack, or another current bundler.
 
-**Module-format caveat.** VS Code's current bundling guide still demonstrates CommonJS for Node extensions. Native ESM
-may work in current hosts, but adds no product value here and increases host/bundler edge cases. CommonJS is the
-lower-risk recommendation, not a claim that ESM is unsupported.
+**Module-format caveat.** VS Code's current bundling guide still demonstrates CommonJS for Node extensions. Native ESM may work in current hosts, but adds no product value here and increases host/bundler edge cases. CommonJS is the lower-risk recommendation, not a claim that ESM is unsupported.
 
 ### Webviews
 
@@ -243,12 +202,10 @@ lower-risk recommendation, not a claim that ESM is unsupported.
 
 - While dbt is external, publish one platform-neutral VSIX.
 - Do not add native Node modules without a measured need.
-- If the VSIX later contains native code or a bundled executable, publish explicit target packages: `darwin-arm64` and
-  `darwin-x64` first, then only platforms the product supports.
+- If the VSIX later contains native code or a bundled executable, publish explicit target packages: `darwin-arm64` and `darwin-x64` first, then only platforms the product supports.
 - Build executable-bearing packages on macOS/Linux and verify mode bits after unpacking.
 
-**Evidence.** Target-specific VSIX files exist for platform-specific dependencies
-[[20]](vscode-extension-development-september-2026-sources.md#20-publishing-and-platform-specific-vsix-files).
+**Evidence.** Target-specific VSIX files exist for platform-specific dependencies [[20]](vscode-extension-development-september-2026-sources.md#20-publishing-and-platform-specific-vsix-files).
 
 ### VSIX contents and size
 
@@ -257,10 +214,8 @@ lower-risk recommendation, not a claim that ESM is unsupported.
 - Run `vsce ls` before packaging.
 - Unzip the built VSIX and assert required entries and forbidden paths.
 - Include runtime bundle, webview assets, manifest, README/license, icons, and localization bundles.
-- Exclude source, tests, fixtures, coverage, editor config, caches, development maps if not intentionally shipped, and
-  all unneeded `node_modules`.
-- Report compressed and unpacked sizes in CI; use a regression threshold based on the established artifact, not an
-  arbitrary universal number.
+- Exclude source, tests, fixtures, coverage, editor config, caches, development maps if not intentionally shipped, and all unneeded `node_modules`.
+- Report compressed and unpacked sizes in CI; use a regression threshold based on the established artifact, not an arbitrary universal number.
 
 ### Supply chain
 
@@ -298,14 +253,11 @@ lower-risk recommendation, not a claim that ESM is unsupported.
 - Package the VSIX.
 - Install that exact file into an isolated host profile.
 - Open a fixture workspace.
-- activate, start the real or controlled test server, receive one diagnostic/request, stop, and assert no surviving
-  child.
+- activate, start the real or controlled test server, receive one diagnostic/request, stop, and assert no surviving child.
 
 ### Tools and matrix
 
-**Recommendation — high.** Use `@vscode/test-cli` and `@vscode/test-electron`
-[[21]](vscode-extension-development-september-2026-sources.md#21-vs-code-extension-testing). Pin the tested VS Code
-version to 1.137.x for the release gate; optionally run Insiders as non-blocking early warning.
+**Recommendation — high.** Use `@vscode/test-cli` and `@vscode/test-electron` [[21]](vscode-extension-development-september-2026-sources.md#21-vs-code-extension-testing). Pin the tested VS Code version to 1.137.x for the release gate; optionally run Insiders as non-blocking early warning.
 
 Minimum release matrix:
 
@@ -316,26 +268,21 @@ Minimum release matrix:
 - explicit executable path and `PATH`.
 - missing executable, unsupported version, crash loop, and cancellation.
 
-Add macOS x64 when a real x64 runner is available or when packaging native artifacts. Add one remote Linux case only if
-remote support is promised.
+Add macOS x64 when a real x64 runner is available or when packaging native artifacts. Add one remote Linux case only if remote support is promised.
 
-**Cursor gap.** `@vscode/test-cli` downloads/runs VS Code, not Cursor
-[[32]](vscode-extension-development-september-2026-sources.md#32-microsoftvscode-test-cli). No official Cursor adapter
-was found. A Cursor smoke harness must therefore be treated as product-owned infrastructure and kept narrow.
+**Cursor gap.** `@vscode/test-cli` downloads/runs VS Code, not Cursor [[32]](vscode-extension-development-september-2026-sources.md#32-microsoftvscode-test-cli). No official Cursor adapter was found. A Cursor smoke harness must therefore be treated as product-owned infrastructure and kept narrow.
 
 ### Proposed APIs
 
 - Do not use them in production.
-- Do not enable them only for VS Code while silently degrading Cursor unless the product explicitly accepts a two-tier
-  feature.
+- Do not enable them only for VS Code while silently degrading Cursor unless the product explicitly accepts a two-tier feature.
 - If experimentation is necessary, isolate it in a non-shipping branch/build.
 
 ## 7. Webview guidance
 
 **Recommendation — high.**
 
-- Use a webview only when native VS Code contributions cannot express the interaction
-  [[25]](vscode-extension-development-september-2026-sources.md#25-webview-ux-and-accessibility).
+- Use a webview only when native VS Code contributions cannot express the interaction [[25]](vscode-extension-development-september-2026-sources.md#25-webview-ux-and-accessibility).
 - Set `localResourceRoots` to the exact media directories, or `[]`.
 - Start CSP with `default-src 'none'`; allow only required `style-src`, `img-src`, and nonce-bearing `script-src`.
 - Do not enable command URIs unless a specific allowlisted use case exists.
@@ -357,10 +304,7 @@ was found. A Cursor smoke harness must therefore be treated as product-owned inf
 - `vscode-using-screen-reader` and `vscode-reduce-motion` respected.
 - No color-only state.
 
-**Toolkit choice.** Use semantic HTML and small local styles/components first. Microsoft's Webview UI Toolkit is
-archived and unmaintained [[26]](vscode-extension-development-september-2026-sources.md#26-webview-ui-toolkit-sunset).
-Community replacements may be evaluated for a concrete need, but neither popularity nor VS Code-like appearance is
-enough reason to add one.
+**Toolkit choice.** Use semantic HTML and small local styles/components first. Microsoft's Webview UI Toolkit is archived and unmaintained [[26]](vscode-extension-development-september-2026-sources.md#26-webview-ui-toolkit-sunset). Community replacements may be evaluated for a concrete need, but neither popularity nor VS Code-like appearance is enough reason to add one.
 
 ## 8. Commands, settings, localization, privacy, and security
 
@@ -370,8 +314,7 @@ enough reason to add one.
 - Keep command IDs stable; change user-facing titles independently.
 - Give every setting a default, scope, description, and narrow schema.
 - Mark old settings with `deprecationMessage`/`markdownDeprecationMessage`.
-- During a bounded migration window, read old values only when the new key is unset; write the new key once if user
-  intent is unambiguous.
+- During a bounded migration window, read old values only when the new key is unset; write the new key once if user intent is unambiguous.
 - Do not silently broaden a setting from user scope to workspace execution authority.
 
 ### Contributions and activation
@@ -387,25 +330,20 @@ enough reason to add one.
 
 - Keep all user-visible strings localizable from the first new code.
 - Use `%key%` manifest strings and `vscode.l10n.t` for extension-host strings.
-- Add translated bundles only when product scope requires them; localizable structure is cheap, speculative
-  translations are not.
+- Add translated bundles only when product scope requires them; localizable structure is cheap, speculative translations are not.
 
-**Evidence.** `vscode.l10n` uses manifest-declared localization bundles
-[[29]](vscode-extension-development-september-2026-sources.md#29-localization-api).
+**Evidence.** `vscode.l10n` uses manifest-declared localization bundles [[29]](vscode-extension-development-september-2026-sources.md#29-localization-api).
 
 ### Telemetry and privacy
 
-**Recommendation — high.** Send no telemetry and call no hosted service. Local logs should be user-opened, bounded, and
-free of secrets. Do not add an analytics dependency for “future observability.”
+**Recommendation — high.** Send no telemetry and call no hosted service. Local logs should be user-opened, bounded, and free of secrets. Do not add an analytics dependency for “future observability.”
 
-**Caveat.** If the boundary changes, VS Code requires honoring its central telemetry state and minimizing collection
-[[28]](vscode-extension-development-september-2026-sources.md#28-telemetry-guide).
+**Caveat.** If the boundary changes, VS Code requires honoring its central telemetry state and minimizing collection [[28]](vscode-extension-development-september-2026-sources.md#28-telemetry-guide).
 
 ### Secrets and URI handling
 
 - This product should need no secret for local dbt Fusion.
-- If a future feature introduces one, use `ExtensionContext.secrets`, never settings/globalState/workspaceState
-  [[27]](vscode-extension-development-september-2026-sources.md#27-secret-storage).
+- If a future feature introduces one, use `ExtensionContext.secrets`, never settings/globalState/workspaceState [[27]](vscode-extension-development-september-2026-sources.md#27-secret-storage).
 - Register URI handlers only for a concrete flow.
 - Validate authority, path, nonce/state, and every query value.
 - Never accept a command line, executable path, or arbitrary command ID from a URI.
@@ -435,19 +373,14 @@ free of secrets. Do not add an analytics dependency for “future observability.
 8. compute SHA-256;
 9. retain artifact and test results.
 
-**Action security.** Pin every action to a full commit SHA and use least-privilege token permissions
-[[22]](vscode-extension-development-september-2026-sources.md#22-github-actions-hardening).
+**Action security.** Pin every action to a full commit SHA and use least-privilege token permissions [[22]](vscode-extension-development-september-2026-sources.md#22-github-actions-hardening).
 
-**Publication.** Prefer short-lived OIDC/trusted publishing where the target supports it. The current `vsce` repository
-documents OIDC publishing [[33]](vscode-extension-development-september-2026-sources.md#33-microsoftvscode-vsce). Keep
-packaging and publishing as separate jobs so only a verified artifact gains release credentials.
+**Publication.** Prefer short-lived OIDC/trusted publishing where the target supports it. The current `vsce` repository documents OIDC publishing [[33]](vscode-extension-development-september-2026-sources.md#33-microsoftvscode-vsce). Keep packaging and publishing as separate jobs so only a verified artifact gains release credentials.
 
 **Attestations and SBOM.**
 
-- Attest the final VSIX when GitHub artifact attestations are available; provenance links it to the source workflow
-  [[23]](vscode-extension-development-september-2026-sources.md#23-artifact-attestations).
-- Generate an SBOM only if consumers, policy, or incident response will use it. No authoritative VS Code source makes
-  one a packaging requirement.
+- Attest the final VSIX when GitHub artifact attestations are available; provenance links it to the source workflow [[23]](vscode-extension-development-september-2026-sources.md#23-artifact-attestations).
+- Generate an SBOM only if consumers, policy, or incident response will use it. No authoritative VS Code source makes one a packaging requirement.
 - Publish SHA-256 checksums regardless; they are simple and useful for private distribution.
 
 ## 10. Cursor compatibility: test contract
@@ -455,10 +388,8 @@ packaging and publishing as separate jobs so only a verified artifact gains rele
 ### Explicitly documented
 
 - Cursor is VS Code-based and can import extensions.
-- Cursor may use an older VS Code base
-  [[6]](vscode-extension-development-september-2026-sources.md#6-cursors-vs-code-rebase-policy).
-- The current observed stable API target is 1.128
-  [[4]](vscode-extension-development-september-2026-sources.md#4-installed-cursor-product-inspection).
+- Cursor may use an older VS Code base [[6]](vscode-extension-development-september-2026-sources.md#6-cursors-vs-code-rebase-policy).
+- The current observed stable API target is 1.128 [[4]](vscode-extension-development-september-2026-sources.md#4-installed-cursor-product-inspection).
 
 ### Test rather than assume
 
@@ -484,19 +415,14 @@ packaging and publishing as separate jobs so only a verified artifact gains rele
 
 ### Selected
 
-1. `microsoft/vscode-extension-samples` at `65c1c44800eeac6fb065a54823ee5ae62c79540a`
-   [[30]](vscode-extension-development-september-2026-sources.md#30-microsoftvscode-extension-samples)
-   - use only `esbuild-sample`, `helloworld-test-cli-sample`, `webview-sample`, and the multi-server selector/session
-     pattern;
+1. `microsoft/vscode-extension-samples` at `65c1c44800eeac6fb065a54823ee5ae62c79540a` [[30]](vscode-extension-development-september-2026-sources.md#30-microsoftvscode-extension-samples)
+   - use only `esbuild-sample`, `helloworld-test-cli-sample`, `webview-sample`, and the multi-server selector/session pattern;
    - do not copy their old engine or LanguageClient versions.
-2. `microsoft/vscode-languageserver-node` at `87f58727b5d287ef9049fb0b4b52984a6e62d604`
-   [[31]](vscode-extension-development-september-2026-sources.md#31-microsoftvscode-languageserver-node)
+2. `microsoft/vscode-languageserver-node` at `87f58727b5d287ef9049fb0b4b52984a6e62d604` [[31]](vscode-extension-development-september-2026-sources.md#31-microsoftvscode-languageserver-node)
    - primary source for LanguageClient 10 lifecycle, restart, transports, and per-folder options.
-3. `microsoft/vscode-test-cli` at `a72f3178c933206239b2cbaebbae92fe99552087`
-   [[32]](vscode-extension-development-september-2026-sources.md#32-microsoftvscode-test-cli)
+3. `microsoft/vscode-test-cli` at `a72f3178c933206239b2cbaebbae92fe99552087` [[32]](vscode-extension-development-september-2026-sources.md#32-microsoftvscode-test-cli)
    - current VS Code extension-host test configuration and runner.
-4. `microsoft/vscode-vsce` at `c1eebf3b1d0cf90da1aca18e4ab58311bbe39d61`
-   [[33]](vscode-extension-development-september-2026-sources.md#33-microsoftvscode-vsce)
+4. `microsoft/vscode-vsce` at `c1eebf3b1d0cf90da1aca18e4ab58311bbe39d61` [[33]](vscode-extension-development-september-2026-sources.md#33-microsoftvscode-vsce)
    - packaging/publishing behavior, not an extension architecture template.
 
 ### Rejected as primary references
@@ -507,8 +433,7 @@ packaging and publishing as separate jobs so only a verified artifact gains rele
 - `eamodio/vscode-gitlens`: hosted/commercial surface conflicts with the local-only boundary.
 - the entire official samples repository: individual samples vary in age and dependency level.
 
-Popularity was not used as evidence. Selection favored authority, September 2026 maintenance, narrow relevance, and
-inspectable current implementation.
+Popularity was not used as evidence. Selection favored authority, September 2026 maintenance, narrow relevance, and inspectable current implementation.
 
 ## 12. Implementation readiness checklist
 

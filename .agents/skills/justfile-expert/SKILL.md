@@ -11,8 +11,7 @@ model: sonnet
 
 # Justfile Expert
 
-Expert knowledge for Just command runner, recipe development, and task automation with focus on cross-platform
-compatibility and project standardization.
+Expert knowledge for Just command runner, recipe development, and task automation with focus on cross-platform compatibility and project standardization.
 
 ## When to Use This Skill
 
@@ -114,16 +113,14 @@ clean-all: clean
 
 ### Recipe Attributes
 
-- **`[doc("text")]`**: The `--list` description. Overrides the comment above the recipe; bare **`[doc]`** suppresses
-  it. See "What `--list` Shows" below — without this attribute only the comment block's LAST line is used
+- **`[doc("text")]`**: The `--list` description. Overrides the comment above the recipe; bare **`[doc]`** suppresses it. See "What `--list` Shows" below — without this attribute only the comment block's LAST line is used
 - **`[private]`**: Hide from `--list` and `--summary` output
 - **`[no-cd]`**: Don't change directory
 - **`[no-exit-message]`**: Suppress exit messages
 - **`[unix]`** / **`[windows]`** / **`[linux]`** / **`[macos]`**: Platform-specific recipes
 - **`[positional-arguments]`**: Per-recipe positional args
 - **`[confirm]`** / **`[confirm("message")]`**: Require confirmation before running
-- **`[group: "name"]`** / **`[group("name")]`**: Section recipes in `--list`; both spellings work, and `--groups` lists
-  the group names
+- **`[group: "name"]`** / **`[group("name")]`**: Section recipes in `--list`; both spellings work, and `--groups` lists the group names
 - **`[working-directory: "path"]`**: Run in specific directory
 
 ### Module System
@@ -131,10 +128,8 @@ clean-all: clean
 - **`mod name`**: Declare submodule
 - **`mod name 'path'`**: Custom module path
 - **Invocation**: `just module::recipe` or `just module recipe`
-- **`set fallback` is NOT inherited by a module.** The parent may fall through to *its* parent, but
-  `just sub::parent-recipe` fails with `justfile does not
-  contain recipe`. A module's recipes resolve only within
-  that module
+- **`set fallback` is NOT inherited by a module.** The parent may fall through to *its* parent, but `just sub::parent-recipe` fails with `justfile does not
+  contain recipe`. A module's recipes resolve only within that module
 
 ## Essential Syntax
 
@@ -160,9 +155,7 @@ test *args:
 
 ### Interpolation is UNQUOTED — quote anything that can contain spaces
 
-`{{...}}` splices raw text into the recipe body *before* the shell parses it, so a value carrying spaces or quotes
-word-splits. This bites hardest on the `*args` passthrough above, because the error is reported by the *called program*
-rather than by just, which makes it read like a bug in the tool:
+`{{...}}` splices raw text into the recipe body *before* the shell parses it, so a value carrying spaces or quotes word-splits. This bites hardest on the `*args` passthrough above, because the error is reported by the *called program* rather than by just, which makes it read like a bug in the tool:
 
 ```just
 # Trap — one argument with spaces arrives as several
@@ -175,9 +168,7 @@ $ just caption ./data "the subject's face"
 tool.py: error: unrecognized arguments: subjects face
 ```
 
-The outer shell consumed the quotes (taking the apostrophe with them) and `the` / `subject's` / `face` arrived as three
-separate argv entries. Name the parameters that can contain spaces and run them through `quote()`, which emits a
-properly shell-escaped literal:
+The outer shell consumed the quotes (taking the apostrophe with them) and `the` / `subject's` / `face` arrived as three separate argv entries. Name the parameters that can contain spaces and run them through `quote()`, which emits a properly shell-escaped literal:
 
 ```just
 # Correct — named params are quoted; trailing flags still pass through
@@ -185,14 +176,11 @@ caption DIR SUBJECT="" *ARGS:
     ./tool.py {{quote(DIR)}} {{quote(SUBJECT)}} {{ARGS}}
 ```
 
-`quote()` covers embedded spaces, `'`, `"`, and `$`. Keep `{{ARGS}}` bare — that is what lets several trailing flags
-expand as separate words — and accept its corollary: an individual passthrough flag's value must not contain spaces.
-When one might, promote it to a named parameter too.
+`quote()` covers embedded spaces, `'`, `"`, and `$`. Keep `{{ARGS}}` bare — that is what lets several trailing flags expand as separate words — and accept its corollary: an individual passthrough flag's value must not contain spaces. When one might, promote it to a named parameter too.
 
 ### What `--list` Shows Is ONE Line, and It Is Not Your Comment Block
 
-`just --list` renders a single description per recipe. With no `[doc]` attribute it takes the **last line** of the
-comment block immediately above the recipe — not the first line, and not the block:
+`just --list` renders a single description per recipe. With no `[doc]` attribute it takes the **last line** of the comment block immediately above the recipe — not the first line, and not the block:
 
 | Above the recipe                     | `--list` shows         |
 | ------------------------------------ | ---------------------- |
@@ -201,8 +189,7 @@ comment block immediately above the recipe — not the first line, and not the b
 | bare `[doc]`                         | nothing                |
 | nothing                              | nothing                |
 
-So "add a comment before each recipe" is **not** the same as documenting it. A block that ends in an example or a
-caveat — the normal way to write one — lists as that fragment:
+So "add a comment before each recipe" is **not** the same as documenting it. A block that ends in an example or a caveat — the normal way to write one — lists as that fragment:
 
 ```just
 # Pitch-correct the singing in an MP4. Video is stream-copied.
@@ -215,23 +202,18 @@ $ just --list
     autotune IN OUT *FLAGS   # just autotune take.mp4 out.mp4 --key C:minor
 ```
 
-**Add `[doc("one line")]` as soon as a recipe's comment block exceeds one line.** The block stays where it is and keeps
-carrying the detail; the attribute is the only thing `--list` reads.
+**Add `[doc("one line")]` as soon as a recipe's comment block exceeds one line.** The block stays where it is and keeps carrying the detail; the attribute is the only thing `--list` reads.
 
-**The block binds by ADJACENCY, and reassignment is silent.** A blank line ends a block, so inserting a recipe between
-a block and the recipe it describes hands the block to the newcomer — the original then lists blank, and nothing warns.
-Re-read `just --list` after inserting a recipe into an existing file.
+**The block binds by ADJACENCY, and reassignment is silent.** A blank line ends a block, so inserting a recipe between a block and the recipe it describes hands the block to the newcomer — the original then lists blank, and nothing warns. Re-read `just --list` after inserting a recipe into an existing file.
 
-**A recipe with a required positional has no `--help` form.** `recipe *ARGS:` forwards `--help` to the underlying tool,
-but just refuses the call before the tool runs once a positional is required:
+**A recipe with a required positional has no `--help` form.** `recipe *ARGS:` forwards `--help` to the underlying tool, but just refuses the call before the tool runs once a positional is required:
 
 ```text
 $ just autotune --help
 error: recipe `autotune` got 1 positional argument but takes at least 2
 ```
 
-There is no bare-help spelling for such a recipe. Put the flags in its `[doc]` or comment block, or add a `help` recipe
-that prints them.
+There is no bare-help spelling for such a recipe. Put the flags in its `[doc]` or comment block, or add a `help` recipe that prints them.
 
 ### Recipe Dependencies
 
@@ -436,14 +418,10 @@ release version:
 
 ### Shared imports + modules: pass per-project values as recipe parameters
 
-When a monorepo registers submodules (`mod name 'path'`) whose justfiles `import` a shared recipe file, hand
-per-project values to the shared recipes as recipe **parameters** — not via a shared *variable*. Two `just` behaviours
-make the variable approach fail:
+When a monorepo registers submodules (`mod name 'path'`) whose justfiles `import` a shared recipe file, hand per-project values to the shared recipes as recipe **parameters** — not via a shared *variable*. Two `just` behaviours make the variable approach fail:
 
-- An `import` that *defaults* a variable a module also assigns is a **conflict**, not an override:
-  `error: variable`X`has multiple definitions`.
-- An imported recipe that references `{{X}}` is resolved at **load time**, so it forces *every* importing module to
-  define `X` (else `error: variable`X`not
+- An `import` that *defaults* a variable a module also assigns is a **conflict**, not an override: `error: variable`X`has multiple definitions`.
+- An imported recipe that references `{{X}}` is resolved at **load time**, so it forces *every* importing module to define `X` (else `error: variable`X`not
   defined`) — even modules that never run that recipe.
 
 Passing the value as a recipe argument sidesteps both and keeps it explicit at the call site:
@@ -462,8 +440,7 @@ flash: (_flash bin_name)      # pass it as an argument
 
 ## MCP Integration (just-mcp)
 
-The `just-mcp` MCP server enables AI assistants to discover and execute justfile recipes through the Model Context
-Protocol, reducing context waste since the AI doesn't need to read the full justfile.
+The `just-mcp` MCP server enables AI assistants to discover and execute justfile recipes through the Model Context Protocol, reducing context waste since the AI doesn't need to read the full justfile.
 
 ### Installation
 
@@ -516,11 +493,9 @@ cargo install just-mcp
 ### Recipe Development Workflow
 
 1. **Name clearly**: Use descriptive, verb-based names (`build`, `test`, `deploy`)
-2. **Document what `--list` reads**: a one-line comment is enough; anything longer needs `[doc("...")]`, or the listing
-   shows only the block's last line
+2. **Document what `--list` reads**: a one-line comment is enough; anything longer needs `[doc("...")]`, or the listing shows only the block's last line
 3. **Use defaults**: Provide sensible default parameter values
-4. **Group logically**: section comments for the file, `[group("name")]` for the listing — a flat `--list` stops being
-   scannable somewhere around 20 recipes
+4. **Group logically**: section comments for the file, `[group("name")]` for the listing — a flat `--list` stops being scannable somewhere around 20 recipes
 5. **Hide internals**: Mark helper recipes as `[private]`
 6. **Test portability**: Verify on all target platforms
 
@@ -531,13 +506,9 @@ cargo install just-mcp
 - Use shebang recipes for multi-line logic
 - Prefer `set dotenv-load` for configuration
 - Use modules for large projects (>20 recipes)
-- Give a recipe a `[doc("...")]` when its comment block's last line would not read as a description on its own —
-  `--list` shows only that line (see "What `--list` Shows" above). To find them:
-  `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/just-recipe-help.py" --audit`
+- Give a recipe a `[doc("...")]` when its comment block's last line would not read as a description on its own — `--list` shows only that line (see "What `--list` Shows" above). To find them: `python3 "${CLAUDE_PLUGIN_ROOT}/scripts/just-recipe-help.py" --audit`
 - Include variadic `*args` for passthrough flexibility
-- Quote all variables in shell commands — `{{...}}` interpolates **unquoted**, so wrap any parameter that can contain
-  spaces in `quote()` (see "Interpolation is UNQUOTED" above); bare `{{args}}` is correct only for space-free
-  passthrough flags
+- Quote all variables in shell commands — `{{...}}` interpolates **unquoted**, so wrap any parameter that can contain spaces in `quote()` (see "Interpolation is UNQUOTED" above); bare `{{args}}` is correct only for space-free passthrough flags
 
 ## Comparison with Alternatives
 
@@ -567,5 +538,4 @@ cargo install just-mcp
 - Legacy projects with existing Makefiles
 - Build systems requiring incremental compilation
 
-For the golden justfile template, detailed syntax reference, advanced patterns, and troubleshooting, see
-[REFERENCE.md](REFERENCE.md).
+For the golden justfile template, detailed syntax reference, advanced patterns, and troubleshooting, see [REFERENCE.md](REFERENCE.md).

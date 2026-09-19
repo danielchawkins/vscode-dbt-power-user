@@ -28,6 +28,9 @@ webview_panels
 mise.toml
 mise.lock
 justfile
+scripts/**
+.jj
+.jj/**
 lefthook.yml
 dprint.json
 rumdl.toml

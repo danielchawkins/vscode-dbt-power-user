@@ -3,7 +3,7 @@
   "lineWidth": 119,
   "markdown": {
     "emphasisKind": "asterisks",
-    "textWrap": "always"
+    "textWrap": "maintain"
   },
   "includes": [
     "./AGENTS.md",

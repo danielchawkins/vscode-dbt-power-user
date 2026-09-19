@@ -1,71 +1,51 @@
 # Fusion Power User
 
-A local-first VS Code / Cursor extension for dbt Fusion projects, forked from `vscode-dbt-power-user`. The native dbt
-Fusion language server owns editor intelligence; no feature depends on a hosted service, an extension-specific account,
-telemetry, or a Python bridge.
+A local-first VS Code / Cursor extension for dbt Fusion projects, forked from `vscode-dbt-power-user`. The native dbt Fusion language server owns editor intelligence; no feature depends on a hosted service, an extension-specific account, telemetry, or a Python bridge.
 
-This is a private fork with no intent to merge upstream. Upstream contributor process, marketplace publication, and
-compatibility with Altimate's product are not constraints. Delete freely.
+This is a private fork with no intent to merge upstream. Upstream contributor process, marketplace publication, and compatibility with Altimate's product are not constraints. Delete freely.
 
 Read before planning or changing code:
 
-- [`CONTEXT.md`](CONTEXT.md) — canonical product language. The vocabulary is fixed; extend it rather than inventing
-  synonyms.
+- [`CONTEXT.md`](CONTEXT.md) — canonical product language. The vocabulary is fixed; extend it rather than inventing synonyms.
 - [`docs/adr/`](docs/adr/) — the product boundary, the LSP decision, and project scoping.
-- [`docs/refactor/fusion-lsp-plan.md`](docs/refactor/fusion-lsp-plan.md) — phased implementation plan. Work the steps
-  in order; each is one commit that compiles with green tests.
+- [`docs/refactor/fusion-lsp-plan.md`](docs/refactor/fusion-lsp-plan.md) — phased implementation plan. Work the steps in order; each is one commit that compiles with green tests.
 
 ## Two contexts — state which one you are in
 
-This repository is both a product and a development environment, and they have opposite rules. Before changing
-anything, say which context the change belongs to. Confusing them is the most expensive mistake available here.
+This repository is both a product and a development environment, and they have opposite rules. Before changing anything, say which context the change belongs to. Confusing them is the most expensive mistake available here.
 
-**The shipped extension is tool-manager-neutral.** It runs in someone else's repository, which may use mise, asdf,
-Homebrew, a bare `PATH`, or nothing. It resolves `dbt` from `PATH` or an explicit path setting. It must never invoke
-`mise` or `just`, never read `mise.toml`, and never assume a Consumer Repository's layout. This covers `src/`,
-`webview_panels/`, and the `package.json` contributions.
+**The shipped extension is tool-manager-neutral.** It runs in someone else's repository, which may use mise, asdf, Homebrew, a bare `PATH`, or nothing. It resolves `dbt` from `PATH` or an explicit path setting. It must never invoke `mise` or `just`, never read `mise.toml`, and never assume a Consumer Repository's layout. This covers `src/`, `webview_panels/`, and the `package.json` contributions.
 
-**This repository's own tooling has chosen mise and Just.** `mise.toml` pins the Node runtime, the contributor CLIs,
-and a dbt Fusion binary for integration tests; contributors and CI go through `just`. None of it ships in the VSIX.
+**This repository's own tooling has chosen mise and Just.** `mise.toml` pins the Node runtime, the contributor CLIs, and a dbt Fusion binary for integration tests; contributors and CI go through `just`. None of it ships in the VSIX.
 
-Pinning Fusion in `mise.toml` is therefore correct — it gives *this* repo's tests a real binary. The tests must locate
-that binary through configuration or `PATH`, never by shelling out to mise, so the same suite passes on a machine
-without it.
+Pinning Fusion in `mise.toml` is therefore correct — it gives *this* repo's tests a real binary. The tests must locate that binary through configuration or `PATH`, never by shelling out to mise, so the same suite passes on a machine without it.
 
 ## Product boundary
 
-The extension supports dbt Fusion 2.0.5 and later. It does not support dbt Core or dbt Cloud, call hosted APIs, require
-an account, collect telemetry, install or update dbt, or recursively discover every `dbt_project.yml` in a workspace.
+The extension supports dbt Fusion 2.0.5 and later. It does not support dbt Core or dbt Cloud, call hosted APIs, require an account, collect telemetry, install or update dbt, or recursively discover every `dbt_project.yml` in a workspace.
 
 ## Commands
 
 ```bash
-just setup    # pin tools via mise, install npm dependencies
-just fmt      # write lint and format fixes
-just lint     # read-only lint, format, lockfile, and Markdown checks
-just check    # lint plus compile and unit tests
-just package  # build the VSIX
+scripts/workspace/setup/setup-environment.sh # first run: bootstrap host, then setup
+just setup                                  # later: refresh tools, dependencies, hooks, jj
+just fmt                                    # write lint and format fixes
+just lint                                   # read-only code, shell, lockfile, and Markdown checks
+just check                                  # lint plus compile and unit tests
+just jj ...                                 # run jj, gating git push on just check
+just package                                # build the VSIX
 just --list
 ```
 
-`fmt` writes fixes; `lint` verifies code, formatting, lockfiles, and Markdown without writing; `check` adds compile and
-unit tests. `just check` is the only full gate: CI, the pre-push hook, and humans call it; pre-commit runs relevant
-subsets from that gate.
+The environment script installs mise and the mise-managed Just needed to enter the task layer, then calls `just setup`. Installers skip existing tools; pass `--force` to either entry point to reinstall managed tools and reapply jj configuration. `fmt` writes fixes; `lint` verifies code, shell, formatting, lockfiles, and Markdown without writing; `check` adds compile and unit tests. `just check` is the only full gate: CI, the pre-push hook, and humans call it; pre-commit runs relevant subsets from that gate.
 
-Recipes are thin facades over npm scripts, which remain the authoritative implementation. The verbs take no file
-arguments — each tool resolves its own scope from its own config (`.eslintrc.json`, `dprint.json`, `rumdl.toml`).
-ESLint and Prettier own TypeScript, JavaScript, JSON, and CSS; dprint and rumdl own Markdown, and no file type has two
-formatters. Copied skills under `.agents/skills/` must pass the Markdown checks.
+Recipes are thin facades over npm scripts, which remain the authoritative implementation. The verbs take no file arguments — each tool resolves its own scope from its own config (`.eslintrc.json`, `dprint.json`, `rumdl.toml`). ESLint and Prettier own TypeScript, JavaScript, JSON, and CSS; dprint and rumdl own Markdown; shfmt and ShellCheck own shell scripts. No file type has two formatters. Copied skills under `.agents/skills/` must pass the Markdown checks. Author Just recipes with the `justfile-expert` skill.
 
 ## Architecture
 
-Two build outputs from one repository: the extension host bundle (TypeScript, rsbuild) and the webview panels (React
-18 + Vite + Redux Toolkit, built separately under `webview_panels/`). They communicate through VS Code's webview
-messaging with typed message contracts.
+Two build outputs from one repository: the extension host bundle (TypeScript, rsbuild) and the webview panels (React 18 + Vite + Redux Toolkit, built separately under `webview_panels/`). They communicate through VS Code's webview messaging with typed message contracts.
 
-`src/extension.ts` → `src/dbtPowerUserExtension.ts` is the single activation path. Every collaborator is constructed
-through an Inversify container configured in `src/inversify.config.ts`, which holds the factories that currently switch
-between Core, Cloud, and Fusion integrations.
+`src/extension.ts` → `src/dbtPowerUserExtension.ts` is the single activation path. Every collaborator is constructed through an Inversify container configured in `src/inversify.config.ts`, which holds the factories that currently switch between Core, Cloud, and Fusion integrations.
 
 Load-bearing directories (abridged):
 
@@ -84,33 +64,27 @@ src/
 └── test/                    # Jest suites, hand-written VS Code mocks
 ```
 
-Tests are Jest with `ts-jest` against a hand-written VS Code mock (`src/test/mock/vscode.ts`). Debug the extension with
-the "Launch Extension" configuration.
+Tests are Jest with `ts-jest` against a hand-written VS Code mock (`src/test/mock/vscode.ts`). Debug the extension with the "Launch Extension" configuration.
 
 Two facts dominate change ordering, both detailed in the plan:
 
-- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps in
-  `src/domain.ts`, and every panel, tree, lens, and language provider consumes them through `QueryManifestService`. The
-  refactor replaces that producer with the LSP; migrate consumers behind a project-session interface before deleting
-  the parser.
-- Fusion currently **inherits from dbt Cloud**
-  (`DBTFusionCommandProjectIntegration extends
-  DBTCloudProjectIntegration`). Cloud cannot be deleted until Fusion is
-  reparented onto a local operation layer.
+- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps in `src/domain.ts`, and every panel, tree, lens, and language provider consumes them through `QueryManifestService`. The refactor replaces that producer with the LSP; migrate consumers behind a project-session interface before deleting the parser.
+- Fusion currently **inherits from dbt Cloud** (`DBTFusionCommandProjectIntegration extends DBTCloudProjectIntegration`). Cloud cannot be deleted until Fusion is reparented onto a local operation layer.
 
 ## Comments and prose
 
-- **No issue or PR numbers in code.** Never write `#127`, `PR #12`, or "step 1a" in a comment. A number names a moment
-  in history, not a property of the code. State the behavior. Git blame and the PR already bind history.
-- **Compression is the goal.** Optimize for the effort to reconstruct intent and behavior, not word count. A qualifier
-  that does not change what the reader *does* is noise. If a clause survives deletion with no actionable loss, delete
-  it.
-- Keep lines shorter than 120 characters, including comments.
-- **Three homes.** Inline comments carry a rare local gotcha — a line that looks wrong but is correct — ideally one
-  line. TSDoc carries the contract. `docs/` carries the rationale; the *why* never lives in code.
-- **Avoid mannered prose.** Do not use metaphor or a striking phrase where a plain statement would do. A metaphor
-  carries associations the writer did not intend. When a literal phrase is available, use it.
+- **No issue or PR numbers in code.** Never write `#127`, `PR #12`, or "step 1a" in a comment. A number names a moment in history, not a property of the code. State the behavior. Git blame and the PR already bind history.
+- **Compression is the goal.** Optimize for the effort to reconstruct intent and behavior, not word count. A qualifier that does not change what the reader *does* is noise. If a clause survives deletion with no actionable loss, delete it.
+- Keep code and comments shorter than 120 characters. In Markdown, write each prose paragraph on one physical line and rely on editor soft wrapping; do not hard-wrap prose.
+- **Three homes.** Inline comments carry a rare local gotcha — a line that looks wrong but is correct — ideally one line. TSDoc carries the contract. `docs/` carries the rationale; the *why* never lives in code.
+- **Avoid mannered prose.** Do not use metaphor or a striking phrase where a plain statement would do. A metaphor carries associations the writer did not intend. When a literal phrase is available, use it.
 
 ## Gates
 
 `just check` and `just package` must pass. Product refactoring starts only after the tooling baseline is green.
+
+## Jujutsu
+
+`just setup` installs jj through mise and colocates this clone through `scripts/workspace/setup/configure-jujutsu.sh`. It needs `--force` to reapply existing jj configuration.
+
+Run every jj command as `just jj ...`, never as bare `jj`. The recipe forwards its arguments unchanged and prepends `just check` to `git push`, which jj would otherwise send without running Lefthook's pre-push hook. Push to `origin`; do not push to `upstream` unless asked. Use the `jujutsu` skill for the commands themselves.

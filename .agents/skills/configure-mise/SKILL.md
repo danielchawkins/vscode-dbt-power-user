@@ -11,9 +11,7 @@ name: configure-mise
 
 # /configure:mise
 
-Set up and audit [mise](https://mise.jdx.dev/) as the unified manager for language runtimes, CLI tools, environment
-variables, and project tasks. mise replaces asdf/nvm/pyenv (runtimes), `cargo install`/`brew install` (CLI binaries),
-and Make/just (tasks) behind one `mise.toml`.
+Set up and audit [mise](https://mise.jdx.dev/) as the unified manager for language runtimes, CLI tools, environment variables, and project tasks. mise replaces asdf/nvm/pyenv (runtimes), `cargo install`/`brew install` (CLI binaries), and Make/just (tasks) behind one `mise.toml`.
 
 ## When to Use This Skill
 
@@ -40,13 +38,11 @@ Parse from command arguments:
 - `--check-only`: Audit and report; make no changes (CI/review mode).
 - `--fix`: Apply the recommended config without prompting for each step.
 - `--global`: Target the **global** config (`~/.config/mise/config.toml`) instead of a project `mise.toml`.
-- `--migrate <source>`: Convert an existing setup into `mise.toml`. Sources: `asdf` (`.tool-versions`), `nvm`
-  (`.nvmrc`), `pyenv` (`.python-version`), `brew` (Brewfile CLI tools), `makefile` (targets → `[tasks]`).
+- `--migrate <source>`: Convert an existing setup into `mise.toml`. Sources: `asdf` (`.tool-versions`), `nvm` (`.nvmrc`), `pyenv` (`.python-version`), `brew` (Brewfile CLI tools), `makefile` (targets → `[tasks]`).
 
 ## Backend Selection (the core decision)
 
-mise installs every tool through a *backend*. Picking the right one mirrors the user's tool-install priority
-(`dependency-management` rule): **mise first, with the most secure/fastest backend**.
+mise installs every tool through a *backend*. Picking the right one mirrors the user's tool-install priority (`dependency-management` rule): **mise first, with the most secure/fastest backend**.
 
 | Tool kind                | Backend   | Syntax                                                                       | Why                                                       |
 | ------------------------ | --------- | ---------------------------------------------------------------------------- | --------------------------------------------------------- |
@@ -58,9 +54,7 @@ mise installs every tool through a *backend*. Picking the right one mirrors the 
 | Go tool (no aqua)        | `go:`     | `"go:golang.org/x/tools/gopls" = "latest"`                                   | Installs via `go install`                                 |
 | GitHub release (no aqua) | `github:` | `"github:starship/starship" = "latest"`                                      | Direct release-asset fetch                                |
 
-Rule of thumb: **runtime → core; Python CLI → `pipx:`; everything else → `aqua:` first**, falling back to
-`npm:`/`cargo:`/`go:`/`github:` only when the aqua registry lacks the tool. Verify aqua availability at
-<https://github.com/aquaproj/aqua-registry>.
+Rule of thumb: **runtime → core; Python CLI → `pipx:`; everything else → `aqua:` first**, falling back to `npm:`/`cargo:`/`go:`/`github:` only when the aqua registry lacks the tool. Verify aqua availability at <https://github.com/aquaproj/aqua-registry>.
 
 ## Execution
 
@@ -73,8 +67,7 @@ From Context, classify the repo:
 - **Has `mise.toml`** → audit mode (Step 5).
 - **Greenfield** → fresh `mise.toml`.
 
-Detect which runtimes the project already implies: `pyproject.toml`/`.python-version` → Python; `package.json`/`.nvmrc`
-→ Node; `go.mod` → Go; `Cargo.toml` → Rust.
+Detect which runtimes the project already implies: `pyproject.toml`/`.python-version` → Python; `package.json`/`.nvmrc` → Node; `go.mod` → Go; `Cargo.toml` → Rust.
 
 ### Step 2: Choose config target and naming
 
@@ -84,14 +77,11 @@ Detect which runtimes the project already implies: `pyproject.toml`/`.python-ver
 | Project, local overrides | `mise.local.toml`            | no — add to `.gitignore`                 |
 | Global (`--global`)      | `~/.config/mise/config.toml` | n/a (dotfiles)                           |
 
-Prefer the modern `mise.toml` name over legacy `.mise.toml`. Use `mise.local.toml` for machine-specific or
-secret-bearing overrides and ensure it is gitignored.
+Prefer the modern `mise.toml` name over legacy `.mise.toml`. Use `mise.local.toml` for machine-specific or secret-bearing overrides and ensure it is gitignored.
 
 ### Step 3: Build the `[tools]` block
 
-Pin runtimes the project needs, then add CLI tools by backend (table above). Pin **as loosely as safe**:
-`python = "3.13"` (allow patch upgrades) for libraries; exact pins (`opentofu = "1.11.2"`) for tools where
-reproducibility matters. Detect latest stable versions with WebSearch/`mise ls-remote <tool>` before writing.
+Pin runtimes the project needs, then add CLI tools by backend (table above). Pin **as loosely as safe**: `python = "3.13"` (allow patch upgrades) for libraries; exact pins (`opentofu = "1.11.2"`) for tools where reproducibility matters. Detect latest stable versions with WebSearch/`mise ls-remote <tool>` before writing.
 
 Minimal example:
 
@@ -107,13 +97,9 @@ node = "lts"
 
 ### Step 4: Add `[env]`, `[tasks]`, `[settings]` as needed
 
-- **`[env]`** — project env vars and PATH; load secrets from a gitignored file with `_.file = ".env.local"` (never
-  inline secrets). See REFERENCE.md.
-- **`[tasks]`** — migrate Makefile/just recipes here so `mise run <task>` replaces `make <target>`. Supports `depends`,
-  `alias`, multi-line `run`. See REFERENCE.md for the full grammar.
-- **`[settings]`** — set `pipx.uvx = true` whenever any `pipx:` tool is present (works around `jdx/mise#7477`);
-  `experimental = true` for newer backends; `legacy_version_file = true` to keep honoring `.tool-versions`/`.nvmrc`
-  during migration.
+- **`[env]`** — project env vars and PATH; load secrets from a gitignored file with `_.file = ".env.local"` (never inline secrets). See REFERENCE.md.
+- **`[tasks]`** — migrate Makefile/just recipes here so `mise run <task>` replaces `make <target>`. Supports `depends`, `alias`, multi-line `run`. See REFERENCE.md for the full grammar.
+- **`[settings]`** — set `pipx.uvx = true` whenever any `pipx:` tool is present (works around `jdx/mise#7477`); `experimental = true` for newer backends; `legacy_version_file = true` to keep honoring `.tool-versions`/`.nvmrc` during migration.
 
 ### Step 5: Audit (always; the whole job when `--check-only`)
 
@@ -134,9 +120,7 @@ Legacy files remaining .tool-versions            [MIGRATED | STILL PRESENT]
 Overall: [N issues]
 ```
 
-Checks: every runtime pinned; CLI tools prefer `aqua:` over `cargo:`/source builds; `pipx.uvx = true` present if any
-`pipx:` tool; `mise.lock` committed; `mise.local.toml` gitignored if present; config trusted (`mise trust`). If
-`--check-only`, stop here.
+Checks: every runtime pinned; CLI tools prefer `aqua:` over `cargo:`/source builds; `pipx.uvx = true` present if any `pipx:` tool; `mise.lock` committed; `mise.local.toml` gitignored if present; config trusted (`mise trust`). If `--check-only`, stop here.
 
 ### Step 6: Apply (with `--fix` or on confirmation)
 
@@ -157,14 +141,11 @@ Checks: every runtime pinned; CLI tools prefer `aqua:` over `cargo:`/source buil
 | `brew`     | Move CLI tools (not casks/services/build-deps) from Brewfile to `aqua:`/core backends; leave GUI apps, fonts, daemons, and compilers in Homebrew.                                               |
 | `makefile` | Convert each target to a `[tasks.<name>]` with `run`; map prerequisites to `depends`. See REFERENCE.md task grammar.                                                                            |
 
-Always verify with `mise install && mise doctor` before deleting the source file. See [REFERENCE.md](REFERENCE.md) for
-per-source mapping tables and worked examples.
+Always verify with `mise install && mise doctor` before deleting the source file. See [REFERENCE.md](REFERENCE.md) for per-source mapping tables and worked examples.
 
 ### Step 8: CI integration (mention, don't duplicate)
 
-A committed `mise.toml` + `mise.lock` is consumed in CI by `jdx/mise-action` (`mise install` then `mise run <task>`),
-giving local↔CI parity (the `local-ci-parity` rule). Point the user to `/configure:ci-workflows` rather than writing
-the workflow here.
+A committed `mise.toml` + `mise.lock` is consumed in CI by `jdx/mise-action` (`mise install` then `mise run <task>`), giving local↔CI parity (the `local-ci-parity` rule). Point the user to `/configure:ci-workflows` rather than writing the workflow here.
 
 ## Agentic Optimizations
 
@@ -209,24 +190,18 @@ the workflow here.
 
 ## Error Handling
 
-- **mise not installed**: Offer the install one-liner (`curl https://mise.run | sh`) or note it is itself a Homebrew
-  bootstrap tool; do not block the audit.
+- **mise not installed**: Offer the install one-liner (`curl https://mise.run | sh`) or note it is itself a Homebrew bootstrap tool; do not block the audit.
 - **Untrusted config**: mise refuses to load an untrusted file — run `mise trust` after writing.
 - **`pipx:` tool fails to resolve**: ensure `uv` is a mise-managed tool and `pipx.uvx = true` is set (`jdx/mise#7477`).
-- **aqua package not found**: the `org/repo` name must match an aqua-registry entry; fall back to
-  `github:`/`cargo:`/`go:` or core.
-- **Tool "keeps coming back" after removal**: stale per-node-version copies + `~/.default-npm-packages` re-seeding —
-  see the global `mise-stale-tool-copies` rule.
-- **node ≥26 on minimal Linux**: prebuilt binaries link `libatomic.so.1`; gate `node` to platforms that have it
-  (chezmoi-style `os` guard) or pin an older line.
+- **aqua package not found**: the `org/repo` name must match an aqua-registry entry; fall back to `github:`/`cargo:`/`go:` or core.
+- **Tool "keeps coming back" after removal**: stale per-node-version copies + `~/.default-npm-packages` re-seeding — see the global `mise-stale-tool-copies` rule.
+- **node ≥26 on minimal Linux**: prebuilt binaries link `libatomic.so.1`; gate `node` to platforms that have it (chezmoi-style `os` guard) or pin an older line.
 
 ## See Also
 
 - `/configure:package-management` — uv/bun for Python/JS **libraries** (mise installs the runtimes; uv/bun manage deps)
 - `/configure:justfile`, `/configure:makefile` — task runners mise's `[tasks]` can replace
 - `/configure:ci-workflows` — CI that consumes `mise.toml` via `jdx/mise-action`
-- Global rules: `dependency-management` (tool-install priority, `mise exec` vs `mise use`), `mise-stale-tool-copies`
-  (per-version cleanup)
-- [REFERENCE.md](REFERENCE.md) — full `[tasks]`/`[env]`/`[settings]` grammar, backend cheat-sheet, migration mapping
-  tables
+- Global rules: `dependency-management` (tool-install priority, `mise exec` vs `mise use`), `mise-stale-tool-copies` (per-version cleanup)
+- [REFERENCE.md](REFERENCE.md) — full `[tasks]`/`[env]`/`[settings]` grammar, backend cheat-sheet, migration mapping tables
 - **mise docs**: <https://mise.jdx.dev/> · **aqua registry**: <https://github.com/aquaproj/aqua-registry>

@@ -2,11 +2,14 @@
 # never invoke mise. Fusion is pinned to the minimum version the product claims, so a
 # failing integration test is attributable to the extension rather than a Fusion upgrade.
 [tools]
-node = "22"
+node = "24"
 just = "latest"
 lefthook = "latest"
 "aqua:dprint/dprint" = "latest"
 "aqua:rvben/rumdl" = "latest"
+"aqua:mvdan/sh" = "latest"
+"aqua:koalaman/shellcheck" = "latest"
+"aqua:jj-vcs/jj" = "latest"
 "aqua:getdbt.com/dbt-fusion" = "2.0.5"
 
 [settings]

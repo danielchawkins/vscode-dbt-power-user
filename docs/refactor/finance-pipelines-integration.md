@@ -1,8 +1,6 @@
 # finance-pipelines integration
 
-This document defines how [`Kikoff/finance-pipelines`](https://github.com/Kikoff/finance-pipelines) will consume Fusion
-Power User. It is not an extension architecture dependency: another Consumer Repository can use a different task
-runner, tool manager, or workspace layout.
+This document defines how [`Kikoff/finance-pipelines`](https://github.com/Kikoff/finance-pipelines) will consume Fusion Power User. It is not an extension architecture dependency: another Consumer Repository can use a different task runner, tool manager, or workspace layout.
 
 ## Relevant consumer architecture
 
@@ -27,13 +25,11 @@ The repository currently works around Power User and SQLFluff limitations with:
 - Power User allow-list and activation workarounds; and
 - explicit formatter selection to resolve competing SQL providers.
 
-Fusion Power User should make those workarounds removable, but the consumer must delete them only after acceptance
-tests prove parity.
+Fusion Power User should make those workarounds removable, but the consumer must delete them only after acceptance tests prove parity.
 
 ## Installation contract
 
-Add one self-contained setup installer under `scripts/workspace/setup/`. It receives the pinned release version and
-checksum from committed configuration.
+Add one self-contained setup installer under `scripts/workspace/setup/`. It receives the pinned release version and checksum from committed configuration.
 
 The installer:
 
@@ -60,8 +56,7 @@ Add `danielchawkins.fusion-power-user` to `mise.customBinaryExtensions`:
 - use shims and project-relative symlinks; and
 - exclude global tools so only the repository's `mise.toml` participates.
 
-After the setting contract is stable, propose built-in support to mise-vscode. Keep the custom mapping until a released
-mise-vscode version contains and tests that support.
+After the setting contract is stable, propose built-in support to mise-vscode. Keep the custom mapping until a released mise-vscode version contains and tests that support.
 
 ## Project configuration
 
@@ -70,15 +65,11 @@ The multi-root workspace should produce two Declared Projects:
 - `finance_general`
 - `finance_sox`
 
-Each dbt workspace folder contains `dbt_project.yml`, so root auto-activation should be sufficient. Folder settings may
-explicitly declare `"."` if the repository wants configuration to remain obvious.
+Each dbt workspace folder contains `dbt_project.yml`, so root auto-activation should be sufficient. Folder settings may explicitly declare `"."` if the repository wants configuration to remain obvious.
 
-The `local_packages` workspace folder is not itself a Declared Project. dbt parses installed package copies as
-dependencies of each project. Editing a package receives no project service unless its own folder contains
-`dbt_project.yml` and is explicitly declared.
+The `local_packages` workspace folder is not itself a Declared Project. dbt parses installed package copies as dependencies of each project. Editing a package receives no project service unless its own folder contains `dbt_project.yml` and is explicitly declared.
 
-Project-specific profiles, targets, and environment-file overrides belong in folder-scoped settings. Window settings
-must not select the first project as a fallback.
+Project-specific profiles, targets, and environment-file overrides belong in folder-scoped settings. Window settings must not select the first project as a fallback.
 
 ## Extension recommendations
 
@@ -124,8 +115,7 @@ Only then remove:
 - Power User-specific allow-list, activation, polling, API, notebook, and AI settings; and
 - SQLFluff extension settings and recommendations.
 
-Keep CLI lint and format behavior unchanged unless a separate repository decision changes it. Editor migration does not
-authorize changing CI or pre-commit semantics.
+Keep CLI lint and format behavior unchanged unless a separate repository decision changes it. Editor migration does not authorize changing CI or pre-commit semantics.
 
 ## Tooling reference, not a template
 
@@ -140,5 +130,4 @@ Before implementing the fork, compare its existing Node workflows with finance-p
 - concise repository agent instructions; and
 - vendored skills that materially help contributors.
 
-Reuse a convention only when it removes setup friction or creates local/CI parity. Do not import uv, dbt project
-modules, Snowflake setup, Python linting, or finance-specific orchestration into a TypeScript extension repository.
+Reuse a convention only when it removes setup friction or creates local/CI parity. Do not import uv, dbt project modules, Snowflake setup, Python linting, or finance-specific orchestration into a TypeScript extension repository.

@@ -13,6 +13,9 @@ pre-commit:
     markdown:
       glob: "*.md"
       run: mise exec -- npm run check:markdown
+    shell:
+      glob: "scripts/**/*.sh"
+      run: mise exec -- shfmt -d -i 2 -ci -sr {staged_files} && mise exec -- shellcheck {staged_files}
 
 pre-push:
   commands:

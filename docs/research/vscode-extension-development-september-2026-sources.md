@@ -1,8 +1,6 @@
 # VS Code extension development evidence ledger
 
-Accessed 2026-09-19 unless stated otherwise. “Updated” is omitted when the publisher exposes no reliable page date. For
-undated VS Code API pages, applicability was checked against VS Code 1.137 and current official sample/tooling
-repositories. Quotations preserve source wording; elisions are marked.
+Accessed 2026-09-19 unless stated otherwise. “Updated” is omitted when the publisher exposes no reliable page date. For undated VS Code API pages, applicability was checked against VS Code 1.137 and current official sample/tooling repositories. Quotations preserve source wording; elisions are marked.
 
 ## Product and runtime baselines
 
@@ -29,8 +27,7 @@ repositories. Quotations preserve source wording; elisions are marked.
   - “24.18.0”
   - `target="42.10.0"`
 - Supports: Node 24.18 development/runtime line and Electron 42.10 target for VS Code 1.137.
-- Caveat: `.nvmrc` is a build/development pin. Electron supplies the extension-host Node runtime; do not infer every
-  Node patch detail solely from `.nvmrc`.
+- Caveat: `.nvmrc` is a build/development pin. Electron supplies the extension-host Node runtime; do not infer every Node patch detail solely from `.nvmrc`.
 
 ### [3] Installed VS Code product inspection
 
@@ -82,8 +79,7 @@ repositories. Quotations preserve source wording; elisions are marked.
 - Type: official documentation
 - URL: <https://cursor.com/docs/configuration/migrations/vscode.md>
 - Location: “Version Updates”
-- Quote: “We regularly rebase Cursor onto the latest VS Code version to stay current with features and fixes. To ensure
-  stability, Cursor often uses slightly older VS Code versions.”
+- Quote: “We regularly rebase Cursor onto the latest VS Code version to stay current with features and fixes. To ensure stability, Cursor often uses slightly older VS Code versions.”
 - Supports: Cursor cannot be assumed to match current VS Code.
 
 ### [7] Cursor extension API cadence
@@ -95,8 +91,7 @@ repositories. Quotations preserve source wording; elisions are marked.
 - Location: reply 6
 - Quotes:
   - “There’s no fixed schedule or public roadmap for syncing Cursor with newer upstream VS Code releases.”
-  - “The declared API compatibility version ... doesn’t always line up one-to-one with the underlying editor internals,
-    which can sit on an older base.”
+  - “The declared API compatibility version ... doesn’t always line up one-to-one with the underlying editor internals, which can sit on an older base.”
 - Supports: test Cursor behavior directly; the displayed API version is necessary but not sufficient evidence.
 - Confidence: medium-high. It is a staff statement, but not versioned product documentation.
 
@@ -107,8 +102,7 @@ repositories. Quotations preserve source wording; elisions are marked.
 - Type: official documentation
 - URL: <https://code.visualstudio.com/api/references/extension-manifest>
 - Location: “Fields”, `engines`
-- Quote: “An object containing at least the `vscode` key matching the versions of VS Code that the extension is
-  compatible with. Cannot be `*`.”
+- Quote: “An object containing at least the `vscode` key matching the versions of VS Code that the extension is compatible with. Cannot be `*`.”
 - Supports: `engines.vscode` must represent the lowest genuinely supported host API.
 
 ## Extension host, trust, lifecycle, and configuration
@@ -124,8 +118,7 @@ repositories. Quotations preserve source wording; elisions are marked.
   - “local – A Node.js extension host running locally”
   - “web – A web extension host running in the browser or locally”
   - “remote – A Node.js extension host running remotely”
-  - “`"extensionKind": ["workspace"]` ... requires access to workspace contents and therefore needs to run where the
-    workspace is located.”
+  - “`"extensionKind": ["workspace"]` ... requires access to workspace contents and therefore needs to run where the workspace is located.”
 - Supports: topology and `extensionKind` selection.
 
 ### [10] Remote extension behavior
@@ -137,11 +130,9 @@ repositories. Quotations preserve source wording; elisions are marked.
 - Location: “Architecture and extension kinds”, opening paragraphs
 - Quotes:
   - “Workspace Extensions are run on the same machine as where the workspace is located.”
-  - “if your extension uses APIs not provided by VS Code — such using Node APIs or running shell scripts — it may not
-    work properly when run remotely.”
+  - “if your extension uses APIs not provided by VS Code — such using Node APIs or running shell scripts — it may not work properly when run remotely.”
   - “We recommend that you test that all features of your extension work properly in both local and remote workspaces.”
-- Supports: a native workspace tool runs remotely in remote workspaces unless the product deliberately rejects that
-  mode.
+- Supports: a native workspace tool runs remotely in remote workspaces unless the product deliberately rejects that mode.
 
 ### [11] Workspace Trust
 
@@ -151,11 +142,9 @@ repositories. Quotations preserve source wording; elisions are marked.
 - URL: <https://code.visualstudio.com/api/extension-guides/workspace-trust>
 - Location: “Static declarations”, “Workspace Trust API”, “Commands, views, or other UI”
 - Quotes:
-  - “Workspace Trust is a feature driven by the security risks associated with unintended code execution when a user
-    opens a workspace in VS Code.”
+  - “Workspace Trust is a feature driven by the security risks associated with unintended code execution when a user opens a workspace in VS Code.”
   - “Use the `isTrusted` property to determine if the current workspace is trusted”
-  - “A command can still be called even if it is not presented in the UI, so you should block execution or not register
-    a command”
+  - “A command can still be called even if it is not presented in the UI, so you should block execution or not register a command”
 - Supports: use `limited`, restrict executable-path/argument settings, and enforce trust in handlers.
 
 ### [12] Activation and asynchronous cleanup
@@ -191,8 +180,7 @@ repositories. Quotations preserve source wording; elisions are marked.
 - Type: official documentation
 - URL: <https://code.visualstudio.com/docs/editing/workspaces/multi-root-workspaces>
 - Location: “Settings”
-- Quote: “With multiple root folders in one workspace, it is possible to have a `.vscode` folder in each root folder
-  defining the settings that should apply for that folder.”
+- Quote: “With multiple root folders in one workspace, it is possible to have a `.vscode` folder in each root folder defining the settings that should apply for that folder.”
 - Supports: do not collapse all projects onto the first workspace folder.
 
 ## LSP and native processes
@@ -243,8 +231,7 @@ repositories. Quotations preserve source wording; elisions are marked.
   - “`export enum TransportKind { stdio, ipc, pipe, socket }`”
   - “When omitted, stdout and stderr are forwarded line by line to the client's output channel”
 - Supports: current dependency line, stdio availability, and default logging behavior.
-- Caveat: `client/package.json` says `engines.vscode: ^1.91.0`, while the current Node client source runtime check is
-  `^1.106.0`. Cursor 1.128 satisfies both, but consumers should test the published package they pin.
+- Caveat: `client/package.json` says `engines.vscode: ^1.91.0`, while the current Node client source runtime check is `^1.106.0`. Cursor 1.128 satisfies both, but consumers should test the published package they pin.
 
 ### [18] Node 24 child process API
 
@@ -272,8 +259,7 @@ repositories. Quotations preserve source wording; elisions are marked.
   - “Loading 100 small files is much slower than loading one large file. That's why we recommend bundling.”
   - “Exclude the 'vscode' module from the bundle (since it's provided by the VS Code runtime).”
   - “esbuild simply strips off all type declarations without doing any type checks.”
-- Supports: bundle the extension host, externalize `vscode`, and keep type-checking separate from the bundler. The page
-  demonstrates esbuild; it does not compare esbuild to rsbuild, Rspack, webpack, or other bundlers.
+- Supports: bundle the extension host, externalize `vscode`, and keep type-checking separate from the bundler. The page demonstrates esbuild; it does not compare esbuild to rsbuild, Rspack, webpack, or other bundlers.
 
 ### [20] Publishing and platform-specific VSIX files
 
@@ -307,8 +293,7 @@ repositories. Quotations preserve source wording; elisions are marked.
 - Publisher: GitHub Docs
 - Updated: current on 2026-09-19
 - Type: official documentation
-- URL:
-  <https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions>
+- URL: <https://docs.github.com/en/actions/security-for-github-actions/security-guides/security-hardening-for-github-actions>
 - Location: “Using third-party actions”, fetched copy lines 100-116
 - Quotes:
   - “Pinning an action to a full-length commit SHA is currently the only way to use an action as an immutable release.”
@@ -322,8 +307,7 @@ repositories. Quotations preserve source wording; elisions are marked.
 - Type: official product documentation
 - URL: <https://github.blog/changelog/2025-02-18-recent-improvements-to-artifact-attestations/>
 - Location: “Attestation verification defaults to build provenance”
-- Quote: “Build provenance ... provides a verifiable trail that links the artifact back to its originating workflow
-  run, ensuring its authenticity and integrity.”
+- Quote: “Build provenance ... provides a verifiable trail that links the artifact back to its originating workflow run, ensuring its authenticity and integrity.”
 - Supports: attesting a released VSIX is a supported, useful hardening step.
 - Caveat: no VS Code documentation requires attestations or SBOMs for VSIX publishing.
 
@@ -375,8 +359,7 @@ repositories. Quotations preserve source wording; elisions are marked.
 - Type: official documentation
 - URL: <https://code.visualstudio.com/api/extension-capabilities/common-capabilities>
 - Location: “Data Storage”
-- Quote: “`ExtensionContext.secrets`: A global storage for secrets ... that will be encrypted. These are not synced
-  across machines.”
+- Quote: “`ExtensionContext.secrets`: A global storage for secrets ... that will be encrypted. These are not synced across machines.”
 - Supports: use `SecretStorage`, not settings or mementos, for credentials.
 
 ### [28] Telemetry guide
@@ -399,14 +382,12 @@ repositories. Quotations preserve source wording; elisions are marked.
 - Type: official documentation
 - URL: <https://code.visualstudio.com/api/references/vscode-api#l10n>
 - Location: `l10n` namespace
-- Quote: “To use this properly, you must have `l10n` defined in your extension manifest and have
-  `bundle.l10n.<LANG>.json` files.”
+- Quote: “To use this properly, you must have `l10n` defined in your extension manifest and have `bundle.l10n.<LANG>.json` files.”
 - Supports: use the built-in `vscode.l10n` surface for extension-host strings when localization is in scope.
 
 ## Cloned reference repositories
 
-All clones are under `/Users/daniel/references/vscode-extension-development/`, are shallow/filtered where supported,
-and were retrieved on 2026-09-19. They were not modified.
+All clones are under `/Users/daniel/references/vscode-extension-development/`, are shallow/filtered where supported, and were retrieved on 2026-09-19. They were not modified.
 
 ### [30] `microsoft/vscode-extension-samples`
 
@@ -439,8 +420,7 @@ and were retrieved on 2026-09-19. They were not modified.
   - `client/src/node/main.ts`: executable server options, transports, stdio logging
   - `client/package.json`: current package/protocol versions
 - Why selected: authoritative implementation of `vscode-languageclient`; current one day before the research date.
-- Caveats: this is library implementation source, not a model extension architecture. Proposed API declarations in the
-  repository are not permission to use proposed APIs in a Marketplace extension.
+- Caveats: this is library implementation source, not a model extension architecture. Proposed API declarations in the repository are not permission to use proposed APIs in a Marketplace extension.
 
 ### [32] `microsoft/vscode-test-cli`
 
@@ -464,32 +444,20 @@ and were retrieved on 2026-09-19. They were not modified.
   - `src/package.ts`, `src/zip.ts`: VSIX composition
   - `src/secretLint.ts`: package secret scanning
 - Why selected: authoritative VSIX packaging and publishing implementation, current four days before research.
-- Caveats: the repository’s own architecture is not an extension template. Its README’s GitHub workflow uses action
-  tags, while GitHub’s stronger current security guidance recommends full commit SHAs.
+- Caveats: the repository’s own architecture is not an extension template. Its README’s GitHub workflow uses action tags, while GitHub’s stronger current security guidance recommends full commit SHAs.
 
 ## Rejected reference repositories
 
-- `microsoft/vscode-webview-ui-toolkit`: rejected because Microsoft announced its deprecation and scheduled archival
-  for 2025-01-06, then stated that maintenance would not continue [26]. Popularity does not overcome explicit
-  deprecation.
-- `microsoft/vscode-eslint`: not selected as a primary template. It is high quality and relevant to LSP, but its mature
-  compatibility surface, migration history, ESLint-specific server model, and remote/web support obscure the minimum
-  architecture for a macOS-first local native process.
-- `redhat-developer/vscode-java`: not selected. It is a large Java/JVM product with installer and platform concerns
-  unlike a user-provided `dbt` executable.
-- `eamodio/vscode-gitlens`: not selected. It is a large commercial extension with hosted-service and product concerns
-  contrary to this product boundary.
-- The whole `microsoft/vscode-extension-samples` repository: rejected as a blanket exemplar. Only the paths in [30] are
-  selected, and even those carry explicit version caveats.
+- `microsoft/vscode-webview-ui-toolkit`: rejected because Microsoft announced its deprecation and scheduled archival for 2025-01-06, then stated that maintenance would not continue [26]. Popularity does not overcome explicit deprecation.
+- `microsoft/vscode-eslint`: not selected as a primary template. It is high quality and relevant to LSP, but its mature compatibility surface, migration history, ESLint-specific server model, and remote/web support obscure the minimum architecture for a macOS-first local native process.
+- `redhat-developer/vscode-java`: not selected. It is a large Java/JVM product with installer and platform concerns unlike a user-provided `dbt` executable.
+- `eamodio/vscode-gitlens`: not selected. It is a large commercial extension with hosted-service and product concerns contrary to this product boundary.
+- The whole `microsoft/vscode-extension-samples` repository: rejected as a blanket exemplar. Only the paths in [30] are selected, and even those carry explicit version caveats.
 
 ## Evidence gaps
 
-- Cursor publishes no versioned compatibility contract for ordinary VS Code extensions beyond migration/import
-  documentation and its declared product API version.
+- Cursor publishes no versioned compatibility contract for ordinary VS Code extensions beyond migration/import documentation and its declared product API version.
 - No official Cursor extension-host integration test runner or documented headless Cursor test interface was found.
-- No authoritative source guarantees Marketplace parity, webview parity, remote parity, or behavior of individual
-  built-in VS Code commands in Cursor.
-- No official VS Code source requires an SBOM or attestation for VSIX files. These are optional supply-chain
-  recommendations supported by GitHub, not Marketplace requirements.
-- The official VS Code pages generally omit publication/update dates. Current applicability therefore rests on the
-  September 2026 product baseline plus current official repositories, not page timestamps.
+- No authoritative source guarantees Marketplace parity, webview parity, remote parity, or behavior of individual built-in VS Code commands in Cursor.
+- No official VS Code source requires an SBOM or attestation for VSIX files. These are optional supply-chain recommendations supported by GitHub, not Marketplace requirements.
+- The official VS Code pages generally omit publication/update dates. Current applicability therefore rests on the September 2026 product baseline plus current official repositories, not page timestamps.

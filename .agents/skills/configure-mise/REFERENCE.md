@@ -4,8 +4,7 @@ Detailed templates and mapping tables for [`/configure:mise`](SKILL.md). Loaded 
 
 ## Config file resolution
 
-mise merges config from several files, most-specific wins. Project files override the global one; `*.local.toml`
-overrides its sibling.
+mise merges config from several files, most-specific wins. Project files override the global one; `*.local.toml` overrides its sibling.
 
 | File                                                           | Scope                   | Commit?                                        |
 | -------------------------------------------------------------- | ----------------------- | ---------------------------------------------- |
@@ -90,8 +89,7 @@ _.file = ".env.local"
 # _.source = "./scripts/env.sh"
 ```
 
-`_.file` values are not committed; keep the referenced file in `.gitignore`. For the dotfiles global config this is how
-`~/.api_tokens` is loaded (`_.file = "~/.api_tokens"`).
+`_.file` values are not committed; keep the referenced file in `.gitignore`. For the dotfiles global config this is how `~/.api_tokens` is loaded (`_.file = "~/.api_tokens"`).
 
 ## `[tasks]` — replacing Make/just
 
@@ -127,8 +125,7 @@ ruff check .
 # and are auto-discovered — no [tasks] entry needed.
 ```
 
-Run with `mise run <name>` (or `mise run c`). List with `mise tasks`. `mise watch <name>` re-runs on file change.
-`depends` replaces Makefile prerequisites; `run` as a list runs steps sequentially.
+Run with `mise run <name>` (or `mise run c`). List with `mise tasks`. `mise watch <name>` re-runs on file change. `depends` replaces Makefile prerequisites; `run` as a list runs steps sequentially.
 
 ### Makefile → `[tasks]` mapping
 
@@ -151,8 +148,7 @@ pipx.uvx = true              # route pipx: backend through uvx (jdx/mise#7477)
 # idiomatic_version_file_enable_tools = ["python"]  # opt-in legacy files per tool
 ```
 
-Set `pipx.uvx = true` whenever any `pipx:` tool is present — mise only auto-detects uvx when `uv` is itself
-mise-managed, so register `uv = "latest"` under `[tools]` too.
+Set `pipx.uvx = true` whenever any `pipx:` tool is present — mise only auto-detects uvx when `uv` is itself mise-managed, so register `uv = "latest"` under `[tools]` too.
 
 ## Migration worked examples
 
@@ -181,8 +177,7 @@ asdf plugin name `nodejs` → mise core `node`. Verify with `mise install && mis
 
 ### Homebrew CLI tools → mise
 
-Keep in Homebrew: GUI casks, services/daemons (postgresql, mosquitto), build deps (cmake, ninja), platform glue (mas),
-and bootstrap (mise itself, chezmoi, git). Move *standalone CLI binaries* to mise:
+Keep in Homebrew: GUI casks, services/daemons (postgresql, mosquitto), build deps (cmake, ninja), platform glue (mas), and bootstrap (mise itself, chezmoi, git). Move *standalone CLI binaries* to mise:
 
 | `brew install …` | mise                         |
 | ---------------- | ---------------------------- |
@@ -215,15 +210,10 @@ mise ls-remote <tool>      # available versions before pinning
 - **Trust**: mise refuses untrusted config files; `mise trust` (or `mise trust --all`) after writing.
 - **`pipx:` resolution** depends on a mise-managed `uv` + `pipx.uvx = true`.
 - **aqua names** are `org/repo` and must match the aqua-registry; otherwise fall back to `github:`/`cargo:`/`go:`.
-- **Stale tool copies**: a global tool can reappear from another node version's `node_modules` or from
-  `~/.default-npm-packages` re-seeding — see the global `mise-stale-tool-copies` rule.
-- **One-off version**: `mise exec <tool>@<ver> -- <cmd>` scopes a version to a single command; `mise use` *changes the
-  default* (global `dependency-management` rule).
+- **Stale tool copies**: a global tool can reappear from another node version's `node_modules` or from `~/.default-npm-packages` re-seeding — see the global `mise-stale-tool-copies` rule.
+- **One-off version**: `mise exec <tool>@<ver> -- <cmd>` scopes a version to a single command; `mise use` *changes the default* (global `dependency-management` rule).
 - **node ≥26** prebuilt binaries need `libatomic.so.1` — absent on some minimal Linux/appliances; gate or pin.
 
 ## Sources
 
-Distilled from the laurigates dotfiles mise setup (`private_dot_config/mise/config.toml.tmpl`,
-`docs/mise-migration-guide.md`, `docs/mise-quick-reference.md`,
-`docs/adrs/0002-unified-tool-version-management-mise.md`) and the global `mise-stale-tool-copies` /
-`dependency-management` rules.
+Distilled from the laurigates dotfiles mise setup (`private_dot_config/mise/config.toml.tmpl`, `docs/mise-migration-guide.md`, `docs/mise-quick-reference.md`, `docs/adrs/0002-unified-tool-version-management-mise.md`) and the global `mise-stale-tool-copies` / `dependency-management` rules.

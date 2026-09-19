@@ -1,37 +1,29 @@
 # Fusion Power User
 
-Fusion Power User is an independent fork of
-[`vscode-dbt-power-user`](https://github.com/AltimateAI/vscode-dbt-power-user) being rebuilt as a local-first VS Code
-and Cursor extension for [dbt Fusion](https://docs.getdbt.com/docs/fusion/about-fusion).
+Fusion Power User is an independent fork of [`vscode-dbt-power-user`](https://github.com/AltimateAI/vscode-dbt-power-user) being rebuilt as a local-first VS Code and Cursor extension for [dbt Fusion](https://docs.getdbt.com/docs/fusion/about-fusion).
 
-> **Status: developer alpha.** Repository identity and contributor tooling are in place, but the runtime is still the
-> upstream implementation. It still contains dbt Core, dbt Cloud, hosted Altimate, telemetry, AI, MCP, and notebook
-> paths. Do not install this build as a local-only replacement yet.
+> **Status: developer alpha.** Repository identity and contributor tooling are in place, but the runtime is still the upstream implementation. It still contains dbt Core, dbt Cloud, hosted Altimate, telemetry, AI, MCP, and notebook paths. Do not install this build as a local-only replacement yet.
 
 ## Target
 
-The completed product will support dbt Fusion 2.0.5 and later on macOS. The native Fusion language server will own
-completion, diagnostics, hover, navigation, rename, formatting, and semantic information. Retained panels and commands
-will use local LSP commands, Fusion artifacts, or the local Fusion CLI.
+The completed product will support dbt Fusion 2.0.5 and later on macOS. The native Fusion language server will own completion, diagnostics, hover, navigation, rename, formatting, and semantic information. Retained panels and commands will use local LSP commands, Fusion artifacts, or the local Fusion CLI.
 
-The target extension will not install dbt, call hosted services, require an extension-specific account, or collect
-telemetry. Those guarantees become true only as the corresponding refactor phases land.
+The target extension will not install dbt, call hosted services, require an extension-specific account, or collect telemetry. Those guarantees become true only as the corresponding refactor phases land.
 
 ## Development
 
 ```bash
-just setup
+scripts/workspace/setup/setup-environment.sh # first run
+just setup                                  # later refreshes
 just check
 just package
 ```
 
-`just setup` installs the pinned contributor tools and npm dependencies. The shipped extension remains
-tool-manager-neutral and must never invoke mise or Just.
+Run the environment script once to install mise and bootstrap the task layer. `just setup` installs the configured contributor tools and npm dependencies, installs hooks, and configures colocated jj. Both commands accept `--force`. The shipped extension remains tool-manager-neutral and must never invoke mise or Just.
 
 ## Contributing
 
-This is a personal fork with no upstream merge path. See [`AGENTS.md`](AGENTS.md) for the development environment and
-[`docs/refactor/`](docs/refactor/) for the plan.
+This is a personal fork with no upstream merge path. See [`AGENTS.md`](AGENTS.md) for the development environment and [`docs/refactor/`](docs/refactor/) for the plan.
 
 ## License
 

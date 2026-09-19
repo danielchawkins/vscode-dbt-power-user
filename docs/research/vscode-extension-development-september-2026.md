@@ -2,185 +2,86 @@
 
 ## Executive summary
 
-**Documented fact.** VS Code 1.137, released 2026-09-09, is the current stable baseline.[^1] The installed macOS build
-is 1.137.0, and the tagged source pins Electron 42.10.0 and Node 24.18.0 for development.[^2]
+Fusion Power User is a desktop, Node-based extension that launches a user-installed dbt Fusion process and delegates editor intelligence to its language server. The compatibility target therefore has two parts: the current VS Code platform and Cursor's older VS Code Extension API surface.
 
-**Documented fact plus direct observation.** Cursor explicitly says it “often uses slightly older VS Code versions.”[^3]
-The installed Cursor 3.20.14 declares VS Code Extension API 1.128.0; a 2026-09-16 Cursor 3.21.4 version report also
-declares 1.128.0.[^4] Cursor staff says the declared API version need not match editor internals one-to-one.[^5]
+As of 2026-09-19, VS Code stable is 1.137, and its tagged source pins Node 24 for development.[^1][^2] Cursor documents that it may lag VS Code, while the installed Cursor 3.20.14 and a later September 3.21.4 report both declare Extension API 1.128.[^3][^4] The available version metadata places both products on Node 24, but their patch versions differ and future rebases can change either runtime; the shared extension API and observed host behavior remain the compatibility constraints. Cursor staff also cautions that the declared API version does not map perfectly to the underlying editor.[^5]
 
-**Recommendation — high confidence.** Set `engines.vscode` to `^1.128.0`, compile against the 1.128 stable API, and do
-not use proposed APIs. This is the highest current minimum that admits both hosts. Raise it only when a required,
-tested API is unavailable in Cursor. Test the same packaged VSIX in VS Code 1.137 and current Cursor; an engine range
-is an installation gate, not behavioral proof.
+The practical baseline is consequently VS Code API 1.128, not the newest API available in VS Code 1.137. That floor should allow installation in both current hosts, but it is not a behavioral compatibility guarantee. The same packaged VSIX still needs to be exercised in both products.
 
-**Recommendation — high confidence.** Make the extension a Node workspace extension. A native local executable cannot
-run in a browser worker, and workspace extensions run where the workspace is located.[^6] Declare remote and
-virtual-workspace behavior instead of allowing accidental placement. For a macOS-first local product, either:
+### Recommended platform baseline
 
-- support remote workspaces by resolving and launching `dbt` on the remote workspace host; or
-- declare the limitation and keep native-process features disabled there.
+- **API surface:** set `engines.vscode` to `^1.128.0`, compile against the 1.128 stable API, and avoid proposed APIs. Raise the floor only when a required feature has been verified in Cursor as well as VS Code.
+- **Extension placement:** ship a Node workspace extension. It must run where the workspace and dbt executable live; a browser extension host cannot launch the native process.[^6] Remote workspaces need an explicit policy rather than accidental behavior.
+- **Project lifecycle:** own one project session and one `LanguageClient` per declared dbt project. Scope document selectors to the owning folder, await startup, dispose clients during shutdown, retain bounded crash recovery, and expose useful status, restart, and logs.[^7]
+- **Process security:** do not discover or launch dbt until the workspace is trusted. Treat executable paths and arguments as restricted configuration, enforce trust inside command handlers, and resolve dbt only from an explicit machine-scoped path or the extension host's `PATH`.[^8]
+- **Build and package:** keep one Node/CommonJS extension-host bundle, externalize `vscode`, type-check separately, and bundle webviews independently.[^9] The existing bundler is acceptable if it satisfies that contract. Keep the VSIX platform-neutral while dbt remains external; introduce target-specific packages only if native artifacts enter the VSIX.[^10]
+- **Testing:** use `@vscode/test-cli` and `@vscode/test-electron` for VS Code extension-host coverage, including trusted and untrusted workspaces.[^11] Add a narrow Cursor smoke harness that installs and exercises the same VSIX; no official Cursor equivalent to the VS Code test runner was found.
+- **Webviews:** prefer native editor UI. Where a webview is necessary, restrict local resources, use a nonce-based CSP, validate messages at runtime, sanitize displayed workspace data, persist with `getState`/`setState`, and include accessibility in acceptance tests.[^12] Do not start new work on Microsoft's archived Webview UI Toolkit.[^13]
+- **Configuration and privacy:** keep one durable command and setting namespace, use `machine` scope for the dbt path and `resource` scope for project behavior, migrate old settings deliberately, and retain the no-telemetry/no-hosted-service boundary.[^14] Use `SecretStorage` only if a future feature genuinely introduces secrets.[^15]
+- **Release integrity:** install from committed lockfiles, pin Actions by full commit SHA, minimize workflow permissions, inspect the VSIX contents, smoke-install the exact artifact, and publish its SHA-256 digest.[^16]
 
-Do not force a UI extension merely to keep the process on the user's Mac; that would separate it from remote workspace
-files.
+### Implications for the refactor
 
-**Recommendation — high confidence.** Use one project session and one LanguageClient per dbt project/workspace folder.
-Scope each `documentSelector` to that folder. Use `vscode-languageclient` 10.1.x and stdio for the native server unless
-the server requires another transport. Await `start()`, dispose the client during deactivation, preserve the library's
-bounded crash restart, and expose restart/status commands plus a log output channel.[^7]
+The project-session seam is the central architectural move. It should own project identity, client startup and teardown, diagnostics, cancellation, restart state, scoped settings, and logs. Building multi-root behavior into that seam from the start avoids recreating global assumptions when a second project is opened.
 
-**Recommendation — high confidence.** Gate every process launch behind Workspace Trust. Declare
-`untrustedWorkspaces: { supported: "limited", ... }`, restrict executable/argument settings, hide unavailable UI, and
-enforce the check again in command handlers; hidden commands remain callable.[^8] Resolve the executable from a
-machine-scoped explicit path or the extension host's `PATH`. Never invoke a tool manager at runtime.
+Process execution should remain independent of contributor tooling. The extension may inherit a `PATH` prepared by mise, asdf, Homebrew, or a shell, but it should never invoke those tools or read this repository's configuration. Workspace Trust must be checked before version probing as well as before language-server startup.
 
-**Recommendation — high confidence.** Meet this output contract: one Node/CommonJS extension-host bundle, externalized
-`vscode`, a separate type check (`tsc --noEmit`), and separately bundled webviews.[^9] The official bundling guide
-demonstrates esbuild and notes it does not type-check; it does not prove esbuild is required or better than rsbuild,
-Rspack, or another current bundler. Keep an existing bundler if it satisfies and tests this contract. Ship one
-platform-neutral VSIX while the extension only locates an external `dbt`; use `darwin-arm64`/`darwin-x64` VSIX files
-only if native artifacts enter the package.[^10] Inspect `vsce ls` and the unpacked VSIX in CI.
+Release testing should cross the package boundary: build the VSIX, inspect its contents, install that exact file into isolated VS Code and Cursor profiles, activate against representative single-root and multi-root fixtures, start a real or controlled server, and verify that shutdown leaves no child process. Unit tests remain useful for project selection, path resolution, configuration migration, and message validation, but they cannot establish host compatibility.
 
-**Recommendation — high confidence.** Use `@vscode/test-cli` plus `@vscode/test-electron` for extension-host tests,
-with separate trusted and untrusted runs.[^11] Add focused fixtures for no-folder, one folder, multi-root add/remove,
-server crash/restart, cancellation, malformed server/webview messages, missing executable, and paths containing spaces.
-Unit-test host-independent logic without VS Code.
+### Cursor compatibility limits
 
-**Recommendation — medium confidence.** Test Cursor by installing the built VSIX into a clean Cursor profile and
-running a small compatibility smoke suite. No official Cursor test runner or compatibility contract was found, so
-Cursor automation may require a maintained local harness. Treat manual testing as a temporary gap, not proof.
+The evidence for VS Code behavior is strong because it comes from current official documentation, tagged source, and maintained Microsoft repositories. The Cursor position is less certain. Official documentation establishes that Cursor is VS Code-based and may use an older base; local product inspection establishes the declared 1.128 API; neither source promises semantic parity for every stable API.[^3][^4][^5]
 
-**Recommendation — high confidence.** Use native VS Code UI wherever it can express the feature. For necessary
-webviews, set narrow `localResourceRoots`, a nonce-based CSP with `default-src 'none'`, validate every incoming message
-at runtime, sanitize workspace-derived output, and persist with `getState`/`setState` rather than
-`retainContextWhenHidden`.[^12] Test keyboard-only operation, screen readers, reduced motion, and all contrast themes.
-Do not adopt Microsoft's archived Webview UI Toolkit.[^13]
+The 1.128 target is therefore a conservative shared installation surface, not a claim that the hosts behave identically. Standard language, command, configuration, workspace, and webview APIs are the lowest-risk choices, but none is zero-risk without Cursor testing; smoke tests must cover every capability this extension depends on.
 
-**Recommendation — high confidence.** Keep commands and settings under one durable namespace. Make the dbt path
-`machine` scoped and project behavior `resource` scoped.[^14] Deprecate old settings in place before removing them. Use
-`SecretStorage` only if secrets are introduced; it is encrypted and not synchronized.[^15] Keep the product's
-no-telemetry boundary: it is simpler and stricter than implementing VS Code's telemetry consent rules.
+The remaining material unknowns are:
 
-**Recommendation — high confidence.** Pin npm inputs with a committed lockfile, pin GitHub Actions by full commit SHA,
-grant minimum workflow permissions, build the VSIX on macOS so executable bits are preserved, record a SHA-256 digest,
-and smoke-install the exact release artifact.[^16] Provenance attestation is a useful optional control; neither SBOMs
-nor attestations are documented Marketplace requirements.[^17]
+- whether Cursor matches VS Code for Workspace Trust transitions, remote extension placement, webview behavior, profiles, and built-in commands;
+- how to automate Cursor extension-host tests without a supported headless test interface;
+- whether remote workspaces should run dbt on the remote host or be explicitly unsupported;
+- how the real dbt Fusion language server behaves during shutdown, crash recovery, cancellation, and concurrent project startup; and
+- how private VSIX distribution interacts with Cursor's gallery and enterprise policies.
 
-## Cursor: known, inferred, unknown
+### Immediate next steps
 
-### Known
-
-- Cursor is VS Code-based, imports VS Code extensions, and intentionally may lag VS Code.[^3]
-- Cursor 3.20.14 on the research Mac declares Extension API 1.128.0.[^4]
-- Cursor has its own extension gallery and product overrides. This is direct product-file observation, not an official
-  compatibility promise.[^4]
-
-### Inferred
-
-- A stable API extension targeting 1.128 or lower is likely installable in both products. This follows from the
-  manifest engine contract and observed host versions, but does not prove behavior.[^18]
-- Node 24-compatible extension-host code is likely safe across the two September builds because both observed runtimes
-  are on Node 24. This should guide syntax/runtime choices, not replace host tests.[^2][^4]
-- Standard language, command, configuration, webview, and workspace APIs are the lowest-risk compatibility surface.
-  This is a recommendation based on Cursor's VS Code base, not an explicit Cursor guarantee.
-
-### Unknown
-
-- Exact semantic parity for stable APIs and built-in commands.
-- Whether Cursor's webview, remote, Workspace Trust, profile, and extension-management behavior matches VS Code in
-  every relevant path.
-- A supported headless Cursor extension-test interface.
-- Cursor's future rebase cadence; staff says there is no fixed public schedule.[^5]
-- Whether one Marketplace publication is always sufficient for Cursor's gallery and enterprise policies.
-
-## Prioritized implications for this product
-
-1. Anchor the public API surface at VS Code 1.128 and verify both hosts before using anything newer.
-2. Put project identity, client ownership, diagnostics, cancellation, and teardown behind one project-session seam.
-3. Resolve `dbt` directly from an explicit machine setting or `PATH`; trust-gate before discovery or execution.
-4. Make multi-root correct from the first implementation: project-scoped sessions, selectors, settings, logs, and
-   restart state.
-5. Keep the VSIX platform-neutral until it actually contains native code; macOS-first testing does not require a
-   macOS-only package.
-6. Treat webviews as untrusted message boundaries and make accessibility part of their acceptance tests.
-7. Add a release-artifact test: package, list contents, install the VSIX, activate it, start a real process, and verify
-   shutdown leaves no child.
-
-## Five highest-value decisions
-
-1. `engines.vscode: ^1.128.0`; stable API only.
-2. Workspace extension with one LanguageClient/project session per project folder.
-3. Explicit path or `PATH` resolution, no runtime tool-manager coupling, and Workspace Trust before execution.
-4. Bundled platform-neutral VSIX, adding target-specific packages only for packaged native artifacts.
-5. One release smoke matrix: VS Code 1.137, current Cursor, trusted/untrusted, single-root/multi-root, arm64/x64 where
-   available.
-
-## Five highest-risk unknowns
-
-1. Cursor stable API behavior may diverge from its declared 1.128 compatibility level.
-2. Cursor has no documented extension-host integration test runner.
-3. Remote-workspace product semantics are unresolved: run dbt remotely or explicitly decline support.
-4. Real dbt Fusion LSP shutdown, crash, and multi-project behavior must be measured against LanguageClient 10.
-5. Cursor gallery/enterprise installation behavior for a privately distributed VSIX lacks a versioned contract.
+1. Align `engines.vscode` and `@types/vscode` on stable API 1.128 before adding the language client.[^17]
+2. Decide whether remote workspaces run dbt remotely or disable process-backed features; that decision fixes extension placement and test scope.
+3. Introduce the project-session seam before migrating providers so lifecycle and multi-root ownership have one implementation.
+4. Add trusted and untrusted VS Code extension-host fixtures, then a narrow Cursor smoke harness that installs the same VSIX.
+5. Extend CI to inspect and smoke-install the packaged artifact before changing distribution or adding native dependencies.
 
 ## Footnotes
 
-[^1]: [Evidence 1](vscode-extension-development-september-2026-sources.md#1-visual-studio-code-1137): “Release date:
-    September 9, 2026”.
+[^1]: [Evidence 1](vscode-extension-development-september-2026-sources.md#1-visual-studio-code-1137): “Release date: September 9, 2026”.
 
-[^2]: [Evidence 2](vscode-extension-development-september-2026-sources.md#2-vs-code-1137-runtime-pins): `.nvmrc` says
-    “24.18.0”; `.npmrc` says `target="42.10.0"`.
+[^2]: [Evidence 2](vscode-extension-development-september-2026-sources.md#2-vs-code-1137-runtime-pins): `.nvmrc` says “24.18.0”; `.npmrc` says `target="42.10.0"`.
 
-[^3]: [Evidence 6](vscode-extension-development-september-2026-sources.md#6-cursors-vs-code-rebase-policy): “Cursor
-    often uses slightly older VS Code versions.”
+[^3]: [Evidence 6](vscode-extension-development-september-2026-sources.md#6-cursors-vs-code-rebase-policy): “Cursor often uses slightly older VS Code versions.”
 
-[^4]: [Evidence 4](vscode-extension-development-september-2026-sources.md#4-installed-cursor-product-inspection) and
-    [evidence 5](vscode-extension-development-september-2026-sources.md#5-cursor-3214-version-report):
-    `"vscodeVersion": "1.128.0"` and “VS Code Extension API: 1.128.0”.
+[^4]: [Evidence 4](vscode-extension-development-september-2026-sources.md#4-installed-cursor-product-inspection) and [evidence 5](vscode-extension-development-september-2026-sources.md#5-cursor-3214-version-report): `"vscodeVersion": "1.128.0"` and “VS Code Extension API: 1.128.0”.
 
-[^5]: [Evidence 7](vscode-extension-development-september-2026-sources.md#7-cursor-extension-api-cadence): “doesn’t
-    always line up one-to-one with the underlying editor internals”.
+[^5]: [Evidence 7](vscode-extension-development-september-2026-sources.md#7-cursor-extension-api-cadence): “doesn’t always line up one-to-one with the underlying editor internals”.
 
-[^6]: [Evidence 9](vscode-extension-development-september-2026-sources.md#9-extension-host-topology) and
-    [evidence 10](vscode-extension-development-september-2026-sources.md#10-remote-extension-behavior): “Workspace
-    Extensions are run on the same machine as where the workspace is located.”
+[^6]: [Evidence 9](vscode-extension-development-september-2026-sources.md#9-extension-host-topology) and [evidence 10](vscode-extension-development-september-2026-sources.md#10-remote-extension-behavior): “Workspace Extensions are run on the same machine as where the workspace is located.”
 
-[^7]: [Evidence 15](vscode-extension-development-september-2026-sources.md#15-current-language-server-extension-guide)
-    and evidence 16: “`await client.start();`” and “Both methods now return a promise”.
-    [16](vscode-extension-development-september-2026-sources.md#16-languageclient-10-lifecycle)
+[^7]: [Evidence 15](vscode-extension-development-september-2026-sources.md#15-current-language-server-extension-guide) and [evidence 16](vscode-extension-development-september-2026-sources.md#16-languageclient-10-lifecycle): “`await client.start();`” and “Both methods now return a promise”.
 
-[^8]: [Evidence 11](vscode-extension-development-september-2026-sources.md#11-workspace-trust): “A command can still be
-    called even if it is not presented in the UI”.
+[^8]: [Evidence 11](vscode-extension-development-september-2026-sources.md#11-workspace-trust): “A command can still be called even if it is not presented in the UI”.
 
-[^9]: [Evidence 19](vscode-extension-development-september-2026-sources.md#19-bundling-extensions): “That's why we
-    recommend bundling.” and “Exclude the 'vscode' module from the bundle (since it's provided by the VS Code
-    runtime).” The same page demonstrates esbuild and says “esbuild simply strips off all type declarations without
-    doing any type checks.”
+[^9]: [Evidence 19](vscode-extension-development-september-2026-sources.md#19-bundling-extensions): “That's why we recommend bundling.” and “Exclude the 'vscode' module from the bundle (since it's provided by the VS Code runtime).” The same page demonstrates esbuild and says “esbuild simply strips off all type declarations without doing any type checks.”
 
-[^10]: Evidence 20: “Platform-specific extensions are useful if your extension has platform-specific libraries or
-    dependencies”.
-    [20](vscode-extension-development-september-2026-sources.md#20-publishing-and-platform-specific-vsix-files)
+[^10]: [Evidence 20](vscode-extension-development-september-2026-sources.md#20-publishing-and-platform-specific-vsix-files): “Platform-specific extensions are useful if your extension has platform-specific libraries or dependencies”.
 
-[^11]: [Evidence 21](vscode-extension-development-september-2026-sources.md#21-vs-code-extension-testing): “add
-    integration tests for both trusted and untrusted workspaces.”
+[^11]: [Evidence 21](vscode-extension-development-september-2026-sources.md#21-vs-code-extension-testing): “add integration tests for both trusted and untrusted workspaces.”
 
-[^12]: [Evidence 24](vscode-extension-development-september-2026-sources.md#24-webview-security-and-state): “`getState`
-    and `setState` are the preferred way to persist state”.
+[^12]: [Evidence 24](vscode-extension-development-september-2026-sources.md#24-webview-security-and-state): “`getState` and `setState` are the preferred way to persist state”.
 
-[^13]: [Evidence 26](vscode-extension-development-september-2026-sources.md#26-webview-ui-toolkit-sunset): “there are
-    sadly no plans to continue the maintenance of this project.”
+[^13]: [Evidence 26](vscode-extension-development-september-2026-sources.md#26-webview-ui-toolkit-sunset): “there are sadly no plans to continue the maintenance of this project.”
 
-[^14]: [Evidence 13](vscode-extension-development-september-2026-sources.md#13-configuration-scopes): machine values
-    “will not be synchronized”; resource settings can be set at folder level.
+[^14]: [Evidence 13](vscode-extension-development-september-2026-sources.md#13-configuration-scopes): machine values “will not be synchronized”; resource settings can be set at folder level.
 
-[^15]: [Evidence 27](vscode-extension-development-september-2026-sources.md#27-secret-storage): SecretStorage “will be
-    encrypted” and is “not synced across machines.”
+[^15]: [Evidence 27](vscode-extension-development-september-2026-sources.md#27-secret-storage): SecretStorage “will be encrypted” and is “not synced across machines.”
 
-[^16]: [Evidence 22](vscode-extension-development-september-2026-sources.md#22-github-actions-hardening): “Pinning an
-    action to a full-length commit SHA is ... the only way to use an action as an immutable release.”
+[^16]: [Evidence 22](vscode-extension-development-september-2026-sources.md#22-github-actions-hardening): “Pinning an action to a full-length commit SHA is ... the only way to use an action as an immutable release.”
 
-[^17]: [Evidence 23](vscode-extension-development-september-2026-sources.md#23-artifact-attestations): provenance
-    “links the artifact back to its originating workflow run”.
-
-[^18]: [Evidence 8](vscode-extension-development-september-2026-sources.md#8-extension-manifest-engine-contract):
-    `engines.vscode` matches “the versions of VS Code that the extension is compatible with.”
+[^17]: [Evidence 8](vscode-extension-development-september-2026-sources.md#8-extension-manifest-engine-contract): `engines.vscode` matches “the versions of VS Code that the extension is compatible with.”

@@ -29,6 +29,8 @@
   },
   "[markdown]": {
     "editor.defaultFormatter": "dprint.dprint",
+    "editor.wordWrap": "bounded",
+    "editor.wordWrapColumn": 119,
     "editor.codeActionsOnSave": {
       "source.fixAll.rumdl": "explicit"
     }
