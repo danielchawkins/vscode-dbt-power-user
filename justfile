@@ -101,6 +101,7 @@ fmt:
 [group("quality")]
 lint:
     just lint-just
+    just lint-mise-lock
     just lint-code
     just webviews::lint
     just lint-format
@@ -124,6 +125,10 @@ lint-just:
     just --fmt --check
     just --justfile webview_panels/justfile --fmt --check
     just --dump > /dev/null
+
+[group("quality")]
+lint-mise-lock:
+    tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT; MISE_DATA_DIR="$tmp" mise install --locked --dry-run
 
 [group("quality")]
 fmt-code:
