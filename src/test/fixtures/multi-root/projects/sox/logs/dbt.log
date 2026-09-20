@@ -1,0 +1,14 @@
+==================== 2026-09-20T02:03:48.571346Z | 01a0bc8e-29da-7081-b6b7-05447591dd36 ====================
+02:03:48.571409 [info ]: dbt 2.0.5
+02:03:48.571498 [info ]: Started loading project
+02:03:48.571897 [info ]: Loading profiles.yml
+02:03:48.671929 [debug]:    Started loading packages
+02:03:48.672250 [debug]:     Loaded [  0.00s] packages
+02:03:48.672710 [info ]: Finished loading project [  0.10s]
+02:03:48.672856 [info ]: Started parsing
+02:03:48.686344 [debug]: Finished parsing models/sox_model.sql [  0.00s]
+02:03:48.737299 [info ]: Finished parsing [  0.06s]
+02:03:49.150690 [info ]: New version available 2.0.6 (run `dbt system update`)
+02:03:49.235567 [info ]: 
+==================== Execution Summary =====================
+Finished 'parse' successfully for target 'test' [664ms]

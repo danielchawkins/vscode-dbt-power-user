@@ -1,0 +1,13 @@
+general:
+  target: test
+  outputs:
+    test:
+      type: snowflake
+      account: dummy
+      user: dummy
+      password: dummy
+      role: dummy
+      database: dummy
+      warehouse: dummy
+      schema: test
+      threads: 1

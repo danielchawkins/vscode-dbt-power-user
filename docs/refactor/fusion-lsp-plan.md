@@ -188,7 +188,7 @@ Verify: a smoke test asserts each fixture parses as YAML and that `multi-root` h
 
 **2.2 — Integration harness.** Add `src/test/integration/` driven by the existing `@vscode/test-electron` devDependency, and a `just test-integration` recipe. The harness opens a fixture as a workspace, waits for activation, and exposes helpers to read diagnostics, request completions, and send `executeCommand`. Add `src/test/integration/lspFixture.ts` that can spawn `dbt lsp` directly against a fixture and speak LSP over the reverse socket without the extension, so protocol behavior can be characterized independently of extension bugs.
 
-Contract: `just test-integration` requires the pinned Fusion on `PATH` and skips with a clear message otherwise; it never runs inside `just check`.
+Contract: `just test-integration` requires the pinned Fusion on `PATH` and skips with a clear message otherwise; it never runs inside `just check`. Fusion 2.0.5 does not load a project-root `profiles.yml` on its own — pass `--profiles-dir` (or `DBT_PROFILES_DIR`) as the fixture's project directory, which already holds a dummy `profiles.yml`.
 
 Verify: one integration test asserts the extension activates on `single-project` and that `dbt --version` resolves to Fusion 2.0.5.
 
