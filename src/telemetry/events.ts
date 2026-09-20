@@ -1,8 +1,8 @@
 export enum TelemetryEventPriority {
-  "Critical" = "Critical",
-  "High" = "High",
-  "Medium" = "Medium",
-  "Low" = "Low",
+  Critical = "Critical",
+  High = "High",
+  Medium = "Medium",
+  Low = "Low",
 }
 
 // List of event names

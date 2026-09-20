@@ -33,6 +33,13 @@ sync:
     npm ci --prefix webview_panels
 
 [group("setup")]
+update:
+    npm update
+    npm update --prefix webview_panels
+    npm install-scripts prune
+    npm --prefix webview_panels install-scripts prune
+
+[group("setup")]
 install-mise-tools *args:
     mise install "$@"
 
@@ -45,6 +52,7 @@ verify-setup:
     node --version
     npm --version
     just --version
+    just-lsp --version
     lefthook version
     dprint --version
     rumdl --version

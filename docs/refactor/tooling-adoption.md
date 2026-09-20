@@ -17,7 +17,7 @@ Add a small contributor layer:
 
 - `scripts/workspace/setup/setup-environment.sh` bootstraps mise and the mise-managed Just entry point;
 - `mise.toml` and `mise.lock` pin one Node LTS plus contributor CLIs;
-- one root `justfile` exposes `setup`, `fmt`, `lint`, `check`, `jj`, and `package`;
+- one root `justfile` exposes setup, dependency, quality, version-control, and package workflows;
 - dprint and rumdl own Markdown only;
 - shfmt and ShellCheck own shell scripts;
 - `AGENTS.md` becomes the concise canonical contributor and agent guide;
@@ -36,6 +36,7 @@ Pin:
 
 - the chosen Node LTS;
 - Just;
+- just-lsp (GitHub backend; the lock records a version, not a per-platform checksum);
 - dprint;
 - rumdl; and
 - any existing native CLI already required by the extension build.
@@ -53,6 +54,7 @@ Required public contract:
 ```text
 just setup
 just sync
+just update
 just fmt
 just lint
 just check

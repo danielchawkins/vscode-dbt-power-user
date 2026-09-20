@@ -4,6 +4,7 @@
 [tools]
 node = "24"
 just = "latest"
+"github:terror/just-lsp" = "latest"
 lefthook = "latest"
 "aqua:dprint/dprint" = "latest"
 "aqua:rvben/rumdl" = "latest"

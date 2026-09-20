@@ -38,8 +38,7 @@ describe("SqlFmtAvailabilityNotifier", () => {
   let createCommandProcessExecution: jest.Mock<any>;
   let completeWithTerminalOutput: jest.Mock<any>;
   let onDidChangeActiveTextEditorListener:
-    | ((editor: vscode.TextEditor | undefined) => unknown)
-    | undefined;
+    ((editor: vscode.TextEditor | undefined) => unknown) | undefined;
   let onManifestChangedListener: (() => unknown) | undefined;
   let onManifestChanged: jest.Mock<any>;
 

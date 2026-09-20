@@ -30,6 +30,7 @@ The extension supports dbt Fusion 2.0.5 and later. It does not support dbt Core 
 scripts/workspace/setup/setup-environment.sh # first run: bootstrap host, then setup
 just setup                                  # later: refresh tools, dependencies, hooks, jj
 just sync                                   # refresh npm dependencies only
+just update                                 # update dependencies within declared ranges
 just fmt                                    # write lint and format fixes
 just lint                                   # read-only code, shell, lockfile, and Markdown checks
 just check                                  # lint plus compile and unit tests

@@ -45,6 +45,7 @@ Done when the intended changes and bookmarks are visible in `jj log`, required c
 - Git's staging area and hooks are not supported by jj. A successful `jj git push` does not prove local checks ran.
 - Use change IDs for revisions that may be rewritten; commit IDs change after rewrites.
 - `stack()`, `substack()`, `jj sb`, `jj top`, and `jj bottom` seen in examples are user-defined aliases, not jj builtins.
+- jj has no pull-request command. A bookmark creates the Git branch a pull request is built on; opening, stacking, and unstacking pull requests needs `gh`.
 
 ## References
 

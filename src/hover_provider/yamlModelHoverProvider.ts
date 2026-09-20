@@ -208,13 +208,11 @@ export class YamlModelHoverProvider implements HoverProvider, Disposable {
         }
 
         // Check if cursor is within this source block
-        if (
-          !(
-            source.range &&
-            offset >= source.range[0] &&
-            offset <= source.range[1]
-          )
-        ) {
+        if (!(
+          source.range &&
+          offset >= source.range[0] &&
+          offset <= source.range[1]
+        )) {
           continue;
         }
 

@@ -1,4 +1,4 @@
-import TelemetryReporter from "@vscode/extension-telemetry";
+import { TelemetryReporter } from "@vscode/extension-telemetry";
 import { createHash } from "crypto";
 import * as vscode from "vscode";
 

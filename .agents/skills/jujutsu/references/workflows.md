@@ -90,7 +90,7 @@ jj bookmark move feature-name --to @-
 jj git push --bookmark feature-name --remote origin
 ```
 
-After every push, verify the bookmark with `jj bookmark list feature-name --all-remotes` and inspect the GitHub branch or pull request with `gh`.
+After every push, verify the bookmark with `jj bookmark list feature-name --all-remotes` and inspect the pull request with `gh pr view`.
 
 ## Stack dependent GitHub PRs
 
@@ -101,15 +101,14 @@ jj bookmark create part-1 --revision <lower-change>
 jj bookmark create part-2 --revision <upper-change>
 # run the repository's required checks
 jj git push --bookmark part-1 --bookmark part-2 --remote origin
-gh pr create --head part-1 --base main
-gh pr create --head part-2 --base part-1
+gh stack link --base main --open part-1 part-2
 ```
 
-Rewrite and rebase the changes with jj; descendant changes and their bookmarks follow automatically. Push rewritten bookmarks with jj before updating GitHub.
+`gh stack link` takes the layers bottom to top. It pushes each named branch to the remote, then reuses an open pull request for that branch or creates one, sets each base, and records no local tracking state. Push with jj first so the GitHub push is a no-op against identical refs; do not run `link` on unpushed bookmarks, because that push would mutate refs outside jj.
 
-If GitHub stacked pull requests are available, `gh stack link --base main --open part-1 part-2` can link branches already pushed by jj. In a colocated repository, do not use `gh stack init`, `add`, `rebase`, `sync`, `push`, or `checkout`: they mutate Git history or refs outside jj and maintain separate stack state.
+Restructure a published stack in jj. Reorder, insert, drop, or resplit layers with `jj rebase`, `jj squash`, `jj split`, and `jj abandon`; bookmarks follow the changes they point at. Push the moved bookmarks with jj, then run `gh stack unstack <stack-number>` and link the new order with a fresh `gh stack link`. `unstack` leaves a PR stacked when it is queued for merge or has auto-merge enabled; confirm the stack is gone before relinking. Stack membership is a link between pull requests rather than a property of the commits, so unlinking and relinking is the normal way to restructure.
 
-Treat a published PR stack as append-only. Reordering or inserting a middle layer can make GitHub mark a PR merged or invalidate its base. Merge bottom-up through GitHub's stack UI or `gh stack merge`; avoid `gh pr merge --delete-branch`, which can close dependent PRs instead of retargeting them.
+Restrict `gh` to linking and unlinking: `gh stack link` and `gh stack unstack`. jj has no pull-request command, so `gh pr create` also remains the way to open a single non-stacked pull request. Do not use other `gh stack` subcommands: `init`, `add`, `modify`, `rebase`, `sync`, `push`, `submit`, and `checkout` mutate Git branches or keep stack tracking, and the navigation commands (`bottom`, `down`, `switch`, `top`, `trunk`, `up`) check out branches behind jj. Merge from the pull request page. Do not use `gh pr merge --delete-branch` on a stacked PR; deleting the branch can close dependents instead of retargeting them.
 
 ## Address review feedback
 
