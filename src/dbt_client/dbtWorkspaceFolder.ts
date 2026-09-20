@@ -196,10 +196,6 @@ export class DBTWorkspaceFolder implements Disposable {
       { numProjects: projectDirectories.length },
     );
 
-    const dbtIntegrationMode = workspace
-      .getConfiguration("dbt")
-      .get<string>("dbtIntegration", "core");
-
     const filteredProjects =
       await this.dbtProjectDetectionFactory().discoverProjects(
         projectDirectories.map((uri) => uri.fsPath),

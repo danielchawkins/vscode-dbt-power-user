@@ -98,10 +98,6 @@ export class InsightsPanel extends AltimateWebviewProvider {
           if (this._panel) {
             const currentProject = await this.getCurrentProject();
 
-            const dbtIntegrationMode = workspace
-              .getConfiguration("dbt")
-              .get<string>("dbtIntegration", "core");
-
             const projectPath = this.getCurrentProject();
             if (!projectPath) {
               this.dbtTerminal.warn("InsightsPanel", "No project selected");
@@ -113,7 +109,7 @@ export class InsightsPanel extends AltimateWebviewProvider {
               data: {
                 config: currentProject?.getDeferConfig(),
                 projectPath: currentProject?.projectRoot.fsPath,
-                dbtIntegrationMode,
+                dbtIntegrationMode: "fusion",
               },
             });
           }
@@ -694,17 +690,13 @@ export class InsightsPanel extends AltimateWebviewProvider {
           projectRoot,
         );
 
-        const dbtIntegrationMode = workspace
-          .getConfiguration("dbt")
-          .get<string>("dbtIntegration", "core");
-
         this.sendResponseToWebview({
           command: "response",
           syncRequestId,
           data: {
             config,
             projectPath,
-            dbtIntegrationMode,
+            dbtIntegrationMode: "fusion",
           },
         });
         break;

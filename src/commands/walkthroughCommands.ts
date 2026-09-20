@@ -6,13 +6,7 @@ import { existsSync } from "fs";
 import { inject } from "inversify";
 import { join } from "path";
 import { gte } from "semver";
-import {
-  commands,
-  ProgressLocation,
-  QuickPickItem,
-  window,
-  workspace,
-} from "vscode";
+import { ProgressLocation, QuickPickItem, window, workspace } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
@@ -52,14 +46,7 @@ export class WalkthroughCommands {
       );
       return;
     }
-    let debugCommand = "dbt debug";
-    if (
-      workspace
-        .getConfiguration("dbt")
-        .get<string>("dbtIntegration", "core") === "cloud"
-    ) {
-      debugCommand = "dbt environment show";
-    }
+    const debugCommand = "dbt debug";
     if (!skipConfirmation) {
       const answer = await window.showInformationMessage(
         `Do you want to validate the project: ${projectContext.label}? This will run the command '${debugCommand}' inside this project. Do you want to continue?`,
@@ -144,21 +131,7 @@ export class WalkthroughCommands {
   }
 
   async installDbt(): Promise<void> {
-    const dbtIntegration = workspace
-      .getConfiguration("dbt")
-      .get<string>("dbtIntegration", "core");
-    switch (dbtIntegration) {
-      case "core":
-        return this.installDbtCore();
-      case "fusion":
-        return this.installDbtFusion();
-      case "cloud":
-        return this.installDbtCloud();
-      default:
-        throw new Error(
-          `Unsupported dbt integration: ${dbtIntegration}. Supported values are 'core', 'cloud', 'fusion'.`,
-        );
-    }
+    return this.installDbtFusion();
   }
 
   private async installDbtFusion(): Promise<void> {
@@ -220,7 +193,7 @@ export class WalkthroughCommands {
         DbtInstallationPromptAnswer.INSTALL_FUSION,
       );
       if (answer === DbtInstallationPromptAnswer.INSTALL_FUSION) {
-        commands.executeCommand("dbtPowerUser.installDbt");
+        await this.installDbt();
       }
     }
   }
@@ -282,7 +255,7 @@ export class WalkthroughCommands {
         DbtInstallationPromptAnswer.INSTALL_CLOUD,
       );
       if (answer === DbtInstallationPromptAnswer.INSTALL_CLOUD) {
-        commands.executeCommand("dbtPowerUser.installDbt");
+        await this.installDbt();
       }
     }
   }
@@ -394,7 +367,7 @@ export class WalkthroughCommands {
       DbtInstallationPromptAnswer.INSTALL,
     );
     if (answer === DbtInstallationPromptAnswer.INSTALL) {
-      commands.executeCommand("dbtPowerUser.installDbt");
+      await this.installDbt();
     }
   }
 

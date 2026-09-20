@@ -1,27 +1,21 @@
 import { executeRequestInSync } from "@modules/app/requestExecutor";
 import { panelLogger } from "@modules/logger";
 import { Stack } from "@uicore";
-import { Alert, Button, Card, Radio, Space } from "antd";
+import { Alert, Button } from "antd";
 import { useState } from "react";
 import classes from "./onboarding.module.scss";
 
 interface InstallDbtStepProps {
-  initialIntegrationType?: "core" | "fusion" | "cloud";
   onComplete?: () => void;
   onSkip?: () => void;
 }
 
-type DbtIntegrationType = "core" | "fusion" | "cloud";
 type InstallState = "idle" | "installing" | "complete" | "error";
 
 const InstallDbtStep = ({
-  initialIntegrationType,
   onComplete,
   onSkip,
 }: InstallDbtStepProps): JSX.Element => {
-  const [integrationType, setIntegrationType] = useState<DbtIntegrationType>(
-    initialIntegrationType ?? "core",
-  );
   const [installState, setInstallState] = useState<InstallState>("idle");
   const [error, setError] = useState<string | undefined>();
 
@@ -30,9 +24,7 @@ const InstallDbtStep = ({
       setError(undefined);
       setInstallState("installing");
 
-      await executeRequestInSync("installDbt", {
-        integrationType,
-      });
+      await executeRequestInSync("installDbt", {});
 
       setInstallState("complete");
 
@@ -64,53 +56,9 @@ const InstallDbtStep = ({
     <div className={classes.installDbtContainer}>
       <div className={classes.installDbtInfo}>
         <p>
-          Choose your dbt integration type and install dbt to enable all
-          features of dbt Power User:
+          Install dbt Fusion to enable all features of Fusion Power User.
         </p>
       </div>
-
-      <Card className={classes.integrationTypeCard}>
-        <Radio.Group
-          value={integrationType}
-          onChange={(e) =>
-            setIntegrationType(e.target.value as DbtIntegrationType)
-          }
-          disabled={isInstalling || isComplete}
-        >
-          <Space direction="vertical" size="large" style={{ width: "100%" }}>
-            <Radio value="core">
-              <div className={classes.radioOption}>
-                <strong>dbt Core</strong>
-                <p className={classes.radioDescription}>
-                  Install dbt Core with a specific adapter (Snowflake, BigQuery,
-                  Postgres, etc.). Best for local development and full control
-                  over your dbt environment.
-                </p>
-              </div>
-            </Radio>
-            <Radio value="fusion">
-              <div className={classes.radioOption}>
-                <strong>dbt Fusion</strong>
-                <p className={classes.radioDescription}>
-                  Install dbt Fusion CLI for enhanced dbt functionality.
-                  Provides improved performance and additional features on top
-                  of dbt Core.
-                </p>
-              </div>
-            </Radio>
-            <Radio value="cloud">
-              <div className={classes.radioOption}>
-                <strong>dbt Cloud CLI</strong>
-                <p className={classes.radioDescription}>
-                  Install the dbt Cloud CLI to work with dbt Cloud environments.
-                  Ideal for teams using dbt Cloud for orchestration and
-                  collaboration.
-                </p>
-              </div>
-            </Radio>
-          </Space>
-        </Radio.Group>
-      </Card>
 
       {error && (
         <Alert
@@ -127,7 +75,7 @@ const InstallDbtStep = ({
       {isComplete && (
         <Alert
           message="Installation successful!"
-          description={`dbt ${integrationType} has been installed successfully.`}
+          description="dbt Fusion has been installed successfully."
           type="success"
           showIcon
           className={classes.alertMessage}
@@ -153,7 +101,7 @@ const InstallDbtStep = ({
             ? "Installed"
             : isInstalling
               ? "Installing..."
-              : `Install dbt ${integrationType}`}
+              : "Install dbt Fusion"}
         </Button>
       </Stack>
 

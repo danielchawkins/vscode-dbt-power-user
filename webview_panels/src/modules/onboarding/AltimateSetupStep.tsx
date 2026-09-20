@@ -57,7 +57,6 @@ const AltimateSetupStep = ({
         {},
       )) as {
         isConfigured: boolean;
-        dbtIntegrationType?: string;
         instanceName?: string;
         apiKey?: string;
         altimateUrl?: string;

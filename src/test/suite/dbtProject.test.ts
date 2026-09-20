@@ -135,9 +135,6 @@ describe("DBTProject Test Suite", () => {
     ];
     (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
       get: jest.fn((key: string) => {
-        if (key === "dbtIntegration") {
-          return "core";
-        }
         if (key === "queryLimit") {
           return 500;
         }
@@ -353,7 +350,7 @@ describe("DBTProject Test Suite", () => {
       ).toHaveBeenCalled();
       expect(mockTerminal.debug).toHaveBeenCalledWith(
         "DbtProject",
-        expect.stringContaining("Created core dbt project"),
+        expect.stringContaining("Created fusion dbt project"),
       );
     });
 
@@ -1074,40 +1071,6 @@ describe("DBTProject Test Suite", () => {
       expect(mockProjectIntegration.dispose).toHaveBeenCalled();
       // dbtProjectLog is created in constructor and added to disposables in initialize
       expect(mockDbtProjectLog.dispose).toHaveBeenCalled();
-    });
-  });
-
-  describe("dbt Loom Integration", () => {
-    it("should check if dbt loom is installed", async () => {
-      const pythonBridge = mockExecutionInfrastructure.createPythonBridge();
-      (pythonBridge.ex as any).mockResolvedValue(undefined);
-
-      const projectUri = vscode.Uri.file("/test/project");
-      dbtProject = new DBTProject(
-        mockPythonEnvironment,
-        dbtProjectLogFactory as any,
-        mockCommandFactory,
-        mockTerminal,
-        mockSharedStateService,
-        mockTelemetry,
-        mockExecutionInfrastructure,
-        jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
-        mockValidationProvider,
-        mockAltimateAuthService,
-        mockRunHistoryService,
-        projectUri,
-        {},
-        mockManifestChangedEmitter,
-      );
-
-      // Wait for the async dbt loom check to complete
-      await new Promise((resolve) => setTimeout(resolve, 100));
-
-      expect(mockTelemetry.setTelemetryCustomAttribute).toHaveBeenCalledWith(
-        "dbtLoomInstalled",
-        "true",
-      );
     });
   });
 });

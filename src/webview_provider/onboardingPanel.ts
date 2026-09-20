@@ -310,21 +310,7 @@ export class OnboardingPanel extends AltimateWebviewProvider {
         }
         break;
       case "installDbt":
-        // Install dbt with specified integration type
         try {
-          const { integrationType } = message as HandleCommandProps & {
-            integrationType: "core" | "fusion" | "cloud";
-          };
-
-          if (!integrationType) {
-            throw new Error("No integration type specified");
-          }
-
-          // Set the dbt integration configuration before installation
-          const config = workspace.getConfiguration("dbt");
-          await config.update("dbtIntegration", integrationType, true);
-
-          // Call the installDbt command
           await this.walkthroughCommands.installDbt();
 
           this.sendResponseToWebview({
@@ -374,9 +360,6 @@ export class OnboardingPanel extends AltimateWebviewProvider {
         try {
           const projects = this.dbtProjectContainer.getProjects();
           const dbtWorkspaces = this.dbtProjectContainer.dbtWorkspaceFolders;
-          const dbtIntegrationMode = workspace
-            .getConfiguration("dbt")
-            .get<string>("dbtIntegration", "core");
           const pythonEnvironment =
             this.dbtProjectContainer.getPythonEnvironment();
 
@@ -427,7 +410,7 @@ export class OnboardingPanel extends AltimateWebviewProvider {
               projectsFound: projectsFoundInWorkspace,
               projectCount: dbtProjectFiles.length,
               workspaceCount: dbtWorkspaces.length,
-              dbtIntegrationMode,
+              dbtIntegrationMode: "fusion",
               pythonPath: pythonEnvironment.pythonPath,
               pythonVersion: pythonEnvironment.pythonVersion,
               dbtVersion,
@@ -438,43 +421,6 @@ export class OnboardingPanel extends AltimateWebviewProvider {
           this.dbtTerminal.error(
             "getDiagnosticsStatus",
             "Error getting diagnostics status",
-            error,
-          );
-          this.sendResponseToWebview({
-            command: "response",
-            syncRequestId,
-            error: error instanceof Error ? error.message : String(error),
-          });
-        }
-        break;
-      case "setDbtIntegration":
-        // Set dbt integration mode
-        try {
-          const { integrationType } = message as HandleCommandProps & {
-            integrationType: "core" | "fusion" | "cloud";
-          };
-
-          if (!integrationType) {
-            throw new Error("No integration type specified");
-          }
-
-          // Set the dbt integration configuration
-          const config = workspace.getConfiguration("dbt");
-          await config.update(
-            "dbtIntegration",
-            integrationType,
-            ConfigurationTarget.Workspace,
-          );
-
-          this.sendResponseToWebview({
-            command: "response",
-            syncRequestId,
-            data: { success: true },
-          });
-        } catch (error) {
-          this.dbtTerminal.error(
-            "setDbtIntegration",
-            "Error setting dbt integration",
             error,
           );
           this.sendResponseToWebview({
@@ -526,10 +472,6 @@ export class OnboardingPanel extends AltimateWebviewProvider {
           const config = workspace.getConfiguration("dbt");
           const apiKey = config.get<string>("altimateAiKey");
           const instanceName = config.get<string>("altimateInstanceName");
-          const dbtIntegrationType = config.get<string>(
-            "dbtIntegration",
-            "core",
-          );
 
           const isConfigured = !!(apiKey && instanceName);
           const altimateUrl = config.get<string>("altimateUrl", "");
@@ -539,7 +481,6 @@ export class OnboardingPanel extends AltimateWebviewProvider {
             syncRequestId,
             data: {
               isConfigured,
-              dbtIntegrationType,
               instanceName: instanceName || "",
               apiKey: apiKey || "",
               altimateUrl,
