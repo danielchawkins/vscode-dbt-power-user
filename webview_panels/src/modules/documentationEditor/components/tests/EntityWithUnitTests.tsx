@@ -1,21 +1,10 @@
-import { AddIcon, InfoCircleIcon } from "@assets/icons";
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
+import { InfoCircleIcon } from "@assets/icons";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import { DBTUnitTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
-import { TelemetryEvents } from "@telemetryEvents";
-import {
-  Button,
-  Drawer,
-  DrawerRef,
-  IconButton,
-  Stack,
-  Tag,
-  Tooltip,
-} from "@uicore";
+import { Button, Drawer, DrawerRef, Stack, Tag, Tooltip } from "@uicore";
 import { useRef, useState } from "react";
 import classes from "../../styles.module.scss";
-import { sendTelemetryEvent } from "../telemetry";
 import UnitTestDetails from "./UnitTestDetails";
 
 interface Props {
@@ -47,26 +36,6 @@ const EntityWithUnitTests = ({ title, unitTests }: Props): JSX.Element => {
     ? unitTests
     : (unitTests ?? []).slice(0, MaxVisibleUnitTests);
   const remainingTests = (unitTests ?? []).length - MaxVisibleUnitTests;
-
-  const handleGenerateClick = () => {
-    sendTelemetryEvent(
-      TelemetryEvents["DocumentationEditor/UnitTestGenerateClick"],
-      { entityName: title },
-    );
-    const model = currentDocsData?.name ?? title;
-    executeRequestInAsync("openAltimateCodeChatForUnitTest", {
-      model,
-      initialMessage: `Analyze the "${model}" dbt model and propose unit tests for it.
-
-Steps:
-1. Review the model's SQL transformation logic and any existing data tests
-2. Identify 2–4 key business logic scenarios worth covering
-3. Show the proposed unit test YAML blocks (dbt 1.8+ format) for each scenario
-
-Do NOT write anything to project files yet. Present the proposals and wait for my approval — I will confirm which tests to add before you make any changes.`,
-      title: `Add Unit Tests for model: ${model}`,
-    });
-  };
 
   return (
     <>
@@ -127,14 +96,6 @@ Do NOT write anything to project files yet. Present the proposals and wait for m
                 {remainingTests} {remainingTests > 1 ? "tests" : "test"} +
               </Button>
             ) : null}
-            <IconButton
-              onClick={handleGenerateClick}
-              color="secondary"
-              className={classes.btnAddTest}
-              title={`Generate unit tests for ${title}`}
-            >
-              <AddIcon />
-            </IconButton>
           </div>
         </Stack>
       </div>

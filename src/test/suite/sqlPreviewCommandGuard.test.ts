@@ -1,8 +1,8 @@
 import { describe, expect, it } from "@jest/globals";
 
 /**
- * Customer UAT surfaced an error when "Validate SQL" or "Visualize SQL (Beta)"
- * was run with the compiled-SQL preview pane focused:
+ * Customer UAT surfaced an error when "Validate SQL" was run with the
+ * compiled-SQL preview pane focused:
  *
  *   ENOPRO: No file system provider found for resource
  *   'query-preview:/…/customers.sql'
@@ -14,23 +14,20 @@ import { describe, expect, it } from "@jest/globals";
  * content providers — it looks up a `FileSystemProvider`, finds none for
  * `query-preview`, and throws `ENOPRO`.
  *
- *   - validateSql.ts          — read at L131; an existing scheme guard sat
- *                               AFTER the read, so it never prevented the crash.
- *   - sqlLineagePanel.ts       — read at L159; no guard at all. The command
- *                               handler lives in commands/index.ts.
+ *   - validateSql.ts — read at L131; an existing scheme guard sat after the
+ *     read, so it never prevented the crash.
  *
  * The fix has two layers, both characterized below:
  *   1. Menu: `editor/context` when-clause gains `resourceScheme != 'query-preview'`
  *      so the items don't appear on the preview pane.
- *   2. Handler: each command early-returns with an info toast when the active
- *      editor is the preview, before any `workspace.fs` call (covers the
- *      Command Palette path, which has no when-gating).
+ *   2. Handler: the command early-returns with an info toast when the active
+ *      editor is the preview, before any `workspace.fs` call.
  *
  * These tests mirror the guard logic (same characterization style as
  * bigQueryCostEstimate.test.ts) rather than instantiating the heavy command
  * classes / VS Code host.
  */
-describe("compiled-preview guard for Validate SQL / Visualize SQL", () => {
+describe("compiled-preview guard for Validate SQL", () => {
   // SqlPreviewContentProvider.SCHEME
   const PREVIEW_SCHEME = "query-preview";
 
@@ -51,7 +48,7 @@ describe("compiled-preview guard for Validate SQL / Visualize SQL", () => {
     }
 
     /**
-     * Post-fix (both handlers): the scheme is checked at the top, before any
+     * Post-fix: the scheme is checked at the top, before any
      * `workspace.fs` call. Preview → info toast + early return; anything else
      * proceeds to read.
      */
@@ -93,8 +90,7 @@ describe("compiled-preview guard for Validate SQL / Visualize SQL", () => {
 
   describe("Layer 1 — editor/context when-clause visibility", () => {
     /**
-     * Mirrors the when-clause applied to dbtPowerUser.validateSql and
-     * dbtPowerUser.sqlLineage:
+     * Mirrors the when-clause applied to dbtPowerUser.validateSql:
      *   resourceLangId =~ /^sql$|^jinja-sql$/ && resourceScheme != 'query-preview'
      */
     function menuItemVisible(langId: string, scheme: string): boolean {

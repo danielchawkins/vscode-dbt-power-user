@@ -1,5 +1,4 @@
-import { Citation, ConversationGroup, DbtDocsShareDetails } from "@lib";
-import { GenerationDBDataProps } from "../types";
+import { ConversationGroup, DbtDocsShareDetails } from "@lib";
 
 export enum Source {
   DATABASE = "DATABASE",
@@ -15,7 +14,6 @@ export interface DBTDocumentationColumn extends MetadataColumn {
   description?: string;
   generated: boolean;
   source: Source;
-  citations?: Citation[];
 }
 
 export interface DBTDocumentation {
@@ -23,11 +21,9 @@ export interface DBTDocumentation {
   description: string;
   columns: DBTDocumentationColumn[];
   generated: boolean;
-  aiEnabled: boolean;
   patchPath?: string;
   uniqueId: string;
   resource_type?: string;
-  citations?: Citation[];
 }
 
 export interface TestMetadataKwArgs {
@@ -72,15 +68,11 @@ export interface DBTUnitTest {
 }
 
 export interface DocumentationStateProps {
-  docUpdatedForModel?: string;
-  docUpdatedForColumns: string[];
   incomingDocsData?: { docs?: DBTDocumentation; tests?: DBTModelTest[] };
   currentDocsData?: DBTDocumentation;
   currentDocsTests?: DBTModelTest[];
   currentUnitTests?: DBTUnitTest[];
   project?: string;
-  generationHistory: GenerationDBDataProps[];
-  userInstructions: DocsGenerateUserInstructions;
   insertedEntityName?: string;
   conversations: Record<DbtDocsShareDetails["share_id"], ConversationGroup[]>;
   showConversationsRightPanel: boolean;
@@ -105,27 +97,4 @@ export interface DBTModelTest {
     name: string;
     namespace?: string;
   };
-}
-
-export interface DocsGenerateFollowupInstructions {
-  instruction?: string;
-}
-
-export interface DocsGenerateUserInstructions {
-  prompt_hint?: string;
-  language?: string;
-  persona?: string;
-}
-
-export interface DocsGenerateModelRequestV2 {
-  user_instructions?: DocsGenerateUserInstructions;
-  follow_up_instructions?: DocsGenerateFollowupInstructions;
-  description?: string;
-  columns?: string[];
-}
-
-export interface DocsGenerateColumnRequestV2 {
-  user_instructions: DocsGenerateUserInstructions;
-  description?: string;
-  columnName: string;
 }

@@ -20,7 +20,6 @@ import DocumentationEditor from "./DocumentationEditor";
 import documentationSlice, {
   initialState,
   setDocBlocks,
-  setGenerationsHistory,
   setIncomingDocsData,
   setInsertedEntityName,
   setMissingDocumentationMessage,
@@ -36,18 +35,16 @@ import documentationSlice, {
   updateCurrentUnitTests,
   updateSelectedConversationGroup,
   updateSingleDocsPropRightPanel,
-  updateUserInstructions,
 } from "./state/documentationSlice";
 import {
   DBTDocumentation,
   DBTModelTest,
   DBTUnitTest,
   DocBlock,
-  DocsGenerateUserInstructions,
   MetadataColumn,
 } from "./state/types";
 import { ContextProps } from "./types";
-import { getGenerationsInModel, isStateDirty } from "./utils";
+import { isStateDirty } from "./utils";
 
 export const DocumentationContext = createContext<ContextProps>({
   state: initialState,
@@ -225,7 +222,6 @@ const DocumentationProvider = (): JSX.Element => {
             updateCurrentDocsData({
               description: params.description,
               name: params.model,
-              isNewGeneration: true,
             }),
           );
           updateFocus(params.model);
@@ -235,7 +231,6 @@ const DocumentationProvider = (): JSX.Element => {
         dispatch(
           updateColumnsInCurrentDocsData({
             columns: [params as Partial<MetadataColumn>],
-            isNewGeneration: true,
           }),
         );
         updateFocus((params as Partial<MetadataColumn>).name);
@@ -245,32 +240,6 @@ const DocumentationProvider = (): JSX.Element => {
         break;
     }
   }, []);
-
-  const loadGenerationsHistory = (project: string, model: string) => {
-    getGenerationsInModel(project, model)
-      .then((data) => {
-        dispatch(setGenerationsHistory(data));
-      })
-      .catch((err) =>
-        panelLogger.error("error while loading generations history", err),
-      );
-  };
-
-  useEffect(() => {
-    if (!state.project || !state.currentDocsData?.name) {
-      return;
-    }
-
-    const userInstructions = localStorage.getItem("userInstructions");
-    if (userInstructions) {
-      dispatch(
-        updateUserInstructions(
-          JSON.parse(userInstructions) as DocsGenerateUserInstructions,
-        ),
-      );
-    }
-    loadGenerationsHistory(state.project, state.currentDocsData.name);
-  }, [state.project, state.currentDocsData?.name]);
 
   useEffect(() => {
     sendTelemetryEvent(TelemetryEvents["DocumentationEditor/Load"]);

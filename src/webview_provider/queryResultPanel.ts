@@ -26,7 +26,6 @@ import { inject } from "inversify";
 import { AltimateRequest } from "../altimate";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { AltimateAuthService } from "../services/altimateAuthService";
-import { AltimateCodeChatService } from "../services/altimateCodeChatService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import { UsersService } from "../services/usersService";
@@ -80,7 +79,6 @@ interface RenderError {
 interface InjectConfig {
   limit?: number;
   darkMode: boolean;
-  aiEnabled: boolean;
 }
 
 enum InboundCommand {
@@ -101,25 +99,10 @@ enum InboundCommand {
   ViewResultSet = "viewResultSet",
   OpenCodeInEditor = "openCodeInEditor",
   ClearQueryHistory = "clearQueryHistory",
-  TroubleshootWithAltimate = "troubleshootWithAltimate",
-  OpenAltimateCodeChat = "openAltimateCodeChat",
-  ExplainWithAltimate = "explainWithAltimate",
-  ProfileQueryWithAltimate = "profileQueryWithAltimate",
 }
 
 interface RecInfo {
   text: string;
-}
-
-interface RecSummary {
-  compiledSql: string;
-}
-
-interface RecTroubleshoot {
-  compiledSql: string;
-  rawSql: string;
-  errorMessage: string;
-  fileName?: string;
 }
 
 interface RecError {
@@ -148,24 +131,6 @@ interface QueryHistory {
   modelName: string;
 }
 
-// Pick a backtick fence long enough to survive any backtick sequence inside the
-// payload, so user-supplied SQL or error messages can't prematurely terminate
-// the Markdown code block we embed in the chat prompt.
-function fenceCodeBlock(content: string, language = ""): string {
-  const safe = content ?? "";
-  let fenceLength = 3;
-  const match = safe.match(/`{3,}/g);
-  if (match) {
-    for (const run of match) {
-      if (run.length >= fenceLength) {
-        fenceLength = run.length + 1;
-      }
-    }
-  }
-  const fence = "`".repeat(fenceLength);
-  return `${fence}${language}\n${safe}\n${fence}`;
-}
-
 export class QueryResultPanel extends AltimateWebviewProvider {
   public static readonly viewType = "dbtPowerUser.PreviewResults";
   protected viewPath = "/query-panel";
@@ -189,7 +154,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     protected queryManifestService: QueryManifestService,
     protected usersService: UsersService,
     protected altimateAuthService: AltimateAuthService,
-    altimateCodeChatService: AltimateCodeChatService,
   ) {
     super(
       dbtProjectContainer,
@@ -200,7 +164,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
       queryManifestService,
       usersService,
       altimateAuthService,
-      altimateCodeChatService,
     );
     this._disposables.push(
       window.onDidChangeActiveTextEditor(() => {
@@ -395,14 +358,12 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     }
   }
 
-  private async handleOpenCodeInEditor(message: {
-    code: string;
-    name: string;
-  }) {
-    commands.executeCommand("dbtPowerUser.createSqlFile", {
-      code: message?.code,
-      name: message?.name,
+  private async handleOpenCodeInEditor(message: { code: string }) {
+    const document = await workspace.openTextDocument({
+      language: "jinja-sql",
+      content: message.code,
     });
+    await window.showTextDocument(document);
   }
 
   /** Primary interface for WebviewView inbound communication */
@@ -449,7 +410,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
             );
             break;
           case InboundCommand.RunAdhocQuery:
-            commands.executeCommand("dbtPowerUser.createSqlFile", {});
+            await this.handleOpenCodeInEditor({ code: "" });
             break;
           case InboundCommand.ExecuteQueryFromActiveWindow:
             await this.executeQueryFromActiveWindow(message);
@@ -526,73 +487,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
             const config = message as RecOpenUrl;
             env.openExternal(Uri.parse(config.url));
             break;
-          case InboundCommand.OpenAltimateCodeChat:
-            try {
-              await commands.executeCommand("altimate.openChat");
-            } catch (err) {
-              window.showErrorMessage(
-                "Altimate Code is not available. Install the Datamates extension to use chat.",
-              );
-            }
-            break;
-          case InboundCommand.GetSummary: {
-            const summary = message as RecSummary;
-            const initialMessage = `Explain this query:\n\n${fenceCodeBlock(
-              summary.compiledSql,
-              "sql",
-            )}`;
-            const opened = await this.altimateCodeChatService.openChat({
-              initialMessage,
-              title: "Explain query",
-            });
-            if (opened) {
-              this.telemetry.sendTelemetryEvent("SummarizeQueryWithAltimate");
-            }
-            break;
-          }
-          case InboundCommand.TroubleshootWithAltimate: {
-            const troubleshoot = message as RecTroubleshoot;
-            const sql = troubleshoot.compiledSql || troubleshoot.rawSql;
-            const initialMessage =
-              `I ran this query and it failed.\n\n` +
-              `Query:\n${fenceCodeBlock(sql, "sql")}\n\n` +
-              `Error:\n${fenceCodeBlock(troubleshoot.errorMessage)}\n\n` +
-              `Help me troubleshoot and fix this.`;
-            const title = troubleshoot.fileName
-              ? `Troubleshoot: ${troubleshoot.fileName}`
-              : "Troubleshoot: query error";
-            const opened = await this.altimateCodeChatService.openChat({
-              initialMessage,
-              title,
-            });
-            if (opened) {
-              this.telemetry.sendTelemetryEvent(
-                "TroubleshootQueryWithAltimate",
-              );
-            }
-            break;
-          }
-          case InboundCommand.ExplainWithAltimate: {
-            await commands.executeCommand("dbtPowerUser.explainWithAltimate");
-            break;
-          }
-          case InboundCommand.ProfileQueryWithAltimate: {
-            const { compiledSql, rawSql, fileName } = message as any;
-            const sql = compiledSql || rawSql;
-            const initialMessage =
-              `Profile this query — identify performance bottlenecks, ` +
-              `data distribution issues, and optimization opportunities.\n\n` +
-              `Query:\n${fenceCodeBlock(sql, "sql")}`;
-            const title = fileName ? `Profile: ${fileName}` : "Profile query";
-            const opened = await this.altimateCodeChatService.openChat({
-              initialMessage,
-              title,
-            });
-            if (opened) {
-              this.telemetry.sendTelemetryEvent("ProfileQueryWithAltimate");
-            }
-            break;
-          }
           case InboundCommand.SetContext:
             this.dbtProjectContainer.setToGlobalState(
               message.key,
@@ -727,7 +621,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
             ColorThemeKind.Light,
             ColorThemeKind.HighContrastLight,
           ].includes(window.activeColorTheme.kind),
-          aiEnabled: this.altimate.enabled(),
         }),
       });
     }

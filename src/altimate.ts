@@ -3,8 +3,6 @@ import {
   ColumnMetaData,
   DBTConfiguration,
   DBTTerminal,
-  NodeMetaData,
-  SourceMetaData,
 } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import type { RequestInit } from "node-fetch";
@@ -59,118 +57,11 @@ export interface DBTColumnLineageResponse {
   errors_dict?: Record<string, string[]>;
 }
 
-interface SQLLineageRequest {
-  model_dialect: string;
-  model_info: { model_node: ModelNode }[];
-  compiled_sql: string;
-  session_id: string;
-}
-
-export type SqlLineageDetails = Record<
-  string,
-  {
-    name: string;
-    type: string;
-    nodeType?: string;
-    nodeId?: string;
-    sql: string;
-    columns: { name: string; datatype?: string; expression?: string }[];
-  }
->;
-type SqlLineageResponse = {
-  tableEdges: [string, string][];
-  details: SqlLineageDetails;
-  nodePositions?: Record<string, [number, number]>;
-};
-
-// `@altimateai/dbt-integration` preserves dbt's manifest convention and exposes
-// `unique_id` (snake_case) on NodeMetaData / SourceMetaData. The /sqltomodel
-// backend Pydantic schema expects `uniqueId` (camelCase) — only that one field.
-// Map at the HTTP boundary instead of asking the backend to alias both shapes,
-// so the wire contract stays anchored at a single TS-owned mapper.
-type BackendModelNode = NodeMetaData & { uniqueId: string };
-type BackendSourceMetaData = SourceMetaData & { uniqueId: string };
-
-export const toBackendModelNode = (n: NodeMetaData): BackendModelNode => ({
-  ...n,
-  uniqueId: n.unique_id,
-});
-export const toBackendSourceMetaData = (
-  s: SourceMetaData,
-): BackendSourceMetaData => ({ ...s, uniqueId: s.unique_id });
-
-interface SQLToModelRequest {
-  sql: string;
-  adapter: string;
-  models: BackendModelNode[];
-  sources: BackendSourceMetaData[];
-}
-
-interface DBTProjectHealthConfig {
-  id: number;
-  name: string;
-  description: string;
-  created_on: string;
-  config: Record<string, unknown>;
-  config_schema: unknown[];
-}
-
-interface DBTProjectHealthConfigResponse {
-  items: DBTProjectHealthConfig[];
-}
-
-export interface SQLToModelResponse {
-  sql: string;
-}
-
 interface OnewayFeedback {
   feedback_value: "good" | "bad";
   feedback_text: string;
   feedback_src: "dbtpu-extension";
   data: any;
-}
-
-export enum QueryAnalysisType {
-  EXPLAIN = "explain",
-  FIX = "fix",
-  MODIFY = "modify",
-  TRANSLATE = "translate",
-}
-
-export enum QueryAnalysisChatType {
-  SYSTEM = "SystemMessage",
-  HUMAN = "HumanMessage",
-}
-
-interface QueryAnalysisChat {
-  type: QueryAnalysisChatType;
-  content: string;
-  additional_kwargs?: Record<string, unknown>;
-}
-
-export interface QueryTranslateRequest {
-  sql: string;
-  target_dialect: string;
-  source_dialect: string;
-}
-
-export interface QueryTranslateExplanationRequest {
-  user_sql: string;
-  translated_sql: string;
-  target_dialect: string;
-  source_dialect: string;
-}
-
-interface DbtModel {
-  model_name: string;
-  model_description?: string;
-  compiled_sql?: string;
-  columns: {
-    column_name: string;
-    description?: string;
-    data_type?: string;
-  }[];
-  adapter?: string;
 }
 
 export interface QueryBookmark {
@@ -182,49 +73,6 @@ export interface QueryBookmark {
   created_on: string;
   updated_on: string;
   tags: { id: number; tag: string }[];
-}
-
-export interface QueryAnalysisRequest {
-  session_id: string;
-  job_type: QueryAnalysisType;
-  model: DbtModel;
-  user_request?: string; // required for modify query
-  history?: QueryAnalysisChat[];
-}
-
-export interface CreateDbtTestRequest {
-  session_id: string;
-  model: DbtModel;
-  column_name?: string;
-  user_request?: string;
-}
-
-interface DocsGenerateModelRequestV2 {
-  columns: string[];
-  dbt_model: DbtModel;
-  user_instructions?: {
-    prompt_hint: string;
-    language: string;
-    persona: string;
-  };
-  follow_up_instructions?: {
-    instruction: string;
-  };
-  prompt_hint?: string;
-  gen_model_description: boolean;
-  column_index_count: number | undefined;
-  session_id: string | undefined;
-  is_bulk_gen: boolean;
-}
-
-export interface DocsGenerateResponse {
-  column_descriptions?: {
-    column_name: string;
-    column_description: string;
-    column_citations?: { id: string; content: string }[];
-  }[];
-  model_description?: string;
-  model_citations?: { id: string; content: string }[];
 }
 
 export interface DBTCoreIntegrationEnvironment {
@@ -392,18 +240,8 @@ export class AltimateRequest {
       endpoint = endpoint.split("?")[0];
       if (
         [
-          /^dbtconfig\/datapilot_version\/.*$/,
-          /^dbtconfig\/.*\/download$/,
-        ].some((regex) => regex.test(endpoint))
-      ) {
-        return;
-      }
-      if (
-        [
           "auth_health",
-          "dbtconfig",
           "dbt/v1/fetch_artifact_url",
-          "dbtconfig/extension/start_scan",
           "dbt/v1/project_integrations",
           "dbt/v1/defer_to_prod_event",
           "dbt/v3/validate-credentials",
@@ -453,13 +291,6 @@ export class AltimateRequest {
     return true;
   }
 
-  async generateModelDocsV2(docsGenerate: DocsGenerateModelRequestV2) {
-    return this.fetch<DocsGenerateResponse>("dbt/v2", {
-      method: "POST",
-      body: JSON.stringify(docsGenerate),
-    });
-  }
-
   async sendFeedback(feedback: OnewayFeedback) {
     return await this.fetch<FeedbackResponse>("feedbacks/ai/fb", {
       method: "POST",
@@ -476,13 +307,6 @@ export class AltimateRequest {
 
   async exportLineage(req: { name: string; lineage_data: unknown }) {
     return this.fetch<{ url: string }>("dbt/v4/export-lineage", {
-      method: "POST",
-      body: JSON.stringify(req),
-    });
-  }
-
-  async runModeller(req: SQLToModelRequest) {
-    return this.fetch<SQLToModelResponse>("dbt/v1/sqltomodel", {
       method: "POST",
       body: JSON.stringify(req),
     });
@@ -595,26 +419,6 @@ export class AltimateRequest {
     );
   }
 
-  async getHealthcheckConfigs() {
-    return this.fetch<DBTProjectHealthConfigResponse>(
-      `dbtconfig${this.getQueryString({ size: "100" })}`,
-    );
-  }
-
-  async logDBTHealthcheckConfig(configId: string) {
-    return this.fetch(`dbtconfig/${configId}/download`);
-  }
-
-  async logDBTHealthcheckStartScan() {
-    return this.fetch(`dbtconfig/extension/start_scan`);
-  }
-
-  async getDatapilotVersion(extension_version: string) {
-    return this.fetch<{ altimate_datapilot_version: string }>(
-      `dbtconfig/datapilot_version/${extension_version}`,
-    );
-  }
-
   async getUsersInTenant() {
     return await this.fetch<TenantUser[]>("users/chat");
   }
@@ -717,13 +521,6 @@ export class AltimateRequest {
 
   async getQueryBookmarks() {
     return await this.fetch<QueryBookmark[]>(`query/bookmark`);
-  }
-
-  async sqlLineage(req: SQLLineageRequest) {
-    return this.fetch<SqlLineageResponse>("dbt/v3/sql_lineage", {
-      method: "POST",
-      body: JSON.stringify(req),
-    });
   }
 
   async bulkDocsPropCredit(req: BulkDocsPropRequest) {

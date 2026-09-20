@@ -1,12 +1,9 @@
-import { Citation } from "@lib";
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { GenerationDBDataProps } from "../types";
 import { isStateDirty, mergeCurrentAndIncomingDocumentationColumns } from "../utils";
 import {
   DBTDocumentation,
   DBTModelTest,
   DBTUnitTest,
-  DocsGenerateUserInstructions,
   DocumentationStateProps,
   MetadataColumn,
 } from "./types";
@@ -19,15 +16,7 @@ export const initialState = {
   // read-only. Revisit if unit tests become editable.
   currentUnitTests: undefined,
   project: undefined,
-  generationHistory: [],
   insertedEntityName: undefined,
-  docUpdatedForModel: undefined,
-  docUpdatedForColumns: [],
-  userInstructions: {
-    language: undefined,
-    persona: undefined,
-    prompt_hint: undefined,
-  },
   conversations: {},
   showConversationsRightPanel: false,
   collaborationEnabled: false,
@@ -144,13 +133,11 @@ const documentationSlice = createSlice({
     },
     updateCurrentDocsData: (
       state,
-      action: PayloadAction<(Partial<DBTDocumentation> & { isNewGeneration?: boolean }) | undefined>
+      action: PayloadAction<Partial<DBTDocumentation> | undefined>
     ) => {
       // incase of yml files, incoming docs data will be {}, so checking for keys length as well
       if (!action.payload || !Object.keys(action.payload).length) {
         state.currentDocsData = undefined;
-        state.docUpdatedForColumns = [];
-        state.docUpdatedForModel = undefined;
         return;
       }
       if (!action.payload.name) {
@@ -165,19 +152,9 @@ const documentationSlice = createSlice({
 
       // switching editor
       if (action.payload.name && state.currentDocsData?.name !== action.payload.name) {
-        state.docUpdatedForModel = undefined;
-        state.docUpdatedForColumns = [];
         // @ts-expect-error TODO fix this type
         state.currentDocsData = action.payload;
         return;
-      }
-
-      // If description is changed, then show coaching
-      if (
-        state.currentDocsData?.name === action.payload.name &&
-        state.currentDocsData.description !== action.payload.description
-      ) {
-        state.docUpdatedForModel = action.payload.name;
       }
 
       state.currentDocsData = { ...state.currentDocsData, ...action.payload };
@@ -204,22 +181,11 @@ const documentationSlice = createSlice({
       {
         payload: { columns },
       }: PayloadAction<{
-        columns: Partial<
-          MetadataColumn & {
-            description?: string;
-            citations?: Citation[];
-          }
-        >[];
-        isNewGeneration?: boolean;
+        columns: Partial<MetadataColumn & { description?: string }>[];
       }>
     ) => {
       if (!state.currentDocsData) {
-        state.docUpdatedForColumns = [];
         return;
-      }
-      const modifiedColumns = columns?.map(column => column.name).filter(Boolean) as string[];
-      if (modifiedColumns) {
-        state.docUpdatedForColumns = [...state.docUpdatedForColumns, ...modifiedColumns];
       }
       state.currentDocsData.columns = state.currentDocsData.columns.map(c => {
         const updatedColumn = columns.find(column => c.name === column.name);
@@ -228,20 +194,6 @@ const documentationSlice = createSlice({
         }
         return c;
       });
-    },
-    addToGenerationsHistory: (state, action: PayloadAction<GenerationDBDataProps[]>) => {
-      action.payload.forEach(history => {
-        state.generationHistory.push(history);
-      });
-    },
-    setGenerationsHistory: (state, action: PayloadAction<GenerationDBDataProps[]>) => {
-      state.generationHistory = action.payload;
-    },
-    resetGenerationsHistory: (state, _action: PayloadAction<undefined>) => {
-      state.generationHistory = [];
-    },
-    updateUserInstructions: (state, action: PayloadAction<DocsGenerateUserInstructions>) => {
-      state.userInstructions = { ...state.userInstructions, ...action.payload };
     },
   },
 });
@@ -253,10 +205,6 @@ export const {
   updateColumnsAfterSync,
   setProject,
   setDocBlocks,
-  addToGenerationsHistory,
-  resetGenerationsHistory,
-  setGenerationsHistory,
-  updateUserInstructions,
   setInsertedEntityName,
   updateCurrentDocsTests,
   updateCurrentUnitTests,

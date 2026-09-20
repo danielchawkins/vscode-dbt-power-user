@@ -17,7 +17,6 @@ import {
 import { useRef, useState } from "react";
 import classes from "../../styles.module.scss";
 import { sendTelemetryEvent } from "../telemetry";
-import CustomTestButton from "./CustomTestButton";
 import TestForm from "./forms/TestForm";
 import useTestFormSave, { TestOperation } from "./hooks/useTestFormSave";
 
@@ -88,9 +87,6 @@ const AddTest = ({ title, currentTests, type }: Props): JSX.Element => {
                     </Button>
                   </Tooltip>
                 ))}
-          <Tooltip title="Generate custom test">
-            <CustomTestButton column={title} type={type} />
-          </Tooltip>
         </Fade>
       ) : null}
       <Drawer ref={drawerRef}>

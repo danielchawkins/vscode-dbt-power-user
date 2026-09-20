@@ -13,7 +13,6 @@ import { AltimateRequest } from "../altimate";
 import { WalkthroughCommands } from "../commands/walkthroughCommands";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { AltimateAuthService } from "../services/altimateAuthService";
-import { AltimateCodeChatService } from "../services/altimateCodeChatService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import { UsersService } from "../services/usersService";
@@ -41,7 +40,6 @@ export class OnboardingPanel extends AltimateWebviewProvider {
     protected usersService: UsersService,
     protected walkthroughCommands: WalkthroughCommands,
     protected altimateAuthService: AltimateAuthService,
-    altimateCodeChatService: AltimateCodeChatService,
   ) {
     super(
       dbtProjectContainer,
@@ -52,7 +50,6 @@ export class OnboardingPanel extends AltimateWebviewProvider {
       queryManifestService,
       usersService,
       altimateAuthService,
-      altimateCodeChatService,
     );
 
     const t = this;

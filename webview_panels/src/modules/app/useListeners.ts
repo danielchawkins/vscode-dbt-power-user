@@ -107,17 +107,18 @@ const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
   useEffect(() => {
     window.addEventListener("message", onMesssage);
 
-    executeRequestInAsync("webview:ready", {});
+    if (window.viewPath !== "/docs-generator") {
+      executeRequestInAsync("webview:ready", {});
+      loadUsersDetails();
+      loadCurrentUser();
+      loadTenantInfo();
+    }
     const themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mu) => {
         panelLogger.debug("body classname modified!", mu);
         setTheme(mu.target as HTMLElement);
       });
     });
-
-    loadUsersDetails();
-    loadCurrentUser();
-    loadTenantInfo();
 
     themeObserver.observe(document.body, {
       attributes: true,

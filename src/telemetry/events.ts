@@ -7,7 +7,6 @@ export enum TelemetryEventPriority {
 
 // List of event names
 export enum TelemetryEvents {
-  "Datapilot/Feedback" = "Datapilot/Feedback",
   "DocumentationEditor/Load" = "DocumentationEditor/Load",
   "DocumentationEditor/SyncWithDBClick" = "DocumentationEditor/SyncWithDBClick",
   "DocumentationEditor/TestsTabClick" = "DocumentationEditor/TestsTabClick",
@@ -20,19 +19,10 @@ export enum TelemetryEvents {
   "DocumentationEditor/HelpDocumentationLinkInTestsClick" = "DocumentationEditor/HelpDocumentationLinkInTestsClick",
   "DocumentationEditor/HelpContactusLinkInTestsClick" = "DocumentationEditor/HelpContactusLinkInTestsClick",
   "DocumentationEditor/FeedbackClick" = "DocumentationEditor/FeedbackClick",
-  "DocumentationEditor/BulkGenerateTests" = "DocumentationEditor/BulkGenerateTests",
   "DocumentationEditor/SaveClick" = "DocumentationEditor/SaveClick",
   "DocumentationEditor/SaveBulk" = "DocumentationEditor/SaveBulk",
   "DocumentationEditor/SaveError" = "DocumentationEditor/SaveError",
   "DocumentationEditor/SaveNewFilePathSelect" = "DocumentationEditor/SaveNewFilePathSelect",
-  "DocumentationEditor/BulkGenerateAllClick" = "DocumentationEditor/BulkGenerateAllClick",
-  "DocumentationEditor/BulkGenerateAllError" = "DocumentationEditor/BulkGenerateAllError",
-  "DocumentationEditor/BulkGenerateMissingColumnsClick" = "DocumentationEditor/BulkGenerateMissingColumnsClick",
-  "DocumentationEditor/BulkGenerateMissingColumnsError" = "DocumentationEditor/BulkGenerateMissingColumnsError",
-  "DocumentationEditor/GenerateDescForModelClick" = "DocumentationEditor/GenerateDescForModelClick",
-  "DocumentationEditor/GenerateDescForColumnClick" = "DocumentationEditor/GenerateDescForColumnClick",
-  "DocumentationEditor/GenerateDescByDatapilotForModelClick" = "DocumentationEditor/GenerateDescByDatapilotForModelClick",
-  "DocumentationEditor/GenerateDescByDatapilotForColumnClick" = "DocumentationEditor/GenerateDescByDatapilotForColumnClick",
   "DocumentationEditor/ColumnTestClick" = "DocumentationEditor/ColumnTestClick",
   "DocumentationEditor/ModelTestClick" = "DocumentationEditor/ModelTestClick",
   "DocumentationEditor/AddTestClick" = "DocumentationEditor/AddTestClick",

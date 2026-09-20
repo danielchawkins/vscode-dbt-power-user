@@ -4,7 +4,6 @@ import * as path from "path";
 import {
   Diagnostic,
   Disposable,
-  env,
   EventEmitter,
   FileSystemWatcher,
   languages,
@@ -294,12 +293,6 @@ export class DBTWorkspaceFolder implements Disposable {
           error.message,
         );
         yamlDiagnostic.source = "dbt Power User";
-        yamlDiagnostic.code = {
-          value: "Fix with Altimate Code",
-          target: Uri.parse(
-            `${env.uriScheme}://innoverio.vscode-dbt-power-user/troubleshoot?source=dbt&error=${encodeURIComponent(error.message)}`,
-          ),
-        };
         this.projectDiscoveryDiagnostics.set(
           Uri.joinPath(uri, DBT_PROJECT_FILE),
           [yamlDiagnostic],

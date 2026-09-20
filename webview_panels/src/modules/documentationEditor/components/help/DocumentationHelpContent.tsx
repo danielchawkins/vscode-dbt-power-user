@@ -53,24 +53,6 @@ const DocumentationHelpContent = ({
         types.
       </p>
       <p>
-        <b>Generate Documentation:</b> This functionality requires an API key.
-        You can generate descriptions for models and columns using the generate
-        button. You can also bulk generate in a single action using the “Bulk
-        actions” button. If you want to change settings like language, or
-        persona, please use the “Settings” button in the right top corner.{" "}
-      </p>
-      <p>
-        If the description is present already, and you click the “regenerate”
-        icon, the documentation will be regenerated using your latest
-        instructions.
-      </p>
-      <p>
-        <b>Help Us Improve:</b> We&apos;re eager to hear from you! If
-        you&apos;ve tried the AI-generated documentation, let us know how it
-        worked. Your feedback helps us improve and ensures we offer a valuable
-        tool for the community.
-      </p>
-      <p>
         Need more help? Check out the&nbsp;
         <a
           onClick={() =>

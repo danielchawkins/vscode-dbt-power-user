@@ -8,16 +8,10 @@ import {
   DbtGenericTests,
   TestMetadataAcceptedValuesKwArgs,
 } from "@modules/documentationEditor/state/types";
-import { Citation, TaskLabels } from "@lib";
 
 const getRandomNumber = (maximum = 10, minimum = 5) =>
   Math.floor(Math.random() * (maximum - minimum + 1)) + minimum;
 
-export const CitationFactory = Sync.makeFactory<Citation>({
-  content: each(() => faker.lorem.paragraph()),
-  id: each(() => faker.string.uuid()),
-  taskLabel: TaskLabels.DocGen,
-});
 export const DBTDocumentationColumnFactory =
   Sync.makeFactory<DBTDocumentationColumn>({
     generated: faker.datatype.boolean(),
@@ -27,11 +21,9 @@ export const DBTDocumentationColumnFactory =
       i % 4 === 0 ? undefined : faker.lorem.paragraph(),
     ),
     type: each(() => faker.database.type()),
-    citations: CitationFactory.buildList(5),
   });
 
 export const DBTDocumentationFactory = Sync.makeFactory<DBTDocumentation>({
-  aiEnabled: true,
   columns: DBTDocumentationColumnFactory.buildList(20),
   description: each(() => faker.lorem.paragraph()),
   generated: faker.datatype.boolean(),

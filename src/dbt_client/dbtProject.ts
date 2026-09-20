@@ -4,7 +4,6 @@ import {
   Catalog,
   CATALOG_FILE,
   ColumnMetaData,
-  DataPilotHealtCheckParams,
   DBColumn,
   DBT_PROJECT_FILE,
   DBTCommand,
@@ -19,14 +18,12 @@ import {
   DBTTerminal,
   DeferConfig,
   extractOutputColumns,
-  HealthcheckArgs,
   isResourceHasDbColumns,
   isResourceNode,
   MANIFEST_FILE,
   NoCredentialsError,
   NodeMetaData,
   ParsedManifest,
-  ProjectHealthcheck,
   PythonException,
   QueryExecution,
   QueryExecutionResult,
@@ -46,7 +43,6 @@ import {
   DiagnosticCollection,
   DiagnosticSeverity,
   Disposable,
-  env,
   Event,
   EventEmitter,
   languages,
@@ -495,12 +491,6 @@ export class DBTProject implements Disposable {
       this.mapSeverityToVSCode(data.severity),
     );
     diagnostic.source = "dbt Power User";
-    diagnostic.code = {
-      value: "Fix with Altimate Code",
-      target: Uri.parse(
-        `${env.uriScheme}://innoverio.vscode-dbt-power-user/troubleshoot?source=dbt&error=${encodeURIComponent(data.message)}`,
-      ),
-    };
     return diagnostic;
   }
 
@@ -532,67 +522,6 @@ export class DBTProject implements Disposable {
         this.convertDiagnosticDataToVSCode(data),
       ),
     );
-  }
-
-  async performDatapilotHealthcheck(args: DataPilotHealtCheckParams) {
-    const manifestPath = this.getManifestPath();
-    if (!manifestPath) {
-      throw new Error(
-        `Unable to find manifest path for project ${this.getProjectName()}`,
-      );
-    }
-    const healthcheckArgs: HealthcheckArgs = { manifestPath };
-    if (args.configType === "Manual") {
-      healthcheckArgs.configPath = args.configPath;
-    } else {
-      if (args.configType === "Saas") {
-        healthcheckArgs.config = args.config;
-      }
-      if (
-        args.configType === "All" ||
-        args.config_schema.some((i) => i.files_required.includes("Catalog"))
-      ) {
-        const docsGenerateCommand =
-          this.dbtCommandFactory.createDocsGenerateCommand();
-        docsGenerateCommand.focus = false;
-        docsGenerateCommand.logToTerminal = false;
-        docsGenerateCommand.showProgress = false;
-        await this.unsafeGenerateDocsImmediately();
-        healthcheckArgs.catalogPath = this.getCatalogPath();
-        if (!healthcheckArgs.catalogPath) {
-          throw new Error(
-            `Unable to find catalog path for project ${this.getProjectName()}`,
-          );
-        }
-      }
-    }
-    this.terminal.debug(
-      "performDatapilotHealthcheck",
-      "Performing healthcheck",
-      healthcheckArgs,
-    );
-    // Create isolated Python bridge for healthcheck
-    const healthCheckThread = this.executionInfrastructure.createPythonBridge(
-      this.projectRoot.fsPath,
-    );
-
-    let projectHealthcheck: ProjectHealthcheck;
-    try {
-      await healthCheckThread.ex`from dbt_utils import *`;
-      projectHealthcheck = await healthCheckThread.lock<ProjectHealthcheck>(
-        (python) =>
-          python!`to_dict(project_healthcheck(${healthcheckArgs.manifestPath}, ${healthcheckArgs.catalogPath}, ${healthcheckArgs.configPath}, ${healthcheckArgs.config}, ${this.altimate.getAIKey()}, ${this.altimate.getInstanceName()}, ${this.altimate.getAltimateUrl()}))`,
-      );
-    } finally {
-      await this.executionInfrastructure.closePythonBridge(healthCheckThread);
-    }
-    // temp fix: ideally datapilot should return absolute path
-    for (const key in projectHealthcheck.model_insights) {
-      for (const item of projectHealthcheck.model_insights[key]) {
-        item.path = path.join(this.projectRoot.fsPath, item.original_file_path);
-      }
-    }
-    return projectHealthcheck;
   }
 
   async initialize(): Promise<void> {
