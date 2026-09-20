@@ -7,8 +7,8 @@ src/**
 .gitignore
 vsc-extension-quickstart.md
 test-fixtures/**
-**/tsconfig.json
-**/.eslintrc.json
+**/tsconfig*.json
+eslint.config.cjs
 **/*.map
 **/*.ts
 **/*.node

@@ -5,11 +5,7 @@ import {
   DBTDocumentationFactory,
   DBTDocumentationTestsFactory,
 } from "@testUtils";
-import { withReactContext } from "storybook-react-context";
-import DocumentationEditor from "./DocumentationEditor";
-import DocumentationProvider, {
-  DocumentationContext,
-} from "./DocumentationProvider";
+import DocumentationProvider from "./DocumentationProvider";
 // import {
 //   aiLearningsFactory,
 //   coachAiResponseFactory,
@@ -33,14 +29,12 @@ export default meta;
 
 export const DefaultHelpView = {
   render: (): JSX.Element => {
-    return <DocumentationEditor />;
+    return (
+      <TeamMateProvider>
+        <DocumentationProvider />
+      </TeamMateProvider>
+    );
   },
-  decorators: [
-    withReactContext({
-      Context: DocumentationContext,
-      initialState: { state: {} },
-    }),
-  ],
 };
 
 const docsDataForTests = DBTDocumentationFactory.build();

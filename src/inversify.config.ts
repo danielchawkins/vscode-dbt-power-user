@@ -42,7 +42,7 @@ import {
   TestParser,
   UnitTestParser,
 } from "@altimateai/dbt-integration";
-import { Container, interfaces } from "inversify";
+import { Container, Factory, ResolutionContext } from "inversify";
 import { Event, EventEmitter, Memento, Uri, WorkspaceFolder } from "vscode";
 import { AltimateRequest } from "./altimate";
 import { DBTProject } from "./dbt_client/dbtProject";
@@ -143,67 +143,47 @@ container
   .toDynamicValue(() => new ChildrenParentParser());
 container
   .bind(NodeParser)
-  .toDynamicValue(
-    (context) => new NodeParser(context.container.get("DBTTerminal")),
-  );
+  .toDynamicValue((context) => new NodeParser(context.get("DBTTerminal")));
 container
   .bind(MacroParser)
-  .toDynamicValue(
-    (context) => new MacroParser(context.container.get("DBTTerminal")),
-  );
+  .toDynamicValue((context) => new MacroParser(context.get("DBTTerminal")));
 container
   .bind(MetricParser)
-  .toDynamicValue(
-    (context) => new MetricParser(context.container.get("DBTTerminal")),
-  );
+  .toDynamicValue((context) => new MetricParser(context.get("DBTTerminal")));
 container
   .bind(SemanticModelParser)
   .toDynamicValue(
-    (context) => new SemanticModelParser(context.container.get("DBTTerminal")),
+    (context) => new SemanticModelParser(context.get("DBTTerminal")),
   );
 container
   .bind(GraphParser)
-  .toDynamicValue(
-    (context) => new GraphParser(context.container.get("DBTTerminal")),
-  );
+  .toDynamicValue((context) => new GraphParser(context.get("DBTTerminal")));
 container
   .bind(SourceParser)
-  .toDynamicValue(
-    (context) => new SourceParser(context.container.get("DBTTerminal")),
-  );
+  .toDynamicValue((context) => new SourceParser(context.get("DBTTerminal")));
 container
   .bind(TestParser)
-  .toDynamicValue(
-    (context) => new TestParser(context.container.get("DBTTerminal")),
-  );
+  .toDynamicValue((context) => new TestParser(context.get("DBTTerminal")));
 container
   .bind(UnitTestParser)
-  .toDynamicValue(
-    (context) => new UnitTestParser(context.container.get("DBTTerminal")),
-  );
+  .toDynamicValue((context) => new UnitTestParser(context.get("DBTTerminal")));
 container
   .bind(ExposureParser)
-  .toDynamicValue(
-    (context) => new ExposureParser(context.container.get("DBTTerminal")),
-  );
+  .toDynamicValue((context) => new ExposureParser(context.get("DBTTerminal")));
 container
   .bind(FunctionParser)
-  .toDynamicValue(
-    (context) => new FunctionParser(context.container.get("DBTTerminal")),
-  );
+  .toDynamicValue((context) => new FunctionParser(context.get("DBTTerminal")));
 container
   .bind(DocParser)
-  .toDynamicValue(
-    (context) => new DocParser(context.container.get("DBTTerminal")),
-  );
+  .toDynamicValue((context) => new DocParser(context.get("DBTTerminal")));
 container
   .bind(ModelDepthParser)
   .toDynamicValue(
     (context) =>
       new ModelDepthParser(
-        context.container.get("DBTTerminal"),
-        context.container.get(DbtIntegrationClient),
-        context.container.get("DBTConfiguration"),
+        context.get("DBTTerminal"),
+        context.get(DbtIntegrationClient),
+        context.get("DBTConfiguration"),
       ),
   );
 
@@ -220,46 +200,44 @@ container
   .inSingletonScope();
 
 container
-  .bind<interfaces.Factory<PythonDBTCommandExecutionStrategy>>(
+  .bind<Factory<PythonDBTCommandExecutionStrategy, [string]>>(
     "Factory<PythonDBTCommandExecutionStrategy>",
   )
-  .toFactory<PythonDBTCommandExecutionStrategy, [string]>(
-    (context: interfaces.Context) => {
-      return (projectRoot: string) => {
-        const { container } = context;
-        const baseConfig = container.get<DBTConfiguration>("DBTConfiguration");
-        // Create a per-project config that returns the correct working directory
-        // so that PythonDBTCommandExecutionStrategy resolves the right .env file
-        const projectConfig = Object.create(baseConfig) as DBTConfiguration;
-        projectConfig.getWorkingDirectory = () => projectRoot;
-        return new PythonDBTCommandExecutionStrategy(
-          container.get(CommandProcessExecutionFactory),
-          container.get("RuntimePythonEnvironment"),
-          container.get("DBTTerminal"),
-          projectConfig,
-        );
-      };
-    },
-  );
+  .toFactory((context: ResolutionContext) => {
+    return (projectRoot: string) => {
+      const container = context;
+      const baseConfig = container.get<DBTConfiguration>("DBTConfiguration");
+      // Create a per-project config that returns the correct working directory
+      // so that PythonDBTCommandExecutionStrategy resolves the right .env file
+      const projectConfig = Object.create(baseConfig) as DBTConfiguration;
+      projectConfig.getWorkingDirectory = () => projectRoot;
+      return new PythonDBTCommandExecutionStrategy(
+        container.get(CommandProcessExecutionFactory),
+        container.get("RuntimePythonEnvironment"),
+        container.get("DBTTerminal"),
+        projectConfig,
+      );
+    };
+  });
 
 container.bind(DBTCommandExecutionInfrastructure).toDynamicValue((context) => {
   return new DBTCommandExecutionInfrastructure(
-    context.container.get("RuntimePythonEnvironment"),
-    context.container.get("DBTTerminal"),
+    context.get("RuntimePythonEnvironment"),
+    context.get("DBTTerminal"),
   );
 });
 
 container
   .bind(DBTCommandFactory)
   .toDynamicValue((context) => {
-    return new DBTCommandFactory(context.container.get("DBTConfiguration"));
+    return new DBTCommandFactory(context.get("DBTConfiguration"));
   })
   .inSingletonScope();
 
 container
   .bind(DbtCloudVariantDetector)
   .toDynamicValue((context) => {
-    return new DbtCloudVariantDetector(context.container.get("DBTTerminal"));
+    return new DbtCloudVariantDetector(context.get("DBTTerminal"));
   })
   .inSingletonScope();
 
@@ -268,9 +246,9 @@ container
   .bind(DBTCoreDetection)
   .toDynamicValue((context) => {
     return new DBTCoreDetection(
-      context.container.get("RuntimePythonEnvironment"),
-      context.container.get(CommandProcessExecutionFactory),
-      context.container.get("DBTTerminal"),
+      context.get("RuntimePythonEnvironment"),
+      context.get(CommandProcessExecutionFactory),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -279,8 +257,8 @@ container
   .bind(DBTCoreProjectDetection)
   .toDynamicValue((context) => {
     return new DBTCoreProjectDetection(
-      context.container.get(DBTCommandExecutionInfrastructure),
-      context.container.get("DBTTerminal"),
+      context.get(DBTCommandExecutionInfrastructure),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -301,9 +279,9 @@ container
   .bind(DBTCloudDetection)
   .toDynamicValue((context) => {
     return new DBTCloudDetection(
-      context.container.get(CommandProcessExecutionFactory),
-      context.container.get("RuntimePythonEnvironment"),
-      context.container.get("DBTTerminal"),
+      context.get(CommandProcessExecutionFactory),
+      context.get("RuntimePythonEnvironment"),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -349,8 +327,8 @@ container
   .bind(DBTCoreCommandDetection)
   .toDynamicValue((context) => {
     return new DBTCoreCommandDetection(
-      context.container.get("RuntimePythonEnvironment"),
-      context.container.get(CommandProcessExecutionFactory),
+      context.get("RuntimePythonEnvironment"),
+      context.get(CommandProcessExecutionFactory),
     );
   })
   .inSingletonScope();
@@ -359,8 +337,8 @@ container
   .bind(DBTCoreCommandProjectDetection)
   .toDynamicValue((context) => {
     return new DBTCoreCommandProjectDetection(
-      context.container.get(DBTCommandExecutionInfrastructure),
-      context.container.get("DBTTerminal"),
+      context.get(DBTCommandExecutionInfrastructure),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -404,9 +382,7 @@ container
 container
   .bind(CommandProcessExecutionFactory)
   .toDynamicValue((context) => {
-    return new CommandProcessExecutionFactory(
-      context.container.get("DBTTerminal"),
-    );
+    return new CommandProcessExecutionFactory(context.get("DBTTerminal"));
   })
   .inSingletonScope();
 
@@ -415,8 +391,8 @@ container
   .bind(AltimateHttpClient)
   .toDynamicValue((context) => {
     return new AltimateHttpClient(
-      context.container.get("DBTTerminal"),
-      context.container.get("DBTConfiguration"),
+      context.get("DBTTerminal"),
+      context.get("DBTConfiguration"),
     );
   })
   .inSingletonScope();
@@ -426,8 +402,8 @@ container
   .bind(DbtIntegrationClient)
   .toDynamicValue((context) => {
     return new DbtIntegrationClient(
-      context.container.get(AltimateHttpClient),
-      context.container.get("DBTTerminal"),
+      context.get(AltimateHttpClient),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -437,53 +413,53 @@ container
   .bind(AltimateRequest)
   .toDynamicValue((context) => {
     return new AltimateRequest(
-      context.container.get("DBTTerminal"),
-      context.container.get("DBTConfiguration"),
-      context.container.get(AltimateHttpClient),
+      context.get("DBTTerminal"),
+      context.get("DBTConfiguration"),
+      context.get(AltimateHttpClient),
     );
   })
   .inSingletonScope();
 
 container
-  .bind<interfaces.Factory<DBTDetection>>("Factory<DBTDetection>")
-  .toFactory<DBTDetection, [Memento | undefined]>(
-    (context: interfaces.Context) => {
-      return (globalState: Memento | undefined) => {
-        const { container } = context;
-        return new FusionVersionDetection(
-          container.get(CommandProcessExecutionFactory),
-          container.get("DBTTerminal"),
-          container.get("DBTConfiguration"),
-          globalState,
-        );
-      };
-    },
-  );
-
-container
-  .bind<interfaces.Factory<DBTProjectDetection>>("Factory<DBTProjectDetection>")
-  .toFactory<DBTProjectDetection, []>((context: interfaces.Context) => {
-    return () => {
-      return context.container.get(DBTFusionCommandProjectDetection);
+  .bind<Factory<DBTDetection, [Memento | undefined]>>("Factory<DBTDetection>")
+  .toFactory((context: ResolutionContext) => {
+    return (globalState: Memento | undefined) => {
+      const container = context;
+      return new FusionVersionDetection(
+        container.get(CommandProcessExecutionFactory),
+        container.get("DBTTerminal"),
+        container.get("DBTConfiguration"),
+        globalState,
+      );
     };
   });
 
 container
-  .bind<interfaces.Factory<DBTWorkspaceFolder>>("Factory<DBTWorkspaceFolder>")
-  .toFactory<
-    DBTWorkspaceFolder,
-    [
-      WorkspaceFolder,
-      EventEmitter<ManifestCacheChangedEvent>,
-      EventEmitter<ProjectRegisteredUnregisteredEvent>,
-    ]
-  >((context: interfaces.Context) => {
+  .bind<Factory<DBTProjectDetection, []>>("Factory<DBTProjectDetection>")
+  .toFactory((context: ResolutionContext) => {
+    return () => {
+      return context.get(DBTFusionCommandProjectDetection);
+    };
+  });
+
+container
+  .bind<
+    Factory<
+      DBTWorkspaceFolder,
+      [
+        WorkspaceFolder,
+        EventEmitter<ManifestCacheChangedEvent>,
+        EventEmitter<ProjectRegisteredUnregisteredEvent>,
+      ]
+    >
+  >("Factory<DBTWorkspaceFolder>")
+  .toFactory((context: ResolutionContext) => {
     return (
       workspaceFolder: WorkspaceFolder,
       _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
       _onProjectRegisteredUnregistered: EventEmitter<ProjectRegisteredUnregisteredEvent>,
     ) => {
-      const { container } = context;
+      const container = context;
       return new DBTWorkspaceFolder(
         container.get("Factory<DBTProject>"),
         container.get("Factory<DBTProjectDetection>"),
@@ -496,39 +472,37 @@ container
   });
 
 container
-  .bind<interfaces.Factory<DBTCommandExecutionStrategy>>(
+  .bind<Factory<DBTCommandExecutionStrategy, [string, string]>>(
     "Factory<CLIDBTCommandExecutionStrategy>",
   )
-  .toFactory<CLIDBTCommandExecutionStrategy, [string, string]>(
-    (context: interfaces.Context) => {
-      return (projectRoot: string, dbtPath: string) => {
-        const { container } = context;
-        return new CLIDBTCommandExecutionStrategy(
-          container.get(CommandProcessExecutionFactory),
-          container.get("RuntimePythonEnvironment"),
-          container.get("DBTTerminal"),
-          projectRoot,
-          dbtPath,
-        );
-      };
-    },
-  );
+  .toFactory((context: ResolutionContext) => {
+    return (projectRoot: string, dbtPath: string) => {
+      const container = context;
+      return new CLIDBTCommandExecutionStrategy(
+        container.get(CommandProcessExecutionFactory),
+        container.get("RuntimePythonEnvironment"),
+        container.get("DBTTerminal"),
+        projectRoot,
+        dbtPath,
+      );
+    };
+  });
 
 container
-  .bind<interfaces.Factory<DBTCoreProjectIntegration>>(
-    "Factory<DBTCoreProjectIntegration>",
-  )
-  .toFactory<
-    DBTCoreProjectIntegration,
-    [string, DBTDiagnosticData[], DeferConfig, () => void]
-  >((context: interfaces.Context) => {
+  .bind<
+    Factory<
+      DBTCoreProjectIntegration,
+      [string, DBTDiagnosticData[], DeferConfig, () => void]
+    >
+  >("Factory<DBTCoreProjectIntegration>")
+  .toFactory((context: ResolutionContext) => {
     return (
       projectRoot: string,
       projectConfigDiagnostics: DBTDiagnosticData[],
       deferConfig: DeferConfig,
       onDiagnosticsChanged: () => void,
     ) => {
-      const { container } = context;
+      const container = context;
       const pythonStrategyFactory = container.get<
         (projectRoot: string) => PythonDBTCommandExecutionStrategy
       >("Factory<PythonDBTCommandExecutionStrategy>");
@@ -550,20 +524,20 @@ container
   });
 
 container
-  .bind<interfaces.Factory<DBTCoreProjectIntegration>>(
-    "Factory<DBTCoreCommandProjectIntegration>",
-  )
-  .toFactory<
-    DBTCoreCommandProjectIntegration,
-    [string, DBTDiagnosticData[], DeferConfig, () => void]
-  >((context: interfaces.Context) => {
+  .bind<
+    Factory<
+      DBTCoreProjectIntegration,
+      [string, DBTDiagnosticData[], DeferConfig, () => void]
+    >
+  >("Factory<DBTCoreCommandProjectIntegration>")
+  .toFactory((context: ResolutionContext) => {
     return (
       projectRoot: string,
       projectConfigDiagnostics: DBTDiagnosticData[],
       deferConfig: DeferConfig,
       onDiagnosticsChanged: () => void,
     ) => {
-      const { container } = context;
+      const container = context;
       const pythonStrategyFactory = container.get<
         (projectRoot: string) => PythonDBTCommandExecutionStrategy
       >("Factory<PythonDBTCommandExecutionStrategy>");
@@ -585,20 +559,20 @@ container
   });
 
 container
-  .bind<interfaces.Factory<DBTCoreProjectIntegration>>(
-    "Factory<DBTFusionCommandProjectIntegration>",
-  )
-  .toFactory<
-    DBTFusionCommandProjectIntegration,
-    [string, DBTDiagnosticData[], DeferConfig, () => void]
-  >((context: interfaces.Context) => {
+  .bind<
+    Factory<
+      DBTFusionCommandProjectIntegration,
+      [string, DBTDiagnosticData[], DeferConfig, () => void]
+    >
+  >("Factory<DBTFusionCommandProjectIntegration>")
+  .toFactory((context: ResolutionContext) => {
     return (
       projectRoot: string,
       projectConfigDiagnostics: DBTDiagnosticData[],
       deferConfig: DeferConfig,
       onDiagnosticsChanged: () => void,
     ) => {
-      const { container } = context;
+      const container = context;
       return new DBTFusionCommandProjectIntegration(
         container.get(DBTCommandExecutionInfrastructure),
         container.get(DBTCommandFactory),
@@ -615,20 +589,20 @@ container
   });
 
 container
-  .bind<interfaces.Factory<DBTCloudProjectIntegration>>(
-    "Factory<DBTCloudProjectIntegration>",
-  )
-  .toFactory<
-    DBTCloudProjectIntegration,
-    [string, DBTDiagnosticData[], DeferConfig, () => void]
-  >((context: interfaces.Context) => {
+  .bind<
+    Factory<
+      DBTCloudProjectIntegration,
+      [string, DBTDiagnosticData[], DeferConfig, () => void]
+    >
+  >("Factory<DBTCloudProjectIntegration>")
+  .toFactory((context: ResolutionContext) => {
     return (
       projectRoot: string,
       projectConfigDiagnostics: DBTDiagnosticData[],
       deferConfig: DeferConfig,
       onDiagnosticsChanged: () => void,
     ) => {
-      const { container } = context;
+      const container = context;
       const pythonStrategyFactory = container.get<
         (projectRoot: string) => PythonDBTCommandExecutionStrategy
       >("Factory<PythonDBTCommandExecutionStrategy>");
@@ -654,74 +628,74 @@ container
   });
 
 container
-  .bind<interfaces.Factory<DBTProjectIntegrationAdapter>>(
-    "Factory<DBTProjectIntegrationAdapter>",
+  .bind<
+    Factory<DBTProjectIntegrationAdapter, [string, DeferConfig | undefined]>
+  >("Factory<DBTProjectIntegrationAdapter>")
+  .toFactory((context: ResolutionContext) => {
+    return (projectRoot: string, deferConfig: DeferConfig | undefined) => {
+      const container = context;
+      return new DBTProjectIntegrationAdapter(
+        container.get("DBTConfiguration"),
+        container.get(DBTCommandFactory),
+        container.get("Factory<DBTCoreProjectIntegration>"),
+        container.get("Factory<DBTCloudProjectIntegration>"),
+        container.get("Factory<DBTFusionCommandProjectIntegration>"),
+        container.get("Factory<DBTCoreCommandProjectIntegration>"),
+        projectRoot,
+        deferConfig,
+        container.get(ChildrenParentParser),
+        container.get(NodeParser),
+        container.get(MacroParser),
+        container.get(MetricParser),
+        container.get(GraphParser),
+        container.get(SourceParser),
+        container.get(TestParser),
+        container.get(UnitTestParser),
+        container.get(ExposureParser),
+        container.get(FunctionParser),
+        container.get(DocParser),
+        container.get("DBTTerminal"),
+        container.get(ModelDepthParser),
+        container.get(SemanticModelParser),
+      );
+    };
+  });
+
+container
+  .bind<
+    Factory<DBTProject, [Uri, any, EventEmitter<ManifestCacheChangedEvent>]>
+  >("Factory<DBTProject>")
+  .toFactory((context: ResolutionContext) => {
+    return (
+      path: Uri,
+      projectConfig: any,
+      _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
+    ) => {
+      const container = context;
+      return new DBTProject(
+        container.get(PythonEnvironment),
+        container.get("Factory<DBTProjectLog>"),
+        container.get(DBTCommandFactory),
+        container.get("DBTTerminal"),
+        container.get(SharedStateService),
+        container.get(DBTCommandExecutionInfrastructure),
+        container.get("Factory<DBTProjectIntegrationAdapter>"),
+        container.get(AltimateRequest),
+        container.get(ValidationProvider),
+        container.get(AltimateAuthService),
+        container.get(RunHistoryService),
+        path,
+        projectConfig,
+        _onManifestChanged,
+      );
+    };
+  });
+
+container
+  .bind<Factory<DBTProjectLog, [Event<ProjectConfigChangedEvent>]>>(
+    "Factory<DBTProjectLog>",
   )
-  .toFactory<DBTProjectIntegrationAdapter, [string, DeferConfig | undefined]>(
-    (context: interfaces.Context) => {
-      return (projectRoot: string, deferConfig: DeferConfig | undefined) => {
-        const { container } = context;
-        return new DBTProjectIntegrationAdapter(
-          container.get("DBTConfiguration"),
-          container.get(DBTCommandFactory),
-          container.get("Factory<DBTCoreProjectIntegration>"),
-          container.get("Factory<DBTCloudProjectIntegration>"),
-          container.get("Factory<DBTFusionCommandProjectIntegration>"),
-          container.get("Factory<DBTCoreCommandProjectIntegration>"),
-          projectRoot,
-          deferConfig,
-          container.get(ChildrenParentParser),
-          container.get(NodeParser),
-          container.get(MacroParser),
-          container.get(MetricParser),
-          container.get(GraphParser),
-          container.get(SourceParser),
-          container.get(TestParser),
-          container.get(UnitTestParser),
-          container.get(ExposureParser),
-          container.get(FunctionParser),
-          container.get(DocParser),
-          container.get("DBTTerminal"),
-          container.get(ModelDepthParser),
-          container.get(SemanticModelParser),
-        );
-      };
-    },
-  );
-
-container
-  .bind<interfaces.Factory<DBTProject>>("Factory<DBTProject>")
-  .toFactory<DBTProject, [Uri, any, EventEmitter<ManifestCacheChangedEvent>]>(
-    (context: interfaces.Context) => {
-      return (
-        path: Uri,
-        projectConfig: any,
-        _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
-      ) => {
-        const { container } = context;
-        return new DBTProject(
-          container.get(PythonEnvironment),
-          container.get("Factory<DBTProjectLog>"),
-          container.get(DBTCommandFactory),
-          container.get("DBTTerminal"),
-          container.get(SharedStateService),
-          container.get(DBTCommandExecutionInfrastructure),
-          container.get("Factory<DBTProjectIntegrationAdapter>"),
-          container.get(AltimateRequest),
-          container.get(ValidationProvider),
-          container.get(AltimateAuthService),
-          container.get(RunHistoryService),
-          path,
-          projectConfig,
-          _onManifestChanged,
-        );
-      };
-    },
-  );
-
-container
-  .bind<interfaces.Factory<DBTProjectLog>>("Factory<DBTProjectLog>")
-  .toFactory<DBTProjectLog, [Event<ProjectConfigChangedEvent>]>(() => {
+  .toFactory(() => {
     return (onProjectConfigChanged: Event<ProjectConfigChangedEvent>) => {
       return new DBTProjectLog(onProjectConfigChanged);
     };
@@ -731,7 +705,7 @@ container
 container
   .bind(AltimateAuthService)
   .toDynamicValue((context) => {
-    return new AltimateAuthService(context.container.get("DBTConfiguration"));
+    return new AltimateAuthService(context.get("DBTConfiguration"));
   })
   .inSingletonScope();
 
@@ -739,9 +713,9 @@ container
   .bind(DbtLineageService)
   .toDynamicValue((context) => {
     return new DbtLineageService(
-      context.container.get(AltimateRequest),
-      context.container.get("DBTTerminal"),
-      context.container.get(QueryManifestService),
+      context.get(AltimateRequest),
+      context.get("DBTTerminal"),
+      context.get(QueryManifestService),
     );
   })
   .inSingletonScope();
@@ -750,8 +724,8 @@ container
   .bind(DbtTestService)
   .toDynamicValue((context) => {
     return new DbtTestService(
-      context.container.get(QueryManifestService),
-      context.container.get("DBTTerminal"),
+      context.get(QueryManifestService),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -767,9 +741,9 @@ container
   .bind(DocGenService)
   .toDynamicValue((context) => {
     return new DocGenService(
-      context.container.get(DBTProjectContainer),
-      context.container.get(QueryManifestService),
-      context.container.get("DBTTerminal"),
+      context.get(DBTProjectContainer),
+      context.get(QueryManifestService),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -785,10 +759,10 @@ container
   .bind(QueryManifestService)
   .toDynamicValue((context) => {
     return new QueryManifestService(
-      context.container.get(DBTProjectContainer),
-      context.container.get("DBTTerminal"),
-      context.container.get(SharedStateService),
-      context.container.get(ProjectQuickPick),
+      context.get(DBTProjectContainer),
+      context.get("DBTTerminal"),
+      context.get(SharedStateService),
+      context.get(ProjectQuickPick),
     );
   })
   .inSingletonScope();
@@ -810,9 +784,7 @@ container
 container
   .bind(RunHistoryTreeviewProvider)
   .toDynamicValue((context) => {
-    return new RunHistoryTreeviewProvider(
-      context.container.get(RunHistoryService),
-    );
+    return new RunHistoryTreeviewProvider(context.get(RunHistoryService));
   })
   .inSingletonScope();
 
@@ -820,8 +792,8 @@ container
   .bind(CteProfilerService)
   .toDynamicValue((context) => {
     return new CteProfilerService(
-      context.container.get(DBTProjectContainer),
-      context.container.get("DBTTerminal"),
+      context.get(DBTProjectContainer),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -830,8 +802,8 @@ container
   .bind(CteProfilerDecorationProvider)
   .toDynamicValue((context) => {
     return new CteProfilerDecorationProvider(
-      context.container.get(CteProfilerService),
-      context.container.get("DBTTerminal"),
+      context.get(CteProfilerService),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -847,8 +819,8 @@ container
   .bind(ValidationProvider)
   .toDynamicValue((context) => {
     return new ValidationProvider(
-      context.container.get(AltimateRequest),
-      context.container.get(AltimateAuthService),
+      context.get(AltimateRequest),
+      context.get(AltimateAuthService),
     );
   })
   .inSingletonScope();
@@ -857,7 +829,7 @@ container
 container
   .bind(PythonEnvironment)
   .toDynamicValue((context) => {
-    return new PythonEnvironment(context.container.get("DBTTerminal"));
+    return new PythonEnvironment(context.get("DBTTerminal"));
   })
   .inSingletonScope();
 
@@ -865,9 +837,9 @@ container
   .bind(DBTProjectContainer)
   .toDynamicValue((context) => {
     return new DBTProjectContainer(
-      context.container.get(DBTClient),
-      context.container.get("Factory<DBTWorkspaceFolder>"),
-      context.container.get("DBTTerminal"),
+      context.get(DBTClient),
+      context.get("Factory<DBTWorkspaceFolder>"),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -877,8 +849,8 @@ container
   .bind(DBTClient)
   .toDynamicValue((context) => {
     return new DBTClient(
-      context.container.get(PythonEnvironment),
-      context.container.get("Factory<DBTDetection>"),
+      context.get(PythonEnvironment),
+      context.get("Factory<DBTDetection>"),
     );
   })
   .inSingletonScope();
@@ -888,10 +860,10 @@ container
   .bind(AutocompletionProviders)
   .toDynamicValue((context) => {
     return new AutocompletionProviders(
-      context.container.get(MacroAutocompletionProvider),
-      context.container.get(ModelAutocompletionProvider),
-      context.container.get(SourceAutocompletionProvider),
-      context.container.get(DocAutocompletionProvider),
+      context.get(MacroAutocompletionProvider),
+      context.get(ModelAutocompletionProvider),
+      context.get(SourceAutocompletionProvider),
+      context.get(DocAutocompletionProvider),
     );
   })
   .inSingletonScope();
@@ -899,36 +871,28 @@ container
 container
   .bind(DocAutocompletionProvider)
   .toDynamicValue((context) => {
-    return new DocAutocompletionProvider(
-      context.container.get(DBTProjectContainer),
-    );
+    return new DocAutocompletionProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
 container
   .bind(MacroAutocompletionProvider)
   .toDynamicValue((context) => {
-    return new MacroAutocompletionProvider(
-      context.container.get(DBTProjectContainer),
-    );
+    return new MacroAutocompletionProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
 container
   .bind(ModelAutocompletionProvider)
   .toDynamicValue((context) => {
-    return new ModelAutocompletionProvider(
-      context.container.get(DBTProjectContainer),
-    );
+    return new ModelAutocompletionProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
 container
   .bind(SourceAutocompletionProvider)
   .toDynamicValue((context) => {
-    return new SourceAutocompletionProvider(
-      context.container.get(DBTProjectContainer),
-    );
+    return new SourceAutocompletionProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -937,11 +901,11 @@ container
   .bind(CodeLensProviders)
   .toDynamicValue((context) => {
     return new CodeLensProviders(
-      context.container.get(DBTProjectContainer),
-      context.container.get(SourceModelCreationCodeLensProvider),
-      context.container.get(VirtualSqlCodeLensProvider),
-      context.container.get(CteCodeLensProvider),
-      context.container.get(SqlActionsCodeLensProvider),
+      context.get(DBTProjectContainer),
+      context.get(SourceModelCreationCodeLensProvider),
+      context.get(VirtualSqlCodeLensProvider),
+      context.get(CteCodeLensProvider),
+      context.get(SqlActionsCodeLensProvider),
     );
   })
   .inSingletonScope();
@@ -949,7 +913,7 @@ container
 container
   .bind(CteCodeLensProvider)
   .toDynamicValue((context) => {
-    return new CteCodeLensProvider(context.container.get("DBTTerminal"));
+    return new CteCodeLensProvider(context.get("DBTTerminal"));
   })
   .inSingletonScope();
 
@@ -971,8 +935,8 @@ container
   .bind(VirtualSqlCodeLensProvider)
   .toDynamicValue((context) => {
     return new VirtualSqlCodeLensProvider(
-      context.container.get(DBTProjectContainer),
-      context.container.get(QueryManifestService),
+      context.get(DBTProjectContainer),
+      context.get(QueryManifestService),
     );
   })
   .inSingletonScope();
@@ -982,10 +946,10 @@ container
   .bind(DefinitionProviders)
   .toDynamicValue((context) => {
     return new DefinitionProviders(
-      context.container.get(ModelDefinitionProvider),
-      context.container.get(MacroDefinitionProvider),
-      context.container.get(SourceDefinitionProvider),
-      context.container.get(DocDefinitionProvider),
+      context.get(ModelDefinitionProvider),
+      context.get(MacroDefinitionProvider),
+      context.get(SourceDefinitionProvider),
+      context.get(DocDefinitionProvider),
     );
   })
   .inSingletonScope();
@@ -993,18 +957,14 @@ container
 container
   .bind(DocDefinitionProvider)
   .toDynamicValue((context) => {
-    return new DocDefinitionProvider(
-      context.container.get(DBTProjectContainer),
-    );
+    return new DocDefinitionProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
 container
   .bind(MacroDefinitionProvider)
   .toDynamicValue((context) => {
-    return new MacroDefinitionProvider(
-      context.container.get(DBTProjectContainer),
-    );
+    return new MacroDefinitionProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -1012,8 +972,8 @@ container
   .bind(ModelDefinitionProvider)
   .toDynamicValue((context) => {
     return new ModelDefinitionProvider(
-      context.container.get(DBTProjectContainer),
-      context.container.get("DBTTerminal"),
+      context.get(DBTProjectContainer),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -1021,9 +981,7 @@ container
 container
   .bind(SourceDefinitionProvider)
   .toDynamicValue((context) => {
-    return new SourceDefinitionProvider(
-      context.container.get(DBTProjectContainer),
-    );
+    return new SourceDefinitionProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -1032,11 +990,11 @@ container
   .bind(HoverProviders)
   .toDynamicValue((context) => {
     return new HoverProviders(
-      context.container.get(ModelHoverProvider),
-      context.container.get(SourceHoverProvider),
-      context.container.get(MacroHoverProvider),
-      context.container.get(DepthDecorationProvider),
-      context.container.get(YamlModelHoverProvider),
+      context.get(ModelHoverProvider),
+      context.get(SourceHoverProvider),
+      context.get(MacroHoverProvider),
+      context.get(DepthDecorationProvider),
+      context.get(YamlModelHoverProvider),
     );
   })
   .inSingletonScope();
@@ -1044,9 +1002,7 @@ container
 container
   .bind(DepthDecorationProvider)
   .toDynamicValue((context) => {
-    return new DepthDecorationProvider(
-      context.container.get(DBTProjectContainer),
-    );
+    return new DepthDecorationProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -1054,8 +1010,8 @@ container
   .bind(MacroHoverProvider)
   .toDynamicValue((context) => {
     return new MacroHoverProvider(
-      context.container.get("DBTTerminal"),
-      context.container.get(QueryManifestService),
+      context.get("DBTTerminal"),
+      context.get(QueryManifestService),
     );
   })
   .inSingletonScope();
@@ -1064,8 +1020,8 @@ container
   .bind(ModelHoverProvider)
   .toDynamicValue((context) => {
     return new ModelHoverProvider(
-      context.container.get(DBTProjectContainer),
-      context.container.get("DBTTerminal"),
+      context.get(DBTProjectContainer),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -1073,16 +1029,14 @@ container
 container
   .bind(SourceHoverProvider)
   .toDynamicValue((context) => {
-    return new SourceHoverProvider(context.container.get(DBTProjectContainer));
+    return new SourceHoverProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
 container
   .bind(YamlModelHoverProvider)
   .toDynamicValue((context) => {
-    return new YamlModelHoverProvider(
-      context.container.get(DBTProjectContainer),
-    );
+    return new YamlModelHoverProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -1090,9 +1044,7 @@ container
 container
   .bind(SqlPreviewContentProvider)
   .toDynamicValue((context) => {
-    return new SqlPreviewContentProvider(
-      context.container.get(DBTProjectContainer),
-    );
+    return new SqlPreviewContentProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -1100,8 +1052,8 @@ container
   .bind(DbtDocumentFormattingEditProvider)
   .toDynamicValue((context) => {
     return new DbtDocumentFormattingEditProvider(
-      context.container.get(CommandProcessExecutionFactory),
-      context.container.get(PythonEnvironment),
+      context.get(CommandProcessExecutionFactory),
+      context.get(PythonEnvironment),
     );
   })
   .inSingletonScope();
@@ -1110,10 +1062,10 @@ container
   .bind(SqlFmtAvailabilityNotifier)
   .toDynamicValue((context) => {
     return new SqlFmtAvailabilityNotifier(
-      context.container.get(DBTProjectContainer),
-      context.container.get(DbtDocumentFormattingEditProvider),
-      context.container.get(PythonEnvironment),
-      context.container.get(CommandProcessExecutionFactory),
+      context.get(DBTProjectContainer),
+      context.get(DbtDocumentFormattingEditProvider),
+      context.get(PythonEnvironment),
+      context.get(CommandProcessExecutionFactory),
     );
   })
   .inSingletonScope();
@@ -1122,7 +1074,7 @@ container
 container
   .bind(VersionStatusBar)
   .toDynamicValue((context) => {
-    return new VersionStatusBar(context.container.get(DBTProjectContainer));
+    return new VersionStatusBar(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -1130,8 +1082,8 @@ container
   .bind(DeferToProductionStatusBar)
   .toDynamicValue((context) => {
     return new DeferToProductionStatusBar(
-      context.container.get(DBTProjectContainer),
-      context.container.get("DBTTerminal"),
+      context.get(DBTProjectContainer),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -1140,8 +1092,8 @@ container
   .bind(TargetStatusBar)
   .toDynamicValue((context) => {
     return new TargetStatusBar(
-      context.container.get(DBTProjectContainer),
-      context.container.get("DBTTerminal"),
+      context.get(DBTProjectContainer),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -1158,7 +1110,7 @@ container
 container
   .bind(RunModel)
   .toDynamicValue((context) => {
-    return new RunModel(context.container.get(DBTProjectContainer));
+    return new RunModel(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -1166,8 +1118,8 @@ container
   .bind(RunTest)
   .toDynamicValue((context) => {
     return new RunTest(
-      context.container.get(DBTProjectContainer),
-      context.container.get(QueryManifestService),
+      context.get(DBTProjectContainer),
+      context.get(QueryManifestService),
     );
   })
   .inSingletonScope();
@@ -1176,9 +1128,9 @@ container
   .bind(ValidateSql)
   .toDynamicValue((context) => {
     return new ValidateSql(
-      context.container.get(DBTProjectContainer),
-      context.container.get(AltimateRequest),
-      context.container.get("DBTTerminal"),
+      context.get(DBTProjectContainer),
+      context.get(AltimateRequest),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -1187,10 +1139,10 @@ container
   .bind(WalkthroughCommands)
   .toDynamicValue((context) => {
     return new WalkthroughCommands(
-      context.container.get(DBTProjectContainer),
-      context.container.get(CommandProcessExecutionFactory),
-      context.container.get(PythonEnvironment),
-      context.container.get("DBTTerminal"),
+      context.get(DBTProjectContainer),
+      context.get(CommandProcessExecutionFactory),
+      context.get(PythonEnvironment),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -1199,22 +1151,22 @@ container
   .bind(VSCodeCommands)
   .toDynamicValue((context) => {
     return new VSCodeCommands(
-      context.container.get(DBTProjectContainer),
-      context.container.get(RunModel),
-      context.container.get(RunTest),
-      context.container.get(ValidateSql),
-      context.container.get(WalkthroughCommands),
-      context.container.get("DBTTerminal"),
-      context.container.get(DiagnosticsOutputChannel),
-      context.container.get(SharedStateService),
-      context.container.get(PythonEnvironment),
-      context.container.get(DBTClient),
-      context.container.get(AltimateRequest),
-      context.container.get(RunHistoryService),
-      context.container.get(CteProfilerService),
-      context.container.get(CteProfilerDecorationProvider),
-      context.container.get(CteCodeLensProvider),
-      context.container.get(WhatsNewPanel),
+      context.get(DBTProjectContainer),
+      context.get(RunModel),
+      context.get(RunTest),
+      context.get(ValidateSql),
+      context.get(WalkthroughCommands),
+      context.get("DBTTerminal"),
+      context.get(DiagnosticsOutputChannel),
+      context.get(SharedStateService),
+      context.get(PythonEnvironment),
+      context.get(DBTClient),
+      context.get(AltimateRequest),
+      context.get(RunHistoryService),
+      context.get(CteProfilerService),
+      context.get(CteProfilerDecorationProvider),
+      context.get(CteCodeLensProvider),
+      context.get(WhatsNewPanel),
     );
   })
   .inSingletonScope();
@@ -1224,12 +1176,12 @@ container
   .bind(QueryResultPanel)
   .toDynamicValue((context) => {
     return new QueryResultPanel(
-      context.container.get(DBTProjectContainer),
-      context.container.get(AltimateRequest),
-      context.container.get(SharedStateService),
-      context.container.get("DBTTerminal"),
-      context.container.get(QueryManifestService),
-      context.container.get(AltimateAuthService),
+      context.get(DBTProjectContainer),
+      context.get(AltimateRequest),
+      context.get(SharedStateService),
+      context.get("DBTTerminal"),
+      context.get(QueryManifestService),
+      context.get(AltimateAuthService),
     );
   })
   .inSingletonScope();
@@ -1238,12 +1190,12 @@ container
   .bind(DocsEditViewPanel)
   .toDynamicValue((context) => {
     return new DocsEditViewPanel(
-      context.container.get(DBTProjectContainer),
-      context.container.get(DocGenService),
-      context.container.get(DbtTestService),
-      context.container.get(QueryManifestService),
-      context.container.get("DBTTerminal"),
-      context.container.get(DbtLineageService),
+      context.get(DBTProjectContainer),
+      context.get(DocGenService),
+      context.get(DbtTestService),
+      context.get(QueryManifestService),
+      context.get("DBTTerminal"),
+      context.get(DbtLineageService),
     );
   })
   .inSingletonScope();
@@ -1252,9 +1204,9 @@ container
   .bind(LineagePanel)
   .toDynamicValue((context) => {
     return new LineagePanel(
-      context.container.get(NewLineagePanel),
-      context.container.get(DBTProjectContainer),
-      context.container.get("DBTTerminal"),
+      context.get(NewLineagePanel),
+      context.get(DBTProjectContainer),
+      context.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -1263,14 +1215,14 @@ container
   .bind(NewLineagePanel)
   .toDynamicValue((context) => {
     return new NewLineagePanel(
-      context.container.get(DBTProjectContainer),
-      context.container.get(AltimateRequest),
-      context.container.get("DBTTerminal"),
-      context.container.get(DbtLineageService),
-      context.container.get(SharedStateService),
-      context.container.get(QueryManifestService),
-      context.container.get(AltimateAuthService),
-      context.container.get(ValidationProvider),
+      context.get(DBTProjectContainer),
+      context.get(AltimateRequest),
+      context.get("DBTTerminal"),
+      context.get(DbtLineageService),
+      context.get(SharedStateService),
+      context.get(QueryManifestService),
+      context.get(AltimateAuthService),
+      context.get(ValidationProvider),
     );
   })
   .inSingletonScope();
@@ -1280,9 +1232,9 @@ container
   .bind(WebviewViewProviders)
   .toDynamicValue((context) => {
     return new WebviewViewProviders(
-      context.container.get(QueryResultPanel),
-      context.container.get(DocsEditViewPanel),
-      context.container.get(LineagePanel),
+      context.get(QueryResultPanel),
+      context.get(DocsEditViewPanel),
+      context.get(LineagePanel),
     );
   })
   .inSingletonScope();
@@ -1291,32 +1243,28 @@ container
 container
   .bind(ChildrenModelTreeview)
   .toDynamicValue((context) => {
-    return new ChildrenModelTreeview(
-      context.container.get(DBTProjectContainer),
-    );
+    return new ChildrenModelTreeview(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
 container
   .bind(ParentModelTreeview)
   .toDynamicValue((context) => {
-    return new ParentModelTreeview(context.container.get(DBTProjectContainer));
+    return new ParentModelTreeview(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
 container
   .bind(ModelTestTreeview)
   .toDynamicValue((context) => {
-    return new ModelTestTreeview(context.container.get(DBTProjectContainer));
+    return new ModelTestTreeview(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
 container
   .bind(DocumentationTreeview)
   .toDynamicValue((context) => {
-    return new DocumentationTreeview(
-      context.container.get(DBTProjectContainer),
-    );
+    return new DocumentationTreeview(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -1325,11 +1273,11 @@ container
   .bind(TreeviewProviders)
   .toDynamicValue((context) => {
     return new TreeviewProviders(
-      context.container.get(ChildrenModelTreeview),
-      context.container.get(ParentModelTreeview),
-      context.container.get(ModelTestTreeview),
-      context.container.get(DocumentationTreeview),
-      context.container.get(RunHistoryTreeviewProvider),
+      context.get(ChildrenModelTreeview),
+      context.get(ParentModelTreeview),
+      context.get(ModelTestTreeview),
+      context.get(DocumentationTreeview),
+      context.get(RunHistoryTreeviewProvider),
     );
   })
   .inSingletonScope();
@@ -1338,9 +1286,7 @@ container
 container
   .bind(ContentProviders)
   .toDynamicValue((context) => {
-    return new ContentProviders(
-      context.container.get(SqlPreviewContentProvider),
-    );
+    return new ContentProviders(context.get(SqlPreviewContentProvider));
   })
   .inSingletonScope();
 
@@ -1349,8 +1295,8 @@ container
   .bind(DocumentFormattingEditProviders)
   .toDynamicValue((context) => {
     return new DocumentFormattingEditProviders(
-      context.container.get(DbtDocumentFormattingEditProvider),
-      context.container.get(SqlFmtAvailabilityNotifier),
+      context.get(DbtDocumentFormattingEditProvider),
+      context.get(SqlFmtAvailabilityNotifier),
     );
   })
   .inSingletonScope();
@@ -1360,9 +1306,9 @@ container
   .bind(StatusBars)
   .toDynamicValue((context) => {
     return new StatusBars(
-      context.container.get(VersionStatusBar),
-      context.container.get(DeferToProductionStatusBar),
-      context.container.get(TargetStatusBar),
+      context.get(VersionStatusBar),
+      context.get(DeferToProductionStatusBar),
+      context.get(TargetStatusBar),
     );
   })
   .inSingletonScope();
@@ -1371,13 +1317,13 @@ container
   .bind(OnboardingPanel)
   .toDynamicValue((context) => {
     return new OnboardingPanel(
-      context.container.get(DBTProjectContainer),
-      context.container.get(AltimateRequest),
-      context.container.get(SharedStateService),
-      context.container.get("DBTTerminal"),
-      context.container.get(QueryManifestService),
-      context.container.get(WalkthroughCommands),
-      context.container.get(AltimateAuthService),
+      context.get(DBTProjectContainer),
+      context.get(AltimateRequest),
+      context.get(SharedStateService),
+      context.get("DBTTerminal"),
+      context.get(QueryManifestService),
+      context.get(WalkthroughCommands),
+      context.get(AltimateAuthService),
     );
   })
   .inSingletonScope();
@@ -1386,12 +1332,12 @@ container
   .bind(WhatsNewPanel)
   .toDynamicValue((context) => {
     return new WhatsNewPanel(
-      context.container.get(DBTProjectContainer),
-      context.container.get(AltimateRequest),
-      context.container.get(SharedStateService),
-      context.container.get("DBTTerminal"),
-      context.container.get(QueryManifestService),
-      context.container.get(AltimateAuthService),
+      context.get(DBTProjectContainer),
+      context.get(AltimateRequest),
+      context.get(SharedStateService),
+      context.get("DBTTerminal"),
+      context.get(QueryManifestService),
+      context.get(AltimateAuthService),
     );
   })
   .inSingletonScope();
@@ -1401,11 +1347,11 @@ container
   .bind(DbtPowerUserActionsCenter)
   .toDynamicValue((context) => {
     return new DbtPowerUserActionsCenter(
-      context.container.get(DbtPowerUserControlCenterAction),
-      context.container.get(ProjectQuickPick),
-      context.container.get(DBTProjectContainer),
-      context.container.get(SharedStateService),
-      context.container.get(OnboardingPanel),
+      context.get(DbtPowerUserControlCenterAction),
+      context.get(ProjectQuickPick),
+      context.get(DBTProjectContainer),
+      context.get(SharedStateService),
+      context.get(OnboardingPanel),
     );
   })
   .inSingletonScope();
@@ -1415,23 +1361,23 @@ container
   .bind(DBTPowerUserExtension)
   .toDynamicValue((context) => {
     return new DBTPowerUserExtension(
-      context.container.get(DBTProjectContainer),
-      context.container.get(WebviewViewProviders),
-      context.container.get(AutocompletionProviders),
-      context.container.get(DefinitionProviders),
-      context.container.get(VSCodeCommands),
-      context.container.get(TreeviewProviders),
-      context.container.get(ContentProviders),
-      context.container.get(CodeLensProviders),
-      context.container.get(DocumentFormattingEditProviders),
-      context.container.get(StatusBars),
-      context.container.get(DbtPowerUserActionsCenter),
-      context.container.get("DBTTerminal"),
-      context.container.get(HoverProviders),
-      context.container.get(ValidationProvider),
-      context.container.get(AltimateRequest),
-      context.container.get(AltimateAuthService),
-      context.container.get(WhatsNewPanel),
+      context.get(DBTProjectContainer),
+      context.get(WebviewViewProviders),
+      context.get(AutocompletionProviders),
+      context.get(DefinitionProviders),
+      context.get(VSCodeCommands),
+      context.get(TreeviewProviders),
+      context.get(ContentProviders),
+      context.get(CodeLensProviders),
+      context.get(DocumentFormattingEditProviders),
+      context.get(StatusBars),
+      context.get(DbtPowerUserActionsCenter),
+      context.get("DBTTerminal"),
+      context.get(HoverProviders),
+      context.get(ValidationProvider),
+      context.get(AltimateRequest),
+      context.get(AltimateAuthService),
+      context.get(WhatsNewPanel),
     );
   })
   .inSingletonScope();

@@ -1,6 +1,7 @@
-import { TableData } from "@finos/perspective";
 import { QueryPanelTitleTabState } from "../components/QueryPanelContents/types";
 import { User } from "@modules/app/types";
+
+export type TableData = Record<string, unknown>[];
 
 export interface QueryHistory {
   rawSql: string;

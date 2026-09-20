@@ -12,7 +12,6 @@ import {
   Table,
 } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
-import { AbortError } from "node-fetch";
 import { CancellationTokenSource, env, Uri, window, workspace } from "vscode";
 import { ModelInfo } from "../altimate";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
@@ -479,7 +478,7 @@ export class DbtLineageService {
         errors: result.errors_dict,
       };
     } catch (error) {
-      if (error instanceof AbortError) {
+      if (error instanceof Error && error.name === "AbortError") {
         window.showErrorMessage(
           extendErrorWithSupportLinks(
             "Fetching column level lineage timed out.",

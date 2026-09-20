@@ -55,18 +55,19 @@ Phase 0 and 1.1 are complete. **1.2**, **1.3**, and **2.1** are on `main`. Next:
 
 ## Overlap table
 
-| Step                         | Primary files                                                                                                                                                     | May run beside                              |
-| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------- |
-| 1.2 Fusion version gate      | `src/fusion/fusionVersion.ts` (new), `src/test/suite/fusionVersion.test.ts` (new), detection wiring in `src/dbt_client/index.ts` and/or `src/inversify.config.ts` | 1.3, 2.1                                    |
-| 1.3 Conflict + enabled       | `src/dbtPowerUserExtension.ts`, `package.json` (new `dbt.enabled` contribution until Phase 9), tests next to the existing extension suite                         | 1.2, 2.1                                    |
-| 2.1 Fixtures                 | `src/test/fixtures/**` only                                                                                                                                       | 1.2, 1.3                                    |
-| 2.2 Integration harness      | `src/test/integration/**`, `justfile` `test-integration` (already present)                                                                                        | after 2.1                                   |
-| 2.3 Scoping characterization | `src/test/suite/projectScoping.test.ts`, reads `src/manifest/dbtWorkspaceFolder.ts` (file is currently `src/dbt_client/dbtWorkspaceFolder.ts`)                    | after 2.1                                   |
-| 2.4 Metadata snapshot        | `src/test/suite/metadataContract.test.ts`, `src/manifest/parsers` / domain maps                                                                                   | after 2.1                                   |
-| 3.x deletions                | wide `src/` and `webview_panels/`                                                                                                                                 | never parallel with another 3.x step        |
-| 4.x Declared Project         | `src/projects/**`, `src/dbt_client/dbtWorkspaceFolder.ts`, `queryManifestService.ts`                                                                              | never parallel with 3.x or another 4.x step |
-| 5.x LSP                      | `src/lsp/**`, `src/fusion/fusionExecutable.ts`, language-provider deletions                                                                                       | after Phase 4; spikes S1–S6 first as named  |
-| 6–10                         | as the spec                                                                                                                                                       | sequential; see Confirm gates               |
+| Step                         | Primary files                                                                                                                                                     | May run beside                                    |
+| ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| 1.2 Fusion version gate      | `src/fusion/fusionVersion.ts` (new), `src/test/suite/fusionVersion.test.ts` (new), detection wiring in `src/dbt_client/index.ts` and/or `src/inversify.config.ts` | 1.3, 2.1                                          |
+| 1.3 Conflict + enabled       | `src/dbtPowerUserExtension.ts`, `package.json` (new `dbt.enabled` contribution until Phase 9), tests next to the existing extension suite                         | 1.2, 2.1                                          |
+| 2.1 Fixtures                 | `src/test/fixtures/**` only                                                                                                                                       | 1.2, 1.3                                          |
+| 2.2 Integration harness      | `src/test/integration/**`, `justfile` `test-integration` (already present)                                                                                        | after 2.1                                         |
+| 2.3 Scoping characterization | `src/test/suite/projectScoping.test.ts`, reads `src/manifest/dbtWorkspaceFolder.ts` (file is currently `src/dbt_client/dbtWorkspaceFolder.ts`)                    | after 2.1                                         |
+| 2.4 Metadata snapshot        | `src/test/suite/metadataContract.test.ts`, `src/manifest/parsers` / domain maps                                                                                   | after 2.1                                         |
+| 3.x deletions                | wide `src/` and `webview_panels/`                                                                                                                                 | never parallel with another 3.x step              |
+| 3.7 latest majors            | both `package.json` / lockfiles, `tsconfig.json`, host module format, `webview_panels/tsconfig*.json`, `engines`                                                  | after 3.6; never beside 4.x                       |
+| 4.x Declared Project         | `src/projects/**`, `src/dbt_client/dbtWorkspaceFolder.ts`, `queryManifestService.ts`                                                                              | never parallel with 3.x, 3.7, or another 4.x step |
+| 5.x LSP                      | `src/lsp/**`, `src/fusion/fusionExecutable.ts`, language-provider deletions                                                                                       | after Phase 4; spikes S1–S6 first as named        |
+| 6–10                         | as the spec                                                                                                                                                       | sequential; see Confirm gates                     |
 
 ## Step briefs (execute from the spec)
 
@@ -91,7 +92,7 @@ No production code. Fixtures are shared vocabulary; do not fork them per suite. 
 
 ### Phase 3
 
-Pin Fusion in the container first (3.1) while leaving Core and Cloud classes in the tree. Then notebooks, AI, MCP, collaboration, telemetry — in that order. Telemetry: delete call sites; no silent sink. `docGenService.ts` is split, not deleted.
+Pin Fusion in the container first (3.1) while leaving Core and Cloud classes in the tree. Then notebooks, AI, MCP, collaboration, telemetry — in that order. Telemetry: delete call sites; no silent sink. `docGenService.ts` is split, not deleted. After 3.6, step 3.7 upgrades or replaces remaining npm deps. The only compatibility ceiling is the VS Code / Cursor Extensions API (`engines.vscode`, `@types/vscode`). CommonJS, Inversify 6/7, React 18, and ESLint 8/9 are not freezes. Fusion in `mise.toml` stays 2.0.5. Complexity lint stays diagnostic and is not that PR.
 
 ### Phases 4–10
 

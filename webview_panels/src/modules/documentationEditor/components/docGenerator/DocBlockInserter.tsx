@@ -12,7 +12,7 @@ const DocBlockIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
 );
 
 interface Props {
-  inputRef: RefObject<HTMLInputElement | HTMLTextAreaElement>;
+  inputRef: RefObject<HTMLInputElement | HTMLTextAreaElement | null>;
   onInsert: (docRef: string) => void;
 }
 

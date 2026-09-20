@@ -1,7 +1,8 @@
-import type { Schema } from "@finos/perspective";
 import { executeRequestInAsync } from "@modules/app/requestExecutor";
 import { panelLogger } from "@modules/logger";
 import OpenIcon from "./openIcon.svg?raw";
+
+type Schema = Record<string, string>;
 
 // Dispatches a custom event with the given event name and message
 function dispatchCustomEvent(
@@ -23,7 +24,7 @@ const isJson = (str: string) => {
     return (
       typeof parsedAssumingJson === "object" && parsedAssumingJson !== null
     );
-  } catch (e) {
+  } catch {
     return false;
   }
 };
@@ -177,8 +178,10 @@ class PerspectiveDatagridJSONViewerPlugin extends (customElements.get(
       const viewer = this.parentElement;
       const datagrid = this.regular_table;
       await this.refresh_cache();
-      const table = await viewer?.getTable(true);
-      this.tableSchema = await table.schema();
+      const table = (await viewer?.getTable(true)) as
+        | { schema(): Promise<Schema> }
+        | undefined;
+      this.tableSchema = await table?.schema();
       viewer.addEventListener("perspective-config-update", () => {
         this.dirty = true;
       });
@@ -191,7 +194,7 @@ class PerspectiveDatagridJSONViewerPlugin extends (customElements.get(
 
 customElements.define(
   "perspective-datagrid-json-viewer-plugin",
-  PerspectiveDatagridJSONViewerPlugin as unknown as CustomElementConstructor,
+  PerspectiveDatagridJSONViewerPlugin,
 );
 
 void customElements

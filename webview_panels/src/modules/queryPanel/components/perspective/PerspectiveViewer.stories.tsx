@@ -1,4 +1,3 @@
-import { TableData } from "@finos/perspective";
 import type { Meta } from "@storybook/react-vite";
 import PerspectiveErrorBoundary from "./PerspectiveErrorBoundary";
 import PerspectiveViewer from "./PerspectiveViewer";
@@ -242,7 +241,7 @@ export const DefaultPerspectiveViewerView = {
                 number_of_orders: 1,
                 customer_lifetime_value: 18,
               },
-            ] as unknown as TableData
+            ]
           }
         />
       </PerspectiveErrorBoundary>

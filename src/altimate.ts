@@ -5,7 +5,9 @@ import {
   DBTTerminal,
 } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
-import type { RequestInit } from "node-fetch";
+import type { RequestInit } from "node-fetch" with {
+  "resolution-mode": "import",
+};
 import * as vscode from "vscode";
 
 export class UserInputError extends Error {}

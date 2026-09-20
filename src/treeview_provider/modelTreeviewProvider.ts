@@ -1,5 +1,4 @@
 import { unmanaged } from "inversify";
-import { provide } from "inversify-binding-decorators";
 import * as path from "path";
 
 import {
@@ -96,7 +95,6 @@ class Source extends Node {
   };
 }
 
-@provide(ModelTreeviewProvider)
 abstract class ModelTreeviewProvider
   implements TreeDataProvider<NodeTreeItem>, Disposable
 {
@@ -274,7 +272,6 @@ abstract class ModelTreeviewProvider
   }
 }
 
-@provide(DocumentationTreeviewProvider)
 class DocumentationTreeviewProvider implements TreeDataProvider<DocTreeItem> {
   private eventMap: Map<string, ManifestCacheProjectAddedEvent> = new Map();
   private _onDidChangeTreeData: EventEmitter<DocTreeItem | undefined | void> =

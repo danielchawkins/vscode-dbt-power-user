@@ -179,7 +179,7 @@ const DocumentationProvider = (): JSX.Element => {
         // insert column desc
         dispatch(
           updateColumnsInCurrentDocsData({
-            columns: [params as Partial<MetadataColumn>],
+            columns: [params],
           }),
         );
         updateFocus((params as Partial<MetadataColumn>).name);

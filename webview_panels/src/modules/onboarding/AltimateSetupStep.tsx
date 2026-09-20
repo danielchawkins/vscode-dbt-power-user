@@ -30,7 +30,9 @@ const AltimateSetupStep = ({
   const [error, setError] = useState<string | undefined>();
   const [success, setSuccess] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const completionTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const completionTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
 
   // Clear completion timer on unmount
   useEffect(() => {

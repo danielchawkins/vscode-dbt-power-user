@@ -21,6 +21,7 @@ export default defineConfig({
     },
   ],
   build: {
+    cssMinify: "esbuild",
     cssCodeSplit: false,
     rollupOptions: {
       input: "./src/main.tsx",
@@ -36,12 +37,12 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@uicore": path.resolve(__dirname, "./src/uiCore"),
-      "@assets": path.resolve(__dirname, "./src/assets"),
-      "@modules": path.resolve(__dirname, "./src/modules"),
-      "@testUtils": path.resolve(__dirname, "./src/testUtils"),
-      "@vscodeApi": path.resolve(__dirname, "./src/modules/vscode"),
-      "@lib": path.resolve(__dirname, "./src/lib"),
+      "@uicore": path.resolve(import.meta.dirname, "./src/uiCore"),
+      "@assets": path.resolve(import.meta.dirname, "./src/assets"),
+      "@modules": path.resolve(import.meta.dirname, "./src/modules"),
+      "@testUtils": path.resolve(import.meta.dirname, "./src/testUtils"),
+      "@vscodeApi": path.resolve(import.meta.dirname, "./src/modules/vscode"),
+      "@lib": path.resolve(import.meta.dirname, "./src/lib"),
     },
   },
   css: {

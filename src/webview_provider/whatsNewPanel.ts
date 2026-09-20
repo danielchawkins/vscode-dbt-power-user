@@ -1,6 +1,5 @@
 import { DBTTerminal } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
-import fetch from "node-fetch";
 import { Uri, ViewColumn, WebviewPanel, window, workspace } from "vscode";
 import { AltimateRequest } from "../altimate";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
