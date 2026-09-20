@@ -3,11 +3,10 @@
   // for the documentation about the tasks.json format
   "version": "2.0.0",
   "tasks": [
-    // Based on this comment: https://stackoverflow.com/a/57328332
     {
-      "label": "debug-task",
-      "type": "npm",
-      "script": "watch",
+      "label": "just watch",
+      "type": "shell",
+      "command": "just watch",
       "isBackground": true,
       "problemMatcher": {
         "pattern": {
@@ -26,18 +25,30 @@
       }
     },
     {
-      "label": "terminate debug-task",
-      "command": "echo ${input:terminate-debug-task}",
+      "label": "just build",
+      "type": "shell",
+      "command": "just build",
+      "problemMatcher": []
+    },
+    {
+      "label": "just compile",
+      "type": "shell",
+      "command": "just compile",
+      "problemMatcher": "$tsc"
+    },
+    {
+      "label": "terminate just watch",
+      "command": "echo ${input:terminate-just-watch}",
       "type": "shell",
       "problemMatcher": []
     }
   ],
   "inputs": [
     {
-      "id": "terminate-debug-task",
+      "id": "terminate-just-watch",
       "type": "command",
       "command": "workbench.action.tasks.terminate",
-      "args": "debug-task"
+      "args": "just watch"
     }
   ]
 }

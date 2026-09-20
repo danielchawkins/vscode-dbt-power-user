@@ -10,12 +10,13 @@
   "packageManager": "npm@10.9.4",
   "scripts": {
     "dev": "vite",
-    "watch": "rm -Rf ./dist; tsc && vite build --watch",
-    "build": "rm -Rf ./dist; NODE_OPTIONS=--max-old-space-size=8192 tsc && concurrently \"NODE_OPTIONS=--max-old-space-size=8192 vite build --emptyOutDir=false\" \"NODE_OPTIONS=--max-old-space-size=8192 vite build --config vite.config.renderer.ts --emptyOutDir=false\"",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 7",
+    "watch": "rm -rf dist && tsc && vite build --watch",
+    "build": "rm -rf dist && NODE_OPTIONS=--max-old-space-size=8192 tsc && concurrently \"NODE_OPTIONS=--max-old-space-size=8192 vite build --emptyOutDir=false\" \"NODE_OPTIONS=--max-old-space-size=8192 vite build --config vite.config.renderer.ts --emptyOutDir=false\"",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "storybook:build": "storybook build",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 7",
+    "lint:fix": "eslint . --ext ts,tsx --fix"
   },
   "dependencies": {
     "@altimateai/ui-components": "^0.0.88",

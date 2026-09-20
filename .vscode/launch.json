@@ -12,7 +12,7 @@
       "runtimeExecutable": "${execPath}",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "preLaunchTask": "npm: build"
+      "preLaunchTask": "just build"
     },
     {
       "name": "Debug Extension",
@@ -21,8 +21,8 @@
       "runtimeExecutable": "${execPath}",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
       "outFiles": ["${workspaceFolder}/dist/**/*.js"],
-      "preLaunchTask": "debug-task",
-      "postDebugTask": "terminate debug-task"
+      "preLaunchTask": "just watch",
+      "postDebugTask": "terminate just watch"
     },
     {
       "name": "Extension Tests",
@@ -34,7 +34,7 @@
         "--extensionTestsPath=${workspaceFolder}/out/test"
       ],
       "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
-      "preLaunchTask": "npm: test-compile"
+      "preLaunchTask": "just compile"
     },
     {
       "name": "Formatter Integration Tests",
@@ -47,7 +47,7 @@
         "--extensionTestsPath=${workspaceFolder}/out/test/integration"
       ],
       "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
-      "preLaunchTask": "npm: test-compile"
+      "preLaunchTask": "just compile"
     },
     {
       "name": "Debug Python: Current File including library code",

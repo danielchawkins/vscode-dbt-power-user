@@ -28,10 +28,10 @@ pip install "shandy-sqlfmt[jinjafmt]"
 
 ```bash
 # If sqlfmt is on PATH:
-npm run test:integration
+just test-integration
 
 # Or point to sqlfmt explicitly (useful in CI or virtualenvs):
-SQLFMT_PATH=/path/to/venv/bin/sqlfmt npm run test:integration
+SQLFMT_PATH=/path/to/venv/bin/sqlfmt just test-integration
 ```
 
 If sqlfmt is not installed (or only the Go `sqlfmt` variant is found), all tests are gracefully skipped via Mocha's `this.skip()`.

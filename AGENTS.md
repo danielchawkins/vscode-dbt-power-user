@@ -29,6 +29,7 @@ The extension supports dbt Fusion 2.0.5 and later. It does not support dbt Core 
 ```bash
 scripts/workspace/setup/setup-environment.sh # first run: bootstrap host, then setup
 just setup                                  # later: refresh tools, dependencies, hooks, jj
+just sync                                   # refresh npm dependencies only
 just fmt                                    # write lint and format fixes
 just lint                                   # read-only code, shell, lockfile, and Markdown checks
 just check                                  # lint plus compile and unit tests
@@ -39,7 +40,7 @@ just --list
 
 The environment script installs mise and the mise-managed Just needed to enter the task layer, then calls `just setup`. Installers skip existing tools; pass `--force` to either entry point to reinstall managed tools and reapply jj configuration. `fmt` writes fixes; `lint` verifies code, shell, formatting, lockfiles, and Markdown without writing; `check` adds compile and unit tests. `just check` is the only full gate: CI, the pre-push hook, and humans call it; pre-commit runs relevant subsets from that gate.
 
-Recipes are thin facades over npm scripts, which remain the authoritative implementation. The verbs take no file arguments — each tool resolves its own scope from its own config (`.eslintrc.json`, `dprint.json`, `rumdl.toml`). ESLint and Prettier own TypeScript, JavaScript, JSON, and CSS; dprint and rumdl own Markdown; shfmt and ShellCheck own shell scripts. No file type has two formatters. Copied skills under `.agents/skills/` must pass the Markdown checks. Author Just recipes with the `justfile-expert` skill.
+Just is the workflow authority. The root file owns repository workflows and delegates webview-specific work to `webview_panels/justfile`; package scripts expose package-local operations and required npm or VS Code lifecycle hooks, while Just owns repository-wide grouping and composition. Each tool resolves scope from its own config (`.eslintrc.json`, `dprint.json`, `rumdl.toml`). ESLint and Prettier own TypeScript, JavaScript, JSON, and CSS; dprint and rumdl own Markdown; shfmt and ShellCheck own shell scripts. No file type has two formatters. Copied skills under `.agents/skills/` must pass the Markdown checks. Author Just recipes with the `justfile-expert` skill.
 
 ## Architecture
 

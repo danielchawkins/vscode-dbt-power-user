@@ -37,7 +37,7 @@
   },
 
   //////////////////////////////////////////////////////////////////////////////
-  // TypeScript. Build tasks are npm scripts, so tsc auto-detection adds noise.
+  // TypeScript. Build tasks are Just recipes, so tsc auto-detection adds noise.
   //////////////////////////////////////////////////////////////////////////////
   "typescript.tsc.autoDetect": "off",
   "typescript.preferences.importModuleSpecifier": "relative",

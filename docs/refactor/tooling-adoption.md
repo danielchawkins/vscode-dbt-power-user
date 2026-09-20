@@ -4,10 +4,11 @@ This is the first implementation decision for the fork. It compares Power User's
 
 ## Decision
 
-Keep the extension Node-native:
+Keep package management Node-native and make Just the workflow authority:
 
 - npm lockfiles install JavaScript dependencies;
-- npm scripts remain the authoritative implementation of build, lint, test, and package operations;
+- package scripts expose package-local operations and required npm or VS Code lifecycle hooks;
+- the root `justfile` owns repository workflows and delegates webview-specific work to `webview_panels/justfile`;
 - ESLint and Prettier continue to own TypeScript, JavaScript, JSON, CSS, and webview formatting;
 - Jest and the existing VS Code test infrastructure remain the test frameworks; and
 - Lefthook is the Git hook implementation, replacing Husky and lint-staged, because staged-file scoping reads more clearly in one declarative file.
@@ -45,12 +46,13 @@ Use a committed lockfile. CI consumes the same configuration through `jdx/mise-a
 
 ### Just
 
-Keep the root file short. Recipes dispatch npm scripts and repository scripts; they do not duplicate shell logic.
+Recipes compose package-local npm scripts and delegate webview work to its Just module. npm owns dependency installation, package-local commands, and lifecycle hooks; Just owns repository workflow composition.
 
 Required public contract:
 
 ```text
 just setup
+just sync
 just fmt
 just lint
 just check
@@ -58,7 +60,7 @@ just jj
 just package
 ```
 
-The implementation agent must add or normalize one `npm run check` command so both Just and CI call one gate.
+CI, hooks, IDE tasks, and agents call Just recipes. Package scripts may compose steps within one package; they do not reproduce repository-level `fmt`, `lint`, `check`, setup, or packaging workflows.
 
 ### Markdown
 

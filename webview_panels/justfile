@@ -1,0 +1,45 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+set positional-arguments
+set default-list
+
+export PATH := `mise bin-paths 2>/dev/null | tr '\n' ':' || true` + env("PATH")
+
+####################
+# Development
+####################
+
+[group("development")]
+dev:
+    npm run dev
+
+[group("development")]
+watch:
+    npm run watch
+
+[group("development")]
+build:
+    npm run build
+
+[group("development")]
+preview:
+    npm run preview
+
+[group("development")]
+storybook:
+    npm run storybook
+
+[group("development")]
+storybook-build:
+    npm run storybook:build
+
+####################
+# Code quality
+####################
+
+[group("quality")]
+fmt:
+    npm run lint:fix
+
+[group("quality")]
+lint:
+    npm run lint

@@ -3,16 +3,16 @@ pre-commit:
   commands:
     typescript:
       glob: "src/**/*.{ts,tsx}"
-      run: mise exec -- npm run lint
+      run: mise exec -- just lint-code
     webview:
       glob: "webview_panels/src/**/*.{ts,tsx}"
-      run: mise exec -- npm run lint --prefix ./webview_panels
+      run: mise exec -- just webviews::lint
     prettier:
       glob: "*.{js,css,html,json}"
-      run: mise exec -- npm run check:format
+      run: mise exec -- just lint-format
     markdown:
       glob: "*.md"
-      run: mise exec -- npm run check:markdown
+      run: mise exec -- just lint-markdown
     shell:
       glob: "scripts/**/*.sh"
       run: mise exec -- shfmt -d -i 2 -ci -sr {staged_files} && mise exec -- shellcheck {staged_files}
