@@ -7,7 +7,7 @@ export const ExtensionKind = {
 };
 
 export const Uri = {
-  file: jest.fn((f: string) => ({ fsPath: f })),
+  file: jest.fn((f: string) => ({ fsPath: f, path: f })),
   parse: jest.fn(),
 };
 
@@ -189,6 +189,7 @@ export const workspace = {
     onDidDelete: jest.fn().mockReturnValue({ dispose: jest.fn() }),
     dispose: jest.fn(),
   }),
+  findFiles: jest.fn(() => Promise.resolve([])),
 } as any;
 
 export const languages = {
