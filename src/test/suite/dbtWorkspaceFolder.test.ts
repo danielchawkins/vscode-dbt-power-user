@@ -4,7 +4,7 @@ import * as path from "path";
 /**
  * Test the `contains` method guard against undefined uri.fsPath.
  *
- * Telemetry showed 907 monthly crashes with:
+ * Handles the previously common crash:
  *   TypeError: Cannot read properties of undefined (reading 'startsWith')
  *   at DBTWorkspaceFolder.contains
  *

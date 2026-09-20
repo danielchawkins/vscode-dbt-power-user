@@ -15,7 +15,6 @@ import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { AltimateAuthService } from "../services/altimateAuthService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { TelemetryService } from "../telemetry";
 import {
   AltimateWebviewProvider,
   HandleCommandProps,
@@ -31,7 +30,6 @@ export class OnboardingPanel extends AltimateWebviewProvider {
   public constructor(
     protected dbtProjectContainer: DBTProjectContainer,
     protected altimateRequest: AltimateRequest,
-    protected telemetry: TelemetryService,
     protected emitterService: SharedStateService,
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
@@ -42,7 +40,6 @@ export class OnboardingPanel extends AltimateWebviewProvider {
     super(
       dbtProjectContainer,
       altimateRequest,
-      telemetry,
       emitterService,
       dbtTerminal,
       queryManifestService,

@@ -13,7 +13,6 @@ import {
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheChangedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
-import { TelemetryService } from "../telemetry";
 import { isEnclosedWithinCodeBlock } from "../utils";
 
 export class DocAutocompletionProvider
@@ -24,10 +23,7 @@ export class DocAutocompletionProvider
     new Map();
   private disposables: Disposable[] = [];
 
-  constructor(
-    private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
-  ) {
+  constructor(private dbtProjectContainer: DBTProjectContainer) {
     this.disposables.push(
       dbtProjectContainer.onManifestChanged((event) =>
         this.onManifestCacheChanged(event),
@@ -84,7 +80,6 @@ export class DocAutocompletionProvider
   }
 
   private showDocNameAutocompletionItems(projectRootpath: Uri) {
-    this.telemetry.sendTelemetryEvent("provideDocAutocompletion");
     return this.docAutocompleteNameItemsMap.get(projectRootpath.fsPath);
   }
 }

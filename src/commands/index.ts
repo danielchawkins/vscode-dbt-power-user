@@ -34,8 +34,6 @@ import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
-import { TelemetryService } from "../telemetry";
-import { TelemetryEvents } from "../telemetry/events";
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { deepEqual, getFirstWorkspacePath } from "../utils";
 import { WhatsNewPanel } from "../webview_provider/whatsNewPanel";
@@ -65,7 +63,6 @@ export class VSCodeCommands implements Disposable {
     private cteProfilerService: CteProfilerService,
     private cteProfilerDecorationProvider: CteProfilerDecorationProvider,
     private cteCodeLensProvider: CteCodeLensProvider,
-    private telemetry: TelemetryService,
     private whatsNewPanel: WhatsNewPanel,
   ) {
     this.disposables.push(
@@ -79,7 +76,7 @@ export class VSCodeCommands implements Disposable {
         },
       ),
       commands.registerCommand("dbtPowerUser.showWhatsNew", () =>
-        this.whatsNewPanel.show("manual"),
+        this.whatsNewPanel.show(),
       ),
       commands.registerCommand("dbtPowerUser.runCurrentModel", () => {
         // `dbt run` on a singular test file is never meaningful; route it
@@ -160,13 +157,7 @@ export class VSCodeCommands implements Disposable {
             }
           }
 
-          const telemetryEvent = TelemetryEvents["CteProfiler/Profile"];
           const totalCtes = ctes.length;
-          this.telemetry.startTelemetryEvent(
-            telemetryEvent,
-            { source },
-            { cteCount: totalCtes },
-          );
 
           await window.withProgress(
             {
@@ -177,10 +168,6 @@ export class VSCodeCommands implements Disposable {
             async (progress, token) => {
               // Forward notification cancel to the service's own token.
               token.onCancellationRequested(() => {
-                this.telemetry.sendTelemetryEvent(
-                  TelemetryEvents["CteProfiler/Cancel"],
-                  { source: "progressNotification" },
-                );
                 this.cteProfilerService.cancel();
               });
 
@@ -210,25 +197,11 @@ export class VSCodeCommands implements Disposable {
                   document!,
                   ctes!,
                 );
-                const result = this.cteProfilerService.getResult(
-                  docUri.toString(),
-                );
-                this.telemetry.endTelemetryEvent(
-                  telemetryEvent,
-                  undefined,
-                  { source, status: result?.status ?? "unknown" },
-                  {
-                    cteCount: totalCtes,
-                    totalTimeMs: result?.totalTimeMs ?? 0,
-                    profiledCount: result?.ctes.length ?? 0,
-                  },
-                );
               } catch (error) {
-                this.telemetry.endTelemetryEvent(
-                  telemetryEvent,
+                this.dbtTerminal.error(
+                  "profileCtesError",
+                  "Unable to profile CTEs",
                   error,
-                  { source },
-                  { cteCount: totalCtes },
                 );
               } finally {
                 progressSub.dispose();
@@ -238,10 +211,6 @@ export class VSCodeCommands implements Disposable {
         },
       ),
       commands.registerCommand("dbtPowerUser.cancelCteProfiling", () => {
-        this.telemetry.sendTelemetryEvent(
-          TelemetryEvents["CteProfiler/Cancel"],
-          { source: "commandPalette" },
-        );
         this.cteProfilerService.cancel();
       }),
       commands.registerCommand("dbtPowerUser.clearProfileResults", () =>

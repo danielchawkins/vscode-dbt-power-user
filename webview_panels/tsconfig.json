@@ -29,11 +29,10 @@
       "@assets/*": ["src/assets/*"],
       "@modules/*": ["src/modules/*"],
       "@testUtils": ["src/testUtils/index.ts"],
-      "@vscodeApi": ["src/modules/vscode/index.ts"],
-      "@telemetryEvents": ["../src/telemetry/events.ts"]
+      "@vscodeApi": ["src/modules/vscode/index.ts"]
     },
     "typeRoots": ["src/modules/queryPanel/components/perspective"]
   },
-  "include": ["src", "../src/telemetry/events.ts"],
+  "include": ["src"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

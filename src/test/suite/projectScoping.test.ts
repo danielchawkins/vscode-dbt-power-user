@@ -62,10 +62,6 @@ function createFolder(
   const instance = new DBTWorkspaceFolder(
     factory as never,
     (() => detection) as never,
-    {
-      sendTelemetryEvent: jest.fn(),
-      sendTelemetryError: jest.fn(),
-    } as never,
     { debug: jest.fn(), info: jest.fn(), error: jest.fn() } as never,
     workspaceFolder as never,
     new EventEmitter<ManifestCacheChangedEvent>(),

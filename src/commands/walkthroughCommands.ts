@@ -10,7 +10,6 @@ import { ProgressLocation, QuickPickItem, window, workspace } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
-import { TelemetryService } from "../telemetry";
 import { getFirstWorkspacePath } from "../utils";
 
 enum PromptAnswer {
@@ -27,7 +26,6 @@ enum DbtInstallationPromptAnswer {
 export class WalkthroughCommands {
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
     private commandProcessExecutionFactory: CommandProcessExecutionFactory,
     @inject(PythonEnvironment)
     private pythonEnvironment: PythonEnvironment,
@@ -58,7 +56,6 @@ export class WalkthroughCommands {
       }
     }
     try {
-      this.telemetry.sendTelemetryEvent("validateProject");
       const project = this.dbtProjectContainer.findDBTProject(
         projectContext.uri,
       );
@@ -105,7 +102,6 @@ export class WalkthroughCommands {
       }
     }
     try {
-      this.telemetry.sendTelemetryEvent("installDeps");
       const project = this.dbtProjectContainer.findDBTProject(
         projectContext.uri,
       );
@@ -120,7 +116,6 @@ export class WalkthroughCommands {
         "Could not install deps",
         err,
       );
-      this.telemetry.sendTelemetryError("installDepsError", err);
       window.showErrorMessage(
         "Error installing dbt dependencies for project " +
           projectContext.label +
@@ -136,7 +131,6 @@ export class WalkthroughCommands {
 
   private async installDbtFusion(): Promise<void> {
     const platform = process.platform;
-    this.telemetry.sendTelemetryEvent("installDbtFusion", { platform });
     let error = undefined;
     await window.withProgress(
       {
@@ -181,9 +175,6 @@ export class WalkthroughCommands {
           this.dbtProjectContainer.initialize();
         } catch (err) {
           error = err;
-          this.telemetry.sendTelemetryError("installDbtFusionError", err, {
-            platform,
-          });
         }
       },
     );
@@ -199,13 +190,6 @@ export class WalkthroughCommands {
   }
 
   private async installDbtCloud(): Promise<void> {
-    const platform = process.platform;
-    const telemetryProps = {
-      platform,
-      pythonPath: this.pythonEnvironment.pythonPath ?? "unknown",
-      pythonVersion: this.pythonEnvironment.pythonVersion ?? "unknown",
-    };
-    this.telemetry.sendTelemetryEvent("installDbtCloud", telemetryProps);
     let error = undefined;
     await window.withProgress(
       {
@@ -241,11 +225,6 @@ export class WalkthroughCommands {
           this.dbtProjectContainer.initialize();
         } catch (err) {
           error = err;
-          this.telemetry.sendTelemetryError(
-            "installDbtCloudError",
-            err,
-            telemetryProps,
-          );
         }
       },
     );
@@ -300,16 +279,6 @@ export class WalkthroughCommands {
     }
     const packageVersion = dbtVersion.label;
     const packageName = this.mapToAdapterPackage(adapter.label);
-    const platform = process.platform;
-    const telemetryProps = {
-      adapter: adapter.label,
-      packageName,
-      dbtVersion: packageVersion,
-      platform,
-      pythonPath: this.pythonEnvironment.pythonPath ?? "unknown",
-      pythonVersion: this.pythonEnvironment.pythonVersion ?? "unknown",
-    };
-    this.telemetry.sendTelemetryEvent("installDbtCore", telemetryProps);
 
     const installArgs = [
       "-m",
@@ -340,11 +309,6 @@ export class WalkthroughCommands {
           this.dbtProjectContainer.initialize();
         } catch (err) {
           error = err;
-          this.telemetry.sendTelemetryError(
-            "installDbtCoreError",
-            err,
-            telemetryProps,
-          );
         }
       },
     );
@@ -355,11 +319,7 @@ export class WalkthroughCommands {
     // PEP 668: the interpreter (commonly a Homebrew Python) refuses global
     // installs. Offer a virtual environment instead of a dead-end retry.
     if (this.isExternallyManagedError(message)) {
-      await this.handleExternallyManagedInstall(
-        pythonPath,
-        installArgs,
-        telemetryProps,
-      );
+      await this.handleExternallyManagedInstall(pythonPath, installArgs);
       return;
     }
     const answer = await window.showErrorMessage(
@@ -419,7 +379,6 @@ export class WalkthroughCommands {
   private async handleExternallyManagedInstall(
     pythonPath: string,
     installArgs: string[],
-    telemetryProps: Record<string, string>,
   ): Promise<void> {
     const CREATE_VENV = "Create virtual environment";
     const FORCE = "Install anyway";
@@ -430,20 +389,15 @@ export class WalkthroughCommands {
       FORCE,
     );
     if (answer === CREATE_VENV) {
-      await this.createVenvAndInstallDbtCore(
-        pythonPath,
-        installArgs,
-        telemetryProps,
-      );
+      await this.createVenvAndInstallDbtCore(pythonPath, installArgs);
     } else if (answer === FORCE) {
-      await this.forceInstallDbtCore(pythonPath, installArgs, telemetryProps);
+      await this.forceInstallDbtCore(pythonPath, installArgs);
     }
   }
 
   private async createVenvAndInstallDbtCore(
     pythonPath: string,
     installArgs: string[],
-    telemetryProps: Record<string, string>,
   ): Promise<void> {
     const workspacePath = workspace.workspaceFolders?.[0]?.uri.fsPath;
     if (!workspacePath) {
@@ -457,7 +411,6 @@ export class WalkthroughCommands {
     const config = workspace.getConfiguration("dbt");
     const previousOverride = config.get<string>("dbtPythonPathOverride");
     let overrideUpdated = false;
-    this.telemetry.sendTelemetryEvent("installDbtCoreVenv", telemetryProps);
     let error: unknown;
     await window.withProgress(
       {
@@ -497,11 +450,6 @@ export class WalkthroughCommands {
             await config.update("dbtPythonPathOverride", previousOverride);
           }
           error = err;
-          this.telemetry.sendTelemetryError(
-            "installDbtCoreVenvError",
-            err,
-            telemetryProps,
-          );
         }
       },
     );
@@ -520,12 +468,7 @@ export class WalkthroughCommands {
   private async forceInstallDbtCore(
     pythonPath: string,
     installArgs: string[],
-    telemetryProps: Record<string, string>,
   ): Promise<void> {
-    this.telemetry.sendTelemetryEvent(
-      "installDbtCoreBreakSystemPackages",
-      telemetryProps,
-    );
     let error: unknown;
     await window.withProgress(
       {
@@ -543,11 +486,6 @@ export class WalkthroughCommands {
           this.dbtProjectContainer.initialize();
         } catch (err) {
           error = err;
-          this.telemetry.sendTelemetryError(
-            "installDbtCoreBreakSystemPackagesError",
-            err,
-            telemetryProps,
-          );
         }
       },
     );

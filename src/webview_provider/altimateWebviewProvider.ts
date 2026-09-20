@@ -30,7 +30,6 @@ import {
 } from "../services/creditsService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { TelemetryService } from "../telemetry";
 import { extendErrorWithSupportLinks } from "../utils";
 import path = require("path");
 
@@ -76,7 +75,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
   public constructor(
     protected dbtProjectContainer: DBTProjectContainer,
     protected altimateRequest: AltimateRequest,
-    protected telemetry: TelemetryService,
     protected emitterService: SharedStateService,
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
@@ -320,20 +318,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
               isValid,
             },
           });
-          break;
-        case "sendTelemetryEvent":
-          this.telemetry.sendTelemetryEvent(
-            params.eventName as string,
-            params.properties as { [key: string]: string },
-            params.measurements as { [key: string]: number },
-          );
-          break;
-        case "sendTelemetryError":
-          this.telemetry.sendTelemetryError(
-            params.eventName as string,
-            params.error,
-            params.properties as { [key: string]: string },
-          );
           break;
         case "setContext":
           this.dbtProjectContainer.setToGlobalState(

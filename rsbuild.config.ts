@@ -116,13 +116,6 @@ export default defineConfig({
         "vscode",
         "@altimateai/altimate-core",
         /^@altimateai\/altimate-core-/,
-        // Ignored because we don't use them, and App Insights has try/catch
-        // guarding their loading: https://github.com/microsoft/vscode-extension-telemetry/issues/41#issuecomment-598852991
-        "applicationinsights-native-metrics",
-        "@opentelemetry/tracing",
-        "@azure/opentelemetry-instrumentation-azure-sdk",
-        "@opentelemetry/instrumentation",
-        "@azure/functions-core",
       ];
 
       config.node = { __dirname: false };

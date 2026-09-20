@@ -7,8 +7,6 @@ import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { AltimateAuthService } from "../services/altimateAuthService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { TelemetryService } from "../telemetry";
-import { TelemetryEvents } from "../telemetry/events";
 import {
   AltimateWebviewProvider,
   HandleCommandProps,
@@ -131,18 +129,13 @@ const toAnchor = (link: string): string => {
   return hash >= 0 ? link.slice(hash) : "";
 };
 
-type WhatsNewTrigger = "auto" | "manual";
-
 export class WhatsNewPanel extends AltimateWebviewProvider {
   public static readonly viewType = "dbtPowerUser.WhatsNew";
   protected viewPath = "/whats-new";
   protected panelDescription = "What's New in dbt Power User";
-  private currentTrigger: WhatsNewTrigger = "manual";
-
   public constructor(
     protected dbtProjectContainer: DBTProjectContainer,
     protected altimateRequest: AltimateRequest,
-    protected telemetry: TelemetryService,
     protected emitterService: SharedStateService,
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
@@ -152,7 +145,6 @@ export class WhatsNewPanel extends AltimateWebviewProvider {
     super(
       dbtProjectContainer,
       altimateRequest,
-      telemetry,
       emitterService,
       dbtTerminal,
       queryManifestService,
@@ -164,9 +156,7 @@ export class WhatsNewPanel extends AltimateWebviewProvider {
    * Opens (or focuses) the What's New panel in the editor area. Mirrors VS
    * Code's own Release Notes: a one-off webview in the center, not a sidebar.
    */
-  public show(trigger: WhatsNewTrigger): void {
-    this.currentTrigger = trigger;
-
+  public show(): void {
     if (this._panel) {
       (this._panel as WebviewPanel).reveal?.();
       return;
@@ -235,7 +225,7 @@ export class WhatsNewPanel extends AltimateWebviewProvider {
     }
 
     if (WhatsNewPanel.isMinorOrMajorUpgrade(lastSeen, current)) {
-      this.show("auto");
+      this.show();
     }
   }
 
@@ -282,11 +272,6 @@ export class WhatsNewPanel extends AltimateWebviewProvider {
 
   private async getManifestForWebview(): Promise<WhatsNewManifest> {
     const manifest = await this.fetchManifest();
-    this.telemetry.sendTelemetryEvent(
-      TelemetryEvents["WhatsNew/PageOpened"],
-      { version: manifest.version, trigger: this.currentTrigger },
-      { items_shown: manifest.items.length },
-    );
     return manifest;
   }
 

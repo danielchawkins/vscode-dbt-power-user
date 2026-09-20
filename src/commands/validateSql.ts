@@ -23,7 +23,6 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
-import { TelemetryService } from "../telemetry";
 import { extendErrorWithSupportLinks } from "../utils";
 
 export class ValidateSql {
@@ -31,7 +30,6 @@ export class ValidateSql {
   private diagnosticsCollection: DiagnosticCollection;
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
     private altimate: AltimateRequest,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
@@ -60,10 +58,6 @@ export class ValidateSql {
             ".",
         ),
       );
-      this.telemetry.sendTelemetryError(
-        "validateSQLCompileNodePythonError",
-        exc,
-      );
       this.dbtTerminal.error(
         "validateSQLError",
         "Error encountered while compiling/retrieving schema for model",
@@ -71,10 +65,6 @@ export class ValidateSql {
       );
       return;
     }
-    this.telemetry.sendTelemetryError(
-      "validateSQLCompileNodeUnknownError",
-      exc,
-    );
     // Unknown error
     window.showErrorMessage(
       extendErrorWithSupportLinks(
@@ -84,7 +74,6 @@ export class ValidateSql {
   }
 
   async validateSql() {
-    this.telemetry.sendTelemetryEvent("validateSql");
     if (!window.activeTextEditor) {
       return;
     }
@@ -241,10 +230,6 @@ export class ValidateSql {
     }
     if (response.error_type === "sql_unknown_error") {
       window.showErrorMessage("Unable to validate SQL.");
-      this.telemetry.sendTelemetryError(
-        "validateSQLError",
-        response.errors[0].description,
-      );
       this.diagnosticsCollection.set(compileSQLUri, []);
       return;
     }

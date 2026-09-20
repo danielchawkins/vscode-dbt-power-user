@@ -28,7 +28,6 @@ import { PythonEnvironment } from "../../dbt_client/pythonEnvironment";
 import { AltimateAuthService } from "../../services/altimateAuthService";
 import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
-import { TelemetryService } from "../../telemetry";
 import { ValidationProvider } from "../../validation_provider";
 
 // Mock the @altimateai/dbt-integration module
@@ -107,7 +106,6 @@ jest.mock("../../utils", () => {
 
 describe("DBTProject Test Suite", () => {
   let mockTerminal: jest.Mocked<DBTTerminal>;
-  let mockTelemetry: jest.Mocked<TelemetryService>;
   let mockAltimate: jest.Mocked<AltimateRequest>;
   let mockValidationProvider: jest.Mocked<ValidationProvider>;
   let mockPythonEnvironment: jest.Mocked<PythonEnvironment>;
@@ -161,16 +159,6 @@ describe("DBTProject Test Suite", () => {
       logBlock: jest.fn(),
       warn: jest.fn(),
     } as unknown as jest.Mocked<DBTTerminal>;
-
-    // Mock TelemetryService
-    mockTelemetry = {
-      sendTelemetryEvent: jest.fn(),
-      sendTelemetryError: jest.fn(),
-      setTelemetryCustomAttribute: jest.fn(),
-      startTelemetryEvent: jest.fn(),
-      endTelemetryEvent: jest.fn(),
-      dispose: jest.fn(),
-    } as unknown as jest.Mocked<TelemetryService>;
 
     // Mock AltimateRequest
     mockAltimate = {
@@ -332,7 +320,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockTelemetry,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
@@ -370,7 +357,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockTelemetry,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
@@ -399,7 +385,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockTelemetry,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
@@ -426,7 +411,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockTelemetry,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
@@ -509,7 +493,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockTelemetry,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
@@ -621,7 +604,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockTelemetry,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
@@ -697,7 +679,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockTelemetry,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
@@ -762,7 +743,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockTelemetry,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
@@ -819,7 +799,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockTelemetry,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
@@ -907,7 +886,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockTelemetry,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,

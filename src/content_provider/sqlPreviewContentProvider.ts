@@ -11,7 +11,6 @@ import {
   workspace,
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import { TelemetryService } from "../telemetry";
 import path = require("path");
 
 export class SqlPreviewContentProvider
@@ -24,10 +23,7 @@ export class SqlPreviewContentProvider
   private subscriptions: Disposable[] = [];
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
 
-  constructor(
-    private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
-  ) {
+  constructor(private dbtProjectContainer: DBTProjectContainer) {
     // Register a single global listener for all document changes
     this.subscriptions.push(
       workspace.onDidChangeTextDocument((e: TextDocumentChangeEvent) => {
@@ -129,10 +125,8 @@ export class SqlPreviewContentProvider
 
       const project = this.dbtProjectContainer.findDBTProject(Uri.file(fsPath));
       if (project === undefined) {
-        this.telemetry.sendTelemetryError("sqlPreviewNotLoadingError");
         return "Still loading dbt project, please try again later...";
       }
-      this.telemetry.sendTelemetryEvent("requestCompilation");
       await project.refreshProjectConfig();
       return await project.unsafeCompileQuery(query, modelName);
     } catch (error: any) {

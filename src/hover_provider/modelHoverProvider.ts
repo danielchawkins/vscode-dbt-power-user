@@ -15,7 +15,6 @@ import {
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheChangedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
-import { TelemetryService } from "../telemetry";
 import { generateHoverMarkdownString } from "./utils";
 
 export class ModelHoverProvider implements HoverProvider, Disposable {
@@ -26,7 +25,6 @@ export class ModelHoverProvider implements HoverProvider, Disposable {
 
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
@@ -97,9 +95,6 @@ export class ModelHoverProvider implements HoverProvider, Disposable {
             const hover = new Hover(mdString, new Range(position, position));
             resolve(hover);
           }
-          this.telemetry.sendTelemetryEvent("provideModelHover", {
-            type: "single",
-          });
           return;
         }
         if (dbtModel && dbtModel.length === 3) {
@@ -111,9 +106,6 @@ export class ModelHoverProvider implements HoverProvider, Disposable {
             const hover = new Hover(mdString, new Range(position, position));
             resolve(hover);
           }
-          this.telemetry.sendTelemetryEvent("provideModelHover", {
-            type: "dual",
-          });
           return;
         }
       }

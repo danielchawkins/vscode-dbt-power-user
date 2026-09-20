@@ -105,14 +105,9 @@ describe("WalkthroughCommands.installDbt — externally-managed flow", () => {
       detectDBT: jest.fn(() => Promise.resolve()),
       initialize: jest.fn(),
     };
-    const telemetry = {
-      sendTelemetryEvent: jest.fn(),
-      sendTelemetryError: jest.fn(),
-    };
 
     commands = new (WalkthroughCommands as any)(
       dbtProjectContainer,
-      telemetry,
       commandProcessExecutionFactory,
       pythonEnvironment,
       { debug: jest.fn(), error: jest.fn() },

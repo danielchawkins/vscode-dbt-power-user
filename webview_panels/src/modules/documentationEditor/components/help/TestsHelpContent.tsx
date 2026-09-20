@@ -1,6 +1,4 @@
-import { TelemetryEvents } from "@telemetryEvents";
 import { Stack } from "@uicore";
-import { sendTelemetryEvent } from "../telemetry";
 
 const TestHelpContent = (): JSX.Element => {
   return (
@@ -37,32 +35,12 @@ const TestHelpContent = (): JSX.Element => {
       </p>
       <p>
         Need more help? Check out the&nbsp;
-        <a
-          onClick={() =>
-            sendTelemetryEvent(
-              TelemetryEvents[
-                "DocumentationEditor/HelpDocumentationLinkInTestsClick"
-              ],
-            )
-          }
-          href="https://docs.myaltimate.com/test/generatetest"
-        >
+        <a href="https://docs.myaltimate.com/test/generatetest">
           documentation
         </a>
         . For any issues or concerns, please{" "}
-        <a
-          onClick={() =>
-            sendTelemetryEvent(
-              TelemetryEvents[
-                "DocumentationEditor/HelpContactusLinkInTestsClick"
-              ],
-            )
-          }
-          href="https://app.myaltimate.com/contactus"
-        >
-          contact us
-        </a>{" "}
-        via chat or Slack. Happy documenting!
+        <a href="https://app.myaltimate.com/contactus">contact us</a> via chat
+        or Slack. Happy documenting!
       </p>
     </Stack>
   );

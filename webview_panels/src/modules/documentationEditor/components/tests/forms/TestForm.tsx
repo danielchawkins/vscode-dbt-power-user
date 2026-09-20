@@ -16,8 +16,6 @@ import Relationships from "./Relationships";
 import { useEffect, useMemo } from "react";
 import useTestFormSave, { TestOperation } from "../hooks/useTestFormSave";
 import { SaveRequest } from "../types";
-import { sendTelemetryEvent } from "../../telemetry";
-import { TelemetryEvents } from "@telemetryEvents";
 
 interface Props {
   formType: DbtGenericTests;
@@ -79,11 +77,6 @@ const TestForm = ({ formType, onClose, column }: Props): JSX.Element | null => {
   }, [formType, fieldValue, toValue, acceptedValues]);
 
   const handleSaveClick = handleSubmit((d) => {
-    sendTelemetryEvent(
-      formType === DbtGenericTests.ACCEPTED_VALUES
-        ? TelemetryEvents["DocumentationEditor/AcceptedValuesSaveClick"]
-        : TelemetryEvents["DocumentationEditor/RelationshipsSaveClick"],
-    );
     handleSave({ ...d, test: formType }, column, TestOperation.CREATE);
     onClose();
   });

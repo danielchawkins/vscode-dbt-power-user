@@ -68,8 +68,7 @@ export class PythonEnvironment {
       // Self-heal already-poisoned configs: a value persisted by an earlier
       // buggy terminal probe (e.g. a leaked command-echo fragment) would
       // otherwise poison every dbt/pip invocation as "Command not found".
-      // Ignore it and fall back to normal detection. sendTelemetry=true so we
-      // can watch recovery across the affected machines.
+      // Ignore it and fall back to normal detection.
       this.dbtTerminal.warn(
         "pythonEnvironment:pythonPath",
         `Ignoring invalid dbtPythonPathOverride (not a usable interpreter): ${override}`,

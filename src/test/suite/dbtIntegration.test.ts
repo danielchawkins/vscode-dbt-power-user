@@ -90,7 +90,6 @@ describe("CLIDBTCommandExecutionStrategy Tests", () => {
     // Verify terminal was shown
     expect(mockTerminal.show).toHaveBeenCalled();
 
-    // Verify telemetry was sent through terminal.info
     expect(mockTerminal.info).toHaveBeenCalledWith(
       "dbtCommand",
       "Executed dbt command: dbt run --select my_model",
@@ -142,7 +141,6 @@ describe("CLIDBTCommandExecutionStrategy Tests", () => {
     // Verify terminal was not shown
     expect(mockTerminal.show).not.toHaveBeenCalled();
 
-    // Verify telemetry was still sent through terminal.info
     expect(mockTerminal.info).toHaveBeenCalledWith(
       "dbtCommand",
       "Executed dbt command: dbt run --select my_model",

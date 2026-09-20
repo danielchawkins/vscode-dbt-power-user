@@ -14,7 +14,6 @@ import {
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheChangedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
-import { TelemetryService } from "../telemetry";
 import { isEnclosedWithinCodeBlock } from "../utils";
 
 // TODO autocomplete doesn't work when mistype, delete and retype
@@ -34,10 +33,7 @@ export class ModelAutocompletionProvider
   > = new Map();
   private disposables: Disposable[] = [];
 
-  constructor(
-    private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
-  ) {
+  constructor(private dbtProjectContainer: DBTProjectContainer) {
     this.disposables.push(
       dbtProjectContainer.onManifestChanged((event) =>
         this.onManifestCacheChanged(event),
@@ -188,7 +184,6 @@ export class ModelAutocompletionProvider
 
       return this.modelAutocompleteMap.get(project.uri.fsPath);
     }
-    this.telemetry.sendTelemetryEvent("provideModelAutocompletion");
     return this.modelAutocompleteMap.get(projectRootpath.fsPath);
   };
 }

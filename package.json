@@ -870,7 +870,6 @@
   "dependencies": {
     "@altimateai/dbt-integration": "^0.3.13",
     "@vscode/codicons": "^0.0.36",
-    "@vscode/extension-telemetry": "^1.5.2",
     "@vscode/vsce": "^3.9.1",
     "inversify": "^6.0.2",
     "inversify-binding-decorators": "^4.0.0",

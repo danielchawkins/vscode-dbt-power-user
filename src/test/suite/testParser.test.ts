@@ -34,9 +34,6 @@ describe("TestParser Test Suite", () => {
         clear: () => {},
         show: () => {},
       },
-      telemetry: {
-        sendTelemetryEvent: () => {},
-      },
       onDidWrite: new EventEmitter<string>().event,
       clear: () => {},
       show: () => {},

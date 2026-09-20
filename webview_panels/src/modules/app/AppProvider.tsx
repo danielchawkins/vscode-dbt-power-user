@@ -11,7 +11,7 @@ import appSlice, {
   initialState,
   updateIsComponentsApiInitialized,
 } from "./appSlice";
-import { executeRequestInAsync, executeRequestInSync } from "./requestExecutor";
+import { executeRequestInSync } from "./requestExecutor";
 import { ContextProps } from "./types";
 import useListeners from "./useListeners";
 
@@ -35,11 +35,6 @@ const AppProvider = ({ children }: { children: ReactNode }): JSX.Element => {
       data?: Record<string, unknown>,
       request?: RequestInit,
     ) => {
-      if (data?.telemetry) {
-        executeRequestInAsync("sendTelemetryEvent", {
-          ...data.telemetry,
-        });
-      }
       return executeRequestInSync("fetch", {
         endpoint: url,
         fetchArgs: { ...data, ...request, method: "GET" },
@@ -51,12 +46,6 @@ const AppProvider = ({ children }: { children: ReactNode }): JSX.Element => {
       data?: Record<string, unknown>,
       request?: RequestInit,
     ) => {
-      if (data?.telemetry) {
-        executeRequestInAsync("sendTelemetryEvent", {
-          ...data.telemetry,
-        });
-      }
-
       return executeRequestInSync("fetch", {
         endpoint: url,
         fetchArgs: {

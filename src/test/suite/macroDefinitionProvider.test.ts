@@ -3,7 +3,6 @@ import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
 import { MacroDefinitionProvider } from "../../definition_provider/macroDefinitionProvider";
-import { TelemetryService } from "../../telemetry";
 
 // A minimal text document mock tailored for MacroDefinitionProvider.
 // The provider only touches lineAt(position).text, getWordRangeAtPosition,
@@ -34,7 +33,6 @@ const createMockDocument = (line: string, word: string) => {
 describe("MacroDefinitionProvider — issue #1754", () => {
   const PROJECT_ROOT = "/workspace/project";
   let mockContainer: jest.Mocked<DBTProjectContainer>;
-  let mockTelemetry: jest.Mocked<TelemetryService>;
   let manifestHandlers: Array<(event: ManifestCacheChangedEvent) => void>;
   let provider: MacroDefinitionProvider;
 
@@ -66,11 +64,7 @@ describe("MacroDefinitionProvider — issue #1754", () => {
       getProjectRootpath: jest.fn().mockReturnValue({ fsPath: PROJECT_ROOT }),
     } as any;
 
-    mockTelemetry = {
-      sendTelemetryEvent: jest.fn(),
-    } as any;
-
-    provider = new MacroDefinitionProvider(mockContainer, mockTelemetry);
+    provider = new MacroDefinitionProvider(mockContainer);
   });
 
   afterEach(() => {
@@ -118,9 +112,6 @@ describe("MacroDefinitionProvider — issue #1754", () => {
     expect(result).toBeDefined();
     expect(result.uri.fsPath).toBe(ownProjectMacro.path);
     expect(result.range.line).toBe(0);
-    expect(mockTelemetry.sendTelemetryEvent).toHaveBeenCalledWith(
-      "provideMacroDefinition",
-    );
   });
 
   it("resolves <current_project>.<macro> self-prefixed calls (issue #1754)", async () => {
@@ -141,9 +132,6 @@ describe("MacroDefinitionProvider — issue #1754", () => {
 
     expect(result).toBeDefined();
     expect(result.uri.fsPath).toBe(ownProjectMacro.path);
-    expect(mockTelemetry.sendTelemetryEvent).toHaveBeenCalledWith(
-      "provideMacroDefinition",
-    );
   });
 
   it("resolves cross-package <other_pkg>.<macro> calls", async () => {
@@ -169,7 +157,7 @@ describe("MacroDefinitionProvider — issue #1754", () => {
     expect(result.range.line).toBe(3);
   });
 
-  it("returns undefined for unknown macros without touching telemetry", async () => {
+  it("returns undefined for unknown macros", async () => {
     fireManifest(new Map());
 
     (mockContainer.getPackageName as jest.Mock).mockReturnValue(undefined);
@@ -184,7 +172,6 @@ describe("MacroDefinitionProvider — issue #1754", () => {
     } as any);
 
     expect(result).toBeUndefined();
-    expect(mockTelemetry.sendTelemetryEvent).not.toHaveBeenCalled();
   });
 
   it("resolves unprefixed calls from inside an installed package (preserves existing behavior)", async () => {

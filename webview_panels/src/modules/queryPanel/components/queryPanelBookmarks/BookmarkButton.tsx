@@ -1,9 +1,6 @@
 import { BookmarkIcon } from "@assets/icons";
 import { yupResolver } from "@hookform/resolvers/yup";
-import {
-  executeRequestInAsync,
-  executeRequestInSync,
-} from "@modules/app/requestExecutor";
+import { executeRequestInSync } from "@modules/app/requestExecutor";
 import { panelLogger } from "@modules/logger";
 import {
   setQueryBookmarksTagsFromDB,
@@ -88,12 +85,6 @@ const BookmarkButton = ({ queryHistory }: Props): JSX.Element => {
       });
       panelLogger.info("saved bookmark", response);
       refetchBookmarks();
-      executeRequestInAsync("sendTelemetryEvent", {
-        eventName: `query-bookmark-added`,
-        properties: {
-          name: data.name,
-        },
-      });
       onClose();
       const actionResponse = await executeRequestInSync(
         "showInformationMessage",

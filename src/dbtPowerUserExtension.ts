@@ -1,3 +1,4 @@
+import { DBTTerminal } from "@altimateai/dbt-integration";
 import {
   commands,
   Disposable,
@@ -24,7 +25,6 @@ import {
   updateCachedAvailableExecutions,
 } from "./services/creditsService";
 import { StatusBars } from "./statusbar";
-import { TelemetryService } from "./telemetry";
 import { TreeviewProviders } from "./treeview_provider";
 import { ValidationProvider } from "./validation_provider";
 import { WebviewViewProviders } from "./webview_provider";
@@ -35,26 +35,8 @@ enum PromptAnswer {
   NO = "No",
 }
 
-const POWER_USER_EXTENSION_MARKER = "innoverio.vscode-dbt-power-user";
 const UPSTREAM_EXTENSION_ID = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_POWER_USER = "Uninstall Power User";
-
-// `process.on("unhandledRejection")` fires for every rejection in the
-// extension host — including rejections originating in other extensions
-// (GitLens, Ruff, SQLFluff, VS Code core RPC, etc.) that happen to be
-// loaded in the same process. Without filtering, our `catchAllError`
-// telemetry attributes other vendors' failures to power-user, inflating
-// our error volume by ~5-10x and polluting triage. Restrict forwarding
-// to rejections whose stack points at the published extension directory.
-export function isPowerUserRejection(reason: unknown): boolean {
-  if (reason === null || reason === undefined) {
-    return false;
-  }
-  const stack = (reason as { stack?: unknown }).stack;
-  return (
-    typeof stack === "string" && stack.includes(POWER_USER_EXTENSION_MARKER)
-  );
-}
 
 export class DBTPowerUserExtension implements Disposable {
   static DBT_SQL_SELECTOR = [
@@ -87,7 +69,7 @@ export class DBTPowerUserExtension implements Disposable {
     private documentFormattingEditProviders: DocumentFormattingEditProviders,
     private statusBars: StatusBars,
     private puStatusBars: DbtPowerUserActionsCenter,
-    private telemetry: TelemetryService,
+    private dbtTerminal: DBTTerminal,
     private hoverProviders: HoverProviders,
     private validationProvider: ValidationProvider,
     private altimateRequest: AltimateRequest,
@@ -106,7 +88,6 @@ export class DBTPowerUserExtension implements Disposable {
       this.documentFormattingEditProviders,
       this.statusBars,
       this.puStatusBars,
-      this.telemetry,
       this.hoverProviders,
       this.validationProvider,
       this.whatsNewPanel,
@@ -151,37 +132,6 @@ export class DBTPowerUserExtension implements Disposable {
         return;
       }
 
-      // VS Code's `@vscode/extension-telemetry` library auto-emits an
-      // `unhandlederror` event for uncaught promise rejections, but it only
-      // captures `name`/`message`/`stack` (baseTelemetrySender.sendErrorData)
-      // and skips `error.code`. That makes IPC failures like `Channel
-      // closed` (errno `ERR_IPC_CHANNEL_CLOSED`), `EPIPE`, `EBADF`, etc.
-      // indistinguishable from each other in App Insights — all just show
-      // up with `name="Error"` and `message="Channel closed"`.
-      //
-      // Route uncaught rejections through `sendTelemetryError` in addition,
-      // so they pick up our consistent `error_name` / `error_message` /
-      // `error_code` fields plus `dbtIntegrationMode` / `instanceName` /
-      // `localMode`. The upstream `unhandlederror` event keeps firing in
-      // parallel — both events stream to App Insights, queryable separately.
-      //
-      // Filter to rejections whose stack originates in our extension; see
-      // `isPowerUserRejection` above for the rationale.
-      const onUnhandledRejection = (reason: unknown) => {
-        if (!isPowerUserRejection(reason)) {
-          return;
-        }
-        try {
-          this.telemetry.sendTelemetryError("catchAllError", reason);
-        } catch {
-          // Telemetry failures must never re-enter the rejection path.
-        }
-      };
-      process.on("unhandledRejection", onUnhandledRejection);
-      context.subscriptions.push({
-        dispose: () => process.off("unhandledRejection", onUnhandledRejection),
-      });
-
       this.dbtProjectContainer.setContext(context);
       this.dbtProjectContainer.initializeWalkthrough();
       this.whatsNewPanel.checkAndShowOnActivation();
@@ -207,10 +157,9 @@ export class DBTPowerUserExtension implements Disposable {
           handleExecutionsExhausted(this.altimateRequest),
         );
       } catch (error) {
-        // Listener registration must never block activation; record it so a
-        // version-skew failure is observable instead of silently swallowed.
-        this.telemetry.sendTelemetryError(
+        this.dbtTerminal.error(
           "creditsListenerRegistrationError",
+          "Unable to register credits listeners",
           error,
         );
       }
@@ -232,7 +181,11 @@ export class DBTPowerUserExtension implements Disposable {
         }
       });
     } catch (error) {
-      this.telemetry.sendTelemetryError("extensionActivationError", error);
+      this.dbtTerminal.error(
+        "extensionActivationError",
+        "Unable to activate Fusion Power User",
+        error,
+      );
     }
   }
 }

@@ -13,7 +13,6 @@ import {
 import { parseDocument } from "yaml";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheChangedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
-import { TelemetryService } from "../telemetry";
 import { generateHoverMarkdownString } from "./utils";
 
 interface YamlMapItem {
@@ -28,10 +27,7 @@ export class YamlModelHoverProvider implements HoverProvider, Disposable {
   private sourceMetaMap: Map<string, SourceMetaMap> = new Map();
   private disposables: Disposable[] = [];
 
-  constructor(
-    private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
-  ) {
+  constructor(private dbtProjectContainer: DBTProjectContainer) {
     this.disposables.push(
       dbtProjectContainer.onManifestChanged((event) =>
         this.onManifestCacheChanged(event),
@@ -66,7 +62,6 @@ export class YamlModelHoverProvider implements HoverProvider, Disposable {
       if (nodeMap) {
         const node = nodeMap.lookupByBaseName(modelName);
         if (node) {
-          this.telemetry.sendTelemetryEvent("provideYamlModelHover");
           return new Hover(
             generateHoverMarkdownString(node, "model"),
             new Range(position, position),
@@ -85,7 +80,6 @@ export class YamlModelHoverProvider implements HoverProvider, Disposable {
             (t) => t.name === sourceInfo.tableName,
           );
           if (table) {
-            this.telemetry.sendTelemetryEvent("provideYamlSourceHover");
             return new Hover(
               generateHoverMarkdownString(table, "source"),
               new Range(position, position),
@@ -97,7 +91,6 @@ export class YamlModelHoverProvider implements HoverProvider, Disposable {
 
     const columnInfo = this.getColumnNameAtPosition(document, position);
     if (columnInfo) {
-      this.telemetry.sendTelemetryEvent("provideYamlColumnHover");
       return this.getColumnHover(columnInfo.columnName, columnInfo.modelName);
     }
 

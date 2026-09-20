@@ -12,7 +12,7 @@ const LAST_SEEN_VERSION_KEY = "whatsNew.lastSeenVersion";
  */
 const activationHarness = (opts: { enabled?: boolean } = {}) => {
   const store = new Map<string, unknown>();
-  const shown: string[] = [];
+  let shownCount = 0;
 
   const container = {
     extensionVersion: "0.0.0",
@@ -29,14 +29,16 @@ const activationHarness = (opts: { enabled?: boolean } = {}) => {
     unknown
   > & { checkAndShowOnActivation: () => void };
   panel.dbtProjectContainer = container;
-  panel.show = (trigger: string) => shown.push(trigger);
+  panel.show = () => {
+    shownCount += 1;
+  };
 
   (workspace.getConfiguration as jest.Mock).mockReturnValue({
     get: (_key: string, fallback: boolean) => opts.enabled ?? fallback,
   });
 
   return {
-    shown,
+    shown: () => shownCount,
     lastSeen: () => store.get(LAST_SEEN_VERSION_KEY),
     setLastSeen: (v: string) => store.set(LAST_SEEN_VERSION_KEY, v),
     /** Simulate the extension activating while reporting `version`. */
@@ -57,7 +59,7 @@ describe("WhatsNewPanel.checkAndShowOnActivation", () => {
     h.activateAs("0.62.1");
     // A first-time user gets the setup walkthrough, not a changelog for
     // changes they were never around for.
-    expect(h.shown).toEqual([]);
+    expect(h.shown()).toBe(0);
     expect(h.lastSeen()).toBe("0.62.1");
   });
 
@@ -66,12 +68,12 @@ describe("WhatsNewPanel.checkAndShowOnActivation", () => {
     h.setLastSeen("0.62.1");
 
     h.activateAs("0.63.0");
-    expect(h.shown).toEqual(["auto"]);
+    expect(h.shown()).toBe(1);
     expect(h.lastSeen()).toBe("0.63.0");
 
     // Reloading the window must not re-open the page.
     h.activateAs("0.63.0");
-    expect(h.shown).toEqual(["auto"]);
+    expect(h.shown()).toBe(1);
   });
 
   it("replays a realistic release sequence, opening only on minor bumps", () => {
@@ -82,7 +84,7 @@ describe("WhatsNewPanel.checkAndShowOnActivation", () => {
       h.activateAs(version);
     }
 
-    expect(h.shown).toEqual(["auto", "auto"]);
+    expect(h.shown()).toBe(2);
     expect(h.lastSeen()).toBe("1.0.0");
   });
 
@@ -93,7 +95,7 @@ describe("WhatsNewPanel.checkAndShowOnActivation", () => {
     h.setLastSeen("0.62.1");
 
     h.activateAs("0.62.9");
-    expect(h.shown).toEqual([]);
+    expect(h.shown()).toBe(0);
     expect(h.lastSeen()).toBe("0.62.9");
   });
 
@@ -102,7 +104,7 @@ describe("WhatsNewPanel.checkAndShowOnActivation", () => {
     h.setLastSeen("0.62.1");
 
     h.activateAs("0.63.0");
-    expect(h.shown).toEqual([]);
+    expect(h.shown()).toBe(0);
     // Still tracked, so re-enabling doesn't fire a stale backlog.
     expect(h.lastSeen()).toBe("0.63.0");
   });
