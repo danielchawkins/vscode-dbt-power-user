@@ -13,11 +13,12 @@ import {
   loadFormatterFixtures,
 } from "./helpers/fixtureLoader";
 import { findSqlfmt, runSqlfmt, runSqlfmtFormat } from "./helpers/sqlfmtRunner";
+import { getExtensionRoot } from "./helpers/testFixtures";
 
 suite("Formatter Integration Tests", function () {
   this.timeout(30_000);
 
-  const extensionRoot = path.resolve(__dirname, "../../../");
+  const extensionRoot = getExtensionRoot();
   let fixtures: FormatterFixture[];
   let tempDir: string;
 
@@ -50,7 +51,7 @@ suite("Formatter Integration Tests", function () {
     // Mocha requires tests to be registered synchronously, so we use a
     // two-phase approach: register all fixtures, skip at runtime if needed.
 
-    const extensionRoot = path.resolve(__dirname, "../../../");
+    const extensionRoot = getExtensionRoot();
     const fixtureDir = path.join(
       extensionRoot,
       "src",
