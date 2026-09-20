@@ -1326,6 +1326,7 @@
     "@vscode/vsce-sign@2.1.0": true,
     "keytar": false,
     "zeromq@6.8.0": true,
-    "core-js": false
+    "core-js": false,
+    "fsevents": false
   }
 }
