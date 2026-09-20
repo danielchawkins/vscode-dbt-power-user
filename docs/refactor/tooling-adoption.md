@@ -64,6 +64,8 @@ just package
 
 CI, hooks, IDE tasks, and agents call Just recipes. Package scripts may compose steps within one package; they do not reproduce repository-level `fmt`, `lint`, `check`, setup, or packaging workflows.
 
+`just sync` and `just update` pass `--strict-allow-scripts` so an install script outside `allowScripts` fails the recipe. Approve with a version pin (`pkg@1.2.3: true`); deny with a bare name (`pkg: false`) so the deny survives upgrades. `just-lsp` stays in `mise.toml` for editors; `just setup` does not require it.
+
 ### Markdown
 
 Use dprint for Markdown formatting and rumdl for structural linting. Keep one physical source line per prose paragraph, let the editor and renderer soft-wrap it, configure dprint to maintain authored wrapping, and disable rumdl's line-length rule. Remove Markdown from Prettier so one file type never has two formatters. Do not add `markdownlint-cli2` alongside rumdl; their structural rules overlap.

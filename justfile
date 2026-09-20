@@ -29,13 +29,13 @@ setup *args:
 
 [group("setup")]
 sync:
-    npm ci
-    npm ci --prefix webview_panels
+    npm ci --strict-allow-scripts
+    npm ci --prefix webview_panels --strict-allow-scripts
 
 [group("setup")]
 update:
-    npm update
-    npm update --prefix webview_panels
+    npm update --strict-allow-scripts
+    npm update --prefix webview_panels --strict-allow-scripts
     npm install-scripts prune
     npm --prefix webview_panels install-scripts prune
 
@@ -52,7 +52,6 @@ verify-setup:
     node --version
     npm --version
     just --version
-    just-lsp --version
     lefthook version
     dprint --version
     rumdl --version
