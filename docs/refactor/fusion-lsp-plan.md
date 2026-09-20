@@ -1,6 +1,6 @@
 # Fusion Power User: refactor plan
 
-Land each step as a feature bookmark and a pull request against `main`. [`implementation-dispatch.md`](implementation-dispatch.md) is the execution layer: trunk, workspaces, overlap, and the two file-path corrections. This file remains the spec: contracts, file lists, verification, spikes, and Confirm gates.
+Land each step as a feature bookmark and a pull request against `main`. [`implementation-dispatch.md`](implementation-dispatch.md) is the execution layer: trunk, workspaces, overlap, and the two file-path corrections. This file remains the spec: contracts, file lists, verification, spikes, and Confirm gates. Remaining work is sequenced in [`remaining-implementation.md`](remaining-implementation.md).
 
 ## 1. Goal and scope
 
@@ -143,7 +143,7 @@ Contract: the package identifier is `danielchawkins.fusion-power-user`. Runtime 
 
 Verify: `just package` produces `fusion-power-user-0.1.0-alpha.0.vsix`; `package.json` carries only the fork package, publisher, repository, homepage, and bug tracker identity; `just check` is green.
 
-**1.2 — Fusion version gate — next.** Replace `DBTFusionCommandDetection.detectDBT` in `src/dbt_client/dbtFusionCommandIntegration.ts` with a version resolver.
+**1.2 — Fusion version gate — complete.** Wrap detection in `src/fusion/` rather than patching `DBTFusionCommandDetection` in `@altimateai/dbt-integration`.
 
 Contract, in a new `src/fusion/fusionVersion.ts`:
 
@@ -164,7 +164,7 @@ export function judgeFusionVersion(v: FusionVersion | undefined, raw: string): F
 
 Verify: unit tests in `src/test/suite/fusionVersion.test.ts` covering real `dbt 2.0.5` output, `dbt 3.0.0` (untested major), `dbt 2.0.4` (too old), a dbt Core `--version` block (not Fusion), and empty stdout. This closes consumer characterization case 2.
 
-**1.3 — Conflict guard and `enabled` setting.** In `src/dbtPowerUserExtension.ts`, before any other activation work: if `extensions.getExtension("innoverio.vscode-dbt-power-user")` is defined, show one blocking error naming the conflicting extension and offering an "Uninstall Power User" action that runs `workbench.extensions.uninstallExtension`, then return without registering anything. Separately, return early when the resource-scoped `enabled` setting is false.
+**1.3 — Conflict guard and `enabled` setting — complete.** In `src/dbtPowerUserExtension.ts`, before any other activation work: if `extensions.getExtension("innoverio.vscode-dbt-power-user")` is defined, show one blocking error naming the conflicting extension and offering an "Uninstall Power User" action that runs `workbench.extensions.uninstallExtension`, then return without registering anything. Separately, return early when the resource-scoped `enabled` setting is false.
 
 Contract: both are decided before `detectDBT()`; neither starts a process, registers a provider, or creates a watcher. The conflict error is the one notification permitted at startup.
 
@@ -176,7 +176,7 @@ Verify: unit tests asserting no disposables are registered and no process is spa
 
 Goal: lock in current behavior at the seams about to move, and encode the consumer's field-observed defects as failing tests that later phases turn green. No production code changes in this phase.
 
-**2.1 — Fixture workspaces.** Add `src/test/fixtures/`:
+**2.1 — Fixture workspaces — complete.** Add `src/test/fixtures/`:
 
 - `single-project/` — one root with `dbt_project.yml`, `models/`, a `profiles.yml`, one deliberately broken `ref()`.
 - `multi-root/` — mirrors the consumer: `projects/general/` and `projects/sox/` as dbt projects, a `shared_packages/` non-project folder holding macros, a `pipelines/` folder with no `dbt_project.yml`, and a `projects/general/.state_copy/` containing a complete copy of a dbt project to reproduce the `.local_defs_state` case.
@@ -186,7 +186,7 @@ Contract: fixtures are the shared vocabulary of every later test. Do not fork th
 
 Verify: a smoke test asserts each fixture parses as YAML and that `multi-root` has exactly two real project roots plus one copy.
 
-**2.2 — Integration harness.** Add `src/test/integration/` driven by the existing `@vscode/test-electron` devDependency, and a `just test-integration` recipe. The harness opens a fixture as a workspace, waits for activation, and exposes helpers to read diagnostics, request completions, and send `executeCommand`. Add `src/test/integration/lspFixture.ts` that can spawn `dbt lsp` directly against a fixture and speak LSP over the reverse socket without the extension, so protocol behavior can be characterized independently of extension bugs.
+**2.2 — Integration harness — next.** Add `src/test/integration/` driven by the existing `@vscode/test-electron` devDependency, and a `just test-integration` recipe. The harness opens a fixture as a workspace, waits for activation, and exposes helpers to read diagnostics, request completions, and send `executeCommand`. Add `src/test/integration/lspFixture.ts` that can spawn `dbt lsp` directly against a fixture and speak LSP over the reverse socket without the extension, so protocol behavior can be characterized independently of extension bugs.
 
 Contract: `just test-integration` requires the pinned Fusion on `PATH` and skips with a clear message otherwise; it never runs inside `just check`. Fusion 2.0.5 does not load a project-root `profiles.yml` on its own — pass `--profiles-dir` (or `DBT_PROFILES_DIR`) as the fixture's project directory, which already holds a dummy `profiles.yml`.
 

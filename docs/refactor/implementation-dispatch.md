@@ -47,7 +47,7 @@ A reviewer then reads the workspace diff against the step's contract and this ch
 
 ## Current position
 
-Phase 0 is complete. Phase 1.1 package identity is complete. Next production steps: **1.2**, **1.3**, then Phase 2. The product is still manifest-driven and still contains Core, Cloud, hosted Altimate, telemetry, AI, MCP, and notebooks.
+Phase 0 and 1.1 are complete. **1.2**, **1.3**, and **2.1** are on `main`. Next: Phase 2.2 / 2.3 / 2.4 in parallel (see [`remaining-implementation.md`](remaining-implementation.md)), then Phase 3 strictly serial. The product is still manifest-driven and still contains Core, Cloud, hosted Altimate, telemetry, AI, MCP, and notebooks.
 
 **Correction to the plan's file path for 1.2:** `DBTFusionCommandDetection` lives in `@altimateai/dbt-integration`, not `src/dbt_client/dbtFusionCommandIntegration.ts`. Do not patch `node_modules`. Put `parseFusionVersion` / `judgeFusionVersion` in `src/fusion/fusionVersion.ts` and wrap detection in this extension (new adapter bound in `src/inversify.config.ts`, or a wrap of `DBTClient.detectDBT`). The library class can stay until Phase 8.
 
