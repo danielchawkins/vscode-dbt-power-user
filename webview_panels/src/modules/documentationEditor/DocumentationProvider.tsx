@@ -1,4 +1,3 @@
-import { ConversationGroup, DbtDocsShareDetails } from "@lib";
 import {
   executeRequestInAsync,
   executeRequestInSync,
@@ -24,16 +23,12 @@ import documentationSlice, {
   setInsertedEntityName,
   setMissingDocumentationMessage,
   setProject,
-  updatConversations,
   updateBulkDocsPropRightPanel,
-  updateCollaborationEnabled,
   updateColumnsAfterSync,
   updateColumnsInCurrentDocsData,
-  updateConversationsRightPanelState,
   updateCurrentDocsData,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
-  updateSelectedConversationGroup,
   updateSingleDocsPropRightPanel,
 } from "./state/documentationSlice";
 import {
@@ -62,7 +57,6 @@ type IncomingMessageEvent = MessageEvent<
     docBlocks?: DocBlock[];
     name?: string;
     description?: string;
-    collaborationEnabled?: boolean;
     missingDocumentationMessage?: {
       message: string;
       type: "error" | "warning";
@@ -93,34 +87,6 @@ const DocumentationProvider = (): JSX.Element => {
     }, 1000);
   };
 
-  const handleConversationUpdates = ({
-    shareId,
-    conversationGroups,
-  }: {
-    shareId: DbtDocsShareDetails["share_id"];
-    conversationGroups: ConversationGroup[];
-  }) => {
-    panelLogger.info("handleConversationUpdates", shareId, conversationGroups);
-    dispatch(updatConversations({ [shareId]: conversationGroups }));
-  };
-
-  const handleViewConversation = ({
-    shareId,
-    conversation_group_id,
-  }: {
-    shareId: DbtDocsShareDetails["share_id"];
-    conversation_group_id: ConversationGroup["conversation_group_id"];
-  }) => {
-    panelLogger.info("handleViewConversation", shareId, conversation_group_id);
-    dispatch(updateConversationsRightPanelState(true));
-    dispatch(
-      updateSelectedConversationGroup({
-        shareId,
-        conversationGroupId: conversation_group_id,
-      }),
-    );
-  };
-
   const renderDocumentation = (event: IncomingMessageEvent) => {
     dispatch(
       setIncomingDocsData({
@@ -131,9 +97,6 @@ const DocumentationProvider = (): JSX.Element => {
     );
     dispatch(setProject(event.data.project));
     dispatch(
-      updateCollaborationEnabled(Boolean(event.data.collaborationEnabled)),
-    );
-    dispatch(
       setMissingDocumentationMessage(event.data.missingDocumentationMessage),
     );
     dispatch(setDocBlocks(event.data.docBlocks ?? []));
@@ -142,18 +105,6 @@ const DocumentationProvider = (): JSX.Element => {
   const onMessage = useCallback((event: IncomingMessageEvent) => {
     const { command, ...params } = event.data;
     switch (command) {
-      case "viewConversation":
-        handleViewConversation(
-          params as unknown as Parameters<typeof handleViewConversation>["0"],
-        );
-        break;
-      case "conversations:updates":
-        handleConversationUpdates(
-          params as unknown as Parameters<
-            typeof handleConversationUpdates
-          >["0"],
-        );
-        break;
       case "renderDocumentation": {
         const {
           currentDocsData,

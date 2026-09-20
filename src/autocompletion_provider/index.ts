@@ -4,7 +4,6 @@ import { DocAutocompletionProvider } from "./docAutocompletionProvider";
 import { MacroAutocompletionProvider } from "./macroAutocompletionProvider";
 import { ModelAutocompletionProvider } from "./modelAutocompletionProvider";
 import { SourceAutocompletionProvider } from "./sourceAutocompletionProvider";
-import { UserCompletionProvider } from "./usercompletion_provider";
 
 export class AutocompletionProviders implements Disposable {
   private disposables: Disposable[] = [];
@@ -14,7 +13,6 @@ export class AutocompletionProviders implements Disposable {
     private modelAutocompletionProvider: ModelAutocompletionProvider,
     private sourceAutocompletionProvider: SourceAutocompletionProvider,
     private docAutocompletionProvider: DocAutocompletionProvider,
-    private userCompletionProvider: UserCompletionProvider,
   ) {
     this.disposables.push(
       languages.registerCompletionItemProvider(
@@ -44,12 +42,6 @@ export class AutocompletionProviders implements Disposable {
         "(",
         '"',
         "'",
-      ),
-      // enabled only for markdowns - to work for comment inputs
-      languages.registerCompletionItemProvider(
-        { language: "markdown" },
-        this.userCompletionProvider,
-        "@",
       ),
     );
   }

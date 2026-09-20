@@ -7,8 +7,6 @@ export enum Themes {
 export interface AppStateProps {
   theme: Themes;
   isComponentsApiInitialized: boolean;
-  users: Record<number, User>;
-  currentUser: User | null;
   availableExecutions: number | null;
   tenantInfo: {
     frontendUrl: string | null;

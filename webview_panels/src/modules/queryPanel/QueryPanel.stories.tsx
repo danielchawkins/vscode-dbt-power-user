@@ -83,9 +83,6 @@ export const DefaultQueryPanelView = {
   parameters: {
     vscode: {
       func: (request: Record<string, unknown>): unknown => {
-        if (request.command === "getCurrentUser") {
-          return user;
-        }
         if (request.command === "configEnabled") {
           return true;
         }
@@ -95,7 +92,6 @@ export const DefaultQueryPanelView = {
         if (request.command === "getQueryPanelContext") {
           window.postMessage({
             command: "getContext",
-            queryHistoryDisabled: false,
           });
 
           window.postMessage({

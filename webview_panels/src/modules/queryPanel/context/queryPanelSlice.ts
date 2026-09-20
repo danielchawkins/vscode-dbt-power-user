@@ -18,7 +18,6 @@ export const initialState = {
   perspectiveTheme: "Vintage",
   queryHistory: [],
   queryBookmarks: {},
-  queryHistoryDisabled: false,
   tabState: QueryPanelTitleTabState.Preview,
   queryBookmarksTagsFromDB: undefined,
   activeEditor: undefined,
@@ -67,12 +66,6 @@ const queryPanelSlice = createSlice({
       action: PayloadAction<QueryPanelStateProps["tabState"]>,
     ) => {
       state.tabState = action.payload;
-    },
-    setQueryHistoryDisabled: (
-      state,
-      action: PayloadAction<QueryPanelStateProps["queryHistoryDisabled"]>,
-    ) => {
-      state.queryHistoryDisabled = action.payload;
     },
     setQueryHistory: (
       state,
@@ -145,7 +138,6 @@ export const {
   setPerspectiveTheme,
   setQueryHistory,
   setQueryBookmarks,
-  setQueryHistoryDisabled,
   setTabState,
   setQueryBookmarksTagsFromDB,
   setActiveEditor,

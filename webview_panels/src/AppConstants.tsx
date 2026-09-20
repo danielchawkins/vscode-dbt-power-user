@@ -1,12 +1,9 @@
-// import { lazy } from "react";
-import DbtDocsView from "@modules/dbtDocs/DbtDocsView";
 import DocumentationProvider from "@modules/documentationEditor/DocumentationProvider";
 import LineageView from "@modules/lineage/LineageView";
 import Onboarding from "@modules/onboarding/Onboarding";
 import QueryPanelProvider from "@modules/queryPanel/QueryPanelProvider";
 import WhatsNew from "@modules/whatsNew/WhatsNew";
 import Home from "./modules/home/Home";
-import Insights from "./modules/insights/Insights";
 
 // TODO: lazy loading breaks loading dynamic webviews when having css because of vite dynamic loading
 // research on how to fix that and then use lazy loading
@@ -14,17 +11,14 @@ import Insights from "./modules/insights/Insights";
 // const DocumentationEditor = lazy(
 //   () => import("./modules/documentationEditor/DocumentationEditor"),
 // );
-// const Insights = lazy(() => import("./modules/insights/Insights"));
 
 // This is the list of routes that are available in the webview
-// The key should be used as viewPath value in providers ex: src/webview_provider/insightsPanel.ts
+// The key should be used as viewPath value in providers.
 export const AvailableRoutes = {
   "/": { component: <Home /> },
-  "/insights": { component: <Insights /> },
   "/docs-generator": {
     component: <DocumentationProvider />,
   },
-  "/dbt-docs": { component: <DbtDocsView /> },
   "/query-panel": { component: <QueryPanelProvider /> },
   "/lineage": { component: <LineageView /> },
   "/onboarding": { component: <Onboarding /> },

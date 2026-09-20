@@ -3,7 +3,6 @@ import { Nav, NavItem, NavLink } from "@uicore";
 import { QueryPanelTitleTabState } from "./types";
 import { useMemo } from "react";
 import { QueryPanelViewType } from "@modules/queryPanel/context/types";
-import NewFeatureIndicator from "@modules/newFeature/NewFeatureIndicator";
 
 const QueryPanelTitle = ({
   setTabState,
@@ -19,7 +18,6 @@ const QueryPanelTitle = ({
     queryExecutionInfo,
     compiledCodeMarkup,
     queryResultsRowCount,
-    queryHistoryDisabled,
     viewType,
   } = useQueryPanelState();
 
@@ -29,35 +27,31 @@ const QueryPanelTitle = ({
 
   const commonTabs = useMemo(
     () =>
-      !queryHistoryDisabled && viewType === QueryPanelViewType.DEFAULT ? (
+      viewType === QueryPanelViewType.DEFAULT ? (
         <>
           <NavItem>
-            <NewFeatureIndicator featureKey="query-results-history-clicked">
-              <NavLink
-                active={QueryPanelTitleTabState.QueryHistory === tabState}
-                onClick={() =>
-                  toggleTabState(QueryPanelTitleTabState.QueryHistory)
-                }
-              >
-                History
-              </NavLink>
-            </NewFeatureIndicator>
+            <NavLink
+              active={QueryPanelTitleTabState.QueryHistory === tabState}
+              onClick={() =>
+                toggleTabState(QueryPanelTitleTabState.QueryHistory)
+              }
+            >
+              History
+            </NavLink>
           </NavItem>
           <NavItem>
-            <NewFeatureIndicator featureKey="query-results-bookmarks-clicked">
-              <NavLink
-                active={QueryPanelTitleTabState.Bookmarks === tabState}
-                onClick={() =>
-                  toggleTabState(QueryPanelTitleTabState.Bookmarks)
-                }
-              >
-                Bookmarks
-              </NavLink>
-            </NewFeatureIndicator>
+            <NavLink
+              active={QueryPanelTitleTabState.Bookmarks === tabState}
+              onClick={() =>
+                toggleTabState(QueryPanelTitleTabState.Bookmarks)
+              }
+            >
+              Bookmarks
+            </NavLink>
           </NavItem>
         </>
       ) : null,
-    [queryHistoryDisabled, tabState, viewType],
+    [tabState, viewType],
   );
 
   if (loading || hasData || hasError) {

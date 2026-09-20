@@ -17,9 +17,6 @@ export const initialState = {
   currentUnitTests: undefined,
   project: undefined,
   insertedEntityName: undefined,
-  conversations: {},
-  showConversationsRightPanel: false,
-  collaborationEnabled: false,
   missingDocumentationMessage: undefined,
   searchQuery: "",
   showSingleDocsPropRightPanel: false,
@@ -34,25 +31,11 @@ const documentationSlice = createSlice({
     setSearchQuery: (state, action: PayloadAction<DocumentationStateProps["searchQuery"]>) => {
       state.searchQuery = action.payload;
     },
-    updatConversations: (
-      state,
-      { payload }: PayloadAction<DocumentationStateProps["conversations"]>
-    ) => {
-      Object.entries(payload).forEach(([shareId, conversationGroups]) => {
-        state.conversations[parseInt(shareId)] = conversationGroups;
-      });
-    },
     setMissingDocumentationMessage: (
       state,
       action: PayloadAction<DocumentationStateProps["missingDocumentationMessage"]>
     ) => {
       state.missingDocumentationMessage = action.payload;
-    },
-    updateConversationsRightPanelState: (
-      state,
-      action: PayloadAction<DocumentationStateProps["showConversationsRightPanel"]>
-    ) => {
-      state.showConversationsRightPanel = action.payload;
     },
     updateSingleDocsPropRightPanel: (
       state,
@@ -65,18 +48,6 @@ const documentationSlice = createSlice({
       action: PayloadAction<DocumentationStateProps["showBulkDocsPropRightPanel"]>
     ) => {
       state.showBulkDocsPropRightPanel = action.payload;
-    },
-    updateCollaborationEnabled: (
-      state,
-      action: PayloadAction<DocumentationStateProps["collaborationEnabled"]>
-    ) => {
-      state.collaborationEnabled = action.payload;
-    },
-    updateSelectedConversationGroup: (
-      state,
-      action: PayloadAction<DocumentationStateProps["selectedConversationGroup"]>
-    ) => {
-      state.selectedConversationGroup = action.payload;
     },
     setProject: (state, action: PayloadAction<DocumentationStateProps["project"]>) => {
       state.project = action.payload;
@@ -208,10 +179,6 @@ export const {
   setInsertedEntityName,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
-  updatConversations,
-  updateConversationsRightPanelState,
-  updateSelectedConversationGroup,
-  updateCollaborationEnabled,
   setMissingDocumentationMessage,
   setSearchQuery,
   updateSingleDocsPropRightPanel,

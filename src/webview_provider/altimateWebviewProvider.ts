@@ -30,7 +30,6 @@ import {
 } from "../services/creditsService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { UsersService } from "../services/usersService";
 import { TelemetryService } from "../telemetry";
 import { extendErrorWithSupportLinks } from "../utils";
 import path = require("path");
@@ -82,7 +81,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
-    protected usersService: UsersService,
     protected altimateAuthService: AltimateAuthService,
   ) {
     this._disposables.push(
@@ -273,32 +271,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         case "openProblemsTab":
           commands.executeCommand("workbench.action.problems.focus");
 
-          break;
-        case "dbtdocsview:render":
-          this.emitterService.fire({
-            command: "dbtdocsview:render",
-            payload: params,
-          });
-          break;
-        case "getUsers":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              return this.usersService.users;
-            },
-            command,
-            true,
-          );
-          break;
-        case "getCurrentUser":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              return this.usersService.user;
-            },
-            command,
-            true,
-          );
           break;
         case "fetch":
           this.handleSyncRequestFromWebview(
@@ -746,18 +718,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         ),
       ),
     );
-    const ProjectScanGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "project-scan.gif",
-        ),
-      ),
-    );
-
     const codiconsUri = webview.asWebviewUri(
       Uri.joinPath(
         extensionUri,
@@ -816,8 +776,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
                 docsEditor: "${DocsEditorGif}",
                 docGenerationUsingAi: "${DocGenerationUsingAiGif}",
                 modelLineage: "${ModelLineageGif}",
-                columnLineage: "${ColumnLineageGif}",
-                projectScan: "${ProjectScanGif}"
+                columnLineage: "${ColumnLineageGif}"
               }
             </script>
             

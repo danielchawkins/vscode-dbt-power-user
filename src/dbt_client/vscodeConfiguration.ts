@@ -68,12 +68,7 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
   }
 
   getDisableQueryHistory(): boolean {
-    return workspace
-      .getConfiguration("dbt")
-      .get<boolean>(
-        "disableQueryHistory",
-        DEFAULT_CONFIGURATION_VALUES.disableQueryHistory,
-      );
+    return false;
   }
 
   getInstallDepsOnProjectInitialization(): boolean {

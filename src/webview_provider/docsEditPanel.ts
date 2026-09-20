@@ -171,7 +171,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         tests: await this.dbtTestService.getTestsForCurrentModel(),
         unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
         project: this.getProject()?.getProjectName(),
-        collaborationEnabled: false,
         docBlocks: this.getDocBlocksForCurrentProject(),
       });
     }

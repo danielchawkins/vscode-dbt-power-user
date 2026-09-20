@@ -88,20 +88,10 @@
             "type": "boolean",
             "description": "Enable the new lineage panel in dbt."
           },
-          "dbt.enableCollaboration": {
-            "type": "boolean",
-            "description": "Enable dbt docs collaboration.",
-            "default": true
-          },
           "dbt.showChangelogOnUpdate": {
             "type": "boolean",
             "description": "Show the What's New page automatically after the extension updates to a new minor or major version.",
             "default": true
-          },
-          "dbt.disableQueryHistory": {
-            "type": "boolean",
-            "description": "Disable Query history and bookmarks",
-            "default": false
           },
           "dbt.lineage.showSelectEdges": {
             "type": "boolean",
@@ -190,12 +180,6 @@
               "Solarized Dark",
               "Monokai"
             ]
-          },
-          "dbt.conversationsPollingInterval": {
-            "type": "integer",
-            "description": "Polling interval to fetch latest conversations (in seconds)",
-            "default": 900,
-            "minimum": 30
           },
           "dbt.queryTemplate": {
             "type": "string",
@@ -296,11 +280,6 @@
           "icon": "./media/images/dbt_icon.svg"
         },
         {
-          "id": "insights_view",
-          "title": "Actions",
-          "icon": "./media/images/dbt_icon.svg"
-        },
-        {
           "id": "run_history_view",
           "title": "Run History",
           "icon": "./media/images/dbt_icon.svg"
@@ -324,10 +303,6 @@
         {
           "id": "documentation_treeview",
           "name": "Documentation"
-        },
-        {
-          "id": "icon_actions_treeview",
-          "name": "Project Actions ✨"
         }
       ],
       "dbt_preview_results": [
@@ -351,13 +326,6 @@
           "type": "webview"
         }
       ],
-      "insights_view": [
-        {
-          "id": "dbtPowerUser.Insights",
-          "name": "",
-          "type": "webview"
-        }
-      ],
       "run_history_view": [
         {
           "id": "run_history_treeview",
@@ -377,46 +345,14 @@
         "category": "dbt Power User"
       },
       {
-        "command": "dbtPowerUser.resolveConversation",
-        "title": "Resolve",
-        "category": "dbt Power User"
-      },
-      {
-        "command": "dbtPowerUser.createConversation",
-        "title": "Publish",
-        "category": "dbt Power User",
-        "enablement": "!commentIsEmpty"
-      },
-      {
-        "command": "dbtPowerUser.viewInDbtDocs",
-        "title": "View in dbt docs",
-        "category": "dbt Power User"
-      },
-      {
-        "command": "dbtPowerUser.copyDbtDocsLink",
-        "title": "Copy link",
-        "category": "dbt Power User"
-      },
-      {
         "command": "dbtPowerUser.viewInDocEditor",
         "title": "View in documentation editor",
-        "category": "dbt Power User"
-      },
-      {
-        "command": "dbtPowerUser.replyToConversation",
-        "title": "Reply",
-        "enablement": "!commentIsEmpty",
         "category": "dbt Power User"
       },
       {
         "command": "dbtPowerUser.puQuickPick",
         "category": "dbt Power User",
         "title": "dbt Power User Quick Pick"
-      },
-      {
-        "command": "dbtPowerUser.openInsights",
-        "category": "dbt Power User",
-        "title": "Open dbt Power User insights panel"
       },
       {
         "command": "dbtPowerUser.openOnboarding",
@@ -470,22 +406,6 @@
         "title": "Validate SQL",
         "category": "dbt Power User",
         "icon": "$(circuit-board)"
-      },
-      {
-        "command": "dbtPowerUser.altimateScan",
-        "title": "Project Healthcheck",
-        "category": "dbt Power User",
-        "icon": "$(circuit-board)"
-      },
-      {
-        "command": "dbtPowerUser.clearAltimateScanResults",
-        "category": "dbt Power User",
-        "title": "Clear Health Check Results"
-      },
-      {
-        "command": "dbtPowerUser.bigqueryCostEstimate",
-        "category": "dbt Power User",
-        "title": "Estimate cost for BigQuery"
       },
       {
         "command": "dbtPowerUser.compileCurrentModel",
@@ -652,11 +572,6 @@
         "icon": "$(terminal)"
       },
       {
-        "command": "dbtPowerUser.showDocumentation",
-        "title": "Show documentation",
-        "category": "dbt Power User"
-      },
-      {
         "command": "dbtPowerUser.applyDeferConfig",
         "category": "dbt Power User",
         "title": "Apply defer configuration"
@@ -676,40 +591,6 @@
       }
     ],
     "menus": {
-      "comments/commentThread/title": [
-        {
-          "command": "dbtPowerUser.viewInDocEditor",
-          "group": "navigation",
-          "when": "commentController == altimate-conversations && (commentThread =~ /saved/) && commentThread =~ /description/"
-        },
-        {
-          "command": "dbtPowerUser.copyDbtDocsLink",
-          "group": "navigation",
-          "when": "commentController == altimate-conversations && (commentThread =~ /saved/)"
-        },
-        {
-          "command": "dbtPowerUser.viewInDbtDocs",
-          "group": "navigation",
-          "when": "commentController == altimate-conversations && (commentThread =~ /saved/)"
-        },
-        {
-          "command": "dbtPowerUser.resolveConversation",
-          "group": "inline",
-          "when": "commentController == altimate-conversations && !commentThreadIsEmpty && (commentThread =~ /saved/)"
-        }
-      ],
-      "comments/commentThread/context": [
-        {
-          "command": "dbtPowerUser.createConversation",
-          "group": "inline@1",
-          "when": "commentController == altimate-conversations && commentThreadIsEmpty"
-        },
-        {
-          "command": "dbtPowerUser.replyToConversation",
-          "group": "inline",
-          "when": "commentController == altimate-conversations && !commentThreadIsEmpty"
-        }
-      ],
       "editor/title": [
         {
           "command": "dbtPowerUser.executeSQL",
@@ -772,11 +653,6 @@
           "command": "dbtPowerUser.validateSql",
           "group": "dbt@4",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/ && resourceScheme != 'query-preview'"
-        },
-        {
-          "command": "dbtPowerUser.bigqueryCostEstimate",
-          "group": "dbt@4",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
         }
       ],
       "editor/title/run": [
@@ -996,7 +872,6 @@
     "@vscode/codicons": "^0.0.36",
     "@vscode/extension-telemetry": "^1.5.2",
     "@vscode/vsce": "^3.9.1",
-    "dayjs": "^1.11.13",
     "inversify": "^6.0.2",
     "inversify-binding-decorators": "^4.0.0",
     "node-abort-controller": "^3.1.1",

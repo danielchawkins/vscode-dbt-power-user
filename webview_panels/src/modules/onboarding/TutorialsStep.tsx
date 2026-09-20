@@ -11,7 +11,6 @@ import GenerateModelFromSourceGif from "@assets/tutorial-images/generate-model-f
 import GenerateModelFromSQLGif from "@assets/tutorial-images/generate-model-from-SQL.gif";
 import GraphGif from "@assets/tutorial-images/graph.gif";
 import ModelLineageGif from "@assets/tutorial-images/model-lineage.gif";
-import ProjectScanGif from "@assets/tutorial-images/project-scan.gif";
 import QueryExplanationGif from "@assets/tutorial-images/query-explanation.gif";
 import QueryResultsAndSQLGif from "@assets/tutorial-images/query-results-and-SQL.gif";
 import { Tabs } from "antd";
@@ -35,7 +34,6 @@ interface TutorialImages {
   docGenerationUsingAi?: string;
   modelLineage?: string;
   columnLineage?: string;
-  projectScan?: string;
 }
 
 // Extend the window interface
@@ -226,39 +224,6 @@ const TUTORIALS: TutorialItem[] = [
         <img
           src={tutorialImages.columnLineage ?? ColumnLineageGif}
           alt="Column lineage"
-          className={classes.tutorialImage}
-        />
-      </div>
-    ),
-  },
-  {
-    id: "healthcheck",
-    title: "Project Health Check",
-    content: (
-      <div className={classes.tutorialContent}>
-        <h4>
-          Before you commit changes to production, scan your entire dbt project
-          to identify following issues:
-        </h4>
-        <ul>
-          <li>
-            <strong>Undocumented Models</strong> - Missing schema.yml files
-          </li>
-          <li>
-            <strong>Undocumented Columns</strong> - Columns missing in
-            schema.yml files
-          </li>
-          <li>
-            <strong>Extra Columns</strong> - Columns not present in model but
-            specified in schema.yml files
-          </li>
-          <li>
-            <strong>Seeds and Models Absent in the Database</strong>
-          </li>
-        </ul>
-        <img
-          src={tutorialImages.projectScan ?? ProjectScanGif}
-          alt="Project scan"
           className={classes.tutorialImage}
         />
       </div>

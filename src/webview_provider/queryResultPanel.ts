@@ -28,7 +28,6 @@ import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { AltimateAuthService } from "../services/altimateAuthService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { UsersService } from "../services/usersService";
 import { TelemetryService } from "../telemetry";
 import { TelemetryEvents } from "../telemetry/events";
 import {
@@ -152,7 +151,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
-    protected usersService: UsersService,
     protected altimateAuthService: AltimateAuthService,
   ) {
     super(
@@ -162,7 +160,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
       eventEmitterService,
       dbtTerminal,
       queryManifestService,
-      usersService,
       altimateAuthService,
     );
     this._disposables.push(
@@ -170,17 +167,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
         // to reset the limit on editor change
         this.sendUpdatedContextToWebview();
       }),
-      workspace.onDidChangeConfiguration(
-        (e) => {
-          if (e.affectsConfiguration("dbt.disableQueryHistory")) {
-            if (this._panel) {
-              this.renderWebviewView(this._panel.webview);
-            }
-          }
-        },
-        this,
-        this._disposables,
-      ),
     );
 
     this._disposables.push(
@@ -196,17 +182,12 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     const perspectiveTheme = workspace
       .getConfiguration("dbt")
       .get("perspectiveTheme", "Vintage");
-    const queryHistoryDisabled = workspace
-      .getConfiguration("dbt")
-      .get("disableQueryHistory", false);
-
     const limit = workspace.getConfiguration("dbt").get<number>("queryLimit");
     if (this._panel) {
       await this._panel.webview.postMessage({
         command: OutboundCommand.GetContext,
         limit,
         perspectiveTheme,
-        queryHistoryDisabled,
         activeEditor: {
           query: window.activeTextEditor?.document.getText(),
           filepath: window.activeTextEditor?.document.uri.fsPath,
@@ -686,10 +667,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     duration: number,
     modelName: string,
   ) {
-    // Do not update query history if disabled
-    if (workspace.getConfiguration("dbt").get("disableQueryHistory", false)) {
-      return;
-    }
     const project = projectName
       ? this.queryManifestService.getProjectByName(projectName) // for queries executed from history and bookmarks tab
       : this.queryManifestService.getProject(); // queries executed from main window

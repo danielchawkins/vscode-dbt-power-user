@@ -1,8 +1,6 @@
 import { QueryBookmark } from "@modules/queryPanel/context/types";
 import { ListGroupItem, Stack, Tag, Tooltip } from "@uicore";
 import ExecuteQueryButton from "../queryPanelQueryHistory/ExecuteQueryButton";
-import BookmarkPrivacySettingButton from "./BookmarkPrivacySettingButton";
-import DeleteBookmarkButton from "./DeleteBookmarkButton";
 
 interface Props {
   bookmark: QueryBookmark;
@@ -57,8 +55,6 @@ const QueryBookmarkRow = ({
           projectName={""}
           editorName={bookmark.name}
         />
-        <BookmarkPrivacySettingButton bookmark={bookmark} />
-        <DeleteBookmarkButton bookmark={bookmark} />
       </Stack>
     </ListGroupItem>
   );
