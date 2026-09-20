@@ -3,6 +3,7 @@ import {
   commands,
   Disposable,
   ExtensionContext,
+  extensions,
   Uri,
   window,
   workspace,
@@ -40,6 +41,8 @@ enum PromptAnswer {
 }
 
 const POWER_USER_EXTENSION_MARKER = "innoverio.vscode-dbt-power-user";
+const UPSTREAM_EXTENSION_ID = "innoverio.vscode-dbt-power-user";
+const UNINSTALL_POWER_USER = "Uninstall Power User";
 
 // `process.on("unhandledRejection")` fires for every rejection in the
 // extension host — including rejections originating in other extensions
@@ -133,6 +136,33 @@ export class DBTPowerUserExtension implements Disposable {
 
   async activate(context: ExtensionContext): Promise<void> {
     try {
+      if (extensions.getExtension(UPSTREAM_EXTENSION_ID)) {
+        const action = await window.showErrorMessage(
+          "Fusion Power User cannot start while dbt Power User is installed.",
+          { modal: true },
+          UNINSTALL_POWER_USER,
+        );
+        if (action === UNINSTALL_POWER_USER) {
+          await commands.executeCommand(
+            "workbench.extensions.uninstallExtension",
+            UPSTREAM_EXTENSION_ID,
+          );
+          await commands.executeCommand("workbench.action.reloadWindow");
+        }
+        return;
+      }
+
+      const folders = workspace.workspaceFolders ?? [];
+      if (
+        folders.length > 0 &&
+        folders.every(
+          (folder) =>
+            !workspace.getConfiguration("dbt", folder.uri).get("enabled", true),
+        )
+      ) {
+        return;
+      }
+
       // VS Code's `@vscode/extension-telemetry` library auto-emits an
       // `unhandlederror` event for uncaught promise rejections, but it only
       // captures `name`/`message`/`stack` (baseTelemetrySender.sendErrorData)

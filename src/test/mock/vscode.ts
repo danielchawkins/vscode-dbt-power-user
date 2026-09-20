@@ -163,6 +163,7 @@ export const window = {
   withProgress: jest
     .fn()
     .mockImplementation((_options: any, task: any) => task()),
+  registerUriHandler: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 };
 
 export const workspace = {
