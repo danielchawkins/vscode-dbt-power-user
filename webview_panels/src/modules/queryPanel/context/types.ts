@@ -66,7 +66,6 @@ export interface QueryPanelStateProps {
     private?: QueryBookmarkResponse;
     public?: QueryBookmarkResponse;
   };
-  queryHistoryDisabled: boolean;
   queryBookmarksTagsFromDB?: { id: number; tag: string }[];
   tabState: QueryPanelTitleTabState;
   activeEditor?: {

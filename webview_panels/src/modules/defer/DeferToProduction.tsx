@@ -21,7 +21,6 @@ import {
 import { ManifestPathType } from "./constants";
 import { ManifestSelection } from "./ManifestSelection";
 import { panelLogger } from "@modules/logger";
-import PreviewFeatureIcon from "@modules/previewFeature/PreviewFeatureIcon";
 
 const DefaultDeferState = {
   deferToProduction: false,
@@ -208,7 +207,7 @@ const DeferToProduction = (): JSX.Element => {
   return (
     <Card className={classes.insightsCard}>
       <CardTitle className={classes.cardTitle} tag="h5">
-        Defer to production <PreviewFeatureIcon />
+        Defer to production
       </CardTitle>
       <CardBody>
         <CardText>

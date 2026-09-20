@@ -7,7 +7,6 @@ import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { AltimateAuthService } from "../services/altimateAuthService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { UsersService } from "../services/usersService";
 import { TelemetryService } from "../telemetry";
 import { TelemetryEvents } from "../telemetry/events";
 import {
@@ -148,7 +147,6 @@ export class WhatsNewPanel extends AltimateWebviewProvider {
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
-    protected usersService: UsersService,
     protected altimateAuthService: AltimateAuthService,
   ) {
     super(
@@ -158,7 +156,6 @@ export class WhatsNewPanel extends AltimateWebviewProvider {
       emitterService,
       dbtTerminal,
       queryManifestService,
-      usersService,
       altimateAuthService,
     );
   }

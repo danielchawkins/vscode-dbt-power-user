@@ -1,11 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import { AppStateProps, Themes, User } from "./types";
+import { AppStateProps, Themes } from "./types";
 
 export const initialState = {
   theme: Themes.Dark,
   isComponentsApiInitialized: false,
-  users: {},
-  currentUser: null,
   availableExecutions: null,
   tenantInfo: {
     frontendUrl: null,
@@ -34,24 +32,6 @@ const appSlice = createSlice({
     ) => {
       state.isComponentsApiInitialized = action.payload;
     },
-    setUsers: (state, action: PayloadAction<User[]>) => {
-      if (!action.payload?.length) {
-        return state;
-      }
-      return {
-        ...state,
-        users: action.payload.reduce((acc: Record<number, User>, user) => {
-          acc[user.id] = user;
-          return acc;
-        }, {}),
-      };
-    },
-    setCurrentUser: (
-      state,
-      action: PayloadAction<AppStateProps["currentUser"]>,
-    ) => {
-      state.currentUser = action.payload;
-    },
     setAvailableExecutions: (state, action: PayloadAction<number | null>) => {
       state.availableExecutions = action.payload;
     },
@@ -61,8 +41,6 @@ const appSlice = createSlice({
 export const {
   updateTheme,
   updateIsComponentsApiInitialized,
-  setUsers,
-  setCurrentUser,
   setTenantInfo,
   setAvailableExecutions,
 } = appSlice.actions;

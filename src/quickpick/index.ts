@@ -18,9 +18,6 @@ export class DbtPowerUserActionsCenter implements Disposable {
     commands.registerCommand("dbtPowerUser.puQuickPick", async () => {
       await this.puLaunchQuickPick.openActions();
     });
-    commands.registerCommand("dbtPowerUser.openInsights", async () => {
-      await commands.executeCommand("dbtPowerUser.Insights.focus");
-    });
     commands.registerCommand(
       "dbtPowerUser.openOnboarding",
       async (initialStep?: string) => {

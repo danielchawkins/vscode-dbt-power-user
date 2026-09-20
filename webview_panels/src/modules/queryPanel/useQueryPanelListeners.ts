@@ -8,7 +8,6 @@ import {
   setLimit,
   setLoading,
   setPerspectiveTheme,
-  setQueryHistoryDisabled,
   setQueryExecutionInfo,
   setQueryHistory,
   setQueryResults,
@@ -158,10 +157,6 @@ const useQueryPanelListeners = (): { loading: boolean } => {
           dispatch(setLimit(args.limit as number));
           // @ts-expect-error valid type
           dispatch(setPerspectiveTheme(args.perspectiveTheme as string));
-          dispatch(
-            // @ts-expect-error valid type
-            setQueryHistoryDisabled(args.queryHistoryDisabled as boolean),
-          );
           dispatch(
             setActiveEditor(
               // @ts-expect-error valid type

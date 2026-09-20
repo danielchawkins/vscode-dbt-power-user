@@ -34,7 +34,6 @@ import { AltimateAuthService } from "../services/altimateAuthService";
 import { CllEvents, DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { UsersService } from "../services/usersService";
 import { TelemetryService } from "../telemetry";
 import { extendErrorWithSupportLinks } from "../utils";
 import { ValidationProvider } from "../validation_provider";
@@ -91,7 +90,6 @@ export class NewLineagePanel
     private dbtLineageService: DbtLineageService,
     eventEmitterService: SharedStateService,
     protected queryManifestService: QueryManifestService,
-    protected usersService: UsersService,
     protected altimateAuthService: AltimateAuthService,
     private validationProvider: ValidationProvider,
   ) {
@@ -102,7 +100,6 @@ export class NewLineagePanel
       eventEmitterService,
       terminal,
       queryManifestService,
-      usersService,
       altimateAuthService,
     );
   }

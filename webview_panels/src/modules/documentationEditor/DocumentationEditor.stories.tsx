@@ -4,7 +4,6 @@ import type { Meta } from "@storybook/react-vite";
 import {
   DBTDocumentationFactory,
   DBTDocumentationTestsFactory,
-  TenantUserFactory,
 } from "@testUtils";
 import { withReactContext } from "storybook-react-context";
 import DocumentationEditor from "./DocumentationEditor";
@@ -77,7 +76,6 @@ export const ModelDocGenView = {
             missingDocumentationMessage: "",
             tests: testsDataForTests,
             project: faker.system.fileName(),
-            collaborationEnabled: true,
           },
           "*",
         );
@@ -96,8 +94,6 @@ export const ModelDocGenView = {
         switch (request.command) {
           case `getTestCode`:
             return { code: `select * from users` };
-          case `getUsers`:
-            return TenantUserFactory.buildList(5);
           case "fetch":
             return {};
           // switch (request.endpoint) {

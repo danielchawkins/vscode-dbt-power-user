@@ -15,11 +15,9 @@ import { Input, InputGroup, Stack, Tag } from "@uicore";
 import {
   ChangeEvent,
   useEffect,
-  useMemo,
   useRef,
   useState,
 } from "react";
-import AddCoversationButton from "../conversation/AddCoversationButton";
 import { DocumentationPropagationButton } from "../documentationPropagation/DocumentationPropagation";
 import DocBlockInserter from "./DocBlockInserter";
 import classes from "./docGenInput.module.scss";
@@ -44,8 +42,6 @@ const DocGeneratorInput = ({
       incomingDocsData,
       currentDocsData,
       insertedEntityName,
-      selectedConversationGroup,
-      conversations,
     },
     dispatch,
   } = useDocumentationContext();
@@ -73,42 +69,6 @@ const DocGeneratorInput = ({
       ) + newLines;
     setInputRows(rows);
   }, [description]);
-
-  const selectedConversationGroupData = useMemo(() => {
-    if (!selectedConversationGroup) {
-      return undefined;
-    }
-
-    return conversations[selectedConversationGroup.shareId]?.find(
-      (c) =>
-        c.conversation_group_id ===
-        selectedConversationGroup.conversationGroupId,
-    );
-  }, [conversations, selectedConversationGroup]);
-
-  useEffect(() => {
-    if (!selectedConversationGroupData || !stackRef.current) {
-      return;
-    }
-    const {
-      meta: { field, column },
-    } = selectedConversationGroupData;
-
-    if (field === "description") {
-      const isMatchingEntity = column
-        ? entity.name === column
-        : type === EntityType.MODEL;
-      if (isMatchingEntity) {
-        panelLogger.log("scrolling");
-        setTimeout(() => {
-          stackRef.current?.scrollIntoView({
-            behavior: "smooth",
-            block: "center",
-          });
-        }, 500);
-      }
-    }
-  }, [selectedConversationGroup]);
 
   useEffect(() => {
     setDescription(entity.description ?? "");
@@ -230,13 +190,6 @@ const DocGeneratorInput = ({
             onInsert={handleInsertDocBlock}
           />
           <DocumentationPropagationButton type={type} name={entity.name} />
-          <AddCoversationButton
-            field="description"
-            value={description}
-            name={entity.name}
-            type={type}
-            model={currentDocsData?.name}
-          />
         </Stack>
       </Stack>
       <Stack ref={stackRef}>

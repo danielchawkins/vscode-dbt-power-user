@@ -98,7 +98,6 @@ export class DBTProject implements Disposable {
   private _onSourceFileChanged = new EventEmitter<void>();
   public onSourceFileChanged = this._onSourceFileChanged.event;
   private dbtProjectLog?: DBTProjectLog;
-  public readonly projectHealth = languages.createDiagnosticCollection("dbt");
   public readonly pythonBridgeDiagnostics =
     languages.createDiagnosticCollection("dbt-python-bridge");
   public readonly rebuildManifestDiagnostics =
@@ -108,7 +107,6 @@ export class DBTProject implements Disposable {
   private disposables: Disposable[] = [
     this._onProjectConfigChanged,
     this._onSourceFileChanged,
-    this.projectHealth,
     this.pythonBridgeDiagnostics,
     this.rebuildManifestDiagnostics,
     this.projectConfigDiagnostics,
@@ -401,17 +399,7 @@ export class DBTProject implements Disposable {
     return this.dbtProjectIntegration.getPythonBridgeStatus();
   }
 
-  // Whether the integration finished initializing its execution state (for
-  // dbt-core: the Python-side `project` binding exists on the current
-  // bridge). Non-core integrations report ready.
-  isBridgeInitialized(): boolean {
-    return this.dbtProjectIntegration.isInitialized();
-  }
-
   getAllDiagnostic(): Diagnostic[] {
-    const projectURI = Uri.file(
-      path.join(this.projectRoot.fsPath, DBT_PROJECT_FILE),
-    );
     const integrationDiagnostics =
       this.getCurrentProjectIntegration().getDiagnostics();
 
@@ -458,10 +446,7 @@ export class DBTProject implements Disposable {
       ),
     ];
 
-    return [
-      ...convertedDiagnostics,
-      ...(this.projectHealth.get(projectURI) || []),
-    ];
+    return convertedDiagnostics;
   }
 
   private mapSeverityToVSCode(severity: string): DiagnosticSeverity {
@@ -1631,7 +1616,6 @@ export class DBTProject implements Disposable {
 
     // Check VSCode diagnostic collections
     const vscodeCollections: DiagnosticCollection[] = [
-      this.projectHealth,
       this.pythonBridgeDiagnostics,
       this.rebuildManifestDiagnostics,
       this.projectConfigDiagnostics,

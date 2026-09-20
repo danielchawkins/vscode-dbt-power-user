@@ -3,9 +3,7 @@ import { UnknownAction } from "@reduxjs/toolkit";
 import { Dispatch, useCallback, useEffect } from "react";
 import {
   setAvailableExecutions,
-  setCurrentUser,
   setTenantInfo,
-  setUsers,
   updateTheme,
 } from "./appSlice";
 import {
@@ -18,7 +16,6 @@ import {
   IncomingMessageProps,
   IncomingSyncResponse,
   Themes,
-  User,
 } from "./types";
 
 const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
@@ -68,28 +65,6 @@ const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
     dispatch(updateTheme(isDark(element) ? Themes.Dark : Themes.Light));
   };
 
-  const loadUsersDetails = () => {
-    executeRequestInSync("getUsers", {})
-      .then((data) => {
-        panelLogger.log("getUsers", data);
-        dispatch(setUsers(data as User[]));
-      })
-      .catch((err) =>
-        panelLogger.error("error while fetching users list", err),
-      );
-  };
-
-  const loadCurrentUser = () => {
-    executeRequestInSync("getCurrentUser", {})
-      .then((data) => {
-        panelLogger.log("getCurrentUser", data);
-        dispatch(setCurrentUser(data as User));
-      })
-      .catch((err) =>
-        panelLogger.error("error while fetching current user", err),
-      );
-  };
-
   const loadTenantInfo = () => {
     executeRequestInSync("fetch", {
       endpoint: "auth/tenant-info",
@@ -109,8 +84,6 @@ const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
 
     if (window.viewPath !== "/docs-generator") {
       executeRequestInAsync("webview:ready", {});
-      loadUsersDetails();
-      loadCurrentUser();
       loadTenantInfo();
     }
     const themeObserver = new MutationObserver((mutations) => {

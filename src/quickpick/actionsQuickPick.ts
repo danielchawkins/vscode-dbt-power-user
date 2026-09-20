@@ -51,18 +51,6 @@ export class DbtPowerUserControlCenterAction {
             kind: QuickPickItemKind.Separator,
           },
           new DbtPowerUserControlPanelItem(
-            "Run Project Healthcheck",
-            "debug-start",
-            "Run the Project healthcheck",
-            "dbtPowerUser.altimateScan",
-          ),
-          new DbtPowerUserControlPanelItem(
-            "Clear Healthcheck Results",
-            "debug-stop",
-            "Clear all problems",
-            "dbtPowerUser.clearAltimateScanResults",
-          ),
-          new DbtPowerUserControlPanelItem(
             "Diagnostics",
             "tools",
             "Run diagnostics on the dbt project",

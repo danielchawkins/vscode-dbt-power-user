@@ -922,10 +922,6 @@ describe("DBTProject Test Suite", () => {
       // Initialize to ensure dbtProjectLog is added to disposables
       await dbtProject.initialize();
 
-      const projectHealthDispose = jest.spyOn(
-        dbtProject.projectHealth,
-        "dispose",
-      );
       const pythonBridgeDiagnosticsDispose = jest.spyOn(
         dbtProject.pythonBridgeDiagnostics,
         "dispose",
@@ -941,7 +937,6 @@ describe("DBTProject Test Suite", () => {
 
       await dbtProject.dispose();
 
-      expect(projectHealthDispose).toHaveBeenCalled();
       expect(pythonBridgeDiagnosticsDispose).toHaveBeenCalled();
       expect(rebuildManifestDiagnosticsDispose).toHaveBeenCalled();
       expect(projectConfigDiagnosticsDispose).toHaveBeenCalled();

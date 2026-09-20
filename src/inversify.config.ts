@@ -60,7 +60,6 @@ import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { FusionVersionDetection } from "./fusion/fusionVersionDetection";
 import { AltimateAuthService } from "./services/altimateAuthService";
-import { ConversationService } from "./services/conversationService";
 import { DbtLineageService } from "./services/dbtLineageService";
 import { DbtTestService } from "./services/dbtTestService";
 import { DiagnosticsOutputChannel } from "./services/diagnosticsOutputChannel";
@@ -69,7 +68,6 @@ import { FileService } from "./services/fileService";
 import { QueryManifestService } from "./services/queryManifestService";
 import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
-import { UsersService } from "./services/usersService";
 import { TelemetryService } from "./telemetry";
 
 import { ValidationProvider } from "./validation_provider";
@@ -84,7 +82,6 @@ import { DocAutocompletionProvider } from "./autocompletion_provider/docAutocomp
 import { MacroAutocompletionProvider } from "./autocompletion_provider/macroAutocompletionProvider";
 import { ModelAutocompletionProvider } from "./autocompletion_provider/modelAutocompletionProvider";
 import { SourceAutocompletionProvider } from "./autocompletion_provider/sourceAutocompletionProvider";
-import { UserCompletionProvider } from "./autocompletion_provider/usercompletion_provider";
 import { CodeLensProviders } from "./code_lens_provider";
 import { CteCodeLensProvider } from "./code_lens_provider/cteCodeLensProvider";
 import { SourceModelCreationCodeLensProvider } from "./code_lens_provider/sourceModelCreationCodeLensProvider";
@@ -105,18 +102,10 @@ import { ProjectQuickPick } from "./quickpick/projectQuickPick";
 
 // Import missing providers and components
 import { VSCodeCommands } from "./commands";
-import { AltimateScan } from "./commands/altimateScan";
-import { BigQueryCostEstimate } from "./commands/bigQueryCostEstimate";
 import { RunModel } from "./commands/runModel";
 import { RunTest } from "./commands/runTest";
-import { MissingSchemaTest } from "./commands/tests/missingSchemaTest";
-import { StaleModelColumnTest } from "./commands/tests/staleModelColumnTest";
-import { UndocumentedModelColumnTest } from "./commands/tests/undocumentedModelColumnTest";
-import { UnmaterializedModelTest } from "./commands/tests/unmaterializedModelTest";
 import { ValidateSql } from "./commands/validateSql";
 import { WalkthroughCommands } from "./commands/walkthroughCommands";
-import { CommentProviders } from "./comment_provider";
-import { ConversationProvider } from "./comment_provider/conversationProvider";
 import { ContentProviders } from "./content_provider";
 import { SqlPreviewContentProvider } from "./content_provider/sqlPreviewContentProvider";
 import { CteProfilerDecorationProvider } from "./cte_profiler/cteProfilerDecorationProvider";
@@ -135,15 +124,12 @@ import { TreeviewProviders } from "./treeview_provider";
 import {
   ChildrenModelTreeview,
   DocumentationTreeview,
-  IconActionsTreeview,
   ModelTestTreeview,
   ParentModelTreeview,
 } from "./treeview_provider/modelTreeviewProvider";
 import { RunHistoryTreeviewProvider } from "./treeview_provider/runHistoryTreeviewProvider";
 import { WebviewViewProviders } from "./webview_provider";
-import { DbtDocsView } from "./webview_provider/DbtDocsView";
 import { DocsEditViewPanel } from "./webview_provider/docsEditPanel";
-import { InsightsPanel } from "./webview_provider/insightsPanel";
 import { LineagePanel } from "./webview_provider/lineagePanel";
 import { NewLineagePanel } from "./webview_provider/newLineagePanel";
 import { OnboardingPanel } from "./webview_provider/onboardingPanel";
@@ -753,18 +739,6 @@ container
   .inSingletonScope();
 
 container
-  .bind(ConversationService)
-  .toDynamicValue((context) => {
-    return new ConversationService(
-      context.container.get(QueryManifestService),
-      context.container.get("DBTTerminal"),
-      context.container.get(AltimateRequest),
-      context.container.get(AltimateAuthService),
-    );
-  })
-  .inSingletonScope();
-
-container
   .bind(DbtLineageService)
   .toDynamicValue((context) => {
     return new DbtLineageService(
@@ -874,18 +848,6 @@ container
   .inSingletonScope();
 
 container
-  .bind(UsersService)
-  .toDynamicValue((context) => {
-    return new UsersService(
-      context.container.get(DBTProjectContainer),
-      context.container.get("DBTTerminal"),
-      context.container.get(AltimateRequest),
-      context.container.get(AltimateAuthService),
-    );
-  })
-  .inSingletonScope();
-
-container
   .bind(TelemetryService)
   .toDynamicValue(() => {
     return new TelemetryService();
@@ -941,7 +903,6 @@ container
       context.container.get(ModelAutocompletionProvider),
       context.container.get(SourceAutocompletionProvider),
       context.container.get(DocAutocompletionProvider),
-      context.container.get(UserCompletionProvider),
     );
   })
   .inSingletonScope();
@@ -983,13 +944,6 @@ container
       context.container.get(DBTProjectContainer),
       context.container.get(TelemetryService),
     );
-  })
-  .inSingletonScope();
-
-container
-  .bind(UserCompletionProvider)
-  .toDynamicValue((context) => {
-    return new UserCompletionProvider(context.container.get(UsersService));
   })
   .inSingletonScope();
 
@@ -1157,52 +1111,7 @@ container
   })
   .inSingletonScope();
 
-// Bind test components
-container
-  .bind(MissingSchemaTest)
-  .toDynamicValue(() => {
-    return new MissingSchemaTest();
-  })
-  .inSingletonScope();
-
-container
-  .bind(UndocumentedModelColumnTest)
-  .toDynamicValue(() => {
-    return new UndocumentedModelColumnTest();
-  })
-  .inSingletonScope();
-
-container
-  .bind(UnmaterializedModelTest)
-  .toDynamicValue(() => {
-    return new UnmaterializedModelTest();
-  })
-  .inSingletonScope();
-
-container
-  .bind(StaleModelColumnTest)
-  .toDynamicValue(() => {
-    return new StaleModelColumnTest();
-  })
-  .inSingletonScope();
-
 // Bind additional webview components
-container
-  .bind(DbtDocsView)
-  .toDynamicValue((context) => {
-    return new DbtDocsView(
-      context.container.get(DBTProjectContainer),
-      context.container.get(AltimateRequest),
-      context.container.get(TelemetryService),
-      context.container.get(SharedStateService),
-      context.container.get("DBTTerminal"),
-      context.container.get(QueryManifestService),
-      context.container.get(UsersService),
-      context.container.get(AltimateAuthService),
-    );
-  })
-  .inSingletonScope();
-
 container
   .bind(SqlPreviewContentProvider)
   .toDynamicValue((context) => {
@@ -1304,22 +1213,6 @@ container
   .inSingletonScope();
 
 container
-  .bind(AltimateScan)
-  .toDynamicValue((context) => {
-    return new AltimateScan(
-      context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
-      context.container.get(AltimateRequest),
-      context.container.get(MissingSchemaTest),
-      context.container.get(UndocumentedModelColumnTest),
-      context.container.get(UnmaterializedModelTest),
-      context.container.get(StaleModelColumnTest),
-      context.container.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-container
   .bind(WalkthroughCommands)
   .toDynamicValue((context) => {
     return new WalkthroughCommands(
@@ -1333,31 +1226,6 @@ container
   .inSingletonScope();
 
 container
-  .bind(BigQueryCostEstimate)
-  .toDynamicValue((context) => {
-    return new BigQueryCostEstimate(
-      context.container.get(DBTProjectContainer),
-      context.container.get("DBTTerminal"),
-      context.container.get(TelemetryService),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(ConversationProvider)
-  .toDynamicValue((context) => {
-    return new ConversationProvider(
-      context.container.get(ConversationService),
-      context.container.get(UsersService),
-      context.container.get("DBTTerminal"),
-      context.container.get(SharedStateService),
-      context.container.get(QueryManifestService),
-      context.container.get(TelemetryService),
-    );
-  })
-  .inSingletonScope();
-
-container
   .bind(VSCodeCommands)
   .toDynamicValue((context) => {
     return new VSCodeCommands(
@@ -1365,16 +1233,12 @@ container
       context.container.get(RunModel),
       context.container.get(RunTest),
       context.container.get(ValidateSql),
-      context.container.get(AltimateScan),
       context.container.get(WalkthroughCommands),
-      context.container.get(BigQueryCostEstimate),
       context.container.get("DBTTerminal"),
       context.container.get(DiagnosticsOutputChannel),
       context.container.get(SharedStateService),
-      context.container.get(ConversationProvider),
       context.container.get(PythonEnvironment),
       context.container.get(DBTClient),
-      context.container.get(QueryManifestService),
       context.container.get(AltimateRequest),
       context.container.get(RunHistoryService),
       context.container.get(CteProfilerService),
@@ -1397,7 +1261,6 @@ container
       context.container.get(SharedStateService),
       context.container.get("DBTTerminal"),
       context.container.get(QueryManifestService),
-      context.container.get(UsersService),
       context.container.get(AltimateAuthService),
     );
   })
@@ -1431,23 +1294,6 @@ container
   .inSingletonScope();
 
 container
-  .bind(InsightsPanel)
-  .toDynamicValue((context) => {
-    return new InsightsPanel(
-      context.container.get(DBTProjectContainer),
-      context.container.get(AltimateRequest),
-      context.container.get(DbtIntegrationClient),
-      context.container.get(TelemetryService),
-      context.container.get(SharedStateService),
-      context.container.get("DBTTerminal"),
-      context.container.get(QueryManifestService),
-      context.container.get(UsersService),
-      context.container.get(AltimateAuthService),
-    );
-  })
-  .inSingletonScope();
-
-container
   .bind(NewLineagePanel)
   .toDynamicValue((context) => {
     return new NewLineagePanel(
@@ -1458,7 +1304,6 @@ container
       context.container.get(DbtLineageService),
       context.container.get(SharedStateService),
       context.container.get(QueryManifestService),
-      context.container.get(UsersService),
       context.container.get(AltimateAuthService),
       context.container.get(ValidationProvider),
     );
@@ -1473,7 +1318,6 @@ container
       context.container.get(QueryResultPanel),
       context.container.get(DocsEditViewPanel),
       context.container.get(LineagePanel),
-      context.container.get(InsightsPanel),
     );
   })
   .inSingletonScope();
@@ -1511,13 +1355,6 @@ container
   })
   .inSingletonScope();
 
-container
-  .bind(IconActionsTreeview)
-  .toDynamicValue(() => {
-    return new IconActionsTreeview();
-  })
-  .inSingletonScope();
-
 // Bind TreeviewProviders
 container
   .bind(TreeviewProviders)
@@ -1527,7 +1364,6 @@ container
       context.container.get(ParentModelTreeview),
       context.container.get(ModelTestTreeview),
       context.container.get(DocumentationTreeview),
-      context.container.get(IconActionsTreeview),
       context.container.get(RunHistoryTreeviewProvider),
     );
   })
@@ -1576,7 +1412,6 @@ container
       context.container.get(SharedStateService),
       context.container.get("DBTTerminal"),
       context.container.get(QueryManifestService),
-      context.container.get(UsersService),
       context.container.get(WalkthroughCommands),
       context.container.get(AltimateAuthService),
     );
@@ -1593,7 +1428,6 @@ container
       context.container.get(SharedStateService),
       context.container.get("DBTTerminal"),
       context.container.get(QueryManifestService),
-      context.container.get(UsersService),
       context.container.get(AltimateAuthService),
     );
   })
@@ -1610,14 +1444,6 @@ container
       context.container.get(SharedStateService),
       context.container.get(OnboardingPanel),
     );
-  })
-  .inSingletonScope();
-
-// Bind CommentProviders
-container
-  .bind(CommentProviders)
-  .toDynamicValue((context) => {
-    return new CommentProviders(context.container.get(ConversationProvider));
   })
   .inSingletonScope();
 
@@ -1640,7 +1466,6 @@ container
       context.container.get(TelemetryService),
       context.container.get(HoverProviders),
       context.container.get(ValidationProvider),
-      context.container.get(CommentProviders),
       context.container.get(AltimateRequest),
       context.container.get(AltimateAuthService),
       context.container.get(WhatsNewPanel),

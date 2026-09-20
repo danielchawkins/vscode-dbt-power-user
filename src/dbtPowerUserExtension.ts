@@ -10,7 +10,6 @@ import { AltimateRequest } from "./altimate";
 import { AutocompletionProviders } from "./autocompletion_provider";
 import { CodeLensProviders } from "./code_lens_provider";
 import { VSCodeCommands } from "./commands";
-import { CommentProviders } from "./comment_provider";
 import { ContentProviders } from "./content_provider";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DefinitionProviders } from "./definition_provider";
@@ -91,7 +90,6 @@ export class DBTPowerUserExtension implements Disposable {
     private telemetry: TelemetryService,
     private hoverProviders: HoverProviders,
     private validationProvider: ValidationProvider,
-    private commentProviders: CommentProviders,
     private altimateRequest: AltimateRequest,
     private altimateAuthService: AltimateAuthService,
     private whatsNewPanel: WhatsNewPanel,
@@ -111,7 +109,6 @@ export class DBTPowerUserExtension implements Disposable {
       this.telemetry,
       this.hoverProviders,
       this.validationProvider,
-      this.commentProviders,
       this.whatsNewPanel,
     );
   }

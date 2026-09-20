@@ -5,8 +5,6 @@ import {
   CancellationTokenSource,
   CodeLens,
   commands,
-  CommentReply,
-  CommentThread,
   Disposable,
   env,
   extensions,
@@ -25,10 +23,6 @@ import {
   CteCodeLensProvider,
   CteInfo,
 } from "../code_lens_provider/cteCodeLensProvider";
-import {
-  ConversationCommentThread,
-  ConversationProvider,
-} from "../comment_provider/conversationProvider";
 import { SqlPreviewContentProvider } from "../content_provider/sqlPreviewContentProvider";
 import { CteProfilerDecorationProvider } from "../cte_profiler/cteProfilerDecorationProvider";
 import { CteProfilerService } from "../cte_profiler/cteProfilerService";
@@ -38,20 +32,13 @@ import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
-import { QueryManifestService } from "../services/queryManifestService";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
 import { TelemetryService } from "../telemetry";
 import { TelemetryEvents } from "../telemetry/events";
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
-import {
-  deepEqual,
-  extendErrorWithSupportLinks,
-  getFirstWorkspacePath,
-} from "../utils";
+import { deepEqual, getFirstWorkspacePath } from "../utils";
 import { WhatsNewPanel } from "../webview_provider/whatsNewPanel";
-import { AltimateScan } from "./altimateScan";
-import { BigQueryCostEstimate } from "./bigQueryCostEstimate";
 import { RunModel } from "./runModel";
 import { RunTest } from "./runTest";
 import { ValidateSql } from "./validateSql";
@@ -65,18 +52,14 @@ export class VSCodeCommands implements Disposable {
     private runModel: RunModel,
     private runTest: RunTest,
     private validateSql: ValidateSql,
-    private altimateScan: AltimateScan,
     private walkthroughCommands: WalkthroughCommands,
-    private bigQueryCostEstimate: BigQueryCostEstimate,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private diagnosticsOutputChannel: DiagnosticsOutputChannel,
     private eventEmitterService: SharedStateService,
-    private conversationController: ConversationProvider,
     @inject(PythonEnvironment)
     private pythonEnvironment: PythonEnvironment,
     private dbtClient: DBTClient,
-    private queryManifestService: QueryManifestService,
     private altimate: AltimateRequest,
     private runHistoryService: RunHistoryService,
     private cteProfilerService: CteProfilerService,
@@ -278,11 +261,6 @@ export class VSCodeCommands implements Disposable {
       commands.registerCommand("dbtPowerUser.compileCurrentModel", () =>
         this.runModel.compileModelOnActiveWindow(),
       ),
-      commands.registerCommand(
-        "dbtPowerUser.bigqueryCostEstimate",
-        ({ returnResult }: { returnResult?: boolean } = {}) =>
-          this.bigQueryCostEstimate.estimateCost({ returnResult }),
-      ),
       commands.registerTextEditorCommand(
         "dbtPowerUser.sqlPreview",
         async (editor: TextEditor) => {
@@ -459,12 +437,6 @@ export class VSCodeCommands implements Disposable {
       commands.registerCommand("dbtPowerUser.validateSql", () =>
         this.validateSql.validateSql(),
       ),
-      commands.registerCommand("dbtPowerUser.altimateScan", () =>
-        this.altimateScan.getProblems(),
-      ),
-      commands.registerCommand("dbtPowerUser.clearAltimateScanResults", () =>
-        this.altimateScan.clearProblems(),
-      ),
       commands.registerCommand("dbtPowerUser.validateProject", () => {
         const pickedProject: ProjectQuickPickItem | undefined =
           this.dbtProjectContainer.getFromWorkspaceState(
@@ -509,86 +481,8 @@ export class VSCodeCommands implements Disposable {
           "@id:files.associations",
         );
       }),
-      commands.registerCommand(
-        "dbtPowerUser.createConversation",
-        (reply: CommentReply) => {
-          try {
-            this.conversationController.createConversation(reply);
-          } catch (err) {
-            window.showErrorMessage(
-              extendErrorWithSupportLinks((err as Error).message),
-            );
-          }
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.replyToConversation",
-        (reply: CommentReply) => {
-          try {
-            this.conversationController.replyToConversation(reply);
-          } catch (err) {
-            window.showErrorMessage(
-              extendErrorWithSupportLinks((err as Error).message),
-            );
-          }
-        },
-      ),
-
-      commands.registerCommand(
-        "dbtPowerUser.resolveConversation",
-        (thread: CommentThread) => {
-          try {
-            this.conversationController.resolveConversation(
-              thread as ConversationCommentThread,
-            );
-          } catch (err) {
-            window.showErrorMessage(
-              extendErrorWithSupportLinks((err as Error).message),
-            );
-          }
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.copyDbtDocsLink",
-        (thread: CommentThread) => {
-          try {
-            this.conversationController.copyThreadLink(
-              thread as ConversationCommentThread,
-            );
-          } catch (err) {
-            window.showErrorMessage(
-              extendErrorWithSupportLinks((err as Error).message),
-            );
-          }
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.viewInDocEditor",
-        (thread: CommentThread) => {
-          try {
-            this.conversationController.viewInDocEditor(
-              thread as ConversationCommentThread,
-            );
-          } catch (err) {
-            window.showErrorMessage(
-              extendErrorWithSupportLinks((err as Error).message),
-            );
-          }
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.viewInDbtDocs",
-        (thread: CommentThread) => {
-          try {
-            this.conversationController.viewInDbtDocs(
-              thread as ConversationCommentThread,
-            );
-          } catch (err) {
-            window.showErrorMessage(
-              extendErrorWithSupportLinks((err as Error).message),
-            );
-          }
-        },
+      commands.registerCommand("dbtPowerUser.viewInDocEditor", () =>
+        commands.executeCommand("dbtPowerUser.DocsEdit.focus"),
       ),
       commands.registerCommand("dbtPowerUser.printEnvVars", () => {
         const activeFolder = window.activeTextEditor
@@ -906,27 +800,6 @@ export class VSCodeCommands implements Disposable {
               "An error occurred while changing target: " + error,
             );
           }
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.showDocumentation",
-        async (modelName) => {
-          const result = queryManifestService.getEventByCurrentProject();
-          if (!result) {
-            return;
-          }
-          const { event } = result;
-          if (!event) {
-            return;
-          }
-          const { nodeMetaMap } = event;
-          const model = nodeMetaMap.lookupByBaseName(modelName);
-          if (!model?.path) {
-            return;
-          }
-          const doc = await workspace.openTextDocument(Uri.file(model.path));
-          await window.showTextDocument(doc);
-          await commands.executeCommand("dbtPowerUser.DocsEdit.focus");
         },
       ),
       commands.registerCommand("dbtPowerUser.applyDeferConfig", async () => {

@@ -1,5 +1,3 @@
-import { ConversationGroup, DbtDocsShareDetails } from "@lib";
-
 export enum Source {
   DATABASE = "DATABASE",
   YAML = "YAML",
@@ -74,15 +72,8 @@ export interface DocumentationStateProps {
   currentUnitTests?: DBTUnitTest[];
   project?: string;
   insertedEntityName?: string;
-  conversations: Record<DbtDocsShareDetails["share_id"], ConversationGroup[]>;
-  showConversationsRightPanel: boolean;
   showSingleDocsPropRightPanel: boolean;
   showBulkDocsPropRightPanel: boolean;
-  selectedConversationGroup?: {
-    shareId: DbtDocsShareDetails["share_id"];
-    conversationGroupId: ConversationGroup["conversation_group_id"];
-  };
-  collaborationEnabled: boolean;
   missingDocumentationMessage?: { message: string; type: "warning" | "error" };
   searchQuery: string;
   docBlocks: DocBlock[];

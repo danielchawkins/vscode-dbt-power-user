@@ -16,7 +16,6 @@ import {
   MarkdownString,
   ProviderResult,
   TextDocument,
-  ThemeIcon,
   TreeDataProvider,
   TreeItem,
   TreeItemCollapsibleState,
@@ -470,75 +469,6 @@ export class NodeTreeItem extends TreeItem {
   }
 }
 
-export class ActionTreeItem extends TreeItem {
-  collapsibleState = TreeItemCollapsibleState.Collapsed;
-  children?: ActionTreeItem[];
-  constructor(
-    label: string,
-    icon?: ThemeIcon,
-    command?: Command,
-    tooltip?: string,
-  ) {
-    super(label);
-    this.iconPath = icon;
-    this.command = command;
-    this.tooltip = tooltip;
-  }
-}
-
-@provide(IconActionsTreeviewProvider)
-class IconActionsTreeviewProvider implements TreeDataProvider<ActionTreeItem> {
-  collapsibleState = TreeItemCollapsibleState.Collapsed;
-  getTreeItem(element: ActionTreeItem): ActionTreeItem {
-    element.collapsibleState = element.children
-      ? TreeItemCollapsibleState.Collapsed
-      : TreeItemCollapsibleState.None;
-    element.iconPath = element.children ? undefined : element.iconPath;
-    return element;
-  }
-
-  getChildren(element: ActionTreeItem): ProviderResult<ActionTreeItem[]> {
-    if (!element) {
-      const scanItem = new ActionTreeItem(
-        "Project Health Check",
-        undefined,
-        undefined,
-        "Find issues in dbt projects",
-      );
-
-      scanItem.children = [
-        new ActionTreeItem(
-          "Start Scan",
-          new ThemeIcon("search-view-icon"),
-          {
-            command: "dbtPowerUser.altimateScan",
-            title: "Project Health Check",
-            arguments: [],
-          },
-          "Scan all projects for issues",
-        ),
-        new ActionTreeItem(
-          "Clear Problems",
-          new ThemeIcon("search-stop"),
-          {
-            command: "dbtPowerUser.clearAltimateScanResults",
-            title: "Clear All Problems",
-            arguments: [],
-          },
-          "Clear issues from problems panel",
-        ),
-        new ActionTreeItem("Send Feedback", undefined, {
-          command: "vscode.open",
-          title: "Send Feedback",
-          arguments: [Uri.parse("https://form.jotform.com/251105674252148")],
-        }),
-      ];
-      return Promise.resolve([scanItem]);
-    }
-    return element.children;
-  }
-}
-
 class ModelTreeItem extends NodeTreeItem {
   contextValue = "model";
 }
@@ -634,8 +564,6 @@ export class DocumentationTreeview extends DocumentationTreeviewProvider {
     super(dbtProjectContainer);
   }
 }
-
-export class IconActionsTreeview extends IconActionsTreeviewProvider {}
 
 // Find appropriate a model from file content (if YAML) or from a file name (otherwise)
 export function lookupModelByEditorContent(

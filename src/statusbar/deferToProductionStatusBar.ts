@@ -58,10 +58,6 @@ export class DeferToProductionStatusBar implements Disposable {
 
   private showTextInStatusBar(text: string) {
     this.statusBar.text = text;
-    this.statusBar.command = {
-      title: "Open Insights Panel",
-      command: "dbtPowerUser.openInsights",
-    };
     this.statusBar.show();
   }
 
