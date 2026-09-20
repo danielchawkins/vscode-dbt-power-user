@@ -1,0 +1,96 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Metadata contract — shape and key set snapshot snapshots parser maps on ManifestCacheProjectAddedEvent 1`] = `
+{
+  "docKeys": [],
+  "exposureKeys": [],
+  "functionKeys": [],
+  "graphShapes": {
+    "children": {
+      "model.single_project.broken_ref": {
+        "currentNode": undefined,
+        "nodes": [
+          {
+            "key": "model.single_project.child",
+            "resourceType": "model",
+          },
+        ],
+      },
+    },
+    "metrics": {
+      "model.single_project.broken_ref": {
+        "currentNode": undefined,
+        "nodes": [],
+      },
+    },
+    "parents": {
+      "model.single_project.broken_ref": {
+        "currentNode": undefined,
+        "nodes": [],
+      },
+      "model.single_project.child": {
+        "currentNode": undefined,
+        "nodes": [
+          {
+            "key": "model.single_project.broken_ref",
+            "resourceType": "model",
+          },
+        ],
+      },
+    },
+    "tests": {
+      "model.single_project.broken_ref": {
+        "currentNode": undefined,
+        "nodes": [],
+      },
+    },
+  },
+  "macroKeys": [
+    "example",
+  ],
+  "macroShapes": [
+    {
+      "key": "example",
+      "name": "example",
+      "unique_id": "macro.single_project.example",
+    },
+  ],
+  "metricKeys": [],
+  "modelDepthMap": {
+    "broken_ref": 1,
+    "child": 2,
+    "model.single_project.broken_ref": 1,
+    "model.single_project.child": 2,
+  },
+  "nodeKeys": [
+    "model.single_project.broken_ref",
+    "model.single_project.child",
+  ],
+  "nodeShapes": [
+    {
+      "alias": "broken_ref",
+      "database": "dummy",
+      "name": "broken_ref",
+      "package_name": "single_project",
+      "resource_type": "model",
+      "schema": "test",
+      "unique_id": "model.single_project.broken_ref",
+    },
+    {
+      "alias": "child",
+      "database": "dummy",
+      "name": "child",
+      "package_name": "single_project",
+      "resource_type": "model",
+      "schema": "test",
+      "unique_id": "model.single_project.child",
+    },
+  ],
+  "semanticModelKeys": [],
+  "sourceKeys": [],
+  "sourceShapes": [],
+  "testKeys": [],
+  "testShapes": [],
+  "unitTestKeys": [],
+}
+`;
