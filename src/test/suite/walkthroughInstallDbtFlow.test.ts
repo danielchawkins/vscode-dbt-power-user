@@ -130,7 +130,7 @@ describe("WalkthroughCommands.installDbt — externally-managed flow", () => {
   });
 
   it("creates a venv, installs dbt there, and repoints the interpreter", async () => {
-    await commands.installDbt();
+    await (commands as any).installDbtCore();
 
     // Global install attempted against the brew interpreter (and failed).
     const globalInstall = runCommands.find(
@@ -158,7 +158,7 @@ describe("WalkthroughCommands.installDbt — externally-managed flow", () => {
   });
 
   it("does not force --break-system-packages when creating a venv", async () => {
-    await commands.installDbt();
+    await (commands as any).installDbtCore();
     const forced = runCommands.some((c) =>
       c.args.includes("--break-system-packages"),
     );
@@ -170,7 +170,7 @@ describe("WalkthroughCommands.installDbt — externally-managed flow", () => {
       Promise.reject(new Error("detect failed")),
     );
 
-    await commands.installDbt();
+    await (commands as any).installDbtCore();
 
     // Override is set to the venv, then rolled back to the prior value
     // (undefined here) so the workspace isn't left on a half-applied interpreter.

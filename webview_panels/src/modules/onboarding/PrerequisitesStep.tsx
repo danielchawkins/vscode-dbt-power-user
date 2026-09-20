@@ -2,7 +2,6 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   CodeOutlined,
-  DatabaseOutlined,
   FileTextOutlined,
   FolderOpenOutlined,
   SyncOutlined,
@@ -10,7 +9,7 @@ import {
 } from "@ant-design/icons";
 import { executeRequestInSync } from "@modules/app/requestExecutor";
 import { panelLogger } from "@modules/logger";
-import { Alert, Button, Card, Radio, Select, Space, Spin } from "antd";
+import { Alert, Button, Card, Select, Spin } from "antd";
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import InstallDbtStep from "./InstallDbtStep";
 import classes from "./onboarding.module.scss";
@@ -37,15 +36,12 @@ interface DiagnosticsStatus {
   projectsFound: boolean;
   projectCount: number;
   workspaceCount: number;
-  dbtIntegrationMode: string;
   pythonPath?: string;
   pythonVersion?: string;
   dbtVersion?: string;
   dbtPath?: string;
   fileAssociationsConfigured: boolean;
 }
-
-type DbtIntegrationType = "core" | "fusion" | "cloud";
 
 type CheckStatus = "pending" | "checking" | "success" | "warning" | "error";
 
@@ -100,10 +96,6 @@ const PrerequisitesStep = forwardRef<
     null,
   );
   const [error, setError] = useState<string | undefined>();
-  const [dbtIntegrationType, setDbtIntegrationType] =
-    useState<DbtIntegrationType>("core");
-  const [changingIntegration, setChangingIntegration] = useState(false);
-  const [showIntegrationOptions, setShowIntegrationOptions] = useState(false);
   const [expandedCheckId, setExpandedCheckId] = useState<string | null>(null);
   const [validationState, setValidationState] =
     useState<ValidationState>("idle");
@@ -196,9 +188,6 @@ const PrerequisitesStep = forwardRef<
       )) as DiagnosticsStatus;
 
       setDiagnostics(status);
-      setDbtIntegrationType(
-        (status.dbtIntegrationMode as DbtIntegrationType) || "core",
-      );
 
       // Update check statuses based on diagnostics
       setChecks((prev) =>
@@ -364,31 +353,6 @@ const PrerequisitesStep = forwardRef<
     setShowInstallDbt(false);
   };
 
-  const handleIntegrationTypeChange = async (newType: DbtIntegrationType) => {
-    try {
-      setChangingIntegration(true);
-      setError(undefined);
-
-      await executeRequestInSync("setDbtIntegration", {
-        integrationType: newType,
-      });
-
-      setDbtIntegrationType(newType);
-
-      // Re-run diagnostics after changing integration type
-      setTimeout(() => void runDiagnostics(), 500);
-    } catch (err) {
-      panelLogger.error("Error changing dbt integration type", err);
-      setError(
-        err instanceof Error
-          ? err.message
-          : "Failed to change dbt integration type",
-      );
-    } finally {
-      setChangingIntegration(false);
-    }
-  };
-
   const getStatusIcon = (status: CheckStatus) => {
     switch (status) {
       case "checking":
@@ -530,8 +494,7 @@ const PrerequisitesStep = forwardRef<
               </p>
             )}
             <p style={labelStyle}>
-              <strong>Integration mode:</strong>{" "}
-              {diagnostics.dbtIntegrationMode}
+              <strong>Integration:</strong> dbt Fusion
             </p>
           </div>
         );
@@ -548,7 +511,6 @@ const PrerequisitesStep = forwardRef<
     return (
       <div className={classes.prerequisitesContainer}>
         <InstallDbtStep
-          initialIntegrationType={dbtIntegrationType}
           onComplete={handleDbtInstallComplete}
           onSkip={handleDbtInstallSkip}
         />
@@ -613,106 +575,6 @@ const PrerequisitesStep = forwardRef<
               className={classes.alertMessage}
             />
           )}
-
-          <Card className={classes.prerequisiteCard}>
-            <div className={classes.prerequisiteCardHeader}>
-              <div className={classes.prerequisiteCardTitle}>
-                <span className={classes.prerequisiteIcon}>
-                  <DatabaseOutlined />
-                </span>
-                <div>
-                  <h3>dbt Integration Type</h3>
-                  {!showIntegrationOptions && (
-                    <>
-                      <p className={classes.prerequisiteDescription}>
-                        <strong>
-                          {dbtIntegrationType === "core" && "dbt Core"}
-                          {dbtIntegrationType === "fusion" &&
-                            "dbt Fusion (beta)"}
-                          {dbtIntegrationType === "cloud" && "dbt Cloud CLI"}
-                        </strong>
-                        {" - "}
-                        {dbtIntegrationType === "core" &&
-                          "Local dbt installation via Python"}
-                        {dbtIntegrationType === "fusion" &&
-                          "dbt Fusion CLI for enhanced performance"}
-                        {dbtIntegrationType === "cloud" &&
-                          "Connect to dbt Cloud"}
-                      </p>
-                    </>
-                  )}
-                </div>
-              </div>
-              {!showIntegrationOptions && (
-                <Button
-                  onClick={() => setShowIntegrationOptions(true)}
-                  disabled={changingIntegration || checking}
-                >
-                  Change
-                </Button>
-              )}
-            </div>
-
-            {showIntegrationOptions && (
-              <div className={classes.prerequisiteAction}>
-                <p
-                  className={classes.prerequisiteDescription}
-                  style={{ marginBottom: "1rem" }}
-                >
-                  Choose how dbt Power User connects to dbt. You can change this
-                  later in settings.
-                </p>
-                <Radio.Group
-                  value={dbtIntegrationType}
-                  onChange={(e) => {
-                    void handleIntegrationTypeChange(
-                      e.target.value as DbtIntegrationType,
-                    );
-                    setShowIntegrationOptions(false);
-                  }}
-                  disabled={changingIntegration || checking}
-                >
-                  <Space
-                    direction="vertical"
-                    size="middle"
-                    style={{ width: "100%" }}
-                  >
-                    <Radio value="core">
-                      <div className={classes.radioOption}>
-                        <strong>dbt Core</strong>
-                        <p className={classes.radioDescription}>
-                          Use local dbt installation via Python. Best for local
-                          development with full control.
-                        </p>
-                      </div>
-                    </Radio>
-                    <Radio value="fusion">
-                      <div className={classes.radioOption}>
-                        <strong>dbt Fusion (beta)</strong>
-                        <p className={classes.radioDescription}>
-                          Use dbt Fusion CLI for enhanced performance and
-                          additional features (beta)
-                        </p>
-                      </div>
-                    </Radio>
-                    <Radio value="cloud">
-                      <div className={classes.radioOption}>
-                        <strong>dbt Cloud CLI</strong>
-                        <p className={classes.radioDescription}>
-                          Connect to dbt Cloud for teams using dbt Cloud CLI
-                        </p>
-                      </div>
-                    </Radio>
-                  </Space>
-                </Radio.Group>
-                <div style={{ marginTop: "1rem" }}>
-                  <Button onClick={() => setShowIntegrationOptions(false)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            )}
-          </Card>
 
           <div className={classes.prerequisiteChecks}>
             {checks.map((check) => {

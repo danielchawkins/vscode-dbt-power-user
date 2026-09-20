@@ -123,9 +123,6 @@ export class VSCodeCommands implements Disposable {
           this.dbtProjectContainer.initialize();
         },
       ),
-      commands.registerCommand("dbtPowerUser.installDbt", () =>
-        this.walkthroughCommands.installDbt(),
-      ),
       commands.registerCommand("dbtPowerUser.showWhatsNew", () =>
         this.whatsNewPanel.show("manual"),
       ),
@@ -777,9 +774,6 @@ export class VSCodeCommands implements Disposable {
           this.diagnosticsOutputChannel.logNewLine();
 
           // Printing extension and setup info
-          const dbtIntegrationMode = workspace
-            .getConfiguration("dbt")
-            .get<string>("dbtIntegration", "core");
           const allowListFolders = workspace
             .getConfiguration("dbt")
             .get<string[]>("allowListFolders", []);
@@ -791,7 +785,7 @@ export class VSCodeCommands implements Disposable {
               extensions.getExtension("innoverio.vscode-dbt-power-user")
                 ?.packageJSON?.version
             }`,
-            `DBT integration mode=${dbtIntegrationMode}`,
+            "DBT integration mode=fusion",
             `First workspace path=${getFirstWorkspacePath()}`,
             `Altimate API connectivity=${apiConnectivity.status}`,
             apiConnectivity.errorMsg

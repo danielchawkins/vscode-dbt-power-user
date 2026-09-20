@@ -45,14 +45,7 @@ import {
 import * as LibNamespace from "@lib";
 import { NotebookKernelClient } from "@lib";
 import { Container, interfaces } from "inversify";
-import {
-  Event,
-  EventEmitter,
-  Memento,
-  Uri,
-  workspace,
-  WorkspaceFolder,
-} from "vscode";
+import { Event, EventEmitter, Memento, Uri, WorkspaceFolder } from "vscode";
 import { AltimateRequest } from "./altimate";
 import { DBTProject } from "./dbt_client/dbtProject";
 import { ProjectRegisteredUnregisteredEvent } from "./dbt_client/dbtProjectContainer";
@@ -483,23 +476,12 @@ container
     (context: interfaces.Context) => {
       return (globalState: Memento | undefined) => {
         const { container } = context;
-        const dbtIntegrationMode = workspace
-          .getConfiguration("dbt")
-          .get<string>("dbtIntegration", "core");
-
-        switch (dbtIntegrationMode) {
-          case "cloud":
-            return container.get(DBTCloudDetection);
-          case "fusion":
-            return new FusionVersionDetection(
-              container.get(CommandProcessExecutionFactory),
-              container.get("DBTTerminal"),
-              container.get("DBTConfiguration"),
-              globalState,
-            );
-          default:
-            return container.get(DBTCoreDetection);
-        }
+        return new FusionVersionDetection(
+          container.get(CommandProcessExecutionFactory),
+          container.get("DBTTerminal"),
+          container.get("DBTConfiguration"),
+          globalState,
+        );
       };
     },
   );
@@ -508,21 +490,7 @@ container
   .bind<interfaces.Factory<DBTProjectDetection>>("Factory<DBTProjectDetection>")
   .toFactory<DBTProjectDetection, []>((context: interfaces.Context) => {
     return () => {
-      const { container } = context;
-      const dbtIntegrationMode = workspace
-        .getConfiguration("dbt")
-        .get<string>("dbtIntegration", "core");
-
-      switch (dbtIntegrationMode) {
-        case "cloud":
-          // Handle preview features for cloud integration
-          container.get(AltimateAuthService).handlePreviewFeatures();
-          return container.get(DBTCloudProjectDetection);
-        case "fusion":
-          return container.get(DBTFusionCommandProjectDetection);
-        default:
-          return container.get(DBTCoreProjectDetection);
-      }
+      return context.container.get(DBTFusionCommandProjectDetection);
     };
   });
 

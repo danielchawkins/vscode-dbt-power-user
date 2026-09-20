@@ -1,14 +1,7 @@
 import { DBTDetection } from "@altimateai/dbt-integration";
 import { existsSync } from "fs";
 import { inject } from "inversify";
-import {
-  commands,
-  Disposable,
-  EventEmitter,
-  Memento,
-  window,
-  workspace,
-} from "vscode";
+import { commands, Disposable, EventEmitter, Memento, window } from "vscode";
 import { DBTInstallationVerificationEvent } from "./dbtVersionEvent";
 import { PythonEnvironment } from "./pythonEnvironment";
 
@@ -128,54 +121,17 @@ export class DBTClient implements Disposable {
     return this.showErrorIfDbtIsNotInstalled();
   }
 
-  private async executeInstallDbtCommand(message: string, option: string) {
-    const answer = await window.showErrorMessage(
-      message,
-      option,
-      PythonInterpreterPromptAnswer.DETECT,
-      "Troubleshoot",
-    );
-    if (answer === option) {
-      commands.executeCommand("dbtPowerUser.installDbt");
-    } else if (answer === PythonInterpreterPromptAnswer.DETECT) {
-      commands.executeCommand("dbtPowerUser.detectPythonFromTerminal");
-    } else if (answer?.includes("Troubleshoot")) {
-      commands.executeCommand("dbtPowerUser.openSetupWalkthrough");
-    }
-  }
-
   async showErrorIfDbtIsNotInstalled() {
     if (!this._dbtInstalled) {
       if (!this.shownError) {
         // We don't want to flood the user with errors
         this.shownError = true;
-        const dbtIntegrationMode = workspace
-          .getConfiguration("dbt")
-          .get<string>("dbtIntegration", "core");
-        switch (dbtIntegrationMode) {
-          case "fusion":
-            await this.executeInstallDbtCommand(
-              "Please ensure dbt fusion cli is installed.",
-              "Install dbt fusion",
-            );
-            break;
-          case "core":
-            await this.executeInstallDbtCommand(
-              "Please ensure dbt core cli is installed.",
-              "Install dbt core",
-            );
-            break;
-          case "cloud":
-            await this.executeInstallDbtCommand(
-              "Please ensure dbt cloud cli is installed.",
-              "Install dbt cloud",
-            );
-            break;
-          default:
-            window.showErrorMessage(
-              `Unknown dbt integration mode: ${dbtIntegrationMode}. Supported modes are: core, cloud, fusion.`,
-            );
-            break;
+        const answer = await window.showErrorMessage(
+          "Please ensure dbt Fusion CLI is installed.",
+          "Troubleshoot",
+        );
+        if (answer === "Troubleshoot") {
+          commands.executeCommand("dbtPowerUser.openSetupWalkthrough");
         }
       }
       return false;

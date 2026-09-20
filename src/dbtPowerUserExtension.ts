@@ -250,10 +250,6 @@ export class DBTPowerUserExtension implements Disposable {
           error,
         );
       }
-      // Ask to reload the window if the dbt integration changes
-      const dbtIntegration = workspace
-        .getConfiguration("dbt")
-        .get<string>("dbtIntegration", "core");
       workspace.onDidChangeConfiguration((e) => {
         if (!e.affectsConfiguration("dbt")) {
           return;
@@ -269,15 +265,6 @@ export class DBTPowerUserExtension implements Disposable {
           } else {
             clearCachedCredits();
           }
-        }
-        const newDbtIntegration = workspace
-          .getConfiguration("dbt")
-          .get<string>("dbtIntegration", "core");
-        if (
-          dbtIntegration !== newDbtIntegration &&
-          ["core", "cloud", "corecommand", "fusion"].includes(newDbtIntegration)
-        ) {
-          commands.executeCommand("workbench.action.reloadWindow");
         }
       });
     } catch (error) {

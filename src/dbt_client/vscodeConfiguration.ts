@@ -18,12 +18,7 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
   }
 
   getDbtIntegration(): string {
-    return workspace
-      .getConfiguration("dbt")
-      .get<string>(
-        "dbtIntegration",
-        DEFAULT_CONFIGURATION_VALUES.dbtIntegration,
-      );
+    return "fusion";
   }
 
   getRunModelCommandAdditionalParams(): string[] {

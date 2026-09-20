@@ -181,17 +181,6 @@
             "type": "string",
             "markdownDescription": "Regex to identify unquoted identifiers. Example: `^([_A-Z]+[_A-Z0-9$]*)$`"
           },
-          "dbt.dbtIntegration": {
-            "type": "string",
-            "enum": [
-              "core",
-              "cloud",
-              "corecommand",
-              "fusion"
-            ],
-            "default": "core",
-            "description": "Select dbt core or dbt cloud"
-          },
           "dbt.dbtPythonPathOverride": {
             "type": "string",
             "description": "Path to a Python executable. Use this when the Python extension selects a different interpreter than the one where dbt is installed (e.g. dbt works in your terminal but not in the extension). You can set this manually or run the 'Detect Python from terminal' command to auto-detect it."

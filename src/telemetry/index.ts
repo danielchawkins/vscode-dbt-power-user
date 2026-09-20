@@ -71,9 +71,7 @@ export class TelemetryService implements vscode.Disposable {
         instanceName: vscode.workspace
           .getConfiguration("dbt")
           .get<string>("altimateInstanceName"),
-        dbtIntegrationMode: vscode.workspace
-          .getConfiguration("dbt")
-          .get<string>("dbtIntegration", "core"),
+        dbtIntegrationMode: "fusion",
         localMode: vscode.workspace
           .getConfiguration("dbt")
           .get<boolean>("isLocalMode", false)
@@ -104,9 +102,7 @@ export class TelemetryService implements vscode.Disposable {
         instanceName: vscode.workspace
           .getConfiguration("dbt")
           .get<string>("altimateInstanceName"),
-        dbtIntegrationMode: vscode.workspace
-          .getConfiguration("dbt")
-          .get<string>("dbtIntegration", "core"),
+        dbtIntegrationMode: "fusion",
         localMode: vscode.workspace
           .getConfiguration("dbt")
           .get<boolean>("isLocalMode", false)

@@ -167,20 +167,6 @@ export class DBTProject implements Disposable {
 
     this.dbtProjectLog = this.dbtProjectLogFactory(this.onProjectConfigChanged);
 
-    // Check if dbt loom is installed for telemetry (only for core integration)
-    const dbtIntegrationMode = workspace
-      .getConfiguration("dbt")
-      .get<string>("dbtIntegration", "core");
-
-    if (dbtIntegrationMode === "core") {
-      this.isDbtLoomInstalled().then((isInstalled) => {
-        this.telemetry.setTelemetryCustomAttribute(
-          "dbtLoomInstalled",
-          `${isInstalled}`,
-        );
-      });
-    }
-
     // Create the integration adapter which will handle the integration selection internally
     this.dbtProjectIntegration = this.dbtIntegrationAdapterFactory(
       this.projectRoot.fsPath,
@@ -304,7 +290,7 @@ export class DBTProject implements Disposable {
 
     this.terminal.debug(
       "DbtProject",
-      `Created ${dbtIntegrationMode} dbt project ${this.getProjectName()} at ${
+      `Created fusion dbt project ${this.getProjectName()} at ${
         this.projectRoot
       }`,
     );
@@ -326,20 +312,6 @@ export class DBTProject implements Disposable {
           err,
         );
       });
-  }
-
-  private async isDbtLoomInstalled(): Promise<boolean> {
-    const dbtLoomThread = this.executionInfrastructure.createPythonBridge(
-      this.projectRoot.fsPath,
-    );
-    try {
-      await dbtLoomThread.ex`from dbt_loom import *`;
-      return true;
-    } catch (error) {
-      return false;
-    } finally {
-      await this.executionInfrastructure.closePythonBridge(dbtLoomThread);
-    }
   }
 
   private stampCloudVariantOnTelemetry(): void {
@@ -837,49 +809,17 @@ export class DBTProject implements Disposable {
   }
 
   private validateIntegrationPrerequisites(): boolean {
-    // Validate different prerequisites based on integration type
-    const dbtIntegrationMode = workspace
-      .getConfiguration("dbt")
-      .get<string>("dbtIntegration", "core");
-
-    switch (dbtIntegrationMode) {
-      case "cloud":
-      case "fusion":
-        // For cloud/fusion integrations, validate authentication
-        try {
-          this.validationProvider.validateCredentialsSilently();
-          return true;
-        } catch (e) {
-          window.showErrorMessage((e as Error).message);
-          return false;
-        }
-      case "core":
-      case "corecommand":
-      default:
-        // For core integrations, check if we have a proper dbt installation
-        // We'll validate through the integration's diagnostic system
-        const diagnostics =
-          this.getCurrentProjectIntegration().getDiagnostics();
-        const hasErrors = [
-          ...diagnostics.pythonBridgeDiagnostics,
-          ...diagnostics.rebuildManifestDiagnostics,
-        ].some((diagnostic) => diagnostic.severity === "error");
-
-        if (hasErrors) {
-          window.showErrorMessage(
-            "dbt installation or Python environment is not properly configured",
-          );
-          return false;
-        }
-        return true;
+    try {
+      this.validationProvider.validateCredentialsSilently();
+      return true;
+    } catch (e) {
+      window.showErrorMessage((e as Error).message);
+      return false;
     }
   }
 
   private requiresAuthentication(): boolean {
-    const dbtIntegrationMode = workspace
-      .getConfiguration("dbt")
-      .get<string>("dbtIntegration", "core");
-    return dbtIntegrationMode === "cloud";
+    return false;
   }
 
   throwIfNotAuthenticated() {
