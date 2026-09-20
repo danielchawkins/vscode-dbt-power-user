@@ -21,6 +21,7 @@ test-results/
 # Test directories
 test_dbt_project/
 test-workspace/
+src/test/fixtures/**/target/
 
 # IDE and editor files
 *.swp

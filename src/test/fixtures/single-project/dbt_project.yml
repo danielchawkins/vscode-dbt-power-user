@@ -1,0 +1,6 @@
+name: single_project
+version: 1.0.0
+config-version: 2
+profile: single_project
+model-paths:
+  - models
