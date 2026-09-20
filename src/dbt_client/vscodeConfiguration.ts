@@ -64,12 +64,7 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
   }
 
   getEnableNotebooks(): boolean {
-    return workspace
-      .getConfiguration("dbt")
-      .get<boolean>(
-        "enableNotebooks",
-        DEFAULT_CONFIGURATION_VALUES.enableNotebooks,
-      );
+    return false;
   }
 
   getDisableQueryHistory(): boolean {

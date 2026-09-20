@@ -1,5 +1,4 @@
 import { DBTTerminal, PythonException } from "@altimateai/dbt-integration";
-import { NotebookSchema } from "@lib";
 import { inject } from "inversify";
 import {
   CancellationToken,
@@ -265,42 +264,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
             },
             command,
             true,
-          );
-          break;
-        case "deleteNotebook":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              return this.altimateRequest.deleteNotebook(
-                params.notebookId as number,
-              );
-            },
-            command,
-            true,
-          );
-          break;
-        case "updateNotebook":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            async () => {
-              const { notebookId, name, data } = params as {
-                notebookId: number;
-                name: string;
-                data?: NotebookSchema;
-              };
-              return await this.altimateRequest.updateNotebook(notebookId, {
-                name,
-                data,
-              });
-            },
-            command,
-            true,
-          );
-          break;
-        case "openNewNotebook":
-          commands.executeCommand(
-            "dbtPowerUser.createAltimateNotebook",
-            params,
           );
           break;
         case "setToWorkspaceState":

@@ -157,9 +157,7 @@ export class QueryManifestService {
   // get project based on current active editor
   // if no editor, then ask user to pick project
   public async getOrPickProjectFromWorkspace() {
-    const uri =
-      window.activeTextEditor?.document.uri ||
-      window.activeNotebookEditor?.notebook.uri;
+    const uri = window.activeTextEditor?.document.uri;
     const project = uri ? this.dbtProjectContainer.findDBTProject(uri) : null;
 
     if (project) {

@@ -20,7 +20,6 @@ export { default as LikeIcon } from "./like.svg?react";
 export { default as LoaderIcon } from "./loader.svg?react";
 export { default as NoBookmarksIcon } from "./no-bookmarks.svg?react";
 export { default as NoHistoryIcon } from "./no-history.svg?react";
-export { default as NoNotebooksIcon } from "./notebook.svg?react";
 export { default as PreviewIcon } from "./preview.svg?react";
 export { default as PropagateIcon } from "./propagate.svg?react";
 export { default as SelectCheckedIcon } from "./select-checked.svg?react";

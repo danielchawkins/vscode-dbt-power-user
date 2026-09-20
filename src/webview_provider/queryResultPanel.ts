@@ -214,22 +214,12 @@ export class QueryResultPanel extends AltimateWebviewProvider {
               this.renderWebviewView(this._panel.webview);
             }
           }
-          if (e.affectsConfiguration("dbt.enableNotebooks")) {
-            this.updateEnableNotebooksInContext();
-            const event = workspace
-              .getConfiguration("dbt")
-              .get<boolean>("enableNotebooks", false)
-              ? "NotebooksEnabled"
-              : "NotebooksDisabled";
-            this.telemetry.sendTelemetryEvent(event);
-          }
         },
         this,
         this._disposables,
       ),
     );
 
-    this.updateEnableNotebooksInContext();
     this._disposables.push(
       commands.registerCommand(
         "dbtPowerUser.collectQueryResultsDebugInfo",
@@ -267,15 +257,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     this._panel?.webview?.postMessage({
       command: "collectQueryResultsDebugInfo",
     });
-  }
-
-  private updateEnableNotebooksInContext() {
-    // Setting this here to access it in package.json for enabling new file command
-    commands.executeCommand(
-      "setContext",
-      "dbt.enableNotebooks",
-      workspace.getConfiguration("dbt").get<boolean>("enableNotebooks", false),
-    );
   }
 
   private async createQueryResultsPanelVirtualDocument(editorName: string) {

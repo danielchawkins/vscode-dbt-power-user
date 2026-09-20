@@ -42,27 +42,6 @@
   ],
   "main": "./dist/extension",
   "contributes": {
-    "notebookRenderer": [
-      {
-        "id": "altimate-notebook-perspective-renderer",
-        "displayName": "Altimate Notebook Perspective Renderer",
-        "entrypoint": "./webview_panels/dist/assets/renderer.js",
-        "mimeTypes": [
-          "application/perspective-json"
-        ]
-      }
-    ],
-    "notebooks": [
-      {
-        "type": "datapilot-notebook",
-        "displayName": "Altimate Notebook",
-        "selector": [
-          {
-            "filenamePattern": "*.notebook"
-          }
-        ]
-      }
-    ],
     "snippets": [
       {
         "language": "jinja-sql",
@@ -140,11 +119,6 @@
             "type": "boolean",
             "description": "Disable Query history and bookmarks",
             "default": false
-          },
-          "dbt.enableNotebooks": {
-            "type": "boolean",
-            "description": "Enable Altimate notebooks feature",
-            "default": true
           },
           "dbt.lineage.showSelectEdges": {
             "type": "boolean",
@@ -313,17 +287,6 @@
         }
       }
     ],
-    "customEditors": [
-      {
-        "viewType": "dbtPowerUser.Mcp",
-        "displayName": "MCP Walkthrough",
-        "selector": [
-          {
-            "filenamePattern": "*.mcpwalkthrough"
-          }
-        ]
-      }
-    ],
     "viewsContainers": {
       "activitybar": [
         {
@@ -459,11 +422,6 @@
       {
         "command": "dbtPowerUser.createSqlFile",
         "title": "Create Power User SQL file"
-      },
-      {
-        "command": "dbtPowerUser.createAltimateNotebook",
-        "title": "Altimate notebook",
-        "enablement": "dbt.enableNotebooks == true"
       },
       {
         "command": "dbtPowerUser.replyToConversation",
@@ -745,36 +703,6 @@
         "category": "dbt Power User"
       },
       {
-        "command": "dbtPowerUser.showAltimateNotebooksQuickPick",
-        "title": "Show Altimate Notebooks Quick Pick",
-        "category": "dbt Power User"
-      },
-      {
-        "command": "dbtPowerUser.showNotebookProfileQuery",
-        "title": "Profile this query",
-        "group": "notebooks@1"
-      },
-      {
-        "command": "dbtPowerUser.showNotebookTestSuggestions",
-        "title": "Get test suggestions",
-        "group": "notebooks@2"
-      },
-      {
-        "command": "dbtPowerUser.showNotebookGenerateBaseModelSql",
-        "title": "Generate dbt base model sql",
-        "group": "notebooks@3"
-      },
-      {
-        "command": "dbtPowerUser.showNotebookGenerateModelYaml",
-        "title": "Generate dbt model yaml",
-        "group": "notebooks@4"
-      },
-      {
-        "command": "dbtPowerUser.showNotebookGenerateModelCTE",
-        "title": "Generate dbt model CTE",
-        "group": "notebooks@5"
-      },
-      {
         "command": "dbtPowerUser.applyDeferConfig",
         "category": "dbt Power User",
         "title": "Apply defer configuration"
@@ -844,11 +772,6 @@
       "file/newFile": [
         {
           "command": "dbtPowerUser.createSqlFile"
-        },
-        {
-          "command": "dbtPowerUser.createAltimateNotebook",
-          "when": "dbt.enableNotebooks == true",
-          "group": "notebook"
         }
       ],
       "comments/commentThread/title": [
@@ -883,28 +806,6 @@
           "command": "dbtPowerUser.replyToConversation",
           "group": "inline",
           "when": "commentController == altimate-conversations && !commentThreadIsEmpty"
-        }
-      ],
-      "dbtPowerUser.notebooksSubmenu": [
-        {
-          "command": "dbtPowerUser.showNotebookProfileQuery",
-          "group": "notebooks@1"
-        },
-        {
-          "command": "dbtPowerUser.showNotebookTestSuggestions",
-          "group": "notebooks@2"
-        },
-        {
-          "command": "dbtPowerUser.showNotebookGenerateBaseModelSql",
-          "group": "notebooks@3"
-        },
-        {
-          "command": "dbtPowerUser.showNotebookGenerateModelYaml",
-          "group": "notebooks@4"
-        },
-        {
-          "command": "dbtPowerUser.showNotebookGenerateModelCTE",
-          "group": "notebooks@5"
         }
       ],
       "dbtPowerUser.altimateCodeSubmenu": [
@@ -982,11 +883,6 @@
           "submenu": "dbtPowerUser.altimateCodeSubmenu",
           "group": "altimate@1",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$|^yaml$|^jinja-yaml$/"
-        },
-        {
-          "submenu": "dbtPowerUser.notebooksSubmenu",
-          "group": "notebooks@1",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/ && dbt.enableNotebooks == true"
         },
         {
           "submenu": "dbtPowerUser.buildModel",
@@ -1183,10 +1079,6 @@
         }
       },
       {
-        "id": "dbtPowerUser.notebooksSubmenu",
-        "label": "Altimate Notebooks"
-      },
-      {
         "id": "dbtPowerUser.altimateCodeSubmenu",
         "label": "Altimate Code"
       }
@@ -1216,8 +1108,7 @@
     ]
   },
   "scripts": {
-    "postinstall": "node postInstall.js",
-    "vscode:prepublish": "npm run build --prefix webview_panels && npm run build && node prepareBuild.js",
+    "vscode:prepublish": "npm run build --prefix webview_panels && npm run build",
     "build": "rsbuild build",
     "build:dev": "rsbuild build --mode development",
     "watch:extension": "rsbuild build --mode development --watch",
@@ -1251,7 +1142,6 @@
     "@vscode/debugadapter": "^1.68.0",
     "@vscode/debugprotocol": "^1.68.0",
     "@vscode/test-electron": "^3.1.0",
-    "@vscode/zeromq": "^0.2.1",
     "concurrently": "^9.2.1",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^8.9.0",
@@ -1278,11 +1168,7 @@
   ],
   "dependencies": {
     "@altimateai/dbt-integration": "^0.3.13",
-    "@jupyterlab/coreutils": "^6.2.4",
-    "@jupyterlab/nbformat": "^4.2.4",
-    "@jupyterlab/services": "^7.0.0",
     "@modelcontextprotocol/sdk": "^1.24.0",
-    "@nteract/messaging": "^7.0.20",
     "@types/express": "^5.0.0",
     "@vscode/chat-extension-utils": "^0.0.0-alpha.5",
     "@vscode/codicons": "^0.0.36",
@@ -1300,7 +1186,6 @@
     "which": "^6.0.1",
     "ws": "^8.18.0",
     "yaml": "^2.6.0",
-    "zeromq": "^6.1.1",
     "zod": "^3.25.28",
     "zod-to-json-schema": "^3.25.2"
   },
@@ -1314,7 +1199,6 @@
   "allowScripts": {
     "@vscode/vsce-sign@2.1.0": true,
     "keytar": false,
-    "zeromq@6.8.0": true,
     "core-js": false,
     "fsevents": false
   }

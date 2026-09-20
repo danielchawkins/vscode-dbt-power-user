@@ -5,14 +5,11 @@ import {
   DeferConfig,
   NotFoundError,
 } from "@altimateai/dbt-integration";
-import { NotebookFileSystemProvider } from "@lib";
 import { inject } from "inversify";
 import {
   commands,
   ConfigurationTarget,
   env,
-  FileChangeEvent,
-  FileChangeType,
   ProgressLocation,
   TextEditor,
   Uri,
@@ -72,7 +69,6 @@ export class InsightsPanel extends AltimateWebviewProvider {
     protected queryManifestService: QueryManifestService,
     private validationProvider: ValidationProvider,
     protected usersService: UsersService,
-    private notebookFileSystemProvider: NotebookFileSystemProvider,
     protected altimateAuthService: AltimateAuthService,
     altimateCodeChatService: AltimateCodeChatService,
   ) {
@@ -111,22 +107,6 @@ export class InsightsPanel extends AltimateWebviewProvider {
                 projectPath: currentProject?.projectRoot.fsPath,
                 dbtIntegrationMode: "fusion",
               },
-            });
-          }
-        },
-      ),
-    );
-
-    this._disposables.push(
-      this.notebookFileSystemProvider.onDidChangeFile(
-        (e: FileChangeEvent[]) => {
-          const createdEvent = e.find(
-            (event) => event.type === FileChangeType.Created,
-          );
-          if (createdEvent) {
-            this.sendResponseToWebview({
-              command: "refetchNotebooks",
-              data: {},
             });
           }
         },
@@ -601,39 +581,6 @@ export class InsightsPanel extends AltimateWebviewProvider {
     const { command, syncRequestId, ...params } = message;
 
     switch (command) {
-      case "getNotebooks":
-        this.handleSyncRequestFromWebview(
-          syncRequestId,
-          async () =>
-            await this.altimateRequest.getNotebooks(
-              "",
-              [],
-              params.privacy as string,
-            ),
-          command,
-          true,
-        );
-        break;
-      case "getPreConfiguredNotebooks":
-        this.handleSyncRequestFromWebview(
-          syncRequestId,
-          async () => await this.altimateRequest.getPreConfiguredNotebooks(),
-          command,
-          true,
-        );
-        break;
-      case "updateNotebookPrivacy":
-        this.handleSyncRequestFromWebview(
-          syncRequestId,
-          async () =>
-            await this.altimateRequest.updateNotebookPrivacy(
-              params.notebookId as number,
-              params.privacy as string,
-            ),
-          command,
-          true,
-        );
-        break;
       case "selectDirectoryForManifest":
         this.selectDirectoryForManifest(syncRequestId);
         break;

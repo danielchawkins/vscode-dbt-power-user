@@ -1,4 +1,3 @@
-import { NotebookService } from "@lib";
 import {
   CancellationToken,
   CodeLens,
@@ -7,7 +6,6 @@ import {
   Disposable,
   Range,
   TextDocument,
-  window,
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { QueryManifestService } from "../services/queryManifestService";
@@ -20,7 +18,6 @@ export class VirtualSqlCodeLensProvider
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
     private queryManifestService: QueryManifestService,
-    private notebookService: NotebookService,
   ) {}
 
   dispose() {
@@ -50,8 +47,7 @@ export class VirtualSqlCodeLensProvider
   ): CodeLens[] | Thenable<CodeLens[]> {
     // Enable this code lens only for adhoc query files created using command: dbtPowerUser.createSqlFile
     if (
-      (document.uri.scheme !== "untitled" &&
-        document.uri.scheme !== "vscode-notebook-cell") ||
+      document.uri.scheme !== "untitled" ||
       document.languageId !== "jinja-sql"
     ) {
       return [];
@@ -69,27 +65,6 @@ export class VirtualSqlCodeLensProvider
       topOfDocument,
       projectSelectorCommand,
     );
-
-    // Cell id code lens for notebook cells
-    if (
-      document.uri.scheme === "vscode-notebook-cell" &&
-      window.activeNotebookEditor?.notebook
-    ) {
-      const cells = this.notebookService
-        .getCellByNotebookAutocompleteMap()
-        .get(window.activeNotebookEditor?.notebook.uri.fsPath);
-      const cell = cells?.find((c) => c.fragment === document.uri.fragment);
-      if (cell) {
-        const cellIdLens = new CodeLens(topOfDocument, {
-          title: `Cell id: cell_${cell.cellId}`,
-          command: "", // TODO: Add command to allow user to modify cell id
-          arguments: [document.uri],
-        });
-
-        return [cellIdLens];
-      }
-      return [];
-    }
 
     return [projectSelectorCodeLens];
   }
