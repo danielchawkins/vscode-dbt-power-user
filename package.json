@@ -84,23 +84,6 @@
             "displayName": "Altimate AI Instance Name",
             "markdownDescription": "Needed for features that require backend support. Sign up for a free Altimate AI account [here](https://app.myaltimate.com/register). If your Altimate AI instance URL is https://betatest.app.myaltimate.com/, The instance name is betatest"
           },
-          "dbt.enableMcpDataSourceQueryTools": {
-            "type": "boolean",
-            "description": "Enable data source query tools (EXECUTE_SQL_WITH_LIMIT and GET_COLUMN_VALUES)",
-            "default": false
-          },
-          "dbt.mcpSslCertKeyPath": {
-            "type": "string",
-            "description": "Path to the SSL certificate key file for MCP server",
-            "displayName": "MCP Server SSL Certificate Key Path",
-            "default": ""
-          },
-          "dbt.mcpSslCertPath": {
-            "type": "string",
-            "description": "Path to the SSL certificate file for MCP server",
-            "displayName": "MCP Server SSL Certificate Path",
-            "default": ""
-          },
           "dbt.enableNewLineagePanel": {
             "type": "boolean",
             "description": "Enable the new lineage panel in dbt."
@@ -1010,13 +993,10 @@
   ],
   "dependencies": {
     "@altimateai/dbt-integration": "^0.3.13",
-    "@modelcontextprotocol/sdk": "^1.24.0",
-    "@types/express": "^5.0.0",
     "@vscode/codicons": "^0.0.36",
     "@vscode/extension-telemetry": "^1.5.2",
     "@vscode/vsce": "^3.9.1",
     "dayjs": "^1.11.13",
-    "express": "^5.1.0",
     "inversify": "^6.0.2",
     "inversify-binding-decorators": "^4.0.0",
     "node-abort-controller": "^3.1.1",
@@ -1027,8 +1007,7 @@
     "which": "^6.0.1",
     "ws": "^8.18.0",
     "yaml": "^2.6.0",
-    "zod": "^3.25.28",
-    "zod-to-json-schema": "^3.25.2"
+    "zod": "^3.25.28"
   },
   "overrides": {
     "uuid": "^14.0.0",

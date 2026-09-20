@@ -77,8 +77,6 @@ import { ValidationProvider } from "./validation_provider";
 // Core extension components
 import { DBTClient } from "./dbt_client";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
-import { DbtPowerUserMcpServer } from "./mcp";
-import { DbtPowerUserMcpServerTools } from "./mcp/server";
 
 // Import providers
 import { AutocompletionProviders } from "./autocompletion_provider";
@@ -923,31 +921,6 @@ container
   })
   .inSingletonScope();
 
-// Bind MCP server tools
-container
-  .bind(DbtPowerUserMcpServerTools)
-  .toDynamicValue((context) => {
-    return new DbtPowerUserMcpServerTools(
-      context.container.get(DBTProjectContainer),
-      context.container.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-// Bind MCP server
-container
-  .bind(DbtPowerUserMcpServer)
-  .toDynamicValue((context) => {
-    return new DbtPowerUserMcpServer(
-      context.container.get(DbtPowerUserMcpServerTools),
-      context.container.get("DBTTerminal"),
-      context.container.get(AltimateRequest),
-      context.container.get(SharedStateService),
-      context.container.get(AltimateAuthService),
-    );
-  })
-  .inSingletonScope();
-
 // Bind dbt client
 container
   .bind(DBTClient)
@@ -1668,7 +1641,6 @@ container
       context.container.get(HoverProviders),
       context.container.get(ValidationProvider),
       context.container.get(CommentProviders),
-      context.container.get(DbtPowerUserMcpServer),
       context.container.get(AltimateRequest),
       context.container.get(AltimateAuthService),
       context.container.get(WhatsNewPanel),

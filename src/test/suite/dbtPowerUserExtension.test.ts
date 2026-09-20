@@ -26,7 +26,6 @@ const activationHarness = (enabled: boolean) => {
   const detectDBT = jest.fn(() => Promise.resolve());
   const initializeDBTProjects = jest.fn(() => Promise.resolve());
   const initializeStatusBars = jest.fn(() => Promise.resolve());
-  const updateMcpExtensionApi = jest.fn(() => Promise.resolve());
   const extension = Object.create(DBTPowerUserExtension.prototype) as any;
   Object.assign(extension, {
     dbtProjectContainer: {
@@ -35,7 +34,6 @@ const activationHarness = (enabled: boolean) => {
       detectDBT,
       initializeDBTProjects,
     },
-    mcpServer: { updateMcpExtensionApi },
     whatsNewPanel: { checkAndShowOnActivation: jest.fn() },
     statusBars: { initialize: initializeStatusBars },
     altimateAuthService: { isAuthenticated: jest.fn(() => false) },
@@ -66,7 +64,6 @@ const activationHarness = (enabled: boolean) => {
     initializeDBTProjects,
     initializeStatusBars,
     telemetry: extension.telemetry,
-    updateMcpExtensionApi,
   };
 };
 
@@ -111,7 +108,6 @@ describe("DBTPowerUserExtension.activate", () => {
     );
     expect(harness.detectDBT).not.toHaveBeenCalled();
     expect(harness.initializeDBTProjects).not.toHaveBeenCalled();
-    expect(harness.updateMcpExtensionApi).not.toHaveBeenCalled();
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
     expect(harness.telemetry.sendTelemetryError).not.toHaveBeenCalled();
     expect(context.subscriptions).toHaveLength(0);
@@ -130,7 +126,6 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(window.showErrorMessage).not.toHaveBeenCalled();
     expect(harness.detectDBT).not.toHaveBeenCalled();
     expect(harness.initializeDBTProjects).not.toHaveBeenCalled();
-    expect(harness.updateMcpExtensionApi).not.toHaveBeenCalled();
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
     expect(harness.telemetry.sendTelemetryError).not.toHaveBeenCalled();
     expect(context.subscriptions).toHaveLength(0);

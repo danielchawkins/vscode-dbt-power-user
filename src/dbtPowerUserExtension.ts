@@ -16,7 +16,6 @@ import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DefinitionProviders } from "./definition_provider";
 import { DocumentFormattingEditProviders } from "./document_formatting_edit_provider";
 import { HoverProviders } from "./hover_provider";
-import { DbtPowerUserMcpServer } from "./mcp";
 import { DbtPowerUserActionsCenter } from "./quickpick";
 import { AltimateAuthService } from "./services/altimateAuthService";
 import {
@@ -93,7 +92,6 @@ export class DBTPowerUserExtension implements Disposable {
     private hoverProviders: HoverProviders,
     private validationProvider: ValidationProvider,
     private commentProviders: CommentProviders,
-    private mcpServer: DbtPowerUserMcpServer,
     private altimateRequest: AltimateRequest,
     private altimateAuthService: AltimateAuthService,
     private whatsNewPanel: WhatsNewPanel,
@@ -114,7 +112,6 @@ export class DBTPowerUserExtension implements Disposable {
       this.hoverProviders,
       this.validationProvider,
       this.commentProviders,
-      this.mcpServer,
       this.whatsNewPanel,
     );
   }
@@ -188,7 +185,6 @@ export class DBTPowerUserExtension implements Disposable {
         dispose: () => process.off("unhandledRejection", onUnhandledRejection),
       });
 
-      await this.mcpServer.updateMcpExtensionApi();
       this.dbtProjectContainer.setContext(context);
       this.dbtProjectContainer.initializeWalkthrough();
       this.whatsNewPanel.checkAndShowOnActivation();
