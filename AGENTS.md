@@ -9,6 +9,7 @@ Read before planning or changing code:
 - [`CONTEXT.md`](CONTEXT.md) — canonical product language. The vocabulary is fixed; extend it rather than inventing synonyms.
 - [`docs/adr/`](docs/adr/) — the product boundary, the LSP decision, and project scoping.
 - [`docs/refactor/fusion-lsp-plan.md`](docs/refactor/fusion-lsp-plan.md) — phased implementation plan. Work the steps in order; each is one commit that compiles with green tests.
+- [`docs/refactor/implementation-dispatch.md`](docs/refactor/implementation-dispatch.md) — land each step as a feature PR against `main`.
 
 ## Two contexts — state which one you are in
 

@@ -1,6 +1,6 @@
 # Fusion LSP refactor context
 
-This document gives an implementation agent the context needed to refactor [`danielchawkins/vscode-dbt-power-user`](https://github.com/danielchawkins/vscode-dbt-power-user) without access to the design conversation that produced the plan. Work starts on the `fusion-lsp-client` branch.
+This document gives an implementation agent the context needed to refactor [`danielchawkins/vscode-dbt-power-user`](https://github.com/danielchawkins/vscode-dbt-power-user) without access to the design conversation that produced the plan. Work lands as feature pull requests against `main`.
 
 Read these first:
 
@@ -11,6 +11,7 @@ Read these first:
 - [`tooling-adoption.md`](tooling-adoption.md) for the contributor environment decision that precedes product work.
 - [`fusion-lsp-feature-disposition.md`](fusion-lsp-feature-disposition.md) for the current feature inventory.
 - [`fusion-lsp-plan.md`](fusion-lsp-plan.md) for implementation and release sequencing.
+- [`implementation-dispatch.md`](implementation-dispatch.md) for trunk, workspaces, and agent handoff.
 
 ## Repositories
 
@@ -18,7 +19,7 @@ The implementation repository is the personal Power User fork:
 
 - Upstream: `AltimateAI/vscode-dbt-power-user`
 - Fork: `danielchawkins/vscode-dbt-power-user`
-- Design branch: `fusion-lsp-client`
+- Trunk: `main`
 - Product identity: `danielchawkins.fusion-power-user`
 - Display name: `Fusion Power User`
 

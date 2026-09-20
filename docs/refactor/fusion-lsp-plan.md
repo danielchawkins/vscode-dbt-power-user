@@ -1,6 +1,6 @@
 # Fusion Power User: refactor plan
 
-Work stays on `fusion-lsp-client`. This file is the executable plan behind the short phase map; each phase below names the files to touch, the contract at each seam, and the verification that closes it.
+Land each step as a feature bookmark and a pull request against `main`. [`implementation-dispatch.md`](implementation-dispatch.md) is the execution layer: trunk, workspaces, overlap, and the two file-path corrections. This file remains the spec: contracts, file lists, verification, spikes, and Confirm gates.
 
 ## 1. Goal and scope
 
