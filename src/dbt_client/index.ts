@@ -1,7 +1,14 @@
 import { DBTDetection } from "@altimateai/dbt-integration";
 import { existsSync } from "fs";
 import { inject } from "inversify";
-import { commands, Disposable, EventEmitter, window, workspace } from "vscode";
+import {
+  commands,
+  Disposable,
+  EventEmitter,
+  Memento,
+  window,
+  workspace,
+} from "vscode";
 import { DBTInstallationVerificationEvent } from "./dbtVersionEvent";
 import { PythonEnvironment } from "./pythonEnvironment";
 
@@ -27,12 +34,19 @@ export class DBTClient implements Disposable {
     this._onDBTInstallationVerificationEvent,
   ];
   private shownError = false;
+  private globalState?: Memento;
   constructor(
     @inject(PythonEnvironment)
     private pythonEnvironment: PythonEnvironment,
     @inject("Factory<DBTDetection>")
-    private dbtDetectionFactory: () => DBTDetection,
+    private dbtDetectionFactory: (
+      globalState: Memento | undefined,
+    ) => DBTDetection,
   ) {}
+
+  setGlobalState(globalState: Memento) {
+    this.globalState = globalState;
+  }
 
   dispose() {
     while (this.disposables.length) {
@@ -60,7 +74,9 @@ export class DBTClient implements Disposable {
     this.shownError = false;
     this._dbtInstalled = undefined;
     this._pythonInstalled = this.pythonPathExists();
-    this._dbtInstalled = await this.dbtDetectionFactory().detectDBT();
+    this._dbtInstalled = await this.dbtDetectionFactory(
+      this.globalState,
+    ).detectDBT();
     // Refresh cached Python version — by this point the Python extension
     // has settled after an interpreter change
     await this.pythonEnvironment.refreshPythonVersion();
