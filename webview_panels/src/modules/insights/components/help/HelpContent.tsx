@@ -24,12 +24,6 @@ const HelpContent = (): JSX.Element => {
         integration, even if the node exists in the current project.
       </p>
       <p>
-        <b>Help Us Improve:</b> We&apos;re eager to hear from you! If
-        you&apos;ve tried the AI-generated documentation, let us know how it
-        worked. Your feedback helps us improve and ensures we offer a valuable
-        tool for the community.
-      </p>
-      <p>
         Need more help? Check out the&nbsp;
         <a href="https://docs.myaltimate.com/test/defertoprod/">
           documentation

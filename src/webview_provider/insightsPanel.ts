@@ -1,5 +1,4 @@
 import {
-  DataPilotHealtCheckParams,
   DbtIntegrationClient,
   DBTTerminal,
   DeferConfig,
@@ -19,13 +18,11 @@ import {
 import { AltimateRequest, DBTCoreIntegration } from "../altimate";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { AltimateAuthService } from "../services/altimateAuthService";
-import { AltimateCodeChatService } from "../services/altimateCodeChatService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import { UsersService } from "../services/usersService";
 import { TelemetryService } from "../telemetry";
 import { getProjectRelativePath } from "../utils";
-import { ValidationProvider } from "../validation_provider";
 import {
   AltimateWebviewProvider,
   HandleCommandProps,
@@ -40,15 +37,6 @@ type UpdateConfigPropsArray = {
 interface DbtProject {
   projectRoot: string;
   projectName: string;
-}
-
-type SelectFilesProps = {
-  filters: { [name: string]: string[] } | undefined;
-  canSelectMany: boolean;
-};
-
-enum PromptAnswer {
-  YES = "Install altimate datapilot cli",
 }
 
 export class InsightsPanel extends AltimateWebviewProvider {
@@ -67,10 +55,8 @@ export class InsightsPanel extends AltimateWebviewProvider {
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
-    private validationProvider: ValidationProvider,
     protected usersService: UsersService,
     protected altimateAuthService: AltimateAuthService,
-    altimateCodeChatService: AltimateCodeChatService,
   ) {
     super(
       dbtProjectContainer,
@@ -81,7 +67,6 @@ export class InsightsPanel extends AltimateWebviewProvider {
       queryManifestService,
       usersService,
       altimateAuthService,
-      altimateCodeChatService,
     );
 
     this._disposables.push(
@@ -407,185 +392,12 @@ export class InsightsPanel extends AltimateWebviewProvider {
     });
   }
 
-  private async selectFiles(
-    syncRequestId: string | undefined,
-    { filters = {}, canSelectMany = false }: SelectFilesProps,
-  ) {
-    const openDialog = await window.showOpenDialog({
-      filters,
-      canSelectFolders: false,
-      openLabel: "Select",
-      canSelectFiles: true,
-      canSelectMany,
-    });
-    if (openDialog === undefined || openDialog.length === 0) {
-      this.dbtTerminal.debug("InsightsPanel", "opendialog cancelled");
-      this._panel!.webview.postMessage({
-        command: "response",
-        args: {
-          syncRequestId,
-          body: { error: "File not selected" },
-          status: false,
-        },
-      });
-      return;
-    }
-
-    this._panel!.webview.postMessage({
-      command: "response",
-      args: {
-        syncRequestId,
-        body: { path: openDialog.map((i) => i.fsPath) },
-        status: true,
-      },
-    });
-  }
-
-  private emitError(syncRequestId: string | undefined, errorMsg: string) {
-    window.showErrorMessage(errorMsg);
-    this._panel!.webview.postMessage({
-      command: "response",
-      args: { syncRequestId, status: false, error: errorMsg },
-    });
-  }
-
-  private async altimateScan(
-    syncRequestId: string | undefined,
-    args: DataPilotHealtCheckParams,
-  ) {
-    try {
-      this.validationProvider.throwIfNotAuthenticated();
-      await this.altimateRequest.logDBTHealthcheckStartScan();
-    } catch (e) {
-      this.emitError(syncRequestId, (e as Error).message);
-      return;
-    }
-    let isInstalled = false;
-    try {
-      isInstalled =
-        await this.dbtProjectContainer.checkIfAltimateDatapilotInstalled();
-    } catch (e) {
-      this.emitError(
-        syncRequestId,
-        `Error while checking altimate datapilot cli installation: ${
-          (e as Error).message
-        }`,
-      );
-      this.dbtTerminal.error(
-        "atimateDatapilotInstallationCheck",
-        "Error while checking altimate datapilot cli installation",
-        e,
-      );
-      return;
-    }
-    if (!isInstalled) {
-      const answer = await window.showInformationMessage(
-        "Altimate datapilot cli is not detected. Install it?",
-        PromptAnswer.YES,
-      );
-      if (answer !== PromptAnswer.YES) {
-        this.emitError(
-          syncRequestId,
-          "Altimate datapilot cli is not installed.",
-        );
-        return;
-      }
-      try {
-        await window.withProgress(
-          {
-            title: `Installing altimate-datapilot-cli...`,
-            location: ProgressLocation.Notification,
-            cancellable: false,
-          },
-          async () => {
-            await this.dbtProjectContainer.installAltimateDatapilot();
-            window.showInformationMessage(
-              "Successfully installed altimate-datapilot-cli",
-            );
-          },
-        );
-      } catch (e) {
-        this.emitError(
-          syncRequestId,
-          `Error while installing altimate datapilot cli: ${
-            (e as Error).message
-          }`,
-        );
-        this.dbtTerminal.error(
-          "atimateDatapilotInstallation",
-          "Error while installing altimate datapilot",
-          e,
-        );
-        return;
-      }
-    }
-    this.telemetry.sendTelemetryEvent("performDatapilotHealthcheck", {
-      args: JSON.stringify(args),
-    });
-    try {
-      window.showInformationMessage(
-        "Started performing healthcheck. We will notify you once it's done.",
-      );
-
-      const projectHealthcheck =
-        await this.dbtProjectContainer.executeAltimateDatapilotHealthcheck(
-          args,
-        );
-      if (this._panel?.visible) {
-        window.showInformationMessage("Healthcheck completed successfully.");
-        this._panel!.webview.postMessage({
-          command: "response",
-          args: {
-            syncRequestId,
-            body: { projectHealthcheck },
-            status: true,
-          },
-        });
-        return;
-      }
-      const result = await window.showInformationMessage(
-        "Healthcheck completed successfully.",
-        "View results",
-      );
-      if (result === "View results") {
-        this.dbtTerminal.debug(
-          "InsightsPanel",
-          "Sending healthcheck results to webview",
-        );
-        await commands.executeCommand("dbtPowerUser.Insights.focus");
-      }
-      this._panel!.webview.postMessage({
-        command: "response",
-        args: {
-          syncRequestId,
-          body: { projectHealthcheck },
-          status: true,
-        },
-      });
-    } catch (e) {
-      this.emitError(
-        syncRequestId,
-        `Error while performing project governance checks:${
-          (e as Error).message
-        }`,
-      );
-      this.dbtTerminal.error(
-        "atimateDatapilotGovernance",
-        "Error while performing project governance checks",
-        e,
-      );
-    }
-  }
-
   async handleCommand(message: HandleCommandProps): Promise<void> {
     const { command, syncRequestId, ...params } = message;
 
     switch (command) {
       case "selectDirectoryForManifest":
         this.selectDirectoryForManifest(syncRequestId);
-        break;
-      case "selectFiles":
-        this.selectFiles(syncRequestId, params as SelectFilesProps);
         break;
       case "updateDeferConfig":
         await this.updateDeferConfig(
@@ -608,12 +420,6 @@ export class InsightsPanel extends AltimateWebviewProvider {
           syncRequestId,
           data: result,
         });
-        break;
-      case "altimateScan":
-        this.altimateScan(syncRequestId, params as DataPilotHealtCheckParams);
-        break;
-      case "clearAltimateScanResults":
-        commands.executeCommand("dbtPowerUser.clearAltimateScanResults", {});
         break;
       case "getDeferToProductionConfig":
         const { projectRoot } = params as { projectRoot?: string };
@@ -661,27 +467,6 @@ export class InsightsPanel extends AltimateWebviewProvider {
         break;
       case "getProjects":
         await this.getProjects(syncRequestId);
-        break;
-      case "logDBTHealthcheckConfig":
-        try {
-          await this.altimateRequest.logDBTHealthcheckConfig(
-            params.configId as string,
-          );
-        } catch (err) {
-          this.dbtTerminal.error(
-            "InsightsPanelError",
-            "Error logging healthcheck config",
-            err,
-          );
-        }
-        break;
-      case "getInsightConfigs":
-        await this.handleSyncRequestFromWebview(
-          syncRequestId,
-          async () => await this.altimateRequest.getHealthcheckConfigs(),
-          command,
-          true,
-        );
         break;
       default:
         super.handleCommand(message);

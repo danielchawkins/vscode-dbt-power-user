@@ -1,6 +1,5 @@
 import type { RunResultsEventData } from "@altimateai/dbt-integration";
 import {
-  DataPilotHealtCheckParams,
   DBTTerminal,
   EnvironmentVariables,
   RunModelParams,
@@ -19,9 +18,7 @@ import {
   workspace,
   WorkspaceFolder,
 } from "vscode";
-import { AltimateRequest } from "../altimate";
 import { DBTClient } from "../dbt_client";
-import { AltimateDatapilot } from "../dbt_client/datapilot";
 import { extractDbtSubcommand } from "../utils";
 import { DBTProject } from "./dbtProject";
 import { DBTWorkspaceFolder } from "./dbtWorkspaceFolder";
@@ -79,8 +76,6 @@ export class DBTProjectContainer implements Disposable {
     ) => DBTWorkspaceFolder,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
-    private altimateDatapilot: AltimateDatapilot,
-    private altimate: AltimateRequest,
   ) {
     this.disposables.push(
       workspace.onDidChangeWorkspaceFolders(async (event) => {
@@ -487,31 +482,5 @@ export class DBTProjectContainer implements Disposable {
 
   private findDBTWorkspaceFolder(uri: Uri): DBTWorkspaceFolder | undefined {
     return this.dbtWorkspaceFolders.find((folder) => folder.contains(uri));
-  }
-
-  async checkIfAltimateDatapilotInstalled() {
-    const datapilotVersion =
-      await this.altimateDatapilot.checkIfAltimateDatapilotInstalled();
-    const { altimate_datapilot_version } =
-      await this.altimate.getDatapilotVersion(this.extensionVersion);
-    return datapilotVersion === altimate_datapilot_version;
-  }
-
-  async installAltimateDatapilot() {
-    const { altimate_datapilot_version } =
-      await this.altimate.getDatapilotVersion(this.extensionVersion);
-    await this.altimateDatapilot.installAltimateDatapilot(
-      altimate_datapilot_version,
-    );
-  }
-
-  executeAltimateDatapilotHealthcheck(args: DataPilotHealtCheckParams) {
-    const project = this.getProjects().find(
-      (p) => p.projectRoot.fsPath.toString() === args.projectRoot,
-    );
-    if (!project) {
-      throw new Error(`Unable to find project ${args.projectRoot}`);
-    }
-    return project.performDatapilotHealthcheck(args);
   }
 }

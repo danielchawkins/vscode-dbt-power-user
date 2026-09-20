@@ -420,10 +420,6 @@
         "category": "dbt Power User"
       },
       {
-        "command": "dbtPowerUser.createSqlFile",
-        "title": "Create Power User SQL file"
-      },
-      {
         "command": "dbtPowerUser.replyToConversation",
         "title": "Reply",
         "enablement": "!commentIsEmpty",
@@ -443,15 +439,6 @@
         "command": "dbtPowerUser.openOnboarding",
         "category": "dbt Power User",
         "title": "Get Started with dbt Power User"
-      },
-      {
-        "command": "dbtPowerUser.sqlQuickPick",
-        "title": "SQL Actions",
-        "category": "dbt Power User",
-        "icon": {
-          "light": "./media/images/sql-action-light.svg",
-          "dark": "./media/images/sql-action-dark.svg"
-        }
       },
       {
         "command": "dbtPowerUser.runCurrentModel",
@@ -494,16 +481,6 @@
         "command": "dbtPowerUser.toggleProfileDecorations",
         "title": "Toggle CTE Profile Decorations",
         "category": "dbt Power User"
-      },
-      {
-        "command": "dbtPowerUser.sqlToModel",
-        "title": "Convert to dbt Model",
-        "shortTitle": "Convert to dbt Model",
-        "category": "dbt Power User",
-        "icon": {
-          "light": "./media/images/preview-dbt-light.svg",
-          "dark": "./media/images/preview-dbt-dark.svg"
-        }
       },
       {
         "command": "dbtPowerUser.validateSql",
@@ -692,12 +669,6 @@
         "icon": "$(terminal)"
       },
       {
-        "command": "dbtPowerUser.sqlLineage",
-        "title": "Visualize SQL (Beta)",
-        "category": "dbt Power User",
-        "icon": "$(eye)"
-      },
-      {
         "command": "dbtPowerUser.showDocumentation",
         "title": "Show documentation",
         "category": "dbt Power User"
@@ -706,53 +677,6 @@
         "command": "dbtPowerUser.applyDeferConfig",
         "category": "dbt Power User",
         "title": "Apply defer configuration"
-      },
-      {
-        "command": "dbtPowerUser.askAltimateAboutSelection",
-        "category": "dbt Power User",
-        "title": "Ask Altimate About Selection"
-      },
-      {
-        "command": "dbtPowerUser.explainWithAltimate",
-        "category": "dbt Power User",
-        "title": "Explain with Altimate"
-      },
-      {
-        "command": "dbtPowerUser.optimizeWithAltimate",
-        "category": "dbt Power User",
-        "title": "Optimize with Altimate"
-      },
-      {
-        "command": "dbtPowerUser.changeWithAltimate",
-        "category": "dbt Power User",
-        "title": "Change with Altimate"
-      },
-      {
-        "command": "dbtPowerUser.translateWithAltimate",
-        "category": "dbt Power User",
-        "title": "Translate with Altimate"
-      },
-      {
-        "command": "dbtPowerUser.analyzeFileWithAltimate",
-        "category": "dbt Power User",
-        "title": "Analyze with Altimate"
-      },
-      {
-        "command": "dbtPowerUser.reviewCodeWithAltimate",
-        "category": "dbt Power User",
-        "title": "Review with Altimate"
-      },
-      {
-        "command": "dbtPowerUser.explainTestFailure",
-        "title": "Explain why this test failed",
-        "category": "dbt Power User",
-        "icon": "$(sparkle)"
-      },
-      {
-        "command": "dbtPowerUser.fixRunFailure",
-        "title": "Fix with Altimate Code",
-        "category": "dbt Power User",
-        "icon": "$(lightbulb)"
       }
     ],
     "keybindings": [
@@ -769,11 +693,6 @@
       }
     ],
     "menus": {
-      "file/newFile": [
-        {
-          "command": "dbtPowerUser.createSqlFile"
-        }
-      ],
       "comments/commentThread/title": [
         {
           "command": "dbtPowerUser.viewInDocEditor",
@@ -808,44 +727,6 @@
           "when": "commentController == altimate-conversations && !commentThreadIsEmpty"
         }
       ],
-      "dbtPowerUser.altimateCodeSubmenu": [
-        {
-          "command": "dbtPowerUser.askAltimateAboutSelection",
-          "group": "1@1",
-          "when": "editorHasSelection"
-        },
-        {
-          "command": "dbtPowerUser.explainWithAltimate",
-          "group": "1@2"
-        },
-        {
-          "command": "dbtPowerUser.optimizeWithAltimate",
-          "group": "1@3",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
-        },
-        {
-          "command": "dbtPowerUser.changeWithAltimate",
-          "group": "1@4",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
-        },
-        {
-          "command": "dbtPowerUser.translateWithAltimate",
-          "group": "1@5",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
-        },
-        {
-          "command": "dbtPowerUser.reviewCodeWithAltimate",
-          "group": "2@1",
-          "when": "dbtPowerUser.fileHasGitChanges"
-        }
-      ],
-      "explorer/context": [
-        {
-          "command": "dbtPowerUser.analyzeFileWithAltimate",
-          "group": "altimate@1",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$|^yaml$|^jinja-yaml$/"
-        }
-      ],
       "editor/title": [
         {
           "command": "dbtPowerUser.executeSQL",
@@ -866,24 +747,9 @@
           "command": "dbtPowerUser.sqlPreview",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@5"
-        },
-        {
-          "command": "dbtPowerUser.sqlQuickPick",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
-          "group": "navigation@1"
-        },
-        {
-          "command": "dbtPowerUser.sqlToModel",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
-          "group": "navigation@6"
         }
       ],
       "editor/context": [
-        {
-          "submenu": "dbtPowerUser.altimateCodeSubmenu",
-          "group": "altimate@1",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$|^yaml$|^jinja-yaml$/"
-        },
         {
           "submenu": "dbtPowerUser.buildModel",
           "group": "dbt@5",
@@ -905,11 +771,6 @@
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
         },
         {
-          "command": "dbtPowerUser.sqlLineage",
-          "group": "dbt@8",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/ && resourceScheme != 'query-preview'"
-        },
-        {
           "command": "dbtPowerUser.testCurrentModel",
           "group": "dbt@2",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
@@ -917,11 +778,6 @@
         {
           "command": "dbtPowerUser.runCurrentModel",
           "group": "dbt@1",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
-        },
-        {
-          "command": "dbtPowerUser.sqlToModel",
-          "group": "dbt@3",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
         },
         {
@@ -1034,16 +890,6 @@
           "command": "dbtPowerUser.goToDocumentationEditor",
           "when": "view == documentation_treeview",
           "group": "inline"
-        },
-        {
-          "command": "dbtPowerUser.explainTestFailure",
-          "when": "view == run_history_treeview && viewItem =~ /runHistoryResult\\.test\\.failed/",
-          "group": "inline"
-        },
-        {
-          "command": "dbtPowerUser.fixRunFailure",
-          "when": "view == run_history_treeview && viewItem =~ /runHistoryResult\\.(model|seed|snapshot)\\.failed/",
-          "group": "inline"
         }
       ]
     },
@@ -1077,10 +923,6 @@
           "light": "./media/images/build-model_light.svg",
           "dark": "./media/images/build-model_dark.svg"
         }
-      },
-      {
-        "id": "dbtPowerUser.altimateCodeSubmenu",
-        "label": "Altimate Code"
       }
     ],
     "languages": [
@@ -1170,7 +1012,6 @@
     "@altimateai/dbt-integration": "^0.3.13",
     "@modelcontextprotocol/sdk": "^1.24.0",
     "@types/express": "^5.0.0",
-    "@vscode/chat-extension-utils": "^0.0.0-alpha.5",
     "@vscode/codicons": "^0.0.36",
     "@vscode/extension-telemetry": "^1.5.2",
     "@vscode/vsce": "^3.9.1",

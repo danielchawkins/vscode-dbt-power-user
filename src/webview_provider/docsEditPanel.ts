@@ -13,6 +13,7 @@ import {
   CancellationToken,
   CancellationTokenSource,
   ColorThemeKind,
+  commands,
   Disposable,
   env,
   ProgressLocation,
@@ -24,10 +25,9 @@ import {
   WebviewViewProvider,
   WebviewViewResolveContext,
   window,
-  workspace,
 } from "vscode";
 import { parse, parseDocument, stringify, YAMLMap, YAMLSeq } from "yaml";
-import { AltimateRequest, UserInputError } from "../altimate";
+import { UserInputError } from "../altimate";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
@@ -41,6 +41,7 @@ import {
   DocumentationSchema,
   DocumentationSchemaColumn,
 } from "../services/docGenService";
+import { QueryManifestService } from "../services/queryManifestService";
 import { TelemetryService } from "../telemetry";
 import { TelemetryEvents } from "../telemetry/events";
 import {
@@ -54,7 +55,6 @@ import {
   removeProtocol,
 } from "../utils";
 import { SendMessageProps } from "./altimateWebviewProvider";
-import { NewDocsGenPanel } from "./newDocsGenPanel";
 import path = require("path");
 
 export enum Source {
@@ -78,33 +78,14 @@ export interface DBTDocumentation {
   description: string;
   columns: DBTDocumentationColumn[];
   generated: boolean;
-  aiEnabled: boolean;
   filePath: string;
   patchPath?: string;
   uniqueId?: string;
   resource_type?: string;
 }
 
-export interface AIColumnDescription {
-  name: string;
-  description: string;
-  citations?: { id: string; content: string }[];
-}
-
-export interface DocsGenPanelView extends WebviewViewProvider {
-  handleCommand(message: { command: string; args: any }): Promise<void> | void;
-  resolveWebview(
-    panel: WebviewView,
-    context: WebviewViewResolveContext,
-    token: CancellationToken,
-  ): void;
-}
-
 export class DocsEditViewPanel implements WebviewViewProvider {
   public static readonly viewType = "dbtPowerUser.DocsEdit";
-  private panel: WebviewView | undefined;
-  private context: WebviewViewResolveContext<unknown> | undefined;
-  private token: CancellationToken | undefined;
   private _panel: WebviewView | undefined = undefined;
   private documentation?: DBTDocumentation;
   private loadedFromManifest = false;
@@ -115,11 +96,10 @@ export class DocsEditViewPanel implements WebviewViewProvider {
 
   public constructor(
     private dbtProjectContainer: DBTProjectContainer,
-    private altimateRequest: AltimateRequest,
     private telemetry: TelemetryService,
-    private newDocsPanel: NewDocsGenPanel,
     private docGenService: DocGenService,
     private dbtTestService: DbtTestService,
+    private queryManifestService: QueryManifestService,
     @inject("DBTTerminal")
     private terminal: DBTTerminal,
     private dbtLineageService: DbtLineageService,
@@ -158,6 +138,19 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     return this.dbtProjectContainer.findDBTProject(currentFilePath);
   }
 
+  private getDbtTestCode(test: TestMetaData, modelName: string) {
+    return {
+      sql: test.path?.endsWith(".sql")
+        ? readFileSync(test.path, { encoding: "utf-8" })
+        : undefined,
+      config: this.dbtTestService.getConfigByTest(
+        test,
+        modelName,
+        test.column_name,
+      ),
+    };
+  }
+
   private async transmitError() {
     if (this._panel) {
       await this._panel.webview.postMessage({
@@ -178,9 +171,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         tests: await this.dbtTestService.getTestsForCurrentModel(),
         unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
         project: this.getProject()?.getProjectName(),
-        collaborationEnabled: workspace
-          .getConfiguration("dbt")
-          .get<boolean>("enableCollaboration", false),
+        collaborationEnabled: false,
         docBlocks: this.getDocBlocksForCurrentProject(),
       });
     }
@@ -217,15 +208,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     }
   }
 
-  private async transmitConfig() {
-    if (this._panel) {
-      await this._panel.webview.postMessage({
-        command: "updateConfig",
-        config: { aiEnabled: this.altimateRequest.enabled() },
-      });
-    }
-  }
-
   private async updateGraphStyle() {
     const theme = [
       ColorThemeKind.Light,
@@ -244,27 +226,14 @@ export class DocsEditViewPanel implements WebviewViewProvider {
   public async resolveWebviewView(
     panel: WebviewView,
     context: WebviewViewResolveContext,
-    token: CancellationToken,
-  ) {
-    this.panel = panel;
-    this.context = context;
-    this.token = token;
-    this._panel = panel;
-    this.newDocsPanel.resolveWebview(panel, context, token);
-    this.setupWebviewHooks(context);
-    this.transmitConfig();
-    this.transmitData();
-  }
-
-  public async resolveWebview(
-    panel: WebviewView,
-    context: WebviewViewResolveContext,
     _token: CancellationToken,
   ) {
     this._panel = panel;
     this.setupWebviewOptions(context);
     this.renderWebviewView(context);
     this.updateGraphStyle();
+    this.setupWebviewHooks(context);
+    this.transmitData();
   }
 
   private renderWebviewView(context: WebviewViewResolveContext) {
@@ -275,12 +244,18 @@ export class DocsEditViewPanel implements WebviewViewProvider {
   private setupWebviewOptions(context: WebviewViewResolveContext) {
     this._panel!.title = "";
     this._panel!.description = "Edit model documentation";
-    this._panel!.webview.options = <WebviewOptions>{ enableScripts: true };
+    this._panel!.webview.options = <WebviewOptions>{
+      enableScripts: true,
+      localResourceRoots: [
+        Uri.joinPath(
+          this.dbtProjectContainer.extensionUri,
+          "webview_panels",
+          "dist",
+          "assets",
+        ),
+      ],
+    };
   }
-
-  private init = async () => {
-    await this.resolveWebviewView(this.panel!, this.context!, this.token!);
-  };
 
   private getTestDataByModel(
     message: any,
@@ -581,21 +556,169 @@ export class DocsEditViewPanel implements WebviewViewProvider {
           "onDidReceiveMessage",
           message,
         );
-        if (
-          window.activeTextEditor === undefined ||
-          this.eventMap === undefined
-        ) {
-          return undefined;
+        const { command, syncRequestId, ...params } = message;
+        if (command === "getCurrentModelDocumentation") {
+          await this.transmitData();
+          return;
         }
-        const queryText = window.activeTextEditor.document.getText();
+        if (
+          command === "showWarningMessage" ||
+          command === "showInformationMessage"
+        ) {
+          await this.handleSyncRequestFromWebview(
+            syncRequestId,
+            () => {
+              const showMessage =
+                command === "showWarningMessage"
+                  ? window.showWarningMessage
+                  : window.showInformationMessage;
+              return showMessage(
+                params.infoMessage as string,
+                ...((params.items as string[] | undefined) ?? []),
+              );
+            },
+            command,
+          );
+          return;
+        }
+        if (command === "openURL" && params.url) {
+          await env.openExternal(Uri.parse(params.url as string));
+          return;
+        }
+        if (command === "openProblemsTab") {
+          await commands.executeCommand("workbench.action.problems.focus");
+          return;
+        }
+        if (command === "sendTelemetryEvent") {
+          this.telemetry.sendTelemetryEvent(
+            params.eventName as string,
+            params.properties as Record<string, string>,
+            params.measurements as Record<string, number>,
+          );
+          return;
+        }
+        if (!window.activeTextEditor) {
+          this.sendResponseToWebview({
+            command: "response",
+            syncRequestId,
+            error: "No active editor",
+          });
+          return;
+        }
         const currentFilePath = window.activeTextEditor.document.uri;
         const project = this.getProject();
-        if (project === undefined) {
-          return undefined;
+        if (!project) {
+          this.sendResponseToWebview({
+            command: "response",
+            syncRequestId,
+            error: "No dbt project found for the active editor",
+          });
+          return;
         }
 
-        const { command, syncRequestId, ...params } = message;
         switch (command) {
+          case "getTestCode":
+            await this.handleSyncRequestFromWebview(
+              syncRequestId,
+              () =>
+                this.getDbtTestCode(
+                  params.test as TestMetaData,
+                  params.model as string,
+                ),
+              command,
+            );
+            break;
+          case "getUnitTestCode":
+            await this.handleSyncRequestFromWebview(
+              syncRequestId,
+              () => {
+                const filePath = params.path as string | undefined;
+                const testName = params.name as string | undefined;
+                if (!filePath || !existsSync(filePath)) {
+                  return { error: "Unit test file not found" };
+                }
+                const raw = readFileSync(filePath, { encoding: "utf-8" });
+                if (!testName) {
+                  return { yaml: raw };
+                }
+                try {
+                  const parsed = parse(raw) as Record<string, any>;
+                  const unitTests: any[] = parsed?.unit_tests ?? [];
+                  const test = unitTests.find((item) => item.name === testName);
+                  return { yaml: test ? stringify(test) : raw };
+                } catch {
+                  return { yaml: raw };
+                }
+              },
+              command,
+            );
+            break;
+          case "getDistinctColumnValues":
+            await this.handleSyncRequestFromWebview(
+              syncRequestId,
+              () =>
+                project.getColumnValues(
+                  params.model as string,
+                  params.column as string,
+                ),
+              command,
+              true,
+            );
+            break;
+          case "getColumnsOfSources":
+            await this.handleSyncRequestFromWebview(
+              syncRequestId,
+              async () => {
+                const columns = await project.getColumnsOfSource(
+                  params.source as string,
+                  params.table as string,
+                );
+                return {
+                  columns: columns?.map((column) => column.column) ?? [],
+                };
+              },
+              command,
+              true,
+            );
+            break;
+          case "getColumnsOfModel":
+            await this.handleSyncRequestFromWebview(
+              syncRequestId,
+              async () => {
+                const columns = await project.getColumnsOfModel(
+                  params.model as string,
+                );
+                return {
+                  columns: columns?.map((column) => column.column) ?? [],
+                };
+              },
+              command,
+              true,
+            );
+            break;
+          case "getSourcesInProject":
+            await this.handleSyncRequestFromWebview(
+              syncRequestId,
+              () => ({
+                sources: this.queryManifestService.getSourcesInProject(
+                  window.activeTextEditor?.document.uri,
+                ),
+              }),
+              command,
+              true,
+            );
+            break;
+          case "getModelsInProject":
+            await this.handleSyncRequestFromWebview(
+              syncRequestId,
+              () => ({
+                models: this.queryManifestService.getModelsInProject(
+                  window.activeTextEditor?.document.uri,
+                ),
+              }),
+              command,
+            );
+            break;
           case "fetchMetadataFromDatabase":
             this.telemetry.startTelemetryEvent(
               TelemetryEvents["DocumentationEditor/SyncWithDBClick"],
@@ -680,33 +803,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
               },
             );
 
-            break;
-          case "generateDocsForModel":
-            this.docGenService.generateDocsForModel({
-              queryText,
-              documentation: this.documentation,
-              message,
-              panel: this._panel,
-              project,
-              columnIndexCount: undefined,
-              isBulkGen: false,
-            });
-            break;
-          case "generateDocsForColumn":
-            await this.docGenService.generateDocsForColumns({
-              documentation: this.documentation,
-              panel: this._panel,
-              message,
-              project,
-              isBulkGen: message.isBulkGen,
-            });
-            break;
-          case "sendFeedback":
-            this.docGenService.sendFeedback({
-              queryText,
-              message,
-              panel: this._panel,
-            });
             break;
           case "getDownstreamColumns": {
             const targets = params.targets as [string, string][];
@@ -864,13 +960,22 @@ export class DocsEditViewPanel implements WebviewViewProvider {
               window.showInformationMessage(
                 `Successfully propagated to: ${Array.from(new Set(successfulSaves)).join(", ")}`,
               );
-              this.altimateRequest.bulkDocsPropCredit({
-                num_columns: startColumns.length,
-                session_id: env.sessionId,
-              });
             }
             break;
           }
+          default:
+            this.terminal.debug(
+              "docsEditPanel:unhandledCommand",
+              `Unhandled command: ${command}`,
+            );
+            if (syncRequestId) {
+              this.sendResponseToWebview({
+                command: "response",
+                syncRequestId,
+                error: `Unsupported command: ${command}`,
+              });
+            }
+            break;
         }
       },
       null,
@@ -1123,7 +1228,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
       const response = await callback();
 
       this.sendResponseToWebview({
-        command: command || "response",
+        command: "response",
         syncRequestId,
         data: response,
       });
@@ -1188,23 +1293,34 @@ export class DocsEditViewPanel implements WebviewViewProvider {
 }
 
 function getHtml(webview: Webview, extensionUri: Uri) {
-  const indexPath = getUri(webview, extensionUri, [
-    "docs_edit_panel",
-    "index.html",
-  ]);
-  const resourceDir = getUri(webview, extensionUri, ["docs_edit_panel"]);
-  const theme = [
-    ColorThemeKind.Light,
-    ColorThemeKind.HighContrastLight,
-  ].includes(window.activeColorTheme.kind)
-    ? "light"
-    : "dark";
-  return readFileSync(indexPath.fsPath)
-    .toString()
-    .replace(/__ROOT__/g, resourceDir.toString())
-    .replace(/__THEME__/g, theme)
-    .replace(/__NONCE__/g, getNonce())
-    .replace(/__CSPSOURCE__/g, webview.cspSource);
+  const assets = Uri.joinPath(extensionUri, "webview_panels", "dist", "assets");
+  const script = webview.asWebviewUri(Uri.joinPath(assets, "main.js"));
+  const styles = webview.asWebviewUri(Uri.joinPath(assets, "main.css"));
+  const codicons = webview.asWebviewUri(
+    Uri.joinPath(assets, "codicons", "codicon.css"),
+  );
+  const nonce = getNonce();
+  return `<!DOCTYPE html>
+    <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${
+          webview.cspSource
+        } data:; style-src 'unsafe-inline' ${
+          webview.cspSource
+        }; img-src ${webview.cspSource} https: data:; script-src 'unsafe-eval' 'nonce-${nonce}';">
+        <link rel="stylesheet" href="${styles}">
+        <link rel="stylesheet" href="${codicons}">
+      </head>
+      <body class="docs-generator">
+        <div id="root"></div>
+        <div id="sidebar"></div>
+        <div id="modal"></div>
+        <script nonce="${nonce}">window.viewPath = "/docs-generator";</script>
+        <script nonce="${nonce}" type="module" src="${script}"></script>
+      </body>
+    </html>`;
 }
 
 function getNonce() {
@@ -1215,8 +1331,4 @@ function getNonce() {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
   }
   return text;
-}
-
-function getUri(webview: Webview, extensionUri: Uri, pathList: string[]) {
-  return webview.asWebviewUri(Uri.joinPath(extensionUri, ...pathList));
 }

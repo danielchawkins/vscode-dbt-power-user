@@ -1,13 +1,10 @@
-import DocGeneratorSettings from "@modules/documentationEditor/components/settings/DocGeneratorSettings";
 import { Button, PopoverWithButton, Stack } from "@uicore";
 import FeedbackButton from "./FeedbackButton";
 import HelpButton from "./HelpButton";
-import ShowConversationsButton from "@modules/documentationEditor/components/conversation/ShowConversationsButton";
-import { HelpIcon, MoreIcon, SettingsIcon } from "@assets/icons";
+import { HelpIcon, MoreIcon } from "@assets/icons";
 import { useState } from "react";
 
 enum SelectedAction {
-  SETTINGS,
   HELP,
 }
 const CommonActionButtons = (): JSX.Element => {
@@ -25,17 +22,6 @@ const CommonActionButtons = (): JSX.Element => {
       >
         {({ close }) => (
           <Stack direction="column">
-            <ShowConversationsButton onClose={close} />
-            <Button
-              outline
-              onClick={() => {
-                close();
-                setAction(SelectedAction.SETTINGS);
-              }}
-              className="w-100 text-start"
-            >
-              <SettingsIcon style={{ height: 16 }} /> Settings
-            </Button>
             <Button
               outline
               className="w-100 text-start"
@@ -59,9 +45,6 @@ const CommonActionButtons = (): JSX.Element => {
         )}
       </PopoverWithButton>
 
-      {action === SelectedAction.SETTINGS ? (
-        <DocGeneratorSettings onClose={() => setAction(undefined)} />
-      ) : null}
       {action === SelectedAction.HELP ? (
         <HelpButton onClose={() => setAction(undefined)} />
       ) : null}

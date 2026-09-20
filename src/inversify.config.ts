@@ -60,7 +60,6 @@ import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { FusionVersionDetection } from "./fusion/fusionVersionDetection";
 import { AltimateAuthService } from "./services/altimateAuthService";
-import { AltimateCodeChatService } from "./services/altimateCodeChatService";
 import { ConversationService } from "./services/conversationService";
 import { DbtLineageService } from "./services/dbtLineageService";
 import { DbtTestService } from "./services/dbtTestService";
@@ -70,7 +69,6 @@ import { FileService } from "./services/fileService";
 import { QueryManifestService } from "./services/queryManifestService";
 import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
-import { StreamingService } from "./services/streamingService";
 import { UsersService } from "./services/usersService";
 import { TelemetryService } from "./telemetry";
 
@@ -78,7 +76,6 @@ import { ValidationProvider } from "./validation_provider";
 
 // Core extension components
 import { DBTClient } from "./dbt_client";
-import { AltimateDatapilot } from "./dbt_client/datapilot";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DbtPowerUserMcpServer } from "./mcp";
 import { DbtPowerUserMcpServerTools } from "./mcp/server";
@@ -114,7 +111,6 @@ import { AltimateScan } from "./commands/altimateScan";
 import { BigQueryCostEstimate } from "./commands/bigQueryCostEstimate";
 import { RunModel } from "./commands/runModel";
 import { RunTest } from "./commands/runTest";
-import { SqlToModel } from "./commands/sqlToModel";
 import { MissingSchemaTest } from "./commands/tests/missingSchemaTest";
 import { StaleModelColumnTest } from "./commands/tests/staleModelColumnTest";
 import { UndocumentedModelColumnTest } from "./commands/tests/undocumentedModelColumnTest";
@@ -133,7 +129,6 @@ import { DbtDocumentFormattingEditProvider } from "./document_formatting_edit_pr
 import { SqlFmtAvailabilityNotifier } from "./document_formatting_edit_provider/sqlfmtAvailabilityNotifier";
 import { DbtPowerUserActionsCenter } from "./quickpick";
 import { DbtPowerUserControlCenterAction } from "./quickpick/actionsQuickPick";
-import { DbtSQLAction } from "./quickpick/sqlQuickPick";
 import { StatusBars } from "./statusbar";
 import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
 import { TargetStatusBar } from "./statusbar/targetStatusBar";
@@ -152,11 +147,9 @@ import { DbtDocsView } from "./webview_provider/DbtDocsView";
 import { DocsEditViewPanel } from "./webview_provider/docsEditPanel";
 import { InsightsPanel } from "./webview_provider/insightsPanel";
 import { LineagePanel } from "./webview_provider/lineagePanel";
-import { NewDocsGenPanel } from "./webview_provider/newDocsGenPanel";
 import { NewLineagePanel } from "./webview_provider/newLineagePanel";
 import { OnboardingPanel } from "./webview_provider/onboardingPanel";
 import { QueryResultPanel } from "./webview_provider/queryResultPanel";
-import { SQLLineagePanel } from "./webview_provider/sqlLineagePanel";
 import { WhatsNewPanel } from "./webview_provider/whatsNewPanel";
 
 export const container = new Container();
@@ -789,13 +782,8 @@ container
   .bind(DbtTestService)
   .toDynamicValue((context) => {
     return new DbtTestService(
-      context.container.get(DocGenService),
-      context.container.get(StreamingService),
-      context.container.get(AltimateRequest),
       context.container.get(QueryManifestService),
       context.container.get("DBTTerminal"),
-      context.container.get(TelemetryService),
-      context.container.get(AltimateAuthService),
     );
   })
   .inSingletonScope();
@@ -811,12 +799,9 @@ container
   .bind(DocGenService)
   .toDynamicValue((context) => {
     return new DocGenService(
-      context.container.get(AltimateRequest),
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
       context.container.get(QueryManifestService),
       context.container.get("DBTTerminal"),
-      context.container.get(AltimateAuthService),
     );
   })
   .inSingletonScope();
@@ -844,13 +829,6 @@ container
   .bind(SharedStateService)
   .toDynamicValue(() => {
     return new SharedStateService();
-  })
-  .inSingletonScope();
-
-container
-  .bind(AltimateCodeChatService)
-  .toDynamicValue(() => {
-    return new AltimateCodeChatService();
   })
   .inSingletonScope();
 
@@ -898,16 +876,6 @@ container
   .inSingletonScope();
 
 container
-  .bind(StreamingService)
-  .toDynamicValue((context) => {
-    return new StreamingService(
-      context.container.get(AltimateRequest),
-      context.container.get(SharedStateService),
-    );
-  })
-  .inSingletonScope();
-
-container
   .bind(UsersService)
   .toDynamicValue((context) => {
     return new UsersService(
@@ -951,8 +919,6 @@ container
       context.container.get(DBTClient),
       context.container.get("Factory<DBTWorkspaceFolder>"),
       context.container.get("DBTTerminal"),
-      context.container.get(AltimateDatapilot),
-      context.container.get(AltimateRequest),
     );
   })
   .inSingletonScope();
@@ -989,18 +955,6 @@ container
     return new DBTClient(
       context.container.get(PythonEnvironment),
       context.container.get("Factory<DBTDetection>"),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(AltimateDatapilot)
-  .toDynamicValue((context) => {
-    return new AltimateDatapilot(
-      context.container.get(PythonEnvironment),
-      context.container.get(CommandProcessExecutionFactory),
-      context.container.get("DBTTerminal"),
-      context.container.get("DBTConfiguration"),
     );
   })
   .inSingletonScope();
@@ -1089,10 +1043,8 @@ container
 
 container
   .bind(SqlActionsCodeLensProvider)
-  .toDynamicValue((context) => {
-    return new SqlActionsCodeLensProvider(
-      context.container.get(AltimateCodeChatService),
-    );
+  .toDynamicValue(() => {
+    return new SqlActionsCodeLensProvider();
   })
   .inSingletonScope();
 
@@ -1274,7 +1226,6 @@ container
       context.container.get(QueryManifestService),
       context.container.get(UsersService),
       context.container.get(AltimateAuthService),
-      context.container.get(AltimateCodeChatService),
     );
   })
   .inSingletonScope();
@@ -1349,13 +1300,6 @@ container
   })
   .inSingletonScope();
 
-container
-  .bind(DbtSQLAction)
-  .toDynamicValue((context) => {
-    return new DbtSQLAction(context.container.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
 // Bind individual command components that are required by VSCodeCommands
 container
   .bind(RunModel)
@@ -1375,19 +1319,6 @@ container
   .inSingletonScope();
 
 container
-  .bind(SqlToModel)
-  .toDynamicValue((context) => {
-    return new SqlToModel(
-      context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
-      context.container.get(AltimateRequest),
-      context.container.get("DBTTerminal"),
-      context.container.get(AltimateAuthService),
-    );
-  })
-  .inSingletonScope();
-
-container
   .bind(ValidateSql)
   .toDynamicValue((context) => {
     return new ValidateSql(
@@ -1395,7 +1326,6 @@ container
       context.container.get(TelemetryService),
       context.container.get(AltimateRequest),
       context.container.get("DBTTerminal"),
-      context.container.get(AltimateCodeChatService),
     );
   })
   .inSingletonScope();
@@ -1455,30 +1385,12 @@ container
   .inSingletonScope();
 
 container
-  .bind(SQLLineagePanel)
-  .toDynamicValue((context) => {
-    return new SQLLineagePanel(
-      context.container.get(DBTProjectContainer),
-      context.container.get(AltimateRequest),
-      context.container.get(TelemetryService),
-      context.container.get("DBTTerminal"),
-      context.container.get(QueryManifestService),
-      context.container.get(SharedStateService),
-      context.container.get(UsersService),
-      context.container.get(AltimateAuthService),
-      context.container.get(AltimateCodeChatService),
-    );
-  })
-  .inSingletonScope();
-
-container
   .bind(VSCodeCommands)
   .toDynamicValue((context) => {
     return new VSCodeCommands(
       context.container.get(DBTProjectContainer),
       context.container.get(RunModel),
       context.container.get(RunTest),
-      context.container.get(SqlToModel),
       context.container.get(ValidateSql),
       context.container.get(AltimateScan),
       context.container.get(WalkthroughCommands),
@@ -1489,11 +1401,9 @@ container
       context.container.get(ConversationProvider),
       context.container.get(PythonEnvironment),
       context.container.get(DBTClient),
-      context.container.get(SQLLineagePanel),
       context.container.get(QueryManifestService),
       context.container.get(AltimateRequest),
       context.container.get(RunHistoryService),
-      context.container.get(AltimateCodeChatService),
       context.container.get(CteProfilerService),
       context.container.get(CteProfilerDecorationProvider),
       context.container.get(CteCodeLensProvider),
@@ -1516,7 +1426,6 @@ container
       context.container.get(QueryManifestService),
       context.container.get(UsersService),
       context.container.get(AltimateAuthService),
-      context.container.get(AltimateCodeChatService),
     );
   })
   .inSingletonScope();
@@ -1526,11 +1435,10 @@ container
   .toDynamicValue((context) => {
     return new DocsEditViewPanel(
       context.container.get(DBTProjectContainer),
-      context.container.get(AltimateRequest),
       context.container.get(TelemetryService),
-      context.container.get(NewDocsGenPanel),
       context.container.get(DocGenService),
       context.container.get(DbtTestService),
+      context.container.get(QueryManifestService),
       context.container.get("DBTTerminal"),
       context.container.get(DbtLineageService),
     );
@@ -1560,32 +1468,8 @@ container
       context.container.get(SharedStateService),
       context.container.get("DBTTerminal"),
       context.container.get(QueryManifestService),
-      context.container.get(ValidationProvider),
       context.container.get(UsersService),
       context.container.get(AltimateAuthService),
-      context.container.get(AltimateCodeChatService),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(NewDocsGenPanel)
-  .toDynamicValue((context) => {
-    return new NewDocsGenPanel(
-      context.container.get(DBTProjectContainer),
-      context.container.get(AltimateRequest),
-      context.container.get(TelemetryService),
-      context.container.get(DocGenService),
-      context.container.get(SharedStateService),
-      context.container.get(QueryManifestService),
-      context.container.get("DBTTerminal"),
-      context.container.get(DbtTestService),
-      context.container.get(UsersService),
-      context.container.get(DbtDocsView),
-      context.container.get(ConversationProvider),
-      context.container.get(ConversationService),
-      context.container.get(AltimateAuthService),
-      context.container.get(AltimateCodeChatService),
     );
   })
   .inSingletonScope();
@@ -1603,7 +1487,6 @@ container
       context.container.get(QueryManifestService),
       context.container.get(UsersService),
       context.container.get(AltimateAuthService),
-      context.container.get(AltimateCodeChatService),
       context.container.get(ValidationProvider),
     );
   })
@@ -1723,7 +1606,6 @@ container
       context.container.get(UsersService),
       context.container.get(WalkthroughCommands),
       context.container.get(AltimateAuthService),
-      context.container.get(AltimateCodeChatService),
     );
   })
   .inSingletonScope();
@@ -1740,7 +1622,6 @@ container
       context.container.get(QueryManifestService),
       context.container.get(UsersService),
       context.container.get(AltimateAuthService),
-      context.container.get(AltimateCodeChatService),
     );
   })
   .inSingletonScope();
@@ -1753,7 +1634,6 @@ container
       context.container.get(DbtPowerUserControlCenterAction),
       context.container.get(ProjectQuickPick),
       context.container.get(DBTProjectContainer),
-      context.container.get(DbtSQLAction),
       context.container.get(SharedStateService),
       context.container.get(OnboardingPanel),
     );

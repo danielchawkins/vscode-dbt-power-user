@@ -1,5 +1,5 @@
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
-import { Alert, Stack } from "@uicore";
+import { Stack } from "@uicore";
 import DocGeneratorColumn from "./DocGeneratorColumn";
 import classes from "../../styles.module.scss";
 import SyncWithDatabase from "./SyncWithDatabase";
@@ -51,10 +51,6 @@ const DocGeneratorColumnsList = (): JSX.Element => {
           </Stack>
           <SearchColumnsInput />
         </Stack>
-        <Alert color="warning">
-          Note: If you don’t want to override existing documentation, please
-          (re)generate documentation at the individual column level below
-        </Alert>
       </div>
       {!currentDocsData?.columns ? (
         <Stack>

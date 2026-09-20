@@ -1,8 +1,4 @@
-import {
-  DBTTerminal,
-  ExecutionsExhaustedException,
-  RunModelType,
-} from "@altimateai/dbt-integration";
+import { DBTTerminal, RunModelType } from "@altimateai/dbt-integration";
 import { existsSync, readFileSync } from "fs";
 import { inject } from "inversify";
 import {
@@ -11,7 +7,6 @@ import {
   commands,
   CommentReply,
   CommentThread,
-  DecorationRangeBehavior,
   Disposable,
   env,
   extensions,
@@ -19,7 +14,6 @@ import {
   ProgressLocation,
   Range,
   TextEditor,
-  TextEditorDecorationType,
   Uri,
   version,
   ViewColumn,
@@ -43,39 +37,23 @@ import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
-import { AltimateCodeChatService } from "../services/altimateCodeChatService";
-import {
-  buildCommandErrorPrompt,
-  buildRunFailurePrompt,
-  buildRunResultFailurePrompt,
-  buildTestFailurePrompt,
-} from "../services/chatPromptBuilders";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { QueryManifestService } from "../services/queryManifestService";
-import {
-  CommandFailedEvent,
-  RunHistoryService,
-} from "../services/runHistoryService";
+import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
 import { TelemetryService } from "../telemetry";
 import { TelemetryEvents } from "../telemetry/events";
-import {
-  ResultTreeItem,
-  RunTreeItem,
-} from "../treeview_provider/runHistoryTreeItems";
+import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import {
   deepEqual,
   extendErrorWithSupportLinks,
   getFirstWorkspacePath,
-  getFormattedDateTime,
 } from "../utils";
-import { SQLLineagePanel } from "../webview_provider/sqlLineagePanel";
 import { WhatsNewPanel } from "../webview_provider/whatsNewPanel";
 import { AltimateScan } from "./altimateScan";
 import { BigQueryCostEstimate } from "./bigQueryCostEstimate";
 import { RunModel } from "./runModel";
 import { RunTest } from "./runTest";
-import { SqlToModel } from "./sqlToModel";
 import { ValidateSql } from "./validateSql";
 import { WalkthroughCommands } from "./walkthroughCommands";
 
@@ -86,7 +64,6 @@ export class VSCodeCommands implements Disposable {
     private dbtProjectContainer: DBTProjectContainer,
     private runModel: RunModel,
     private runTest: RunTest,
-    private sqlToModel: SqlToModel,
     private validateSql: ValidateSql,
     private altimateScan: AltimateScan,
     private walkthroughCommands: WalkthroughCommands,
@@ -99,11 +76,9 @@ export class VSCodeCommands implements Disposable {
     @inject(PythonEnvironment)
     private pythonEnvironment: PythonEnvironment,
     private dbtClient: DBTClient,
-    private sqlLineagePanel: SQLLineagePanel,
     private queryManifestService: QueryManifestService,
     private altimate: AltimateRequest,
     private runHistoryService: RunHistoryService,
-    private altimateCodeChatService: AltimateCodeChatService,
     private cteProfilerService: CteProfilerService,
     private cteProfilerDecorationProvider: CteProfilerDecorationProvider,
     private cteCodeLensProvider: CteCodeLensProvider,
@@ -480,9 +455,6 @@ export class VSCodeCommands implements Disposable {
         this.runModel.buildModelOnActiveWindow(
           RunModelType.BUILD_CHILDREN_PARENTS,
         ),
-      ),
-      commands.registerCommand("dbtPowerUser.sqlToModel", () =>
-        this.sqlToModel.getModelFromSql(),
       ),
       commands.registerCommand("dbtPowerUser.validateSql", () =>
         this.validateSql.validateSql(),
@@ -937,131 +909,6 @@ export class VSCodeCommands implements Disposable {
         },
       ),
       commands.registerCommand(
-        "dbtPowerUser.createSqlFile",
-        async (args: { code?: string; fileName?: string } | undefined) => {
-          const { code, fileName } = args || {};
-          try {
-            const project =
-              await this.queryManifestService.getOrPickProjectFromWorkspace();
-            if (!project) {
-              window.showErrorMessage("No dbt project selected.");
-              return;
-            }
-
-            // Open a new untitled sql file by default
-            let docOpenPromise = workspace.openTextDocument({
-              language: "jinja-sql",
-            });
-            // If file name is provided, open the file in the project
-            if (fileName) {
-              const uri = Uri.parse(
-                `${project.projectRoot}/${fileName}-${getFormattedDateTime()}.sql`,
-              ).with({ scheme: "untitled" });
-              docOpenPromise = workspace.openTextDocument(uri);
-            }
-
-            const annotationDecoration: TextEditorDecorationType =
-              window.createTextEditorDecorationType({
-                rangeBehavior: DecorationRangeBehavior.OpenOpen,
-              });
-
-            const contentText =
-              "Enter your query here and execute it just like any dbt model file. This file is unsaved, you can either save it to your project or save it as a bookmark for later usage or share it with your team members.";
-
-            const decorations = [
-              {
-                renderOptions: {
-                  before: {
-                    color: "#666666",
-                    contentText,
-                    // hacking to add more css properties
-                    width: "90%;display: block;white-space: pre-line;",
-                  },
-                },
-                range: new Range(2, 0, 2, 0),
-              },
-            ];
-
-            docOpenPromise.then((doc) => {
-              // set this to sql language so we can bind codelens and other features
-              languages.setTextDocumentLanguage(doc, "jinja-sql");
-              window.showTextDocument(doc).then((editor) => {
-                editor.edit((editBuilder) => {
-                  const entireDocumentRange = new Range(
-                    doc.positionAt(0),
-                    doc.positionAt(doc.getText().length),
-                  );
-                  editBuilder.replace(entireDocumentRange, code || "\n");
-
-                  editor.setDecorations(annotationDecoration, decorations);
-                  setTimeout(() => {
-                    commands.executeCommand("cursorMove", {
-                      to: "up",
-                      by: "line",
-                      value: 1,
-                    });
-                  }, 0);
-                  const disposable = workspace.onDidChangeTextDocument((e) => {
-                    const activeEditor = window.activeTextEditor;
-                    if (activeEditor && e.document === editor.document) {
-                      if (activeEditor.document.getText().trim()) {
-                        activeEditor.setDecorations(annotationDecoration, []);
-                        disposable.dispose();
-                      }
-                    }
-                  });
-                });
-              });
-            });
-          } catch (e) {
-            const message = (e as Error).message;
-            this.dbtTerminal.error("createSqlFile", message, e, true);
-            window.showErrorMessage(message);
-          }
-        },
-      ),
-      commands.registerCommand("dbtPowerUser.sqlLineage", async () => {
-        const activeUri = window.activeTextEditor?.document.uri;
-        if (activeUri?.scheme === SqlPreviewContentProvider.SCHEME) {
-          // The compiled-SQL preview is a read-only derived artifact served by
-          // a TextDocumentContentProvider; workspace.fs has no provider for its
-          // scheme, so reading it throws ENOPRO. Visualize SQL operates on the
-          // source model, so there is nothing to visualize from the preview.
-          window.showInformationMessage(
-            "Visualize SQL runs on a dbt model file, not the compiled SQL preview.",
-          );
-          return;
-        }
-        window.withProgress(
-          {
-            title: "Retrieving SQL visualization",
-            location: ProgressLocation.Notification,
-            cancellable: false,
-          },
-          async (_, token) => {
-            try {
-              const modelName = this.sqlLineagePanel.getActiveEditorFilename();
-              const lineage = await this.sqlLineagePanel.getSQLLineage(token);
-              const panel = window.createWebviewPanel(
-                SQLLineagePanel.viewType,
-                `${modelName} - visualization`,
-                ViewColumn.Two,
-                { retainContextWhenHidden: true, enableScripts: true },
-              );
-              this.sqlLineagePanel.renderSqlVisualizer(panel, lineage);
-            } catch (e) {
-              // The central 402 handler already showed the out-of-credits popup.
-              if (e instanceof ExecutionsExhaustedException) {
-                return;
-              }
-              const errorMessage = (e as Error)?.message;
-              this.dbtTerminal.error("sqlLineage", errorMessage, e, true);
-              window.showErrorMessage(errorMessage);
-            }
-          },
-        );
-      }),
-      commands.registerCommand(
         "dbtPowerUser.showDocumentation",
         async (modelName) => {
           const result = queryManifestService.getEventByCurrentProject();
@@ -1100,249 +947,6 @@ export class VSCodeCommands implements Disposable {
           );
         }
       }),
-      commands.registerCommand(
-        "dbtPowerUser.askAltimateAboutSelection",
-        async () => {
-          const context = this.altimateCodeChatService.getEditorContext();
-          if (!context) {
-            return;
-          }
-          await this.altimateCodeChatService.openChat({
-            prefillMessage: `Regarding this code from \`@${context.relativePath}\`:\n\`\`\`\n${context.code}\n\`\`\`\n`,
-            title: `Ask: ${context.fileName}`,
-            beside: true,
-          });
-        },
-      ),
-      commands.registerCommand("dbtPowerUser.explainWithAltimate", async () => {
-        const context = this.altimateCodeChatService.getEditorContext();
-        if (!context) {
-          return;
-        }
-        await this.altimateCodeChatService.openChat({
-          initialMessage: `Explain the following code from \`@${context.relativePath}\`:\n\`\`\`sql\n${context.code}\n\`\`\``,
-          title: `Explain: ${context.fileName}`,
-          beside: true,
-        });
-      }),
-      commands.registerCommand(
-        "dbtPowerUser.optimizeWithAltimate",
-        async () => {
-          const context = this.altimateCodeChatService.getEditorContext();
-          if (!context) {
-            return;
-          }
-          await this.altimateCodeChatService.openChat({
-            initialMessage: `Optimize the following SQL from \`@${context.relativePath}\` for performance and readability:\n\`\`\`sql\n${context.code}\n\`\`\``,
-            title: `Optimize: ${context.fileName}`,
-            beside: true,
-          });
-        },
-      ),
-      commands.registerCommand("dbtPowerUser.changeWithAltimate", async () => {
-        const context = this.altimateCodeChatService.getEditorContext();
-        if (!context) {
-          return;
-        }
-        await this.altimateCodeChatService.openChat({
-          initialMessage: `I want to make changes to the SQL in \`@${context.relativePath}\`:\n\`\`\`sql\n${context.code}\n\`\`\`\nWhat do you need to know from me to make the right changes?`,
-          title: `Change: ${context.fileName}`,
-          beside: true,
-        });
-      }),
-      commands.registerCommand(
-        "dbtPowerUser.translateWithAltimate",
-        async () => {
-          const context = this.altimateCodeChatService.getEditorContext();
-          if (!context) {
-            return;
-          }
-
-          const SQL_DIALECTS = [
-            "bigquery",
-            "clickhouse",
-            "databricks",
-            "doris",
-            "duckdb",
-            "hive",
-            "mysql",
-            "oracle",
-            "postgres",
-            "redshift",
-            "snowflake",
-            "spark",
-            "sqlserver",
-            "starrocks",
-            "synapse",
-            "teradata",
-            "trino",
-          ];
-
-          const sourceDialect = await window.showQuickPick(SQL_DIALECTS, {
-            title: "Translate SQL — Step 1 of 2",
-            placeHolder: "Select source dialect",
-          });
-          if (!sourceDialect) {
-            return;
-          }
-
-          // Auto-detect target from project adapter type if available
-          let defaultTarget: string | undefined;
-          try {
-            defaultTarget = this.queryManifestService
-              .getProject()
-              ?.getAdapterType();
-          } catch {
-            // ignore — optional
-          }
-
-          const targetItems: { label: string; description?: string }[] =
-            SQL_DIALECTS.filter((d) => d !== sourceDialect).map((d) => ({
-              label: d,
-              description: d === defaultTarget ? "current project" : undefined,
-            }));
-
-          // Bubble project adapter to the top
-          if (defaultTarget) {
-            const idx = targetItems.findIndex((i) => i.label === defaultTarget);
-            if (idx > 0) {
-              const [item] = targetItems.splice(idx, 1);
-              targetItems.unshift(item);
-            }
-          }
-
-          const targetPick = await window.showQuickPick(targetItems, {
-            title: "Translate SQL — Step 2 of 2",
-            placeHolder: "Select target dialect",
-          });
-          if (!targetPick) {
-            return;
-          }
-          const targetDialect = targetPick.label;
-
-          await this.altimateCodeChatService.openChat({
-            initialMessage: `Translate the following SQL from \`@${context.relativePath}\` from **${sourceDialect}** to **${targetDialect}** dialect:\n\`\`\`sql\n${context.code}\n\`\`\``,
-            title: `Translate: ${context.fileName}`,
-            beside: true,
-          });
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.analyzeFileWithAltimate",
-        async (uri?: Uri) => {
-          const fileUri = uri ?? window.activeTextEditor?.document.uri;
-          if (!fileUri) {
-            return;
-          }
-          const ctx = this.altimateCodeChatService.getContextForUri(fileUri);
-          if (!ctx) {
-            return;
-          }
-          await this.altimateCodeChatService.openChat({
-            initialMessage: `Analyze \`@${ctx.relativePath}\` for dbt best practices, performance, and documentation completeness.`,
-            title: `Analyze: ${ctx.fileName}`,
-            beside: true,
-          });
-        },
-      ),
-      // Feature 1: dbt run/build/test failure notification
-      this.runHistoryService.onHistoryChanged(async (entry) => {
-        if (!entry) {
-          return;
-        }
-        const failed = entry.results.filter((r) => r.status === "error");
-        if (failed.length === 0) {
-          return;
-        }
-        const label =
-          failed.length === 1
-            ? `\`${failed[0].name}\` failed`
-            : `${failed.length} failures in \`${entry.command}\``;
-        const clicked = await window.showErrorMessage(
-          `dbt: ${label}`,
-          "Fix with Altimate Code",
-        );
-        if (clicked === "Fix with Altimate Code") {
-          this.telemetry.sendTelemetryEvent(
-            TelemetryEvents["AltimateCode/RunFailureClick"],
-            {
-              command: entry.command,
-              modelName: failed.length === 1 ? failed[0].name : "",
-            },
-            { failedCount: failed.length },
-          );
-          await this.altimateCodeChatService.openChat({
-            initialMessage: buildRunFailurePrompt(entry, failed),
-            title: `Fix: ${entry.command}`,
-            beside: true,
-          });
-        }
-      }),
-      // Feature 2: dbt compilation/parse error notification
-      this.runHistoryService.onCommandFailed(
-        async ({ command, error }: CommandFailedEvent) => {
-          const clicked = await window.showErrorMessage(
-            `dbt command failed: ${command}`,
-            "Fix with Altimate Code",
-          );
-          if (clicked === "Fix with Altimate Code") {
-            this.telemetry.sendTelemetryEvent(
-              TelemetryEvents["AltimateCode/CommandFailureClick"],
-              { command },
-            );
-            await this.altimateCodeChatService.openChat({
-              initialMessage: buildCommandErrorPrompt(command, error),
-              title: `Fix: ${command}`,
-              beside: true,
-            });
-          }
-        },
-      ),
-      // Feature 3: Explain why this test failed (run history tree)
-      commands.registerCommand(
-        "dbtPowerUser.explainTestFailure",
-        async (item: ResultTreeItem) => {
-          const prompt = buildTestFailurePrompt(
-            item.result,
-            item.parentCommand,
-          );
-          this.telemetry.sendTelemetryEvent(
-            TelemetryEvents["AltimateCode/ExplainTestFailureClick"],
-            {
-              testName: item.result.name,
-              command: item.parentCommand ?? "",
-            },
-          );
-          await this.altimateCodeChatService.openChat({
-            initialMessage: prompt,
-            title: `Explain: ${item.result.name}`,
-            beside: true,
-          });
-        },
-      ),
-      // Feature 4: Fix run failure from run history tree (model/seed/snapshot)
-      commands.registerCommand(
-        "dbtPowerUser.fixRunFailure",
-        async (item: ResultTreeItem) => {
-          const prompt = buildRunResultFailurePrompt(
-            item.result,
-            item.parentCommand,
-          );
-          this.telemetry.sendTelemetryEvent(
-            TelemetryEvents["AltimateCode/RunHistoryFixClick"],
-            {
-              modelName: item.result.name,
-              resourceType: item.result.resourceType,
-              command: item.parentCommand ?? "",
-            },
-          );
-          await this.altimateCodeChatService.openChat({
-            initialMessage: prompt,
-            title: `Fix: ${item.result.name}`,
-            beside: true,
-          });
-        },
-      ),
     );
   }
 

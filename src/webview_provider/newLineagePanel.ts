@@ -31,7 +31,6 @@ import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import { AltimateAuthService } from "../services/altimateAuthService";
-import { AltimateCodeChatService } from "../services/altimateCodeChatService";
 import { CllEvents, DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
@@ -94,7 +93,6 @@ export class NewLineagePanel
     protected queryManifestService: QueryManifestService,
     protected usersService: UsersService,
     protected altimateAuthService: AltimateAuthService,
-    altimateCodeChatService: AltimateCodeChatService,
     private validationProvider: ValidationProvider,
   ) {
     super(
@@ -106,7 +104,6 @@ export class NewLineagePanel
       queryManifestService,
       usersService,
       altimateAuthService,
-      altimateCodeChatService,
     );
   }
 

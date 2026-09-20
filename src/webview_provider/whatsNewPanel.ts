@@ -5,7 +5,6 @@ import { Uri, ViewColumn, WebviewPanel, window, workspace } from "vscode";
 import { AltimateRequest } from "../altimate";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { AltimateAuthService } from "../services/altimateAuthService";
-import { AltimateCodeChatService } from "../services/altimateCodeChatService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import { UsersService } from "../services/usersService";
@@ -151,7 +150,6 @@ export class WhatsNewPanel extends AltimateWebviewProvider {
     protected queryManifestService: QueryManifestService,
     protected usersService: UsersService,
     protected altimateAuthService: AltimateAuthService,
-    altimateCodeChatService: AltimateCodeChatService,
   ) {
     super(
       dbtProjectContainer,
@@ -162,7 +160,6 @@ export class WhatsNewPanel extends AltimateWebviewProvider {
       queryManifestService,
       usersService,
       altimateAuthService,
-      altimateCodeChatService,
     );
   }
 

@@ -3,7 +3,6 @@ import {
   Disposable,
   ExtensionContext,
   extensions,
-  Uri,
   window,
   workspace,
 } from "vscode";
@@ -28,7 +27,6 @@ import {
 } from "./services/creditsService";
 import { StatusBars } from "./statusbar";
 import { TelemetryService } from "./telemetry";
-import { TelemetryEvents } from "./telemetry/events";
 import { TreeviewProviders } from "./treeview_provider";
 import { ValidationProvider } from "./validation_provider";
 import { WebviewViewProviders } from "./webview_provider";
@@ -189,29 +187,6 @@ export class DBTPowerUserExtension implements Disposable {
       context.subscriptions.push({
         dispose: () => process.off("unhandledRejection", onUnhandledRejection),
       });
-
-      const telemetry = this.telemetry;
-      context.subscriptions.push(
-        window.registerUriHandler({
-          handleUri(uri: Uri): void {
-            if (uri.path === "/troubleshoot") {
-              const params = new URLSearchParams(uri.query);
-              const errorMessage = params.get("error") ?? "";
-              const source = params.get("source") ?? "dbt";
-              telemetry.sendTelemetryEvent(
-                TelemetryEvents["AltimateCode/TroubleshootCodeActionClick"],
-                { source },
-              );
-              commands.executeCommand("altimate.troubleshootError", {
-                errorMessage,
-                source,
-                filePath: "",
-                lineNumber: 0,
-              });
-            }
-          },
-        }),
-      );
 
       await this.mcpServer.updateMcpExtensionApi();
       this.dbtProjectContainer.setContext(context);

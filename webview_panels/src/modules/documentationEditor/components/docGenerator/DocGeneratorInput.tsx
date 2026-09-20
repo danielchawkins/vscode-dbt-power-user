@@ -1,4 +1,3 @@
-import { executeRequestInSync } from "@modules/app/requestExecutor";
 import {
   updateColumnsInCurrentDocsData,
   updateCurrentDocsData,
@@ -8,7 +7,6 @@ import {
   DBTDocumentation,
   DBTDocumentationColumn,
   DBTModelTest,
-  DocsGenerateModelRequestV2,
 } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { isArrayEqual } from "@modules/documentationEditor/utils";
@@ -16,7 +14,6 @@ import { panelLogger } from "@modules/logger";
 import { Input, InputGroup, Stack, Tag } from "@uicore";
 import {
   ChangeEvent,
-  useCallback,
   useEffect,
   useMemo,
   useRef,
@@ -25,19 +22,16 @@ import {
 import AddCoversationButton from "../conversation/AddCoversationButton";
 import { DocumentationPropagationButton } from "../documentationPropagation/DocumentationPropagation";
 import DocBlockInserter from "./DocBlockInserter";
-import GenerateButton, { Variants } from "./GenerateButton";
 import classes from "./docGenInput.module.scss";
 
 interface Props {
   entity: DBTDocumentationColumn | DBTDocumentation;
-  onSubmit: (data: DocsGenerateModelRequestV2) => void;
   placeholder?: string;
   type: EntityType;
   title: string;
   tests?: DBTModelTest[];
 }
 const DocGeneratorInput = ({
-  onSubmit,
   entity,
   placeholder,
   type,
@@ -47,7 +41,6 @@ const DocGeneratorInput = ({
   const stackRef = useRef<HTMLDivElement | null>(null);
   const {
     state: {
-      userInstructions,
       incomingDocsData,
       currentDocsData,
       insertedEntityName,
@@ -133,24 +126,12 @@ const DocGeneratorInput = ({
     }
   }, [insertedEntityName, entity.name]);
 
-  const handleSubmit = useCallback(async () => {
-    const result = (await executeRequestInSync("validateCredentials", {})) as {
-      isValid: boolean;
-    };
-    if (!result.isValid) {
-      return;
-    }
-    const columns = currentDocsData?.columns.map((c) => c.name) ?? [];
-    onSubmit({ user_instructions: userInstructions, description, columns });
-  }, [description, userInstructions, currentDocsData?.columns]);
-
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     setDescription(e.target.value);
     if (type === EntityType.COLUMN) {
       dispatch(
         updateColumnsInCurrentDocsData({
           columns: [{ name: entity.name, description: e.target.value }],
-          isNewGeneration: true,
         }),
       );
     }
@@ -160,7 +141,6 @@ const DocGeneratorInput = ({
         updateCurrentDocsData({
           name: entity.name,
           description: e.target.value,
-          isNewGeneration: true,
         }),
       );
     }
@@ -186,7 +166,6 @@ const DocGeneratorInput = ({
       dispatch(
         updateColumnsInCurrentDocsData({
           columns: [{ name: entity.name, description: newValue }],
-          isNewGeneration: true,
         }),
       );
     }
@@ -196,7 +175,6 @@ const DocGeneratorInput = ({
         updateCurrentDocsData({
           name: entity.name,
           description: newValue,
-          isNewGeneration: true,
         }),
       );
     }
@@ -211,7 +189,6 @@ const DocGeneratorInput = ({
     }, 10);
   };
 
-  const variant = entity.description ? Variants.ICON : Variants.ICON_WITH_TEXT;
   const entityColumn = incomingDocsData?.docs?.columns?.find(
     (c) => c.name === entity.name,
   );
@@ -259,11 +236,6 @@ const DocGeneratorInput = ({
             name={entity.name}
             type={type}
             model={currentDocsData?.name}
-          />
-          <GenerateButton
-            onSubmit={handleSubmit}
-            variant={variant}
-            entityName={entity.name}
           />
         </Stack>
       </Stack>

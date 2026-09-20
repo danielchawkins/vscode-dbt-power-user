@@ -1,7 +1,4 @@
-import {
-  DataPilotHealtCheckParams,
-  RunModelType,
-} from "@altimateai/dbt-integration";
+import { RunModelType } from "@altimateai/dbt-integration";
 import {
   afterEach,
   beforeEach,
@@ -32,8 +29,6 @@ describe("DBTProjectContainer Tests", () => {
   let container: DBTProjectContainer;
   let mockDbtClient: any;
   let mockDbtTerminal: any;
-  let mockAltimateDatapilot: any;
-  let mockAltimateRequest: any;
   let mockDbtWorkspaceFolder: any;
   let mockDbtProject: any;
   let mockDbtWorkspaceFolderFactory: any;
@@ -59,7 +54,6 @@ describe("DBTProjectContainer Tests", () => {
       showRunSQL: jest.fn(),
       showCompiledSql: jest.fn(),
       generateSchemaYML: jest.fn(),
-      performDatapilotHealthcheck: jest.fn(),
       dispose: jest.fn(),
     };
 
@@ -106,25 +100,6 @@ describe("DBTProjectContainer Tests", () => {
       warn: jest.fn(),
     };
 
-    // Mock Altimate datapilot
-    mockAltimateDatapilot = {
-      checkIfAltimateDatapilotInstalled: jest.fn(() =>
-        Promise.resolve("1.0.0"),
-      ),
-      installAltimateDatapilot: jest.fn(() => Promise.resolve()),
-    };
-
-    // Mock Altimate request
-    mockAltimateRequest = {
-      dispose: jest.fn(),
-      enabled: jest.fn(),
-      isAuthenticated: jest.fn(),
-      validateCredentials: jest.fn(),
-      getDatapilotVersion: jest.fn(() =>
-        Promise.resolve({ altimate_datapilot_version: "1.0.0" }),
-      ),
-    };
-
     // Mock workspace folder factory
     mockDbtWorkspaceFolderFactory = jest.fn(() => mockDbtWorkspaceFolder);
 
@@ -133,8 +108,6 @@ describe("DBTProjectContainer Tests", () => {
       mockDbtClient,
       mockDbtWorkspaceFolderFactory,
       mockDbtTerminal,
-      mockAltimateDatapilot,
-      mockAltimateRequest,
     );
 
     // Set up workspace folders for testing
@@ -451,65 +424,6 @@ describe("DBTProjectContainer Tests", () => {
     });
   });
 
-  describe("Altimate Datapilot Integration", () => {
-    beforeEach(() => {
-      const mockContext = {
-        extension: { id: "test-extension", packageJSON: { version: "1.0.0" } },
-      } as ExtensionContext;
-      container.setContext(mockContext);
-    });
-
-    it("should check if Altimate Datapilot is installed", async () => {
-      const result = await container.checkIfAltimateDatapilotInstalled();
-
-      expect(
-        mockAltimateDatapilot.checkIfAltimateDatapilotInstalled,
-      ).toHaveBeenCalled();
-      expect(mockAltimateRequest.getDatapilotVersion).toHaveBeenCalledWith(
-        "1.0.0",
-      );
-      expect(result).toBe(true);
-    });
-
-    it("should install Altimate Datapilot", async () => {
-      await container.installAltimateDatapilot();
-
-      expect(mockAltimateRequest.getDatapilotVersion).toHaveBeenCalledWith(
-        "1.0.0",
-      );
-      expect(
-        mockAltimateDatapilot.installAltimateDatapilot,
-      ).toHaveBeenCalledWith("1.0.0");
-    });
-
-    it("should execute Altimate Datapilot healthcheck", async () => {
-      const args = {
-        projectRoot: "/path/to/project",
-        configType: "All" as const,
-      } as DataPilotHealtCheckParams;
-
-      await container.executeAltimateDatapilotHealthcheck(args);
-
-      expect(mockDbtProject.performDatapilotHealthcheck).toHaveBeenCalledWith(
-        args,
-      );
-    });
-
-    it("should throw error when project not found for healthcheck", () => {
-      // Mock getProjects to return empty array
-      container.getProjects = jest.fn(() => []);
-
-      const args = {
-        projectRoot: "/non/existent/project",
-        configType: "All" as const,
-      } as DataPilotHealtCheckParams;
-
-      expect(() => container.executeAltimateDatapilotHealthcheck(args)).toThrow(
-        "Unable to find project /non/existent/project",
-      );
-    });
-  });
-
   describe("Workspace Folder Management", () => {
     it("should initialize DBT projects", async () => {
       const mockWorkspaceFolder = {
@@ -557,8 +471,6 @@ describe("DBTProjectContainer Tests", () => {
         mockDbtClient,
         mockDbtWorkspaceFolderFactory,
         mockDbtTerminal,
-        mockAltimateDatapilot,
-        mockAltimateRequest,
       );
 
       // Simulate workspace folder change
@@ -638,8 +550,6 @@ describe("DBTProjectContainer Tests", () => {
         mockDbtClient,
         mockDbtWorkspaceFolderFactory,
         mockDbtTerminal,
-        mockAltimateDatapilot,
-        mockAltimateRequest,
       );
 
       // These should not throw even without context
@@ -763,8 +673,6 @@ describe("DBTProjectContainer Tests", () => {
         mockDbtClient,
         mockDbtWorkspaceFolderFactory,
         mockDbtTerminal,
-        mockAltimateDatapilot,
-        mockAltimateRequest,
       );
 
       // Verify the container has the expected event emitters
@@ -862,8 +770,6 @@ describe("DBTProjectContainer Tests", () => {
         mockDbtClient,
         factoryWithEvent,
         mockDbtTerminal,
-        mockAltimateDatapilot,
-        mockAltimateRequest,
       );
 
       // Register workspace folder

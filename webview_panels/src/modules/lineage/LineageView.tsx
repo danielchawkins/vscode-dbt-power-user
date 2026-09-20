@@ -56,7 +56,6 @@ const LineageView = (): JSX.Element | null => {
         case "init":
         case "openFile":
         case "openChat":
-        case "openAltimateCodeChat":
         case "showInfoNotification":
         case "previewFeature":
         case "telemetryEvents":

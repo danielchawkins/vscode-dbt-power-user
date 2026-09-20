@@ -4,7 +4,6 @@ import { Container, Stack, Tabs } from "@uicore";
 // import BigQueryCostEstimator from "../bigQuery/CostEstimator";
 import { useMemo } from "react";
 import DeferToProduction from "../defer/DeferToProduction";
-import ProjectHealthChecker from "../healthCheck/ProjectHealthChecker";
 import HelpButton from "./components/help/HelpButton";
 import classes from "./insights.module.scss";
 
@@ -14,10 +13,6 @@ const Insights = (): JSX.Element => {
       {
         label: "Defer to prod",
         component: <DeferToProduction />,
-      },
-      {
-        label: "Project Governance",
-        component: <ProjectHealthChecker />,
       },
     ],
     [],

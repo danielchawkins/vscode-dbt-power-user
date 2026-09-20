@@ -1,15 +1,12 @@
-import { SparkleIcon } from "@assets/icons";
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
 import CreditsChip from "@modules/commonActionButtons/CreditsChip";
 import FeedbackButton from "@modules/commonActionButtons/FeedbackButton";
-import { Button, Stack } from "@uicore";
+import { Stack } from "@uicore";
 import { useEffect } from "react";
 import { useQueryPanelDispatch } from "./QueryPanelProvider";
 import QueryPanelContent from "./components/QueryPanelContents/QueryPanelContent";
 import QueryPanelTitle from "./components/QueryPanelContents/QueryPanelTitle";
 import { QueryPanelTitleTabState } from "./components/QueryPanelContents/types";
 import ClearResultsButton from "./components/clearResultsButton/ClearResultsButton";
-import HelpButton from "./components/help/HelpButton";
 import ShowInTabButton from "./components/openInTabButton/OpenInTabButton";
 import OptimizeWarehouseButton from "./components/optimizeWarehouseButton/OptimizeWarehouseButton";
 import QueryLimit from "./components/queryLimit/QueryLimit";
@@ -21,8 +18,7 @@ import useQueryPanelListeners from "./useQueryPanelListeners";
 import useQueryPanelState from "./useQueryPanelState";
 
 const QueryPanel = (): JSX.Element => {
-  const { tabState, viewType, hasData, compiledCodeMarkup, activeEditor } =
-    useQueryPanelState();
+  const { tabState, viewType } = useQueryPanelState();
   const dispatch = useQueryPanelDispatch();
   const { loading } = useQueryPanelListeners();
 
@@ -46,22 +42,6 @@ const QueryPanel = (): JSX.Element => {
           {viewType === QueryPanelViewType.DEFAULT && (
             <>
               <QueryLimit />
-              {hasData && (
-                <Button
-                  color="primary"
-                  icon={<SparkleIcon />}
-                  showTextAlways
-                  onClick={() =>
-                    executeRequestInAsync("profileQueryWithAltimate", {
-                      compiledSql: compiledCodeMarkup ?? "",
-                      rawSql: activeEditor?.query ?? "",
-                      fileName: activeEditor?.filepath?.split(/[/\\]/).pop(),
-                    })
-                  }
-                >
-                  Profile Query
-                </Button>
-              )}
               <OptimizeWarehouseButton />
               <RunAdhocQueryButton />
               <ShowInTabButton />
@@ -69,7 +49,6 @@ const QueryPanel = (): JSX.Element => {
             </>
           )}
           <CreditsChip />
-          <HelpButton />
           <FeedbackButton url="https://form.jotform.com/251106305895153" />
         </Stack>
       </Stack>

@@ -4,7 +4,6 @@ import { SharedStateService } from "../services/sharedStateService";
 import { OnboardingPanel } from "../webview_provider/onboardingPanel";
 import { DbtPowerUserControlCenterAction } from "./actionsQuickPick";
 import { ProjectQuickPick } from "./projectQuickPick";
-import { DbtSQLAction } from "./sqlQuickPick";
 
 export class DbtPowerUserActionsCenter implements Disposable {
   private disposables: Disposable[] = [];
@@ -13,7 +12,6 @@ export class DbtPowerUserActionsCenter implements Disposable {
     private puLaunchQuickPick: DbtPowerUserControlCenterAction,
     private projectQuickPick: ProjectQuickPick,
     private dbtProjectContainer: DBTProjectContainer,
-    private sqlQuickPick: DbtSQLAction,
     private emitterService: SharedStateService,
     private onboardingPanel: OnboardingPanel,
   ) {
@@ -32,9 +30,6 @@ export class DbtPowerUserActionsCenter implements Disposable {
         });
       },
     );
-    commands.registerCommand("dbtPowerUser.sqlQuickPick", async () => {
-      await this.sqlQuickPick.openQuickPick();
-    });
     commands.registerCommand("dbtPowerUser.pickProject", async () => {
       const pickedProject = await this.projectQuickPick.projectPicker(
         await this.dbtProjectContainer.getProjects(),
