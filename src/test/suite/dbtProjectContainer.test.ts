@@ -84,6 +84,7 @@ describe("DBTProjectContainer Tests", () => {
       showErrorIfDbtOrPythonNotInstalled: jest.fn(),
       showErrorIfDbtIsNotInstalled: jest.fn(),
       detectDBT: jest.fn(() => Promise.resolve()),
+      setGlobalState: jest.fn(),
       getPythonEnvironment: jest.fn(() => ({
         pythonPath: "/path/to/python",
       })),
@@ -164,12 +165,19 @@ describe("DBTProjectContainer Tests", () => {
       const mockContext = {
         extensionUri: Uri.file("/path/to/extension"),
         extension: { id: "test-extension", packageJSON: { version: "1.0.0" } },
-      } as ExtensionContext;
+        globalState: {
+          get: jest.fn(),
+          update: jest.fn(),
+        },
+      } as unknown as ExtensionContext;
 
       container.setContext(mockContext);
       expect(container.extensionUri).toEqual(mockContext.extensionUri);
       expect(container.extensionVersion).toBe("1.0.0");
       expect(container.extensionId).toBe("test-extension");
+      expect(mockDbtClient.setGlobalState).toHaveBeenCalledWith(
+        mockContext.globalState,
+      );
     });
 
     it("should detect DBT installation", async () => {

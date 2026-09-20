@@ -19,7 +19,6 @@ import {
   DBTCoreProjectIntegration,
   DBTDetection,
   DBTDiagnosticData,
-  DBTFusionCommandDetection,
   DBTFusionCommandProjectDetection,
   DBTFusionCommandProjectIntegration,
   DbtIntegrationClient,
@@ -46,7 +45,14 @@ import {
 import * as LibNamespace from "@lib";
 import { NotebookKernelClient } from "@lib";
 import { Container, interfaces } from "inversify";
-import { Event, EventEmitter, Uri, workspace, WorkspaceFolder } from "vscode";
+import {
+  Event,
+  EventEmitter,
+  Memento,
+  Uri,
+  workspace,
+  WorkspaceFolder,
+} from "vscode";
 import { AltimateRequest } from "./altimate";
 import { DBTProject } from "./dbt_client/dbtProject";
 import { ProjectRegisteredUnregisteredEvent } from "./dbt_client/dbtProjectContainer";
@@ -61,6 +67,7 @@ import {
 } from "./dbt_client/runtimePythonEnvironmentProvider";
 import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
+import { FusionVersionDetection } from "./fusion/fusionVersionDetection";
 import { AltimateAuthService } from "./services/altimateAuthService";
 import { AltimateCodeChatService } from "./services/altimateCodeChatService";
 import { ConversationService } from "./services/conversationService";
@@ -352,19 +359,6 @@ container
   })
   .inSingletonScope();
 
-// Bind dbt fusion integration classes using factory functions
-container
-  .bind(DBTFusionCommandDetection)
-  .toDynamicValue((context) => {
-    return new DBTFusionCommandDetection(
-      context.container.get(CommandProcessExecutionFactory),
-      context.container.get("RuntimePythonEnvironment"),
-      context.container.get("DBTTerminal"),
-      context.container.get("DBTConfiguration"),
-    );
-  })
-  .inSingletonScope();
-
 container
   .bind(DBTFusionCommandProjectDetection)
   .toDynamicValue(() => {
@@ -485,23 +479,30 @@ container
 
 container
   .bind<interfaces.Factory<DBTDetection>>("Factory<DBTDetection>")
-  .toFactory<DBTDetection, []>((context: interfaces.Context) => {
-    return () => {
-      const { container } = context;
-      const dbtIntegrationMode = workspace
-        .getConfiguration("dbt")
-        .get<string>("dbtIntegration", "core");
+  .toFactory<DBTDetection, [Memento | undefined]>(
+    (context: interfaces.Context) => {
+      return (globalState: Memento | undefined) => {
+        const { container } = context;
+        const dbtIntegrationMode = workspace
+          .getConfiguration("dbt")
+          .get<string>("dbtIntegration", "core");
 
-      switch (dbtIntegrationMode) {
-        case "cloud":
-          return container.get(DBTCloudDetection);
-        case "fusion":
-          return container.get(DBTFusionCommandDetection);
-        default:
-          return container.get(DBTCoreDetection);
-      }
-    };
-  });
+        switch (dbtIntegrationMode) {
+          case "cloud":
+            return container.get(DBTCloudDetection);
+          case "fusion":
+            return new FusionVersionDetection(
+              container.get(CommandProcessExecutionFactory),
+              container.get("DBTTerminal"),
+              container.get("DBTConfiguration"),
+              globalState,
+            );
+          default:
+            return container.get(DBTCoreDetection);
+        }
+      };
+    },
+  );
 
 container
   .bind<interfaces.Factory<DBTProjectDetection>>("Factory<DBTProjectDetection>")

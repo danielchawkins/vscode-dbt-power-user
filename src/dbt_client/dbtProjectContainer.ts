@@ -108,6 +108,7 @@ export class DBTProjectContainer implements Disposable {
 
   setContext(context: ExtensionContext) {
     this.context = context;
+    this.dbtClient.setGlobalState(context.globalState);
   }
 
   showErrorIfDbtOrPythonNotInstalled() {
