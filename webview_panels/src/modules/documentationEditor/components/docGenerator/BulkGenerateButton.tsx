@@ -43,7 +43,6 @@ const BulkGenerateButton = (): JSX.Element => {
       { label: "Select columns", value: "selected" },
       { label: "Propagate to downstream models", value: "docs-prop" },
     ],
-    Tests: [{ label: "Generate all", value: "all-tests" }],
   };
 
   const bulkGenerateDocs = async (
@@ -88,21 +87,6 @@ const BulkGenerateButton = (): JSX.Element => {
       panelLogger.error("Unable to generate docs for missing columns");
     }
   };
-  const generateTestsForAllColumns = async () => {
-    try {
-      const { columns } = (await executeRequestInSync(
-        "fetchMetadataFromDatabase",
-        {},
-      )) as { columns: DBTDocumentationColumn[] };
-
-      executeRequestInAsync("generateTestsForColumns", {
-        columns,
-      });
-    } catch (err) {
-      panelLogger.error("Unable to generate tests for all columns");
-    }
-  };
-
   const generateForAll = async () => {
     try {
       const { columns } = (await executeRequestInSync(
@@ -146,10 +130,6 @@ const BulkGenerateButton = (): JSX.Element => {
           if (columns) {
             sendTelemetryEvent(value, columns, startTime);
           }
-          break;
-        }
-        case "all-tests": {
-          await generateTestsForAllColumns();
           break;
         }
         case "missing": {

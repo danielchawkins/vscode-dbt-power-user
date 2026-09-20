@@ -42,8 +42,6 @@ import {
   TestParser,
   UnitTestParser,
 } from "@altimateai/dbt-integration";
-import * as LibNamespace from "@lib";
-import { NotebookKernelClient } from "@lib";
 import { Container, interfaces } from "inversify";
 import { Event, EventEmitter, Memento, Uri, WorkspaceFolder } from "vscode";
 import { AltimateRequest } from "./altimate";
@@ -1111,7 +1109,6 @@ container
     return new VirtualSqlCodeLensProvider(
       context.container.get(DBTProjectContainer),
       context.container.get(QueryManifestService),
-      context.container.get("NotebookService"),
     );
   })
   .inSingletonScope();
@@ -1231,96 +1228,6 @@ container
     return new YamlModelHoverProvider(
       context.container.get(DBTProjectContainer),
       context.container.get(TelemetryService),
-    );
-  })
-  .inSingletonScope();
-
-// Bind notebook-related services
-
-container
-  .bind<any>("NotebookFileSystemProvider")
-  .toDynamicValue((context) => {
-    return new LibNamespace.NotebookFileSystemProvider(
-      context.container.get("DBTTerminal"),
-      context.container.get(AltimateRequest),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind<interfaces.Factory<NotebookKernelClient>>("Factory<NotebookClient>")
-  .toFactory<NotebookKernelClient, [string]>((context: interfaces.Context) => {
-    return (path: string) => {
-      const { container } = context;
-      return new LibNamespace.NotebookKernelClient(
-        path,
-        container.get(DBTCommandExecutionInfrastructure),
-        container.get("NotebookDependencies"),
-        container.get("DBTTerminal"),
-      );
-    };
-  });
-container
-  .bind<any>("NotebookDependencies")
-  .toDynamicValue((context) => {
-    return new LibNamespace.NotebookDependencies(
-      context.container.get("DBTTerminal"),
-      context.container.get(TelemetryService),
-      context.container.get(CommandProcessExecutionFactory),
-      context.container.get(PythonEnvironment),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind<any>("ClientMapper")
-  .toDynamicValue((context) => {
-    return new LibNamespace.ClientMapper(
-      context.container.get(DBTCommandExecutionInfrastructure),
-      context.container.get("NotebookDependencies"),
-      context.container.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind<any>("DatapilotNotebookSerializer")
-  .toDynamicValue(() => {
-    return new LibNamespace.DatapilotNotebookSerializer();
-  })
-  .inSingletonScope();
-
-container
-  .bind<any>("DatapilotNotebookController")
-  .toDynamicValue((context) => {
-    return new LibNamespace.DatapilotNotebookController(
-      context.container.get("ClientMapper"),
-      context.container.get(QueryManifestService),
-      context.container.get(TelemetryService),
-      context.container.get("DBTTerminal"),
-      context.container.get("NotebookDependencies"),
-      context.container.get(AltimateRequest),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind<any>("NotebookService")
-  .toDynamicValue((context) => {
-    return new LibNamespace.NotebookService(
-      context.container.get("DatapilotNotebookController"),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind<any>("NotebookProviders")
-  .toDynamicValue((context) => {
-    return new LibNamespace.NotebookProviders(
-      context.container.get("DatapilotNotebookSerializer"),
-      context.container.get("DatapilotNotebookController"),
-      context.container.get("NotebookFileSystemProvider"),
-      context.container.get("DBTTerminal"),
     );
   })
   .inSingletonScope();
@@ -1585,7 +1492,6 @@ container
       context.container.get(SQLLineagePanel),
       context.container.get(QueryManifestService),
       context.container.get(AltimateRequest),
-      context.container.get("DatapilotNotebookController"),
       context.container.get(RunHistoryService),
       context.container.get(AltimateCodeChatService),
       context.container.get(CteProfilerService),
@@ -1656,7 +1562,6 @@ container
       context.container.get(QueryManifestService),
       context.container.get(ValidationProvider),
       context.container.get(UsersService),
-      context.container.get("NotebookFileSystemProvider"),
       context.container.get(AltimateAuthService),
       context.container.get(AltimateCodeChatService),
     );
@@ -1883,7 +1788,6 @@ container
       context.container.get(HoverProviders),
       context.container.get(ValidationProvider),
       context.container.get(CommentProviders),
-      context.container.get("NotebookProviders"),
       context.container.get(DbtPowerUserMcpServer),
       context.container.get(AltimateRequest),
       context.container.get(AltimateAuthService),

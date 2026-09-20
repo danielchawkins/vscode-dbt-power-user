@@ -81,8 +81,7 @@
   "explorer.fileNesting.patterns": {
     ".git-dotfiles": ".gitignore, .gitattributes, .vscodeignore, lefthook.yml",
     ".workspace-dotfiles": "justfile, dprint.json, mise.toml, mise.lock, mise.local.toml, rumdl.toml, .mcp.json, .nvmrc",
-    ".typescript-dotfiles": "package.json, package-lock.json, tsconfig.json, typings.d.ts, rsbuild.config.ts, jest.config.js, .eslintrc.json, .prettierignore, .prettierrc, postInstall.js, prepareBuild.js",
-    ".python-dotfiles": "altimate_notebook_kernel.py",
+    ".typescript-dotfiles": "package.json, package-lock.json, tsconfig.json, typings.d.ts, rsbuild.config.ts, jest.config.js, .eslintrc.json, .prettierignore, .prettierrc",
     "README.md": "AGENTS.md, CONTEXT.md, LICENSE, *.md"
   }
 }

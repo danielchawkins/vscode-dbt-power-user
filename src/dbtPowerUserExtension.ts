@@ -1,4 +1,3 @@
-import { NotebookProviders } from "@lib";
 import {
   commands,
   Disposable,
@@ -66,7 +65,6 @@ export class DBTPowerUserExtension implements Disposable {
     { language: "jinja-sql", scheme: "file" },
     { language: "sql", scheme: "file" },
     { language: "jinja-sql", scheme: "untitled" },
-    { language: "jinja-sql", scheme: "vscode-notebook-cell" },
   ];
   static DBT_YAML_SELECTOR = [
     { language: "yaml", scheme: "file" },
@@ -97,7 +95,6 @@ export class DBTPowerUserExtension implements Disposable {
     private hoverProviders: HoverProviders,
     private validationProvider: ValidationProvider,
     private commentProviders: CommentProviders,
-    private notebookProviders: NotebookProviders,
     private mcpServer: DbtPowerUserMcpServer,
     private altimateRequest: AltimateRequest,
     private altimateAuthService: AltimateAuthService,
@@ -119,7 +116,6 @@ export class DBTPowerUserExtension implements Disposable {
       this.hoverProviders,
       this.validationProvider,
       this.commentProviders,
-      this.notebookProviders,
       this.mcpServer,
       this.whatsNewPanel,
     );

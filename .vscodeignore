@@ -11,6 +11,7 @@ test-fixtures/**
 **/.eslintrc.json
 **/*.map
 **/*.ts
+**/*.node
 .github
 webview_panels
 !webview_panels/dist
@@ -40,8 +41,6 @@ rumdl.toml
 .claude/**
 docs/**
 jest.config.js
-postInstall.js
-prepareBuild.js
 AGENTS.md
 CLAUDE.md
 CONTEXT.md

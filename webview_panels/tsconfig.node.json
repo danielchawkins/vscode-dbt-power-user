@@ -7,10 +7,5 @@
     "allowSyntheticDefaultImports": true,
     "strictNullChecks": true
   },
-  "include": [
-    "vite.config.ts",
-    "vite.config.renderer.ts",
-    "tailwind.config.ts",
-    "postcss.config.mjs"
-  ]
+  "include": ["vite.config.ts", "tailwind.config.ts", "postcss.config.mjs"]
 }

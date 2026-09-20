@@ -15,7 +15,7 @@ export class CodeLensProviders implements Disposable {
     private cteCodeLensProvider: CteCodeLensProvider,
     private sqlActionsCodeLensProvider: SqlActionsCodeLensProvider,
   ) {
-    // Add codelens after projects are initialized to avoid race conditions in executing notebook cells
+    // Add code lenses after projects are initialized.
     this.dbtProjectContainer.onDBTProjectsInitialization(() => {
       this.disposables.push(
         languages.registerCodeLensProvider(

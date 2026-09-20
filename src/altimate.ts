@@ -6,7 +6,6 @@ import {
   NodeMetaData,
   SourceMetaData,
 } from "@altimateai/dbt-integration";
-import { NotebookItem, NotebookSchema, PreconfiguredNotebookItem } from "@lib";
 import { inject } from "inversify";
 import type { RequestInit } from "node-fetch";
 import * as vscode from "vscode";
@@ -122,24 +121,6 @@ interface DBTProjectHealthConfigResponse {
 
 export interface SQLToModelResponse {
   sql: string;
-}
-
-interface NotebooksResponse {
-  notebooks: PreconfiguredNotebookItem[];
-}
-
-interface AddNotebookRequest {
-  name: string;
-  description: string;
-  tags_list: string[];
-  data?: NotebookSchema;
-}
-
-interface UpdateNotebookRequest {
-  name: string;
-  description?: string;
-  tags_list?: string[];
-  data?: NotebookSchema;
 }
 
 interface OnewayFeedback {
@@ -749,67 +730,6 @@ export class AltimateRequest {
     return this.fetch<FeedbackResponse>("dbt/v4/bulk-docs-prop-credits", {
       method: "POST",
       body: JSON.stringify(req),
-    });
-  }
-
-  async getPreConfiguredNotebooks() {
-    return this.fetch<PreconfiguredNotebookItem[]>(
-      "notebook/preconfigured/list",
-      {
-        method: "GET",
-      },
-    );
-  }
-
-  async getNotebooks(
-    name: string = "",
-    tags_list: string[] = [],
-    privacy: string = "private",
-  ) {
-    const params = new URLSearchParams({
-      name,
-      privacy,
-      ...(tags_list.length > 0 && { tags_list: tags_list.join(",") }),
-    });
-    return this.fetch<NotebookItem[]>(`notebook/list?${params.toString()}`, {
-      method: "GET",
-    });
-  }
-
-  async addNotebook(req: AddNotebookRequest) {
-    return this.fetch<FeedbackResponse>("notebook", {
-      method: "POST",
-      body: JSON.stringify(req),
-    });
-  }
-
-  async deleteNotebook(id: number) {
-    return this.fetch<FeedbackResponse>(`notebook/${id}`, {
-      method: "DELETE",
-    });
-  }
-
-  async updateNotebook(id: number, req: UpdateNotebookRequest) {
-    return this.fetch<FeedbackResponse>(`notebook/${id}`, {
-      method: "PUT",
-      body: JSON.stringify(req),
-    });
-  }
-
-  async updateNotebookPrivacy(id: number, privacy: string) {
-    const params = new URLSearchParams({ privacy: privacy });
-    return this.fetch<FeedbackResponse>(
-      `notebook/privacy/${id}?${params.toString()}`,
-      {
-        method: "PUT",
-      },
-    );
-  }
-
-  async trackBulkTestGen(sessionId: string) {
-    return this.fetch<{ ok: boolean }>(`dbt/v2/bulk_test_gen`, {
-      method: "POST",
-      body: JSON.stringify({ session_id: sessionId }),
     });
   }
 }

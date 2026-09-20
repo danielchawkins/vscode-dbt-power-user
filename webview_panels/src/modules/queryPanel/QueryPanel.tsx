@@ -13,7 +13,6 @@ import HelpButton from "./components/help/HelpButton";
 import ShowInTabButton from "./components/openInTabButton/OpenInTabButton";
 import OptimizeWarehouseButton from "./components/optimizeWarehouseButton/OptimizeWarehouseButton";
 import QueryLimit from "./components/queryLimit/QueryLimit";
-import NewNotebookButton from "./components/runAdhocQueryButton/NewNotebook";
 import RunAdhocQueryButton from "./components/runAdhocQueryButton/RunAdhocQueryButton";
 import { setTabState } from "./context/queryPanelSlice";
 import { QueryPanelViewType } from "./context/types";
@@ -64,7 +63,6 @@ const QueryPanel = (): JSX.Element => {
                 </Button>
               )}
               <OptimizeWarehouseButton />
-              <NewNotebookButton />
               <RunAdhocQueryButton />
               <ShowInTabButton />
               <ClearResultsButton />

@@ -1,5 +1,5 @@
 import { defineConfig, RsbuildPlugin } from "@rsbuild/core";
-import { cpSync, existsSync, readdirSync } from "fs";
+import { cpSync } from "fs";
 import path from "path";
 
 const DIST = path.resolve(__dirname, "dist");
@@ -9,13 +9,6 @@ const copyAssetsPlugin: RsbuildPlugin = {
   setup(api) {
     api.onBeforeBuild(() => {
       const patterns = [
-        {
-          from: path.resolve(__dirname, "altimate_notebook_kernel.py"),
-          to: path.join(
-            DIST,
-            "altimate_python_packages/altimate_notebook_kernel.py",
-          ),
-        },
         {
           from: path.resolve(
             __dirname,
@@ -64,93 +57,6 @@ const copyAssetsPlugin: RsbuildPlugin = {
           );
         }
       }
-
-      console.log("copying notebook modules");
-      try {
-        cpSync(
-          path.resolve(__dirname, "node_modules/zeromq"),
-          path.join(DIST, "node_modules/zeromq"),
-          { recursive: true },
-        );
-      } catch (e) {
-        console.warn(`Skipping zeromq: ${(e as Error).message}`);
-      }
-
-      try {
-        const altimateCoreDir = path.dirname(
-          require.resolve("@altimateai/core/package.json"),
-        );
-        cpSync(
-          altimateCoreDir,
-          path.join(DIST, "node_modules/@altimateai/core"),
-          { recursive: true },
-        );
-      } catch (e) {
-        console.warn(`Skipping @altimateai/core: ${(e as Error).message}`);
-      }
-
-      try {
-        cpSync(
-          path.resolve(__dirname, "node_modules/@altimateai/altimate-core"),
-          path.join(DIST, "node_modules/@altimateai/altimate-core"),
-          { recursive: true },
-        );
-        console.log("Copied @altimateai/altimate-core");
-      } catch (e) {
-        console.warn(
-          `Skipping @altimateai/altimate-core: ${(e as Error).message}`,
-        );
-      }
-
-      // Copy only the .node binary directly into the altimate-core/ directory —
-      // skip the platform package directories entirely. napi-rs index.js falls back
-      // to require('./altimate-core.<platform>.node') when the platform package
-      // isn't found, so this works and halves VSIX size.
-      const altimatePlatformPackages = [
-        "@altimateai/altimate-core-darwin-arm64",
-        "@altimateai/altimate-core-darwin-x64",
-        "@altimateai/altimate-core-linux-arm64-gnu",
-        "@altimateai/altimate-core-linux-x64-gnu",
-        "@altimateai/altimate-core-win32-x64-msvc",
-      ];
-      const coreDistDir = path.join(
-        DIST,
-        "node_modules/@altimateai/altimate-core",
-      );
-      for (const pkg of altimatePlatformPackages) {
-        const srcDir = path.resolve(__dirname, "node_modules", pkg);
-        try {
-          if (!existsSync(srcDir)) {
-            continue;
-          }
-          for (const file of readdirSync(srcDir)) {
-            if (file.endsWith(".node")) {
-              cpSync(path.join(srcDir, file), path.join(coreDistDir, file));
-              console.log(
-                `Copied ${file} into altimate-core/ (skipped platform package dir)`,
-              );
-            }
-          }
-        } catch (e) {
-          console.warn(`Skipping ${pkg}: ${(e as Error).message}`);
-        }
-      }
-
-      try {
-        cpSync(
-          path.resolve(__dirname, "node_modules/@aminya/node-gyp-build"),
-          path.join(DIST, "node_modules/@aminya/node-gyp-build"),
-          { recursive: true },
-        );
-        cpSync(
-          path.resolve(__dirname, "node_modules/node-gyp-build"),
-          path.join(DIST, "node_modules/node-gyp-build"),
-          { recursive: true },
-        );
-      } catch (e) {
-        console.warn(`Skipping node-gyp-build: ${(e as Error).message}`);
-      }
-      console.log("copied notebook modules");
     });
   },
 };
@@ -193,7 +99,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@extension": path.resolve(__dirname, "./src/modules.ts"),
-      "@lib": path.resolve(__dirname, "./src/lib/index"),
     },
     extensions: [".ts", ".js"],
   },
@@ -209,6 +114,8 @@ export default defineConfig({
     rspack: (config) => {
       config.externals = [
         "vscode",
+        "@altimateai/altimate-core",
+        /^@altimateai\/altimate-core-/,
         // Ignored because we don't use them, and App Insights has try/catch
         // guarding their loading: https://github.com/microsoft/vscode-extension-telemetry/issues/41#issuecomment-598852991
         "applicationinsights-native-metrics",
@@ -216,14 +123,6 @@ export default defineConfig({
         "@azure/opentelemetry-instrumentation-azure-sdk",
         "@opentelemetry/instrumentation",
         "@azure/functions-core",
-        "zeromq",
-        "@altimateai/core",
-        "@altimateai/altimate-core",
-        "@altimateai/altimate-core-darwin-arm64",
-        "@altimateai/altimate-core-darwin-x64",
-        "@altimateai/altimate-core-linux-arm64-gnu",
-        "@altimateai/altimate-core-linux-x64-gnu",
-        "@altimateai/altimate-core-win32-x64-msvc",
       ];
 
       config.node = { __dirname: false };

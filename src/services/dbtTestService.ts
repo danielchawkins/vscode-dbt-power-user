@@ -6,21 +6,17 @@ import {
   TestMetadataRelationships,
   UnitTestMetaData,
 } from "@altimateai/dbt-integration";
-import { getTestSuggestions } from "@lib";
 import { readFileSync } from "fs";
 import { inject } from "inversify";
-import { env, ProgressLocation, WebviewView, window } from "vscode";
+import { window } from "vscode";
 import { parse, stringify } from "yaml";
 import {
   AltimateRequest,
   CreateDbtTestRequest,
   UserInputError,
 } from "../altimate";
-import { DBTProject } from "../dbt_client/dbtProject";
 import { TelemetryService } from "../telemetry";
-import { TelemetryEvents } from "../telemetry/events";
 import {
-  extendErrorWithSupportLinks,
   getColumnTestConfigFromYml,
   isColumnNameEqual,
   removeProtocol,
@@ -381,79 +377,6 @@ export class DbtTestService {
         };
       })
       .filter((t) => Boolean(t));
-  }
-
-  public async generateTestsForColumns(
-    project: DBTProject,
-    panel: WebviewView | undefined,
-  ) {
-    if (!this.altimateAuthService.handlePreviewFeatures()) {
-      return;
-    }
-    return await window.withProgress(
-      {
-        title: "Generating tests...",
-        location: ProgressLocation.Notification,
-        cancellable: false,
-      },
-      async () => {
-        try {
-          this.telemetryService.startTelemetryEvent(
-            TelemetryEvents["DocumentationEditor/BulkGenerateTests"],
-          );
-
-          const currentFilePath = window.activeTextEditor?.document.uri;
-          if (!currentFilePath) {
-            return;
-          }
-          const modelName = path.basename(currentFilePath.fsPath, ".sql");
-
-          const columnsInRelation = await project.getColumnsOfModel(modelName);
-          const testSuggestions = await getTestSuggestions({
-            adapter: project.getAdapterType(),
-            columnsInRelation,
-            tableRelation: modelName,
-            dbtConfig: {},
-            queryFn: async (query: string) =>
-              project.immediatelyExecuteSQL(query, modelName),
-          });
-
-          this.telemetryService.endTelemetryEvent(
-            TelemetryEvents["DocumentationEditor/BulkGenerateTests"],
-          );
-          if (!testSuggestions) {
-            return;
-          }
-
-          this.dbtTerminal.debug(
-            "docsEditPanel:generateTestsForColumns",
-            "testSuggestions",
-            testSuggestions,
-          );
-          const testSuggestionsForModel = testSuggestions?.models[0];
-
-          const sessionID = `${
-            env.sessionId
-          }-${modelName}-numColumns-${testSuggestionsForModel?.columns.length}-${Date.now()}`;
-
-          await this.altimateRequest.trackBulkTestGen(sessionID);
-          return testSuggestionsForModel;
-        } catch (error) {
-          this.telemetryService.endTelemetryEvent(
-            TelemetryEvents["DocumentationEditor/BulkGenerateTests"],
-            error,
-          );
-          this.dbtTerminal.error(
-            "docsEditPanel:generateTestsForColumns",
-            "error",
-            error,
-          );
-          window.showErrorMessage(
-            extendErrorWithSupportLinks((error as Error).message),
-          );
-        }
-      },
-    );
   }
 
   public async getUnitTestsForCurrentModel(): Promise<

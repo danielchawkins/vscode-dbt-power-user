@@ -3,7 +3,6 @@ import {
   ExecutionsExhaustedException,
   RunModelType,
 } from "@altimateai/dbt-integration";
-import { DatapilotNotebookController, OpenNotebookRequest } from "@lib";
 import { existsSync, readFileSync } from "fs";
 import { inject } from "inversify";
 import {
@@ -43,7 +42,6 @@ import { DBTClient } from "../dbt_client";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
-import { NotebookQuickPick } from "../quickpick/notebookQuickPick";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { AltimateCodeChatService } from "../services/altimateCodeChatService";
 import {
@@ -104,7 +102,6 @@ export class VSCodeCommands implements Disposable {
     private sqlLineagePanel: SQLLineagePanel,
     private queryManifestService: QueryManifestService,
     private altimate: AltimateRequest,
-    private notebookController: DatapilotNotebookController,
     private runHistoryService: RunHistoryService,
     private altimateCodeChatService: AltimateCodeChatService,
     private cteProfilerService: CteProfilerService,
@@ -883,12 +880,6 @@ export class VSCodeCommands implements Disposable {
         }
       }),
       commands.registerCommand(
-        "dbtPowerUser.createAltimateNotebook",
-        async (args: OpenNotebookRequest | undefined) => {
-          this.notebookController.createNotebook(args);
-        },
-      ),
-      commands.registerCommand(
         "dbtPowerUser.openTargetSelector",
         async (
           targets,
@@ -1089,53 +1080,6 @@ export class VSCodeCommands implements Disposable {
           const doc = await workspace.openTextDocument(Uri.file(model.path));
           await window.showTextDocument(doc);
           await commands.executeCommand("dbtPowerUser.DocsEdit.focus");
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.showAltimateNotebooksQuickPick",
-        async () => {
-          const notebookQuickPick = new NotebookQuickPick();
-          await notebookQuickPick.showNotebookPicker();
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.showNotebookProfileQuery",
-        async () => {
-          await commands.executeCommand("dbtPowerUser.createAltimateNotebook", {
-            template: "Profile your query",
-          });
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.showNotebookTestSuggestions",
-        async () => {
-          await commands.executeCommand("dbtPowerUser.createAltimateNotebook", {
-            template: "Get test suggestions",
-          });
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.showNotebookGenerateBaseModelSql",
-        async () => {
-          await commands.executeCommand("dbtPowerUser.createAltimateNotebook", {
-            template: "Generate dbt base model sql",
-          });
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.showNotebookGenerateModelYaml",
-        async () => {
-          await commands.executeCommand("dbtPowerUser.createAltimateNotebook", {
-            template: "Generate dbt model yaml",
-          });
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.showNotebookGenerateModelCTE",
-        async () => {
-          await commands.executeCommand("dbtPowerUser.createAltimateNotebook", {
-            template: "Generate dbt model CTE",
-          });
         },
       ),
       commands.registerCommand("dbtPowerUser.applyDeferConfig", async () => {
