@@ -1,0 +1,67 @@
+{
+  "nodes": {
+    "model.single_project.broken_ref": {
+      "unique_id": "model.single_project.broken_ref",
+      "name": "broken_ref",
+      "alias": "broken_ref",
+      "resource_type": "model",
+      "package_name": "single_project",
+      "database": "dummy",
+      "schema": "test",
+      "original_file_path": "models/broken_ref.sql",
+      "path": "broken_ref.sql",
+      "description": "",
+      "columns": {},
+      "config": {
+        "enabled": true,
+        "materialized": "view"
+      },
+      "depends_on": { "macros": [], "nodes": [] },
+      "meta": {},
+      "constraints": [],
+      "relation_name": "dummy.test.broken_ref"
+    },
+    "model.single_project.child": {
+      "unique_id": "model.single_project.child",
+      "name": "child",
+      "alias": "child",
+      "resource_type": "model",
+      "package_name": "single_project",
+      "database": "dummy",
+      "schema": "test",
+      "original_file_path": "models/child.sql",
+      "path": "child.sql",
+      "description": "",
+      "columns": {},
+      "config": {
+        "enabled": true,
+        "materialized": "view"
+      },
+      "depends_on": {
+        "macros": [],
+        "nodes": ["model.single_project.broken_ref"]
+      },
+      "meta": {},
+      "constraints": [],
+      "relation_name": "dummy.test.child"
+    }
+  },
+  "macros": {
+    "macro.single_project.example": {
+      "unique_id": "macro.single_project.example",
+      "name": "example",
+      "package_name": "single_project",
+      "original_file_path": "macros/example.sql",
+      "description": "",
+      "arguments": [],
+      "depends_on": { "macros": [] }
+    }
+  },
+  "sources": {},
+  "docs": {},
+  "exposures": {},
+  "functions": {},
+  "metrics": {},
+  "semantic_models": {},
+  "unit_tests": {}
+}
