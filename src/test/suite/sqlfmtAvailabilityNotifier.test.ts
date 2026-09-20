@@ -12,18 +12,7 @@ import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { PythonEnvironment } from "../../dbt_client/pythonEnvironment";
 import { DbtDocumentFormattingEditProvider } from "../../document_formatting_edit_provider/dbtDocumentFormattingEditProvider";
 import { SqlFmtAvailabilityNotifier } from "../../document_formatting_edit_provider/sqlfmtAvailabilityNotifier";
-import { TelemetryService } from "../../telemetry";
 
-/**
- * Production telemetry surfaced ~31 machines / 231 events / 24h of
- * `formatDbtModelApplyDiffError` with "sqlfmt not found" — users hitting
- * Format Document on dbt models without sqlfmt installed and re-hitting it
- * every time. The notifier surfaces a one-time install prompt the first time
- * a sql / jinja-sql file is focused in a workspace that has at least one dbt
- * project, then runs `python -m pip install` in-extension matching the
- * `installDbtCore` / `installDbtCloud` / `installDbtFusion` convention in
- * `walkthroughCommands.ts`.
- */
 describe("SqlFmtAvailabilityNotifier", () => {
   let resolveSqlFmtPath: jest.Mock<any>;
   let invalidateSqlFmtPathCache: jest.Mock<any>;
@@ -33,8 +22,6 @@ describe("SqlFmtAvailabilityNotifier", () => {
   let showInformationMessage: jest.Mock<any>;
   let showErrorMessage: jest.Mock<any>;
   let withProgress: jest.Mock<any>;
-  let sendTelemetryEvent: jest.Mock<any>;
-  let sendTelemetryError: jest.Mock<any>;
   let createCommandProcessExecution: jest.Mock<any>;
   let completeWithTerminalOutput: jest.Mock<any>;
   let onDidChangeActiveTextEditorListener:
@@ -50,8 +37,6 @@ describe("SqlFmtAvailabilityNotifier", () => {
     setToGlobalState = jest.fn();
     showInformationMessage = jest.fn();
     showErrorMessage = jest.fn();
-    sendTelemetryEvent = jest.fn();
-    sendTelemetryError = jest.fn();
     onManifestChanged = jest.fn((cb: () => unknown) => {
       onManifestChangedListener = cb;
       return { dispose: jest.fn() };
@@ -121,16 +106,11 @@ describe("SqlFmtAvailabilityNotifier", () => {
     const commandProcessExecutionFactory = {
       createCommandProcessExecution,
     } as unknown as CommandProcessExecutionFactory;
-    const telemetry = {
-      sendTelemetryEvent,
-      sendTelemetryError,
-    } as unknown as TelemetryService;
     return new SqlFmtAvailabilityNotifier(
       container,
       formattingProvider,
       pythonEnvironment,
       commandProcessExecutionFactory,
-      telemetry,
     );
   };
 
@@ -273,18 +253,6 @@ describe("SqlFmtAvailabilityNotifier", () => {
       expect(spawnArgs.args).not.toContain("--no-cache-dir");
     });
 
-    it("emits installSqlFmt success telemetry with platform / pythonPath / pythonVersion", async () => {
-      resolveSqlFmtPath.mockResolvedValue(undefined);
-      showInformationMessage.mockResolvedValue("Install sqlfmt");
-      construct();
-      await fireEditorChange("jinja-sql");
-      expect(sendTelemetryEvent).toHaveBeenCalledWith("installSqlFmt", {
-        platform: process.platform,
-        pythonPath: "/usr/bin/python3",
-        pythonVersion: "3.11.4",
-      });
-    });
-
     it("invalidates the sqlfmt path cache after a successful install", async () => {
       resolveSqlFmtPath.mockResolvedValue(undefined);
       showInformationMessage.mockResolvedValue("Install sqlfmt");
@@ -303,7 +271,6 @@ describe("SqlFmtAvailabilityNotifier", () => {
       construct();
       await fireEditorChange("jinja-sql");
       expect(showErrorMessage).not.toHaveBeenCalled();
-      expect(sendTelemetryError).not.toHaveBeenCalled();
       expect(invalidateSqlFmtPathCache).toHaveBeenCalledTimes(1);
     });
 
@@ -316,11 +283,6 @@ describe("SqlFmtAvailabilityNotifier", () => {
       });
       construct();
       await fireEditorChange("jinja-sql");
-      expect(sendTelemetryError).toHaveBeenCalledWith(
-        "installSqlFmtError",
-        expect.any(Error),
-        expect.objectContaining({ platform: process.platform }),
-      );
       expect(showErrorMessage).toHaveBeenCalledWith(
         expect.stringContaining("Could not install sqlfmt"),
       );
@@ -335,11 +297,6 @@ describe("SqlFmtAvailabilityNotifier", () => {
       );
       construct();
       await fireEditorChange("jinja-sql");
-      expect(sendTelemetryError).toHaveBeenCalledWith(
-        "installSqlFmtError",
-        expect.any(Error),
-        expect.any(Object),
-      );
       expect(showErrorMessage).toHaveBeenCalledWith(
         expect.stringContaining("ENOENT"),
       );
@@ -357,7 +314,6 @@ describe("SqlFmtAvailabilityNotifier", () => {
         true,
       );
       expect(createCommandProcessExecution).not.toHaveBeenCalled();
-      expect(sendTelemetryEvent).not.toHaveBeenCalled();
     });
 
     it("dismissal via Esc (undefined) leaves globalState untouched and does not install", async () => {

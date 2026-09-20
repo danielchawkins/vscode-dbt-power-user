@@ -19,7 +19,6 @@ import {
 } from "vscode";
 import which from "which";
 import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
-import { TelemetryService } from "../telemetry";
 import { extendErrorWithSupportLinks, getFirstWorkspacePath } from "../utils";
 
 const execAsync = promisify(exec);
@@ -30,9 +29,7 @@ export class DbtDocumentFormattingEditProvider implements DocumentFormattingEdit
   private cachedPythonPath: string | undefined;
 
   constructor(
-    private commandProcessExecutionFactory: CommandProcessExecutionFactory,
-    private telemetry: TelemetryService,
-    @inject(PythonEnvironment)
+    private commandProcessExecutionFactory: CommandProcessExecutionFactory,@inject(PythonEnvironment)
     private pythonEnvironment: PythonEnvironment,
   ) {}
 
@@ -63,13 +60,6 @@ export class DbtDocumentFormattingEditProvider implements DocumentFormattingEdit
     ];
     const sqlFmtPath = await this.resolveSqlFmtPath();
     if (!sqlFmtPath) {
-      // sqlfmt not installed is an expected, user-actionable configuration
-      // state, not a runtime failure. Emit a distinct non-error signal and
-      // guide the user to install it, instead of classifying it as a
-      // formatDbtModelApplyDiffError (reserved for genuine sqlfmt execution or
-      // diff-processing failures). SqlFmtAvailabilityNotifier already prompts
-      // to install on first file open.
-      this.telemetry.sendTelemetryEvent("formatDbtModelSqlfmtNotInstalled");
       window.showWarningMessage(
         'sqlfmt not found. Install it (e.g. `uv tool install "shandy-sqlfmt[jinjafmt]"` or ' +
           '`pipx install "shandy-sqlfmt[jinjafmt]"`), set the `dbt.sqlFmtPath` setting to the ' +
@@ -79,9 +69,6 @@ export class DbtDocumentFormattingEditProvider implements DocumentFormattingEdit
     }
 
     try {
-      this.telemetry.sendTelemetryEvent("formatDbtModel", {
-        sqlFmtPath: sqlFmtPathSetting ? "setting" : "path",
-      });
       try {
         const { stderr } = await this.commandProcessExecutionFactory
           .createCommandProcessExecution({
@@ -99,10 +86,6 @@ export class DbtDocumentFormattingEditProvider implements DocumentFormattingEdit
         try {
           return this.processDiffOutput(document, (e as Error).message);
         } catch (error) {
-          this.telemetry.sendTelemetryError(
-            "formatDbtModelApplyDiffError",
-            error,
-          );
           window.showErrorMessage(
             extendErrorWithSupportLinks(
               "Could not process difference output from sqlfmt. Detailed error: " +
@@ -113,7 +96,6 @@ export class DbtDocumentFormattingEditProvider implements DocumentFormattingEdit
         }
       }
     } catch (error) {
-      this.telemetry.sendTelemetryError("formatDbtModelApplyDiffError", error);
       window.showErrorMessage(
         extendErrorWithSupportLinks(
           "Could not run sqlfmt. Detailed error: " + error + ".",

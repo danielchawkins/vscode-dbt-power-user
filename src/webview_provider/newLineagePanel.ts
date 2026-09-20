@@ -34,7 +34,6 @@ import { AltimateAuthService } from "../services/altimateAuthService";
 import { CllEvents, DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { TelemetryService } from "../telemetry";
 import { extendErrorWithSupportLinks } from "../utils";
 import { ValidationProvider } from "../validation_provider";
 import { AltimateWebviewProvider } from "./altimateWebviewProvider";
@@ -84,7 +83,6 @@ export class NewLineagePanel
   public constructor(
     protected dbtProjectContainer: DBTProjectContainer,
     private altimate: AltimateRequest,
-    protected telemetry: TelemetryService,
     @inject("DBTTerminal")
     private terminal: DBTTerminal,
     private dbtLineageService: DbtLineageService,
@@ -96,7 +94,6 @@ export class NewLineagePanel
     super(
       dbtProjectContainer,
       altimate,
-      telemetry,
       eventEmitterService,
       terminal,
       queryManifestService,
@@ -278,9 +275,6 @@ export class NewLineagePanel
           command: "response",
           args: { id, error, status: false },
         });
-        this.telemetry.sendTelemetryError("columnLineageUnknownError", {
-          params,
-        });
       }
       return;
     }
@@ -306,10 +300,6 @@ export class NewLineagePanel
           extendErrorWithSupportLinks(
             "Could not send feedback: " + (error as Error).message,
           ),
-        );
-        this.telemetry.sendTelemetryError(
-          "altimateLineageSendFeedbackError",
-          error,
         );
       }
       return;
@@ -340,10 +330,6 @@ export class NewLineagePanel
             "Could not export lineage: " + (error as Error).message,
           ),
         );
-        this.telemetry.sendTelemetryError(
-          "altimateLineageExportLineageError",
-          error,
-        );
       }
       return;
     }
@@ -355,11 +341,6 @@ export class NewLineagePanel
           args: { event: CllEvents.CANCEL },
         });
       });
-      return;
-    }
-
-    if (command === "telemetryEvents") {
-      this.telemetry.sendTelemetryEvent(id, params);
       return;
     }
 
@@ -876,15 +857,9 @@ export class NewLineagePanel
       }
     }
 
-    // Only report this as telemetry for actual dbt files. A non-dbt file (e.g. a
-    // .sh/.md script) can never be a dbt node, so the panel re-rendering on every
-    // editor switch would otherwise emit this event constantly — pure noise. Keep
-    // the output-channel log for debugging but skip telemetry for non-dbt files.
-    const isDbtFile = NewLineagePanel.DBT_FILE_EXTENSIONS.includes(ext);
     this.dbtTerminal.info(
       "Lineage:getStartingNode",
       `No node found for ${tableName}`,
-      isDbtFile,
     );
     return {
       aiEnabled,

@@ -42,8 +42,6 @@ import {
   DocumentationSchemaColumn,
 } from "../services/docGenService";
 import { QueryManifestService } from "../services/queryManifestService";
-import { TelemetryService } from "../telemetry";
-import { TelemetryEvents } from "../telemetry/events";
 import {
   extendErrorWithSupportLinks,
   getColumnNameByCase,
@@ -96,7 +94,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
 
   public constructor(
     private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
     private docGenService: DocGenService,
     private dbtTestService: DbtTestService,
     private queryManifestService: QueryManifestService,
@@ -588,14 +585,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
           await commands.executeCommand("workbench.action.problems.focus");
           return;
         }
-        if (command === "sendTelemetryEvent") {
-          this.telemetry.sendTelemetryEvent(
-            params.eventName as string,
-            params.properties as Record<string, string>,
-            params.measurements as Record<string, number>,
-          );
-          return;
-        }
         if (!window.activeTextEditor) {
           this.sendResponseToWebview({
             command: "response",
@@ -719,9 +708,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
             );
             break;
           case "fetchMetadataFromDatabase":
-            this.telemetry.startTelemetryEvent(
-              TelemetryEvents["DocumentationEditor/SyncWithDBClick"],
-            );
             window.withProgress(
               {
                 title: "Syncing columns with metadata from database",
@@ -756,15 +742,8 @@ export class DocsEditViewPanel implements WebviewViewProvider {
                       },
                     });
                   }
-                  this.telemetry.endTelemetryEvent(
-                    TelemetryEvents["DocumentationEditor/SyncWithDBClick"],
-                  );
                 } catch (exc) {
                   this.transmitError();
-                  this.telemetry.endTelemetryEvent(
-                    TelemetryEvents["DocumentationEditor/SyncWithDBClick"],
-                    exc,
-                  );
                   if (exc instanceof PythonException) {
                     window.showErrorMessage(
                       `An error occured while fetching metadata for ${modelName} from the database: ` +
@@ -865,9 +844,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
             break;
           }
           case "saveDocumentation":
-            this.telemetry.sendTelemetryEvent(
-              TelemetryEvents["DocumentationEditor/SaveClick"],
-            );
             window.withProgress(
               {
                 title: "Saving documentation",
@@ -900,10 +876,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
             );
             break;
           case "saveDocumentationBulk": {
-            this.telemetry.sendTelemetryEvent(
-              TelemetryEvents["DocumentationEditor/SaveBulk"],
-            );
-
             // Transform raw data into models array
             const {
               allColumns,
@@ -1023,9 +995,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
             if (!saveDialog) {
               return;
             }
-            this.telemetry.sendTelemetryEvent(
-              TelemetryEvents["DocumentationEditor/SaveNewFilePathSelect"],
-            );
             patchPath = saveDialog.fsPath;
             break;
         }
@@ -1189,10 +1158,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
       writeFileSync(patchPath, stringify(parsedDocFile, { lineWidth: 0 }));
     } catch (error) {
       this.transmitError();
-      this.telemetry.sendTelemetryError(
-        TelemetryEvents["DocumentationEditor/SaveError"],
-        error,
-      );
       window.showErrorMessage(
         `Could not save documentation to ${patchPath}: ${error}`,
       );

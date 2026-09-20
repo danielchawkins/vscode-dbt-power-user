@@ -12,17 +12,13 @@ import {
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheChangedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
-import { TelemetryService } from "../telemetry";
 import { isEnclosedWithinCodeBlock } from "../utils";
 export class MacroDefinitionProvider implements DefinitionProvider, Disposable {
   private macroToLocationMap: Map<string, MacroMetaMap> = new Map();
   private static readonly IS_MACRO = /\w+\.?\w+/;
   private disposables: Disposable[] = [];
 
-  constructor(
-    private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
-  ) {
+  constructor(private dbtProjectContainer: DBTProjectContainer) {
     this.disposables.push(
       dbtProjectContainer.onManifestChanged((event) =>
         this.onManifestCacheChanged(event),
@@ -86,7 +82,6 @@ export class MacroDefinitionProvider implements DefinitionProvider, Disposable {
           const definition = this.getMacroDefinition(candidate, document.uri);
           if (definition !== undefined) {
             resolve(definition);
-            this.telemetry.sendTelemetryEvent("provideMacroDefinition");
             return;
           }
         }

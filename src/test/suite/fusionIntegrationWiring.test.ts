@@ -11,21 +11,13 @@ import { Memento } from "vscode";
 import { FusionVersionDetection } from "../../fusion/fusionVersionDetection";
 
 // The shared vscode mock has no `env` or `extensions` namespaces. Stub them
-// before importing the container, which constructs telemetry and Python services.
+// before importing the container, which constructs Python services.
 import * as vscodeMock from "../mock/vscode";
 const vscodeMockAny = vscodeMock as Record<string, unknown>;
 vscodeMockAny.env = {
   appName: "vscode-test",
   machineId: "test-machine",
   sessionId: "test-session",
-  isTelemetryEnabled: false,
-  onDidChangeTelemetryEnabled: () => ({ dispose: () => {} }),
-  createTelemetryLogger: () => ({
-    logUsage: () => {},
-    logError: () => {},
-    dispose: () => {},
-    onDidChangeEnableStates: () => ({ dispose: () => {} }),
-  }),
 };
 const sharedWindow = vscodeMockAny.window as Record<string, unknown>;
 sharedWindow.createOutputChannel = jest.fn(() => ({

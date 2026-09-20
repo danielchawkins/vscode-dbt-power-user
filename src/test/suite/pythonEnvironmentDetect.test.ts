@@ -146,11 +146,10 @@ describe("PythonEnvironment.pythonPath override guard", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it("ignores the leaked probe-fragment value and falls back, with telemetry", () => {
+  it("ignores the leaked probe-fragment value and falls back", () => {
     setOverride(`"); print(sys.executable); print("`);
 
     expect(env.pythonPath).toBe(FALLBACK);
-    // sendTelemetry flag (3rd arg) must be true so recovery is observable.
     expect(warn).toHaveBeenCalledWith(
       "pythonEnvironment:pythonPath",
       expect.stringContaining("Ignoring invalid dbtPythonPathOverride"),

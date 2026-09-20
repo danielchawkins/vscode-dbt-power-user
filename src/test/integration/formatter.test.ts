@@ -7,7 +7,6 @@ import "reflect-metadata";
 import * as vscode from "vscode";
 import { PythonEnvironment } from "../../dbt_client/pythonEnvironment";
 import { DbtDocumentFormattingEditProvider } from "../../document_formatting_edit_provider/dbtDocumentFormattingEditProvider";
-import { TelemetryService } from "../../telemetry";
 import {
   FormatterFixture,
   loadFormatterFixtures,
@@ -140,7 +139,6 @@ suite("Formatter Integration Tests", function () {
         // 4. Call processDiffOutput on the real document
         const provider = new DbtDocumentFormattingEditProvider(
           {} as CommandProcessExecutionFactory,
-          {} as TelemetryService,
           {} as PythonEnvironment,
         );
         const edits: vscode.TextEdit[] = (provider as any).processDiffOutput(
@@ -184,7 +182,6 @@ suite("Formatter Integration Tests", function () {
 
       const provider = new DbtDocumentFormattingEditProvider(
         {} as CommandProcessExecutionFactory,
-        {} as TelemetryService,
         {} as PythonEnvironment,
       );
       const edits: vscode.TextEdit[] = (provider as any).processDiffOutput(
@@ -208,7 +205,6 @@ suite("Formatter Integration Tests", function () {
 
       const provider = new DbtDocumentFormattingEditProvider(
         {} as CommandProcessExecutionFactory,
-        {} as TelemetryService,
         {} as PythonEnvironment,
       );
       const edits: vscode.TextEdit[] = (provider as any).processDiffOutput(

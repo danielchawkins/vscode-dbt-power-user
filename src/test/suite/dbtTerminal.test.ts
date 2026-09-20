@@ -7,7 +7,6 @@ import { VSCodeDBTTerminal } from "../../dbt_client/vscodeTerminal";
 process.env.NODE_ENV = "test";
 
 describe("DBTTerminal Test Suite", () => {
-  let mockTelemetry: jest.Mocked<any>;
   let mockOutputChannel: jest.Mocked<any>;
   let terminal: DBTTerminal;
 
@@ -22,12 +21,7 @@ describe("DBTTerminal Test Suite", () => {
       warn: jest.fn(),
     };
 
-    mockTelemetry = {
-      sendTelemetryEvent: jest.fn(),
-      sendTelemetryError: jest.fn(),
-    };
-
-    terminal = new VSCodeDBTTerminal(mockTelemetry);
+    terminal = new VSCodeDBTTerminal();
     // @ts-ignore - Manually set the output channel
     terminal.outputChannel = mockOutputChannel;
   });
@@ -42,34 +36,6 @@ describe("DBTTerminal Test Suite", () => {
     expect(mockOutputChannel.info).toHaveBeenCalledWith(message, []);
   });
 
-  it("should send telemetry on info messages", () => {
-    const name = "test_event";
-    const message = "Test info message";
-    terminal.info(name, message);
-    expect(mockOutputChannel.info).toHaveBeenCalledWith(
-      `${name}:${message}`,
-      [],
-    );
-    expect(mockTelemetry.sendTelemetryEvent).toHaveBeenCalledWith(name, {
-      message,
-      level: "info",
-    });
-  });
-
-  it("should send telemetry on warning messages", () => {
-    const name = "test_warning";
-    const message = "Test warning message";
-    terminal.warn(name, message);
-    expect(mockOutputChannel.warn).toHaveBeenCalledWith(
-      `${name}:${message}`,
-      [],
-    );
-    expect(mockTelemetry.sendTelemetryEvent).toHaveBeenCalledWith(name, {
-      message,
-      level: "warn",
-    });
-  });
-
   it("should handle errors with proper error message formatting", () => {
     const name = "test_error";
     const message = "Test error message";
@@ -79,9 +45,6 @@ describe("DBTTerminal Test Suite", () => {
       `${name}:${message}:${error.message}`,
       [],
     );
-    expect(mockTelemetry.sendTelemetryError).toHaveBeenCalledWith(name, error, {
-      message,
-    });
   });
 
   it("should handle Python exceptions", () => {
@@ -95,13 +58,6 @@ describe("DBTTerminal Test Suite", () => {
     expect(mockOutputChannel.error).toHaveBeenCalledWith(
       `${name}:${message}:${pythonError.toString()}`,
       [],
-    );
-    expect(mockTelemetry.sendTelemetryError).toHaveBeenCalledWith(
-      name,
-      pythonError,
-      {
-        message,
-      },
     );
   });
 
@@ -142,40 +98,6 @@ describe("DBTTerminal Test Suite", () => {
     );
   });
 
-  it("should not send telemetry when sendTelemetry is false for info messages", () => {
-    const name = "test_event_no_telemetry";
-    const message = "Test info message without telemetry";
-    terminal.info(name, message, false);
-    expect(mockOutputChannel.info).toHaveBeenCalledWith(
-      `${name}:${message}`,
-      [],
-    );
-    expect(mockTelemetry.sendTelemetryEvent).not.toHaveBeenCalled();
-  });
-
-  it("should not send telemetry when sendTelemetry is false for warning messages", () => {
-    const name = "test_warning_no_telemetry";
-    const message = "Test warning message without telemetry";
-    terminal.warn(name, message, false);
-    expect(mockOutputChannel.warn).toHaveBeenCalledWith(
-      `${name}:${message}`,
-      [],
-    );
-    expect(mockTelemetry.sendTelemetryEvent).not.toHaveBeenCalled();
-  });
-
-  it("should not send telemetry when sendTelemetry is false for error messages", () => {
-    const name = "test_error_no_telemetry";
-    const message = "Test error message without telemetry";
-    const error = new Error("Test error details");
-    terminal.error(name, message, error, false);
-    expect(mockOutputChannel.error).toHaveBeenCalledWith(
-      `${name}:${message}:${error.message}`,
-      [],
-    );
-    expect(mockTelemetry.sendTelemetryError).not.toHaveBeenCalled();
-  });
-
   it("should properly dispose of all disposables", () => {
     const mockDisposable1 = { dispose: jest.fn() };
     const mockDisposable2 = { dispose: jest.fn() };
@@ -200,7 +122,7 @@ describe("DBTTerminal Test Suite", () => {
       .mockReturnValue(mockTerminal as unknown as vscode.Terminal);
 
     // Create a new terminal instance
-    const newTerminal = new VSCodeDBTTerminal(mockTelemetry);
+    const newTerminal = new VSCodeDBTTerminal();
     await newTerminal.show(true);
 
     // Verify terminal was created with correct parameters

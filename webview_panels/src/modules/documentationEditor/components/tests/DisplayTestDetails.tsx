@@ -9,7 +9,6 @@ import {
   TestMetadataRelationshipsKwArgs,
 } from "@modules/documentationEditor/state/types";
 import { panelLogger } from "@modules/logger";
-import { TelemetryEvents } from "@telemetryEvents";
 import {
   Button,
   Card,
@@ -24,7 +23,6 @@ import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
 import classes from "../../styles.module.scss";
-import { sendTelemetryEvent } from "../telemetry";
 import AcceptedValues from "./forms/AcceptedValues";
 import Relationships from "./forms/Relationships";
 import useTestFormSave, { TestOperation } from "./hooks/useTestFormSave";
@@ -69,10 +67,6 @@ const DisplayTestDetails = ({
     type !== EntityType.MODEL;
 
   const handleDelete = () => {
-    sendTelemetryEvent(TelemetryEvents["DocumentationEditor/TestDeleteClick"], {
-      test: test.test_metadata?.name ?? "",
-      entityName: column,
-    });
     panelLogger.info("delete test", test);
     handleSave(
       { test: test.test_metadata?.name as DbtGenericTests },
@@ -83,10 +77,6 @@ const DisplayTestDetails = ({
   };
 
   const handleEdit = () => {
-    sendTelemetryEvent(TelemetryEvents["DocumentationEditor/TestEditClick"], {
-      test: test.test_metadata?.name ?? "",
-      entityName: column,
-    });
     setIsInEditMode(true);
     if (test.test_metadata?.name === DbtGenericTests.ACCEPTED_VALUES) {
       setValue(
@@ -110,10 +100,6 @@ const DisplayTestDetails = ({
   };
 
   const handleCancel = () => {
-    sendTelemetryEvent(TelemetryEvents["DocumentationEditor/TestEditCancel"], {
-      test: test.test_metadata?.name ?? "",
-      entityName: column,
-    });
     setIsInEditMode(false);
   };
 
@@ -157,11 +143,6 @@ const DisplayTestDetails = ({
     if (!isInEditMode) {
       return;
     }
-
-    sendTelemetryEvent(
-      TelemetryEvents["DocumentationEditor/TestEditUpdateClick"],
-      { test: test.test_metadata?.name ?? "", entityName: column },
-    );
     handleSave(
       { ...data, test: testName as DbtGenericTests },
       column,

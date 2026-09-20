@@ -28,8 +28,6 @@ import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { AltimateAuthService } from "../services/altimateAuthService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { TelemetryService } from "../telemetry";
-import { TelemetryEvents } from "../telemetry/events";
 import {
   extendErrorWithSupportLinks,
   getFormattedDateTime,
@@ -145,7 +143,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
 
   public constructor(
     protected dbtProjectContainer: DBTProjectContainer,
-    protected telemetry: TelemetryService,
     private altimate: AltimateRequest,
     private eventEmitterService: SharedStateService,
     @inject("DBTTerminal")
@@ -156,7 +153,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     super(
       dbtProjectContainer,
       altimate,
-      telemetry,
       eventEmitterService,
       dbtTerminal,
       queryManifestService,
@@ -245,7 +241,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
         this._queryTabData = payload.queryTabData;
         this.createQueryResultsPanelVirtualDocument("Query results");
         this.updateViewTypeToWebview(QueryPanelViewType.OPEN_RESULTS_IN_TAB);
-        this.sendQueryTabViewEvent();
         break;
       default:
         super.onEvent({ command, payload });
@@ -268,8 +263,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     _token.onCancellationRequested(async () => {
       await this.transmitReset();
     });
-    this.sendQueryPanelViewEvent();
-    this._panel.onDidChangeVisibility(this.sendQueryPanelViewEvent);
   }
 
   /** Sets options, note that retainContextWhen hidden is set on registration */
@@ -314,9 +307,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
       this.updateViewTypeToWebview(
         QueryPanelViewType.OPEN_RESULTS_FROM_HISTORY_BOOKMARKS,
       );
-      this.telemetry.sendTelemetryEvent(
-        isHistoryTab ? "QueryHistoryExecuteSql" : "QueryBookmarkExecuteSql",
-      );
       if (message.limit) {
         await project.executeSQLWithLimitOnQueryPanel(
           message.query,
@@ -355,10 +345,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
           // Incase of error in rendering perspective viewer query results, user can click button
           // to disable query history and retry
           case InboundCommand.ClearQueryHistory:
-            this.telemetry.sendTelemetryError(
-              TelemetryEvents["QueryHistory/ClearError"],
-              message.error,
-            );
             this._queryHistory = [];
             this.sendResponseToWebview({
               command: "response",
@@ -485,10 +471,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
               "collecting query results debug info",
               data,
             );
-            this.telemetry.sendTelemetryEvent(
-              "CollectQueryResultsDebugInfo",
-              data,
-            );
             break;
           default:
             super.handleCommand(message);
@@ -524,23 +506,12 @@ export class QueryResultPanel extends AltimateWebviewProvider {
       );
       query = activeEditor.document.getText(selectionRange);
     }
-    this.telemetry.sendTelemetryEvent("QueryActiveWindowExecuteSql");
     await project.executeSQLWithLimitOnQueryPanel(
       query,
       modelName,
       message.limit,
     );
   }
-
-  private sendQueryPanelViewEvent() {
-    if (this._panel?.visible) {
-      this.telemetry.sendTelemetryEvent("QueryPanelActive");
-    }
-  }
-
-  private sendQueryTabViewEvent = () => {
-    this.telemetry.sendTelemetryEvent("QueryTabActive");
-  };
 
   /** Renders webview content */
   protected renderWebviewView(webview: Webview) {
@@ -582,7 +553,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     compiled_sql: string,
   ) {
     if (this._panel) {
-      // TODO: telemetry
       await this._panel.webview.postMessage({
         command: OutboundCommand.RenderError,
         ...(<RenderError>{ ...error, raw_sql, compiled_sql }),

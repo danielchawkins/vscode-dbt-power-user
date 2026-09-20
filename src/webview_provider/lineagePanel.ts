@@ -16,7 +16,6 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
-import { TelemetryService } from "../telemetry";
 import { NewLineagePanel } from "./newLineagePanel";
 
 export interface LineagePanelView extends WebviewViewProvider {
@@ -40,7 +39,6 @@ export class LineagePanel implements WebviewViewProvider, Disposable {
   public constructor(
     private lineagePanel: NewLineagePanel,
     private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
@@ -111,13 +109,6 @@ export class LineagePanel implements WebviewViewProvider, Disposable {
 
     this.init();
     panel.webview.onDidReceiveMessage(this.handleWebviewMessage, null, []);
-    const sendLineageViewEvent = () => {
-      if (this.panel!.visible) {
-        this.telemetry.sendTelemetryEvent("NewLineagePanelActive");
-      }
-    };
-    sendLineageViewEvent();
-    panel.onDidChangeVisibility(sendLineageViewEvent);
   }
 
   private handleWebviewMessage = async (message: {
@@ -148,20 +139,6 @@ export class LineagePanel implements WebviewViewProvider, Disposable {
       return;
     }
 
-    if (command === "reactError") {
-      const typeMapper: { [key: string]: string } = {
-        generic: "Generic",
-      };
-      const { type } = args;
-      this.telemetry.sendTelemetryEvent(
-        "ReactError:" + typeMapper[type as keyof typeof typeMapper] ||
-          "Unknown",
-      );
-    }
-
-    // specific commands
-    // Will add specific events in respective places in the future
-    // this.telemetry.sendTelemetryEvent(command);
     this.getPanel().handleCommand(message);
   };
 }

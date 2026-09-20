@@ -1,7 +1,6 @@
 import { DBTTerminal, PythonException } from "@altimateai/dbt-integration";
 import { injectable } from "inversify";
 import { Disposable, EventEmitter, Terminal, window } from "vscode";
-import { TelemetryService } from "../telemetry";
 import { stripANSI } from "../utils";
 
 @injectable()
@@ -13,7 +12,7 @@ export class VSCodeDBTTerminal implements DBTTerminal {
     log: true,
   });
 
-  constructor(private telemetry: TelemetryService) {}
+  constructor() {}
 
   async show(status: boolean) {
     if (status) {
@@ -40,37 +39,21 @@ export class VSCodeDBTTerminal implements DBTTerminal {
     console.debug(message, args);
   }
 
-  info(
-    name: string,
-    message: string,
-    sendTelemetry: boolean = true,
-    ...args: any[]
-  ) {
+  info(name: string, message: string, _unused: boolean = true, ...args: any[]) {
     this.outputChannel?.info(`${name}:${stripANSI(message)}`, args);
     console.info(`${name}:${message}`, args);
-    if (sendTelemetry) {
-      this.telemetry.sendTelemetryEvent(name, { message, level: "info" });
-    }
   }
 
-  warn(
-    name: string,
-    message: string,
-    sendTelemetry: boolean = true,
-    ...args: any[]
-  ) {
+  warn(name: string, message: string, _unused: boolean = true, ...args: any[]) {
     this.outputChannel?.warn(`${name}:${stripANSI(message)}`, args);
     console.warn(`${name}:${message}`, args);
-    if (sendTelemetry) {
-      this.telemetry.sendTelemetryEvent(name, { message, level: "warn" });
-    }
   }
 
   error(
     name: string,
     message: string,
     e: PythonException | Error | unknown,
-    sendTelemetry = true,
+    _unused = true,
     ...args: any[]
   ) {
     let errorMessage = message;
@@ -83,9 +66,6 @@ export class VSCodeDBTTerminal implements DBTTerminal {
     }
     this.outputChannel?.error(`${name}:${stripANSI(errorMessage)}`, args);
     console.error(`${name}:${errorMessage}`, args);
-    if (sendTelemetry) {
-      this.telemetry.sendTelemetryError(name, e, { message });
-    }
   }
 
   dispose() {

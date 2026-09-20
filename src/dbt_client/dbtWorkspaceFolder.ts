@@ -15,7 +15,6 @@ import {
   WorkspaceFolder,
 } from "vscode";
 import { YAMLError } from "yaml";
-import { TelemetryService } from "../telemetry";
 import { DBTProject } from "./dbtProject";
 import { ProjectRegisteredUnregisteredEvent } from "./dbtProjectContainer";
 import {
@@ -34,7 +33,7 @@ import {
 
 // Sentinel for the empty-after-retries case in `retryWithBackoff`. Lets the
 // caller distinguish "this folder has no dbt project" (silent, expected for
-// multi-root workspaces) from a real `findFiles` failure (telemetry-worthy).
+// multi-root workspaces) from a real `findFiles` failure.
 class NoProjectsFound extends Error {}
 
 export class DBTWorkspaceFolder implements Disposable {
@@ -57,7 +56,6 @@ export class DBTWorkspaceFolder implements Disposable {
     ) => DBTProject,
     @inject("Factory<DBTProjectDetection>")
     private dbtProjectDetectionFactory: () => DBTProjectDetection,
-    private telemetry: TelemetryService,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     public workspaceFolder: WorkspaceFolder,
@@ -147,7 +145,11 @@ export class DBTWorkspaceFolder implements Disposable {
       );
     } catch (error) {
       if (!(error instanceof NoProjectsFound)) {
-        this.telemetry.sendTelemetryError("discoverProjectsError", error);
+        this.dbtTerminal.error(
+          "discoverProjectsError",
+          "Unable to discover projects",
+          error,
+        );
       }
       dbtProjectFiles = [];
     }
@@ -187,12 +189,6 @@ export class DBTWorkspaceFolder implements Disposable {
       "foundProjectsAfterFilter",
       false,
       projectDirectories,
-    );
-
-    this.telemetry.sendTelemetryEvent(
-      "discoverProjects",
-      {},
-      { numProjects: projectDirectories.length },
     );
 
     const filteredProjects =
@@ -301,7 +297,6 @@ export class DBTWorkspaceFolder implements Disposable {
       window.showErrorMessage(
         `Skipping project: could not parse dbt_project_config.yml at '${uri}': ${error}`,
       );
-      this.telemetry.sendTelemetryError("registerDBTProjectError", error);
     }
   }
 

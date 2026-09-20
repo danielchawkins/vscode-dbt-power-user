@@ -62,15 +62,10 @@ describe("DBTWorkspaceFolder config watcher: dbt_packages race", () => {
       error: jest.fn(),
       log: jest.fn(),
     };
-    const telemetry = {
-      sendTelemetryEvent: jest.fn(),
-      sendTelemetryError: jest.fn(),
-    };
 
     return new DBTWorkspaceFolder(
       jest.fn() as never, // dbtProjectFactory — unused (registerDBTProject is spied)
       jest.fn() as never, // dbtProjectDetectionFactory — unused
-      telemetry as never,
       terminal as never,
       { uri: { fsPath: tmpRoot }, name: "root", index: 0 } as never,
       new EventEmitter() as never,

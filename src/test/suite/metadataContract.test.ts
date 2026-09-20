@@ -56,7 +56,6 @@ function mockTerminal(): DBTTerminal {
       clear: () => undefined,
       show: () => undefined,
     },
-    telemetry: { sendTelemetryEvent: () => undefined },
     onDidWrite: new EventEmitter<string>().event,
     clear: () => undefined,
     show: () => undefined,

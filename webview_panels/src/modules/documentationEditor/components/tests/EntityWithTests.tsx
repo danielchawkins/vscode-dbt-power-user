@@ -2,11 +2,9 @@ import { InfoCircleIcon, TestsIcon } from "@assets/icons";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
-import { TelemetryEvents } from "@telemetryEvents";
 import { Button, Drawer, DrawerRef, Stack, Tooltip } from "@uicore";
 import { useMemo, useRef, useState } from "react";
 import classes from "../../styles.module.scss";
-import { sendTelemetryEvent } from "../telemetry";
 import AddTest from "./AddTest";
 import DisplayTestDetails from "./DisplayTestDetails";
 import Test from "./Test";
@@ -35,12 +33,6 @@ const EntityWithTests = ({ title, tests, type }: Props): JSX.Element | null => {
 
   const onSelect = (test: DBTModelTest) => {
     setSelectedTest(test);
-    sendTelemetryEvent(
-      type === EntityType.MODEL
-        ? TelemetryEvents["DocumentationEditor/ModelTestClick"]
-        : TelemetryEvents["DocumentationEditor/ColumnTestClick"],
-      { entityName: title, testName: test.test_metadata?.name ?? test.key },
-    );
     drawerRef.current?.open();
   };
 

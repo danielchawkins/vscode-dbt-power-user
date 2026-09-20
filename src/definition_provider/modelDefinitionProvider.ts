@@ -15,7 +15,6 @@ import {
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheChangedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
-import { TelemetryService } from "../telemetry";
 
 export class ModelDefinitionProvider implements DefinitionProvider, Disposable {
   private modelToLocationMap: Map<string, NodeMetaMap> = new Map();
@@ -25,7 +24,6 @@ export class ModelDefinitionProvider implements DefinitionProvider, Disposable {
 
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
@@ -76,9 +74,6 @@ export class ModelDefinitionProvider implements DefinitionProvider, Disposable {
             document.uri,
           );
           resolve(definition);
-          this.telemetry.sendTelemetryEvent("provideModelDefinition", {
-            type: "single",
-          });
           return;
         }
         if (dbtModel && dbtModel.length === 3) {
@@ -87,9 +82,6 @@ export class ModelDefinitionProvider implements DefinitionProvider, Disposable {
             dbtModel[2],
             document.uri,
           );
-          this.telemetry.sendTelemetryEvent("provideModelDefinition", {
-            type: "dual",
-          });
           resolve(definition);
           return;
         }

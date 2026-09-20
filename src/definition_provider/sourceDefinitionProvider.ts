@@ -14,7 +14,6 @@ import {
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheChangedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
-import { TelemetryService } from "../telemetry";
 import { isEnclosedWithinCodeBlock } from "../utils";
 
 export class SourceDefinitionProvider
@@ -25,10 +24,7 @@ export class SourceDefinitionProvider
   private static readonly GET_SOURCE_INFO = /(?!['"])(\w+)(?=['"])/g;
   private disposables: Disposable[] = [];
 
-  constructor(
-    private dbtProjectContainer: DBTProjectContainer,
-    private telemetry: TelemetryService,
-  ) {
+  constructor(private dbtProjectContainer: DBTProjectContainer) {
     this.disposables.push(
       dbtProjectContainer.onManifestChanged((event) =>
         this.onManifestCacheChanged(event),
@@ -85,7 +81,6 @@ export class SourceDefinitionProvider
         document.uri,
         source[1],
       );
-      this.telemetry.sendTelemetryEvent("provideSourceDefinition");
       resolve(definition);
     });
   }

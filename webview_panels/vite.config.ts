@@ -41,7 +41,6 @@ export default defineConfig({
       "@modules": path.resolve(__dirname, "./src/modules"),
       "@testUtils": path.resolve(__dirname, "./src/testUtils"),
       "@vscodeApi": path.resolve(__dirname, "./src/modules/vscode"),
-      "@telemetryEvents": path.resolve(__dirname, "../src/telemetry/events.ts"),
       "@lib": path.resolve(__dirname, "./src/lib"),
     },
   },

@@ -1,9 +1,7 @@
 import DocumentationHelpContent from "@modules/documentationEditor/components/help/DocumentationHelpContent";
 import TestsHelpContent from "@modules/documentationEditor/components/help/TestsHelpContent";
-import { sendTelemetryEvent } from "@modules/documentationEditor/components/telemetry";
 import { Button, ButtonGroup, Drawer, DrawerRef } from "@uicore";
 import { useEffect, useRef, useState } from "react";
-import { TelemetryEvents } from "@telemetryEvents";
 
 enum Pages {
   DOCUMENTATION,
@@ -25,16 +23,12 @@ const HelpButton = ({ onClose }: Props): JSX.Element => {
   const handleClick = (page: Pages) => {
     setSelectedPage(page);
   };
-  const onOpen = () => {
-    sendTelemetryEvent(TelemetryEvents["DocumentationEditor/HelpOpen"]);
-  };
 
   const openTest = () => {
     handleClick(Pages.TESTS);
-    sendTelemetryEvent(TelemetryEvents["DocumentationEditor/HelpTestsOpen"]);
   };
   return (
-    <Drawer title="Help" onOpen={onOpen} onClose={onClose} ref={drawerRef}>
+    <Drawer title="Help" onClose={onClose} ref={drawerRef}>
       <ButtonGroup className="mb-2">
         <Button
           color={selectedPage === Pages.DOCUMENTATION ? "primary" : "secondary"}

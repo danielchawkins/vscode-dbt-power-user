@@ -3,18 +3,13 @@ import { inject } from "inversify";
 import { Disposable, ProgressLocation, TextEditor, window } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
-import { TelemetryService } from "../telemetry";
 import { getFirstWorkspacePath } from "../utils";
 import { DbtDocumentFormattingEditProvider } from "./dbtDocumentFormattingEditProvider";
 
 // Surfaces a one-time "install sqlfmt" prompt when the user first looks at a
 // `sql` or `jinja-sql` file in a dbt project workspace and sqlfmt isn't
-// available. Production telemetry showed ~31 machines repeatedly hitting
-// `formatDbtModelApplyDiffError` with "sqlfmt not found" (~7.5 events per
-// machine per day) because the format provider only surfaces the install
-// hint when the user actually runs the format command. This pre-empts that:
-// users learn about the missing dependency before they hit Format and can
-// install it in one click.
+// available. The format provider otherwise surfaces the install hint only
+// after the user runs Format.
 export class SqlFmtAvailabilityNotifier implements Disposable {
   // Persisted in globalState so "Don't ask again" survives reboots and
   // applies across workspaces (the user has made a deliberate choice about
@@ -33,7 +28,6 @@ export class SqlFmtAvailabilityNotifier implements Disposable {
     @inject(PythonEnvironment)
     private pythonEnvironment: PythonEnvironment,
     private commandProcessExecutionFactory: CommandProcessExecutionFactory,
-    private telemetry: TelemetryService,
   ) {
     this.disposables.push(
       window.onDidChangeActiveTextEditor((editor) => this.maybeNotify(editor)),
@@ -126,15 +120,8 @@ export class SqlFmtAvailabilityNotifier implements Disposable {
   // and invalidates the format provider's cached path. Mirrors the convention
   // used by `installDbtCore` / `installDbtCloud` / `installDbtFusion` in
   // `walkthroughCommands.ts`: progress notification, command process
-  // execution via factory, bare-verb success telemetry, `*Error` failure
-  // telemetry, error toast on failure.
+  // execution via factory and an error toast on failure.
   private async installSqlFmt(): Promise<void> {
-    const telemetryProps = {
-      platform: process.platform,
-      pythonPath: this.pythonEnvironment.pythonPath ?? "unknown",
-      pythonVersion: this.pythonEnvironment.pythonVersion ?? "unknown",
-    };
-    this.telemetry.sendTelemetryEvent("installSqlFmt", telemetryProps);
     let error: unknown = undefined;
     await window.withProgress(
       {
@@ -162,11 +149,6 @@ export class SqlFmtAvailabilityNotifier implements Disposable {
           this.formattingProvider.invalidateSqlFmtPathCache();
         } catch (err) {
           error = err;
-          this.telemetry.sendTelemetryError(
-            "installSqlFmtError",
-            err,
-            telemetryProps,
-          );
         }
       },
     );

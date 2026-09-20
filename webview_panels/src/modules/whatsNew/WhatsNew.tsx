@@ -3,7 +3,6 @@ import {
   executeRequestInSync,
 } from "@modules/app/requestExecutor";
 import { panelLogger } from "@modules/logger";
-import { TelemetryEvents } from "@telemetryEvents";
 import {
   type MouseEvent,
   useCallback,
@@ -80,15 +79,20 @@ const PRODUCT_LINKS = [
     label: "Altimate MCP Server",
     url: "https://help.altimate.ai/datamates/",
   },
-  { label: "Snowflake", url: "https://altimate.ai/altimate-on-snowflake?utm_source=dbt-power-user&utm_medium=extension" },
+  {
+    label: "Snowflake",
+    url: "https://altimate.ai/altimate-on-snowflake?utm_source=dbt-power-user&utm_medium=extension",
+  },
   {
     label: "Databricks",
     url: "https://altimate.ai/use-cases/altimate-for-databricks?utm_source=dbt-power-user&utm_medium=extension",
   },
 ];
 
-const FULL_CHANGELOG_URL = "https://altimate.ai/changelog?utm_source=dbt-power-user&utm_medium=extension";
-const ALTIMATE_SITE_URL = "https://altimate.ai?utm_source=dbt-power-user&utm_medium=extension";
+const FULL_CHANGELOG_URL =
+  "https://altimate.ai/changelog?utm_source=dbt-power-user&utm_medium=extension";
+const ALTIMATE_SITE_URL =
+  "https://altimate.ai?utm_source=dbt-power-user&utm_medium=extension";
 
 /**
  * Click handler for a link that opens outside the editor.
@@ -128,10 +132,6 @@ const pluralize = (count: number, word: string): string =>
 
 const openUrl = (url: string): void => {
   executeRequestInAsync("openURL", { url });
-};
-
-const track = (eventName: string, properties: Record<string, string>): void => {
-  executeRequestInAsync("sendTelemetryEvent", { eventName, properties });
 };
 
 const WhatsNew = (): JSX.Element => {
@@ -245,85 +245,32 @@ const WhatsNew = (): JSX.Element => {
     return () => observer.disconnect();
   }, [groups]);
 
-  // Every event carries the running version so engagement can be read per
-  // release rather than as one undifferentiated pile.
-  const trackWithVersion = useCallback(
-    (eventName: string, properties: Record<string, string> = {}): void => {
-      track(eventName, { version: manifest?.version ?? "", ...properties });
-    },
-    [manifest],
-  );
-
-  // The ref is the synchronous source of truth for the toggle decision.
-  // Reading `activeTags` directly would go stale between two clicks landing in
-  // the same render (reporting "enabled" twice for an on/off pair), and
-  // deciding inside the state updater would double-fire under StrictMode,
-  // which invokes updaters twice.
-  const activeTagsRef = useRef<Tag[]>([]);
-
-  const toggleTag = useCallback(
-    (tag: Tag): void => {
-      const enabling = !activeTagsRef.current.includes(tag);
-      const next = enabling
-        ? [...activeTagsRef.current, tag]
-        : activeTagsRef.current.filter((t) => t !== tag);
-      activeTagsRef.current = next;
-      trackWithVersion(TelemetryEvents["WhatsNew/FilterToggled"], {
-        tag,
-        enabled: String(enabling),
-      });
-      setActiveTags(next);
-    },
-    [trackWithVersion],
-  );
+  const toggleTag = useCallback((tag: Tag): void => {
+    setActiveTags((current) =>
+      current.includes(tag)
+        ? current.filter((currentTag) => currentTag !== tag)
+        : [...current, tag],
+    );
+  }, []);
 
   // Reached only if a filter can ever select zero entries. Today it can't —
   // pills with no entries are disabled, and filters union rather than
-  // intersect — so this is a fallback, not a tracked path.
+  // intersect — so this is a fallback.
   const clearFilters = useCallback((): void => {
-    activeTagsRef.current = [];
     setActiveTags([]);
   }, []);
 
-  const onTimelineNavigate = useCallback(
-    (month: string): void => {
-      trackWithVersion(TelemetryEvents["WhatsNew/TimelineNavigated"], {
-        month,
-      });
-    },
-    [trackWithVersion],
-  );
+  const onProductLink = useCallback((url: string): void => {
+    openUrl(url);
+  }, []);
 
-  const onProductLink = useCallback(
-    (product: string, url: string): void => {
-      trackWithVersion(TelemetryEvents["WhatsNew/ProductLinkClicked"], {
-        product,
-      });
-      openUrl(url);
-    },
-    [trackWithVersion],
-  );
+  const onSiteLink = useCallback((): void => {
+    openUrl(ALTIMATE_SITE_URL);
+  }, []);
 
-  const onSiteLink = useCallback(
-    (source: string): void => {
-      trackWithVersion(TelemetryEvents["WhatsNew/SiteLinkClicked"], { source });
-      openUrl(ALTIMATE_SITE_URL);
-    },
-    [trackWithVersion],
-  );
-
-  // `source` distinguishes the topbar link, the hero CTA, the footer link and
-  // the error state — they all lead to the same place, so without it we can't
-  // tell which one readers actually use.
-  const onFullChangelog = useCallback(
-    (source: string): void => {
-      trackWithVersion(TelemetryEvents["WhatsNew/FullChangelogClicked"], {
-        source,
-      });
-      openUrl(manifest?.base_url ?? FULL_CHANGELOG_URL);
-    },
-    [manifest, trackWithVersion],
-  );
+  const onFullChangelog = useCallback((): void => {
+    openUrl(manifest?.base_url ?? FULL_CHANGELOG_URL);
+  }, [manifest]);
 
   if (error) {
     return (
@@ -333,7 +280,7 @@ const WhatsNew = (): JSX.Element => {
           <a
             href={FULL_CHANGELOG_URL}
             title={`Open ${FULL_CHANGELOG_URL} in your browser`}
-            onClick={openExternal(() => onFullChangelog("error_state"))}
+            onClick={openExternal(onFullChangelog)}
           >
             Open the full changelog →
           </a>
@@ -362,7 +309,7 @@ const WhatsNew = (): JSX.Element => {
           href="https://altimate.ai?utm_source=dbt-power-user&utm_medium=extension"
           aria-label="Altimate AI"
           title="Open altimate.ai in your browser"
-          onClick={openExternal(() => onSiteLink("logo"))}
+          onClick={openExternal(onSiteLink)}
         >
           <AltimateWordmark />
         </a>
@@ -371,7 +318,7 @@ const WhatsNew = (): JSX.Element => {
             className={classes.topbarLink}
             href={FULL_CHANGELOG_URL}
             title={`Open ${FULL_CHANGELOG_URL} in your browser`}
-            onClick={openExternal(() => onFullChangelog("topbar"))}
+            onClick={openExternal(onFullChangelog)}
           >
             Full changelog
           </a>
@@ -379,7 +326,7 @@ const WhatsNew = (): JSX.Element => {
             className={classes.topbarLink}
             href="https://altimate.ai?utm_source=dbt-power-user&utm_medium=extension"
             title="Open altimate.ai in your browser"
-            onClick={openExternal(() => onSiteLink("topbar"))}
+            onClick={openExternal(onSiteLink)}
           >
             altimate.ai
           </a>
@@ -402,7 +349,7 @@ const WhatsNew = (): JSX.Element => {
             className={classes.cta}
             href={manifest.base_url}
             title={`Open ${manifest.base_url} in your browser`}
-            onClick={openExternal(() => onFullChangelog("cta"))}
+            onClick={openExternal(onFullChangelog)}
           >
             View full changelog
             <ArrowIcon />
@@ -418,7 +365,7 @@ const WhatsNew = (): JSX.Element => {
                 className={classes.asideLink}
                 href={link.url}
                 title={`Open ${link.url} in your browser`}
-                onClick={openExternal(() => onProductLink(link.label, link.url))}
+                onClick={openExternal(() => onProductLink(link.url))}
               >
                 {link.label}
                 <ExternalArrowIcon className={classes.asideArrow} />
@@ -470,7 +417,6 @@ const WhatsNew = (): JSX.Element => {
                 type="button"
                 data-active={activeMonth === group.key}
                 onClick={() => {
-                  onTimelineNavigate(group.key);
                   setActiveMonth(group.key);
                   sectionRefs.current
                     .get(group.key)
@@ -574,7 +520,7 @@ const WhatsNew = (): JSX.Element => {
         <a
           href={FULL_CHANGELOG_URL}
           title={`Open ${FULL_CHANGELOG_URL} in your browser`}
-          onClick={openExternal(() => onFullChangelog("footer"))}
+          onClick={openExternal(onFullChangelog)}
         >
           See the full platform changelog →
         </a>

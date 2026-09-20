@@ -5,7 +5,6 @@ import {
 import { IncomingMessageProps } from "@modules/app/types";
 import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
-import { TelemetryEvents } from "@telemetryEvents";
 import {
   createContext,
   useCallback,
@@ -14,7 +13,6 @@ import {
   useReducer,
   useRef,
 } from "react";
-import { sendTelemetryEvent } from "./components/telemetry";
 import DocumentationEditor from "./DocumentationEditor";
 import documentationSlice, {
   initialState,
@@ -193,7 +191,6 @@ const DocumentationProvider = (): JSX.Element => {
   }, []);
 
   useEffect(() => {
-    sendTelemetryEvent(TelemetryEvents["DocumentationEditor/Load"]);
     window.addEventListener("message", onMessage);
     // Load current editor documentation
     executeRequestInAsync("getCurrentModelDocumentation", {});

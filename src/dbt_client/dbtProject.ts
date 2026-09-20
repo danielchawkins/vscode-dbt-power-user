@@ -58,8 +58,6 @@ import { AltimateRequest, ModelNode } from "../altimate";
 import { AltimateAuthService } from "../services/altimateAuthService";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
-import { TelemetryService } from "../telemetry";
-import { TelemetryEvents } from "../telemetry/events";
 import {
   extendErrorWithSupportLinks,
   getColumnNameByCase,
@@ -133,7 +131,6 @@ export class DBTProject implements Disposable {
     private dbtCommandFactory: DBTCommandFactory,
     private terminal: DBTTerminal,
     private eventEmitterService: SharedStateService,
-    private telemetry: TelemetryService,
     private executionInfrastructure: DBTCommandExecutionInfrastructure,
     private dbtIntegrationAdapterFactory: (
       projectRoot: string,
@@ -187,7 +184,6 @@ export class DBTProject implements Disposable {
           "Received projectConfigChanged event from Node.js project config watcher",
         );
         const event = new ProjectConfigChangedEvent(this);
-        this.stampCloudVariantOnTelemetry();
         this._onProjectConfigChanged.fire(event);
       },
     );
@@ -306,18 +302,6 @@ export class DBTProject implements Disposable {
           err,
         );
       });
-  }
-
-  private stampCloudVariantOnTelemetry(): void {
-    const info = this.dbtProjectIntegration.getCloudVariantInfo();
-    this.telemetry.setTelemetryCustomAttribute(
-      "dbtCloudVariant",
-      info?.variant ?? "",
-    );
-    this.telemetry.setTelemetryCustomAttribute(
-      "dbtCloudRawVersion",
-      info?.rawDbtVersion ?? "",
-    );
   }
 
   private invalidateCacheUsingUniqueIds(uniqueIds: string[]) {
@@ -594,7 +578,6 @@ export class DBTProject implements Disposable {
     try {
       const command =
         await this.getCurrentProjectIntegration().runModel(runModelCommand);
-      this.telemetry.sendTelemetryEvent("runModel");
       if (command) {
         this.addCommandToQueue("all", command);
       }
@@ -604,7 +587,6 @@ export class DBTProject implements Disposable {
   }
 
   async unsafeRunModelImmediately(runModelParams: RunModelParams) {
-    this.telemetry.sendTelemetryEvent("runModel");
     return this.dbtProjectIntegration.unsafeRunModelImmediately(runModelParams);
   }
 
@@ -619,7 +601,6 @@ export class DBTProject implements Disposable {
     try {
       const command =
         await this.getCurrentProjectIntegration().buildModel(buildModelCommand);
-      this.telemetry.sendTelemetryEvent("buildModel");
       if (command) {
         this.addCommandToQueue("all", command);
       }
@@ -629,7 +610,6 @@ export class DBTProject implements Disposable {
   }
 
   async unsafeBuildModelImmediately(runModelParams: RunModelParams) {
-    this.telemetry.sendTelemetryEvent("buildModel");
     return this.dbtProjectIntegration.unsafeBuildModelImmediately(
       runModelParams,
     );
@@ -648,7 +628,6 @@ export class DBTProject implements Disposable {
         await this.getCurrentProjectIntegration().buildProject(
           buildProjectCommand,
         );
-      this.telemetry.sendTelemetryEvent("buildProject");
       if (command) {
         this.addCommandToQueue("all", command);
       }
@@ -658,7 +637,6 @@ export class DBTProject implements Disposable {
   }
 
   async unsafeBuildProjectImmediately() {
-    this.telemetry.sendTelemetryEvent("buildProject");
     return this.dbtProjectIntegration.unsafeBuildProjectImmediately();
   }
 
@@ -673,7 +651,6 @@ export class DBTProject implements Disposable {
     try {
       const command =
         await this.getCurrentProjectIntegration().runTest(testModelCommand);
-      this.telemetry.sendTelemetryEvent("runTest");
       if (command) {
         this.addCommandToQueue("all", command);
       }
@@ -683,7 +660,6 @@ export class DBTProject implements Disposable {
   }
 
   async unsafeRunTestImmediately(testName: string) {
-    this.telemetry.sendTelemetryEvent("runTest");
     return this.dbtProjectIntegration.unsafeRunTestImmediately(testName);
   }
 
@@ -700,7 +676,6 @@ export class DBTProject implements Disposable {
         await this.getCurrentProjectIntegration().runModelTest(
           testModelCommand,
         );
-      this.telemetry.sendTelemetryEvent("runModelTest");
       if (command) {
         this.addCommandToQueue("all", command);
       }
@@ -710,7 +685,6 @@ export class DBTProject implements Disposable {
   }
 
   async unsafeRunModelTestImmediately(modelName: string) {
-    this.telemetry.sendTelemetryEvent("runModelTest");
     return this.dbtProjectIntegration.unsafeRunModelTestImmediately(modelName);
   }
 
@@ -753,14 +727,12 @@ export class DBTProject implements Disposable {
       await this.getCurrentProjectIntegration().compileModel(
         compileModelCommand,
       );
-    this.telemetry.sendTelemetryEvent("compileModel");
     if (command) {
       this.addCommandToQueue("all", command);
     }
   }
 
   async unsafeCompileModelImmediately(runModelParams: RunModelParams) {
-    this.telemetry.sendTelemetryEvent("compileModel");
     return this.dbtProjectIntegration.unsafeCompileModelImmediately(
       runModelParams,
     );
@@ -781,7 +753,6 @@ export class DBTProject implements Disposable {
       await this.getCurrentProjectIntegration().generateDocs(
         docsGenerateCommand,
       );
-    this.telemetry.sendTelemetryEvent("generateDocs");
     if (command) {
       this.addCommandToQueue("all", command);
     }
@@ -789,27 +760,22 @@ export class DBTProject implements Disposable {
 
   clean() {
     this.throwIfNotAuthenticated();
-    this.telemetry.sendTelemetryEvent("clean");
     return this.dbtProjectIntegration.clean();
   }
 
   debug(focus: boolean = true) {
-    this.telemetry.sendTelemetryEvent("debug");
     return this.dbtProjectIntegration.debug(focus);
   }
 
   async installDbtPackages(packages: string[]) {
-    this.telemetry.sendTelemetryEvent("installDbtPackages");
     return this.dbtProjectIntegration.installDbtPackages(packages);
   }
 
   async installDeps(silent = false) {
-    this.telemetry.sendTelemetryEvent("installDeps");
     return this.dbtProjectIntegration.installDeps(silent);
   }
 
   async compileNode(modelName: string): Promise<string | undefined> {
-    this.telemetry.sendTelemetryEvent("compileNode");
     this.throwDiagnosticsErrorIfAvailable();
     try {
       return await this.dbtProjectIntegration.unsafeCompileNode(modelName);
@@ -822,7 +788,6 @@ export class DBTProject implements Disposable {
               ".",
           ),
         );
-        this.telemetry.sendTelemetryError("compileNodePythonError", exc);
         return (
           "Exception: " +
           exc.exception.message +
@@ -831,7 +796,6 @@ export class DBTProject implements Disposable {
           exc
         );
       }
-      this.telemetry.sendTelemetryError("compileNodeUnknownError", exc);
       // Unknown error
       window.showErrorMessage(
         extendErrorWithSupportLinks(
@@ -847,7 +811,6 @@ export class DBTProject implements Disposable {
   }
 
   async unsafeCompileNode(modelName: string): Promise<string | undefined> {
-    this.telemetry.sendTelemetryEvent("unsafeCompileNode");
     this.throwDiagnosticsErrorIfAvailable();
     this.throwIfNotAuthenticated();
     return this.dbtProjectIntegration.unsafeCompileNode(modelName);
@@ -880,9 +843,6 @@ export class DBTProject implements Disposable {
       window.showErrorMessage(
         exception.exception.message || "Could not validate sql with dry run.",
       );
-      this.telemetry.sendTelemetryError("validateSQLDryRunError", {
-        error: exc,
-      });
     }
   }
 
@@ -894,7 +854,6 @@ export class DBTProject implements Disposable {
     query: string,
     originalModelName: string | undefined = undefined,
   ): Promise<string | undefined> {
-    this.telemetry.sendTelemetryEvent("compileQuery");
     try {
       return await this.dbtProjectIntegration.unsafeCompileQuery(
         query,
@@ -909,10 +868,8 @@ export class DBTProject implements Disposable {
               ".",
           ),
         );
-        this.telemetry.sendTelemetryError("compileQueryPythonError", exc);
         return undefined;
       }
-      this.telemetry.sendTelemetryError("compileQueryUnknownError", exc);
       // Unknown error
       window.showErrorMessage(
         extendErrorWithSupportLinks(
@@ -973,11 +930,6 @@ export class DBTProject implements Disposable {
   }
 
   async getColumnValues(model: string, column: string) {
-    this.telemetry.startTelemetryEvent(
-      TelemetryEvents["DocumentationEditor/GetDistinctColumnValues"],
-      { column, model },
-    );
-
     try {
       this.throwIfNotAuthenticated();
       this.terminal.debug(
@@ -990,18 +942,8 @@ export class DBTProject implements Disposable {
         model,
         column,
       );
-      this.telemetry.endTelemetryEvent(
-        TelemetryEvents["DocumentationEditor/GetDistinctColumnValues"],
-        undefined,
-        { column, model },
-      );
       return result;
     } catch (error) {
-      this.telemetry.endTelemetryEvent(
-        TelemetryEvents["DocumentationEditor/GetDistinctColumnValues"],
-        error,
-        { column, model },
-      );
       throw error;
     } finally {
       await this.getCurrentProjectIntegration().cleanupConnections();
@@ -1030,9 +972,6 @@ export class DBTProject implements Disposable {
       return result;
     } catch (exc: any) {
       if (exc instanceof PythonException) {
-        this.telemetry.sendTelemetryError("catalogPythonError", exc, {
-          adapter: this.getAdapterType(),
-        });
         window.showErrorMessage(
           "Some of the scans could not run as connectivity to database for the project " +
             this.getProjectName() +
@@ -1040,10 +979,6 @@ export class DBTProject implements Disposable {
         );
         return [];
       }
-      // Unknown error
-      this.telemetry.sendTelemetryError("catalogUnknownError", exc, {
-        adapter: this.getAdapterType(),
-      });
       window.showErrorMessage(
         "Some of the scans could not run as connectivity to database for the project " +
           this.getProjectName() +
@@ -1061,9 +996,6 @@ export class DBTProject implements Disposable {
       const currentDir = path.dirname(modelPath.fsPath);
       const location = path.join(currentDir, modelName + "_schema.yml");
       if (!existsSync(location)) {
-        this.telemetry.sendTelemetryEvent("generateSchemaYML", {
-          adapter: this.getAdapterType(),
-        });
         const columnsInRelation = await this.getColumnsOfModel(modelName);
         // Generate yml file content
         const fileContents = this.createYMLContent(
@@ -1080,9 +1012,6 @@ export class DBTProject implements Disposable {
       }
     } catch (exc: any) {
       if (exc instanceof PythonException) {
-        this.telemetry.sendTelemetryError("generateSchemaYMLPythonError", exc, {
-          adapter: this.getAdapterType(),
-        });
         window.showErrorMessage(
           extendErrorWithSupportLinks(
             "An error occured while trying to generate the schema yml " +
@@ -1091,10 +1020,6 @@ export class DBTProject implements Disposable {
           ),
         );
       }
-      // Unknown error
-      this.telemetry.sendTelemetryError("generateSchemaYMLUnknownError", exc, {
-        adapter: this.getAdapterType(),
-      });
       window.showErrorMessage(
         extendErrorWithSupportLinks(
           "Could not generate schema yaml: " + (exc as Error).message,
@@ -1138,12 +1063,6 @@ export class DBTProject implements Disposable {
               "{prefix}_{sourceName}_{tableName}",
             );
 
-          this.telemetry.sendTelemetryEvent("generateModel", {
-            prefix: prefix,
-            filenametemplate: fileNameTemplate,
-            adapter: this.getAdapterType(),
-          });
-
           // Parse setting to fileName
           if (fileNameTemplate in fileNameTemplateMap) {
             fileName = fileNameTemplateMap[fileNameTemplate];
@@ -1184,18 +1103,11 @@ export class DBTProject implements Disposable {
           }
         } catch (exc: any) {
           if (exc instanceof PythonException) {
-            this.telemetry.sendTelemetryError("generateModelPythonError", exc, {
-              adapter: this.getAdapterType(),
-            });
             window.showErrorMessage(
               "An error occured while trying to generate the model " +
                 exc.exception.message,
             );
           }
-          // Unknown error
-          this.telemetry.sendTelemetryError("generateModelUnknownError", exc, {
-            adapter: this.getAdapterType(),
-          });
           window.showErrorMessage(
             extendErrorWithSupportLinks(
               "An error occured while trying to generate the model:" +
@@ -1359,10 +1271,6 @@ export class DBTProject implements Disposable {
     if (!columnsFromDB || columnsFromDB.length === 0) {
       return false;
     }
-    if (columnsFromDB.length > 100) {
-      // Flagging events where more than 100 columns are fetched from db to get a sense of how many of these happen
-      this.telemetry.sendTelemetryEvent("excessiveColumnsFetchedFromDB");
-    }
     const columnsFromManifest: Record<string, ColumnMetaData> = {};
     Object.entries(node.columns).forEach(([k, v]) => {
       columnsFromManifest[getColumnNameByCase(k, this.getAdapterType())] = v;
@@ -1386,10 +1294,6 @@ export class DBTProject implements Disposable {
         description: "",
         meta: {},
       };
-    }
-    if (Object.keys(node.columns).length > columnsFromDB.length) {
-      // Flagging events where columns fetched from db are less than the number of columns in the manifest
-      this.telemetry.sendTelemetryEvent("possibleStaleSchema");
     }
     return true;
   }
@@ -1433,7 +1337,6 @@ export class DBTProject implements Disposable {
 
     for (const key of modelsToFetch) {
       if (this.dbSchemaCache[key]) {
-        this.telemetry.sendTelemetryEvent("dbSchemaCacheHit", { model: key });
         mappedNode[key] = this.dbSchemaCache[key];
         continue;
       }
@@ -1580,12 +1483,6 @@ export class DBTProject implements Disposable {
       dbFetchTime,
       modelInfosLength: modelsToFetch.length,
     });
-    this.telemetry.sendTelemetryEvent("getNodesWithDBColumnsTimings", {
-      compiledSqlTime: compiledSqlTime.toString(),
-      sqlglotSchemaTime: sqlglotSchemaTime.toString(),
-      dbFetchTime: dbFetchTime.toString(),
-      modelInfosLength: modelsToFetch.length.toString(),
-    });
 
     return {
       mappedNode,
@@ -1710,9 +1607,6 @@ export class DBTProject implements Disposable {
             statusMessage,
             String(error),
           );
-          this.telemetry.sendTelemetryError("queueRunCommandError", error, {
-            command: statusMessage,
-          });
         }
       };
 

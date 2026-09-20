@@ -1,9 +1,7 @@
 import { ZapIcon } from "@assets/icons";
 import { executeRequestInSync } from "@modules/app/requestExecutor";
-import { sendTelemetryEvent } from "@modules/documentationEditor/components/telemetry";
 import { panelLogger } from "@modules/logger";
 import { vscode } from "@modules/vscode";
-import { TelemetryEvents } from "@telemetryEvents";
 import { Button } from "@uicore";
 import { useEffect, useState } from "react";
 
@@ -34,7 +32,6 @@ const OptimizeWarehouseButton = (): JSX.Element | null => {
   }, []);
 
   const handleClick = () => {
-    sendTelemetryEvent(TelemetryEvents["QueryPanel/OptimizeWarehouseClick"]);
     vscode.postMessage({ command: "openURL", url: SNOWFLAKE_NATIVE_APP_URL });
   };
 

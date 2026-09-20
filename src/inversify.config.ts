@@ -68,7 +68,6 @@ import { FileService } from "./services/fileService";
 import { QueryManifestService } from "./services/queryManifestService";
 import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
-import { TelemetryService } from "./telemetry";
 
 import { ValidationProvider } from "./validation_provider";
 
@@ -488,7 +487,6 @@ container
       return new DBTWorkspaceFolder(
         container.get("Factory<DBTProject>"),
         container.get("Factory<DBTProjectDetection>"),
-        container.get(TelemetryService),
         container.get("DBTTerminal"),
         workspaceFolder,
         _onManifestChanged,
@@ -707,7 +705,6 @@ container
           container.get(DBTCommandFactory),
           container.get("DBTTerminal"),
           container.get(SharedStateService),
-          container.get(TelemetryService),
           container.get(DBTCommandExecutionInfrastructure),
           container.get("Factory<DBTProjectIntegrationAdapter>"),
           container.get(AltimateRequest),
@@ -743,7 +740,6 @@ container
   .toDynamicValue((context) => {
     return new DbtLineageService(
       context.container.get(AltimateRequest),
-      context.container.get(TelemetryService),
       context.container.get("DBTTerminal"),
       context.container.get(QueryManifestService),
     );
@@ -848,13 +844,6 @@ container
   .inSingletonScope();
 
 container
-  .bind(TelemetryService)
-  .toDynamicValue(() => {
-    return new TelemetryService();
-  })
-  .inSingletonScope();
-
-container
   .bind(ValidationProvider)
   .toDynamicValue((context) => {
     return new ValidationProvider(
@@ -912,7 +901,6 @@ container
   .toDynamicValue((context) => {
     return new DocAutocompletionProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
     );
   })
   .inSingletonScope();
@@ -922,7 +910,6 @@ container
   .toDynamicValue((context) => {
     return new MacroAutocompletionProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
     );
   })
   .inSingletonScope();
@@ -932,7 +919,6 @@ container
   .toDynamicValue((context) => {
     return new ModelAutocompletionProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
     );
   })
   .inSingletonScope();
@@ -942,7 +928,6 @@ container
   .toDynamicValue((context) => {
     return new SourceAutocompletionProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
     );
   })
   .inSingletonScope();
@@ -1010,7 +995,6 @@ container
   .toDynamicValue((context) => {
     return new DocDefinitionProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
     );
   })
   .inSingletonScope();
@@ -1020,7 +1004,6 @@ container
   .toDynamicValue((context) => {
     return new MacroDefinitionProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
     );
   })
   .inSingletonScope();
@@ -1030,7 +1013,6 @@ container
   .toDynamicValue((context) => {
     return new ModelDefinitionProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
       context.container.get("DBTTerminal"),
     );
   })
@@ -1041,7 +1023,6 @@ container
   .toDynamicValue((context) => {
     return new SourceDefinitionProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
     );
   })
   .inSingletonScope();
@@ -1073,7 +1054,6 @@ container
   .bind(MacroHoverProvider)
   .toDynamicValue((context) => {
     return new MacroHoverProvider(
-      context.container.get(TelemetryService),
       context.container.get("DBTTerminal"),
       context.container.get(QueryManifestService),
     );
@@ -1085,7 +1065,6 @@ container
   .toDynamicValue((context) => {
     return new ModelHoverProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
       context.container.get("DBTTerminal"),
     );
   })
@@ -1094,10 +1073,7 @@ container
 container
   .bind(SourceHoverProvider)
   .toDynamicValue((context) => {
-    return new SourceHoverProvider(
-      context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
-    );
+    return new SourceHoverProvider(context.container.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -1106,7 +1082,6 @@ container
   .toDynamicValue((context) => {
     return new YamlModelHoverProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
     );
   })
   .inSingletonScope();
@@ -1117,7 +1092,6 @@ container
   .toDynamicValue((context) => {
     return new SqlPreviewContentProvider(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
     );
   })
   .inSingletonScope();
@@ -1127,7 +1101,6 @@ container
   .toDynamicValue((context) => {
     return new DbtDocumentFormattingEditProvider(
       context.container.get(CommandProcessExecutionFactory),
-      context.container.get(TelemetryService),
       context.container.get(PythonEnvironment),
     );
   })
@@ -1141,7 +1114,6 @@ container
       context.container.get(DbtDocumentFormattingEditProvider),
       context.container.get(PythonEnvironment),
       context.container.get(CommandProcessExecutionFactory),
-      context.container.get(TelemetryService),
     );
   })
   .inSingletonScope();
@@ -1205,7 +1177,6 @@ container
   .toDynamicValue((context) => {
     return new ValidateSql(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
       context.container.get(AltimateRequest),
       context.container.get("DBTTerminal"),
     );
@@ -1217,7 +1188,6 @@ container
   .toDynamicValue((context) => {
     return new WalkthroughCommands(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
       context.container.get(CommandProcessExecutionFactory),
       context.container.get(PythonEnvironment),
       context.container.get("DBTTerminal"),
@@ -1244,7 +1214,6 @@ container
       context.container.get(CteProfilerService),
       context.container.get(CteProfilerDecorationProvider),
       context.container.get(CteCodeLensProvider),
-      context.container.get(TelemetryService),
       context.container.get(WhatsNewPanel),
     );
   })
@@ -1256,7 +1225,6 @@ container
   .toDynamicValue((context) => {
     return new QueryResultPanel(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
       context.container.get(AltimateRequest),
       context.container.get(SharedStateService),
       context.container.get("DBTTerminal"),
@@ -1271,7 +1239,6 @@ container
   .toDynamicValue((context) => {
     return new DocsEditViewPanel(
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
       context.container.get(DocGenService),
       context.container.get(DbtTestService),
       context.container.get(QueryManifestService),
@@ -1287,7 +1254,6 @@ container
     return new LineagePanel(
       context.container.get(NewLineagePanel),
       context.container.get(DBTProjectContainer),
-      context.container.get(TelemetryService),
       context.container.get("DBTTerminal"),
     );
   })
@@ -1299,7 +1265,6 @@ container
     return new NewLineagePanel(
       context.container.get(DBTProjectContainer),
       context.container.get(AltimateRequest),
-      context.container.get(TelemetryService),
       context.container.get("DBTTerminal"),
       context.container.get(DbtLineageService),
       context.container.get(SharedStateService),
@@ -1408,7 +1373,6 @@ container
     return new OnboardingPanel(
       context.container.get(DBTProjectContainer),
       context.container.get(AltimateRequest),
-      context.container.get(TelemetryService),
       context.container.get(SharedStateService),
       context.container.get("DBTTerminal"),
       context.container.get(QueryManifestService),
@@ -1424,7 +1388,6 @@ container
     return new WhatsNewPanel(
       context.container.get(DBTProjectContainer),
       context.container.get(AltimateRequest),
-      context.container.get(TelemetryService),
       context.container.get(SharedStateService),
       context.container.get("DBTTerminal"),
       context.container.get(QueryManifestService),
@@ -1463,7 +1426,7 @@ container
       context.container.get(DocumentFormattingEditProviders),
       context.container.get(StatusBars),
       context.container.get(DbtPowerUserActionsCenter),
-      context.container.get(TelemetryService),
+      context.container.get("DBTTerminal"),
       context.container.get(HoverProviders),
       context.container.get(ValidationProvider),
       context.container.get(AltimateRequest),

@@ -1,7 +1,5 @@
 /**
- * Regression tests for production telemetry cluster
- * `extensionActivationError` (83 machines / 104 events / 24h, top 2 versions),
- * stack pinned at:
+ * Regression tests for a multi-root activation failure with this stack:
  *   Error: no projects found. retrying
  *     at DBTWorkspaceFolder.retryWithBackoff
  *     at async DBTWorkspaceFolder.discoverProjects
@@ -23,7 +21,7 @@
  * Fix: `retryWithBackoff` throws a typed `NoProjectsFound` for the
  * consistently-empty case. `discoverProjects` catches at the call site —
  * silently for `NoProjectsFound` (expected for multi-root workspaces),
- * with `discoverProjectsError` telemetry for any other failure
+ * with a terminal error for any other failure
  * (e.g. permission errors, malformed pattern). Both paths resolve to `[]`
  * so activation is never short-circuited by a single empty/erroring folder.
  */
@@ -34,11 +32,6 @@ import { DBTWorkspaceFolder } from "../../dbt_client/dbtWorkspaceFolder";
 // Lightweight stand-ins for the DI graph. None of the project-registration
 // path is exercised — we're testing the discoverProjects → retryWithBackoff
 // boundary against the real source.
-const fakeTelemetry = {
-  sendTelemetryEvent: jest.fn(),
-  sendTelemetryError: jest.fn(),
-} as any;
-
 const fakeTerminal = {
   debug: jest.fn(),
   info: jest.fn(),
@@ -62,7 +55,6 @@ function makeFolder(): DBTWorkspaceFolder {
   return new DBTWorkspaceFolder(
     fakeProjectFactory,
     fakeDetectionFactory,
-    fakeTelemetry,
     fakeTerminal,
     ws,
     new EventEmitter() as any,
@@ -96,7 +88,7 @@ describe("discoverProjects: multi-root activation no-projects-found regression",
   });
 
   it("returns no projects (does not throw) when findFiles is consistently empty", async () => {
-    fakeTelemetry.sendTelemetryError.mockClear();
+    fakeTerminal.error.mockClear();
     const findFilesMock = stubWorkspaceFindFiles(() =>
       Promise.resolve([] as Uri[]),
     );
@@ -114,9 +106,9 @@ describe("discoverProjects: multi-root activation no-projects-found regression",
     expect(findFilesMock).toHaveBeenCalledTimes(5);
 
     // Empty folders are an expected multi-root case, not a failure — they
-    // must NOT fire `discoverProjectsError` telemetry, otherwise we just
+    // must NOT fire `discoverProjectsError` logging, otherwise we just
     // swap one noisy cluster for another.
-    expect(fakeTelemetry.sendTelemetryError).not.toHaveBeenCalled();
+    expect(fakeTerminal.error).not.toHaveBeenCalled();
   }, 20000);
 
   it("retry budget is still ~10s — confirms backoff schedule unchanged", async () => {
@@ -158,13 +150,13 @@ describe("discoverProjects: multi-root activation no-projects-found regression",
     expect(elapsed).toBeGreaterThanOrEqual(9500);
   }, 20000);
 
-  it("real findFiles errors resolve to [] AND fire discoverProjectsError telemetry", async () => {
+  it("real findFiles errors resolve to [] AND fire discoverProjectsError logging", async () => {
     // Activation must never crash on a single folder, so genuine errors
     // (permission failures, malformed RelativePattern, indexer crashes)
-    // also resolve to []. They DO fire `discoverProjectsError` telemetry
+    // also resolve to []. They DO fire `discoverProjectsError` logging
     // — we don't observe these in production today, but if they ever
     // start firing we want the signal instead of silently swallowing.
-    fakeTelemetry.sendTelemetryError.mockClear();
+    fakeTerminal.error.mockClear();
     let calls = 0;
     const findFilesMock = stubWorkspaceFindFiles(() => {
       calls += 1;
@@ -177,10 +169,10 @@ describe("discoverProjects: multi-root activation no-projects-found regression",
     expect(findFilesMock).toHaveBeenCalledTimes(5);
     expect(calls).toBe(5);
 
-    // Telemetry fires once with the underlying error — not the
-    // NoProjectsFound sentinel — so the cluster is meaningful.
-    expect(fakeTelemetry.sendTelemetryError).toHaveBeenCalledTimes(1);
-    const [eventName, error] = fakeTelemetry.sendTelemetryError.mock.calls[0];
+    // The terminal logs once with the underlying error — not the
+    // NoProjectsFound sentinel — so the failure is actionable.
+    expect(fakeTerminal.error).toHaveBeenCalledTimes(1);
+    const [eventName, , error] = fakeTerminal.error.mock.calls[0];
     expect(eventName).toBe("discoverProjectsError");
     expect((error as Error).message).toBe("EACCES: permission denied");
   }, 20000);

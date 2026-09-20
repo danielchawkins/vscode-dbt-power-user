@@ -1,7 +1,6 @@
 import { AddIcon, RemoveIcon } from "@assets/icons";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import { DbtGenericTests } from "@modules/documentationEditor/state/types";
-import { TelemetryEvents } from "@telemetryEvents";
 import {
   Button,
   Card,
@@ -16,7 +15,6 @@ import {
 } from "@uicore";
 import { useRef, useState } from "react";
 import classes from "../../styles.module.scss";
-import { sendTelemetryEvent } from "../telemetry";
 import TestForm from "./forms/TestForm";
 import useTestFormSave, { TestOperation } from "./hooks/useTestFormSave";
 
@@ -33,11 +31,6 @@ const AddTest = ({ title, currentTests, type }: Props): JSX.Element => {
   const { handleSave } = useTestFormSave();
 
   const handleNewTestClick = (test: DbtGenericTests) => {
-    sendTelemetryEvent(TelemetryEvents["DocumentationEditor/AddTestSelect"], {
-      test,
-      type,
-      entityName: title,
-    });
     if (test === DbtGenericTests.NOT_NULL || test === DbtGenericTests.UNIQUE) {
       handleSave({ test }, title, TestOperation.CREATE);
       setShowButtons(false);
@@ -49,10 +42,6 @@ const AddTest = ({ title, currentTests, type }: Props): JSX.Element => {
 
   const handleOpen = () => {
     setShowButtons((prev) => !prev);
-    sendTelemetryEvent(TelemetryEvents["DocumentationEditor/AddTestClick"], {
-      type,
-      entityName: title,
-    });
   };
   const onClose = () => {
     setFormType(null);

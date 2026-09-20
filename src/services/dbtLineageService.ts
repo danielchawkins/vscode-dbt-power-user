@@ -16,12 +16,7 @@ import { AbortError } from "node-fetch";
 import { CancellationTokenSource, env, Uri, window, workspace } from "vscode";
 import { ModelInfo } from "../altimate";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
-import {
-  AltimateRequest,
-  DBTTerminal,
-  QueryManifestService,
-  TelemetryService,
-} from "../modules";
+import { AltimateRequest, DBTTerminal, QueryManifestService } from "../modules";
 import { extendErrorWithSupportLinks } from "../utils";
 
 export enum CllEvents {
@@ -41,7 +36,6 @@ const canCompileSQL = (nodeType: string) =>
 export class DbtLineageService {
   public constructor(
     private altimateRequest: AltimateRequest,
-    protected telemetry: TelemetryService,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private queryManifestService: QueryManifestService,
@@ -352,13 +346,19 @@ export class DbtLineageService {
     const targetTables = Array.from(new Set(targets.map((t) => t[0])));
     // targets should not empty
     if (targets.length === 0 || modelInfos.length < targetTables.length) {
-      this.telemetry.sendTelemetryError("columnLineageLogicError", {
-        targets,
-        modelInfos,
-        upstreamExpansion,
-        currAnd1HopTables,
-        selectedColumn,
-      });
+      this.dbtTerminal.error(
+        "columnLineageLogicError",
+        "Unable to match lineage targets to models",
+        undefined,
+        false,
+        {
+          targets,
+          modelInfos,
+          upstreamExpansion,
+          currAnd1HopTables,
+          selectedColumn,
+        },
+      );
       return { column_lineage: [] };
     }
 
@@ -456,10 +456,6 @@ export class DbtLineageService {
         "response",
         result,
       );
-      this.telemetry.sendTelemetryEvent("columnLineageTimes", {
-        apiTime: apiTime.toString(),
-        modelInfosLength: modelInfos.length.toString(),
-      });
       console.log("lineageTimings:", {
         apiTime: apiTime.toString(),
         modelInfosLength: modelInfos.length.toString(),
@@ -468,9 +464,6 @@ export class DbtLineageService {
         window.showErrorMessage(
           extendErrorWithSupportLinks(result.errors.join("\n")),
         );
-        this.telemetry.sendTelemetryError("columnLineageApiError", {
-          errors: result.errors,
-        });
       }
       const column_lineage =
         result.column_lineage.map((c) => ({
@@ -492,10 +485,6 @@ export class DbtLineageService {
             "Fetching column level lineage timed out.",
           ),
         );
-        this.telemetry.sendTelemetryError(
-          "columnLevelLineageRequestTimeoutError",
-          error,
-        );
         return;
       }
       window.showErrorMessage(
@@ -504,7 +493,6 @@ export class DbtLineageService {
             (error as Error).message,
         ),
       );
-      this.telemetry.sendTelemetryError("ColumnLevelLineageError", error);
       return;
     }
   }

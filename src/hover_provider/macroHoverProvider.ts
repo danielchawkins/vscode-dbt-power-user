@@ -16,14 +16,12 @@ import {
   TextDocument,
 } from "vscode";
 import { QueryManifestService } from "../services/queryManifestService";
-import { TelemetryService } from "../telemetry";
 import { generateMacroHoverMarkdown } from "./utils";
 
 export class MacroHoverProvider implements HoverProvider, Disposable {
   private disposables: Disposable[] = [];
 
   constructor(
-    private telemetry: TelemetryService,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private queryManifestService: QueryManifestService,
@@ -70,7 +68,6 @@ export class MacroHoverProvider implements HoverProvider, Disposable {
       referencedBy,
       eventResult,
     );
-    this.telemetry.sendTelemetryEvent("provideMacroHover");
     return new Hover(hoverContent);
   }
 
