@@ -29,27 +29,30 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
   getRunModelCommandAdditionalParams(): string[] {
     const params = workspace
       .getConfiguration("dbt")
-      .get<
-        string[]
-      >("runModelCommandAdditionalParams", DEFAULT_CONFIGURATION_VALUES.runModelCommandAdditionalParams);
+      .get<string[]>(
+        "runModelCommandAdditionalParams",
+        DEFAULT_CONFIGURATION_VALUES.runModelCommandAdditionalParams,
+      );
     return params.map((p) => resolveSettingsVariables(p));
   }
 
   getBuildModelCommandAdditionalParams(): string[] {
     const params = workspace
       .getConfiguration("dbt")
-      .get<
-        string[]
-      >("buildModelCommandAdditionalParams", DEFAULT_CONFIGURATION_VALUES.buildModelCommandAdditionalParams);
+      .get<string[]>(
+        "buildModelCommandAdditionalParams",
+        DEFAULT_CONFIGURATION_VALUES.buildModelCommandAdditionalParams,
+      );
     return params.map((p) => resolveSettingsVariables(p));
   }
 
   getTestModelCommandAdditionalParams(): string[] {
     const params = workspace
       .getConfiguration("dbt")
-      .get<
-        string[]
-      >("testModelCommandAdditionalParams", DEFAULT_CONFIGURATION_VALUES.testModelCommandAdditionalParams);
+      .get<string[]>(
+        "testModelCommandAdditionalParams",
+        DEFAULT_CONFIGURATION_VALUES.testModelCommandAdditionalParams,
+      );
     return params.map((p) => resolveSettingsVariables(p));
   }
 

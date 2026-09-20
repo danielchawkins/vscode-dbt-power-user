@@ -5,9 +5,9 @@
   "type": "module",
   "engines": {
     "node": ">=22.12.0",
-    "npm": ">=10"
+    "npm": ">=11"
   },
-  "packageManager": "npm@10.9.4",
+  "packageManager": "npm@11.19.0",
   "scripts": {
     "dev": "vite",
     "watch": "rm -rf dist && tsc && vite build --watch",
@@ -109,5 +109,12 @@
     "serialize-javascript": "^7.0.0",
     "brace-expansion": "^2.0.2",
     "minimatch": "^9.0.7"
+  },
+  "allowScripts": {
+    "@parcel/watcher@2.6.0": true,
+    "esbuild@0.25.12": true,
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true,
+    "es5-ext": false
   }
 }

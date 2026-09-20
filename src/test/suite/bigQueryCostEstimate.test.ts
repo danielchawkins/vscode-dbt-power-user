@@ -120,8 +120,7 @@ describe("BigQueryCostEstimate.estimateCost arg destructure", () => {
     }
 
     function postFixWrapper({ returnResult }: { returnResult?: boolean } = {}):
-      | boolean
-      | undefined {
+      boolean | undefined {
       return returnResult;
     }
 

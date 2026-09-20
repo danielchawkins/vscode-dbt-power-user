@@ -278,16 +278,14 @@ export const getColumnTestConfigFromYml = (
   if (isRelationship(kwargs)) {
     return (
       testWithRightConfigValues as
-        | { relationships: TestMetadataAcceptedValues }
-        | undefined
+        { relationships: TestMetadataAcceptedValues } | undefined
     )?.["relationships"];
   }
 
   if (isAcceptedValues(kwargs)) {
     return (
       testWithRightConfigValues as
-        | { accepted_values: TestMetadataAcceptedValues }
-        | undefined
+        { accepted_values: TestMetadataAcceptedValues } | undefined
     )?.["accepted_values"];
   }
 

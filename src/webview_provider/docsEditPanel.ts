@@ -554,8 +554,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         (models.items.find(
           (
             item:
-              | DocumentationSchema["models"]["0"]
-              | DocumentationSchemaColumn,
+              DocumentationSchema["models"]["0"] | DocumentationSchemaColumn,
           ) => {
             if (item instanceof YAMLMap) {
               const name = item.get("name");
@@ -968,8 +967,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         },
       );
       const existingModels = parsedDocFile.get("models") as
-        | YAMLSeq<DocumentationSchema["models"]["0"]>
-        | undefined;
+        YAMLSeq<DocumentationSchema["models"]["0"]> | undefined;
 
       const model = this.findEntityInParsedDoc(
         existingModels,
@@ -1041,8 +1039,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         message.columns.forEach((column: any) => {
           const existingColumn = this.findEntityInParsedDoc(
             model.get("columns") as
-              | YAMLSeq<DocumentationSchemaColumn>
-              | undefined,
+              YAMLSeq<DocumentationSchemaColumn> | undefined,
             (name: string) => isColumnNameEqual(name, column.name),
           );
 
@@ -1099,8 +1096,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         if (
           (
             model.get("columns") as
-              | YAMLSeq<DocumentationSchemaColumn>
-              | undefined
+              YAMLSeq<DocumentationSchemaColumn> | undefined
           )?.items.length === 0
         ) {
           model.delete("columns");

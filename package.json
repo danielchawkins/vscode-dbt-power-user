@@ -16,7 +16,8 @@
   "version": "0.1.0-alpha.0",
   "engines": {
     "vscode": "^1.95.0",
-    "node": ">=22.12.0"
+    "node": ">=22.12.0",
+    "npm": ">=11"
   },
   "capabilities": {
     "hoverProvider": true
@@ -1257,11 +1258,9 @@
     "@vscode/test-electron": "^3.1.0",
     "@vscode/zeromq": "^0.2.1",
     "concurrently": "^9.2.1",
-    "cross-env": "^7.0.3",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^8.9.0",
     "eslint-plugin-prettier": "^5.2.1",
-    "file-loader": "^6.1.0",
     "glob": "^10.4.2",
     "glob-parent": "^6.0.2",
     "istanbul-lib-coverage": "^3.2.2",
@@ -1270,7 +1269,6 @@
     "lockfile-lint": "4.14.1",
     "mocha": "^11.7.5",
     "prettier": "^3.3.3",
-    "prettier-eslint": "^16.4.2",
     "prettier-plugin-organize-imports": "^3.2.4",
     "source-map-support": "^0.5.21",
     "ts-jest": "^29.1.0",
@@ -1293,9 +1291,8 @@
     "@types/express": "^5.0.0",
     "@vscode/chat-extension-utils": "^0.0.0-alpha.5",
     "@vscode/codicons": "^0.0.36",
-    "@vscode/extension-telemetry": "0.9.7",
+    "@vscode/extension-telemetry": "^1.5.2",
     "@vscode/vsce": "^3.9.1",
-    "@vscode/webview-ui-toolkit": "^1.4.0",
     "dayjs": "^1.11.13",
     "express": "^5.1.0",
     "inversify": "^6.0.2",
@@ -1318,5 +1315,11 @@
     "diff": "^8.0.3",
     "brace-expansion": "^2.0.2"
   },
-  "packageManager": "npm@10.9.4"
+  "packageManager": "npm@11.19.0",
+  "allowScripts": {
+    "@vscode/vsce-sign@2.1.0": true,
+    "keytar": false,
+    "zeromq@6.8.0": true,
+    "core-js": false
+  }
 }

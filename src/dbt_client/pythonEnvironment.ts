@@ -408,8 +408,7 @@ export class PythonEnvironment {
         }
         try {
           const integratedEnv:
-            | Record<string, Record<string, string>>
-            | undefined = workspace
+            Record<string, Record<string, string>> | undefined = workspace
             .getConfiguration("terminal")
             .get("integrated.env");
           if (integratedEnv) {

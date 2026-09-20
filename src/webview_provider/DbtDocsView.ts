@@ -80,8 +80,7 @@ export class DbtDocsView extends AltimateWebviewProvider {
         );
         this._shareId = payload.shareId as string | undefined;
         this._conversationGroupId = payload.conversationGroupId as
-          | string
-          | undefined;
+          string | undefined;
         if (this._panel) {
           (this._panel as WebviewPanel).dispose();
         }

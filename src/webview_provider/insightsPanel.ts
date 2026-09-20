@@ -212,15 +212,13 @@ export class InsightsPanel extends AltimateWebviewProvider {
         });
       }
 
-      if (
-        !(
-          currentConfig[root].deferToProduction ===
-            newConfig[root].deferToProduction &&
-          currentConfig[root].manifestPathForDeferral ===
-            newConfig[root].manifestPathForDeferral &&
-          currentConfig[root].favorState === newConfig[root].favorState
-        )
-      ) {
+      if (!(
+        currentConfig[root].deferToProduction ===
+          newConfig[root].deferToProduction &&
+        currentConfig[root].manifestPathForDeferral ===
+          newConfig[root].manifestPathForDeferral &&
+        currentConfig[root].favorState === newConfig[root].favorState
+      )) {
         window.withProgress(
           {
             location: ProgressLocation.Notification,
