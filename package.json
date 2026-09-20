@@ -171,6 +171,12 @@
       {
         "title": "dbt Power User",
         "properties": {
+          "dbt.enabled": {
+            "type": "boolean",
+            "description": "Enable Fusion Power User for this workspace folder.",
+            "default": true,
+            "scope": "resource"
+          },
           "dbt.unquotedCaseInsensitiveIdentifierRegex": {
             "type": "string",
             "markdownDescription": "Regex to identify unquoted identifiers. Example: `^([_A-Z]+[_A-Z0-9$]*)$`"
