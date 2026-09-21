@@ -60,9 +60,7 @@ const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
 
   useEffect(() => {
     window.addEventListener("message", onMesssage);
-    if (window.viewPath !== "/docs-generator") {
-      executeRequestInAsync("webview:ready", {});
-    }
+    executeRequestInAsync("webview:ready", {});
 
     const themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mu) => {

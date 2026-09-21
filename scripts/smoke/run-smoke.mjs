@@ -1,12 +1,12 @@
+import {
+  resolveCliArgsFromVSCodeExecutablePath,
+  runTests,
+} from "@vscode/test-electron";
 import { spawnSync } from "child_process";
 import { copyFileSync, cpSync, mkdtempSync, rmSync } from "fs";
 import { tmpdir } from "os";
 import path from "path";
 import { fileURLToPath } from "url";
-import {
-  resolveCliArgsFromVSCodeExecutablePath,
-  runTests,
-} from "@vscode/test-electron";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -30,13 +30,16 @@ if (!hostApp || !vsix) {
   console.error("Missing --host-app or --vsix");
   process.exit(2);
 }
+const remoteDebuggingPort = process.env.FPU_CDP_PORT;
 
-const compile = spawnSync("npm", ["run", "compile:integration"], {
-  cwd: root,
-  stdio: "inherit",
-});
-if (compile.status !== 0) {
-  process.exit(compile.status ?? 1);
+if (process.env.FPU_SKIP_INTEGRATION_COMPILE !== "1") {
+  const compile = spawnSync("npm", ["run", "compile:integration"], {
+    cwd: root,
+    stdio: "inherit",
+  });
+  if (compile.status !== 0) {
+    process.exit(compile.status ?? 1);
+  }
 }
 
 copyFileSync(
@@ -45,7 +48,9 @@ copyFileSync(
 );
 
 const userDataDir = mkdtempSync(path.join(tmpdir(), `fpu-smoke-${host}-`));
-const extensionsDir = mkdtempSync(path.join(tmpdir(), `fpu-smoke-ext-${host}-`));
+const extensionsDir = mkdtempSync(
+  path.join(tmpdir(), `fpu-smoke-ext-${host}-`),
+);
 const workspaceParent = mkdtempSync(
   path.join(tmpdir(), `fpu-smoke-workspace-${host}-`),
 );
@@ -87,6 +92,9 @@ try {
       workspaceDir,
       `--user-data-dir=${userDataDir}`,
       `--extensions-dir=${extensionsDir}`,
+      ...(remoteDebuggingPort
+        ? [`--remote-debugging-port=${remoteDebuggingPort}`]
+        : []),
       "--disable-workspace-trust",
       "--skip-release-notes",
       "--skip-welcome",

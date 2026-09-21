@@ -201,6 +201,10 @@ smoke-cursor *args:
     bash scripts/smoke/run-host-smoke.sh --host cursor "$@"
 
 [group("tests")]
+benchmark-runtime-vscode vsix:
+    node scripts/benchmark/measure-runtime.mjs --host vscode --vsix "{{ vsix }}"
+
+[group("tests")]
 smoke *args:
     just smoke-vscode "$@"
     just smoke-cursor "$@"

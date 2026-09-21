@@ -252,6 +252,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     context: WebviewViewResolveContext,
     _token: CancellationToken,
   ) {
+    this.beginWebviewResolve();
     this.updateViewTypeToWebview(QueryPanelViewType.DEFAULT);
     this._panel = panel;
     this._bottomPanel = panel;

@@ -2,7 +2,7 @@
 
 Pinned-host smoke and local `just smoke-cursor` install Cursor from an immutable production URL, never from a developer profile and never from unofficial mirrors.
 
-The smoke verifies packaged-VSIX installation, activation, runtime metadata, required webview assets, and retained command registration. It does not prove that webviews rendered, and it records no activation, first-contentful-paint, or resolve-to-ready timing. Those visible-host assertions remain required before the browser target can change.
+The smoke verifies packaged-VSIX installation, activation, runtime metadata, required webview assets, and retained command registration. Cursor rendering and runtime timing remain deferred because its clean-profile login flow disrupts unattended panel automation; the VS Code runtime benchmark does not stand in for Cursor evidence.
 
 ## Official source
 
