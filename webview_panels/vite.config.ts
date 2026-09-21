@@ -40,9 +40,10 @@ function copyCodicons(): Plugin {
 export const viteConfig = defineConfig({
   plugins: [svgr(), react(), copyCodicons()],
   build: {
+    target: "chrome148",
     cssMinify: "esbuild",
     cssCodeSplit: false,
-    rollupOptions: {
+    rolldownOptions: {
       input: "./src/main.tsx",
       output: {
         entryFileNames: `assets/[name].js`,
