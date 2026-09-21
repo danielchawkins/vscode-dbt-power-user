@@ -1,4 +1,4 @@
-// Jest Snapshot v1, https://goo.gl/fbAQLP
+// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
 
 exports[`Metadata contract — shape and key set snapshot snapshots parser maps on ManifestCacheProjectAddedEvent 1`] = `
 {

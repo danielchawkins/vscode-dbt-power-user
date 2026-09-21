@@ -1,7 +1,6 @@
 module.exports = {
   "@typescript-eslint/no-explicit-any": "error",
   "@typescript-eslint/explicit-module-boundary-types": "warn", // on because it's good
-  "@typescript-eslint/indent": "off", // off because https://github.com/typescript-eslint/typescript-eslint/issues/1824
   "@typescript-eslint/no-shadow": "warn", // on because it's good
   "@typescript-eslint/naming-convention": [
     "error",
@@ -31,7 +30,7 @@ module.exports = {
       checksVoidReturn: false,
     },
   ],
-  "@typescript-eslint/ban-types": [
+  "@typescript-eslint/no-restricted-types": [
     "warn",
     {
       types: {
@@ -58,5 +57,4 @@ module.exports = {
     "error",
     { varsIgnorePattern: "^_", argsIgnorePattern: "^_" },
   ],
-  "typescript-sort-keys/string-enum": ["warn", "asc", { caseSensitive: true }],
 };

@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { Uri, workspace } from "vscode";
+import { Uri, workspace, type WorkspaceFolder } from "vscode";
 import { PythonEnvironment } from "../../dbt_client/pythonEnvironment";
 import {
   StaticRuntimePythonEnvironment,
@@ -34,8 +34,8 @@ describe("StaticRuntimePythonEnvironment", () => {
   });
 
   it("should resolve workspace folder when path is provided", () => {
-    const mockFolder = {
-      uri: { fsPath: "/workspace/project" },
+    const mockFolder: WorkspaceFolder = {
+      uri: Uri.file("/workspace/project"),
       name: "project",
       index: 0,
     };
@@ -132,8 +132,8 @@ describe("VSCodeRuntimePythonEnvironmentProvider", () => {
   });
 
   it("should return environment with getEnvironmentVariables that resolves workspace paths", () => {
-    const mockFolder = {
-      uri: { fsPath: "/workspace/project" },
+    const mockFolder: WorkspaceFolder = {
+      uri: Uri.file("/workspace/project"),
       name: "project",
       index: 0,
     };

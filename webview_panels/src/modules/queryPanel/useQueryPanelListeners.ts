@@ -28,9 +28,9 @@ import {
 const useQueryPanelListeners = (): { loading: boolean } => {
   const dispatch = useQueryPanelDispatch();
   const { loading, hintIndex, queryResults } = useQueryPanelState();
-  const hintInterval = useRef<NodeJS.Timeout>();
+  const hintInterval = useRef<NodeJS.Timeout | undefined>(undefined);
   const hintIndexRef = useRef<number>(hintIndex);
-  const queryExecutionTimer = useRef<NodeJS.Timeout>();
+  const queryExecutionTimer = useRef<NodeJS.Timeout | undefined>(undefined);
   const queryStart = useRef(Date.now());
 
   useEffect(() => {
@@ -148,7 +148,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
           dispatch(
             setViewType(
               (args.args.body as { type: QueryPanelViewType })
-                .type as QueryPanelViewType,
+                .type,
             ),
           );
           break;

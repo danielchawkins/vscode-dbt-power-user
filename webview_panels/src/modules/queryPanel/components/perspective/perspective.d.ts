@@ -1,6 +1,5 @@
 import { HTMLPerspectiveViewerDatagridPluginElement as FinosHTMLPerspectiveViewerDatagridPluginElement } from "@finos/perspective-viewer-datagrid";
 import { HTMLPerspectiveViewerElement } from "@finos/perspective-viewer";
-import type { Schema } from "@finos/perspective";
 
 declare global {
   interface TableCellMetadata {
@@ -13,7 +12,7 @@ declare global {
   interface PerspectiveViewerView {
     column_paths: () => Promise<string[]>;
     get_config: () => Promise<{ group_by: string[] }>;
-    schema: () => Promise<Schema>;
+    schema: () => Promise<Record<string, string>>;
   }
 
   interface CustomElementRegistry {

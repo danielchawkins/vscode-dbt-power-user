@@ -244,6 +244,10 @@ Verify: `just check` green; `grep -rn "telemetry" src -i` empty; integration tes
 
 **Release alpha.1** (`0.1.0-alpha.1`). Still manifest-driven and not yet useful for the LSP goal, but it is the first artifact that is unambiguously local-only and installable, and it exercises the release pipeline early. Bring Phase 9 step 9.4's release workflow forward if this phase finishes first.
 
+**3.7 — Latest majors (`chore/latest-majors`).** After 3.6, before Phase 4. The only compatibility ceiling is the Extensions API this product declares: `engines.vscode` and `@types/vscode` are the newest version both VS Code and Cursor actually support (Confirm if those diverge; take the intersection). Node, npm, TypeScript, the extension host module format, Inversify, React, ESLint, Vite, and every other direct dependency are fair game — newest published major with a caret (`^x.y.z`), or a replacement if the package is unmaintained or cannot take that major. Do not keep CommonJS, an old React, or an old Inversify as a freeze. Migrate `moduleResolution` off `node`/`node10` (`nodenext` or `bundler` as the compiler/bundler requires). No `ignoreDeprecations`. `engines.node` is `>=<current LTS major> <next major>`. Leave Fusion at 2.0.5 in `mise.toml`. SHA-pinned GitHub Actions stay SHA-pinned. Split into more than one PR if a single change is too large; do not leave leftovers unscheduled. `just check` and `just package` green.
+
+**Tooling after 3.7 (not a gate).** Evaluate a report-only `just lint-complexity`. Do not add it to `just lint`, `just check`, Lefthook pre-push, or CI. Promoting it to a gate is a later Confirm, not before Phase 8.
+
 ---
 
 ### Phase 4 — The Declared Project model → **alpha.2**

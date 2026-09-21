@@ -43,7 +43,7 @@ const ProjectSetupStep = ({
         setProjects(projectList ?? []);
 
         // Auto-select if only one project
-        if (projectList && projectList.length === 1) {
+        if (projectList?.length === 1) {
           setSelectedProject(projectList[0].projectRoot);
         }
         setSetupState("idle");

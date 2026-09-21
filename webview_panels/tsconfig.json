@@ -21,15 +21,13 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
-    "downlevelIteration": true,
-    "baseUrl": ".",
     "paths": {
-      "@uicore": ["src/uiCore/index.ts"],
-      "@lib": ["src/lib/index.ts"],
-      "@assets/*": ["src/assets/*"],
-      "@modules/*": ["src/modules/*"],
-      "@testUtils": ["src/testUtils/index.ts"],
-      "@vscodeApi": ["src/modules/vscode/index.ts"]
+      "@uicore": ["./src/uiCore/index.ts"],
+      "@lib": ["./src/lib/index.ts"],
+      "@assets/*": ["./src/assets/*"],
+      "@modules/*": ["./src/modules/*"],
+      "@testUtils": ["./src/testUtils/index.ts"],
+      "@vscodeApi": ["./src/modules/vscode/index.ts"]
     },
     "typeRoots": ["src/modules/queryPanel/components/perspective"]
   },

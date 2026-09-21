@@ -25,12 +25,12 @@ const PerspectiveErrorBoundary = ({
     }
   };
 
-  const handleOnError = (errorObject: Error) => {
-    setError({
-      message: errorObject.message,
-      stack: errorObject.stack,
-      name: errorObject.name,
-    });
+  const handleOnError = (errorObject: unknown) => {
+    setError(
+      errorObject instanceof Error
+        ? errorObject
+        : new Error("Unknown Perspective rendering error"),
+    );
   };
 
   const fallbackRenderer = () => {

@@ -1,8 +1,9 @@
-import perspective, { TableData } from "@finos/perspective";
+import perspective from "@finos/perspective";
 import "@finos/perspective-viewer";
+import type { ColumnConfigValues } from "@finos/perspective-viewer";
 import {
   HTMLPerspectiveViewerElement,
-  PerspectiveViewerConfig,
+  ViewerConfigUpdate,
 } from "@finos/perspective-viewer";
 import "@finos/perspective-viewer-d3fc";
 import "@finos/perspective-viewer-datagrid";
@@ -16,6 +17,7 @@ import { executeRequestInAsync } from "@modules/app/requestExecutor";
 import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
 import { setPerspectiveTheme } from "@modules/queryPanel/context/queryPanelSlice";
+import { TableData } from "@modules/queryPanel/context/types";
 import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Drawer, DrawerRef } from "@uicore";
@@ -52,10 +54,40 @@ const PerspectiveViewer = ({
   const perspectiveViewerRef = useRef<HTMLPerspectiveViewerElement>(null);
   const drawerRef = useRef<DrawerRef | null>(null);
 
-  const config: PerspectiveViewerConfig = {
+  const columnsConfig = Object.fromEntries(
+    columnNames.flatMap((name, index) => {
+      const type = columnTypes[index];
+      if (type !== "Integer" && type !== "Number") {
+        return [];
+      }
+      return [
+        [
+          name,
+          {
+            number_format: {
+              minimumIntegerDigits: null,
+              minimumFractionDigits: 0,
+              maximumFractionDigits: 20,
+              minimumSignificantDigits: null,
+              maximumSignificantDigits: null,
+              roundingPriority: null,
+              roundingIncrement: null,
+              roundingMode: null,
+              trailingZeroDisplay: null,
+              useGrouping: false,
+              signDisplay: null,
+            },
+          },
+        ],
+      ];
+    }),
+  ) as Record<string, ColumnConfigValues>;
+
+  const config: ViewerConfigUpdate = {
     theme: perspectiveTheme,
     title: "query result",
     columns: [], // reset columns
+    columns_config: columnsConfig,
     settings: false,
     plugin_config: { editable: false },
   };
@@ -95,7 +127,7 @@ const PerspectiveViewer = ({
           .map((fieldName) => {
             const fieldData = row[fieldName];
             if (fieldData && typeof fieldData === "string") {
-              return `"${(fieldData as string).replace(/"/g, '""')}"`; // escape double quotes and Wrap in double quotes
+              return `"${(fieldData).replace(/"/g, '""')}"`; // escape double quotes and Wrap in double quotes
             }
             return JSON.stringify(fieldData, replacer);
           })
@@ -156,30 +188,14 @@ const PerspectiveViewer = ({
       return;
     }
 
-    const dataFormats = {
-      types: {
-        integer: {
-          format: {
-            useGrouping: false,
-          },
-        },
-        float: {
-          format: {
-            maximumFractionDigits: 20,
-            minimumFractionDigits: 0,
-            useGrouping: false,
-          },
-        },
-      },
-    };
-
     const schema: Record<string, string> = {};
     for (let i = 0; i < columnNames.length; i++) {
       schema[columnNames[i]] = mapType(columnTypes[i]);
     }
     try {
-      // @ts-expect-error valid parameter
-      const worker = perspective.worker(dataFormats);
+      const worker = await perspective.worker();
+      // Perspective accepts schema objects, but its generated type omits them.
+      // @ts-expect-error schema initialization is supported at runtime
       const table = await worker.table(schema);
       await table.replace(data);
 
@@ -207,7 +223,7 @@ const PerspectiveViewer = ({
       perspectiveViewerRef.current.addEventListener(
         "perspective-config-update",
         (event) => {
-          const ev = event as CustomEvent<PerspectiveViewerConfig>;
+          const ev = event as CustomEvent<ViewerConfigUpdate>;
           panelLogger.log("perspective-config-update", ev.detail);
           if (ev.detail.theme) {
             updateCustomStyles(ev.detail.theme);
@@ -263,7 +279,7 @@ const PerspectiveViewer = ({
     return () => {
       perspectiveViewerRef.current
         ?.getTable()
-        .then((table) => table.delete())
+        .then((table: { delete(): Promise<void> }) => table.delete())
         .catch((err) =>
           panelLogger.error("error while deleting perspective table", err),
         );

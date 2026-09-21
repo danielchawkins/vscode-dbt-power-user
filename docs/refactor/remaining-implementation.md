@@ -11,8 +11,10 @@ Phase 0 and 1.1 are complete. Merged onto `main`:
 | 1.2 Fusion version gate  | `src/fusion/fusionVersion.ts` plus PATH-only `FusionVersionDetection`. Accepts `dbt 2.0.5`. Untested major warns once to the terminal via `globalState`. Missing binary is `notFusion` / ENOENT debug, not a `notFound` verdict. |
 | 1.3 Conflict + `enabled` | Early return in `activate()` before `detectDBT` / MCP / status. Conflict is the only startup notification. `enabled` is false only when every folder is disabled.                                                                |
 | 2.1 Fixtures             | `src/test/fixtures/{single-project,multi-root,nested-project}` with `profile:` and dummy `profiles.yml`. Smoke in `fixturesSmoke.test.ts`. `src/test/fixtures/**/target/` is gitignored.                                         |
+| 2.2–2.4                  | Integration harness, scoping characterization, metadata contract snapshot.                                                                                                                                                       |
+| 3.1–3.6                  | Fusion-only factories; notebooks, AI/DataPilot, MCP, collaboration, telemetry deleted.                                                                                                                                           |
 
-The product is still manifest-driven. Core, Cloud, hosted Altimate, telemetry, AI, MCP, and notebooks remain. Fusion still extends Cloud. `DBTFusionCommandDetection` still lives in `@altimateai/dbt-integration`; do not patch `node_modules`.
+The product is still manifest-driven. Core and Cloud classes remain because Fusion still extends Cloud. `DBTFusionCommandDetection` still lives in `@altimateai/dbt-integration`; do not patch `node_modules`.
 
 ## How to land a step
 
@@ -96,9 +98,25 @@ Start only after Batch 1 is on `main`. Never run two 3.x steps in parallel. Orde
 
 Confirm: `grep` emptiness as named in the spec. Telemetry is 51 files; keep the diff mechanical.
 
+### After 3.6 — latest majors, then diagnostic lint
+
+Start only after 3.6 is on `main`. Bookmark `chore/latest-majors` for the first PR; further majors/replacements get their own bookmarks. Do not start Phase 4 until 3.7 and those booked follow-ons are on `main`. Do not run them beside 4.x.
+
+**Ceiling:** `engines.vscode` and `@types/vscode` are the newest Extensions API both VS Code and Cursor support (Confirm if they diverge). That is the only compatibility constraint. Installed Cursor reports `vscodeVersion` 1.128.0; VS Code is 1.137.0; take 1.128 for `engines.vscode`. `@types/vscode` has no 1.128 publish (1.125 then 1.136+); pin `1.125.0` so types do not float above that API. The host may become ESM. Inversify, React, ESLint, TypeScript, and the rest take the current major or a replacement.
+
+**Job:** every remaining direct npm dependency (root and `webview_panels`) to the newest published major as `^x.y.z`. Drop exact versions, tildes, and tighter-than-caret ranges, except `@types/vscode`. Replace a package that is unmaintained or cannot take the current major (do not pin an old major and call it a host-shape freeze). Migrate `moduleResolution` off `node`/`node10`. No `"ignoreDeprecations"`. Refresh lockfiles with `just update` (or equivalent), re-review `allowScripts`, `just check` and `just package` green.
+
+**Engines:** `engines.node` is `>=<current LTS major> <next major>`. mise contributor CLIs already track `latest`; Fusion stays `2.0.5` in `mise.toml` — product minimum, not a library to float. SHA-pin GitHub Actions stay SHA-pinned.
+
+**Do not:** add complexity lint in these PRs; delete Core/Cloud classes; bump Fusion; treat CommonJS as inviolable.
+
+**Held in 3.7, booked as own PRs before Phase 4:** Tailwind 4 (class prefix `al-` becomes a variant; `@source` for `@altimateai/ui-components`; Vite 8 `cssMinify: "esbuild"` until lightningcss accepts the output); ESM host plus Inversify 8; webview ESLint 10 (replace `eslint-plugin-react` / `eslint-plugin-import` / `eslint-plugin-jsx-a11y` if they stay on ESLint 9); React 19 (replace `@altimateai/ui-components` and `@ant-design/pro-chat` which peer on React 18 / antd 5); `@finos/perspective*` to `@perspective-dev/*`. TypeScript 7 when `typescript-eslint` supports it.
+
+After the last booked majors PR, evaluate a report-only `just lint-complexity` (ESLint `complexity` / `max-depth` or sonarjs). Prefer warn or a non-failing recipe. Do not add it to `just lint`, `just check`, Lefthook pre-push, or CI. Promoting it to a gate needs a later Confirm, and not before Phase 8 at the earliest.
+
 ## Batch 3 — Phase 4 Declared Projects (strictly serial)
 
-Start only after Phase 3. Never parallel with 3.x or another 4.x step.
+Start only after Phase 3 and 3.7. Never parallel with 3.x, 3.7, or another 4.x step.
 
 | Step | Bookmark                      | Turns green                                                                                                                                                                    |
 | ---- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |

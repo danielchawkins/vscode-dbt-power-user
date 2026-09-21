@@ -5,7 +5,7 @@ module.exports = {
   testMatch: ["**/*.test.ts"],
   testPathIgnorePatterns: ["/node_modules/", "/src/test/integration/"],
   transform: {
-    "^.+\\.tsx?$": ["ts-jest", { tsconfig: "tsconfig.json" }],
+    "^.+\\.tsx?$": ["ts-jest", { tsconfig: "tsconfig.jest.json" }],
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
   setupFilesAfterEnv: ["<rootDir>/src/test/setup.ts"],

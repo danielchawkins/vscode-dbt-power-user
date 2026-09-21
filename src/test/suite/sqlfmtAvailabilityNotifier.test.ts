@@ -14,20 +14,20 @@ import { DbtDocumentFormattingEditProvider } from "../../document_formatting_edi
 import { SqlFmtAvailabilityNotifier } from "../../document_formatting_edit_provider/sqlfmtAvailabilityNotifier";
 
 describe("SqlFmtAvailabilityNotifier", () => {
-  let resolveSqlFmtPath: jest.Mock<any>;
-  let invalidateSqlFmtPathCache: jest.Mock<any>;
-  let getProjects: jest.Mock<any>;
-  let getFromGlobalState: jest.Mock<any>;
-  let setToGlobalState: jest.Mock<any>;
-  let showInformationMessage: jest.Mock<any>;
-  let showErrorMessage: jest.Mock<any>;
-  let withProgress: jest.Mock<any>;
-  let createCommandProcessExecution: jest.Mock<any>;
-  let completeWithTerminalOutput: jest.Mock<any>;
+  let resolveSqlFmtPath: jest.Mock<(...args: any[]) => any>;
+  let invalidateSqlFmtPathCache: jest.Mock<(...args: any[]) => any>;
+  let getProjects: jest.Mock<(...args: any[]) => any>;
+  let getFromGlobalState: jest.Mock<(...args: any[]) => any>;
+  let setToGlobalState: jest.Mock<(...args: any[]) => any>;
+  let showInformationMessage: jest.Mock<(...args: any[]) => any>;
+  let showErrorMessage: jest.Mock<(...args: any[]) => any>;
+  let withProgress: jest.Mock<(...args: any[]) => any>;
+  let createCommandProcessExecution: jest.Mock<(...args: any[]) => any>;
+  let completeWithTerminalOutput: jest.Mock<(...args: any[]) => any>;
   let onDidChangeActiveTextEditorListener:
     ((editor: vscode.TextEditor | undefined) => unknown) | undefined;
   let onManifestChangedListener: (() => unknown) | undefined;
-  let onManifestChanged: jest.Mock<any>;
+  let onManifestChanged: jest.Mock<(...args: any[]) => any>;
 
   beforeEach(() => {
     resolveSqlFmtPath = jest.fn();

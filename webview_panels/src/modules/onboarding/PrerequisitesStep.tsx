@@ -177,7 +177,7 @@ const PrerequisitesStep = forwardRef<
         setChecks((prev) =>
           prev.map((check) => ({
             ...check,
-            status: "checking" as CheckStatus,
+            status: "checking",
           })),
         );
       }
@@ -224,7 +224,7 @@ const PrerequisitesStep = forwardRef<
 
       // Set all checks to error
       setChecks((prev) =>
-        prev.map((check) => ({ ...check, status: "error" as CheckStatus })),
+        prev.map((check) => ({ ...check, status: "error" })),
       );
     } finally {
       if (!silent) {
@@ -242,7 +242,7 @@ const PrerequisitesStep = forwardRef<
       setProjects(projectList ?? []);
 
       // Auto-select if only one project
-      if (projectList && projectList.length === 1) {
+      if (projectList?.length === 1) {
         setSelectedProject(projectList[0].projectRoot);
       }
     } catch (err) {

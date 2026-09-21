@@ -185,7 +185,7 @@ const useTestFormSave = (): {
             column_name: column,
             model: currentDocsData?.name ?? "",
             values: newValues,
-            to: data.to ? data.to : undefined,
+            to: data.to ?? undefined,
             field: data.field,
           },
         },
@@ -206,7 +206,7 @@ const useTestFormSave = (): {
       return updateTests(
         testsData,
         {
-          to: data.to ? data.to : undefined,
+          to: data.to ?? undefined,
           field: data.field,
         },
         DbtGenericTests.RELATIONSHIPS,
