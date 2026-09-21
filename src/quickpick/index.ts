@@ -1,7 +1,6 @@
 import { commands, Disposable, window } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { SharedStateService } from "../services/sharedStateService";
-import { OnboardingPanel } from "../webview_provider/onboardingPanel";
 import { DbtPowerUserControlCenterAction } from "./actionsQuickPick";
 import { ProjectQuickPick } from "./projectQuickPick";
 
@@ -13,20 +12,10 @@ export class DbtPowerUserActionsCenter implements Disposable {
     private projectQuickPick: ProjectQuickPick,
     private dbtProjectContainer: DBTProjectContainer,
     private emitterService: SharedStateService,
-    private onboardingPanel: OnboardingPanel,
   ) {
     commands.registerCommand("dbtPowerUser.puQuickPick", async () => {
       await this.puLaunchQuickPick.openActions();
     });
-    commands.registerCommand(
-      "dbtPowerUser.openOnboarding",
-      async (initialStep?: string) => {
-        this.emitterService.eventEmitter.fire({
-          command: "onboarding:render",
-          payload: initialStep ? { initialStep } : {},
-        });
-      },
-    );
     commands.registerCommand("dbtPowerUser.pickProject", async () => {
       const pickedProject = await this.projectQuickPick.projectPicker(
         await this.dbtProjectContainer.getProjects(),
@@ -35,11 +24,6 @@ export class DbtPowerUserActionsCenter implements Disposable {
         this.dbtProjectContainer.setToWorkspaceState(
           "dbtPowerUser.projectSelected",
           pickedProject,
-        );
-        commands.executeCommand(
-          "setContext",
-          "dbtPowerUser.walkthroughProjectSelected",
-          true,
         );
         window.showInformationMessage(
           "You have succesfully selected " + pickedProject.label + ".",

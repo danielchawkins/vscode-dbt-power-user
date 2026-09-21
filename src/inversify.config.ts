@@ -137,9 +137,7 @@ import { WebviewViewProviders } from "./webview_provider";
 import { DocsEditViewPanel } from "./webview_provider/docsEditPanel";
 import { LineagePanel } from "./webview_provider/lineagePanel";
 import { NewLineagePanel } from "./webview_provider/newLineagePanel";
-import { OnboardingPanel } from "./webview_provider/onboardingPanel";
 import { QueryResultPanel } from "./webview_provider/queryResultPanel";
-import { WhatsNewPanel } from "./webview_provider/whatsNewPanel";
 
 export const container = new Container();
 
@@ -1146,8 +1144,7 @@ container
   .toDynamicValue((context) => {
     return new WalkthroughCommands(
       context.get(DBTProjectContainer),
-      context.get(CommandProcessExecutionFactory),
-      context.get(PythonEnvironment),
+      context.get(ProjectQuickPick),
       context.get("DBTTerminal"),
     );
   })
@@ -1164,7 +1161,6 @@ container
       context.get(WalkthroughCommands),
       context.get("DBTTerminal"),
       context.get(DiagnosticsOutputChannel),
-      context.get(SharedStateService),
       context.get(PythonEnvironment),
       context.get(DBTClient),
       context.get(AltimateRequest),
@@ -1172,7 +1168,6 @@ container
       context.get(CteProfilerService),
       context.get(CteProfilerDecorationProvider),
       context.get(CteCodeLensProvider),
-      context.get(WhatsNewPanel),
     );
   })
   .inSingletonScope();
@@ -1319,35 +1314,6 @@ container
   })
   .inSingletonScope();
 
-container
-  .bind(OnboardingPanel)
-  .toDynamicValue((context) => {
-    return new OnboardingPanel(
-      context.get(DBTProjectContainer),
-      context.get(AltimateRequest),
-      context.get(SharedStateService),
-      context.get("DBTTerminal"),
-      context.get(QueryManifestService),
-      context.get(WalkthroughCommands),
-      context.get(AltimateAuthService),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(WhatsNewPanel)
-  .toDynamicValue((context) => {
-    return new WhatsNewPanel(
-      context.get(DBTProjectContainer),
-      context.get(AltimateRequest),
-      context.get(SharedStateService),
-      context.get("DBTTerminal"),
-      context.get(QueryManifestService),
-      context.get(AltimateAuthService),
-    );
-  })
-  .inSingletonScope();
-
 // Bind DbtPowerUserActionsCenter
 container
   .bind(DbtPowerUserActionsCenter)
@@ -1357,7 +1323,6 @@ container
       context.get(ProjectQuickPick),
       context.get(DBTProjectContainer),
       context.get(SharedStateService),
-      context.get(OnboardingPanel),
     );
   })
   .inSingletonScope();
@@ -1383,7 +1348,6 @@ container
       context.get(ValidationProvider),
       context.get(AltimateRequest),
       context.get(AltimateAuthService),
-      context.get(WhatsNewPanel),
     );
   })
   .inSingletonScope();

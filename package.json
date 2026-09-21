@@ -89,11 +89,6 @@
             "type": "boolean",
             "description": "Enable the new lineage panel in dbt."
           },
-          "dbt.showChangelogOnUpdate": {
-            "type": "boolean",
-            "description": "Show the What's New page automatically after the extension updates to a new minor or major version.",
-            "default": true
-          },
           "dbt.lineage.showSelectEdges": {
             "type": "boolean",
             "description": "Show select edges in lineage panel.",
@@ -341,11 +336,6 @@
         "category": "dbt Power User"
       },
       {
-        "command": "dbtPowerUser.showWhatsNew",
-        "title": "Show What's New",
-        "category": "dbt Power User"
-      },
-      {
         "command": "dbtPowerUser.viewInDocEditor",
         "title": "View in documentation editor",
         "category": "dbt Power User"
@@ -354,11 +344,6 @@
         "command": "dbtPowerUser.puQuickPick",
         "category": "dbt Power User",
         "title": "dbt Power User Quick Pick"
-      },
-      {
-        "command": "dbtPowerUser.openOnboarding",
-        "category": "dbt Power User",
-        "title": "Get Started with dbt Power User"
       },
       {
         "command": "dbtPowerUser.runCurrentModel",
@@ -407,6 +392,16 @@
         "title": "Validate SQL",
         "category": "dbt Power User",
         "icon": "$(circuit-board)"
+      },
+      {
+        "command": "dbtPowerUser.validateProject",
+        "title": "Validate dbt Project",
+        "category": "dbt Power User"
+      },
+      {
+        "command": "dbtPowerUser.installDeps",
+        "title": "Install dbt Package Dependencies",
+        "category": "dbt Power User"
       },
       {
         "command": "dbtPowerUser.compileCurrentModel",
