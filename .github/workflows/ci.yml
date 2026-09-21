@@ -113,4 +113,4 @@ jobs:
 
       - name: Smoke Cursor pinned stable
         run: |
-          just smoke-cursor --vsix fusion-power-user-*.vsix
+          just benchmark-runtime-cursor fusion-power-user-*.vsix

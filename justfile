@@ -205,6 +205,10 @@ benchmark-runtime-vscode vsix:
     node scripts/benchmark/measure-runtime.mjs --host vscode --vsix "{{ vsix }}"
 
 [group("tests")]
+benchmark-runtime-cursor vsix:
+    node scripts/benchmark/measure-runtime.mjs --host cursor --vsix "{{ vsix }}"
+
+[group("tests")]
 smoke *args:
     just smoke-vscode "$@"
     just smoke-cursor "$@"
