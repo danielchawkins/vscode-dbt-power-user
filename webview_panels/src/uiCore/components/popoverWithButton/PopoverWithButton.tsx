@@ -63,6 +63,7 @@ const PopoverWithButton: ForwardRefRenderFunction<
 
   return (
     <>
+      {/* eslint-disable-next-line jsx-a11y-x/no-static-element-interactions, jsx-a11y-x/click-events-have-key-events -- child is always an interactive control; wrapper only forwards clicks */}
       <span ref={buttonRef} onClick={onOpen}>
         {button}
       </span>

@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import { activateClickOnKeyDown } from "../../keyboardActivation";
 import classes from "./accordion.module.scss";
 
 const Accordion = ({
@@ -15,10 +16,17 @@ const Accordion = ({
     <div>
       <div
         className="cursor-pointer"
+        role="button"
+        tabIndex={0}
         onClick={(e) => {
           e.stopPropagation();
           setOpen((b) => !b);
         }}
+        onKeyDown={(e) =>
+          activateClickOnKeyDown(e, () => {
+            setOpen((b) => !b);
+          })
+        }
       >
         {trigger(open)}
       </div>

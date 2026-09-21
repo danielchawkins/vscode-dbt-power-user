@@ -1,5 +1,6 @@
 import useAppContext from "@modules/app/useAppContext";
 import { vscode } from "@modules/vscode";
+import { activateClickOnKeyDown } from "@uicore";
 
 // Thresholds for the balance-based color state.
 const LOW = 10;
@@ -68,7 +69,10 @@ const CreditsChip = (): JSX.Element | null => {
   return (
     <div
       title={tooltip}
+      role="button"
+      tabIndex={0}
       onClick={handleClick}
+      onKeyDown={(e) => activateClickOnKeyDown(e, () => handleClick())}
       style={{
         display: "inline-flex",
         alignItems: "center",

@@ -1,5 +1,5 @@
 import { QueryHistory } from "@modules/queryPanel/context/types";
-import { ListGroupItem } from "@uicore";
+import { activateClickOnKeyDown, ListGroupItem } from "@uicore";
 import BookmarkButton from "../queryPanelBookmarks/BookmarkButton";
 import ExecuteQueryButton from "./ExecuteQueryButton";
 import { FileCodeIcon } from "@assets/icons";
@@ -15,7 +15,12 @@ const QueryHistoryRow = ({ queryHistory, onSelect }: Props): JSX.Element => {
 
   return (
     <ListGroupItem>
-      <div onClick={handleClick}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        onKeyDown={(e) => activateClickOnKeyDown(e, handleClick)}
+      >
         <FileCodeIcon />
         {queryHistory.rawSql}
       </div>

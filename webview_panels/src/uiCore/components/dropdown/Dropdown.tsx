@@ -1,4 +1,4 @@
-import { List, Popover, PopoverBody, Stack } from "@uicore";
+import { Popover, PopoverBody } from "@uicore";
 import { useRef, useState } from "react";
 import classes from "./dropdown.module.scss";
 import { ArrowDownIcon } from "@assets/icons";
@@ -16,7 +16,7 @@ const Dropdown = ({
   onOptionSelect,
   selectedValue,
 }: Props): JSX.Element => {
-  const ref = useRef<HTMLDivElement | null>(null);
+  const ref = useRef<HTMLButtonElement | null>(null);
   const [openPopover, setOpenPopover] = useState(false);
 
   const onToggleClick = () => {
@@ -24,10 +24,15 @@ const Dropdown = ({
   };
   return (
     <div>
-      <Stack ref={ref} onClick={onToggleClick} className={classes.dropdown}>
+      <button
+        type="button"
+        ref={ref}
+        onClick={onToggleClick}
+        className={classes.dropdown}
+      >
         {options.find((o) => o.value === selectedValue)?.label ?? label}
         <ArrowDownIcon />
-      </Stack>
+      </button>
       <Popover
         isOpen={openPopover}
         target={ref}
@@ -36,21 +41,25 @@ const Dropdown = ({
         className={classes.popover}
       >
         <PopoverBody>
-          <List>
+          <ul>
             {options.map((option) => (
-              <li
-                key={option.value}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setOpenPopover(false);
-                  onOptionSelect(option.value);
-                }}
-                className={option.value === selectedValue ? classes.active : ""}
-              >
-                {option.label}
+              <li key={option.value}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setOpenPopover(false);
+                    onOptionSelect(option.value);
+                  }}
+                  className={
+                    option.value === selectedValue ? classes.active : ""
+                  }
+                >
+                  {option.label}
+                </button>
               </li>
             ))}
-          </List>
+          </ul>
         </PopoverBody>
       </Popover>
     </div>

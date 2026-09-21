@@ -21,18 +21,20 @@ export interface OptionType {
   value: string;
 }
 
+interface SelectExtraProps {
+  hideOptionIcon?: boolean;
+}
+
 const IconOption = (
-  props: OptionProps<OptionType, boolean, GroupBase<OptionType>> & {
-    selectName: string;
-    hideOptionIcon?: boolean;
-  },
+  props: OptionProps<OptionType, boolean, GroupBase<OptionType>>,
 ) => {
   const {
     data: { label },
     isMulti,
     isSelected,
-    hideOptionIcon,
+    selectProps,
   } = props;
+  const { hideOptionIcon } = selectProps as SelectExtraProps;
 
   return (
     <Option {...props}>
@@ -107,7 +109,6 @@ const AltimateSelect = (props: Props): JSX.Element => {
       ...props.styles?.container?.(styles, cprops),
     }),
   };
-  const selectName = props.name ?? `select-${Math.random()}`;
 
   if (props.isCreatable) {
     return (
@@ -115,17 +116,11 @@ const AltimateSelect = (props: Props): JSX.Element => {
         {...props}
         styles={colourStyles}
         className={`${props.className} altimate-select`}
+        hideOptionIcon={props.hideOptionIcon}
         // @ts-expect-error TODO fix this type
         components={{
           ...props.components,
-          Option: (optionProps) => (
-            // @ts-expect-error TODO fix this type
-            <IconOption
-              {...optionProps}
-              hideOptionIcon={props.hideOptionIcon}
-              selectName={selectName}
-            />
-          ),
+          Option: IconOption,
         }}
       />
     );
@@ -135,17 +130,11 @@ const AltimateSelect = (props: Props): JSX.Element => {
       {...props}
       styles={colourStyles}
       className={`${props.className} altimate-select`}
+      hideOptionIcon={props.hideOptionIcon}
       // @ts-expect-error TODO fix this type
       components={{
         ...props.components,
-        Option: (optionProps) => (
-          // @ts-expect-error TODO fix this type
-          <IconOption
-            {...optionProps}
-            hideOptionIcon={props.hideOptionIcon}
-            selectName={selectName}
-          />
-        ),
+        Option: IconOption,
       }}
     />
   );

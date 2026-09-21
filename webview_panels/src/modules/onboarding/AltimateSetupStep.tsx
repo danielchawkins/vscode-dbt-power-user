@@ -187,15 +187,22 @@ const AltimateSetupStep = ({
             <ol style={{ margin: "0 0 1rem", paddingLeft: "1.25rem" }}>
               <li>
                 Sign up at{" "}
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
+                <button
+                  type="button"
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "inherit",
+                    cursor: "pointer",
+                    padding: 0,
+                    textDecoration: "underline",
+                  }}
+                  onClick={() => {
                     void openUrl("https://app.myaltimate.com/register");
                   }}
                 >
                   app.myaltimate.com
-                </a>
+                </button>
               </li>
               <li>Navigate to Settings &rarr; API Keys</li>
               <li>Copy your API key and instance name</li>

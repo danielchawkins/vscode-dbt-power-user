@@ -68,47 +68,50 @@ const Filters = ({
   };
 
   return (
-    <Stack className="gap-1" onClick={stopPropagation}>
-      {showSearch ? (
-        <Input
-          type="search"
-          placeholder="Search query"
-          onChange={handleSearchQueryChange}
-          onBlur={handleBlur}
-          autoFocus
-          style={{ marginBottom: 4.5, maxHeight: 38 }}
-          className={styles.searchInput}
-        />
-      ) : (
-        <IconButton title="Search query" onClick={() => setShowSearch(true)}>
-          <SearchIcon />
-        </IconButton>
-      )}
-      {showForm ? (
-        <Select
-          closeMenuOnSelect={false}
-          components={{ DropdownIndicator: null }}
-          styles={{
-            container: (s) => ({
-              ...s,
-              minWidth: 200,
-              marginBottom: "1rem",
-            }),
-          }}
-          autoFocus
-          inputId="tags"
-          openMenuOnFocus
-          isMulti
-          options={tags?.map((v) => ({ label: v, value: v })) ?? []}
-          onChange={handleTagsChange}
-          onBlur={handleTagsBlur}
-        />
-      ) : tags.length ? (
-        <IconButton title="Search query" onClick={() => setShowForm(true)}>
-          <FilterIcon />
-        </IconButton>
-      ) : null}
-    </Stack>
+    <>
+      {/* eslint-disable-next-line jsx-a11y-x/no-static-element-interactions, jsx-a11y-x/click-events-have-key-events -- nested controls own keyboard behavior; wrapper stops parent accordion click */}
+      <Stack className="gap-1" onClick={stopPropagation}>
+        {showSearch ? (
+          <Input
+            type="search"
+            placeholder="Search query"
+            onChange={handleSearchQueryChange}
+            onBlur={handleBlur}
+            autoFocus
+            style={{ marginBottom: 4.5, maxHeight: 38 }}
+            className={styles.searchInput}
+          />
+        ) : (
+          <IconButton title="Search query" onClick={() => setShowSearch(true)}>
+            <SearchIcon />
+          </IconButton>
+        )}
+        {showForm ? (
+          <Select
+            closeMenuOnSelect={false}
+            components={{ DropdownIndicator: null }}
+            styles={{
+              container: (s) => ({
+                ...s,
+                minWidth: 200,
+                marginBottom: "1rem",
+              }),
+            }}
+            autoFocus
+            inputId="tags"
+            openMenuOnFocus
+            isMulti
+            options={tags?.map((v) => ({ label: v, value: v })) ?? []}
+            onChange={handleTagsChange}
+            onBlur={handleTagsBlur}
+          />
+        ) : tags.length ? (
+          <IconButton title="Search query" onClick={() => setShowForm(true)}>
+            <FilterIcon />
+          </IconButton>
+        ) : null}
+      </Stack>
+    </>
   );
 };
 

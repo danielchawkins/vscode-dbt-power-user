@@ -131,7 +131,7 @@
             border-color: var(--primary-color);
           }
 
-          > div:first-child {
+          > :first-child {
             text-overflow: ellipsis;
             overflow: hidden;
             white-space: nowrap;
@@ -144,7 +144,7 @@
             }
           }
 
-          > div:last-child {
+          > :last-child {
             gap: 2px;
             span {
               vertical-align: bottom;
@@ -156,7 +156,7 @@
           }
 
           &:hover {
-            > div:last-child {
+            > :last-child {
               button {
                 display: inline-block;
                 color: var(--text-color--title);

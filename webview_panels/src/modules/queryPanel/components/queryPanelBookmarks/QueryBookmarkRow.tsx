@@ -14,9 +14,12 @@ const QueryBookmarkRow = ({
 }: Props): JSX.Element => {
   return (
     <ListGroupItem>
-      <Stack onClick={() => onSelect(bookmark)}>
+      <button
+        type="button"
+        className="border-0 bg-transparent p-0 text-start flex-grow-1 d-flex align-items-center gap-2"
+        onClick={() => onSelect(bookmark)}
+      >
         {bookmark.name}
-
         <Stack>
           {bookmark.tags.slice(0, 2).map((tag) => (
             <Tag key={tag.id}>{tag.tag}</Tag>
@@ -33,7 +36,7 @@ const QueryBookmarkRow = ({
             </Tooltip>
           ) : null}
         </Stack>
-      </Stack>
+      </button>
       <Stack>
         {isSharedView ? (
           <span className="me-2">{bookmark.created_by_user.first_name}</span>

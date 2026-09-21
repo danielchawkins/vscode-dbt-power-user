@@ -21,7 +21,7 @@ const AcceptedValues = ({
   const {
     state: { currentDocsData },
   } = useDocumentationContext();
-  const [, setRefresh] = useState(Date.now());
+  const [, setRefresh] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const getDistinctColumnValues = async () => {
     setIsLoading(true);
