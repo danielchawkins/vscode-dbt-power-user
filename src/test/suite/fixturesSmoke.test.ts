@@ -2,8 +2,9 @@ import { describe, expect, it } from "@jest/globals";
 import { existsSync, readFileSync, readdirSync } from "fs";
 import * as path from "path";
 import { parse } from "yaml";
+import { esmDirname } from "../esmDirname";
 
-const fixtures = path.resolve(__dirname, "../fixtures");
+const fixtures = path.resolve(esmDirname(import.meta.url), "../fixtures");
 const workspaces = ["single-project", "multi-root", "nested-project"];
 
 function findProjectFiles(root: string): string[] {

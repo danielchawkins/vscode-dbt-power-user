@@ -4,13 +4,14 @@ import { EventEmitter, Uri, workspace } from "vscode";
 import { ProjectRegisteredUnregisteredEvent } from "../../dbt_client/dbtProjectContainer";
 import { DBTWorkspaceFolder } from "../../dbt_client/dbtWorkspaceFolder";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
+import { esmDirname } from "../esmDirname";
 
 /**
  * Consumer cases 3–6. `it.failing` bodies assert the Phase 4 contract so they
  * fail on today's discovery and flip to passing when Phase 4 lands.
  */
 
-const fixturesRoot = path.resolve(__dirname, "../fixtures");
+const fixturesRoot = path.resolve(esmDirname(import.meta.url), "../fixtures");
 
 function yml(projectRoot: string) {
   return Uri.file(path.join(projectRoot, "dbt_project.yml"));

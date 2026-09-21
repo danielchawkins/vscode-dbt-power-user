@@ -1,6 +1,9 @@
 import { describe, expect, it } from "@jest/globals";
 import * as fs from "fs";
 import * as path from "path";
+import { esmDirname } from "../esmDirname";
+
+const testDir = esmDirname(import.meta.url);
 
 /**
  * Tests for the TextMate grammar files.
@@ -27,7 +30,7 @@ function toJsRegex(pattern: string, extraFlags = ""): RegExp {
 
 describe("Jinja SQL Grammar", () => {
   const grammarPath = path.resolve(
-    __dirname,
+    testDir,
     "../../../syntaxes/jinja-sql.tmLanguage.json",
   );
 
@@ -242,7 +245,7 @@ describe("Jinja SQL Grammar", () => {
 
 describe("Jinja YAML Injection Grammar", () => {
   const grammarPath = path.resolve(
-    __dirname,
+    testDir,
     "../../../syntaxes/jinja-yaml.tmLanguage.json",
   );
 
