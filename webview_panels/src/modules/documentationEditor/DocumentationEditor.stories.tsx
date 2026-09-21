@@ -1,17 +1,10 @@
 import { faker } from "@faker-js/faker";
-import { TeamMateProvider } from "@lib";
 import type { Meta } from "@storybook/react-vite";
 import {
   DBTDocumentationFactory,
   DBTDocumentationTestsFactory,
 } from "@testUtils";
 import DocumentationProvider from "./DocumentationProvider";
-// import {
-//   aiLearningsFactory,
-//   coachAiResponseFactory,
-//   delay,
-//   getRandomDelay,
-// } from "@lib-testUtils";
 import { useEffect } from "react";
 
 const meta = {
@@ -29,11 +22,7 @@ export default meta;
 
 export const DefaultHelpView = {
   render: (): JSX.Element => {
-    return (
-      <TeamMateProvider>
-        <DocumentationProvider />
-      </TeamMateProvider>
-    );
+    return <DocumentationProvider />;
   },
 };
 
@@ -75,11 +64,7 @@ const ModelDocGenStory = (): JSX.Element => {
     }, 100);
     return () => clearTimeout(timeoutId);
   }, []);
-  return (
-    <TeamMateProvider>
-      <DocumentationProvider />
-    </TeamMateProvider>
-  );
+  return <DocumentationProvider />;
 };
 
 export const ModelDocGenView = {
@@ -93,20 +78,6 @@ export const ModelDocGenView = {
             return { code: `select * from users` };
           case "fetch":
             return {};
-          // switch (request.endpoint) {
-          // case `/coach/training`:
-          //   await delay(getRandomDelay());
-          //   if (
-          //     (request.fetchArgs as RequestInit | undefined)?.method ===
-          //     "POST"
-          //   ) {
-          //   return coachAiResponseFactory.build();
-          //   }
-          //   return { train_docs: aiLearningsFactory.buildList(5) };
-          // case `/coach/training/confirm`:
-          //   await delay(getRandomDelay());
-          //   return coachAiResponseFactory.build();
-          // }
         }
       },
       timer: 500,

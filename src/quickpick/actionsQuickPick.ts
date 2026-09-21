@@ -19,30 +19,9 @@ export class DbtPowerUserControlCenterAction {
         dbtpuquickpick.title = "dbt Power User Control Panel";
         dbtpuquickpick.items = [
           new DbtPowerUserControlPanelItem(
-            "Change dbt flavour",
-            "compare-changes",
-            "Switch between dbt core, cloud or fusion",
-            "dbtPowerUser.openSetupWalkthrough",
-          ),
-          new DbtPowerUserControlPanelItem(
-            "Troubleshooting",
-            "debug",
-            "Setup the extension",
-            "dbtPowerUser.openOnboarding",
-            ["prerequisites"],
-          ),
-          new DbtPowerUserControlPanelItem(
-            "Tutorials",
-            "book",
-            "How to use the extension",
-            "dbtPowerUser.openTutorialWalkthrough",
-          ),
-          new DbtPowerUserControlPanelItem(
             "Documentation",
             "link-external",
             "View the detailed Documentation for the extension",
-            // This really is an older interface meant to work with executeCommand.
-            // recommended is to use vscode.env.openExternal
             "vscode.open",
             [Uri.parse("https://docs.myaltimate.com")],
           ),

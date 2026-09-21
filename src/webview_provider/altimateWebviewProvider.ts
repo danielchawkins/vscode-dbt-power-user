@@ -280,7 +280,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
               );
             },
             command,
-            params.endpoint === "auth/tenant-info" ? false : true,
+            true,
           );
           break;
         case "getProjectAdapterType":
@@ -524,184 +524,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         ),
       ),
     );
-    const AltimateCodeBannerUrl = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "altimate-code-banner-sml.png",
-        ),
-      ),
-    );
-
-    // Tutorial images - convert URIs to strings for serialization
-    const GenerateModelFromSourceGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "generate-model-from-source.gif",
-        ),
-      ),
-    );
-    const GenerateModelFromSQLGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "generate-model-from-SQL.gif",
-        ),
-      ),
-    );
-    const AutocompleteModelGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "autocomplete-model.gif",
-        ),
-      ),
-    );
-    const AutocompleteMacroGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "autocomplete-macro.gif",
-        ),
-      ),
-    );
-    const AutocompleteSourceGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "autocomplete-source.gif",
-        ),
-      ),
-    );
-    const DefinitionModelGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "definition-model.gif",
-        ),
-      ),
-    );
-    const DefinitionMacroGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "definition-macro.gif",
-        ),
-      ),
-    );
-    const QueryResultsAndSQLGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "query-results-and-SQL.gif",
-        ),
-      ),
-    );
-    const EDAAndExportGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "EDA-and-export.gif",
-        ),
-      ),
-    );
-    const QueryExplanationGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "query-explanation.gif",
-        ),
-      ),
-    );
-    const GraphGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "graph.gif",
-        ),
-      ),
-    );
-    const DocsEditorGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "docs-editor.gif",
-        ),
-      ),
-    );
-    const DocGenerationUsingAiGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "doc-generation-using-ai.gif",
-        ),
-      ),
-    );
-    const ModelLineageGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "model-lineage.gif",
-        ),
-      ),
-    );
-    const ColumnLineageGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "column-lineage.gif",
-        ),
-      ),
-    );
     const codiconsUri = webview.asWebviewUri(
       Uri.joinPath(
         extensionUri,
@@ -744,24 +566,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
               window.viewPath = "${this.viewPath}";
               var spinnerUrl = "${SpinnerUrl}"
               var lineageGif = "${LineageGif}"
-              window.altimateCodeBannerUrl = "${AltimateCodeBannerUrl}";
-              window.tutorialImages = {
-                generateModelFromSource: "${GenerateModelFromSourceGif}",
-                generateModelFromSQL: "${GenerateModelFromSQLGif}",
-                autocompleteModel: "${AutocompleteModelGif}",
-                autocompleteMacro: "${AutocompleteMacroGif}",
-                autocompleteSource: "${AutocompleteSourceGif}",
-                definitionModel: "${DefinitionModelGif}",
-                definitionMacro: "${DefinitionMacroGif}",
-                queryResultsAndSQL: "${QueryResultsAndSQLGif}",
-                edaAndExport: "${EDAAndExportGif}",
-                queryExplanation: "${QueryExplanationGif}",
-                graph: "${GraphGif}",
-                docsEditor: "${DocsEditorGif}",
-                docGenerationUsingAi: "${DocGenerationUsingAiGif}",
-                modelLineage: "${ModelLineageGif}",
-                columnLineage: "${ColumnLineageGif}"
-              }
             </script>
             
             <script nonce="${nonce}" type="module" src="${indexJs}"></script>

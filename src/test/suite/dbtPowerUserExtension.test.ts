@@ -27,11 +27,9 @@ const activationHarness = (enabled: boolean) => {
   Object.assign(extension, {
     dbtProjectContainer: {
       setContext: jest.fn(),
-      initializeWalkthrough: jest.fn(),
       detectDBT,
       initializeDBTProjects,
     },
-    whatsNewPanel: { checkAndShowOnActivation: jest.fn() },
     statusBars: { initialize: initializeStatusBars },
     altimateAuthService: { isAuthenticated: jest.fn(() => false) },
     altimateRequest: {

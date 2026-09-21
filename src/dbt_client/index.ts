@@ -126,13 +126,9 @@ export class DBTClient implements Disposable {
       if (!this.shownError) {
         // We don't want to flood the user with errors
         this.shownError = true;
-        const answer = await window.showErrorMessage(
+        await window.showErrorMessage(
           "Please ensure dbt Fusion CLI is installed.",
-          "Troubleshoot",
         );
-        if (answer === "Troubleshoot") {
-          commands.executeCommand("dbtPowerUser.openSetupWalkthrough");
-        }
       }
       return false;
     }

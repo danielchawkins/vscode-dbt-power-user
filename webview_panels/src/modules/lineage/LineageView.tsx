@@ -22,7 +22,7 @@ import { MissingLineageMessage, StaticLineageProps } from "./types";
 
 const LineageView = (): JSX.Element | null => {
   const {
-    state: { theme, isComponentsApiInitialized },
+    state: { theme },
   } = useAppContext();
 
   const [isApiHelperInitialized, setIsApiHelperInitialized] = useState(false);
@@ -37,9 +37,6 @@ const LineageView = (): JSX.Element | null => {
   >();
 
   useEffect(() => {
-    if (!isComponentsApiInitialized) {
-      return;
-    }
     panelLogger.info("LineageView updating components api helper");
     // @ts-expect-error TODO: add type generic for executeRequestInSync
     ApiHelper.get = async (url: string, data?: Record<string, unknown>) => {
@@ -79,7 +76,7 @@ const LineageView = (): JSX.Element | null => {
       }
     };
     setIsApiHelperInitialized(true);
-  }, [isComponentsApiInitialized]);
+  }, []);
 
   const render = (
     data: {

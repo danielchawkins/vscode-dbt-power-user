@@ -28,7 +28,6 @@ import { StatusBars } from "./statusbar";
 import { TreeviewProviders } from "./treeview_provider";
 import { ValidationProvider } from "./validation_provider";
 import { WebviewViewProviders } from "./webview_provider";
-import { WhatsNewPanel } from "./webview_provider/whatsNewPanel";
 
 enum PromptAnswer {
   YES = "Yes",
@@ -74,7 +73,6 @@ export class DBTPowerUserExtension implements Disposable {
     private validationProvider: ValidationProvider,
     private altimateRequest: AltimateRequest,
     private altimateAuthService: AltimateAuthService,
-    private whatsNewPanel: WhatsNewPanel,
   ) {
     this.disposables.push(
       this.dbtProjectContainer,
@@ -90,7 +88,6 @@ export class DBTPowerUserExtension implements Disposable {
       this.puStatusBars,
       this.hoverProviders,
       this.validationProvider,
-      this.whatsNewPanel,
     );
   }
 
@@ -133,8 +130,6 @@ export class DBTPowerUserExtension implements Disposable {
       }
 
       this.dbtProjectContainer.setContext(context);
-      this.dbtProjectContainer.initializeWalkthrough();
-      this.whatsNewPanel.checkAndShowOnActivation();
       await this.dbtProjectContainer.detectDBT();
       await this.dbtProjectContainer.initializeDBTProjects();
       await this.statusBars.initialize();

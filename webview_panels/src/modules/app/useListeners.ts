@@ -1,18 +1,12 @@
 import { panelLogger } from "@modules/logger";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { Dispatch, useCallback, useEffect } from "react";
-import {
-  setAvailableExecutions,
-  setTenantInfo,
-  updateTheme,
-} from "./appSlice";
+import { setAvailableExecutions, updateTheme } from "./appSlice";
 import {
   executeRequestInAsync,
-  executeRequestInSync,
   handleIncomingResponse,
 } from "./requestExecutor";
 import {
-  AppStateProps,
   IncomingMessageProps,
   IncomingSyncResponse,
   Themes,
@@ -29,8 +23,7 @@ const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
         case "creditsUpdate":
           dispatch(
             setAvailableExecutions(
-              // `Number.isFinite` rejects NaN (which passes `typeof === "number"`
-              // and would render "NaN credits"); `typeof` stays to narrow the type.
+              // typeof rejects non-numbers; isFinite rejects NaN and infinities.
               typeof args.availableExecutions === "number" &&
                 Number.isFinite(args.availableExecutions)
                 ? args.availableExecutions
@@ -65,27 +58,12 @@ const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
     dispatch(updateTheme(isDark(element) ? Themes.Dark : Themes.Light));
   };
 
-  const loadTenantInfo = () => {
-    executeRequestInSync("fetch", {
-      endpoint: "auth/tenant-info",
-      fetchArgs: { method: "GET" },
-    })
-      .then((data) => {
-        panelLogger.log("loadTenantInfo", data);
-        dispatch(setTenantInfo(data as AppStateProps["tenantInfo"]));
-      })
-      .catch((err) =>
-        panelLogger.error("error while fetching tenant info", err),
-      );
-  };
-
   useEffect(() => {
     window.addEventListener("message", onMesssage);
-
     if (window.viewPath !== "/docs-generator") {
       executeRequestInAsync("webview:ready", {});
-      loadTenantInfo();
     }
+
     const themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mu) => {
         panelLogger.debug("body classname modified!", mu);

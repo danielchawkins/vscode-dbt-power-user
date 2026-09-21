@@ -42,7 +42,6 @@ export default defineConfig({
       "@modules": path.resolve(import.meta.dirname, "./src/modules"),
       "@testUtils": path.resolve(import.meta.dirname, "./src/testUtils"),
       "@vscodeApi": path.resolve(import.meta.dirname, "./src/modules/vscode"),
-      "@lib": path.resolve(import.meta.dirname, "./src/lib"),
     },
   },
   css: {

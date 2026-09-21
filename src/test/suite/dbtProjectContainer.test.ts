@@ -9,7 +9,7 @@ import {
 } from "@jest/globals";
 import { EventEmitter } from "events";
 import * as fs from "fs";
-import { commands, ExtensionContext, Uri, window, workspace } from "vscode";
+import { ExtensionContext, Uri, window, workspace } from "vscode";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { createEntry } from "../fixtures/runHistory";
 
@@ -549,111 +549,6 @@ describe("DBTProjectContainer Tests", () => {
       // These should not throw even without context
       expect(() => newContainer.extensionId).not.toThrow();
       expect(newContainer.extensionId).toBe("");
-    });
-  });
-
-  describe("Walkthrough and Initialization", () => {
-    beforeEach(() => {
-      const mockContext = {
-        workspaceState: {
-          get: jest.fn(),
-          update: jest.fn(),
-        },
-        globalState: {
-          get: jest.fn(),
-          update: jest.fn(),
-        },
-      } as unknown as ExtensionContext;
-      container.setContext(mockContext);
-    });
-
-    it("should show walkthrough when user accepts", async () => {
-      (window.showInformationMessage as any) = jest.fn(() =>
-        Promise.resolve("Yes"),
-      );
-
-      await container.showWalkthrough();
-
-      expect(commands.executeCommand).toHaveBeenCalledWith(
-        "setContext",
-        "dbtPowerUser.showSetupWalkthrough",
-        false,
-      );
-      expect(commands.executeCommand).toHaveBeenCalledWith(
-        "dbtPowerUser.openOnboarding",
-      );
-    });
-
-    it("should not show walkthrough when user ignores", async () => {
-      (window.showInformationMessage as any) = jest.fn(() =>
-        Promise.resolve("Ignore"),
-      );
-
-      await container.showWalkthrough();
-
-      expect(commands.executeCommand).not.toHaveBeenCalledWith(
-        "dbtPowerUser.openOnboarding",
-      );
-    });
-
-    it("should skip walkthrough when hidden in settings", async () => {
-      const mockConfig = {
-        get: jest.fn((key: string, defaultValue?: any) => {
-          if (key === "hideWalkthrough") {
-            return true;
-          }
-          return defaultValue;
-        }),
-      };
-      (workspace.getConfiguration as any) = jest.fn(() => mockConfig);
-
-      const mockContext = {
-        workspaceState: {
-          get: jest.fn(),
-          update: jest.fn(),
-        },
-        globalState: {
-          get: jest.fn(() => true),
-          update: jest.fn(),
-        },
-      } as unknown as ExtensionContext;
-      container.setContext(mockContext);
-      (window.showInformationMessage as any) = jest.fn();
-
-      await container.initializeWalkthrough();
-
-      expect(window.showInformationMessage).not.toHaveBeenCalled();
-    });
-
-    it("should trigger walkthrough when not hidden and state undefined", async () => {
-      const mockConfig = {
-        get: jest.fn((key: string, defaultValue?: any) => {
-          if (key === "hideWalkthrough") {
-            return false;
-          }
-          return defaultValue;
-        }),
-      };
-      (workspace.getConfiguration as any) = jest.fn(() => mockConfig);
-
-      const mockContext = {
-        workspaceState: {
-          get: jest.fn(),
-          update: jest.fn(),
-        },
-        globalState: {
-          get: jest.fn(() => undefined),
-          update: jest.fn(),
-        },
-      } as unknown as ExtensionContext;
-      container.setContext(mockContext);
-      (window.showInformationMessage as any) = jest.fn(() =>
-        Promise.resolve("Ignore"),
-      );
-
-      await container.initializeWalkthrough();
-
-      expect(window.showInformationMessage).toHaveBeenCalled();
     });
   });
 

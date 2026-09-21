@@ -1,26 +1,12 @@
 import DocumentationProvider from "@modules/documentationEditor/DocumentationProvider";
 import LineageView from "@modules/lineage/LineageView";
-import Onboarding from "@modules/onboarding/Onboarding";
 import QueryPanelProvider from "@modules/queryPanel/QueryPanelProvider";
-import WhatsNew from "@modules/whatsNew/WhatsNew";
-import Home from "./modules/home/Home";
 
-// TODO: lazy loading breaks loading dynamic webviews when having css because of vite dynamic loading
-// research on how to fix that and then use lazy loading
-// Using lazy loading for routes to load only necessary files for each panel
-// const DocumentationEditor = lazy(
-//   () => import("./modules/documentationEditor/DocumentationEditor"),
-// );
-
-// This is the list of routes that are available in the webview
-// The key should be used as viewPath value in providers.
+// Routes available in the webview bundle. Keys must match each panel's viewPath.
 export const AvailableRoutes = {
-  "/": { component: <Home /> },
   "/docs-generator": {
     component: <DocumentationProvider />,
   },
   "/query-panel": { component: <QueryPanelProvider /> },
   "/lineage": { component: <LineageView /> },
-  "/onboarding": { component: <Onboarding /> },
-  "/whats-new": { component: <WhatsNew /> },
 };

@@ -33,10 +33,8 @@ import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
-import { SharedStateService } from "../services/sharedStateService";
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { deepEqual, getFirstWorkspacePath } from "../utils";
-import { WhatsNewPanel } from "../webview_provider/whatsNewPanel";
 import { RunModel } from "./runModel";
 import { RunTest } from "./runTest";
 import { ValidateSql } from "./validateSql";
@@ -54,7 +52,6 @@ export class VSCodeCommands implements Disposable {
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private diagnosticsOutputChannel: DiagnosticsOutputChannel,
-    private eventEmitterService: SharedStateService,
     @inject(PythonEnvironment)
     private pythonEnvironment: PythonEnvironment,
     private dbtClient: DBTClient,
@@ -63,7 +60,6 @@ export class VSCodeCommands implements Disposable {
     private cteProfilerService: CteProfilerService,
     private cteProfilerDecorationProvider: CteProfilerDecorationProvider,
     private cteCodeLensProvider: CteCodeLensProvider,
-    private whatsNewPanel: WhatsNewPanel,
   ) {
     this.disposables.push(
       this.cteProfilerService,
@@ -74,9 +70,6 @@ export class VSCodeCommands implements Disposable {
           await this.dbtProjectContainer.detectDBT();
           this.dbtProjectContainer.initialize();
         },
-      ),
-      commands.registerCommand("dbtPowerUser.showWhatsNew", () =>
-        this.whatsNewPanel.show(),
       ),
       commands.registerCommand("dbtPowerUser.runCurrentModel", () => {
         // `dbt run` on a singular test file is never meaningful; route it
@@ -406,44 +399,21 @@ export class VSCodeCommands implements Disposable {
       commands.registerCommand("dbtPowerUser.validateSql", () =>
         this.validateSql.validateSql(),
       ),
-      commands.registerCommand("dbtPowerUser.validateProject", () => {
+      commands.registerCommand("dbtPowerUser.validateProject", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
           this.dbtProjectContainer.getFromWorkspaceState(
             "dbtPowerUser.projectSelected",
           );
 
-        this.walkthroughCommands.validateProjects(pickedProject);
+        await this.walkthroughCommands.validateProjects(pickedProject);
       }),
-      commands.registerCommand("dbtPowerUser.installDeps", () => {
-        this.dbtProjectContainer.setToGlobalState(
-          "showSetupWalkthrough",
-          false,
-        );
-
+      commands.registerCommand("dbtPowerUser.installDeps", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
           this.dbtProjectContainer.getFromWorkspaceState(
             "dbtPowerUser.projectSelected",
           );
-        this.walkthroughCommands.installDeps(pickedProject);
+        await this.walkthroughCommands.installDeps(pickedProject);
       }),
-      commands.registerCommand(
-        "dbtPowerUser.openSetupWalkthrough",
-        async () => {
-          this.eventEmitterService.eventEmitter.fire({
-            command: "onboarding:render",
-            payload: { initialStep: "prerequisites" },
-          });
-        },
-      ),
-      commands.registerCommand(
-        "dbtPowerUser.openTutorialWalkthrough",
-        async () => {
-          this.eventEmitterService.eventEmitter.fire({
-            command: "onboarding:render",
-            payload: { initialStep: "finish" },
-          });
-        },
-      ),
       commands.registerCommand("dbtPowerUser.associateFileExts", async () => {
         commands.executeCommand(
           "workbench.action.openSettings",

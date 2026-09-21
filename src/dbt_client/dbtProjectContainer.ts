@@ -9,7 +9,6 @@ import * as fs from "fs";
 import { inject } from "inversify";
 import { basename } from "path";
 import {
-  commands,
   Disposable,
   EventEmitter,
   ExtensionContext,
@@ -26,11 +25,6 @@ import {
   ManifestCacheChangedEvent,
   RebuildManifestCombinedStatusChange,
 } from "./event/manifestCacheChangedEvent";
-
-enum PromptAnswer {
-  YES = "Yes",
-  IGNORE = "Ignore",
-}
 
 export interface ProjectRegisteredUnregisteredEvent {
   root: Uri;
@@ -123,44 +117,6 @@ export class DBTProjectContainer implements Disposable {
       folders.map((folder) => this.registerWorkspaceFolder(folder)),
     );
     this._onDBTProjectsInitializationEvent.fire({});
-  }
-
-  async showWalkthrough() {
-    const answer = await window.showInformationMessage(
-      `Thanks for installing dbt Power User. Do you need help setting up the extension?`,
-      PromptAnswer.YES,
-      PromptAnswer.IGNORE,
-    );
-    commands.executeCommand(
-      "setContext",
-      "dbtPowerUser.showSetupWalkthrough",
-      false,
-    );
-    if (answer === PromptAnswer.YES) {
-      commands.executeCommand("dbtPowerUser.openOnboarding");
-    }
-    this.setToGlobalState("showSetupWalkthrough", false);
-  }
-
-  async initializeWalkthrough() {
-    // show setup walkthrough if needed
-    const isWalkthroughDisabledFromSettings = workspace
-      .getConfiguration("dbt")
-      .get("hideWalkthrough", false);
-    const showSetupWalkthrough = this.getFromGlobalState(
-      "showSetupWalkthrough",
-    );
-    if (
-      !isWalkthroughDisabledFromSettings &&
-      (showSetupWalkthrough === undefined || showSetupWalkthrough === true)
-    ) {
-      this.dbtTerminal.debug(
-        "dbtProjectContainer:setupWalkthroughDisplayed",
-        "showing SetupWalkthrough: value of showSetupWalkthrough is" +
-          showSetupWalkthrough,
-      );
-      this.showWalkthrough();
-    }
   }
 
   get extensionUri() {

@@ -117,10 +117,8 @@ export class SqlFmtAvailabilityNotifier implements Disposable {
   }
 
   // Installs `shandy-sqlfmt[jinjafmt]` into the workspace python environment
-  // and invalidates the format provider's cached path. Mirrors the convention
-  // used by `installDbtCore` / `installDbtCloud` / `installDbtFusion` in
-  // `walkthroughCommands.ts`: progress notification, command process
-  // execution via factory and an error toast on failure.
+  // and invalidates the format provider's cached path via progress notification,
+  // command process execution, and an error toast on failure.
   private async installSqlFmt(): Promise<void> {
     let error: unknown = undefined;
     await window.withProgress(

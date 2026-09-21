@@ -3,7 +3,6 @@ import {
   executeRequestInSync,
 } from "@modules/app/requestExecutor";
 import { IncomingMessageProps } from "@modules/app/types";
-import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
 import {
   createContext,
@@ -68,9 +67,6 @@ enum ActionState {
 }
 
 const DocumentationProvider = (): JSX.Element => {
-  const {
-    state: { isComponentsApiInitialized },
-  } = useAppContext();
   const [state, dispatch] = useReducer(
     documentationSlice.reducer,
     documentationSlice.getInitialState(),
@@ -212,10 +208,6 @@ const DocumentationProvider = (): JSX.Element => {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
-
-  if (!isComponentsApiInitialized) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <DocumentationContext.Provider value={values}>
