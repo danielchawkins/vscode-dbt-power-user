@@ -1,13 +1,18 @@
-module.exports = {
-  preset: "ts-jest",
+export default {
+  preset: "ts-jest/presets/default-esm",
   testEnvironment: "node",
   roots: ["<rootDir>/src"],
   testMatch: ["**/*.test.ts"],
   testPathIgnorePatterns: ["/node_modules/", "/src/test/integration/"],
+  extensionsToTreatAsEsm: [".ts"],
   transform: {
-    "^.+\\.tsx?$": ["ts-jest", { tsconfig: "tsconfig.jest.json" }],
+    "^.+\\.tsx?$": [
+      "ts-jest",
+      { useESM: true, tsconfig: "tsconfig.jest.json" },
+    ],
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json", "node"],
+  setupFiles: ["<rootDir>/src/test/jest-globals.ts"],
   setupFilesAfterEnv: ["<rootDir>/src/test/setup.ts"],
   reporters: ["default", ["summary", { summaryThreshold: 1 }]],
   collectCoverageFrom: [
@@ -19,10 +24,6 @@ module.exports = {
   moduleNameMapper: {
     "^vscode$": "<rootDir>/src/test/mock/vscode.ts",
     "^node-fetch$": "<rootDir>/src/test/mock/node-fetch.ts",
-    // Development: use local TypeScript source (same as webpack and tsconfig)
-    // "^@altimateai/dbt-integration$":
-    //   "<rootDir>/../altimate-dbt-integration/src/index.ts",
-    // Production: use npm package (commented out for development)
     "^@altimateai/dbt-integration$": "@altimateai/dbt-integration",
     "^@extension$": "<rootDir>/src/modules.ts",
   },
