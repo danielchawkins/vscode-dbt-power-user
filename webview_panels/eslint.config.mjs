@@ -16,6 +16,7 @@ const typescriptRules = require("./eslint/typescript.cjs");
 
 const isPreCommit = process.env.PRE_COMMIT === "true";
 const tsFiles = ["**/*.{ts,tsx}"];
+const testFiles = ["src/**/*.test.{ts,tsx}", "src/test/**/*.ts"];
 const storybookConfigFiles = [".storybook/**/*.{ts,tsx}"];
 
 export default defineConfig(
@@ -31,7 +32,7 @@ export default defineConfig(
   },
   {
     files: tsFiles,
-    ignores: [".storybook/**"],
+    ignores: [".storybook/**", ...testFiles],
     extends: [
       js.configs.recommended,
       ...typescriptEslint.configs["flat/recommended-type-checked"],
@@ -109,6 +110,36 @@ export default defineConfig(
     },
   },
   {
+    files: testFiles,
+    extends: [
+      js.configs.recommended,
+      ...typescriptEslint.configs["flat/recommended"],
+      typescriptEslint.configs["flat/disable-type-checked"],
+      eslintReact.configs["disable-type-checked"],
+      eslintReact.configs["disable-experimental"],
+      prettier,
+    ],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        ecmaFeatures: { jsx: true },
+      },
+      globals: {
+        ...globals.browser,
+        JSX: "readonly",
+      },
+    },
+    plugins: {
+      "@eslint-react": eslintReact,
+    },
+    rules: {
+      "@eslint-react/rules-of-hooks": "error",
+      "@eslint-react/exhaustive-deps": "warn",
+    },
+  },
+  {
     files: storybookConfigFiles,
     extends: [
       ...typescriptEslint.configs["flat/recommended"],
@@ -129,6 +160,7 @@ export default defineConfig(
   ...storybook.configs["flat/recommended"],
   {
     files: ["src/modules/**"],
+    ignores: testFiles,
     rules: {
       "no-restricted-imports": [
         "error",
@@ -146,6 +178,7 @@ export default defineConfig(
   },
   {
     files: ["src/**/*.{ts,tsx}"],
+    ignores: testFiles,
     plugins: {
       "react-refresh": reactRefresh,
     },
