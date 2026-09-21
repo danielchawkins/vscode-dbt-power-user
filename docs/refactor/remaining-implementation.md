@@ -4,13 +4,13 @@ This is the executor plan for work still ahead of `main`. Contracts, file lists,
 
 ## Current position
 
-**Merged on `main`:** 1.2 version gate, 1.3 conflict guard and `enabled`, all of Phase 2, steps 3.1 through 3.10, the ESM host with Inversify 8, the Tailwind guard, and webview ESLint 10. The extension packages as `0.1.0-alpha.0` against the 1.128 Extensions API.
+**Merged on `main`:** 1.2 version gate, 1.3 conflict guard and `enabled`, all of Phase 2, steps 3.1 through 3.13, and 3.14's pinned VS Code/Cursor acquisition, basic packaged-VSIX smoke, and VS Code runtime baseline. The extension packages as `0.1.0-alpha.0` against the 1.128 Extensions API.
 
-**Local review:** step 3.11 image pruning and step 3.12 Codicons allowlisting.
+**Local implementation:** step 3.14 Cursor runtime timing and clean-profile login automation.
 
-**Local implementation:** step 3.13 webview tests and v1 baselines.
+**Completed evidence:** VS Code 1.128.0 records all three host activation phases, real-webview FCP, and host resolve-to-ready across ten fresh processes. Existing Cursor acquisition, installation, and activation smoke remains green.
 
-**Not started:** step 3.14 onward, listed below.
+**Blocked:** step 3.15 until 3.14 records equivalent runtime evidence on both hosts.
 
 What is still true of the product: it is manifest-driven, and it still ships hosted Altimate, authentication, credits, and Python-bridge paths. Core and Cloud stay constructible because `DBTProjectIntegrationAdapter`'s constructor requires their factories — **not** because Fusion extends Cloud, which it does not. `DBTFusionCommandDetection` and the integration classes live in `@altimateai/dbt-integration`; wrap them, never patch `node_modules`.
 
@@ -71,11 +71,11 @@ Serial PRs, each carrying the constraints below. Do not start Phase 4 until ever
 | 3  | 3.8 code block and `noop` | Merged. Local CodeBlock capability preserving its prop interface; local `noop` replaces the documentation editor's internal Ant import.                                | 2          |
 | 4  | 3.9 hosted webview cut    | Merged. Hosted routes/providers and `webview_panels/src/lib/` are gone; retained validate/install commands resolve projects through the picker.                        | 3          |
 | 5  | 3.10 dependency pruning   | Merged. Zero-reference and vendored-bundle dependencies are removed; remaining advisories belong to lineage and Perspective.                                           | 4          |
-| 6  | 3.11 image audit          | Implemented locally under review. Reference-audited asset deletion with an exact runtime/contribution icon guard.                                                      | 4          |
-| 7  | 3.12 Codicons allowlist   | Implemented locally under review. Copy only `codicon.css` and `codicon.ttf` from the plugin.                                                                           | —          |
-| 8  | 3.13 tests and baselines  | In implementation. Vitest/Testing Library tests against current seams plus reproducible single-entry payload and build/package baselines.                              | 3          |
-| 9  | 3.14 host smoke + timing  | Pinned VS Code/Cursor acquisition, real retained-panel smoke, and visible-host activation/FCP/ready timing. Stops if supported automation cannot resolve panels.       | 8          |
-| 10 | 3.15 browser target       | `build.target: "chrome148"`, `rolldownOptions`, and the `cssMinify` override attempt, only once 9 is green on both hosts.                                              | 9          |
+| 6  | 3.11 image audit          | Merged. Reference-audited asset deletion with an exact runtime/contribution icon guard.                                                                                | 4          |
+| 7  | 3.12 Codicons allowlist   | Merged. Copy only `codicon.css` and `codicon.ttf` from the plugin.                                                                                                     | —          |
+| 8  | 3.13 tests and baselines  | Merged. Vitest/Testing Library tests against current seams plus reproducible single-entry payload and build/package baselines.                                         | 3          |
+| 9  | 3.14 host smoke + timing  | Acquisition, basic smoke, and VS Code runtime evidence merged. Cursor timing is next and must resolve login disruption in clean-profile automation.                    | 8          |
+| 10 | 3.15 browser target       | Blocked until 3.14 records equivalent runtime evidence on both hosts; then set `chrome148`, migrate to `rolldownOptions`, and retry the CSS minifier default.          | 9          |
 
 Deliberately not in this list: the shared message contract, which arrives at v2.1 as `packages/webview-contract/` together with the npm workspace that makes it resolvable, and must not be stubbed in v1 so a test can be written against it; React 19, which **D6** has not selected and which must not be adopted merely to unblock a dependency bump; `@finos/perspective*` to `@perspective-dev/*`, which is v2.5 behind its spike; and TypeScript 7 until `typescript-eslint` supports it.
 

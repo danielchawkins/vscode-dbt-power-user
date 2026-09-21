@@ -62,7 +62,7 @@ A reviewer reads the full bookmark diff against the step's contract and this che
 
 ## Current position
 
-Steps 1.2 through 3.10 are on `main`, including all of Phase 2, the ESM host with Inversify 8, the Tailwind guard, and webview ESLint 10. Steps 3.11 and 3.12 are implemented locally under review; step 3.13 is in implementation. Complete the remaining follow-ons in [`remaining-implementation.md`](remaining-implementation.md) serially, using the pipelined landing workflow above, before Phase 4. The product is still manifest-driven.
+Steps 1.2 through 3.13 and 3.14's pinned-host acquisition, basic smoke, and VS Code runtime baseline are on `main`. Cursor runtime timing and clean-profile login automation are next, and 3.15 remains blocked on equivalent evidence from both hosts. Complete the remaining follow-ons in [`remaining-implementation.md`](remaining-implementation.md) serially, using the pipelined landing workflow above, before Phase 4. The product is still manifest-driven.
 
 **Correction to the Cloud blocker.** The published Fusion integration extends `DBTBaseProjectIntegration`, not `DBTCloudProjectIntegration`, so there is no reparenting task. Cloud is blocked by composition instead: `DBTProjectIntegrationAdapter`'s constructor takes Core, Cloud, Fusion, and Core-command factories as mandatory parameters, and `src/inversify.config.ts` supplies all four. Order is therefore 7.1 retire the adapter, then 8.1 delete Cloud and Core construction. The same retirement removes the adapter's private ambient target watcher, which is why no earlier step should attempt either.
 
@@ -108,7 +108,7 @@ Copy the contract and verification from `fusion-lsp-plan.md`. The notes below ar
 
 ### Phase 3
 
-3.1 through 3.7 are merged. Steps 3.8 through 3.15 remain: each is one focused PR with the dependencies in the table above, and the smoke job (3.14) lands before the browser target (3.15) rather than beside it. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
+3.1 through 3.13, pinned-host smoke, and the VS Code runtime baseline are merged. Finish 3.14's Cursor runtime evidence and login automation before 3.15; the browser target remains blocked until both hosts are green. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
 
 ### Phases 4–10 and v2
 
