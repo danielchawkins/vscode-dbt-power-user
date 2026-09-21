@@ -62,7 +62,7 @@ A reviewer reads the full bookmark diff against the step's contract and this che
 
 ## Current position
 
-Steps 1.2 through 3.15 and Phase 4.1 through 4.3 are complete at this tip. Phase 4.4's discovery retirement is next. Continue through [`remaining-implementation.md`](remaining-implementation.md) serially, using the pipelined landing workflow above. The product is still manifest-driven.
+Steps 1.2 through 3.15 and Phase 4.1 through 4.4 are complete at this tip. Phase 4.5's pinned-project fallback retirement is next. Continue through [`remaining-implementation.md`](remaining-implementation.md) serially, using the pipelined landing workflow above. The product is still manifest-driven.
 
 **Correction to the Cloud blocker.** The published Fusion integration extends `DBTBaseProjectIntegration`, not `DBTCloudProjectIntegration`, so there is no reparenting task. Cloud is blocked by composition instead: `DBTProjectIntegrationAdapter`'s constructor takes Core, Cloud, Fusion, and Core-command factories as mandatory parameters, and `src/inversify.config.ts` supplies all four. Order is therefore 7.1 retire the adapter, then 8.1 delete Cloud and Core construction. The same retirement removes the adapter's private ambient target watcher, which is why no earlier step should attempt either.
 
@@ -74,16 +74,16 @@ Steps 1.2 through 3.15 and Phase 4.1 through 4.3 are complete at this tip. Phase
 
 ## File-overlap reference
 
-| Work                  | Primary files                                                                        | Ordering and conflict boundary                          |
-| --------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------- |
-| Dependency follow-ons | package manifests, lockfiles, host and webview configuration, affected modules       | serial; all land before Phase 4                         |
-| 3.8–3.15 webview      | `webview_panels/**`, `media/images/**`, `src/webview_provider/**`, CI smoke job      | 3.8 → 3.9 → {3.10, 3.11}; 3.12 free; 3.13 → 3.14 → 3.15 |
-| 4.x Declared Project  | `src/projects/**`, `src/dbt_client/dbtWorkspaceFolder.ts`, `queryManifestService.ts` | serial 4.1 → 4.5                                        |
-| 5.x LSP               | `src/fusion/staticAnalysisMode.ts`, `src/lsp/**`, `src/fusion/fusionExecutable.ts`   | 5.0 after D5 and before 5.3; then 5.1 → 5.6             |
-| 6.x metadata          | `src/dbt_client/event/manifestCacheChangedEvent.ts`, `src/metadata/**`               | 6.0 epoch first; no consumer changes                    |
-| 7.1 adapter           | `src/dbt_client/fusionProjectIntegration.ts`, `dbtProject.ts`, `inversify.config.ts` | gates all of Phase 8                                    |
-| 8–10                  | as the spec                                                                          | sequential; stop at Confirm gates                       |
-| v2                    | plan Section 4                                                                       | after Phase 10 and the 1.0.0 release                    |
+| Work                  | Primary files                                                                         | Ordering and conflict boundary                          |
+| --------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Dependency follow-ons | package manifests, lockfiles, host and webview configuration, affected modules        | serial; all land before Phase 4                         |
+| 3.8–3.15 webview      | `webview_panels/**`, `media/images/**`, `src/webview_provider/**`, CI smoke job       | 3.8 → 3.9 → {3.10, 3.11}; 3.12 free; 3.13 → 3.14 → 3.15 |
+| 4.x Declared Project  | `src/projects/**`, `src/dbt_client/dbtProjectContainer.ts`, `queryManifestService.ts` | serial 4.1 → 4.5                                        |
+| 5.x LSP               | `src/fusion/staticAnalysisMode.ts`, `src/lsp/**`, `src/fusion/fusionExecutable.ts`    | 5.0 after D5 and before 5.3; then 5.1 → 5.6             |
+| 6.x metadata          | `src/dbt_client/event/manifestCacheChangedEvent.ts`, `src/metadata/**`                | 6.0 epoch first; no consumer changes                    |
+| 7.1 adapter           | `src/dbt_client/fusionProjectIntegration.ts`, `dbtProject.ts`, `inversify.config.ts`  | gates all of Phase 8                                    |
+| 8–10                  | as the spec                                                                           | sequential; stop at Confirm gates                       |
+| v2                    | plan Section 4                                                                        | after Phase 10 and the 1.0.0 release                    |
 
 ## Step briefs (execute from the spec)
 
@@ -104,11 +104,11 @@ Copy the contract and verification from `fusion-lsp-plan.md`. The notes below ar
 
 ### Phase 2 — complete
 
-2.1 through 2.4 are merged: the fixtures, the `@vscode/test-electron` harness with `lspFixture.ts`, the project-scoping characterization suite, and the metadata contract snapshot. Fixtures are shared vocabulary; do not fork them per suite. `just test-integration` stays out of `just check`. Characterization tests that must still fail use `it.failing` / `xit` so `just check` stays green.
+2.1 through 2.4 are merged: the fixtures, the `@vscode/test-electron` harness with `lspFixture.ts`, project-scoping characterization, and the metadata contract snapshot. Phases 4.1 through 4.4 moved the scoping assertions to their final seams and deleted the expected-failure suite. Fixtures are shared vocabulary; do not fork them per suite. `just test-integration` stays out of `just check`.
 
 ### Phase 3
 
-3.1 through 3.15 and 4.1 through 4.3 are complete at this tip. Phase 4.4 begins next. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
+3.1 through 3.15 and 4.1 through 4.4 are complete at this tip. Phase 4.5 begins next. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
 
 ### Phases 4–10 and v2
 
