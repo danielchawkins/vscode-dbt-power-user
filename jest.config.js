@@ -22,6 +22,7 @@ export default {
   ],
   coverageDirectory: "coverage",
   moduleNameMapper: {
+    "^(\\.{1,2}/)+extensionRoot$": "<rootDir>/src/test/mock/extensionRoot.ts",
     "^vscode$": "<rootDir>/src/test/mock/vscode.ts",
     "^node-fetch$": "<rootDir>/src/test/mock/node-fetch.ts",
     "^@altimateai/dbt-integration$": "@altimateai/dbt-integration",

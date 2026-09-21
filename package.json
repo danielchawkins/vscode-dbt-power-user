@@ -815,6 +815,7 @@
     "build:dev": "rsbuild build --mode development",
     "watch:extension": "rsbuild build --mode development --watch",
     "compile": "tsc -p ./ --noEmit",
+    "compile:integration": "tsc -p tsconfig.integration.json",
     "clean": "rimraf out coverage",
     "format": "prettier --write \"**/*.{js,css,html,json}\"",
     "lint": "eslint src --ext ts",
