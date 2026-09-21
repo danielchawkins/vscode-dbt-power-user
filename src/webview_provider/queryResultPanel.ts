@@ -23,6 +23,7 @@ import {
   QueryExecution,
 } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
+import * as path from "path";
 import { AltimateRequest } from "../altimate";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { AltimateAuthService } from "../services/altimateAuthService";
@@ -38,7 +39,6 @@ import {
   SendMessageProps,
   SharedStateEventEmitterProps,
 } from "./altimateWebviewProvider";
-import path = require("path");
 
 interface JsonObj {
   [key: string]: string | number | undefined;

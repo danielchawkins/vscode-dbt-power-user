@@ -1,5 +1,5 @@
-import path = require("path");
 import { RunModelType } from "@altimateai/dbt-integration";
+import * as path from "path";
 import { Uri, window } from "vscode";
 import { GenerateModelFromSourceParams } from "../code_lens_provider/sourceModelCreationCodeLensProvider";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";

@@ -1,5 +1,6 @@
 import { DBTTerminal, PythonException } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
+import * as path from "path";
 import {
   CancellationToken,
   commands,
@@ -31,7 +32,6 @@ import {
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import { extendErrorWithSupportLinks } from "../utils";
-import path = require("path");
 
 export type UpdateConfigProps = {
   key: string;

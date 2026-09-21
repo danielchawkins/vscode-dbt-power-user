@@ -6,12 +6,12 @@ import {
 import { promises as fs } from "fs";
 import { inject } from "inversify";
 import * as yaml from "js-yaml";
+import * as path from "path";
 import { Uri, window } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { removeProtocol } from "../utils";
 import { DBTDocumentation, Source } from "../webview_provider/docsEditPanel";
 import { QueryManifestService } from "./queryManifestService";
-import path = require("path");
 
 interface DBTDocumentationMessage {
   documentation: DBTDocumentation | undefined;

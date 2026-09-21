@@ -26,6 +26,7 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
+import { extensionRoot } from "../extensionRoot";
 import {
   getCurrentlySelectedModelNameInYamlConfig,
   getDepthColor,
@@ -42,11 +43,8 @@ abstract class Node {
   key: string;
   url: string | undefined;
   iconPath: IconPath = {
-    light: path.join(
-      path.resolve(__dirname),
-      "../media/images/model_light.svg",
-    ),
-    dark: path.join(path.resolve(__dirname), "../media/images/model_dark.svg"),
+    light: path.join(extensionRoot, "../media/images/model_light.svg"),
+    dark: path.join(extensionRoot, "../media/images/model_dark.svg"),
   };
   displayInModelTree: boolean = true;
 
@@ -63,11 +61,8 @@ class Seed extends Node {}
 class Test extends Node {
   // displayInModelTree = false;
   iconPath = {
-    light: path.join(
-      path.resolve(__dirname),
-      "../media/images/source_light.svg",
-    ),
-    dark: path.join(path.resolve(__dirname), "../media/images/source_dark.svg"),
+    light: path.join(extensionRoot, "../media/images/source_light.svg"),
+    dark: path.join(extensionRoot, "../media/images/source_dark.svg"),
   };
 }
 class Analysis extends Node {
@@ -87,11 +82,8 @@ class Snapshot extends Node {}
 
 class Source extends Node {
   iconPath = {
-    light: path.join(
-      path.resolve(__dirname),
-      "../media/images/source_light.svg",
-    ),
-    dark: path.join(path.resolve(__dirname), "../media/images/source_dark.svg"),
+    light: path.join(extensionRoot, "../media/images/source_light.svg"),
+    dark: path.join(extensionRoot, "../media/images/source_dark.svg"),
   };
 }
 
@@ -473,23 +465,17 @@ class ModelTreeItem extends NodeTreeItem {
 class SourceTreeItem extends NodeTreeItem {
   iconPath = {
     light: Uri.file(
-      path.join(path.resolve(__dirname), "../media/images/source_light.svg"),
+      path.join(extensionRoot, "../media/images/source_light.svg"),
     ),
-    dark: Uri.file(
-      path.join(path.resolve(__dirname), "../media/images/source_dark.svg"),
-    ),
+    dark: Uri.file(path.join(extensionRoot, "../media/images/source_dark.svg")),
   };
   contextValue = "source";
 }
 
 class SeedTreeItem extends NodeTreeItem {
   iconPath = {
-    light: Uri.file(
-      path.join(path.resolve(__dirname), "../media/images/seed_light.svg"),
-    ),
-    dark: Uri.file(
-      path.join(path.resolve(__dirname), "../media/images/seed_dark.svg"),
-    ),
+    light: Uri.file(path.join(extensionRoot, "../media/images/seed_light.svg")),
+    dark: Uri.file(path.join(extensionRoot, "../media/images/seed_dark.svg")),
   };
   contextValue = "seed";
 }
@@ -498,10 +484,10 @@ class SnapshotTreeItem extends NodeTreeItem {
   contextValue = "snapshot";
   iconPath = {
     light: Uri.file(
-      path.join(path.resolve(__dirname), "../media/images/snapshot_light.svg"),
+      path.join(extensionRoot, "../media/images/snapshot_light.svg"),
     ),
     dark: Uri.file(
-      path.join(path.resolve(__dirname), "../media/images/snapshot_dark.svg"),
+      path.join(extensionRoot, "../media/images/snapshot_dark.svg"),
     ),
   };
 }
@@ -510,10 +496,10 @@ class ExposureTreeItem extends NodeTreeItem {
   contextValue = "exposure";
   iconPath = {
     light: Uri.file(
-      path.join(path.resolve(__dirname), "../media/images/exposure_light.svg"),
+      path.join(extensionRoot, "../media/images/exposure_light.svg"),
     ),
     dark: Uri.file(
-      path.join(path.resolve(__dirname), "../media/images/exposure_dark.svg"),
+      path.join(extensionRoot, "../media/images/exposure_dark.svg"),
     ),
   };
 }
@@ -529,11 +515,9 @@ class AnalysisTreeItem extends NodeTreeItem {
 class TestTreeItem extends NodeTreeItem {
   iconPath = {
     light: Uri.file(
-      path.join(path.resolve(__dirname), "../media/images/tests_light.svg"),
+      path.join(extensionRoot, "../media/images/tests_light.svg"),
     ),
-    dark: Uri.file(
-      path.join(path.resolve(__dirname), "../media/images/tests_dark.svg"),
-    ),
+    dark: Uri.file(path.join(extensionRoot, "../media/images/tests_dark.svg")),
   };
   contextValue = "test";
 }
