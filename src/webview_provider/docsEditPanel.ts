@@ -29,6 +29,10 @@ import {
 } from "vscode";
 import { parse, parseDocument, stringify, YAMLMap, YAMLSeq } from "yaml";
 import { UserInputError } from "../altimate";
+import {
+  beginWebviewResolve,
+  completeWebviewReady,
+} from "../benchmark/runtimeTimings";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
@@ -56,8 +60,11 @@ import {
 } from "../utils";
 import { SendMessageProps } from "./altimateWebviewProvider";
 
+const DOCS_VIEW_PATH = "/docs-generator";
+
 export class DocsEditViewPanel implements WebviewViewProvider {
   public static readonly viewType = "dbtPowerUser.DocsEdit";
+  protected viewPath = DOCS_VIEW_PATH;
   private _panel: WebviewView | undefined = undefined;
   private documentation?: DBTDocumentation;
   private loadedFromManifest = false;
@@ -198,6 +205,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     context: WebviewViewResolveContext,
     _token: CancellationToken,
   ) {
+    beginWebviewResolve(this.viewPath);
     this._panel = panel;
     this.setupWebviewOptions(context);
     this.renderWebviewView(context);
@@ -527,6 +535,10 @@ export class DocsEditViewPanel implements WebviewViewProvider {
           message,
         );
         const { command, syncRequestId, ...params } = message;
+        if (command === "webview:ready") {
+          completeWebviewReady(this.viewPath);
+          return;
+        }
         if (command === "getCurrentModelDocumentation") {
           await this.transmitData();
           return;
@@ -1254,7 +1266,7 @@ function getHtml(webview: Webview, extensionUri: Uri) {
         <div id="root"></div>
         <div id="sidebar"></div>
         <div id="modal"></div>
-        <script nonce="${nonce}">window.viewPath = "/docs-generator";</script>
+        <script nonce="${nonce}">window.viewPath = "${DOCS_VIEW_PATH}";</script>
         <script nonce="${nonce}" type="module" src="${script}"></script>
       </body>
     </html>`;

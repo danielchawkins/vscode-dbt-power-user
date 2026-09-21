@@ -17,6 +17,10 @@ import {
   workspace,
 } from "vscode";
 import { AltimateRequest, UserInputError } from "../altimate";
+import {
+  completeWebviewReady,
+  beginWebviewResolve as recordWebviewResolveStart,
+} from "../benchmark/runtimeTimings";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
   ManifestCacheChangedEvent,
@@ -211,8 +215,13 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
   }
 
   protected onWebviewReady() {
+    completeWebviewReady(this.viewPath);
     this.isWebviewReady = true;
     this.sendCreditsToWebview();
+  }
+
+  protected beginWebviewResolve() {
+    recordWebviewResolveStart(this.viewPath);
   }
 
   private sendCreditsToWebview() {
@@ -447,6 +456,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
     context: WebviewViewResolveContext<unknown>,
     _token: CancellationToken,
   ): void | Thenable<void> {
+    this.beginWebviewResolve();
     this._panel = panel;
     this.setupWebviewOptions(context);
     this.renderWebviewView(this._panel!.webview);

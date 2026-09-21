@@ -29,7 +29,7 @@ describe("useListeners", () => {
     vi.restoreAllMocks();
   });
 
-  it("posts webview:ready on mount for non-docs routes", () => {
+  it("posts webview:ready on mount", () => {
     render(<Harness dispatch={dispatch} />);
 
     expect(getVsCodeApiMock().postMessage).toHaveBeenCalledWith({
@@ -37,11 +37,13 @@ describe("useListeners", () => {
     });
   });
 
-  it("skips webview:ready for the docs-generator route", () => {
+  it("posts webview:ready for the docs-generator route", () => {
     window.viewPath = "/docs-generator";
     render(<Harness dispatch={dispatch} />);
 
-    expect(getVsCodeApiMock().postMessage).not.toHaveBeenCalled();
+    expect(getVsCodeApiMock().postMessage).toHaveBeenCalledWith({
+      command: "webview:ready",
+    });
   });
 
   it("dispatches credits updates from incoming messages", async () => {
