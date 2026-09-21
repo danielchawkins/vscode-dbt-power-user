@@ -10,12 +10,13 @@ import {
 import { MouseEvent, useEffect, useRef, useState } from "react";
 import { setIncomingDocsData } from "@modules/documentationEditor/state/documentationSlice";
 import classes from "../../styles.module.scss";
-import { noop } from "antd/es/_util/warning";
 import {
   DBTDocumentation,
   DBTModelTest,
 } from "@modules/documentationEditor/state/types";
 import { isStateDirty } from "@modules/documentationEditor/utils";
+
+const noop = (): void => undefined;
 
 /**
  * Handles save documentation functionality
