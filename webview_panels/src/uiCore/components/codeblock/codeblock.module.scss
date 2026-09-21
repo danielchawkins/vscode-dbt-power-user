@@ -1,15 +1,30 @@
-.codeblock {
-  :global .card-title {
+.wrapper {
+  :global(.card-title) {
     border-bottom: 1px solid #ccc;
     font-weight: 500;
     padding-bottom: var(--spacing-xl);
     margin-bottom: var(--spacing-xl);
   }
+}
 
-  :global .card-body {
-    > span {
-        padding: 0 !important;
-        max-height: 250px;
-    }
+.codeblock {
+  padding: 0;
+  --code-bg: #082247;
+
+  :global(.card-body) {
+    padding: 0;
+  }
+
+  :global(pre) {
+    background: var(--code-bg) !important;
+    margin: 0 !important;
+    border-radius: 0.5rem;
+  }
+
+  :global(code) {
+    background: var(--code-bg) !important;
+    white-space: pre-wrap !important;
+    font-size: 13px !important;
+    line-height: 1.5 !important;
   }
 }
