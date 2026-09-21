@@ -356,19 +356,23 @@ Goal: replace recursive discovery with ADR 0003's model, and turn the Phase 2 fa
 **4.1 — Project configuration resolution.** New `src/projects/projectConfiguration.ts`.
 
 ```ts
+export type ProjectConfigurationProblem =
+  | { reason: "invalidEntry"; entry: string }
+  | { reason: "missingProjectFile"; entry: string; root: string };
 /** Resolved project roots for one workspace folder, in declaration order. */
 export interface DeclaredProjectRoots {
   folder: WorkspaceFolder;
   roots: Uri[];
   source: "explicit" | "folderRoot";
+  problems: readonly ProjectConfigurationProblem[];
 }
 /** Reads `projects` scoped to the folder, falling back to the folder root when it holds dbt_project.yml. */
 export function resolveDeclaredProjectRoots(folder: WorkspaceFolder): DeclaredProjectRoots;
 ```
 
-Rules, all testable without VS Code running: read the setting with `workspace.getConfiguration(SECTION, folder.uri)` so folder values win over window values; interpret each entry as a path relative to the folder, accepting absolute paths; require `dbt_project.yml` at each resolved root and report a blocking configuration failure naming the offending entry when it is missing; when the setting is absent or empty, return the folder root if and only if it contains `dbt_project.yml`, otherwise return no roots; never walk the tree.
+Rules, all testable without VS Code running: read the setting with `workspace.getConfiguration(SECTION, folder.uri)` so folder values win over window values; interpret each entry as a path relative to the folder, accepting absolute paths; require `dbt_project.yml` at each resolved root; return structured problems naming invalid entries and block all explicit roots when any problem exists; 4.2 reports those problems through the output channel; when the setting is absent or empty, return the folder root if and only if it contains `dbt_project.yml`, otherwise return no roots; never walk the tree.
 
-Verify: closes characterization cases 3, 5, and 6. Add cases for an explicit root that does not exist, an absolute root, a root outside the folder, and duplicate entries across folders resolving to the same path.
+Verify: closes characterization cases 3, 5, and 6 at the resolver seam; 4.4 rewrites the corresponding `DBTWorkspaceFolder` characterization tests onto `ProjectRegistry` and removes `it.failing`. Add cases for an explicit root that does not exist, an absolute root, a root outside the folder, and duplicate entries across folders resolving to the same path.
 
 **4.2 — Project registry.** New `src/projects/projectRegistry.ts`, replacing `src/dbt_client/dbtWorkspaceFolder.ts`.
 
@@ -413,7 +417,7 @@ Verify: closes characterization case 4. Integration test on `multi-root` opens a
 
 **4.4 — Retire the old discovery path.** Delete `src/dbt_client/dbtWorkspaceFolder.ts` and rewire `src/dbt_client/dbtProjectContainer.ts` onto `ProjectRegistry`. `DBTProjectDetection` and its three implementations (`DBTCoreProjectDetection`, `DBTCloudProjectDetection`, `DBTFusionCommandProjectDetection`) are package exports, so what this step removes is their imports and bindings in `src/inversify.config.ts`, not local files. Remove `dbt.allowListFolders`.
 
-Verify: `just check` green with the Phase 2 scoping suite now passing without `it.failing`; the two dbt folders of `multi-root` behave identically whether opened as a multi-root workspace or individually.
+Verify: `just check` green with the Phase 2 scoping behaviors covered through `ProjectRegistry` and no `it.failing`; the obsolete `DBTWorkspaceFolder` tests are removed with their subject; the two dbt folders of `multi-root` behave identically whether opened as a multi-root workspace or individually.
 
 **Release alpha.2** (`0.2.0-alpha.0`). Worth installing in the consumer as a replacement for patch cases 2 through 7 even before the LSP lands: it validates the Declared Project model against the real repository shape while the manifest path still works.
 
