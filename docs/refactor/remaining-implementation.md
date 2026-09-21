@@ -110,7 +110,7 @@ Start only after 3.6 is on `main`. Bookmark `chore/latest-majors` for the first 
 
 **Do not:** add complexity lint in these PRs; delete Core/Cloud classes; bump Fusion; treat CommonJS as inviolable.
 
-**Held in 3.7, booked as own PRs before Phase 4:** Tailwind 4 (class prefix `al-` becomes a variant; `@source` for `@altimateai/ui-components`; Vite 8 `cssMinify: "esbuild"` until lightningcss accepts the output); ESM host plus Inversify 8; webview ESLint 10 (replace `eslint-plugin-react` / `eslint-plugin-import` / `eslint-plugin-jsx-a11y` if they stay on ESLint 9); React 19 (replace `@altimateai/ui-components` and `@ant-design/pro-chat` which peer on React 18 / antd 5); `@finos/perspective*` to `@perspective-dev/*`. TypeScript 7 when `typescript-eslint` supports it.
+**Held in 3.7, booked as own PRs before Phase 4:** React 19 (replace `@altimateai/ui-components` and `@ant-design/pro-chat`, which peer on React 18 / antd 5) precedes Tailwind 4 — blocked on ui-components v3 class-prefix strings; see [`tailwind4-ui-components-blocker.md`](tailwind4-ui-components-blocker.md). Regression check: `scripts/workspace/check-webview-tailwind-css.sh` wired into `webview_panels` `npm run build`. ESM host plus Inversify 8; webview ESLint 10 (replace `eslint-plugin-react` / `eslint-plugin-import` / `eslint-plugin-jsx-a11y` if they stay on ESLint 9); `@finos/perspective*` to `@perspective-dev/*`. TypeScript 7 when `typescript-eslint` supports it.
 
 After the last booked majors PR, evaluate a report-only `just lint-complexity` (ESLint `complexity` / `max-depth` or sonarjs). Prefer warn or a non-failing recipe. Do not add it to `just lint`, `just check`, Lefthook pre-push, or CI. Promoting it to a gate needs a later Confirm, and not before Phase 8 at the earliest.
 
