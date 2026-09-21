@@ -10,7 +10,7 @@ import * as path from "path";
 import { Uri, window } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { removeProtocol } from "../utils";
-import { DBTDocumentation, Source } from "../webview_provider/docsEditPanel";
+import { DBTDocumentation, Source } from "./docGenTypes";
 import { QueryManifestService } from "./queryManifestService";
 
 interface DBTDocumentationMessage {

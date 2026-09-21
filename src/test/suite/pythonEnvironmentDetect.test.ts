@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
-import { window, workspace } from "vscode";
+import { extensions, window, workspace } from "vscode";
 import { PythonEnvironment } from "../../dbt_client/pythonEnvironment";
 
 /**
@@ -139,7 +139,7 @@ describe("PythonEnvironment.pythonPath override guard", () => {
     expect(warn).not.toHaveBeenCalled();
   });
 
-  it("keeps a bare command that resolves via PATH (e.g. python3)", () => {
+  it("keeps a bare command for PATH resolution (e.g. python3)", () => {
     setOverride("python3");
 
     expect(env.pythonPath).toBe("python3");
@@ -169,5 +169,41 @@ describe("PythonEnvironment.pythonPath override guard", () => {
 
     expect(env.pythonPath).toBe(FALLBACK);
     expect(warn).not.toHaveBeenCalled();
+  });
+});
+
+describe("PythonEnvironment without the Python extension", () => {
+  it("falls back to python3 and the extension host environment", async () => {
+    const debug = jest.fn();
+    const originalGetConfiguration = workspace.getConfiguration;
+    (extensions.getExtension as jest.Mock).mockReturnValueOnce(undefined);
+    process.env.FPU_PYTHON_FALLBACK_TEST = "present";
+    (workspace as any).getConfiguration = jest.fn((section: string) => ({
+      get: jest.fn((key: string, fallback: unknown) =>
+        section === "terminal" && key === "integrated.env"
+          ? { osx: { FPU_INTEGRATED_FALLBACK_TEST: "integrated" } }
+          : fallback,
+      ),
+    }));
+    const env = new PythonEnvironment({ debug } as any);
+
+    try {
+      await env.initialize();
+      process.env.FPU_PYTHON_FALLBACK_TEST = "updated";
+
+      expect(env.pythonPath).toBe("python3");
+      expect(env.environmentVariables.FPU_PYTHON_FALLBACK_TEST).toBe("updated");
+      expect(env.environmentVariables.FPU_INTEGRATED_FALLBACK_TEST).toBe(
+        "integrated",
+      );
+      expect(debug).toHaveBeenCalledWith(
+        "pythonEnvironment:initialize",
+        expect.stringContaining("Python extension is unavailable"),
+      );
+    } finally {
+      (workspace as any).getConfiguration = originalGetConfiguration;
+      delete process.env.FPU_PYTHON_FALLBACK_TEST;
+      await env.dispose();
+    }
   });
 });

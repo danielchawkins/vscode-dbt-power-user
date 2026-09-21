@@ -42,6 +42,7 @@ import {
   DocumentationSchema,
   DocumentationSchemaColumn,
 } from "../services/docGenService";
+import { DBTDocumentation, MetadataColumn } from "../services/docGenTypes";
 import { QueryManifestService } from "../services/queryManifestService";
 import {
   extendErrorWithSupportLinks,
@@ -54,33 +55,6 @@ import {
   removeProtocol,
 } from "../utils";
 import { SendMessageProps } from "./altimateWebviewProvider";
-
-export enum Source {
-  YAML = "YAML",
-  DATABASE = "DATABASE",
-}
-
-interface MetadataColumn {
-  name: string;
-  type?: string;
-}
-
-interface DBTDocumentationColumn extends MetadataColumn {
-  description?: string;
-  generated: boolean;
-  source: Source;
-}
-
-export interface DBTDocumentation {
-  name: string;
-  description: string;
-  columns: DBTDocumentationColumn[];
-  generated: boolean;
-  filePath: string;
-  patchPath?: string;
-  uniqueId?: string;
-  resource_type?: string;
-}
 
 export class DocsEditViewPanel implements WebviewViewProvider {
   public static readonly viewType = "dbtPowerUser.DocsEdit";
@@ -915,7 +889,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
                   { name: item.column, description: columnDescription },
                 ],
                 dialogType: "Existing file",
-                // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
                 patchPath: node?.patchPath || defaultPatchPath,
                 filePath: node?.url,
                 updatedTests: testsMetadata[item.model],
