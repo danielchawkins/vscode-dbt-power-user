@@ -1,25 +1,44 @@
 import react from "@vitejs/plugin-react";
-import { cpSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync } from "fs";
 import path from "path";
-import { defineConfig } from "vite";
+import { defineConfig, type Plugin } from "vite";
 import svgr from "vite-plugin-svgr";
+
+function copyCodicons(): Plugin {
+  const srcDir = path.resolve(
+    import.meta.dirname,
+    "node_modules/@vscode/codicons/dist",
+  );
+  let destDir: string;
+
+  return {
+    name: "copy-codicons",
+    configResolved: (config) => {
+      destDir = path.resolve(
+        config.root,
+        config.build.outDir,
+        "assets/codicons",
+      );
+    },
+    renderStart: () => {
+      const cssSrc = path.join(srcDir, "codicon.css");
+      const ttfSrc = path.join(srcDir, "codicon.ttf");
+      if (!existsSync(cssSrc)) {
+        throw new Error(`Missing Codicons asset: ${cssSrc}`);
+      }
+      if (!existsSync(ttfSrc)) {
+        throw new Error(`Missing Codicons asset: ${ttfSrc}`);
+      }
+      mkdirSync(destDir, { recursive: true });
+      copyFileSync(cssSrc, path.join(destDir, "codicon.css"));
+      copyFileSync(ttfSrc, path.join(destDir, "codicon.ttf"));
+    },
+  };
+}
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [
-    svgr(),
-    react(),
-    {
-      name: "copy-codicons",
-      renderStart: () => {
-        cpSync(
-          "./node_modules/@vscode/codicons/dist",
-          "./dist/assets/codicons/",
-          { recursive: true },
-        );
-      },
-    },
-  ],
+  plugins: [svgr(), react(), copyCodicons()],
   build: {
     cssMinify: "esbuild",
     cssCodeSplit: false,
