@@ -3,16 +3,13 @@ import "bootstrap/dist/css/bootstrap.min.css";
 import "@uicore/theme.scss";
 import { AppRoutes } from "./AppRoutes";
 import AppProvider from "./modules/app/AppProvider";
-import { TeamMateProvider } from "@lib";
 
 const Loader = () => <div>Loading...</div>;
 const App = (): JSX.Element => (
   <AppProvider>
-    <TeamMateProvider>
-      <Suspense fallback={<Loader />}>
-        <AppRoutes />
-      </Suspense>
-    </TeamMateProvider>
+    <Suspense fallback={<Loader />}>
+      <AppRoutes />
+    </Suspense>
   </AppProvider>
 );
 

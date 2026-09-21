@@ -6,13 +6,7 @@ export enum Themes {
 }
 export interface AppStateProps {
   theme: Themes;
-  isComponentsApiInitialized: boolean;
   availableExecutions: number | null;
-  tenantInfo: {
-    frontendUrl: string | null;
-    currency: string;
-    teammatesEnabled: boolean;
-  };
 }
 
 export interface ContextProps {
