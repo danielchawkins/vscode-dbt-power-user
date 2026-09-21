@@ -95,6 +95,9 @@ try {
       ...(remoteDebuggingPort
         ? [`--remote-debugging-port=${remoteDebuggingPort}`]
         : []),
+      ...(host === "cursor"
+        ? ["--skip-onboarding", "--suppress-popups-on-startup"]
+        : []),
       "--disable-workspace-trust",
       "--skip-release-notes",
       "--skip-welcome",

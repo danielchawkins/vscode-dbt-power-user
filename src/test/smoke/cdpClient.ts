@@ -100,9 +100,30 @@ function evaluateContexts(
     const contexts: ExecutionContext[] = [];
     const evaluations = new Map<number, unknown>();
     let expected = 0;
+    let contextTimer: NodeJS.Timeout | undefined;
+    let settled = false;
+    const cleanup = () => {
+      clearTimeout(timeout);
+      clearTimeout(contextTimer);
+      if (socket.readyState === WebSocket.OPEN) {
+        socket.close();
+      }
+    };
+    const finish = (callback: () => void) => {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      cleanup();
+      callback();
+    };
     const timeout = setTimeout(
       () =>
-        reject(new Error(`CDP context evaluation timed out: ${webSocketUrl}`)),
+        finish(() =>
+          reject(
+            new Error(`CDP context evaluation timed out: ${webSocketUrl}`),
+          ),
+        ),
       5_000,
     );
     socket.addEventListener("open", () => {
@@ -115,27 +136,33 @@ function evaluateContexts(
         return;
       }
       if (message.id === 1) {
-        expected = contexts.length;
-        if (expected === 0) {
-          clearTimeout(timeout);
-          socket.close();
-          resolve([]);
-          return;
+        const evaluate = () => {
+          expected = contexts.length;
+          if (expected === 0) {
+            finish(() => resolve([]));
+            return;
+          }
+          contexts.forEach((context, index) => {
+            socket.send(
+              JSON.stringify({
+                id: 100 + index,
+                method: "Runtime.evaluate",
+                params: {
+                  contextId: context.id,
+                  expression,
+                  awaitPromise: true,
+                  returnByValue: true,
+                },
+              }),
+            );
+          });
+        };
+        if (contexts.length === 0) {
+          // Cursor can acknowledge Runtime.enable before reporting existing contexts.
+          contextTimer = setTimeout(evaluate, 100);
+        } else {
+          evaluate();
         }
-        contexts.forEach((context, index) => {
-          socket.send(
-            JSON.stringify({
-              id: 100 + index,
-              method: "Runtime.evaluate",
-              params: {
-                contextId: context.id,
-                expression,
-                awaitPromise: true,
-                returnByValue: true,
-              },
-            }),
-          );
-        });
         return;
       }
       if (typeof message.id !== "number" || message.id < 100) {
@@ -148,14 +175,13 @@ function evaluateContexts(
           : message.result.result.value,
       );
       if (evaluations.size === expected) {
-        clearTimeout(timeout);
-        socket.close();
-        resolve(contexts.map((_, index) => evaluations.get(100 + index)));
+        finish(() =>
+          resolve(contexts.map((_, index) => evaluations.get(100 + index))),
+        );
       }
     });
     socket.addEventListener("error", () => {
-      clearTimeout(timeout);
-      reject(new Error(`CDP socket failed: ${webSocketUrl}`));
+      finish(() => reject(new Error(`CDP socket failed: ${webSocketUrl}`)));
     });
   });
 }
