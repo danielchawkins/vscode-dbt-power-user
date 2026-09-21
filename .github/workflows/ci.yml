@@ -79,7 +79,7 @@ jobs:
 
       - name: Smoke VS Code 1.128.x
         run: |
-          just smoke-vscode --vsix fusion-power-user-*.vsix
+          just benchmark-runtime-vscode fusion-power-user-*.vsix
 
   smoke-cursor:
     needs: check
