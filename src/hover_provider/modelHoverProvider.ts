@@ -12,7 +12,6 @@ import {
   TextDocument,
   Uri,
 } from "vscode";
-import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheChangedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import { generateHoverMarkdownString } from "./utils";
@@ -44,22 +43,6 @@ export class ModelHoverProvider implements HoverProvider, Disposable {
     }
   }
 
-  private getProject(uri: Uri): DBTProject | undefined {
-    const projectByUri = this.dbtProjectContainer.findDBTProject(uri);
-    if (projectByUri) {
-      return projectByUri;
-    }
-
-    const project = this.dbtProjectContainer.getFromWorkspaceState(
-      "dbtPowerUser.projectSelected",
-    );
-    if (!project?.uri) {
-      return;
-    }
-
-    return this.dbtProjectContainer.findDBTProject(project?.uri);
-  }
-
   provideHover(
     document: TextDocument,
     position: Position,
@@ -75,13 +58,14 @@ export class ModelHoverProvider implements HoverProvider, Disposable {
         resolve(undefined);
       }
       const word = document.getText(range);
-      const project = this.getProject(document.uri);
+      const project = this.dbtProjectContainer.findDBTProject(document.uri);
       if (!project) {
         this.dbtTerminal.debug(
           "modeHoverProvider:provideHover",
           "Could not load hover provider, project not found in container for " +
             document.uri.fsPath,
         );
+        resolve(undefined);
         return;
       }
       if (word !== undefined && hover !== "ref") {

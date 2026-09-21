@@ -172,18 +172,9 @@ export class ModelAutocompletionProvider
   }
 
   private getAutoCompleteItems = (currentFilePath: Uri) => {
-    const projectRootpath =
-      this.dbtProjectContainer.getProjectRootpath(currentFilePath);
-    if (projectRootpath === undefined) {
-      const project = this.dbtProjectContainer.getFromWorkspaceState(
-        "dbtPowerUser.projectSelected",
-      );
-      if (!project?.uri) {
-        return;
-      }
-
-      return this.modelAutocompleteMap.get(project.uri.fsPath);
-    }
-    return this.modelAutocompleteMap.get(projectRootpath.fsPath);
+    const project = this.dbtProjectContainer.findDBTProject(currentFilePath);
+    return project
+      ? this.modelAutocompleteMap.get(project.projectRoot.fsPath)
+      : undefined;
   };
 }

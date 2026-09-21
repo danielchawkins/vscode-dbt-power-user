@@ -7,7 +7,6 @@ import {
   Range,
   TextDocument,
 } from "vscode";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { QueryManifestService } from "../services/queryManifestService";
 
 export class VirtualSqlCodeLensProvider
@@ -15,10 +14,7 @@ export class VirtualSqlCodeLensProvider
 {
   private disposables: Disposable[] = [];
 
-  constructor(
-    private dbtProjectContainer: DBTProjectContainer,
-    private queryManifestService: QueryManifestService,
-  ) {}
+  constructor(private queryManifestService: QueryManifestService) {}
 
   dispose() {
     while (this.disposables.length) {
@@ -30,14 +26,6 @@ export class VirtualSqlCodeLensProvider
   }
 
   private getProjectName() {
-    const project = this.dbtProjectContainer.getFromWorkspaceState(
-      "dbtPowerUser.projectSelected",
-    );
-    if (project?.label) {
-      return project.label;
-    }
-
-    // Find the project name from the current active editor
     return this.queryManifestService.getProject()?.getProjectName();
   }
 

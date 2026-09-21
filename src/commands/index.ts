@@ -818,7 +818,7 @@ export class VSCodeCommands implements Disposable {
     await project.debug(false);
   }
 
-  private runSelectedQuery(uri: Uri, range: Range): void {
+  private async runSelectedQuery(uri: Uri, range: Range): Promise<void> {
     // Get the document and extract the selected text
     const document = workspace.textDocuments.find(
       (doc) => doc.uri.toString() === uri.toString(),
@@ -837,8 +837,7 @@ export class VSCodeCommands implements Disposable {
     // Create a model name based on the selection - use "cte_query" as default
     const modelName = "cte_query";
 
-    // Execute the selected query using the existing infrastructure
-    this.dbtProjectContainer.executeSQL(uri, selectedQuery, modelName);
+    await this.runModel.executeSQL(uri, selectedQuery, modelName);
   }
 
   private async runCteWithDependencies(
@@ -982,8 +981,7 @@ export class VSCodeCommands implements Disposable {
         `Executing CTE query with model name: ${modelName}`,
       );
 
-      // Execute the complete query with dependencies
-      this.dbtProjectContainer.executeSQL(uri, query, modelName);
+      await this.runModel.executeSQL(uri, query, modelName);
     } catch (error) {
       this.dbtTerminal.error(
         "CteExecution",

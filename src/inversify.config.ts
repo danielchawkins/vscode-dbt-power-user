@@ -883,10 +883,7 @@ container
 container
   .bind(VirtualSqlCodeLensProvider)
   .toDynamicValue((context) => {
-    return new VirtualSqlCodeLensProvider(
-      context.get(DBTProjectContainer),
-      context.get(QueryManifestService),
-    );
+    return new VirtualSqlCodeLensProvider(context.get(QueryManifestService));
   })
   .inSingletonScope();
 
@@ -1059,7 +1056,10 @@ container
 container
   .bind(RunModel)
   .toDynamicValue((context) => {
-    return new RunModel(context.get(DBTProjectContainer));
+    return new RunModel(
+      context.get(DBTProjectContainer),
+      context.get(ProjectContext),
+    );
   })
   .inSingletonScope();
 
@@ -1265,7 +1265,7 @@ container
   .toDynamicValue((context) => {
     return new DbtPowerUserActionsCenter(
       context.get(DbtPowerUserControlCenterAction),
-      context.get(ProjectQuickPick),
+      context.get(ProjectContext),
       context.get(DBTProjectContainer),
       context.get(SharedStateService),
     );

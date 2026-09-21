@@ -1,15 +1,16 @@
 import { commands, Disposable, window } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { ProjectContext } from "../projects/projectContext";
 import { SharedStateService } from "../services/sharedStateService";
 import { DbtPowerUserControlCenterAction } from "./actionsQuickPick";
-import { ProjectQuickPick } from "./projectQuickPick";
+import { ProjectQuickPickItem } from "./projectQuickPick";
 
 export class DbtPowerUserActionsCenter implements Disposable {
   private disposables: Disposable[] = [];
 
   constructor(
     private puLaunchQuickPick: DbtPowerUserControlCenterAction,
-    private projectQuickPick: ProjectQuickPick,
+    private projectContext: ProjectContext,
     private dbtProjectContainer: DBTProjectContainer,
     private emitterService: SharedStateService,
   ) {
@@ -17,16 +18,19 @@ export class DbtPowerUserActionsCenter implements Disposable {
       await this.puLaunchQuickPick.openActions();
     });
     commands.registerCommand("dbtPowerUser.pickProject", async () => {
-      const pickedProject = await this.projectQuickPick.projectPicker(
-        await this.dbtProjectContainer.getProjects(),
-      );
-      if (pickedProject) {
+      const project = await this.projectContext.pickForCommand();
+      if (project) {
+        const pickedProject: ProjectQuickPickItem = {
+          label: project.name,
+          description: project.root.fsPath,
+          uri: project.root,
+        };
         this.dbtProjectContainer.setToWorkspaceState(
           "dbtPowerUser.projectSelected",
           pickedProject,
         );
         window.showInformationMessage(
-          "You have succesfully selected " + pickedProject.label + ".",
+          "You have successfully selected " + pickedProject.label + ".",
         );
       }
     });

@@ -540,33 +540,18 @@ describe("DBTProjectContainer", () => {
       expect(globalState.update).toHaveBeenCalledWith("key", "value");
     });
 
-    it("uses the selected project for untitled SQL", () => {
-      container.setContext({
-        workspaceState: {
-          get: jest.fn().mockReturnValue({ uri: declaredProject1.root }),
-          update: jest.fn(),
-        },
-        globalState: { get: jest.fn(), update: jest.fn() },
-      } as unknown as ExtensionContext);
+    it("resolves SQL for files in a project", () => {
+      const model = Uri.file("/project1/models/test.sql");
 
-      container.executeSQL(
-        { scheme: "untitled", fsPath: "Untitled-1" } as Uri,
-        "select 1",
-        "untitled",
-      );
+      container.executeSQL(model, "select 1", "test");
 
       expect(mockProject1.executeSQLOnQueryPanel).toHaveBeenCalledWith(
         "select 1",
-        "untitled",
+        "test",
       );
     });
 
-    it("does nothing for untitled SQL without a selected project", () => {
-      container.setContext({
-        workspaceState: { get: jest.fn(), update: jest.fn() },
-        globalState: { get: jest.fn(), update: jest.fn() },
-      } as unknown as ExtensionContext);
-
+    it("does not resolve SQL for untitled documents outside any project", () => {
       container.executeSQL(
         { scheme: "untitled", fsPath: "Untitled-1" } as Uri,
         "select 1",
