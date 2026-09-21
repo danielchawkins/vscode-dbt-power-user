@@ -1,13 +1,12 @@
+import { createRequire } from "node:module";
 import type { StorybookConfig } from "@storybook/react-vite";
 import { mergeConfig } from "vite";
 
+const require = createRequire(import.meta.url);
+
 const config: StorybookConfig = {
   stories: ["../src/**/*.mdx", "../src/**/*.stories.@(js|jsx|mjs|ts|tsx)"],
-  addons: [
-    "@storybook/addon-links",
-    "@storybook/addon-essentials",
-    "@storybook/addon-interactions",
-  ],
+  addons: ["@storybook/addon-links", "@storybook/addon-docs"],
   staticDirs: ["../src/assets"],
   framework: {
     name: "@storybook/react-vite",
@@ -22,17 +21,17 @@ const config: StorybookConfig = {
   docs: {
     autodocs: "tag",
   },
-  async viteFinal(config) {
-    if (config.resolve?.alias) {
-      config.resolve.alias["@vscodeApi"] = require.resolve(
-        "./__mocks__/vscode.ts"
+  viteFinal(viteConfig) {
+    if (viteConfig.resolve?.alias) {
+      viteConfig.resolve.alias["@vscodeApi"] = require.resolve(
+        "./__mocks__/vscode.ts",
       );
 
-      config.resolve.alias["crypto"] = require.resolve("./__mocks__/crypto.ts");
+      viteConfig.resolve.alias["crypto"] = require.resolve(
+        "./__mocks__/crypto.ts",
+      );
     }
-    // Merge custom configuration into the default config
-    return mergeConfig(config, {
-      // Add dependencies to pre-optimization
+    return mergeConfig(viteConfig, {
       optimizeDeps: {
         include: ["storybook-dark-mode"],
       },

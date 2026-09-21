@@ -1,6 +1,7 @@
 out
 node_modules
 dist
+webview_panels/storybook-static
 .vscode-test/
 *.vsix
 .DS_Store
