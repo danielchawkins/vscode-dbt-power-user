@@ -120,6 +120,15 @@
             "default": true,
             "scope": "resource"
           },
+          "dbt.projects": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "scope": "resource",
+            "description": "Declared Project roots for this workspace folder, relative to the folder or absolute. When unset or empty, the folder root is served if it contains dbt_project.yml. Every configured root must contain dbt_project.yml or no declared roots are served for the folder."
+          },
           "dbt.unquotedCaseInsensitiveIdentifierRegex": {
             "type": "string",
             "markdownDescription": "Regex to identify unquoted identifiers. Example: `^([_A-Z]+[_A-Z0-9$]*)$`"
