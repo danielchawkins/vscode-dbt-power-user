@@ -3,7 +3,11 @@ export default {
   testEnvironment: "node",
   roots: ["<rootDir>/src"],
   testMatch: ["**/*.test.ts"],
-  testPathIgnorePatterns: ["/node_modules/", "/src/test/integration/"],
+  testPathIgnorePatterns: [
+    "/node_modules/",
+    "/src/test/integration/",
+    "/src/test/smoke/",
+  ],
   extensionsToTreatAsEsm: [".ts"],
   transform: {
     "^.+\\.tsx?$": [

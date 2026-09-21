@@ -41,9 +41,9 @@ Measured after `just webviews::build` (build step runs before payload in `just b
 
 Per-panel payload is deferred to v2.1 when entries split.
 
-## Runtime measures owned by step 3.14
+## Runtime measures deferred within step 3.14
 
-The following are intentionally out of scope for 3.13:
+The [pinned-host smoke](cursor-acquisition.md) now verifies installation, activation, runtime metadata, packaged assets, and command registration in both hosts. The following runtime measurements remain deferred until visible-host automation is reproducible:
 
 - **Webview first contentful paint** — requires visible-host/CDP automation against a real webview, not a standalone headless HTML harness.
 - **Webview resolve-to-ready** — requires panel-open automation in a pinned host (step 3.14 smoke harness) or a test API that forces `resolveWebviewView`.

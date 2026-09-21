@@ -46,3 +46,71 @@ jobs:
           path: |
             *.vsix
             vsix.sha256
+
+  smoke-vscode:
+    needs: check
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install tools
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+
+      - name: Restore pinned hosts
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/Library/Caches/fusion-power-user/hosts
+          key: ${{ runner.os }}-${{ runner.arch }}-fpu-hosts-vscode-${{ hashFiles('scripts/smoke/pins.env') }}
+
+      - name: Install JavaScript dependencies
+        run: just sync
+
+      - name: Download VSIX
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: fusion-power-user-vsix
+
+      - name: Verify VSIX
+        run: shasum -a 256 -c vsix.sha256
+
+      - name: Smoke VS Code 1.128.x
+        run: |
+          just smoke-vscode --vsix fusion-power-user-*.vsix
+
+  smoke-cursor:
+    needs: check
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install tools
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+
+      - name: Restore pinned hosts
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/Library/Caches/fusion-power-user/hosts
+          key: ${{ runner.os }}-${{ runner.arch }}-fpu-hosts-cursor-${{ hashFiles('scripts/smoke/pins.env') }}
+
+      - name: Install JavaScript dependencies
+        run: just sync
+
+      - name: Download VSIX
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: fusion-power-user-vsix
+
+      - name: Verify VSIX
+        run: shasum -a 256 -c vsix.sha256
+
+      - name: Smoke Cursor pinned stable
+        run: |
+          just smoke-cursor --vsix fusion-power-user-*.vsix

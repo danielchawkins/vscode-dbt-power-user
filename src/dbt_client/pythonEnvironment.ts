@@ -5,6 +5,7 @@ import { isAbsolute } from "path";
 import {
   Disposable,
   Event,
+  EventEmitter,
   extensions,
   Terminal,
   Uri,
@@ -22,6 +23,16 @@ interface PythonExecutionDetails {
   getPythonPath: () => string;
   onDidChangeExecutionDetails: Event<Uri | undefined>;
   getEnvVars: (workspaceFolder?: WorkspaceFolder) => EnvVarsResult;
+}
+
+/**
+ * Accepts a bare command for PATH resolution or an existing filesystem path.
+ */
+export function isUsableInterpreter(value: string): boolean {
+  if (/^[\w.+-]+$/.test(value)) {
+    return true;
+  }
+  return (isAbsolute(value) || /[\\/]/.test(value)) && existsSync(value);
 }
 
 export class PythonEnvironment {
@@ -62,7 +73,7 @@ export class PythonEnvironment {
   public get pythonPath() {
     const override = this.getResolvedConfigValue("dbtPythonPathOverride");
     if (override) {
-      if (this.isUsableInterpreterOverride(override)) {
+      if (isUsableInterpreter(override)) {
         return override;
       }
       // Self-heal already-poisoned configs: a value persisted by an earlier
@@ -76,21 +87,6 @@ export class PythonEnvironment {
       );
     }
     return this.executionDetails!.getPythonPath();
-  }
-
-  /**
-   * Whether a user-supplied dbtPythonPathOverride is something we can actually
-   * invoke. Two valid shapes:
-   *  - a bare command resolved via PATH ("python", "python3", "python3.11")
-   *  - a filesystem path (absolute or containing a separator) that exists
-   * Anything else (shell noise, a leaked probe fragment) is rejected so it can
-   * never be used as the interpreter.
-   */
-  private isUsableInterpreterOverride(value: string): boolean {
-    if (/^[\w.+-]+$/.test(value)) {
-      return true;
-    }
-    return (isAbsolute(value) || /[\\/]/.test(value)) && existsSync(value);
   }
 
   public get pythonVersion(): string | undefined {
@@ -309,7 +305,6 @@ export class PythonEnvironment {
     }
     // Strip ANSI/OSC escape codes and control characters
     const cleaned = output.replace(
-      // eslint-disable-next-line no-control-regex
       /\x1B(?:\][^\x07\x1B]*(?:\x07|\x1B\\)|[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])/g,
       "",
     );
@@ -344,8 +339,72 @@ export class PythonEnvironment {
     return undefined;
   }
 
+  private getBaseEnvironmentVariables(
+    workspaceFolder?: WorkspaceFolder,
+  ): EnvVarsResult {
+    const vars: EnvironmentVariables = {};
+    const sources: Record<string, EnvFrom> = {};
+    for (const key in process.env) {
+      vars[key] = process.env[key];
+      sources[key] = "process";
+    }
+
+    try {
+      const integratedEnv: Record<string, Record<string, string>> | undefined =
+        workspace.getConfiguration("terminal").get("integrated.env");
+      if (integratedEnv) {
+        for (const platform in integratedEnv) {
+          if (!["osx", "windows", "linux"].includes(platform)) {
+            this.dbtTerminal.debug(
+              "pythonEnvironment:envVars",
+              "Ignoring unsupported terminal.integrated.env platform",
+              platform,
+            );
+            continue;
+          }
+          this.dbtTerminal.debug(
+            "pythonEnvironment:envVars",
+            `Merging terminal.integrated.env.${platform}`,
+            Object.keys(integratedEnv[platform]),
+          );
+          for (const key in integratedEnv[platform]) {
+            vars[key] = this.substituteSettingsVariables(
+              integratedEnv[platform][key],
+              process.env,
+              workspaceFolder,
+              sources,
+            );
+            sources[key] = "integrated";
+          }
+        }
+      }
+    } catch (error) {
+      this.dbtTerminal.error(
+        "getEnvVarsError",
+        "Could not read terminal environment configuration",
+        error,
+      );
+    }
+
+    return { vars, sources };
+  }
+
   private async activatePythonExtension(): Promise<PythonExecutionDetails> {
-    const extension = extensions.getExtension("ms-python.python")!;
+    const extension = extensions.getExtension("ms-python.python");
+    if (!extension) {
+      const environmentChanged = new EventEmitter<Uri | undefined>();
+      this.disposables.push(environmentChanged);
+      this.dbtTerminal.debug(
+        "pythonEnvironment:initialize",
+        "Python extension is unavailable; using python3 and the extension host environment",
+      );
+      return {
+        getPythonPath: () => "python3",
+        onDidChangeExecutionDetails: environmentChanged.event,
+        getEnvVars: (workspaceFolder) =>
+          this.getBaseEnvironmentVariables(workspaceFolder),
+      };
+    }
 
     if (!extension.isActive) {
       await extension.activate();
@@ -399,47 +458,9 @@ export class PythonEnvironment {
       // Collecting env vars from all 3 places and merging them into one in the above order
       // While merging, also tagging the places from where the env var has come.
       getEnvVars: (workspaceFolder?: WorkspaceFolder) => {
-        const envVars: EnvironmentVariables = {};
-        const sources: Record<string, EnvFrom> = {};
-        for (const key in process.env) {
-          envVars[key] = process.env[key];
-          sources[key] = "process";
-        }
+        const { vars: envVars, sources } =
+          this.getBaseEnvironmentVariables(workspaceFolder);
         try {
-          const integratedEnv:
-            Record<string, Record<string, string>> | undefined = workspace
-            .getConfiguration("terminal")
-            .get("integrated.env");
-          if (integratedEnv) {
-            // parse vs code environment variables
-            for (const prop in integratedEnv) {
-              // Ignore any settings not supported by the terminal
-              // We don't know which os is used in terminal unfortunately, so we just merge all of them.
-              if (!["osx", "windows", "linux"].includes(prop)) {
-                this.dbtTerminal.debug(
-                  "pythonEnvironment:envVars",
-                  "Loading env vars from config.terminal.integrated.env",
-                  "Ignoring invalid property " + prop,
-                );
-                continue;
-              }
-              this.dbtTerminal.debug(
-                "pythonEnvironment:envVars",
-                "Loading env vars from config.terminal.integrated.env",
-                "Merging from " + prop,
-                Object.keys(integratedEnv[prop]),
-              );
-              for (const key in integratedEnv[prop]) {
-                envVars[key] = this.substituteSettingsVariables(
-                  integratedEnv[prop][key],
-                  process.env,
-                  workspaceFolder,
-                  sources,
-                );
-                sources[key] = "integrated";
-              }
-            }
-          }
           if (api.environments) {
             const workspacePath =
               workspaceFolder || workspace.workspaceFolders?.[0];

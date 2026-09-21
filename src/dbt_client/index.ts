@@ -1,9 +1,8 @@
 import { DBTDetection } from "@altimateai/dbt-integration";
-import { existsSync } from "fs";
 import { inject } from "inversify";
 import { commands, Disposable, EventEmitter, Memento, window } from "vscode";
 import { DBTInstallationVerificationEvent } from "./dbtVersionEvent";
-import { PythonEnvironment } from "./pythonEnvironment";
+import { isUsableInterpreter, PythonEnvironment } from "./pythonEnvironment";
 
 enum PythonInterpreterPromptAnswer {
   SELECT = "Select Python interpreter",
@@ -140,9 +139,7 @@ export class DBTClient implements Disposable {
   }
 
   private pythonPathExists() {
-    return (
-      this.pythonEnvironment.pythonPath !== undefined &&
-      existsSync(this.pythonEnvironment.pythonPath)
-    );
+    const pythonPath = this.pythonEnvironment.pythonPath;
+    return pythonPath !== undefined && isUsableInterpreter(pythonPath);
   }
 }
