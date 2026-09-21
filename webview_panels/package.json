@@ -11,7 +11,7 @@
   "scripts": {
     "dev": "vite",
     "watch": "rm -rf dist && tsc && vite build --watch",
-    "build": "rm -rf dist && NODE_OPTIONS=--max-old-space-size=8192 tsc && NODE_OPTIONS=--max-old-space-size=8192 vite build --emptyOutDir=false",
+    "build": "rm -rf dist && NODE_OPTIONS=--max-old-space-size=8192 tsc && NODE_OPTIONS=--max-old-space-size=8192 vite build --emptyOutDir=false && bash ../scripts/workspace/check-webview-tailwind-css.sh dist/assets/main.css",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
