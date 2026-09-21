@@ -110,7 +110,31 @@ Start only after 3.6 is on `main`. Bookmark `chore/latest-majors` for the first 
 
 **Do not:** add complexity lint in these PRs; delete Core/Cloud classes; bump Fusion; treat CommonJS as inviolable.
 
-**Held in 3.7, booked as own PRs before Phase 4:** React 19 (replace `@altimateai/ui-components` and `@ant-design/pro-chat`, which peer on React 18 / antd 5) precedes Tailwind 4 — blocked on ui-components v3 class-prefix strings; see [`tailwind4-ui-components-blocker.md`](tailwind4-ui-components-blocker.md). Regression check: `scripts/workspace/check-webview-tailwind-css.sh` wired into `webview_panels` `npm run build`. ESM host plus Inversify 8; webview ESLint 10 (replace `eslint-plugin-react` / `eslint-plugin-import` / `eslint-plugin-jsx-a11y` if they stay on ESLint 9); `@finos/perspective*` to `@perspective-dev/*`. TypeScript 7 when `typescript-eslint` supports it.
+**Held in 3.7, booked as own PRs before Phase 4:** React 19 (replace `@altimateai/ui-components` and `@ant-design/pro-chat`, which peer on React 18 / antd 5) precedes Tailwind 4 — blocked on ui-components v3 class-prefix strings; see [`tailwind4-ui-components-blocker.md`](tailwind4-ui-components-blocker.md). Regression check: `scripts/workspace/check-webview-tailwind-css.sh` wired into `webview_panels` `npm run build`. ESM host plus Inversify 8; webview ESLint 10 landed (see below); `@finos/perspective*` to `@perspective-dev/*`. TypeScript 7 when `typescript-eslint` supports it.
+
+### Webview ESLint 10 (landed in 3.7 follow-on)
+
+Native flat config in `webview_panels/eslint.config.mjs` with `@eslint-react/recommended-typescript`, then `disable-experimental` (React Compiler and RSC rules only — not stable hooks/DOM rules). Stable guardrails re-enabled after that preset: `@eslint-react/set-state-in-render: error`, `@eslint-react/static-components: error`, plus `rules-of-hooks`, `no-nested-component-definitions`, and `dom-no-unsafe-target-blank` at error. Replaced `eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-import`, legacy `eslint-plugin-jsx-a11y`, and dead plugins (`eslint-plugin-jest`, `eslint-plugin-testing-library`, `eslint-plugin-promise`, `typescript-sort-keys`). Accessibility uses `eslint-plugin-jsx-a11y-x@0.2.x` (es-tooling; ESLint 10 peer verified). `react/function-component-definition` has no maintained replacement and is intentionally dropped (style-only).
+
+Main type-checked block uses `files: ["**/*.{ts,tsx}"]` with explicit `ignores: [".storybook/**"]`. `.storybook/**/*.{ts,tsx}` lint runs in a self-contained later block with non-type-aware `typescript-eslint` `flat/recommended` plus `flat/disable-type-checked` (core `no-undef` stays off for TypeScript; 25 active rules on `.storybook/main.ts`). Composite `tsconfig.node.json` cannot include `.storybook` without breaking `tsc -b`. `jsx-a11y-x` maps `@uicore` `Stack` to `div` only. `@uicore` `Tag` is span or `button` when clickable and is not mapped; reactstrap `List` / `ListGroupItem` / `Card` and other third-party wrappers stay unmapped.
+
+**Tooltip id probe (no webview test harness):** React 18 `useId()` values like `:R0:` are prefixed with `tooltip-` and non-word characters become hyphens so reactstrap `target` resolves (example: `:R0:` becomes `tooltip--R0-`). Manual check: open a panel using `@uicore/Tooltip` and confirm the trigger receives the sanitized id and the tooltip opens.
+
+**Storybook build:** `npm run storybook:build` passes (output: `webview_panels/storybook-static`, Vite build ~2.4s).
+
+**Warning budget (`--max-warnings 59`, zero errors):** mechanical fixes applied for stable error rules and behavior-preserving a11y/DOM fixes. Remaining warnings require behavioral refactors without a webview test harness:
+
+| Rule group                                 | Count | Follow-up                                               |
+| ------------------------------------------ | ----: | ------------------------------------------------------- |
+| `@eslint-react/exhaustive-deps`            |    27 | Promote to error after webview component tests exist    |
+| `@eslint-react/set-state-in-effect`        |    14 | Same                                                    |
+| `@eslint-react/use-state`                  |     7 | Same                                                    |
+| `react-refresh/only-export-components`     |     4 | Revisit when story/module boundaries are test-covered   |
+| `@eslint-react/naming-convention-ref-name` |     4 | Same                                                    |
+| `jsx-a11y-x/no-autofocus`                  |     2 | UX review; keep warn until product accepts focus policy |
+| `@eslint-react/purity`                     |     1 | Same                                                    |
+
+**Prerequisite:** a webview panel test harness (Vitest/RTL or Storybook interaction tests) before promoting warn-level React rules to error. Re-add `eslint-plugin-jest` / `eslint-plugin-testing-library` only when that harness lands.
 
 After the last booked majors PR, evaluate a report-only `just lint-complexity` (ESLint `complexity` / `max-depth` or sonarjs). Prefer warn or a non-failing recipe. Do not add it to `just lint`, `just check`, Lefthook pre-push, or CI. Promoting it to a gate needs a later Confirm, and not before Phase 8 at the earliest.
 
