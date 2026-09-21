@@ -14,16 +14,18 @@ const Tabs = ({
     <Stack direction="column" className="align-items-start">
       <div className={classes.tabs}>
         {tabs.map((t, i) => (
-          <span
+          <button
+            type="button"
             className={`${classes.tab} ${i === tab ? classes.selected : ""}`}
             key={t.label}
+            aria-pressed={i === tab}
             onClick={(e) => {
               e.stopPropagation();
               setTab(i);
             }}
           >
             {t.label}
-          </span>
+          </button>
         ))}
       </div>
       {tabs.find((_, i) => i === tab)?.component}

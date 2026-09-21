@@ -80,9 +80,10 @@ const DocGeneratorInput = ({
     }
 
     if (insertedEntityName === entity.name) {
-      setTimeout(() => {
+      const timeoutId = setTimeout(() => {
         inputRef.current?.focus();
       }, 100);
+      return () => clearTimeout(timeoutId);
     }
   }, [insertedEntityName, entity.name]);
 

@@ -59,28 +59,31 @@ const testsDataForTests = docsDataForTests.columns
     }
     return test;
   });
+const ModelDocGenStory = (): JSX.Element => {
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      window.postMessage(
+        {
+          command: "renderDocumentation",
+          docs: docsDataForTests,
+          missingDocumentationMessage: "",
+          tests: testsDataForTests,
+          project: faker.system.fileName(),
+        },
+        "*",
+      );
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, []);
+  return (
+    <TeamMateProvider>
+      <DocumentationProvider />
+    </TeamMateProvider>
+  );
+};
+
 export const ModelDocGenView = {
-  render: (): JSX.Element => {
-    useEffect(() => {
-      setTimeout(() => {
-        window.postMessage(
-          {
-            command: "renderDocumentation",
-            docs: docsDataForTests,
-            missingDocumentationMessage: "",
-            tests: testsDataForTests,
-            project: faker.system.fileName(),
-          },
-          "*",
-        );
-      }, 100);
-    }, []);
-    return (
-      <TeamMateProvider>
-        <DocumentationProvider />
-      </TeamMateProvider>
-    );
-  },
+  render: (): JSX.Element => <ModelDocGenStory />,
   decorators: [],
   parameters: {
     vscode: {

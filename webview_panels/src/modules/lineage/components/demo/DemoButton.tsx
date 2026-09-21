@@ -1,7 +1,7 @@
 import { CloseIcon, PlayCircleIcon } from "@assets/icons";
 import { Demo } from "@modules/lineage/Demo";
 import { useEffect, useState } from "react";
-import { Modal, Button } from "@uicore";
+import { Modal, Button, activateClickOnKeyDown } from "@uicore";
 import styles from "../../lineage.module.scss";
 
 const DemoButton = (): JSX.Element => {
@@ -9,10 +9,10 @@ const DemoButton = (): JSX.Element => {
   const [showDemoModal, setShowDemoModal] = useState(false);
 
   useEffect(() => {
-    // hide demo button after 10s
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       setShowDemoButton(false);
     }, 10000);
+    return () => clearTimeout(timeoutId);
   }, []);
 
   return (
@@ -24,7 +24,15 @@ const DemoButton = (): JSX.Element => {
         className={styles.demoModal}
       >
         <Demo />
-        <div className="close-btn" onClick={() => setShowDemoModal(false)}>
+        <div
+          className="close-btn"
+          role="button"
+          tabIndex={0}
+          onClick={() => setShowDemoModal(false)}
+          onKeyDown={(e) =>
+            activateClickOnKeyDown(e, () => setShowDemoModal(false))
+          }
+        >
           <CloseIcon />
         </div>
       </Modal>

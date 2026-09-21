@@ -1,4 +1,10 @@
-import { PopoverWithButton, Stack, Button, Input } from "@uicore";
+import {
+  PopoverWithButton,
+  Stack,
+  Button,
+  Input,
+  activateClickOnKeyDown,
+} from "@uicore";
 import { RefObject, useState, useMemo } from "react";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { DocBlock } from "@modules/documentationEditor/state/types";
@@ -85,7 +91,14 @@ const DocBlockInserter = ({
                 <div
                   key={docBlock.name}
                   className={styles.docBlockItem}
+                  role="button"
+                  tabIndex={0}
                   onClick={() => handleInsertDocBlock(docBlock, close)}
+                  onKeyDown={(e) =>
+                    activateClickOnKeyDown(e, () =>
+                      handleInsertDocBlock(docBlock, close),
+                    )
+                  }
                 >
                   <Stack direction="column" className={`align-items-start ${styles.itemContent}`}>
                     <strong className={styles.itemName}>{docBlock.name}</strong>

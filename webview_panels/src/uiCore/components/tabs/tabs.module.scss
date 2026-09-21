@@ -3,6 +3,10 @@
   background: var(--background--02);
   border-radius: 0.25em;
   .tab {
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
     padding: 0.25em 1em;
     border-radius: 0.25em;
     cursor: pointer;

@@ -13,7 +13,7 @@ const Avatar = ({ imgUrl, children, size = 40 }: Props): JSX.Element => {
       style={{ maxWidth: size, minWidth: size, height: size }}
     >
       {children}
-      {imgUrl ? <img src={imgUrl} /> : null}
+      {imgUrl ? <img src={imgUrl} alt="" /> : null}
     </div>
   );
 };

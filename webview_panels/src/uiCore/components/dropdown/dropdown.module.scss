@@ -12,14 +12,22 @@
         color: var(--text-color--paragraph);
 
         li {
-          text-decoration: none;
           width: 100%;
           min-width: 8em;
-          text-align: left;
-          padding: 0.25em 0.5em;
-          cursor: pointer;
-          &:hover,
-          &.active {
+
+          button {
+            width: 100%;
+            border: none;
+            background: transparent;
+            text-align: left;
+            padding: 0.25em 0.5em;
+            cursor: pointer;
+            color: inherit;
+            font: inherit;
+          }
+
+          button:hover,
+          button.active {
             color: var(--primary-color);
             background-color: var(--background--03);
           }
@@ -30,11 +38,14 @@
 }
 
 .dropdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25em;
   padding: 0.25em 0.5em;
   border-radius: 0.25em;
-  align-items: center;
   border: 1px solid var(--stroke--disable);
   background: var(--background--02);
   color: var(--text-color--paragraph);
   cursor: pointer;
+  font: inherit;
 }

@@ -9,7 +9,9 @@ export const vscode = {
       let status = true;
       try {
         const body =
-          typeof func === "function" ? await (func as (args: Record<string, unknown>) => unknown)(args) : data;
+          typeof func === "function"
+            ? await (func as (message: Record<string, unknown>) => unknown)(args)
+            : data;
         response = { body };
       } catch (error) {
         response = {

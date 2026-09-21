@@ -2,7 +2,7 @@ import { executeRequestInAsync } from "@modules/app/requestExecutor";
 import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
 import { setLimit } from "@modules/queryPanel/context/queryPanelSlice";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
-import { Input, Stack } from "@uicore";
+import { activateClickOnKeyDown, Input, Stack } from "@uicore";
 import { useEffect, useState } from "react";
 import styles from "./styles.module.scss";
 import { PlayIcon } from "@assets/icons";
@@ -80,6 +80,8 @@ const QueryLimit = (): JSX.Element => {
                 ? styles.active
                 : styles.inactive,
             ].join(" ")}
+            role="button"
+            tabIndex={0}
             onClick={() => {
               if (value && activeEditor?.filepath?.endsWith(".sql")) {
                 executeRequestInAsync("executeQueryFromActiveWindow", {
@@ -87,6 +89,15 @@ const QueryLimit = (): JSX.Element => {
                 });
               }
             }}
+            onKeyDown={(e) =>
+              activateClickOnKeyDown(e, () => {
+                if (value && activeEditor?.filepath?.endsWith(".sql")) {
+                  executeRequestInAsync("executeQueryFromActiveWindow", {
+                    limit: parseInt(value),
+                  });
+                }
+              })
+            }
           >
             <PlayIcon />
           </div>
@@ -96,7 +107,13 @@ const QueryLimit = (): JSX.Element => {
         <Stack className={styles.saveContainer}>
           <div>Set as default</div>
           {limitSaveState === LimitSaveState.Dirty ? (
-            <div className={styles.saveButton} onClick={saveLimit}>
+            <div
+              className={styles.saveButton}
+              role="button"
+              tabIndex={0}
+              onClick={saveLimit}
+              onKeyDown={(e) => activateClickOnKeyDown(e, saveLimit)}
+            >
               Save
             </div>
           ) : (

@@ -1,5 +1,5 @@
 import { ErrorBoundary } from "react-error-boundary";
-import { ReactNode, useRef, useState } from "react";
+import { ReactNode, useId, useState } from "react";
 import { Tooltip as ReactStrapTooltip, TooltipProps } from "reactstrap";
 
 interface Props {
@@ -14,19 +14,19 @@ interface Props {
 const Tooltip = (props: Props): JSX.Element => {
   const [tooltipOpen, setTooltipOpen] = useState(false);
   const toggle = () => setTooltipOpen(!tooltipOpen);
-  const idRef = useRef(
-    (
-      props.id ?? `tooltip-${Math.random().toString(36).substring(3, 9)}`
-    ).replace(/\s/g, "-"),
+  const generatedId = useId();
+  const tooltipId = (props.id ?? `tooltip-${generatedId}`).replace(
+    /[^\w-]/g,
+    "-",
   );
 
   return (
-    <ErrorBoundary fallback={<span id={idRef.current}>{props.children}</span>}>
-      <span id={idRef.current}>{props.children}</span>
+    <ErrorBoundary fallback={<span id={tooltipId}>{props.children}</span>}>
+      <span id={tooltipId}>{props.children}</span>
       {props.title ? (
         <ReactStrapTooltip
           isOpen={tooltipOpen}
-          target={idRef.current}
+          target={tooltipId}
           toggle={toggle}
           className={props.className}
           placement={props.placement ?? "auto"}

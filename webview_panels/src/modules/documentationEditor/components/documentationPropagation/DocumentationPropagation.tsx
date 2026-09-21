@@ -1,5 +1,6 @@
 import type { ColumnLineage } from "@altimateai/ui-components/lineage";
 import { ArrowDownIcon, ArrowUpIcon, PropagateIcon } from "@assets/icons";
+import { activateClickOnKeyDown } from "@uicore";
 import { executeRequestInSync } from "@modules/app/requestExecutor";
 import {
   updateBulkDocsPropRightPanel,
@@ -96,7 +97,12 @@ const SingleColumnCard = ({
         <CardBody>
           <div
             className={styles.singleColumnAccordion}
+            role="button"
+            tabIndex={0}
             onClick={() => setIsExpanded(true)}
+            onKeyDown={(e) =>
+              activateClickOnKeyDown(e, () => setIsExpanded(true))
+            }
           >
             <ArrowDownIcon />
           </div>
@@ -125,7 +131,12 @@ const SingleColumnCard = ({
       <CardBody>
         <div
           className={styles.singleColumnAccordion}
+          role="button"
+          tabIndex={0}
           onClick={() => setIsExpanded(false)}
+          onKeyDown={(e) =>
+            activateClickOnKeyDown(e, () => setIsExpanded(false))
+          }
         >
           <ArrowUpIcon />
         </div>
@@ -230,7 +241,7 @@ const useDocumentationPropagation = ({
     Record<string, boolean>
   >({});
   const [tableMetadata, setTableMetadata] = useState<TableMetadata[]>([]);
-  const isCancelled = useRef(false);
+  const isCancelledRef = useRef(false);
   const [testsMetadata, setTestsMetadata] = useState<Record<string, unknown>>(
     {},
   );
@@ -239,13 +250,13 @@ const useDocumentationPropagation = ({
   >({});
 
   const loadMoreDownstreamModels = async () => {
-    isCancelled.current = false;
+    isCancelledRef.current = false;
     setIsLoading(true);
     setIsColumnLineageLoading(
       Object.fromEntries(currColumns.map((curr) => [curr.column, true])),
     );
     let iCurrColumns = startColumns;
-    while (iCurrColumns.length > 0 && !isCancelled.current) {
+    while (iCurrColumns.length > 0 && !isCancelledRef.current) {
       const result = (await executeRequestInSync("getDownstreamColumns", {
         targets: iCurrColumns.map((c) => [c.model, c.column]),
         model: currentDocsData?.uniqueId,
@@ -292,7 +303,7 @@ const useDocumentationPropagation = ({
   };
 
   const cancelColumnLineage = async () => {
-    isCancelled.current = true;
+    isCancelledRef.current = true;
     await executeRequestInSync("cancelColumnLineage", {});
   };
 
@@ -313,7 +324,7 @@ const useDocumentationPropagation = ({
     setTableMetadata([]);
     setTestsMetadata({});
     setSelectedColumns({});
-    isCancelled.current = false;
+    isCancelledRef.current = false;
   };
   return {
     isLoading,

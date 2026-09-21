@@ -115,27 +115,30 @@ const LineageView = (): JSX.Element | null => {
       },
     };
 
-    window.addEventListener(
-      "message",
-      (
-        event: MessageEvent<{ command: string; args: Record<string, unknown> }>,
-      ) => {
-        panelLogger.log("lineage:message -> ", JSON.stringify(event.data));
-        const { command, args } = event.data;
+    const onMessage = (
+      event: MessageEvent<{ command: string; args: Record<string, unknown> }>,
+    ) => {
+      panelLogger.log("lineage:message -> ", JSON.stringify(event.data));
+      const { command, args } = event.data;
 
-        if (command in commandMap) {
-          (
-            commandMap[command as keyof typeof commandMap] as (
-              args: Record<string, unknown>,
-            ) => void
-          )(args);
-        }
-      },
-    );
+      if (command in commandMap) {
+        (
+          commandMap[command as keyof typeof commandMap] as (
+            args: Record<string, unknown>,
+          ) => void
+        )(args);
+      }
+    };
+
+    window.addEventListener("message", onMessage);
 
     panelLogger.info("lineage:onload");
     document.documentElement.classList.add(styles.lineageBody);
     executeRequestInAsync("init", {});
+
+    return () => {
+      window.removeEventListener("message", onMessage);
+    };
   }, []);
 
   if (!isApiHelperInitialized || !renderNode) {
