@@ -4,13 +4,11 @@ This is the executor plan for work still ahead of `main`. Contracts, file lists,
 
 ## Current position
 
-**Merged on `main`:** 1.2 version gate, 1.3 conflict guard and `enabled`, all of Phase 2, steps 3.1 through 3.13, and 3.14's pinned VS Code/Cursor acquisition, basic packaged-VSIX smoke, and VS Code runtime baseline. The extension packages as `0.1.0-alpha.0` against the 1.128 Extensions API.
+**Completed at this tip:** 1.2 version gate, 1.3 conflict guard and `enabled`, all of Phase 2, and steps 3.1 through 3.14. The extension packages as `0.1.0-alpha.0` against the 1.128 Extensions API.
 
-**Local implementation:** step 3.14 Cursor runtime timing and clean-profile login automation.
+**Completed evidence:** pinned VS Code 1.128.0 and unauthenticated Cursor 3.21.16 each record all three host activation phases, real-webview FCP, and host resolve-to-ready across ten fresh processes.
 
-**Completed evidence:** VS Code 1.128.0 records all three host activation phases, real-webview FCP, and host resolve-to-ready across ten fresh processes. Existing Cursor acquisition, installation, and activation smoke remains green.
-
-**Blocked:** step 3.15 until 3.14 records equivalent runtime evidence on both hosts.
+**Next:** step 3.15 derives the browser target from both pinned hosts.
 
 What is still true of the product: it is manifest-driven, and it still ships hosted Altimate, authentication, credits, and Python-bridge paths. Core and Cloud stay constructible because `DBTProjectIntegrationAdapter`'s constructor requires their factories — **not** because Fusion extends Cloud, which it does not. `DBTFusionCommandDetection` and the integration classes live in `@altimateai/dbt-integration`; wrap them, never patch `node_modules`.
 
@@ -74,8 +72,8 @@ Serial PRs, each carrying the constraints below. Do not start Phase 4 until ever
 | 6  | 3.11 image audit          | Merged. Reference-audited asset deletion with an exact runtime/contribution icon guard.                                                                                | 4          |
 | 7  | 3.12 Codicons allowlist   | Merged. Copy only `codicon.css` and `codicon.ttf` from the plugin.                                                                                                     | —          |
 | 8  | 3.13 tests and baselines  | Merged. Vitest/Testing Library tests against current seams plus reproducible single-entry payload and build/package baselines.                                         | 3          |
-| 9  | 3.14 host smoke + timing  | Acquisition, basic smoke, and VS Code runtime evidence merged. Cursor timing is next and must resolve login disruption in clean-profile automation.                    | 8          |
-| 10 | 3.15 browser target       | Blocked until 3.14 records equivalent runtime evidence on both hosts; then set `chrome148`, migrate to `rolldownOptions`, and retry the CSS minifier default.          | 9          |
+| 9  | 3.14 host smoke + timing  | Complete at this tip. Both pinned hosts have acquisition, packaged-VSIX smoke, metadata, and ten fresh-process activation/FCP/ready samples.                           | 8          |
+| 10 | 3.15 browser target       | Next. Set `chrome148`, migrate to `rolldownOptions`, and retry the CSS minifier default against the completed two-host smoke evidence.                                 | 9          |
 
 Deliberately not in this list: the shared message contract, which arrives at v2.1 as `packages/webview-contract/` together with the npm workspace that makes it resolvable, and must not be stubbed in v1 so a test can be written against it; React 19, which **D6** has not selected and which must not be adopted merely to unblock a dependency bump; `@finos/perspective*` to `@perspective-dev/*`, which is v2.5 behind its spike; and TypeScript 7 until `typescript-eslint` supports it.
 

@@ -16,6 +16,10 @@ interface HostRuntimeTiming {
   duration: number;
 }
 
+interface MeasuredWebview extends WebviewPaintMetric {
+  openAttempts: number;
+}
+
 suite("Pinned-host VSIX smoke", function () {
   this.timeout(120_000);
 
@@ -89,7 +93,7 @@ suite("Pinned-host VSIX smoke", function () {
         viewPath: "/lineage",
       },
     ];
-    const webviews: WebviewPaintMetric[] = [];
+    const webviews: MeasuredWebview[] = [];
 
     for (const panel of panels) {
       assert.ok(
@@ -118,10 +122,11 @@ suite("Pinned-host VSIX smoke", function () {
           host: process.env.FPU_SMOKE_HOST,
           activation,
           webviews: webviews.map(
-            ({ viewPath, timeOrigin, firstContentfulPaint }) => ({
+            ({ viewPath, timeOrigin, firstContentfulPaint, openAttempts }) => ({
               viewPath,
               timeOrigin,
               firstContentfulPaint,
+              openAttempts,
             }),
           ),
           hostTimings,
@@ -147,12 +152,15 @@ async function waitForHostRuntimeTimings(): Promise<HostRuntimeTiming[]> {
 async function openMeasuredPanel(
   cdpPort: string,
   panel: { container?: string; command: string; viewPath: string },
-): Promise<WebviewPaintMetric> {
+): Promise<MeasuredWebview> {
   let error: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await openPanel(panel);
     try {
-      return await waitForWebviewPaint(cdpPort, panel.viewPath, 50);
+      return {
+        ...(await waitForWebviewPaint(cdpPort, panel.viewPath, 50)),
+        openAttempts: attempt + 1,
+      };
     } catch (cause) {
       error = cause;
     }
