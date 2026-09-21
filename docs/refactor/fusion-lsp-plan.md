@@ -374,7 +374,7 @@ Rules, all testable without VS Code running: read the setting with `workspace.ge
 
 Verify: closes characterization cases 3, 5, and 6 at the resolver seam; 4.4 rewrites the corresponding `DBTWorkspaceFolder` characterization tests onto `ProjectRegistry` and removes `it.failing`. Add cases for an explicit root that does not exist, an absolute root, a root outside the folder, and duplicate entries across folders resolving to the same path.
 
-**4.2 — Project registry.** New `src/projects/projectRegistry.ts`, replacing `src/dbt_client/dbtWorkspaceFolder.ts`.
+**4.2 — Project registry.** New `src/projects/projectRegistry.ts`. One concrete `ProjectRegistry` class implements the registry seam, bound to `DBTTerminal` and inert until 4.3 calls `initialize()`.
 
 ```ts
 export interface DeclaredProject extends Disposable {
@@ -383,19 +383,20 @@ export interface DeclaredProject extends Disposable {
   readonly folder: WorkspaceFolder;
   contains(uri: Uri): boolean;
 }
-export interface ProjectRegistry extends Disposable {
+export declare class ProjectRegistry implements Disposable {
   readonly projects: readonly DeclaredProject[];
   readonly onDidChangeProjects: Event<void>;
   /** Deepest-root-first match; undefined when the uri belongs to no Declared Project. */
   findProject(uri: Uri): DeclaredProject | undefined;
-  /** Watches only each declared root's dbt_project.yml, never a recursive glob. */
+  /** Registers listeners and creates one non-recursive `dbt_project.yml` watcher per registered root. */
   initialize(): Promise<void>;
+  dispose(): void;
 }
 ```
 
-A root under another project's packages install path is a Dependency Project and is rejected with an output-channel note, not a notification. Deduplicate roots that resolve to the same real path across folders. React to `workspace.onDidChangeWorkspaceFolders` and to configuration changes affecting the section.
+Resolution calls `resolveDeclaredProjectRoots` (4.1) per folder, collects roots, and deduplicates by `realpathSync.native` (fallback lexical) — first folder wins while all declared lexical aliases remain valid for containment. An explicitly declared package root is a Declared Project under ADR 0003; undeclared package trees never enter the registry because it does not discover recursively. `contains` is exact-or-separator-prefix across those aliases. `findProject` uses deepest-segment-first deterministic lookup. Reads project name from `dbt_project.yml` config, basename fallback, parse-error stops that root with an output-channel note. Per-root watchers reconcile on `dbt_project.yml` create/change/delete and on `workspace.onDidChangeConfiguration` when `dbt.projects` changes; `onDidChangeWorkspaceFolders` reconciles the whole set. Reconcile preserves `DeclaredProject` instance identity for unchanged projects, disposes removed ones, fires `onDidChangeProjects` once and only on a net set change. Project-free folders get zero watchers. A missing explicit project file therefore heals on a configuration change or reload, not ambient file creation. No watcher exists before `initialize()`. DI binding in `src/inversify.config.ts` takes `DBTTerminal` only; no activation call or consumer until 4.3.
 
-Verify: on `multi-root`, exactly two projects register; `.state_copy` does not; `pipelines/` creates no watcher; `shared_packages/` registers nothing. Integration test asserts no `FileSystemWatcher` with a recursive pattern exists.
+Verify: registration and names correct per folder and declaration order; fail-closed per folder leaves siblings unaffected; explicitly declared package roots register; deduped-realpath fallback; deepest-first deterministic; no `findFiles` or recursive watchers in the registry; per-root `RelativePattern(root, "dbt_project.yml")` exact count; zero watchers on project-free folders; configuration-change reconcile and event-firing exact. The workspace-wide recursive-watcher assertion turns green in 4.4 when the old discovery subject is removed.
 
 **4.3 — Project Context resolution.** New `src/projects/projectContext.ts`.
 

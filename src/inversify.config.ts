@@ -65,6 +65,7 @@ import {
 import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { FusionVersionDetection } from "./fusion/fusionVersionDetection";
+import { ProjectRegistry } from "./projects/projectRegistry";
 import { AltimateAuthService } from "./services/altimateAuthService";
 import { DbtLineageService } from "./services/dbtLineageService";
 import { DbtTestService } from "./services/dbtTestService";
@@ -756,6 +757,13 @@ container
   .bind(FileService)
   .toDynamicValue(() => {
     return new FileService();
+  })
+  .inSingletonScope();
+
+container
+  .bind(ProjectRegistry)
+  .toDynamicValue((context) => {
+    return new ProjectRegistry(context.get("DBTTerminal"));
   })
   .inSingletonScope();
 
