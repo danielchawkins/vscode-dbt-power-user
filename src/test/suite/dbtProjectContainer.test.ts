@@ -1,4 +1,4 @@
-import { RunModelType } from "@altimateai/dbt-integration";
+import { DBTTerminal, RunModelType } from "@altimateai/dbt-integration";
 import {
   afterEach,
   beforeEach,
@@ -7,35 +7,77 @@ import {
   it,
   jest,
 } from "@jest/globals";
-import { EventEmitter } from "events";
 import * as fs from "fs";
-import { ExtensionContext, Uri, window, workspace } from "vscode";
+import { EventEmitter, ExtensionContext, Uri, window } from "vscode";
+import { DBTClient } from "../../dbt_client";
+import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
+import { ProjectRegistry } from "../../projects/projectRegistry";
 import { createEntry } from "../fixtures/runHistory";
 
-// Make fs.realpathSync.native a pass-through so model params can be derived
-// from synthetic paths without the files existing on disk.
-jest
-  .spyOn(fs.realpathSync, "native")
-  .mockImplementation((p: fs.PathLike) => p as string);
-
-describe("DBTProjectContainer Tests", () => {
+describe("DBTProjectContainer", () => {
   let container: DBTProjectContainer;
-  let mockDbtClient: any;
-  let mockDbtTerminal: any;
-  let mockDbtWorkspaceFolder: any;
-  let mockDbtProject: any;
-  let mockDbtWorkspaceFolderFactory: any;
+  let mockDbtClient: jest.Mocked<DBTClient>;
+  let mockDbtTerminal: jest.Mocked<DBTTerminal>;
+  let mockProjectRegistry: any;
+  let mockDbtProjectFactory: jest.Mock;
+  let mockProject1: jest.Mocked<DBTProject>;
+  let mockProject2: jest.Mocked<DBTProject>;
+  let declaredProject1: any;
+  let declaredProject2: any;
+  let registryOnDidChangeProjects: EventEmitter<void>;
 
   beforeEach(() => {
-    // Reset all mocks
-    jest.clearAllMocks();
+    // Mock DBTClient
+    mockDbtClient = {
+      onDBTInstallationVerification: jest
+        .fn()
+        .mockReturnValue({ dispose: jest.fn() }),
+      setGlobalState: jest.fn(),
+      pythonInstalled: true,
+      dbtInstalled: true,
+      getPythonEnvironment: jest
+        .fn()
+        .mockReturnValue({ pythonPath: "/path/to/python" }),
+      showErrorIfDbtOrPythonNotInstalled: jest.fn(),
+      showErrorIfDbtIsNotInstalled: jest.fn(),
+      detectDBT: jest.fn(),
+      dispose: jest.fn(),
+    } as unknown as jest.Mocked<DBTClient>;
 
-    // Mock DBT project
-    mockDbtProject = {
-      projectRoot: Uri.file("/path/to/project"),
-      findPackageName: jest.fn(() => "test_package"),
+    // Mock DBTTerminal
+    mockDbtTerminal = {
+      debug: jest.fn(),
+      error: jest.fn(),
+      info: jest.fn(),
+      dispose: jest.fn(),
+    } as unknown as jest.Mocked<DBTTerminal>;
+
+    // Create mock declared projects
+    declaredProject1 = {
+      root: Uri.file("/project1"),
+      name: "project1",
+      folder: { uri: Uri.file("/ws"), name: "ws", index: 0 },
+      contains: jest.fn((uri: Uri) => uri.fsPath.startsWith("/project1")),
+      dispose: jest.fn(),
+    };
+
+    declaredProject2 = {
+      root: Uri.file("/project2"),
+      name: "project2",
+      folder: { uri: Uri.file("/ws"), name: "ws", index: 0 },
+      contains: jest.fn((uri: Uri) => uri.fsPath.startsWith("/project2")),
+      dispose: jest.fn(),
+    };
+
+    // Mock DBTProject instances
+    mockProject1 = {
+      projectRoot: Uri.file("/project1"),
+      getProjectName: jest.fn().mockReturnValue("project1"),
+      getAdapterType: jest.fn().mockReturnValue("snowflake"),
+      findPackageName: jest.fn().mockReturnValue("package1"),
       initialize: jest.fn(),
+      dispose: jest.fn(),
       executeSQLOnQueryPanel: jest.fn(),
       runModel: jest.fn(),
       buildModel: jest.fn(),
@@ -44,764 +86,589 @@ describe("DBTProjectContainer Tests", () => {
       runModelTest: jest.fn(),
       compileModel: jest.fn(),
       generateDocs: jest.fn(),
-      compileQuery: jest.fn(() => Promise.resolve("compiled query")),
+      compileQuery: jest.fn(async () => "compiled query"),
       showRunSQL: jest.fn(),
       showCompiledSql: jest.fn(),
       generateSchemaYML: jest.fn(),
-      dispose: jest.fn(),
-    };
+      onRebuildManifestStatusChange: jest
+        .fn()
+        .mockReturnValue({ dispose: jest.fn() }),
+    } as unknown as jest.Mocked<DBTProject>;
 
-    // Mock DBT workspace folder
-    mockDbtWorkspaceFolder = {
+    mockProject2 = {
+      projectRoot: Uri.file("/project2"),
+      getProjectName: jest.fn().mockReturnValue("project2"),
+      getAdapterType: jest.fn().mockReturnValue("snowflake"),
+      initialize: jest.fn(),
       dispose: jest.fn(),
-      contains: jest.fn(() => true),
-      findDBTProject: jest.fn(() => mockDbtProject),
-      getProjects: jest.fn(() => [mockDbtProject]),
-      getAdapters: jest.fn(() => ["postgres"]),
-      discoverProjects: jest.fn(() => Promise.resolve()),
-      onRebuildManifestStatusChange: (handler: any) => {
-        // Mock event registration
-        return { dispose: jest.fn() };
+      executeSQLOnQueryPanel: jest.fn(),
+      onRebuildManifestStatusChange: jest
+        .fn()
+        .mockReturnValue({ dispose: jest.fn() }),
+    } as unknown as jest.Mocked<DBTProject>;
+
+    // Mock factory
+    mockDbtProjectFactory = jest.fn((uri: Uri) => {
+      if (uri.fsPath === "/project1") {
+        return mockProject1;
+      }
+      if (uri.fsPath === "/project2") {
+        return mockProject2;
+      }
+      throw new Error("Unknown project");
+    }) as any;
+
+    // Mock ProjectRegistry
+    registryOnDidChangeProjects = new EventEmitter<void>();
+    mockProjectRegistry = {
+      projects: [declaredProject1, declaredProject2],
+      get onDidChangeProjects() {
+        return registryOnDidChangeProjects.event;
       },
-    };
-
-    // Mock DBT client
-    mockDbtClient = {
-      onDBTInstallationVerification: new EventEmitter().on,
+      findProject: jest.fn((uri: Uri) => {
+        if (uri.fsPath.startsWith("/project1")) {
+          return declaredProject1;
+        }
+        if (uri.fsPath.startsWith("/project2")) {
+          return declaredProject2;
+        }
+        return undefined;
+      }),
       dispose: jest.fn(),
-      showErrorIfDbtOrPythonNotInstalled: jest.fn(),
-      showErrorIfDbtIsNotInstalled: jest.fn(),
-      detectDBT: jest.fn(() => Promise.resolve()),
-      setGlobalState: jest.fn(),
-      getPythonEnvironment: jest.fn(() => ({
-        pythonPath: "/path/to/python",
-      })),
-    };
+    } as unknown as ProjectRegistry;
 
-    // Mock DBT terminal
-    mockDbtTerminal = {
-      show: jest.fn(),
-      log: jest.fn(),
-      trace: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      error: jest.fn(),
-      dispose: jest.fn(),
-      logNewLine: jest.fn(),
-      logLine: jest.fn(),
-      logHorizontalRule: jest.fn(),
-      logBlock: jest.fn(),
-      warn: jest.fn(),
-    };
-
-    // Mock workspace folder factory
-    mockDbtWorkspaceFolderFactory = jest.fn(() => mockDbtWorkspaceFolder);
-
-    // Create container
     container = new DBTProjectContainer(
       mockDbtClient,
-      mockDbtWorkspaceFolderFactory,
+      mockProjectRegistry,
+      mockDbtProjectFactory as any,
       mockDbtTerminal,
     );
-
-    // Set up workspace folders for testing
-    container.dbtWorkspaceFolders = [mockDbtWorkspaceFolder];
+    jest
+      .spyOn(fs.realpathSync, "native")
+      .mockImplementation((value) => value as string);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    jest.restoreAllMocks();
   });
 
-  describe("Initialization and Lifecycle", () => {
-    it("should initialize with correct dependencies", () => {
-      expect(container).toBeDefined();
-      expect(container.onDBTInstallationVerification).toBe(
-        mockDbtClient.onDBTInstallationVerification,
+  describe("initialization and sync", () => {
+    it("should construct DBTProject instances exactly once across multiple syncs", async () => {
+      await container.initializeDBTProjects();
+
+      expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
+      expect(mockProject1.initialize).toHaveBeenCalled();
+      expect(mockProject2.initialize).toHaveBeenCalled();
+
+      // Trigger a second sync via registry change
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      // Factory should not be called again
+      expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
+    });
+
+    it("should initialize event even when no projects exist", async () => {
+      mockProjectRegistry.projects = [];
+      const container2 = new DBTProjectContainer(
+        mockDbtClient,
+        mockProjectRegistry,
+        mockDbtProjectFactory as any,
+        mockDbtTerminal,
+      );
+
+      const initHandler = jest.fn();
+      container2.onDBTProjectsInitialization(initHandler);
+
+      await container2.initializeDBTProjects();
+
+      expect(initHandler).toHaveBeenCalled();
+    });
+  });
+
+  describe("project lookup", () => {
+    beforeEach(async () => {
+      await container.initializeDBTProjects();
+    });
+
+    it("should resolve projects through registry with deepest-first order", () => {
+      const project = container.findDBTProject(
+        Uri.file("/project1/models/my_model.sql"),
+      );
+      expect(project).toBe(mockProject1);
+    });
+
+    it("should return registry order for getProjects", () => {
+      const projects = container.getProjects();
+      expect(projects).toHaveLength(2);
+      expect(projects[0]).toBe(mockProject1);
+      expect(projects[1]).toBe(mockProject2);
+    });
+
+    it("should return undefined for file outside any project", () => {
+      const project = container.findDBTProject(Uri.file("/unknown/path"));
+      expect(project).toBeUndefined();
+    });
+  });
+
+  describe("removal and manifest events", () => {
+    beforeEach(async () => {
+      await container.initializeDBTProjects();
+    });
+
+    it("should fire manifest removed before disposing removed projects", async () => {
+      const manifestHandler = jest.fn();
+      container.onManifestChanged(manifestHandler);
+
+      // Reduce registry to one project
+      mockProjectRegistry.projects = [declaredProject1];
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(manifestHandler).toHaveBeenCalledWith({
+        removed: [{ projectRoot: mockProject2.projectRoot }],
+      });
+      expect(mockProject2.dispose).toHaveBeenCalled();
+      expect(manifestHandler.mock.invocationCallOrder[0]).toBeLessThan(
+        (mockProject2.dispose as jest.Mock).mock.invocationCallOrder[0],
       );
     });
 
-    it("should dispose all dependencies", () => {
-      container.dispose();
+    it("should update rebuild status map on removal", async () => {
+      const statusHandler = jest.fn();
+      container.onRebuildManifestStatusChange(statusHandler);
 
-      expect(mockDbtWorkspaceFolder.dispose).toHaveBeenCalled();
-      expect(mockDbtClient.dispose).toHaveBeenCalled();
-      expect(mockDbtTerminal.dispose).toHaveBeenCalled();
+      // Manually trigger rebuild status for project2
+      const rebuildStatusSub = (
+        mockProject2.onRebuildManifestStatusChange as jest.Mock
+      ).mock.calls[0]?.[0] as any;
+      if (rebuildStatusSub && typeof rebuildStatusSub === "function") {
+        rebuildStatusSub({
+          project: mockProject2,
+          inProgress: true,
+        });
+      }
+
+      // Remove project2
+      mockProjectRegistry.projects = [declaredProject1];
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(statusHandler).toHaveBeenLastCalledWith({
+        projects: [],
+        inProgress: false,
+      });
+    });
+  });
+
+  describe("registry reconciliation", () => {
+    it("should follow registry order changes", async () => {
+      await container.initializeDBTProjects();
+      mockProjectRegistry.projects = [declaredProject2, declaredProject1];
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(container.getProjects()).toEqual([mockProject2, mockProject1]);
+      expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
     });
 
-    it("should set context properly", () => {
-      const mockContext = {
-        extensionUri: Uri.file("/path/to/extension"),
-        extension: { id: "test-extension", packageJSON: { version: "1.0.0" } },
-        globalState: {
-          get: jest.fn(),
-          update: jest.fn(),
-        },
+    it("serializes removal after project initialization", async () => {
+      mockProjectRegistry.projects = [];
+      await container.initializeDBTProjects();
+      let finish!: () => void;
+      mockProject1.initialize.mockReturnValue(
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+      );
+
+      mockProjectRegistry.projects = [declaredProject1];
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+      mockProjectRegistry.projects = [];
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(mockProject1.dispose).not.toHaveBeenCalled();
+      finish();
+      await new Promise((resolve) => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
+      expect(mockProject1.dispose).toHaveBeenCalled();
+    });
+
+    it("reports reconciliation failures", async () => {
+      mockProjectRegistry.projects = [];
+      await container.initializeDBTProjects();
+      mockProject1.initialize.mockRejectedValue(new Error("broken project"));
+
+      mockProjectRegistry.projects = [declaredProject1];
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(mockDbtTerminal.error).toHaveBeenCalledWith(
+        "DBTProjectContainer",
+        "Project synchronization failed",
+        expect.any(Error),
+      );
+    });
+  });
+
+  describe("retained container API", () => {
+    beforeEach(async () => {
+      await container.initializeDBTProjects();
+    });
+
+    it("exposes context, installation, and environment state", async () => {
+      const context = {
+        extensionUri: Uri.file("/extension"),
+        extension: { id: "publisher.extension", packageJSON: { version: "1" } },
+        workspaceState: { get: jest.fn(), update: jest.fn() },
+        globalState: { get: jest.fn(), update: jest.fn() },
       } as unknown as ExtensionContext;
+      container.setContext(context);
 
-      container.setContext(mockContext);
-      expect(container.extensionUri).toEqual(mockContext.extensionUri);
-      expect(container.extensionVersion).toBe("1.0.0");
-      expect(container.extensionId).toBe("test-extension");
-      expect(mockDbtClient.setGlobalState).toHaveBeenCalledWith(
-        mockContext.globalState,
-      );
-    });
-
-    it("should detect DBT installation", async () => {
       await container.detectDBT();
-      expect(mockDbtClient.detectDBT).toHaveBeenCalled();
-    });
-
-    it("should initialize all projects", async () => {
-      await container.initialize();
-      expect(mockDbtProject.initialize).toHaveBeenCalled();
-    });
-  });
-
-  describe("Error Handling", () => {
-    it("should show error if dbt or Python not installed", () => {
       container.showErrorIfDbtOrPythonNotInstalled();
+      container.showErrorIfDbtIsNotInstalled();
+
+      expect(container.extensionUri).toBe(context.extensionUri);
+      expect(container.extensionVersion).toBe("1");
+      expect(container.extensionId).toBe("publisher.extension");
+      expect(container.pythonInstalled).toBe(true);
+      expect(container.dbtInstalled).toBe(true);
+      expect(container.getPythonEnvironment()).toEqual({
+        pythonPath: "/path/to/python",
+      });
+      expect(mockDbtClient.setGlobalState).toHaveBeenCalledWith(
+        context.globalState,
+      );
+      expect(mockDbtClient.detectDBT).toHaveBeenCalled();
       expect(
         mockDbtClient.showErrorIfDbtOrPythonNotInstalled,
       ).toHaveBeenCalled();
-    });
-
-    it("should show error if dbt is not installed", () => {
-      container.showErrorIfDbtIsNotInstalled();
       expect(mockDbtClient.showErrorIfDbtIsNotInstalled).toHaveBeenCalled();
     });
-  });
 
-  describe("Project Management", () => {
-    it("should find DBT project for given URI", () => {
-      const uri = Uri.file("/path/to/project/models/test.sql");
-      const result = container.findDBTProject(uri);
-
-      expect(mockDbtWorkspaceFolder.findDBTProject).toHaveBeenCalledWith(uri);
-      expect(result).toBe(mockDbtProject);
-    });
-
-    it("should return undefined when no DBT project found", () => {
-      container.dbtWorkspaceFolders = [];
-      const uri = Uri.file("/path/to/non-dbt/file.txt");
-      const result = container.findDBTProject(uri);
-
-      expect(result).toBeUndefined();
-    });
-
-    it("should get all projects", () => {
-      const projects = container.getProjects();
-      expect(projects).toEqual([mockDbtProject]);
-    });
-
-    it("should get unique adapters", () => {
-      const adapters = container.getAdapters();
-      expect(adapters).toEqual(["postgres"]);
-    });
-
-    it("should get Python environment", () => {
-      const pythonEnv = container.getPythonEnvironment();
-      expect(pythonEnv?.pythonPath).toBe("/path/to/python");
-    });
-
-    it("should get package name from URI", () => {
-      const uri = Uri.file("/path/to/project/models/test.sql");
-      const packageName = container.getPackageName(uri);
-
-      expect(packageName).toBe("test_package");
-    });
-
-    it("should get project root path from URI", () => {
-      const uri = Uri.file("/path/to/project/models/test.sql");
-      const rootPath = container.getProjectRootpath(uri);
-
-      expect(rootPath).toEqual(mockDbtProject.projectRoot);
-    });
-  });
-
-  describe("SQL Operations", () => {
-    it("should execute SQL query", () => {
-      const uri = Uri.file("/path/to/project/models/test.sql");
-      const query = "SELECT * FROM table";
-      const modelName = "test_model";
-
-      container.executeSQL(uri, query, modelName);
-
-      expect(mockDbtProject.executeSQLOnQueryPanel).toHaveBeenCalledWith(
-        query,
-        modelName,
+    it("initializes every project and awaits completion", async () => {
+      let finish!: () => void;
+      mockProject1.initialize.mockReturnValue(
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
       );
+      mockProject1.initialize.mockClear();
+      mockProject2.initialize.mockClear();
+
+      const result = container.initialize();
+      expect(mockProject1.initialize).toHaveBeenCalled();
+      expect(mockProject2.initialize).toHaveBeenCalled();
+      finish();
+      await result;
     });
 
-    it("should compile query", async () => {
-      const uri = Uri.file("/path/to/project/models/test.sql");
-      const query = "SELECT * FROM {{ ref('model') }}";
+    it("resolves package, root, adapter, and project-name accessors", () => {
+      const model = Uri.file("/project1/models/test.sql");
 
-      const result = await container.compileQuery(uri, query);
-
-      expect(mockDbtProject.compileQuery).toHaveBeenCalledWith(query);
-      expect(result).toBe("compiled query");
+      expect(container.getPackageName(model)).toBe("package1");
+      expect(container.getProjectRootpath(model)).toBe(
+        mockProject1.projectRoot,
+      );
+      expect(container.getAdapters()).toEqual(["snowflake"]);
+      expect(container.findProjectByName("project2")).toBe(mockProject2);
     });
 
-    it("should show run SQL", () => {
-      const uri = Uri.file("/path/to/project/models/test.sql");
+    it("delegates SQL and display operations", async () => {
+      const model = Uri.file("/project1/models/test.sql");
 
-      container.showRunSQL(uri);
+      container.executeSQL(model, "select 1", "test");
+      await expect(container.compileQuery(model, "select 1")).resolves.toBe(
+        "compiled query",
+      );
+      container.showRunSQL(model);
+      container.showCompiledSQL(model);
 
-      expect(mockDbtProject.showRunSQL).toHaveBeenCalledWith(uri);
+      expect(mockProject1.executeSQLOnQueryPanel).toHaveBeenCalledWith(
+        "select 1",
+        "test",
+      );
+      expect(mockProject1.compileQuery).toHaveBeenCalledWith("select 1");
+      expect(mockProject1.showRunSQL).toHaveBeenCalledWith(model);
+      expect(mockProject1.showCompiledSql).toHaveBeenCalledWith(model);
     });
 
-    it("should show compiled SQL", () => {
-      const uri = Uri.file("/path/to/project/models/test.sql");
+    it.each([
+      {
+        name: "run",
+        invoke: () => container.runModel(Uri.file("/project1/models/test.sql")),
+        method: () => mockProject1.runModel,
+        expected: {
+          plusOperatorLeft: "",
+          modelName: "test",
+          plusOperatorRight: "",
+        },
+      },
+      {
+        name: "run with parents",
+        invoke: () =>
+          container.runModel(
+            Uri.file("/project1/models/test.sql"),
+            RunModelType.RUN_PARENTS,
+          ),
+        method: () => mockProject1.runModel,
+        expected: {
+          plusOperatorLeft: "+",
+          modelName: "test",
+          plusOperatorRight: "",
+        },
+      },
+      {
+        name: "run with children",
+        invoke: () =>
+          container.runModel(
+            Uri.file("/project1/models/test.sql"),
+            RunModelType.RUN_CHILDREN,
+          ),
+        method: () => mockProject1.runModel,
+        expected: {
+          plusOperatorLeft: "",
+          modelName: "test",
+          plusOperatorRight: "+",
+        },
+      },
+      {
+        name: "build with parents",
+        invoke: () =>
+          container.buildModel(
+            Uri.file("/project1/models/test.sql"),
+            RunModelType.BUILD_PARENTS,
+          ),
+        method: () => mockProject1.buildModel,
+        expected: {
+          plusOperatorLeft: "+",
+          modelName: "test",
+          plusOperatorRight: "",
+        },
+      },
+      {
+        name: "build with children",
+        invoke: () =>
+          container.buildModel(
+            Uri.file("/project1/models/test.sql"),
+            RunModelType.BUILD_CHILDREN,
+          ),
+        method: () => mockProject1.buildModel,
+        expected: {
+          plusOperatorLeft: "",
+          modelName: "test",
+          plusOperatorRight: "+",
+        },
+      },
+      {
+        name: "build with parents and children",
+        invoke: () =>
+          container.buildModel(
+            Uri.file("/project1/models/test.sql"),
+            RunModelType.BUILD_CHILDREN_PARENTS,
+          ),
+        method: () => mockProject1.buildModel,
+        expected: {
+          plusOperatorLeft: "+",
+          modelName: "test",
+          plusOperatorRight: "+",
+        },
+      },
+    ])(
+      "derives selector operators for $name",
+      ({ invoke, method, expected }) => {
+        invoke();
+        expect(method()).toHaveBeenCalledWith(expected);
+      },
+    );
 
-      container.showCompiledSQL(uri);
+    it("delegates model, test, docs, and schema operations", () => {
+      const model = Uri.file("/project1/models/test.sql");
 
-      expect(mockDbtProject.showCompiledSql).toHaveBeenCalledWith(uri);
-    });
-  });
+      container.buildProject(model);
+      container.compileModel(model);
+      container.generateDocs(model);
+      container.generateSchemaYML(model, "test");
+      container.runTest(model, "unique_test");
+      container.runModelTest(model, "test");
+      container.runModelByName(model, "test");
 
-  describe("Model Operations", () => {
-    it("should run model", () => {
-      const modelPath = Uri.file("/path/to/project/models/test.sql");
-      container.runModel(modelPath);
-
-      expect(mockDbtProject.runModel).toHaveBeenCalledWith({
+      expect(mockProject1.buildProject).toHaveBeenCalled();
+      expect(mockProject1.compileModel).toHaveBeenCalledWith({
+        plusOperatorLeft: "",
+        modelName: "test",
+        plusOperatorRight: "",
+      });
+      expect(mockProject1.generateDocs).toHaveBeenCalled();
+      expect(mockProject1.generateSchemaYML).toHaveBeenCalledWith(
+        model,
+        "test",
+      );
+      expect(mockProject1.runTest).toHaveBeenCalledWith("unique_test");
+      expect(mockProject1.runModelTest).toHaveBeenCalledWith("test");
+      expect(mockProject1.runModel).toHaveBeenCalledWith({
         plusOperatorLeft: "",
         modelName: "test",
         plusOperatorRight: "",
       });
     });
 
-    it("should run model with parents", () => {
-      const modelPath = Uri.file("/path/to/project/models/test.sql");
-      container.runModel(modelPath, RunModelType.RUN_PARENTS);
+    it("reads and writes workspace and global state", () => {
+      const workspaceState = {
+        get: jest.fn().mockReturnValue("workspace-value"),
+        update: jest.fn(),
+      };
+      const globalState = {
+        get: jest.fn().mockReturnValue("global-value"),
+        update: jest.fn(),
+      };
+      container.setContext({
+        workspaceState,
+        globalState,
+      } as unknown as ExtensionContext);
 
-      expect(mockDbtProject.runModel).toHaveBeenCalledWith({
-        plusOperatorLeft: "+",
-        modelName: "test",
-        plusOperatorRight: "",
-      });
+      container.setToWorkspaceState("key", "value");
+      container.setToGlobalState("key", "value");
+
+      expect(container.getFromWorkspaceState("key")).toBe("workspace-value");
+      expect(container.getFromGlobalState("key")).toBe("global-value");
+      expect(workspaceState.update).toHaveBeenCalledWith("key", "value");
+      expect(globalState.update).toHaveBeenCalledWith("key", "value");
     });
 
-    it("should run model with children", () => {
-      const modelPath = Uri.file("/path/to/project/models/test.sql");
-      container.runModel(modelPath, RunModelType.RUN_CHILDREN);
-
-      expect(mockDbtProject.runModel).toHaveBeenCalledWith({
-        plusOperatorLeft: "",
-        modelName: "test",
-        plusOperatorRight: "+",
-      });
-    });
-
-    it("should build model", () => {
-      const modelPath = Uri.file("/path/to/project/models/test.sql");
-      container.buildModel(modelPath);
-
-      expect(mockDbtProject.buildModel).toHaveBeenCalledWith({
-        plusOperatorLeft: "",
-        modelName: "test",
-        plusOperatorRight: "",
-      });
-    });
-
-    it("should build project", () => {
-      const modelPath = Uri.file("/path/to/project");
-      container.buildProject(modelPath);
-
-      expect(mockDbtProject.buildProject).toHaveBeenCalled();
-    });
-
-    it("should compile model", () => {
-      const modelPath = Uri.file("/path/to/project/models/test.sql");
-      container.compileModel(modelPath);
-
-      expect(mockDbtProject.compileModel).toHaveBeenCalledWith({
-        plusOperatorLeft: "",
-        modelName: "test",
-        plusOperatorRight: "",
-      });
-    });
-
-    it("should generate docs", () => {
-      const modelPath = Uri.file("/path/to/project/models/test.sql");
-      container.generateDocs(modelPath);
-
-      expect(mockDbtProject.generateDocs).toHaveBeenCalled();
-    });
-
-    it("should generate schema YML", () => {
-      const modelPath = Uri.file("/path/to/project/models/test.sql");
-      const modelName = "test_model";
-
-      container.generateSchemaYML(modelPath, modelName);
-
-      expect(mockDbtProject.generateSchemaYML).toHaveBeenCalledWith(
-        modelPath,
-        modelName,
-      );
-    });
-  });
-
-  describe("Test Operations", () => {
-    it("should run test", () => {
-      const modelPath = Uri.file("/path/to/project/tests/test_model.sql");
-      const testName = "test_model";
-
-      container.runTest(modelPath, testName);
-
-      expect(mockDbtProject.runTest).toHaveBeenCalledWith(testName);
-    });
-
-    it("should run model test", () => {
-      const modelPath = Uri.file("/path/to/project/models/test.sql");
-      const modelName = "test_model";
-
-      container.runModelTest(modelPath, modelName);
-
-      expect(mockDbtProject.runModelTest).toHaveBeenCalledWith(modelName);
-    });
-  });
-
-  describe("State Management", () => {
-    it("should set and get workspace state", () => {
-      const mockContext = {
+    it("uses the selected project for untitled SQL", () => {
+      container.setContext({
         workspaceState: {
-          get: jest.fn(),
+          get: jest.fn().mockReturnValue({ uri: declaredProject1.root }),
           update: jest.fn(),
         },
-        globalState: {
-          get: jest.fn(),
-          update: jest.fn(),
-        },
-      } as unknown as ExtensionContext;
+        globalState: { get: jest.fn(), update: jest.fn() },
+      } as unknown as ExtensionContext);
 
-      container.setContext(mockContext);
-
-      const key = "testKey";
-      const value = { test: "value" };
-
-      container.setToWorkspaceState(key, value);
-      expect(mockContext.workspaceState.update).toHaveBeenCalledWith(
-        key,
-        value,
+      container.executeSQL(
+        { scheme: "untitled", fsPath: "Untitled-1" } as Uri,
+        "select 1",
+        "untitled",
       );
 
-      mockContext.workspaceState.get = jest.fn(() => value);
-      const result = container.getFromWorkspaceState(key);
-      expect(result).toEqual(value);
-    });
-
-    it("should set and get global state", () => {
-      const mockContext = {
-        workspaceState: {
-          get: jest.fn(),
-          update: jest.fn(),
-        },
-        globalState: {
-          get: jest.fn(),
-          update: jest.fn(),
-        },
-      } as unknown as ExtensionContext;
-
-      container.setContext(mockContext);
-
-      const key = "globalKey";
-      const value = "globalValue";
-
-      container.setToGlobalState(key, value);
-      expect(mockContext.globalState.update).toHaveBeenCalledWith(key, value);
-
-      mockContext.globalState.get = jest.fn(() => value);
-      const result = container.getFromGlobalState(key);
-      expect(result).toBe(value);
-    });
-  });
-
-  describe("Workspace Folder Management", () => {
-    it("should initialize DBT projects", async () => {
-      const mockWorkspaceFolder = {
-        uri: Uri.file("/path/to/workspace"),
-        name: "test-workspace",
-        index: 0,
-      };
-
-      // Mock workspace folders
-      (workspace as any).workspaceFolders = [mockWorkspaceFolder];
-      container.dbtWorkspaceFolders = [];
-
-      await container.initializeDBTProjects();
-
-      expect(mockDbtWorkspaceFolderFactory).toHaveBeenCalledWith(
-        mockWorkspaceFolder,
-        expect.anything(),
-        expect.anything(),
+      expect(mockProject1.executeSQLOnQueryPanel).toHaveBeenCalledWith(
+        "select 1",
+        "untitled",
       );
     });
 
-    it("should handle undefined workspace folders", async () => {
-      // Mock workspace folders as undefined
-      (workspace as any).workspaceFolders = undefined;
+    it("does nothing for untitled SQL without a selected project", () => {
+      container.setContext({
+        workspaceState: { get: jest.fn(), update: jest.fn() },
+        globalState: { get: jest.fn(), update: jest.fn() },
+      } as unknown as ExtensionContext);
 
-      // Should not throw
-      await container.initializeDBTProjects();
-
-      // Should not call factory
-      expect(mockDbtWorkspaceFolderFactory).not.toHaveBeenCalled();
-    });
-
-    it("should handle workspace folder changes", async () => {
-      // Setup workspace change handler
-      let changeHandler: any;
-      (workspace.onDidChangeWorkspaceFolders as any).mockImplementation(
-        (handler: any) => {
-          changeHandler = handler;
-          return { dispose: jest.fn() };
-        },
+      container.executeSQL(
+        { scheme: "untitled", fsPath: "Untitled-1" } as Uri,
+        "select 1",
+        "untitled",
       );
 
-      // Create a new container to register the handler
-      new DBTProjectContainer(
-        mockDbtClient,
-        mockDbtWorkspaceFolderFactory,
-        mockDbtTerminal,
-      );
-
-      // Simulate workspace folder change
-      const addedFolder = {
-        uri: Uri.file("/path/to/added"),
-        name: "added",
-        index: 1,
-      };
-      const removedFolder = {
-        uri: Uri.file("/path/to/workspace"),
-        name: "test-workspace",
-        index: 0,
-      };
-
-      await changeHandler({
-        added: [addedFolder],
-        removed: [removedFolder],
-      });
-
-      expect(mockDbtWorkspaceFolderFactory).toHaveBeenCalledWith(
-        addedFolder,
-        expect.anything(),
-        expect.anything(),
-      );
-    });
-  });
-
-  describe("Edge Cases", () => {
-    it("should handle operations when no project is found", () => {
-      mockDbtWorkspaceFolder.findDBTProject = jest.fn(() => undefined);
-
-      const uri = Uri.file("/path/to/non-dbt/file.sql");
-
-      // These should not throw errors
-      container.runModel(uri);
-      container.buildModel(uri);
-      container.compileModel(uri);
-      container.generateDocs(uri);
-
-      expect(mockDbtProject.runModel).not.toHaveBeenCalled();
-      expect(mockDbtProject.buildModel).not.toHaveBeenCalled();
-      expect(mockDbtProject.compileModel).not.toHaveBeenCalled();
-      expect(mockDbtProject.generateDocs).not.toHaveBeenCalled();
+      expect(mockProject1.executeSQLOnQueryPanel).not.toHaveBeenCalled();
+      expect(mockProject2.executeSQLOnQueryPanel).not.toHaveBeenCalled();
     });
 
-    it("should handle empty workspace folders array", () => {
-      container.dbtWorkspaceFolders = [];
-
-      expect(container.getProjects()).toEqual([]);
-      expect(container.getAdapters()).toEqual([]);
-    });
-
-    it("should deduplicate adapters", () => {
-      const mockDbtWorkspaceFolder2 = {
-        ...mockDbtWorkspaceFolder,
-        getAdapters: jest.fn(() => ["postgres", "snowflake"]),
-      };
-
-      container.dbtWorkspaceFolders = [
-        mockDbtWorkspaceFolder,
-        mockDbtWorkspaceFolder2,
-      ];
-
-      const adapters = container.getAdapters();
-      expect(adapters).toEqual(["postgres", "snowflake"]);
-    });
-
-    it("should handle undefined Python environment", () => {
-      mockDbtClient.getPythonEnvironment = jest.fn(() => undefined);
-
-      const pythonEnv = container.getPythonEnvironment();
-      expect(pythonEnv).toBeUndefined();
-    });
-
-    it("should handle context not set", () => {
-      const newContainer = new DBTProjectContainer(
-        mockDbtClient,
-        mockDbtWorkspaceFolderFactory,
-        mockDbtTerminal,
-      );
-
-      // These should not throw even without context
-      expect(() => newContainer.extensionId).not.toThrow();
-      expect(newContainer.extensionId).toBe("");
-    });
-  });
-
-  describe("Project Registration Events", () => {
-    it("should set up project registration event handler", () => {
-      // The project registration event handler is set up in the constructor
-      // and is tested indirectly through workspace folder operations.
-      // This test verifies that the container properly initializes with the event system.
-
-      const newContainer = new DBTProjectContainer(
-        mockDbtClient,
-        mockDbtWorkspaceFolderFactory,
-        mockDbtTerminal,
-      );
-
-      // Verify the container has the expected event emitters
-      expect(
-        (newContainer as any)._onProjectRegisteredUnregistered,
-      ).toBeDefined();
-      expect((newContainer as any)._onManifestChanged).toBeDefined();
-      expect(
-        (newContainer as any)._onRebuildManifestStatusChange,
-      ).toBeDefined();
-
-      // Verify public event accessors
-      expect(newContainer.onManifestChanged).toBeDefined();
-      expect(newContainer.onRebuildManifestStatusChange).toBeDefined();
-    });
-  });
-
-  describe("SQL Operations with Untitled Files", () => {
-    it("should handle executeSQL with untitled URI and selected project", () => {
-      const mockContext = {
-        workspaceState: {
-          get: jest.fn((key: string) => {
-            if (key === "dbtPowerUser.projectSelected") {
-              return {
-                label: "test_project",
-                description: "/path/to/project",
-                uri: Uri.file("/path/to/project"),
-              };
-            }
-            return undefined;
-          }),
-          update: jest.fn(),
-        },
-        globalState: {
-          get: jest.fn(),
-          update: jest.fn(),
-        },
-      } as unknown as ExtensionContext;
-      container.setContext(mockContext);
-
-      const untitledUri = { scheme: "untitled", fsPath: "Untitled-1" } as Uri;
-      const query = "SELECT * FROM table";
-      const modelName = "test_model";
-
-      container.executeSQL(untitledUri, query, modelName);
-
-      expect(mockDbtProject.executeSQLOnQueryPanel).toHaveBeenCalledWith(
-        query,
-        modelName,
-      );
-    });
-
-    it("should handle executeSQL with untitled URI and no selected project", () => {
-      const mockContext = {
-        workspaceState: {
-          get: jest.fn(() => undefined),
-          update: jest.fn(),
-        },
-        globalState: {
-          get: jest.fn(),
-          update: jest.fn(),
-        },
-      } as unknown as ExtensionContext;
-      container.setContext(mockContext);
-
-      mockDbtWorkspaceFolder.findDBTProject = jest.fn(() => undefined);
-
-      const untitledUri = { scheme: "untitled", fsPath: "Untitled-1" } as Uri;
-      const query = "SELECT * FROM table";
-      const modelName = "test_model";
-
-      // Should not throw error
-      container.executeSQL(untitledUri, query, modelName);
-
-      expect(mockDbtProject.executeSQLOnQueryPanel).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("Rebuild Manifest Status", () => {
-    it("should handle rebuild manifest status changes", () => {
-      // Setup the event handler
-      let statusChangeHandler: any;
-      const mockWorkspaceFolderWithEvent = {
-        ...mockDbtWorkspaceFolder,
-        onRebuildManifestStatusChange: (handler: any) => {
-          statusChangeHandler = handler;
-          return { dispose: jest.fn() };
-        },
-      };
-
-      const factoryWithEvent = jest.fn(() => mockWorkspaceFolderWithEvent);
-
-      // Create container with event support
-      const newContainer = new DBTProjectContainer(
-        mockDbtClient,
-        factoryWithEvent,
-        mockDbtTerminal,
-      );
-
-      // Register workspace folder
-      const workspaceFolder = {
-        uri: Uri.file("/path/to/workspace"),
-        name: "test-workspace",
-        index: 0,
-      };
-
-      // Mock workspace folders
-      (workspace as any).workspaceFolders = [workspaceFolder];
-      newContainer.initializeDBTProjects();
-
-      // Simulate rebuild manifest status change
-      if (statusChangeHandler) {
-        statusChangeHandler({
-          project: mockDbtProject,
-          inProgress: true,
-        });
-
-        // Check that the event was properly handled
-        const rebuildEvent = (newContainer as any)
-          ._onRebuildManifestStatusChange;
-        expect(rebuildEvent).toBeDefined();
-      }
+    it("returns an empty extension id before context is set", () => {
+      expect(container.extensionId).toBe("");
     });
   });
 
   describe("rerunFromHistory", () => {
-    const mockProject = {
-      getProjectName: jest.fn().mockReturnValue("test-project"),
-      runModel: jest.fn(),
-      buildModel: jest.fn(),
-      buildProject: jest.fn(),
-      runTest: jest.fn(),
-      compileModel: jest.fn(),
-    };
-
-    beforeEach(() => {
-      jest
-        .spyOn(container, "findProjectByName")
-        .mockReturnValue(mockProject as any);
+    beforeEach(async () => {
+      await container.initializeDBTProjects();
     });
 
-    it("should show error when project is not found", () => {
-      jest.spyOn(container, "findProjectByName").mockReturnValue(undefined);
-
+    it("reports a project that is not loaded", () => {
       container.rerunFromHistory(
-        createEntry({ projectName: "nonexistent", command: "dbt run" }),
+        createEntry({ projectName: "missing", command: "dbt run" }),
       );
 
       expect(window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining("nonexistent"),
+        expect.stringContaining("missing"),
       );
     });
 
-    it("should show warning for project-wide dbt run (empty args)", () => {
-      container.rerunFromHistory(createEntry({ command: "dbt run", args: [] }));
+    it.each(["dbt run", "dbt test", "dbt compile"])(
+      "warns for project-wide %s",
+      (command) => {
+        container.rerunFromHistory(
+          createEntry({ projectName: "project1", command, args: [] }),
+        );
 
-      expect(window.showWarningMessage).toHaveBeenCalledWith(
-        expect.stringContaining("dbt run"),
-      );
-      expect(mockProject.runModel).not.toHaveBeenCalled();
-    });
+        expect(window.showWarningMessage).toHaveBeenCalledWith(
+          expect.stringContaining(command),
+        );
+      },
+    );
 
-    it("should delegate to runModel when args are present", () => {
+    it("reruns selected run, test, compile, and build commands", () => {
       container.rerunFromHistory(
-        createEntry({ command: "dbt run", args: ["my_model"] }),
-      );
-
-      expect(mockProject.runModel).toHaveBeenCalledWith(
-        expect.objectContaining({ modelName: "my_model" }),
-      );
-    });
-
-    it("should show warning for project-wide dbt test (empty args)", () => {
-      container.rerunFromHistory(
-        createEntry({ command: "dbt test", args: [] }),
-      );
-
-      expect(window.showWarningMessage).toHaveBeenCalledWith(
-        expect.stringContaining("dbt test"),
-      );
-      expect(mockProject.runTest).not.toHaveBeenCalled();
-    });
-
-    it("should delegate to runTest when args are present", () => {
-      container.rerunFromHistory(
-        createEntry({ command: "dbt test", args: ["my_test"] }),
-      );
-
-      expect(mockProject.runTest).toHaveBeenCalledWith("my_test");
-    });
-
-    it("should show warning for project-wide dbt compile (empty args)", () => {
-      container.rerunFromHistory(
-        createEntry({ command: "dbt compile", args: [] }),
-      );
-
-      expect(window.showWarningMessage).toHaveBeenCalledWith(
-        expect.stringContaining("dbt compile"),
-      );
-      expect(mockProject.compileModel).not.toHaveBeenCalled();
-    });
-
-    it("should delegate to compileModel when args are present", () => {
-      container.rerunFromHistory(
-        createEntry({ command: "dbt compile", args: ["+my_model"] }),
-      );
-
-      expect(mockProject.compileModel).toHaveBeenCalledWith(
-        expect.objectContaining({
-          plusOperatorLeft: "+",
-          modelName: "my_model",
+        createEntry({
+          projectName: "project1",
+          command: "dbt run",
+          args: ["model"],
         }),
       );
-    });
-
-    it("should call buildProject for project-wide dbt build (empty args)", () => {
       container.rerunFromHistory(
-        createEntry({ command: "dbt build", args: [] }),
-      );
-
-      expect(mockProject.buildProject).toHaveBeenCalled();
-    });
-
-    it("should delegate to buildModel when build has args", () => {
-      container.rerunFromHistory(
-        createEntry({ command: "dbt build", args: ["+my_model+"] }),
-      );
-
-      expect(mockProject.buildModel).toHaveBeenCalledWith(
-        expect.objectContaining({
-          plusOperatorLeft: "+",
-          modelName: "my_model",
-          plusOperatorRight: "+",
+        createEntry({
+          projectName: "project1",
+          command: "dbt test",
+          args: ["unique_model"],
         }),
       );
+      container.rerunFromHistory(
+        createEntry({
+          projectName: "project1",
+          command: "dbt compile",
+          args: ["+model"],
+        }),
+      );
+      container.rerunFromHistory(
+        createEntry({
+          projectName: "project1",
+          command: "dbt build",
+          args: ["+model+"],
+        }),
+      );
+      container.rerunFromHistory(
+        createEntry({
+          projectName: "project1",
+          command: "dbt build",
+          args: [],
+        }),
+      );
+
+      expect(mockProject1.runModel).toHaveBeenCalledWith(
+        expect.objectContaining({ modelName: "model" }),
+      );
+      expect(mockProject1.runTest).toHaveBeenCalledWith("unique_model");
+      expect(mockProject1.compileModel).toHaveBeenCalledWith(
+        expect.objectContaining({ plusOperatorLeft: "+", modelName: "model" }),
+      );
+      expect(mockProject1.buildModel).toHaveBeenCalledWith({
+        plusOperatorLeft: "+",
+        modelName: "model",
+        plusOperatorRight: "+",
+      });
+      expect(mockProject1.buildProject).toHaveBeenCalled();
     });
 
-    it("should show warning for unknown command", () => {
+    it("warns for unsupported commands", () => {
       container.rerunFromHistory(
-        createEntry({ command: "dbt seed", args: [] }),
+        createEntry({
+          projectName: "project1",
+          command: "dbt seed",
+          args: [],
+        }),
       );
 
       expect(window.showWarningMessage).toHaveBeenCalledWith(
@@ -810,37 +677,37 @@ describe("DBTProjectContainer Tests", () => {
     });
   });
 
-  describe("unregisterWorkspaceFolder (via workspace event)", () => {
-    it("should remove only the targeted folder, not subsequent ones", () => {
-      // Access the internal dbtWorkspaceFolders array directly to verify
-      // splice removes exactly one element (not all from index onward).
-      const folders = (container as any).dbtWorkspaceFolders as any[];
-      // The beforeEach seeds the container with one workspace folder; reset
-      // to a clean slate so we can assert on exactly the three we push below.
-      folders.length = 0;
+  describe("disposal", () => {
+    beforeEach(async () => {
+      await container.initializeDBTProjects();
+    });
 
-      const createMockFolder = (fsPath: string) => ({
-        contains: (uri: any) => uri.fsPath.startsWith(fsPath),
-        dispose: jest.fn(),
-        workspaceFolder: { uri: { fsPath } },
-      });
+    it("should dispose projects and subscriptions but not registry", async () => {
+      container.dispose();
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
 
-      const folder1 = createMockFolder("/workspace/project-a");
-      const folder2 = createMockFolder("/workspace/project-b");
-      const folder3 = createMockFolder("/workspace/project-c");
-      folders.push(folder1, folder2, folder3);
+      expect(mockProject1.dispose).toHaveBeenCalled();
+      expect(mockProject2.dispose).toHaveBeenCalled();
+      expect(mockProjectRegistry.dispose).not.toHaveBeenCalled();
+      expect(container.getProjects()).toEqual([]);
+      expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
+    });
 
-      expect(folders).toHaveLength(3);
+    it("should fire manifest removed on disposal", () => {
+      const manifestHandler = jest.fn();
+      container.onManifestChanged(manifestHandler);
 
-      // Call the private unregisterWorkspaceFolder via its internal name
-      (container as any).unregisterWorkspaceFolder({
-        uri: { fsPath: "/workspace/project-b" },
-      });
+      container.dispose();
 
-      expect(folders).toHaveLength(2);
-      expect(folders[0]).toBe(folder1);
-      expect(folders[1]).toBe(folder3);
-      expect(folder2.dispose).toHaveBeenCalled();
+      const calls = manifestHandler.mock.calls;
+      const removedCalls = calls.filter((call: any) => call[0]?.removed);
+      expect(removedCalls).toHaveLength(2);
+
+      const allRemoved = removedCalls.flatMap((call: any) => call[0].removed);
+      const roots = allRemoved.map((r: any) => r.projectRoot.fsPath).sort();
+      expect(roots).toContain(mockProject1.projectRoot.fsPath);
+      expect(roots).toContain(mockProject2.projectRoot.fsPath);
     });
   });
 });

@@ -141,7 +141,6 @@ export class DBTProject implements Disposable {
     private altimateAuthService: AltimateAuthService,
     private runHistoryService: RunHistoryService,
     path: Uri,
-    _projectConfig: any,
     private _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
   ) {
     this.projectRoot = path;

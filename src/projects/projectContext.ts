@@ -56,11 +56,6 @@ export class ProjectContext implements Disposable {
     return this._onDidChangeCurrent.event;
   }
 
-  /** Whether configuration resolution produced any Declared Project. */
-  get hasDeclaredProjects(): boolean {
-    return this.registry.projects.length > 0;
-  }
-
   /** Project owning a specific resource; used by commands that carry a uri. */
   forResource(uri: Uri): DeclaredProject | undefined {
     return this.registry.findProject(uri);

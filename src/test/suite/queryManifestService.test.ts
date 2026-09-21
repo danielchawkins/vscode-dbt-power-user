@@ -45,14 +45,12 @@ describe("QueryManifestService.rewire", () => {
       forResource: forResourceMock,
       current: declaredProject,
       requireForCommand: jest.fn(),
-      hasDeclaredProjects: true,
     };
 
     service = new QueryManifestService(
       containerDouble as any,
       { debug: jest.fn(), error: jest.fn(), warn: jest.fn() } as any,
       { fire: jest.fn() } as any,
-      { projectPicker: jest.fn() } as any,
       contextDouble as any,
     );
   });
@@ -72,19 +70,6 @@ describe("QueryManifestService.rewire", () => {
 
       contextDouble.current = { root: Uri.file("/nonexistent") };
       expect(service.getProject()).toBeUndefined();
-    });
-
-    it("uses old discovery only while no Declared Projects resolve", () => {
-      const uri = Uri.file("/workspace/dbt/models/model.sql");
-      const legacyProject = { projectRoot: Uri.file("/workspace/dbt") };
-      contextDouble.current = undefined;
-      contextDouble.hasDeclaredProjects = false;
-      (window.activeTextEditor as any) = { document: { uri } };
-      containerDouble.findDBTProject.mockReturnValue(legacyProject);
-
-      expect(service.getProject()).toBe(legacyProject);
-      expect(service.getProjectByUri(uri)).toBe(legacyProject);
-      expect(containerDouble.findDBTProject).toHaveBeenCalledWith(uri);
     });
   });
 
@@ -112,20 +97,19 @@ describe("QueryManifestService.rewire", () => {
       expect(contextDouble.forResource).not.toHaveBeenCalled();
     });
 
-    it("maps a declared alias through the resource when its root is absent", () => {
+    it("never substitutes a resource when the declared root is absent", () => {
       const uri = Uri.file(
         "/workspace/projects/general/models/general_model.sql",
       );
-      const project = { projectRoot: Uri.file("/workspace/projects/general") };
-      containerDouble.findDBTProject
-        .mockReturnValueOnce(undefined)
-        .mockReturnValueOnce(project);
+      containerDouble.findDBTProject.mockImplementation((candidate: Uri) =>
+        candidate === uri ? { projectRoot: Uri.file("/wrong") } : undefined,
+      );
 
-      expect(service.getProjectByUri(uri)).toBe(project);
-      expect(containerDouble.findDBTProject.mock.calls).toEqual([
-        [contextDouble.current.root],
-        [uri],
-      ]);
+      expect(service.getProjectByUri(uri)).toBeUndefined();
+      expect(containerDouble.findDBTProject).toHaveBeenCalledTimes(1);
+      expect(containerDouble.findDBTProject).toHaveBeenCalledWith(
+        contextDouble.current.root,
+      );
     });
   });
 

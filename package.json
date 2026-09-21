@@ -142,14 +142,6 @@
             "description": "Python import string to import custom dbt runner. (Only supported for dbt core)",
             "default": "from dbt.cli.main import dbtRunner"
           },
-          "dbt.allowListFolders": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "default": [],
-            "description": "Define workspace-relative paths to include. Only projects within these folders will be built. If empty, no filtering is applied. The path should be relative to the workspace. Example: [folder1, folder2]"
-          },
           "dbt.runModelCommandAdditionalParams": {
             "type": "array",
             "items": {
