@@ -177,17 +177,17 @@ Confidence describes the recommendation, not the authority of every underlying s
 
 **Recommendation — high.**
 
-- Bundle to one Node/CommonJS extension-host entry.
+- Bundle the extension host and verify its entrypoints on Cursor and VS Code 1.128.
 - Externalize `vscode`; it is provided by the host runtime.
 - Run `tsc --noEmit` (or equivalent) separately from the bundler.
 - Produce development source maps; decide whether production maps are shipped based on local debugging needs.
 - Exclude `sourcesContent` from published maps unless supportability justifies source duplication.
 - Fail on unresolved dynamic-require warnings.
-- Keep the current bundler if it meets this contract under test.
+- Use the inherited bundler and module shape only for bounded first-pass work. Evaluate current extension-host and webview architectures independently, then choose the target by functionality and measured activation, runtime, bundle-size, webview-startup, and build performance on the supported hosts.
 
 **Evidence.** VS Code recommends bundling and excluding `vscode` from the bundle [[19]](vscode-extension-development-september-2026-sources.md#19-bundling-extensions). The same page demonstrates esbuild and notes that esbuild does not type-check. That is a property of the demonstrated tool, not a ranking of bundlers. This research does not establish that esbuild is required or superior to rsbuild, Rspack, webpack, or another current bundler.
 
-**Module-format caveat.** VS Code's current bundling guide still demonstrates CommonJS for Node extensions. Native ESM may work in current hosts, but adds no product value here and increases host/bundler edge cases. CommonJS is the lower-risk recommendation, not a claim that ESM is unsupported.
+**Architecture horizon.** VS Code's bundling guide demonstrates one supported CommonJS design, not an optimum. The current pass may move to ESM or change tooling when that unblocks the refactor, but neither the inherited design nor that incremental migration defines the north star. Compare viable 2026 architectures—including replacement of the framework, state layer, styling system, bundler, and panel boundaries—without a backward-compatibility preference. Fold bounded wins into the current phases and schedule larger evidence-backed replacement work for v2. Do not claim any format or framework is faster without measuring the supported hosts.
 
 ### Webviews
 

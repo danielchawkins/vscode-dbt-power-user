@@ -8,8 +8,10 @@ Read before planning or changing code:
 
 - [`CONTEXT.md`](CONTEXT.md) — canonical product language. The vocabulary is fixed; extend it rather than inventing synonyms.
 - [`docs/adr/`](docs/adr/) — the product boundary, the LSP decision, and project scoping.
-- [`docs/refactor/fusion-lsp-plan.md`](docs/refactor/fusion-lsp-plan.md) — phased implementation plan. Work the steps in order; each is one commit that compiles with green tests.
+- [`docs/refactor/fusion-lsp-plan.md`](docs/refactor/fusion-lsp-plan.md) — phased implementation plan. Work the steps in order; each PR bookmark contains focused revisions and ends with green tests.
 - [`docs/refactor/implementation-dispatch.md`](docs/refactor/implementation-dispatch.md) — land each step as a feature PR against `main`.
+
+The parent session orchestrates implementation. Use a fast coding agent for implementation and accepted fixes, a different higher-reasoning read-only agent for detailed review, then perform a quick evidence check before resuming the same coding agent. Both roles inspect revisions through `just jj`; implementers create focused revisions but never push, and reviewers never mutate the workspace.
 
 ## Two contexts — state which one you are in
 
@@ -71,8 +73,8 @@ Tests are Jest with `ts-jest` against a hand-written VS Code mock (`src/test/moc
 
 Two facts dominate change ordering, both detailed in the plan:
 
-- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps in `src/domain.ts`, and every panel, tree, lens, and language provider consumes them through `QueryManifestService`. The refactor replaces that producer with the LSP; migrate consumers behind a project-session interface before deleting the parser.
-- Fusion currently **inherits from dbt Cloud** (`DBTFusionCommandProjectIntegration extends DBTCloudProjectIntegration`). Cloud cannot be deleted until Fusion is reparented onto a local operation layer.
+- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps, and every panel, tree, lens, and language provider consumes them through `QueryManifestService` via `ManifestCacheProjectAddedEvent`. The refactor swaps that producer for the LSP behind the existing event; do not introduce a second consumer seam.
+- **`DBTProjectIntegrationAdapter` is the ordering constraint.** Fusion does not inherit from dbt Cloud — the published integration extends `DBTBaseProjectIntegration`. But that external adapter owns the parsers, the ambient target watcher, and a constructor requiring Core, Cloud, Fusion, and Core-command factories, so Cloud cannot be deleted until the adapter is retired. Never patch `node_modules`.
 
 ## Comments and prose
 

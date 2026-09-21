@@ -4,9 +4,11 @@ These documents define the independent, local-first Fusion Power User fork.
 
 ## Current status
 
-Phase 0 is complete. The branch is rebased onto upstream 0.64.6, the repository tooling baseline is green, dbt Fusion 2.0.5 is pinned for development and tests, and the extension packages as `danielchawkins.fusion-power-user` `0.1.0-alpha.0`.
+Steps 1.2 and 1.3, all of Phase 2, and steps 3.1 through 3.14's pinned-host acquisition, basic smoke, and VS Code runtime baseline are on `main`. Cursor runtime timing is next and must resolve its clean-profile login flow before 3.14 and the dependent browser target in 3.15 can complete. The repository tooling baseline is green, dbt Fusion 2.0.5 is pinned for development and tests, and the extension packages as `danielchawkins.fusion-power-user` `0.1.0-alpha.0`.
 
-The product runtime is not local-only yet. It still contains the inherited Core, Cloud, hosted Altimate, telemetry, AI, MCP, and notebook paths. The next implementation step is Phase 1.2: add the Fusion version resolver and gate. Phase 1.3 then adds the upstream-extension conflict guard and the resource-scoped enabled setting. Do not start Phase 2 production code until both gates are covered by unit tests. Fixture work (2.1) may proceed in parallel. Execution rules are in [`implementation-dispatch.md`](implementation-dispatch.md).
+The product runtime remains manifest-driven and still ships hosted Altimate, authentication, credits, and Python-bridge paths; telemetry, AI, MCP, collaboration, and notebooks are gone. Core and Cloud stay constructible because the external `DBTProjectIntegrationAdapter` requires their factories; the published Fusion integration does not extend Cloud, and retiring that adapter — which also owns the ambient target watcher — is what unblocks their removal.
+
+Next, in order: resolve Cursor login automation and record the same runtime evidence there, derive the 3.15 browser target, then begin Phase 4. Implementation is serial, while local successor work overlaps with review and CI for its parent through dependent jj revisions. Execution rules are in [`implementation-dispatch.md`](implementation-dispatch.md).
 
 Read in order:
 
@@ -14,8 +16,16 @@ Read in order:
 2. [`fusion-lsp-context.md`](fusion-lsp-context.md) — repositories, current architecture, target architecture, and contracts.
 3. [`tooling-adoption.md`](tooling-adoption.md) — contributor environment decisions before product changes.
 4. [`fusion-lsp-feature-disposition.md`](fusion-lsp-feature-disposition.md) — retain, replace, remove, and spike inventory.
-5. [`fusion-lsp-plan.md`](fusion-lsp-plan.md) — incremental implementation and prerelease plan.
-6. [`implementation-dispatch.md`](implementation-dispatch.md) — trunk, workspaces, overlap, and agent handoff.
+5. [`fusion-lsp-plan.md`](fusion-lsp-plan.md) — the spec: v1 phases and prereleases in Section 3, the v2 north-star horizon in Section 4.
+6. [`implementation-dispatch.md`](implementation-dispatch.md) — trunk, serial jj workspaces, pipelined landing, and agent handoff.
 7. [`finance-pipelines-integration.md`](finance-pipelines-integration.md) — first Consumer Repository adoption.
 
-Architectural decisions are in [`../adr/`](../adr/). Current VS Code and Cursor compatibility evidence is summarized in [`../research/vscode-extension-development-september-2026.md`](../research/vscode-extension-development-september-2026.md). The proposed colocated Jujutsu rollout is in [`../research/jujutsu-adoption-september-2026.md`](../research/jujutsu-adoption-september-2026.md).
+Architectural decisions are in [`../adr/`](../adr/).
+
+Research holds evidence, measurements, and rationale; the plan holds decisions, contracts, order, and verification. All of it lives in [`../research/`](../research/).
+
+- [`vscode-extension-development-september-2026.md`](../research/vscode-extension-development-september-2026.md) — VS Code and Cursor platform and compatibility evidence.
+- [`jujutsu-adoption-september-2026.md`](../research/jujutsu-adoption-september-2026.md) — the colocated Jujutsu rollout.
+- [`vscode-webview-architecture-north-star-september-2026.md`](../research/vscode-webview-architecture-north-star-september-2026.md) — the measured extension/webview baseline and v2 architecture.
+- [`modern-webview-ui-september-2026.md`](../research/modern-webview-ui-september-2026.md) — React 19, Tailwind 4, and VS Code webview practice.
+- [`dbt-fusion-interactive-data-path-september-2026.md`](../research/dbt-fusion-interactive-data-path-september-2026.md) and its [sources ledger](../research/dbt-fusion-interactive-data-path-september-2026-sources.md) — project-state, cache, latency, and Snowflake evidence.
