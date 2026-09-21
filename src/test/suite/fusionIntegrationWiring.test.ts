@@ -1,8 +1,6 @@
 import {
   DBTDetection,
-  DBTFusionCommandProjectDetection,
   DBTFusionCommandProjectIntegration,
-  DBTProjectDetection,
   DBTProjectIntegrationAdapter,
   DeferConfig,
 } from "@altimateai/dbt-integration";
@@ -65,12 +63,8 @@ describe("Fusion-only integration wiring", () => {
     expect(factory(undefined)).toBeInstanceOf(FusionVersionDetection);
   });
 
-  it("uses Fusion project detection", () => {
-    const factory = container.get<() => DBTProjectDetection>(
-      "Factory<DBTProjectDetection>",
-    );
-
-    expect(factory()).toBeInstanceOf(DBTFusionCommandProjectDetection);
+  it("does not bind Factory<DBTProjectDetection>", () => {
+    expect(() => container.get("Factory<DBTProjectDetection>")).toThrow();
   });
 
   it("uses the Fusion project integration", () => {

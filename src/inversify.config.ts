@@ -4,7 +4,6 @@ import {
   CLIDBTCommandExecutionStrategy,
   CommandProcessExecutionFactory,
   DBTCloudDetection,
-  DBTCloudProjectDetection,
   DBTCloudProjectIntegration,
   DbtCloudVariantDetector,
   DBTCommandExecutionInfrastructure,
@@ -15,14 +14,11 @@ import {
   DBTCoreCommandProjectDetection,
   DBTCoreCommandProjectIntegration,
   DBTCoreDetection,
-  DBTCoreProjectDetection,
   DBTCoreProjectIntegration,
   DBTDetection,
   DBTDiagnosticData,
-  DBTFusionCommandProjectDetection,
   DBTFusionCommandProjectIntegration,
   DbtIntegrationClient,
-  DBTProjectDetection,
   DBTProjectIntegrationAdapter,
   DBTTerminal,
   DeferConfig,
@@ -43,18 +39,10 @@ import {
   UnitTestParser,
 } from "@altimateai/dbt-integration";
 import { Container, Factory, ResolutionContext } from "inversify";
-import {
-  Event,
-  EventEmitter,
-  Memento,
-  Uri,
-  type WorkspaceFolder,
-} from "vscode";
+import { Event, EventEmitter, Memento, Uri } from "vscode";
 import { AltimateRequest } from "./altimate";
 import { DBTProject } from "./dbt_client/dbtProject";
-import { ProjectRegisteredUnregisteredEvent } from "./dbt_client/dbtProjectContainer";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
-import { DBTWorkspaceFolder } from "./dbt_client/dbtWorkspaceFolder";
 import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
 import { PythonEnvironment } from "./dbt_client/pythonEnvironment";
@@ -259,16 +247,6 @@ container
   })
   .inSingletonScope();
 
-container
-  .bind(DBTCoreProjectDetection)
-  .toDynamicValue((context) => {
-    return new DBTCoreProjectDetection(
-      context.get(DBTCommandExecutionInfrastructure),
-      context.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
 // Note: DBTCoreProjectIntegration requires projectRoot at construction time
 // It will be created via Factory<DBTCoreProjectIntegration>
 container
@@ -292,13 +270,6 @@ container
   })
   .inSingletonScope();
 
-container
-  .bind(DBTCloudProjectDetection)
-  .toDynamicValue(() => {
-    return new DBTCloudProjectDetection();
-  })
-  .inSingletonScope();
-
 // Note: DBTCloudProjectIntegration requires projectRoot at construction time
 // It will be created via Factory<DBTCloudProjectIntegration>
 container
@@ -307,13 +278,6 @@ container
     throw new Error(
       "DBTCloudProjectIntegration should be created via Factory<DBTCloudProjectIntegration>",
     );
-  })
-  .inSingletonScope();
-
-container
-  .bind(DBTFusionCommandProjectDetection)
-  .toDynamicValue(() => {
-    return new DBTFusionCommandProjectDetection();
   })
   .inSingletonScope();
 
@@ -436,43 +400,6 @@ container
         container.get("DBTTerminal"),
         container.get("DBTConfiguration"),
         globalState,
-      );
-    };
-  });
-
-container
-  .bind<Factory<DBTProjectDetection, []>>("Factory<DBTProjectDetection>")
-  .toFactory((context: ResolutionContext) => {
-    return () => {
-      return context.get(DBTFusionCommandProjectDetection);
-    };
-  });
-
-container
-  .bind<
-    Factory<
-      DBTWorkspaceFolder,
-      [
-        WorkspaceFolder,
-        EventEmitter<ManifestCacheChangedEvent>,
-        EventEmitter<ProjectRegisteredUnregisteredEvent>,
-      ]
-    >
-  >("Factory<DBTWorkspaceFolder>")
-  .toFactory((context: ResolutionContext) => {
-    return (
-      workspaceFolder: WorkspaceFolder,
-      _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
-      _onProjectRegisteredUnregistered: EventEmitter<ProjectRegisteredUnregisteredEvent>,
-    ) => {
-      const container = context;
-      return new DBTWorkspaceFolder(
-        container.get("Factory<DBTProject>"),
-        container.get("Factory<DBTProjectDetection>"),
-        container.get("DBTTerminal"),
-        workspaceFolder,
-        _onManifestChanged,
-        _onProjectRegisteredUnregistered,
       );
     };
   });
@@ -668,13 +595,12 @@ container
   });
 
 container
-  .bind<
-    Factory<DBTProject, [Uri, any, EventEmitter<ManifestCacheChangedEvent>]>
-  >("Factory<DBTProject>")
+  .bind<Factory<DBTProject, [Uri, EventEmitter<ManifestCacheChangedEvent>]>>(
+    "Factory<DBTProject>",
+  )
   .toFactory((context: ResolutionContext) => {
     return (
       path: Uri,
-      projectConfig: any,
       _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
     ) => {
       const container = context;
@@ -691,7 +617,6 @@ container
         container.get(AltimateAuthService),
         container.get(RunHistoryService),
         path,
-        projectConfig,
         _onManifestChanged,
       );
     };
@@ -785,7 +710,6 @@ container
       context.get(DBTProjectContainer),
       context.get("DBTTerminal"),
       context.get(SharedStateService),
-      context.get(ProjectQuickPick),
       context.get(ProjectContext),
     );
   })
@@ -862,7 +786,8 @@ container
   .toDynamicValue((context) => {
     return new DBTProjectContainer(
       context.get(DBTClient),
-      context.get("Factory<DBTWorkspaceFolder>"),
+      context.get(ProjectRegistry),
+      context.get("Factory<DBTProject>"),
       context.get("DBTTerminal"),
     );
   })
