@@ -65,7 +65,23 @@ All durations are milliseconds. Median averages the two middle values; p90 is th
 | Lineage FCP                 | 324, 320, 320, 320, 320, 316, 320, 316, 316, 308                                         |     320 |     320 |
 | Lineage resolve-to-ready    | 343.420, 348.836, 342.776, 354.924, 344.065, 339.061, 339.979, 337.291, 337.111, 334.400 | 341.377 | 348.836 |
 
-Cursor runtime timing remains deferred because its clean-profile login flow disrupts unattended panel automation. The existing pinned Cursor installation and activation smoke remains in place.
+## Cursor runtime — ten fresh CI processes
+
+`just benchmark-runtime-cursor fusion-power-user-0.1.0-alpha.0.vsix` uses the same clocks and assertions as the VS Code benchmark. Cursor automation runs in GitHub CI because macOS activates the application during local Electron tests.
+
+Observed workflow: [run 35632682194](https://github.com/danielchawkins/vscode-dbt-power-user/actions/runs/35632682194). Observed host: Cursor 3.21.16, Electron 42.10.0, Chromium 148.0.7778.280, and Node 24.18.1. Every sample was unauthenticated, used a disposable profile, reported the expected eager activation event, and rendered each panel on its first open attempt.
+
+| Measure                     | Raw samples                                                                                        |    Median |       p90 |
+| --------------------------- | -------------------------------------------------------------------------------------------------- | --------: | --------: |
+| Activation: load code       | 141, 35, 212, 78, 39, 38, 133, 65, 42, 72                                                          |      68.5 |       141 |
+| Activation: call activate   | 103, 13, 61, 32, 16, 14, 27, 42, 29, 28                                                            |      28.5 |        61 |
+| Activation: finish activate | 4573, 3534, 2778, 3115, 2890, 2427, 7288, 3498, 2341, 2909                                         |     3,012 |     4,573 |
+| Docs FCP                    | 2616, 1592, 1108, 1688, 1796, 1380, 2336, 2028, 1228, 1300                                         |     1,640 |     2,336 |
+| Docs resolve-to-ready       | 4133.642, 2114.805, 1549.667, 1892.739, 1949.930, 1972.583, 2550.381, 2286.492, 1704.951, 1669.097 | 1,961.257 | 2,550.381 |
+| Query FCP                   | 1476, 1208, 1016, 1360, 1036, 1068, 1972, 1372, 1016, 1148                                         |     1,178 |     1,476 |
+| Query resolve-to-ready      | 1557.842, 1315.687, 1046.982, 1480.672, 1201.547, 1183.267, 2284.692, 1545.380, 1179.756, 1385.812 | 1,350.750 | 1,557.842 |
+| Lineage FCP                 | 1512, 1400, 1272, 1128, 1364, 1108, 1468, 1064, 1372, 996                                          |     1,318 |     1,468 |
+| Lineage resolve-to-ready    | 1578.939, 1396.904, 1357.251, 1286.718, 1596.498, 1197.813, 1722.510, 1223.056, 1442.861, 1049.826 | 1,377.077 | 1,596.498 |
 
 ## Component test coverage (step 3.13)
 

@@ -2,7 +2,7 @@
 
 Pinned-host smoke and local `just smoke-cursor` install Cursor from an immutable production URL, never from a developer profile and never from unofficial mirrors.
 
-The smoke verifies packaged-VSIX installation, activation, runtime metadata, required webview assets, and retained command registration. Cursor rendering and runtime timing remain deferred because its clean-profile login flow disrupts unattended panel automation; the VS Code runtime benchmark does not stand in for Cursor evidence.
+Unauthenticated Cursor renders all three local extension webviews; aiserver and repository-indexing authentication errors are background service noise, not a workbench gate. The harness passes `--skip-onboarding` and `--suppress-popups-on-startup` from the pinned build's own option schema, without credentials or seeded profile state. The ten-sample runtime benchmark runs in CI because macOS still activates the Cursor application during local automation.
 
 ## Official source
 
@@ -21,7 +21,8 @@ The resolve API is used only when advancing the pin (`scripts/smoke/resolve-curs
 
 1. Run `bash scripts/smoke/resolve-cursor-pin.sh` on macOS with network access.
 2. The script validates the resolved URL against the API's archive commit, downloads the DMG, records the separate `product.json` commit, verifies `vscodeVersion` matches `1.128.x`, computes SHA-256, and rewrites `scripts/smoke/pins.env`.
-3. Commit the updated pin file. Re-run `just smoke-cursor` and the CI Cursor job before merging.
+3. Confirm the new app's `out/cli.js` still declares `--skip-onboarding` and `--suppress-popups-on-startup`.
+4. Commit the updated pin file. Re-run `just smoke-cursor` and the CI Cursor job before merging.
 
 Calling `releaseTrack=<semver>` on the resolve API returned `Failed to fetch download link`, including for previously installed builds such as `3.20.14`. Historical DMGs may also return HTTP 403 from `downloads.cursor.com`. The supported pin path is therefore: resolve `latest` once, record `{version, commitSha, downloadUrl, sha256}`, and consume the immutable URL thereafter.
 
