@@ -1,6 +1,5 @@
 import { createRequire } from "node:module";
 import type { StorybookConfig } from "@storybook/react-vite";
-import { mergeConfig } from "vite";
 
 const require = createRequire(import.meta.url);
 
@@ -31,11 +30,7 @@ const config: StorybookConfig = {
         "./__mocks__/crypto.ts",
       );
     }
-    return mergeConfig(viteConfig, {
-      optimizeDeps: {
-        include: ["storybook-dark-mode"],
-      },
-    });
+    return viteConfig;
   },
 };
 export default config;
