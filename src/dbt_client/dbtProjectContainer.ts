@@ -1,7 +1,6 @@
 import type { RunResultsEventData } from "@altimateai/dbt-integration";
 import {
   DBTTerminal,
-  EnvironmentVariables,
   RunModelParams,
   RunModelType,
 } from "@altimateai/dbt-integration";
@@ -14,25 +13,22 @@ import {
   ExtensionContext,
   Uri,
   window,
-  workspace,
-  WorkspaceFolder,
 } from "vscode";
 import { DBTClient } from "../dbt_client";
+import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";
 import { extractDbtSubcommand } from "../utils";
 import { DBTProject } from "./dbtProject";
-import { DBTWorkspaceFolder } from "./dbtWorkspaceFolder";
 import {
   ManifestCacheChangedEvent,
   RebuildManifestCombinedStatusChange,
 } from "./event/manifestCacheChangedEvent";
 
-export interface ProjectRegisteredUnregisteredEvent {
-  root: Uri;
-  name: string;
-  registered: boolean;
-}
-
 export interface DBTProjectsInitializationEvent {}
+
+interface ProjectEntry {
+  project: DBTProject;
+  subscriptions: Disposable[];
+}
 
 export class DBTProjectContainer implements Disposable {
   public onDBTInstallationVerification =
@@ -41,58 +37,38 @@ export class DBTProjectContainer implements Disposable {
     new EventEmitter<DBTProjectsInitializationEvent>();
   public readonly onDBTProjectsInitialization =
     this._onDBTProjectsInitializationEvent.event;
-  dbtWorkspaceFolders: DBTWorkspaceFolder[] = [];
   private _onManifestChanged = new EventEmitter<ManifestCacheChangedEvent>();
-  private _onProjectRegisteredUnregistered =
-    new EventEmitter<ProjectRegisteredUnregisteredEvent>();
   public readonly onManifestChanged = this._onManifestChanged.event;
-  private disposables: Disposable[] = [
-    this._onManifestChanged,
-    this._onProjectRegisteredUnregistered,
-  ];
   private context?: ExtensionContext;
-  private projects: Map<Uri, string> = new Map<Uri, string>();
   private _onRebuildManifestStatusChange =
     new EventEmitter<RebuildManifestCombinedStatusChange>();
   readonly onRebuildManifestStatusChange =
     this._onRebuildManifestStatusChange.event;
   private rebuildManifestStatusChangeMap = new Map<string, boolean>();
+  private disposables: Disposable[] = [
+    this._onDBTProjectsInitializationEvent,
+    this._onManifestChanged,
+    this._onRebuildManifestStatusChange,
+  ];
+
+  private readonly projectsByRoot = new Map<string, ProjectEntry>();
+  private projectOrder: string[] = [];
+  private registrySubscription: Disposable | undefined;
+  private syncQueue = Promise.resolve();
+  private disposed = false;
 
   constructor(
     private dbtClient: DBTClient,
-    @inject("Factory<DBTWorkspaceFolder>")
-    private dbtWorkspaceFolderFactory: (
-      workspaceFolder: WorkspaceFolder,
-      _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
-      _onProjectRegisteredUnregistered: EventEmitter<ProjectRegisteredUnregisteredEvent>,
-      pythonPath?: string,
-      envVars?: EnvironmentVariables,
-    ) => DBTWorkspaceFolder,
+    private projectRegistry: ProjectRegistry,
+    @inject("Factory<DBTProject>")
+    private dbtProjectFactory: (
+      path: Uri,
+      onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
+    ) => DBTProject,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
-    this.disposables.push(
-      workspace.onDidChangeWorkspaceFolders(async (event) => {
-        const { added, removed } = event;
-        await Promise.all(
-          added.map(
-            async (folder) => await this.registerWorkspaceFolder(folder),
-          ),
-        );
-        removed.forEach((removedWorkspaceFolder) =>
-          this.unregisterWorkspaceFolder(removedWorkspaceFolder),
-        );
-      }),
-      this.dbtClient,
-      this.dbtTerminal,
-    );
-    this._onProjectRegisteredUnregistered.event((event) => {
-      if (event.registered) {
-        this.projects.set(event.root, event.name);
-      } else {
-        this.projects.delete(event.root);
-      }
-    });
+    this.disposables.push(this.dbtClient, this.dbtTerminal);
   }
 
   setContext(context: ExtensionContext) {
@@ -109,13 +85,22 @@ export class DBTProjectContainer implements Disposable {
   }
 
   async initializeDBTProjects(): Promise<void> {
-    const folders = workspace.workspaceFolders;
-    if (folders === undefined) {
+    if (this.disposed || this.registrySubscription) {
       return;
     }
-    await Promise.all(
-      folders.map((folder) => this.registerWorkspaceFolder(folder)),
-    );
+    await this.enqueueSync();
+    if (this.disposed) {
+      return;
+    }
+    this.registrySubscription = this.projectRegistry.onDidChangeProjects(() => {
+      void this.enqueueSync().catch((error) => {
+        this.dbtTerminal.error(
+          "DBTProjectContainer",
+          "Project synchronization failed",
+          error,
+        );
+      });
+    });
     this._onDBTProjectsInitializationEvent.fire({});
   }
 
@@ -153,12 +138,10 @@ export class DBTProjectContainer implements Disposable {
     return this.dbtClient.dbtInstalled ?? false;
   }
 
-  // TODO: bypasses events and could be inconsistent
   getPackageName = (uri: Uri): string | undefined => {
     return this.findDBTProject(uri)?.findPackageName(uri);
   };
 
-  // TODO: bypasses events and could be inconsistent
   getProjectRootpath = (uri: Uri): Uri | undefined => {
     return this.findDBTProject(uri)?.projectRoot;
   };
@@ -167,28 +150,10 @@ export class DBTProjectContainer implements Disposable {
     await this.dbtClient.detectDBT();
   }
 
-  async reinitialize(): Promise<void> {
-    // Dispose all existing workspace folders
-    this.dbtWorkspaceFolders.forEach((workspaceFolder) =>
-      workspaceFolder.dispose(),
+  async initialize(): Promise<void> {
+    await Promise.all(
+      this.getProjects().map((project) => project.initialize()),
     );
-    this.dbtWorkspaceFolders = [];
-
-    // Clear projects map
-    this.projects.clear();
-
-    // Clear rebuild manifest status map
-    this.rebuildManifestStatusChangeMap.clear();
-
-    // Re-detect DBT with new integration type
-    await this.detectDBT();
-
-    // Re-initialize DBT projects
-    await this.initializeDBTProjects();
-  }
-
-  async initialize() {
-    this.getProjects().forEach((project) => project.initialize());
   }
 
   executeSQL(uri: Uri, query: string, modelName: string): void {
@@ -262,13 +227,15 @@ export class DBTProjectContainer implements Disposable {
   }
 
   findDBTProject(uri: Uri): DBTProject | undefined {
-    return this.findDBTWorkspaceFolder(uri)?.findDBTProject(uri);
+    const declared = this.projectRegistry.findProject(uri);
+    return declared && this.projectsByRoot.get(declared.root.fsPath)?.project;
   }
 
   getProjects(): DBTProject[] {
-    return this.dbtWorkspaceFolders.flatMap((workspaceFolder) =>
-      workspaceFolder.getProjects(),
-    );
+    return this.projectOrder.flatMap((root) => {
+      const entry = this.projectsByRoot.get(root);
+      return entry ? [entry.project] : [];
+    });
   }
 
   findProjectByName(projectName: string): DBTProject | undefined {
@@ -344,9 +311,7 @@ export class DBTProjectContainer implements Disposable {
   getAdapters(): string[] {
     return Array.from(
       new Set<string>(
-        this.dbtWorkspaceFolders.flatMap((workspaceFolder) =>
-          workspaceFolder.getAdapters(),
-        ),
+        this.getProjects().map((project) => project.getAdapterType()),
       ),
     );
   }
@@ -356,9 +321,28 @@ export class DBTProjectContainer implements Disposable {
   }
 
   dispose() {
-    this.dbtWorkspaceFolders.forEach((workspaceFolder) =>
-      workspaceFolder.dispose(),
-    );
+    this.disposed = true;
+    if (this.registrySubscription) {
+      this.registrySubscription.dispose();
+    }
+    for (const [rootPath, entry] of this.projectsByRoot) {
+      this.projectsByRoot.delete(rootPath);
+      this._onManifestChanged.fire({
+        removed: [{ projectRoot: entry.project.projectRoot }],
+      });
+      const rebuildKey = entry.project.projectRoot.fsPath;
+      if (this.rebuildManifestStatusChangeMap.has(rebuildKey)) {
+        this.rebuildManifestStatusChangeMap.delete(rebuildKey);
+        this.fireRebuildStatus();
+      }
+      for (const sub of entry.subscriptions) {
+        sub.dispose();
+      }
+      void entry.project.dispose();
+    }
+    this.projectsByRoot.clear();
+    this.projectOrder = [];
+    this.rebuildManifestStatusChangeMap.clear();
     while (this.disposables.length) {
       const x = this.disposables.pop();
       if (x) {
@@ -387,56 +371,82 @@ export class DBTProjectContainer implements Disposable {
     return { plusOperatorLeft, modelName, plusOperatorRight };
   }
 
-  private async registerWorkspaceFolder(
-    workspaceFolder: WorkspaceFolder,
-  ): Promise<void> {
-    const dbtProjectWorkspaceFolder = this.dbtWorkspaceFolderFactory(
-      workspaceFolder,
-      this._onManifestChanged,
-      this._onProjectRegisteredUnregistered,
-    );
-    this.disposables.push(
-      dbtProjectWorkspaceFolder.onRebuildManifestStatusChange((e) => {
-        this.rebuildManifestStatusChangeMap.set(
-          e.project.projectRoot.fsPath,
-          e.inProgress,
-        );
-        const inProgressProjects: DBTProject[] = Array.from(
-          this.rebuildManifestStatusChangeMap.entries(),
-        )
-          .filter(([_, inProgress]) => inProgress)
-          .map(([root, _]) => root)
-          .map((root) => this.findDBTProject(Uri.file(root)))
-          .filter((project) => project !== undefined) as DBTProject[];
-
-        this._onRebuildManifestStatusChange.fire({
-          projects: inProgressProjects,
-          inProgress: inProgressProjects.length > 0,
-        });
-      }),
-    );
-    this.dbtWorkspaceFolders.push(dbtProjectWorkspaceFolder);
-    this.dbtTerminal.debug(
-      "dbtProjectContainer:registerWorkspaceFolder",
-      "dbtWorkspaceFolders",
-      this.dbtWorkspaceFolders,
-    );
-    await dbtProjectWorkspaceFolder.discoverProjects();
-  }
-
-  private unregisterWorkspaceFolder(workspaceFolder: WorkspaceFolder): void {
-    const folderToDelete = this.findDBTWorkspaceFolder(workspaceFolder.uri);
-    if (folderToDelete === undefined) {
-      return;
+  private async sync(): Promise<void> {
+    const desired = new Map<string, DeclaredProject>();
+    for (const project of this.projectRegistry.projects) {
+      desired.set(project.root.fsPath, project);
     }
-    this.dbtWorkspaceFolders.splice(
-      this.dbtWorkspaceFolders.indexOf(folderToDelete),
-      1,
-    );
-    folderToDelete.dispose();
+    this.projectOrder = [...desired.keys()];
+
+    const created: ProjectEntry[] = [];
+
+    for (const [rootPath, declared] of desired) {
+      if (!this.projectsByRoot.has(rootPath)) {
+        const project = this.dbtProjectFactory(
+          declared.root,
+          this._onManifestChanged,
+        );
+        const subscriptions: Disposable[] = [
+          project.onRebuildManifestStatusChange((e) => {
+            this.rebuildManifestStatusChangeMap.set(
+              e.project.projectRoot.fsPath,
+              e.inProgress,
+            );
+            this.fireRebuildStatus();
+          }),
+        ];
+        const entry = { project, subscriptions };
+        this.projectsByRoot.set(rootPath, entry);
+        created.push(entry);
+      }
+    }
+
+    const removed: ProjectEntry[] = [];
+    for (const [rootPath, entry] of this.projectsByRoot) {
+      if (!desired.has(rootPath)) {
+        removed.push(entry);
+        this.projectsByRoot.delete(rootPath);
+      }
+    }
+
+    for (const entry of removed) {
+      this._onManifestChanged.fire({
+        removed: [{ projectRoot: entry.project.projectRoot }],
+      });
+      const rebuildKey = entry.project.projectRoot.fsPath;
+      if (this.rebuildManifestStatusChangeMap.has(rebuildKey)) {
+        this.rebuildManifestStatusChangeMap.delete(rebuildKey);
+        this.fireRebuildStatus();
+      }
+      for (const sub of entry.subscriptions) {
+        sub.dispose();
+      }
+      await entry.project.dispose();
+    }
+
+    if (!this.disposed) {
+      await Promise.all(created.map((entry) => entry.project.initialize()));
+    }
   }
 
-  private findDBTWorkspaceFolder(uri: Uri): DBTWorkspaceFolder | undefined {
-    return this.dbtWorkspaceFolders.find((folder) => folder.contains(uri));
+  private enqueueSync(): Promise<void> {
+    const next = this.syncQueue.then(() =>
+      this.disposed ? undefined : this.sync(),
+    );
+    this.syncQueue = next.catch(() => undefined);
+    return next;
+  }
+
+  private fireRebuildStatus(): void {
+    const projects = Array.from(this.rebuildManifestStatusChangeMap)
+      .filter(([, inProgress]) => inProgress)
+      .flatMap(([root]) => {
+        const project = this.projectsByRoot.get(root)?.project;
+        return project ? [project] : [];
+      });
+    this._onRebuildManifestStatusChange.fire({
+      projects,
+      inProgress: projects.length > 0,
+    });
   }
 }

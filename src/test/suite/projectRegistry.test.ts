@@ -69,6 +69,45 @@ describe("ProjectRegistry", () => {
     expect(registry.projects[1].name).toBe("sox");
   });
 
+  it("registers the same projects from a parent folder or individual folders", async () => {
+    const parent = makeFolder("multi-root");
+    const general: WorkspaceFolder = {
+      uri: Uri.file(path.join(parent.uri.fsPath, "projects/general")),
+      name: "general",
+      index: 0,
+    };
+    const sox: WorkspaceFolder = {
+      uri: Uri.file(path.join(parent.uri.fsPath, "projects/sox")),
+      name: "sox",
+      index: 1,
+    };
+    const getConfiguration = jest.spyOn(workspace, "getConfiguration");
+    getConfiguration.mockImplementation((_section, scope) =>
+      scope === parent.uri
+        ? makeConfig(["projects/general", "projects/sox"])
+        : makeConfig([]),
+    );
+    (workspace.workspaceFolders as any) = [parent];
+
+    const parentRegistry = new ProjectRegistry(terminal);
+    await parentRegistry.initialize();
+    const fromParent = parentRegistry.projects.map(({ root, name }) => ({
+      root: root.fsPath,
+      name,
+    }));
+    parentRegistry.dispose();
+
+    (workspace.workspaceFolders as any) = [general, sox];
+    const individualRegistry = new ProjectRegistry(terminal);
+    await individualRegistry.initialize();
+    const fromIndividualFolders = individualRegistry.projects.map(
+      ({ root, name }) => ({ root: root.fsPath, name }),
+    );
+
+    expect(fromIndividualFolders).toEqual(fromParent);
+    individualRegistry.dispose();
+  });
+
   it("attributes copied-tree files to their declared parent", async () => {
     const general = makeFolder("multi-root");
     jest

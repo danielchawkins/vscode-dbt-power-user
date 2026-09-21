@@ -252,7 +252,6 @@ describe("DBTProject Test Suite", () => {
         mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
-        projectConfig,
         mockManifestChangedEmitter,
       );
 
@@ -289,7 +288,6 @@ describe("DBTProject Test Suite", () => {
         mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
-        projectConfig,
         mockManifestChangedEmitter,
       );
 
@@ -317,7 +315,6 @@ describe("DBTProject Test Suite", () => {
         mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
-        {},
         mockManifestChangedEmitter,
       );
 
@@ -343,7 +340,6 @@ describe("DBTProject Test Suite", () => {
         mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
-        {},
         mockManifestChangedEmitter,
       );
     });
@@ -424,7 +420,6 @@ describe("DBTProject Test Suite", () => {
         mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
-        {},
         mockManifestChangedEmitter,
       );
     });
@@ -535,7 +530,6 @@ describe("DBTProject Test Suite", () => {
         mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
-        {},
         mockManifestChangedEmitter,
       );
     });
@@ -610,7 +604,6 @@ describe("DBTProject Test Suite", () => {
         mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
-        {},
         mockManifestChangedEmitter,
       );
     });
@@ -674,7 +667,6 @@ describe("DBTProject Test Suite", () => {
         mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
-        {},
         mockManifestChangedEmitter,
       );
     });
@@ -730,7 +722,6 @@ describe("DBTProject Test Suite", () => {
         mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
-        {},
         mockManifestChangedEmitter,
       );
     });
@@ -817,7 +808,6 @@ describe("DBTProject Test Suite", () => {
         mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
-        {},
         mockManifestChangedEmitter,
       );
 

@@ -576,9 +576,6 @@ export class VSCodeCommands implements Disposable {
           this.diagnosticsOutputChannel.logNewLine();
 
           // Printing extension and setup info
-          const allowListFolders = workspace
-            .getConfiguration("dbt")
-            .get<string[]>("allowListFolders", []);
           const apiConnectivity = await this.altimate.checkApiConnectivity();
           this.diagnosticsOutputChannel.logBlock([
             `Python Path=${this.pythonEnvironment.pythonPath}`,
@@ -593,7 +590,6 @@ export class VSCodeCommands implements Disposable {
             apiConnectivity.errorMsg
               ? `Altimate API connectivity error=${apiConnectivity.errorMsg}`
               : "",
-            `AllowList Folders=${allowListFolders}`,
           ]);
           this.diagnosticsOutputChannel.logNewLine();
 
@@ -613,33 +609,6 @@ export class VSCodeCommands implements Disposable {
             return;
           }
           this.diagnosticsOutputChannel.logLine("DBT is installed");
-          const dbtWorkspaces = this.dbtProjectContainer.dbtWorkspaceFolders;
-          this.diagnosticsOutputChannel.logLine(
-            `Number of workspaces=${dbtWorkspaces.length}`,
-          );
-          for (const w of dbtWorkspaces) {
-            this.diagnosticsOutputChannel.logHorizontalRule();
-            this.diagnosticsOutputChannel.logLine(
-              `Workspace Path=${w.workspaceFolder.uri.fsPath}`,
-            );
-            this.diagnosticsOutputChannel.logLine(
-              `Adapters=${w.getAdapters()}`,
-            );
-            this.diagnosticsOutputChannel.logLine(
-              `AllowList Folders=${w.getAllowListFolders()}`,
-            );
-            w.projectDiscoveryDiagnostics.forEach((uri, diagnostics) => {
-              this.diagnosticsOutputChannel.logLine(
-                `Problems for ${uri.fsPath}`,
-              );
-              diagnostics.forEach((d) => {
-                this.diagnosticsOutputChannel.logLine(
-                  `source=${d.source}\tmessage=${d.message}`,
-                );
-              });
-            });
-            this.diagnosticsOutputChannel.logHorizontalRule();
-          }
 
           const projects = this.dbtProjectContainer.getProjects();
           this.diagnosticsOutputChannel.logLine(
