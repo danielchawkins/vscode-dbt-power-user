@@ -786,6 +786,7 @@ container
       context.get("DBTTerminal"),
       context.get(SharedStateService),
       context.get(ProjectQuickPick),
+      context.get(ProjectContext),
     );
   })
   .inSingletonScope();

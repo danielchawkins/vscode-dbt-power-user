@@ -7,6 +7,8 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
+import { ProjectContext } from "../projects/projectContext";
+import { DeclaredProject } from "../projects/projectRegistry";
 import { ProjectQuickPick } from "../quickpick/projectQuickPick";
 import { SharedStateService } from "./sharedStateService";
 
@@ -19,6 +21,7 @@ export class QueryManifestService {
     private dbtTerminal: DBTTerminal,
     protected emitterService: SharedStateService,
     private projectQuickPick: ProjectQuickPick,
+    private projectContext: ProjectContext,
   ) {
     dbtProjectContainer.onDBTProjectsInitialization(() => {
       this.emitterService.fire({
@@ -41,15 +44,36 @@ export class QueryManifestService {
     });
   }
 
+  /** Maps the Declared Project owning `uri` to the DBTProject the discovery path already built. */
+  private resolveProject(uri?: Uri): DBTProject | undefined {
+    if (!uri) {
+      return undefined;
+    }
+    const declared = this.projectContext.forResource(uri);
+    if (declared) {
+      return this.mapDeclaredProject(declared, uri);
+    }
+    return this.projectContext.hasDeclaredProjects
+      ? undefined
+      : this.dbtProjectContainer.findDBTProject(uri);
+  }
+
   public getProject(): DBTProject | undefined {
-    return this.getProjectByUri(window.activeTextEditor?.document.uri);
+    const current = this.projectContext.current;
+    if (current) {
+      return this.mapDeclaredProject(
+        current,
+        window.activeTextEditor?.document.uri,
+      );
+    }
+    const uri = window.activeTextEditor?.document.uri;
+    return !this.projectContext.hasDeclaredProjects && uri
+      ? this.dbtProjectContainer.findDBTProject(uri)
+      : undefined;
   }
 
   public getProjectByUri(uri?: Uri): DBTProject | undefined {
-    if (!uri) {
-      return;
-    }
-    return this.dbtProjectContainer.findDBTProject(uri);
+    return this.resolveProject(uri);
   }
 
   public getProjectNamesInWorkspace(): string[] | undefined {
@@ -88,8 +112,7 @@ export class QueryManifestService {
       "getting event for project, currentFilePath: ",
       currentFilePath.fsPath,
     );
-    const projectRootpath =
-      this.dbtProjectContainer.getProjectRootpath(currentFilePath);
+    const projectRootpath = this.resolveProject(currentFilePath)?.projectRoot;
     if (projectRootpath === undefined) {
       this.dbtTerminal.debug(
         "no project for currentFilePath: ",
@@ -111,8 +134,7 @@ export class QueryManifestService {
       return;
     }
 
-    const projectRootpath =
-      this.dbtProjectContainer.getProjectRootpath(currentFilePath);
+    const projectRootpath = this.resolveProject(currentFilePath)?.projectRoot;
     if (projectRootpath === undefined) {
       return;
     }
@@ -139,8 +161,7 @@ export class QueryManifestService {
       return;
     }
 
-    const projectRootpath =
-      this.dbtProjectContainer.getProjectRootpath(currentFilePath);
+    const projectRootpath = this.resolveProject(currentFilePath)?.projectRoot;
     if (projectRootpath === undefined) {
       return;
     }
@@ -158,39 +179,41 @@ export class QueryManifestService {
   // if no editor, then ask user to pick project
   public async getOrPickProjectFromWorkspace() {
     const uri = window.activeTextEditor?.document.uri;
-    const project = uri ? this.dbtProjectContainer.findDBTProject(uri) : null;
-
-    if (project) {
-      return project;
+    if (!this.projectContext.hasDeclaredProjects) {
+      const project = uri && this.dbtProjectContainer.findDBTProject(uri);
+      if (project) {
+        return project;
+      }
+      const projects = this.dbtProjectContainer.getProjects();
+      if (projects.length === 1) {
+        return projects[0];
+      }
+      const picked = await this.projectQuickPick.projectPicker(projects);
+      return picked && this.dbtProjectContainer.findDBTProject(picked.uri);
     }
-    this.dbtTerminal.debug(
-      "getProject",
-      "no project name provided, getting all projects in workspace",
-    );
-    const projects = this.dbtProjectContainer.getProjects();
-    if (projects.length === 1) {
-      this.dbtTerminal.debug(
-        "getProject",
-        `single project in workspace, returning project: ${projects[0].getProjectName()}`,
-      );
-      return projects[0];
-    }
+    const declared = await this.projectContext.requireForCommand(uri);
 
-    this.dbtTerminal.debug(
-      "getProject",
-      "multiple projects in workspace, prompting user to select project",
-    );
-
-    const pickedProject = await this.projectQuickPick.projectPicker(projects);
-    if (!pickedProject) {
+    if (!declared) {
       this.dbtTerminal.debug("getProject", "no project selected, returning");
       return;
     }
 
     this.dbtTerminal.debug(
       "getProject",
-      `project selected: ${pickedProject.uri}`,
+      `project selected: ${declared.root.fsPath}`,
     );
-    return this.dbtProjectContainer.findDBTProject(pickedProject.uri);
+    return this.mapDeclaredProject(declared, uri);
+  }
+
+  private mapDeclaredProject(
+    declared: DeclaredProject,
+    resource?: Uri,
+  ): DBTProject | undefined {
+    return (
+      this.dbtProjectContainer.findDBTProject(declared.root) ??
+      (resource && declared.contains(resource)
+        ? this.dbtProjectContainer.findDBTProject(resource)
+        : undefined)
+    );
   }
 }
