@@ -23,7 +23,6 @@
     "noFallthroughCasesInSwitch": true,
     "paths": {
       "@uicore": ["./src/uiCore/index.ts"],
-      "@lib": ["./src/lib/index.ts"],
       "@assets/*": ["./src/assets/*"],
       "@modules/*": ["./src/modules/*"],
       "@testUtils": ["./src/testUtils/index.ts"],
