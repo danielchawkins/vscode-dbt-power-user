@@ -97,7 +97,7 @@ function makeClickEvent(
   removeImageAndClickEvent(td);
 }
 
-// Custom perspective plugin to add click event to the td element
+// The datagrid side-effect import registers synchronously before this module runs.
 class PerspectiveDatagridJSONViewerPlugin extends (customElements.get(
   "perspective-viewer-datagrid",
 ) as unknown as typeof HTMLPerspectiveViewerDatagridPluginElement) {
@@ -197,6 +197,10 @@ customElements.define(
   PerspectiveDatagridJSONViewerPlugin,
 );
 
-void customElements
-  .get("perspective-viewer")
-  .registerPlugin("perspective-datagrid-json-viewer-plugin");
+void customElements.whenDefined("perspective-viewer").then((viewer) => {
+  (
+    viewer as CustomElementConstructor & {
+      registerPlugin(name: string): void;
+    }
+  ).registerPlugin("perspective-datagrid-json-viewer-plugin");
+});
