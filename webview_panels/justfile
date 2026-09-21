@@ -37,9 +37,17 @@ storybook-build:
 ####################
 
 [group("quality")]
+typecheck:
+    npm run typecheck
+
+[group("quality")]
 fmt:
     npm run lint:fix
 
 [group("quality")]
 lint:
     npm run lint
+
+[group("tests")]
+test *args:
+    npm test -- "$@"

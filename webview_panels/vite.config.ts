@@ -37,7 +37,7 @@ function copyCodicons(): Plugin {
 }
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export const viteConfig = defineConfig({
   plugins: [svgr(), react(), copyCodicons()],
   build: {
     cssMinify: "esbuild",
@@ -69,3 +69,5 @@ export default defineConfig({
     },
   },
 });
+
+export default viteConfig;

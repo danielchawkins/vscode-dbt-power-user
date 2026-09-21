@@ -114,6 +114,8 @@ check:
     just compile
     just lint
     just test
+    just webviews::typecheck
+    just webviews::test
 
 [group("quality")]
 fmt-just:
@@ -185,6 +187,10 @@ test-integration *args:
     npm run compile:integration
     cp src/test/integration/out-package.json out/package.json
     npm run test:integration -- "$@"
+
+[group("tests")]
+benchmark *args:
+    bash scripts/benchmark/run-baseline.sh "$@"
 
 ####################
 # Version control
