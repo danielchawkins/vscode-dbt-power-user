@@ -1368,6 +1368,8 @@ container
       context.get(ValidationProvider),
       context.get(AltimateRequest),
       context.get(AltimateAuthService),
+      context.get(ProjectRegistry),
+      context.get(ProjectContext),
     );
   })
   .inSingletonScope();

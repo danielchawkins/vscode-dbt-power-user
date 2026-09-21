@@ -23,6 +23,7 @@ const activationHarness = (enabled: boolean) => {
   const detectDBT = jest.fn(() => Promise.resolve());
   const initializeDBTProjects = jest.fn(() => Promise.resolve());
   const initializeStatusBars = jest.fn(() => Promise.resolve());
+  const registryInitialize = jest.fn(() => Promise.resolve());
   const extension = Object.create(DBTPowerUserExtension.prototype) as any;
   Object.assign(extension, {
     dbtProjectContainer: {
@@ -30,6 +31,8 @@ const activationHarness = (enabled: boolean) => {
       detectDBT,
       initializeDBTProjects,
     },
+    projectRegistry: { initialize: registryInitialize },
+    projectContext: {},
     statusBars: { initialize: initializeStatusBars },
     altimateAuthService: { isAuthenticated: jest.fn(() => false) },
     altimateRequest: {
@@ -55,6 +58,7 @@ const activationHarness = (enabled: boolean) => {
     folder,
     initializeDBTProjects,
     initializeStatusBars,
+    registryInitialize,
     dbtTerminal: extension.dbtTerminal,
   };
 };
@@ -98,6 +102,7 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(commands.executeCommand).toHaveBeenCalledWith(
       "workbench.action.reloadWindow",
     );
+    expect(harness.registryInitialize).not.toHaveBeenCalled();
     expect(harness.detectDBT).not.toHaveBeenCalled();
     expect(harness.initializeDBTProjects).not.toHaveBeenCalled();
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
@@ -116,6 +121,7 @@ describe("DBTPowerUserExtension.activate", () => {
       harness.folder.uri,
     );
     expect(window.showErrorMessage).not.toHaveBeenCalled();
+    expect(harness.registryInitialize).not.toHaveBeenCalled();
     expect(harness.detectDBT).not.toHaveBeenCalled();
     expect(harness.initializeDBTProjects).not.toHaveBeenCalled();
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
@@ -126,32 +132,43 @@ describe("DBTPowerUserExtension.activate", () => {
   it("activates when any workspace folder remains enabled", async () => {
     const harness = activationHarness(false);
     context = harness.context;
-    const other = { uri: Uri.file("/dbt"), name: "dbt", index: 1 };
-    (workspace as any).workspaceFolders = [harness.folder, other];
+    const enabledFolder = {
+      uri: Uri.file("/enabled"),
+      name: "enabled",
+      index: 1,
+    };
+    (workspace as any).workspaceFolders = [harness.folder, enabledFolder];
     (workspace.getConfiguration as jest.Mock).mockImplementation(
       (...args: unknown[]) => ({
-        get: (key: string, fallback: unknown) =>
-          key === "enabled"
-            ? (args[1] as { fsPath: string }).fsPath === other.uri.fsPath
-            : fallback,
+        get: () => (args[1] as Uri).fsPath === enabledFolder.uri.fsPath,
       }),
     );
 
     await harness.extension.activate(context);
 
-    expect(harness.detectDBT).toHaveBeenCalled();
-    expect(harness.initializeDBTProjects).toHaveBeenCalled();
+    expect(harness.registryInitialize).toHaveBeenCalledTimes(1);
+    expect(harness.detectDBT).toHaveBeenCalledTimes(1);
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
   });
 
-  it("runs detectDBT when there is no conflict and the folder is enabled", async () => {
+  it("activates and initializes registry before detectDBT on happy path", async () => {
     const harness = activationHarness(true);
     context = harness.context;
 
     await harness.extension.activate(context);
 
+    expect(harness.registryInitialize).toHaveBeenCalled();
     expect(harness.detectDBT).toHaveBeenCalled();
     expect(harness.initializeDBTProjects).toHaveBeenCalled();
+
+    const registryCall = (harness.registryInitialize as jest.Mock).mock
+      .invocationCallOrder[0];
+    const detectCall = (harness.detectDBT as jest.Mock).mock
+      .invocationCallOrder[0];
+    expect(registryCall).toBeLessThan(detectCall);
+    expect(registryCall).toBeLessThan(
+      (harness.initializeDBTProjects as jest.Mock).mock.invocationCallOrder[0],
+    );
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
   });
 });
