@@ -62,7 +62,7 @@ A reviewer reads the full bookmark diff against the step's contract and this che
 
 ## Current position
 
-Steps 1.2 through 3.14 are complete at this tip, including two-host pinned acquisition, packaged-VSIX smoke, host metadata, and ten fresh-process runtime samples. Step 3.15 is next. Complete the remaining follow-ons in [`remaining-implementation.md`](remaining-implementation.md) serially, using the pipelined landing workflow above, before Phase 4. The product is still manifest-driven.
+Steps 1.2 through 3.15 are complete at this tip, including two-host pinned runtime evidence and the derived Chromium 148 webview target. Phase 4's Declared Project model is next. Continue through [`remaining-implementation.md`](remaining-implementation.md) serially, using the pipelined landing workflow above. The product is still manifest-driven.
 
 **Correction to the Cloud blocker.** The published Fusion integration extends `DBTBaseProjectIntegration`, not `DBTCloudProjectIntegration`, so there is no reparenting task. Cloud is blocked by composition instead: `DBTProjectIntegrationAdapter`'s constructor takes Core, Cloud, Fusion, and Core-command factories as mandatory parameters, and `src/inversify.config.ts` supplies all four. Order is therefore 7.1 retire the adapter, then 8.1 delete Cloud and Core construction. The same retirement removes the adapter's private ambient target watcher, which is why no earlier step should attempt either.
 
@@ -108,7 +108,7 @@ Copy the contract and verification from `fusion-lsp-plan.md`. The notes below ar
 
 ### Phase 3
 
-3.1 through 3.14 are complete at this tip. Step 3.15 now derives the browser target from the two green pinned hosts before Phase 4 begins. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
+3.1 through 3.15 are complete at this tip. Phase 4 begins next. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
 
 ### Phases 4–10 and v2
 
