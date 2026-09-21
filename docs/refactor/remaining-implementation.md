@@ -2,188 +2,151 @@
 
 This is the executor plan for work still ahead of `main`. Contracts, file lists, spikes, and Confirm gates stay in [`fusion-lsp-plan.md`](fusion-lsp-plan.md). Landing rules stay in [`implementation-dispatch.md`](implementation-dispatch.md). Do not invent vocabulary; use `CONTEXT.md`.
 
-## Current `main`
+## Current position
 
-Phase 0 and 1.1 are complete. Merged onto `main`:
+**Merged on `main`:** 1.2 version gate, 1.3 conflict guard and `enabled`, all of Phase 2, steps 3.1 through 3.10, the ESM host with Inversify 8, the Tailwind guard, and webview ESLint 10. The extension packages as `0.1.0-alpha.0` against the 1.128 Extensions API.
 
-| Step                     | What landed                                                                                                                                                                                                                      |
-| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1.2 Fusion version gate  | `src/fusion/fusionVersion.ts` plus PATH-only `FusionVersionDetection`. Accepts `dbt 2.0.5`. Untested major warns once to the terminal via `globalState`. Missing binary is `notFusion` / ENOENT debug, not a `notFound` verdict. |
-| 1.3 Conflict + `enabled` | Early return in `activate()` before `detectDBT` / MCP / status. Conflict is the only startup notification. `enabled` is false only when every folder is disabled.                                                                |
-| 2.1 Fixtures             | `src/test/fixtures/{single-project,multi-root,nested-project}` with `profile:` and dummy `profiles.yml`. Smoke in `fixturesSmoke.test.ts`. `src/test/fixtures/**/target/` is gitignored.                                         |
-| 2.2–2.4                  | Integration harness, scoping characterization, metadata contract snapshot.                                                                                                                                                       |
-| 3.1–3.6                  | Fusion-only factories; notebooks, AI/DataPilot, MCP, collaboration, telemetry deleted.                                                                                                                                           |
+**Local review:** step 3.11 image pruning and step 3.12 Codicons allowlisting.
 
-The product is still manifest-driven. Core and Cloud classes remain because Fusion still extends Cloud. `DBTFusionCommandDetection` still lives in `@altimateai/dbt-integration`; do not patch `node_modules`.
+**Local implementation:** step 3.13 webview tests and v1 baselines.
+
+**Not started:** step 3.14 onward, listed below.
+
+What is still true of the product: it is manifest-driven, and it still ships hosted Altimate, authentication, credits, and Python-bridge paths. Core and Cloud stay constructible because `DBTProjectIntegrationAdapter`'s constructor requires their factories — **not** because Fusion extends Cloud, which it does not. `DBTFusionCommandDetection` and the integration classes live in `@altimateai/dbt-integration`; wrap them, never patch `node_modules`.
+
+A React 19 attempt was abandoned for vendoring generated output into `src/`, and React is **not** scheduled as a selected target: D6 decides the runtime at v2.2. Vendoring generated output is prohibited outright — generated CSS or JavaScript may arrive through a package's `exports`, never as a committed copy.
 
 ## How to land a step
 
 Product context: the shipped extension never invokes `mise` or `just`, never reads `mise.toml`, and never assumes a Consumer Repository layout.
 
 ```bash
-just jj workspace add ../fusion-pu-<step> --revision main -m "<one-line subject>"
+just jj workspace add ../fusion-pu-<step> --revision <parent-bookmark> -m "<one-line subject>"
 cd ../fusion-pu-<step>
 just sync
 # implement one plan step, TDD at the named seam
+# finish each concern or file group as a focused revision
+just jj commit -m "<focused revision>"
+# repeat until the PR bookmark is complete
 just check
-just package   # only when packaging or contributions change
-just jj commit -m "…"
-just jj bookmark create <step-bookmark> --revision @-
+just package   # only when the PR changes packaging or contributions
 ```
 
-Do not `git commit`, `git checkout -b`, or `git push`. The parent session pushes, opens `gh pr create --base main`, waits for review fixes, and merges. One described change per step. Reviewers read the workspace diff against the spec contract; blockers are folded into the same change before the PR.
+Implementation is serial: only one PR is being coded at a time, and its revisions are built in order. Split docs, configuration, and distinct modules or concerns into focused revisions; keep each concern's tests with its implementation. The complete bookmark tip, not every intermediate revision, is the required green unit.
+
+External review and CI do not create idle time. Once PR N is locally green, passes the local read-only review, and is pushed, begin PR N+1 locally as a child of N's bookmark tip in another jj workspace. If N is rewritten, jj rebases descendants. If a fix is added on top of N, run `just jj rebase --source <n+1-root> --destination <parent-bookmark>`. After N merges, rebase the full N+1 revision range onto `main`, rerun its gates, then push its bookmark. Never push a dependent PR before its parent merges.
+
+Do not `git commit`, `git checkout -b`, or `git push`. The parent session owns revision shaping, rebases, bookmarks, pushes, PR review fixes, CI repairs, and merges. Reviewers read the full bookmark diff and its revision boundaries against the spec contract.
+
+For each PR, use the dispatch document's loop: fast coding agent for implementation, separate higher-reasoning agent for detailed read-only review, orchestrator evidence check, then resume the same coding agent for accepted fixes. Every agent inspects revisions with `just jj`; only implementers create revisions, and only the orchestrator publishes them.
 
 ## Gotchas that already bit us
 
 - `DBTFusionCommandDetection` is not in `src/dbt_client/dbtFusionCommandIntegration.ts`. Wrap it in this extension.
 - Collaborators are constructed before `activate()`. An early return cannot un-construct them; it can only skip later work.
-- `src/manifest/dbtWorkspaceFolder.ts` in the spec is `src/dbt_client/dbtWorkspaceFolder.ts` on disk.
+- There is no `src/manifest/` and no `src/domain.ts`. Discovery is `src/dbt_client/dbtWorkspaceFolder.ts`, the metadata event is `src/dbt_client/event/manifestCacheChangedEvent.ts`, and the map types and parsers come from `@altimateai/dbt-integration`.
 - `just test-integration` already exists and already runs `@vscode/test-electron` over `src/test/integration/**/*.test.ts` (formatter / sqlfmt / run-history). Step 2.2 extends that harness; it does not replace it or pull it into `just check`.
 - Fusion 2.x `--version` is `dbt 2.0.5`, not `dbt-fusion`. Configured-path resolution is step 5.1, not 1.2.
 - Decision 9: silent startup except the 1.3 conflict error. Do not add toasts in later steps; status bar, output channel, or Problems.
 - Untested-major `notFound` was dropped from the 1.2 type because PATH miss is already `notFusion`. Step 5.1 reintroduces a blocking missing-path verdict on the configured path.
 
-## Batch 1 — finish Phase 2 (parallel)
+## Dependency follow-ons before Phase 4
 
-All three may run beside each other after 2.1. None may edit production runtime behavior.
+Serial PRs, each carrying the constraints below. Do not start Phase 4 until every booked follow-on is on `main`.
 
-### 2.2 — Integration harness
+**Ceiling:** `engines.vscode` and `@types/vscode` are the newest Extensions API both VS Code and Cursor support. The compatibility Confirm is discharged by merged step 3.7: installed Cursor reports `vscodeVersion` 1.128.0 and VS Code is 1.137.0, so `engines.vscode` uses their 1.128 intersection. `@types/vscode` has no 1.128 release; pin 1.125.0 exactly so types do not float above the host API. The webview has a second, separate ceiling — Chromium 148, derived from VS Code 1.128.0's Electron 42.5.0 — and it is set in step 3.15, after step 3.14's smoke job proves both hosts.
 
-**Workspace:** `../fusion-pu-2-2`. **Bookmark:** `test/integration-harness`.
-
-**Touch:** `src/test/integration/` (add, do not delete existing formatter tests), `src/test/integration/lspFixture.ts` (new), helpers to open a fixture workspace, wait for activation, read diagnostics, request completions, and `executeCommand`. Keep `just test-integration` out of `just check`. If the recipe needs a Fusion-skip message, put that in the new tests / `lspFixture`, not by making `just check` spawn Electron.
-
-**Contract:** `just test-integration` requires pinned Fusion on `PATH` and skips with a clear message otherwise. `lspFixture.ts` spawns `dbt lsp` against a fixture and speaks LSP over the reverse socket without the extension.
-
-**Verify:** one integration test asserts the extension activates on `single-project` and that `dbt --version` resolves to Fusion 2.0.5. Existing sqlfmt integration tests still run when `SQLFMT_PATH` is set. `just check` stays green without Electron.
-
-**Do not:** implement reverse-socket production code (`src/lsp/` is Phase 5); call `mise`; download VS Code in `just check`.
-
-### 2.3 — Project scoping characterization
-
-**Workspace:** `../fusion-pu-2-3`. **Bookmark:** `test/project-scoping-characterization`.
-
-**Touch:** `src/test/suite/projectScoping.test.ts` (new). Read `src/dbt_client/dbtWorkspaceFolder.ts` (not `src/manifest/`). Use the 2.1 fixtures. No production edits.
-
-**Contract:** encode consumer cases 3–6 as tests: folder-scoped setting wins over window-level; a file outside any project must still resolve a Project Context; a copied project tree must not register; a workspace folder without a root `dbt_project.yml` registers nothing and creates no watcher. Mark cases that fail against today's discovery with `it.failing` (or `xit` naming the Phase 4 step that will fix them) so `just check` stays green.
-
-**Verify:** the suite runs and reports the expected failures; `just check` green.
-
-**Do not:** start `src/projects/` or delete `allowListFolders`. That is Phase 4.
-
-### 2.4 — Metadata contract snapshot
-
-**Workspace:** `../fusion-pu-2-4`. **Bookmark:** `test/metadata-contract-snapshot`.
-
-**Touch:** `src/test/suite/metadataContract.test.ts` (new). Drive existing parsers on `single-project`'s `manifest.json`. Snapshot `NodeMetaMap`, `MacroMetaMap`, `SourceMetaMap`, `GraphMetaMap`, and `TestMetaMap` *shape and key set*, not absolute paths or checksums.
-
-**Contract:** this snapshot is the Phase 6 acceptance test for both producers. Generate `manifest.json` in the test if missing (fixtures gitignore `target/`); do not commit `target/`.
-
-**Verify:** snapshot committed; suite green; `just check` green.
-
-**Do not:** introduce `ProjectMetadataSource`. That is 6.1.
-
-## Batch 2 — Phase 3 deletions (strictly serial)
-
-Start only after Batch 1 is on `main`. Never run two 3.x steps in parallel. Order is load-bearing: 3.1 shrinks 3.2–3.6.
-
-| Step | Bookmark                      | One-line job                                                                                                                                                                                                             |
-| ---- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 3.1  | `feat/pin-fusion-integration` | Collapse `inversify.config.ts` factories to Fusion only. Remove `dbt.dbtIntegration` and switch/install commands. Leave Core and Cloud classes in the tree.                                                              |
-| 3.2  | `feat/remove-notebooks`       | Delete notebook kernel, ZeroMQ, `postInstall.js` / `prepareBuild.js`. VSIX must contain no `.node` files. `just package`.                                                                                                |
-| 3.3  | `feat/remove-ai-datapilot`    | Delete DataPilot / AI panels and commands. Split `docGenService.ts`: AI paths go, local schema-YAML scaffolding stays.                                                                                                   |
-| 3.4  | `feat/remove-mcp`             | Delete `src/mcp/` and MCP settings/deps.                                                                                                                                                                                 |
-| 3.5  | `feat/remove-collaboration`   | Delete comments, users, insights, hosted docs, healthcheck, BigQuery cost. Keep remaining `AppRoutes`.                                                                                                                   |
-| 3.6  | `feat/remove-telemetry`       | Delete `src/telemetry/` and every `TelemetryService` parameter. No no-op sink. Replace sole-error telemetry with `DBTTerminal`. Then tag `0.1.0-alpha.1` only after 9.4's release workflow exists or is brought forward. |
-
-Confirm: `grep` emptiness as named in the spec. Telemetry is 51 files; keep the diff mechanical.
-
-### After 3.6 — latest majors, then diagnostic lint
-
-Start only after 3.6 is on `main`. Bookmark `chore/latest-majors` for the first PR; further majors/replacements get their own bookmarks. Do not start Phase 4 until 3.7 and those booked follow-ons are on `main`. Do not run them beside 4.x.
-
-**Ceiling:** `engines.vscode` and `@types/vscode` are the newest Extensions API both VS Code and Cursor support (Confirm if they diverge). That is the only compatibility constraint. Installed Cursor reports `vscodeVersion` 1.128.0; VS Code is 1.137.0; take 1.128 for `engines.vscode`. `@types/vscode` has no 1.128 publish (1.125 then 1.136+); pin `1.125.0` so types do not float above that API. The host may become ESM. Inversify, React, ESLint, TypeScript, and the rest take the current major or a replacement.
-
-**Job:** every remaining direct npm dependency (root and `webview_panels`) to the newest published major as `^x.y.z`. Drop exact versions, tildes, and tighter-than-caret ranges, except `@types/vscode`. Replace a package that is unmaintained or cannot take the current major (do not pin an old major and call it a host-shape freeze). Migrate `moduleResolution` off `node`/`node10`. No `"ignoreDeprecations"`. Refresh lockfiles with `just update` (or equivalent), re-review `allowScripts`, `just check` and `just package` green.
+**Job:** every remaining direct npm dependency (root and `webview_panels`) takes the newest published major as `^x.y.z`, except the API types pin above. Replace a package that is unmaintained or cannot take the current major. No `"ignoreDeprecations"`. Refresh lockfiles, re-review `allowScripts`, and keep `just check` and `just package` green.
 
 **Engines:** `engines.node` is `>=<current LTS major> <next major>`. mise contributor CLIs already track `latest`; Fusion stays `2.0.5` in `mise.toml` — product minimum, not a library to float. SHA-pin GitHub Actions stay SHA-pinned.
 
-**Do not:** add complexity lint in these PRs; delete Core/Cloud classes; bump Fusion; treat CommonJS as inviolable.
+**Do not:** add complexity lint in these PRs; delete the Core or Cloud factories, which the external adapter's constructor still requires; bump Fusion; treat CommonJS as inviolable; vendor generated output; settle **D6**, **D7**, or **D8** by writing a framework, a renderer, or a Tailwind decision into one of these PRs.
 
-**Held in 3.7, booked as own PRs before Phase 4:** React 19 (replace `@altimateai/ui-components` and `@ant-design/pro-chat`, which peer on React 18 / antd 5) precedes Tailwind 4 — blocked on ui-components v3 class-prefix strings; see [`tailwind4-ui-components-blocker.md`](tailwind4-ui-components-blocker.md). Regression check: `scripts/workspace/check-webview-tailwind-css.sh` wired into `webview_panels` `npm run build`. ESM host plus Inversify 8; webview ESLint 10 landed (see below); `@finos/perspective*` to `@perspective-dev/*`. TypeScript 7 when `typescript-eslint` supports it.
+**Booked, in order.** Each row is one bookmark and one PR, independently green at its tip. Contracts, file lists, and verification for 3.8 through 3.15 are in the plan.
 
-### Webview ESLint 10 (landed in 3.7 follow-on)
+| #  | PR                        | Contents                                                                                                                                                               | Depends on |
+| -- | ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| 1  | Tailwind guard, blocker   | Merged. The regression guard plus evidence that the `al-` generation cannot move to v4 while its consumer ships v3 class strings. Records **D8**; does not resolve it. | —          |
+| 2  | Webview ESLint 10         | Merged. Native ESLint 10 config, supported plugins, stable correctness/a11y rules, and an exact warning ratchet.                                                       | 1          |
+| 3  | 3.8 code block and `noop` | Merged. Local CodeBlock capability preserving its prop interface; local `noop` replaces the documentation editor's internal Ant import.                                | 2          |
+| 4  | 3.9 hosted webview cut    | Merged. Hosted routes/providers and `webview_panels/src/lib/` are gone; retained validate/install commands resolve projects through the picker.                        | 3          |
+| 5  | 3.10 dependency pruning   | Merged. Zero-reference and vendored-bundle dependencies are removed; remaining advisories belong to lineage and Perspective.                                           | 4          |
+| 6  | 3.11 image audit          | Implemented locally under review. Reference-audited asset deletion with an exact runtime/contribution icon guard.                                                      | 4          |
+| 7  | 3.12 Codicons allowlist   | Implemented locally under review. Copy only `codicon.css` and `codicon.ttf` from the plugin.                                                                           | —          |
+| 8  | 3.13 tests and baselines  | In implementation. Vitest/Testing Library tests against current seams plus reproducible single-entry payload and build/package baselines.                              | 3          |
+| 9  | 3.14 host smoke + timing  | Pinned VS Code/Cursor acquisition, real retained-panel smoke, and visible-host activation/FCP/ready timing. Stops if supported automation cannot resolve panels.       | 8          |
+| 10 | 3.15 browser target       | `build.target: "chrome148"`, `rolldownOptions`, and the `cssMinify` override attempt, only once 9 is green on both hosts.                                              | 9          |
 
-Native flat config in `webview_panels/eslint.config.mjs` with `@eslint-react/recommended-typescript`, then `disable-experimental` (React Compiler and RSC rules only — not stable hooks/DOM rules). Stable guardrails re-enabled after that preset: `@eslint-react/set-state-in-render: error`, `@eslint-react/static-components: error`, plus `rules-of-hooks`, `no-nested-component-definitions`, and `dom-no-unsafe-target-blank` at error. Replaced `eslint-plugin-react`, `eslint-plugin-react-hooks`, `eslint-plugin-import`, legacy `eslint-plugin-jsx-a11y`, and dead plugins (`eslint-plugin-jest`, `eslint-plugin-testing-library`, `eslint-plugin-promise`, `typescript-sort-keys`). Accessibility uses `eslint-plugin-jsx-a11y-x@0.2.x` (es-tooling; ESLint 10 peer verified). `react/function-component-definition` has no maintained replacement and is intentionally dropped (style-only).
+Deliberately not in this list: the shared message contract, which arrives at v2.1 as `packages/webview-contract/` together with the npm workspace that makes it resolvable, and must not be stubbed in v1 so a test can be written against it; React 19, which **D6** has not selected and which must not be adopted merely to unblock a dependency bump; `@finos/perspective*` to `@perspective-dev/*`, which is v2.5 behind its spike; and TypeScript 7 until `typescript-eslint` supports it.
 
-Main type-checked block uses `files: ["**/*.{ts,tsx}"]` with explicit `ignores: [".storybook/**"]`. `.storybook/**/*.{ts,tsx}` lint runs in a self-contained later block with non-type-aware `typescript-eslint` `flat/recommended` plus `flat/disable-type-checked` (core `no-undef` stays off for TypeScript; 25 active rules on `.storybook/main.ts`). Composite `tsconfig.node.json` cannot include `.storybook` without breaking `tsc -b`. `jsx-a11y-x` maps `@uicore` `Stack` to `div` only. `@uicore` `Tag` is span or `button` when clickable and is not mapped; reactstrap `List` / `ListGroupItem` / `Card` and other third-party wrappers stay unmapped.
+After the last of these, evaluate a report-only `just lint-complexity` (ESLint `complexity` / `max-depth` or sonarjs). Prefer warn or a non-failing recipe. Do not add it to `just lint`, `just check`, Lefthook pre-push, or CI. Promoting it to a gate needs a later Confirm, and not before Phase 8 at the earliest.
 
-**Tooltip id probe (no webview test harness):** React 18 `useId()` values like `:R0:` are prefixed with `tooltip-` and non-word characters become hyphens so reactstrap `target` resolves (example: `:R0:` becomes `tooltip--R0-`). Manual check: open a panel using `@uicore/Tooltip` and confirm the trigger receives the sanitized id and the tooltip opens.
+## Phase 4 — Declared Projects
 
-**Storybook build:** `npm run storybook:build` passes (output: `webview_panels/storybook-static`, Vite build ~2.4s).
+Start only after every dependency follow-on above is on `main`. Implement 4.1 through 4.4 serially.
 
-**Warning budget (`--max-warnings 59`, zero errors):** mechanical fixes applied for stable error rules and behavior-preserving a11y/DOM fixes. Remaining warnings require behavioral refactors without a webview test harness:
+| Step | Bookmark                      | Turns green                                                                                                                                                                                                                                                                                                                                                                         |
+| ---- | ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4.1  | `feat/declared-project-roots` | `src/projects/projectConfiguration.ts`. Cases 3, 5, 6.                                                                                                                                                                                                                                                                                                                              |
+| 4.2  | `feat/project-registry`       | `src/projects/projectRegistry.ts` replaces workspace-folder discovery. Two projects on `multi-root`; no recursive watchers.                                                                                                                                                                                                                                                         |
+| 4.3  | `feat/project-context`        | `src/projects/projectContext.ts`. Rewire `QueryManifestService` without changing its 21 call-site signatures. Case 4.                                                                                                                                                                                                                                                               |
+| 4.4  | `feat/retire-discovery`       | Delete `src/dbt_client/dbtWorkspaceFolder.ts`. `DBTProjectDetection` and its implementations are exports of `@altimateai/dbt-integration`, so remove their imports, container bindings, and composition in `src/inversify.config.ts` — there are no local class files to delete. Remove `dbt.allowListFolders`. Scoping suite passes without `it.failing`. Release `0.2.0-alpha.0`. |
 
-| Rule group                                 | Count | Follow-up                                               |
-| ------------------------------------------ | ----: | ------------------------------------------------------- |
-| `@eslint-react/exhaustive-deps`            |    27 | Promote to error after webview component tests exist    |
-| `@eslint-react/set-state-in-effect`        |    14 | Same                                                    |
-| `@eslint-react/use-state`                  |     7 | Same                                                    |
-| `react-refresh/only-export-components`     |     4 | Revisit when story/module boundaries are test-covered   |
-| `@eslint-react/naming-convention-ref-name` |     4 | Same                                                    |
-| `jsx-a11y-x/no-autofocus`                  |     2 | UX review; keep warn until product accepts focus policy |
-| `@eslint-react/purity`                     |     1 | Same                                                    |
+## Phase 5 — spikes, then LSP
 
-**Prerequisite:** a webview panel test harness (Vitest/RTL or Storybook interaction tests) before promoting warn-level React rules to error. Re-add `eslint-plugin-jest` / `eslint-plugin-testing-library` only when that harness lands.
+Do not start 5.x until Phase 4 is on `main`. Each spike is its own bookmark and PR of evidence only, run before the step in its "Before" column; the table lists all ten here so none is discovered late, not because all ten precede Phase 5.
 
-After the last booked majors PR, evaluate a report-only `just lint-complexity` (ESLint `complexity` / `max-depth` or sonarjs). Prefer warn or a non-failing recipe. Do not add it to `just lint`, `just check`, Lefthook pre-push, or CI. Promoting it to a gate needs a later Confirm, and not before Phase 8 at the earliest.
+Spike privacy rules are in the plan and are conditions of running: synthetic fixtures for verbose traces, redaction at capture, no SQL or result retention, transient query ids, explicit opt-in for anything touching an account.
 
-## Batch 3 — Phase 4 Declared Projects (strictly serial)
+| Spike | Before            | Output                                                                                                                                               |
+| ----- | ----------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| S6    | 5.2               | Cursor loads chosen `vscode-languageclient` major; `cursor --install-extension` accepts a local VSIX.                                                |
+| S2    | 5.3, 6.2, Phase 7 | `docs/refactor/lsp-commands.md` request/response JSON for the migrated flows. Confirm `show` / `previewCte` / `goToDefinition` and prefix semantics. |
+| S3    | 5.3               | Per-project `RelativePattern` documentSelector isolation, including `target/` and files with no folder.                                              |
+| S4    | 5.3               | Memory/startup for one and two `dbt lsp`; SIGTERM vs socket close; reload orphans; SIGKILL grace.                                                    |
+| S5    | 5.3               | Coexistence with `dbtlabs.dbt`. Prefix vs second conflict guard.                                                                                     |
+| S1    | 5.5               | Resolve **D3** in `docs/adr/0005-dependency-diagnostics.md`.                                                                                         |
+| S10   | **D5**, so 5.0    | Opt-in. Measured `baseline` versus `strict`, and how to detect a silent fallback.                                                                    |
+| S8    | 6.0               | What the server does on `dbt_project.yml`, `profiles.yml`, and `dbt deps` changes — the producer-evidence list the epoch advances on.                |
+| S7    | 7.1               | Whether the server writes `target/`; watcher-experienced race rate, separately labeled from writer vulnerability; duplicate-work evidence.           |
+| S9    | 7.4               | Opt-in. Query-id availability, cancellation, `QUERY_TAG`, per-phase distributions.                                                                   |
 
-Start only after Phase 3 and 3.7. Never parallel with 3.x, 3.7, or another 4.x step.
+Then serial 5.0 → 5.6. **5.0 is new and gated on D5**: `src/fusion/staticAnalysisMode.ts` carrying the configured mode, the effective mode with its fallback flag, the restart-on-change rule, and the capability matrix — the pool in 5.3 cannot assemble launch arguments without it. 5.1 is the first production configured-path resolver (`src/fusion/fusionExecutable.ts`). 5.2 is reverse-socket (`src/lsp/reverseSocketTransport.ts`), vscode-free except `Disposable`. 5.3 is client + pool with mandatory `--command-prefix`. 5.4 is status/output, including the effective-mode surface, and the permanent zero-notification spy test. 5.5 implements a diagnostics filter only if S1 requires it. 5.6 deletes the five provider directories. Release `0.3.0-alpha.0`.
 
-| Step | Bookmark                      | Turns green                                                                                                                                                                    |
-| ---- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| 4.1  | `feat/declared-project-roots` | `src/projects/projectConfiguration.ts`. Cases 3, 5, 6.                                                                                                                         |
-| 4.2  | `feat/project-registry`       | `src/projects/projectRegistry.ts` replaces workspace-folder discovery. Two projects on `multi-root`; no recursive watchers.                                                    |
-| 4.3  | `feat/project-context`        | `src/projects/projectContext.ts`. Rewire `QueryManifestService` without changing its 21 call-site signatures. Case 4.                                                          |
-| 4.4  | `feat/retire-discovery`       | Delete `dbtWorkspaceFolder.ts` and the three `DBTProjectDetection` classes. Remove `dbt.allowListFolders`. Scoping suite passes without `it.failing`. Release `0.2.0-alpha.0`. |
+## Phases 6–10 — serial with Confirm gates
 
-## Batch 4 — spikes, then Phase 5 LSP
+6.0 stamps the publication epoch and producer identity onto `ManifestCacheProjectAddedEvent`, wraps extension-initiated requests so each captures the epoch and any document version before dispatch and rechecks both after completion, and starts the Fusion segment records. It adds no new interface and changes no consumer. 6.1 through 6.3 swap the producer behind the port. **7.1 then retires `DBTProjectIntegrationAdapter`**, which is what removes the ambient target watcher and the Cloud factory requirement together; 8.1 deletes Cloud and Core construction only after it.
 
-Do not start 5.x until Phase 4 is on `main`. Run spikes first as named; each spike is its own bookmark and PR of evidence only.
+| Gate           | Stop until                                                                                         |
+| -------------- | -------------------------------------------------------------------------------------------------- |
+| Before 5.0     | **D5** — whether a user's own `dbt login` is recognized — resolved against S10's capability matrix |
+| Before 5.5     | S1 / D3                                                                                            |
+| Before 6.2     | S2 payload contract for the migrated flows                                                         |
+| Before Phase 7 | S2 inventory; name any retained feature with no command and no artifact                            |
+| Before 7.4     | S9 and S10 evidence for the warehouse- and `strict`-dependent features                             |
+| Before Phase 8 | 7.1 merged; beta.2 soaked on `finance-pipelines`                                                   |
+| Before 10.4    | all seven consumer characterization cases green through the fork                                   |
+| Before v2.3    | **D6** and **D7** from v2.2's joint benchmark, plus the Perspective spike verdict                  |
 
-| Spike | Before          | Output                                                                                                                                    |
-| ----- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| S6    | 5.2             | Cursor loads chosen `vscode-languageclient` major; `cursor --install-extension` accepts a local VSIX.                                     |
-| S2    | 5.3 and Phase 7 | `docs/refactor/lsp-commands.md` request/response JSON. Confirm `show` / `previewCte` / `goToDefinition` and `--command-prefix` semantics. |
-| S3    | 5.3             | Per-project `RelativePattern` documentSelector isolation, including `target/` and files with no folder.                                   |
-| S4    | 5.3             | Memory/startup for one and two `dbt lsp`; SIGTERM vs socket close; reload orphans; SIGKILL grace.                                         |
-| S5    | 5.3             | Coexistence with `dbtlabs.dbt`. Prefix vs second conflict guard.                                                                          |
-| S1    | 5.5             | Resolve **D3** in `docs/adr/0005-dependency-diagnostics.md`.                                                                              |
-
-Then serial 5.1 → 5.6. 5.1 is the first production configured-path resolver (`src/fusion/fusionExecutable.ts`). 5.2 is reverse-socket (`src/lsp/reverseSocketTransport.ts`), vscode-free except `Disposable`. 5.3 is client + pool with mandatory `--command-prefix`. 5.4 is status/output and the permanent zero-notification spy test. 5.5 implements a diagnostics filter only if S1 requires it. 5.6 deletes the five provider directories. Release `0.3.0-alpha.0`.
-
-## Batch 5 — Phases 6–10 (serial, Confirm gates)
-
-| Gate           | Stop until                                                              |
-| -------------- | ----------------------------------------------------------------------- |
-| Before 5.5     | S1 / D3                                                                 |
-| Before Phase 7 | S2 inventory; name any retained feature with no command and no artifact |
-| Before Phase 8 | beta.2 soaked on `finance-pipelines`                                    |
-| Before 10.4    | all seven consumer characterization cases green through the fork        |
-
-Hard-to-reverse, each preceded by a release: 6.3 (delete parsers), all of 8, 9.1 (namespace rename). Do not batch those with another step.
+Hard-to-reverse, each v1 one preceded by a release: 6.3 (flip the producer), 7.1 (retire the adapter), all of 8, 9.1 (namespace rename), and v2.3 (the lineage renderer). Do not batch those with another step.
 
 6.1 must not change consumer files. If it must, stop: the metadata event is the wrong boundary.
 
 Phase 10 is work in `/Users/daniel/projects/finance-pipelines` with that repo's `gh stack` skill, not this repo's feature-PR loop.
 
+## v2 — the north-star horizon
+
+Section 4 of the plan. **It starts after v1 is complete through Phase 10 and the 1.0.0 release**, with step 3.13's baseline recorded and step 3.14's smoke job green; the namespace, the distribution pipeline, and consumer adoption settle before any panel is rebuilt under them. Order: v2.1 the `packages/webview-contract/` message contract and the npm workspace that carries it, `LineageData`, per-panel entries, and `PanelHost`, with the panels unchanged; v2.2 the joint runtime and renderer benchmark against that baseline, resolving D6 and D7; v2.3 the selected renderer; v2.4 the styling contract per D8; v2.5 Perspective; v2.6 the runtime application with the token layer and UI-only panel persistence; v2.7 the React candidates only if the selected stack and its tests justify them; v2.8 the Playwright harness.
+
 ## Reviewer checklist (every PR)
 
 - Matches the named step's contract and verification, including path corrections in the dispatch doc.
-- One commit. Bookmark is not `main` or `fusion-lsp-client`.
+- Revisions separate docs, configuration, and distinct modules or concerns. Bookmark is not `main` or `fusion-lsp-client`.
 - No mise/just in `src/`, `webview_panels/`, or `package.json` contributions.
 - No issue or PR numbers in code. Lines under 120 characters. Markdown prose is one physical line per paragraph.
 - Ponytail: no files the plan says to delete later; no telemetry shim; no 5.1 resolver inside 2.x tests beyond PATH checks.
+- No generated output committed to `src/` or `webview_panels/src/`, and no patched `node_modules`.
+- No new ambient watching of `target/`, no writes into any project's `target/`, no persisted compiler, schema, or result cache, and no second diagnostic store.
+- No deferred decision settled in passing: D5 authentication, D6 runtime, D7 renderer, D8 Tailwind.
+- No performance target that the harness did not produce.
 - `just check` green. `just package` when packaging changed.

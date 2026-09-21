@@ -44,6 +44,8 @@ Implementers work only in their assigned workspace and use `just jj status`, `ju
 
 Reviewers are read-only. They use `just jj diff`, `just jj show`, and `just jj log` to review the complete bookmark range and its revision boundaries. They return detailed, severity-ranked findings with file and line evidence; they do not edit, rewrite revisions, or push.
 
+Every dispatch names the workspace, parent revision, plan step, required reads (`AGENTS.md`, `CONTEXT.md`, the step, and its ADR/research), in-scope and excluded concerns, intended revision boundaries, and exact gates. If a coding agent cannot preserve the jj stack after one focused correction, it stops and returns a checkpoint; the orchestrator performs revision surgery directly instead of repeatedly delegating it.
+
 After the initial implementation for PR N is locally reviewed and pushed, the orchestrator may dispatch PR N+1 to the fast coding agent in a dependent local workspace while external review and CI run for N. Repairs to N take priority; after each repair, rebase the dependent workspace and resume its implementation.
 
 ## Agent contract
@@ -60,7 +62,11 @@ A reviewer reads the full bookmark diff against the step's contract and this che
 
 ## Current position
 
-Steps 1.2 through 3.7 are on `main`. Complete the booked dependency follow-ons serially, using the pipelined landing workflow above, before Phase 4. The product is still manifest-driven; Core and Cloud classes remain because Fusion still extends Cloud.
+Steps 1.2 through 3.10 are on `main`, including all of Phase 2, the ESM host with Inversify 8, the Tailwind guard, and webview ESLint 10. Steps 3.11 and 3.12 are implemented locally under review; step 3.13 is in implementation. Complete the remaining follow-ons in [`remaining-implementation.md`](remaining-implementation.md) serially, using the pipelined landing workflow above, before Phase 4. The product is still manifest-driven.
+
+**Correction to the Cloud blocker.** The published Fusion integration extends `DBTBaseProjectIntegration`, not `DBTCloudProjectIntegration`, so there is no reparenting task. Cloud is blocked by composition instead: `DBTProjectIntegrationAdapter`'s constructor takes Core, Cloud, Fusion, and Core-command factories as mandatory parameters, and `src/inversify.config.ts` supplies all four. Order is therefore 7.1 retire the adapter, then 8.1 delete Cloud and Core construction. The same retirement removes the adapter's private ambient target watcher, which is why no earlier step should attempt either.
+
+**Research artifacts precede plan integration.** Stack reviewed research revisions directly beneath the plan revision that consumes them, so every link resolves and evidence changes remain independently reviewable.
 
 **Correction to the plan's file path for 1.2:** `DBTFusionCommandDetection` lives in `@altimateai/dbt-integration`, not `src/dbt_client/dbtFusionCommandIntegration.ts`. Do not patch `node_modules`. Put `parseFusionVersion` / `judgeFusionVersion` in `src/fusion/fusionVersion.ts` and wrap detection in this extension (new adapter bound in `src/inversify.config.ts`, or a wrap of `DBTClient.detectDBT`). The library class can stay until Phase 8.
 
@@ -68,12 +74,16 @@ Steps 1.2 through 3.7 are on `main`. Complete the booked dependency follow-ons s
 
 ## File-overlap reference
 
-| Work                  | Primary files                                                                        | Ordering and conflict boundary     |
-| --------------------- | ------------------------------------------------------------------------------------ | ---------------------------------- |
-| Dependency follow-ons | package manifests, lockfiles, host and webview configuration, affected modules       | serial; all land before Phase 4    |
-| 4.x Declared Project  | `src/projects/**`, `src/dbt_client/dbtWorkspaceFolder.ts`, `queryManifestService.ts` | serial 4.1 → 4.4                   |
-| 5.x LSP               | `src/lsp/**`, `src/fusion/fusionExecutable.ts`, language-provider deletions          | after Phase 4 and the named spikes |
-| 6–10                  | as the spec                                                                          | sequential; stop at Confirm gates  |
+| Work                  | Primary files                                                                        | Ordering and conflict boundary                          |
+| --------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| Dependency follow-ons | package manifests, lockfiles, host and webview configuration, affected modules       | serial; all land before Phase 4                         |
+| 3.8–3.15 webview      | `webview_panels/**`, `media/images/**`, `src/webview_provider/**`, CI smoke job      | 3.8 → 3.9 → {3.10, 3.11}; 3.12 free; 3.13 → 3.14 → 3.15 |
+| 4.x Declared Project  | `src/projects/**`, `src/dbt_client/dbtWorkspaceFolder.ts`, `queryManifestService.ts` | serial 4.1 → 4.4                                        |
+| 5.x LSP               | `src/fusion/staticAnalysisMode.ts`, `src/lsp/**`, `src/fusion/fusionExecutable.ts`   | 5.0 after D5 and before 5.3; then 5.1 → 5.6             |
+| 6.x metadata          | `src/dbt_client/event/manifestCacheChangedEvent.ts`, `src/metadata/**`               | 6.0 epoch first; no consumer changes                    |
+| 7.1 adapter           | `src/dbt_client/fusionProjectIntegration.ts`, `dbtProject.ts`, `inversify.config.ts` | gates all of Phase 8                                    |
+| 8–10                  | as the spec                                                                          | sequential; stop at Confirm gates                       |
+| v2                    | plan Section 4                                                                       | after Phase 10 and the 1.0.0 release                    |
 
 ## Step briefs (execute from the spec)
 
@@ -92,17 +102,17 @@ Copy the contract and verification from `fusion-lsp-plan.md`. The notes below ar
 - Resource-scoped `dbt.enabled` (keep the upstream key until Phase 9) false: return equally early, silently.
 - Tests: neither path calls `detectDBT` / `initializeDBTProjects` / MCP update. Closes consumer case 7.
 
-### Phase 2
+### Phase 2 — complete
 
-No production code. Fixtures are shared vocabulary; do not fork them per suite. `just test-integration` stays out of `just check`. Characterization tests that must fail today use `it.failing` / `xit` so `just check` stays green.
+2.1 through 2.4 are merged: the fixtures, the `@vscode/test-electron` harness with `lspFixture.ts`, the project-scoping characterization suite, and the metadata contract snapshot. Fixtures are shared vocabulary; do not fork them per suite. `just test-integration` stays out of `just check`. Characterization tests that must still fail use `it.failing` / `xit` so `just check` stays green.
 
 ### Phase 3
 
-Pin Fusion in the container first (3.1) while leaving Core and Cloud classes in the tree. Then notebooks, AI, MCP, collaboration, telemetry — in that order. Telemetry: delete call sites; no silent sink. `docGenService.ts` is split, not deleted. After 3.6, step 3.7 upgrades or replaces remaining npm deps. The only compatibility ceiling is the VS Code / Cursor Extensions API (`engines.vscode`, `@types/vscode`). CommonJS, Inversify 6/7, React 18, and ESLint 8/9 are not freezes. Fusion in `mise.toml` stays 2.0.5. Complexity lint stays diagnostic and is not that PR.
+3.1 through 3.7 are merged. Steps 3.8 through 3.15 remain: each is one focused PR with the dependencies in the table above, and the smoke job (3.14) lands before the browser target (3.15) rather than beside it. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
 
-### Phases 4–10
+### Phases 4–10 and v2
 
-Unchanged from the spec. Hard-to-reverse: 6.3, all of 8, 9.1. Each is preceded by a release. Spikes S1–S6 before the steps that name them. Confirm D3 before 5.5; S2 inventory before Phase 7; consumer soak before Phase 8; all seven characterization cases before 10.4.
+Steps and contracts from the spec. Hard-to-reverse: 6.3, 7.1, all of 8, 9.1, and v2.3. Spikes run before the steps that name them. Confirm **D5** before 5.0, **D3** before 5.5, the S2 inventory before Phase 7, consumer soak before Phase 8, all seven characterization cases before 10.4, and **D6** with **D7** before v2.3. v2 begins only after the 1.0.0 release.
 
 ## Reviewer checklist
 

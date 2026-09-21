@@ -73,8 +73,8 @@ Tests are Jest with `ts-jest` against a hand-written VS Code mock (`src/test/moc
 
 Two facts dominate change ordering, both detailed in the plan:
 
-- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps in `src/domain.ts`, and every panel, tree, lens, and language provider consumes them through `QueryManifestService`. The refactor replaces that producer with the LSP; migrate consumers behind a project-session interface before deleting the parser.
-- Fusion currently **inherits from dbt Cloud** (`DBTFusionCommandProjectIntegration extends DBTCloudProjectIntegration`). Cloud cannot be deleted until Fusion is reparented onto a local operation layer.
+- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps, and every panel, tree, lens, and language provider consumes them through `QueryManifestService` via `ManifestCacheProjectAddedEvent`. The refactor swaps that producer for the LSP behind the existing event; do not introduce a second consumer seam.
+- **`DBTProjectIntegrationAdapter` is the ordering constraint.** Fusion does not inherit from dbt Cloud — the published integration extends `DBTBaseProjectIntegration`. But that external adapter owns the parsers, the ambient target watcher, and a constructor requiring Core, Cloud, Fusion, and Core-command factories, so Cloud cannot be deleted until the adapter is retired. Never patch `node_modules`.
 
 ## Comments and prose
 
