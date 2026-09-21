@@ -8,6 +8,7 @@ import {
 } from "@altimateai/dbt-integration";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { inject } from "inversify";
+import * as path from "path";
 import { gte } from "semver";
 import {
   CancellationToken,
@@ -53,7 +54,6 @@ import {
   removeProtocol,
 } from "../utils";
 import { SendMessageProps } from "./altimateWebviewProvider";
-import path = require("path");
 
 export enum Source {
   YAML = "YAML",

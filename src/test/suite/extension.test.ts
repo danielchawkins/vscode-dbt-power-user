@@ -8,7 +8,7 @@ describe("Extension Test Suite", () => {
     mockExtensions = {
       getExtension: jest.fn(),
     };
-    (vscode as any).extensions = mockExtensions;
+    Object.assign(vscode.extensions as object, mockExtensions);
   });
 
   afterEach(() => {

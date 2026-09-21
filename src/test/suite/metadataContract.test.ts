@@ -23,8 +23,12 @@ import * as path from "path";
 import { EventEmitter } from "vscode";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { ManifestCacheProjectAddedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
+import { esmDirname } from "../esmDirname";
 
-const fixtureRoot = path.resolve(__dirname, "../fixtures/single-project");
+const fixtureRoot = path.resolve(
+  esmDirname(import.meta.url),
+  "../fixtures/single-project",
+);
 const generatedManifest = path.join(fixtureRoot, "target", "manifest.json");
 const contractPath = path.join(fixtureRoot, "manifest.contract.json");
 

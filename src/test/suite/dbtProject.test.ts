@@ -1,12 +1,15 @@
 import {
   Catalog,
+  DBT_PROJECT_FILE,
   DBTCommandExecutionInfrastructure,
   DBTCommandFactory,
   DBTDiagnosticData,
   DBTProjectIntegrationAdapterEvents,
   DBTTerminal,
+  MANIFEST_FILE,
   NoCredentialsError,
   ParsedManifest,
+  RESOURCE_TYPE_MODEL,
   RunResultsEventData,
 } from "@altimateai/dbt-integration";
 import {
@@ -30,80 +33,6 @@ import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
 import { ValidationProvider } from "../../validation_provider";
 
-// Mock the @altimateai/dbt-integration module
-jest.mock("@altimateai/dbt-integration", () => {
-  // Get the actual module to inherit constants
-  const actualModule = jest.requireActual("@altimateai/dbt-integration") as any;
-
-  return {
-    // First, include all the constants that should be inherited
-    DBT_PROJECT_FILE: actualModule.DBT_PROJECT_FILE || "dbt_project.yml",
-    MANIFEST_FILE: actualModule.MANIFEST_FILE || "manifest.json",
-    RUN_RESULTS_FILE: actualModule.RUN_RESULTS_FILE || "run_results.json",
-    CATALOG_FILE: actualModule.CATALOG_FILE || "catalog.json",
-    RESOURCE_TYPE_MODEL: actualModule.RESOURCE_TYPE_MODEL || "model",
-    RESOURCE_TYPE_MACRO: actualModule.RESOURCE_TYPE_MACRO || "macro",
-    RESOURCE_TYPE_ANALYSIS: actualModule.RESOURCE_TYPE_ANALYSIS || "analysis",
-    RESOURCE_TYPE_SOURCE: actualModule.RESOURCE_TYPE_SOURCE || "source",
-    RESOURCE_TYPE_EXPOSURE: actualModule.RESOURCE_TYPE_EXPOSURE || "exposure",
-    RESOURCE_TYPE_SEED: actualModule.RESOURCE_TYPE_SEED || "seed",
-    RESOURCE_TYPE_SNAPSHOT: actualModule.RESOURCE_TYPE_SNAPSHOT || "snapshot",
-    RESOURCE_TYPE_TEST: actualModule.RESOURCE_TYPE_TEST || "test",
-    RESOURCE_TYPE_METRIC: actualModule.RESOURCE_TYPE_METRIC || "semantic_model",
-
-    // Include any other constants from the actual module
-    DEFAULT_CONFIGURATION_VALUES:
-      actualModule.DEFAULT_CONFIGURATION_VALUES || {},
-
-    // Mock functions
-    validateSQLUsingSqlGlot: jest.fn(),
-    validateSQL: jest.fn(),
-
-    // Keep the actual event constants but ensure they're defined
-    DBTProjectIntegrationAdapterEvents:
-      actualModule.DBTProjectIntegrationAdapterEvents || {
-        SOURCE_FILE_CHANGED: "sourceFileChanged",
-        MANIFEST_PARSED: "manifestParsed",
-        RUN_RESULTS_PARSED: "runResultsParsed",
-        DIAGNOSTICS_CHANGED: "diagnosticsChanged",
-        PROJECT_CONFIG_CHANGED: "projectConfigChanged",
-        REBUILD_MANIFEST_STATUS_CHANGE: "rebuildManifestStatusChange",
-      },
-
-    // PythonException is exported by dbt-integration (vendored bridge)
-    PythonException: class PythonException extends Error {
-      exception: any;
-      constructor(message: string) {
-        super(message);
-        this.exception = { message };
-      }
-    },
-
-    // Mock the error class but keep it extending Error
-    NoCredentialsError: class NoCredentialsError extends Error {
-      constructor(message?: string) {
-        super(message);
-        this.name = "NoCredentialsError";
-      }
-    },
-  };
-});
-
-// Mock vscode module
-jest.mock("vscode", () => {
-  const mock = jest.requireActual("../mock/vscode");
-  return mock;
-});
-
-// Mock getProjectRelativePath to avoid workspace issues
-jest.mock("../../utils", () => {
-  return {
-    getProjectRelativePath: jest.fn(() => "test-project"),
-    extendErrorWithSupportLinks: jest.fn((error: any) => error),
-    getColumnNameByCase: jest.fn((name: string) => name),
-  };
-});
-
 describe("DBTProject Test Suite", () => {
   let mockTerminal: jest.Mocked<DBTTerminal>;
   let mockAltimate: jest.Mocked<AltimateRequest>;
@@ -124,13 +53,17 @@ describe("DBTProject Test Suite", () => {
 
   beforeEach(() => {
     // Setup workspace configuration mock
-    (vscode.workspace as any).workspaceFolders = [
-      {
-        uri: vscode.Uri.file("/test/workspace"),
-        name: "Test Workspace",
-        index: 0,
-      },
-    ];
+    const workspaceFolder = {
+      uri: vscode.Uri.file("/test/workspace"),
+      name: "Test Workspace",
+      index: 0,
+    };
+    Object.assign(vscode.workspace as object, {
+      workspaceFolders: [workspaceFolder],
+    });
+    (vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(
+      workspaceFolder,
+    );
     (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
       get: jest.fn((key: string) => {
         if (key === "queryLimit") {
@@ -293,14 +226,6 @@ describe("DBTProject Test Suite", () => {
 
   describe("Constructor and Initialization", () => {
     it("should have access to constants from @altimateai/dbt-integration", () => {
-      // Import the mocked module to verify constants are available
-      const {
-        DBT_PROJECT_FILE,
-        MANIFEST_FILE,
-        RESOURCE_TYPE_MODEL,
-        DBTProjectIntegrationAdapterEvents,
-      } = require("@altimateai/dbt-integration");
-
       // Verify constants are defined
       expect(DBT_PROJECT_FILE).toBe("dbt_project.yml");
       expect(MANIFEST_FILE).toBe("manifest.json");
@@ -459,7 +384,6 @@ describe("DBTProject Test Suite", () => {
     });
 
     it("should get DBT project file path", () => {
-      const { DBT_PROJECT_FILE } = require("@altimateai/dbt-integration");
       expect(dbtProject.getDBTProjectFilePath()).toBe(
         path.join("/test/project", DBT_PROJECT_FILE),
       );

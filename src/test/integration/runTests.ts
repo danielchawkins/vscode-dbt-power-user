@@ -5,9 +5,10 @@ import { fixturePath, getExtensionRoot } from "./helpers/testFixtures";
 async function main() {
   try {
     const extensionDevelopmentPath = getExtensionRoot();
-    const extensionTestsPath = path.resolve(__dirname, "./index");
+    const extensionTestsPath = path.resolve(__dirname, "./index.js");
 
     await runTests({
+      version: "1.128.0",
       extensionDevelopmentPath,
       extensionTestsPath,
       launchArgs: [fixturePath("single-project"), "--disable-extensions"],

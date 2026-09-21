@@ -1,8 +1,11 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import type { ChildProcess } from "child_process";
 import { EventEmitter } from "events";
+import { createRequire } from "node:module";
 import { Duplex } from "stream";
 
+// Node's builtin child_process namespace is read-only under ESM import.
+const require = createRequire(import.meta.url);
 const childProcess = require("child_process") as typeof import("child_process");
 
 type FakeChildProcess = EventEmitter & {

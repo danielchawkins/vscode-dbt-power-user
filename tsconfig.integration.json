@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "bundler",
+    "outDir": "out",
+    "rootDir": "src"
+  },
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    ".vscode-test",
+    "webview_panels",
+    "dist",
+    "out",
+    "src/test/suite/**/*",
+    "src/test/mock/**/*",
+    "src/test/esmDirname.ts",
+    "src/test/jest-globals.ts",
+    "src/test/setup.ts"
+  ]
+}

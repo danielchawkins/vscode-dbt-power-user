@@ -1,4 +1,5 @@
 import { readFileSync } from "fs";
+import * as path from "path";
 import {
   Disposable,
   Event,
@@ -11,7 +12,6 @@ import {
   workspace,
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import path = require("path");
 
 export class SqlPreviewContentProvider
   implements TextDocumentContentProvider, Disposable

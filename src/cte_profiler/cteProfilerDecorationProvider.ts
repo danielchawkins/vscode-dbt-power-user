@@ -11,6 +11,7 @@ import {
   Uri,
   window,
 } from "vscode";
+import { extensionRoot } from "../extensionRoot";
 import { CteProfilerService } from "./cteProfilerService";
 import { CteProfileEntry } from "./cteProfilerTypes";
 
@@ -29,7 +30,7 @@ export class CteProfilerDecorationProvider implements Disposable {
   ) {
     this.hotDecorationType = window.createTextEditorDecorationType({
       gutterIconPath: Uri.file(
-        __dirname + "/../../media/images/profiler-hot.svg",
+        `${extensionRoot}/../media/images/profiler-hot.svg`,
       ),
       gutterIconSize: "contain",
       after: {
@@ -42,7 +43,7 @@ export class CteProfilerDecorationProvider implements Disposable {
 
     this.warmDecorationType = window.createTextEditorDecorationType({
       gutterIconPath: Uri.file(
-        __dirname + "/../../media/images/profiler-warm.svg",
+        `${extensionRoot}/../media/images/profiler-warm.svg`,
       ),
       gutterIconSize: "contain",
       after: {

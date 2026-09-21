@@ -3,22 +3,8 @@ import {
   CommandProcessExecutionFactory,
   DBTCoreDetection,
 } from "@altimateai/dbt-integration";
-import { expect } from "@jest/globals";
-import { workspace } from "vscode";
-
-// Mock workspace folders
-jest.mock("vscode", () => ({
-  ...jest.requireActual("vscode"),
-  workspace: {
-    workspaceFolders: [
-      {
-        uri: {
-          fsPath: "/test/workspace",
-        },
-      },
-    ],
-  },
-}));
+import { beforeEach, expect } from "@jest/globals";
+import * as vscode from "vscode";
 
 // Note: DBTCoreProjectIntegration tests are temporarily disabled
 // TODO: Add proper tests for DBTCoreProjectIntegration
@@ -65,7 +51,7 @@ describe("DBTCoreDetection Tests", () => {
     );
 
     // Mock workspace folders
-    Object.defineProperty(workspace, "workspaceFolders", {
+    Object.defineProperty(vscode.workspace, "workspaceFolders", {
       get: () => [{ uri: { fsPath: "/test/workspace" } }],
       configurable: true,
     });
@@ -107,7 +93,7 @@ describe("DBTCoreDetection Tests", () => {
     );
 
     // Mock workspace folders
-    Object.defineProperty(workspace, "workspaceFolders", {
+    Object.defineProperty(vscode.workspace, "workspaceFolders", {
       get: () => [{ uri: { fsPath: "/test/workspace" } }],
       configurable: true,
     });

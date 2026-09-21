@@ -13,12 +13,6 @@ import { commands, ExtensionContext, Uri, window, workspace } from "vscode";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { createEntry } from "../fixtures/runHistory";
 
-// Mock vscode module
-jest.mock("vscode", () => {
-  const mock = jest.requireActual("../mock/vscode");
-  return mock;
-});
-
 // Make fs.realpathSync.native a pass-through so model params can be derived
 // from synthetic paths without the files existing on disk.
 jest

@@ -19,10 +19,6 @@ describe("AltimateRequest Tests", () => {
   let mockDBTConfiguration: jest.Mocked<DBTConfiguration>;
   let request: AltimateRequest;
   const fetchMock = jest.fn() as jest.MockedFunction<FetchFn>;
-  jest.mock("node-fetch", () => ({
-    __esModule: true,
-    default: fetchMock,
-  }));
 
   beforeEach(() => {
     mockTerminal = {

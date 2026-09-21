@@ -10,15 +10,15 @@ import { describe, expect, it, jest } from "@jest/globals";
 import { Memento } from "vscode";
 import { FusionVersionDetection } from "../../fusion/fusionVersionDetection";
 
-// The shared vscode mock has no `env` or `extensions` namespaces. Stub them
-// before importing the container, which constructs Python services.
+// Stub env and extensions before importing the container, which constructs
+// Python services.
 import * as vscodeMock from "../mock/vscode";
 const vscodeMockAny = vscodeMock as Record<string, unknown>;
-vscodeMockAny.env = {
+Object.assign(vscodeMockAny.env as Record<string, unknown>, {
   appName: "vscode-test",
   machineId: "test-machine",
   sessionId: "test-session",
-};
+});
 const sharedWindow = vscodeMockAny.window as Record<string, unknown>;
 sharedWindow.createOutputChannel = jest.fn(() => ({
   append: jest.fn(),
@@ -37,7 +37,7 @@ sharedWindow.createOutputChannel = jest.fn(() => ({
   logLevel: 1,
   onDidChangeLogLevel: () => ({ dispose: () => {} }),
 }));
-vscodeMockAny.extensions = {
+Object.assign(vscodeMockAny.extensions as Record<string, unknown>, {
   getExtension: jest.fn(() => ({
     isActive: true,
     activate: () => Promise.resolve(),
@@ -52,7 +52,7 @@ vscodeMockAny.extensions = {
       },
     },
   })),
-};
+});
 
 import { container } from "../../inversify.config";
 

@@ -84,6 +84,87 @@ export const DiagnosticSeverity = {
   Hint: 3,
 };
 
+export const ColorThemeKind = {
+  Light: 1,
+  Dark: 2,
+  HighContrast: 3,
+  HighContrastLight: 4,
+};
+
+export const ConfigurationTarget = {
+  Global: 1,
+  Workspace: 2,
+  WorkspaceFolder: 3,
+};
+
+export const CompletionItemKind = {
+  Text: 0,
+  Method: 1,
+  Function: 2,
+  Constructor: 3,
+  Field: 4,
+  Variable: 5,
+  Class: 6,
+  Interface: 7,
+  Module: 8,
+  Property: 9,
+  Unit: 10,
+  Value: 11,
+  Enum: 12,
+  Keyword: 13,
+  Snippet: 14,
+  Color: 15,
+  File: 16,
+  Reference: 17,
+  Folder: 18,
+  EnumMember: 19,
+  Constant: 20,
+  Struct: 21,
+  Event: 22,
+  Operator: 23,
+  TypeParameter: 24,
+};
+
+export class CompletionItem {
+  constructor(
+    public label: string,
+    public kind?: number,
+  ) {}
+}
+
+export const QuickPickItemKind = {
+  Separator: -1,
+  Default: 0,
+};
+
+export const StatusBarAlignment = {
+  Left: 1,
+  Right: 2,
+};
+
+export const OverviewRulerLane = {
+  Left: 1,
+  Center: 2,
+  Right: 4,
+  Full: 7,
+};
+
+export class MarkdownString {
+  public value = "";
+  constructor(value?: string) {
+    if (value) {
+      this.value = value;
+    }
+  }
+}
+
+export class Hover {
+  constructor(
+    public contents: MarkdownString | string,
+    public range?: Range,
+  ) {}
+}
+
 export const TreeItemCollapsibleState = {
   None: 0,
   Collapsed: 1,
@@ -131,6 +212,7 @@ export const extensions = {
 };
 
 export const env = { uriScheme: "vscode" };
+export const version = "1.125.0";
 
 export const commands = {
   registerCommand: jest.fn().mockReturnValue({ dispose: jest.fn() }),

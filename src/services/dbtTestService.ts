@@ -8,6 +8,7 @@ import {
 } from "@altimateai/dbt-integration";
 import { readFileSync } from "fs";
 import { inject } from "inversify";
+import * as path from "path";
 import { parse, stringify } from "yaml";
 import {
   getColumnTestConfigFromYml,
@@ -15,7 +16,6 @@ import {
   removeProtocol,
 } from "../utils";
 import { QueryManifestService } from "./queryManifestService";
-import path = require("path");
 
 export class DbtTestService {
   public constructor(

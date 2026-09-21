@@ -43,7 +43,13 @@ import {
   UnitTestParser,
 } from "@altimateai/dbt-integration";
 import { Container, Factory, ResolutionContext } from "inversify";
-import { Event, EventEmitter, Memento, Uri, WorkspaceFolder } from "vscode";
+import {
+  Event,
+  EventEmitter,
+  Memento,
+  Uri,
+  type WorkspaceFolder,
+} from "vscode";
 import { AltimateRequest } from "./altimate";
 import { DBTProject } from "./dbt_client/dbtProject";
 import { ProjectRegisteredUnregisteredEvent } from "./dbt_client/dbtProjectContainer";

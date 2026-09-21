@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "module": "Node16",
+    "module": "ESNext",
     "target": "ES2020",
     "outDir": "out",
     "lib": ["ES2020"],
@@ -13,7 +13,7 @@
     "esModuleInterop": true,
     "allowJs": true,
     "checkJs": false,
-    "moduleResolution": "Node16",
+    "moduleResolution": "bundler",
     "types": ["node", "jest", "mocha", "vscode"],
     "paths": {
       // "@altimateai/dbt-integration": ["../altimate-dbt-integration/src/index.ts"],

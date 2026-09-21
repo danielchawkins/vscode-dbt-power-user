@@ -1,8 +1,10 @@
 import { defineConfig, RsbuildPlugin } from "@rsbuild/core";
 import { cpSync } from "fs";
-import path from "path";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 
-const DIST = path.resolve(__dirname, "dist");
+const ROOT = path.dirname(fileURLToPath(import.meta.url));
+const DIST = path.resolve(ROOT, "dist");
 
 const copyAssetsPlugin: RsbuildPlugin = {
   name: "copy-assets-plugin",
@@ -11,14 +13,14 @@ const copyAssetsPlugin: RsbuildPlugin = {
       const patterns = [
         {
           from: path.resolve(
-            __dirname,
+            ROOT,
             "node_modules/@altimateai/dbt-integration/dist/node_python_bridge.py",
           ),
           to: path.join(DIST, "node_python_bridge.py"),
         },
         {
           from: path.resolve(
-            __dirname,
+            ROOT,
             "node_modules/@altimateai/dbt-integration/dist/altimate_python_packages/dbt_core_integration.py",
           ),
           to: path.join(
@@ -28,14 +30,14 @@ const copyAssetsPlugin: RsbuildPlugin = {
         },
         {
           from: path.resolve(
-            __dirname,
+            ROOT,
             "node_modules/@altimateai/dbt-integration/dist/altimate_python_packages/dbt_utils.py",
           ),
           to: path.join(DIST, "altimate_python_packages/dbt_utils.py"),
         },
         {
           from: path.resolve(
-            __dirname,
+            ROOT,
             "node_modules/@altimateai/dbt-integration/dist/altimate_python_packages/altimate_packages/",
           ),
           to: path.join(DIST, "altimate_python_packages/altimate_packages/"),
@@ -98,7 +100,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@extension": path.resolve(__dirname, "./src/modules.ts"),
+      "@extension": path.resolve(ROOT, "./src/modules.ts"),
     },
     extensions: [".ts", ".js"],
   },
@@ -118,12 +120,18 @@ export default defineConfig({
         /^@altimateai\/altimate-core-/,
       ];
 
-      config.node = { __dirname: false };
+      config.node = { __dirname: "node-module", __filename: "node-module" };
 
       config.output = {
         ...config.output,
-        libraryTarget: "commonjs2",
+        libraryTarget: "module",
+        chunkFormat: "module",
         devtoolModuleFilenameTemplate: "../[resource-path]",
+      };
+
+      config.experiments = {
+        ...config.experiments,
+        outputModule: true,
       };
 
       // Use ts-loader so inversify's decorators + emitDecoratorMetadata keep working.

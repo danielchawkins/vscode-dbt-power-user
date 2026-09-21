@@ -14,6 +14,7 @@
     "url": "https://github.com/danielchawkins/vscode-dbt-power-user/issues"
   },
   "version": "0.1.0-alpha.0",
+  "type": "module",
   "engines": {
     "vscode": "^1.128.0",
     "node": ">=24 <25",
@@ -40,7 +41,7 @@
   "activationEvents": [
     "workspaceContains:**/dbt_project.yml"
   ],
-  "main": "./dist/extension",
+  "main": "./dist/extension.js",
   "contributes": {
     "snippets": [
       {
@@ -813,7 +814,8 @@
     "build": "rsbuild build",
     "build:dev": "rsbuild build --mode development",
     "watch:extension": "rsbuild build --mode development --watch",
-    "compile": "tsc -p ./",
+    "compile": "tsc -p ./ --noEmit",
+    "compile:integration": "tsc -p tsconfig.integration.json",
     "clean": "rimraf out coverage",
     "format": "prettier --write \"**/*.{js,css,html,json}\"",
     "lint": "eslint src --ext ts",
@@ -821,8 +823,8 @@
     "check:format": "prettier --check \"**/*.{js,css,html,json}\"",
     "check:lockfile": "lockfile-lint --path package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity",
     "check:lockfile:webviews": "lockfile-lint --path webview_panels/package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity",
-    "test": "jest",
-    "test:coverage": "jest --coverage",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
     "test:integration": "node out/test/integration/runTests.js",
     "package:vsix": "vsce package"
   },
@@ -871,7 +873,7 @@
     "@altimateai/dbt-integration": "^0.3.13",
     "@vscode/codicons": "^0.0.45",
     "@vscode/vsce": "^4.0.0",
-    "inversify": "^7.11.0",
+    "inversify": "^8.2.3",
     "node-abort-controller": "^3.1.1",
     "node-fetch": "^3.3.2",
     "parse-diff": "^0.12.0",

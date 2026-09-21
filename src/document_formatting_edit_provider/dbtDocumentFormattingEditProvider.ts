@@ -4,7 +4,7 @@ import fs from "fs";
 import { inject } from "inversify";
 import os from "os";
 import parseDiff from "parse-diff";
-import path from "path";
+import * as path from "path";
 import { promisify } from "util";
 import {
   CancellationToken,
