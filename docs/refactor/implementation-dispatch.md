@@ -62,7 +62,7 @@ A reviewer reads the full bookmark diff against the step's contract and this che
 
 ## Current position
 
-Steps 1.2 through 3.15, Phase 4.1 (Project Configuration), and Phase 4.2 (Project Registry) are complete at this tip. Phase 4.3's Project Context is next. Continue through [`remaining-implementation.md`](remaining-implementation.md) serially, using the pipelined landing workflow above. The product is still manifest-driven.
+Steps 1.2 through 3.15 and Phase 4.1 through 4.3 are complete at this tip. Phase 4.4's discovery retirement is next. Continue through [`remaining-implementation.md`](remaining-implementation.md) serially, using the pipelined landing workflow above. The product is still manifest-driven.
 
 **Correction to the Cloud blocker.** The published Fusion integration extends `DBTBaseProjectIntegration`, not `DBTCloudProjectIntegration`, so there is no reparenting task. Cloud is blocked by composition instead: `DBTProjectIntegrationAdapter`'s constructor takes Core, Cloud, Fusion, and Core-command factories as mandatory parameters, and `src/inversify.config.ts` supplies all four. Order is therefore 7.1 retire the adapter, then 8.1 delete Cloud and Core construction. The same retirement removes the adapter's private ambient target watcher, which is why no earlier step should attempt either.
 
@@ -78,7 +78,7 @@ Steps 1.2 through 3.15, Phase 4.1 (Project Configuration), and Phase 4.2 (Projec
 | --------------------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------- |
 | Dependency follow-ons | package manifests, lockfiles, host and webview configuration, affected modules       | serial; all land before Phase 4                         |
 | 3.8–3.15 webview      | `webview_panels/**`, `media/images/**`, `src/webview_provider/**`, CI smoke job      | 3.8 → 3.9 → {3.10, 3.11}; 3.12 free; 3.13 → 3.14 → 3.15 |
-| 4.x Declared Project  | `src/projects/**`, `src/dbt_client/dbtWorkspaceFolder.ts`, `queryManifestService.ts` | serial 4.1 → 4.4                                        |
+| 4.x Declared Project  | `src/projects/**`, `src/dbt_client/dbtWorkspaceFolder.ts`, `queryManifestService.ts` | serial 4.1 → 4.5                                        |
 | 5.x LSP               | `src/fusion/staticAnalysisMode.ts`, `src/lsp/**`, `src/fusion/fusionExecutable.ts`   | 5.0 after D5 and before 5.3; then 5.1 → 5.6             |
 | 6.x metadata          | `src/dbt_client/event/manifestCacheChangedEvent.ts`, `src/metadata/**`               | 6.0 epoch first; no consumer changes                    |
 | 7.1 adapter           | `src/dbt_client/fusionProjectIntegration.ts`, `dbtProject.ts`, `inversify.config.ts` | gates all of Phase 8                                    |
@@ -108,7 +108,7 @@ Copy the contract and verification from `fusion-lsp-plan.md`. The notes below ar
 
 ### Phase 3
 
-3.1 through 3.15, 4.1, and 4.2 are complete at this tip. Phase 4.3 begins next. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
+3.1 through 3.15 and 4.1 through 4.3 are complete at this tip. Phase 4.4 begins next. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
 
 ### Phases 4–10 and v2
 

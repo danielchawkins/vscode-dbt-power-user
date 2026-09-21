@@ -65,6 +65,7 @@ import {
 import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { FusionVersionDetection } from "./fusion/fusionVersionDetection";
+import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { AltimateAuthService } from "./services/altimateAuthService";
 import { DbtLineageService } from "./services/dbtLineageService";
@@ -768,6 +769,16 @@ container
   .inSingletonScope();
 
 container
+  .bind(ProjectContext)
+  .toDynamicValue((context) => {
+    return new ProjectContext(
+      context.get(ProjectRegistry),
+      context.get(ProjectQuickPick),
+    );
+  })
+  .inSingletonScope();
+
+container
   .bind(QueryManifestService)
   .toDynamicValue((context) => {
     return new QueryManifestService(
@@ -775,6 +786,7 @@ container
       context.get("DBTTerminal"),
       context.get(SharedStateService),
       context.get(ProjectQuickPick),
+      context.get(ProjectContext),
     );
   })
   .inSingletonScope();
@@ -1356,6 +1368,8 @@ container
       context.get(ValidationProvider),
       context.get(AltimateRequest),
       context.get(AltimateAuthService),
+      context.get(ProjectRegistry),
+      context.get(ProjectContext),
     );
   })
   .inSingletonScope();

@@ -401,24 +401,29 @@ Verify: registration and names correct per folder and declaration order; fail-cl
 **4.3 — Project Context resolution.** New `src/projects/projectContext.ts`.
 
 ```ts
-export interface ProjectContext {
+export declare class ProjectContext implements Disposable {
   /** Project owning the active editor, else the project owning the active folder, else the sole project. */
   readonly current: DeclaredProject | undefined;
   readonly onDidChangeCurrent: Event<DeclaredProject | undefined>;
   /** Project owning a specific resource; used by commands that carry a uri. */
   forResource(uri: Uri): DeclaredProject | undefined;
+  /** Whether configuration resolution produced any Declared Project. */
+  readonly hasDeclaredProjects: boolean;
   /** Prompts only when a user-invoked command needs a project and cannot infer one. */
-  requireForCommand(uri?: Uri): Promise<DeclaredProject>;
+  requireForCommand(uri?: Uri): Promise<DeclaredProject | undefined>;
+  dispose(): void;
 }
 ```
 
-Precedence for `current`: the active editor's URI, then `window.activeTextEditor`'s workspace folder, then the single registered project if there is exactly one, then undefined. Never silently default to "the first project" when more than one exists — that is the upstream behavior the consumer had to patch around, and it produced wrong-project lineage. Rewire `src/services/queryManifestService.ts` `getProject`, `getProjectByUri`, and `getOrPickProjectFromWorkspace` onto this, keeping their signatures so the 21 consuming files do not change.
+Precedence for `current`: the active editor's URI, then the sole Declared Project owned by the active editor's workspace folder, then the single registered project if there is exactly one, then undefined. Never silently default to "the first project" when more than one exists — that is the upstream behavior the Consumer Repository had to patch around, and it produced wrong-project lineage. A user command carrying a file-scheme URI that belongs to no Declared Project does not inherit the sole project; it prompts only when multiple choices exist. A non-file URI such as an untitled buffer falls through to `current`. Cancellation returns undefined. Activate the registry after the conflict and `dbt.enabled` guards and `setContext`, before old discovery initializes DBTProject instances. Rewire `src/services/queryManifestService.ts` `getProject`, `getProjectByUri`, `getOrPickProjectFromWorkspace`, and its three manifest-event lookup paths onto Project Context, keeping consumer signatures unchanged; one private mapper resolves the Declared Project root back to the DBTProject the old path already constructed.
 
-Verify: closes characterization case 4. Integration test on `multi-root` opens a model in each project and asserts `current` follows, then opens a file in `pipelines/` and asserts `current` is undefined with no notification raised.
+Verify: Jest coverage closes characterization case 4 at the Project Context seam: models in each project update `current`, while `pipelines/` resolves undefined with no notification. The multi-root Electron launch coverage lands in 4.4 with the discovery replacement. Until 4.4, Query Manifest resolution uses the old container only when the registry resolves no Declared Projects, preserving nested-project workspaces that have not configured `dbt.projects`. Once any declaration exists, Project Context is authoritative: an undeclared nested project is intentionally owned by its declared ancestor under ADR 0003. The private mapper may use the original resource only when a declared lexical alias cannot map its root to the old producer; it never resolves a resource that Project Context did not already own.
 
-**4.4 — Retire the old discovery path.** Delete `src/dbt_client/dbtWorkspaceFolder.ts` and rewire `src/dbt_client/dbtProjectContainer.ts` onto `ProjectRegistry`. `DBTProjectDetection` and its three implementations (`DBTCoreProjectDetection`, `DBTCloudProjectDetection`, `DBTFusionCommandProjectDetection`) are package exports, so what this step removes is their imports and bindings in `src/inversify.config.ts`, not local files. Remove `dbt.allowListFolders`.
+**4.4 — Retire the old discovery path.** Delete `src/dbt_client/dbtWorkspaceFolder.ts` and rewire `src/dbt_client/dbtProjectContainer.ts` onto `ProjectRegistry`. Remove Query Manifest's temporary zero-registry fallback. `DBTProjectDetection` and its three implementations (`DBTCoreProjectDetection`, `DBTCloudProjectDetection`, `DBTFusionCommandProjectDetection`) are package exports, so what this step removes is their imports and bindings in `src/inversify.config.ts`, not local files. Remove `dbt.allowListFolders`.
 
 Verify: `just check` green with the Phase 2 scoping behaviors covered through `ProjectRegistry` and no `it.failing`; the obsolete `DBTWorkspaceFolder` tests are removed with their subject; the two dbt folders of `multi-root` behave identically whether opened as a multi-root workspace or individually.
+
+**4.5 — Retire pinned-project resolution fallbacks.** Replace editor-intelligence and untitled-query reads of `dbtPowerUser.projectSelected` with Project Context inference or an explicit user-invoked Project Context pick. Preserve the explicit `pickProject` command and retained validate/install command behavior; remove only silent resolution fallbacks in hover, autocomplete, code lenses, and SQL execution. Verify that a file outside every Declared Project never inherits a prior pick, while a user-invoked path-free command can still prompt.
 
 **Release alpha.2** (`0.2.0-alpha.0`). Worth installing in the consumer as a replacement for patch cases 2 through 7 even before the LSP lands: it validates the Declared Project model against the real repository shape while the manifest path still works.
 

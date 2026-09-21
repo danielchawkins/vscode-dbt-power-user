@@ -48,7 +48,7 @@ describe("WalkthroughCommands project resolution", () => {
 
     const commands = new WalkthroughCommands(
       mockContainer as never,
-      mockPicker as ProjectQuickPick,
+      mockPicker as unknown as ProjectQuickPick,
       mockDbtTerminal as never,
     );
 

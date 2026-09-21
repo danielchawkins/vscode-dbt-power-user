@@ -16,6 +16,8 @@ import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DefinitionProviders } from "./definition_provider";
 import { DocumentFormattingEditProviders } from "./document_formatting_edit_provider";
 import { HoverProviders } from "./hover_provider";
+import { ProjectContext } from "./projects/projectContext";
+import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
 import { AltimateAuthService } from "./services/altimateAuthService";
 import {
@@ -73,6 +75,8 @@ export class DBTPowerUserExtension implements Disposable {
     private validationProvider: ValidationProvider,
     private altimateRequest: AltimateRequest,
     private altimateAuthService: AltimateAuthService,
+    private projectRegistry: ProjectRegistry,
+    private projectContext: ProjectContext,
   ) {
     this.disposables.push(
       this.dbtProjectContainer,
@@ -88,6 +92,8 @@ export class DBTPowerUserExtension implements Disposable {
       this.puStatusBars,
       this.hoverProviders,
       this.validationProvider,
+      this.projectRegistry,
+      this.projectContext,
     );
   }
 
@@ -130,6 +136,7 @@ export class DBTPowerUserExtension implements Disposable {
       }
 
       this.dbtProjectContainer.setContext(context);
+      await this.projectRegistry.initialize();
       await this.dbtProjectContainer.detectDBT();
       await this.dbtProjectContainer.initializeDBTProjects();
       await this.statusBars.initialize();

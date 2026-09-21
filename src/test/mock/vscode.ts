@@ -7,7 +7,7 @@ export const ExtensionKind = {
 };
 
 export const Uri = {
-  file: jest.fn((f: string) => ({ fsPath: f, path: f })),
+  file: jest.fn((f: string) => ({ fsPath: f, path: f, scheme: "file" })),
   parse: jest.fn(),
 };
 
@@ -224,6 +224,7 @@ export const window = {
   showInformationMessage: jest.fn().mockReturnValue(Promise.resolve()),
   showWarningMessage: jest.fn().mockReturnValue(Promise.resolve()),
   showErrorMessage: jest.fn().mockReturnValue(Promise.resolve()),
+  showQuickPick: jest.fn().mockReturnValue(Promise.resolve(undefined)),
   onDidChangeActiveTextEditor: jest
     .fn()
     .mockReturnValue({ dispose: jest.fn() }),
