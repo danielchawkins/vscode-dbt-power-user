@@ -1,6 +1,6 @@
 # Fusion Power User: refactor plan
 
-Land each step as a feature bookmark and a pull request against `main`. [`implementation-dispatch.md`](implementation-dispatch.md) is the execution layer: trunk, workspaces, overlap, and the two file-path corrections. This file remains the spec: contracts, file lists, verification, spikes, and Confirm gates. Remaining work is sequenced in [`remaining-implementation.md`](remaining-implementation.md).
+Land each step as a feature bookmark and a pull request against `main`. [`implementation-dispatch.md`](implementation-dispatch.md) is the execution layer: trunk, focused revisions, serial jj workspaces, pipelined landing, and file-path corrections. This file remains the spec: contracts, file lists, verification, spikes, and Confirm gates. Remaining work is sequenced in [`remaining-implementation.md`](remaining-implementation.md).
 
 ## 1. Goal and scope
 
@@ -10,7 +10,7 @@ In scope: product identity; the Declared Project model; a reverse-socket `Langua
 
 Explicitly out of scope: marketplace or OpenVSX publication; Windows and Linux support (macOS only for the first releases); a generic socket-to-stdio bridge; upstream compatibility or contributing changes back; any attempt to unlock Fusion capabilities that Fusion itself gates behind licensing or `dbt auth`; and the MkDocs site under `documentation/`, which is deleted rather than rewritten.
 
-Executors: work the steps in order. Each step is one commit that compiles and has green tests. Where a step says **Confirm**, stop and get a human decision before proceeding. The verification command throughout is `just check`, plus `just package` where a step changes packaging.
+Executors: work the steps in order, with one PR implementation active at a time. Each step is one PR bookmark whose ordered revisions separate documentation, configuration, and distinct modules or concerns; keep focused tests with their implementation. The bookmark tip compiles and has green tests. Review and CI for step N may overlap with local implementation of N+1 as a child of N's bookmark tip, but N+1 is not pushed until N merges; rebase the child range whenever its parent changes and onto `main` after the merge. Where a step says **Confirm**, stop and get a human decision before proceeding. The verification command throughout is `just check`, plus `just package` where a step changes packaging.
 
 ## 2. Grounding
 
@@ -36,7 +36,7 @@ Executors: work the steps in order. Each step is one commit that compiles and ha
 9. Notifications: silent startup. Only user-invoked actions and blocking configuration failures may notify. Everything else goes to the status bar, an output channel, or Problems.
 10. Conflict: if upstream Power User is installed, do not start; show one actionable blocking error. Consumer setup removes upstream.
 11. Retain in the comprehensive target: standard LSP features; compile / preview / run / build / test; model and column lineage; model trees; local documentation editor; query results, CTE preview and profiler, charting; local model generation and defer where Fusion supports them.
-12. Migration: small green commits — characterization tests, LSP behind an internal boundary, switch consumers, then delete old paths and dependencies. No big-bang rewrite.
+12. Migration: small focused revisions with green PR bookmark tips — characterization tests, LSP behind an internal boundary, switch consumers, then delete old paths and dependencies. No big-bang rewrite.
 13. Distribution: GitHub Release VSIX with checksum, pinned by the consumer. `finance-pipelines` setup installs it into Cursor and VS Code when each CLI exists. New `fusionPowerUser.*` namespace with a documented migration and no fallback reads of `dbt.*`.
 14. macOS only initially. Defer a generic socket-to-stdio bridge but keep transport code reusable.
 15. The full target is comprehensive. Sequence alpha and beta prereleases for testing; do not drop target features because the first alpha is small.
@@ -123,7 +123,7 @@ The repository pins dbt Fusion 2.0.5 while the Consumer Repository tracks `lates
 
 ## 3. Phases
 
-Each step is one commit. Every step lists the files it touches, the contract at its seam, and its verification.
+Each step is one PR bookmark, normally containing several focused revisions. Every step lists the files it touches, the contract at its seam, and its bookmark-tip verification.
 
 ### Phase 0 — Close the tooling baseline — **complete**
 
@@ -244,7 +244,7 @@ Verify: `just check` green; `grep -rn "telemetry" src -i` empty; integration tes
 
 **Release alpha.1** (`0.1.0-alpha.1`). Still manifest-driven and not yet useful for the LSP goal, but it is the first artifact that is unambiguously local-only and installable, and it exercises the release pipeline early. Bring Phase 9 step 9.4's release workflow forward if this phase finishes first.
 
-**3.7 — Latest majors (`chore/latest-majors`).** After 3.6, before Phase 4. The only compatibility ceiling is the Extensions API this product declares: `engines.vscode` and `@types/vscode` are the newest version both VS Code and Cursor actually support (Confirm if those diverge; take the intersection). Node, npm, TypeScript, the extension host module format, Inversify, React, ESLint, Vite, and every other direct dependency are fair game — newest published major with a caret (`^x.y.z`), or a replacement if the package is unmaintained or cannot take that major. Do not keep CommonJS, an old React, or an old Inversify as a freeze. Migrate `moduleResolution` off `node`/`node10` (`nodenext` or `bundler` as the compiler/bundler requires). No `ignoreDeprecations`. `engines.node` is `>=<current LTS major> <next major>`. Leave Fusion at 2.0.5 in `mise.toml`. SHA-pinned GitHub Actions stay SHA-pinned. Split into more than one PR if a single change is too large; do not leave leftovers unscheduled. `just check` and `just package` green.
+**3.7 — Latest majors (`chore/latest-majors`).** After 3.6, before Phase 4. The only compatibility ceiling is the Extensions API this product declares: `engines.vscode` and `@types/vscode` are the newest version both VS Code and Cursor actually support (Confirm if those diverge; take the intersection). The first pass upgrades or replaces dependencies where that fits the inherited architecture without derailing the product refactor; it does not bless that architecture as the target. Node, npm, TypeScript, the extension host module format, Inversify, React, ESLint, Vite, and every other direct dependency are fair game. Do not retain an older format or tool merely because it is lower risk or supports older hosts. Separately research the 2026 extension and webview landscape, choose a north-star architecture by functionality and measured activation, runtime, bundle-size, webview-startup, and build performance, and schedule larger rip-and-replace work for v2 when it does not fit the current phases. Migrate `moduleResolution` off `node`/`node10` (`nodenext` or `bundler` as the compiler/bundler requires). No `ignoreDeprecations`. `engines.node` is `>=<current LTS major> <next major>`. Leave Fusion at 2.0.5 in `mise.toml`. SHA-pinned GitHub Actions stay SHA-pinned. Split into more than one PR if a single change is too large; do not leave leftovers unscheduled. `just check` and `just package` green.
 
 **Tooling after 3.7 (not a gate).** Evaluate a report-only `just lint-complexity`. Do not add it to `just lint`, `just check`, Lefthook pre-push, or CI. Promoting it to a gate is a later Confirm, not before Phase 8.
 
@@ -534,7 +534,7 @@ Verify: a test asserting every `contributes.commands` entry has a registration i
 
 ### Phase 9 — Namespace, distribution, and docs → **1.0.0**
 
-**9.1 — Settings and command namespace.** Rename every setting to `fusionPowerUser.*` and every command to `fusionPowerUser.*` in one commit, with no fallback reads of `dbt.*` and no deprecation aliases (decision 13). Set `scope` correctly per property: `resource` for project, executable, lint, and enablement settings so folder values work; `window` only where genuinely window-wide. Write `docs/settings-migration.md` with the full mapping, including the settings the consumer actually sets:
+**9.1 — Settings and command namespace.** Rename every setting to `fusionPowerUser.*` and every command to `fusionPowerUser.*` in one PR, with no fallback reads of `dbt.*` and no deprecation aliases (decision 13). Separate contribution metadata, runtime call sites, tests, and migration documentation into focused revisions. Set `scope` correctly per property: `resource` for project, executable, lint, and enablement settings so folder values work; `window` only where genuinely window-wide. Write `docs/settings-migration.md` with the full mapping, including the settings the consumer actually sets:
 
 | Old                                                                                                                                                                                                                          | New                                                                                         |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
@@ -620,7 +620,7 @@ Verify: `just check` green; a fresh `just setup` on a clean checkout produces a 
 5. **`ManifestCacheProjectAddedEvent` turns out to be the wrong boundary** — for instance, the LSP cannot populate a field that three panels require. Mitigation: Phase 6 step 6.1's rule that no consumer file changes. If one must, stop: that is the signal the boundary is wrong, and it is far cheaper to learn at 6.1 than at 6.3.
 6. **Cursor and VS Code diverge in extension-host behavior.** Mitigation: **S6** early, and a VSIX smoke test that reports per-editor results for the life of the project.
 7. **Fusion licensing gates a retained capability.** Decision 4 forbids working around it. Response: detect the gate, surface Fusion's own message, and mark the capability unavailable. Never implement a bypass.
-8. **Concurrent sessions overwrite each other's work in this repository.** This plan file was itself overwritten once during authoring. Mitigation: commit each step before starting the next, and re-read a document before editing it rather than rewriting from memory.
+8. **Concurrent sessions overwrite each other's work in this repository.** This plan file was itself overwritten once during authoring. Mitigation: one implementation workspace is active at a time; each PR uses focused jj revisions; read-only review may overlap; and the next PR starts only after its parent is pushed, in a separate child workspace.
 
 ### Checkpoints — stop and confirm
 
