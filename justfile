@@ -192,6 +192,19 @@ test-integration *args:
 benchmark *args:
     bash scripts/benchmark/run-baseline.sh "$@"
 
+[group("tests")]
+smoke-vscode *args:
+    bash scripts/smoke/run-host-smoke.sh --host vscode "$@"
+
+[group("tests")]
+smoke-cursor *args:
+    bash scripts/smoke/run-host-smoke.sh --host cursor "$@"
+
+[group("tests")]
+smoke *args:
+    just smoke-vscode "$@"
+    just smoke-cursor "$@"
+
 ####################
 # Version control
 ####################
