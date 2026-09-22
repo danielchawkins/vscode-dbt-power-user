@@ -737,6 +737,91 @@ suite("lspProtocolClient", function () {
     });
   });
 
+  test("rejects client requests with typed JSON-RPC error code", async function () {
+    await withLoopbackPair(async (clientSocket, serverSocket) => {
+      const client = attachLspProtocolClient(clientSocket);
+      const reader = readServerMessages(serverSocket);
+
+      const pending = client.request("textDocument/diagnostic", {
+        textDocument: { uri: "file:///probe.sql" },
+      });
+      const outbound = await reader.nextMessage();
+      serverSocket.write(
+        frame(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            id: outbound.id,
+            error: { code: -32601, message: "Method not found" },
+          }),
+        ),
+      );
+
+      await assert.rejects(pending, (error: unknown) => {
+        assert.ok(error instanceof LspRequestError);
+        assert.strictEqual(error.code, -32601);
+        assert.strictEqual(error.method, "textDocument/diagnostic");
+        return true;
+      });
+
+      client.close();
+    });
+  });
+
+  test("lists only server request methods that were received", async function () {
+    await withLoopbackPair(async (clientSocket, serverSocket) => {
+      const client = attachLspProtocolClient(clientSocket);
+      const reader = readServerMessages(serverSocket);
+
+      assert.deepStrictEqual(client.getServerRequestMethods(), []);
+      assert.strictEqual(
+        client.serverRequestCount("workspace/configuration"),
+        0,
+      );
+      assert.deepStrictEqual(
+        client.getServerRequests("workspace/configuration"),
+        [],
+      );
+
+      const pending = client.request("probe", {});
+      const outbound = await reader.nextMessage();
+      serverSocket.write(
+        frame(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            id: outbound.id,
+            result: { ok: true },
+          }),
+        ),
+      );
+      await pending;
+
+      serverSocket.write(
+        frame(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            id: 99,
+            method: "window/workDoneProgress/create",
+            params: { token: "progress" },
+          }),
+        ),
+      );
+      await new Promise((resolve) => setTimeout(resolve, 20));
+
+      assert.deepStrictEqual(client.getServerRequestMethods(), [
+        "window/workDoneProgress/create",
+      ]);
+      assert.strictEqual(
+        client.serverRequestCount("workspace/configuration"),
+        0,
+      );
+      assert.deepStrictEqual(client.getServerRequestMethods(), [
+        "window/workDoneProgress/create",
+      ]);
+
+      client.close();
+    });
+  });
+
   test("timeout errors name the method only", async function () {
     await withLoopbackPair(async (clientSocket, serverSocket) => {
       const client = attachLspProtocolClient(clientSocket);

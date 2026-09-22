@@ -31,6 +31,8 @@ export interface LspFixture {
   port: number;
   /** Temp copy root passed to `dbt lsp --project-dir`. */
   readonly projectRoot: string;
+  /** argv passed to `dbt` at connect; empty until connected. */
+  readonly launchArgs: readonly string[];
   connect(timeoutMs: number): Promise<void>;
   close(): Promise<void>;
   request<T = unknown>(
@@ -67,6 +69,7 @@ export interface LspFixture {
   getConfigurationDeliveriesSince(
     fromCursor: number,
   ): readonly ConfigurationDeliveryEntry[];
+  getServerRequestMethods(): readonly string[];
   getErrors(): readonly CapturedError[];
   getStderr(): string;
   setWorkspaceConfiguration(response: unknown[]): void;
@@ -160,6 +163,7 @@ export async function createLspFixture(
   options: LspFixtureOptions = {},
 ): Promise<LspFixture> {
   let port = 0;
+  let launchArgs: readonly string[] = [];
   let childProcess: ChildProcess | null = null;
   let client: LspProtocolClient | null = null;
   let reverseServer: ReverseSocketServer | null = null;
@@ -195,6 +199,10 @@ export async function createLspFixture(
       return temporaryProjectRoot;
     },
 
+    get launchArgs() {
+      return launchArgs;
+    },
+
     async connect(timeoutMs: number): Promise<void> {
       if (client) {
         throw new Error("Already connected");
@@ -217,6 +225,7 @@ export async function createLspFixture(
       if (options.extraArgs) {
         args.push(...options.extraArgs);
       }
+      launchArgs = args;
 
       stderr = "";
       childProcess = spawn("dbt", args, {
@@ -356,6 +365,10 @@ export async function createLspFixture(
       fromCursor: number,
     ): readonly ConfigurationDeliveryEntry[] {
       return requireClient().getConfigurationDeliveriesSince(fromCursor);
+    },
+
+    getServerRequestMethods(): readonly string[] {
+      return requireClient().getServerRequestMethods();
     },
 
     getErrors(): readonly CapturedError[] {
