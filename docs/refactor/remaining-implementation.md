@@ -105,27 +105,27 @@ Spike privacy rules are in the plan and are conditions of running: synthetic fix
 | S4    | 5.3               | Memory/startup for one and two `dbt lsp`; SIGTERM vs socket close; reload orphans; SIGKILL grace.                                                                                                                                                                                                                          |
 | S5    | 5.3               | Coexistence with `dbtlabs.dbt`. Prefix vs second conflict guard.                                                                                                                                                                                                                                                           |
 | S1    | 5.5               | Resolve **D3** in `docs/adr/0005-dependency-diagnostics.md`.                                                                                                                                                                                                                                                               |
-| S10   | **D5**, so 5.0    | Opt-in. Measured `baseline` versus `strict`, and how to detect a silent fallback.                                                                                                                                                                                                                                          |
+| S10   | 5.0               | `docs/refactor/s10-static-analysis.md`. Inconclusive on `finance_general` / `dev`: neither mode finished loading within 20s. Gate not discharged.                                                                                                                                                                          |
 | S8    | 6.0               | What the server does on `dbt_project.yml`, `profiles.yml`, and `dbt deps` changes — the producer-evidence list the epoch advances on.                                                                                                                                                                                      |
 | S7    | 7.1               | Whether the server writes `target/`; watcher-experienced race rate, separately labeled from writer vulnerability; duplicate-work evidence.                                                                                                                                                                                 |
 | S9    | 7.4               | Opt-in. Query-id availability, cancellation, `QUERY_TAG`, per-phase distributions.                                                                                                                                                                                                                                         |
 
-Then serial 5.0 → 5.6. **5.0 is new and gated on D5**: `src/fusion/staticAnalysisMode.ts` carrying the configured mode, the effective mode with its fallback flag, the restart-on-change rule, and the capability matrix — the pool in 5.3 cannot assemble launch arguments without it. 5.1 is the first production configured-path resolver (`src/fusion/fusionExecutable.ts`). 5.2 is reverse-socket (`src/lsp/reverseSocketTransport.ts`), vscode-free except `Disposable`. 5.3 is client + pool with mandatory `--command-prefix`. 5.4 is status/output, including the effective-mode surface, and the permanent zero-notification spy test. 5.5 implements a diagnostics filter only if S1 requires it. 5.6 deletes the five provider directories. Release `0.3.0-alpha.0`.
+Then serial 5.0 → 5.6. **5.0 follows S10**: `src/fusion/staticAnalysisMode.ts` carrying the configured mode, the effective mode, the restart-on-change rule, and the capability matrix — the pool in 5.3 cannot assemble launch arguments without it. There is no login branch. 5.1 is the first production configured-path resolver (`src/fusion/fusionExecutable.ts`). 5.2 is reverse-socket (`src/lsp/reverseSocketTransport.ts`), vscode-free except `Disposable`. 5.3 is client + pool with mandatory `--command-prefix`. 5.4 is status/output, including the effective-mode surface, and the permanent zero-notification spy test. 5.5 implements a diagnostics filter only if S1 requires it. 5.6 deletes the five provider directories. Release `0.3.0-alpha.0`.
 
 ## Phases 6–10 — serial with Confirm gates
 
 6.0 stamps the publication epoch and producer identity onto `ManifestCacheProjectAddedEvent`, wraps extension-initiated requests so each captures the epoch and any document version before dispatch and rechecks both after completion, and starts the Fusion segment records. It adds no new interface and changes no consumer. 6.1 through 6.3 swap the producer behind the port. **7.1 then retires `DBTProjectIntegrationAdapter`**, which is what removes the ambient target watcher and the Cloud factory requirement together; 8.1 deletes Cloud and Core construction only after it.
 
-| Gate           | Stop until                                                                                         |
-| -------------- | -------------------------------------------------------------------------------------------------- |
-| Before 5.0     | **D5** — whether a user's own `dbt login` is recognized — resolved against S10's capability matrix |
-| Before 5.5     | S1 / D3                                                                                            |
-| Before 6.2     | S2 payload contract for the migrated flows                                                         |
-| Before Phase 7 | S2 inventory; name any retained feature with no command and no artifact                            |
-| Before 7.4     | S9 and S10 evidence for the warehouse- and `strict`-dependent features                             |
-| Before Phase 8 | 7.1 merged; beta.2 soaked on `finance-pipelines`                                                   |
-| Before 10.4    | all seven consumer characterization cases green through the fork                                   |
-| Before v2.3    | **D6** and **D7** from v2.2's joint benchmark, plus the Perspective spike verdict                  |
+| Gate           | Stop until                                                                                                                                   |
+| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Before 5.0     | **D5** is decided: no login. 5.0 waits on a conclusive S10 comparison of `baseline` and `strict`; the 2026-09-21 capture did not produce one |
+| Before 5.5     | S1 / D3                                                                                                                                      |
+| Before 6.2     | S2 payload contract for the migrated flows                                                                                                   |
+| Before Phase 7 | S2 inventory; name any retained feature with no command and no artifact                                                                      |
+| Before 7.4     | S9 and S10 evidence for the warehouse- and `strict`-dependent features                                                                       |
+| Before Phase 8 | 7.1 merged; beta.2 soaked on `finance-pipelines`                                                                                             |
+| Before 10.4    | all seven consumer characterization cases green through the fork                                                                             |
+| Before v2.3    | **D6** and **D7** from v2.2's joint benchmark, plus the Perspective spike verdict                                                            |
 
 Hard-to-reverse, each v1 one preceded by a release: 6.3 (flip the producer), 7.1 (retire the adapter), all of 8, 9.1 (namespace rename), and v2.3 (the lineage renderer). Do not batch those with another step.
 
@@ -146,6 +146,6 @@ Section 4 of the plan. **It starts after v1 is complete through Phase 10 and the
 - Ponytail: no files the plan says to delete later; no telemetry shim; no 5.1 resolver inside 2.x tests beyond PATH checks.
 - No generated output committed to `src/` or `webview_panels/src/`, and no patched `node_modules`.
 - No new ambient watching of `target/`, no writes into any project's `target/`, no persisted compiler, schema, or result cache, and no second diagnostic store.
-- No deferred decision settled in passing: D5 authentication, D6 runtime, D7 renderer, D8 Tailwind.
+- No deferred decision settled in passing: D6 runtime, D7 renderer, D8 Tailwind. D5 is decided: no login.
 - No performance target that the harness did not produce.
 - `just check` green. `just package` when packaging changed.
