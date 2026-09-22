@@ -4,6 +4,7 @@ import {
 } from "@vscode/test-electron";
 import { spawnSync } from "child_process";
 import { copyFileSync, cpSync, mkdtempSync, rmSync } from "fs";
+import { createServer } from "net";
 import { tmpdir } from "os";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -30,7 +31,6 @@ if (!hostApp || !vsix) {
   console.error("Missing --host-app or --vsix");
   process.exit(2);
 }
-const remoteDebuggingPort = process.env.FPU_CDP_PORT;
 
 if (process.env.FPU_SKIP_INTEGRATION_COMPILE !== "1") {
   const compile = spawnSync("npm", ["run", "compile:integration"], {
@@ -63,6 +63,10 @@ const cleanup = () => {
 };
 process.once("exit", cleanup);
 
+const cdpPort =
+  process.env.FPU_CDP_PORT ??
+  String(await findAvailablePort(10_000 + (process.pid % 20_000)));
+
 const [cliPath, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(hostApp, {
   reuseMachineInstall: true,
 });
@@ -92,21 +96,39 @@ try {
       workspaceDir,
       `--user-data-dir=${userDataDir}`,
       `--extensions-dir=${extensionsDir}`,
-      ...(remoteDebuggingPort
-        ? [`--remote-debugging-port=${remoteDebuggingPort}`]
-        : []),
+      `--remote-debugging-port=${cdpPort}`,
       ...(host === "cursor"
         ? ["--skip-onboarding", "--suppress-popups-on-startup"]
         : []),
-      "--disable-workspace-trust",
-      "--skip-release-notes",
-      "--skip-welcome",
     ],
     extensionTestsEnv: {
       FPU_SMOKE_HOST: host,
+      FPU_CDP_PORT: cdpPort,
+      ...(process.env.FPU_RUNTIME_BENCHMARK
+        ? { FPU_RUNTIME_BENCHMARK: process.env.FPU_RUNTIME_BENCHMARK }
+        : {}),
     },
   });
 } finally {
   process.removeListener("exit", cleanup);
   cleanup();
+}
+
+async function findAvailablePort(start) {
+  for (let port = start; port < 32_000; port += 1) {
+    if (await canBind(port)) {
+      return port;
+    }
+  }
+  throw new Error("No CDP port available below the ephemeral range");
+}
+
+function canBind(port) {
+  return new Promise((resolve) => {
+    const server = createServer();
+    server.once("error", () => resolve(false));
+    server.listen(port, "127.0.0.1", () => {
+      server.close(() => resolve(true));
+    });
+  });
 }

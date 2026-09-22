@@ -1,3 +1,19 @@
+import {
+  allDispatchedSlotsSettled,
+  assembleEvaluationResults,
+  ContextSlot,
+  DispatchedContext,
+} from "./cdpEvaluation";
+import {
+  aggregateWorkbenchNotificationSnapshots,
+  collectWorkbenchNotifications,
+  NOTIFICATION_CENTER_ITEM_SELECTOR,
+  NOTIFICATION_TOAST_ITEM_SELECTOR,
+  WorkbenchNotificationSnapshot,
+} from "./notificationToasts";
+
+export type SmokeHost = "vscode" | "cursor";
+
 interface CdpTarget {
   type: string;
   title?: string;
@@ -5,8 +21,11 @@ interface CdpTarget {
   webSocketDebuggerUrl?: string;
 }
 
-interface ExecutionContext {
-  id: number;
+export function validateSmokeHost(host: string): SmokeHost {
+  if (host === "vscode" || host === "cursor") {
+    return host;
+  }
+  throw new Error(`Unsupported smoke host: ${host}`);
 }
 
 export interface WebviewPaintMetric {
@@ -16,6 +35,80 @@ export interface WebviewPaintMetric {
   bodyText: string;
   stylesheets: string[];
   codiconFont: boolean;
+}
+
+const WORKBENCH_NOTIFICATION_COLLECTOR = `(${collectWorkbenchNotifications.toString()})(
+  document,
+  ${JSON.stringify(NOTIFICATION_CENTER_ITEM_SELECTOR)},
+  ${JSON.stringify(NOTIFICATION_TOAST_ITEM_SELECTOR)}
+)`;
+
+function matchesWorkbenchPage(target: CdpTarget, host: string): boolean {
+  if (
+    target.type !== "page" ||
+    !target.webSocketDebuggerUrl ||
+    target.url?.startsWith("devtools://")
+  ) {
+    return false;
+  }
+  const url = target.url ?? "";
+  if (!url.includes("/workbench/workbench.html")) {
+    return false;
+  }
+  const smokeHost = validateSmokeHost(host);
+  if (smokeHost === "vscode") {
+    return url.includes("vscode-app");
+  }
+  return url.includes("cursor") || target.title?.includes("Cursor") === true;
+}
+
+function isWorkbenchNotificationSnapshot(
+  value: unknown,
+): value is WorkbenchNotificationSnapshot {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+  const candidate = value as Partial<WorkbenchNotificationSnapshot>;
+  return (
+    typeof candidate.workbench === "boolean" &&
+    Array.isArray(candidate.toasts) &&
+    candidate.toasts.every((entry) => typeof entry === "string")
+  );
+}
+
+export async function readWorkbenchNotificationTexts(
+  port: string,
+  host: string,
+  attempts = 20,
+): Promise<string[]> {
+  const smokeHost = validateSmokeHost(host);
+  let lastError: unknown;
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const target = await findWorkbenchPageTarget(port, smokeHost);
+      const values = await evaluateContexts(
+        target.webSocketDebuggerUrl!,
+        WORKBENCH_NOTIFICATION_COLLECTOR,
+      );
+      const snapshots = values.map((value) => {
+        if (!isWorkbenchNotificationSnapshot(value)) {
+          throw new Error(
+            `CDP notification collector returned unexpected value: ${JSON.stringify(value)}`,
+          );
+        }
+        return value;
+      });
+      return aggregateWorkbenchNotificationSnapshots(snapshots).toasts;
+    } catch (error) {
+      lastError = error;
+      if (attempt < attempts - 1) {
+        await sleep(100);
+      }
+    }
+  }
+  throw lastError instanceof Error
+    ? lastError
+    : new Error(String(lastError ?? "CDP notification read failed"));
 }
 
 export async function waitForWebviewPaint(
@@ -69,7 +162,9 @@ export async function waitForWebviewPaint(
     } catch {
       // The CDP endpoint can be briefly unavailable while a view is attaching.
     }
-    await sleep(100);
+    if (attempt < attempts - 1) {
+      await sleep(100);
+    }
   }
   throw new Error(
     `Webview did not render with required assets: ${viewPath} ${JSON.stringify({
@@ -81,6 +176,22 @@ export async function waitForWebviewPaint(
       })),
     })}`,
   );
+}
+
+async function findWorkbenchPageTarget(
+  port: string,
+  host: string,
+): Promise<CdpTarget> {
+  const targets = await listTargets(port);
+  const page = targets.find((target) => matchesWorkbenchPage(target, host));
+  if (!page) {
+    throw new Error(
+      `Workbench page for ${host} not found among CDP targets: ${JSON.stringify(
+        targets.map(({ type, title, url }) => ({ type, title, url })),
+      )}`,
+    );
+  }
+  return page;
 }
 
 async function listTargets(port: string): Promise<CdpTarget[]> {
@@ -97,9 +208,10 @@ function evaluateContexts(
 ): Promise<unknown[]> {
   return new Promise((resolve, reject) => {
     const socket = new WebSocket(webSocketUrl);
-    const contexts: ExecutionContext[] = [];
-    const evaluations = new Map<number, unknown>();
-    let expected = 0;
+    const pendingContextIds = new Set<number>();
+    const slots = new Map<number, ContextSlot>();
+    let dispatched: DispatchedContext[] = [];
+    let evaluateStarted = false;
     let contextTimer: NodeJS.Timeout | undefined;
     let settled = false;
     const cleanup = () => {
@@ -117,6 +229,25 @@ function evaluateContexts(
       cleanup();
       callback();
     };
+    const maybeComplete = () => {
+      if (settled || !evaluateStarted) {
+        return;
+      }
+      if (!allDispatchedSlotsSettled(dispatched, slots)) {
+        return;
+      }
+      finish(() => {
+        try {
+          resolve(assembleEvaluationResults(dispatched, slots));
+        } catch (error) {
+          reject(
+            error instanceof Error
+              ? error
+              : new Error(String(error ?? "CDP evaluation assembly failed")),
+          );
+        }
+      });
+    };
     const timeout = setTimeout(
       () =>
         finish(() =>
@@ -126,59 +257,91 @@ function evaluateContexts(
         ),
       5_000,
     );
+    const dispatchEvaluations = () => {
+      evaluateStarted = true;
+      const contextIds = [...pendingContextIds];
+      pendingContextIds.clear();
+      if (contextIds.length === 0) {
+        finish(() => resolve([]));
+        return;
+      }
+      dispatched = contextIds.map((contextId, index) => ({
+        requestId: 100 + index,
+        contextId,
+      }));
+      for (const { requestId } of dispatched) {
+        slots.set(requestId, { state: "pending" });
+      }
+      for (const { requestId, contextId } of dispatched) {
+        socket.send(
+          JSON.stringify({
+            id: requestId,
+            method: "Runtime.evaluate",
+            params: {
+              contextId,
+              expression,
+              awaitPromise: true,
+              returnByValue: true,
+            },
+          }),
+        );
+      }
+    };
     socket.addEventListener("open", () => {
       socket.send(JSON.stringify({ id: 1, method: "Runtime.enable" }));
     });
     socket.addEventListener("message", (event) => {
       const message = JSON.parse(String(event.data));
       if (message.method === "Runtime.executionContextCreated") {
-        contexts.push(message.params.context);
+        if (!evaluateStarted) {
+          pendingContextIds.add(message.params.context.id);
+        }
+        return;
+      }
+      if (message.method === "Runtime.executionContextDestroyed") {
+        const contextId = message.params.executionContextId as number;
+        if (!evaluateStarted) {
+          pendingContextIds.delete(contextId);
+          return;
+        }
+        const entry = dispatched.find(
+          ({ contextId: dispatchedId }) => dispatchedId === contextId,
+        );
+        if (entry && slots.get(entry.requestId)?.state === "pending") {
+          slots.set(entry.requestId, { state: "destroyed" });
+          maybeComplete();
+        }
         return;
       }
       if (message.id === 1) {
-        const evaluate = () => {
-          expected = contexts.length;
-          if (expected === 0) {
-            finish(() => resolve([]));
-            return;
-          }
-          contexts.forEach((context, index) => {
-            socket.send(
-              JSON.stringify({
-                id: 100 + index,
-                method: "Runtime.evaluate",
-                params: {
-                  contextId: context.id,
-                  expression,
-                  awaitPromise: true,
-                  returnByValue: true,
-                },
-              }),
-            );
-          });
-        };
-        if (contexts.length === 0) {
+        if (pendingContextIds.size === 0) {
           // Cursor can acknowledge Runtime.enable before reporting existing contexts.
-          contextTimer = setTimeout(evaluate, 100);
+          contextTimer = setTimeout(dispatchEvaluations, 100);
         } else {
-          evaluate();
+          dispatchEvaluations();
         }
         return;
       }
       if (typeof message.id !== "number" || message.id < 100) {
         return;
       }
-      evaluations.set(
-        message.id,
-        message.error || message.result.exceptionDetails
-          ? undefined
-          : message.result.result.value,
-      );
-      if (evaluations.size === expected) {
-        finish(() =>
-          resolve(contexts.map((_, index) => evaluations.get(100 + index))),
-        );
+      if (message.error) {
+        slots.set(message.id, {
+          state: "error",
+          error: JSON.stringify(message.error),
+        });
+      } else if (message.result.exceptionDetails) {
+        slots.set(message.id, {
+          state: "error",
+          error: JSON.stringify(message.result.exceptionDetails),
+        });
+      } else {
+        slots.set(message.id, {
+          state: "ok",
+          value: message.result.result.value,
+        });
       }
+      maybeComplete();
     });
     socket.addEventListener("error", () => {
       finish(() => reject(new Error(`CDP socket failed: ${webSocketUrl}`)));

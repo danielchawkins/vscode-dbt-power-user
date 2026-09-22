@@ -4,10 +4,17 @@ import * as path from "path";
 import "reflect-metadata";
 import * as vscode from "vscode";
 import { ActivationMetric, readActivationMetric } from "./activationReport";
-import { waitForWebviewPaint, WebviewPaintMetric } from "./cdpClient";
+import {
+  readWorkbenchNotificationTexts,
+  validateSmokeHost,
+  waitForWebviewPaint,
+  WebviewPaintMetric,
+} from "./cdpClient";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RUNTIME_TIMINGS_COMMAND = "dbtPowerUser.test.getRuntimeTimings";
+const SHOW_NOTIFICATIONS = "notifications.showList";
+const HIDE_NOTIFICATIONS = "notifications.hideList";
 
 interface HostRuntimeTiming {
   viewPath: string;
@@ -39,10 +46,15 @@ suite("Pinned-host VSIX smoke", function () {
   });
 
   test("activates the VSIX and opens retained panels", async () => {
+    const cdpPort = process.env.FPU_CDP_PORT;
+    assert.ok(cdpPort, "smoke requires CDP port");
+    const smokeHost = validateSmokeHost(process.env.FPU_SMOKE_HOST ?? "");
+
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
     await ext.activate();
     assert.ok(ext.isActive, "packaged extension should activate");
+    await assertNoWorkbenchNotifications(cdpPort, smokeHost);
 
     const extRoot = ext.extensionUri.fsPath;
     for (const asset of [
@@ -58,8 +70,6 @@ suite("Pinned-host VSIX smoke", function () {
     }
 
     const runtimeEnabled = process.env.FPU_RUNTIME_BENCHMARK === "1";
-    const cdpPort = process.env.FPU_CDP_PORT;
-    assert.ok(!runtimeEnabled || cdpPort, "runtime benchmark requires CDP");
 
     const folder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(folder, "fixture workspace should be open");
@@ -101,7 +111,7 @@ suite("Pinned-host VSIX smoke", function () {
         `${panel.command} should be registered`,
       );
       if (runtimeEnabled) {
-        webviews.push(await openMeasuredPanel(cdpPort!, panel));
+        webviews.push(await openMeasuredPanel(cdpPort, panel));
       } else {
         await openPanel(panel);
         await sleep(2_000);
@@ -114,12 +124,14 @@ suite("Pinned-host VSIX smoke", function () {
       })}`,
     );
 
+    await assertNoWorkbenchNotifications(cdpPort, smokeHost);
+
     if (runtimeEnabled) {
       const hostTimings = await waitForHostRuntimeTimings();
       const activation: ActivationMetric = await readActivationMetric();
       console.log(
         `FPU_RUNTIME_SAMPLE=${JSON.stringify({
-          host: process.env.FPU_SMOKE_HOST,
+          host: smokeHost,
           activation,
           webviews: webviews.map(
             ({ viewPath, timeOrigin, firstContentfulPaint, openAttempts }) => ({
@@ -135,6 +147,26 @@ suite("Pinned-host VSIX smoke", function () {
     }
   });
 });
+
+async function assertNoWorkbenchNotifications(
+  cdpPort: string,
+  smokeHost: string,
+): Promise<void> {
+  await vscode.commands.executeCommand(SHOW_NOTIFICATIONS);
+  try {
+    const notifications = await readWorkbenchNotificationTexts(
+      cdpPort,
+      smokeHost,
+    );
+    if (notifications.length > 0) {
+      throw new Error(
+        `Unexpected workbench notifications: ${JSON.stringify(notifications)}`,
+      );
+    }
+  } finally {
+    await vscode.commands.executeCommand(HIDE_NOTIFICATIONS);
+  }
+}
 
 async function waitForHostRuntimeTimings(): Promise<HostRuntimeTiming[]> {
   for (let attempt = 0; attempt < 100; attempt += 1) {
