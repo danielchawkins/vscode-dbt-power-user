@@ -81,7 +81,7 @@ Steps 1.2 through 3.15 and Phase 4.1 through 4.5 are complete at this tip. Phase
 | 4.x Declared Project  | `src/projects/**`, `src/dbt_client/dbtProjectContainer.ts`, `queryManifestService.ts` | serial 4.1 → 4.5                                        |
 | 5.x LSP               | `src/fusion/staticAnalysisMode.ts`, `src/lsp/**`, `src/fusion/fusionExecutable.ts`    | 5.0 after D5 and before 5.3; then 5.1 → 5.6             |
 | 6.x metadata          | `src/dbt_client/event/manifestCacheChangedEvent.ts`, `src/metadata/**`                | 6.0 epoch first; no consumer changes                    |
-| 7.1 adapter           | `src/dbt_client/fusionProjectIntegration.ts`, `dbtProject.ts`, `inversify.config.ts`  | gates all of Phase 8                                    |
+| 7.1 adapter           | `src/dbt_client/fusionProjectIntegration.ts`, `dbtProject.ts`, `inversify.config.ts`  | gates Phase 8.2 onward                                  |
 | 8–10                  | as the spec                                                                           | sequential; stop at Confirm gates                       |
 | v2                    | plan Section 4                                                                        | after Phase 10 and the 1.0.0 release                    |
 
@@ -112,7 +112,7 @@ Copy the contract and verification from `fusion-lsp-plan.md`. The notes below ar
 
 ### Phases 4–10 and v2
 
-Steps and contracts come from the spec. Hard-to-reverse: 6.3, 7.1, all of 8, 9.1, and v2.3. **D5** is decided: no login. D3 is pass-through, and S10 leaves effective mode unknown; neither blocks implementation. Require each 5.6 replacement flow before deleting its provider, the S2 inventory before Phase 7, consumer soak before Phase 8, all seven characterization cases before 10.4, and **D6** with **D7** before v2.3. v2 begins only after the 1.0.0 release.
+Steps and contracts come from the spec. Hard-to-reverse: 7.1, Phase 8.2 onward, 9.1, and v2.3. Step 8.1 is exempt because it deletes already-unreachable Core and Cloud construction. **D5** is decided: no login. D3 is pass-through, and S10 leaves effective mode unknown; neither blocks implementation. Require each 5.6 replacement flow before deleting its provider, the S2 inventory before Phase 7, consumer soak before 8.2, all seven characterization cases before 10.4, and **D6** with **D7** before v2.3.
 
 ## Reviewer checklist
 

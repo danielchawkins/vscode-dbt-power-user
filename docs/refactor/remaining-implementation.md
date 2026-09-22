@@ -4,13 +4,13 @@ This is the executor plan for work still ahead of `main`. Contracts, file lists,
 
 ## Current position
 
-**Completed at this tip:** 1.2 version gate, 1.3 conflict guard and `enabled`, all of Phase 2, steps 3.1 through 3.15, and Phase 4.1 through 4.5. Project Registry is the sole scope authority, DBTProjectContainer produces one DBTProject per Declared Project, Query Manifest maps only through Project Context, and silent pinned-project resolution fallbacks are retired. Hover, autocomplete, and code lenses never inherit a prior pick for a resource outside every Declared Project; untitled/path-free SQL execution no longer silently substitutes a stored project. Explicit project-pick and validate/install behaviors are preserved. The extension packages as `0.2.0-alpha.0` against the 1.128 Extensions API with webview compiled for Chromium 148.
+**Completed at this tip:** Phases 0–4, the Fusion client through 5.4, publication epochs, and the manifest metadata-source port. Project Registry is the sole scope authority and DBTProjectContainer routes one metadata source per Declared Project through the existing consumer event. Core, Cloud, and Core-command construction is removed; the external adapter receives fail-closed factories in those unused positional slots while its Fusion manifest parser remains active. The extension packages as `0.2.0-alpha.0` against the 1.128 Extensions API with webview compiled for Chromium 148.
 
 **Completed evidence:** pinned VS Code 1.128.0 and unauthenticated Cursor 3.21.16 each record all three host activation phases, real-webview FCP, and host resolve-to-ready across ten fresh processes. Webview target is now `chrome148` with `rolldownOptions`, and the Tailwind guard retains 543 base selector tokens. Project Registry coverage includes registration, fail-closed semantics, explicitly declared package roots, canonical deduplication and aliases, lookup order, containment, parent-versus-individual workspace equivalence, watchers, configuration and workspace-folder changes, stable events, and disposal. Phase 4.5 verifies that a file outside every Declared Project never inherits a prior pick.
 
-**Next:** Phase 5 spikes, then LSP transport, client, and lifecycle once the Confirm gates in the plan pass.
+**Next:** retire the external adapter's manifest watcher and Python path without replacing complete metadata with partial LSP payloads.
 
-What is still true of the product: it is manifest-driven, and it still ships hosted Altimate, authentication, credits, and Python-bridge paths. Core and Cloud stay constructible because `DBTProjectIntegrationAdapter`'s constructor requires their factories — **not** because Fusion extends Cloud, which it does not. `DBTFusionCommandDetection` and the integration classes live in `@altimateai/dbt-integration`; wrap them, never patch `node_modules`.
+What is still true of the product: it is manifest-driven, and it still ships hosted Altimate, authentication, credits, and Python-bridge paths. `DBTProjectIntegrationAdapter` remains only for manifest parsing and its private watcher; Core and Cloud are not constructible. `DBTFusionCommandDetection` and the integration classes live in `@altimateai/dbt-integration`; wrap them, never patch `node_modules`.
 
 A React 19 attempt was abandoned for vendoring generated output into `src/`, and React is **not** scheduled as a selected target: D6 decides the runtime at v2.2. Vendoring generated output is prohibited outright — generated CSS or JavaScript may arrive through a package's `exports`, never as a committed copy.
 
@@ -114,19 +114,18 @@ Then serial 5.0 → 5.4. **5.0 follows D5**: `src/fusion/staticAnalysisMode.ts` 
 
 ## Phases 6–10 — serial with Confirm gates
 
-6.0 stamps the publication epoch and producer identity onto `ManifestCacheProjectAddedEvent` without changing consumers. 6.1 introduces the producer port. 6.2 adds the LSP producer and exact epoch/document-version acceptance at its real request seam. 6.3 flips the producer. **7.1 then retires `DBTProjectIntegrationAdapter`**, which removes the ambient target watcher and Cloud factory requirement together; 8.1 deletes Cloud and Core construction only after it.
+6.0 stamps the publication epoch and producer identity onto `ManifestCacheProjectAddedEvent` without changing consumers. 6.1 introduces the producer port. Fusion's LSP payload cannot populate the complete metadata contract, so the manifest source remains selected. **7.1 retires `DBTProjectIntegrationAdapter`** by replacing its parser/watcher composition without duplicating parser logic. Core and Cloud construction is already removed.
 
 | Gate           | Stop until                                                                                                                          |
 | -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | Before 5.0     | **D5** is decided: no login. Configured mode supplies the launch argument; effective mode remains unknown without positive evidence |
-| Before 6.2     | S2 payload contract for the migrated flows                                                                                          |
 | Before Phase 7 | S2 inventory; name any retained feature with no command and no artifact                                                             |
 | Before 7.4     | S9 and S10 evidence for the warehouse- and `strict`-dependent features                                                              |
-| Before Phase 8 | 7.1 merged; beta.2 soaked on `finance-pipelines`                                                                                    |
+| Before 8.2     | 7.1 merged; beta.2 soaked on `finance-pipelines`                                                                                    |
 | Before 10.4    | all seven consumer characterization cases green through the fork                                                                    |
 | Before v2.3    | **D6** and **D7** from v2.2's joint benchmark, plus the Perspective spike verdict                                                   |
 
-Hard-to-reverse, each v1 one preceded by a release: 6.3 (flip the producer), 7.1 (retire the adapter), all of 8, 9.1 (namespace rename), and v2.3 (the lineage renderer). Do not batch those with another step.
+Hard-to-reverse, each v1 one preceded by a release: 7.1 (retire the adapter), 8.2 onward, 9.1 (namespace rename), and v2.3 (the lineage renderer). Step 8.1 is exempt because it deletes already-unreachable construction. Do not batch the remaining boundaries.
 
 6.1 must not change consumer files. If it must, stop: the metadata event is the wrong boundary.
 
