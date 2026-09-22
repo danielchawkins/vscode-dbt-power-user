@@ -16,6 +16,7 @@ import {
   WorkspaceFolder,
 } from "vscode";
 import { LanguageClientOptions, State } from "vscode-languageclient/node";
+import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
 import {
   fusionLogLevelArgument,
   parseTraceServerLevel,
@@ -1254,7 +1255,7 @@ describe("FusionLanguageClient lifecycle", () => {
     });
 
     expect(languageClient.sendRequest).toHaveBeenCalledWith(
-      "workspace/executeCommand",
+      ExecuteCommandRequest.type,
       {
         command: `${prefix}${FUSION_LSP_COMMANDS.show}`,
         arguments: [{ uri: "file:///workspace/general/models/plain.sql" }],
