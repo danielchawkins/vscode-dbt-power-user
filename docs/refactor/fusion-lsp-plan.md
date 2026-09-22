@@ -77,9 +77,9 @@ Launch surface:
 
 Advertised server capabilities include `completionProvider`, `hoverProvider`, `signatureHelpProvider`, `definitionProvider`, `declarationProvider`, `typeDefinitionProvider`, `implementationProvider`, `referencesProvider`, `documentSymbolProvider`, `workspaceSymbolProvider`, `codeActionProvider`, `documentFormattingProvider`, `renameProvider`, `foldingRangeProvider`, `selectionRangeProvider`, `semanticTokensProvider`, `inlayHintProvider`, `codeLensProvider`, `diagnosticProvider`, and `executeCommandProvider`. **This is the list that makes five provider directories deletions rather than rewrites.**
 
-Advertised `executeCommandProvider` commands, which appear in the binary as one contiguous registration array immediately before the watcher glob and the code action kinds: `dbt.listNodes`, `dbt.getCurrentNode`, `dbt.compileFile`, `dbt.compileLsp`, `dbt.clearTarget`, `dbt.getProjectInfo`. Those six are the whole advertised set.
+`initialize` on Fusion 2.0.5 advertises seven `executeCommandProvider` commands: `dbt.listNodes`, `dbt.getCurrentNode`, `dbt.compileFile`, `dbt.compileLsp`, `dbt.clearTarget`, `dbt.getProjectInfo`, and `dbt.show`. An older reading of the binary listed six and left `dbt.show` off that list.
 
-`dbt.show`, `dbt.previewCte`, and `dbt.goToDefinition` appear *outside* that array, only alongside payload-validation and progress strings ("Missing dbt.show payload", "Missing compile file payload", `dbt/progress/show`). The likely reading is that they are handled but not advertised — which matters concretely: a client that validates outgoing commands against `initialize`'s `executeCommandProvider.commands` would reject them even though the server would answer. Do not filter against the advertised list, and confirm each of the three empirically in spike **S2**.
+`dbt.previewCte` and `dbt.goToDefinition` are not in that list. An unknown command name also returns `null` and no LSP error, so S2 does not show that those two are registered. Do not drop `dbt.show` because an older reading left it off the advertised list.
 
 Progress notifications, which give the status-bar contract: `dbt/progress/listNodes` ("Computing Lineage"), `dbt/progress/getCurrentNode` ("Getting Columns"), `dbt/progress/compileFile` ("Compiling File"), `dbt/progress/references` ("Finding All References"), `dbt/progress/rename` ("Renaming Files"), `dbt/progress/show` ("Running Preview"). Note that `dbt.listNodes` is the lineage source and `dbt.getCurrentNode` the column source — model and column lineage do not need a bespoke command.
 
@@ -536,7 +536,7 @@ export const FUSION_LSP_COMMANDS = {
 } as const;
 ```
 
-`request` applies the prefix. Treat `show` and `previewCte` as unconfirmed until **S2**.
+`request` applies the prefix. S2 advertises `show`. `previewCte` still has no result that distinguishes it from an unknown command.
 
 Lifecycle: restart with bounded exponential backoff on unexpected exit, cap the attempts, and on reaching the cap move to `failed` and log — do not notify. Dispose clients on project unregistration, workspace folder removal, configuration change affecting the executable or lint setting, and extension deactivation. Await process exit during disposal and escalate to `SIGKILL` after a grace period, so a window reload does not leak a server (**S4**).
 
