@@ -3,18 +3,10 @@ import {
   ChildrenParentParser,
   CLIDBTCommandExecutionStrategy,
   CommandProcessExecutionFactory,
-  DBTCloudDetection,
-  DBTCloudProjectIntegration,
-  DbtCloudVariantDetector,
   DBTCommandExecutionInfrastructure,
   DBTCommandExecutionStrategy,
   DBTCommandFactory,
   DBTConfiguration,
-  DBTCoreCommandDetection,
-  DBTCoreCommandProjectDetection,
-  DBTCoreCommandProjectIntegration,
-  DBTCoreDetection,
-  DBTCoreProjectIntegration,
   DBTDetection,
   DBTDiagnosticData,
   DBTFusionCommandProjectIntegration,
@@ -30,7 +22,6 @@ import {
   MetricParser,
   ModelDepthParser,
   NodeParser,
-  PythonDBTCommandExecutionStrategy,
   PythonEnvironmentProvider,
   RuntimePythonEnvironment,
   SemanticModelParser,
@@ -54,6 +45,7 @@ import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import { FusionVersionDetection } from "./fusion/fusionVersionDetection";
+import { failClosedIntegrationFactory } from "./inversify/failClosedIntegrationFactory";
 import {
   createFusionClientPool,
   FusionClientPoolImpl,
@@ -197,27 +189,6 @@ container
   })
   .inSingletonScope();
 
-container
-  .bind<Factory<PythonDBTCommandExecutionStrategy, [string]>>(
-    "Factory<PythonDBTCommandExecutionStrategy>",
-  )
-  .toFactory((context: ResolutionContext) => {
-    return (projectRoot: string) => {
-      const container = context;
-      const baseConfig = container.get<DBTConfiguration>("DBTConfiguration");
-      // Create a per-project config that returns the correct working directory
-      // so that PythonDBTCommandExecutionStrategy resolves the right .env file
-      const projectConfig = Object.create(baseConfig) as DBTConfiguration;
-      projectConfig.getWorkingDirectory = () => projectRoot;
-      return new PythonDBTCommandExecutionStrategy(
-        container.get(CommandProcessExecutionFactory),
-        container.get("RuntimePythonEnvironment"),
-        container.get("DBTTerminal"),
-        projectConfig,
-      );
-    };
-  });
-
 container.bind(DBTCommandExecutionInfrastructure).toDynamicValue((context) => {
   return new DBTCommandExecutionInfrastructure(
     context.get("RuntimePythonEnvironment"),
@@ -232,59 +203,6 @@ container
   })
   .inSingletonScope();
 
-container
-  .bind(DbtCloudVariantDetector)
-  .toDynamicValue((context) => {
-    return new DbtCloudVariantDetector(context.get("DBTTerminal"));
-  })
-  .inSingletonScope();
-
-// Bind dbt core integration classes using factory functions
-container
-  .bind(DBTCoreDetection)
-  .toDynamicValue((context) => {
-    return new DBTCoreDetection(
-      context.get("RuntimePythonEnvironment"),
-      context.get(CommandProcessExecutionFactory),
-      context.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-// Note: DBTCoreProjectIntegration requires projectRoot at construction time
-// It will be created via Factory<DBTCoreProjectIntegration>
-container
-  .bind(DBTCoreProjectIntegration)
-  .toDynamicValue(() => {
-    throw new Error(
-      "DBTCoreProjectIntegration should be created via Factory<DBTCoreProjectIntegration>",
-    );
-  })
-  .inSingletonScope();
-
-// Bind dbt cloud integration classes using factory functions
-container
-  .bind(DBTCloudDetection)
-  .toDynamicValue((context) => {
-    return new DBTCloudDetection(
-      context.get(CommandProcessExecutionFactory),
-      context.get("RuntimePythonEnvironment"),
-      context.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-// Note: DBTCloudProjectIntegration requires projectRoot at construction time
-// It will be created via Factory<DBTCloudProjectIntegration>
-container
-  .bind(DBTCloudProjectIntegration)
-  .toDynamicValue(() => {
-    throw new Error(
-      "DBTCloudProjectIntegration should be created via Factory<DBTCloudProjectIntegration>",
-    );
-  })
-  .inSingletonScope();
-
 // Note: DBTFusionCommandProjectIntegration requires projectRoot at construction time
 // It will be created via Factory<DBTFusionCommandProjectIntegration>
 container
@@ -292,38 +210,6 @@ container
   .toDynamicValue(() => {
     throw new Error(
       "DBTFusionCommandProjectIntegration should be created via Factory<DBTFusionCommandProjectIntegration>",
-    );
-  })
-  .inSingletonScope();
-
-// Bind dbt core command integration classes using factory functions
-container
-  .bind(DBTCoreCommandDetection)
-  .toDynamicValue((context) => {
-    return new DBTCoreCommandDetection(
-      context.get("RuntimePythonEnvironment"),
-      context.get(CommandProcessExecutionFactory),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(DBTCoreCommandProjectDetection)
-  .toDynamicValue((context) => {
-    return new DBTCoreCommandProjectDetection(
-      context.get(DBTCommandExecutionInfrastructure),
-      context.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-// Note: DBTCoreCommandProjectIntegration requires projectRoot at construction time
-// It will be created via Factory<DBTCoreCommandProjectIntegration>
-container
-  .bind(DBTCoreCommandProjectIntegration)
-  .toDynamicValue(() => {
-    throw new Error(
-      "DBTCoreCommandProjectIntegration should be created via Factory<DBTCoreCommandProjectIntegration>",
     );
   })
   .inSingletonScope();
@@ -428,76 +314,6 @@ container
 container
   .bind<
     Factory<
-      DBTCoreProjectIntegration,
-      [string, DBTDiagnosticData[], DeferConfig, () => void]
-    >
-  >("Factory<DBTCoreProjectIntegration>")
-  .toFactory((context: ResolutionContext) => {
-    return (
-      projectRoot: string,
-      projectConfigDiagnostics: DBTDiagnosticData[],
-      deferConfig: DeferConfig,
-      onDiagnosticsChanged: () => void,
-    ) => {
-      const container = context;
-      const pythonStrategyFactory = container.get<
-        (projectRoot: string) => PythonDBTCommandExecutionStrategy
-      >("Factory<PythonDBTCommandExecutionStrategy>");
-      return new DBTCoreProjectIntegration(
-        container.get(DBTCommandExecutionInfrastructure),
-        container.get("RuntimePythonEnvironment"),
-        container.get("PythonEnvironmentProvider"),
-        pythonStrategyFactory(projectRoot),
-        container.get("Factory<CLIDBTCommandExecutionStrategy>"),
-        container.get("DBTTerminal"),
-        container.get("DBTConfiguration"),
-        container.get(DbtIntegrationClient),
-        projectRoot,
-        projectConfigDiagnostics,
-        deferConfig,
-        onDiagnosticsChanged,
-      );
-    };
-  });
-
-container
-  .bind<
-    Factory<
-      DBTCoreProjectIntegration,
-      [string, DBTDiagnosticData[], DeferConfig, () => void]
-    >
-  >("Factory<DBTCoreCommandProjectIntegration>")
-  .toFactory((context: ResolutionContext) => {
-    return (
-      projectRoot: string,
-      projectConfigDiagnostics: DBTDiagnosticData[],
-      deferConfig: DeferConfig,
-      onDiagnosticsChanged: () => void,
-    ) => {
-      const container = context;
-      const pythonStrategyFactory = container.get<
-        (projectRoot: string) => PythonDBTCommandExecutionStrategy
-      >("Factory<PythonDBTCommandExecutionStrategy>");
-      return new DBTCoreCommandProjectIntegration(
-        container.get(DBTCommandExecutionInfrastructure),
-        container.get("RuntimePythonEnvironment"),
-        container.get("PythonEnvironmentProvider"),
-        pythonStrategyFactory(projectRoot),
-        container.get("Factory<CLIDBTCommandExecutionStrategy>"),
-        container.get("DBTTerminal"),
-        container.get("DBTConfiguration"),
-        container.get(DbtIntegrationClient),
-        projectRoot,
-        projectConfigDiagnostics,
-        deferConfig,
-        onDiagnosticsChanged,
-      );
-    };
-  });
-
-container
-  .bind<
-    Factory<
       DBTFusionCommandProjectIntegration,
       [string, DBTDiagnosticData[], DeferConfig, () => void]
     >
@@ -527,45 +343,6 @@ container
 
 container
   .bind<
-    Factory<
-      DBTCloudProjectIntegration,
-      [string, DBTDiagnosticData[], DeferConfig, () => void]
-    >
-  >("Factory<DBTCloudProjectIntegration>")
-  .toFactory((context: ResolutionContext) => {
-    return (
-      projectRoot: string,
-      projectConfigDiagnostics: DBTDiagnosticData[],
-      deferConfig: DeferConfig,
-      onDiagnosticsChanged: () => void,
-    ) => {
-      const container = context;
-      const pythonStrategyFactory = container.get<
-        (projectRoot: string) => PythonDBTCommandExecutionStrategy
-      >("Factory<PythonDBTCommandExecutionStrategy>");
-      return new DBTCloudProjectIntegration(
-        container.get(DBTCommandExecutionInfrastructure),
-        container.get(DBTCommandFactory),
-        container.get("Factory<CLIDBTCommandExecutionStrategy>"),
-        container.get("RuntimePythonEnvironment"),
-        container.get("PythonEnvironmentProvider"),
-        container.get("DBTTerminal"),
-        projectRoot,
-        projectConfigDiagnostics,
-        deferConfig,
-        onDiagnosticsChanged,
-        container.get(DbtCloudVariantDetector),
-        {
-          pythonDBTCommandExecutionStrategy: pythonStrategyFactory(projectRoot),
-          dbtConfiguration: container.get<DBTConfiguration>("DBTConfiguration"),
-          dbtIntegrationClient: container.get(DbtIntegrationClient),
-        },
-      );
-    };
-  });
-
-container
-  .bind<
     Factory<DBTProjectIntegrationAdapter, [string, DeferConfig | undefined]>
   >("Factory<DBTProjectIntegrationAdapter>")
   .toFactory((context: ResolutionContext) => {
@@ -574,10 +351,10 @@ container
       return new DBTProjectIntegrationAdapter(
         container.get("DBTConfiguration"),
         container.get(DBTCommandFactory),
-        container.get("Factory<DBTCoreProjectIntegration>"),
-        container.get("Factory<DBTCloudProjectIntegration>"),
+        failClosedIntegrationFactory,
+        failClosedIntegrationFactory,
         container.get("Factory<DBTFusionCommandProjectIntegration>"),
-        container.get("Factory<DBTCoreCommandProjectIntegration>"),
+        failClosedIntegrationFactory,
         projectRoot,
         deferConfig,
         container.get(ChildrenParentParser),

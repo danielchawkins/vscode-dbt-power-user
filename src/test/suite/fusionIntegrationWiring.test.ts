@@ -72,6 +72,16 @@ describe("Fusion-only integration wiring", () => {
     expect(() => container.get("Factory<DBTProjectDetection>")).toThrow();
   });
 
+  it("does not bind unsupported integration factories", () => {
+    expect(container.isBound("Factory<DBTCoreProjectIntegration>")).toBe(false);
+    expect(container.isBound("Factory<DBTCloudProjectIntegration>")).toBe(
+      false,
+    );
+    expect(container.isBound("Factory<DBTCoreCommandProjectIntegration>")).toBe(
+      false,
+    );
+  });
+
   it("binds FusionStatus for the Fusion LSP status surface", () => {
     expect(container.isBound(FusionStatus)).toBe(true);
     const fusionStatus = container.get(FusionStatus);
