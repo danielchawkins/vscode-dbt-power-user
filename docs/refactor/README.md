@@ -29,3 +29,4 @@ Research holds evidence, measurements, and rationale; the plan holds decisions, 
 - [`vscode-webview-architecture-north-star-september-2026.md`](../research/vscode-webview-architecture-north-star-september-2026.md) — the measured extension/webview baseline and v2 architecture.
 - [`modern-webview-ui-september-2026.md`](../research/modern-webview-ui-september-2026.md) — React 19, Tailwind 4, and VS Code webview practice.
 - [`dbt-fusion-interactive-data-path-september-2026.md`](../research/dbt-fusion-interactive-data-path-september-2026.md) and its [sources ledger](../research/dbt-fusion-interactive-data-path-september-2026-sources.md) — project-state, cache, latency, and Snowflake evidence.
+- [`fusion-editor-flow-evidence.md`](fusion-editor-flow-evidence.md) — opt-in Phase 5.6 native editor-flow capture (`FPU_RUN_EDITOR_FLOW_CAPTURE=1`); gates provider deletion with S10.

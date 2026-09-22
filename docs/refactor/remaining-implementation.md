@@ -116,17 +116,17 @@ Then serial 5.0 → 5.4. **5.0 follows D5**: `src/fusion/staticAnalysisMode.ts` 
 
 6.0 stamps the publication epoch and producer identity onto `ManifestCacheProjectAddedEvent`, wraps extension-initiated requests so each captures the epoch and any document version before dispatch and rechecks both after completion, and starts the Fusion segment records. It adds no new interface and changes no consumer. 6.1 through 6.3 swap the producer behind the port. **7.1 then retires `DBTProjectIntegrationAdapter`**, which is what removes the ambient target watcher and the Cloud factory requirement together; 8.1 deletes Cloud and Core construction only after it.
 
-| Gate           | Stop until                                                                                                                          |
-| -------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| Before 5.0     | **D5** is decided: no login. Configured mode supplies the launch argument; effective mode remains unknown without positive evidence |
-| Before 5.5     | S1 / **D3** — 2026-09-21 capture did not finish loading and observed no diagnostics                                                 |
-| Before 5.6     | Reproducible loaded-project S10 control; 5.6 integration tests exercise every editor flow before provider deletion                  |
-| Before 6.2     | S2 payload contract for the migrated flows                                                                                          |
-| Before Phase 7 | S2 inventory; name any retained feature with no command and no artifact                                                             |
-| Before 7.4     | S9 and S10 evidence for the warehouse- and `strict`-dependent features                                                              |
-| Before Phase 8 | 7.1 merged; beta.2 soaked on `finance-pipelines`                                                                                    |
-| Before 10.4    | all seven consumer characterization cases green through the fork                                                                    |
-| Before v2.3    | **D6** and **D7** from v2.2's joint benchmark, plus the Perspective spike verdict                                                   |
+| Gate           | Stop until                                                                                                                                                                                                                |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Before 5.0     | **D5** is decided: no login. Configured mode supplies the launch argument; effective mode remains unknown without positive evidence                                                                                       |
+| Before 5.5     | S1 / **D3** — 2026-09-21 capture did not finish loading and observed no diagnostics                                                                                                                                       |
+| Before 5.6     | Reproducible loaded-project S10 control; opt-in editor-flow capture (`fusion-editor-flow-evidence.md`, `FPU_RUN_EDITOR_FLOW_CAPTURE=1`) must pass every Phase 5.6 flow on production-shaped arms before provider deletion |
+| Before 6.2     | S2 payload contract for the migrated flows                                                                                                                                                                                |
+| Before Phase 7 | S2 inventory; name any retained feature with no command and no artifact                                                                                                                                                   |
+| Before 7.4     | S9 and S10 evidence for the warehouse- and `strict`-dependent features                                                                                                                                                    |
+| Before Phase 8 | 7.1 merged; beta.2 soaked on `finance-pipelines`                                                                                                                                                                          |
+| Before 10.4    | all seven consumer characterization cases green through the fork                                                                                                                                                          |
+| Before v2.3    | **D6** and **D7** from v2.2's joint benchmark, plus the Perspective spike verdict                                                                                                                                         |
 
 Hard-to-reverse, each v1 one preceded by a release: 6.3 (flip the producer), 7.1 (retire the adapter), all of 8, 9.1 (namespace rename), and v2.3 (the lineage renderer). Do not batch those with another step.
 

@@ -77,6 +77,7 @@ interface FlowCapture {
   flowProgress: ProgressRecord[];
   pullDiagnosticsAvailable: boolean;
   textDocumentSyncShape: string;
+  renameProviderAdvertised: boolean;
   configurationRequestSections: string[];
   configurationDeliveredSections: string[];
   protocolErrors: number;
@@ -674,7 +675,9 @@ async function runEditorFlows(
 ): Promise<
   Omit<
     FlowCapture,
-    "configurationRequestSections" | "configurationDeliveredSections"
+    | "configurationRequestSections"
+    | "configurationDeliveredSections"
+    | "renameProviderAdvertised"
   >
 > {
   const completionPath = path.join(projectRoot, "models/completion_probe.sql");
@@ -1185,6 +1188,7 @@ async function runArm(arm: ArmId, sourceRoot: string): Promise<ArmCapture> {
     await fixture.connect(30_000);
 
     const configCursor = fixture.serverRequestCount("workspace/configuration");
+    const configDeliveryCursor = fixture.configurationDeliveryCount();
 
     const init = await fixture.request<{
       capabilities: Record<string, unknown>;
@@ -1207,6 +1211,7 @@ async function runArm(arm: ArmId, sourceRoot: string): Promise<ArmCapture> {
     const pullDiagnosticsAvailable =
       capabilities.diagnosticProvider !== undefined;
     const syncShape = textDocumentSyncShape(capabilities);
+    const renameProviderAdvertised = capabilities.renameProvider !== undefined;
 
     fixture.notify("initialized", {});
     const documentVersions = await openProjectDocuments(
@@ -1260,9 +1265,10 @@ async function runArm(arm: ArmId, sourceRoot: string): Promise<ArmCapture> {
       configCursor,
     );
     const configurationDeliveredSections =
-      extractDeliveredConfigurationSections(fixture, configCursor);
+      extractDeliveredConfigurationSections(fixture, configDeliveryCursor);
     const flows: FlowCapture = {
       ...flowBody,
+      renameProviderAdvertised,
       configurationRequestSections,
       configurationDeliveredSections,
     };
@@ -1301,6 +1307,7 @@ interface FlowSignature {
   lintCodeActionExercised: boolean;
   lintCodeActionOffered: boolean;
   getProjectInfoKind: OutcomeKind;
+  renameProviderAdvertised: boolean;
 }
 
 function flowSignature(capture: ArmCapture): FlowSignature {
@@ -1327,6 +1334,7 @@ function flowSignature(capture: ArmCapture): FlowSignature {
       capture.flows.lintCodeAction.value?.exercised === true,
     lintCodeActionOffered: capture.flows.lintCodeAction.value?.offered === true,
     getProjectInfoKind: capture.flows.getProjectInfo.kind,
+    renameProviderAdvertised: capture.flows.renameProviderAdvertised,
   };
 }
 
@@ -1404,6 +1412,7 @@ function redactedSummary(captures: ArmCapture[]): string {
           capture.flows.configurationDeliveredSections,
         pullDiagnosticsAvailable: capture.flows.pullDiagnosticsAvailable,
         textDocumentSyncShape: capture.flows.textDocumentSyncShape,
+        renameProviderAdvertised: capture.flows.renameProviderAdvertised,
         protocolErrors: capture.flows.protocolErrors,
       },
     })),
