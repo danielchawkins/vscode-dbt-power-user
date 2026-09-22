@@ -11,7 +11,8 @@ export type FusionVersionVerdict =
   | { kind: "ok"; version: FusionVersion }
   | { kind: "untestedMajor"; version: FusionVersion }
   | { kind: "tooOld"; version: FusionVersion }
-  | { kind: "notFusion"; raw: string };
+  | { kind: "notFusion"; raw: string }
+  | { kind: "notFound"; path: string; source: "configured" | "path" };
 
 export function parseFusionVersion(stdout: string): FusionVersion | undefined {
   const match = /^dbt\s+(\d+)\.(\d+)\.(\d+)(?:\s|$)/m.exec(stdout);
