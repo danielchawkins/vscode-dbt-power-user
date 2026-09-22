@@ -262,6 +262,8 @@ describe("Metadata contract — shape and key set snapshot", () => {
         terminal,
       ).createSemanticModelMetaMap(manifest.semantic_models, adapter),
       modelDepthMap,
+      publicationEpoch: 1,
+      metadataProducer: "manifest",
     };
 
     const nodeKeys = [...event.nodeMetaMap.nodes()]

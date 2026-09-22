@@ -433,7 +433,9 @@ describe("DBTProject Test Suite", () => {
         (call: any) =>
           call[0] === DBTProjectIntegrationAdapterEvents.SOURCE_FILE_CHANGED,
       );
+      expect(dbtProject.getPublicationEpoch()).toBe(0);
       onCall![1](); // Call the handler
+      expect(dbtProject.getPublicationEpoch()).toBe(0);
 
       expect(mockTerminal.debug).toHaveBeenCalledWith(
         "DBTProject",
@@ -471,16 +473,32 @@ describe("DBTProject Test Suite", () => {
         (call: any) =>
           call[0] === DBTProjectIntegrationAdapterEvents.MANIFEST_PARSED,
       );
+      const lastPublication = () => {
+        const calls = mockManifestChangedEmitter.fire.mock.calls;
+        const publication = calls[calls.length - 1]?.[0].added?.[0];
+        if (!publication) {
+          throw new Error("Expected a published manifest event");
+        }
+        return publication;
+      };
       onCall![1](parsedManifest);
+      const firstPublication = lastPublication();
+      onCall![1](parsedManifest);
+      const secondPublication = lastPublication();
 
-      expect(mockManifestChangedEmitter.fire).toHaveBeenCalledWith({
-        added: [
-          expect.objectContaining({
-            project: dbtProject,
-            ...parsedManifest,
-          }),
-        ],
-      });
+      expect(firstPublication).toEqual(
+        expect.objectContaining({
+          project: dbtProject,
+          ...parsedManifest,
+          metadataProducer: "manifest",
+        }),
+      );
+      expect(secondPublication.publicationEpoch).toBe(
+        firstPublication.publicationEpoch + 1,
+      );
+      expect(dbtProject.getPublicationEpoch()).toBe(
+        secondPublication.publicationEpoch,
+      );
     });
 
     it("should handle run results parsed events", () => {
