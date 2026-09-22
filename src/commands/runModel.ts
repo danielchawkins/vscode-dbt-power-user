@@ -3,11 +3,15 @@ import * as path from "path";
 import { Uri, window } from "vscode";
 import { GenerateModelFromSourceParams } from "../code_lens_provider/sourceModelCreationCodeLensProvider";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { ProjectContext } from "../projects/projectContext";
 import { NodeTreeItem } from "../treeview_provider/modelTreeviewProvider";
 import { extendErrorWithSupportLinks } from "../utils";
 
 export class RunModel {
-  constructor(private dbtProjectContainer: DBTProjectContainer) {}
+  constructor(
+    private dbtProjectContainer: DBTProjectContainer,
+    private projectContext: ProjectContext,
+  ) {}
 
   runModelOnActiveWindow(type?: RunModelType) {
     if (!window.activeTextEditor) {
@@ -62,7 +66,7 @@ export class RunModel {
     );
   }
 
-  executeQueryOnActiveWindow() {
+  async executeQueryOnActiveWindow(): Promise<void> {
     const query = this.getQuery();
     if (query === undefined) {
       return;
@@ -70,7 +74,7 @@ export class RunModel {
     const modelPath = window.activeTextEditor?.document.uri;
     if (modelPath) {
       const modelName = path.basename(modelPath.fsPath, ".sql");
-      this.executeSQL(window.activeTextEditor!.document.uri, query, modelName);
+      await this.executeSQL(modelPath, query, modelName);
     }
   }
 
@@ -166,7 +170,11 @@ export class RunModel {
   }
 
   async executeSQL(uri: Uri, query: string, modelName: string) {
-    this.dbtProjectContainer.executeSQL(uri, query, modelName);
+    const declared = await this.projectContext.requireForCommand(uri);
+    if (!declared) {
+      return;
+    }
+    this.dbtProjectContainer.executeSQL(declared.root, query, modelName);
   }
 
   showCompiledSQL(modelPath: Uri) {

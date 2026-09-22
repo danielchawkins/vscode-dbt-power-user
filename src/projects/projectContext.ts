@@ -15,6 +15,7 @@ export class ProjectContext implements Disposable {
     DeclaredProject | undefined
   >();
   private lastEmittedCurrent: DeclaredProject | undefined;
+  private selectedProject: DeclaredProject | undefined;
   private subscriptions: Disposable[] = [];
 
   constructor(
@@ -27,7 +28,7 @@ export class ProjectContext implements Disposable {
     );
   }
 
-  /** Active editor's project, else the active folder's sole project, else the sole project. */
+  /** Active editor/folder project, retained non-file pick, then the sole project. */
   get current(): DeclaredProject | undefined {
     const activeUri = window.activeTextEditor?.document.uri;
     if (activeUri) {
@@ -44,6 +45,10 @@ export class ProjectContext implements Disposable {
           return projectsInFolder[0];
         }
       }
+    }
+
+    if (activeUri?.scheme !== "file" && this.selectedProject) {
+      return this.selectedProject;
     }
 
     if (this.registry.projects.length === 1) {
@@ -82,7 +87,18 @@ export class ProjectContext implements Disposable {
       return undefined;
     }
 
-    return this.projectQuickPick.declaredProjectPicker(this.registry.projects);
+    return this.pickForCommand();
+  }
+
+  async pickForCommand(): Promise<DeclaredProject | undefined> {
+    const project = await this.projectQuickPick.declaredProjectPicker(
+      this.registry.projects,
+    );
+    if (project) {
+      this.selectedProject = project;
+      this.updateCurrent();
+    }
+    return project;
   }
 
   dispose(): void {
@@ -93,6 +109,12 @@ export class ProjectContext implements Disposable {
   }
 
   private updateCurrent(): void {
+    if (
+      this.selectedProject &&
+      !this.registry.projects.includes(this.selectedProject)
+    ) {
+      this.selectedProject = undefined;
+    }
     const newCurrent = this.current;
     if (newCurrent !== this.lastEmittedCurrent) {
       this.lastEmittedCurrent = newCurrent;

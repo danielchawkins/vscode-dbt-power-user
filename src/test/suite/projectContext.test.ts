@@ -96,33 +96,63 @@ describe("ProjectContext", () => {
     expect(harness.picker.declaredProjectPicker).not.toHaveBeenCalled();
   });
 
-  it("prompts among multiple projects and preserves cancellation", async () => {
+  it("prompts among multiple projects and retains the selection", async () => {
     const harness = createHarness([general, sox]);
-    harness.picker.declaredProjectPicker
-      .mockResolvedValueOnce(general)
-      .mockResolvedValueOnce(undefined);
+    harness.picker.declaredProjectPicker.mockResolvedValue(general);
 
     await expect(harness.context.requireForCommand()).resolves.toBe(general);
-    await expect(harness.context.requireForCommand()).resolves.toBeUndefined();
+    await expect(harness.context.requireForCommand()).resolves.toBe(general);
     expect(harness.picker.declaredProjectPicker).toHaveBeenCalledWith([
       general,
       sox,
     ]);
+    expect(harness.picker.declaredProjectPicker).toHaveBeenCalledTimes(1);
+  });
+
+  it("preserves project-pick cancellation", async () => {
+    const harness = createHarness([general, sox]);
+    harness.picker.declaredProjectPicker.mockResolvedValue(undefined);
+
+    await expect(harness.context.requireForCommand()).resolves.toBeUndefined();
+  });
+
+  it("retains an explicit pick for path-free commands only", async () => {
+    const harness = createHarness([general, sox]);
+    harness.picker.declaredProjectPicker.mockResolvedValue(sox);
+    const untitled = {
+      scheme: "untitled",
+      fsPath: "",
+      path: "Untitled-1",
+    } as Uri;
+
+    await expect(harness.context.pickForCommand()).resolves.toBe(sox);
+    await expect(harness.context.requireForCommand(untitled)).resolves.toBe(
+      sox,
+    );
+    expect(harness.picker.declaredProjectPicker).toHaveBeenCalledTimes(1);
+
+    setEditor("/workspace/pipelines/pipeline.sql");
+    jest.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(folder);
+    expect(harness.context.current).toBeUndefined();
   });
 
   it("prompts when a file URI belongs to no Declared Project", async () => {
     const harness = createHarness([general, sox]);
-    harness.picker.declaredProjectPicker.mockResolvedValue(general);
+    harness.picker.declaredProjectPicker
+      .mockResolvedValueOnce(general)
+      .mockResolvedValueOnce(sox);
 
     await expect(
       harness.context.requireForCommand(
         Uri.file("/workspace/pipelines/pipeline.sql"),
       ),
     ).resolves.toBe(general);
+    await expect(harness.context.requireForCommand()).resolves.toBe(sox);
     expect(harness.picker.declaredProjectPicker).toHaveBeenCalledWith([
       general,
       sox,
     ]);
+    expect(harness.picker.declaredProjectPicker).toHaveBeenCalledTimes(2);
   });
 
   it("handles zero or one project without prompting", async () => {
