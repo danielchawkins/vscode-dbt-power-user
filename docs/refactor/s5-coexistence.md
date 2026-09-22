@@ -112,7 +112,7 @@ Both extensions contribute the same language id and primary grammar scope. Injec
 | Primary grammar                         | `jinja-sql` → `source.sql.jinja`                                                                                       | `jinja-sql` → `source.sql.jinja`       | Yes         |
 | Injection grammars                      | `dbt.jinja-sql.injection`, `dbt.funcsign.injection`, `sql.function.injection` into `source.sql` and `source.sql.jinja` | `source.yaml.jinja` into `source.yaml` | **None**    |
 | `contributes.languages[].configuration` | absent                                                                                                                 | absent                                 | n/a         |
-| Snippets                                | `sql`, `jinja-sql`                                                                                                     | `jinja-sql`, `jinja-yaml`, `jinja-md`  | `jinja-sql` |
+| Snippets                                | `sql`, `jinja-sql`                                                                                                     | `jinja-sql`                            | `jinja-sql` |
 
 Both extensions bind the same `jinja-sql` language id and the same primary `scopeName` (`source.sql.jinja`). VS Code merges extension grammars for a shared language id; **which TextMate rules win for highlighting is unmeasured** in this spike. The shared id does not by itself assign a buffer's `languageId` — that depends on file association and editor mode, also unmeasured.
 

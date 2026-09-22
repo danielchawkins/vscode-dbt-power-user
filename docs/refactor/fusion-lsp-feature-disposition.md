@@ -197,6 +197,6 @@ Change:
 - repository, homepage, bugs, icons, descriptions, and keywords; and
 - every user-visible reference to Altimate or Power User's hosted product.
 
-Remove upstream extension dependencies. If syntax highlighting still depends on `samuelcolvin.jinjahtml`, either bundle the required grammar under the fork's identity or document the remaining dependency with a focused test.
+Remove upstream extension dependencies. Syntax highlighting ships under this extension's identity: a contributed `jinja-sql` grammar and YAML injection grammar; no Better Jinja dependency.
 
 The extension must detect `innoverio.vscode-dbt-power-user`. When present, it emits one blocking, actionable error and does not activate project services.
