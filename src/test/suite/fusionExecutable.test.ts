@@ -6,14 +6,19 @@ import {
   it,
   jest,
 } from "@jest/globals";
+import { readFileSync } from "fs";
 import path from "path";
 import { Uri, WorkspaceFolder } from "vscode";
 import {
   ConfiguredFusionExecutableResolver,
+  FUSION_PATH_SETTING,
   FusionExecutable,
 } from "../../fusion/fusionExecutable";
 import { FusionVersionVerdict } from "../../fusion/fusionVersion";
+import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
+import { esmDirname } from "../esmDirname";
 
+const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
 const scope = Uri.file("/workspace/general/models/stg_orders.sql");
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
@@ -428,5 +433,26 @@ describe("Fusion executable resolver", () => {
       kind: "notFusion",
       raw: "empty",
     });
+  });
+
+  it("matches the package manifest for fusionPath", () => {
+    const manifest = JSON.parse(
+      readFileSync(path.join(repositoryRoot, "package.json"), "utf8"),
+    ) as {
+      contributes: {
+        configuration: Array<{ properties: Record<string, unknown> }>;
+      };
+    };
+    const property = manifest.contributes.configuration
+      .flatMap((section) => Object.entries(section.properties))
+      .find(
+        ([key]) => key === `${CONFIGURATION_SECTION}.${FUSION_PATH_SETTING}`,
+      )?.[1];
+
+    expect(property).toMatchObject({
+      type: "string",
+      scope: "resource",
+    });
+    expect(property).not.toHaveProperty("default");
   });
 });
