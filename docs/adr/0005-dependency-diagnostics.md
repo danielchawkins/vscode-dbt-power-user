@@ -1,0 +1,20 @@
+# Leave the dependency diagnostics policy provisional
+
+**Status:** D3 provisional. Spike S1 did not observe `textDocument/publishDiagnostics` on any scenario, so neither confinement to the root project nor a root `dbt_project.yml` blocker is established.
+
+Captured 2026-09-21 on dbt Fusion 2.0.5, the binary named in section 2.4, with `--no-version-check`. Each of the four rows started from a temporary copy of `src/test/fixtures/single-project`, removed `models/child.sql` and `models/broken_ref.sql`, and added `models/plain.sql` (`select 1 as id`). The dummy Snowflake profile in that copy was the only profiles source. There was no warehouse and no `dbt login`. The S2 inventory in `docs/refactor/lsp-commands.md` left `child.sql` and `broken_ref.sql` in place, used the same dummy profile, answered progress, and reached an Analyzing end and `models_count` 2. These four rows did not finish loading. Removing those two models is a difference from that capture; this record does not show that the removal caused the load failure.
+
+The client listened on `127.0.0.1`, passed the port to `dbt lsp --socket`, and set `--project-dir` and `--profiles-dir` to the temp copy. `initialize` declared `window.workDoneProgress`, `workspace.configuration`, and `textDocument` capabilities including synchronization and `publishDiagnostics`. It answered `window/workDoneProgress/create` with null. After `initialized` it sent `textDocument/didOpen` for the files named in each row. It listened for `textDocument/publishDiagnostics` and for `$/progress`. Each row waited up to 60 seconds for a diagnostic or a progress message with `kind: end`. Begin messages during those waits were not retained, so this does not say whether analysis had started.
+
+| Scenario                         | Opened files                                                       | `publishDiagnostics` | `$/progress` `end` | `dbt.getProjectInfo`                              |
+| -------------------------------- | ------------------------------------------------------------------ | -------------------- | ------------------ | ------------------------------------------------- |
+| Control, no packages             | root `dbt_project.yml`, `models/plain.sql`                         | none                 | none within 60s    | `models_count` 0, `models_count_is_estimate` true |
+| Local package model error        | above plus `packages.yml`, package model under `dbt_packages/`     | none                 | none within 60s    | same                                              |
+| Broken package `dbt_project.yml` | above plus invalid package manifest                                | none                 | none within 60s    | same                                              |
+| Broken `packages.yml`            | root `dbt_project.yml`, invalid `packages.yml`, `models/plain.sql` | none                 | none within 60s    | same                                              |
+
+The three package rows declared the package with a `packages.yml` local path and copied the package tree into `dbt_packages/` by hand. `dbt deps` was not run, so these rows do not show that Fusion recognized an installed dependency.
+
+On the control copy, after `child.sql` and `broken_ref.sql` were removed, `dbt parse` succeeded. The language server on that copy still reported `models_count` 0 with `models_count_is_estimate` true and emitted no diagnostics. A shorter run in this spike, not the S2 inventory, kept those two models, called `dbt.listNodes` with `[]`, and recorded a Computing Lineage begin and an immediate end. It did not record an Analyzing end. That run is not one of the four rows.
+
+**D3 remains provisional.** This capture does not show whether Fusion confines diagnostics to the Declared Project, whether dependency-file diagnostics appear, or whether a dependency parse failure surfaces on root `dbt_project.yml`. Step 5.5 should wait for a conclusive rerun or for consumer soak that observes dependency diagnostics in a loaded project.
