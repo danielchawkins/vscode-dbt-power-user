@@ -1,6 +1,6 @@
 # S8: config-change behavior
 
-Captured 2026-09-21 on dbt Fusion 2.0.5, the binary named in section 2.4. The result is inconclusive. The server never finished loading on this run, and none of the applied stimuli produced producer evidence afterward, so step 6.0's producer-evidence list remains open.
+Captured 2026-09-21 on dbt Fusion 2.0.5, the binary named in section 2.4. The result is inconclusive. The server never finished loading on this run, and none of the applied stimuli produced producer evidence afterward, so step 6.2 starts with observed compile-complete and restart refresh triggers only.
 
 The project was a temporary copy of `src/test/fixtures/single-project` plus `models/plain.sql`, whose text is `select 1 as id`. The copy kept the fixture models `child.sql` and `broken_ref.sql`. Unlike the [S2 command inventory](lsp-commands.md) capture, this run also added `packages.yml`, a local package at `vendor/s8_local_pkg`, and a second local package at `vendor/s8_local_pkg2` used only for the lock rewrite. `dbt_project.yml` names profile `single_project`. The copy's `profiles.yml` was the only profiles source (`--profiles-dir` pointed at the copy). There was no warehouse and no `dbt login`. The trace was not kept, and no SQL was written down.
 
@@ -44,10 +44,10 @@ For the YAML paths, the client also sent `workspace/didChangeWatchedFiles` with 
 
 A bump to the first local package's version alone did not change an existing lock on a separate offline check; adding the second local package entry did. The rewrite row above used that second-package change.
 
-## Producer evidence and step 6.0
+## Producer evidence and step 6.2
 
-Step 6.0 says the publication epoch advances on producer evidence only: a producer completes and publishes a projection, or a producer restarts. It does not advance because a file changed on disk.
+Step 6.2 advances the publication epoch when the LSP producer completes and publishes a projection or restarts. It does not advance merely because a file changed on disk.
 
 This capture observed no producer evidence for any applied change class on an unloaded server. There was no second `Analyzing` or `Parsing` progress after a config edit or after the existing `package-lock.yml` was rewritten, no `publishDiagnostics`, no qualifying log line beyond the baseline `Did open` messages, no process exit and reconnect, and no change in `dbt.getProjectInfo` that would mark a new published projection. The only progress before stimuli was the immediate `Computing Lineage` pair that followed `dbt.listNodes`.
 
-**S8 remains inconclusive and does not discharge step 6.0's producer-evidence list.** Step 6.0 should not rely on coverage claims that every change class republishes until a loaded server is exercised and republication or restart is observed for these stimuli, or their absence is confirmed on a server that had finished loading.
+**S8 remains inconclusive.** Step 6.2 must not claim that every change class republishes until a loaded server observes republication or restart for these stimuli, or their absence is confirmed after loading.
