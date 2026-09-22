@@ -47,14 +47,6 @@
       {
         "language": "jinja-sql",
         "path": "./snippets/snippets_sql.json"
-      },
-      {
-        "language": "jinja-yaml",
-        "path": "./snippets/snippets_yaml.json"
-      },
-      {
-        "language": "jinja-md",
-        "path": "./snippets/snippets_markdown.json"
       }
     ],
     "configuration": [
@@ -915,9 +907,6 @@
     "typescript": "^6.0.3",
     "webpack": "^5.111.1"
   },
-  "extensionDependencies": [
-    "samuelcolvin.jinjahtml"
-  ],
   "dependencies": {
     "@altimateai/dbt-integration": "^0.3.13",
     "@vscode/codicons": "^0.0.45",

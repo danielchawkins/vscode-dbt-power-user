@@ -21,33 +21,8 @@ describe("Extension Test Suite", () => {
   });
 
   const getExtension = () => {
-    // Mock the jinjahtml extension
-    const mockJinjaHtml = {
-      id: "samuelcolvin.jinjahtml",
-      packageJSON: {
-        name: "jinjahtml",
-        displayName: "Jinja HTML",
-        contributes: {
-          languages: [
-            {
-              id: "jinja-sql",
-              extensions: [".sql"],
-            },
-          ],
-        },
-      },
-      isActive: true,
-      activate: () => Promise.resolve(),
-      exports: {},
-      extensionUri: vscode.Uri.file(""),
-      extensionPath: "",
-      extensionKind: vscode.ExtensionKind.UI,
-    };
-
-    // Create a mutable isActive property
     let isActive = false;
 
-    // Mock our own extension
     const mockOurExtension = {
       id: "innoverio.vscode-dbt-power-user",
       packageJSON: {
@@ -81,9 +56,6 @@ describe("Extension Test Suite", () => {
 
     // Set up the extensions API
     mockExtensions.getExtension.mockImplementation((id: string) => {
-      if (id === "samuelcolvin.jinjahtml") {
-        return mockJinjaHtml;
-      }
       if (id === "innoverio.vscode-dbt-power-user") {
         return mockOurExtension;
       }

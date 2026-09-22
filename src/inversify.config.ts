@@ -115,7 +115,6 @@ import { CteProfilerService } from "./cte_profiler/cteProfilerService";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 import { DocumentFormattingEditProviders } from "./document_formatting_edit_provider";
 import { DbtDocumentFormattingEditProvider } from "./document_formatting_edit_provider/dbtDocumentFormattingEditProvider";
-import { SqlFmtAvailabilityNotifier } from "./document_formatting_edit_provider/sqlfmtAvailabilityNotifier";
 import { DbtPowerUserActionsCenter } from "./quickpick";
 import { DbtPowerUserControlCenterAction } from "./quickpick/actionsQuickPick";
 import { StatusBars } from "./statusbar";
@@ -1035,18 +1034,6 @@ container
   })
   .inSingletonScope();
 
-container
-  .bind(SqlFmtAvailabilityNotifier)
-  .toDynamicValue((context) => {
-    return new SqlFmtAvailabilityNotifier(
-      context.get(DBTProjectContainer),
-      context.get(DbtDocumentFormattingEditProvider),
-      context.get(PythonEnvironment),
-      context.get(CommandProcessExecutionFactory),
-    );
-  })
-  .inSingletonScope();
-
 // Bind status bar components
 container
   .bind(DeferToProductionStatusBar)
@@ -1266,7 +1253,6 @@ container
   .toDynamicValue((context) => {
     return new DocumentFormattingEditProviders(
       context.get(DbtDocumentFormattingEditProvider),
-      context.get(SqlFmtAvailabilityNotifier),
     );
   })
   .inSingletonScope();
