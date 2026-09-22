@@ -12,6 +12,8 @@ The target extension will not install dbt, call hosted services, require an exte
 
 The extension will resolve dbt Fusion from the resource-scoped `dbt.fusionPath` setting first, then from `dbt` on the extension host PATH. Configured paths support `${workspaceFolder}`, `${userHome}`, and `${env:VAR}`; an invalid configured path blocks that project's language server and does not fall back to PATH. Tool managers such as mise or Homebrew work by putting the shim on PATH; the extension never invokes a tool manager directly.
 
+Per Declared Project, resource-scoped settings `dbt.profilesDir`, `dbt.target`, and `dbt.lintEnabled` are passed to that project's Fusion language server launch. `dbt.profilesDir` supports the same `${workspaceFolder}`, `${userHome}`, and `${env:VAR}` substitutions as `dbt.fusionPath`. Changing any launch-affecting setting replaces the project's language server client with a new process using the updated options.
+
 ## Development
 
 ```bash
