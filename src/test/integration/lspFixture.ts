@@ -3,6 +3,12 @@ import * as fs from "fs";
 import * as net from "net";
 import * as os from "os";
 import * as path from "path";
+import {
+  acceptWithProcessExit,
+  ExitingProcess,
+  listenForServer,
+  ReverseSocketServer,
+} from "../../lsp/reverseSocketTransport";
 
 /**
  * Spawns `dbt lsp` against a fixture and speaks LSP over the reverse socket
@@ -57,6 +63,40 @@ function waitForExit(
   });
 }
 
+async function terminateChild(child: ChildProcess): Promise<void> {
+  child.kill("SIGTERM");
+  if (!(await waitForExit(child, 500))) {
+    child.kill("SIGKILL");
+    await waitForExit(child);
+  }
+}
+
+function connectFailure(error: unknown, stderr: string): Error {
+  const message = error instanceof Error ? error.message : String(error);
+  const detail = stderr.trim();
+  if (detail) {
+    return new Error(`${message}; dbt stderr:\n${detail}`);
+  }
+  return error instanceof Error ? error : new Error(message);
+}
+
+function childProcessAdapter(
+  child: ChildProcess,
+  getStderr: () => string,
+): ExitingProcess {
+  return {
+    get exitCode() {
+      return child.exitCode;
+    },
+    get signalCode() {
+      return child.signalCode;
+    },
+    on: (event, listener) => child.on(event, listener),
+    removeListener: (event, listener) => child.removeListener(event, listener),
+    getStderr,
+  };
+}
+
 /**
  * Creates a reverse-socket harness for testing dbt lsp directly.
  * Binds 127.0.0.1:0 (ephemeral), spawns dbt lsp --socket <port>,
@@ -67,8 +107,11 @@ export async function createLspFixture(
   profilesDir?: string,
 ): Promise<LspFixture> {
   let port = 0;
-  let childProcess: ReturnType<typeof spawn> | null = null;
+  let childProcess: ChildProcess | null = null;
   let socket: net.Socket | null = null;
+  let reverseServer: ReverseSocketServer | null = null;
+  let stderr = "";
+  let closed = false;
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-lsp-"));
   const temporaryProjectRoot = path.join(tempDir, path.basename(projectRoot));
   fs.cpSync(projectRoot, temporaryProjectRoot, { recursive: true });
@@ -87,85 +130,66 @@ export async function createLspFixture(
         throw new Error("Already connected");
       }
 
-      return new Promise((resolve, reject) => {
-        let settled = false;
-        const finish = (error?: Error) => {
-          if (settled) {
-            return;
-          }
-          settled = true;
-          clearTimeout(timer);
-          server.close();
-          if (error) {
-            reject(error);
-          } else {
-            resolve();
-          }
-        };
+      reverseServer = await listenForServer();
+      port = reverseServer.port;
 
-        const server = net.createServer((incomingSocket) => {
-          socket = incomingSocket;
-          finish();
-        });
+      const args = [
+        "lsp",
+        "--socket",
+        String(port),
+        "--project-dir",
+        temporaryProjectRoot,
+      ];
+      if (temporaryProfilesDir) {
+        args.push("--profiles-dir", temporaryProfilesDir);
+      }
+      args.push("--no-version-check");
 
-        const timer = setTimeout(() => {
-          if (childProcess) {
-            childProcess.kill("SIGKILL");
-          }
-          finish(
-            new Error(
-              `LSP connection timeout after ${timeoutMs}ms; check dbt output`,
-            ),
-          );
-        }, timeoutMs);
-
-        server.on("error", (err) => {
-          finish(err);
-        });
-
-        server.listen(0, "127.0.0.1", () => {
-          const addr = server.address();
-          if (addr && typeof addr === "object") {
-            port = addr.port;
-
-            const args = [
-              "lsp",
-              "--socket",
-              String(port),
-              "--project-dir",
-              temporaryProjectRoot,
-            ];
-            if (temporaryProfilesDir) {
-              args.push("--profiles-dir", temporaryProfilesDir);
-            }
-            args.push("--no-version-check");
-
-            childProcess = spawn("dbt", args, {
-              stdio: ["ignore", "inherit", "inherit"],
-            });
-
-            childProcess.on("error", (err) => {
-              finish(err);
-            });
-          }
-        });
+      stderr = "";
+      childProcess = spawn("dbt", args, {
+        stdio: ["ignore", "inherit", "pipe"],
       });
+      childProcess.stderr?.on("data", (chunk: Buffer) => {
+        stderr += chunk.toString("utf-8");
+      });
+
+      try {
+        const streams = await acceptWithProcessExit(
+          reverseServer,
+          childProcessAdapter(childProcess, () => stderr),
+          timeoutMs,
+        );
+        socket = streams.reader as net.Socket;
+      } catch (error) {
+        reverseServer.dispose();
+        reverseServer = null;
+        if (childProcess) {
+          const child = childProcess;
+          childProcess = null;
+          await terminateChild(child);
+        }
+        throw connectFailure(error, stderr);
+      }
     },
 
     async close(): Promise<void> {
+      if (closed) {
+        return;
+      }
+      closed = true;
+
       if (socket) {
         socket.destroy();
         socket = null;
       }
 
+      reverseServer?.dispose();
+      reverseServer = null;
+
       if (childProcess) {
         const child = childProcess;
         childProcess = null;
-        child.kill("SIGTERM");
-        if (!(await waitForExit(child, 500))) {
-          child.kill("SIGKILL");
-          await waitForExit(child);
-        }
+        await terminateChild(child);
       }
 
       fs.rmSync(tempDir, { recursive: true, force: true });
