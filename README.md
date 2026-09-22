@@ -12,7 +12,7 @@ The target extension will not install dbt, call hosted services, require an exte
 
 The extension will resolve dbt Fusion from the resource-scoped `dbt.fusionPath` setting first, then from `dbt` on the extension host PATH. Configured paths support `${workspaceFolder}`, `${userHome}`, and `${env:VAR}`; an invalid configured path blocks that project's language server and does not fall back to PATH. Tool managers such as mise or Homebrew work by putting the shim on PATH; the extension never invokes a tool manager directly.
 
-Per Declared Project, resource-scoped settings `dbt.profilesDir`, `dbt.target`, and `dbt.lintEnabled` are passed to that project's Fusion language server launch. `dbt.profilesDir` supports the same `${workspaceFolder}`, `${userHome}`, and `${env:VAR}` substitutions as `dbt.fusionPath`. Changing any launch-affecting setting replaces the project's language server client with a new process using the updated options.
+Per Declared Project, resource-scoped settings `dbt.profilesDir`, `dbt.target`, `dbt.lintEnabled`, and `dbt.traceServer` are passed to that project's Fusion language server launch. `dbt.profilesDir` supports the same `${workspaceFolder}`, `${userHome}`, and `${env:VAR}` substitutions as `dbt.fusionPath`. Changing any launch-affecting setting replaces the project's language server client with a new process using the updated options. `dbt.traceServer` controls Fusion server process log verbosity only; server stdout and stderr appear in that project's Fusion LSP output channel, and debug or verbose also increase Fusion's own project log file verbosity (for example `logs/dbt.log`). The status bar names the channel and never shows a notification for startup or failure.
 
 ## Development
 
