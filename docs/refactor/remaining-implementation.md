@@ -10,7 +10,7 @@ This is the executor plan for work still ahead of `main`. Contracts, file lists,
 
 **Next:** retire the external adapter's manifest watcher and Python path without replacing complete metadata with partial LSP payloads.
 
-What is still true of the product: it is manifest-driven, and it still ships hosted Altimate, authentication, credits, and Python-bridge paths. `DBTProjectIntegrationAdapter` remains only for manifest parsing and its private watcher; Core and Cloud are not constructible. `DBTFusionCommandDetection` and the integration classes live in `@altimateai/dbt-integration`; wrap them, never patch `node_modules`.
+What is still true of the product: it is manifest-driven, and it still ships hosted Altimate, authentication, and Python-bridge paths. Credits are removed. `DBTProjectIntegrationAdapter` remains only for manifest parsing and its private watcher; Core and Cloud are not constructible. `DBTFusionCommandDetection` and the integration classes live in `@altimateai/dbt-integration`; wrap them, never patch `node_modules`.
 
 A React 19 attempt was abandoned for vendoring generated output into `src/`, and React is **not** scheduled as a selected target: D6 decides the runtime at v2.2. Vendoring generated output is prohibited outright — generated CSS or JavaScript may arrive through a package's `exports`, never as a committed copy.
 
