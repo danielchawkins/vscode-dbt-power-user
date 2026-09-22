@@ -16,6 +16,7 @@ import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DefinitionProviders } from "./definition_provider";
 import { DocumentFormattingEditProviders } from "./document_formatting_edit_provider";
 import { HoverProviders } from "./hover_provider";
+import { FusionClientPool } from "./lsp/fusionClientPool";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
@@ -77,6 +78,7 @@ export class DBTPowerUserExtension implements Disposable {
     private altimateAuthService: AltimateAuthService,
     private projectRegistry: ProjectRegistry,
     private projectContext: ProjectContext,
+    private fusionClientPool: FusionClientPool,
   ) {
     this.disposables.push(
       this.dbtProjectContainer,
@@ -94,6 +96,7 @@ export class DBTPowerUserExtension implements Disposable {
       this.validationProvider,
       this.projectRegistry,
       this.projectContext,
+      this.fusionClientPool,
     );
   }
 
@@ -104,6 +107,11 @@ export class DBTPowerUserExtension implements Disposable {
         x.dispose();
       }
     }
+  }
+
+  async deactivate(): Promise<void> {
+    await this.fusionClientPool.stop();
+    this.dispose();
   }
 
   async activate(context: ExtensionContext): Promise<void> {
@@ -137,6 +145,7 @@ export class DBTPowerUserExtension implements Disposable {
 
       this.dbtProjectContainer.setContext(context);
       await this.projectRegistry.initialize();
+      this.fusionClientPool.initialize();
       await this.dbtProjectContainer.detectDBT();
       await this.dbtProjectContainer.initializeDBTProjects();
       await this.statusBars.initialize();

@@ -6,8 +6,27 @@ export const ExtensionKind = {
   Workspace: 2,
 };
 
+const uriCache = new Map<string, ReturnType<typeof createUri>>();
+
+function createUri(f: string) {
+  return {
+    fsPath: f,
+    path: f,
+    scheme: "file",
+    toString: () => (f.startsWith("file://") ? f : `file://${f}`),
+  };
+}
+
 export const Uri = {
-  file: jest.fn((f: string) => ({ fsPath: f, path: f, scheme: "file" })),
+  file: jest.fn((f: string) => {
+    const cached = uriCache.get(f);
+    if (cached) {
+      return cached;
+    }
+    const uri = createUri(f);
+    uriCache.set(f, uri);
+    return uri;
+  }),
   parse: jest.fn(),
 };
 
@@ -325,7 +344,10 @@ export const ProgressLocation = {
   Notification: 15,
 };
 
-export const RelativePattern = jest.fn();
+export const RelativePattern = jest.fn((base: unknown, pattern: string) => ({
+  base,
+  pattern,
+}));
 export const ViewColumn = {};
 export const Disposable = Object.assign(jest.fn(), { from: jest.fn() });
 export const Event = jest.fn();

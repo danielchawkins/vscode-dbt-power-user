@@ -150,6 +150,22 @@
             "scope": "resource",
             "description": "Path to the local dbt Fusion executable for this Declared Project. The extension will resolve this path first, then dbt on the extension host PATH. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. An invalid configured path blocks that project's language server and does not fall back to PATH."
           },
+          "dbt.profilesDir": {
+            "type": "string",
+            "scope": "resource",
+            "description": "Profiles directory passed to Fusion when this Declared Project's language server starts. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. Relative paths resolve against the containing workspace folder."
+          },
+          "dbt.target": {
+            "type": "string",
+            "scope": "resource",
+            "description": "dbt target name passed to Fusion when this Declared Project's language server starts."
+          },
+          "dbt.lintEnabled": {
+            "type": "boolean",
+            "scope": "resource",
+            "default": true,
+            "description": "Whether Fusion lint diagnostics are enabled when this Declared Project's language server starts."
+          },
           "dbt.unquotedCaseInsensitiveIdentifierRegex": {
             "type": "string",
             "markdownDescription": "Regex to identify unquoted identifiers. Example: `^([_A-Z]+[_A-Z0-9$]*)$`"
