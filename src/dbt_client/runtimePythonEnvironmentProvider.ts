@@ -31,8 +31,7 @@ export class VSCodeRuntimePythonEnvironmentProvider implements PythonEnvironment
       getEnvironmentVariables: (
         workspacePath: string,
       ): EnvironmentVariables => {
-        // workspacePath may be undefined at runtime when called by dbt-integration
-        // code that hasn't been updated to pass it yet (e.g. DBTCoreDetection)
+        // dbt-integration can omit workspacePath.
         const folder = workspacePath
           ? workspace.getWorkspaceFolder(Uri.file(workspacePath))
           : undefined;
@@ -68,8 +67,7 @@ export class StaticRuntimePythonEnvironment implements RuntimePythonEnvironment 
   }
 
   getEnvironmentVariables(workspacePath: string): EnvironmentVariables {
-    // workspacePath may be undefined at runtime when called by dbt-integration
-    // code that hasn't been updated to pass it yet (e.g. DBTCoreDetection)
+    // dbt-integration can omit workspacePath.
     const folder = workspacePath
       ? workspace.getWorkspaceFolder(Uri.file(workspacePath))
       : undefined;
