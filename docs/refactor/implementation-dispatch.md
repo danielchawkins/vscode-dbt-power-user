@@ -112,7 +112,7 @@ Copy the contract and verification from `fusion-lsp-plan.md`. The notes below ar
 
 ### Phases 4–10 and v2
 
-Steps and contracts from the spec. Hard-to-reverse: 6.3, 7.1, all of 8, 9.1, and v2.3. Spikes run before the steps that name them. Confirm **D5** before 5.0, **D3** before 5.5, the S2 inventory before Phase 7, consumer soak before Phase 8, all seven characterization cases before 10.4, and **D6** with **D7** before v2.3. v2 begins only after the 1.0.0 release.
+Steps and contracts from the spec. Hard-to-reverse: 6.3, 7.1, all of 8, 9.1, and v2.3. Spikes run before the steps that name them. **D5** is decided: no login. Confirm **D3** before 5.5, the S2 inventory before Phase 7, consumer soak before Phase 8, all seven characterization cases before 10.4, and **D6** with **D7** before v2.3. v2 begins only after the 1.0.0 release.
 
 ## Reviewer checklist
 

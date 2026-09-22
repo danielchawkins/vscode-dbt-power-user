@@ -8,7 +8,7 @@ Turn this fork of `vscode-dbt-power-user` into **Fusion Power User** (`danielcha
 
 In scope: product identity; the Declared Project model; a reverse-socket `LanguageClient` per Declared Project; replacing the manifest-driven parse loop and language providers with LSP-sourced metadata; rebasing compile / preview / run / build / test, query results, CTE preview and profiler, charting, model and column lineage, model trees, the local documentation editor, and local model generation and defer onto Fusion; removing dbt Core, dbt Cloud, Altimate hosted services, authentication, telemetry, AI, collaboration, MCP, and notebooks along with their dependencies; a new `fusionPowerUser.*` settings namespace; VSIX distribution via GitHub Releases; and adoption in the `finance-pipelines` consumer repository.
 
-Explicitly out of scope: marketplace or OpenVSX publication; Windows and Linux support (macOS only for the first releases); a generic socket-to-stdio bridge; upstream compatibility or contributing changes back; any attempt to unlock Fusion capabilities that Fusion itself gates behind licensing, which is a different question from whether the product recognizes a user's own `dbt login` — that one is open as **D5**; and the MkDocs site under `documentation/`, which is deleted rather than rewritten.
+Explicitly out of scope: marketplace or OpenVSX publication; Windows and Linux support (macOS only for the first releases); a generic socket-to-stdio bridge; upstream compatibility or contributing changes back; any attempt to unlock a capability Fusion itself withholds, and any login flow — Fusion is the local engine, and the paid hosted product is dbt Cloud, which this extension does not support; and the MkDocs site under `documentation/`, which is deleted rather than rewritten.
 
 Executors: work the steps in order, with one PR implementation active at a time. Each step is one PR bookmark whose ordered revisions separate documentation, configuration, and distinct modules or concerns; keep focused tests with their implementation. The bookmark tip compiles and has green tests. Review and CI for step N may overlap with local implementation of N+1 as a child of N's bookmark tip, but N+1 is not pushed until N merges; rebase the child range whenever its parent changes and onto `main` after the merge. Where a step says **Confirm**, stop and get a human decision before proceeding. The verification command throughout is `just check`, plus `just package` where a step changes packaging.
 
@@ -127,17 +127,17 @@ The repository pins dbt Fusion 2.0.5 while the Consumer Repository tracks `lates
 
 **D4 — Folder-scoped `envFile` override.** Decision 8 permits one only if justified. Default to *not* adding it: Fusion already reads the project-root `.env`, and the extension inherits the editor environment. Revisit only if a consumer case fails in Phase 10.
 
-**D5 — User-owned `dbt login` and static-analysis mode. Confirm before step 5.0, gated on S10.**
+**D5 — Static-analysis mode. Decided: no dbt login.**
 
-This is a Phase 5 decision, not a Phase 7 one: the mode is a launch argument and a status surface, so the client cannot be built without it. Decision 4 forbids an extension-specific account and any licensing bypass. It does not by itself forbid a user from running `dbt login` with their own dbt platform credentials; those are different questions. Whether the product supports, ignores, or discourages a user-owned login has not been decided. Decide it against this matrix:
+Fusion is the local engine, the v2 of dbt Core. The paid product is dbt Cloud, which this extension does not support. The extension never prompts for, stores, or recognizes a login. Warehouse credentials stay in the user's own `profiles.yml`, which Fusion reads. `off`, `baseline`, and `strict` are launch arguments. The mode is a launch argument and a status surface, so step 5.0 lands before any client starts.
 
-| Mode                 | Authentication       | Warehouse schema download | Capabilities                                                                                                  |
-| -------------------- | -------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `off`                | none                 | no                        | SQL analysis skipped for the model and its descendants                                                        |
-| `baseline` (default) | none                 | no                        | Jinja, YAML, and SQL syntax diagnostics; ref and source navigation; table-level lineage; ref autocomplete     |
-| `strict`             | requires `dbt login` | yes                       | adds column-level lineage, SQL type and schema diagnostics, column go-to-definition, `select *` hover, rename |
+| Mode                 | What the server is asked to do                                                                                                                                                                          |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `off`                | Skip SQL analysis for the model and its descendants                                                                                                                                                     |
+| `baseline` (default) | Jinja, YAML, and SQL syntax diagnostics; ref and source navigation; table-level lineage; ref autocomplete                                                                                               |
+| `strict`             | Baseline, plus column-level lineage, SQL type and schema diagnostics, column go-to-definition, `select *` hover, and rename, when Fusion provides them from the local project and the warehouse profile |
 
-Independent of the decision, the extension must determine and display the **effective** mode rather than echoing configuration: an unauthenticated run configured for `strict` silently falls back to `baseline`, and every column-level feature then goes missing for a reason the UI does not explain. Detection method comes from S10, and step 5.0 is where it becomes code. Phase 7's warehouse- and `strict`-dependent features stay gated on S9 and S10 evidence regardless of how D5 lands.
+S10 measures the difference between `baseline` and `strict` on a synthetic fixture that uses a normal profiles file. If Fusion withholds a capability, surface Fusion's own message and mark the capability unavailable. Do not add a login to obtain it. Step 5.0 records the configured mode, the effective mode, and this matrix. Phase 7's warehouse- and `strict`-dependent features stay gated on S9 and S10 evidence.
 
 **D6 — Webview UI runtime. Deferred to the v2 measured comparison.** React 19 with `@vscode-elements/elements` is the provisional default so that v1 is not blocked; it is not a selection. The live alternative is a coherent Lit and semantic-DOM webview, since VS Code Elements is itself Lit and needs no React wrapper. Svelte and Solid remain possible but require a measured advantage over the cost of rewriting three panels; no such measurement exists, and none is claimed. The comparison runs at v2.2, behind the contract and per-panel entry seam that v2.1 establishes, on the three retained panels, with the incumbent React implementation as the control. Do not record React as chosen.
 
@@ -451,7 +451,7 @@ export type FusionCapability =
 export function capabilitiesFor(mode: StaticAnalysisMode): ReadonlySet<FusionCapability>;
 ```
 
-Contract: the setting is resource-scoped so a Declared Project can differ from its neighbor; the selection produces the client's mode argument; a change to the configured mode restarts that project's client rather than mutating a running one; and the fallback is surfaced in the status bar and output channel, never as a notification. A capability absent because of the effective mode reads as explained-unavailable, not as missing or broken. No authentication is performed, prompted, or stored by the extension under any branch of **D5** — the only question D5 settles is whether a login the user performed themselves is recognized.
+Contract: the setting is resource-scoped so a Declared Project can differ from its neighbor; the selection produces the client's mode argument; a change to the configured mode restarts that project's client rather than mutating a running one; and a capability Fusion withholds is surfaced in the status bar and output channel, never as a notification. A capability absent because of the effective mode reads as explained-unavailable, not as missing or broken. The extension performs, prompts for, and stores no login.
 
 Verify: unit tests over the selection for each configured mode, for the fallback case, and for the restart-on-change rule; a capability-matrix test asserting the D5 table exactly. The live detection path is exercised by 5.3 and 5.4 once a client exists.
 
@@ -873,7 +873,7 @@ Reconcile before running. **S2** and the `initialize` capability record in Secti
 
 **S9 — Snowflake query identity and phases.** Before Phase 7 step 7.4. **Touches an account; requires explicit opt-in.** Run the same preview on a cold warehouse, a warm warehouse, an identical repeat for result reuse, and a repeat with reuse disabled; read the query id, compilation and execution times, and the queue columns from `INFORMATION_SCHEMA.QUERY_HISTORY`, not the account-usage view, which lags. Record whether the extension can obtain a query id at all, whether an in-flight preview can be cancelled, and whether a query tag can be set through Fusion. Output: per-phase distributions and two yes-or-no answers. Query-id handling follows the rules above.
 
-**S10 — Effective static-analysis mode.** Before **D5**, and therefore before Phase 5 step 5.0. **Touches an account; requires explicit opt-in.** Run one synthetic fixture in `baseline` and in `strict`; measure cold start, first diagnostic, and first hover; record which features degrade. Then run a configured-`strict` project **without** authentication and record every observable signal of the silent fallback. Output: D5's capability matrix with measured latencies, plus a detection method so an absent column-level feature is explained rather than reported as a bug.
+**S10 — Effective static-analysis mode.** Before Phase 5 step 5.0. **Touches a warehouse; the operator opted in for `finance_general` / `dev`.** Run one synthetic fixture in `baseline` and in `strict` with that profiles file. Measure cold start, first diagnostic, and first hover, and record which capabilities appear in each mode. There is no login arm. Output: measured latencies and the capability differences, so step 5.0 can show the effective mode.
 
 ### Risks, ranked by how likely they are to change the plan
 
@@ -890,7 +890,7 @@ Reconcile before running. **S2** and the `initialize` capability record in Secti
 
 **D1** and **D2** are resolved; Phase 0 and Phase 1.1 are complete.
 
-- **Before Phase 5 step 5.0:** **D5**, resolved by **S10**. The question is whether the product recognizes a user's own `dbt login`, not whether it ships an account. It lands here rather than at Phase 7 because the client cannot be launched without a mode. Phase 7's warehouse- and `strict`-dependent features stay gated on **S9** and **S10** evidence separately.
+- **Before Phase 5 step 5.0:** **D5** is decided: no login. S10 still measures `baseline` against `strict` before the mode becomes a launch argument. Phase 7's warehouse- and `strict`-dependent features stay gated on **S9** and **S10** evidence separately.
 - **Before Phase 5 step 5.5:** **D3**, resolved by **S1**.
 - **Before Phase 7:** the **S2** command inventory, with any retained feature that has no backing command named explicitly. This is the point where the comprehensive target either holds or must be amended.
 - **Before Phase 8:** confirm beta.2 has been used against the real consumer repository long enough to trust it. Phase 8 is where the old paths stop being available as a fallback.
