@@ -592,7 +592,7 @@ export interface ProjectMetadataSource extends Disposable {
 }
 ```
 
-Add `src/metadata/manifestMetadataSource.ts` as a thin adapter over today's `DBTProject.rebuildManifest()` and the adapter's `MANIFEST_PARSED` publication, with no behavior change, and route `src/dbt_client/dbtProjectContainer.ts` through the port.
+Add `src/metadata/manifestMetadataSource.ts` as a thin adapter over today's `DBTProject.rebuildManifest()` and the adapter's `MANIFEST_PARSED` publication, and route `src/dbt_client/dbtProjectContainer.ts` through the port. A registry replacement at the same root recreates the project and source so neither retains a disposed `DeclaredProject`; removal is published before disposal, and late publications from the removed source are dropped.
 
 Verify: the Phase 2 metadata snapshot test passes through the port unchanged. No consumer file changes in this step — if one does, the boundary is wrong; stop and reconsider.
 
