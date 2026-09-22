@@ -16,6 +16,7 @@ import {
   type LanguageClientOptions,
   type ServerOptions,
 } from "vscode-languageclient/node";
+import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
 import { FusionExecutable } from "../fusion/fusionExecutable";
 import {
   resolveConfiguredStaticAnalysisMode,
@@ -461,7 +462,7 @@ class FusionLanguageClientImpl implements FusionClient {
     const args =
       payload === undefined ? [] : Array.isArray(payload) ? payload : [payload];
     return this.languageClient.sendRequest(
-      "workspace/executeCommand",
+      ExecuteCommandRequest.type,
       {
         command: prefixedCommand(this.options.commandPrefix, command),
         arguments: args,
