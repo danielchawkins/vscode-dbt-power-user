@@ -123,7 +123,7 @@ The repository pins dbt Fusion 2.0.5 while the Consumer Repository tracks `lates
 
 **D2 — Fork base version. Resolved.** The branch is rebased onto upstream 0.64.6. The inherited suite now contains 48 test suites and 637 passing tests, and the consumer's characterization cases describe the same upstream generation.
 
-**D3 — Dependency diagnostics policy.** Provisional: suppress diagnostics whose URI lies under the packages install path, while surfacing one project-level blocker on `dbt_project.yml` when a dependency fails to parse. Resolve empirically in spike **S1** before Phase 5 step 5.5; if Fusion already scopes diagnostics to the root project, delete the filter rather than keeping dead defense.
+**D3 — Dependency diagnostics policy.** Still provisional after **S1**. The working hypothesis: suppress diagnostics whose URI lies under the packages install path, while surfacing one project-level blocker on `dbt_project.yml` when a dependency fails to parse. The 2026-09-21 capture in `docs/adr/0005-dependency-diagnostics.md` observed no `publishDiagnostics` on any scenario within 60 seconds, so confinement and root blockers are not established. If a later capture shows Fusion already scopes diagnostics to the root project, delete the filter rather than keeping dead defense.
 
 **D4 — Folder-scoped `envFile` override.** Decision 8 permits one only if justified. Default to *not* adding it: Fusion already reads the project-root `.env`, and the extension inherits the editor environment. Revisit only if a consumer case fails in Phase 10.
 
@@ -548,7 +548,7 @@ Contract: this is where decision 9 is enforced. Startup, parse, restart, and fai
 
 Verify: the spy test is green and CI-enforced.
 
-**5.5 — Diagnostics policy.** Gated on **S1** and **D3**. The client's `middleware.handleDiagnostics` decides what reaches Problems. If the spike shows Fusion already confines diagnostics to the root project, implement nothing and record that in the ADR. If it does not, drop diagnostics whose URI is under the project's packages install path and, when a dependency failure would otherwise be invisible, publish one project-level diagnostic on `dbt_project.yml` naming the failing package.
+**5.5 — Diagnostics policy.** Gated on **S1** and **D3**. The client's `middleware.handleDiagnostics` decides what reaches Problems. If a conclusive S1 capture shows Fusion already confines diagnostics to the root project, implement nothing and record that in the ADR. If it does not, drop diagnostics whose URI is under the project's packages install path and, when a dependency failure would otherwise be invisible, publish one project-level diagnostic on `dbt_project.yml` naming the failing package. The 2026-09-21 run did not show either outcome.
 
 Verify: integration test on a fixture with a deliberately broken dependency package asserting the policy either way, plus that a genuine error in a root-project model is never suppressed.
 
@@ -855,7 +855,7 @@ Rules that apply to every spike, as conditions of running rather than advice. Ca
 
 Reconcile before running. **S2** and the `initialize` capability record in Section 2.4 already cover part of this ground; extend that record rather than re-capturing it.
 
-**S1 — Dependency diagnostics.** Before Phase 5 step 5.5. Using `src/test/integration/lspFixture.ts`, run `dbt lsp` on a fixture with an installed package containing a deliberate error, and record every `textDocument/publishDiagnostics` URI and severity. Determine whether Fusion already confines diagnostics to the root project and whether a dependency parse failure surfaces at all. Output: resolve **D3** and record it in `docs/adr/0005-dependency-diagnostics.md`. Time-box half a day.
+**S1 — Dependency diagnostics.** Before Phase 5 step 5.5. Determine whether Fusion already confines diagnostics to the root project and whether a dependency parse failure surfaces at all. Run `dbt lsp` against a fixture whose installed package contains a deliberate error, and record every `textDocument/publishDiagnostics` URI and severity. `src/test/integration/lspFixture.ts` spawns the server but drops notifications and does not answer `window/workDoneProgress/create`, so a capture that needs those speaks the protocol itself. Output: `docs/adr/0005-dependency-diagnostics.md`. Time-box half a day. The 2026-09-21 run is inconclusive: the project did not finish loading within 60s and no diagnostics were observed; **D3** stays provisional.
 
 **S2 — Custom command payloads, and the migration's payload contract.** Before Phase 5 step 5.3, and blocking step 6.2 and Phase 7. The command *names* are already known (Section 2.4). What is unknown is each command's argument and response schema, and whether `dbt.show`, `dbt.previewCte`, and `dbt.goToDefinition` are actually registered. Drive each of `dbt.getProjectInfo`, `dbt.listNodes`, `dbt.getCurrentNode`, `dbt.compileFile`, `dbt.compileLsp`, `dbt.clearTarget`, `dbt.show`, and `dbt.previewCte` over the socket against `single-project`, and record request and response JSON in `docs/refactor/lsp-commands.md`. Scope the trace to the flows the migration needs — open a model, request compiled SQL, request lineage, request node metadata — rather than attempting a complete method inventory. Confirm whether `dbt.show` returns column types, which decides step 7.4. Also confirm `--command-prefix` semantics: whether the prefix replaces or prepends the `dbt.` segment. Time-box one day. **This is the largest single unknown in the plan; if a retained feature has no command and no artifact behind it, surface that before Phase 7 rather than discovering it mid-phase.** No Fusion LSP method name belongs in a design before this record exists; the public engine source says nothing about the server, which is closed.
 
@@ -891,7 +891,7 @@ Reconcile before running. **S2** and the `initialize` capability record in Secti
 **D1** and **D2** are resolved; Phase 0 and Phase 1.1 are complete.
 
 - **Before Phase 5 step 5.0:** **D5** is decided: no login. S10 still measures `baseline` against `strict` before the mode becomes a launch argument. Phase 7's warehouse- and `strict`-dependent features stay gated on **S9** and **S10** evidence separately.
-- **Before Phase 5 step 5.5:** **D3**, resolved by **S1**.
+- **Before Phase 5 step 5.5:** **D3** is still provisional. The 2026-09-21 S1 capture did not finish loading and produced no diagnostics.
 - **Before Phase 7:** the **S2** command inventory, with any retained feature that has no backing command named explicitly. This is the point where the comprehensive target either holds or must be amended.
 - **Before Phase 8:** confirm beta.2 has been used against the real consumer repository long enough to trust it. Phase 8 is where the old paths stop being available as a fallback.
 - **Before Phase 10 step 10.4:** all seven consumer characterization cases verified green through the fork.
