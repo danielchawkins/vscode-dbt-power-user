@@ -34,6 +34,7 @@ async function main() {
         workspaceDir,
         `--user-data-dir=${userDataDir}`,
         `--extensions-dir=${extensionsDir}`,
+        "--use-inmemory-secretstorage",
       ],
     });
   } catch (err) {
