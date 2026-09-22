@@ -3,37 +3,76 @@ import * as fs from "fs";
 import * as net from "net";
 import * as os from "os";
 import * as path from "path";
+import type { Disposable } from "../../lsp/reverseSocketTransport";
 import {
   acceptWithProcessExit,
   ExitingProcess,
   listenForServer,
   ReverseSocketServer,
 } from "../../lsp/reverseSocketTransport";
+import {
+  attachLspProtocolClient,
+  CAPTURE_LIMITS,
+  CapturedError,
+  LspProtocolClient,
+  NotificationEntry,
+  ServerRequestEntry,
+} from "./lspProtocolClient";
 
 /**
  * Spawns `dbt lsp` against a fixture and speaks LSP over the reverse socket
- * without the extension. This allows testing protocol behavior independently.
+ * without the extension. Raw params, URIs, and diagnostic text are retained in
+ * memory only for assertions and are never logged or persisted by the harness;
+ * callers must redact before writing artifacts.
  */
 
 export interface LspFixture {
   port: number;
+  /** Temp copy root passed to `dbt lsp --project-dir`. */
+  readonly projectRoot: string;
   connect(timeoutMs: number): Promise<void>;
   close(): Promise<void>;
-  request<T = unknown>(method: string, params: unknown): Promise<T>;
+  request<T = unknown>(
+    method: string,
+    params: unknown,
+    timeoutMs?: number,
+  ): Promise<T>;
+  notify(method: string, params?: unknown): void;
+  onNotification(
+    method: string,
+    handler: (params: unknown) => void,
+  ): Disposable;
+  onRequest(
+    method: string,
+    handler: (params: unknown) => unknown | Promise<unknown>,
+  ): Disposable;
+  waitForNotification(
+    method: string,
+    predicate: (params: unknown) => boolean,
+    timeoutMs: number,
+    fromIndex?: number,
+  ): Promise<unknown>;
+  notificationCount(method: string): number;
+  serverRequestCount(method: string): number;
+  getNotifications(method: string): readonly unknown[];
+  getNotificationsSince(method: string, fromCursor: number): readonly unknown[];
+  getNotificationEntries(method: string): readonly NotificationEntry[];
+  getServerRequests(method: string): readonly ServerRequestEntry[];
+  getServerRequestsSince(
+    method: string,
+    fromCursor: number,
+  ): readonly ServerRequestEntry[];
+  getErrors(): readonly CapturedError[];
+  getStderr(): string;
+  setWorkspaceConfiguration(response: unknown[]): void;
 }
 
-interface JsonRpcRequest {
-  jsonrpc: "2.0";
-  id: number;
-  method: string;
-  params?: unknown;
-}
-
-interface JsonRpcResponse<T = unknown> {
-  jsonrpc: "2.0";
-  id: number;
-  result?: T;
-  error?: { code: number; message: string; data?: unknown };
+export interface LspFixtureOptions {
+  prepareProject?: (projectRoot: string) => void;
+  workspaceConfiguration?: unknown[];
+  defaultRequestTimeoutMs?: number;
+  /** Extra `dbt lsp` argv tokens, e.g. `--static-analysis strict`. */
+  extraArgs?: string[];
 }
 
 function waitForExit(
@@ -97,6 +136,13 @@ function childProcessAdapter(
   };
 }
 
+function cappedStderrTail(stderr: string): string {
+  if (stderr.length <= CAPTURE_LIMITS.stderrBytes) {
+    return stderr;
+  }
+  return stderr.slice(-CAPTURE_LIMITS.stderrBytes);
+}
+
 /**
  * Creates a reverse-socket harness for testing dbt lsp directly.
  * Binds 127.0.0.1:0 (ephemeral), spawns dbt lsp --socket <port>,
@@ -105,28 +151,41 @@ function childProcessAdapter(
 export async function createLspFixture(
   projectRoot: string,
   profilesDir?: string,
+  options: LspFixtureOptions = {},
 ): Promise<LspFixture> {
   let port = 0;
   let childProcess: ChildProcess | null = null;
-  let socket: net.Socket | null = null;
+  let client: LspProtocolClient | null = null;
   let reverseServer: ReverseSocketServer | null = null;
   let stderr = "";
   let closed = false;
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-lsp-"));
   const temporaryProjectRoot = path.join(tempDir, path.basename(projectRoot));
   fs.cpSync(projectRoot, temporaryProjectRoot, { recursive: true });
+  options.prepareProject?.(temporaryProjectRoot);
   const temporaryProfilesDir =
     profilesDir && path.resolve(profilesDir) === path.resolve(projectRoot)
       ? temporaryProjectRoot
       : profilesDir;
+
+  const requireClient = (): LspProtocolClient => {
+    if (!client) {
+      throw new Error("Not connected");
+    }
+    return client;
+  };
 
   return {
     get port() {
       return port;
     },
 
+    get projectRoot() {
+      return temporaryProjectRoot;
+    },
+
     async connect(timeoutMs: number): Promise<void> {
-      if (socket) {
+      if (client) {
         throw new Error("Already connected");
       }
 
@@ -144,13 +203,20 @@ export async function createLspFixture(
         args.push("--profiles-dir", temporaryProfilesDir);
       }
       args.push("--no-version-check");
+      if (options.extraArgs) {
+        args.push(...options.extraArgs);
+      }
 
       stderr = "";
       childProcess = spawn("dbt", args, {
-        stdio: ["ignore", "inherit", "pipe"],
+        stdio: ["ignore", "pipe", "pipe"],
       });
+      childProcess.stdout?.on("data", () => {});
       childProcess.stderr?.on("data", (chunk: Buffer) => {
         stderr += chunk.toString("utf-8");
+        if (stderr.length > CAPTURE_LIMITS.stderrBytes * 2) {
+          stderr = stderr.slice(-CAPTURE_LIMITS.stderrBytes * 2);
+        }
       });
 
       try {
@@ -159,7 +225,10 @@ export async function createLspFixture(
           childProcessAdapter(childProcess, () => stderr),
           timeoutMs,
         );
-        socket = streams.reader as net.Socket;
+        client = attachLspProtocolClient(streams.reader as net.Socket, {
+          workspaceConfiguration: options.workspaceConfiguration,
+          defaultRequestTimeoutMs: options.defaultRequestTimeoutMs,
+        });
       } catch (error) {
         reverseServer.dispose();
         reverseServer = null;
@@ -178,10 +247,8 @@ export async function createLspFixture(
       }
       closed = true;
 
-      if (socket) {
-        socket.destroy();
-        socket = null;
-      }
+      client?.close();
+      client = null;
 
       reverseServer?.dispose();
       reverseServer = null;
@@ -195,99 +262,90 @@ export async function createLspFixture(
       fs.rmSync(tempDir, { recursive: true, force: true });
     },
 
-    async request<T>(method: string, params: unknown): Promise<T> {
-      if (!socket) {
-        throw new Error("Not connected");
-      }
+    request<T>(
+      method: string,
+      params: unknown,
+      timeoutMs?: number,
+    ): Promise<T> {
+      return requireClient().request<T>(method, params, timeoutMs);
+    },
 
-      const id = Math.floor(Math.random() * 1_000_000);
-      const request: JsonRpcRequest = {
-        jsonrpc: "2.0",
-        id,
+    notify(method: string, params?: unknown): void {
+      requireClient().notify(method, params);
+    },
+
+    onNotification(
+      method: string,
+      handler: (params: unknown) => void,
+    ): Disposable {
+      return requireClient().onNotification(method, handler);
+    },
+
+    onRequest(
+      method: string,
+      handler: (params: unknown) => unknown | Promise<unknown>,
+    ): Disposable {
+      return requireClient().onRequest(method, handler);
+    },
+
+    waitForNotification(
+      method: string,
+      predicate: (params: unknown) => boolean,
+      timeoutMs: number,
+      fromIndex?: number,
+    ): Promise<unknown> {
+      return requireClient().waitForNotification(
         method,
-        params,
-      };
+        predicate,
+        timeoutMs,
+        fromIndex,
+      );
+    },
 
-      return new Promise((resolve, reject) => {
-        let buffer = Buffer.alloc(0);
-        const delimiter = Buffer.from("\r\n\r\n");
+    notificationCount(method: string): number {
+      return requireClient().notificationCount(method);
+    },
 
-        const onData = (chunk: Buffer) => {
-          buffer = Buffer.concat([buffer, chunk]);
+    serverRequestCount(method: string): number {
+      return requireClient().serverRequestCount(method);
+    },
 
-          while (true) {
-            const delimiterIndex = buffer.indexOf(delimiter);
-            if (delimiterIndex === -1) {
-              return;
-            }
-            const headerSection = buffer
-              .subarray(0, delimiterIndex)
-              .toString("ascii");
+    getNotifications(method: string): readonly unknown[] {
+      return requireClient().getNotifications(method);
+    },
 
-            const match = headerSection.match(/Content-Length: (\d+)/);
-            if (!match) {
-              settle(new Error("LSP response is missing Content-Length"));
-              return;
-            }
+    getNotificationsSince(
+      method: string,
+      fromCursor: number,
+    ): readonly unknown[] {
+      return requireClient().getNotificationsSince(method, fromCursor);
+    },
 
-            const contentLength = parseInt(match[1], 10);
-            const bodyStart = delimiterIndex + delimiter.length;
-            const bodyEnd = bodyStart + contentLength;
-            if (buffer.length < bodyEnd) {
-              return;
-            }
+    getNotificationEntries(method: string): readonly NotificationEntry[] {
+      return requireClient().getNotificationEntries(method);
+    },
 
-            const json = buffer.subarray(bodyStart, bodyEnd).toString("utf-8");
-            buffer = buffer.subarray(bodyEnd);
+    getServerRequests(method: string): readonly ServerRequestEntry[] {
+      return requireClient().getServerRequests(method);
+    },
 
-            try {
-              const response = JSON.parse(json) as JsonRpcResponse<T>;
-              if (response.id === id) {
-                if (response.error) {
-                  settle(new Error(`LSP error: ${response.error.message}`));
-                } else {
-                  settle(undefined, response.result as T);
-                }
-                return;
-              }
-            } catch {
-              // Malformed JSON; continue reading
-            }
-          }
-        };
+    getServerRequestsSince(
+      method: string,
+      fromCursor: number,
+    ): readonly ServerRequestEntry[] {
+      return requireClient().getServerRequestsSince(method, fromCursor);
+    },
 
-        const onError = (err: Error) => settle(err);
-        const onClose = () => settle(new Error("LSP connection closed"));
-        const settle = (error?: Error, result?: T) => {
-          clearTimeout(timer);
-          socket?.removeListener("data", onData);
-          socket?.removeListener("error", onError);
-          socket?.removeListener("close", onClose);
-          if (error) {
-            reject(error);
-          } else {
-            resolve(result as T);
-          }
-        };
+    getErrors(): readonly CapturedError[] {
+      return requireClient().getErrors();
+    },
 
-        const timer = setTimeout(() => {
-          settle(new Error(`LSP request ${method} timed out after 10s`));
-        }, 10_000);
+    getStderr(): string {
+      return cappedStderrTail(stderr);
+    },
 
-        if (socket) {
-          socket.on("data", onData);
-          socket.on("error", onError);
-          socket.on("close", onClose);
-
-          const json = JSON.stringify(request);
-          const headers = `Content-Length: ${Buffer.byteLength(
-            json,
-            "utf-8",
-          )}\r\n\r\n`;
-          socket.write(headers);
-          socket.write(json);
-        }
-      });
+    setWorkspaceConfiguration(response: unknown[]): void {
+      requireClient().setWorkspaceConfiguration(response);
     },
   };
 }
