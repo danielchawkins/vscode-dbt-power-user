@@ -10,6 +10,8 @@ The completed product will support dbt Fusion 2.0.5 and later on macOS. The nati
 
 The target extension will not install dbt, call hosted services, require an extension-specific account, or collect telemetry. Those guarantees become true only as the corresponding refactor phases land.
 
+The extension will resolve dbt Fusion from the resource-scoped `dbt.fusionPath` setting first, then from `dbt` on the extension host PATH. Configured paths support `${workspaceFolder}`, `${userHome}`, and `${env:VAR}`; an invalid configured path blocks that project's language server and does not fall back to PATH. Tool managers such as mise or Homebrew work by putting the shim on PATH; the extension never invokes a tool manager directly.
+
 ## Development
 
 ```bash

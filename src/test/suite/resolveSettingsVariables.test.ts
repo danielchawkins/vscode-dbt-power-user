@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
-import type { Uri } from "vscode";
+import { workspace, type Uri } from "vscode";
 import { resolveSettingsVariables } from "../../utils";
 
 // The vscode mock's `Uri` re-imports from "vscode" recursively, so construct
@@ -80,7 +80,38 @@ describe("resolveSettingsVariables", () => {
     ).toBe("--profile dev --project-dir /ws");
   });
 
+  it("resolves ${userHome} using the provided home directory", () => {
+    expect(
+      resolveSettingsVariables(
+        "${userHome}/.local/bin/dbt",
+        undefined,
+        "/mock/home",
+      ),
+    ).toBe("/mock/home/.local/bin/dbt");
+  });
+
+  it("treats userHome paths containing $ characters as literal", () => {
+    expect(
+      resolveSettingsVariables(
+        "${userHome}/tools",
+        undefined,
+        "/weird/$1/home",
+      ),
+    ).toBe("/weird/$1/home/tools");
+  });
+
   it("returns empty string unchanged", () => {
     expect(resolveSettingsVariables("")).toBe("");
+  });
+
+  it("does not fall back to the first workspace folder when null is passed", () => {
+    const folder = mockUri("/first/workspace");
+    (workspace.workspaceFolders as unknown as Array<{ uri: Uri }>) = [
+      { uri: folder },
+    ];
+
+    expect(
+      resolveSettingsVariables("${workspaceFolder}/models", null, "/mock/home"),
+    ).toBe("${workspaceFolder}/models");
   });
 });

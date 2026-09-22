@@ -145,6 +145,11 @@
             "scope": "resource",
             "description": "Static analysis depth passed to Fusion when this Declared Project's language server starts."
           },
+          "dbt.fusionPath": {
+            "type": "string",
+            "scope": "resource",
+            "description": "Path to the local dbt Fusion executable for this Declared Project. The extension will resolve this path first, then dbt on the extension host PATH. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. An invalid configured path blocks that project's language server and does not fall back to PATH."
+          },
           "dbt.unquotedCaseInsensitiveIdentifierRegex": {
             "type": "string",
             "markdownDescription": "Regex to identify unquoted identifiers. Example: `^([_A-Z]+[_A-Z0-9$]*)$`"

@@ -2,6 +2,7 @@ import {
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
 } from "@altimateai/dbt-integration";
+import { homedir } from "os";
 import * as path from "path";
 import {
   Disposable,
@@ -434,13 +435,18 @@ export function extractDbtSubcommand(command: string): string {
 
 /**
  * Resolve VS Code variable substitution patterns in a string value.
- * Handles ${workspaceFolder} and ${env:VAR_NAME}.
+ * Handles ${workspaceFolder}, ${userHome}, and ${env:VAR_NAME}.
  * VS Code only auto-resolves these in tasks.json/launch.json — extension
  * settings must resolve them manually.
+ *
+ * @param workspaceFolder Explicit workspace root for `${workspaceFolder}`.
+ *   When omitted, falls back to the first open workspace folder. Pass `null`
+ *   to disable that fallback and leave unresolved tokens unchanged.
  */
 export function resolveSettingsVariables(
   value: string,
-  workspaceFolder?: Uri,
+  workspaceFolder?: Uri | null,
+  userHome: string = homedir(),
 ): string {
   if (!value) {
     return value;
@@ -461,10 +467,16 @@ export function resolveSettingsVariables(
     return envValue !== undefined ? envValue : match;
   });
 
+  // Resolve ${userHome}
+  value = value.replace(/\$\{userHome\}/g, () => userHome);
+
   // Resolve ${workspaceFolder}
   // Also use a callback for the same `$`-interpretation reason: workspace
   // paths can legitimately contain `$` on Windows.
-  const folder = workspaceFolder ?? workspace.workspaceFolders?.[0]?.uri;
+  const folder =
+    workspaceFolder === null
+      ? undefined
+      : (workspaceFolder ?? workspace.workspaceFolders?.[0]?.uri);
   if (folder) {
     value = value.replace(/\$\{workspaceFolder\}/g, () => folder.fsPath);
   }
