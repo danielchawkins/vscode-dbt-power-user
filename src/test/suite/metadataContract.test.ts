@@ -20,9 +20,14 @@ import {
 import { describe, expect, it } from "@jest/globals";
 import * as fs from "fs";
 import * as path from "path";
-import { EventEmitter } from "vscode";
+import { EventEmitter, Uri } from "vscode";
 import { DBTProject } from "../../dbt_client/dbtProject";
-import { ManifestCacheProjectAddedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
+import {
+  ManifestCacheChangedEvent,
+  ManifestCacheProjectAddedEvent,
+} from "../../dbt_client/event/manifestCacheChangedEvent";
+import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
+import { DeclaredProject } from "../../projects/projectRegistry";
 import { esmDirname } from "../esmDirname";
 
 const fixtureRoot = path.resolve(
@@ -234,8 +239,16 @@ describe("Metadata contract — shape and key set snapshot", () => {
       parentMaps.parentMetaMap,
       parentMaps.childMetaMap,
     );
+    const manifestEvents = new EventEmitter<ManifestCacheChangedEvent>();
+    const project = {
+      projectRoot: Uri.file(fixtureRoot),
+      getProjectName: () => "single_project",
+      getMetadataSnapshot: () => event,
+      onManifestChanged: manifestEvents.event,
+      rebuildManifest: async () => {},
+    } as unknown as DBTProject;
     const event: ManifestCacheProjectAddedEvent = {
-      project: { getProjectName: () => "single_project" } as DBTProject,
+      project,
       nodeMetaMap,
       macroMetaMap,
       metricMetaMap: await new MetricParser(terminal).createMetricMetaMap(
@@ -265,31 +278,51 @@ describe("Metadata contract — shape and key set snapshot", () => {
       publicationEpoch: 1,
       metadataProducer: "manifest",
     };
+    const declaredProject = {
+      root: Uri.file(fixtureRoot),
+      name: "single_project",
+      folder: { uri: Uri.file(fixtureRoot), name: "single_project", index: 0 },
+      contains: () => true,
+      dispose: () => {},
+    } as DeclaredProject;
+    const source = new ManifestMetadataSource(declaredProject, project);
+    let forwarded: ManifestCacheProjectAddedEvent | undefined;
+    source.onDidChangeMetadata((publication) => {
+      forwarded = publication;
+    });
+    manifestEvents.fire({ added: [event] });
+    expect(forwarded).toBe(event);
+    expect(source.current()).toBe(event);
+    if (!forwarded) {
+      throw new Error("Expected metadata publication");
+    }
 
-    const nodeKeys = [...event.nodeMetaMap.nodes()]
+    const nodeKeys = [...forwarded.nodeMetaMap.nodes()]
       .map((node) => node.unique_id)
       .sort();
     expect({
       nodeKeys,
-      nodeShapes: nodeShapes(event),
-      macroKeys: projectMacroKeys(event.macroMetaMap),
-      macroShapes: macroShapes(event.macroMetaMap),
-      sourceKeys: mapKeys(event.sourceMetaMap),
-      sourceShapes: sourceShapes(event),
-      testKeys: mapKeys(event.testMetaMap),
-      testShapes: testShapes(event),
-      graphShapes: graphShapes(event.graphMetaMap),
-      docKeys: mapKeys(event.docMetaMap),
-      exposureKeys: mapKeys(event.exposureMetaMap),
-      functionKeys: mapKeys(event.functionMetaMap),
-      metricKeys: mapKeys(event.metricMetaMap),
-      semanticModelKeys: mapKeys(event.semanticModelMetaMap),
-      unitTestKeys: mapKeys(event.unitTestMetaMap),
+      nodeShapes: nodeShapes(forwarded),
+      macroKeys: projectMacroKeys(forwarded.macroMetaMap),
+      macroShapes: macroShapes(forwarded.macroMetaMap),
+      sourceKeys: mapKeys(forwarded.sourceMetaMap),
+      sourceShapes: sourceShapes(forwarded),
+      testKeys: mapKeys(forwarded.testMetaMap),
+      testShapes: testShapes(forwarded),
+      graphShapes: graphShapes(forwarded.graphMetaMap),
+      docKeys: mapKeys(forwarded.docMetaMap),
+      exposureKeys: mapKeys(forwarded.exposureMetaMap),
+      functionKeys: mapKeys(forwarded.functionMetaMap),
+      metricKeys: mapKeys(forwarded.metricMetaMap),
+      semanticModelKeys: mapKeys(forwarded.semanticModelMetaMap),
+      unitTestKeys: mapKeys(forwarded.unitTestMetaMap),
       modelDepthMap: Object.fromEntries(
-        [...event.modelDepthMap.entries()].sort(([a], [b]) =>
+        [...forwarded.modelDepthMap.entries()].sort(([a], [b]) =>
           a.localeCompare(b),
         ),
       ),
     }).toMatchSnapshot();
+    source.dispose();
+    manifestEvents.dispose();
   });
 });

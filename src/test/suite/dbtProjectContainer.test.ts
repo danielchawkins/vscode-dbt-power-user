@@ -12,6 +12,11 @@ import { EventEmitter, ExtensionContext, Uri, window } from "vscode";
 import { DBTClient } from "../../dbt_client";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
+import {
+  ManifestCacheChangedEvent,
+  ManifestCacheProjectAddedEvent,
+} from "../../dbt_client/event/manifestCacheChangedEvent";
+import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 import { createEntry } from "../fixtures/runHistory";
 
@@ -93,6 +98,9 @@ describe("DBTProjectContainer", () => {
       onRebuildManifestStatusChange: jest
         .fn()
         .mockReturnValue({ dispose: jest.fn() }),
+      getMetadataSnapshot: jest.fn().mockReturnValue(undefined),
+      onManifestChanged: new EventEmitter().event,
+      rebuildManifest: jest.fn(),
     } as unknown as jest.Mocked<DBTProject>;
 
     mockProject2 = {
@@ -105,18 +113,30 @@ describe("DBTProjectContainer", () => {
       onRebuildManifestStatusChange: jest
         .fn()
         .mockReturnValue({ dispose: jest.fn() }),
+      getMetadataSnapshot: jest.fn().mockReturnValue(undefined),
+      onManifestChanged: new EventEmitter().event,
+      rebuildManifest: jest.fn(),
     } as unknown as jest.Mocked<DBTProject>;
 
     // Mock factory
-    mockDbtProjectFactory = jest.fn((uri: Uri) => {
-      if (uri.fsPath === "/project1") {
-        return mockProject1;
-      }
-      if (uri.fsPath === "/project2") {
-        return mockProject2;
-      }
-      throw new Error("Unknown project");
-    }) as any;
+    mockDbtProjectFactory = jest.fn(
+      (uri: Uri, manifestEmitter: EventEmitter<ManifestCacheChangedEvent>) => {
+        const project =
+          uri.fsPath === "/project1"
+            ? mockProject1
+            : uri.fsPath === "/project2"
+              ? mockProject2
+              : undefined;
+        if (!project) {
+          throw new Error("Unknown project");
+        }
+        Object.defineProperty(project, "onManifestChanged", {
+          configurable: true,
+          value: manifestEmitter.event,
+        });
+        return project;
+      },
+    ) as any;
 
     // Mock ProjectRegistry
     registryOnDidChangeProjects = new EventEmitter<void>();
@@ -693,6 +713,81 @@ describe("DBTProjectContainer", () => {
       const roots = allRemoved.map((r: any) => r.projectRoot.fsPath).sort();
       expect(roots).toContain(mockProject1.projectRoot.fsPath);
       expect(roots).toContain(mockProject2.projectRoot.fsPath);
+    });
+  });
+
+  describe("metadata source integration", () => {
+    beforeEach(async () => {
+      await container.initializeDBTProjects();
+    });
+
+    it("routes each publication once and drops events after removal", async () => {
+      const listener = jest.fn<(event: ManifestCacheChangedEvent) => void>();
+      const sourceDispose = jest.spyOn(
+        ManifestMetadataSource.prototype,
+        "dispose",
+      );
+      container.onManifestChanged(listener);
+      const projectEmitter = mockDbtProjectFactory.mock
+        .calls[0][1] as EventEmitter<ManifestCacheChangedEvent>;
+      const publication: ManifestCacheProjectAddedEvent = {
+        project: mockProject1,
+        nodeMetaMap: {} as any,
+        macroMetaMap: new Map(),
+        metricMetaMap: new Map(),
+        sourceMetaMap: new Map(),
+        graphMetaMap: {} as any,
+        testMetaMap: new Map(),
+        unitTestMetaMap: new Map(),
+        docMetaMap: new Map(),
+        exposureMetaMap: new Map(),
+        functionMetaMap: new Map(),
+        semanticModelMetaMap: new Map(),
+        modelDepthMap: new Map(),
+        publicationEpoch: 1,
+        metadataProducer: "manifest",
+      };
+
+      projectEmitter.fire({ added: [publication] });
+
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(listener.mock.calls[0]?.[0].added?.[0]).toBe(publication);
+
+      mockProjectRegistry.projects = [declaredProject2];
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(listener).toHaveBeenCalledTimes(2);
+      expect(listener.mock.calls[1]?.[0]).toEqual({
+        removed: [{ projectRoot: mockProject1.projectRoot }],
+      });
+      expect(listener.mock.invocationCallOrder[1]).toBeLessThan(
+        sourceDispose.mock.invocationCallOrder[0],
+      );
+      expect(sourceDispose).toHaveBeenCalledTimes(1);
+
+      projectEmitter.fire({ added: [publication] });
+      expect(listener).toHaveBeenCalledTimes(2);
+
+      container.dispose();
+      expect(sourceDispose).toHaveBeenCalledTimes(2);
+    });
+
+    it("replaces the source when Declared Project identity changes", async () => {
+      const replacement = {
+        ...declaredProject1,
+        name: "renamed-project",
+        dispose: jest.fn(),
+      };
+
+      mockProjectRegistry.projects = [replacement, declaredProject2];
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(mockDbtProjectFactory).toHaveBeenCalledTimes(3);
+      expect(mockProject1.dispose).toHaveBeenCalledTimes(1);
     });
   });
 });

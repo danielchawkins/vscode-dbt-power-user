@@ -15,6 +15,8 @@ import {
   window,
 } from "vscode";
 import { DBTClient } from "../dbt_client";
+import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
+import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
 import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";
 import { extractDbtSubcommand } from "../utils";
 import { DBTProject } from "./dbtProject";
@@ -27,6 +29,7 @@ export interface DBTProjectsInitializationEvent {}
 
 interface ProjectEntry {
   project: DBTProject;
+  metadataSource: ProjectMetadataSource;
   subscriptions: Disposable[];
 }
 
@@ -327,6 +330,7 @@ export class DBTProjectContainer implements Disposable {
         this.rebuildManifestStatusChangeMap.delete(rebuildKey);
         this.fireRebuildStatus();
       }
+      entry.metadataSource.dispose();
       for (const sub of entry.subscriptions) {
         sub.dispose();
       }
@@ -371,14 +375,26 @@ export class DBTProjectContainer implements Disposable {
     this.projectOrder = [...desired.keys()];
 
     const created: ProjectEntry[] = [];
+    const removed: ProjectEntry[] = [];
 
     for (const [rootPath, declared] of desired) {
+      const existing = this.projectsByRoot.get(rootPath);
+      if (existing && existing.metadataSource.project !== declared) {
+        this.projectsByRoot.delete(rootPath);
+        removed.push(existing);
+      }
       if (!this.projectsByRoot.has(rootPath)) {
+        const projectManifestEmitter =
+          new EventEmitter<ManifestCacheChangedEvent>();
         const project = this.dbtProjectFactory(
           declared.root,
-          this._onManifestChanged,
+          projectManifestEmitter,
         );
+        const metadataSource = new ManifestMetadataSource(declared, project);
         const subscriptions: Disposable[] = [
+          metadataSource.onDidChangeMetadata((event) => {
+            this._onManifestChanged.fire({ added: [event] });
+          }),
           project.onRebuildManifestStatusChange((e) => {
             this.rebuildManifestStatusChangeMap.set(
               e.project.projectRoot.fsPath,
@@ -386,14 +402,14 @@ export class DBTProjectContainer implements Disposable {
             );
             this.fireRebuildStatus();
           }),
+          projectManifestEmitter,
         ];
-        const entry = { project, subscriptions };
+        const entry = { project, metadataSource, subscriptions };
         this.projectsByRoot.set(rootPath, entry);
         created.push(entry);
       }
     }
 
-    const removed: ProjectEntry[] = [];
     for (const [rootPath, entry] of this.projectsByRoot) {
       if (!desired.has(rootPath)) {
         removed.push(entry);
@@ -410,6 +426,7 @@ export class DBTProjectContainer implements Disposable {
         this.rebuildManifestStatusChangeMap.delete(rebuildKey);
         this.fireRebuildStatus();
       }
+      entry.metadataSource.dispose();
       for (const sub of entry.subscriptions) {
         sub.dispose();
       }
