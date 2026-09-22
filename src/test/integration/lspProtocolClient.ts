@@ -153,6 +153,7 @@ export interface LspProtocolClient {
   getConfigurationDeliveriesSince(
     fromCursor: number,
   ): readonly ConfigurationDeliveryEntry[];
+  getServerRequestMethods(): readonly string[];
   getErrors(): readonly CapturedError[];
   setWorkspaceConfiguration(response: unknown[]): void;
   close(): void;
@@ -833,7 +834,7 @@ export function attachLspProtocolClient(
     },
 
     serverRequestCount(method: string): number {
-      return serverRequestState(method).totalReceived;
+      return capturedServerRequests.get(method)?.totalReceived ?? 0;
     },
 
     getNotifications(method: string): readonly unknown[] {
@@ -856,7 +857,11 @@ export function attachLspProtocolClient(
     },
 
     getServerRequests(method: string): readonly ServerRequestEntry[] {
-      return cloneServerRequestEntries(serverRequestState(method));
+      const state = capturedServerRequests.get(method);
+      if (!state) {
+        return [];
+      }
+      return cloneServerRequestEntries(state);
     },
 
     getServerRequestsSince(
@@ -886,6 +891,13 @@ export function attachLspProtocolClient(
         deliveredSections: [...entry.deliveredSections],
         absoluteIndex: entry.absoluteIndex,
       }));
+    },
+
+    getServerRequestMethods(): readonly string[] {
+      return [...capturedServerRequests.entries()]
+        .filter(([, state]) => state.totalReceived > 0)
+        .map(([method]) => method)
+        .sort();
     },
 
     getErrors(): readonly CapturedError[] {
