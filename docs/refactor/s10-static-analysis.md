@@ -4,8 +4,6 @@ Captured 2026-09-22 on dbt Fusion 2.0.5. The operator opted in to profile `finan
 
 The result is inconclusive for mode comparison. `dbt parse` on the synthetic fixture succeeded, but neither `baseline` nor `strict` finished project load within five minutes per mode, so diagnostic, hover, and effective-mode measurements did not run against a loaded project. Follow-up diagnosis on 2026-09-22 tested Fusion 2.0.5 and 2.0.6 with short direct harness runs and a valid official-extension control; no loaded-project state was reproduced during that diagnosis window. What changed since earlier green captures on the same machine remains unknown.
 
-`s9-query-phases.md` is not present in this workspace.
-
 ## Method
 
 The fixture is a minimal synthetic temp project, not a real or production project. It contains `dbt_project.yml` naming profile `finance_general`, three models under `models/`: one valid plain select, one base select with a numeric column and a text column, and one downstream model that adds those two columns through a `ref`. The type-addition case is intended to exercise schema/type diagnostics in `strict` once the project loads. Fixture SQL is not retained here.
@@ -58,7 +56,7 @@ With the project unloaded, no behavioral difference between `baseline` and `stri
 - The warehouse reachable through `finance_general` / `dev` may block or stall LSP compilation even when CLI `dbt parse` succeeds on the same fixture and profile. This capture does not isolate whether warehouse connectivity, profile permissions, or a Fusion LSP defect caused the stall.
 - Diagnostics may require a loaded project; with no `diagnosticProvider` at initialize and no push notifications, absence of diagnostics is inconclusive.
 - A prior capture on 2026-09-21 using an incomplete client also failed to load; this rerun used the full client contract above and still failed to load with the operator profile.
-- No query text, result rows, query ids, credentials, account identifiers, or document bodies were retained. Isolated user-data, extensions, and workspace directories used for diagnosis were removed, along with spawned processes. The direct harness lived only under the system temp directory and was deleted after capture under the spike artifact policy; it was not preserved in the repository.
+- No query text, result rows, query ids, credentials, account identifiers, or document bodies were retained. Isolated user-data, extensions, and workspace directories used for diagnosis were removed, along with spawned processes. The temporary direct harness was deleted after capture and was not preserved in the repository; the method and tested variants are recorded below for a later rerun.
 
 ## Diagnosis (2026-09-22)
 
@@ -69,9 +67,9 @@ After the inconclusive baseline/strict capture, short direct harness runs and a 
 Earlier captures on this machine recorded loaded-project behavior on Fusion 2.0.5 with the S2 dummy fixture:
 
 - `docs/refactor/lsp-commands.md` recorded Analyzing `$/progress` through Parsing reports and `kind: end` on the single-project copy with the fixture dummy Snowflake profile. On an earlier two-model run, after that analyzing progress ended, `dbt.getProjectInfo` returned `models_count` 2 and `models_count_is_estimate` false.
-- ADR 0005 section 2.4 references the same S2 inventory reaching Analyzing end and `models_count` 2 on the dummy profile, and contrasts it with later four-row runs that did not finish loading.
+- ADR 0005 references the same S2 inventory reaching Analyzing end and `models_count` 2 on the dummy profile, and contrasts it with later four-row runs that did not finish loading.
 
-The 2026-09-22 diagnosis did **not** reproduce those green outcomes on Fusion 2.0.5 or on 2.0.6. The changed condition remains unknown.
+The 2026-09-22 diagnosis did **not** reproduce those green outcomes on Fusion 2.0.5 or on 2.0.6. The S7 and S8 captures from the same migration window also failed to load their projects, which corroborates a current machine-wide regression but does not identify what changed from the historical green run.
 
 ### Fusion 2.0.6 provenance
 
@@ -92,7 +90,7 @@ Harness launch shape: `dbt lsp --socket <port> --project-dir <tmp> --profiles-di
 
 Separate compatibility observation: standalone `dbt lsp --clientProcessId <pid>` on Fusion 2.0.5 and 2.0.6 exits with `unexpected argument '--clientProcessId' found`. No verbatim process argv from the official extension session was retained, so that flag was not recorded as part of the official launch.
 
-### Official extension control (valid)
+### Official extension control (activation and startup; load confounded)
 
 An earlier control used `--disable-extensions`, which suppresses installed VSIXes; `--enable-extension` did not restore `dbtLabsInc.dbt` in exthost logs and could not answer the question. The valid control below does **not** pass `--disable-extensions`.
 

@@ -137,7 +137,7 @@ Fusion is the local engine, the v2 of dbt Core. The paid product is dbt Cloud, w
 | `baseline` (default) | Jinja, YAML, and SQL syntax diagnostics; ref and source navigation; table-level lineage; ref autocomplete                                                                                               |
 | `strict`             | Baseline, plus column-level lineage, SQL type and schema diagnostics, column go-to-definition, `select *` hover, and rename, when Fusion provides them from the local project and the warehouse profile |
 
-S10 measures the difference between `baseline` and `strict` on a synthetic fixture that uses a normal profiles file. If Fusion withholds a capability, surface Fusion's own message and mark the capability unavailable. Do not add a login to obtain it. Step 5.0 records the configured mode, the effective mode, and this matrix. Phase 7's warehouse- and `strict`-dependent features stay gated on S9 and S10 evidence.
+S10 measures the difference between `baseline` and `strict` on a synthetic fixture that uses a normal profiles file. If Fusion withholds a capability, surface Fusion's own message and mark the capability unavailable. Do not add a login to obtain it. Step 5.0 records the configured mode and supplies the launch argument. Effective mode stays `unknown` without positive server evidence, and configuration alone never enables a `strict`-only capability. S10 gates provider deletion in 5.6 and Phase 7's warehouse- and `strict`-dependent features.
 
 **D6 — Webview UI runtime. Deferred to the v2 measured comparison.** React 19 with `@vscode-elements/elements` is the provisional default so that v1 is not blocked; it is not a selection. The live alternative is a coherent Lit and semantic-DOM webview, since VS Code Elements is itself Lit and needs no React wrapper. Svelte and Solid remain possible but require a measured advantage over the cost of rewriting three panels; no such measurement exists, and none is claimed. The comparison runs at v2.2, behind the contract and per-panel entry seam that v2.1 establishes, on the three retained panels, with the incumbent React implementation as the control. Do not record React as chosen.
 
@@ -429,11 +429,11 @@ Verify: `just check` green with the Phase 2 scoping behaviors covered through `P
 
 ### Phase 5 — LSP transport, client, and lifecycle → **alpha.3**
 
-Goal: the first genuinely valuable alpha. Editor intelligence comes from Fusion, five provider directories are gone, and linting is on by default.
+Goal: the first genuinely valuable alpha. Steps 5.0 through 5.4 establish the Fusion client path before the loaded-project gates clear; alpha.3 ships only after 5.5 and 5.6 replace diagnostics and the five provider directories.
 
-Run spikes **S2** (command payloads), **S3**, **S4**, **S5**, and **S6** before the steps that name them, **S10** before step 5.0, and **S1** before step 5.5.
+Run spikes **S2** (command payloads), **S3**, **S4**, **S5**, and **S6** before the steps that name them, **S10** before step 5.6, and **S1** before step 5.5.
 
-**5.0 — Static-analysis mode, effective-mode detection, and the capability matrix.** Gated on **D5** and **S10**, and landed before 5.3 launches any client, because the mode is a launch argument the pool cannot assemble without it. New `src/fusion/staticAnalysisMode.ts`.
+**5.0 — Static-analysis launch selection and the capability matrix.** Gated on **D5** and landed before 5.3 launches any client, because the mode is a launch argument the pool cannot assemble without it. New `src/fusion/staticAnalysisMode.ts`.
 
 ```ts
 export type StaticAnalysisMode = "off" | "baseline" | "strict";
@@ -442,8 +442,6 @@ export interface StaticAnalysisSelection {
   readonly configured: StaticAnalysisMode;
   /** What the server is actually running, once a client has reported. */
   readonly effective: StaticAnalysisMode | "unknown";
-  /** True when `strict` was configured and the server fell back for want of authentication. */
-  readonly fellBack: boolean;
 }
 /** Capabilities the effective mode admits; the source of every "unavailable because" message. */
 export type FusionCapability =
@@ -451,9 +449,9 @@ export type FusionCapability =
 export function capabilitiesFor(mode: StaticAnalysisMode): ReadonlySet<FusionCapability>;
 ```
 
-Contract: the setting is resource-scoped so a Declared Project can differ from its neighbor; the selection produces the client's mode argument; a change to the configured mode restarts that project's client rather than mutating a running one; and a capability Fusion withholds is surfaced in the status bar and output channel, never as a notification. A capability absent because of the effective mode reads as explained-unavailable, not as missing or broken. The extension performs, prompts for, and stores no login.
+Contract: the setting is resource-scoped so a Declared Project can differ from its neighbor; the selection produces the client's mode argument; a change to the configured mode restarts that project's client rather than mutating a running one; and a capability Fusion withholds is surfaced in the status bar and output channel, never as a notification. Effective mode starts and remains `unknown` until the running server provides positive evidence. Do not call `capabilitiesFor` while effective mode is unknown, and do not advertise a `strict`-only capability from the configured mode alone. A capability absent because of a known effective mode reads as explained-unavailable, not as missing or broken. The extension performs, prompts for, and stores no login.
 
-Verify: unit tests over the selection for each configured mode, for the fallback case, and for the restart-on-change rule; a capability-matrix test asserting the D5 table exactly. The live detection path is exercised by 5.3 and 5.4 once a client exists.
+Verify: unit tests over the selection for each configured mode, the initial unknown effective mode, the rule that unknown enables no `strict`-only capability, and the restart-on-change rule; a capability-matrix test asserting the D5 table exactly. The live detection path is exercised by 5.3 and 5.4 once a client exists.
 
 **5.1 — Executable resolution.** New `src/fusion/fusionExecutable.ts`.
 
@@ -542,7 +540,7 @@ Lifecycle: restart with bounded exponential backoff on unexpected exit, cap the 
 
 Verify: unit tests for argument assembly, prefix application, backoff and cap, and disposal ordering. Integration tests: a `multi-root` window starts exactly two processes; deleting a project's `dbt_project.yml` stops exactly one; killing a server externally triggers exactly one restart; window teardown leaves no `dbt lsp` process (assert by PID list before and after).
 
-**5.4 — Status and output.** New `src/lsp/fusionStatus.ts`. One status bar item reflecting the Project Context's client state and its effective static-analysis mode from step 5.0, including the fallback case, one output channel per project for server logs, and the server's `dbt/progress/*` notifications mapped to `window.withProgress` in the window location. Replace `src/statusbar/versionStatusBar.ts` and `targetStatusBar.ts`; delete `src/statusbar/deferToProductionStatusBar.ts` if defer moves into the LSP path in Phase 7.
+**5.4 — Status and output.** New `src/lsp/fusionStatus.ts`. One status bar item reflecting the Project Context's client state and its effective static-analysis mode from step 5.0, including `unknown`, one output channel per project for server logs, and the server's `dbt/progress/*` notifications mapped to `window.withProgress` in the window location. Replace `src/statusbar/versionStatusBar.ts` and `targetStatusBar.ts`; delete `src/statusbar/deferToProductionStatusBar.ts` if defer moves into the LSP path in Phase 7.
 
 Contract: this is where decision 9 is enforced. Startup, parse, restart, and failure are all status-and-output. Add a unit test that activates the extension against the fixtures with `window.showInformationMessage`, `showWarningMessage`, and `showErrorMessage` spied, asserting zero calls. Keep that test permanently as the notification-policy guard.
 
@@ -552,13 +550,13 @@ Verify: the spy test is green and CI-enforced.
 
 Verify: integration test on a fixture with a deliberately broken dependency package asserting the policy either way, plus that a genuine error in a root-project model is never suppressed.
 
-**5.6 — Delete the language providers.** Delete `src/autocompletion_provider/`, `src/definition_provider/`, `src/hover_provider/`, `src/document_formatting_edit_provider/`, and `src/validation_provider/` in full, along with their registration in `src/dbtPowerUserExtension.ts` and `inversify.config.ts`, the `dbtPowerUser.validateSql` command with `src/commands/validateSql.ts`, and the `dbt.sqlFmtPath` and `dbt.sqlFmtAdditionalParams` settings. In `src/code_lens_provider/`, keep `cteCodeLensProvider.ts`, `virtualSqlCodeLensProvider.ts`, and `documentationCodeLensProvider.ts`; the fate of `sourceModelCreationCodeLensProvider.ts` follows model generation in Phase 7.
+**5.6 — Delete the language providers.** Gated on a reproducible loaded-project S10 control; the integration tests below must pass before deletion. Delete `src/autocompletion_provider/`, `src/definition_provider/`, `src/hover_provider/`, `src/document_formatting_edit_provider/`, and `src/validation_provider/` in full, along with their registration in `src/dbtPowerUserExtension.ts` and `inversify.config.ts`, the `dbtPowerUser.validateSql` command with `src/commands/validateSql.ts`, and the `dbt.sqlFmtPath` and `dbt.sqlFmtAdditionalParams` settings. In `src/code_lens_provider/`, keep `cteCodeLensProvider.ts`, `virtualSqlCodeLensProvider.ts`, and `documentationCodeLensProvider.ts`; the fate of `sourceModelCreationCodeLensProvider.ts` follows model generation in Phase 7.
 
 Do not contribute a `documentSelector`-level formatter default and do not set `editor.formatOnSave`. Expose LSP formatting and code actions and let the repository or user decide (decision 7).
 
-Verify: integration tests on `single-project` that completion inside `ref('` returns the fixture's models; hover on a dotted `package.macro` returns documentation (closing characterization case 1 through the LSP rather than a patch); go-to-definition on a `ref()` opens the model; rename across files works; a broken `ref()` yields a diagnostic; and `source.fixAll.dbtLintFix` is offered on a lint violation.
+Verify: integration tests on `single-project` that completion inside `ref('` returns the fixture's models; hover on a dotted `package.macro` returns documentation (closing characterization case 1 through the LSP rather than a patch); go-to-definition on a `ref()` opens the model; rename across files works; formatting returns an edit; a broken `ref()` yields a diagnostic; and `source.fixAll.dbtLintFix` is offered on a lint violation.
 
-**Release alpha.3** (`0.3.0-alpha.0`). First release that delivers the ADR 0002 thesis. Install in the consumer alongside the manifest-driven panels and use it for daily editing.
+**Release alpha.3** (`0.3.0-alpha.0`) only after 5.5 and 5.6 clear their loaded-project gates. It is the first release that delivers the ADR 0002 thesis. Install in the consumer alongside the manifest-driven panels and use it for daily editing.
 
 ---
 
@@ -873,7 +871,7 @@ Reconcile before running. **S2** and the `initialize` capability record in Secti
 
 **S9 — Snowflake query identity and phases.** Before Phase 7 step 7.4. **Touches an account; requires explicit opt-in.** Run the same preview on a cold warehouse, a warm warehouse, an identical repeat for result reuse, and a repeat with reuse disabled; read the query id, compilation and execution times, and the queue columns from `INFORMATION_SCHEMA.QUERY_HISTORY`, not the account-usage view, which lags. Record whether the extension can obtain a query id at all, whether an in-flight preview can be cancelled, and whether a query tag can be set through Fusion. Output: per-phase distributions and two yes-or-no answers. Query-id handling follows the rules above. `docs/refactor/s9-query-phases.md` is partial: exact-repeat timings were measured, but cold provisioning was not proven and reuse-disabled was unavailable because each Fusion invocation used a different session. The CLI preview path exposed no query id, cancellation, or tag mechanism; LSP cancellation and tag paths remain unchecked. Step 7.4 remains open.
 
-**S10 — Effective static-analysis mode.** Before Phase 5 step 5.0. **Touches a warehouse; the operator opted in for `finance_general` / `dev`.** Run one synthetic fixture in `baseline` and in `strict` with that profiles file. Measure cold start, first diagnostic, and first hover, and record which capabilities appear in each mode. There is no login arm. Output: measured latencies and the capability differences, so step 5.0 can show the effective mode.
+**S10 — Effective static-analysis mode.** Before Phase 5 step 5.6 and Phase 7 step 7.4. **Touches a warehouse; the operator opted in for `finance_general` / `dev`.** Run one synthetic fixture in `baseline` and in `strict` with that profiles file. Measure cold start, first diagnostic, and first hover, and record which capabilities appear in each mode. There is no login arm. Output: measured latencies and the capability differences, so the extension can replace existing providers and show a known effective mode.
 
 ### Risks, ranked by how likely they are to change the plan
 
@@ -890,8 +888,9 @@ Reconcile before running. **S2** and the `initialize` capability record in Secti
 
 **D1** and **D2** are resolved; Phase 0 and Phase 1.1 are complete.
 
-- **Before Phase 5 step 5.0:** **D5** is decided: no login. S10 still measures `baseline` against `strict` before the mode becomes a launch argument. Phase 7's warehouse- and `strict`-dependent features stay gated on **S9** and **S10** evidence separately.
+- **Before Phase 5 step 5.0:** **D5** is decided: no login. Configuration supplies the launch argument; effective mode remains unknown without positive server evidence.
 - **Before Phase 5 step 5.5:** **D3** is still provisional. The 2026-09-21 S1 capture did not finish loading and produced no diagnostics.
+- **Before Phase 5 step 5.6:** a loaded-project **S10** control is reproducible, then 5.6's integration tests exercise completion, hover, definition, rename, formatting, diagnostics, and code actions before deleting the five provider directories.
 - **Before Phase 7:** the **S2** command inventory, with any retained feature that has no backing command named explicitly. This is the point where the comprehensive target either holds or must be amended.
 - **Before Phase 8:** confirm beta.2 has been used against the real consumer repository long enough to trust it. Phase 8 is where the old paths stop being available as a fallback.
 - **Before Phase 10 step 10.4:** all seven consumer characterization cases verified green through the fork.
