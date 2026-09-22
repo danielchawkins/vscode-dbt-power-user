@@ -82,6 +82,12 @@ export interface LspFixtureOptions {
   defaultRequestTimeoutMs?: number;
   /** Extra `dbt lsp` argv tokens, e.g. `--static-analysis strict`. */
   extraArgs?: string[];
+  /** Environment variables for `dbt lsp` spawn; merged over process.env. */
+  env?: Record<string, string>;
+  /** Fusion executable; defaults to `dbt` on PATH. */
+  executable?: string;
+  /** Spawn from the copied project root. */
+  useProjectRootAsCwd?: boolean;
 }
 
 function waitForExit(
@@ -228,8 +234,13 @@ export async function createLspFixture(
       launchArgs = args;
 
       stderr = "";
-      childProcess = spawn("dbt", args, {
+      const spawnEnv = options.env
+        ? { ...process.env, ...options.env }
+        : undefined;
+      childProcess = spawn(options.executable ?? "dbt", args, {
         stdio: ["ignore", "pipe", "pipe"],
+        ...(spawnEnv && { env: spawnEnv }),
+        ...(options.useProjectRootAsCwd && { cwd: temporaryProjectRoot }),
       });
       childProcess.stdout?.on("data", () => {});
       childProcess.stderr?.on("data", (chunk: Buffer) => {
