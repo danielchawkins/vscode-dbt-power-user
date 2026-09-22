@@ -115,6 +115,16 @@ export class DBTProject implements Disposable {
   readonly onRebuildManifestStatusChange =
     this._onRebuildManifestStatusChange.event;
 
+  /** Emits complete manifest metadata publications. */
+  get onManifestChanged(): Event<ManifestCacheChangedEvent> {
+    return this._onManifestChanged.event;
+  }
+
+  /** Returns the latest complete metadata publication. */
+  getMetadataSnapshot(): ManifestCacheProjectAddedEvent | undefined {
+    return this._manifestCacheEvent;
+  }
+
   private dbSchemaCache: Record<string, ModelNode> = {};
   private queues: Map<string, DBTCommandExecution[]> = new Map<
     string,
