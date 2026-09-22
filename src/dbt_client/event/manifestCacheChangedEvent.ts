@@ -29,6 +29,12 @@ export interface ManifestCacheProjectAddedEvent {
   functionMetaMap: FunctionMetaMap;
   semanticModelMetaMap: SemanticModelMetaMap;
   modelDepthMap: Map<string, number>;
+  /** Client-owned counter for one published projection of this project. */
+  readonly publicationEpoch: number;
+  /** Stable identity of the component that produced this projection. */
+  readonly metadataProducer: "manifest";
+  /** Producer-supplied revision token, when one exists. */
+  readonly producerRevision?: string;
 }
 
 export interface ManifestCacheProjectRemovedEvent {

@@ -84,6 +84,7 @@ interface JsonObj {
 }
 
 export class DBTProject implements Disposable {
+  private static readonly publicationEpochs = new Map<string, number>();
   private _manifestCacheEvent?: ManifestCacheProjectAddedEvent;
   readonly projectRoot: Uri;
   private dbtProjectIntegration: DBTProjectIntegrationAdapter;
@@ -210,6 +211,9 @@ export class DBTProject implements Disposable {
           "DBTProject",
           "Received manifestParsed event from dbtIntegrationAdapter",
         );
+        const projectKey = this.projectRoot.fsPath;
+        const publicationEpoch =
+          (DBTProject.publicationEpochs.get(projectKey) ?? 0) + 1;
         const manifestCacheEvent: ManifestCacheProjectAddedEvent = {
           project: this,
           nodeMetaMap: parsedManifest.nodeMetaMap,
@@ -224,7 +228,10 @@ export class DBTProject implements Disposable {
           functionMetaMap: parsedManifest.functionMetaMap,
           semanticModelMetaMap: parsedManifest.semanticModelMetaMap,
           modelDepthMap: parsedManifest.modelDepthMap,
+          publicationEpoch,
+          metadataProducer: "manifest",
         };
+        DBTProject.publicationEpochs.set(projectKey, publicationEpoch);
         this._manifestCacheEvent = manifestCacheEvent;
         this._onManifestChanged.fire({ added: [manifestCacheEvent] });
       },
@@ -1634,5 +1641,9 @@ export class DBTProject implements Disposable {
 
   private getCurrentProjectIntegration(): DBTProjectIntegration {
     return this.dbtProjectIntegration.getCurrentProjectIntegration();
+  }
+
+  getPublicationEpoch(): number {
+    return this._manifestCacheEvent?.publicationEpoch ?? 0;
   }
 }
