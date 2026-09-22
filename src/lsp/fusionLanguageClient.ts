@@ -220,6 +220,23 @@ export function validateDocumentSelectorPatterns(
   }
 }
 
+/** Returns minimal dbt config: `{lsp:{linter:{enabled:bool}}}`, null for other sections. */
+export function buildWorkspaceConfigurationResponse(
+  section: string,
+  lintEnabled: boolean,
+): unknown {
+  if (section === "dbt") {
+    return {
+      lsp: {
+        linter: {
+          enabled: lintEnabled,
+        },
+      },
+    };
+  }
+  return null;
+}
+
 /** Line buffer for piped Fusion server stdout/stderr. */
 export class ProcessStreamBuffer {
   private partial = "";
@@ -317,6 +334,8 @@ export class SpawnedLspProcess implements ExitingProcess {
   }
 }
 
+export const DBT_LSP_USE_TARGET_LSP = "DBT_LSP_USE_TARGET_LSP" as const;
+
 export type FusionLanguageClientDependencies = {
   listenForServer?: typeof listenForServer;
   acceptWithProcessExit?: typeof acceptWithProcessExit;
@@ -324,6 +343,7 @@ export type FusionLanguageClientDependencies = {
     executable: string,
     args: string[],
     env: Record<string, string>,
+    cwd?: string,
   ) => ChildProcess;
   createLanguageClient?: (
     id: string,
@@ -538,9 +558,10 @@ class FusionLanguageClientImpl implements FusionClient {
     const accept = this.deps.acceptWithProcessExit ?? acceptWithProcessExit;
     const spawnProcess =
       this.deps.spawnProcess ??
-      ((executable, args, env) =>
+      ((executable, args, env, cwd) =>
         spawn(executable, args, {
           env,
+          cwd,
           shell: false,
           stdio: ["ignore", "pipe", "pipe"],
         }));
@@ -569,10 +590,16 @@ class FusionLanguageClientImpl implements FusionClient {
         target: launch.target,
       });
 
+      const env = {
+        ...this.options.executable.env,
+        [DBT_LSP_USE_TARGET_LSP]: "1",
+      };
+
       const child = spawnProcess(
         this.options.executable.path,
         args,
-        this.options.executable.env,
+        env,
+        this.options.project.root.fsPath,
       );
       const processAdapter = new SpawnedLspProcess(child, (line) => {
         this._logChannel.appendLine(line);
@@ -608,6 +635,22 @@ class FusionLanguageClientImpl implements FusionClient {
             uri: this.options.project.folder.uri,
             name: this.options.project.folder.name,
             index: this.options.project.folder.index,
+          },
+          middleware: {
+            workspace: {
+              configuration: async (params) => {
+                const results: unknown[] = [];
+                for (const item of params.items) {
+                  results.push(
+                    buildWorkspaceConfigurationResponse(
+                      item.section ?? "",
+                      this.options.lintEnabled,
+                    ),
+                  );
+                }
+                return results;
+              },
+            },
           },
         },
       );

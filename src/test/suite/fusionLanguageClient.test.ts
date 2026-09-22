@@ -9,7 +9,12 @@ import {
 import type { ChildProcess } from "child_process";
 import { EventEmitter } from "events";
 import { PassThrough } from "stream";
-import { Uri, workspace, WorkspaceFolder } from "vscode";
+import {
+  type CancellationToken,
+  Uri,
+  workspace,
+  WorkspaceFolder,
+} from "vscode";
 import { LanguageClientOptions, State } from "vscode-languageclient/node";
 import {
   fusionLogLevelArgument,
@@ -17,7 +22,9 @@ import {
 } from "../../lsp/fusionClientSettings";
 import {
   buildFusionLspArgs,
+  buildWorkspaceConfigurationResponse,
   commandPrefixForProject,
+  DBT_LSP_USE_TARGET_LSP,
   DefaultFusionClientFactory,
   DISPOSAL_GRACE_MS,
   documentSelectorForProject,
@@ -45,6 +52,11 @@ const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
   name: "general",
   index: 0,
+};
+
+const cancellationToken: CancellationToken = {
+  isCancellationRequested: false,
+  onCancellationRequested: () => ({ dispose: () => {} }),
 };
 
 function makeProject(
@@ -265,6 +277,21 @@ describe("fusionLanguageClient helpers", () => {
     expect(lines).toHaveLength(1);
     expect(lines[0]).toHaveLength(PARTIAL_LINE_LIMIT);
     expect(lines[0]).toBe("a".repeat(PARTIAL_LINE_LIMIT));
+  });
+
+  it("builds workspace/configuration response for dbt section with linter", () => {
+    expect(buildWorkspaceConfigurationResponse("dbt", true)).toEqual({
+      lsp: { linter: { enabled: true } },
+    });
+    expect(buildWorkspaceConfigurationResponse("dbt", false)).toEqual({
+      lsp: { linter: { enabled: false } },
+    });
+  });
+
+  it("returns null for non-dbt sections", () => {
+    expect(buildWorkspaceConfigurationResponse("python", true)).toBeNull();
+    expect(buildWorkspaceConfigurationResponse("vscode", false)).toBeNull();
+    expect(buildWorkspaceConfigurationResponse("", true)).toBeNull();
   });
 });
 
@@ -504,8 +531,12 @@ describe("FusionLanguageClient lifecycle", () => {
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
     const spawnProcess = jest.fn(
-      (_executable: string, _args: string[], _env: Record<string, string>) =>
-        processAdapter as any,
+      (
+        _executable: string,
+        _args: string[],
+        _env: Record<string, string>,
+        _cwd?: string,
+      ) => processAdapter as any,
     );
     const createLanguageClient = jest.fn(
       async () => makeLanguageClient() as any,
@@ -524,7 +555,11 @@ describe("FusionLanguageClient lifecycle", () => {
       executable: {
         path: "/opt/dbt",
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
-        env: { PATH: "/opt/bin", TEST_ENV: "1" },
+        env: {
+          PATH: "/opt/bin",
+          TEST_ENV: "1",
+          [DBT_LSP_USE_TARGET_LSP]: "0",
+        },
       },
       lintEnabled: true,
       commandPrefix: "fusionPowerUser:test:",
@@ -543,7 +578,12 @@ describe("FusionLanguageClient lifecycle", () => {
         "--lint-enabled",
         "true",
       ]),
-      { PATH: "/opt/bin", TEST_ENV: "1" },
+      {
+        PATH: "/opt/bin",
+        TEST_ENV: "1",
+        DBT_LSP_USE_TARGET_LSP: "1",
+      },
+      "/workspace/general",
     );
 
     await client.stop();
@@ -584,6 +624,115 @@ describe("FusionLanguageClient lifecycle", () => {
     expect(spawnArgs[1]).toEqual(
       expect.arrayContaining(["--lint-enabled", "false"]),
     );
+
+    await client.stop();
+    client.dispose();
+  });
+
+  it("configures workspace/configuration middleware for dbt section only", async () => {
+    const streams = makeStreams();
+    const server = new FakeReverseSocketServer(streams);
+    let capturedClientOptions: LanguageClientOptions | undefined;
+
+    const factory = new DefaultFusionClientFactory(terminal as any, {
+      listenForServer: async () => server,
+      acceptWithProcessExit: async () => streams,
+      spawnProcess: () => new FakeExitingProcess() as any,
+      createLanguageClient: async (
+        _id: string,
+        _name: string,
+        _serverOptions,
+        clientOptions: LanguageClientOptions,
+      ) => {
+        capturedClientOptions = clientOptions;
+        return makeLanguageClient() as any;
+      },
+      sleep: async () => {},
+    });
+
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        env: {},
+      },
+      lintEnabled: true,
+      commandPrefix: "fusionPowerUser:test:",
+    });
+
+    await flushAsync();
+
+    expect(capturedClientOptions?.middleware).toBeDefined();
+    const configMiddleware = (capturedClientOptions?.middleware as any)
+      ?.workspace?.configuration;
+    expect(configMiddleware).toBeDefined();
+    const next = jest.fn();
+
+    const result = await configMiddleware(
+      { items: [{ section: "dbt" }, { section: "python" }] },
+      cancellationToken,
+      next,
+    );
+
+    expect(result).toHaveLength(2);
+    expect(result[0]).toEqual({
+      lsp: { linter: { enabled: true } },
+    });
+    expect(result[1]).toBeNull();
+    expect(next).not.toHaveBeenCalled();
+
+    await client.stop();
+    client.dispose();
+  });
+
+  it("middleware responds to lintEnabled false", async () => {
+    const streams = makeStreams();
+    const server = new FakeReverseSocketServer(streams);
+    let capturedClientOptions: LanguageClientOptions | undefined;
+
+    const factory = new DefaultFusionClientFactory(terminal as any, {
+      listenForServer: async () => server,
+      acceptWithProcessExit: async () => streams,
+      spawnProcess: () => new FakeExitingProcess() as any,
+      createLanguageClient: async (
+        _id: string,
+        _name: string,
+        _serverOptions,
+        clientOptions: LanguageClientOptions,
+      ) => {
+        capturedClientOptions = clientOptions;
+        return makeLanguageClient() as any;
+      },
+      sleep: async () => {},
+    });
+
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        env: {},
+      },
+      lintEnabled: false,
+      commandPrefix: "fusionPowerUser:test:",
+    });
+
+    await flushAsync();
+
+    const configMiddleware = (capturedClientOptions?.middleware as any)
+      ?.workspace?.configuration;
+    const next = jest.fn();
+    const result = await configMiddleware(
+      { items: [{ section: "dbt" }] },
+      cancellationToken,
+      next,
+    );
+
+    expect(result[0]).toEqual({
+      lsp: { linter: { enabled: false } },
+    });
+    expect(next).not.toHaveBeenCalled();
 
     await client.stop();
     client.dispose();
