@@ -1074,8 +1074,6 @@ container
       context.get("DBTTerminal"),
       context.get(HoverProviders),
       context.get(ValidationProvider),
-      context.get(AltimateRequest),
-      context.get(AltimateAuthService),
       context.get(ProjectRegistry),
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),

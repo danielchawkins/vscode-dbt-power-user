@@ -1,4 +1,3 @@
-import CreditsChip from "@modules/commonActionButtons/CreditsChip";
 import FeedbackButton from "@modules/commonActionButtons/FeedbackButton";
 import { Stack } from "@uicore";
 import { useEffect } from "react";
@@ -48,7 +47,6 @@ const QueryPanel = (): JSX.Element => {
               <ClearResultsButton />
             </>
           )}
-          <CreditsChip />
           <FeedbackButton url="https://form.jotform.com/251106305895153" />
         </Stack>
       </Stack>

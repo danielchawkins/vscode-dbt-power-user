@@ -7,7 +7,6 @@ import {
   window,
   workspace,
 } from "vscode";
-import { AltimateRequest } from "./altimate";
 import { AutocompletionProviders } from "./autocompletion_provider";
 import { CodeLensProviders } from "./code_lens_provider";
 import { VSCodeCommands } from "./commands";
@@ -21,13 +20,6 @@ import { FusionStatus } from "./lsp/fusionStatus";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
-import { AltimateAuthService } from "./services/altimateAuthService";
-import {
-  clearCachedCredits,
-  fetchAndCacheCredits,
-  handleExecutionsExhausted,
-  updateCachedAvailableExecutions,
-} from "./services/creditsService";
 import { StatusBars } from "./statusbar";
 import { TreeviewProviders } from "./treeview_provider";
 import { ValidationProvider } from "./validation_provider";
@@ -71,8 +63,6 @@ export class DBTPowerUserExtension implements Disposable {
     private dbtTerminal: DBTTerminal,
     private hoverProviders: HoverProviders,
     private validationProvider: ValidationProvider,
-    private altimateRequest: AltimateRequest,
-    private altimateAuthService: AltimateAuthService,
     private projectRegistry: ProjectRegistry,
     private projectContext: ProjectContext,
     private fusionClientPool: FusionClientPool,
@@ -149,48 +139,6 @@ export class DBTPowerUserExtension implements Disposable {
       await this.dbtProjectContainer.detectDBT();
       await this.dbtProjectContainer.initializeDBTProjects();
       await this.statusBars.initialize();
-
-      // Fetch credits balance if user is authenticated (failures are silently ignored)
-      if (this.altimateAuthService.isAuthenticated()) {
-        void fetchAndCacheCredits(this.altimateRequest);
-      }
-      // Keep the cached credits balance live: the backend sets an
-      // `X-Credits-Remaining` header on every response, so each action updates
-      // the balance with no extra API calls. Guarded so listener registration
-      // can never interfere with activation.
-      try {
-        this.altimateRequest.setCreditsRemainingListener((remaining) =>
-          updateCachedAvailableExecutions(remaining),
-        );
-        // Single central handler: every 402 from any feature shows the same
-        // out-of-credits popup.
-        this.altimateRequest.setExecutionsExhaustedListener(() =>
-          handleExecutionsExhausted(this.altimateRequest),
-        );
-      } catch (error) {
-        this.dbtTerminal.error(
-          "creditsListenerRegistrationError",
-          "Unable to register credits listeners",
-          error,
-        );
-      }
-      workspace.onDidChangeConfiguration((e) => {
-        if (!e.affectsConfiguration("dbt")) {
-          return;
-        }
-        // Credentials changed (sign-in / sign-out / instance switch): the initial
-        // activation fetch is gated on auth and never retried, so refresh here.
-        if (
-          e.affectsConfiguration("dbt.altimateAiKey") ||
-          e.affectsConfiguration("dbt.altimateInstanceName")
-        ) {
-          if (this.altimateAuthService.isAuthenticated()) {
-            void fetchAndCacheCredits(this.altimateRequest);
-          } else {
-            clearCachedCredits();
-          }
-        }
-      });
     } catch (error) {
       this.dbtTerminal.error(
         "extensionActivationError",

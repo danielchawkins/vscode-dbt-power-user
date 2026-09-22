@@ -38,14 +38,6 @@ const activationHarness = (enabled: boolean) => {
     fusionStatus: { initialize: fusionStatusInitialize },
     projectContext: {},
     statusBars: { initialize: initializeStatusBars },
-    altimateAuthService: { isAuthenticated: jest.fn(() => false) },
-    altimateRequest: {
-      fetch: jest.fn(() =>
-        Promise.resolve({ available_executions: 1, total_executions: 1 }),
-      ),
-      setCreditsRemainingListener: jest.fn(),
-      setExecutionsExhaustedListener: jest.fn(),
-    },
     dbtTerminal: { error: jest.fn() },
   });
 
@@ -68,8 +60,6 @@ const activationHarness = (enabled: boolean) => {
     registryInitialize,
     fusionClientPoolInitialize,
     fusionStatusInitialize,
-    altimateAuthService: extension.altimateAuthService,
-    altimateRequest: extension.altimateRequest,
     dbtTerminal: extension.dbtTerminal,
   };
 };
@@ -164,37 +154,6 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(harness.registryInitialize).toHaveBeenCalledTimes(1);
     expect(harness.detectDBT).toHaveBeenCalledTimes(1);
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
-  });
-
-  it("refreshes credits when Altimate instance changes", async () => {
-    let configListener:
-      | ((event: { affectsConfiguration: (key: string) => boolean }) => void)
-      | undefined;
-    const harness = activationHarness(true);
-    context = harness.context;
-    jest
-      .mocked(harness.altimateAuthService.isAuthenticated)
-      .mockReturnValue(true);
-
-    jest
-      .spyOn(workspace, "onDidChangeConfiguration")
-      .mockImplementation((listener) => {
-        configListener = listener as typeof configListener;
-        return { dispose: jest.fn() };
-      });
-
-    await harness.extension.activate(context);
-
-    configListener?.({
-      affectsConfiguration: (key: string) =>
-        key === "dbt" || key === "dbt.altimateInstanceName",
-    });
-    await Promise.resolve();
-
-    expect(harness.altimateRequest.fetch).toHaveBeenCalledWith(
-      "payment/credits",
-    );
-    jest.mocked(workspace.onDidChangeConfiguration).mockRestore();
   });
 
   it("deactivate awaits pool stop before disposing collaborators", async () => {
