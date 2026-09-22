@@ -170,12 +170,12 @@ export class FusionClientPoolImpl implements FusionClientPool {
       if (nextProjects.has(key)) {
         continue;
       }
+      this.clients.delete(key);
       managed.client.dispose();
       await managed.client.stop();
       if (this.disposed) {
         return;
       }
-      this.clients.delete(key);
       changed = true;
     }
 
@@ -202,12 +202,12 @@ export class FusionClientPoolImpl implements FusionClientPool {
   ): Promise<void> {
     const existing = this.clients.get(key);
     if (existing) {
+      this.clients.delete(key);
       existing.client.dispose();
       await existing.client.stop();
       if (this.disposed) {
         return;
       }
-      this.clients.delete(key);
     }
 
     const verdict = await this.resolver.resolve(project.root);
