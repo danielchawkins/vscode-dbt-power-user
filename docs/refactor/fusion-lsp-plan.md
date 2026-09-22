@@ -75,15 +75,15 @@ Launch surface:
 - Useful others: `--no-version-check`, `--log-level`, `--log-format`, `--static-analysis`, `--no-manage-state`, `--defer`, `--state`, `--favor-state`, `--threads`.
 - Environment the server reads: `DBT_LSP_USE_TARGET_LSP`, `DBT_CLOUD_PUBLICATIONS_DIR`, `DBT_MAXIMUM_SEED_SIZE_MIB`, plus the standard `DBT_*` set.
 
-Advertised server capabilities include `completionProvider`, `hoverProvider`, `signatureHelpProvider`, `definitionProvider`, `declarationProvider`, `typeDefinitionProvider`, `implementationProvider`, `referencesProvider`, `documentSymbolProvider`, `workspaceSymbolProvider`, `codeActionProvider`, `documentFormattingProvider`, `renameProvider`, `foldingRangeProvider`, `selectionRangeProvider`, `semanticTokensProvider`, `inlayHintProvider`, `codeLensProvider`, `diagnosticProvider`, and `executeCommandProvider`. **This is the list that makes five provider directories deletions rather than rewrites.**
+Advertised server capabilities observed on Fusion 2.0.6 `initialize`: `completionProvider`, `hoverProvider`, `definitionProvider`, `referencesProvider`, `renameProvider`, `signatureHelpProvider`, `documentFormattingProvider`, `documentSymbolProvider`, `codeActionProvider`, `codeLensProvider`, `semanticTokensProvider`, and `inlayHintProvider`. `diagnosticProvider` was absent; S1 and S10 observed no push diagnostics, so diagnostic timing remains unverified. **The provider list is the boundary that makes the editor-provider directories deletions rather than rewrites once their production-shaped flow tests pass.**
 
-`initialize` on Fusion 2.0.5 advertises seven `executeCommandProvider` commands: `dbt.listNodes`, `dbt.getCurrentNode`, `dbt.compileFile`, `dbt.compileLsp`, `dbt.clearTarget`, `dbt.getProjectInfo`, and `dbt.show`. An older reading of the binary listed six and left `dbt.show` off that list.
+`initialize` on Fusion 2.0.5+ advertises seven `executeCommandProvider` commands: `dbt.listNodes`, `dbt.getCurrentNode`, `dbt.compileFile`, `dbt.compileLsp`, `dbt.clearTarget`, `dbt.getProjectInfo`, and `dbt.show`.
 
-`dbt.previewCte` and `dbt.goToDefinition` are not in that list. An unknown command name also returns `null` and no LSP error, so S2 does not show that those two are registered. Do not drop `dbt.show` because an older reading left it off the advertised list.
+`dbt.previewCte` and `dbt.goToDefinition` are not advertised; the server returned `null` when they were executed. The official-client capture observed bare `dbt.previewCte` commands in code lenses, so the extension must rewrite them to fork-owned command IDs in Phase 5.6.
 
-Progress notifications, which give the status-bar contract: `dbt/progress/listNodes` ("Computing Lineage"), `dbt/progress/getCurrentNode` ("Getting Columns"), `dbt/progress/compileFile` ("Compiling File"), `dbt/progress/references` ("Finding All References"), `dbt/progress/rename` ("Renaming Files"), `dbt/progress/show` ("Running Preview"). Note that `dbt.listNodes` is the lineage source and `dbt.getCurrentNode` the column source — model and column lineage do not need a bespoke command.
+Fusion uses standard `window/workDoneProgress/create` and `$/progress`; `dbt/progress/*` strings are tokens, not notification methods. Captured or statically identified retained-feature tokens include `dbt/progress/listNodes` ("Computing Lineage"), `dbt/progress/getCurrentNode` ("Getting Columns"), `dbt/progress/compileFile` ("Compiling File"), and `dbt/progress/show` ("Running Preview"). `dbt.listNodes` is the lineage source and `dbt.getCurrentNode` the column source.
 
-Other observed contracts: code action kinds `source.fixAll` and `source.fixAll.dbtLintFix`; a configuration section named `dbt-lsp` with `maxErrorReporting`, `linter`, and `formatter` subsections; a file watcher registration `default-dbt-file-system-watcher` over `**/*.{sql,csv}`; and server-side reads of `.dbtignore`, `.sqlfluff`, and `.sqlfluffignore`. Lineage response shapes appear as `ProjectLineageNodeDto` and `ColumnLineageNodeDto` (`node_name`, `parents`, `transformation_type` in `passthrough` / `transformation` / `raw`, `is_primary_key`), with `MaterializationKindDto`, `AccessDto`, `ResourceTypeDto`, and the failure flags `compilation_failed`, `lineage_query_failed`, and `models_count_is_estimate`.
+Other observed contracts: code action kinds `source.fixAll` and `source.fixAll.dbtLintFix`; `workspace/configuration` requests for section `dbt` with an `lsp` subsection; a watcher over `**/*.{sql,csv}`; and server-side reads of `.dbtignore`, `.sqlfluff`, and `.sqlfluffignore`. Lineage response shapes appear as `ProjectLineageNodeDto` and `ColumnLineageNodeDto` (`node_name`, `parents`, `transformation_type` in `passthrough` / `transformation` / `raw`, `is_primary_key`), with `MaterializationKindDto`, `AccessDto`, `ResourceTypeDto`, and the failure flags `compilation_failed`, `lineage_query_failed`, and `models_count_is_estimate`.
 
 ### 2.5 The consumer repository, and the acceptance suite it already contains
 
@@ -111,7 +111,7 @@ Two observations collapse a large amount of the apparent work. Both are load-bea
 
 **One retirement discharges four constraints.** The parse loop, the ambient target watcher, the mandatory Cloud factory, and the Core and Python execution strategies all live behind `DBTProjectIntegrationAdapter`. Treating them as four deletions produces four orderings that cannot all be satisfied; treating them as one retirement — compose the published Fusion integration directly, with metadata arriving through the port — produces a single step, 7.1, that unblocks Phase 8 entirely. Sequence everything Cloud-shaped after it.
 
-**Five provider directories are deletions, not ports.** Because the Fusion server advertises `completionProvider`, `hoverProvider`, `definitionProvider`, `referencesProvider`, `renameProvider`, `documentFormattingProvider`, `codeActionProvider`, `semanticTokensProvider`, and `diagnosticProvider`, registering one `LanguageClient` supersedes `src/autocompletion_provider/`, `src/definition_provider/`, `src/hover_provider/`, `src/document_formatting_edit_provider/`, and `src/validation_provider/` wholesale. Do not port their logic. The only nuance is `src/code_lens_provider/`, which is mixed: the CTE and virtual SQL lenses drive local panels and survive; the documentation lens survives; the source-model-creation lens follows the feature.
+**Editor-provider directories are deletions, not ports.** The Fusion server advertises completion, hover, definition, references, rename, formatting, code actions, semantic tokens, and code lenses. Registering one `LanguageClient` supersedes the corresponding inherited providers after each production-shaped flow test passes. Standard push diagnostics replace validation when observed; until then the inherited validation path is removed only with a green broken-model diagnostic test. The mixed code-lens directory keeps its local panel and documentation commands while rewriting server-emitted bare CTE commands.
 
 ### 2.7 Open decisions
 
@@ -123,7 +123,7 @@ The repository pins dbt Fusion 2.0.5 while the Consumer Repository tracks `lates
 
 **D2 — Fork base version. Resolved.** The branch is rebased onto upstream 0.64.6. The inherited suite now contains 48 test suites and 637 passing tests, and the consumer's characterization cases describe the same upstream generation.
 
-**D3 — Dependency diagnostics policy.** Still provisional after **S1**. The working hypothesis: suppress diagnostics whose URI lies under the packages install path, while surfacing one project-level blocker on `dbt_project.yml` when a dependency fails to parse. The 2026-09-22 opt-in capture in `docs/adr/0005-dependency-diagnostics.md` established a parse-clean control but observed no positive load probe and no `publishDiagnostics` on any arm, so confinement and root blockers are not established. If a later capture shows Fusion already scopes diagnostics to the root project, delete the filter rather than keeping dead defense.
+**D3 — Dependency diagnostics policy. Decided: pass through.** S1 observed no dependency diagnostics and therefore no harmful noise to justify filtering or a synthetic blocker. Fusion Power User initially accepts standard server diagnostics unchanged and owns no second diagnostic store. Add a filter only with a production-shaped regression that demonstrates a concrete dependency-diagnostic problem.
 
 **D4 — Folder-scoped `envFile` override.** Decision 8 permits one only if justified. Default to *not* adding it: Fusion already reads the project-root `.env`, and the extension inherits the editor environment. Revisit only if a consumer case fails in Phase 10.
 
@@ -137,7 +137,7 @@ Fusion is the local engine, the v2 of dbt Core. The paid product is dbt Cloud, w
 | `baseline` (default) | Jinja, YAML, and SQL syntax diagnostics; ref and source navigation; table-level lineage; ref autocomplete                                                                                               |
 | `strict`             | Baseline, plus column-level lineage, SQL type and schema diagnostics, column go-to-definition, `select *` hover, and rename, when Fusion provides them from the local project and the warehouse profile |
 
-S10 measures the difference between `baseline` and `strict` on a synthetic fixture that uses a normal profiles file. If Fusion withholds a capability, surface Fusion's own message and mark the capability unavailable. Do not add a login to obtain it. Step 5.0 records the configured mode and supplies the launch argument. Effective mode stays `unknown` without positive server evidence, and configuration alone never enables a `strict`-only capability. S10 gates provider deletion in 5.6 and Phase 7's warehouse- and `strict`-dependent features.
+S10 did not establish the runtime difference between `baseline` and `strict`. Step 5.0 records the configured mode and supplies the launch argument; effective mode stays `unknown` without positive server evidence, and configuration alone never enables a strict-only capability. Provider replacement proceeds behind production-shaped tests of the capabilities Fusion advertises. Warehouse- and strict-dependent enhancements remain deferred until positive runtime evidence.
 
 **D6 — Webview UI runtime. Deferred to the v2 measured comparison.** React 19 with `@vscode-elements/elements` is the provisional default so that v1 is not blocked; it is not a selection. The live alternative is a coherent Lit and semantic-DOM webview, since VS Code Elements is itself Lit and needs no React wrapper. Svelte and Solid remain possible but require a measured advantage over the cost of rewriting three panels; no such measurement exists, and none is claimed. The comparison runs at v2.2, behind the contract and per-panel entry seam that v2.1 establishes, on the three retained panels, with the incumbent React implementation as the control. Do not record React as chosen.
 
@@ -162,6 +162,10 @@ These bind every step below. They restate ADR 0002 rather than amend it.
 **Panel persistence is UI state only.** Each panel that persists through `getState`/`setState` declares a schema of view state and nothing else: scroll and selection position, expanded or collapsed nodes, active tab, sort and filter choices, panel layout, and the epoch the view was rendered against so a restore can revalidate. Prohibited in that schema, without exception: result rows or any sample of them, SQL text compiled or submitted, credentials or tokens, Snowflake query ids, warehouse or schema metadata and anything derived from it, and compiler payloads. Webview state is host-persisted storage this product does not encrypt, and a restore must fail closed by revalidating rather than by reusing data.
 
 **No performance claim precedes its measurement.** Every target is derived from the baseline harness in step 3.13, expressed as a per-segment percentile against a recorded baseline. Arbitrary numeric targets do not belong in this plan.
+
+### 2.9 Operation routing
+
+A single Fusion language server is authoritative for editor intelligence: realtime completions, hovers, definitions, references, renames, formatting, code actions, lenses, and diagnostics. Direct CLI invocations of Fusion are used only when no suitable LSP capability exists — `run`, `build`, `test`, `deps`, `seed`, `snapshot`, and the `show --inline` fallback — always through the same resolved executable and launch context (cwd, environment, profile, target). The target architecture does not run direct parse or compile in parallel with the server to manufacture editor state; use LSP `didOpen` compile and validated artifacts only. The inherited parse loop and target watcher remain until 6.3 and 7.1 retire them. Phase 7 introduces the operation layer that enforces this routing.
 
 ## 3. Phases
 
@@ -429,7 +433,7 @@ Verify: `just check` green with the Phase 2 scoping behaviors covered through `P
 
 ### Phase 5 — LSP transport, client, and lifecycle → **alpha.3**
 
-Goal: the first genuinely valuable alpha. Steps 5.0 through 5.4 establish the Fusion client path before the loaded-project gates clear; alpha.3 ships only after 5.5 and 5.6 replace diagnostics and the five provider directories.
+Goal: the first genuinely valuable alpha. Steps 5.0 through 5.4 establish the Fusion client path; 5.5 adopts diagnostic pass-through; 5.6 deletes each inherited provider with its production-shaped replacement test.
 
 Run spikes **S2** (command payloads), **S3**, **S4**, **S5**, and **S6** before the steps that name them, **S10** before step 5.6, and **S1** before step 5.5.
 
@@ -491,7 +495,7 @@ Keep this file free of `vscode` imports apart from `Disposable` so the deferred 
 
 Add `vscode-languageclient` as a dependency, pinned to a major compatible with `engines.vscode` and verified to load in Cursor (**S6**).
 
-Verify: unit tests with a fake process that connects, never connects, exits immediately, and connects twice. Integration test against a real `dbt lsp` on `single-project` asserting a successful `initialize` whose result advertises `completionProvider`, `hoverProvider`, `definitionProvider`, `renameProvider`, `documentFormattingProvider`, `codeActionProvider`, `semanticTokensProvider`, and `diagnosticProvider`.
+Verify: unit tests with a fake process that connects, never connects, exits immediately, and connects twice. Integration test against a real `dbt lsp` on `single-project` asserting a successful `initialize` whose result advertises `completionProvider`, `hoverProvider`, `definitionProvider`, `renameProvider`, `documentFormattingProvider`, `codeActionProvider`, and `semanticTokensProvider`, with no `diagnosticProvider` assertion.
 
 **5.3 — The language client.** New `src/lsp/fusionLanguageClient.ts` and `src/lsp/fusionClientPool.ts`.
 
@@ -517,6 +521,10 @@ export interface FusionClientPool extends Disposable {
 }
 ```
 
+**Spawn contract:** Spawn cwd is `DeclaredProject.root.fsPath` exactly. Spawn environment includes `DBT_LSP_USE_TARGET_LSP=1`, overriding any inherited or configured value from the executable. This isolation prevents the LSP from corrupting manifest-driven paths.
+
+**Configuration contract:** Implement `workspace/configuration` middleware that responds to the section `"dbt"` with `{lsp:{linter:{enabled:<lintEnabled>}}}` only, returning `null` for all other sections. Do not forward host settings that Fusion may not understand.
+
 Arguments assembled per project: `lsp`, `--socket <port>`, `--project-dir <root>`, `--profiles-dir` when configured, `--target` when configured, `--lint-enabled <bool>`, `--static-analysis` from step 5.0's selection, `--no-version-check`, `--log-level` from the trace setting. `documentSelector` is scoped to the project root via a `RelativePattern`, so in a multi-root window each client sees only its own files — this is what prevents two clients from both answering for one document (**S3**).
 
 `--command-prefix` is mandatory, not optional: the official dbt Labs extension registers the same bare `dbt.*` command names, and an unprefixed client in the same window collides (**S5**). Use the extension's own namespace as the prefix and record the resolved names in one place:
@@ -530,33 +538,34 @@ export const FUSION_LSP_COMMANDS = {
   clearTarget: "dbt.clearTarget",
   getProjectInfo: "dbt.getProjectInfo",
   show: "dbt.show",
-  previewCte: "dbt.previewCte",
 } as const;
 ```
 
-`request` applies the prefix. S2 advertises `show`. `previewCte` still has no result that distinguishes it from an unknown command.
+`request` applies the prefix. `dbt.previewCte` is a client command emitted bare by server code lenses, not an execute command; middleware rewrites it to a fork-owned command.
+
+**Compile semantics:** Do not bootstrap `compileLsp` or `clearTarget` at startup. First `didOpen` on a file automatically triggers compile; both commands are explicit user-invoked operations only.
 
 Lifecycle: restart with bounded exponential backoff on unexpected exit, cap the attempts, and on reaching the cap move to `failed` and log — do not notify. Dispose clients on project unregistration, workspace folder removal, configuration change affecting the executable or lint setting, and extension deactivation. Await process exit during disposal and escalate to `SIGKILL` after a grace period, so a window reload does not leak a server (**S4**).
 
 Verify: unit tests for argument assembly, prefix application, backoff and cap, and disposal ordering. Integration tests: a `multi-root` window starts exactly two processes; deleting a project's `dbt_project.yml` stops exactly one; killing a server externally triggers exactly one restart; window teardown leaves no `dbt lsp` process (assert by PID list before and after).
 
-**5.4 — Status and output.** New `src/lsp/fusionStatus.ts`. One status bar item reflecting the Project Context's client state and its effective static-analysis mode from step 5.0, including `unknown`, one output channel per project for server logs, and the server's `dbt/progress/*` notifications mapped to `window.withProgress` in the window location. Replace `src/statusbar/versionStatusBar.ts` and `targetStatusBar.ts`; delete `src/statusbar/deferToProductionStatusBar.ts` if defer moves into the LSP path in Phase 7.
+**5.4 — Status and output.** New `src/lsp/fusionStatus.ts`. One status bar item reflects the Project Context's client state and effective static-analysis mode from step 5.0, including `unknown`; one output channel per project retains server logs. `vscode-languageclient` handles standard work-done progress. Replace `src/statusbar/versionStatusBar.ts` and `targetStatusBar.ts`; delete `src/statusbar/deferToProductionStatusBar.ts` if defer moves into the LSP path in Phase 7.
 
 Contract: this is where decision 9 is enforced. Startup, parse, restart, and failure are all status-and-output. Add a unit test that activates the extension against the fixtures with `window.showInformationMessage`, `showWarningMessage`, and `showErrorMessage` spied, asserting zero calls. Keep that test permanently as the notification-policy guard.
 
 Verify: the spy test is green and CI-enforced.
 
-**5.5 — Diagnostics policy.** Gated on **S1** and **D3**. The client's `middleware.handleDiagnostics` decides what reaches Problems. If a conclusive S1 capture shows Fusion already confines diagnostics to the root project, implement nothing and record that in the ADR. If it does not, drop diagnostics whose URI is under the project's packages install path and, when a dependency failure would otherwise be invisible, publish one project-level diagnostic on `dbt_project.yml` naming the failing package. The 2026-09-22 run did not show either outcome.
+**5.5 — Diagnostics policy.** Pass standard Fusion diagnostics through unchanged. S1 observed neither dependency diagnostics nor harmful noise, so filtering and synthetic project blockers would be speculative. Add middleware only when a production-shaped regression demonstrates a concrete dependency-diagnostic failure.
 
-Verify: integration test on a fixture with a deliberately broken dependency package asserting the policy either way, plus that a genuine error in a root-project model is never suppressed.
+Verify: no diagnostic middleware or second diagnostic store; a genuine root-project error reaches Problems once the loaded editor-flow test produces diagnostics.
 
-**5.6 — Delete the language providers.** Gated on a reproducible loaded-project S10 control; the integration tests below must pass before deletion. Delete `src/autocompletion_provider/`, `src/definition_provider/`, `src/hover_provider/`, `src/document_formatting_edit_provider/`, and `src/validation_provider/` in full, along with their registration in `src/dbtPowerUserExtension.ts` and `inversify.config.ts`, the `dbtPowerUser.validateSql` command with `src/commands/validateSql.ts`, and the `dbt.sqlFmtPath` and `dbt.sqlFmtAdditionalParams` settings. In `src/code_lens_provider/`, keep `cteCodeLensProvider.ts`, `virtualSqlCodeLensProvider.ts`, and `documentationCodeLensProvider.ts`; the fate of `sourceModelCreationCodeLensProvider.ts` follows model generation in Phase 7.
+**5.6 — Delete the language providers.** Delete each inherited provider with the production-shaped integration test for its replacement in the same implementation PR. Delete `src/autocompletion_provider/`, `src/definition_provider/`, `src/hover_provider/`, and `src/document_formatting_edit_provider/` after their completion, definition, hover, formatting, and code-action flows pass. Delete `src/validation_provider/`, `dbtPowerUser.validateSql`, and `src/commands/validateSql.ts` only with a green broken-model diagnostic test. Remove `dbt.sqlFmtPath` and `dbt.sqlFmtAdditionalParams`. In `src/code_lens_provider/`, keep `cteCodeLensProvider.ts`, `virtualSqlCodeLensProvider.ts`, and `documentationCodeLensProvider.ts`; the fate of `sourceModelCreationCodeLensProvider.ts` follows model generation in Phase 7.
 
 Do not contribute a `documentSelector`-level formatter default and do not set `editor.formatOnSave`. Expose LSP formatting and code actions and let the repository or user decide (decision 7).
 
 Verify: integration tests on `single-project` that completion inside `ref('` returns the fixture's models; hover on a dotted `package.macro` returns documentation (closing characterization case 1 through the LSP rather than a patch); go-to-definition on a `ref()` opens the model; rename across files works; formatting returns an edit; a broken `ref()` yields a diagnostic; and `source.fixAll.dbtLintFix` is offered on a lint violation.
 
-**Release alpha.3** (`0.3.0-alpha.0`) only after 5.5 and 5.6 clear their loaded-project gates. It is the first release that delivers the ADR 0002 thesis. Install in the consumer alongside the manifest-driven panels and use it for daily editing.
+**Release alpha.3** (`0.3.0-alpha.0`) follows the green 5.5 and 5.6 implementation tests. It is the first release that delivers the ADR 0002 thesis. Install in the consumer alongside the manifest-driven panels and use it for daily editing.
 
 ---
 
@@ -853,7 +862,7 @@ Rules that apply to every spike, as conditions of running rather than advice. Ca
 
 Reconcile before running. **S2** and the `initialize` capability record in Section 2.4 already cover part of this ground; extend that record rather than re-capturing it.
 
-**S1 — Dependency diagnostics.** Before Phase 5 step 5.5. Determine whether Fusion already confines diagnostics to the root project and whether a dependency parse failure surfaces at all. Run `dbt lsp` against a fixture whose installed package contains a deliberate error, and record every `textDocument/publishDiagnostics` URI and severity. Use the merged `LspFixture` / `LspProtocolClient` harness; opt-in capture lives in `src/test/integration/s1DependencyDiagnosticsCapture.test.ts` (`FPU_RUN_S1_CAPTURE=1`). Output: `docs/adr/0005-dependency-diagnostics.md`. Time-box half a day. The 2026-09-22 run is inconclusive: parse-clean control with null load probes and no push diagnostics; **D3** stays provisional.
+**S1 — Dependency diagnostics. Complete.** The 2026-09-22 run was inconclusive: parse-clean control with null load probes and no push diagnostics. D3 therefore chooses pass-through rather than speculative filtering. Reopen only with a production-shaped regression.
 
 **S2 — Custom command payloads, and the migration's payload contract.** Before Phase 5 step 5.3, and blocking step 6.2 and Phase 7. The command *names* are already known (Section 2.4). What is unknown is each command's argument and response schema, and whether `dbt.show`, `dbt.previewCte`, and `dbt.goToDefinition` are actually registered. Drive each of `dbt.getProjectInfo`, `dbt.listNodes`, `dbt.getCurrentNode`, `dbt.compileFile`, `dbt.compileLsp`, `dbt.clearTarget`, `dbt.show`, and `dbt.previewCte` over the socket against `single-project`, and record request and response JSON in `docs/refactor/lsp-commands.md`. Scope the trace to the flows the migration needs — open a model, request compiled SQL, request lineage, request node metadata — rather than attempting a complete method inventory. Confirm whether `dbt.show` returns column types, which decides step 7.4. Also confirm `--command-prefix` semantics: whether the prefix replaces or prepends the `dbt.` segment. Time-box one day. **This is the largest single unknown in the plan; if a retained feature has no command and no artifact behind it, surface that before Phase 7 rather than discovering it mid-phase.** No Fusion LSP method name belongs in a design before this record exists; the public engine source says nothing about the server, which is closed.
 
@@ -871,7 +880,7 @@ Reconcile before running. **S2** and the `initialize` capability record in Secti
 
 **S9 — Snowflake query identity and phases.** Before Phase 7 step 7.4. **Touches an account; requires explicit opt-in.** Run the same preview on a cold warehouse, a warm warehouse, an identical repeat for result reuse, and a repeat with reuse disabled; read the query id, compilation and execution times, and the queue columns from `INFORMATION_SCHEMA.QUERY_HISTORY`, not the account-usage view, which lags. Record whether the extension can obtain a query id at all, whether an in-flight preview can be cancelled, and whether a query tag can be set through Fusion. Output: per-phase distributions and two yes-or-no answers. Query-id handling follows the rules above. `docs/refactor/s9-query-phases.md` is partial: exact-repeat timings were measured, but cold provisioning was not proven and reuse-disabled was unavailable because each Fusion invocation used a different session. The CLI preview path exposed no query id, cancellation, or tag mechanism; LSP cancellation and tag paths remain unchecked. Step 7.4 remains open.
 
-**S10 — Effective static-analysis mode.** Before Phase 5 step 5.6 and Phase 7 step 7.4. **Touches a warehouse; the operator opted in for `finance_general` / `dev`.** Run one synthetic fixture in `baseline` and in `strict` with that profiles file. Measure cold start, first diagnostic, and first hover, and record which capabilities appear in each mode. There is no login arm. Output: measured latencies and the capability differences, so the extension can replace existing providers and show a known effective mode.
+**S10 — Effective static-analysis mode. Complete for sequencing.** The rerun did not establish effective-mode differences. Launch `baseline`, retain effective mode `unknown`, verify provider replacements in their implementation PRs, and defer strict-dependent enhancements until positive runtime evidence.
 
 ### Risks, ranked by how likely they are to change the plan
 
@@ -889,8 +898,6 @@ Reconcile before running. **S2** and the `initialize` capability record in Secti
 **D1** and **D2** are resolved; Phase 0 and Phase 1.1 are complete.
 
 - **Before Phase 5 step 5.0:** **D5** is decided: no login. Configuration supplies the launch argument; effective mode remains unknown without positive server evidence.
-- **Before Phase 5 step 5.5:** **D3** is still provisional. The 2026-09-22 S1 capture produced no positive load probe and no push diagnostics.
-- **Before Phase 5 step 5.6:** a loaded-project **S10** control is reproducible, then 5.6's integration tests exercise completion, hover, definition, rename, formatting, diagnostics, and code actions before deleting the five provider directories.
 - **Before Phase 7:** the **S2** command inventory, with any retained feature that has no backing command named explicitly. This is the point where the comprehensive target either holds or must be amended.
 - **Before Phase 8:** confirm beta.2 has been used against the real consumer repository long enough to trust it. Phase 8 is where the old paths stop being available as a fallback.
 - **Before Phase 10 step 10.4:** all seven consumer characterization cases verified green through the fork.
