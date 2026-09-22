@@ -52,7 +52,13 @@ import {
 } from "./dbt_client/runtimePythonEnvironmentProvider";
 import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
+import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import { FusionVersionDetection } from "./fusion/fusionVersionDetection";
+import {
+  createFusionClientPool,
+  FusionClientPoolImpl,
+} from "./lsp/fusionClientPool";
+import { DefaultFusionClientFactory } from "./lsp/fusionLanguageClient";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { AltimateAuthService } from "./services/altimateAuthService";
@@ -694,6 +700,32 @@ container
   .inSingletonScope();
 
 container
+  .bind(ConfiguredFusionExecutableResolver)
+  .toDynamicValue(() => new ConfiguredFusionExecutableResolver())
+  .inSingletonScope();
+
+container
+  .bind(DefaultFusionClientFactory)
+  .toDynamicValue((context) => {
+    return new DefaultFusionClientFactory(context.get("DBTTerminal"));
+  })
+  .inSingletonScope();
+
+container
+  .bind(FusionClientPoolImpl)
+  .toDynamicValue((context) => {
+    return createFusionClientPool(
+      context.get(ProjectRegistry),
+      context.get("DBTTerminal"),
+      {
+        resolver: context.get(ConfiguredFusionExecutableResolver),
+        factory: context.get(DefaultFusionClientFactory),
+      },
+    );
+  })
+  .inSingletonScope();
+
+container
   .bind(ProjectContext)
   .toDynamicValue((context) => {
     return new ProjectContext(
@@ -1295,6 +1327,7 @@ container
       context.get(AltimateAuthService),
       context.get(ProjectRegistry),
       context.get(ProjectContext),
+      context.get(FusionClientPoolImpl),
     );
   })
   .inSingletonScope();

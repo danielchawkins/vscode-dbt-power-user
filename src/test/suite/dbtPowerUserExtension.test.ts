@@ -24,6 +24,7 @@ const activationHarness = (enabled: boolean) => {
   const initializeDBTProjects = jest.fn(() => Promise.resolve());
   const initializeStatusBars = jest.fn(() => Promise.resolve());
   const registryInitialize = jest.fn(() => Promise.resolve());
+  const fusionClientPoolInitialize = jest.fn();
   const extension = Object.create(DBTPowerUserExtension.prototype) as any;
   Object.assign(extension, {
     dbtProjectContainer: {
@@ -32,10 +33,14 @@ const activationHarness = (enabled: boolean) => {
       initializeDBTProjects,
     },
     projectRegistry: { initialize: registryInitialize },
+    fusionClientPool: { initialize: fusionClientPoolInitialize },
     projectContext: {},
     statusBars: { initialize: initializeStatusBars },
     altimateAuthService: { isAuthenticated: jest.fn(() => false) },
     altimateRequest: {
+      fetch: jest.fn(() =>
+        Promise.resolve({ available_executions: 1, total_executions: 1 }),
+      ),
       setCreditsRemainingListener: jest.fn(),
       setExecutionsExhaustedListener: jest.fn(),
     },
@@ -59,6 +64,9 @@ const activationHarness = (enabled: boolean) => {
     initializeDBTProjects,
     initializeStatusBars,
     registryInitialize,
+    fusionClientPoolInitialize,
+    altimateAuthService: extension.altimateAuthService,
+    altimateRequest: extension.altimateRequest,
     dbtTerminal: extension.dbtTerminal,
   };
 };
@@ -103,6 +111,7 @@ describe("DBTPowerUserExtension.activate", () => {
       "workbench.action.reloadWindow",
     );
     expect(harness.registryInitialize).not.toHaveBeenCalled();
+    expect(harness.fusionClientPoolInitialize).not.toHaveBeenCalled();
     expect(harness.detectDBT).not.toHaveBeenCalled();
     expect(harness.initializeDBTProjects).not.toHaveBeenCalled();
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
@@ -122,6 +131,7 @@ describe("DBTPowerUserExtension.activate", () => {
     );
     expect(window.showErrorMessage).not.toHaveBeenCalled();
     expect(harness.registryInitialize).not.toHaveBeenCalled();
+    expect(harness.fusionClientPoolInitialize).not.toHaveBeenCalled();
     expect(harness.detectDBT).not.toHaveBeenCalled();
     expect(harness.initializeDBTProjects).not.toHaveBeenCalled();
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
@@ -151,6 +161,65 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
   });
 
+  it("refreshes credits when Altimate instance changes", async () => {
+    let configListener:
+      | ((event: { affectsConfiguration: (key: string) => boolean }) => void)
+      | undefined;
+    const harness = activationHarness(true);
+    context = harness.context;
+    jest
+      .mocked(harness.altimateAuthService.isAuthenticated)
+      .mockReturnValue(true);
+
+    jest
+      .spyOn(workspace, "onDidChangeConfiguration")
+      .mockImplementation((listener) => {
+        configListener = listener as typeof configListener;
+        return { dispose: jest.fn() };
+      });
+
+    await harness.extension.activate(context);
+
+    configListener?.({
+      affectsConfiguration: (key: string) =>
+        key === "dbt" || key === "dbt.altimateInstanceName",
+    });
+    await Promise.resolve();
+
+    expect(harness.altimateRequest.fetch).toHaveBeenCalledWith(
+      "payment/credits",
+    );
+    jest.mocked(workspace.onDidChangeConfiguration).mockRestore();
+  });
+
+  it("deactivate awaits pool stop before disposing collaborators", async () => {
+    const order: string[] = [];
+    const fusionClientPool = {
+      initialize: jest.fn(),
+      stop: jest.fn(async () => {
+        order.push("pool.stop");
+      }),
+      dispose: jest.fn(() => {
+        order.push("pool.dispose");
+      }),
+    };
+    const disposable = { dispose: jest.fn(() => order.push("other.dispose")) };
+    const extension = Object.create(
+      DBTPowerUserExtension.prototype,
+    ) as DBTPowerUserExtension;
+    Object.assign(extension, {
+      fusionClientPool,
+      disposables: [disposable, fusionClientPool],
+    });
+
+    await extension.deactivate();
+
+    expect(fusionClientPool.stop).toHaveBeenCalledTimes(1);
+    expect(order.indexOf("pool.stop")).toBeLessThan(
+      order.indexOf("other.dispose"),
+    );
+  });
+
   it("activates and initializes registry before detectDBT on happy path", async () => {
     const harness = activationHarness(true);
     context = harness.context;
@@ -158,14 +227,18 @@ describe("DBTPowerUserExtension.activate", () => {
     await harness.extension.activate(context);
 
     expect(harness.registryInitialize).toHaveBeenCalled();
+    expect(harness.fusionClientPoolInitialize).toHaveBeenCalled();
     expect(harness.detectDBT).toHaveBeenCalled();
     expect(harness.initializeDBTProjects).toHaveBeenCalled();
 
     const registryCall = (harness.registryInitialize as jest.Mock).mock
       .invocationCallOrder[0];
+    const poolCall = (harness.fusionClientPoolInitialize as jest.Mock).mock
+      .invocationCallOrder[0];
     const detectCall = (harness.detectDBT as jest.Mock).mock
       .invocationCallOrder[0];
-    expect(registryCall).toBeLessThan(detectCall);
+    expect(registryCall).toBeLessThan(poolCall);
+    expect(poolCall).toBeLessThan(detectCall);
     expect(registryCall).toBeLessThan(
       (harness.initializeDBTProjects as jest.Mock).mock.invocationCallOrder[0],
     );
