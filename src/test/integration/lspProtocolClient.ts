@@ -68,6 +68,21 @@ export interface CapturedError {
   error: Error;
 }
 
+/** JSON-RPC error from an LSP request response. */
+export class LspRequestError extends Error {
+  readonly method: string;
+  readonly code: number;
+  readonly data?: unknown;
+
+  constructor(method: string, code: number, message: string, data?: unknown) {
+    super(message);
+    this.name = "LspRequestError";
+    this.method = method;
+    this.code = code;
+    this.data = data;
+  }
+}
+
 export interface NotificationEntry {
   params: unknown;
   receivedAtMs: number;
@@ -85,9 +100,17 @@ export interface ServerRequestEntry {
   absoluteIndex: number;
 }
 
+export interface ConfigurationDeliveryEntry {
+  requestedSections: string[];
+  deliveredSections: string[];
+  absoluteIndex: number;
+}
+
 export interface LspProtocolClientOptions {
   defaultRequestTimeoutMs?: number;
   workspaceConfiguration?: unknown[];
+  /** Maps LSP configuration section strings to response objects. */
+  configurationBySection?: Record<string, unknown>;
   notificationsPerMethod?: number;
   serverRequestsPerMethod?: number;
 }
@@ -126,6 +149,10 @@ export interface LspProtocolClient {
     method: string,
     fromCursor: number,
   ): readonly ServerRequestEntry[];
+  configurationDeliveryCount(): number;
+  getConfigurationDeliveriesSince(
+    fromCursor: number,
+  ): readonly ConfigurationDeliveryEntry[];
   getErrors(): readonly CapturedError[];
   setWorkspaceConfiguration(response: unknown[]): void;
   close(): void;
@@ -189,15 +216,40 @@ function notificationTimeoutError(method: string, timeoutMs: number): Error {
 function configurationResponse(
   params: unknown,
   configured: readonly unknown[],
-): unknown[] {
+  bySection?: Record<string, unknown>,
+): {
+  values: unknown[];
+  requestedSections: string[];
+  deliveredSections: string[];
+} {
   const items =
     typeof params === "object" && params !== null && "items" in params
       ? (params as { items?: unknown[] }).items
       : undefined;
   if (!Array.isArray(items)) {
-    return [];
+    return { values: [], requestedSections: [], deliveredSections: [] };
   }
-  return items.map((_, index) => configured[index] ?? null);
+  const requestedSections: string[] = [];
+  const deliveredSections: string[] = [];
+  const values = items.map((item, index) => {
+    const section =
+      typeof item === "object" && item !== null
+        ? (item as { section?: string }).section
+        : undefined;
+    if (typeof section === "string") {
+      requestedSections.push(section);
+    }
+    if (bySection && typeof section === "string" && section in bySection) {
+      deliveredSections.push(section);
+      return bySection[section];
+    }
+    const fallback = configured[index] ?? null;
+    if (fallback !== null && typeof section === "string") {
+      deliveredSections.push(section);
+    }
+    return fallback;
+  });
+  return { values, requestedSections, deliveredSections };
 }
 
 function cloneCapturedValue<T>(value: T): T {
@@ -262,6 +314,9 @@ export function attachLspProtocolClient(
   let nextId = 1;
   let closed = false;
   let workspaceConfiguration = options.workspaceConfiguration ?? [];
+  const configurationBySection = options.configurationBySection ?? {};
+  const configurationDeliveries =
+    emptyCaptureState<ConfigurationDeliveryEntry>();
 
   const pendingRequests = new Map<number, PendingRequest>();
   const notificationHandlers = new Map<string, Set<NotificationHandler>>();
@@ -450,7 +505,22 @@ export function attachLspProtocolClient(
       return () => null;
     }
     if (method === "workspace/configuration") {
-      return (params) => configurationResponse(params, workspaceConfiguration);
+      return (params) => {
+        const response = configurationResponse(
+          params,
+          workspaceConfiguration,
+          configurationBySection,
+        );
+        pushBoundedCapture(
+          configurationDeliveries,
+          {
+            requestedSections: response.requestedSections,
+            deliveredSections: response.deliveredSections,
+          },
+          CAPTURE_LIMITS.serverRequestsPerMethod,
+        );
+        return response.values;
+      };
     }
     return undefined;
   };
@@ -537,7 +607,14 @@ export function attachLspProtocolClient(
 
     const response = message as unknown as JsonRpcResponse;
     if (response.error) {
-      pending.reject(new Error(`LSP error: ${response.error.message}`));
+      pending.reject(
+        new LspRequestError(
+          pending.method,
+          response.error.code,
+          response.error.message,
+          response.error.data,
+        ),
+      );
       return;
     }
     pending.resolve(response.result);
@@ -795,6 +872,20 @@ export function attachLspProtocolClient(
           absoluteIndex: entry.absoluteIndex,
         }),
       );
+    },
+
+    configurationDeliveryCount(): number {
+      return configurationDeliveries.totalReceived;
+    },
+
+    getConfigurationDeliveriesSince(
+      fromCursor: number,
+    ): readonly ConfigurationDeliveryEntry[] {
+      return entriesSince(configurationDeliveries, fromCursor).map((entry) => ({
+        requestedSections: [...entry.requestedSections],
+        deliveredSections: [...entry.deliveredSections],
+        absoluteIndex: entry.absoluteIndex,
+      }));
     },
 
     getErrors(): readonly CapturedError[] {

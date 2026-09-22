@@ -14,6 +14,7 @@ import {
   attachLspProtocolClient,
   CAPTURE_LIMITS,
   CapturedError,
+  ConfigurationDeliveryEntry,
   LspProtocolClient,
   NotificationEntry,
   ServerRequestEntry,
@@ -62,6 +63,10 @@ export interface LspFixture {
     method: string,
     fromCursor: number,
   ): readonly ServerRequestEntry[];
+  configurationDeliveryCount(): number;
+  getConfigurationDeliveriesSince(
+    fromCursor: number,
+  ): readonly ConfigurationDeliveryEntry[];
   getErrors(): readonly CapturedError[];
   getStderr(): string;
   setWorkspaceConfiguration(response: unknown[]): void;
@@ -70,6 +75,7 @@ export interface LspFixture {
 export interface LspFixtureOptions {
   prepareProject?: (projectRoot: string) => void;
   workspaceConfiguration?: unknown[];
+  configurationBySection?: Record<string, unknown>;
   defaultRequestTimeoutMs?: number;
   /** Extra `dbt lsp` argv tokens, e.g. `--static-analysis strict`. */
   extraArgs?: string[];
@@ -162,7 +168,12 @@ export async function createLspFixture(
   const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-lsp-"));
   const temporaryProjectRoot = path.join(tempDir, path.basename(projectRoot));
   fs.cpSync(projectRoot, temporaryProjectRoot, { recursive: true });
-  options.prepareProject?.(temporaryProjectRoot);
+  try {
+    options.prepareProject?.(temporaryProjectRoot);
+  } catch (error) {
+    fs.rmSync(tempDir, { recursive: true, force: true });
+    throw error;
+  }
   const temporaryProfilesDir =
     profilesDir && path.resolve(profilesDir) === path.resolve(projectRoot)
       ? temporaryProjectRoot
@@ -227,6 +238,7 @@ export async function createLspFixture(
         );
         client = attachLspProtocolClient(streams.reader as net.Socket, {
           workspaceConfiguration: options.workspaceConfiguration,
+          configurationBySection: options.configurationBySection,
           defaultRequestTimeoutMs: options.defaultRequestTimeoutMs,
         });
       } catch (error) {
@@ -334,6 +346,16 @@ export async function createLspFixture(
       fromCursor: number,
     ): readonly ServerRequestEntry[] {
       return requireClient().getServerRequestsSince(method, fromCursor);
+    },
+
+    configurationDeliveryCount(): number {
+      return requireClient().configurationDeliveryCount();
+    },
+
+    getConfigurationDeliveriesSince(
+      fromCursor: number,
+    ): readonly ConfigurationDeliveryEntry[] {
+      return requireClient().getConfigurationDeliveriesSince(fromCursor);
     },
 
     getErrors(): readonly CapturedError[] {
