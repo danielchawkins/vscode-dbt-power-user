@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
+import { readFileSync } from "fs";
+import path from "path";
 import {
   ConfigurationChangeEvent,
   Uri,
@@ -17,8 +19,17 @@ import {
   selectionAdmitsCapability,
   STATIC_ANALYSIS_MODE_SETTING,
   staticAnalysisLaunchArgument,
+  StaticAnalysisMode,
 } from "../../fusion/staticAnalysisMode";
 import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
+import { esmDirname } from "../esmDirname";
+
+const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
+const EXPECTED_STATIC_ANALYSIS_MODES = [
+  "off",
+  "baseline",
+  "strict",
+] as const satisfies readonly StaticAnalysisMode[];
 
 const STRICT_ONLY_CAPABILITIES: readonly FusionCapability[] = [
   "columnLineage",
@@ -132,6 +143,28 @@ describe("staticAnalysisMode", () => {
 
     expect(selection).not.toHaveProperty("fellBack");
     expect(Object.keys(selection).sort()).toEqual(["configured", "effective"]);
+  });
+
+  it("matches the package manifest for staticAnalysisMode", () => {
+    const manifest = JSON.parse(
+      readFileSync(path.join(repositoryRoot, "package.json"), "utf8"),
+    ) as {
+      contributes: {
+        configuration: Array<{ properties: Record<string, unknown> }>;
+      };
+    };
+    const property = manifest.contributes.configuration
+      .flatMap((section) => Object.entries(section.properties))
+      .find(
+        ([key]) =>
+          key === `${CONFIGURATION_SECTION}.${STATIC_ANALYSIS_MODE_SETTING}`,
+      )?.[1];
+
+    expect(property).toMatchObject({
+      enum: [...EXPECTED_STATIC_ANALYSIS_MODES],
+      default: DEFAULT_STATIC_ANALYSIS_MODE,
+      scope: "resource",
+    });
   });
 });
 

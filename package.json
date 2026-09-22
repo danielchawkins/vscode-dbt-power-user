@@ -129,6 +129,22 @@
             "scope": "resource",
             "description": "Declared Project roots for this workspace folder, relative to the folder or absolute. When unset or empty, the folder root is served if it contains dbt_project.yml. Every configured root must contain dbt_project.yml or no declared roots are served for the folder."
           },
+          "dbt.staticAnalysisMode": {
+            "type": "string",
+            "enum": [
+              "off",
+              "baseline",
+              "strict"
+            ],
+            "enumDescriptions": [
+              "Ask Fusion to skip SQL analysis for the model and its descendants.",
+              "Ask Fusion for Jinja, YAML, and SQL syntax diagnostics, ref and source navigation, table-level lineage, and ref autocomplete.",
+              "Ask Fusion for baseline analysis plus column-level lineage, SQL type and schema diagnostics, column go-to-definition, select-star hover, and column rename when the local project and warehouse profile support them."
+            ],
+            "default": "baseline",
+            "scope": "resource",
+            "description": "Static analysis depth passed to Fusion when this Declared Project's language server starts."
+          },
           "dbt.unquotedCaseInsensitiveIdentifierRegex": {
             "type": "string",
             "markdownDescription": "Regex to identify unquoted identifiers. Example: `^([_A-Z]+[_A-Z0-9$]*)$`"
