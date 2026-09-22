@@ -17,6 +17,7 @@ import { DefinitionProviders } from "./definition_provider";
 import { DocumentFormattingEditProviders } from "./document_formatting_edit_provider";
 import { HoverProviders } from "./hover_provider";
 import { FusionClientPool } from "./lsp/fusionClientPool";
+import { FusionStatus } from "./lsp/fusionStatus";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
@@ -79,6 +80,7 @@ export class DBTPowerUserExtension implements Disposable {
     private projectRegistry: ProjectRegistry,
     private projectContext: ProjectContext,
     private fusionClientPool: FusionClientPool,
+    private fusionStatus: FusionStatus,
   ) {
     this.disposables.push(
       this.dbtProjectContainer,
@@ -97,6 +99,7 @@ export class DBTPowerUserExtension implements Disposable {
       this.projectRegistry,
       this.projectContext,
       this.fusionClientPool,
+      this.fusionStatus,
     );
   }
 
@@ -146,6 +149,7 @@ export class DBTPowerUserExtension implements Disposable {
       this.dbtProjectContainer.setContext(context);
       await this.projectRegistry.initialize();
       this.fusionClientPool.initialize();
+      this.fusionStatus.initialize();
       await this.dbtProjectContainer.detectDBT();
       await this.dbtProjectContainer.initializeDBTProjects();
       await this.statusBars.initialize();

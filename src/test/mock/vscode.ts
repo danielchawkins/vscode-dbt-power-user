@@ -248,11 +248,15 @@ export const version = "1.125.0";
 
 export const commands = {
   registerCommand: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+  registerTextEditorCommand: jest.fn().mockReturnValue({ dispose: jest.fn() }),
   getCommands: jest.fn().mockReturnValue(Promise.resolve([])),
   executeCommand: jest.fn().mockReturnValue(Promise.resolve()),
 };
 
 let mockLogOutputChannelCounter = 0;
+
+const mockDisposable = { dispose: jest.fn() };
+const mockRegisterProvider = jest.fn(() => mockDisposable);
 
 export function createMockLogOutputChannel(name?: string): LogOutputChannel {
   const channelName =
@@ -286,7 +290,18 @@ export const window = {
   onDidChangeActiveTextEditor: jest
     .fn()
     .mockReturnValue({ dispose: jest.fn() }),
+  onDidChangeActiveColorTheme: jest
+    .fn()
+    .mockReturnValue({ dispose: jest.fn() }),
+  onDidChangeTextEditorSelection: jest
+    .fn()
+    .mockReturnValue({ dispose: jest.fn() }),
+  onDidChangeVisibleTextEditors: jest
+    .fn()
+    .mockReturnValue({ dispose: jest.fn() }),
   activeTextEditor: undefined as any,
+  visibleTextEditors: [] as unknown[],
+  activeColorTheme: { kind: ColorThemeKind.Dark },
   createStatusBarItem: jest.fn().mockReturnValue({
     text: "",
     tooltip: undefined,
@@ -297,6 +312,9 @@ export const window = {
   createOutputChannel: jest.fn((name?: string, _options?: { log?: boolean }) =>
     createMockLogOutputChannel(name),
   ),
+  registerWebviewViewProvider: mockRegisterProvider,
+  registerTreeDataProvider: mockRegisterProvider,
+  createTextEditorDecorationType: jest.fn(() => mockDisposable),
   createTerminal: jest.fn().mockReturnValue({
     sendText: jest.fn(),
     show: jest.fn(),
@@ -323,6 +341,7 @@ export const workspace = {
     return undefined;
   }),
   onDidChangeConfiguration: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+  onDidChangeTextDocument: jest.fn().mockReturnValue({ dispose: jest.fn() }),
   onDidChangeWorkspaceFolders: jest
     .fn()
     .mockReturnValue({ dispose: jest.fn() }),
@@ -333,6 +352,7 @@ export const workspace = {
     dispose: jest.fn(),
   }),
   findFiles: jest.fn(() => Promise.resolve([])),
+  registerTextDocumentContentProvider: mockRegisterProvider,
 } as any;
 
 export const languages = {
@@ -354,7 +374,12 @@ export const languages = {
       // Mock implementation that does nothing by default
     },
   }),
-  registerCodeLensProvider: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+  registerCodeLensProvider: mockRegisterProvider,
+  registerCompletionItemProvider: mockRegisterProvider,
+  registerHoverProvider: mockRegisterProvider,
+  registerDefinitionProvider: mockRegisterProvider,
+  registerDocumentFormattingEditProvider: mockRegisterProvider,
+  setTextDocumentLanguage: jest.fn(() => Promise.resolve(undefined)),
 };
 
 export class EventEmitter<T> {
