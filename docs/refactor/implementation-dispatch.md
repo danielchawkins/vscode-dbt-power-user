@@ -108,11 +108,11 @@ Copy the contract and verification from `fusion-lsp-plan.md`. The notes below ar
 
 ### Phase 3
 
-3.1 through 3.15 and 4.1 through 4.5 are complete at this tip. Phase 5 begins next after its named spikes and Confirm gates. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
+3.1 through 3.15 and 4.1 through 4.5 are complete at this tip. Phase 5 steps 5.0 through 5.4 may proceed. **D3** still gates 5.5, and a loaded-project S10 rerun gates 5.6. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
 
 ### Phases 4–10 and v2
 
-Steps and contracts from the spec. Hard-to-reverse: 6.3, 7.1, all of 8, 9.1, and v2.3. Spikes run before the steps that name them. **D5** is decided: no login. Confirm **D3** before 5.5, the S2 inventory before Phase 7, consumer soak before Phase 8, all seven characterization cases before 10.4, and **D6** with **D7** before v2.3. v2 begins only after the 1.0.0 release.
+Steps and contracts from the spec. Hard-to-reverse: 6.3, 7.1, all of 8, 9.1, and v2.3. Spikes run before the steps that name them. **D5** is decided: no login. Confirm **D3** before 5.5, a reproducible loaded-project S10 control before 5.6, every 5.6 integration flow before provider deletion, the S2 inventory before Phase 7, consumer soak before Phase 8, all seven characterization cases before 10.4, and **D6** with **D7** before v2.3. v2 begins only after the 1.0.0 release.
 
 ## Reviewer checklist
 
