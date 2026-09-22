@@ -6,7 +6,6 @@ export enum Themes {
 }
 export interface AppStateProps {
   theme: Themes;
-  availableExecutions: number | null;
 }
 
 export interface ContextProps {

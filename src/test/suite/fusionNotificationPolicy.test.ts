@@ -83,11 +83,6 @@ describe("fusionNotificationPolicy", () => {
       fusionStatus: { initialize: jest.fn() },
       projectContext: {},
       statusBars: { initialize: jest.fn(() => Promise.resolve()) },
-      altimateAuthService: { isAuthenticated: jest.fn(() => false) },
-      altimateRequest: {
-        setCreditsRemainingListener: jest.fn(),
-        setExecutionsExhaustedListener: jest.fn(),
-      },
       dbtTerminal: { error: jest.fn() },
     });
 

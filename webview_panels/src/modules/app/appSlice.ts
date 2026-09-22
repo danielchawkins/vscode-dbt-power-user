@@ -3,7 +3,6 @@ import { AppStateProps, Themes } from "./types";
 
 export const initialState = {
   theme: Themes.Dark,
-  availableExecutions: null,
 } as AppStateProps;
 
 const appSlice = createSlice({
@@ -13,11 +12,8 @@ const appSlice = createSlice({
     updateTheme: (state, action: PayloadAction<Themes>) => {
       state.theme = action.payload;
     },
-    setAvailableExecutions: (state, action: PayloadAction<number | null>) => {
-      state.availableExecutions = action.payload;
-    },
   },
 });
 
-export const { updateTheme, setAvailableExecutions } = appSlice.actions;
+export const { updateTheme } = appSlice.actions;
 export default appSlice;

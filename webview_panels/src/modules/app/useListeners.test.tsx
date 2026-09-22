@@ -46,50 +46,6 @@ describe("useListeners", () => {
     });
   });
 
-  it("dispatches credits updates from incoming messages", async () => {
-    render(<Harness dispatch={dispatch} />);
-
-    window.dispatchEvent(
-      new MessageEvent("message", {
-        data: {
-          command: "creditsUpdate",
-          args: { availableExecutions: 42 },
-        },
-      }),
-    );
-
-    await waitFor(() => {
-      expect(dispatchMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: "appState/setAvailableExecutions",
-          payload: 42,
-        }),
-      );
-    });
-  });
-
-  it("rejects non-finite credits values", async () => {
-    render(<Harness dispatch={dispatch} />);
-
-    window.dispatchEvent(
-      new MessageEvent("message", {
-        data: {
-          command: "creditsUpdate",
-          args: { availableExecutions: Number.NaN },
-        },
-      }),
-    );
-
-    await waitFor(() => {
-      expect(dispatchMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: "appState/setAvailableExecutions",
-          payload: null,
-        }),
-      );
-    });
-  });
-
   it("forwards sync responses to the request executor", () => {
     const handleIncomingResponse = vi.spyOn(
       requestExecutor,
@@ -113,21 +69,12 @@ describe("useListeners", () => {
     expect(handleIncomingResponse).toHaveBeenCalledWith(response);
   });
 
-  it("stops handling messages and theme mutations after unmount", async () => {
+  it("stops handling theme mutations after unmount", async () => {
     const { unmount } = render(<Harness dispatch={dispatch} />);
     dispatchMock.mockClear();
     getVsCodeApiMock().postMessage.mockClear();
 
     unmount();
-
-    window.dispatchEvent(
-      new MessageEvent("message", {
-        data: {
-          command: "creditsUpdate",
-          args: { availableExecutions: 99 },
-        },
-      }),
-    );
 
     document.body.classList.remove("vscode-dark");
     document.body.classList.add("vscode-light");

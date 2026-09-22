@@ -1,7 +1,7 @@
 import { panelLogger } from "@modules/logger";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { Dispatch, useCallback, useEffect } from "react";
-import { setAvailableExecutions, updateTheme } from "./appSlice";
+import { updateTheme } from "./appSlice";
 import {
   executeRequestInAsync,
   handleIncomingResponse,
@@ -19,17 +19,6 @@ const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
       switch (command) {
         case "response":
           handleIncomingResponse(args as unknown as IncomingSyncResponse);
-          break;
-        case "creditsUpdate":
-          dispatch(
-            setAvailableExecutions(
-              // typeof rejects non-numbers; isFinite rejects NaN and infinities.
-              typeof args.availableExecutions === "number" &&
-                Number.isFinite(args.availableExecutions)
-                ? args.availableExecutions
-                : null,
-            ),
-          );
           break;
         default:
           break;

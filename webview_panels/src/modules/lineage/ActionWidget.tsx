@@ -1,6 +1,5 @@
 import { Button } from "@altimateai/ui-components/lineage";
 import { FeedbackIcon } from "@assets/icons";
-import CreditsChip from "@modules/commonActionButtons/CreditsChip";
 import FeedbackButton from "@modules/commonActionButtons/FeedbackButton";
 import { vscode } from "@modules/vscode";
 import HelpButton from "./components/help/HelpButton";
@@ -55,7 +54,6 @@ const ActionWidget = ({
       <div id="settings-container" className="al-tw-scope" />
       <HelpButton />
       <div id="reset-container" className="al-tw-scope" />
-      <CreditsChip />
       <LineageFeedbackButton
         url={
           aiEnabled
