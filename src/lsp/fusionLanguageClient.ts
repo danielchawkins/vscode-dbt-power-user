@@ -186,7 +186,6 @@ export function documentSelectorForProject(root: Uri): FusionDocumentFilter[] {
     { language: "jinja-sql", pattern: { baseUri, pattern: glob } },
     { language: "sql", pattern: { baseUri, pattern: glob } },
     { language: "yaml", pattern: { baseUri, pattern: glob } },
-    { language: "jinja-yaml", pattern: { baseUri, pattern: glob } },
   ];
   validateDocumentSelectorPatterns(selector);
   return selector;

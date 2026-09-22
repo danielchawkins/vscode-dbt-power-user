@@ -105,26 +105,11 @@ export class DbtDocumentFormattingEditProvider implements DocumentFormattingEdit
     return [];
   }
 
-  /**
-   * Resolves the sqlfmt binary for both the format command and the
-   * availability notifier. Reads the `dbt.sqlFmtPath` setting first; if
-   * unset, probes the python venv, well-known uv/pipx locations, and the
-   * system PATH. Returns undefined if not found anywhere.
-   */
-  public async resolveSqlFmtPath(): Promise<string | undefined> {
+  /** Resolves sqlfmt when the user runs Format Document on a dbt SQL file. */
+  private async resolveSqlFmtPath(): Promise<string | undefined> {
     const sqlFmtPathSetting =
       this.pythonEnvironment.getResolvedConfigValue("sqlFmtPath");
     return sqlFmtPathSetting || (await this.findSqlFmtPath());
-  }
-
-  /**
-   * Drops the cached sqlfmt path so the next `resolveSqlFmtPath()` re-probes.
-   * Called after an in-extension install so the freshly-installed binary is
-   * picked up without restarting VS Code.
-   */
-  public invalidateSqlFmtPathCache(): void {
-    this.cachedSqlFmtPath = undefined;
-    this.cachedPythonPath = undefined;
   }
 
   private async findSqlFmtPath(): Promise<string | undefined> {
