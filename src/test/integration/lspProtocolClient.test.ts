@@ -1,6 +1,6 @@
 import * as assert from "assert";
 import * as net from "net";
-import { attachLspProtocolClient } from "./lspProtocolClient";
+import { attachLspProtocolClient, LspRequestError } from "./lspProtocolClient";
 
 const HEADER_DELIMITER = "\r\n\r\n";
 
@@ -185,6 +185,33 @@ suite("lspProtocolClient", function () {
     });
   });
 
+  test("rejects requests with LspRequestError preserving JSON-RPC code", async function () {
+    await withLoopbackPair(async (clientSocket, serverSocket) => {
+      const client = attachLspProtocolClient(clientSocket);
+      const reader = readServerMessages(serverSocket);
+
+      const pending = client.request("prepareRename", { uri: "file:///x" });
+      const outbound = await reader.nextMessage();
+      serverSocket.write(
+        frame(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            id: outbound.id,
+            error: { code: -32600, message: "Invalid request" },
+          }),
+        ),
+      );
+
+      await assert.rejects(pending, (error: unknown) => {
+        assert.ok(error instanceof LspRequestError);
+        assert.strictEqual(error.method, "prepareRename");
+        assert.strictEqual(error.code, -32600);
+        return true;
+      });
+      client.close();
+    });
+  });
+
   test("continues dispatch when a notification subscriber throws", async function () {
     await withLoopbackPair(async (clientSocket, serverSocket) => {
       const client = attachLspProtocolClient(clientSocket);
@@ -352,6 +379,46 @@ suite("lspProtocolClient", function () {
       assert.strictEqual(
         client.getServerRequests("workspace/configuration").length,
         1,
+      );
+
+      client.close();
+    });
+  });
+
+  test("records configuration sections the handler actually delivered", async function () {
+    await withLoopbackPair(async (clientSocket, serverSocket) => {
+      const client = attachLspProtocolClient(clientSocket, {
+        configurationBySection: {
+          dbt: { lint: true },
+          editor: { tabSize: 2 },
+        },
+      });
+      const reader = readServerMessages(serverSocket);
+
+      serverSocket.write(
+        frame(
+          JSON.stringify({
+            jsonrpc: "2.0",
+            id: "cfg-delivered",
+            method: "workspace/configuration",
+            params: { items: [{ section: "dbt" }, { section: "missing" }] },
+          }),
+        ),
+      );
+
+      const response = await reader.nextMessage();
+      assert.deepStrictEqual(response.result, [{ lint: true }, null]);
+      assert.deepStrictEqual(
+        client.getConfigurationDeliveriesSince(0).map((entry) => ({
+          requestedSections: entry.requestedSections,
+          deliveredSections: entry.deliveredSections,
+        })),
+        [
+          {
+            requestedSections: ["dbt", "missing"],
+            deliveredSections: ["dbt"],
+          },
+        ],
       );
 
       client.close();
