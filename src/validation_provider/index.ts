@@ -1,10 +1,5 @@
-import {
-  ForbiddenError,
-  NoCredentialsError,
-} from "@altimateai/dbt-integration";
 import { commands, Disposable, window, workspace } from "vscode";
 import { AltimateRequest } from "../altimate";
-import { AltimateAuthService } from "../services/altimateAuthService";
 
 const validTenantRegex = new RegExp(/^[a-z_][a-z0-9_-]*$/);
 
@@ -13,10 +8,7 @@ export class ValidationProvider implements Disposable {
   private _isAuthenticated = false;
   private cachedConfig = workspace.getConfiguration("dbt");
 
-  constructor(
-    private altimate: AltimateRequest,
-    private altimateAuthService: AltimateAuthService,
-  ) {
+  constructor(private altimate: AltimateRequest) {
     this.disposables.push(
       workspace.onDidChangeConfiguration((e) => {
         if (!e.affectsConfiguration("dbt")) {
@@ -117,13 +109,6 @@ export class ValidationProvider implements Disposable {
 
   isAuthenticated() {
     return this._isAuthenticated;
-  }
-
-  throwIfNotAuthenticated() {
-    if (!this.isAuthenticated()) {
-      const message = this.altimateAuthService.getCredentialsMessage();
-      throw message ? new NoCredentialsError(message) : new ForbiddenError();
-    }
   }
 
   dispose() {

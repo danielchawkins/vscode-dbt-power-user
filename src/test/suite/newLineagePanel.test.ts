@@ -31,9 +31,6 @@ describe("NewLineagePanel", () => {
       getProject: jest.fn().mockReturnValue(undefined),
     };
     (panel as any).altimate = { enabled: jest.fn().mockReturnValue(false) };
-    (panel as any).validationProvider = {
-      isAuthenticated: jest.fn().mockReturnValue(false),
-    };
     (panel as any).dbtTerminal = {
       info: jest.fn(),
       debug: jest.fn(),
@@ -193,9 +190,6 @@ describe("NewLineagePanel — source YAML rooting", () => {
     panel = Object.create(NewLineagePanel.prototype);
     (panel as any)._panel = { webview: { postMessage: jest.fn() } };
     (panel as any).altimate = { enabled: jest.fn().mockReturnValue(false) };
-    (panel as any).validationProvider = {
-      isAuthenticated: jest.fn().mockReturnValue(false),
-    };
     (panel as any).dbtTerminal = {
       info: jest.fn(),
       debug: jest.fn(),
@@ -576,5 +570,16 @@ describe("NewLineagePanel — source YAML rooting", () => {
       expect.objectContaining({ type: "warning" }),
     );
     expect((panel as any).dbtLineageService.createTable).not.toHaveBeenCalled();
+  });
+
+  it("getStartingNode returns aiEnabled true for local lineage", () => {
+    (panel as any).queryManifestService = {
+      getEventByCurrentProject: jest.fn().mockReturnValue(undefined),
+      getProject: jest.fn().mockReturnValue(undefined),
+    };
+
+    const result = (panel as any).getStartingNode();
+
+    expect(result.aiEnabled).toBe(true);
   });
 });

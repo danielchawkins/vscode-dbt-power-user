@@ -54,7 +54,6 @@ import { DefaultFusionClientFactory } from "./lsp/fusionLanguageClient";
 import { FusionStatus } from "./lsp/fusionStatus";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
-import { AltimateAuthService } from "./services/altimateAuthService";
 import { DbtLineageService } from "./services/dbtLineageService";
 import { DbtTestService } from "./services/dbtTestService";
 import { DiagnosticsOutputChannel } from "./services/diagnosticsOutputChannel";
@@ -395,7 +394,6 @@ container
         container.get("Factory<DBTProjectIntegrationAdapter>"),
         container.get(AltimateRequest),
         container.get(ValidationProvider),
-        container.get(AltimateAuthService),
         container.get(RunHistoryService),
         path,
         _onManifestChanged,
@@ -412,14 +410,6 @@ container
       return new DBTProjectLog(onProjectConfigChanged);
     };
   });
-
-// Bind services
-container
-  .bind(AltimateAuthService)
-  .toDynamicValue((context) => {
-    return new AltimateAuthService(context.get("DBTConfiguration"));
-  })
-  .inSingletonScope();
 
 container
   .bind(DbtLineageService)
@@ -573,10 +563,7 @@ container
 container
   .bind(ValidationProvider)
   .toDynamicValue((context) => {
-    return new ValidationProvider(
-      context.get(AltimateRequest),
-      context.get(AltimateAuthService),
-    );
+    return new ValidationProvider(context.get(AltimateRequest));
   })
   .inSingletonScope();
 
@@ -915,7 +902,6 @@ container
       context.get(SharedStateService),
       context.get("DBTTerminal"),
       context.get(QueryManifestService),
-      context.get(AltimateAuthService),
     );
   })
   .inSingletonScope();
@@ -955,8 +941,6 @@ container
       context.get(DbtLineageService),
       context.get(SharedStateService),
       context.get(QueryManifestService),
-      context.get(AltimateAuthService),
-      context.get(ValidationProvider),
     );
   })
   .inSingletonScope();

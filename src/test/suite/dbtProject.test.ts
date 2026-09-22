@@ -28,7 +28,6 @@ import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
 import { PythonEnvironment } from "../../dbt_client/pythonEnvironment";
-import { AltimateAuthService } from "../../services/altimateAuthService";
 import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
 import { ValidationProvider } from "../../validation_provider";
@@ -39,7 +38,6 @@ describe("DBTProject Test Suite", () => {
   let mockValidationProvider: jest.Mocked<ValidationProvider>;
   let mockPythonEnvironment: jest.Mocked<PythonEnvironment>;
   let mockSharedStateService: jest.Mocked<SharedStateService>;
-  let mockAltimateAuthService: jest.Mocked<AltimateAuthService>;
   let mockRunHistoryService: jest.Mocked<RunHistoryService>;
   let mockExecutionInfrastructure: jest.Mocked<DBTCommandExecutionInfrastructure>;
   let mockCommandFactory: jest.Mocked<DBTCommandFactory>;
@@ -95,7 +93,6 @@ describe("DBTProject Test Suite", () => {
 
     // Mock AltimateRequest
     mockAltimate = {
-      handlePreviewFeatures: jest.fn().mockReturnValue(true),
       enabled: jest.fn().mockReturnValue(true),
       isAuthenticated: jest.fn().mockReturnValue(true),
       validateCredentials: jest.fn(),
@@ -120,9 +117,6 @@ describe("DBTProject Test Suite", () => {
 
     // Mock SharedStateService
     mockSharedStateService = {} as unknown as jest.Mocked<SharedStateService>;
-
-    // Mock AltimateAuthService
-    mockAltimateAuthService = {} as unknown as jest.Mocked<AltimateAuthService>;
 
     // Mock RunHistoryService
     mockRunHistoryService = {
@@ -249,7 +243,6 @@ describe("DBTProject Test Suite", () => {
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
         mockValidationProvider,
-        mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -285,7 +278,6 @@ describe("DBTProject Test Suite", () => {
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
         mockValidationProvider,
-        mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -312,7 +304,6 @@ describe("DBTProject Test Suite", () => {
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
         mockValidationProvider,
-        mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -337,7 +328,6 @@ describe("DBTProject Test Suite", () => {
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
         mockValidationProvider,
-        mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -417,7 +407,6 @@ describe("DBTProject Test Suite", () => {
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
         mockValidationProvider,
-        mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -545,7 +534,6 @@ describe("DBTProject Test Suite", () => {
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
         mockValidationProvider,
-        mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -619,7 +607,6 @@ describe("DBTProject Test Suite", () => {
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
         mockValidationProvider,
-        mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -682,7 +669,6 @@ describe("DBTProject Test Suite", () => {
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
         mockValidationProvider,
-        mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -737,7 +723,6 @@ describe("DBTProject Test Suite", () => {
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
         mockValidationProvider,
-        mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -823,7 +808,6 @@ describe("DBTProject Test Suite", () => {
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
         mockValidationProvider,
-        mockAltimateAuthService,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,

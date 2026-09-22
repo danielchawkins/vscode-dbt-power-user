@@ -26,7 +26,6 @@ import { inject } from "inversify";
 import * as path from "path";
 import { AltimateRequest } from "../altimate";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import { AltimateAuthService } from "../services/altimateAuthService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import {
@@ -148,7 +147,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
-    protected altimateAuthService: AltimateAuthService,
   ) {
     super(
       dbtProjectContainer,
@@ -156,7 +154,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
       eventEmitterService,
       dbtTerminal,
       queryManifestService,
-      altimateAuthService,
     );
     this._disposables.push(
       window.onDidChangeActiveTextEditor(() => {

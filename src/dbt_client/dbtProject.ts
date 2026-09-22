@@ -21,7 +21,6 @@ import {
   isResourceHasDbColumns,
   isResourceNode,
   MANIFEST_FILE,
-  NoCredentialsError,
   NodeMetaData,
   ParsedManifest,
   PythonException,
@@ -55,7 +54,6 @@ import {
   workspace,
 } from "vscode";
 import { AltimateRequest, ModelNode } from "../altimate";
-import { AltimateAuthService } from "../services/altimateAuthService";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
 import {
@@ -149,7 +147,6 @@ export class DBTProject implements Disposable {
     ) => DBTProjectIntegrationAdapter,
     private altimate: AltimateRequest,
     private validationProvider: ValidationProvider,
-    private altimateAuthService: AltimateAuthService,
     private runHistoryService: RunHistoryService,
     path: Uri,
     private _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
@@ -584,22 +581,11 @@ export class DBTProject implements Disposable {
   }
 
   async runModel(runModelParams: RunModelParams) {
-    if (!this.validateIntegrationPrerequisites()) {
-      return undefined;
-    }
-
     const runModelCommand =
       this.dbtCommandFactory.createRunModelCommand(runModelParams);
-
-    try {
-      const command =
-        await this.getCurrentProjectIntegration().runModel(runModelCommand);
-      if (command) {
-        this.addCommandToQueue("all", command);
-      }
-    } catch (error) {
-      this.handleNoCredentialsError(error);
-    }
+    await this.prepareAndQueue(runModelCommand, () =>
+      this.getCurrentProjectIntegration().runModel(runModelCommand),
+    );
   }
 
   async unsafeRunModelImmediately(runModelParams: RunModelParams) {
@@ -607,22 +593,11 @@ export class DBTProject implements Disposable {
   }
 
   async buildModel(runModelParams: RunModelParams) {
-    if (!this.validateIntegrationPrerequisites()) {
-      return undefined;
-    }
-
     const buildModelCommand =
       this.dbtCommandFactory.createBuildModelCommand(runModelParams);
-
-    try {
-      const command =
-        await this.getCurrentProjectIntegration().buildModel(buildModelCommand);
-      if (command) {
-        this.addCommandToQueue("all", command);
-      }
-    } catch (error) {
-      this.handleNoCredentialsError(error);
-    }
+    await this.prepareAndQueue(buildModelCommand, () =>
+      this.getCurrentProjectIntegration().buildModel(buildModelCommand),
+    );
   }
 
   async unsafeBuildModelImmediately(runModelParams: RunModelParams) {
@@ -632,24 +607,11 @@ export class DBTProject implements Disposable {
   }
 
   async buildProject() {
-    if (!this.validateIntegrationPrerequisites()) {
-      return;
-    }
-
     const buildProjectCommand =
       this.dbtCommandFactory.createBuildProjectCommand();
-
-    try {
-      const command =
-        await this.getCurrentProjectIntegration().buildProject(
-          buildProjectCommand,
-        );
-      if (command) {
-        this.addCommandToQueue("all", command);
-      }
-    } catch (error) {
-      this.handleNoCredentialsError(error);
-    }
+    await this.prepareAndQueue(buildProjectCommand, () =>
+      this.getCurrentProjectIntegration().buildProject(buildProjectCommand),
+    );
   }
 
   async unsafeBuildProjectImmediately() {
@@ -657,22 +619,11 @@ export class DBTProject implements Disposable {
   }
 
   async runTest(testName: string) {
-    if (!this.validateIntegrationPrerequisites()) {
-      return undefined;
-    }
-
     const testModelCommand =
       this.dbtCommandFactory.createTestModelCommand(testName);
-
-    try {
-      const command =
-        await this.getCurrentProjectIntegration().runTest(testModelCommand);
-      if (command) {
-        this.addCommandToQueue("all", command);
-      }
-    } catch (error) {
-      this.handleNoCredentialsError(error);
-    }
+    await this.prepareAndQueue(testModelCommand, () =>
+      this.getCurrentProjectIntegration().runTest(testModelCommand),
+    );
   }
 
   async unsafeRunTestImmediately(testName: string) {
@@ -680,63 +631,18 @@ export class DBTProject implements Disposable {
   }
 
   async runModelTest(modelName: string) {
-    if (!this.validateIntegrationPrerequisites()) {
-      return undefined;
-    }
-
     const testModelCommand =
       this.dbtCommandFactory.createTestModelCommand(modelName);
-
-    try {
-      const command =
-        await this.getCurrentProjectIntegration().runModelTest(
-          testModelCommand,
-        );
-      if (command) {
-        this.addCommandToQueue("all", command);
-      }
-    } catch (error) {
-      this.handleNoCredentialsError(error);
-    }
+    await this.prepareAndQueue(testModelCommand, () =>
+      this.getCurrentProjectIntegration().runModelTest(testModelCommand),
+    );
   }
 
   async unsafeRunModelTestImmediately(modelName: string) {
     return this.dbtProjectIntegration.unsafeRunModelTestImmediately(modelName);
   }
 
-  private handleNoCredentialsError(error: unknown) {
-    if (error instanceof NoCredentialsError) {
-      this.altimateAuthService.handlePreviewFeatures();
-      return;
-    }
-    window.showErrorMessage((error as Error).message);
-  }
-
-  private validateIntegrationPrerequisites(): boolean {
-    try {
-      this.validationProvider.validateCredentialsSilently();
-      return true;
-    } catch (e) {
-      window.showErrorMessage((e as Error).message);
-      return false;
-    }
-  }
-
-  private requiresAuthentication(): boolean {
-    return false;
-  }
-
-  throwIfNotAuthenticated() {
-    if (this.requiresAuthentication()) {
-      this.validationProvider.throwIfNotAuthenticated();
-    }
-  }
-
   async compileModel(runModelParams: RunModelParams) {
-    if (!this.validateIntegrationPrerequisites()) {
-      return;
-    }
-
     const compileModelCommand =
       this.dbtCommandFactory.createCompileModelCommand(runModelParams);
     const command =
@@ -759,10 +665,6 @@ export class DBTProject implements Disposable {
   }
 
   async generateDocs() {
-    if (!this.validateIntegrationPrerequisites()) {
-      return;
-    }
-
     const docsGenerateCommand =
       this.dbtCommandFactory.createDocsGenerateCommand();
     const command =
@@ -775,7 +677,6 @@ export class DBTProject implements Disposable {
   }
 
   clean() {
-    this.throwIfNotAuthenticated();
     return this.dbtProjectIntegration.clean();
   }
 
@@ -828,7 +729,6 @@ export class DBTProject implements Disposable {
 
   async unsafeCompileNode(modelName: string): Promise<string | undefined> {
     this.throwDiagnosticsErrorIfAvailable();
-    this.throwIfNotAuthenticated();
     return this.dbtProjectIntegration.unsafeCompileNode(modelName);
   }
 
@@ -839,7 +739,6 @@ export class DBTProject implements Disposable {
   }): Promise<Awaited<ReturnType<typeof validateSQL>>> {
     const { sql, dialect, models } = request;
     this.throwDiagnosticsErrorIfAvailable();
-    this.throwIfNotAuthenticated();
     const sqlValidationThread = this.executionInfrastructure.createPythonBridge(
       this.projectRoot.fsPath,
     );
@@ -851,7 +750,6 @@ export class DBTProject implements Disposable {
   }
 
   async validateSQLDryRun(query: string) {
-    this.throwIfNotAuthenticated();
     try {
       return this.dbtProjectIntegration.validateSQLDryRun(query);
     } catch (exc) {
@@ -920,7 +818,6 @@ export class DBTProject implements Disposable {
     query: string,
     originalModelName: string | undefined = undefined,
   ) {
-    this.throwIfNotAuthenticated();
     return this.dbtProjectIntegration.unsafeCompileQuery(
       query,
       originalModelName,
@@ -928,7 +825,6 @@ export class DBTProject implements Disposable {
   }
 
   async getColumnsOfModel(modelName: string) {
-    this.throwIfNotAuthenticated();
     const result =
       await this.dbtProjectIntegration.getColumnsOfModel(modelName);
     await this.getCurrentProjectIntegration().cleanupConnections();
@@ -936,7 +832,6 @@ export class DBTProject implements Disposable {
   }
 
   async getColumnsOfSource(sourceName: string, tableName: string) {
-    this.throwIfNotAuthenticated();
     const result = await this.dbtProjectIntegration.getColumnsOfSource(
       sourceName,
       tableName,
@@ -947,7 +842,6 @@ export class DBTProject implements Disposable {
 
   async getColumnValues(model: string, column: string) {
     try {
-      this.throwIfNotAuthenticated();
       this.terminal.debug(
         "getColumnValues",
         "finding distinct values for column",
@@ -967,7 +861,6 @@ export class DBTProject implements Disposable {
   }
 
   async getBulkSchemaFromDB(req: DBTNode[], signal: AbortSignal) {
-    this.throwIfNotAuthenticated();
     try {
       const result =
         await this.getCurrentProjectIntegration().getBulkSchemaFromDB(
@@ -982,7 +875,6 @@ export class DBTProject implements Disposable {
   }
 
   async getCatalog(): Promise<Catalog> {
-    this.throwIfNotAuthenticated();
     try {
       const result = await this.getCurrentProjectIntegration().getCatalog();
       return result;
@@ -1176,7 +1068,6 @@ export class DBTProject implements Disposable {
     limit: number,
   ): Promise<QueryExecutionResult> {
     this.throwDiagnosticsErrorIfAvailable();
-    this.throwIfNotAuthenticated();
     this.terminal.info("executeSQL", "Executed query: " + query, true, {
       adapter: this.getAdapterType(),
       limit: limit.toString(),
@@ -1190,7 +1081,6 @@ export class DBTProject implements Disposable {
 
   async executeSQLWithLimit(query: string, modelName: string, limit: number) {
     this.throwDiagnosticsErrorIfAvailable();
-    this.throwIfNotAuthenticated();
     this.terminal.info("executeSQL", "Executed query: " + query, true, {
       adapter: this.getAdapterType(),
       limit: limit.toString(),
@@ -1207,7 +1097,6 @@ export class DBTProject implements Disposable {
     modelName: string,
   ): Promise<QueryExecutionResult> {
     this.throwDiagnosticsErrorIfAvailable();
-    this.throwIfNotAuthenticated();
     const limit = workspace
       .getConfiguration("dbt")
       .get<number>("queryLimit", 500);
@@ -1580,6 +1469,35 @@ export class DBTProject implements Disposable {
     this.queues.set(queueName, []);
   }
 
+  private formatCommandStatus(command: DBTCommand): string {
+    return command
+      .getCommandAsString()
+      .replace(/\s*--project-dir\s+\S+/g, "")
+      .replace(/\s*--profiles-dir\s+\S+/g, "")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  private async prepareAndQueue(
+    requestedCommand: DBTCommand,
+    prepare: () => Promise<DBTCommand | undefined>,
+  ): Promise<void> {
+    try {
+      const command = await prepare();
+      if (command) {
+        this.addCommandToQueue("all", command);
+      }
+    } catch (error) {
+      const statusMessage = this.formatCommandStatus(requestedCommand);
+      this.runHistoryService.notifyCommandFailed(statusMessage, String(error));
+      this.terminal.error(
+        "commandPreparationError",
+        `Unable to prepare ${statusMessage}`,
+        error,
+      );
+    }
+  }
+
   private addCommandToQueue(queueName: string, command: DBTCommand): void {
     this.queues.get(queueName)!.push({
       command: async (signal) => {
@@ -1592,12 +1510,7 @@ export class DBTProject implements Disposable {
           throw new Error(result.stdout.trim());
         }
       },
-      statusMessage: command
-        .getCommandAsString()
-        .replace(/\s*--project-dir\s+\S+/g, "")
-        .replace(/\s*--profiles-dir\s+\S+/g, "")
-        .replace(/\s+/g, " ")
-        .trim(),
+      statusMessage: this.formatCommandStatus(command),
       focus: command.focus,
       signal: command.signal,
       showProgress: command.showProgress,
@@ -1615,10 +1528,6 @@ export class DBTProject implements Disposable {
         try {
           await command(signal);
         } catch (error) {
-          if (error instanceof NoCredentialsError) {
-            this.altimateAuthService.handlePreviewFeatures();
-            return;
-          }
           this.runHistoryService.notifyCommandFailed(
             statusMessage,
             String(error),
