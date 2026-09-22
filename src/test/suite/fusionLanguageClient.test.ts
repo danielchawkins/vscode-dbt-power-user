@@ -6,10 +6,15 @@ import {
   it,
   jest,
 } from "@jest/globals";
+import type { ChildProcess } from "child_process";
 import { EventEmitter } from "events";
 import { PassThrough } from "stream";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
-import { State } from "vscode-languageclient/node";
+import { LanguageClientOptions, State } from "vscode-languageclient/node";
+import {
+  fusionLogLevelArgument,
+  parseTraceServerLevel,
+} from "../../lsp/fusionClientSettings";
 import {
   buildFusionLspArgs,
   commandPrefixForProject,
@@ -19,9 +24,13 @@ import {
   FUSION_LSP_COMMANDS,
   FusionClient,
   FusionClientState,
+  fusionOutputChannelName,
   languageClientIdForProject,
   MAX_UNEXPECTED_EXIT_RETRIES,
+  PARTIAL_LINE_LIMIT,
   prefixedCommand,
+  ProcessStreamBuffer,
+  SpawnedLspProcess,
   validateDocumentSelectorPatterns,
 } from "../../lsp/fusionLanguageClient";
 import {
@@ -30,6 +39,7 @@ import {
   ReverseSocketStreams,
 } from "../../lsp/reverseSocketTransport";
 import { DeclaredProject } from "../../projects/projectRegistry";
+import { createMockLogOutputChannel } from "../mock/vscode";
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
@@ -37,10 +47,13 @@ const folder: WorkspaceFolder = {
   index: 0,
 };
 
-function makeProject(rootPath = "/workspace/general"): DeclaredProject {
+function makeProject(
+  rootPath = "/workspace/general",
+  name = "general",
+): DeclaredProject {
   return {
     root: Uri.file(rootPath),
-    name: "general",
+    name,
     folder,
     contains: () => false,
     dispose: () => {},
@@ -100,6 +113,7 @@ describe("fusionLanguageClient helpers", () => {
       commandPrefix: "fusionPowerUser:abc:",
       lintEnabled: false,
       staticAnalysisMode: "strict",
+      traceServer: "verbose",
       profilesDir: "/profiles",
       target: "dev",
     });
@@ -121,7 +135,40 @@ describe("fusionLanguageClient helpers", () => {
       "/profiles",
       "--target",
       "dev",
+      "--log-level",
+      "trace",
     ]);
+  });
+
+  it("omits log level when traceServer is off", () => {
+    const args = buildFusionLspArgs({
+      port: 1,
+      projectRoot: "/workspace/general",
+      commandPrefix: "fusionPowerUser:abc:",
+      lintEnabled: true,
+      staticAnalysisMode: "baseline",
+      traceServer: "off",
+    });
+    expect(args).not.toContain("--log-level");
+    expect(fusionLogLevelArgument("off")).toBeUndefined();
+    expect(fusionLogLevelArgument("messages")).toBe("debug");
+    expect(fusionLogLevelArgument("verbose")).toBe("trace");
+  });
+
+  it("parses traceServer launch setting values", () => {
+    expect(parseTraceServerLevel("verbose")).toBe("verbose");
+    expect(parseTraceServerLevel("unexpected")).toBe("off");
+  });
+
+  it("names output channels with project name and root digest", () => {
+    const general = makeProject("/workspace/general", "general");
+    const duplicateName = makeProject("/workspace/sox", "general");
+
+    expect(fusionOutputChannelName(general)).toContain("general");
+    expect(fusionOutputChannelName(duplicateName)).toContain("general");
+    expect(fusionOutputChannelName(general)).not.toBe(
+      fusionOutputChannelName(duplicateName),
+    );
   });
 
   it("uses configured static analysis mode, not effective mode", () => {
@@ -131,6 +178,7 @@ describe("fusionLanguageClient helpers", () => {
       commandPrefix: "fusionPowerUser:abc:",
       lintEnabled: true,
       staticAnalysisMode: "off",
+      traceServer: "off",
     });
 
     expect(args).toContain("off");
@@ -203,6 +251,69 @@ describe("fusionLanguageClient helpers", () => {
       ]),
     ).toThrow(/pattern must be non-empty/);
   });
+
+  it("caps overlong partial lines by preserving the head", () => {
+    const buffer = new ProcessStreamBuffer();
+    const lines: string[] = [];
+    const onLine = (line: string): void => {
+      lines.push(line);
+    };
+
+    buffer.feed("a".repeat(PARTIAL_LINE_LIMIT + 50), onLine);
+    expect(lines).toHaveLength(0);
+    buffer.flush(onLine);
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toHaveLength(PARTIAL_LINE_LIMIT);
+    expect(lines[0]).toBe("a".repeat(PARTIAL_LINE_LIMIT));
+  });
+});
+
+describe("SpawnedLspProcess streams", () => {
+  function makeChildProcess(): ChildProcess {
+    const child = new EventEmitter() as ChildProcess;
+    child.stdout = new PassThrough();
+    child.stderr = new PassThrough();
+    child.stdin = null;
+    return child;
+  }
+
+  it("keeps stderr in getStderr when stdout is verbose", () => {
+    const child = makeChildProcess();
+    const channelLines: string[] = [];
+    const adapter = new SpawnedLspProcess(child, (line) => {
+      channelLines.push(line);
+    });
+
+    const stdout = child.stdout as PassThrough;
+    const stderr = child.stderr as PassThrough;
+    for (let i = 0; i < 200; i += 1) {
+      stdout.write(`stdout line ${i}\n`);
+    }
+    stderr.write("fatal: connection refused\n");
+
+    expect(adapter.getStderr()).toContain("fatal: connection refused");
+    expect(
+      channelLines.some((line) => line.includes("fatal: connection refused")),
+    ).toBe(true);
+    expect(channelLines.some((line) => line.startsWith("stdout line"))).toBe(
+      true,
+    );
+  });
+
+  it("flushes partial lines on close after late stdio chunks", () => {
+    const child = makeChildProcess();
+    const channelLines: string[] = [];
+    const adapter = new SpawnedLspProcess(child, (line) => {
+      channelLines.push(line);
+    });
+
+    const stderr = child.stderr as PassThrough;
+    stderr.write("late error without newline");
+    child.emit("close");
+
+    expect(adapter.getStderr()).toContain("late error without newline");
+    expect(channelLines).toContain("late error without newline");
+  });
 });
 
 describe("FusionLanguageClient lifecycle", () => {
@@ -222,6 +333,9 @@ describe("FusionLanguageClient lifecycle", () => {
         if (key === "lintEnabled") {
           return true;
         }
+        if (key === "traceServer") {
+          return "off";
+        }
         return undefined;
       }),
     } as any);
@@ -229,6 +343,160 @@ describe("FusionLanguageClient lifecycle", () => {
 
   afterEach(async () => {
     jest.mocked(workspace.getConfiguration).mockRestore();
+  });
+
+  it("creates one output channel and passes it to LanguageClient", async () => {
+    const streams = makeStreams();
+    const server = new FakeReverseSocketServer(streams);
+    const outputChannel = createMockLogOutputChannel(
+      fusionOutputChannelName(makeProject()),
+    );
+    const createOutputChannel = jest.fn(
+      (_name: string) => outputChannel,
+    ) as NonNullable<
+      ConstructorParameters<typeof DefaultFusionClientFactory>[1]
+    >["createOutputChannel"];
+    const createLanguageClient = jest.fn(
+      async (
+        _id: string,
+        _name: string,
+        _server: unknown,
+        clientOptions: LanguageClientOptions,
+      ) => {
+        expect(clientOptions.outputChannel).toBe(outputChannel);
+        expect(clientOptions).not.toHaveProperty("outputChannelName");
+        return makeLanguageClient() as any;
+      },
+    );
+
+    const factory = new DefaultFusionClientFactory(terminal as any, {
+      listenForServer: async () => server,
+      acceptWithProcessExit: async () => streams,
+      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      createLanguageClient,
+      createOutputChannel,
+      sleep: async () => {},
+    });
+
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        env: {},
+      },
+      lintEnabled: true,
+      commandPrefix: "fusionPowerUser:test:",
+    });
+
+    await flushAsync();
+    expect(createOutputChannel).toHaveBeenCalledTimes(1);
+    expect(createOutputChannel).toHaveBeenCalledWith(
+      fusionOutputChannelName(makeProject()),
+    );
+    expect(client.outputChannel).toBe(outputChannel);
+
+    await client.stop();
+    expect(outputChannel.dispose).not.toHaveBeenCalled();
+    client.dispose();
+    await flushAsync();
+    expect(outputChannel.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("reuses the same output channel across restarts and retains failure logs", async () => {
+    let listenAttempts = 0;
+    const streams = makeStreams();
+    const outputChannel = createMockLogOutputChannel(
+      fusionOutputChannelName(makeProject()),
+    );
+    const channels: unknown[] = [];
+    const createLanguageClient = jest.fn(
+      async (
+        _id: string,
+        _name: string,
+        _server: unknown,
+        clientOptions: LanguageClientOptions,
+      ) => {
+        channels.push(clientOptions.outputChannel);
+        return makeLanguageClient() as any;
+      },
+    );
+
+    const factory = new DefaultFusionClientFactory(terminal as any, {
+      listenForServer: async () => {
+        listenAttempts += 1;
+        if (listenAttempts === 1) {
+          throw new Error("listen failed");
+        }
+        return new FakeReverseSocketServer(streams);
+      },
+      acceptWithProcessExit: async () => streams,
+      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      createLanguageClient,
+      createOutputChannel: jest.fn(
+        (_name: string) => outputChannel,
+      ) as NonNullable<
+        ConstructorParameters<typeof DefaultFusionClientFactory>[1]
+      >["createOutputChannel"],
+      sleep: async () => {},
+    });
+
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        env: {},
+      },
+      lintEnabled: true,
+      commandPrefix: "fusionPowerUser:test:",
+    });
+
+    await waitForState(client, "failed");
+    expect(outputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining("listen failed"),
+    );
+
+    await client.restart();
+    await waitForState(client, "running");
+    expect(channels).toHaveLength(1);
+    expect(channels[0]).toBe(outputChannel);
+    expect(outputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining("listen failed"),
+    );
+
+    await client.stop();
+    client.dispose();
+  });
+
+  it("keeps effective static analysis unknown at the client seam", async () => {
+    const streams = makeStreams();
+    const server = new FakeReverseSocketServer(streams);
+    const factory = new DefaultFusionClientFactory(terminal as any, {
+      listenForServer: async () => server,
+      acceptWithProcessExit: async () => streams,
+      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      createLanguageClient: async () => makeLanguageClient() as any,
+      sleep: async () => {},
+    });
+
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        env: {},
+      },
+      lintEnabled: true,
+      commandPrefix: "fusionPowerUser:test:",
+    });
+
+    await waitForState(client, "running");
+    expect(client.staticAnalysis.effective).toBe("unknown");
+    expect(client.staticAnalysis.configured).toBe("baseline");
+
+    await client.stop();
+    client.dispose();
   });
 
   it("spawns directly without shell and passes executable env", async () => {
@@ -725,6 +993,47 @@ describe("FusionLanguageClient lifecycle", () => {
 
     expect(languageClient.start.mock.calls.length).toBeGreaterThan(
       startsBefore,
+    );
+
+    await client.stop();
+    client.dispose();
+  });
+
+  it("preserves the root failureReason when a later failure is logged", async () => {
+    let listenAttempts = 0;
+    const outputChannel = createMockLogOutputChannel(
+      fusionOutputChannelName(makeProject()),
+    );
+    const factory = new DefaultFusionClientFactory(terminal as any, {
+      listenForServer: async () => {
+        listenAttempts += 1;
+        throw new Error(`listen failed ${listenAttempts}`);
+      },
+      createOutputChannel: (() => outputChannel) as NonNullable<
+        ConstructorParameters<typeof DefaultFusionClientFactory>[1]
+      >["createOutputChannel"],
+      sleep: async () => {},
+    });
+
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        env: {},
+      },
+      lintEnabled: true,
+      commandPrefix: "fusionPowerUser:test:",
+    });
+
+    await waitForState(client, "failed");
+    expect(client.failureReason).toContain("listen failed 1");
+
+    await client.restart();
+    await waitForState(client, "failed");
+    expect(client.failureReason).toContain("listen failed 1");
+    expect(outputChannel.appendLine).toHaveBeenCalledWith(
+      expect.stringContaining("listen failed 2"),
     );
 
     await client.stop();

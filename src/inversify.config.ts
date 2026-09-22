@@ -59,6 +59,7 @@ import {
   FusionClientPoolImpl,
 } from "./lsp/fusionClientPool";
 import { DefaultFusionClientFactory } from "./lsp/fusionLanguageClient";
+import { FusionStatus } from "./lsp/fusionStatus";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { AltimateAuthService } from "./services/altimateAuthService";
@@ -119,8 +120,6 @@ import { DbtPowerUserActionsCenter } from "./quickpick";
 import { DbtPowerUserControlCenterAction } from "./quickpick/actionsQuickPick";
 import { StatusBars } from "./statusbar";
 import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
-import { TargetStatusBar } from "./statusbar/targetStatusBar";
-import { VersionStatusBar } from "./statusbar/versionStatusBar";
 import { TreeviewProviders } from "./treeview_provider";
 import {
   ChildrenModelTreeview,
@@ -1050,13 +1049,6 @@ container
 
 // Bind status bar components
 container
-  .bind(VersionStatusBar)
-  .toDynamicValue((context) => {
-    return new VersionStatusBar(context.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
-container
   .bind(DeferToProductionStatusBar)
   .toDynamicValue((context) => {
     return new DeferToProductionStatusBar(
@@ -1067,11 +1059,11 @@ container
   .inSingletonScope();
 
 container
-  .bind(TargetStatusBar)
+  .bind(FusionStatus)
   .toDynamicValue((context) => {
-    return new TargetStatusBar(
-      context.get(DBTProjectContainer),
-      context.get("DBTTerminal"),
+    return new FusionStatus(
+      context.get(ProjectContext),
+      context.get(FusionClientPoolImpl),
     );
   })
   .inSingletonScope();
@@ -1283,11 +1275,7 @@ container
 container
   .bind(StatusBars)
   .toDynamicValue((context) => {
-    return new StatusBars(
-      context.get(VersionStatusBar),
-      context.get(DeferToProductionStatusBar),
-      context.get(TargetStatusBar),
-    );
+    return new StatusBars(context.get(DeferToProductionStatusBar));
   })
   .inSingletonScope();
 
@@ -1328,6 +1316,7 @@ container
       context.get(ProjectRegistry),
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),
+      context.get(FusionStatus),
     );
   })
   .inSingletonScope();

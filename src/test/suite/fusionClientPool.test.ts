@@ -16,8 +16,15 @@ import {
   FUSION_PATH_SETTING,
   FusionExecutableResolver,
 } from "../../fusion/fusionExecutable";
+import {
+  createStaticAnalysisSelection,
+  StaticAnalysisSelection,
+} from "../../fusion/staticAnalysisMode";
 import { FusionClientPoolImpl } from "../../lsp/fusionClientPool";
-import { LINT_ENABLED_SETTING } from "../../lsp/fusionClientSettings";
+import {
+  LINT_ENABLED_SETTING,
+  TRACE_SERVER_SETTING,
+} from "../../lsp/fusionClientSettings";
 import {
   FailedFusionClient,
   FusionClient,
@@ -29,6 +36,7 @@ import {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/projectRegistry";
+import { createMockLogOutputChannel } from "../mock/vscode";
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
@@ -69,6 +77,12 @@ class FakeClient implements FusionClient {
   readonly onDidChangeState = (
     _listener: (state: FusionClient["state"]) => void,
   ) => ({ dispose: () => {} });
+  readonly onDidChangeStaticAnalysis = (
+    _listener: (selection: StaticAnalysisSelection) => void,
+  ) => ({ dispose: () => {} });
+  readonly staticAnalysis = createStaticAnalysisSelection("baseline");
+  readonly outputChannel = createMockLogOutputChannel("dbt Fusion LSP (test)");
+  readonly failureReason = undefined;
   restart = jest.fn(() => Promise.resolve());
   stop = jest.fn(() => Promise.resolve());
   dispose = jest.fn();
@@ -169,6 +183,98 @@ describe("FusionClientPool", () => {
 
     expect(pool.get(project)).toBe(first);
     expect(factory.create).toHaveBeenCalledTimes(1);
+    await pool.stop();
+  });
+
+  it("clears pool.get before awaiting client stop on removal", async () => {
+    const pool = createPool();
+    resolver.resolve.mockResolvedValue({
+      path: "/opt/dbt",
+      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      env: {},
+    });
+
+    let releaseStop: (() => void) | undefined;
+    const stopGate = new Promise<void>((resolve) => {
+      releaseStop = resolve;
+    });
+    factory.create.mockImplementation((options: FusionClientOptions) => {
+      const client = new FakeClient(options.project, options);
+      client.stop = jest.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            stopGate.then(resolve);
+          }),
+      );
+      return client;
+    });
+
+    const project = makeProject("general", "/workspace/general");
+    pool.initialize();
+    registry.setProjects([project]);
+    await flushAsync();
+
+    expect(pool.get(project)).toBeDefined();
+    registry.setProjects([]);
+    await flushAsync();
+    expect(pool.get(project)).toBeUndefined();
+
+    releaseStop?.();
+    await flushAsync();
+    await pool.stop();
+  });
+
+  it("clears pool.get before awaiting client stop on replace", async () => {
+    const pool = createPool();
+    let resolveFirst: (() => void) | undefined;
+    const firstResolveGate = new Promise<void>((resolve) => {
+      resolveFirst = resolve;
+    });
+    let call = 0;
+    resolver.resolve.mockImplementation(async () => {
+      call += 1;
+      if (call === 1) {
+        await firstResolveGate;
+      }
+      return {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        env: {},
+      };
+    });
+
+    let releaseStop: (() => void) | undefined;
+    const stopGate = new Promise<void>((resolve) => {
+      releaseStop = resolve;
+    });
+    factory.create.mockImplementation((options: FusionClientOptions) => {
+      const client = new FakeClient(options.project, options);
+      client.stop = jest.fn(
+        () =>
+          new Promise<void>((resolve) => {
+            stopGate.then(resolve);
+          }),
+      );
+      return client;
+    });
+
+    const project = makeProject("general", "/workspace/general");
+    pool.initialize();
+    registry.setProjects([project]);
+    resolveFirst?.();
+    await flushAsync();
+    expect(pool.get(project)).toBeDefined();
+
+    configListener?.({
+      affectsConfiguration: (key: string, scope?: Uri) =>
+        key === `${CONFIGURATION_SECTION}.${TRACE_SERVER_SETTING}` &&
+        scope?.fsPath === project.root.fsPath,
+    } as ConfigurationChangeEvent);
+    await flushAsync();
+    expect(pool.get(project)).toBeUndefined();
+
+    releaseStop?.();
+    await flushAsync();
     await pool.stop();
   });
 
@@ -368,6 +474,32 @@ describe("FusionClientPool", () => {
     const latestCall =
       factory.create.mock.calls[factory.create.mock.calls.length - 1]?.[0];
     expect(latestCall?.executable.path).toBe("/opt/dbt-new");
+    await pool.stop();
+  });
+
+  it("replaces the affected project when traceServer changes", async () => {
+    const pool = createPool();
+    resolver.resolve.mockResolvedValue({
+      path: "/opt/dbt",
+      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      env: {},
+    });
+
+    const project = makeProject("general", "/workspace/general");
+    pool.initialize();
+    registry.setProjects([project]);
+    await flushAsync();
+
+    const firstClient = pool.get(project)! as FakeClient;
+    configListener?.({
+      affectsConfiguration: (key: string, scope?: Uri) =>
+        key === `${CONFIGURATION_SECTION}.${TRACE_SERVER_SETTING}` &&
+        scope?.fsPath === project.root.fsPath,
+    } as ConfigurationChangeEvent);
+    await flushAsync();
+
+    expect(firstClient.dispose).toHaveBeenCalled();
+    expect(factory.create).toHaveBeenCalledTimes(2);
     await pool.stop();
   });
 

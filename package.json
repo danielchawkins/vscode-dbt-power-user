@@ -166,6 +166,22 @@
             "default": true,
             "description": "Whether Fusion lint diagnostics are enabled when this Declared Project's language server starts."
           },
+          "dbt.traceServer": {
+            "type": "string",
+            "enum": [
+              "off",
+              "messages",
+              "verbose"
+            ],
+            "enumDescriptions": [
+              "Default Fusion server log level for this project.",
+              "Pass debug log level to the Fusion server process and increase Fusion project log verbosity (for example logs/dbt.log).",
+              "Pass trace log level to the Fusion server process and increase Fusion project log verbosity (for example logs/dbt.log)."
+            ],
+            "default": "off",
+            "scope": "resource",
+            "description": "Fusion server process log verbosity for this Declared Project. Server stdout and stderr appear in that project's Fusion LSP output channel; debug and verbose also increase Fusion's own project log file verbosity (for example logs/dbt.log)."
+          },
           "dbt.unquotedCaseInsensitiveIdentifierRegex": {
             "type": "string",
             "markdownDescription": "Regex to identify unquoted identifiers. Example: `^([_A-Z]+[_A-Z0-9$]*)$`"

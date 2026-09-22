@@ -653,63 +653,6 @@ export class VSCodeCommands implements Disposable {
           this.diagnosticsOutputChannel.logLine(`Error=${e}`);
         }
       }),
-      commands.registerCommand(
-        "dbtPowerUser.openTargetSelector",
-        async (
-          targets,
-          project: DBTProject,
-          statusBar,
-          currentTarget?: string,
-        ) => {
-          try {
-            if (!targets) {
-              return;
-            }
-            this.dbtTerminal.debug(
-              "OpenTargetSelector",
-              "Showing following targets",
-              targets,
-            );
-            const sortedTargets = (targets as string[]).sort((a, b) => {
-              if (a === currentTarget) {
-                return -1;
-              }
-              if (b === currentTarget) {
-                return 1;
-              }
-              return 0;
-            });
-            const items = sortedTargets.map((t) => ({
-              label: t,
-              description: t === currentTarget ? "(current)" : "",
-            }));
-            const selected = await window.showQuickPick(items, {
-              title: "Select your target",
-              canPickMany: false,
-            });
-            const target = selected?.label;
-            if (target) {
-              await project.setSelectedTarget(target);
-              await statusBar.updateStatusBar();
-              this.dbtTerminal.info(
-                "OpenTargetSelector",
-                "Selecting target",
-                true,
-                target,
-              );
-            }
-          } catch (error) {
-            this.dbtTerminal.error(
-              "OpenTargetSelector",
-              "An error occurred while changing target",
-              error,
-            );
-            window.showErrorMessage(
-              "An error occurred while changing target: " + error,
-            );
-          }
-        },
-      ),
       commands.registerCommand("dbtPowerUser.applyDeferConfig", async () => {
         const projects = this.dbtProjectContainer.getProjects();
         try {

@@ -1,4 +1,5 @@
 import { jest } from "@jest/globals";
+import type { LogOutputChannel } from "vscode";
 
 // Export VSCode types that were previously defined
 export const ExtensionKind = {
@@ -161,6 +162,16 @@ export const StatusBarAlignment = {
   Right: 2,
 };
 
+/** Matches `@types/vscode` LogLevel ordering (Info = 3). */
+export const LogLevel = {
+  Off: 0,
+  Trace: 1,
+  Debug: 2,
+  Info: 3,
+  Warning: 4,
+  Error: 5,
+} as const;
+
 export const OverviewRulerLane = {
   Left: 1,
   Center: 2,
@@ -170,7 +181,9 @@ export const OverviewRulerLane = {
 
 export class MarkdownString {
   public value = "";
-  constructor(value?: string) {
+  public isTrusted = false;
+  public supportHtml = false;
+  constructor(value?: string, _supportThemeIcons?: boolean) {
     if (value) {
       this.value = value;
     }
@@ -235,9 +248,39 @@ export const version = "1.125.0";
 
 export const commands = {
   registerCommand: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+  registerTextEditorCommand: jest.fn().mockReturnValue({ dispose: jest.fn() }),
   getCommands: jest.fn().mockReturnValue(Promise.resolve([])),
   executeCommand: jest.fn().mockReturnValue(Promise.resolve()),
 };
+
+let mockLogOutputChannelCounter = 0;
+
+const mockDisposable = { dispose: jest.fn() };
+const mockRegisterProvider = jest.fn(() => mockDisposable);
+
+export function createMockLogOutputChannel(name?: string): LogOutputChannel {
+  const channelName =
+    name ?? `Log - mock-${(mockLogOutputChannelCounter += 1)}`;
+  return {
+    name: channelName,
+    append: jest.fn(),
+    appendLine: jest.fn(),
+    clear: jest.fn(),
+    show: jest.fn(),
+    hide: jest.fn(),
+    dispose: jest.fn(),
+    debug: jest.fn(),
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    trace: jest.fn(),
+    replace: jest.fn(),
+    logLevel: LogLevel.Info,
+    onDidChangeLogLevel: jest
+      .fn()
+      .mockReturnValue({ dispose: jest.fn() } as { dispose: () => void }),
+  } as LogOutputChannel;
+}
 
 export const window = {
   showInformationMessage: jest.fn().mockReturnValue(Promise.resolve()),
@@ -247,15 +290,31 @@ export const window = {
   onDidChangeActiveTextEditor: jest
     .fn()
     .mockReturnValue({ dispose: jest.fn() }),
+  onDidChangeActiveColorTheme: jest
+    .fn()
+    .mockReturnValue({ dispose: jest.fn() }),
+  onDidChangeTextEditorSelection: jest
+    .fn()
+    .mockReturnValue({ dispose: jest.fn() }),
+  onDidChangeVisibleTextEditors: jest
+    .fn()
+    .mockReturnValue({ dispose: jest.fn() }),
   activeTextEditor: undefined as any,
-  createOutputChannel: jest.fn().mockReturnValue({
-    append: jest.fn(),
-    appendLine: jest.fn(),
-    clear: jest.fn(),
+  visibleTextEditors: [] as unknown[],
+  activeColorTheme: { kind: ColorThemeKind.Dark },
+  createStatusBarItem: jest.fn().mockReturnValue({
+    text: "",
+    tooltip: undefined,
     show: jest.fn(),
     hide: jest.fn(),
     dispose: jest.fn(),
   }),
+  createOutputChannel: jest.fn((name?: string, _options?: { log?: boolean }) =>
+    createMockLogOutputChannel(name),
+  ),
+  registerWebviewViewProvider: mockRegisterProvider,
+  registerTreeDataProvider: mockRegisterProvider,
+  createTextEditorDecorationType: jest.fn(() => mockDisposable),
   createTerminal: jest.fn().mockReturnValue({
     sendText: jest.fn(),
     show: jest.fn(),
@@ -282,6 +341,7 @@ export const workspace = {
     return undefined;
   }),
   onDidChangeConfiguration: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+  onDidChangeTextDocument: jest.fn().mockReturnValue({ dispose: jest.fn() }),
   onDidChangeWorkspaceFolders: jest
     .fn()
     .mockReturnValue({ dispose: jest.fn() }),
@@ -292,6 +352,7 @@ export const workspace = {
     dispose: jest.fn(),
   }),
   findFiles: jest.fn(() => Promise.resolve([])),
+  registerTextDocumentContentProvider: mockRegisterProvider,
 } as any;
 
 export const languages = {
@@ -313,7 +374,12 @@ export const languages = {
       // Mock implementation that does nothing by default
     },
   }),
-  registerCodeLensProvider: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+  registerCodeLensProvider: mockRegisterProvider,
+  registerCompletionItemProvider: mockRegisterProvider,
+  registerHoverProvider: mockRegisterProvider,
+  registerDefinitionProvider: mockRegisterProvider,
+  registerDocumentFormattingEditProvider: mockRegisterProvider,
+  setTextDocumentLanguage: jest.fn(() => Promise.resolve(undefined)),
 };
 
 export class EventEmitter<T> {

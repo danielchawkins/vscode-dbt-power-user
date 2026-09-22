@@ -49,6 +49,7 @@ describe("fusionClientSettings", () => {
       profilesDir: undefined,
       target: undefined,
       lintEnabled: true,
+      traceServer: "off",
     });
   });
 
