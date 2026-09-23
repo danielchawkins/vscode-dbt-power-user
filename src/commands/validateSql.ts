@@ -16,13 +16,13 @@ import {
   window,
   workspace,
 } from "vscode";
-import { AltimateRequest, ModelNode } from "../altimate";
 import { SqlPreviewContentProvider } from "../content_provider/sqlPreviewContentProvider";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
+import { ModelNode } from "../local/lineageTypes";
 import { extendErrorWithSupportLinks } from "../utils";
 
 export class ValidateSql {
@@ -30,7 +30,6 @@ export class ValidateSql {
   private diagnosticsCollection: DiagnosticCollection;
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
-    private altimate: AltimateRequest,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {

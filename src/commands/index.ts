@@ -17,7 +17,6 @@ import {
   window,
   workspace,
 } from "vscode";
-import { AltimateRequest } from "../altimate";
 import {
   CteCodeLensProvider,
   CteInfo,
@@ -54,7 +53,6 @@ export class VSCodeCommands implements Disposable {
     @inject(PythonEnvironment)
     private pythonEnvironment: PythonEnvironment,
     private dbtClient: DBTClient,
-    private altimate: AltimateRequest,
     private runHistoryService: RunHistoryService,
     private cteProfilerService: CteProfilerService,
     private cteProfilerDecorationProvider: CteProfilerDecorationProvider,
@@ -558,7 +556,6 @@ export class VSCodeCommands implements Disposable {
           this.diagnosticsOutputChannel.logNewLine();
 
           // Printing extension and setup info
-          const apiConnectivity = await this.altimate.checkApiConnectivity();
           this.diagnosticsOutputChannel.logBlock([
             `Python Path=${this.pythonEnvironment.pythonPath}`,
             `VSCode version=${version}`,
@@ -568,10 +565,6 @@ export class VSCodeCommands implements Disposable {
             }`,
             "DBT integration mode=fusion",
             `First workspace path=${getFirstWorkspacePath()}`,
-            `Altimate API connectivity=${apiConnectivity.status}`,
-            apiConnectivity.errorMsg
-              ? `Altimate API connectivity error=${apiConnectivity.errorMsg}`
-              : "",
           ]);
           this.diagnosticsOutputChannel.logNewLine();
 

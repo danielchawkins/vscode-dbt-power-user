@@ -28,7 +28,6 @@ import {
   window,
 } from "vscode";
 import { parse, parseDocument, stringify, YAMLMap, YAMLSeq } from "yaml";
-import { UserInputError } from "../altimate";
 import {
   beginWebviewResolve,
   completeWebviewReady,
@@ -39,6 +38,7 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
+import { UserInputError } from "../local/errors";
 import { DbtLineageService } from "../services/dbtLineageService";
 import { DbtTestService } from "../services/dbtTestService";
 import {
@@ -814,7 +814,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
                 selectedColumn,
                 upstreamExpansion: true,
                 showIndirectEdges: false,
-                eventType: "documentation_propagation",
               },
               this.cancellationTokenSource!,
             );

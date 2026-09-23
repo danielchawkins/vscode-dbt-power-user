@@ -22,7 +22,6 @@ import {
 import { EventEmitter } from "events";
 import * as path from "path";
 import * as vscode from "vscode";
-import { AltimateRequest } from "../../altimate";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
@@ -31,7 +30,6 @@ import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
 describe("DBTProject Test Suite", () => {
   let mockTerminal: jest.Mocked<DBTTerminal>;
-  let mockAltimate: jest.Mocked<AltimateRequest>;
   let mockPythonEnvironment: jest.Mocked<PythonEnvironment>;
   let mockSharedStateService: jest.Mocked<SharedStateService>;
   let mockRunHistoryService: jest.Mocked<RunHistoryService>;
@@ -86,18 +84,6 @@ describe("DBTProject Test Suite", () => {
       logBlock: jest.fn(),
       warn: jest.fn(),
     } as unknown as jest.Mocked<DBTTerminal>;
-
-    // Mock AltimateRequest
-    mockAltimate = {
-      enabled: jest.fn().mockReturnValue(true),
-      isAuthenticated: jest.fn().mockReturnValue(true),
-      validateCredentials: jest.fn(),
-      checkApiConnectivity: jest.fn(),
-      getAIKey: jest.fn().mockReturnValue("0123456789abcdef0123456789abcdef"),
-      getInstanceName: jest.fn().mockReturnValue("test-instance"),
-      getAltimateUrl: jest.fn().mockReturnValue("https://test.altimate.ai"),
-      dispose: jest.fn(),
-    } as unknown as jest.Mocked<AltimateRequest>;
 
     // Mock PythonEnvironment
     mockPythonEnvironment = {
@@ -233,7 +219,6 @@ describe("DBTProject Test Suite", () => {
         mockSharedStateService,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -257,7 +242,6 @@ describe("DBTProject Test Suite", () => {
         mockSharedStateService,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -266,8 +250,6 @@ describe("DBTProject Test Suite", () => {
       await dbtProject.initialize();
 
       expect(mockProjectIntegration.initialize).toHaveBeenCalled();
-      expect(mockAltimate.checkApiConnectivity).not.toHaveBeenCalled();
-      expect(mockAltimate.validateCredentials).not.toHaveBeenCalled();
     });
   });
 
@@ -282,7 +264,6 @@ describe("DBTProject Test Suite", () => {
         mockSharedStateService,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -360,7 +341,6 @@ describe("DBTProject Test Suite", () => {
         mockSharedStateService,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -486,7 +466,6 @@ describe("DBTProject Test Suite", () => {
         mockSharedStateService,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -558,7 +537,6 @@ describe("DBTProject Test Suite", () => {
         mockSharedStateService,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -619,7 +597,6 @@ describe("DBTProject Test Suite", () => {
         mockSharedStateService,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -672,7 +649,6 @@ describe("DBTProject Test Suite", () => {
         mockSharedStateService,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -756,7 +732,6 @@ describe("DBTProject Test Suite", () => {
         mockSharedStateService,
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,

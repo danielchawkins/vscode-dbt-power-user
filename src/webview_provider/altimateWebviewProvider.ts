@@ -16,7 +16,6 @@ import {
   window,
   workspace,
 } from "vscode";
-import { AltimateRequest, UserInputError } from "../altimate";
 import {
   completeWebviewReady,
   beginWebviewResolve as recordWebviewResolveStart,
@@ -26,6 +25,7 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
+import { UserInputError } from "../local/errors";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import { extendErrorWithSupportLinks } from "../utils";
@@ -71,7 +71,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
 
   public constructor(
     protected dbtProjectContainer: DBTProjectContainer,
-    protected altimateRequest: AltimateRequest,
     protected emitterService: SharedStateService,
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
@@ -250,19 +249,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         case "openProblemsTab":
           commands.executeCommand("workbench.action.problems.focus");
 
-          break;
-        case "fetch":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              return this.altimateRequest.fetch(
-                params.endpoint as string,
-                params.fetchArgs as Record<string, unknown>,
-              );
-            },
-            command,
-            true,
-          );
           break;
         case "getProjectAdapterType":
           this.handleSyncRequestFromWebview(

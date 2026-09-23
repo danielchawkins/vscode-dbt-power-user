@@ -53,7 +53,7 @@ import {
   window,
   workspace,
 } from "vscode";
-import { AltimateRequest, ModelNode } from "../altimate";
+import { ModelNode } from "../local/lineageTypes";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
 import {
@@ -144,7 +144,6 @@ export class DBTProject implements Disposable {
       projectRoot: string,
       deferConfig: DeferConfig | undefined,
     ) => DBTProjectIntegrationAdapter,
-    private altimate: AltimateRequest,
     private runHistoryService: RunHistoryService,
     path: Uri,
     private _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,

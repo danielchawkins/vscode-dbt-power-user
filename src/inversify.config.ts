@@ -31,7 +31,6 @@ import {
 } from "@altimateai/dbt-integration";
 import { Container, Factory, ResolutionContext } from "inversify";
 import { Event, EventEmitter, Memento, Uri } from "vscode";
-import { AltimateRequest } from "./altimate";
 import { DBTProject } from "./dbt_client/dbtProject";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
@@ -265,18 +264,6 @@ container
   })
   .inSingletonScope();
 
-// Bind AltimateRequest
-container
-  .bind(AltimateRequest)
-  .toDynamicValue((context) => {
-    return new AltimateRequest(
-      context.get("DBTTerminal"),
-      context.get("DBTConfiguration"),
-      context.get(AltimateHttpClient),
-    );
-  })
-  .inSingletonScope();
-
 container
   .bind<Factory<DBTDetection, [Memento | undefined]>>("Factory<DBTDetection>")
   .toFactory((context: ResolutionContext) => {
@@ -390,7 +377,6 @@ container
         container.get(SharedStateService),
         container.get(DBTCommandExecutionInfrastructure),
         container.get("Factory<DBTProjectIntegrationAdapter>"),
-        container.get(AltimateRequest),
         container.get(RunHistoryService),
         path,
         _onManifestChanged,
@@ -412,7 +398,6 @@ container
   .bind(DbtLineageService)
   .toDynamicValue((context) => {
     return new DbtLineageService(
-      context.get(AltimateRequest),
       context.get("DBTTerminal"),
       context.get(QueryManifestService),
     );
@@ -842,7 +827,6 @@ container
   .toDynamicValue((context) => {
     return new ValidateSql(
       context.get(DBTProjectContainer),
-      context.get(AltimateRequest),
       context.get("DBTTerminal"),
     );
   })
@@ -872,7 +856,6 @@ container
       context.get(DiagnosticsOutputChannel),
       context.get(PythonEnvironment),
       context.get(DBTClient),
-      context.get(AltimateRequest),
       context.get(RunHistoryService),
       context.get(CteProfilerService),
       context.get(CteProfilerDecorationProvider),
@@ -887,7 +870,6 @@ container
   .toDynamicValue((context) => {
     return new QueryResultPanel(
       context.get(DBTProjectContainer),
-      context.get(AltimateRequest),
       context.get(SharedStateService),
       context.get("DBTTerminal"),
       context.get(QueryManifestService),
@@ -925,7 +907,6 @@ container
   .toDynamicValue((context) => {
     return new NewLineagePanel(
       context.get(DBTProjectContainer),
-      context.get(AltimateRequest),
       context.get("DBTTerminal"),
       context.get(DbtLineageService),
       context.get(SharedStateService),
