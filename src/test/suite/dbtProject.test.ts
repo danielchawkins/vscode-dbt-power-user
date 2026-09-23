@@ -568,22 +568,6 @@ describe("DBTProject Test Suite", () => {
       // Check that error message was shown to user
       expect(vscode.window.showErrorMessage).toHaveBeenCalled();
     });
-
-    it("should validate SQL", async () => {
-      const request = {
-        sql: "SELECT * FROM table",
-        dialect: "postgres",
-        models: [],
-      };
-
-      // The real validateSQL requires a working python bridge; here we just
-      // verify the wiring: the python bridge is created and closed around the
-      // call, even when validation itself surfaces an error.
-      await expect(dbtProject.validateSql(request)).rejects.toBeDefined();
-
-      expect(mockExecutionInfrastructure.createPythonBridge).toHaveBeenCalled();
-      expect(mockExecutionInfrastructure.closePythonBridge).toHaveBeenCalled();
-    });
   });
 
   describe("Query Execution", () => {

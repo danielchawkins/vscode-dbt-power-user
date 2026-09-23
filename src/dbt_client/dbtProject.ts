@@ -32,7 +32,6 @@ import {
   RunResultsEventData,
   SourceNode,
   Table,
-  validateSQL,
 } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import * as path from "path";
@@ -379,10 +378,6 @@ export class DBTProject implements Disposable {
     return path.join(targetPath, CATALOG_FILE);
   }
 
-  getPythonBridgeStatus() {
-    return this.dbtProjectIntegration.getPythonBridgeStatus();
-  }
-
   getAllDiagnostic(): Diagnostic[] {
     const integrationDiagnostics =
       this.getCurrentProjectIntegration().getDiagnostics();
@@ -717,34 +712,6 @@ export class DBTProject implements Disposable {
   async unsafeCompileNode(modelName: string): Promise<string | undefined> {
     this.throwDiagnosticsErrorIfAvailable();
     return this.dbtProjectIntegration.unsafeCompileNode(modelName);
-  }
-
-  async validateSql(request: {
-    sql: string;
-    dialect: string;
-    models: any[];
-  }): Promise<Awaited<ReturnType<typeof validateSQL>>> {
-    const { sql, dialect, models } = request;
-    this.throwDiagnosticsErrorIfAvailable();
-    const sqlValidationThread = this.executionInfrastructure.createPythonBridge(
-      this.projectRoot.fsPath,
-    );
-    try {
-      return await validateSQL(sql, dialect, models, sqlValidationThread);
-    } finally {
-      await this.executionInfrastructure.closePythonBridge(sqlValidationThread);
-    }
-  }
-
-  async validateSQLDryRun(query: string) {
-    try {
-      return this.dbtProjectIntegration.validateSQLDryRun(query);
-    } catch (exc) {
-      const exception = exc as { exception: { message: string } };
-      window.showErrorMessage(
-        exception.exception.message || "Could not validate sql with dry run.",
-      );
-    }
   }
 
   getDBTVersion(): number[] | undefined {

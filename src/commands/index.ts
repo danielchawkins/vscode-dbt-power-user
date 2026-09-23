@@ -35,7 +35,6 @@ import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { deepEqual, getFirstWorkspacePath } from "../utils";
 import { RunModel } from "./runModel";
 import { RunTest } from "./runTest";
-import { ValidateSql } from "./validateSql";
 import { WalkthroughCommands } from "./walkthroughCommands";
 
 export class VSCodeCommands implements Disposable {
@@ -45,7 +44,6 @@ export class VSCodeCommands implements Disposable {
     private dbtProjectContainer: DBTProjectContainer,
     private runModel: RunModel,
     private runTest: RunTest,
-    private validateSql: ValidateSql,
     private walkthroughCommands: WalkthroughCommands,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
@@ -382,9 +380,6 @@ export class VSCodeCommands implements Disposable {
           RunModelType.BUILD_CHILDREN_PARENTS,
         ),
       ),
-      commands.registerCommand("dbtPowerUser.validateSql", () =>
-        this.validateSql.validateSql(),
-      ),
       commands.registerCommand("dbtPowerUser.validateProject", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
           this.dbtProjectContainer.getFromWorkspaceState(
@@ -664,12 +659,6 @@ export class VSCodeCommands implements Disposable {
       this.diagnosticsOutputChannel.logLine(
         `DBT version=${dbtVersion.join(".")}`,
       );
-    }
-
-    if (!project.getPythonBridgeStatus()) {
-      this.diagnosticsOutputChannel.logLine("Python bridge is not connected");
-    } else {
-      this.diagnosticsOutputChannel.logLine("Python bridge is connected");
     }
 
     this.diagnosticsOutputChannel.logNewLine();

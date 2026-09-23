@@ -94,7 +94,6 @@ import { ProjectQuickPick } from "./quickpick/projectQuickPick";
 import { VSCodeCommands } from "./commands";
 import { RunModel } from "./commands/runModel";
 import { RunTest } from "./commands/runTest";
-import { ValidateSql } from "./commands/validateSql";
 import { WalkthroughCommands } from "./commands/walkthroughCommands";
 import { ContentProviders } from "./content_provider";
 import { SqlPreviewContentProvider } from "./content_provider/sqlPreviewContentProvider";
@@ -823,16 +822,6 @@ container
   .inSingletonScope();
 
 container
-  .bind(ValidateSql)
-  .toDynamicValue((context) => {
-    return new ValidateSql(
-      context.get(DBTProjectContainer),
-      context.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-container
   .bind(WalkthroughCommands)
   .toDynamicValue((context) => {
     return new WalkthroughCommands(
@@ -850,7 +839,6 @@ container
       context.get(DBTProjectContainer),
       context.get(RunModel),
       context.get(RunTest),
-      context.get(ValidateSql),
       context.get(WalkthroughCommands),
       context.get("DBTTerminal"),
       context.get(DiagnosticsOutputChannel),
