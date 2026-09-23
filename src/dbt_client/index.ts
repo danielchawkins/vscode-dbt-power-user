@@ -1,6 +1,6 @@
 import { DBTDetection } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
-import { commands, Disposable, EventEmitter, Memento, window } from "vscode";
+import { Disposable, EventEmitter, Memento, window } from "vscode";
 import { DBTInstallationVerificationEvent } from "./dbtVersionEvent";
 
 export class DBTClient implements Disposable {
@@ -49,11 +49,6 @@ export class DBTClient implements Disposable {
       inProgress: false,
       installed: this._dbtInstalled,
     });
-    commands.executeCommand(
-      "setContext",
-      "dbtPowerUser.dbtInstalled",
-      this._dbtInstalled,
-    );
     if (!this._dbtInstalled) {
       void this.showErrorIfDbtIsNotInstalled();
     }

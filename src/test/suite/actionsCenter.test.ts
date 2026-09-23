@@ -38,7 +38,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
     await pickProjectCommand()();
 
     expect(container.setToWorkspaceState).toHaveBeenCalledWith(
-      "dbtPowerUser.projectSelected",
+      "fusionPowerUser.projectSelected",
       {
         label: "project",
         description: "/project",
@@ -61,7 +61,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
 
 function pickProjectCommand(): () => Promise<void> {
   const registration = (commands.registerCommand as jest.Mock).mock.calls.find(
-    ([command]) => command === "dbtPowerUser.pickProject",
+    ([command]) => command === "fusionPowerUser.pickProject",
   );
   return registration?.[1] as () => Promise<void>;
 }

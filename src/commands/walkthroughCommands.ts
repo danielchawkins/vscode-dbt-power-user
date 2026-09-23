@@ -35,7 +35,7 @@ export class WalkthroughCommands {
     }
 
     this.dbtProjectContainer.setToWorkspaceState(
-      "dbtPowerUser.projectSelected",
+      "fusionPowerUser.projectSelected",
       pickedProject,
     );
     return pickedProject;

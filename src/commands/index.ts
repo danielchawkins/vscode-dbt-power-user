@@ -62,21 +62,21 @@ export class VSCodeCommands implements Disposable {
     this.disposables.push(
       this.cteProfilerService,
       this.cteProfilerDecorationProvider,
-      commands.registerCommand("dbtPowerUser.runCurrentModel", () => {
+      commands.registerCommand("fusionPowerUser.runCurrentModel", () => {
         // `dbt run` on a singular test file is never meaningful; route it
-        // to `dbt test --select <test>` instead. See #1720.
+        // to `dbt test --select <test>` instead.
         if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
           return;
         }
         this.runModel.runModelOnActiveWindow();
       }),
       commands.registerCommand(
-        "dbtPowerUser.rerunFromHistory",
+        "fusionPowerUser.rerunFromHistory",
         (item: RunTreeItem) => {
           this.dbtProjectContainer.rerunFromHistory(item.entry);
         },
       ),
-      commands.registerCommand("dbtPowerUser.clearRunHistory", async () => {
+      commands.registerCommand("fusionPowerUser.clearRunHistory", async () => {
         const confirm = await window.showWarningMessage(
           "Clear all run history entries?",
           { modal: true },
@@ -87,7 +87,7 @@ export class VSCodeCommands implements Disposable {
         }
       }),
       commands.registerCommand(
-        "dbtPowerUser.profileCtes",
+        "fusionPowerUser.profileCtes",
         async (uri?: Uri, ctes?: CteInfo[]) => {
           // When called from command palette, args are undefined — use active editor
           const source = uri ? "codeLens" : "commandPalette";
@@ -128,7 +128,7 @@ export class VSCodeCommands implements Disposable {
             // Extract CteInfo from CodeLens arguments (index 1 is the ctes array)
             const profileLens = resolved.find(
               (cl: CodeLens) =>
-                cl.command?.command === "dbtPowerUser.profileCtes",
+                cl.command?.command === "fusionPowerUser.profileCtes",
             );
             ctes = profileLens?.command?.arguments?.[1] as
               CteInfo[] | undefined;
@@ -194,28 +194,28 @@ export class VSCodeCommands implements Disposable {
           );
         },
       ),
-      commands.registerCommand("dbtPowerUser.cancelCteProfiling", () => {
+      commands.registerCommand("fusionPowerUser.cancelCteProfiling", () => {
         this.cteProfilerService.cancel();
       }),
-      commands.registerCommand("dbtPowerUser.clearProfileResults", () =>
+      commands.registerCommand("fusionPowerUser.clearProfileResults", () =>
         this.cteProfilerService.clearResults(),
       ),
-      commands.registerCommand("dbtPowerUser.toggleProfileDecorations", () =>
+      commands.registerCommand("fusionPowerUser.toggleProfileDecorations", () =>
         this.cteProfilerDecorationProvider.toggle(),
       ),
-      commands.registerCommand("dbtPowerUser.testCurrentModel", () => {
+      commands.registerCommand("fusionPowerUser.testCurrentModel", () => {
         // Singular data tests must be selected by their own test name, not
-        // the surrounding model. See #1720.
+        // the surrounding model.
         if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
           return;
         }
         this.runModel.runTestsOnActiveWindow();
       }),
-      commands.registerCommand("dbtPowerUser.compileCurrentModel", () =>
+      commands.registerCommand("fusionPowerUser.compileCurrentModel", () =>
         this.runModel.compileModelOnActiveWindow(),
       ),
       commands.registerTextEditorCommand(
-        "dbtPowerUser.sqlPreview",
+        "fusionPowerUser.sqlPreview",
         async (editor: TextEditor) => {
           const uri = editor.document.uri.with({
             scheme: SqlPreviewContentProvider.SCHEME,
@@ -238,14 +238,14 @@ export class VSCodeCommands implements Disposable {
         },
       ),
       commands.registerCommand(
-        "dbtPowerUser.goToDocumentationEditor",
+        "fusionPowerUser.goToDocumentationEditor",
         async () => {
           await commands.executeCommand(
             "workbench.view.extension.docs_edit_view",
           );
         },
       ),
-      commands.registerCommand("dbtPowerUser.runTest", (model) => {
+      commands.registerCommand("fusionPowerUser.runTest", (model) => {
         // Tree-item invocation (from the test treeview): run the selected
         // test node — never a singular test, always a generic test.
         if (model !== undefined) {
@@ -254,60 +254,60 @@ export class VSCodeCommands implements Disposable {
         }
         // Command-palette invocation (no tree item): route singular test
         // files to `dbt test --select <test>`; otherwise fall back to
-        // running the generic tests attached to the active model. See #1720.
+        // running the generic tests attached to the active model.
         if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
           return;
         }
         this.runModel.runModelOnNodeTreeItem(RunModelType.TEST)(model);
       }),
-      commands.registerCommand("dbtPowerUser.runChildrenModels", (model) =>
+      commands.registerCommand("fusionPowerUser.runChildrenModels", (model) =>
         this.runModel.runModelOnNodeTreeItem(RunModelType.RUN_CHILDREN)(model),
       ),
       commands.registerCommand(
-        "dbtPowerUser.yamlRunModel",
+        "fusionPowerUser.yamlRunModel",
         (uri: Uri, modelName: string) => {
           this.dbtProjectContainer.runModelByName(uri, modelName);
         },
       ),
       commands.registerCommand(
-        "dbtPowerUser.yamlTestModel",
+        "fusionPowerUser.yamlTestModel",
         (uri: Uri, modelName: string) => {
           this.dbtProjectContainer.runModelTest(uri, modelName);
         },
       ),
-      commands.registerCommand("dbtPowerUser.runParentModels", (model) =>
+      commands.registerCommand("fusionPowerUser.runParentModels", (model) =>
         this.runModel.runModelOnNodeTreeItem(RunModelType.RUN_PARENTS)(model),
       ),
-      commands.registerCommand("dbtPowerUser.copyModelName", (model) =>
+      commands.registerCommand("fusionPowerUser.copyModelName", (model) =>
         env.clipboard.writeText(model.label.toString()),
       ),
-      commands.registerCommand("dbtPowerUser.showRunSQL", () =>
+      commands.registerCommand("fusionPowerUser.showRunSQL", () =>
         this.runModel.showRunSQLOnActiveWindow(),
       ),
-      commands.registerCommand("dbtPowerUser.showCompiledSQL", () =>
+      commands.registerCommand("fusionPowerUser.showCompiledSQL", () =>
         this.runModel.showCompiledSQLOnActiveWindow(),
       ),
-      commands.registerCommand("dbtPowerUser.generateSchemaYML", () =>
+      commands.registerCommand("fusionPowerUser.generateSchemaYML", () =>
         this.runModel.generateSchemaYMLOnActiveWindow(),
       ),
-      commands.registerCommand("dbtPowerUser.executeSQL", () =>
+      commands.registerCommand("fusionPowerUser.executeSQL", () =>
         this.runModel.executeQueryOnActiveWindow(),
       ),
       commands.registerCommand(
-        "dbtPowerUser.runCteWithDependencies",
+        "fusionPowerUser.runCteWithDependencies",
         (uri: Uri, cteIndex: number, ctes: CteInfo[]) =>
           this.runCteWithDependencies(uri, cteIndex, ctes),
       ),
       commands.registerCommand(
-        "dbtPowerUser.createModelBasedonSourceConfig",
+        "fusionPowerUser.createModelBasedonSourceConfig",
         (params) => {
           this.runModel.createModelBasedonSourceConfig(params);
         },
       ),
-      commands.registerCommand("dbtPowerUser.buildCurrentModel", () =>
+      commands.registerCommand("fusionPowerUser.buildCurrentModel", () =>
         this.runModel.buildModelOnActiveWindow(),
       ),
-      commands.registerCommand("dbtPowerUser.buildCurrentProject", () => {
+      commands.registerCommand("fusionPowerUser.buildCurrentProject", () => {
         if (!window.activeTextEditor) {
           return;
         }
@@ -338,7 +338,7 @@ export class VSCodeCommands implements Disposable {
 
         dbtProject.buildProject();
       }),
-      commands.registerCommand("dbtPowerUser.cleanCurrentProject", () => {
+      commands.registerCommand("fusionPowerUser.cleanCurrentProject", () => {
         if (!window.activeTextEditor) {
           return;
         }
@@ -369,36 +369,38 @@ export class VSCodeCommands implements Disposable {
 
         dbtProject.clean();
       }),
-      commands.registerCommand("dbtPowerUser.buildChildrenModels", () =>
+      commands.registerCommand("fusionPowerUser.buildChildrenModels", () =>
         this.runModel.buildModelOnActiveWindow(RunModelType.BUILD_CHILDREN),
       ),
-      commands.registerCommand("dbtPowerUser.buildParentModels", () =>
+      commands.registerCommand("fusionPowerUser.buildParentModels", () =>
         this.runModel.buildModelOnActiveWindow(RunModelType.BUILD_PARENTS),
       ),
-      commands.registerCommand("dbtPowerUser.buildChildrenParentModels", () =>
-        this.runModel.buildModelOnActiveWindow(
-          RunModelType.BUILD_CHILDREN_PARENTS,
-        ),
+      commands.registerCommand(
+        "fusionPowerUser.buildChildrenParentModels",
+        () =>
+          this.runModel.buildModelOnActiveWindow(
+            RunModelType.BUILD_CHILDREN_PARENTS,
+          ),
       ),
-      commands.registerCommand("dbtPowerUser.validateProject", async () => {
+      commands.registerCommand("fusionPowerUser.validateProject", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
           this.dbtProjectContainer.getFromWorkspaceState(
-            "dbtPowerUser.projectSelected",
+            "fusionPowerUser.projectSelected",
           );
 
         await this.walkthroughCommands.validateProjects(pickedProject);
       }),
-      commands.registerCommand("dbtPowerUser.installDeps", async () => {
+      commands.registerCommand("fusionPowerUser.installDeps", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
           this.dbtProjectContainer.getFromWorkspaceState(
-            "dbtPowerUser.projectSelected",
+            "fusionPowerUser.projectSelected",
           );
         await this.walkthroughCommands.installDeps(pickedProject);
       }),
-      commands.registerCommand("dbtPowerUser.viewInDocEditor", () =>
-        commands.executeCommand("dbtPowerUser.DocsEdit.focus"),
+      commands.registerCommand("fusionPowerUser.viewInDocEditor", () =>
+        commands.executeCommand("fusionPowerUser.DocsEdit.focus"),
       ),
-      commands.registerCommand("dbtPowerUser.diagnostics", async () => {
+      commands.registerCommand("fusionPowerUser.diagnostics", async () => {
         try {
           this.diagnosticsOutputChannel.show();
           this.diagnosticsOutputChannel.logLine("Diagnostics started...");
@@ -514,7 +516,7 @@ export class VSCodeCommands implements Disposable {
           this.diagnosticsOutputChannel.logLine(`Error=${e}`);
         }
       }),
-      commands.registerCommand("dbtPowerUser.applyDeferConfig", async () => {
+      commands.registerCommand("fusionPowerUser.applyDeferConfig", async () => {
         const projects = this.dbtProjectContainer.getProjects();
         try {
           await Promise.all(

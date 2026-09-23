@@ -54,7 +54,7 @@ export interface SendMessageProps extends Record<string, unknown> {
  * Each panel needs to have its own provider which extends this class with correct viewPath and description
  */
 export class AltimateWebviewProvider implements WebviewViewProvider {
-  public viewType = "dbtPowerUser.Default";
+  public viewType = "fusionPowerUser.Default";
   protected viewPath = "/"; // webview route path from AppRoutes.tsx
   protected panelDescription = "Altimate default webview";
 

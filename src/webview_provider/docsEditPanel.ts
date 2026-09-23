@@ -60,7 +60,7 @@ import { SendMessageProps } from "./altimateWebviewProvider";
 const DOCS_VIEW_PATH = "/docs-generator";
 
 export class DocsEditViewPanel implements WebviewViewProvider {
-  public static readonly viewType = "dbtPowerUser.DocsEdit";
+  public static readonly viewType = "fusionPowerUser.DocsEdit";
   protected viewPath = DOCS_VIEW_PATH;
   private _panel: WebviewView | undefined = undefined;
   private documentation?: DBTDocumentation;

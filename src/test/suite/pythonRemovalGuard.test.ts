@@ -29,10 +29,10 @@ const forbiddenInPackageJson: Array<{ label: string; pattern: RegExp }> = [
     pattern: /installDepsOnProjectInitialization/,
   },
   { label: "sqlFmtPath setting", pattern: /sqlFmtPath/ },
-  { label: "printEnvVars command", pattern: /dbtPowerUser\.printEnvVars/ },
+  { label: "printEnvVars command", pattern: /\bprintEnvVars\b/ },
   {
     label: "detectPythonFromTerminal command",
-    pattern: /dbtPowerUser\.detectPythonFromTerminal/,
+    pattern: /\bdetectPythonFromTerminal\b/,
   },
 ];
 

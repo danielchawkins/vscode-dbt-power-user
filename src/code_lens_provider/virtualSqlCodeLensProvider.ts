@@ -45,7 +45,7 @@ export class VirtualSqlCodeLensProvider
     const projectName = this.getProjectName();
     const projectSelectorCommand: Command = {
       title: `Project: ${projectName || "Select a project"}`,
-      command: "dbtPowerUser.pickProject",
+      command: "fusionPowerUser.pickProject",
       arguments: [document.uri],
     };
 

@@ -371,7 +371,7 @@ export class DBTProject implements Disposable {
       data.message,
       this.mapSeverityToVSCode(data.severity),
     );
-    diagnostic.source = "dbt Power User";
+    diagnostic.source = "Fusion Power User";
     return diagnostic;
   }
 

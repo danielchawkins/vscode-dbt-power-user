@@ -11,7 +11,7 @@ export class DbtPowerUserActionsCenter implements Disposable {
     private dbtProjectContainer: DBTProjectContainer,
   ) {
     this.disposables.push(
-      commands.registerCommand("dbtPowerUser.pickProject", async () => {
+      commands.registerCommand("fusionPowerUser.pickProject", async () => {
         const project = await this.projectContext.pickForCommand();
         if (project) {
           const pickedProject: ProjectQuickPickItem = {
@@ -20,7 +20,7 @@ export class DbtPowerUserActionsCenter implements Disposable {
             uri: project.root,
           };
           this.dbtProjectContainer.setToWorkspaceState(
-            "dbtPowerUser.projectSelected",
+            "fusionPowerUser.projectSelected",
             pickedProject,
           );
           window.showInformationMessage(

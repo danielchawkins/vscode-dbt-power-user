@@ -114,7 +114,7 @@ interface QueryHistory {
 }
 
 export class QueryResultPanel extends AltimateWebviewProvider {
-  public static readonly viewType = "dbtPowerUser.PreviewResults";
+  public static readonly viewType = "fusionPowerUser.PreviewResults";
   protected viewPath = "/query-panel";
   protected panelDescription = "Query results panel";
   private _queryTabData: any;
@@ -630,7 +630,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
   ) {
     const start = Date.now();
     //using id to focus on the webview is more reliable than using the view title
-    await commands.executeCommand("dbtPowerUser.PreviewResults.focus");
+    await commands.executeCommand("fusionPowerUser.PreviewResults.focus");
     if (this._panel && this.isWebviewView(this._panel)) {
       this._panel.show(); // Show the view
       this._panel.webview.postMessage({ command: "focus" }); // keyboard focus

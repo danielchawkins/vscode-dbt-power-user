@@ -12,7 +12,7 @@ import {
 } from "./cdpClient";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";
-const RUNTIME_TIMINGS_COMMAND = "dbtPowerUser.test.getRuntimeTimings";
+const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 const SHOW_NOTIFICATIONS = "notifications.showList";
 const HIDE_NOTIFICATIONS = "notifications.hideList";
 
@@ -78,7 +78,7 @@ suite("Pinned-host VSIX smoke", function () {
     );
     await vscode.window.showTextDocument(doc);
 
-    const contributedCommand = "dbtPowerUser.viewInDocEditor";
+    const contributedCommand = "fusionPowerUser.viewInDocEditor";
     const registeredCommands = await vscode.commands.getCommands(true);
     assert.ok(
       registeredCommands.includes(contributedCommand),
@@ -89,17 +89,17 @@ suite("Pinned-host VSIX smoke", function () {
     const panels = [
       {
         container: "workbench.view.extension.docs_edit_view",
-        command: "dbtPowerUser.DocsEdit.focus",
+        command: "fusionPowerUser.DocsEdit.focus",
         viewPath: "/docs-generator",
       },
       {
         container: "workbench.view.extension.dbt_preview_results",
-        command: "dbtPowerUser.PreviewResults.focus",
+        command: "fusionPowerUser.PreviewResults.focus",
         viewPath: "/query-panel",
       },
       {
         container: "workbench.view.extension.lineage_view",
-        command: "dbtPowerUser.Lineage.focus",
+        command: "fusionPowerUser.Lineage.focus",
         viewPath: "/lineage",
       },
     ];

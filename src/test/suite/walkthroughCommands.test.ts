@@ -89,7 +89,7 @@ describe("WalkthroughCommands project resolution", () => {
 
     expect(mockPicker.projectPicker).toHaveBeenCalledTimes(1);
     expect(mockContainer.setToWorkspaceState).toHaveBeenCalledWith(
-      "dbtPowerUser.projectSelected",
+      "fusionPowerUser.projectSelected",
       pickedProject,
     );
     expect(mockProject.debug).toHaveBeenCalledTimes(1);

@@ -28,7 +28,7 @@ export interface LineagePanelView extends WebviewViewProvider {
 }
 
 export class LineagePanel implements WebviewViewProvider, Disposable {
-  public static readonly viewType = "dbtPowerUser.Lineage";
+  public static readonly viewType = "fusionPowerUser.Lineage";
 
   private panel: WebviewView | undefined;
   private context: WebviewViewResolveContext<unknown> | undefined;
