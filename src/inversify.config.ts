@@ -374,7 +374,6 @@ container
         container.get(DBTCommandFactory),
         container.get("DBTTerminal"),
         container.get(SharedStateService),
-        container.get(DBTCommandExecutionInfrastructure),
         container.get("Factory<DBTProjectIntegrationAdapter>"),
         container.get(RunHistoryService),
         path,

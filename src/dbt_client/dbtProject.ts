@@ -8,7 +8,6 @@ import {
   DBT_PROJECT_FILE,
   DBTCommand,
   DBTCommandExecution,
-  DBTCommandExecutionInfrastructure,
   DBTCommandFactory,
   DBTDiagnosticData,
   DBTNode,
@@ -138,7 +137,6 @@ export class DBTProject implements Disposable {
     private dbtCommandFactory: DBTCommandFactory,
     private terminal: DBTTerminal,
     private eventEmitterService: SharedStateService,
-    private executionInfrastructure: DBTCommandExecutionInfrastructure,
     private dbtIntegrationAdapterFactory: (
       projectRoot: string,
       deferConfig: DeferConfig | undefined,

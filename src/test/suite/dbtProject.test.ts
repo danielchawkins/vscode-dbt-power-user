@@ -1,7 +1,6 @@
 import {
   Catalog,
   DBT_PROJECT_FILE,
-  DBTCommandExecutionInfrastructure,
   DBTCommandFactory,
   DBTDiagnosticData,
   DBTProjectIntegrationAdapterEvents,
@@ -33,7 +32,6 @@ describe("DBTProject Test Suite", () => {
   let mockPythonEnvironment: jest.Mocked<PythonEnvironment>;
   let mockSharedStateService: jest.Mocked<SharedStateService>;
   let mockRunHistoryService: jest.Mocked<RunHistoryService>;
-  let mockExecutionInfrastructure: jest.Mocked<DBTCommandExecutionInfrastructure>;
   let mockCommandFactory: jest.Mocked<DBTCommandFactory>;
   let mockProjectIntegration: any;
   let mockDbtProjectLog: jest.Mocked<DBTProjectLog>;
@@ -101,27 +99,6 @@ describe("DBTProject Test Suite", () => {
       addEntry: jest.fn(),
     } as unknown as jest.Mocked<RunHistoryService>;
 
-    // Mock DBTCommandExecutionInfrastructure
-    mockExecutionInfrastructure = {
-      createPythonBridge: jest.fn().mockImplementation(() => ({
-        ex: jest.fn(),
-        lock: jest.fn(),
-        pid: 1234,
-        end: jest.fn(),
-        disconnect: jest.fn(),
-        kill: jest.fn(),
-        ex_json: jest.fn(),
-        exNB: jest.fn(),
-        exAsync: jest.fn(),
-        runJupyterKernel: jest.fn(),
-        stdin: null,
-        stdout: null,
-        stderr: null,
-        connected: true,
-      })),
-      closePythonBridge: jest.fn(),
-    } as unknown as jest.Mocked<DBTCommandExecutionInfrastructure>;
-
     // Mock DBTCommandFactory
     mockCommandFactory = {
       createDocsGenerateCommand: jest.fn().mockReturnValue({
@@ -159,7 +136,6 @@ describe("DBTProject Test Suite", () => {
       getModelPaths: jest.fn().mockReturnValue(["/project/models"]),
       getSeedPaths: jest.fn().mockReturnValue(["/project/seeds"]),
       getMacroPaths: jest.fn().mockReturnValue(["/project/macros"]),
-      getPythonBridgeStatus: jest.fn().mockReturnValue("ready"),
       getDiagnostics: jest.fn().mockReturnValue({
         pythonBridgeDiagnostics: [],
         rebuildManifestDiagnostics: [],
@@ -217,7 +193,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockRunHistoryService,
         projectUri,
@@ -240,7 +215,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockRunHistoryService,
         projectUri,
@@ -262,7 +236,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockRunHistoryService,
         projectUri,
@@ -339,7 +312,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockRunHistoryService,
         projectUri,
@@ -464,7 +436,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockRunHistoryService,
         projectUri,
@@ -535,7 +506,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockRunHistoryService,
         projectUri,
@@ -579,7 +549,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockRunHistoryService,
         projectUri,
@@ -631,7 +600,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockRunHistoryService,
         projectUri,
@@ -714,7 +682,6 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockRunHistoryService,
         projectUri,
