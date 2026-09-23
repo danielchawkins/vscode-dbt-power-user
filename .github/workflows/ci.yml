@@ -52,6 +52,13 @@ jobs:
         run: |
           just benchmark-runtime-vscode fusion-power-user-*.vsix
 
+      - name: Multi-root LSP smoke VS Code 1.128.x
+        env:
+          FPU_SKIP_INTEGRATION_COMPILE: "1"
+          FPU_SMOKE_REQUIRE_FUSION: "1"
+        run: |
+          just smoke-vscode --vsix fusion-power-user-*.vsix --fixture src/test/fixtures/multi-root
+
   smoke-cursor:
     needs: check
     runs-on: macos-latest
@@ -85,3 +92,10 @@ jobs:
       - name: Smoke Cursor pinned stable
         run: |
           just benchmark-runtime-cursor fusion-power-user-*.vsix
+
+      - name: Multi-root LSP smoke Cursor pinned stable
+        env:
+          FPU_SKIP_INTEGRATION_COMPILE: "1"
+          FPU_SMOKE_REQUIRE_FUSION: "1"
+        run: |
+          just smoke-cursor --vsix fusion-power-user-*.vsix --fixture src/test/fixtures/multi-root

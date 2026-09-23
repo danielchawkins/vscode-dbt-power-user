@@ -5,6 +5,18 @@ smoke_root=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=scripts/smoke/common.sh
 source "$smoke_root/common.sh"
 
+force=0
+case "${1:-}" in
+  --force)
+    force=1
+    ;;
+  "") ;;
+  *)
+    echo "usage: fetch-vscode.sh [--force]" >&2
+    exit 2
+    ;;
+esac
+
 dest="$cache_root/vscode-${FPU_VSCODE_VERSION}-${FPU_VSCODE_PLATFORM}"
 cli=$(host_cli vscode)
 verify_cached_vscode() {
@@ -19,7 +31,7 @@ if actual != expected:
 PY
 }
 
-if [[ -x "$cli" ]] && verify_cached_vscode; then
+if [[ "$force" -eq 0 ]] && [[ -x "$cli" ]] && verify_cached_vscode; then
   echo "VS Code ${FPU_VSCODE_VERSION} already cached at $dest"
   exit 0
 fi
