@@ -2,10 +2,8 @@ import {
   CancellationToken,
   ColorThemeKind,
   commands,
-  env,
   ProgressLocation,
   Range,
-  Uri,
   ViewColumn,
   Webview,
   WebviewOptions,
@@ -76,7 +74,6 @@ enum InboundCommand {
   Info = "info",
   Error = "error",
   UpdateConfig = "updateConfig",
-  OpenUrl = "openUrl",
   GetSummary = "getSummary",
   CancelQuery = "cancelQuery",
   SetContext = "setContext",
@@ -102,10 +99,6 @@ interface RecError {
 interface RecConfig {
   limit?: number;
   scale?: number;
-}
-
-interface RecOpenUrl {
-  url: string;
 }
 
 interface QueryHistory {
@@ -422,10 +415,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
                 .getConfiguration("dbt")
                 .update("perspectiveTheme", configMessage.perspectiveTheme);
             }
-            break;
-          case InboundCommand.OpenUrl:
-            const config = message as RecOpenUrl;
-            env.openExternal(Uri.parse(config.url));
             break;
           case InboundCommand.SetContext:
             this.dbtProjectContainer.setToGlobalState(

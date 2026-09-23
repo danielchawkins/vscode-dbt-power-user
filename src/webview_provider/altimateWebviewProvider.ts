@@ -5,7 +5,6 @@ import {
   CancellationToken,
   commands,
   Disposable,
-  env,
   Uri,
   Webview,
   WebviewOptions,
@@ -255,12 +254,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         case "webview:ready":
           this.onWebviewReady();
           break;
-        case "openURL":
-          if (!params.url) {
-            return;
-          }
-          env.openExternal(Uri.parse(params.url as string));
-          break;
         case "setContext":
           this.dbtProjectContainer.setToGlobalState(
             params.key as string,
@@ -442,17 +435,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         ),
       ),
     );
-    const LineageGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "lineage.gif",
-        ),
-      ),
-    );
     const codiconsUri = webview.asWebviewUri(
       Uri.joinPath(
         extensionUri,
@@ -481,7 +463,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
               vscode-resource protocol, and the CDN is unreachable from a
               webview, so a data URI is the only path that works offline.
               -->
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; worker-src blob:; font-src ${webview.cspSource} data:; style-src 'unsafe-inline' ${webview.cspSource}; img-src ${webview.cspSource} https: data:; script-src 'unsafe-eval' 'nonce-${nonce}' https://*.vscode-resource.vscode-cdn.net; connect-src https://*.s3.amazonaws.com">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; worker-src blob:; font-src ${webview.cspSource} data:; style-src 'unsafe-inline' ${webview.cspSource}; img-src ${webview.cspSource} https: data:; script-src 'unsafe-eval' 'nonce-${nonce}' https://*.vscode-resource.vscode-cdn.net">
             <title>VSCode DBT Power user extension</title>
             <link rel="stylesheet" type="text/css" href="${indexCss}">
             <link rel="stylesheet" type="text/css" href="${codiconsUri}">
@@ -494,7 +476,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
             <script nonce="${nonce}" >
               window.viewPath = "${this.viewPath}";
               var spinnerUrl = "${SpinnerUrl}"
-              var lineageGif = "${LineageGif}"
             </script>
             
             <script nonce="${nonce}" type="module" src="${indexJs}"></script>

@@ -812,7 +812,7 @@ Verify: one `package-lock.json` at the root and none under `webview_panels`; `np
 2. **The contract.** The discriminated unions, the guards, and the package's tests, which the widened Jest configuration already runs.
 3. **Host validation.** Guard the host's existing message-handling sites, one panel host at a time, logging and dropping an unrecognized message rather than throwing.
 4. **Panel entries.** Cut each panel's entry over behind `PanelHost` and replace that panel's ad-hoc command strings with the union as its entry lands.
-5. **Cleanup.** Delete the duplicated `openUrl` / `openURL` pair, once both ends speak only the union.
+5. **Cleanup.** The duplicated `openUrl` / `openURL` pair is already removed; confirm both ends speak only the union before the PR closes.
 
 Every revision compiles and its tests pass; the tip is the green unit.
 

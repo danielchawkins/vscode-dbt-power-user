@@ -1,5 +1,4 @@
 import { HTMLAttributes } from "react";
-import LineageGif from "./lineage.gif";
 import LoadingSpinnerUrl from "./spinner.gif";
 import "./styles.css";
 export { default as AddOutlineIcon } from "./add-outline.svg?react";
@@ -134,14 +133,6 @@ export const LoadingSpinner = (): JSX.Element => (
     // @ts-expect-error added in altimateWebViewProvider
     src={(window.spinnerUrl as string) ?? LoadingSpinnerUrl}
     alt="Altimate loader"
-  />
-);
-
-export const LineageDemo = (): JSX.Element => (
-  <img
-    // @ts-expect-error added in altimateWebViewProvider
-    src={(window.lineageGif as string) ?? LineageGif}
-    alt="Lineage demo"
   />
 );
 
