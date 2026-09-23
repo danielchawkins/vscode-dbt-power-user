@@ -1,188 +1,118 @@
-import { MarkdownString } from "vscode";
 import {
   generateHoverMarkdownString,
   generateMacroHoverMarkdown,
 } from "../../hover_provider/utils";
 
-// Add methods to MarkdownString mock for testing
-Object.defineProperty(MarkdownString.prototype, "appendMarkdown", {
-  value: function (value: string) {
-    this.value += value;
-  },
-});
-Object.defineProperty(MarkdownString.prototype, "appendText", {
-  value: function (value: string) {
-    this.value += value;
-  },
-});
-Object.defineProperty(MarkdownString.prototype, "supportThemeIcons", {
-  value: true,
-  writable: true,
-});
-
 describe("Hover Provider Utils", () => {
   describe("generateHoverMarkdownString", () => {
-    it("generates hover markdown for model without openChat links", () => {
-      const nodeMetaType = {
-        name: "my_model",
-        description: "A test model",
+    it("renders model with column fragments, no openChat or trailing separator", () => {
+      const model = {
+        name: "orders",
+        description: "Customer orders",
         columns: {
-          col1: {
-            name: "id",
+          order_id: {
+            name: "order_id",
             data_type: "int",
-            description: "Primary key",
+            description: "Unique order ID",
           },
-          col2: {
-            name: "name",
-            data_type: "string",
-            description: "User name",
+          customer_id: {
+            name: "customer_id",
+            data_type: "int",
+            description: "Customer reference",
           },
         },
-        unique_id: "model.test.my_model",
-        path: "/path/to/model.yml",
+        unique_id: "model.test.orders",
+        path: "/path/to/orders.yml",
       } as any;
 
-      const content = generateHoverMarkdownString(nodeMetaType, "model");
+      const modelMarkdown = generateHoverMarkdownString(model, "model").value;
 
-      expect(content).toBeInstanceOf(MarkdownString);
-      expect(content.isTrusted).toBe(true);
-      expect(content.supportHtml).toBe(true);
-
-      const markdown = content.value;
-      expect(markdown).toContain("my_model");
-      expect(markdown).toContain("A test model");
-      expect(markdown).toContain("id");
-      expect(markdown).toContain("int");
-      expect(markdown).toContain("Primary key");
-      expect(markdown).toContain("name");
-      expect(markdown).toContain("string");
-      expect(markdown).toContain("User name");
-
-      // Verify no openChat links
-      expect(markdown).not.toContain("command:altimate.openChat");
-      expect(markdown).not.toContain("Explain transformation");
+      expect(modelMarkdown).toContain("(column)&nbsp;</span><span>order_id");
+      expect(modelMarkdown).toContain("-&nbsp;int");
+      expect(modelMarkdown).toContain("Unique order ID");
+      expect(modelMarkdown).toContain("(column)&nbsp;</span><span>customer_id");
+      expect(modelMarkdown).toContain("Customer reference");
+      expect(modelMarkdown).not.toContain("command:altimate.openChat");
+      expect(modelMarkdown).not.toMatch(/---\s*$/);
     });
 
-    it("generates hover markdown for source without openChat links", () => {
-      const sourceMetaType = {
-        name: "my_source",
-        description: "External data source",
+    it("renders source with column fragments, no openChat or trailing separator", () => {
+      const source = {
+        name: "raw_users",
+        description: "Raw user data",
         columns: {
-          col1: {
-            name: "id",
-            data_type: "bigint",
-            description: "Row ID",
-          },
+          id: { name: "id", data_type: "bigint", description: "User ID" },
         },
-        unique_id: "source.test.my_source.table1",
-        path: "/path/to/source.yml",
+        unique_id: "source.test.raw.users",
+        path: "/path/to/sources.yml",
       } as any;
 
-      const content = generateHoverMarkdownString(sourceMetaType, "source");
+      const sourceMarkdown = generateHoverMarkdownString(
+        source,
+        "source",
+      ).value;
 
-      const markdown = content.value;
-      expect(markdown).toContain("my_source");
-      expect(markdown).toContain("External data source");
-      expect(markdown).toContain("id");
-      expect(markdown).toContain("Row ID");
-      expect(markdown).not.toContain("command:altimate.openChat");
+      expect(sourceMarkdown).toContain("(column)&nbsp;</span><span>id");
+      expect(sourceMarkdown).toContain("-&nbsp;bigint");
+      expect(sourceMarkdown).toContain("User ID");
+      expect(sourceMarkdown).not.toContain("command:altimate.openChat");
+      expect(sourceMarkdown).not.toMatch(/---\s*$/);
     });
   });
 
   describe("generateMacroHoverMarkdown", () => {
-    it("generates macro hover markdown with references without openChat links", () => {
-      const macroMetaData = {
-        name: "my_macro",
-        description: "A utility macro",
-        unique_id: "macro.test.my_macro",
+    it("renders macro args, references, dependencies, no openChat or trailing separator", () => {
+      const macro = {
+        name: "generate_alias",
+        description: "Generate table alias",
+        unique_id: "macro.test.generate_alias",
         arguments: [
-          {
-            name: "arg1",
-            type: "string",
-            description: "First argument",
-          },
+          { name: "name", type: "string", description: "Alias name" },
+          { name: "quote", type: "boolean", description: "Quote name" },
         ],
         depends_on: {
-          macros: [],
-          nodes: [],
+          macros: ["macro.test.helper"],
+          nodes: ["model.test.base"],
         },
       } as any;
 
-      const referencedBy = [
+      const refBy = [
         {
-          name: "model_a",
-          unique_id: "model.test.model_a",
-          path: "/path/to/model_a.sql",
+          name: "stg_customers",
+          unique_id: "model.test.stg_customers",
+          path: "/path/to/stg_customers.sql",
         } as any,
       ];
 
-      const event = {
-        macroMetaMap: new Map(),
-        nodeMetaMap: { nodes: () => [] },
-      } as any;
-
-      const content = generateMacroHoverMarkdown(
-        macroMetaData,
-        referencedBy,
-        event,
-      );
-
-      const markdown = content.value;
-      expect(markdown).toContain("my_macro");
-      expect(markdown).toContain("A utility macro");
-      expect(markdown).toContain("arg1");
-      expect(markdown).toContain("string");
-      expect(markdown).toContain("First argument");
-      expect(markdown).toContain("Referenced by");
-      expect(markdown).toContain("model_a");
-
-      // Verify no openChat links
-      expect(markdown).not.toContain("command:altimate.openChat");
-      expect(markdown).not.toContain("Explain what this macro does");
-      expect(markdown).not.toContain("Find risky usages");
-    });
-
-    it("generates macro hover markdown with dependencies without openChat links", () => {
-      const macroMetaData = {
-        name: "my_macro",
-        description: "Macro with dependencies",
-        unique_id: "macro.test.my_macro",
-        arguments: [],
-        depends_on: {
-          macros: ["macro.test.dep_macro"],
-          nodes: ["model.test.dep_model"],
-        },
-      } as any;
-
-      const depMacro = {
-        name: "dep_macro",
-        unique_id: "macro.test.dep_macro",
-        path: "/path/to/dep_macro.sql",
+      const helper = {
+        name: "helper",
+        unique_id: "macro.test.helper",
+        path: "/path/to/helper.sql",
       } as any;
 
       const depModel = {
-        name: "dep_model",
-        unique_id: "model.test.dep_model",
-        path: "/path/to/dep_model.sql",
+        name: "base",
+        unique_id: "model.test.base",
+        path: "/path/to/base.sql",
       } as any;
 
       const event = {
-        macroMetaMap: new Map([["macro.test.dep_macro", depMacro]]),
-        nodeMetaMap: {
-          nodes: () => [depModel],
-        },
+        macroMetaMap: new Map([["macro.test.helper", helper]]),
+        nodeMetaMap: { nodes: () => [depModel] },
       } as any;
 
-      const content = generateMacroHoverMarkdown(macroMetaData, [], event);
+      const markdown = generateMacroHoverMarkdown(macro, refBy, event).value;
 
-      const markdown = content.value;
-      expect(markdown).toContain("my_macro");
-      expect(markdown).toContain("Depends on");
-      expect(markdown).toContain("dep_macro");
-      expect(markdown).toContain("dep_model");
-
-      // Verify no openChat links
+      expect(markdown).toContain("(argument)&nbsp;</span><span>name");
+      expect(markdown).toContain("-&nbsp;string");
+      expect(markdown).toContain("Alias name");
+      expect(markdown).toContain("(argument)&nbsp;</span><span>quote");
+      expect(markdown).toContain("-&nbsp;boolean");
+      expect(markdown).toContain("[stg_customers](");
+      expect(markdown).toContain("[helper](");
+      expect(markdown).toContain("[base](");
       expect(markdown).not.toContain("command:altimate.openChat");
+      expect(markdown).not.toMatch(/---\s*$/);
     });
   });
 });

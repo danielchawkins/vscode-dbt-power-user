@@ -39,7 +39,6 @@ export function generateHoverMarkdownString(
     }
     content.appendMarkdown("</br>");
   }
-  addSeparator(content);
   return content;
 }
 
@@ -102,8 +101,6 @@ export const generateMacroHoverMarkdown = (
         .join(",&nbsp;")}</span>`,
     );
   }
-
-  addSeparator(content);
 
   return content;
 };
