@@ -175,7 +175,11 @@ export async function createLspFixture(
   let reverseServer: ReverseSocketServer | null = null;
   let stderr = "";
   let closed = false;
-  const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-lsp-"));
+  // realpathSync resolves macOS's /tmp -> /private/tmp symlink; Fusion canonicalizes
+  // --project-dir but not document URIs, so a symlinked root can desync the two.
+  const tempDir = fs.mkdtempSync(
+    path.join(fs.realpathSync(os.tmpdir()), "fusion-lsp-"),
+  );
   const temporaryProjectRoot = path.join(tempDir, path.basename(projectRoot));
   fs.cpSync(projectRoot, temporaryProjectRoot, { recursive: true });
   try {

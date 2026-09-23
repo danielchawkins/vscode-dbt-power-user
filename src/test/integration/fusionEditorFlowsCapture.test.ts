@@ -472,7 +472,7 @@ function prepareEditorFlowProject(tempRoot: string): void {
   );
   fs.writeFileSync(
     path.join(tempRoot, ".sqlfluff"),
-    ["[sqlfluff]", "dialect = snowflake", "templater = jinja", ""].join("\n"),
+    ["[sqlfluff]", "dialect = duckdb", "templater = jinja", ""].join("\n"),
   );
 }
 
@@ -1158,12 +1158,10 @@ async function openProjectDocuments(
 }
 
 async function runArm(arm: ArmId, sourceRoot: string): Promise<ArmCapture> {
+  // Matches Fusion Power User's buildWorkspaceConfigurationResponse (docs/refactor/
+  // official-client-contracts.md): only {lsp:{linter:{enabled}}} for section "dbt".
   const configurationBySection: Record<string, unknown> = {
-    dbt: {
-      maxErrorReporting: 100,
-      linter: { enabled: true },
-      formatter: { enabled: true },
-    },
+    dbt: { lsp: { linter: { enabled: true } } },
   };
   const fixture = await createLspFixture(sourceRoot, sourceRoot, {
     prepareProject: prepareEditorFlowProject,
@@ -1179,6 +1177,10 @@ async function runArm(arm: ArmId, sourceRoot: string): Promise<ArmCapture> {
       "--target",
       "test",
     ],
+    // cwd = project root and DBT_LSP_USE_TARGET_LSP=1 match the official client's
+    // spawn contract (docs/refactor/official-client-contracts.md).
+    env: { DBT_LSP_USE_TARGET_LSP: "1" },
+    useProjectRootAsCwd: true,
     configurationBySection,
     defaultRequestTimeoutMs: REQUEST_MS,
   });
