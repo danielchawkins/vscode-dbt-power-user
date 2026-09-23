@@ -14,6 +14,7 @@ import { ContentProviders } from "./content_provider";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DefinitionProviders } from "./definition_provider";
 import { HoverProviders } from "./hover_provider";
+import { registerFusionClientDiagnostics } from "./lsp/fusionClientDiagnostics";
 import { FusionClientPool } from "./lsp/fusionClientPool";
 import { FusionStatus } from "./lsp/fusionStatus";
 import { CONFIGURATION_SECTION } from "./projects/projectConfiguration";
@@ -133,6 +134,11 @@ export class DBTPowerUserExtension implements Disposable {
       await this.projectRegistry.initialize();
       this.fusionClientPool.initialize();
       this.fusionStatus.initialize();
+      registerFusionClientDiagnostics(
+        context,
+        this.projectRegistry,
+        this.fusionClientPool,
+      );
       await this.dbtProjectContainer.initializeDBTProjects();
       await this.statusBars.initialize();
     } catch (error) {
