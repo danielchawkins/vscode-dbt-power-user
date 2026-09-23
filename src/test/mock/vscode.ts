@@ -430,14 +430,19 @@ export const ViewColumn = {};
 export const Disposable = Object.assign(jest.fn(), { from: jest.fn() });
 export const Event = jest.fn();
 
-export const CancellationTokenSource = jest.fn().mockImplementation(() => ({
-  token: {
+export const CancellationTokenSource = jest.fn().mockImplementation(() => {
+  const token = {
     onCancellationRequested: jest.fn(),
     isCancellationRequested: false,
-  },
-  cancel: jest.fn(),
-  dispose: jest.fn(),
-}));
+  };
+  return {
+    token,
+    cancel: jest.fn(() => {
+      token.isCancellationRequested = true;
+    }),
+    dispose: jest.fn(),
+  };
+});
 
 export const CancellationToken = {
   None: {

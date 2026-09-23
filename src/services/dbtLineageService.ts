@@ -12,10 +12,10 @@ import {
   Table,
 } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
-import { CancellationTokenSource, env, Uri, window, workspace } from "vscode";
-import { ModelInfo } from "../altimate";
+import { CancellationTokenSource, window } from "vscode";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
-import { AltimateRequest, DBTTerminal, QueryManifestService } from "../modules";
+import { ModelInfo } from "../local/lineageTypes";
+import { DBTTerminal, QueryManifestService } from "../modules";
 import { extendErrorWithSupportLinks } from "../utils";
 
 export enum CllEvents {
@@ -32,13 +32,19 @@ const CAN_COMPILE_SQL_NODE = [
 const canCompileSQL = (nodeType: string) =>
   CAN_COMPILE_SQL_NODE.includes(nodeType);
 
+export type ColumnLineageCompute = typeof computeColumnLineage;
+
 export class DbtLineageService {
+  private columnLineageCompute: ColumnLineageCompute;
+
   public constructor(
-    private altimateRequest: AltimateRequest,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private queryManifestService: QueryManifestService,
-  ) {}
+    columnLineageCompute?: ColumnLineageCompute,
+  ) {
+    this.columnLineageCompute = columnLineageCompute ?? computeColumnLineage;
+  }
 
   getUpstreamTables({ table }: { table: string }) {
     return { tables: this.getConnectedTables("children", table) };
@@ -223,15 +229,12 @@ export class DbtLineageService {
       currAnd1HopTables,
       selectedColumn,
       showIndirectEdges,
-      eventType,
     }: {
       targets: [string, string][];
       upstreamExpansion: boolean;
       currAnd1HopTables: string[];
-      // select_column is used for pricing not business logic
       selectedColumn: { name: string; table: string };
       showIndirectEdges: boolean;
-      eventType: string;
     },
     cancellationTokenSource: CancellationTokenSource,
   ) {
@@ -249,14 +252,12 @@ export class DbtLineageService {
     }
 
     const modelInfos: ModelInfo[] = [];
-    let upstream_models: string[] = [];
-    let auxiliaryTables: string[] = []; // these are used for better sqlglot parsing
-    let sqlTables: string[] = []; // these are used which models should be compiled sql
+    let auxiliaryTables: string[] = [];
+    let sqlTables: string[] = [];
     currAnd1HopTables = Array.from(new Set(currAnd1HopTables));
     const currTables = new Set(targets.map((t) => t[0]));
     if (upstreamExpansion) {
       const hop1Tables = currAnd1HopTables.filter((t) => !currTables.has(t));
-      upstream_models = [...hop1Tables];
       sqlTables = [...hop1Tables];
       auxiliaryTables = project.getNonEphemeralParents(hop1Tables);
     } else {
@@ -278,13 +279,8 @@ export class DbtLineageService {
         abortController.signal,
       );
 
-    const selected_column = {
-      model_node: mappedNode[selectedColumn.table],
-      column: selectedColumn.name,
-    };
-
     if (cancellationTokenSource.token.isCancellationRequested) {
-      return { column_lineage: [] };
+      return;
     }
 
     const modelsToCompile = modelsToFetch.filter((key) => {
@@ -306,24 +302,9 @@ export class DbtLineageService {
         continue;
       }
       if (modelsToCompile.includes(key)) {
-        // rawSql only for debuging propose in backend
-        let rawSql: string = "";
-        if (node.path) {
-          try {
-            rawSql = (
-              await workspace.fs.readFile(Uri.file(node.path))
-            ).toString();
-          } catch (e) {
-            this.dbtTerminal.warn(
-              "readRawSql",
-              `Unable to read raw sql file ${node.path}`,
-            );
-          }
-        }
         modelInfos.push({
           model_node: node,
           compiled_sql: mappedCompiledSql[key] || bulkCompiledSql[key],
-          raw_sql: rawSql,
         });
       } else {
         modelInfos.push({ model_node: node });
@@ -355,7 +336,6 @@ export class DbtLineageService {
           modelInfos,
           upstreamExpansion,
           currAnd1HopTables,
-          selectedColumn,
         },
       );
       return { column_lineage: [] };
@@ -374,123 +354,56 @@ export class DbtLineageService {
 
     const modelDialect = project.getAdapterType();
 
-    // --- altimate-core: try local column lineage first ---
-    const cllEngine = workspace
-      .getConfiguration("dbt")
-      .get<string>("lineage.cllEngine", "sqlEngine");
-
-    this.dbtTerminal.debug(
-      "dbtLineageService:getConnectedColumns",
-      `Column lineage engine: ${cllEngine}`,
-    );
-
-    if (cllEngine === "sqlEngine") {
-      try {
-        const localResult = await computeColumnLineage(
-          modelDialect,
-          modelInfos,
-          {
-            showIndirectEdges,
-            isCancelled: () =>
-              cancellationTokenSource.token.isCancellationRequested,
-          },
-        );
-        if (localResult) {
-          this.dbtTerminal.debug(
-            "newLineagePanel:getConnectedColumns",
-            "altimate-core-node result",
-            {
-              lineageCount: localResult.column_lineage.length,
-              errors: localResult.errors,
-            },
-          );
-          return localResult;
-        }
-        this.dbtTerminal.warn(
-          "dbtLineageService:getConnectedColumns",
-          "computeColumnLineage returned null - altimate-core native module may not be loaded",
-        );
-      } catch (error) {
-        this.dbtTerminal.warn(
-          "newLineagePanel:getConnectedColumns",
-          "altimate-core-node failed, falling back to legacy API",
-          true,
-          error,
-        );
-      }
-    }
-    // --- end altimate-core ---
-
-    this.dbtTerminal.debug(
-      "dbtLineageService:getConnectedColumns",
-      "Using legacy API for column lineage",
-    );
-
     try {
+      const localResult = await this.columnLineageCompute(
+        modelDialect,
+        modelInfos,
+        {
+          showIndirectEdges,
+          isCancelled: () =>
+            cancellationTokenSource.token.isCancellationRequested,
+        },
+      );
+
+      // Check cancellation before returning to avoid partial results.
       if (cancellationTokenSource.token.isCancellationRequested) {
-        return { column_lineage: [] };
-      }
-      const sessionId = `${env.sessionId}-${selectedColumn.table}-${selectedColumn.name}`;
-      const request = {
-        model_dialect: modelDialect,
-        model_info: modelInfos,
-        upstream_expansion: upstreamExpansion,
-        upstream_models,
-        targets: targets.map((t) => ({ uniqueId: t[0], column_name: t[1] })),
-        selected_column: selected_column!,
-        session_id: sessionId,
-        show_indirect_edges: showIndirectEdges,
-        event_type: eventType,
-      };
-      this.dbtTerminal.debug(
-        "newLineagePanel:getConnectedColumns",
-        "request",
-        request,
-      );
-      const startTime = Date.now();
-      const result = await this.altimateRequest.getColumnLevelLineage(request);
-      const apiTime = Date.now() - startTime;
-      this.dbtTerminal.debug(
-        "newLineagePanel:getConnectedColumns",
-        "response",
-        result,
-      );
-      console.log("lineageTimings:", {
-        apiTime: apiTime.toString(),
-        modelInfosLength: modelInfos.length.toString(),
-      });
-      if (!result.errors_dict && result.errors && result.errors.length > 0) {
-        window.showErrorMessage(
-          extendErrorWithSupportLinks(result.errors.join("\n")),
-        );
-      }
-      const column_lineage =
-        result.column_lineage.map((c) => ({
-          source: [c.source.uniqueId, c.source.column_name],
-          target: [c.target.uniqueId, c.target.column_name],
-          type: c.type,
-          viewsType: c.views_type,
-          viewsCode: c.views_code,
-        })) || [];
-      return {
-        column_lineage,
-        confidence: result.confidence,
-        errors: result.errors_dict,
-      };
-    } catch (error) {
-      if (error instanceof Error && error.name === "AbortError") {
-        window.showErrorMessage(
-          extendErrorWithSupportLinks(
-            "Fetching column level lineage timed out.",
-          ),
-        );
         return;
       }
+
+      if (localResult) {
+        this.dbtTerminal.debug(
+          "dbtLineageService:getConnectedColumns",
+          "local column lineage result",
+          {
+            lineageCount: localResult.column_lineage.length,
+            errors: localResult.errors,
+          },
+        );
+        return localResult;
+      }
+
       window.showErrorMessage(
         extendErrorWithSupportLinks(
-          "Could not generate column level lineage: " +
-            (error as Error).message,
+          "Unable to compute column lineage. The native SQL engine is not loaded.",
         ),
+      );
+      this.dbtTerminal.warn(
+        "dbtLineageService:getConnectedColumns",
+        "computeColumnLineage returned null",
+      );
+      return;
+    } catch (error) {
+      window.showErrorMessage(
+        extendErrorWithSupportLinks(
+          "Unable to compute column lineage: " +
+            (error instanceof Error ? error.message : String(error)),
+        ),
+      );
+      this.dbtTerminal.error(
+        "dbtLineageService:getConnectedColumns",
+        "local column lineage computation failed",
+        error,
+        false,
       );
       return;
     }

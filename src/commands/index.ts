@@ -17,7 +17,6 @@ import {
   window,
   workspace,
 } from "vscode";
-import { AltimateRequest } from "../altimate";
 import {
   CteCodeLensProvider,
   CteInfo,
@@ -36,7 +35,6 @@ import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { deepEqual, getFirstWorkspacePath } from "../utils";
 import { RunModel } from "./runModel";
 import { RunTest } from "./runTest";
-import { ValidateSql } from "./validateSql";
 import { WalkthroughCommands } from "./walkthroughCommands";
 
 export class VSCodeCommands implements Disposable {
@@ -46,7 +44,6 @@ export class VSCodeCommands implements Disposable {
     private dbtProjectContainer: DBTProjectContainer,
     private runModel: RunModel,
     private runTest: RunTest,
-    private validateSql: ValidateSql,
     private walkthroughCommands: WalkthroughCommands,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
@@ -54,7 +51,6 @@ export class VSCodeCommands implements Disposable {
     @inject(PythonEnvironment)
     private pythonEnvironment: PythonEnvironment,
     private dbtClient: DBTClient,
-    private altimate: AltimateRequest,
     private runHistoryService: RunHistoryService,
     private cteProfilerService: CteProfilerService,
     private cteProfilerDecorationProvider: CteProfilerDecorationProvider,
@@ -384,9 +380,6 @@ export class VSCodeCommands implements Disposable {
           RunModelType.BUILD_CHILDREN_PARENTS,
         ),
       ),
-      commands.registerCommand("dbtPowerUser.validateSql", () =>
-        this.validateSql.validateSql(),
-      ),
       commands.registerCommand("dbtPowerUser.validateProject", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
           this.dbtProjectContainer.getFromWorkspaceState(
@@ -558,7 +551,6 @@ export class VSCodeCommands implements Disposable {
           this.diagnosticsOutputChannel.logNewLine();
 
           // Printing extension and setup info
-          const apiConnectivity = await this.altimate.checkApiConnectivity();
           this.diagnosticsOutputChannel.logBlock([
             `Python Path=${this.pythonEnvironment.pythonPath}`,
             `VSCode version=${version}`,
@@ -568,10 +560,6 @@ export class VSCodeCommands implements Disposable {
             }`,
             "DBT integration mode=fusion",
             `First workspace path=${getFirstWorkspacePath()}`,
-            `Altimate API connectivity=${apiConnectivity.status}`,
-            apiConnectivity.errorMsg
-              ? `Altimate API connectivity error=${apiConnectivity.errorMsg}`
-              : "",
           ]);
           this.diagnosticsOutputChannel.logNewLine();
 
@@ -671,12 +659,6 @@ export class VSCodeCommands implements Disposable {
       this.diagnosticsOutputChannel.logLine(
         `DBT version=${dbtVersion.join(".")}`,
       );
-    }
-
-    if (!project.getPythonBridgeStatus()) {
-      this.diagnosticsOutputChannel.logLine("Python bridge is not connected");
-    } else {
-      this.diagnosticsOutputChannel.logLine("Python bridge is connected");
     }
 
     this.diagnosticsOutputChannel.logNewLine();

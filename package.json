@@ -434,12 +434,6 @@
         "category": "dbt Power User"
       },
       {
-        "command": "dbtPowerUser.validateSql",
-        "title": "Validate SQL",
-        "category": "dbt Power User",
-        "icon": "$(circuit-board)"
-      },
-      {
         "command": "dbtPowerUser.validateProject",
         "title": "Validate dbt Project",
         "category": "dbt Power User"
@@ -690,11 +684,6 @@
           "command": "dbtPowerUser.compileCurrentModel",
           "group": "dbt@4",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
-        },
-        {
-          "command": "dbtPowerUser.validateSql",
-          "group": "dbt@4",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/ && resourceScheme != 'query-preview'"
         }
       ],
       "editor/title/run": [
@@ -913,7 +902,6 @@
     "@vscode/vsce": "^4.0.0",
     "inversify": "^8.2.3",
     "node-abort-controller": "^3.1.1",
-    "node-fetch": "^3.3.2",
     "parse-diff": "^0.12.0",
     "reflect-metadata": "^0.2.2",
     "semver": "^7.8.5",

@@ -26,7 +26,6 @@ import {
   workspace,
 } from "vscode";
 import { isMap, isScalar, isSeq, parseDocument } from "yaml";
-import { AltimateRequest } from "../altimate";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
@@ -80,7 +79,6 @@ export class NewLineagePanel
 
   public constructor(
     protected dbtProjectContainer: DBTProjectContainer,
-    private altimate: AltimateRequest,
     @inject("DBTTerminal")
     private terminal: DBTTerminal,
     private dbtLineageService: DbtLineageService,
@@ -89,7 +87,6 @@ export class NewLineagePanel
   ) {
     super(
       dbtProjectContainer,
-      altimate,
       eventEmitterService,
       terminal,
       queryManifestService,
@@ -250,10 +247,9 @@ export class NewLineagePanel
     if (command === "getConnectedColumns") {
       try {
         const body = await this.dbtLineageService.getConnectedColumns(
-          {
-            ...params,
-            eventType: "column_lineage",
-          },
+          params as Parameters<
+            typeof this.dbtLineageService.getConnectedColumns
+          >[0],
           this.cancellationTokenSource ?? new CancellationTokenSource(),
         );
         this._panel?.webview.postMessage({
@@ -270,61 +266,6 @@ export class NewLineagePanel
           command: "response",
           args: { id, error, status: false },
         });
-      }
-      return;
-    }
-
-    if (command === "sendFeedback") {
-      try {
-        await this.altimate.sendFeedback({
-          feedback_src: "dbtpu-extension",
-          feedback_text: params.feedback_text,
-          feedback_value: params.feedback_value,
-          data: {},
-        });
-        this._panel?.webview.postMessage({
-          command: "response",
-          args: { id, syncRequestId, status: true },
-        });
-      } catch (error) {
-        this._panel?.webview.postMessage({
-          command: "response",
-          args: { id, syncRequestId, status: false },
-        });
-        window.showErrorMessage(
-          extendErrorWithSupportLinks(
-            "Could not send feedback: " + (error as Error).message,
-          ),
-        );
-      }
-      return;
-    }
-
-    if (command === "exportLineage") {
-      try {
-        const body = await this.altimate.exportLineage({
-          name: params.name,
-          lineage_data: params.lineage_data,
-        });
-        this._panel?.webview.postMessage({
-          command: "response",
-          args: { id, syncRequestId, body, status: true },
-        });
-      } catch (error) {
-        this._panel?.webview.postMessage({
-          command: "response",
-          args: {
-            id,
-            syncRequestId,
-            error: (error as Error).message,
-            status: false,
-          },
-        });
-        window.showErrorMessage(
-          extendErrorWithSupportLinks(
-            "Could not export lineage: " + (error as Error).message,
-          ),
-        );
       }
       return;
     }

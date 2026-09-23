@@ -8,7 +8,6 @@ import {
   DBT_PROJECT_FILE,
   DBTCommand,
   DBTCommandExecution,
-  DBTCommandExecutionInfrastructure,
   DBTCommandFactory,
   DBTDiagnosticData,
   DBTNode,
@@ -32,7 +31,6 @@ import {
   RunResultsEventData,
   SourceNode,
   Table,
-  validateSQL,
 } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import * as path from "path";
@@ -53,7 +51,7 @@ import {
   window,
   workspace,
 } from "vscode";
-import { AltimateRequest, ModelNode } from "../altimate";
+import { ModelNode } from "../local/lineageTypes";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
 import {
@@ -139,12 +137,10 @@ export class DBTProject implements Disposable {
     private dbtCommandFactory: DBTCommandFactory,
     private terminal: DBTTerminal,
     private eventEmitterService: SharedStateService,
-    private executionInfrastructure: DBTCommandExecutionInfrastructure,
     private dbtIntegrationAdapterFactory: (
       projectRoot: string,
       deferConfig: DeferConfig | undefined,
     ) => DBTProjectIntegrationAdapter,
-    private altimate: AltimateRequest,
     private runHistoryService: RunHistoryService,
     path: Uri,
     private _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
@@ -378,10 +374,6 @@ export class DBTProject implements Disposable {
       return;
     }
     return path.join(targetPath, CATALOG_FILE);
-  }
-
-  getPythonBridgeStatus() {
-    return this.dbtProjectIntegration.getPythonBridgeStatus();
   }
 
   getAllDiagnostic(): Diagnostic[] {
@@ -718,34 +710,6 @@ export class DBTProject implements Disposable {
   async unsafeCompileNode(modelName: string): Promise<string | undefined> {
     this.throwDiagnosticsErrorIfAvailable();
     return this.dbtProjectIntegration.unsafeCompileNode(modelName);
-  }
-
-  async validateSql(request: {
-    sql: string;
-    dialect: string;
-    models: any[];
-  }): Promise<Awaited<ReturnType<typeof validateSQL>>> {
-    const { sql, dialect, models } = request;
-    this.throwDiagnosticsErrorIfAvailable();
-    const sqlValidationThread = this.executionInfrastructure.createPythonBridge(
-      this.projectRoot.fsPath,
-    );
-    try {
-      return await validateSQL(sql, dialect, models, sqlValidationThread);
-    } finally {
-      await this.executionInfrastructure.closePythonBridge(sqlValidationThread);
-    }
-  }
-
-  async validateSQLDryRun(query: string) {
-    try {
-      return this.dbtProjectIntegration.validateSQLDryRun(query);
-    } catch (exc) {
-      const exception = exc as { exception: { message: string } };
-      window.showErrorMessage(
-        exception.exception.message || "Could not validate sql with dry run.",
-      );
-    }
   }
 
   getDBTVersion(): number[] | undefined {

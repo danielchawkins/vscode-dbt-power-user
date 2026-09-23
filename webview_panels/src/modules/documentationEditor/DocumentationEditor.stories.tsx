@@ -76,8 +76,6 @@ export const ModelDocGenView = {
         switch (request.command) {
           case `getTestCode`:
             return { code: `select * from users` };
-          case "fetch":
-            return {};
         }
       },
       timer: 500,

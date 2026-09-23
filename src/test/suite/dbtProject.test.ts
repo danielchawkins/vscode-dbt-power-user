@@ -1,7 +1,6 @@
 import {
   Catalog,
   DBT_PROJECT_FILE,
-  DBTCommandExecutionInfrastructure,
   DBTCommandFactory,
   DBTDiagnosticData,
   DBTProjectIntegrationAdapterEvents,
@@ -22,7 +21,6 @@ import {
 import { EventEmitter } from "events";
 import * as path from "path";
 import * as vscode from "vscode";
-import { AltimateRequest } from "../../altimate";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
@@ -31,11 +29,9 @@ import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
 describe("DBTProject Test Suite", () => {
   let mockTerminal: jest.Mocked<DBTTerminal>;
-  let mockAltimate: jest.Mocked<AltimateRequest>;
   let mockPythonEnvironment: jest.Mocked<PythonEnvironment>;
   let mockSharedStateService: jest.Mocked<SharedStateService>;
   let mockRunHistoryService: jest.Mocked<RunHistoryService>;
-  let mockExecutionInfrastructure: jest.Mocked<DBTCommandExecutionInfrastructure>;
   let mockCommandFactory: jest.Mocked<DBTCommandFactory>;
   let mockProjectIntegration: any;
   let mockDbtProjectLog: jest.Mocked<DBTProjectLog>;
@@ -87,18 +83,6 @@ describe("DBTProject Test Suite", () => {
       warn: jest.fn(),
     } as unknown as jest.Mocked<DBTTerminal>;
 
-    // Mock AltimateRequest
-    mockAltimate = {
-      enabled: jest.fn().mockReturnValue(true),
-      isAuthenticated: jest.fn().mockReturnValue(true),
-      validateCredentials: jest.fn(),
-      checkApiConnectivity: jest.fn(),
-      getAIKey: jest.fn().mockReturnValue("0123456789abcdef0123456789abcdef"),
-      getInstanceName: jest.fn().mockReturnValue("test-instance"),
-      getAltimateUrl: jest.fn().mockReturnValue("https://test.altimate.ai"),
-      dispose: jest.fn(),
-    } as unknown as jest.Mocked<AltimateRequest>;
-
     // Mock PythonEnvironment
     mockPythonEnvironment = {
       initialize: jest.fn(() => Promise.resolve()),
@@ -114,27 +98,6 @@ describe("DBTProject Test Suite", () => {
     mockRunHistoryService = {
       addEntry: jest.fn(),
     } as unknown as jest.Mocked<RunHistoryService>;
-
-    // Mock DBTCommandExecutionInfrastructure
-    mockExecutionInfrastructure = {
-      createPythonBridge: jest.fn().mockImplementation(() => ({
-        ex: jest.fn(),
-        lock: jest.fn(),
-        pid: 1234,
-        end: jest.fn(),
-        disconnect: jest.fn(),
-        kill: jest.fn(),
-        ex_json: jest.fn(),
-        exNB: jest.fn(),
-        exAsync: jest.fn(),
-        runJupyterKernel: jest.fn(),
-        stdin: null,
-        stdout: null,
-        stderr: null,
-        connected: true,
-      })),
-      closePythonBridge: jest.fn(),
-    } as unknown as jest.Mocked<DBTCommandExecutionInfrastructure>;
 
     // Mock DBTCommandFactory
     mockCommandFactory = {
@@ -173,7 +136,6 @@ describe("DBTProject Test Suite", () => {
       getModelPaths: jest.fn().mockReturnValue(["/project/models"]),
       getSeedPaths: jest.fn().mockReturnValue(["/project/seeds"]),
       getMacroPaths: jest.fn().mockReturnValue(["/project/macros"]),
-      getPythonBridgeStatus: jest.fn().mockReturnValue("ready"),
       getDiagnostics: jest.fn().mockReturnValue({
         pythonBridgeDiagnostics: [],
         rebuildManifestDiagnostics: [],
@@ -231,9 +193,7 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -255,9 +215,7 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -266,8 +224,6 @@ describe("DBTProject Test Suite", () => {
       await dbtProject.initialize();
 
       expect(mockProjectIntegration.initialize).toHaveBeenCalled();
-      expect(mockAltimate.checkApiConnectivity).not.toHaveBeenCalled();
-      expect(mockAltimate.validateCredentials).not.toHaveBeenCalled();
     });
   });
 
@@ -280,9 +236,7 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -358,9 +312,7 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -484,9 +436,7 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -556,9 +506,7 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -590,22 +538,6 @@ describe("DBTProject Test Suite", () => {
       // Check that error message was shown to user
       expect(vscode.window.showErrorMessage).toHaveBeenCalled();
     });
-
-    it("should validate SQL", async () => {
-      const request = {
-        sql: "SELECT * FROM table",
-        dialect: "postgres",
-        models: [],
-      };
-
-      // The real validateSQL requires a working python bridge; here we just
-      // verify the wiring: the python bridge is created and closed around the
-      // call, even when validation itself surfaces an error.
-      await expect(dbtProject.validateSql(request)).rejects.toBeDefined();
-
-      expect(mockExecutionInfrastructure.createPythonBridge).toHaveBeenCalled();
-      expect(mockExecutionInfrastructure.closePythonBridge).toHaveBeenCalled();
-    });
   });
 
   describe("Query Execution", () => {
@@ -617,9 +549,7 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -670,9 +600,7 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -754,9 +682,7 @@ describe("DBTProject Test Suite", () => {
         mockCommandFactory,
         mockTerminal,
         mockSharedStateService,
-        mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
