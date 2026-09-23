@@ -68,9 +68,9 @@ Steps 1.2 through 3.15 and Phase 4.1 through 4.5 are complete at this tip. Phase
 
 **Research artifacts precede plan integration.** Stack reviewed research revisions directly beneath the plan revision that consumes them, so every link resolves and evidence changes remain independently reviewable.
 
-**Correction to the plan's file path for 1.2:** `DBTFusionCommandDetection` lives in `@altimateai/dbt-integration`, not `src/dbt_client/dbtFusionCommandIntegration.ts`. Do not patch `node_modules`. Put `parseFusionVersion` / `judgeFusionVersion` in `src/fusion/fusionVersion.ts` and wrap detection in this extension (new adapter bound in `src/inversify.config.ts`, or a wrap of `DBTClient.detectDBT`). The library class can stay until Phase 8.
+**Correction to the plan's file path for 1.2:** `DBTFusionCommandDetection` lives in `@altimateai/dbt-integration`, not `src/dbt_client/dbtFusionCommandIntegration.ts`. Do not patch `node_modules`. Put `parseFusionVersion` / `judgeFusionVersion` in `src/fusion/fusionVersion.ts`. Executable resolution and version judgment are per Declared Project through `ConfiguredFusionExecutableResolver` during `FusionProjectIntegration.initialize`; there is no global bare-`dbt` activation gate.
 
-**Correction for 1.3:** collaborators are constructed by Inversify before `activate()`. An early return in `activate()` cannot un-construct them. The contract is: decide conflict and `enabled` before `detectDBT()`, before `initializeDBTProjects()`, before MCP start, before watchers and status bars initialize, and before any notification other than the conflict error. Do not re-architect the container in this step.
+**Correction for 1.3:** collaborators are constructed by Inversify before `activate()`. An early return in `activate()` cannot un-construct them. The contract is: decide conflict and `enabled` before `initializeDBTProjects()`, before MCP start, before watchers and status bars initialize, and before any notification other than the conflict error. Do not re-architect the container in this step.
 
 ## File-overlap reference
 
@@ -100,7 +100,7 @@ Copy the contract and verification from `fusion-lsp-plan.md`. The notes below ar
 
 - If `extensions.getExtension("innoverio.vscode-dbt-power-user")` is defined: one blocking error, action `workbench.extensions.uninstallExtension`, return. That is the only startup notification this step may add.
 - Resource-scoped `dbt.enabled` (keep the upstream key until Phase 9) false: return equally early, silently.
-- Tests: neither path calls `detectDBT` / `initializeDBTProjects` / MCP update. Closes consumer case 7.
+- Tests: neither path calls `initializeDBTProjects` / MCP update. Closes consumer case 7.
 
 ### Phase 2 — complete
 

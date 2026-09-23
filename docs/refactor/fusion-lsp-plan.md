@@ -53,7 +53,7 @@ Branch `fusion-lsp-client` is based on upstream `0.64.6`. No LSP code exists; `v
 
 Load-bearing product structure the plan depends on:
 
-- `src/extension.ts` → `src/dbtPowerUserExtension.ts` (`DBTPowerUserExtension.activate`) is the single activation path. It constructs fifteen collaborators through Inversify and calls `detectDBT()` then `initializeDBTProjects()`.
+- `src/extension.ts` → `src/dbtPowerUserExtension.ts` (`DBTPowerUserExtension.activate`) is the single activation path. It constructs collaborators through Inversify, initializes the Project Registry and Fusion LSP pool/status, then calls `initializeDBTProjects()`. Executable resolution is per Declared Project through `ConfiguredFusionExecutableResolver`; a missing executable records project diagnostics and must not block siblings or activation.
 - `src/inversify.config.ts` holds every factory binding. Step 3.1 collapsed the integration-mode switches, so Fusion is the only reachable `DBTProjectIntegration` at runtime.
 - Before 4.4, `src/dbt_client/dbtWorkspaceFolder.ts` implemented recursive discovery through `workspace.findFiles`, `allowListFolders`, and `DBTProjectDetection.discoverProjects`. Phase 4 replaced it with Declared Projects.
 - `src/dbt_client/event/manifestCacheChangedEvent.ts` declares `ManifestCacheProjectAddedEvent`, carrying the project handle, the eleven metadata maps whose types (`NodeMetaMap`, `MacroMetaMap`, `SourceMetaMap`, `GraphMetaMap`, `TestMetaMap`, and the rest) come from `@altimateai/dbt-integration`, and `modelDepthMap`. Every panel, tree view, lineage view, and code lens consumes it through `src/services/queryManifestService.ts`, which keys by project root and serves `getEventByCurrentProject()` and `getEventByDocument()`. The interface is declared in this repository, so stamping it is a local change.
@@ -208,11 +208,13 @@ export function judgeFusionVersion(v: FusionVersion | undefined, raw: string): F
 
 `parseFusionVersion` must accept `dbt 2.0.5` — the actual Fusion 2.x output — and must reject dbt Core's `installed: 1.x` shape. Do not require the literal `dbt-fusion`. "Warn once" means once per extension installation per major version, keyed in `ExtensionContext.globalState`.
 
+Since 1.2's original wrapper was replaced by per-project resolution, `ConfiguredFusionExecutableResolver.probe` (in `src/fusion/fusionExecutable.ts`) is where a `judgeFusionVersion` verdict of `untestedMajor` turns into a usable `FusionExecutable` instead of a blocking failure. The resolver is a singleton shared by both the LSP pool and every project's `FusionProjectIntegration`, so it is the one place that sees every resolution; it logs the once-per-major warning through the injected `DBTTerminal.warn` (never `window.show*Message`) and records `fusionVersion.warnedMajor.<major>` through `DBTProjectContainer`'s `globalState` accessors, wired in `src/inversify.config.ts`.
+
 Verify: unit tests in `src/test/suite/fusionVersion.test.ts` covering real `dbt 2.0.5` output, `dbt 3.0.0` (untested major), `dbt 2.0.4` (too old), a dbt Core `--version` block (not Fusion), and empty stdout. This closes consumer characterization case 2.
 
 **1.3 — Conflict guard and `enabled` setting — complete.** In `src/dbtPowerUserExtension.ts`, before any other activation work: if `extensions.getExtension("innoverio.vscode-dbt-power-user")` is defined, show one blocking error naming the conflicting extension and offering an "Uninstall Power User" action that runs `workbench.extensions.uninstallExtension`, then return without registering anything. Separately, return early when the resource-scoped `enabled` setting is false.
 
-Contract: both are decided before `detectDBT()`; neither starts a process, registers a provider, or creates a watcher. The conflict error is the one notification permitted at startup.
+Contract: both are decided before project initialization; neither starts a process, registers a provider, or creates a watcher. The conflict error is the one notification permitted at startup.
 
 Verify: unit tests asserting no disposables are registered and no process is spawned in each case. This closes consumer characterization case 7 and makes the consumer's injected `dbt.enabled` patch unnecessary.
 
