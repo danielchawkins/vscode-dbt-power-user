@@ -355,28 +355,6 @@ export class YamlModelHoverProvider implements HoverProvider, Disposable {
     content.appendText("\n");
     content.appendText("\n");
 
-    const suggestDescArgs = encodeURIComponent(
-      JSON.stringify({
-        initialMessage: `Suggest a clear, concise description for the column \`${columnName}\` in the dbt model \`${modelName}\`. The description should explain what the column represents, its data type if known, and any business context.`,
-        title: `Suggest description: ${columnName}`,
-        beside: true,
-      }),
-    );
-    content.appendMarkdown(
-      `[$(pencil) Suggest description](command:altimate.openChat?${suggestDescArgs})\n\n`,
-    );
-
-    const suggestTestsArgs = encodeURIComponent(
-      JSON.stringify({
-        initialMessage: `Suggest appropriate dbt tests for the column \`${columnName}\` in the model \`${modelName}\`. Consider: not_null, unique, accepted_values, relationships, and any custom tests that make sense based on the column name and context.`,
-        title: `Suggest tests: ${columnName}`,
-        beside: true,
-      }),
-    );
-    content.appendMarkdown(
-      `[$(beaker) Suggest tests](command:altimate.openChat?${suggestTestsArgs})`,
-    );
-
     return new Hover(content);
   }
 
