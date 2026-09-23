@@ -318,6 +318,30 @@ describe("Fusion executable resolver", () => {
     expectInheritedEnv(env);
   });
 
+  it("preserves DBT_PROFILES_DIR from the host environment in the resolved env", async () => {
+    const priorProfilesDir = process.env.DBT_PROFILES_DIR;
+    process.env.DBT_PROFILES_DIR = "/Users/someone/.dbt";
+
+    try {
+      const { resolver, isExecutable, runVersion } = createResolver({
+        getConfiguredPath: () => "/opt/dbt",
+      });
+      isExecutable.mockResolvedValue(true);
+      runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+
+      const result = await resolver.resolve(scope);
+
+      assertFusionExecutable(result);
+      expect(result.env.DBT_PROFILES_DIR).toBe("/Users/someone/.dbt");
+    } finally {
+      if (priorProfilesDir === undefined) {
+        delete process.env.DBT_PROFILES_DIR;
+      } else {
+        process.env.DBT_PROFILES_DIR = priorProfilesDir;
+      }
+    }
+  });
+
   it("returns FusionExecutable for an ok version verdict", async () => {
     const raw = "dbt 2.0.5\n";
     const { resolver, findOnPath, runVersion } = createResolver();
