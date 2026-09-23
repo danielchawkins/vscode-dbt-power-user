@@ -2,12 +2,7 @@ nested_analytics:
   target: test
   outputs:
     test:
-      type: snowflake
-      account: dummy
-      user: dummy
-      password: dummy
-      role: dummy
-      database: dummy
-      warehouse: dummy
-      schema: test
+      type: duckdb
+      path: "target/nested_analytics.duckdb"
+      schema: main
       threads: 1
