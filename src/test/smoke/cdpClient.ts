@@ -1,3 +1,4 @@
+import { commands } from "vscode";
 import {
   allDispatchedSlotsSettled,
   assembleEvaluationResults,
@@ -13,6 +14,9 @@ import {
 } from "./notificationToasts";
 
 export type SmokeHost = "vscode" | "cursor";
+
+const SHOW_NOTIFICATIONS = "notifications.showList";
+const HIDE_NOTIFICATIONS = "notifications.hideList";
 
 interface CdpTarget {
   type: string;
@@ -109,6 +113,27 @@ export async function readWorkbenchNotificationTexts(
   throw lastError instanceof Error
     ? lastError
     : new Error(String(lastError ?? "CDP notification read failed"));
+}
+
+/** Fails when the workbench shows any notification, toast or centered. */
+export async function assertNoWorkbenchNotifications(
+  cdpPort: string,
+  smokeHost: string,
+): Promise<void> {
+  await commands.executeCommand(SHOW_NOTIFICATIONS);
+  try {
+    const notifications = await readWorkbenchNotificationTexts(
+      cdpPort,
+      smokeHost,
+    );
+    if (notifications.length > 0) {
+      throw new Error(
+        `Unexpected workbench notifications: ${JSON.stringify(notifications)}`,
+      );
+    }
+  } finally {
+    await commands.executeCommand(HIDE_NOTIFICATIONS);
+  }
 }
 
 export async function waitForWebviewPaint(

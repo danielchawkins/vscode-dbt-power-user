@@ -5,16 +5,15 @@ import "reflect-metadata";
 import * as vscode from "vscode";
 import { ActivationMetric, readActivationMetric } from "./activationReport";
 import {
-  readWorkbenchNotificationTexts,
+  assertNoWorkbenchNotifications,
   validateSmokeHost,
   waitForWebviewPaint,
   WebviewPaintMetric,
 } from "./cdpClient";
+import { currentFixtureName } from "./fixtureContext";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
-const SHOW_NOTIFICATIONS = "notifications.showList";
-const HIDE_NOTIFICATIONS = "notifications.hideList";
 
 interface HostRuntimeTiming {
   viewPath: string;
@@ -45,7 +44,11 @@ suite("Pinned-host VSIX smoke", function () {
     );
   });
 
-  test("activates the VSIX and opens retained panels", async () => {
+  test("activates the VSIX and opens retained panels", async function () {
+    if (currentFixtureName() !== "single-project") {
+      this.skip();
+      return;
+    }
     const cdpPort = process.env.FPU_CDP_PORT;
     assert.ok(cdpPort, "smoke requires CDP port");
     const smokeHost = validateSmokeHost(process.env.FPU_SMOKE_HOST ?? "");
@@ -147,26 +150,6 @@ suite("Pinned-host VSIX smoke", function () {
     }
   });
 });
-
-async function assertNoWorkbenchNotifications(
-  cdpPort: string,
-  smokeHost: string,
-): Promise<void> {
-  await vscode.commands.executeCommand(SHOW_NOTIFICATIONS);
-  try {
-    const notifications = await readWorkbenchNotificationTexts(
-      cdpPort,
-      smokeHost,
-    );
-    if (notifications.length > 0) {
-      throw new Error(
-        `Unexpected workbench notifications: ${JSON.stringify(notifications)}`,
-      );
-    }
-  } finally {
-    await vscode.commands.executeCommand(HIDE_NOTIFICATIONS);
-  }
-}
 
 async function waitForHostRuntimeTimings(): Promise<HostRuntimeTiming[]> {
   for (let attempt = 0; attempt < 100; attempt += 1) {
