@@ -1,18 +1,10 @@
 import { HTMLAttributes } from "react";
 import LoadingSpinnerUrl from "./spinner.gif";
 import "./styles.css";
-export { default as AddOutlineIcon } from "./add-outline.svg?react";
-export { default as AltimateIcon } from "./altimate.svg?react";
-export { default as BlogIcon } from "./blog.svg?react";
 export { default as CheckBlueIcon } from "./check-blue.svg?react";
-export { default as CheckedSquareIcon } from "./checked-square.svg?react";
-export { default as CoachAIIcon } from "./coachAi.svg?react";
-export { default as ContactUsIcon } from "./contact.svg?react";
-export { default as DislikeIcon } from "./dislike.svg?react";
 export { default as DocsIcon } from "./docs.svg?react";
 export { default as EditIcon } from "./edit.svg?react";
 export { default as ErrorIcon } from "./error.svg?react";
-export { default as FolderIcon } from "./folder.svg?react";
 export { default as HelpIcon } from "./help.svg?react";
 export { default as LikeIcon } from "./like.svg?react";
 export { default as LoaderIcon } from "./loader.svg?react";
@@ -22,12 +14,8 @@ export { default as PropagateIcon } from "./propagate.svg?react";
 export { default as SelectCheckedIcon } from "./select-checked.svg?react";
 export { default as SelectUncheckedIcon } from "./select-unchecked.svg?react";
 export { default as ShinesIcon } from "./shines.svg?react";
-export { default as SlackIcon } from "./slack.svg?react";
-export { default as EmptySquareIcon } from "./square.svg?react";
 export { default as TestsIcon } from "./tests.svg?react";
-export { default as ThinkingIcon } from "./thinking.svg?react";
 export { default as UncheckIcon } from "./uncheck.svg?react";
-export { default as UserIcon } from "./user.svg?react";
 
 interface Props {
   icon: string;
@@ -56,14 +44,6 @@ export const DeleteIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
   <Icon icon="trash" {...props} />
 );
 
-export const GlobeIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="globe" {...props} />
-);
-
-export const GithubIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="github-inverted" {...props} />
-);
-
 export const FilesIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
   <Icon icon="files" {...props} />
 );
@@ -75,14 +55,6 @@ export const ArrowUpIcon = (
 export const ArrowDownIcon = (
   props: HTMLAttributes<HTMLElement>,
 ): JSX.Element => <Icon icon="chevron-down" {...props} />;
-
-export const ArrowRightIcon = (
-  props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="chevron-right" {...props} />;
-
-export const ArrowLeftIcon = (
-  props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="chevron-left" {...props} />;
 
 export const CheckedIcon = (
   props: HTMLAttributes<HTMLElement>,
@@ -104,29 +76,13 @@ export const ChevronRightIcon = (
   props: HTMLAttributes<HTMLElement>,
 ): JSX.Element => <Icon icon="chevron-right" {...props} />;
 
-export const ChevronLeftIcon = (
-  props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="chevron-left" {...props} />;
-
-export const MoreIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="more" {...props} />
-);
-
 export const InfoCircleIcon = (
   props: HTMLAttributes<HTMLElement>,
 ): JSX.Element => <Icon icon="info" {...props} />;
 
-export const AskIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="send" {...props} />
-);
-
 export const CloseIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
   <Icon icon="close" {...props} />
 );
-
-export const CommentIcon = (
-  props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="comment" {...props} />;
 
 export const LoadingSpinner = (): JSX.Element => (
   <img
@@ -136,17 +92,9 @@ export const LoadingSpinner = (): JSX.Element => (
   />
 );
 
-export const LoadingIcon = (
-  props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="loading" className="rotate" {...props} />;
-
 export const PlayCircleIcon = (
   props: HTMLAttributes<HTMLElement>,
 ): JSX.Element => <Icon icon="play-circle" {...props} />;
-
-export const ShareIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="live-share" {...props} />
-);
 
 export const FilterIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
   <Icon icon="filter" {...props} />
@@ -163,7 +111,3 @@ export const FileCodeIcon = (
 export const OpenNewIcon = (
   props: HTMLAttributes<HTMLElement>,
 ): JSX.Element => <Icon icon="link-external" {...props} />;
-
-export const SparkleIcon = (
-  props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="sparkle" {...props} />;
