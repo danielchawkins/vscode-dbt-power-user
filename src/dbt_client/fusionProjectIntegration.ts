@@ -14,6 +14,7 @@ import {
   DBTTerminal,
   DeferConfig,
   DocParser,
+  type ExecuteSQLResult,
   ExposureParser,
   FunctionParser,
   GraphParser,
@@ -23,7 +24,7 @@ import {
   ModelDepthParser,
   NodeParser,
   ParsedManifest,
-  type QueryExecution,
+  QueryExecution,
   type QueryExecutionResult,
   readAndParseProjectConfig,
   RESOURCE_TYPE_MODEL,
@@ -98,6 +99,26 @@ function asParserProject(
   ctx: ManifestParserProjectContext,
 ): DBTProjectIntegrationAdapter {
   return ctx as DBTProjectIntegrationAdapter;
+}
+
+/**
+ * `dbt show --output json` reports no column types; the published integration fabricates
+ * the literal string "string" for every column regardless of its real type. Report every
+ * column type as unknown here, the one seam both `executeSQLWithLimit` and
+ * `immediatelyExecuteSQLWithLimit` consumers read through, instead of forwarding that
+ * placeholder.
+ */
+function markColumnTypesUnknown(result: ExecuteSQLResult): ExecuteSQLResult {
+  return {
+    ...result,
+    table: {
+      ...result.table,
+      // Cast: the library types column_types as string[], but never returns a real type.
+      column_types: result.table.column_types.map(
+        () => null,
+      ) as unknown as string[],
+    },
+  };
 }
 
 type FunctionParserInput = Parameters<
@@ -1254,10 +1275,14 @@ export class FusionProjectIntegration
     if (limit <= 0) {
       throw new Error("Limit must be greater than 0");
     }
-    const execution = await this.requireIntegration().executeSQL(
+    const rawExecution = await this.requireIntegration().executeSQL(
       normalizedQuery,
       limit,
       modelName,
+    );
+    const execution = new QueryExecution(
+      () => rawExecution.cancel(),
+      async () => markColumnTypesUnknown(await rawExecution.executeQuery()),
     );
     if (!immediate) {
       return execution;

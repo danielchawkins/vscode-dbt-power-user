@@ -23,6 +23,7 @@ import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Drawer, DrawerRef } from "@uicore";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useErrorBoundary } from "react-error-boundary";
+import { buildPerspectiveTableInit } from "./columnTypeMapping";
 import classes from "./perspective.module.scss";
 import perspectiveStyles from "./perspective.scss?inline";
 import "./PerspectivePlugins";
@@ -31,7 +32,7 @@ import "./themes.css";
 interface Props {
   data: TableData;
   columnNames: string[];
-  columnTypes: string[];
+  columnTypes: (string | null)[];
   styles?: CSSProperties;
 }
 const PerspectiveViewer = ({
@@ -90,22 +91,6 @@ const PerspectiveViewer = ({
     columns_config: columnsConfig,
     settings: false,
     plugin_config: { editable: false },
-  };
-
-  const mapType = (agateType: string) => {
-    switch (agateType) {
-      case "Text":
-        return "string";
-      case "Integer":
-        return "float";
-      case "BigInteger":
-        return "string";
-      case "Number":
-        return "float";
-      default:
-        // treat any unknown types as string
-        return "string";
-    }
   };
 
   // Converts the provided data to CSV format.
@@ -188,16 +173,16 @@ const PerspectiveViewer = ({
       return;
     }
 
-    const schema: Record<string, string> = {};
-    for (let i = 0; i < columnNames.length; i++) {
-      schema[columnNames[i]] = mapType(columnTypes[i]);
-    }
+    const tableInit = buildPerspectiveTableInit(columnNames, columnTypes, data);
     try {
       const worker = await perspective.worker();
-      // Perspective accepts schema objects, but its generated type omits them.
+      // Perspective accepts a schema object or the row data directly; its generated type
+      // only declares the row-data overload.
       // @ts-expect-error schema initialization is supported at runtime
-      const table = await worker.table(schema);
-      await table.replace(data);
+      const table = await worker.table(tableInit);
+      if (!Array.isArray(tableInit)) {
+        await table.replace(data);
+      }
 
       await perspectiveViewerRef.current.load(table);
       await perspectiveViewerRef.current.resetThemes([

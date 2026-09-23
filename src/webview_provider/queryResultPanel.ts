@@ -52,7 +52,7 @@ enum OutboundCommand {
 
 interface RenderQuery {
   columnNames: string[];
-  columnTypes: string[];
+  columnTypes: (string | null)[];
   rows: JsonObj[];
   raw_sql: string;
   compiled_sql: string;
@@ -101,7 +101,7 @@ interface QueryHistory {
   projectName: string;
   data?: JsonObj[];
   columnNames: string[];
-  columnTypes: string[];
+  columnTypes: (string | null)[];
   modelName: string;
 }
 
@@ -443,7 +443,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
   /** Sends query result data to webview */
   private async transmitData(
     columnNames: string[],
-    columnTypes: string[],
+    columnTypes: (string | null)[],
     rows: JsonObj[],
     raw_sql: string,
     compiled_sql: string,
@@ -538,6 +538,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     }
     return await this.transmitData(
       result.table.column_names,
+      // FusionProjectIntegration already reports every column type as unknown.
       result.table.column_types,
       rows,
       query,
@@ -548,7 +549,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
   private updateQueryHistory(
     result: {
       columnNames: string[];
-      columnTypes: string[];
+      columnTypes: (string | null)[];
       rows: JsonObj[];
       raw_sql: string;
       compiled_sql: string;

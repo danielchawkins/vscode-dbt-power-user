@@ -13,6 +13,7 @@ import {
   ModelDepthParser,
   NodeParser,
   ParsedManifest,
+  QueryExecution,
   SemanticModelParser,
   SourceParser,
   TestParser,
@@ -280,6 +281,95 @@ describe("FusionProjectIntegration", () => {
       expect.objectContaining({ id: "inv-new" }),
     );
     await integration.dispose();
+  });
+
+  describe("query column types", () => {
+    function fabricatedExecuteSQL(): jest.Mock<() => Promise<QueryExecution>> {
+      // Mirrors the published integration's real dbt show --output json shape: real row
+      // values, but column_types fabricated as the literal string "string" for every column.
+      return jest.fn(
+        async () =>
+          new QueryExecution(
+            async () => undefined,
+            async () => ({
+              table: {
+                column_names: ["a", "b"],
+                column_types: ["string", "string"],
+                rows: [[1, "x"]],
+              },
+              compiled_sql: "select 1 as a, 'x' as b",
+              raw_sql: "select 1 as a, 'x' as b",
+              modelName: "my_model",
+            }),
+          ),
+      );
+    }
+
+    it("reports every column type as unknown for executeSQLWithLimit", async () => {
+      tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-show-"));
+      const executeSQL = fabricatedExecuteSQL();
+      const integration = await buildIntegration(
+        tempRoot,
+        stubDelegate(tempRoot, { executeSQL }),
+      );
+
+      const execution = await integration.executeSQLWithLimit(
+        "select 1 as a, 'x' as b",
+        "my_model",
+        500,
+      );
+      const result = await execution.executeQuery();
+
+      expect(executeSQL).toHaveBeenCalled();
+      expect(result.table.column_types).toEqual([null, null]);
+      expect(result.table.column_names).toEqual(["a", "b"]);
+      await integration.dispose();
+    });
+
+    it("reports every column type as unknown for immediatelyExecuteSQLWithLimit", async () => {
+      tempRoot = fs.mkdtempSync(
+        path.join(os.tmpdir(), "fusion-show-immediate-"),
+      );
+      const integration = await buildIntegration(
+        tempRoot,
+        stubDelegate(tempRoot, { executeSQL: fabricatedExecuteSQL() }),
+      );
+
+      const result = await integration.immediatelyExecuteSQLWithLimit(
+        "select 1 as a, 'x' as b",
+        "my_model",
+        500,
+      );
+
+      expect(result.columnTypes).toEqual([null, null]);
+      await integration.dispose();
+    });
+
+    it("forwards cancellation to the underlying query execution", async () => {
+      tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-show-cancel-"));
+      const cancel = jest.fn(async () => undefined);
+      const integration = await buildIntegration(
+        tempRoot,
+        stubDelegate(tempRoot, {
+          executeSQL: jest.fn(
+            async () =>
+              new QueryExecution(cancel, async () => {
+                throw new Error("should not execute after cancel in this test");
+              }),
+          ),
+        }),
+      );
+
+      const execution = await integration.executeSQLWithLimit(
+        "select 1",
+        "my_model",
+        500,
+      );
+      await execution.cancel();
+
+      expect(cancel).toHaveBeenCalled();
+      await integration.dispose();
+    });
   });
 });
 
