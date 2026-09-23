@@ -1,6 +1,7 @@
 import {
   CLIDBTCommandExecutionStrategy,
   CommandProcessExecutionFactory,
+  DBTCommand,
   DBTCommandExecutionInfrastructure,
   DBTCommandFactory,
   DBTDiagnosticData,
@@ -12,9 +13,13 @@ import {
 } from "@altimateai/dbt-integration";
 import { existsSync, statSync } from "fs";
 import { basename, dirname } from "path";
+import { Uri } from "vscode";
 import { FusionExecutable } from "../fusion/fusionExecutable";
+import { resolveFusionLaunchSettings } from "../lsp/fusionClientSettings";
 import { FusionCommandIntegrationFactory } from "./fusionProjectIntegration";
 import { ProjectFusionProcessEnvironment } from "./projectFusionProcessEnvironment";
+
+const PROFILES_DIR_ARGUMENT = "--profiles-dir";
 
 /** Assigns the resolved executable path and builds local-state defer arguments. */
 export class ConfiguredFusionCommandProjectIntegration extends DBTFusionCommandProjectIntegration {
@@ -77,6 +82,27 @@ export class ConfiguredFusionCommandProjectIntegration extends DBTFusionCommandP
       false,
     );
     return undefined;
+  }
+
+  /**
+   * Every CLI subcommand routes through here, so it is the one place that can
+   * give the configured profiles directory the same effect it already has on
+   * the language server. Without the setting, nothing is added and dbt applies
+   * its own cascade, which is what matches running dbt in a terminal.
+   */
+  protected override wrapCommand(command: DBTCommand): DBTCommand {
+    const wrapped = super.wrapCommand(command);
+    const { profilesDir } = resolveFusionLaunchSettings(
+      Uri.file(this.projectRoot),
+    );
+    // Treats any occurrence as an existing flag because dbt argument arrays are unstructured.
+    if (!profilesDir || wrapped.args.includes(PROFILES_DIR_ARGUMENT)) {
+      return wrapped;
+    }
+
+    wrapped.addArgument(PROFILES_DIR_ARGUMENT);
+    wrapped.addArgument(profilesDir);
+    return wrapped;
   }
 }
 

@@ -10,11 +10,13 @@ import { describe, expect, it, jest } from "@jest/globals";
 import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
+import { Uri, workspace } from "vscode";
 import {
   ConfiguredFusionCommandProjectIntegration,
   createFusionCommandIntegrationFactory,
 } from "../../dbt_client/configuredFusionCommandIntegration";
 import { FusionExecutable } from "../../fusion/fusionExecutable";
+import { PROFILES_DIR_SETTING } from "../../lsp/fusionClientSettings";
 
 function mockTerminal(): jest.Mocked<DBTTerminal> {
   return {
@@ -361,6 +363,89 @@ describe("Fusion defer argument construction", () => {
     } finally {
       rmSync(stateDir, { recursive: true, force: true });
     }
+  });
+});
+
+describe("Fusion CLI profiles directory argument", () => {
+  function configureProfilesDir(
+    configured: string | undefined,
+    folder: string | undefined = "/project/root",
+  ): void {
+    (workspace.getConfiguration as jest.Mock).mockReturnValue({
+      get: jest.fn((key: string) =>
+        key === PROFILES_DIR_SETTING ? configured : undefined,
+      ),
+      has: jest.fn(),
+      update: jest.fn(),
+    });
+    (workspace as any).workspaceFolders = folder
+      ? [{ uri: Uri.file(folder), name: "root", index: 0 }]
+      : [];
+  }
+
+  async function runModelCommandString(
+    configured: string | undefined,
+  ): Promise<string> {
+    configureProfilesDir(configured);
+    const { integration, dbtCommandFactory } = setupIntegration();
+    await integration.initializeProject();
+
+    const command = (await integration.runModel(
+      dbtCommandFactory.createRunModelCommand({
+        plusOperatorLeft: "",
+        modelName: "my_model",
+        plusOperatorRight: "",
+      }),
+    )) as DBTCommand;
+    return command.getCommandAsString();
+  }
+
+  afterEach(() => {
+    (workspace.getConfiguration as jest.Mock).mockReturnValue({
+      get: jest.fn(),
+      has: jest.fn(),
+      update: jest.fn(),
+    });
+    (workspace as any).workspaceFolders = [];
+  });
+
+  it("passes the configured profiles directory so the CLI matches the language server", async () => {
+    expect(await runModelCommandString("/configured/profiles")).toContain(
+      "--profiles-dir /configured/profiles",
+    );
+  });
+
+  it("passes nothing when unset, leaving dbt's own cascade to resolve profiles.yml", async () => {
+    expect(await runModelCommandString(undefined)).not.toContain(
+      "--profiles-dir",
+    );
+  });
+
+  it("resolves a folder-relative setting against the project's workspace folder", async () => {
+    expect(await runModelCommandString("profiles")).toContain(
+      `--profiles-dir ${join("/project/root", "profiles")}`,
+    );
+  });
+
+  it("adds the argument once when a command already carries it", async () => {
+    configureProfilesDir("/configured/profiles");
+    const { integration } = setupIntegration();
+    await integration.initializeProject();
+
+    const preset = new DBTCommand("Running dbt run...", [
+      "run",
+      "--profiles-dir",
+      "/already/set",
+    ]);
+    const command = (await integration.runModel(preset)) as DBTCommand;
+    const occurrences = command.args.filter(
+      (arg) => arg === "--profiles-dir",
+    ).length;
+
+    expect(occurrences).toBe(1);
+    expect(command.getCommandAsString()).toContain(
+      "--profiles-dir /already/set",
+    );
   });
 });
 
