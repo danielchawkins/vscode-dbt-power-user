@@ -1,48 +1,8 @@
-import {
-  CommandProcessExecution,
-  CommandProcessExecutionFactory,
-  DBTConfiguration,
-  DBTTerminal,
-} from "@altimateai/dbt-integration";
-import { afterEach, describe, expect, it } from "@jest/globals";
-import { anything, instance, mock, verify, when } from "ts-mockito";
-import { Memento } from "vscode";
+import { describe, expect, it } from "@jest/globals";
 import {
   judgeFusionVersion,
   parseFusionVersion,
 } from "../../fusion/fusionVersion";
-import { FusionVersionDetection } from "../../fusion/fusionVersionDetection";
-
-afterEach(() => {
-  jest.clearAllMocks();
-});
-
-function createDetection(stdout: string, globalState?: Memento, stderr = "") {
-  const execution = mock<CommandProcessExecution>();
-  const executionFactory = mock(CommandProcessExecutionFactory);
-  const configuration = mock<DBTConfiguration>();
-  const terminal = mock<DBTTerminal>();
-
-  when(execution.complete()).thenResolve({
-    stdout,
-    stderr,
-    fullOutput: stdout,
-  });
-  when(executionFactory.createCommandProcessExecution(anything())).thenReturn(
-    instance(execution),
-  );
-  when(configuration.getWorkingDirectory()).thenReturn("/workspace");
-
-  return {
-    detection: new FusionVersionDetection(
-      instance(executionFactory),
-      instance(terminal),
-      instance(configuration),
-      globalState,
-    ),
-    terminal,
-  };
-}
 
 describe("Fusion version", () => {
   it("accepts the minimum supported Fusion version", () => {
@@ -92,40 +52,5 @@ Plugins:
       kind: "notFusion",
       raw: "",
     });
-  });
-
-  it("detects the minimum supported Fusion version", async () => {
-    const { detection } = createDetection("dbt 2.0.5\n");
-    await expect(detection.detectDBT()).resolves.toBe(true);
-  });
-
-  it("detects Fusion even when --version writes to stderr", async () => {
-    const { detection } = createDetection("dbt 2.0.5\n", undefined, "notice\n");
-    await expect(detection.detectDBT()).resolves.toBe(true);
-  });
-
-  it("warns once per untested major version", async () => {
-    const globalState = mock<Memento>();
-    const key = "fusionVersion.warnedMajor.3";
-
-    when(globalState.get<boolean>(key)).thenReturn(undefined, true);
-    when(globalState.update(key, true)).thenResolve();
-
-    const { detection, terminal } = createDetection(
-      "dbt 3.0.0\n",
-      instance(globalState),
-    );
-
-    await detection.detectDBT();
-    await detection.detectDBT();
-
-    verify(
-      terminal.warn(
-        "FusionVersionDetection",
-        "dbt Fusion 3 has not been tested with Fusion Power User. Continuing.",
-        false,
-      ),
-    ).once();
-    verify(globalState.update(key, true)).once();
   });
 });

@@ -1,17 +1,17 @@
 import {
   AltimateHttpClient,
-  DBTDetection,
   DbtIntegrationClient,
   DeferConfig,
 } from "@altimateai/dbt-integration";
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
-import { Memento } from "vscode";
+import { readdirSync, readFileSync, statSync } from "fs";
+import path from "path";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
-import { FusionVersionDetection } from "../../fusion/fusionVersionDetection";
 import { FusionStatus } from "../../lsp/fusionStatus";
 
 import { FusionProjectIntegration } from "../../dbt_client/fusionProjectIntegration";
 import { ConfiguredFusionExecutableResolver } from "../../fusion/fusionExecutable";
+import { esmDirname } from "../esmDirname";
 import * as vscodeMock from "../mock/vscode";
 import { createMockLogOutputChannel } from "../mock/vscode";
 const vscodeMockAny = vscodeMock as Record<string, unknown>;
@@ -35,6 +35,34 @@ sharedWindow.createOutputChannel = jest.fn(
 
 import { container } from "../../inversify.config";
 
+const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
+const srcRoot = path.join(repositoryRoot, "src");
+const forbiddenProductionSymbols = [
+  "DBTClient",
+  "FusionVersionDetection",
+  "Factory<DBTDetection>",
+  "DBTInstallationVerificationEvent",
+];
+
+function collectProductionSources(dir: string): string[] {
+  const files: string[] = [];
+  for (const entry of readdirSync(dir)) {
+    const entryPath = path.join(dir, entry);
+    const stat = statSync(entryPath);
+    if (stat.isDirectory()) {
+      if (entry === "test" || entry === "node_modules") {
+        continue;
+      }
+      files.push(...collectProductionSources(entryPath));
+      continue;
+    }
+    if (entry.endsWith(".ts") && !entry.endsWith(".d.ts")) {
+      files.push(entryPath);
+    }
+  }
+  return files;
+}
+
 describe("Fusion-only integration wiring", () => {
   const disposables: Array<{ dispose: () => void }> = [];
 
@@ -44,12 +72,19 @@ describe("Fusion-only integration wiring", () => {
     }
   });
 
-  it("uses Fusion detection", () => {
-    const factory = container.get<
-      (globalState: Memento | undefined) => DBTDetection
-    >("Factory<DBTDetection>");
-
-    expect(factory(undefined)).toBeInstanceOf(FusionVersionDetection);
+  it("does not reference global detection symbols in production code", () => {
+    const offenders: string[] = [];
+    for (const filePath of collectProductionSources(srcRoot)) {
+      const content = readFileSync(filePath, "utf8");
+      for (const symbol of forbiddenProductionSymbols) {
+        if (content.includes(symbol)) {
+          offenders.push(
+            `${path.relative(repositoryRoot, filePath)}:${symbol}`,
+          );
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
   });
 
   it("does not bind Factory<DBTProjectDetection>", () => {

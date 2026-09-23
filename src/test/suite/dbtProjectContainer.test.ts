@@ -9,7 +9,6 @@ import {
 } from "@jest/globals";
 import * as fs from "fs";
 import { EventEmitter, ExtensionContext, Uri, window } from "vscode";
-import { DBTClient } from "../../dbt_client";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import {
@@ -22,7 +21,6 @@ import { createEntry } from "../fixtures/runHistory";
 
 describe("DBTProjectContainer", () => {
   let container: DBTProjectContainer;
-  let mockDbtClient: jest.Mocked<DBTClient>;
   let mockDbtTerminal: jest.Mocked<DBTTerminal>;
   let mockProjectRegistry: any;
   let mockDbtProjectFactory: jest.Mock;
@@ -33,18 +31,6 @@ describe("DBTProjectContainer", () => {
   let registryOnDidChangeProjects: EventEmitter<void>;
 
   beforeEach(() => {
-    // Mock DBTClient
-    mockDbtClient = {
-      onDBTInstallationVerification: jest
-        .fn()
-        .mockReturnValue({ dispose: jest.fn() }),
-      setGlobalState: jest.fn(),
-      dbtInstalled: true,
-      showErrorIfDbtIsNotInstalled: jest.fn(),
-      detectDBT: jest.fn(),
-      dispose: jest.fn(),
-    } as unknown as jest.Mocked<DBTClient>;
-
     // Mock DBTTerminal
     mockDbtTerminal = {
       debug: jest.fn(),
@@ -152,7 +138,6 @@ describe("DBTProjectContainer", () => {
     } as unknown as ProjectRegistry;
 
     container = new DBTProjectContainer(
-      mockDbtClient,
       mockProjectRegistry,
       mockDbtProjectFactory as any,
       mockDbtTerminal,
@@ -186,7 +171,6 @@ describe("DBTProjectContainer", () => {
     it("should initialize event even when no projects exist", async () => {
       mockProjectRegistry.projects = [];
       const container2 = new DBTProjectContainer(
-        mockDbtClient,
         mockProjectRegistry,
         mockDbtProjectFactory as any,
         mockDbtTerminal,
@@ -333,7 +317,7 @@ describe("DBTProjectContainer", () => {
       await container.initializeDBTProjects();
     });
 
-    it("exposes context, installation, and environment state", async () => {
+    it("exposes context state", async () => {
       const context = {
         extensionUri: Uri.file("/extension"),
         extension: { id: "publisher.extension", packageJSON: { version: "1" } },
@@ -342,18 +326,9 @@ describe("DBTProjectContainer", () => {
       } as unknown as ExtensionContext;
       container.setContext(context);
 
-      await container.detectDBT();
-      container.showErrorIfDbtIsNotInstalled();
-
       expect(container.extensionUri).toBe(context.extensionUri);
       expect(container.extensionVersion).toBe("1");
       expect(container.extensionId).toBe("publisher.extension");
-      expect(container.dbtInstalled).toBe(true);
-      expect(mockDbtClient.setGlobalState).toHaveBeenCalledWith(
-        context.globalState,
-      );
-      expect(mockDbtClient.detectDBT).toHaveBeenCalled();
-      expect(mockDbtClient.showErrorIfDbtIsNotInstalled).toHaveBeenCalled();
     });
 
     it("initializes every project and awaits completion", async () => {

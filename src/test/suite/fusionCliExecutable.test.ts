@@ -17,7 +17,7 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { ConfigurationChangeEvent, Uri, workspace } from "vscode";
+import { ConfigurationChangeEvent, Uri, window, workspace } from "vscode";
 import { createFusionCommandIntegrationFactory } from "../../dbt_client/configuredFusionCommandIntegration";
 import {
   FusionCommandIntegrationFactory,
@@ -319,6 +319,60 @@ describe("Fusion CLI executable wiring", () => {
     );
 
     fs.rmSync(root, { recursive: true, force: true });
+  });
+
+  it("keeps a healthy sibling initializing when one project's resolver fails, without notifying the user", async () => {
+    const failedRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), "fusion-cli-sibling-failed-"),
+    );
+    const healthyRoot = fs.mkdtempSync(
+      path.join(os.tmpdir(), "fusion-cli-sibling-healthy-"),
+    );
+    prepareProjectRoot(failedRoot);
+    prepareProjectRoot(healthyRoot);
+
+    const failedIntegration = buildIntegration(
+      failedRoot,
+      async () => ({
+        kind: "notFound",
+        path: "/missing/dbt",
+        source: "configured",
+      }),
+      lifecycleFactory(failedRoot, {}),
+    );
+    const initializeProject = jest.fn(async () => undefined);
+    const healthyIntegration = buildIntegration(
+      healthyRoot,
+      async () => sampleExecutable("/opt/healthy/dbt"),
+      lifecycleFactory(healthyRoot, { initializeProject }),
+    );
+
+    await Promise.all([
+      failedIntegration.initialize(),
+      healthyIntegration.initialize(),
+    ]);
+
+    expect(failedIntegration.getDiagnostics().projectConfigDiagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          source: "fusion-executable",
+          severity: "error",
+        }),
+      ]),
+    );
+    expect(() => failedIntegration.getCurrentProjectIntegration()).toThrow(
+      /not initialized/,
+    );
+    expect(healthyIntegration.getCurrentProjectIntegration()).toBeDefined();
+    expect(initializeProject).toHaveBeenCalledTimes(1);
+    expect(window.showErrorMessage).not.toHaveBeenCalled();
+    expect(window.showWarningMessage).not.toHaveBeenCalled();
+    expect(window.showInformationMessage).not.toHaveBeenCalled();
+
+    await failedIntegration.dispose();
+    await healthyIntegration.dispose();
+    fs.rmSync(failedRoot, { recursive: true, force: true });
+    fs.rmSync(healthyRoot, { recursive: true, force: true });
   });
 
   it("re-resolves on scoped path change, keeps sibling path/env, and executes B after A refresh", async () => {

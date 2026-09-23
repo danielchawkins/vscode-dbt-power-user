@@ -75,7 +75,6 @@ describe("fusionNotificationPolicy", () => {
     Object.assign(extension, {
       dbtProjectContainer: {
         setContext: jest.fn(),
-        detectDBT: jest.fn(() => Promise.resolve()),
         initializeDBTProjects: jest.fn(() => Promise.resolve()),
       },
       projectRegistry: { initialize: jest.fn(() => Promise.resolve()) },

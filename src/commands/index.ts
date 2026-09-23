@@ -30,7 +30,6 @@ import {
 import { SqlPreviewContentProvider } from "../content_provider/sqlPreviewContentProvider";
 import { CteProfilerDecorationProvider } from "../cte_profiler/cteProfilerDecorationProvider";
 import { CteProfilerService } from "../cte_profiler/cteProfilerService";
-import { DBTClient } from "../dbt_client";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
@@ -54,7 +53,6 @@ export class VSCodeCommands implements Disposable {
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private diagnosticsOutputChannel: DiagnosticsOutputChannel,
-    private dbtClient: DBTClient,
     private runHistoryService: RunHistoryService,
     private cteProfilerService: CteProfilerService,
     private cteProfilerDecorationProvider: CteProfilerDecorationProvider,
@@ -468,15 +466,6 @@ export class VSCodeCommands implements Disposable {
             `First workspace path=${getFirstWorkspacePath()}`,
           ]);
           this.diagnosticsOutputChannel.logNewLine();
-
-          if (!this.dbtClient.dbtInstalled) {
-            this.diagnosticsOutputChannel.logLine("DBT is not installed");
-            this.diagnosticsOutputChannel.logLine(
-              "Can't proceed further without fixing dbt installation",
-            );
-            return;
-          }
-          this.diagnosticsOutputChannel.logLine("DBT is installed");
 
           const projects = this.dbtProjectContainer.getProjects();
           this.diagnosticsOutputChannel.logLine(

@@ -133,7 +133,6 @@ export class DBTPowerUserExtension implements Disposable {
       await this.projectRegistry.initialize();
       this.fusionClientPool.initialize();
       this.fusionStatus.initialize();
-      await this.dbtProjectContainer.detectDBT();
       await this.dbtProjectContainer.initializeDBTProjects();
       await this.statusBars.initialize();
     } catch (error) {

@@ -11,6 +11,7 @@ import {
   FusionVersion,
   FusionVersionVerdict,
   judgeFusionVersion,
+  MINIMUM_FUSION,
   parseFusionVersion,
 } from "./fusionVersion";
 
@@ -31,6 +32,14 @@ export interface FusionExecutableResolver {
   resolve(scope: Uri): Promise<FusionExecutable | FusionVersionVerdict>;
 }
 
+/** The subset of `Memento` the resolver needs to remember which majors it has warned about. */
+export interface FusionExecutableGlobalState {
+  get<T>(key: string): T | undefined;
+  update(key: string, value: unknown): void | Thenable<void>;
+}
+
+const WARNED_MAJOR_KEY_PREFIX = "fusionVersion.warnedMajor.";
+
 export type FusionExecutableResolverDependencies = {
   getConfiguredPath?: (scope: Uri) => string | undefined;
   getWorkspaceFolder?: (scope: Uri) => WorkspaceFolder | undefined;
@@ -42,6 +51,10 @@ export type FusionExecutableResolverDependencies = {
     executable: string,
     env: Record<string, string>,
   ) => Promise<{ stdout: string; stderr: string }>;
+  /** Terminal-only warning, never a toast, for an untested-but-newer Fusion major. */
+  logWarning?: (message: string) => void;
+  /** Lazily resolved because `ExtensionContext.globalState` isn't ready at construction. */
+  getGlobalState?: () => FusionExecutableGlobalState | undefined;
 };
 
 function inheritedEnv(): Record<string, string> {
@@ -149,6 +162,10 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
     executable: string,
     env: Record<string, string>,
   ) => Promise<{ stdout: string; stderr: string }>;
+  private readonly logWarning?: (message: string) => void;
+  private readonly getGlobalState?: () =>
+    FusionExecutableGlobalState | undefined;
+  private readonly warnedMajorsThisSession = new Set<number>();
 
   constructor(deps: FusionExecutableResolverDependencies = {}) {
     this.getConfiguredPath =
@@ -164,6 +181,8 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
     this.findOnPath = deps.findOnPath ?? defaultFindOnPath;
     this.isExecutable = deps.isExecutable ?? defaultIsExecutable;
     this.runVersion = deps.runVersion ?? defaultRunVersion;
+    this.logWarning = deps.logWarning;
+    this.getGlobalState = deps.getGlobalState;
   }
 
   async resolve(scope: Uri): Promise<FusionExecutable | FusionVersionVerdict> {
@@ -247,8 +266,11 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
     }
 
     const verdict = judgeFusionVersion(parseFusionVersion(raw), raw);
-    if (verdict.kind !== "ok") {
+    if (verdict.kind !== "ok" && verdict.kind !== "untestedMajor") {
       return verdict;
+    }
+    if (verdict.kind === "untestedMajor") {
+      this.warnUntestedMajorOnce(verdict.version.major);
     }
 
     return {
@@ -256,5 +278,29 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
       version: verdict.version,
       env,
     };
+  }
+
+  /** Decision: minimum 2.0.5, no upper bound; warn once per major, never a toast. */
+  private warnUntestedMajorOnce(major: number): void {
+    if (this.warnedMajorsThisSession.has(major)) {
+      return;
+    }
+    this.warnedMajorsThisSession.add(major);
+
+    try {
+      const key = `${WARNED_MAJOR_KEY_PREFIX}${major}`;
+      const globalState = this.getGlobalState?.();
+      if (globalState?.get<boolean>(key)) {
+        return;
+      }
+
+      this.logWarning?.(
+        `dbt Fusion major version ${major} is newer than this extension has been tested ` +
+          `against (minimum supported ${MINIMUM_FUSION.major}.${MINIMUM_FUSION.minor}.${MINIMUM_FUSION.patch}). Continuing.`,
+      );
+      void globalState?.update(key, true);
+    } catch {
+      // Global state may be unavailable before extension context is set; the warning is best-effort.
+    }
   }
 }

@@ -3,7 +3,6 @@ import {
   CommandProcessExecutionFactory,
   DBTCommandFactory,
   DBTConfiguration,
-  DBTDetection,
   DBTTerminal,
   DeferConfig,
   DocParser,
@@ -20,7 +19,7 @@ import {
   UnitTestParser,
 } from "@altimateai/dbt-integration";
 import { Container, Factory, ResolutionContext } from "inversify";
-import { Event, EventEmitter, Memento, Uri } from "vscode";
+import { Event, EventEmitter, Uri } from "vscode";
 import { createFusionCommandIntegrationFactory } from "./dbt_client/configuredFusionCommandIntegration";
 import { DBTProject } from "./dbt_client/dbtProject";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
@@ -30,7 +29,6 @@ import { FusionProjectIntegration } from "./dbt_client/fusionProjectIntegration"
 import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
-import { FusionVersionDetection } from "./fusion/fusionVersionDetection";
 import {
   createFusionClientPool,
   FusionClientPoolImpl,
@@ -50,7 +48,6 @@ import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
 
 // Core extension components
-import { DBTClient } from "./dbt_client";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 
 // Import providers
@@ -184,20 +181,6 @@ container
   .inSingletonScope();
 
 container
-  .bind<Factory<DBTDetection, [Memento | undefined]>>("Factory<DBTDetection>")
-  .toFactory((context: ResolutionContext) => {
-    return (globalState: Memento | undefined) => {
-      const container = context;
-      return new FusionVersionDetection(
-        container.get(CommandProcessExecutionFactory),
-        container.get("DBTTerminal"),
-        container.get("DBTConfiguration"),
-        globalState,
-      );
-    };
-  });
-
-container
   .bind<Factory<FusionProjectIntegration, [string, DeferConfig | undefined]>>(
     "Factory<FusionProjectIntegration>",
   )
@@ -325,7 +308,19 @@ container
 
 container
   .bind(ConfiguredFusionExecutableResolver)
-  .toDynamicValue(() => new ConfiguredFusionExecutableResolver())
+  .toDynamicValue((context) => {
+    const terminal = context.get<DBTTerminal>("DBTTerminal");
+    return new ConfiguredFusionExecutableResolver({
+      logWarning: (message) => terminal.warn("FusionVersion", message, false),
+      getGlobalState: () => {
+        const projectContainer = context.get(DBTProjectContainer);
+        return {
+          get: (key) => projectContainer.getFromGlobalState(key),
+          update: (key, value) => projectContainer.setToGlobalState(key, value),
+        };
+      },
+    });
+  })
   .inSingletonScope();
 
 container
@@ -423,19 +418,10 @@ container
   .bind(DBTProjectContainer)
   .toDynamicValue((context) => {
     return new DBTProjectContainer(
-      context.get(DBTClient),
       context.get(ProjectRegistry),
       context.get("Factory<DBTProject>"),
       context.get("DBTTerminal"),
     );
-  })
-  .inSingletonScope();
-
-// Bind dbt client
-container
-  .bind(DBTClient)
-  .toDynamicValue((context) => {
-    return new DBTClient(context.get("Factory<DBTDetection>"));
   })
   .inSingletonScope();
 
@@ -692,7 +678,6 @@ container
       context.get(WalkthroughCommands),
       context.get("DBTTerminal"),
       context.get(DiagnosticsOutputChannel),
-      context.get(DBTClient),
       context.get(RunHistoryService),
       context.get(CteProfilerService),
       context.get(CteProfilerDecorationProvider),
