@@ -53,10 +53,6 @@
       {
         "title": "dbt",
         "properties": {
-          "dbt.enableNewLineagePanel": {
-            "type": "boolean",
-            "description": "Enable the new lineage panel in dbt."
-          },
           "dbt.lineage.showSelectEdges": {
             "type": "boolean",
             "description": "Show select edges in lineage panel.",
