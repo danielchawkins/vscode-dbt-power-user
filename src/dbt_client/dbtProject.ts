@@ -16,6 +16,7 @@ import {
   extractOutputColumns,
   isResourceHasDbColumns,
   isResourceNode,
+  ManifestPathType,
   NodeMetaData,
   ParsedManifest,
   QueryExecutionResult,
@@ -67,6 +68,13 @@ import {
 } from "./fusionProjectIntegration";
 interface FileNameTemplateMap {
   [key: string]: string;
+}
+
+/** Settings shape for `fusionPowerUser.defer.perProject`. */
+interface DeferSettingsEntry {
+  deferToProduction: boolean;
+  favorState: boolean;
+  manifestPathForDeferral?: string;
 }
 
 interface JsonObj {
@@ -1135,7 +1143,7 @@ export class DBTProject implements Disposable {
 
   private retrieveDeferConfigFromSettings(): DeferConfig | undefined {
     const relativePath = getProjectRelativePath(this.projectRoot);
-    const currentConfig: Record<string, DeferConfig> = workspace
+    const currentConfig: Record<string, DeferSettingsEntry> = workspace
       .getConfiguration(CONFIGURATION_SECTION, this.projectRoot)
       .get("defer.perProject", {});
     if (currentConfig[relativePath]) {
@@ -1146,12 +1154,19 @@ export class DBTProject implements Disposable {
             this.projectRoot,
           )
         : config.manifestPathForDeferral;
+      if (config.deferToProduction && !resolvedManifestPath) {
+        this.terminal.warn(
+          "deferMissingManifestPath",
+          `fusionPowerUser.defer.perProject has deferToProduction enabled for ` +
+            `${relativePath} but no manifestPathForDeferral; defer will not apply.`,
+          false,
+        );
+      }
       return new DeferConfig(
         config.deferToProduction,
         config.favorState,
         resolvedManifestPath,
-        config.manifestPathType,
-        config.dbtCoreIntegrationId,
+        resolvedManifestPath ? ManifestPathType.LOCAL : undefined,
       );
     }
   }

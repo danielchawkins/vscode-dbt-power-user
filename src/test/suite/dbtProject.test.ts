@@ -5,6 +5,7 @@ import {
   DBTDiagnosticData,
   DBTTerminal,
   MANIFEST_FILE,
+  ManifestPathType,
   ParsedManifest,
   RESOURCE_TYPE_MODEL,
   RunResultsEventData,
@@ -755,7 +756,116 @@ describe("DBTProject Test Suite", () => {
         expect.objectContaining({
           deferToProduction: true,
           favorState: false,
+          manifestPathType: ManifestPathType.LOCAL,
         }),
+      );
+    });
+
+    it("does not honor a remote manifestPathType or hosted integration id from settings", async () => {
+      const projectUri = vscode.Uri.file("/test/workspace/finance_general");
+      const workspaceFolder = {
+        uri: vscode.Uri.file("/test/workspace"),
+        name: "Test Workspace",
+        index: 0,
+      };
+      (vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(
+        workspaceFolder,
+      );
+
+      // Not part of the settings schema, but exercised in case a user's settings.json sets it directly.
+      const storedDeferConfig = {
+        deferToProduction: true,
+        favorState: false,
+        manifestPathForDeferral: "/tmp/manifest.json",
+        manifestPathType: "remote",
+        dbtCoreIntegrationId: 42,
+      };
+      (vscode.workspace.getConfiguration as jest.Mock).mockImplementation(
+        () => ({
+          get: jest.fn((key: string) => {
+            if (key === "defer.perProject") {
+              return { finance_general: storedDeferConfig };
+            }
+            if (key === "query.limit") {
+              return 500;
+            }
+            return undefined;
+          }),
+          has: jest.fn(),
+          update: jest.fn(),
+        }),
+      );
+      mockProjectIntegration.applyDeferConfig = jest.fn(() =>
+        Promise.resolve(),
+      );
+
+      dbtProject = new DBTProject(
+        dbtProjectLogFactory as any,
+        mockCommandFactory,
+        mockTerminal,
+        mockSharedStateService,
+        jest.fn().mockReturnValue(mockProjectIntegration) as any,
+        mockRunHistoryService,
+        projectUri,
+        mockManifestChangedEmitter,
+      );
+
+      await dbtProject.applyDeferConfig();
+
+      const appliedConfig =
+        mockProjectIntegration.applyDeferConfig.mock.calls[0][0];
+      expect(appliedConfig.manifestPathType).toBe(ManifestPathType.LOCAL);
+      expect(appliedConfig.dbtCoreIntegrationId).toBeUndefined();
+    });
+
+    it("warns in the terminal when defer is enabled without a manifest path", async () => {
+      const projectUri = vscode.Uri.file("/test/workspace/finance_general");
+      const workspaceFolder = {
+        uri: vscode.Uri.file("/test/workspace"),
+        name: "Test Workspace",
+        index: 0,
+      };
+      (vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(
+        workspaceFolder,
+      );
+      (vscode.workspace.getConfiguration as jest.Mock).mockImplementation(
+        () => ({
+          get: jest.fn((key: string) => {
+            if (key === "defer.perProject") {
+              return {
+                finance_general: { deferToProduction: true, favorState: false },
+              };
+            }
+            if (key === "query.limit") {
+              return 500;
+            }
+            return undefined;
+          }),
+          has: jest.fn(),
+          update: jest.fn(),
+        }),
+      );
+      mockProjectIntegration.applyDeferConfig = jest.fn(() =>
+        Promise.resolve(),
+      );
+
+      dbtProject = new DBTProject(
+        dbtProjectLogFactory as any,
+        mockCommandFactory,
+        mockTerminal,
+        mockSharedStateService,
+        jest.fn().mockReturnValue(mockProjectIntegration) as any,
+        mockRunHistoryService,
+        projectUri,
+        mockManifestChangedEmitter,
+      );
+
+      await dbtProject.applyDeferConfig();
+
+      expect(mockTerminal.warn).toHaveBeenCalledWith(
+        "deferMissingManifestPath",
+        expect.stringContaining("fusionPowerUser.defer.perProject"),
+        false,
       );
     });
 
