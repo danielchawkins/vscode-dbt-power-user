@@ -66,3 +66,17 @@ Calls below are after `textDocument/didOpen` of `file://<project>/models/plain.s
 `[]` for `dbt.show` logs `Missing dbt.show payload` and returns `null`. `[{}]` returns `{"columns":null,"data":null,"error":"invalid file selector: . relative URL without a base"}`. `[]` for `dbt.compileFile` logs `Missing compile file payload` and returns `null`.
 
 No `dbt.compileFile` argument tried here returned compiled SQL. `dbt.show` returned `columns: null` with `error: null` on the dummy profile, including for `plain.sql`, so this run does not show a column type. `dbt.listNodes` returned `null` on a project that still contains the broken `ref`. These calls do not discharge the step 6.2 payload contract or the step 7.4 column-type question.
+
+## Addendum: loaded DuckDB project (Fusion 2.0.5, 2026-09-23)
+
+Ad hoc follow-up probes (not checked in) against `single-project` converted to a `duckdb` profile, spawned
+with the project root as `cwd`, `DBT_LSP_USE_TARGET_LSP=1`, and a valid `base` → `child` chain (`broken_ref`
+removed, matching the convention every checked-in integration test already uses for this fixture). See
+`docs/refactor/fusion-editor-flow-evidence.md` (Working-DuckDB run) for the full method and the fixed
+harness.
+
+- `dbt.getProjectInfo` `[]` → `{"adapter_type":"duckdb","models_count":2,"models_count_is_estimate":false,"project_name":"single_project"}` — a real, non-estimated count, unlike the dummy-Snowflake run above.
+- `dbt.compileFile` with a bare URI **string** argument (`["file://<project>/models/child.sql"]`, not an object) → `{"error":null,"file_uri":"file://<project>/target/.lsp/compiled/single_project/models/child.sql"}`. None of the shapes tried in the dummy-Snowflake run above used a bare string on a loaded project; this shape works.
+- `dbt.show` with `[{"uri":"file://<project>/models/child.sql"}]` → a real DuckDB `Catalog Error` because `base` was never built as a physical relation — proof the command executes against the live warehouse, not a stub. It is not proof of a column-type contract; `base` still needs a prior `dbt build`/`run` for `dbt.show` on a dependent model to return rows.
+- `dbt.listNodes` `[]` and `dbt.getCurrentNode` `[{"uri":...,"line":0,"character":20}]` both still returned `null` on this fully loaded project (verified via `getProjectInfo`'s accurate count above). Only the documented argument shapes were tried. This is now a genuine open question — not explained by an unloaded project or a wrong argument shape found so far — and needs product-side or further protocol investigation before concluding it is a Fusion server limitation.
+- `textDocument/hover` on `ref("base")` → real content (`"**Children Models**\n\n- child"`). Hover on a macro call (`example()`, no package qualifier) on the same loaded project → `null`. Hover works for `ref()`/`source()` targets but not for any macro invocation tried, dotted or not — narrower than "hover is broken," and not specific to cross-package macros.
