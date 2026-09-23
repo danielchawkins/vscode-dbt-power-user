@@ -1,5 +1,4 @@
 import {
-  AltimateHttpClient,
   ChildrenParentParser,
   CLIDBTCommandExecutionStrategy,
   CommandProcessExecutionFactory,
@@ -10,7 +9,6 @@ import {
   DBTDetection,
   DBTDiagnosticData,
   DBTFusionCommandProjectIntegration,
-  DbtIntegrationClient,
   DBTProjectIntegrationAdapter,
   DBTTerminal,
   DeferConfig,
@@ -51,6 +49,7 @@ import {
 } from "./lsp/fusionClientPool";
 import { DefaultFusionClientFactory } from "./lsp/fusionLanguageClient";
 import { FusionStatus } from "./lsp/fusionStatus";
+import { createLocalModelDepthContext } from "./manifest/localModelDepthContext";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtLineageService } from "./services/dbtLineageService";
@@ -167,7 +166,7 @@ container
     (context) =>
       new ModelDepthParser(
         context.get("DBTTerminal"),
-        context.get(DbtIntegrationClient),
+        createLocalModelDepthContext(),
         context.get("DBTConfiguration"),
       ),
   );
@@ -238,28 +237,6 @@ container
   .bind(CommandProcessExecutionFactory)
   .toDynamicValue((context) => {
     return new CommandProcessExecutionFactory(context.get("DBTTerminal"));
-  })
-  .inSingletonScope();
-
-// Bind AltimateHttpClient
-container
-  .bind(AltimateHttpClient)
-  .toDynamicValue((context) => {
-    return new AltimateHttpClient(
-      context.get("DBTTerminal"),
-      context.get("DBTConfiguration"),
-    );
-  })
-  .inSingletonScope();
-
-// Bind DbtIntegrationClient
-container
-  .bind(DbtIntegrationClient)
-  .toDynamicValue((context) => {
-    return new DbtIntegrationClient(
-      context.get(AltimateHttpClient),
-      context.get("DBTTerminal"),
-    );
   })
   .inSingletonScope();
 

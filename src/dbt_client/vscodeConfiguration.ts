@@ -94,24 +94,18 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
   }
 
   getAltimateUrl(): string {
-    return workspace
-      .getConfiguration("dbt")
-      .get<string>("altimateUrl", DEFAULT_CONFIGURATION_VALUES.altimateUrl);
+    return "";
   }
 
   getIsLocalMode(): boolean {
-    return workspace
-      .getConfiguration("dbt")
-      .get<boolean>("isLocalMode", DEFAULT_CONFIGURATION_VALUES.isLocalMode);
+    return true;
   }
 
   getAltimateInstanceName(): string | undefined {
-    return workspace
-      .getConfiguration("dbt")
-      .get<string>("altimateInstanceName");
+    return undefined;
   }
 
   getAltimateAiKey(): string | undefined {
-    return workspace.getConfiguration("dbt").get<string>("altimateAiKey");
+    return undefined;
   }
 }

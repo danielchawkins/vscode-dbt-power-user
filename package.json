@@ -51,32 +51,8 @@
     ],
     "configuration": [
       {
-        "title": "Altimate AI",
+        "title": "dbt",
         "properties": {
-          "dbt.altimateAiKey": {
-            "type": "string",
-            "displayName": "Altimate AI API Key",
-            "markdownDescription": "Needed for features that require backend support. Sign up for a free Altimate AI account [here](https://app.myaltimate.com/register). API Key can be copied from Altimate AI UI (navigate to Settings->API Key)"
-          },
-          "dbt.altimateUrl": {
-            "type": "string",
-            "displayName": "Altimate API endpoint",
-            "description": "Select Altimate API endpoint",
-            "enum": [
-              "https://api.myaltimate.com",
-              "https://api.getaltimate.com"
-            ],
-            "enumDescriptions": [
-              "Community, Pro or Team Plan",
-              "Enterprise Plan"
-            ],
-            "default": "https://api.myaltimate.com"
-          },
-          "dbt.altimateInstanceName": {
-            "type": "string",
-            "displayName": "Altimate AI Instance Name",
-            "markdownDescription": "Needed for features that require backend support. Sign up for a free Altimate AI account [here](https://app.myaltimate.com/register). If your Altimate AI instance URL is https://betatest.app.myaltimate.com/, The instance name is betatest"
-          },
           "dbt.enableNewLineagePanel": {
             "type": "boolean",
             "description": "Enable the new lineage panel in dbt."
@@ -901,7 +877,6 @@
     "@vscode/codicons": "^0.0.45",
     "@vscode/vsce": "^4.0.0",
     "inversify": "^8.2.3",
-    "node-abort-controller": "^3.1.1",
     "parse-diff": "^0.12.0",
     "reflect-metadata": "^0.2.2",
     "semver": "^7.8.5",

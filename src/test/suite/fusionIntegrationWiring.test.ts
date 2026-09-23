@@ -1,7 +1,9 @@
 import {
+  AltimateHttpClient,
   DBTDetection,
   DBTFusionCommandProjectIntegration,
   DBTProjectIntegrationAdapter,
+  DbtIntegrationClient,
   DeferConfig,
 } from "@altimateai/dbt-integration";
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
@@ -80,6 +82,11 @@ describe("Fusion-only integration wiring", () => {
     expect(container.isBound("Factory<DBTCoreCommandProjectIntegration>")).toBe(
       false,
     );
+  });
+
+  it("does not bind hosted HTTP clients", () => {
+    expect(container.isBound(AltimateHttpClient)).toBe(false);
+    expect(container.isBound(DbtIntegrationClient)).toBe(false);
   });
 
   it("binds FusionStatus for the Fusion LSP status surface", () => {
