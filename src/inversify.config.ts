@@ -63,8 +63,6 @@ import { QueryManifestService } from "./services/queryManifestService";
 import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
 
-import { ValidationProvider } from "./validation_provider";
-
 // Core extension components
 import { DBTClient } from "./dbt_client";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
@@ -393,7 +391,6 @@ container
         container.get(DBTCommandExecutionInfrastructure),
         container.get("Factory<DBTProjectIntegrationAdapter>"),
         container.get(AltimateRequest),
-        container.get(ValidationProvider),
         container.get(RunHistoryService),
         path,
         _onManifestChanged,
@@ -559,14 +556,6 @@ container
     return new ProjectQuickPick();
   })
   .inSingletonScope();
-
-container
-  .bind(ValidationProvider)
-  .toDynamicValue((context) => {
-    return new ValidationProvider(context.get(AltimateRequest));
-  })
-  .inSingletonScope();
-
 // Bind manifest components
 container
   .bind(PythonEnvironment)
@@ -1057,7 +1046,6 @@ container
       context.get(DbtPowerUserActionsCenter),
       context.get("DBTTerminal"),
       context.get(HoverProviders),
-      context.get(ValidationProvider),
       context.get(ProjectRegistry),
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),

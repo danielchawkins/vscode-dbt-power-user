@@ -62,7 +62,6 @@ import {
   getProjectRelativePath,
   resolveSettingsVariables,
 } from "../utils";
-import { ValidationProvider } from "../validation_provider";
 import { DBTProjectLog } from "./dbtProjectLog";
 import {
   ManifestCacheChangedEvent,
@@ -146,22 +145,11 @@ export class DBTProject implements Disposable {
       deferConfig: DeferConfig | undefined,
     ) => DBTProjectIntegrationAdapter,
     private altimate: AltimateRequest,
-    private validationProvider: ValidationProvider,
     private runHistoryService: RunHistoryService,
     path: Uri,
     private _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
   ) {
     this.projectRoot = path;
-    try {
-      this.validationProvider.validateCredentialsSilently();
-    } catch (error) {
-      this.terminal.error(
-        "validateCredentialsSilently",
-        "Credential validation failed",
-        error,
-        false,
-      );
-    }
 
     this.dbtProjectLog = this.dbtProjectLogFactory(this.onProjectConfigChanged);
 

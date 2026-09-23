@@ -7,7 +7,6 @@ import {
   DBTProjectIntegrationAdapterEvents,
   DBTTerminal,
   MANIFEST_FILE,
-  NoCredentialsError,
   ParsedManifest,
   RESOURCE_TYPE_MODEL,
   RunResultsEventData,
@@ -30,12 +29,9 @@ import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheC
 import { PythonEnvironment } from "../../dbt_client/pythonEnvironment";
 import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
-import { ValidationProvider } from "../../validation_provider";
-
 describe("DBTProject Test Suite", () => {
   let mockTerminal: jest.Mocked<DBTTerminal>;
   let mockAltimate: jest.Mocked<AltimateRequest>;
-  let mockValidationProvider: jest.Mocked<ValidationProvider>;
   let mockPythonEnvironment: jest.Mocked<PythonEnvironment>;
   let mockSharedStateService: jest.Mocked<SharedStateService>;
   let mockRunHistoryService: jest.Mocked<RunHistoryService>;
@@ -96,16 +92,12 @@ describe("DBTProject Test Suite", () => {
       enabled: jest.fn().mockReturnValue(true),
       isAuthenticated: jest.fn().mockReturnValue(true),
       validateCredentials: jest.fn(),
-      getAIKey: jest.fn().mockReturnValue("test-ai-key"),
+      checkApiConnectivity: jest.fn(),
+      getAIKey: jest.fn().mockReturnValue("0123456789abcdef0123456789abcdef"),
       getInstanceName: jest.fn().mockReturnValue("test-instance"),
       getAltimateUrl: jest.fn().mockReturnValue("https://test.altimate.ai"),
       dispose: jest.fn(),
     } as unknown as jest.Mocked<AltimateRequest>;
-
-    // Mock ValidationProvider
-    mockValidationProvider = {
-      validateCredentialsSilently: jest.fn(),
-    } as unknown as jest.Mocked<ValidationProvider>;
 
     // Mock PythonEnvironment
     mockPythonEnvironment = {
@@ -242,52 +234,15 @@ describe("DBTProject Test Suite", () => {
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
-        mockValidationProvider,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
       );
 
       expect(dbtProject.projectRoot).toBe(projectUri);
-      expect(
-        mockValidationProvider.validateCredentialsSilently,
-      ).toHaveBeenCalled();
       expect(mockTerminal.debug).toHaveBeenCalledWith(
         "DbtProject",
         expect.stringContaining("Created fusion dbt project"),
-      );
-    });
-
-    it("should handle validation errors gracefully", () => {
-      mockValidationProvider.validateCredentialsSilently.mockImplementation(
-        () => {
-          throw new NoCredentialsError();
-        },
-      );
-
-      const projectUri = vscode.Uri.file("/test/project");
-      const projectConfig = {};
-
-      dbtProject = new DBTProject(
-        mockPythonEnvironment,
-        dbtProjectLogFactory as any,
-        mockCommandFactory,
-        mockTerminal,
-        mockSharedStateService,
-        mockExecutionInfrastructure,
-        jest.fn().mockReturnValue(mockProjectIntegration) as any,
-        mockAltimate,
-        mockValidationProvider,
-        mockRunHistoryService,
-        projectUri,
-        mockManifestChangedEmitter,
-      );
-
-      expect(mockTerminal.error).toHaveBeenCalledWith(
-        "validateCredentialsSilently",
-        "Credential validation failed",
-        expect.any(NoCredentialsError),
-        false,
       );
     });
 
@@ -303,7 +258,6 @@ describe("DBTProject Test Suite", () => {
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
-        mockValidationProvider,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -312,6 +266,8 @@ describe("DBTProject Test Suite", () => {
       await dbtProject.initialize();
 
       expect(mockProjectIntegration.initialize).toHaveBeenCalled();
+      expect(mockAltimate.checkApiConnectivity).not.toHaveBeenCalled();
+      expect(mockAltimate.validateCredentials).not.toHaveBeenCalled();
     });
   });
 
@@ -327,7 +283,6 @@ describe("DBTProject Test Suite", () => {
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
-        mockValidationProvider,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -406,7 +361,6 @@ describe("DBTProject Test Suite", () => {
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
-        mockValidationProvider,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -533,7 +487,6 @@ describe("DBTProject Test Suite", () => {
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
-        mockValidationProvider,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -606,7 +559,6 @@ describe("DBTProject Test Suite", () => {
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
-        mockValidationProvider,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -668,7 +620,6 @@ describe("DBTProject Test Suite", () => {
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
-        mockValidationProvider,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -722,7 +673,6 @@ describe("DBTProject Test Suite", () => {
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
-        mockValidationProvider,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
@@ -807,7 +757,6 @@ describe("DBTProject Test Suite", () => {
         mockExecutionInfrastructure,
         jest.fn().mockReturnValue(mockProjectIntegration) as any,
         mockAltimate,
-        mockValidationProvider,
         mockRunHistoryService,
         projectUri,
         mockManifestChangedEmitter,
