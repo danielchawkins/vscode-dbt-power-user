@@ -25,9 +25,8 @@ Likely source areas:
 - `src/autocompletion_provider/`
 - `src/definition_provider/`
 - `src/hover_provider/`
-- `src/validation_provider/`
 - `src/document_formatting_edit_provider/`
-- manifest-cache consumers under `src/dbt_client/`
+- manifest-cache consumers under `src/dbt_client/` (standard LanguageClient diagnostics are separate)
 
 Do not keep an old provider as a silent fallback. Duplicate providers make completion ordering, diagnostics, formatting, and navigation nondeterministic.
 
@@ -184,7 +183,7 @@ These current couplings make deletion order part of correctness:
 4. Keep the manifest watcher only for named local panel consumers. Migrate those consumers behind a project-session interface before deleting the parser.
 5. Separate query-results and lineage webviews from shared Altimate base classes before removing hosted webview libraries.
 6. Remove the exposed `generateDBTDocs` command early: the current Fusion implementation throws because docs generation is unsupported.
-7. Remove or replace constructor-time credential validation before project sessions activate; it currently runs for every project.
+7. Constructor-time credential validation is removed (was hosted validation in ValidationProvider).
 
 ## Package identity and contributions
 

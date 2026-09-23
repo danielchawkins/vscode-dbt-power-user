@@ -60,8 +60,7 @@ The extension then implements editor intelligence directly with VS Code provider
 - `src/autocompletion_provider/` registers completion providers;
 - `src/definition_provider/` registers definition providers;
 - `src/hover_provider/` registers hover providers;
-- `src/validation_provider/` owns diagnostics; and
-- `src/dbt_client/` distributes manifest-derived metadata to those providers.
+- `src/dbt_client/` distributes manifest-derived metadata to those providers (standard LanguageClient diagnostics are separate).
 
 For example, `ModelAutocompletionProvider` builds completion entries from `nodeMetaMap` after a manifest-cache event. There is no `vscode-languageclient` dependency, `LanguageClient`, `dbt lsp` process, or LSP transport in the current extension.
 
