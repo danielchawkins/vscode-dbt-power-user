@@ -10,7 +10,6 @@ import {
   extensions,
   languages,
   ProgressLocation,
-  Range,
   TextEditor,
   Uri,
   version,
@@ -64,13 +63,6 @@ export class VSCodeCommands implements Disposable {
     this.disposables.push(
       this.cteProfilerService,
       this.cteProfilerDecorationProvider,
-      commands.registerCommand(
-        "dbtPowerUser.checkIfDbtIsInstalled",
-        async () => {
-          await this.dbtProjectContainer.detectDBT();
-          this.dbtProjectContainer.initialize();
-        },
-      ),
       commands.registerCommand("dbtPowerUser.runCurrentModel", () => {
         // `dbt run` on a singular test file is never meaningful; route it
         // to `dbt test --select <test>` instead. See #1720.
@@ -306,10 +298,6 @@ export class VSCodeCommands implements Disposable {
         this.runModel.executeQueryOnActiveWindow(),
       ),
       commands.registerCommand(
-        "dbtPowerUser.runSelectedQuery",
-        (uri: Uri, range: Range) => this.runSelectedQuery(uri, range),
-      ),
-      commands.registerCommand(
         "dbtPowerUser.runCteWithDependencies",
         (uri: Uri, cteIndex: number, ctes: CteInfo[]) =>
           this.runCteWithDependencies(uri, cteIndex, ctes),
@@ -413,12 +401,6 @@ export class VSCodeCommands implements Disposable {
             "dbtPowerUser.projectSelected",
           );
         await this.walkthroughCommands.installDeps(pickedProject);
-      }),
-      commands.registerCommand("dbtPowerUser.associateFileExts", async () => {
-        commands.executeCommand(
-          "workbench.action.openSettings",
-          "@id:files.associations",
-        );
       }),
       commands.registerCommand("dbtPowerUser.viewInDocEditor", () =>
         commands.executeCommand("dbtPowerUser.DocsEdit.focus"),
@@ -759,28 +741,6 @@ export class VSCodeCommands implements Disposable {
       this.diagnosticsOutputChannel.logLine(d.message);
     }
     await project.debug(false);
-  }
-
-  private async runSelectedQuery(uri: Uri, range: Range): Promise<void> {
-    // Get the document and extract the selected text
-    const document = workspace.textDocuments.find(
-      (doc) => doc.uri.toString() === uri.toString(),
-    );
-    if (!document) {
-      window.showErrorMessage("Document not found");
-      return;
-    }
-
-    const selectedQuery = document.getText(range);
-    if (!selectedQuery.trim()) {
-      window.showErrorMessage("No query selected");
-      return;
-    }
-
-    // Create a model name based on the selection - use "cte_query" as default
-    const modelName = "cte_query";
-
-    await this.runModel.executeSQL(uri, selectedQuery, modelName);
   }
 
   private async runCteWithDependencies(

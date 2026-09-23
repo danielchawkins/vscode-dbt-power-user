@@ -102,16 +102,10 @@ describe("command contribution consistency", () => {
     const { literals, nonLiterals } = scanCommandRegistrations();
 
     const literalUncontributedAllowlist: Record<string, string> = {
-      "dbtPowerUser.checkIfDbtIsInstalled":
-        "Dead registration pending cleanup; src/commands",
-      "dbtPowerUser.associateFileExts":
-        "Dead registration pending cleanup; src/commands",
       "dbtPowerUser.createModelBasedonSourceConfig":
         "CodeLens-only; src/code_lens_provider",
       "dbtPowerUser.runCteWithDependencies":
         "CodeLens-only; src/code_lens_provider",
-      "dbtPowerUser.runSelectedQuery":
-        "Dead registration pending cleanup; src/commands",
       "dbtPowerUser.yamlRunModel": "CodeLens-only; src/code_lens_provider",
       "dbtPowerUser.yamlTestModel": "CodeLens-only; src/code_lens_provider",
       "dbtPowerUser.pickProject": "CodeLens-only; src/code_lens_provider",
