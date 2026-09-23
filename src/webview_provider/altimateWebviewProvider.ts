@@ -26,7 +26,6 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
-import { AltimateAuthService } from "../services/altimateAuthService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import { extendErrorWithSupportLinks } from "../utils";
@@ -77,7 +76,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
-    protected altimateAuthService: AltimateAuthService,
   ) {
     this._disposables.push(
       dbtProjectContainer.onManifestChanged((event) =>
@@ -289,16 +287,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
           }
           env.openExternal(Uri.parse(params.url as string));
           break;
-        case "validateCredentials":
-          const isValid = this.altimateAuthService.handlePreviewFeatures();
-          this.sendResponseToWebview({
-            command: "response",
-            syncRequestId,
-            data: {
-              isValid,
-            },
-          });
-          break;
         case "setContext":
           this.dbtProjectContainer.setToGlobalState(
             params.key as string,
@@ -323,21 +311,15 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
             "Updating config",
             params,
           );
-          // If config is for preview feature, then check keys
-          const shouldUpdate =
-            !params.isPreviewFeature ||
-            this.altimateAuthService.handlePreviewFeatures();
-          if (shouldUpdate) {
-            await workspace
-              .getConfiguration("dbt")
-              .update(params.key, params.value);
-          }
+          await workspace
+            .getConfiguration("dbt")
+            .update(params.key, params.value);
           if (syncRequestId) {
             this.sendResponseToWebview({
               command: "response",
               syncRequestId,
               data: {
-                updated: shouldUpdate,
+                updated: true,
               },
             });
           }

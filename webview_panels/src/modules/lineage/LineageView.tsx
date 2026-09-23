@@ -47,14 +47,11 @@ const LineageView = (): JSX.Element | null => {
         case "getFunctionDetails":
         case "getColumns":
         case "getConnectedColumns":
-        case "sendFeedback":
         case "getLineageSettings":
         case "persistLineageSettings":
         case "init":
         case "openFile":
-        case "openChat":
         case "showInfoNotification":
-        case "previewFeature":
         case "getRelationships":
           return executeRequestInSync(url, { args: { params: data ?? {} } });
         case "columnLineage":
@@ -65,12 +62,8 @@ const LineageView = (): JSX.Element | null => {
       }
     };
     // @ts-expect-error TODO: add type generic for executeRequestInSync
-    ApiHelper.post = async (url: string, data?: Record<string, unknown>) => {
+    ApiHelper.post = (url: string) => {
       switch (url) {
-        case "dbt/v4/export-lineage":
-          return executeRequestInSync("exportLineage", {
-            args: { params: data ?? {} },
-          });
         default:
           break;
       }

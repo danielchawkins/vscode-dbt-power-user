@@ -183,10 +183,22 @@ export class MarkdownString {
   public value = "";
   public isTrusted = false;
   public supportHtml = false;
+  public supportThemeIcons = false;
+
   constructor(value?: string, _supportThemeIcons?: boolean) {
     if (value) {
       this.value = value;
     }
+  }
+
+  appendMarkdown(value: string): this {
+    this.value += value;
+    return this;
+  }
+
+  appendText(value: string): this {
+    this.value += value;
+    return this;
   }
 }
 

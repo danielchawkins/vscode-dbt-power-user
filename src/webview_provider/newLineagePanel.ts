@@ -30,12 +30,10 @@ import { AltimateRequest } from "../altimate";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
-import { AltimateAuthService } from "../services/altimateAuthService";
 import { CllEvents, DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import { extendErrorWithSupportLinks } from "../utils";
-import { ValidationProvider } from "../validation_provider";
 import { AltimateWebviewProvider } from "./altimateWebviewProvider";
 import { LineagePanelView } from "./lineagePanel";
 
@@ -88,8 +86,6 @@ export class NewLineagePanel
     private dbtLineageService: DbtLineageService,
     eventEmitterService: SharedStateService,
     protected queryManifestService: QueryManifestService,
-    protected altimateAuthService: AltimateAuthService,
-    private validationProvider: ValidationProvider,
   ) {
     super(
       dbtProjectContainer,
@@ -97,7 +93,6 @@ export class NewLineagePanel
       eventEmitterService,
       terminal,
       queryManifestService,
-      altimateAuthService,
     );
   }
 
@@ -344,11 +339,6 @@ export class NewLineagePanel
       return;
     }
 
-    if (command === "previewFeature") {
-      this.altimateAuthService.handlePreviewFeatures();
-      return;
-    }
-
     if (command === "showInfoNotification") {
       window.showInformationMessage(params.message);
       return;
@@ -457,29 +447,17 @@ export class NewLineagePanel
   }
 
   /**
-   * ERD overlay: extract PK/FK relationships from the current project's
-   * manifest. Chains all four sources — `relationships` data tests (Phase 1),
-   * model contract foreign keys (Phase 2), naming-convention inference
-   * (Phase 3), and semantic-layer entity pairings (Phase 4). Each ref carries
-   * a `source` discriminator so the frontend can filter and style per-source.
-   *
-   * Inference is invoked unconditionally with the parser's default
-   * confidence floor; the frontend applies the user-controlled threshold
-   * on top. Sources are excluded by default — opt-in via params.
-   *
-   * Gated behind a validated Altimate API key (same gate as other premium
-   * lineage features — `aiEnabled` in `getStartingNode` reads from the same
-   * `ValidationProvider`). Returns an empty list when not authenticated so
-   * the UI silently renders no overlay. Defense-in-depth alongside the
-   * frontend's `aiEnabled` check — covers stale or manipulated webviews.
+   * Extract PK/FK relationships from the current project's manifest.
+   * Chains all four sources — `relationships` data tests, model contract
+   * foreign keys, naming-convention inference, and semantic-layer entity
+   * pairings. Each ref carries a `source` discriminator so the frontend can
+   * filter and style per-source. Sources are excluded by default — opt-in via
+   * params.
    */
   private getRelationships(params?: {
     includeSources?: boolean;
     allowSelfReference?: boolean;
   }): { refs: Ref[] } {
-    if (!this.validationProvider.isAuthenticated()) {
-      return { refs: [] };
-    }
     const event = this.queryManifestService.getEventByCurrentProject();
     if (!event?.event) {
       return { refs: [] };
@@ -778,11 +756,7 @@ export class NewLineagePanel
         missingLineageMessage?: { message: string; type: string };
       }
     | undefined {
-    // Stricter than `altimate.enabled()` (which only checks key + instance
-    // presence): require a successful round-trip validation. Lineage panel
-    // gates premium features on this, so an unvalidated key shouldn't unlock
-    // them.
-    const aiEnabled = this.validationProvider.isAuthenticated();
+    const aiEnabled = true;
     const event = this.queryManifestService.getEventByCurrentProject();
     if (!event?.event) {
       this.dbtTerminal.info("Lineage:getStartingNode", "No event found");

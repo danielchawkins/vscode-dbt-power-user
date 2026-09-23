@@ -4,7 +4,6 @@ import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { CodeBlock } from "@uicore";
 import PerspectiveErrorBoundary from "../perspective/PerspectiveErrorBoundary";
 import PerspectiveViewer from "../perspective/PerspectiveViewer";
-import QueryPanelBookmarks from "../queryPanelBookmarks/QueryPanelBookmarks";
 import QueryPanelHistory from "../queryPanelQueryHistory/QueryPanelHistory";
 import QueryPanelError from "./QueryPanelError";
 import QueryPanelLoader from "./QueryPanelLoader";
@@ -17,10 +16,6 @@ const QueryPanelContent = ({
 }): JSX.Element | null => {
   const { loading, hasError, queryResults, compiledCodeMarkup } =
     useQueryPanelState();
-
-  if (QueryPanelTitleTabState.Bookmarks === tabState) {
-    return <QueryPanelBookmarks />;
-  }
 
   if (QueryPanelTitleTabState.QueryHistory === tabState) {
     return <QueryPanelHistory />;

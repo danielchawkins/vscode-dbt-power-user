@@ -39,16 +39,6 @@ const QueryPanelTitle = ({
               History
             </NavLink>
           </NavItem>
-          <NavItem>
-            <NavLink
-              active={QueryPanelTitleTabState.Bookmarks === tabState}
-              onClick={() =>
-                toggleTabState(QueryPanelTitleTabState.Bookmarks)
-              }
-            >
-              Bookmarks
-            </NavLink>
-          </NavItem>
         </>
       ) : null,
     [tabState, viewType],

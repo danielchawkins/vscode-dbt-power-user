@@ -22,7 +22,6 @@ import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
 import { StatusBars } from "./statusbar";
 import { TreeviewProviders } from "./treeview_provider";
-import { ValidationProvider } from "./validation_provider";
 import { WebviewViewProviders } from "./webview_provider";
 
 enum PromptAnswer {
@@ -62,7 +61,6 @@ export class DBTPowerUserExtension implements Disposable {
     private puStatusBars: DbtPowerUserActionsCenter,
     private dbtTerminal: DBTTerminal,
     private hoverProviders: HoverProviders,
-    private validationProvider: ValidationProvider,
     private projectRegistry: ProjectRegistry,
     private projectContext: ProjectContext,
     private fusionClientPool: FusionClientPool,
@@ -81,7 +79,6 @@ export class DBTPowerUserExtension implements Disposable {
       this.statusBars,
       this.puStatusBars,
       this.hoverProviders,
-      this.validationProvider,
       this.projectRegistry,
       this.projectContext,
       this.fusionClientPool,

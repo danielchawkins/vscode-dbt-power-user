@@ -1,6 +1,5 @@
 import { QueryHistory } from "@modules/queryPanel/context/types";
 import { activateClickOnKeyDown, ListGroupItem } from "@uicore";
-import BookmarkButton from "../queryPanelBookmarks/BookmarkButton";
 import ExecuteQueryButton from "./ExecuteQueryButton";
 import { FileCodeIcon } from "@assets/icons";
 
@@ -41,7 +40,6 @@ const QueryHistoryRow = ({ queryHistory, onSelect }: Props): JSX.Element => {
           projectName={queryHistory.projectName}
           editorName={queryHistory.modelName}
         />
-        <BookmarkButton queryHistory={queryHistory} />
       </div>
     </ListGroupItem>
   );

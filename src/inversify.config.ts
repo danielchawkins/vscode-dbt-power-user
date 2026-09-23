@@ -54,7 +54,6 @@ import { DefaultFusionClientFactory } from "./lsp/fusionLanguageClient";
 import { FusionStatus } from "./lsp/fusionStatus";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
-import { AltimateAuthService } from "./services/altimateAuthService";
 import { DbtLineageService } from "./services/dbtLineageService";
 import { DbtTestService } from "./services/dbtTestService";
 import { DiagnosticsOutputChannel } from "./services/diagnosticsOutputChannel";
@@ -63,8 +62,6 @@ import { FileService } from "./services/fileService";
 import { QueryManifestService } from "./services/queryManifestService";
 import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
-
-import { ValidationProvider } from "./validation_provider";
 
 // Core extension components
 import { DBTClient } from "./dbt_client";
@@ -394,8 +391,6 @@ container
         container.get(DBTCommandExecutionInfrastructure),
         container.get("Factory<DBTProjectIntegrationAdapter>"),
         container.get(AltimateRequest),
-        container.get(ValidationProvider),
-        container.get(AltimateAuthService),
         container.get(RunHistoryService),
         path,
         _onManifestChanged,
@@ -412,14 +407,6 @@ container
       return new DBTProjectLog(onProjectConfigChanged);
     };
   });
-
-// Bind services
-container
-  .bind(AltimateAuthService)
-  .toDynamicValue((context) => {
-    return new AltimateAuthService(context.get("DBTConfiguration"));
-  })
-  .inSingletonScope();
 
 container
   .bind(DbtLineageService)
@@ -569,17 +556,6 @@ container
     return new ProjectQuickPick();
   })
   .inSingletonScope();
-
-container
-  .bind(ValidationProvider)
-  .toDynamicValue((context) => {
-    return new ValidationProvider(
-      context.get(AltimateRequest),
-      context.get(AltimateAuthService),
-    );
-  })
-  .inSingletonScope();
-
 // Bind manifest components
 container
   .bind(PythonEnvironment)
@@ -915,7 +891,6 @@ container
       context.get(SharedStateService),
       context.get("DBTTerminal"),
       context.get(QueryManifestService),
-      context.get(AltimateAuthService),
     );
   })
   .inSingletonScope();
@@ -955,8 +930,6 @@ container
       context.get(DbtLineageService),
       context.get(SharedStateService),
       context.get(QueryManifestService),
-      context.get(AltimateAuthService),
-      context.get(ValidationProvider),
     );
   })
   .inSingletonScope();
@@ -1073,7 +1046,6 @@ container
       context.get(DbtPowerUserActionsCenter),
       context.get("DBTTerminal"),
       context.get(HoverProviders),
-      context.get(ValidationProvider),
       context.get(ProjectRegistry),
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),

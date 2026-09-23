@@ -1,11 +1,6 @@
-import { panelLogger } from "@modules/logger";
 import type { Meta } from "@storybook/react-vite";
-import { TenantUserFactory } from "@testUtils";
 import { Button, Stack } from "@uicore";
-import {
-  QueryBookmarkFactory,
-  QueryHistoryFactory,
-} from "../../testUtils/queryResults";
+import { QueryHistoryFactory } from "../../testUtils/queryResults";
 import { QueryPanelViewType } from "./context/types";
 import QueryPanelProvider from "./QueryPanelProvider";
 
@@ -35,7 +30,6 @@ const ActionButton = ({
   return <Button onClick={handleAction}>{title}</Button>;
 };
 
-const user = TenantUserFactory.build();
 export const DefaultQueryPanelView = {
   render: (): JSX.Element => {
     return (
@@ -107,45 +101,6 @@ export const DefaultQueryPanelView = {
             args: { body: QueryHistoryFactory.buildList(5) },
           });
           return;
-        }
-
-        if (request.command === "fetch") {
-          switch (request.endpoint) {
-            case (/query\/bookmark\?privacy=private/.exec((request.endpoint as string)))?.input:
-              return {
-                items: QueryBookmarkFactory.buildList(5, {
-                  privacy: "private",
-                  created_by_user: user,
-                }),
-                page: 1,
-                pages: 1,
-                size: 5,
-                total: 5,
-              };
-            case (/query\/bookmark\?privacy=public/.exec((request.endpoint as string)))?.input:
-              return {
-                items: QueryBookmarkFactory.buildList(5, {
-                  privacy: "public",
-                  created_by_user: user,
-                }),
-                page: 1,
-                pages: 1,
-                size: 5,
-                total: 5,
-              };
-
-            case "query/bookmark/tags":
-              panelLogger.info("Fetching tags");
-              return [
-                { id: 1, tag: "tag1" },
-                { id: 2, tag: "tag2" },
-                { id: 3, tag: "tag3" },
-              ];
-              break;
-
-            default:
-              break;
-          }
         }
       },
       timer: 500,

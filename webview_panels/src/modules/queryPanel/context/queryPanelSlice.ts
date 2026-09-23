@@ -1,9 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
-import {
-  QueryBookmarkResponse,
-  QueryPanelStateProps,
-  QueryPanelViewType,
-} from "./types";
+import { QueryPanelStateProps, QueryPanelViewType } from "./types";
 import { QueryPanelTitleTabState } from "../components/QueryPanelContents/types";
 
 export const initialState = {
@@ -17,9 +13,7 @@ export const initialState = {
   limit: undefined,
   perspectiveTheme: "Vintage",
   queryHistory: [],
-  queryBookmarks: {},
   tabState: QueryPanelTitleTabState.Preview,
-  queryBookmarksTagsFromDB: undefined,
   activeEditor: undefined,
 } as QueryPanelStateProps;
 
@@ -42,12 +36,6 @@ const queryPanelSlice = createSlice({
         compiledCodeMarkup: undefined,
         loading: false,
       };
-    },
-    setQueryBookmarksTagsFromDB: (
-      state,
-      action: PayloadAction<QueryPanelStateProps["queryBookmarksTagsFromDB"]>,
-    ) => {
-      state.queryBookmarksTagsFromDB = action.payload;
     },
     setViewType: (
       state,
@@ -113,15 +101,6 @@ const queryPanelSlice = createSlice({
     ) => {
       state.loading = action.payload;
     },
-    setQueryBookmarks: (
-      state,
-      action: PayloadAction<{
-        response: QueryBookmarkResponse;
-        type: "public" | "private";
-      }>,
-    ) => {
-      state.queryBookmarks[action.payload.type] = action.payload.response;
-    },
   },
 });
 
@@ -137,9 +116,7 @@ export const {
   setLimit,
   setPerspectiveTheme,
   setQueryHistory,
-  setQueryBookmarks,
   setTabState,
-  setQueryBookmarksTagsFromDB,
   setActiveEditor,
 } = queryPanelSlice.actions;
 

@@ -39,17 +39,6 @@ export function generateHoverMarkdownString(
     }
     content.appendMarkdown("</br>");
   }
-  addSeparator(content);
-  const cmdArgs = encodeURIComponent(
-    JSON.stringify({
-      initialMessage: `Explain the transformation logic of the dbt model \`${node.name}\`. Walk through what it selects, filters, joins, and aggregates — step by step.`,
-      title: `Explain: ${node.name}`,
-      beside: true,
-    }),
-  );
-  content.appendMarkdown(
-    `[$(sparkle) Explain transformation](command:altimate.openChat?${cmdArgs})`,
-  );
   return content;
 }
 
@@ -113,29 +102,6 @@ export const generateMacroHoverMarkdown = (
     );
   }
 
-  addSeparator(content);
-
-  const explainArgs = encodeURIComponent(
-    JSON.stringify({
-      initialMessage: `Explain what the dbt macro \`${node.name}\` does. Describe its purpose, parameters, and how it should be used.`,
-      title: `Explain macro: ${node.name}`,
-      beside: true,
-    }),
-  );
-  content.appendMarkdown(
-    `[$(sparkle) Explain what this macro does](command:altimate.openChat?${explainArgs})\n\n`,
-  );
-
-  const riskyArgs = encodeURIComponent(
-    JSON.stringify({
-      initialMessage: `Analyze the dbt macro \`${node.name}\` and find risky usages in the project. Look for: missing required arguments, incorrect argument types, edge cases that could cause SQL errors, and any anti-patterns.`,
-      title: `Risky usages: ${node.name}`,
-      beside: true,
-    }),
-  );
-  content.appendMarkdown(
-    `[$(warning) Find risky usages](command:altimate.openChat?${riskyArgs})`,
-  );
   return content;
 };
 
