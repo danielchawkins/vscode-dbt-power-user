@@ -3,19 +3,20 @@ import {
   PythonEnvironmentProvider,
   RuntimePythonEnvironment,
 } from "@altimateai/dbt-integration";
-import { injectable } from "inversify";
+import { FusionExecutable } from "../fusion/fusionExecutable";
 
-/** Host env passed into @altimateai/dbt-integration CLI execution only. */
-@injectable()
-export class HostProcessEnvironment
+/** Immutable per-project host env for external Fusion CLI execution. */
+export class ProjectFusionProcessEnvironment
   implements RuntimePythonEnvironment, PythonEnvironmentProvider
 {
-  // External Fusion integration checks truthiness and may derive sibling dbt
-  // paths from this value; keep a separator-free placeholder, not a real path.
-  readonly pythonPath = "unused";
+  constructor(private readonly executable: FusionExecutable) {}
+
+  get pythonPath(): string {
+    return this.executable.path;
+  }
 
   getEnvironmentVariables(_workspacePath: string): EnvironmentVariables {
-    return process.env as EnvironmentVariables;
+    return this.executable.env as EnvironmentVariables;
   }
 
   getCurrentEnvironment(): RuntimePythonEnvironment {

@@ -895,19 +895,3 @@ function formatError(error: unknown): string {
   }
   return String(error);
 }
-
-export function formatExecutableFailure(
-  project: DeclaredProject,
-  verdict: { kind: string; path?: string; raw?: string },
-): string {
-  if (verdict.kind === "notFound") {
-    return `Fusion executable not found for ${project.name} at ${verdict.path ?? "unknown path"}`;
-  }
-  if (verdict.kind === "tooOld") {
-    return `Fusion version too old for ${project.name}`;
-  }
-  if (verdict.kind === "untestedMajor") {
-    return `Untested Fusion major version for ${project.name}`;
-  }
-  return `Fusion executable invalid for ${project.name}`;
-}

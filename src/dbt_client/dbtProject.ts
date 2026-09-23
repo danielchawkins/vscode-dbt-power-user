@@ -310,8 +310,7 @@ export class DBTProject implements Disposable {
   }
 
   getAllDiagnostic(): Diagnostic[] {
-    const integrationDiagnostics =
-      this.getCurrentProjectIntegration().getDiagnostics();
+    const integrationDiagnostics = this.dbtProjectIntegration.getDiagnostics();
 
     // Convert diagnostic data to VSCode Diagnostics
     const convertedDiagnostics = [
@@ -380,8 +379,7 @@ export class DBTProject implements Disposable {
     const projectURI = Uri.file(
       path.join(this.projectRoot.fsPath, DBT_PROJECT_FILE),
     );
-    const integrationDiagnostics =
-      this.getCurrentProjectIntegration().getDiagnostics();
+    const integrationDiagnostics = this.dbtProjectIntegration.getDiagnostics();
 
     this.rebuildManifestDiagnostics.set(
       projectURI,
@@ -1115,9 +1113,7 @@ export class DBTProject implements Disposable {
   }
 
   throwDiagnosticsErrorIfAvailable() {
-    // Check integration diagnostics
-    const integrationDiagnostics =
-      this.getCurrentProjectIntegration().getDiagnostics();
+    const integrationDiagnostics = this.dbtProjectIntegration.getDiagnostics();
     const allIntegrationDiagnostics = [
       ...integrationDiagnostics.rebuildManifestDiagnostics,
     ];

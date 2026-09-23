@@ -8,6 +8,7 @@ import {
   DBTCommandFactory,
   type DBTConfiguration,
   type DBTDiagnosticData,
+  type DBTDiagnosticResult,
   DBTProjectIntegration,
   DBTProjectIntegrationAdapter,
   DBTTerminal,
@@ -24,6 +25,7 @@ import {
   ParsedManifest,
   type QueryExecution,
   type QueryExecutionResult,
+  readAndParseProjectConfig,
   RESOURCE_TYPE_MODEL,
   RUN_RESULTS_FILE,
   type RunResultsEventData,
@@ -33,7 +35,25 @@ import {
   UnitTestParser,
 } from "@altimateai/dbt-integration";
 import { EventEmitter } from "events";
+import { ConfigurationChangeEvent, Disposable, Uri, workspace } from "vscode";
 import { YAMLError } from "yaml";
+import {
+  formatFusionExecutableResolutionFailure,
+  FusionExecutable,
+  FusionExecutableResolver,
+  isFusionExecutable,
+} from "../fusion/fusionExecutable";
+import { affectsFusionExecutablePath } from "../lsp/fusionClientSettings";
+
+export type FusionCommandIntegrationFactory = (
+  executable: FusionExecutable,
+  projectRoot: string,
+  projectConfigDiagnostics: DBTDiagnosticData[],
+  deferConfig: DeferConfig,
+  onDiagnosticsChanged: () => void,
+) => DBTProjectIntegration;
+
+const EXECUTABLE_DIAGNOSTIC_SOURCE = "fusion-executable";
 
 /** Parser-facing project context; upstream types require the adapter class name. */
 export interface ManifestParserProjectContext {
@@ -212,7 +232,11 @@ export class FusionProjectIntegration
   extends EventEmitter
   implements ManifestParserProjectContext
 {
-  private readonly currentIntegration: DBTProjectIntegration;
+  private currentIntegration?: DBTProjectIntegration;
+  private configurationSubscription?: Disposable;
+  private refreshChain: Promise<void> = Promise.resolve();
+  private refreshGeneration = 0;
+  private disposed = false;
   private consecutiveReadFailures = 0;
   private sourceFileWatchers: FSWatcher[] = [];
   private currentSourcePaths?: string[];
@@ -227,12 +251,8 @@ export class FusionProjectIntegration
   constructor(
     private readonly dbtConfiguration: DBTConfiguration,
     private readonly dbtCommandFactory: DBTCommandFactory,
-    private readonly dbtFusionIntegrationFactory: (
-      projectRoot: string,
-      diagnostics: DBTDiagnosticData[],
-      deferConfig: DeferConfig,
-      onDiagnosticsChanged: () => void,
-    ) => DBTProjectIntegration,
+    private readonly resolver: FusionExecutableResolver,
+    private readonly fusionIntegrationFactory: FusionCommandIntegrationFactory,
     private readonly projectRoot: string,
     deferConfig: DeferConfig | undefined,
     private readonly childrenParentParser: ChildrenParentParser,
@@ -252,20 +272,31 @@ export class FusionProjectIntegration
   ) {
     super();
     this.deferConfig = deferConfig ?? this.getDefaultDeferConfig();
-    this.currentIntegration = this.createIntegration();
   }
 
-  private createIntegration(): DBTProjectIntegration {
-    return this.dbtFusionIntegrationFactory(
-      this.projectRoot,
-      this.projectConfigDiagnostics,
-      this.deferConfig,
-      () => this.emit(FusionProjectIntegrationEvents.DIAGNOSTICS_CHANGED),
-    );
+  private requireIntegration(): DBTProjectIntegration {
+    const integration = this.currentIntegration;
+    if (!integration) {
+      throw new Error(
+        `Fusion CLI integration is not initialized for ${this.projectRoot}`,
+      );
+    }
+    return integration;
+  }
+
+  private readProjectNameFromConfig(): string {
+    try {
+      return readAndParseProjectConfig(this.projectRoot).name;
+    } catch {
+      return this.projectRoot.split(/[/\\]/).pop() ?? this.projectRoot;
+    }
   }
 
   getProjectName(): string {
-    return this.currentIntegration.getProjectName();
+    return (
+      this.currentIntegration?.getProjectName() ??
+      this.readProjectNameFromConfig()
+    );
   }
 
   getProjectRoot(): string {
@@ -281,27 +312,27 @@ export class FusionProjectIntegration
   }
 
   getTargetPath(): string | undefined {
-    return this.currentIntegration.getTargetPath();
+    return this.currentIntegration?.getTargetPath();
   }
 
   getPackageInstallPath(): string | undefined {
-    return this.currentIntegration.getPackageInstallPath();
+    return this.currentIntegration?.getPackageInstallPath();
   }
 
   getModelPaths(): string[] | undefined {
-    return this.currentIntegration.getModelPaths();
+    return this.currentIntegration?.getModelPaths();
   }
 
   getSeedPaths(): string[] | undefined {
-    return this.currentIntegration.getSeedPaths();
+    return this.currentIntegration?.getSeedPaths();
   }
 
   getMacroPaths(): string[] | undefined {
-    return this.currentIntegration.getMacroPaths();
+    return this.currentIntegration?.getMacroPaths();
   }
 
   getAdapterType(): string {
-    return this.currentIntegration.getAdapterType() || "unknown";
+    return this.currentIntegration?.getAdapterType() || "unknown";
   }
 
   getDeferConfig(): DeferConfig {
@@ -310,11 +341,22 @@ export class FusionProjectIntegration
 
   async applyDeferConfig(deferConfig: DeferConfig | undefined): Promise<void> {
     this.deferConfig = deferConfig ?? this.getDefaultDeferConfig();
-    await this.currentIntegration.applyDeferConfig(this.deferConfig);
+    if (this.currentIntegration) {
+      await this.currentIntegration.applyDeferConfig(this.deferConfig);
+    }
   }
 
   getCurrentProjectIntegration(): DBTProjectIntegration {
-    return this.currentIntegration;
+    return this.requireIntegration();
+  }
+
+  getDiagnostics(): DBTDiagnosticResult {
+    const delegate = this.currentIntegration?.getDiagnostics();
+    return {
+      projectConfigDiagnostics: [...this.projectConfigDiagnostics],
+      rebuildManifestDiagnostics: delegate?.rebuildManifestDiagnostics ?? [],
+      pythonBridgeDiagnostics: delegate?.pythonBridgeDiagnostics ?? [],
+    };
   }
 
   private addProjectConfigDiagnostic(diagnostic: DBTDiagnosticData): void {
@@ -328,21 +370,224 @@ export class FusionProjectIntegration
   }
 
   async initialize(): Promise<void> {
-    await this.currentIntegration.initializeProject();
-    await this.refreshProjectConfig();
+    this.startExecutableConfigurationWatcher();
+    await this.enqueueRefresh(async () => {
+      await this.activateFromResolvedExecutable(this.refreshGeneration);
+    });
+  }
+
+  private async activateFromResolvedExecutable(
+    generation: number,
+  ): Promise<void> {
+    const executable = await this.resolveExecutable(generation);
+    if (!executable) {
+      return;
+    }
+    await this.activateWithExecutable(executable, generation);
+  }
+
+  private async resolveExecutable(
+    generation: number,
+  ): Promise<FusionExecutable | undefined> {
+    const verdict = await this.resolver.resolve(Uri.file(this.projectRoot));
+    if (generation !== this.refreshGeneration) {
+      return undefined;
+    }
+    if (isFusionExecutable(verdict)) {
+      this.clearExecutableResolutionDiagnostics();
+      return verdict;
+    }
+    const message = formatFusionExecutableResolutionFailure(
+      this.projectRoot,
+      verdict,
+    );
+    this.terminal.error("FusionProjectIntegration", message, false);
+    this.setExecutableResolutionFailure(message);
+    return undefined;
+  }
+
+  private setExecutableResolutionFailure(message: string): void {
+    this.clearExecutableResolutionDiagnostics();
+    this.addProjectConfigDiagnostic({
+      filePath: this.getDBTProjectFilePath(),
+      message,
+      severity: "error",
+      range: {
+        startLine: 0,
+        startColumn: 0,
+        endLine: 999,
+        endColumn: 999,
+      },
+      source: EXECUTABLE_DIAGNOSTIC_SOURCE,
+      category: "project-config",
+    });
+  }
+
+  private clearExecutableResolutionDiagnostics(): void {
+    let removed = false;
+    for (
+      let index = this.projectConfigDiagnostics.length - 1;
+      index >= 0;
+      index--
+    ) {
+      if (
+        this.projectConfigDiagnostics[index].source ===
+        EXECUTABLE_DIAGNOSTIC_SOURCE
+      ) {
+        this.projectConfigDiagnostics.splice(index, 1);
+        removed = true;
+      }
+    }
+    if (removed) {
+      this.emit(FusionProjectIntegrationEvents.DIAGNOSTICS_CHANGED);
+    }
+  }
+
+  private createDelegate(executable: FusionExecutable): DBTProjectIntegration {
+    return this.fusionIntegrationFactory(
+      executable,
+      this.projectRoot,
+      this.projectConfigDiagnostics,
+      this.deferConfig,
+      () => this.emit(FusionProjectIntegrationEvents.DIAGNOSTICS_CHANGED),
+    );
+  }
+
+  private isActivationCurrent(generation: number): boolean {
+    return !this.disposed && generation === this.refreshGeneration;
+  }
+
+  private async abandonIfStale(
+    generation: number,
+    candidate: DBTProjectIntegration,
+  ): Promise<boolean> {
+    if (this.isActivationCurrent(generation)) {
+      return true;
+    }
+    await candidate.dispose();
+    return false;
+  }
+
+  private async activateWithExecutable(
+    executable: FusionExecutable,
+    generation: number,
+  ): Promise<void> {
+    const candidate = this.createDelegate(executable);
+
+    await candidate.initializeProject();
+    if (!(await this.abandonIfStale(generation, candidate))) {
+      return;
+    }
+
+    await this.refreshIntegrationProjectConfig(candidate, false);
+    if (!(await this.abandonIfStale(generation, candidate))) {
+      return;
+    }
+
+    let parsed: ParsedManifest | undefined;
+    await this.runManifestRebuild(candidate, generation, async () => {
+      parsed = await this.buildParsedManifest(candidate, generation);
+    });
+    if (!(await this.abandonIfStale(generation, candidate))) {
+      return;
+    }
+
+    await this.commitCandidate(generation, candidate);
+    if (parsed && this.isActivationCurrent(generation)) {
+      this.publishParsedManifest(parsed);
+    }
+  }
+
+  private async commitCandidate(
+    generation: number,
+    candidate: DBTProjectIntegration,
+  ): Promise<void> {
+    if (!(await this.abandonIfStale(generation, candidate))) {
+      return;
+    }
+    const previous = this.currentIntegration;
+    this.currentIntegration = candidate;
+    if (previous && previous !== candidate) {
+      await previous.dispose();
+    }
     this.emit(FusionProjectIntegrationEvents.PROJECT_CONFIG_CHANGED);
-    await this.rebuildManifest();
     this.startProjectConfigWatcher();
     this.startSourceFilesWatcher();
   }
 
+  private startExecutableConfigurationWatcher(): void {
+    if (this.configurationSubscription) {
+      return;
+    }
+    this.configurationSubscription = workspace.onDidChangeConfiguration(
+      (event) => {
+        void this.enqueueExecutableRefresh(event).catch(() => undefined);
+      },
+    );
+  }
+
+  private enqueueExecutableRefresh(
+    event: ConfigurationChangeEvent,
+  ): Promise<void> {
+    if (!affectsFusionExecutablePath(event, Uri.file(this.projectRoot))) {
+      return this.refreshChain;
+    }
+    if (this.disposed) {
+      return Promise.resolve();
+    }
+    const generation = ++this.refreshGeneration;
+    return this.enqueueRefresh(async () => {
+      this.stopFileWatching();
+      this.stopProjectConfigWatcher();
+      await this.disposeDelegate();
+      await this.activateFromResolvedExecutable(generation);
+    });
+  }
+
+  private enqueueRefresh(task: () => Promise<void>): Promise<void> {
+    if (this.disposed) {
+      return Promise.resolve();
+    }
+    const run = this.refreshChain.then(async () => {
+      if (this.disposed) {
+        return;
+      }
+      await task();
+    });
+    this.refreshChain = run.catch((error: unknown) => {
+      this.terminal.error(
+        "FusionProjectIntegration",
+        "Fusion executable refresh failed",
+        error,
+        false,
+      );
+    });
+    return run;
+  }
+
+  private async disposeDelegate(): Promise<void> {
+    const delegate = this.currentIntegration;
+    this.currentIntegration = undefined;
+    if (!delegate) {
+      return;
+    }
+    await delegate.dispose();
+  }
+
   async refreshProjectConfig(): Promise<void> {
+    await this.refreshIntegrationProjectConfig(this.requireIntegration(), true);
+  }
+
+  private async refreshIntegrationProjectConfig(
+    delegate: DBTProjectIntegration,
+    updateWatchers: boolean,
+  ): Promise<void> {
     this.terminal.debug(
       "FusionProjectIntegration",
       `Going to refresh the project "${this.getProjectName()}" at ${this.projectRoot} configuration`,
     );
     try {
-      await this.currentIntegration.refreshProjectConfig();
+      await delegate.refreshProjectConfig();
       this.clearProjectConfigDiagnostics();
     } catch (error) {
       const projectFile = this.getDBTProjectFilePath();
@@ -368,6 +613,9 @@ export class FusionProjectIntegration
       );
       return;
     }
+    if (!updateWatchers) {
+      return;
+    }
     this.updateSourceFilesWatchers();
     const modelPaths = this.getModelPaths();
     const macroPaths = this.getMacroPaths();
@@ -390,23 +638,43 @@ export class FusionProjectIntegration
       "FusionProjectIntegration",
       `Going to rebuild the manifest for project at ${this.projectRoot}`,
     );
+    const delegate = this.requireIntegration();
+    const generation = this.refreshGeneration;
+    await this.runManifestRebuild(delegate, generation, async () => {
+      const parsed = await this.buildParsedManifest(delegate, generation);
+      if (parsed) {
+        this.publishParsedManifest(parsed);
+      }
+    });
+  }
+
+  private async runManifestRebuild(
+    delegate: DBTProjectIntegration,
+    generation: number,
+    afterRebuild: () => Promise<void>,
+  ): Promise<void> {
     this.emit(FusionProjectIntegrationEvents.REBUILD_MANIFEST_STATUS_CHANGE, {
       inProgress: true,
     });
     try {
-      await this.currentIntegration.rebuildManifest();
+      await delegate.rebuildManifest();
+      if (!this.isActivationCurrent(generation)) {
+        return;
+      }
       this.terminal.debug(
         "FusionProjectIntegration",
         `Finished rebuilding the manifest for project at ${this.projectRoot}`,
       );
-      await this.parseManifest();
+      await afterRebuild();
     } catch (error) {
-      this.terminal.error(
-        "FusionProjectIntegration",
-        "Error rebuilding manifest",
-        error,
-      );
-      throw error;
+      if (this.isActivationCurrent(generation)) {
+        this.terminal.error(
+          "FusionProjectIntegration",
+          "Error rebuilding manifest",
+          error,
+        );
+        throw error;
+      }
     } finally {
       this.emit(FusionProjectIntegrationEvents.REBUILD_MANIFEST_STATUS_CHANGE, {
         inProgress: false,
@@ -415,11 +683,36 @@ export class FusionProjectIntegration
   }
 
   async parseManifest(): Promise<ParsedManifest | undefined> {
+    const generation = this.refreshGeneration;
+    const parsed = await this.buildParsedManifest(
+      this.requireIntegration(),
+      generation,
+    );
+    if (parsed && this.isActivationCurrent(generation)) {
+      this.publishParsedManifest(parsed);
+    }
+    return parsed;
+  }
+
+  private publishParsedManifest(parsed: ParsedManifest): void {
+    this.lastParsedManifest = parsed;
+    this.emit(FusionProjectIntegrationEvents.MANIFEST_PARSED, parsed);
+    this.terminal.debug(
+      "manifestParsed",
+      "manifest succesfully parsed",
+      parsed,
+    );
+  }
+
+  private async buildParsedManifest(
+    delegate: DBTProjectIntegration,
+    generation: number,
+  ): Promise<ParsedManifest | undefined> {
     this.terminal.debug(
       "FusionProjectIntegration",
       `Going to parse manifest for project at ${this.projectRoot}`,
     );
-    const targetPath = this.getTargetPath();
+    const targetPath = delegate.getTargetPath();
     if (!targetPath) {
       this.terminal.debug(
         "FusionProjectIntegration",
@@ -432,6 +725,8 @@ export class FusionProjectIntegration
     if (manifestJson === undefined) {
       return;
     }
+    const previous = this.currentIntegration;
+    this.currentIntegration = delegate;
     const parserProject = asParserProject(this);
     // manifest.json stores resource maps as objects; published parser types say arrays.
     const {
@@ -526,6 +821,12 @@ export class FusionProjectIntegration
       exposureMetaMapPromise,
       functionMetaMapPromise,
     ]);
+    if (!this.isActivationCurrent(generation)) {
+      if (this.currentIntegration === delegate && previous !== delegate) {
+        this.currentIntegration = previous;
+      }
+      return;
+    }
     const modelDepthMap = this.modelDepthParser.createModelDepthsMap(
       nodes,
       parentMetaMap,
@@ -555,13 +856,9 @@ export class FusionProjectIntegration
       semanticModelMetaMap,
       modelDepthMap,
     };
-    this.lastParsedManifest = parsed;
-    this.emit(FusionProjectIntegrationEvents.MANIFEST_PARSED, parsed);
-    this.terminal.debug(
-      "manifestParsed",
-      "manifest succesfully parsed",
-      parsed,
-    );
+    if (this.currentIntegration === delegate && previous !== delegate) {
+      this.currentIntegration = previous;
+    }
     return parsed;
   }
 
@@ -651,7 +948,7 @@ export class FusionProjectIntegration
   }
 
   getDebounceForRebuildManifest(): number {
-    return this.currentIntegration.getDebounceForRebuildManifest?.() ?? 500;
+    return this.requireIntegration().getDebounceForRebuildManifest?.() ?? 500;
   }
 
   private startSourceFilesWatcher(): void {
@@ -877,17 +1174,20 @@ export class FusionProjectIntegration
     command.logToTerminal = false;
     const before = this.observeRunResultsBeforeCommand();
     const result =
-      await this.currentIntegration.executeCommandImmediately(command);
+      await this.requireIntegration().executeCommandImmediately(command);
     this.parseRunResultsAfterCommand(before);
     return result;
   }
 
   async unsafeCompileNode(modelName: string) {
-    return this.currentIntegration.unsafeCompileNode(modelName);
+    return this.requireIntegration().unsafeCompileNode(modelName);
   }
 
   async unsafeCompileQuery(query: string, originalModelName?: string) {
-    return this.currentIntegration.unsafeCompileQuery(query, originalModelName);
+    return this.requireIntegration().unsafeCompileQuery(
+      query,
+      originalModelName,
+    );
   }
 
   async installDeps() {
@@ -903,7 +1203,7 @@ export class FusionProjectIntegration
     const command = this.dbtCommandFactory.createDebugCommand(focus);
     command.showProgress = false;
     command.logToTerminal = false;
-    return this.currentIntegration.executeCommandImmediately(command);
+    return this.requireIntegration().executeCommandImmediately(command);
   }
 
   async executeSQLWithLimit(
@@ -954,7 +1254,7 @@ export class FusionProjectIntegration
     if (limit <= 0) {
       throw new Error("Limit must be greater than 0");
     }
-    const execution = await this.currentIntegration.executeSQL(
+    const execution = await this.requireIntegration().executeSQL(
       normalizedQuery,
       limit,
       modelName,
@@ -982,11 +1282,11 @@ export class FusionProjectIntegration
   }
 
   async getColumnsOfModel(modelName: string) {
-    return this.currentIntegration.getColumnsOfModel(modelName);
+    return this.requireIntegration().getColumnsOfModel(modelName);
   }
 
   async getColumnsOfSource(sourceName: string, tableName: string) {
-    return this.currentIntegration.getColumnsOfSource(sourceName, tableName);
+    return this.requireIntegration().getColumnsOfSource(sourceName, tableName);
   }
 
   async getColumnValues(model: string, column: string) {
@@ -1033,9 +1333,16 @@ export class FusionProjectIntegration
   }
 
   async dispose(): Promise<void> {
+    if (this.disposed) {
+      return;
+    }
+    this.disposed = true;
+    this.refreshGeneration++;
+    this.configurationSubscription?.dispose();
+    this.configurationSubscription = undefined;
     this.stopFileWatching();
     this.stopProjectConfigWatcher();
-    await this.currentIntegration.dispose();
+    await this.disposeDelegate();
     this.removeAllListeners();
   }
 }

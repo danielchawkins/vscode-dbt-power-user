@@ -115,6 +115,28 @@ async function defaultRunVersion(
   return { stdout, stderr };
 }
 
+export function isFusionExecutable(
+  verdict: FusionExecutable | FusionVersionVerdict,
+): verdict is FusionExecutable {
+  return "env" in verdict;
+}
+
+export function formatFusionExecutableResolutionFailure(
+  label: string,
+  verdict: FusionVersionVerdict,
+): string {
+  if (verdict.kind === "notFound") {
+    return `Fusion executable not found for ${label} at ${verdict.path ?? "unknown path"}`;
+  }
+  if (verdict.kind === "tooOld") {
+    return `Fusion version too old for ${label}`;
+  }
+  if (verdict.kind === "untestedMajor") {
+    return `Untested Fusion major version for ${label}`;
+  }
+  return `Fusion executable invalid for ${label}`;
+}
+
 export class ConfiguredFusionExecutableResolver implements FusionExecutableResolver {
   private readonly getConfiguredPath: (scope: Uri) => string | undefined;
   private readonly getWorkspaceFolder: (

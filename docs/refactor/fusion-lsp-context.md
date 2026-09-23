@@ -70,7 +70,7 @@ The existing Fusion integration is therefore a CLI-and-artifact adapter beneath 
 
 The current `DBTFusionCommandProjectIntegration` extends the Cloud integration. Although it overrides command execution to call the local CLI, inherited run, build, test, compile, and defer paths can still pass through Cloud helpers that call `throwIfNotAuthenticated()`. Extract a Fusion-only operation layer before deleting hosted validation or authentication code.
 
-After Phase 8.2, direct Fusion CLI execution uses the extension host's inherited `process.env`, aligned with the LSP launch context. The Python bridge, Python extension dependency, terminal-interpreter detection, and ms-python `.env` merging are removed. Characterization tests must demonstrate local run/build/test without Python or Altimate state.
+After Phase 8.2, direct Fusion CLI execution uses the extension host's inherited `process.env` through a per-project boundary configured from `ConfiguredFusionExecutableResolver` — the same resolver and env snapshot contract as the LSP client. Changing the folder-scoped executable-path setting re-resolves that project, replaces its CLI delegate, and keeps LSP and CLI on the same path and env snapshot; sibling projects stay isolated. The Python bridge, Python extension dependency, terminal-interpreter detection, and ms-python `.env` merging are removed. Characterization tests must demonstrate local run/build/test without Python or Altimate state.
 
 The current parse and metadata flow is separate:
 

@@ -1,14 +1,9 @@
 import {
   ChildrenParentParser,
-  CLIDBTCommandExecutionStrategy,
   CommandProcessExecutionFactory,
-  DBTCommandExecutionInfrastructure,
-  DBTCommandExecutionStrategy,
   DBTCommandFactory,
   DBTConfiguration,
   DBTDetection,
-  DBTDiagnosticData,
-  DBTFusionCommandProjectIntegration,
   DBTTerminal,
   DeferConfig,
   DocParser,
@@ -19,8 +14,6 @@ import {
   MetricParser,
   ModelDepthParser,
   NodeParser,
-  PythonEnvironmentProvider,
-  RuntimePythonEnvironment,
   SemanticModelParser,
   SourceParser,
   TestParser,
@@ -28,12 +21,12 @@ import {
 } from "@altimateai/dbt-integration";
 import { Container, Factory, ResolutionContext } from "inversify";
 import { Event, EventEmitter, Memento, Uri } from "vscode";
+import { createFusionCommandIntegrationFactory } from "./dbt_client/configuredFusionCommandIntegration";
 import { DBTProject } from "./dbt_client/dbtProject";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
 import { FusionProjectIntegration } from "./dbt_client/fusionProjectIntegration";
-import { HostProcessEnvironment } from "./dbt_client/hostProcessEnvironment";
 import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
@@ -163,40 +156,10 @@ container
       ),
   );
 
-// Bind core dbt integration classes using factory functions
-container
-  .bind(CLIDBTCommandExecutionStrategy)
-  .toDynamicValue(() => {
-    // Note: CLIDBTCommandExecutionStrategy requires projectRoot and dbtPath at construction time
-    // These will be provided by the factory functions that create instances
-    throw new Error(
-      "CLIDBTCommandExecutionStrategy should be created via Factory<CLIDBTCommandExecutionStrategy>",
-    );
-  })
-  .inSingletonScope();
-
-container.bind(DBTCommandExecutionInfrastructure).toDynamicValue((context) => {
-  return new DBTCommandExecutionInfrastructure(
-    context.get("RuntimePythonEnvironment"),
-    context.get("DBTTerminal"),
-  );
-});
-
 container
   .bind(DBTCommandFactory)
   .toDynamicValue((context) => {
     return new DBTCommandFactory(context.get("DBTConfiguration"));
-  })
-  .inSingletonScope();
-
-// Note: DBTFusionCommandProjectIntegration requires projectRoot at construction time
-// It will be created via Factory<DBTFusionCommandProjectIntegration>
-container
-  .bind(DBTFusionCommandProjectIntegration)
-  .toDynamicValue(() => {
-    throw new Error(
-      "DBTFusionCommandProjectIntegration should be created via Factory<DBTFusionCommandProjectIntegration>",
-    );
   })
   .inSingletonScope();
 
@@ -210,18 +173,6 @@ container
 container
   .bind<DBTTerminal>("DBTTerminal")
   .to(VSCodeDBTTerminal)
-  .inSingletonScope();
-
-container.bind(HostProcessEnvironment).toSelf().inSingletonScope();
-
-container
-  .bind<RuntimePythonEnvironment>("RuntimePythonEnvironment")
-  .toDynamicValue((context) => context.get(HostProcessEnvironment))
-  .inSingletonScope();
-
-container
-  .bind<PythonEnvironmentProvider>("PythonEnvironmentProvider")
-  .toDynamicValue((context) => context.get(HostProcessEnvironment))
   .inSingletonScope();
 
 // Bind CommandProcessExecutionFactory
@@ -247,63 +198,26 @@ container
   });
 
 container
-  .bind<Factory<DBTCommandExecutionStrategy, [string, string]>>(
-    "Factory<CLIDBTCommandExecutionStrategy>",
-  )
-  .toFactory((context: ResolutionContext) => {
-    return (projectRoot: string, dbtPath: string) => {
-      const container = context;
-      return new CLIDBTCommandExecutionStrategy(
-        container.get(CommandProcessExecutionFactory),
-        container.get("RuntimePythonEnvironment"),
-        container.get("DBTTerminal"),
-        projectRoot,
-        dbtPath,
-      );
-    };
-  });
-
-container
-  .bind<
-    Factory<
-      DBTFusionCommandProjectIntegration,
-      [string, DBTDiagnosticData[], DeferConfig, () => void]
-    >
-  >("Factory<DBTFusionCommandProjectIntegration>")
-  .toFactory((context: ResolutionContext) => {
-    return (
-      projectRoot: string,
-      projectConfigDiagnostics: DBTDiagnosticData[],
-      deferConfig: DeferConfig,
-      onDiagnosticsChanged: () => void,
-    ) => {
-      const container = context;
-      return new DBTFusionCommandProjectIntegration(
-        container.get(DBTCommandExecutionInfrastructure),
-        container.get(DBTCommandFactory),
-        container.get("Factory<CLIDBTCommandExecutionStrategy>"),
-        container.get("RuntimePythonEnvironment"),
-        container.get("PythonEnvironmentProvider"),
-        container.get("DBTTerminal"),
-        projectRoot,
-        projectConfigDiagnostics,
-        deferConfig,
-        onDiagnosticsChanged,
-      );
-    };
-  });
-
-container
   .bind<Factory<FusionProjectIntegration, [string, DeferConfig | undefined]>>(
     "Factory<FusionProjectIntegration>",
   )
   .toFactory((context: ResolutionContext) => {
     return (projectRoot: string, deferConfig: DeferConfig | undefined) => {
       const container = context;
+      const terminal = container.get<DBTTerminal>("DBTTerminal");
+      const commandProcessExecutionFactory = container.get(
+        CommandProcessExecutionFactory,
+      );
+      const dbtCommandFactory = container.get(DBTCommandFactory);
       return new FusionProjectIntegration(
         container.get("DBTConfiguration"),
-        container.get(DBTCommandFactory),
-        container.get("Factory<DBTFusionCommandProjectIntegration>"),
+        dbtCommandFactory,
+        container.get(ConfiguredFusionExecutableResolver),
+        createFusionCommandIntegrationFactory(
+          commandProcessExecutionFactory,
+          dbtCommandFactory,
+          terminal,
+        ),
         projectRoot,
         deferConfig,
         container.get(ChildrenParentParser),
@@ -317,7 +231,7 @@ container
         container.get(ExposureParser),
         container.get(FunctionParser),
         container.get(DocParser),
-        container.get("DBTTerminal"),
+        terminal,
         container.get(ModelDepthParser),
         container.get(SemanticModelParser),
       );

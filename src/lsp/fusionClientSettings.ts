@@ -121,3 +121,13 @@ export function affectsFusionLaunchConfiguration(
     event.affectsConfiguration(`${CONFIGURATION_SECTION}.${key}`, scope),
   );
 }
+
+export function affectsFusionExecutablePath(
+  event: ConfigurationChangeEvent,
+  scope: Uri,
+): boolean {
+  return event.affectsConfiguration(
+    `${CONFIGURATION_SECTION}.${FUSION_PATH_SETTING}`,
+    scope,
+  );
+}

@@ -1,7 +1,6 @@
 import {
   AltimateHttpClient,
   DBTDetection,
-  DBTFusionCommandProjectIntegration,
   DbtIntegrationClient,
   DeferConfig,
 } from "@altimateai/dbt-integration";
@@ -12,7 +11,7 @@ import { FusionVersionDetection } from "../../fusion/fusionVersionDetection";
 import { FusionStatus } from "../../lsp/fusionStatus";
 
 import { FusionProjectIntegration } from "../../dbt_client/fusionProjectIntegration";
-import { HostProcessEnvironment } from "../../dbt_client/hostProcessEnvironment";
+import { ConfiguredFusionExecutableResolver } from "../../fusion/fusionExecutable";
 import * as vscodeMock from "../mock/vscode";
 import { createMockLogOutputChannel } from "../mock/vscode";
 const vscodeMockAny = vscodeMock as Record<string, unknown>;
@@ -86,11 +85,14 @@ describe("Fusion-only integration wiring", () => {
     expect(extension).toBeInstanceOf(DBTPowerUserExtension);
   });
 
-  it("binds host process env for external CLI execution", () => {
-    const env = container.get(HostProcessEnvironment);
-    expect(env.pythonPath).toBeTruthy();
-    expect(env.pythonPath.includes("/")).toBe(false);
-    expect(env.getEnvironmentVariables("/tmp/project")).toBe(process.env);
+  it("binds one shared Fusion executable resolver for LSP and CLI", () => {
+    expect(container.isBound(ConfiguredFusionExecutableResolver)).toBe(true);
+    const resolver = container.get(ConfiguredFusionExecutableResolver);
+    expect(resolver).toBeInstanceOf(ConfiguredFusionExecutableResolver);
+    expect(container.isBound("RuntimePythonEnvironment")).toBe(false);
+    expect(
+      container.isBound("Factory<DBTFusionCommandProjectIntegration>"),
+    ).toBe(false);
   });
 
   it("uses the Fusion project integration", () => {
@@ -105,8 +107,8 @@ describe("Fusion-only integration wiring", () => {
     const integration = factory("/tmp/project", undefined);
 
     expect(integration).toBeInstanceOf(FusionProjectIntegration);
-    expect(integration.getCurrentProjectIntegration()).toBeInstanceOf(
-      DBTFusionCommandProjectIntegration,
+    expect(() => integration.getCurrentProjectIntegration()).toThrow(
+      /not initialized/,
     );
   });
 });

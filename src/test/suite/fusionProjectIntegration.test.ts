@@ -61,19 +61,50 @@ function mockTerminal(): DBTTerminal {
   } as unknown as DBTTerminal;
 }
 
-function buildIntegration(
+function stubDelegate(
+  projectRoot: string,
+  overrides: Partial<DBTProjectIntegration> = {},
+): DBTProjectIntegration {
+  return {
+    initializeProject: jest.fn(async () => undefined),
+    refreshProjectConfig: jest.fn(async () => undefined),
+    rebuildManifest: jest.fn(async () => undefined),
+    dispose: jest.fn(async () => undefined),
+    getDiagnostics: () => ({
+      projectConfigDiagnostics: [],
+      rebuildManifestDiagnostics: [],
+      pythonBridgeDiagnostics: [],
+    }),
+    getDebounceForRebuildManifest: () => 500,
+    getProjectName: () => "single_project",
+    getModelPaths: () => [path.join(projectRoot, "models")],
+    getMacroPaths: () => [path.join(projectRoot, "macros")],
+    getSeedPaths: () => [path.join(projectRoot, "seeds")],
+    getTargetPath: () => path.join(projectRoot, "target"),
+    ...overrides,
+  } as unknown as DBTProjectIntegration;
+}
+
+async function buildIntegration(
   projectRoot: string,
   fusionDelegate: DBTProjectIntegration,
-): FusionProjectIntegration {
+): Promise<FusionProjectIntegration> {
   const terminal = mockTerminal();
   const configuration = {
     getInstallDepsOnProjectInitialization: () => false,
     getQueryLimit: () => 500,
     getDisableDepthsCalculation: () => false,
   } as unknown as DBTConfiguration;
-  return new FusionProjectIntegration(
+  const integration = new FusionProjectIntegration(
     configuration,
     {} as DBTCommandFactory,
+    {
+      resolve: jest.fn(async () => ({
+        path: "/mock/bin/dbt",
+        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5\n" },
+        env: process.env as Record<string, string>,
+      })),
+    },
     () => fusionDelegate,
     projectRoot,
     undefined,
@@ -96,6 +127,8 @@ function buildIntegration(
     ),
     new SemanticModelParser(terminal),
   );
+  await integration.initialize();
+  return integration;
 }
 
 function sampleRunResultsJson(invocationId = "inv-123") {
@@ -121,6 +154,16 @@ function writeRunResults(targetDir: string, content = sampleRunResultsJson()) {
   fs.writeFileSync(path.join(targetDir, "run_results.json"), content);
 }
 
+function prepareWatcherPaths(projectRoot: string): void {
+  for (const segment of ["models", "macros", "seeds"]) {
+    fs.mkdirSync(path.join(projectRoot, segment), { recursive: true });
+  }
+  const projectFile = path.join(projectRoot, "dbt_project.yml");
+  if (!fs.existsSync(projectFile)) {
+    fs.writeFileSync(projectFile, "name: single_project\nversion: 1.0.0\n");
+  }
+}
+
 describe("FusionProjectIntegration", () => {
   let tempRoot: string;
 
@@ -140,18 +183,12 @@ describe("FusionProjectIntegration", () => {
       path.join(targetDir, "manifest.json"),
     );
 
-    const fusionDelegate = {
-      getProjectName: () => "single_project",
+    const fusionDelegate = stubDelegate(tempRoot, {
       getTargetPath: () => targetDir,
       getPackageInstallPath: () => path.join(tempRoot, "dbt_packages"),
-      getModelPaths: () => [path.join(tempRoot, "models")],
-      getSeedPaths: () => [path.join(tempRoot, "seeds")],
-      getMacroPaths: () => [path.join(tempRoot, "macros")],
-      getDebounceForRebuildManifest: () => 500,
-      dispose: () => undefined,
-    } as unknown as DBTProjectIntegration;
+    });
 
-    const integration = buildIntegration(tempRoot, fusionDelegate);
+    const integration = await buildIntegration(tempRoot, fusionDelegate);
     const parsed = await new Promise<ParsedManifest>((resolve) => {
       integration.on(FusionProjectIntegrationEvents.MANIFEST_PARSED, resolve);
       void integration.parseManifest();
@@ -164,13 +201,14 @@ describe("FusionProjectIntegration", () => {
     await integration.dispose();
   });
 
-  it("parses run_results.json when content appears after command start", () => {
+  it("parses run_results.json when content appears after command start", async () => {
     tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-run-fresh-"));
+    prepareWatcherPaths(tempRoot);
     const targetDir = path.join(tempRoot, "target");
-    const integration = buildIntegration(tempRoot, {
-      getProjectName: () => "single_project",
-      getTargetPath: () => targetDir,
-    } as unknown as DBTProjectIntegration);
+    const integration = await buildIntegration(
+      tempRoot,
+      stubDelegate(tempRoot, { getTargetPath: () => targetDir }),
+    );
     const listener = jest.fn();
     integration.on(FusionProjectIntegrationEvents.RUN_RESULTS_PARSED, listener);
 
@@ -183,47 +221,53 @@ describe("FusionProjectIntegration", () => {
     expect(listener).toHaveBeenCalledWith(
       expect.objectContaining({ id: "inv-123", projectName: "single_project" }),
     );
+    await integration.dispose();
   });
 
-  it("ignores unchanged run_results.json after command start", () => {
+  it("ignores unchanged run_results.json after command start", async () => {
     tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-run-stale-"));
+    prepareWatcherPaths(tempRoot);
     const targetDir = path.join(tempRoot, "target");
     writeRunResults(targetDir);
-    const integration = buildIntegration(tempRoot, {
-      getProjectName: () => "single_project",
-      getTargetPath: () => targetDir,
-    } as unknown as DBTProjectIntegration);
+    const integration = await buildIntegration(
+      tempRoot,
+      stubDelegate(tempRoot, { getTargetPath: () => targetDir }),
+    );
     const listener = jest.fn();
     integration.on(FusionProjectIntegrationEvents.RUN_RESULTS_PARSED, listener);
 
     const before = integration.observeRunResultsBeforeCommand();
     expect(integration.parseRunResultsAfterCommand(before)).toBeNull();
     expect(listener).not.toHaveBeenCalled();
+    await integration.dispose();
   });
 
-  it("stays silent when run_results.json is missing after command start", () => {
+  it("stays silent when run_results.json is missing after command start", async () => {
     tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-run-missing-"));
+    prepareWatcherPaths(tempRoot);
     const targetDir = path.join(tempRoot, "target");
-    const integration = buildIntegration(tempRoot, {
-      getProjectName: () => "single_project",
-      getTargetPath: () => targetDir,
-    } as unknown as DBTProjectIntegration);
+    const integration = await buildIntegration(
+      tempRoot,
+      stubDelegate(tempRoot, { getTargetPath: () => targetDir }),
+    );
     const listener = jest.fn();
     integration.on(FusionProjectIntegrationEvents.RUN_RESULTS_PARSED, listener);
 
     const before = integration.observeRunResultsBeforeCommand();
     expect(integration.parseRunResultsAfterCommand(before)).toBeNull();
     expect(listener).not.toHaveBeenCalled();
+    await integration.dispose();
   });
 
-  it("parses run_results.json when content changes after command start", () => {
+  it("parses run_results.json when content changes after command start", async () => {
     tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-run-changed-"));
+    prepareWatcherPaths(tempRoot);
     const targetDir = path.join(tempRoot, "target");
     writeRunResults(targetDir, sampleRunResultsJson("inv-old"));
-    const integration = buildIntegration(tempRoot, {
-      getProjectName: () => "single_project",
-      getTargetPath: () => targetDir,
-    } as unknown as DBTProjectIntegration);
+    const integration = await buildIntegration(
+      tempRoot,
+      stubDelegate(tempRoot, { getTargetPath: () => targetDir }),
+    );
     const listener = jest.fn();
     integration.on(FusionProjectIntegrationEvents.RUN_RESULTS_PARSED, listener);
 
@@ -235,6 +279,7 @@ describe("FusionProjectIntegration", () => {
     expect(listener).toHaveBeenCalledWith(
       expect.objectContaining({ id: "inv-new" }),
     );
+    await integration.dispose();
   });
 });
 
@@ -242,9 +287,11 @@ describe("FusionProjectIntegration file watchers", () => {
   let tempRoot: string;
   let watchMock: jest.Mock;
   let FusionProjectIntegrationClass: typeof FusionProjectIntegration;
+  let mockRebuildManifest: jest.Mock<() => Promise<void>>;
   let usingFakeTimers = false;
 
   beforeEach(async () => {
+    mockRebuildManifest = jest.fn(async () => undefined);
     watchMock = jest.fn();
     jest.resetModules();
     await jest.unstable_mockModule("fs", () => {
@@ -263,6 +310,7 @@ describe("FusionProjectIntegration file watchers", () => {
       jest.useRealTimers();
       usingFakeTimers = false;
     }
+    jest.restoreAllMocks();
     jest.resetModules();
     await jest.unstable_unmockModule("fs");
     if (tempRoot && fs.existsSync(tempRoot)) {
@@ -270,10 +318,7 @@ describe("FusionProjectIntegration file watchers", () => {
     }
   });
 
-  function buildMockedIntegration(
-    projectRoot: string,
-    fusionDelegate: DBTProjectIntegration,
-  ) {
+  function buildMockedIntegration(projectRoot: string) {
     const terminal = mockTerminal();
     const configuration = {
       getInstallDepsOnProjectInitialization: () => false,
@@ -283,7 +328,31 @@ describe("FusionProjectIntegration file watchers", () => {
     return new FusionProjectIntegrationClass(
       configuration,
       {} as DBTCommandFactory,
-      () => fusionDelegate,
+      {
+        resolve: jest.fn(async () => ({
+          path: "/mock/bin/dbt",
+          version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5\n" },
+          env: process.env as Record<string, string>,
+        })),
+      },
+      (_executable, root) =>
+        ({
+          initializeProject: jest.fn(async () => undefined),
+          refreshProjectConfig: jest.fn(async () => undefined),
+          rebuildManifest: mockRebuildManifest,
+          getProjectName: () => "single_project",
+          getModelPaths: () => [path.join(root, "models")],
+          getMacroPaths: () => [path.join(root, "macros")],
+          getSeedPaths: () => [path.join(root, "seeds")],
+          getTargetPath: () => path.join(root, "target"),
+          getDebounceForRebuildManifest: () => 500,
+          getDiagnostics: () => ({
+            projectConfigDiagnostics: [],
+            rebuildManifestDiagnostics: [],
+            pythonBridgeDiagnostics: [],
+          }),
+          dispose: jest.fn(async () => undefined),
+        }) as unknown as DBTProjectIntegration,
       projectRoot,
       undefined,
       new ChildrenParentParser(),
@@ -307,24 +376,6 @@ describe("FusionProjectIntegration file watchers", () => {
     );
   }
 
-  function buildWatcherDelegate(
-    projectRoot: string,
-    rebuildManifest = jest.fn(() => Promise.resolve()),
-  ) {
-    return {
-      initializeProject: jest.fn(() => Promise.resolve()),
-      refreshProjectConfig: jest.fn(() => Promise.resolve()),
-      rebuildManifest,
-      getProjectName: () => "single_project",
-      getModelPaths: () => [path.join(projectRoot, "models")],
-      getMacroPaths: () => [path.join(projectRoot, "macros")],
-      getSeedPaths: () => [path.join(projectRoot, "seeds")],
-      getTargetPath: () => path.join(projectRoot, "target"),
-      getDebounceForRebuildManifest: () => 500,
-      dispose: jest.fn(() => Promise.resolve()),
-    } as unknown as DBTProjectIntegration;
-  }
-
   it("watches model, macro, seed, and dbt_project.yml paths only via initialize", async () => {
     tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-watch-"));
     fs.mkdirSync(path.join(tempRoot, "models"), { recursive: true });
@@ -335,10 +386,7 @@ describe("FusionProjectIntegration file watchers", () => {
     const closeMock = jest.fn();
     watchMock.mockReturnValue({ close: closeMock } as unknown as fs.FSWatcher);
 
-    const integration = buildMockedIntegration(
-      tempRoot,
-      buildWatcherDelegate(tempRoot),
-    );
+    const integration = buildMockedIntegration(tempRoot);
     await integration.initialize();
 
     const watchedPaths = watchMock.mock.calls.map(([watchedPath]) =>
@@ -361,9 +409,10 @@ describe("FusionProjectIntegration file watchers", () => {
 
     watchMock.mockClear();
     closeMock.mockClear();
-    await integration.initialize();
+    const reinitialized = buildMockedIntegration(tempRoot);
+    await reinitialized.initialize();
     expect(watchMock).toHaveBeenCalledTimes(4);
-    await integration.dispose();
+    await reinitialized.dispose();
     expect(closeMock).toHaveBeenCalledTimes(4);
   });
 
@@ -386,16 +435,12 @@ describe("FusionProjectIntegration file watchers", () => {
       return { close: jest.fn() } as unknown as fs.FSWatcher;
     });
 
-    const rebuildManifest = jest.fn(() => Promise.resolve());
-    const integration = buildMockedIntegration(
-      tempRoot,
-      buildWatcherDelegate(tempRoot, rebuildManifest),
-    );
+    const integration = buildMockedIntegration(tempRoot);
     await integration.initialize();
     changeHandler?.("change", "model.sql");
     jest.advanceTimersByTime(400);
     await integration.dispose();
     jest.advanceTimersByTime(500);
-    expect(rebuildManifest).toHaveBeenCalledTimes(1);
+    expect(mockRebuildManifest).toHaveBeenCalledTimes(1);
   });
 });
