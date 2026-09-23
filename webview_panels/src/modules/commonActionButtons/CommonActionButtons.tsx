@@ -1,5 +1,4 @@
 import { Button, PopoverWithButton, Stack } from "@uicore";
-import FeedbackButton from "./FeedbackButton";
 import HelpButton from "./HelpButton";
 import { HelpIcon, MoreIcon } from "@assets/icons";
 import { useState } from "react";
@@ -32,15 +31,6 @@ const CommonActionButtons = (): JSX.Element => {
             >
               <HelpIcon style={{ height: 16 }} /> Help
             </Button>
-            <FeedbackButton
-              onClose={close}
-              url="https://form.jotform.com/251106030591141"
-              buttonProps={{
-                outline: true,
-                className: "w-100 text-start",
-                showTextAlways: true,
-              }}
-            />
           </Stack>
         )}
       </PopoverWithButton>

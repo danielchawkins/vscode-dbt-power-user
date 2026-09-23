@@ -55,9 +55,7 @@ const DocumentationHelpContent = ({
         <a href="https://docs.myaltimate.com/document/generatedoc/">
           documentation
         </a>
-        . For any issues or concerns, please{" "}
-        <a href="https://app.myaltimate.com/contactus">contact us</a> via chat
-        or Slack. Happy documenting!
+        .
       </p>
     </Stack>
   );

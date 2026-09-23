@@ -13,7 +13,6 @@ export { default as DislikeIcon } from "./dislike.svg?react";
 export { default as DocsIcon } from "./docs.svg?react";
 export { default as EditIcon } from "./edit.svg?react";
 export { default as ErrorIcon } from "./error.svg?react";
-export { default as FeedbackIcon } from "./feedback.svg?react";
 export { default as FolderIcon } from "./folder.svg?react";
 export { default as HelpIcon } from "./help.svg?react";
 export { default as LikeIcon } from "./like.svg?react";
@@ -177,7 +176,3 @@ export const OpenNewIcon = (
 export const SparkleIcon = (
   props: HTMLAttributes<HTMLElement>,
 ): JSX.Element => <Icon icon="sparkle" {...props} />;
-
-export const ZapIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="zap" {...props} />
-);

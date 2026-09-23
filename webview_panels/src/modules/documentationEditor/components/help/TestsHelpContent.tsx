@@ -13,14 +13,12 @@ const TestHelpContent = (): JSX.Element => {
       </p>
       <p>
         <b>Add Tests:</b> You can easily add or edit generic dbt tests - unique,
-        not_null, accepted_values and relationships . You can also generate code
-        for custom tests from various packages like dbt expectations, dbt utils
-        using Altimate Code chat. Generating custom tests requires an API key.
+        not_null, accepted_values and relationships.
       </p>
       <p>
         <b>Save Tests:</b> Once you&apos;ve added or edited generic tests, hit
         the <b>&quot;Save Tests&quot;</b> button at the bottom to save in yaml
-        file. Generated custom tests need to be added to yaml files manually.
+        file.
       </p>
       <p>
         <b>Sync Columns with Database:</b> Use the sync action to synchronize
@@ -28,19 +26,11 @@ const TestHelpContent = (): JSX.Element => {
         types.
       </p>
       <p>
-        <b>Help Us Improve:</b> We&apos;re eager to hear from you! If
-        you&apos;ve tried the tests generation, let us know how it worked. Your
-        feedback helps us improve and ensures we offer a valuable tool for the
-        community.
-      </p>
-      <p>
         Need more help? Check out the&nbsp;
         <a href="https://docs.myaltimate.com/test/generatetest">
           documentation
         </a>
-        . For any issues or concerns, please{" "}
-        <a href="https://app.myaltimate.com/contactus">contact us</a> via chat
-        or Slack. Happy documenting!
+        .
       </p>
     </Stack>
   );

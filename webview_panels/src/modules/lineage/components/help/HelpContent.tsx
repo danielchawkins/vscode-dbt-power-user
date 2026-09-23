@@ -1,31 +1,13 @@
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
-import { Button } from "@uicore";
-
 const HelpContent = (): JSX.Element => {
   return (
     <div className="p-3 h-100 d-flex flex-column overflow-y">
       <div className="mb-2 d-flex">
         <div className="fw-semibold fs-5">Help</div>
-        <div className="spacer"></div>
-        <Button
-          size="sm"
-          color="primary"
-          onClick={(e) => {
-            e.stopPropagation();
-            executeRequestInAsync("openURL", {
-              url: "https://app.myaltimate.com/contactus",
-            });
-          }}
-        >
-          Chat with us
-        </Button>
       </div>
       <div>
         <p>
           Lineage is available in two forms - model level lineage and column
-          level lineage. You need to add API key in the extension settings to
-          view column level lineage. You can view model level lineage without an
-          API key.
+          level lineage.
         </p>
         <ul>
           <li>
@@ -52,10 +34,6 @@ const HelpContent = (): JSX.Element => {
           <span>If you want to know more please check our </span>
           <a href="https://docs.myaltimate.com" className="text-blue">
             Documentation
-          </a>
-          <span> or still have issue no problem Get in touch with us </span>
-          <a href="https://www.altimate.ai/support?utm_source=dbt-power-user&utm_medium=extension" className="text-blue">
-            Contact us
           </a>
         </div>
       </div>

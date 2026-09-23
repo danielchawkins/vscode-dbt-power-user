@@ -140,11 +140,9 @@ const LineageView = (): JSX.Element | null => {
   return (
     <TooltipProvider>
       <div className={styles.lineageView}>
-        <ActionWidget
-          missingLineageMessage={missingLineageMessage}
-          aiEnabled={renderNode.aiEnabled}
-          lineageType={lineageType}
-        />
+        {lineageType === "dynamic" ? (
+          <ActionWidget missingLineageMessage={missingLineageMessage} />
+        ) : null}
         {lineageType === "sql" ? null : (
           <div className="bottom-right-container">
             <DemoButton />

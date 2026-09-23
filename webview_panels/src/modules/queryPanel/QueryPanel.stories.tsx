@@ -80,9 +80,6 @@ export const DefaultQueryPanelView = {
         if (request.command === "configEnabled") {
           return true;
         }
-        if (request.command === "getProjectAdapterType") {
-          return "snowflake";
-        }
         if (request.command === "getQueryPanelContext") {
           window.postMessage({
             command: "getContext",

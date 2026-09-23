@@ -247,15 +247,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
           commands.executeCommand("workbench.action.problems.focus");
 
           break;
-        case "getProjectAdapterType":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              return this.queryManifestService.getProject()?.getAdapterType();
-            },
-            command,
-          );
-          break;
         case "openFile":
           workspace.openTextDocument(params.path as string).then((doc) => {
             window.showTextDocument(doc);
