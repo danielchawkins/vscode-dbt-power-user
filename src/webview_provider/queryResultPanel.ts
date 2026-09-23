@@ -153,8 +153,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
         this.sendUpdatedContextToWebview();
       }),
     );
-
-    this._disposables.push(this);
   }
 
   private async sendUpdatedContextToWebview() {

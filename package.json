@@ -51,7 +51,7 @@
     ],
     "configuration": [
       {
-        "title": "dbt",
+        "title": "Lineage",
         "properties": {
           "dbt.lineage.showSelectEdges": {
             "type": "boolean",

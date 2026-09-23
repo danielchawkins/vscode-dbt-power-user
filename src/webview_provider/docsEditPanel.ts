@@ -16,7 +16,6 @@ import {
   ColorThemeKind,
   commands,
   Disposable,
-  env,
   ProgressLocation,
   TextEditor,
   Uri,
@@ -560,10 +559,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
             },
             command,
           );
-          return;
-        }
-        if (command === "openURL" && params.url) {
-          await env.openExternal(Uri.parse(params.url as string));
           return;
         }
         if (command === "openProblemsTab") {
