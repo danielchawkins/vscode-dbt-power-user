@@ -29,8 +29,10 @@ import {
 
 export interface LspFixture {
   port: number;
-  /** Temp copy root passed to `dbt lsp --project-dir`. */
+  /** Temp copy root on disk; always the real, non-symlinked path. */
   readonly projectRoot: string;
+  /** Path actually passed as `--project-dir`; equals `projectRoot` unless overridden. */
+  readonly projectDirArg: string;
   /** argv passed to `dbt` at connect; empty until connected. */
   readonly launchArgs: readonly string[];
   connect(timeoutMs: number): Promise<void>;
@@ -88,6 +90,12 @@ export interface LspFixtureOptions {
   executable?: string;
   /** Spawn from the copied project root. */
   useProjectRootAsCwd?: boolean;
+  /**
+   * Overrides the `--project-dir` argument, given the real temp copy path.
+   * Used to reproduce the symlink hazard: Fusion canonicalizes `--project-dir`
+   * but not document URIs, so a symlinked root can desync the two.
+   */
+  projectDirOverride?: (projectRoot: string) => string;
 }
 
 function waitForExit(
@@ -175,6 +183,7 @@ export async function createLspFixture(
   let reverseServer: ReverseSocketServer | null = null;
   let stderr = "";
   let closed = false;
+  let projectDirArg = "";
   // realpathSync resolves macOS's /tmp -> /private/tmp symlink; Fusion canonicalizes
   // --project-dir but not document URIs, so a symlinked root can desync the two.
   const tempDir = fs.mkdtempSync(
@@ -209,6 +218,10 @@ export async function createLspFixture(
       return temporaryProjectRoot;
     },
 
+    get projectDirArg() {
+      return projectDirArg;
+    },
+
     get launchArgs() {
       return launchArgs;
     },
@@ -221,12 +234,15 @@ export async function createLspFixture(
       reverseServer = await listenForServer();
       port = reverseServer.port;
 
+      projectDirArg = options.projectDirOverride
+        ? options.projectDirOverride(temporaryProjectRoot)
+        : temporaryProjectRoot;
       const args = [
         "lsp",
         "--socket",
         String(port),
         "--project-dir",
-        temporaryProjectRoot,
+        projectDirArg,
       ];
       if (temporaryProfilesDir) {
         args.push("--profiles-dir", temporaryProfilesDir);

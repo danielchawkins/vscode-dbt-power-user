@@ -11,6 +11,10 @@ import { tmpdir } from "os";
 import * as path from "path";
 import { fixturePath, getExtensionRoot } from "./helpers/testFixtures";
 
+// A Cursor-launched shell sets this for its own CLI; inherited, it makes the pinned
+// host run as a Node script against our launch args instead of opening a workbench.
+delete process.env.ELECTRON_RUN_AS_NODE;
+
 async function main() {
   const fixtureSource = fixturePath("single-project");
   const temporaryRoot = realpathSync(tmpdir());
