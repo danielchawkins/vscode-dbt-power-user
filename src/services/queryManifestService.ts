@@ -9,7 +9,6 @@ import {
 } from "../dbt_client/event/manifestCacheChangedEvent";
 import { ProjectContext } from "../projects/projectContext";
 import { DeclaredProject } from "../projects/projectRegistry";
-import { SharedStateService } from "./sharedStateService";
 
 export class QueryManifestService {
   private eventMap: Map<string, ManifestCacheProjectAddedEvent> = new Map();
@@ -18,16 +17,8 @@ export class QueryManifestService {
     private dbtProjectContainer: DBTProjectContainer,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
-    protected emitterService: SharedStateService,
     private projectContext: ProjectContext,
   ) {
-    dbtProjectContainer.onDBTProjectsInitialization(() => {
-      this.emitterService.fire({
-        command: "dbtProjectsInitialized",
-        payload: {},
-      });
-    });
-
     dbtProjectContainer.onManifestChanged((event) =>
       this.onManifestCacheChanged(event),
     );

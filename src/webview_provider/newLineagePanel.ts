@@ -16,7 +16,6 @@ import * as path from "path";
 import {
   CancellationToken,
   CancellationTokenSource,
-  ColorThemeKind,
   commands,
   ProgressLocation,
   TextDocument,
@@ -146,25 +145,8 @@ export class NewLineagePanel
     this.renderStartingNode();
   }
 
-  changedActiveColorTheme() {
-    if (!this._panel) {
-      return;
-    }
-    const theme = [
-      ColorThemeKind.Light,
-      ColorThemeKind.HighContrastLight,
-    ].includes(window.activeColorTheme.kind)
-      ? "light"
-      : "dark";
-    this._panel.webview.postMessage({
-      command: "setTheme",
-      args: { theme },
-    });
-  }
-
   init() {
     this.terminal.debug("newLineagePanel:init", "init", this._panel);
-    this.changedActiveColorTheme();
     this.renderStartingNode();
   }
 

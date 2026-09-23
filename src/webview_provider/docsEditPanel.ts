@@ -12,7 +12,6 @@ import { gte } from "semver";
 import {
   CancellationToken,
   CancellationTokenSource,
-  ColorThemeKind,
   commands,
   Disposable,
   ProgressLocation,
@@ -82,15 +81,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     dbtProjectContainer.onManifestChanged((event) =>
       this.onManifestCacheChanged(event),
     );
-    window.onDidChangeActiveColorTheme(
-      async (e) => {
-        if (this._panel) {
-          this.updateGraphStyle();
-        }
-      },
-      null,
-      this._disposables,
-    );
     window.onDidChangeActiveTextEditor(
       async (event: TextEditor | undefined) => {
         this.documentation = undefined;
@@ -99,7 +89,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         }
         if (this._panel) {
           this.transmitData();
-          this.updateGraphStyle();
         }
       },
     );
@@ -182,21 +171,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     }
   }
 
-  private async updateGraphStyle() {
-    const theme = [
-      ColorThemeKind.Light,
-      ColorThemeKind.HighContrastLight,
-    ].includes(window.activeColorTheme.kind)
-      ? "light"
-      : "dark";
-
-    if (this._panel) {
-      await this._panel.webview.postMessage({
-        command: "setStylesByTheme",
-        theme: theme,
-      });
-    }
-  }
   public async resolveWebviewView(
     panel: WebviewView,
     context: WebviewViewResolveContext,
@@ -206,7 +180,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     this._panel = panel;
     this.setupWebviewOptions(context);
     this.renderWebviewView(context);
-    this.updateGraphStyle();
     this.setupWebviewHooks(context);
     this.transmitData();
   }
@@ -1212,7 +1185,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     this.loadedFromManifest = true;
     if (this._panel) {
       this.transmitData();
-      this.updateGraphStyle();
     }
   }
 }

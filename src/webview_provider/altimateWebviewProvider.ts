@@ -50,7 +50,7 @@ export interface SendMessageProps extends Record<string, unknown> {
  */
 export class AltimateWebviewProvider implements WebviewViewProvider {
   public viewType = "fusionPowerUser.Default";
-  protected viewPath = "/"; // webview route path from AppRoutes.tsx
+  protected viewPath = "/"; // webview route path from AppConstants.tsx
   protected panelDescription = "Altimate default webview";
 
   protected _panel: WebviewView | WebviewPanel | undefined = undefined;
@@ -157,14 +157,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
 
   protected async onEvent({ command, payload }: SharedStateEventEmitterProps) {
     switch (command) {
-      case "stream:chunk":
-        this.sendResponseToWebview({
-          command: "response",
-          syncRequestId: payload.syncRequestId as string | undefined,
-          data: payload.body,
-        });
-        break;
-
       default:
         break;
     }
@@ -209,12 +201,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
 
     try {
       switch (command) {
-        case "setToWorkspaceState":
-          this.dbtProjectContainer.setToWorkspaceState(
-            params.key as string,
-            params.value,
-          );
-          break;
         case "openProblemsTab":
           commands.executeCommand("workbench.action.problems.focus");
 
@@ -226,21 +212,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
           break;
         case "webview:ready":
           this.onWebviewReady();
-          break;
-        case "setContext":
-          this.dbtProjectContainer.setToGlobalState(
-            params.key as string,
-            params.value,
-          );
-          break;
-        case "getFromContext":
-          this.sendResponseToWebview({
-            command: "response",
-            data: this.dbtProjectContainer.getFromGlobalState(
-              params.key as string,
-            ),
-            syncRequestId,
-          });
           break;
         case "showInformationMessage":
           const { infoMessage, items } = params as {
@@ -259,39 +230,11 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
             });
           }
           break;
-        case "showErrorMessage":
-          const args = params as {
-            infoMessage: string;
-            items: any[];
-          };
-          window.showErrorMessage(args.infoMessage, ...(args.items || []));
-          break;
         case "showWarningMessage":
           this.handleWarningMessage(
             params as Parameters<typeof this.handleWarningMessage>["0"],
             syncRequestId,
           );
-          break;
-        case "findPackageVersion":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              try {
-                return this.queryManifestService
-                  .getProject()
-                  ?.findPackageVersion(params.packageName as string);
-              } catch (err) {
-                this.dbtTerminal.debug(
-                  "findPackageVersion",
-                  (err as Error).message,
-                );
-              }
-              return undefined;
-            },
-            command,
-            false,
-          );
-
           break;
         case "queryResultTab:render":
           this.emitterService.fire({

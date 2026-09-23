@@ -2,7 +2,6 @@ import {
   CancellationToken,
   ColorThemeKind,
   commands,
-  ProgressLocation,
   Range,
   ViewColumn,
   Webview,
@@ -71,12 +70,9 @@ interface InjectConfig {
 }
 
 enum InboundCommand {
-  Info = "info",
   Error = "error",
   UpdateConfig = "updateConfig",
-  GetSummary = "getSummary",
   CancelQuery = "cancelQuery",
-  SetContext = "setContext",
   GetQueryPanelContext = "getQueryPanelContext",
   GetQueryHistory = "getQueryHistory",
   ExecuteQuery = "executeQuery",
@@ -88,17 +84,12 @@ enum InboundCommand {
   ClearQueryHistory = "clearQueryHistory",
 }
 
-interface RecInfo {
-  text: string;
-}
-
 interface RecError {
   text: string;
 }
 
 interface RecConfig {
   limit?: number;
-  scale?: number;
 }
 
 interface QueryHistory {
@@ -387,19 +378,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
             const error = message as RecError;
             window.showErrorMessage(error.text);
             break;
-          case InboundCommand.Info:
-            const info = message as RecInfo;
-            window.withProgress(
-              {
-                title: info.text,
-                location: ProgressLocation.Notification,
-                cancellable: false,
-              },
-              async () => {
-                await new Promise((timer) => setTimeout(timer, 3000));
-              },
-            );
-            break;
           case InboundCommand.UpdateConfig:
             const configMessage = message as RecConfig;
             if (configMessage.limit !== undefined) {
@@ -407,22 +385,11 @@ export class QueryResultPanel extends AltimateWebviewProvider {
                 .getConfiguration(CONFIGURATION_SECTION)
                 .update("query.limit", configMessage.limit);
             }
-            if (configMessage.scale) {
-              workspace
-                .getConfiguration(CONFIGURATION_SECTION)
-                .update("query.scale", configMessage.scale);
-            }
             if ("perspectiveTheme" in configMessage) {
               workspace
                 .getConfiguration(CONFIGURATION_SECTION)
                 .update("queryResults.theme", configMessage.perspectiveTheme);
             }
-            break;
-          case InboundCommand.SetContext:
-            this.dbtProjectContainer.setToGlobalState(
-              message.key,
-              message.value,
-            );
             break;
           default:
             super.handleCommand(message);
@@ -638,7 +605,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     await commands.executeCommand("fusionPowerUser.PreviewResults.focus");
     if (this._panel && this.isWebviewView(this._panel)) {
       this._panel.show(); // Show the view
-      this._panel.webview.postMessage({ command: "focus" }); // keyboard focus
     }
     this.transmitLoading();
     try {

@@ -360,7 +360,6 @@ container
     return new QueryManifestService(
       context.get(DBTProjectContainer),
       context.get("DBTTerminal"),
-      context.get(SharedStateService),
       context.get(ProjectContext),
     );
   })

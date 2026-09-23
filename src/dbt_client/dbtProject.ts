@@ -915,16 +915,6 @@ export class DBTProject implements Disposable {
     return true;
   }
 
-  public findPackageVersion(packageName: string) {
-    const version =
-      this.getCurrentProjectIntegration().findPackageVersion(packageName);
-    this.terminal.debug(
-      "dbtProject:findPackageVersion",
-      `found ${packageName} version: ${version}`,
-    );
-    return version;
-  }
-
   async getBulkCompiledSql(models: string[]) {
     if (models.length === 0) {
       return {};

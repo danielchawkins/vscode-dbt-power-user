@@ -21,7 +21,6 @@ import { NewLineagePanel } from "./newLineagePanel";
 export interface LineagePanelView extends WebviewViewProvider {
   init(): void;
   eventMapChanged(eventMap: Map<string, ManifestCacheProjectAddedEvent>): void;
-  changedActiveColorTheme(): void;
   changedActiveTextEditor(event: TextEditor | undefined): void;
   changedTextEditorSelection(editor: TextEditor): void;
   handleCommand(message: { command: string; args: any }): Promise<void> | void;
@@ -46,13 +45,6 @@ export class LineagePanel implements WebviewViewProvider, Disposable {
       dbtProjectContainer.onManifestChanged((event) =>
         this.onManifestCacheChanged(event),
       ),
-    );
-    window.onDidChangeActiveColorTheme(
-      async (e) => {
-        this.getPanel().changedActiveColorTheme();
-      },
-      null,
-      this.disposables,
     );
     window.onDidChangeActiveTextEditor((event: TextEditor | undefined) => {
       this.getPanel().changedActiveTextEditor(event);
