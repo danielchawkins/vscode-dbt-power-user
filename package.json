@@ -53,17 +53,17 @@
       {
         "title": "Lineage",
         "properties": {
-          "dbt.lineage.showSelectEdges": {
+          "fusionPowerUser.lineage.showSelectEdges": {
             "type": "boolean",
             "description": "Show select edges in lineage panel.",
             "default": true
           },
-          "dbt.lineage.showNonSelectEdges": {
+          "fusionPowerUser.lineage.showNonSelectEdges": {
             "type": "boolean",
             "description": "Show non-select edges in lineage panel.",
             "default": false
           },
-          "dbt.lineage.defaultExpansion": {
+          "fusionPowerUser.lineage.defaultExpansion": {
             "type": "number",
             "description": "By default how much lineage should expand.",
             "default": 1
@@ -73,13 +73,13 @@
       {
         "title": "Fusion Power User",
         "properties": {
-          "dbt.enabled": {
+          "fusionPowerUser.enabled": {
             "type": "boolean",
             "description": "Enable Fusion Power User for this workspace folder.",
             "default": true,
             "scope": "resource"
           },
-          "dbt.projects": {
+          "fusionPowerUser.projects": {
             "type": "array",
             "items": {
               "type": "string"
@@ -88,7 +88,7 @@
             "scope": "resource",
             "description": "Declared Project roots for this workspace folder, relative to the folder or absolute. When unset or empty, the folder root is served if it contains dbt_project.yml. Every configured root must contain dbt_project.yml or no declared roots are served for the folder."
           },
-          "dbt.staticAnalysisMode": {
+          "fusionPowerUser.staticAnalysis": {
             "type": "string",
             "enum": [
               "off",
@@ -104,28 +104,28 @@
             "scope": "resource",
             "description": "Static analysis depth passed to Fusion when this Declared Project's language server starts."
           },
-          "dbt.fusionPath": {
+          "fusionPowerUser.dbtPath": {
             "type": "string",
             "scope": "resource",
             "description": "Path to the local dbt Fusion executable for this Declared Project. The extension will resolve this path first, then dbt on the extension host PATH. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. An invalid configured path blocks that project's language server and does not fall back to PATH."
           },
-          "dbt.profilesDir": {
+          "fusionPowerUser.profilesDir": {
             "type": "string",
             "scope": "resource",
             "description": "Profiles directory passed to Fusion when this Declared Project's language server starts. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. Relative paths resolve against the containing workspace folder."
           },
-          "dbt.target": {
+          "fusionPowerUser.target": {
             "type": "string",
             "scope": "resource",
             "description": "dbt target name passed to Fusion when this Declared Project's language server starts."
           },
-          "dbt.lintEnabled": {
+          "fusionPowerUser.lint.enabled": {
             "type": "boolean",
             "scope": "resource",
             "default": true,
             "description": "Whether Fusion lint diagnostics are enabled when this Declared Project's language server starts."
           },
-          "dbt.traceServer": {
+          "fusionPowerUser.trace.server": {
             "type": "string",
             "enum": [
               "off",
@@ -141,11 +141,11 @@
             "scope": "resource",
             "description": "Fusion server process log verbosity for this Declared Project. Server stdout and stderr appear in that project's Fusion LSP output channel; debug and verbose also increase Fusion's own project log file verbosity (for example logs/dbt.log)."
           },
-          "dbt.unquotedCaseInsensitiveIdentifierRegex": {
+          "fusionPowerUser.unquotedCaseInsensitiveIdentifierRegex": {
             "type": "string",
             "markdownDescription": "Regex to identify unquoted identifiers. Example: `^([_A-Z]+[_A-Z0-9$]*)$`"
           },
-          "dbt.runModelCommandAdditionalParams": {
+          "fusionPowerUser.run.additionalParams": {
             "type": "array",
             "items": {
               "type": "string"
@@ -153,7 +153,7 @@
             "default": [],
             "description": "Add additional params to the dbt run model command. Ex: --select model1 --target prod needs to be added as four different entries \n--select \nmodel1 \n--target \nprod "
           },
-          "dbt.buildModelCommandAdditionalParams": {
+          "fusionPowerUser.build.additionalParams": {
             "type": "array",
             "items": {
               "type": "string"
@@ -161,13 +161,21 @@
             "default": [],
             "description": "Add additional params to the dbt build model command. Ex: --select model1 --target prod needs to be added as four different entries \n--select \nmodel1 \n--target \nprod "
           },
-          "dbt.queryLimit": {
+          "fusionPowerUser.test.additionalParams": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Add additional params to the dbt test model command. Ex: --select model1 --target prod needs to be added as four different entries \n--select \nmodel1 \n--target \nprod "
+          },
+          "fusionPowerUser.query.limit": {
             "type": "integer",
             "description": "The maximum number of rows the `Preview SQL Query` command returns.",
             "default": 500,
             "minimum": 1
           },
-          "dbt.perspectiveTheme": {
+          "fusionPowerUser.queryResults.theme": {
             "type": "string",
             "description": "Theme for perspective viewer in query results panel",
             "default": "Vintage",
@@ -181,17 +189,17 @@
               "Monokai"
             ]
           },
-          "dbt.queryTemplate": {
+          "fusionPowerUser.query.template": {
             "type": "string",
             "description": "Override the default query template that is used by the `Preview SQL Query` command. Use this if your database has special syntax to limit query results",
             "default": "select * from ({query}\n) as query limit {limit}"
           },
-          "dbt.queryScale": {
+          "fusionPowerUser.query.scale": {
             "type": "string",
             "description": "Override the default scale of the result table that is used by the `Preview SQL Query` command.",
             "default": 1
           },
-          "dbt.fileNameTemplateGenerateModel": {
+          "fusionPowerUser.generateModel.fileNameTemplate": {
             "type": "string",
             "enum": [
               "{prefix}_{sourceName}_{tableName}",
@@ -202,17 +210,12 @@
             "default": "{prefix}_{sourceName}_{tableName}",
             "description": "Set the naming template that is used when generating a model from a source yml file."
           },
-          "dbt.prefixGenerateModel": {
+          "fusionPowerUser.generateModel.prefix": {
             "type": "string",
             "default": "base",
             "description": "Set the prefix that is used when generating a model from a source yml file."
           },
-          "dbt.disableDepthsCalculation": {
-            "type": "boolean",
-            "description": "Disable DAG depth calculation and decoration",
-            "default": false
-          },
-          "dbt.deferConfigPerProject": {
+          "fusionPowerUser.defer.perProject": {
             "type": "object",
             "description": "Run subset of models without building their parent models",
             "scope": "resource",

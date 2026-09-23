@@ -33,6 +33,7 @@ import { CteProfilerService } from "../cte_profiler/cteProfilerService";
 import { DBTClient } from "../dbt_client";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
@@ -418,10 +419,12 @@ export class VSCodeCommands implements Disposable {
           this.diagnosticsOutputChannel.logNewLine();
 
           // Printing extension settings
-          const dbtSettings = workspace.getConfiguration().inspect("dbt");
-          const globalValue: any = dbtSettings?.globalValue || {};
-          const defaultValue: any = dbtSettings?.defaultValue || {};
-          const workspaceValue: any = dbtSettings?.workspaceValue || {};
+          const extensionSettings = workspace
+            .getConfiguration()
+            .inspect(CONFIGURATION_SECTION);
+          const globalValue: any = extensionSettings?.globalValue || {};
+          const defaultValue: any = extensionSettings?.defaultValue || {};
+          const workspaceValue: any = extensionSettings?.workspaceValue || {};
           const settingKeys = [
             ...Object.keys(globalValue),
             ...Object.keys(defaultValue),
@@ -433,7 +436,9 @@ export class VSCodeCommands implements Disposable {
               "* Please remove any sensitive information before sending it to us",
             ],
             settingKeys.map((key) => {
-              const value = workspace.getConfiguration("dbt").get(key);
+              const value = workspace
+                .getConfiguration(CONFIGURATION_SECTION)
+                .get(key);
               let overridenText = "";
               if (!deepEqual(value, defaultValue[key])) {
                 if (deepEqual(value, workspaceValue[key])) {

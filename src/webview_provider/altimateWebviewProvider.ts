@@ -27,11 +27,6 @@ import {
 import { UserInputError } from "../local/errors";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-export type UpdateConfigProps = {
-  key: string;
-  value: string | boolean | number;
-};
-
 export interface HandleCommandProps extends Record<string, unknown> {
   command: string;
   syncRequestId?: string;
@@ -182,13 +177,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
     webview.html = this.getHtml(webview, this.dbtProjectContainer.extensionUri);
   }
 
-  // typegaurd to UpdateConfigProps
-  private isUpdateConfigProps(
-    data: UpdateConfigProps | Record<string, unknown>,
-  ): data is UpdateConfigProps {
-    return (data as UpdateConfigProps).key !== undefined;
-  }
-
   protected onWebviewReady() {
     completeWebviewReady(this.viewPath);
     this.isWebviewReady = true;
@@ -221,18 +209,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
 
     try {
       switch (command) {
-        case "configEnabled":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              return workspace
-                .getConfiguration(params.section as string)
-                .get(params.config as string);
-            },
-            command,
-            true,
-          );
-          break;
         case "setToWorkspaceState":
           this.dbtProjectContainer.setToWorkspaceState(
             params.key as string,
@@ -265,28 +241,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
             ),
             syncRequestId,
           });
-          break;
-        case "updateConfig":
-          if (!this.isUpdateConfigProps(params)) {
-            return;
-          }
-          this.dbtTerminal.debug(
-            "altimateWebviewProvider:handleCommand",
-            "Updating config",
-            params,
-          );
-          await workspace
-            .getConfiguration("dbt")
-            .update(params.key, params.value);
-          if (syncRequestId) {
-            this.sendResponseToWebview({
-              command: "response",
-              syncRequestId,
-              data: {
-                updated: true,
-              },
-            });
-          }
           break;
         case "showInformationMessage":
           const { infoMessage, items } = params as {

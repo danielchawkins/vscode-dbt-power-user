@@ -22,6 +22,7 @@ import {
 import { inject } from "inversify";
 import * as path from "path";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import { getFormattedDateTime, getStringSizeInMb } from "../utils";
@@ -149,9 +150,11 @@ export class QueryResultPanel extends AltimateWebviewProvider {
 
   private async sendUpdatedContextToWebview() {
     const perspectiveTheme = workspace
-      .getConfiguration("dbt")
-      .get("perspectiveTheme", "Vintage");
-    const limit = workspace.getConfiguration("dbt").get<number>("queryLimit");
+      .getConfiguration(CONFIGURATION_SECTION)
+      .get("queryResults.theme", "Vintage");
+    const limit = workspace
+      .getConfiguration(CONFIGURATION_SECTION)
+      .get<number>("query.limit");
     if (this._panel) {
       await this._panel.webview.postMessage({
         command: OutboundCommand.GetContext,
@@ -401,18 +404,18 @@ export class QueryResultPanel extends AltimateWebviewProvider {
             const configMessage = message as RecConfig;
             if (configMessage.limit !== undefined) {
               workspace
-                .getConfiguration("dbt")
-                .update("queryLimit", configMessage.limit);
+                .getConfiguration(CONFIGURATION_SECTION)
+                .update("query.limit", configMessage.limit);
             }
             if (configMessage.scale) {
               workspace
-                .getConfiguration("dbt")
-                .update("queryScale", configMessage.scale);
+                .getConfiguration(CONFIGURATION_SECTION)
+                .update("query.scale", configMessage.scale);
             }
             if ("perspectiveTheme" in configMessage) {
               workspace
-                .getConfiguration("dbt")
-                .update("perspectiveTheme", configMessage.perspectiveTheme);
+                .getConfiguration(CONFIGURATION_SECTION)
+                .update("queryResults.theme", configMessage.perspectiveTheme);
             }
             break;
           case InboundCommand.SetContext:
@@ -511,7 +514,9 @@ export class QueryResultPanel extends AltimateWebviewProvider {
 
   /** Sends VSCode config data to webview */
   private transmitConfig() {
-    const limit = workspace.getConfiguration("dbt").get<number>("queryLimit");
+    const limit = workspace
+      .getConfiguration(CONFIGURATION_SECTION)
+      .get<number>("query.limit");
     if (this._panel) {
       this._panel.webview.postMessage({
         command: OutboundCommand.InjectConfig,

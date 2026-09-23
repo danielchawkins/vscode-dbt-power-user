@@ -105,9 +105,9 @@ describe("fusionClientSettings", () => {
 
     expect(properties).toEqual(
       expect.arrayContaining([
-        "dbt.profilesDir",
-        "dbt.target",
-        "dbt.lintEnabled",
+        "fusionPowerUser.profilesDir",
+        "fusionPowerUser.target",
+        "fusionPowerUser.lint.enabled",
       ]),
     );
   });

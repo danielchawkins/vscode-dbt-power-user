@@ -493,7 +493,7 @@ describe("ProjectRegistry", () => {
 
     projects = ["projects/general"];
     onConfiguration?.({
-      affectsConfiguration: (section) => section === "dbt.projects",
+      affectsConfiguration: (section) => section === "fusionPowerUser.projects",
     });
     const project = registry.projects[0];
     onConfiguration?.({ affectsConfiguration: () => false });

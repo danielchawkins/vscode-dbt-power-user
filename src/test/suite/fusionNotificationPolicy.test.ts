@@ -54,7 +54,7 @@ describe("fusionNotificationPolicy", () => {
     (workspace as any).workspaceFolders = [folder];
     jest.spyOn(workspace, "getConfiguration").mockReturnValue({
       get: jest.fn((key: string, fallback?: unknown) => {
-        if (key === "staticAnalysisMode") {
+        if (key === "staticAnalysis") {
           return "baseline";
         }
         if (key === "enabled") {

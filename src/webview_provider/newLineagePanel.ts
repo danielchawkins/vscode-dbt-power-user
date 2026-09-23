@@ -29,6 +29,7 @@ import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
+import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { CllEvents, DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
@@ -283,7 +284,9 @@ export class NewLineagePanel
     }
 
     if (command === "getLineageSettings") {
-      const config = workspace.getConfiguration("dbt.lineage");
+      const config = workspace.getConfiguration(
+        `${CONFIGURATION_SECTION}.lineage`,
+      );
       this._panel?.webview.postMessage({
         command: "response",
         args: {
@@ -304,7 +307,9 @@ export class NewLineagePanel
     }
 
     if (command === "persistLineageSettings") {
-      const config = workspace.getConfiguration("dbt.lineage");
+      const config = workspace.getConfiguration(
+        `${CONFIGURATION_SECTION}.lineage`,
+      );
       for (const k in params) {
         await config.update(k, params[k]);
       }

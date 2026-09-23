@@ -45,6 +45,7 @@ import {
   workspace,
 } from "vscode";
 import { ModelNode } from "../local/lineageTypes";
+import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
 import {
@@ -703,8 +704,8 @@ export class DBTProject implements Disposable {
       async () => {
         try {
           const prefix = workspace
-            .getConfiguration("dbt")
-            .get<string>("prefixGenerateModel", "base");
+            .getConfiguration(CONFIGURATION_SECTION)
+            .get<string>("generateModel.prefix", "base");
 
           // Map setting to fileName
           const fileNameTemplateMap: FileNameTemplateMap = {
@@ -718,9 +719,9 @@ export class DBTProject implements Disposable {
           let fileName = `${prefix}_${sourceName}_${tableName}`;
 
           const fileNameTemplate = workspace
-            .getConfiguration("dbt")
+            .getConfiguration(CONFIGURATION_SECTION)
             .get<string>(
-              "fileNameTemplateGenerateModel",
+              "generateModel.fileNameTemplate",
               "{prefix}_{sourceName}_{tableName}",
             );
 
@@ -775,8 +776,8 @@ export class DBTProject implements Disposable {
 
   async executeSQLOnQueryPanel(query: string, modelName: string) {
     const limit = workspace
-      .getConfiguration("dbt")
-      .get<number>("queryLimit", 500);
+      .getConfiguration(CONFIGURATION_SECTION)
+      .get<number>("query.limit", 500);
     return this.executeSQLWithLimitOnQueryPanel(query, modelName, limit);
   }
 
@@ -1145,8 +1146,8 @@ export class DBTProject implements Disposable {
   private retrieveDeferConfigFromSettings(): DeferConfig | undefined {
     const relativePath = getProjectRelativePath(this.projectRoot);
     const currentConfig: Record<string, DeferConfig> = workspace
-      .getConfiguration("dbt")
-      .get("deferConfigPerProject", {});
+      .getConfiguration(CONFIGURATION_SECTION, this.projectRoot)
+      .get("defer.perProject", {});
     if (currentConfig[relativePath]) {
       const config = currentConfig[relativePath];
       const resolvedManifestPath = config.manifestPathForDeferral

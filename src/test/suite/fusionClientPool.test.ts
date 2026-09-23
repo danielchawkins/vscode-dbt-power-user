@@ -13,7 +13,7 @@ import {
   WorkspaceFolder,
 } from "vscode";
 import {
-  FUSION_PATH_SETTING,
+  DBT_PATH_SETTING,
   FusionExecutableResolver,
 } from "../../fusion/fusionExecutable";
 import {
@@ -130,7 +130,7 @@ describe("FusionClientPool", () => {
         if (key === LINT_ENABLED_SETTING) {
           return lintEnabled;
         }
-        if (key === "staticAnalysisMode") {
+        if (key === "staticAnalysis") {
           return "baseline";
         }
         return undefined;
@@ -464,7 +464,7 @@ describe("FusionClientPool", () => {
     const firstClient = pool.get(project)! as FakeClient;
     configListener?.({
       affectsConfiguration: (key: string, scope?: Uri) =>
-        key === `${CONFIGURATION_SECTION}.${FUSION_PATH_SETTING}` &&
+        key === `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}` &&
         scope?.fsPath === project.root.fsPath,
     } as ConfigurationChangeEvent);
     await flushAsync();

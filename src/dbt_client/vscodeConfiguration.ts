@@ -4,6 +4,7 @@ import {
 } from "@altimateai/dbt-integration";
 import { injectable } from "inversify";
 import { workspace } from "vscode";
+import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { getFirstWorkspacePath, resolveSettingsVariables } from "../utils";
 
 @injectable()
@@ -18,9 +19,9 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
 
   getRunModelCommandAdditionalParams(): string[] {
     const params = workspace
-      .getConfiguration("dbt")
+      .getConfiguration(CONFIGURATION_SECTION)
       .get<string[]>(
-        "runModelCommandAdditionalParams",
+        "run.additionalParams",
         DEFAULT_CONFIGURATION_VALUES.runModelCommandAdditionalParams,
       );
     return params.map((p) => resolveSettingsVariables(p));
@@ -28,9 +29,9 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
 
   getBuildModelCommandAdditionalParams(): string[] {
     const params = workspace
-      .getConfiguration("dbt")
+      .getConfiguration(CONFIGURATION_SECTION)
       .get<string[]>(
-        "buildModelCommandAdditionalParams",
+        "build.additionalParams",
         DEFAULT_CONFIGURATION_VALUES.buildModelCommandAdditionalParams,
       );
     return params.map((p) => resolveSettingsVariables(p));
@@ -38,9 +39,9 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
 
   getTestModelCommandAdditionalParams(): string[] {
     const params = workspace
-      .getConfiguration("dbt")
+      .getConfiguration(CONFIGURATION_SECTION)
       .get<string[]>(
-        "testModelCommandAdditionalParams",
+        "test.additionalParams",
         DEFAULT_CONFIGURATION_VALUES.testModelCommandAdditionalParams,
       );
     return params.map((p) => resolveSettingsVariables(p));
@@ -48,14 +49,17 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
 
   getQueryTemplate(): string {
     return workspace
-      .getConfiguration("dbt")
-      .get<string>("queryTemplate", DEFAULT_CONFIGURATION_VALUES.queryTemplate);
+      .getConfiguration(CONFIGURATION_SECTION)
+      .get<string>(
+        "query.template",
+        DEFAULT_CONFIGURATION_VALUES.queryTemplate,
+      );
   }
 
   getQueryLimit(): number {
     return workspace
-      .getConfiguration("dbt")
-      .get<number>("queryLimit", DEFAULT_CONFIGURATION_VALUES.queryLimit);
+      .getConfiguration(CONFIGURATION_SECTION)
+      .get<number>("query.limit", DEFAULT_CONFIGURATION_VALUES.queryLimit);
   }
 
   getEnableNotebooks(): boolean {
@@ -71,12 +75,7 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
   }
 
   getDisableDepthsCalculation(): boolean {
-    return workspace
-      .getConfiguration("dbt")
-      .get<boolean>(
-        "disableDepthsCalculation",
-        DEFAULT_CONFIGURATION_VALUES.disableDepthsCalculation,
-      );
+    return false;
   }
 
   getWorkingDirectory(): string {

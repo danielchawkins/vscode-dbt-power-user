@@ -57,9 +57,9 @@ describe("utils tests", () => {
     expect(isQuotedIdentifier("ABC", "any")).toBe(true);
   });
 
-  it("getColumnNameByCase and isColumnNameEqual use config", () => {
+  it("getColumnNameByCase and isColumnNameEqual lowercase unquoted names", () => {
     jest.spyOn(workspace, "getConfiguration").mockReturnValue({
-      get: (key: string) => (key === "showColumnNamesInLowercase" ? true : ""),
+      get: () => "",
     } as any);
     expect(getColumnNameByCase("TEST", "snowflake")).toBe("test");
     expect(isColumnNameEqual("CoL", "col")).toBe(true);

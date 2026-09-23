@@ -11,7 +11,7 @@ import path from "path";
 import { Uri, WorkspaceFolder } from "vscode";
 import {
   ConfiguredFusionExecutableResolver,
-  FUSION_PATH_SETTING,
+  DBT_PATH_SETTING,
   FusionExecutable,
 } from "../../fusion/fusionExecutable";
 import { FusionVersionVerdict } from "../../fusion/fusionVersion";
@@ -446,7 +446,7 @@ describe("Fusion executable resolver", () => {
     const property = manifest.contributes.configuration
       .flatMap((section) => Object.entries(section.properties))
       .find(
-        ([key]) => key === `${CONFIGURATION_SECTION}.${FUSION_PATH_SETTING}`,
+        ([key]) => key === `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}`,
       )?.[1];
 
     expect(property).toMatchObject({

@@ -15,6 +15,7 @@ import {
   workspace,
 } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
+import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
 
 const UPSTREAM_EXTENSION = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_ACTION = "Uninstall Power User";
@@ -120,7 +121,7 @@ describe("DBTPowerUserExtension.activate", () => {
     await harness.extension.activate(context);
 
     expect(workspace.getConfiguration).toHaveBeenCalledWith(
-      "dbt",
+      CONFIGURATION_SECTION,
       harness.folder.uri,
     );
     expect(window.showErrorMessage).not.toHaveBeenCalled();

@@ -41,7 +41,7 @@ async function main() {
     mkdirSync(userDir, { recursive: true });
     writeFileSync(
       path.join(userDir, "settings.json"),
-      JSON.stringify({ "dbt.fusionPath": fusionPath }),
+      JSON.stringify({ "fusionPowerUser.dbtPath": fusionPath }),
     );
   }
   const cleanup = () => {

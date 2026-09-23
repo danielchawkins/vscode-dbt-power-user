@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
+import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
 import { esmDirname } from "../esmDirname";
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
@@ -9,6 +10,9 @@ const packageJsonPath = path.join(repositoryRoot, "package.json");
 
 /** Extension-owned command, view, context, and submenu IDs use fusionPowerUser.* */
 const LEGACY_NAMESPACE_PATTERN = /dbtPowerUser\./;
+
+const LEGACY_DBT_CONFIGURATION_PATTERN =
+  /getConfiguration\s*\(\s*["']dbt(?:\.|["'])|inspect\s*\(\s*["']dbt["']|affectsConfiguration\s*\(\s*["']dbt(?:\.|["'])/;
 
 function listProductionSourceFiles(dir: string): string[] {
   const files: string[] = [];
@@ -42,7 +46,35 @@ function findLegacyNamespaceHits(
   return hits;
 }
 
+function findLegacyDbtConfigurationHits(
+  relativePath: string,
+  contents: string,
+): string[] {
+  const hits: string[] = [];
+  for (const [lineNumber, line] of contents.split("\n").entries()) {
+    if (LEGACY_DBT_CONFIGURATION_PATTERN.test(line)) {
+      hits.push(`${relativePath}:${lineNumber + 1}: ${line.trim()}`);
+    }
+  }
+  return hits;
+}
+
+function contributedConfigurationKeys(): string[] {
+  const manifest = JSON.parse(readFileSync(packageJsonPath, "utf8")) as {
+    contributes: {
+      configuration: Array<{ properties: Record<string, unknown> }>;
+    };
+  };
+  return manifest.contributes.configuration.flatMap((section) =>
+    Object.keys(section.properties),
+  );
+}
+
 describe("fusionPowerUser namespace guard", () => {
+  it("uses fusionPowerUser as the configuration section constant", () => {
+    expect(CONFIGURATION_SECTION).toBe("fusionPowerUser");
+  });
+
   it("has no legacy dbtPowerUser.* IDs in package.json", () => {
     const contents = readFileSync(packageJsonPath, "utf8");
     expect(findLegacyNamespaceHits("package.json", contents)).toEqual([]);
@@ -64,6 +96,24 @@ describe("fusionPowerUser namespace guard", () => {
       const relativePath = path.relative(repositoryRoot, filePath);
       const contents = readFileSync(filePath, "utf8");
       hits.push(...findLegacyNamespaceHits(relativePath, contents));
+    }
+    expect(hits).toEqual([]);
+  });
+
+  it("contributes configuration keys only under fusionPowerUser.*", () => {
+    const keys = contributedConfigurationKeys();
+    expect(keys.length).toBeGreaterThan(0);
+    expect(
+      keys.every((key) => key.startsWith(`${CONFIGURATION_SECTION}.`)),
+    ).toBe(true);
+  });
+
+  it("has no legacy dbt configuration reads in production source", () => {
+    const hits: string[] = [];
+    for (const filePath of listProductionSourceFiles(srcRoot)) {
+      const relativePath = path.relative(repositoryRoot, filePath);
+      const contents = readFileSync(filePath, "utf8");
+      hits.push(...findLegacyDbtConfigurationHits(relativePath, contents));
     }
     expect(hits).toEqual([]);
   });

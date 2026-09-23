@@ -16,6 +16,7 @@ import { DefinitionProviders } from "./definition_provider";
 import { HoverProviders } from "./hover_provider";
 import { FusionClientPool } from "./lsp/fusionClientPool";
 import { FusionStatus } from "./lsp/fusionStatus";
+import { CONFIGURATION_SECTION } from "./projects/projectConfiguration";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
@@ -120,7 +121,9 @@ export class DBTPowerUserExtension implements Disposable {
         folders.length > 0 &&
         folders.every(
           (folder) =>
-            !workspace.getConfiguration("dbt", folder.uri).get("enabled", true),
+            !workspace
+              .getConfiguration(CONFIGURATION_SECTION, folder.uri)
+              .get("enabled", true),
         )
       ) {
         return;

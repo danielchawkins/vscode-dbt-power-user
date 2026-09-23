@@ -24,6 +24,7 @@ import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
 import { FusionProjectIntegrationEvents } from "../../dbt_client/fusionProjectIntegration";
+import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
 import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
 describe("DBTProject Test Suite", () => {
@@ -54,10 +55,10 @@ describe("DBTProject Test Suite", () => {
     );
     (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
       get: jest.fn((key: string) => {
-        if (key === "queryLimit") {
+        if (key === "query.limit") {
           return 500;
         }
-        if (key === "deferConfigPerProject") {
+        if (key === "defer.perProject") {
           return {};
         }
         return undefined;
@@ -696,6 +697,66 @@ describe("DBTProject Test Suite", () => {
       const failOrder =
         mockRunHistoryService.notifyCommandFailed.mock.invocationCallOrder[0];
       expect(parseOrder).toBeLessThan(failOrder);
+    });
+
+    it("reads defer.perProject scoped to the project root", async () => {
+      const projectUri = vscode.Uri.file("/test/workspace/finance_general");
+      const workspaceFolder = {
+        uri: vscode.Uri.file("/test/workspace"),
+        name: "Test Workspace",
+        index: 0,
+      };
+      (vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(
+        workspaceFolder,
+      );
+
+      const storedDeferConfig = {
+        deferToProduction: true,
+        favorState: false,
+        manifestPathForDeferral: "/tmp/manifest.json",
+      };
+      (vscode.workspace.getConfiguration as jest.Mock).mockImplementation(
+        () => ({
+          get: jest.fn((key: string) => {
+            if (key === "defer.perProject") {
+              return { finance_general: storedDeferConfig };
+            }
+            if (key === "query.limit") {
+              return 500;
+            }
+            return undefined;
+          }),
+          has: jest.fn(),
+          update: jest.fn(),
+        }),
+      );
+      mockProjectIntegration.applyDeferConfig = jest.fn(() =>
+        Promise.resolve(),
+      );
+
+      dbtProject = new DBTProject(
+        dbtProjectLogFactory as any,
+        mockCommandFactory,
+        mockTerminal,
+        mockSharedStateService,
+        jest.fn().mockReturnValue(mockProjectIntegration) as any,
+        mockRunHistoryService,
+        projectUri,
+        mockManifestChangedEmitter,
+      );
+
+      await dbtProject.applyDeferConfig();
+
+      expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith(
+        CONFIGURATION_SECTION,
+        projectUri,
+      );
+      expect(mockProjectIntegration.applyDeferConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          deferToProduction: true,
+          favorState: false,
+        }),
+      );
     });
 
     it("does not parse run_results when execute rejects", async () => {

@@ -25,7 +25,7 @@ import {
   FusionProjectIntegrationEvents,
 } from "../../dbt_client/fusionProjectIntegration";
 import {
-  FUSION_PATH_SETTING,
+  DBT_PATH_SETTING,
   FusionExecutable,
 } from "../../fusion/fusionExecutable";
 import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
@@ -174,7 +174,7 @@ function buildIntegration(
 function pathChangeEvent(root: string): ConfigurationChangeEvent {
   return {
     affectsConfiguration: (section: string, scope?: Uri) =>
-      section === `${CONFIGURATION_SECTION}.${FUSION_PATH_SETTING}` &&
+      section === `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}` &&
       scope?.fsPath === root,
   } as ConfigurationChangeEvent;
 }

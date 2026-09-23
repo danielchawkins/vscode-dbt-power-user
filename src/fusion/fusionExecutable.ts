@@ -16,7 +16,7 @@ import {
 
 const execFile = promisify(execFileCb);
 
-export const FUSION_PATH_SETTING = "fusionPath";
+export const DBT_PATH_SETTING = "dbtPath";
 
 const PATH_LOOKUP_NAME = "dbt";
 
@@ -156,7 +156,7 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
       ((scope) =>
         workspace
           .getConfiguration(CONFIGURATION_SECTION, scope)
-          .get<string>(FUSION_PATH_SETTING));
+          .get<string>(DBT_PATH_SETTING));
     this.getWorkspaceFolder =
       deps.getWorkspaceFolder ??
       ((scope) => workspace.getWorkspaceFolder(scope));
