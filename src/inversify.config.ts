@@ -9,7 +9,6 @@ import {
   DBTDetection,
   DBTDiagnosticData,
   DBTFusionCommandProjectIntegration,
-  DBTProjectIntegrationAdapter,
   DBTTerminal,
   DeferConfig,
   DocParser,
@@ -33,6 +32,7 @@ import { DBTProject } from "./dbt_client/dbtProject";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
+import { FusionProjectIntegration } from "./dbt_client/fusionProjectIntegration";
 import { PythonEnvironment } from "./dbt_client/pythonEnvironment";
 import {
   StaticRuntimePythonEnvironment,
@@ -42,7 +42,6 @@ import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import { FusionVersionDetection } from "./fusion/fusionVersionDetection";
-import { failClosedIntegrationFactory } from "./inversify/failClosedIntegrationFactory";
 import {
   createFusionClientPool,
   FusionClientPoolImpl,
@@ -301,19 +300,16 @@ container
   });
 
 container
-  .bind<
-    Factory<DBTProjectIntegrationAdapter, [string, DeferConfig | undefined]>
-  >("Factory<DBTProjectIntegrationAdapter>")
+  .bind<Factory<FusionProjectIntegration, [string, DeferConfig | undefined]>>(
+    "Factory<FusionProjectIntegration>",
+  )
   .toFactory((context: ResolutionContext) => {
     return (projectRoot: string, deferConfig: DeferConfig | undefined) => {
       const container = context;
-      return new DBTProjectIntegrationAdapter(
+      return new FusionProjectIntegration(
         container.get("DBTConfiguration"),
         container.get(DBTCommandFactory),
-        failClosedIntegrationFactory,
-        failClosedIntegrationFactory,
         container.get("Factory<DBTFusionCommandProjectIntegration>"),
-        failClosedIntegrationFactory,
         projectRoot,
         deferConfig,
         container.get(ChildrenParentParser),
@@ -350,7 +346,7 @@ container
         container.get(DBTCommandFactory),
         container.get("DBTTerminal"),
         container.get(SharedStateService),
-        container.get("Factory<DBTProjectIntegrationAdapter>"),
+        container.get("Factory<FusionProjectIntegration>"),
         container.get(RunHistoryService),
         path,
         _onManifestChanged,

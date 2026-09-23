@@ -2,7 +2,6 @@ import { existsSync, writeFileSync } from "fs";
 
 import {
   Catalog,
-  CATALOG_FILE,
   ColumnMetaData,
   DBColumn,
   DBT_PROJECT_FILE,
@@ -12,25 +11,20 @@ import {
   DBTDiagnosticData,
   DBTNode,
   DBTProjectIntegration,
-  DBTProjectIntegrationAdapter,
-  DBTProjectIntegrationAdapterEvents,
   DBTTerminal,
   DeferConfig,
   extractOutputColumns,
   isResourceHasDbColumns,
   isResourceNode,
-  MANIFEST_FILE,
   NodeMetaData,
   ParsedManifest,
   PythonException,
-  QueryExecution,
   QueryExecutionResult,
   RESOURCE_TYPE_MODEL,
   RESOURCE_TYPE_SOURCE,
   RunModelParams,
   RunResultsEventData,
   SourceNode,
-  Table,
 } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import * as path from "path";
@@ -67,6 +61,10 @@ import {
 } from "./event/manifestCacheChangedEvent";
 import { ProjectConfigChangedEvent } from "./event/projectConfigChangedEvent";
 import { RunResultsEvent } from "./event/runResultsEvent";
+import {
+  FusionProjectIntegration,
+  FusionProjectIntegrationEvents,
+} from "./fusionProjectIntegration";
 import { PythonEnvironment } from "./pythonEnvironment";
 
 interface FileNameTemplateMap {
@@ -81,7 +79,7 @@ export class DBTProject implements Disposable {
   private static readonly publicationEpochs = new Map<string, number>();
   private _manifestCacheEvent?: ManifestCacheProjectAddedEvent;
   readonly projectRoot: Uri;
-  private dbtProjectIntegration: DBTProjectIntegrationAdapter;
+  private dbtProjectIntegration: FusionProjectIntegration;
 
   private _onProjectConfigChanged =
     new EventEmitter<ProjectConfigChangedEvent>();
@@ -139,7 +137,7 @@ export class DBTProject implements Disposable {
     private dbtIntegrationAdapterFactory: (
       projectRoot: string,
       deferConfig: DeferConfig | undefined,
-    ) => DBTProjectIntegrationAdapter,
+    ) => FusionProjectIntegration,
     private runHistoryService: RunHistoryService,
     path: Uri,
     private _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
@@ -156,7 +154,7 @@ export class DBTProject implements Disposable {
 
     // Set up Node.js watcher events to emit VSCode events directly
     this.dbtProjectIntegration.on(
-      DBTProjectIntegrationAdapterEvents.SOURCE_FILE_CHANGED,
+      FusionProjectIntegrationEvents.SOURCE_FILE_CHANGED,
       () => {
         this.terminal.debug(
           "DBTProject",
@@ -167,7 +165,7 @@ export class DBTProject implements Disposable {
     );
 
     this.dbtProjectIntegration.on(
-      DBTProjectIntegrationAdapterEvents.PROJECT_CONFIG_CHANGED,
+      FusionProjectIntegrationEvents.PROJECT_CONFIG_CHANGED,
       () => {
         this.terminal.debug(
           "DBTProject",
@@ -179,7 +177,7 @@ export class DBTProject implements Disposable {
     );
 
     this.dbtProjectIntegration.on(
-      DBTProjectIntegrationAdapterEvents.REBUILD_MANIFEST_STATUS_CHANGE,
+      FusionProjectIntegrationEvents.REBUILD_MANIFEST_STATUS_CHANGE,
       (status: { inProgress: boolean }) => {
         this.terminal.debug(
           "DBTProject",
@@ -195,7 +193,7 @@ export class DBTProject implements Disposable {
 
     // Handle manifestCreated events from dbtIntegrationAdapter
     this.dbtProjectIntegration.on(
-      DBTProjectIntegrationAdapterEvents.MANIFEST_PARSED,
+      FusionProjectIntegrationEvents.MANIFEST_PARSED,
       (parsedManifest: ParsedManifest) => {
         this.terminal.debug(
           "DBTProject",
@@ -229,7 +227,7 @@ export class DBTProject implements Disposable {
 
     // Handle runResultsCreated events from dbtIntegrationAdapter
     this.dbtProjectIntegration.on(
-      DBTProjectIntegrationAdapterEvents.RUN_RESULTS_PARSED,
+      FusionProjectIntegrationEvents.RUN_RESULTS_PARSED,
       (eventData: RunResultsEventData) => {
         this.terminal.debug(
           "DBTProject",
@@ -246,7 +244,7 @@ export class DBTProject implements Disposable {
 
     // Handle diagnosticsChanged events from dbtIntegrationAdapter
     this.dbtProjectIntegration.on(
-      DBTProjectIntegrationAdapterEvents.DIAGNOSTICS_CHANGED,
+      FusionProjectIntegrationEvents.DIAGNOSTICS_CHANGED,
       () => {
         this.terminal.debug(
           "DBTProject",
@@ -316,25 +314,6 @@ export class DBTProject implements Disposable {
     return this.projectRoot.fsPath;
   }
 
-  getSelectedTarget() {
-    return this.dbtProjectIntegration.getSelectedTarget();
-  }
-
-  getTargetNames() {
-    return this.dbtProjectIntegration.getTargetNames();
-  }
-
-  async setSelectedTarget(targetName: string) {
-    await window.withProgress(
-      {
-        location: ProgressLocation.Notification,
-        title: "Changing target...",
-        cancellable: false,
-      },
-      () => this.dbtProjectIntegration.setSelectedTarget(targetName),
-    );
-  }
-
   getDBTProjectFilePath() {
     return path.join(this.projectRoot.fsPath, DBT_PROJECT_FILE);
   }
@@ -357,22 +336,6 @@ export class DBTProject implements Disposable {
 
   getMacroPaths() {
     return this.dbtProjectIntegration.getMacroPaths();
-  }
-
-  getManifestPath() {
-    const targetPath = this.getTargetPath();
-    if (!targetPath) {
-      return;
-    }
-    return path.join(targetPath, MANIFEST_FILE);
-  }
-
-  getCatalogPath() {
-    const targetPath = this.getTargetPath();
-    if (!targetPath) {
-      return;
-    }
-    return path.join(targetPath, CATALOG_FILE);
   }
 
   getAllDiagnostic(): Diagnostic[] {
@@ -565,21 +528,11 @@ export class DBTProject implements Disposable {
     );
   }
 
-  async unsafeRunModelImmediately(runModelParams: RunModelParams) {
-    return this.dbtProjectIntegration.unsafeRunModelImmediately(runModelParams);
-  }
-
   async buildModel(runModelParams: RunModelParams) {
     const buildModelCommand =
       this.dbtCommandFactory.createBuildModelCommand(runModelParams);
     await this.prepareAndQueue(buildModelCommand, () =>
       this.getCurrentProjectIntegration().buildModel(buildModelCommand),
-    );
-  }
-
-  async unsafeBuildModelImmediately(runModelParams: RunModelParams) {
-    return this.dbtProjectIntegration.unsafeBuildModelImmediately(
-      runModelParams,
     );
   }
 
@@ -591,10 +544,6 @@ export class DBTProject implements Disposable {
     );
   }
 
-  async unsafeBuildProjectImmediately() {
-    return this.dbtProjectIntegration.unsafeBuildProjectImmediately();
-  }
-
   async runTest(testName: string) {
     const testModelCommand =
       this.dbtCommandFactory.createTestModelCommand(testName);
@@ -603,20 +552,12 @@ export class DBTProject implements Disposable {
     );
   }
 
-  async unsafeRunTestImmediately(testName: string) {
-    return this.dbtProjectIntegration.unsafeRunTestImmediately(testName);
-  }
-
   async runModelTest(modelName: string) {
     const testModelCommand =
       this.dbtCommandFactory.createTestModelCommand(modelName);
     await this.prepareAndQueue(testModelCommand, () =>
       this.getCurrentProjectIntegration().runModelTest(testModelCommand),
     );
-  }
-
-  async unsafeRunModelTestImmediately(modelName: string) {
-    return this.dbtProjectIntegration.unsafeRunModelTestImmediately(modelName);
   }
 
   async compileModel(runModelParams: RunModelParams) {
@@ -631,28 +572,6 @@ export class DBTProject implements Disposable {
     }
   }
 
-  async unsafeCompileModelImmediately(runModelParams: RunModelParams) {
-    return this.dbtProjectIntegration.unsafeCompileModelImmediately(
-      runModelParams,
-    );
-  }
-
-  async unsafeGenerateDocsImmediately(args?: string[]) {
-    return this.dbtProjectIntegration.unsafeGenerateDocsImmediately(args);
-  }
-
-  async generateDocs() {
-    const docsGenerateCommand =
-      this.dbtCommandFactory.createDocsGenerateCommand();
-    const command =
-      await this.getCurrentProjectIntegration().generateDocs(
-        docsGenerateCommand,
-      );
-    if (command) {
-      this.addCommandToQueue("all", command);
-    }
-  }
-
   clean() {
     return this.dbtProjectIntegration.clean();
   }
@@ -661,12 +580,8 @@ export class DBTProject implements Disposable {
     return this.dbtProjectIntegration.debug(focus);
   }
 
-  async installDbtPackages(packages: string[]) {
-    return this.dbtProjectIntegration.installDbtPackages(packages);
-  }
-
-  async installDeps(silent = false) {
-    return this.dbtProjectIntegration.installDeps(silent);
+  async installDeps() {
+    return this.dbtProjectIntegration.installDeps();
   }
 
   async compileNode(modelName: string): Promise<string | undefined> {
@@ -1025,32 +940,6 @@ export class DBTProject implements Disposable {
     );
   }
 
-  async immediatelyExecuteSQL(
-    query: string,
-    modelName: string,
-  ): Promise<QueryExecutionResult> {
-    this.throwDiagnosticsErrorIfAvailable();
-    const limit = workspace
-      .getConfiguration("dbt")
-      .get<number>("queryLimit", 500);
-    this.terminal.info("executeSQL", "Executed query: " + query, true, {
-      adapter: this.getAdapterType(),
-      limit: limit.toString(),
-    });
-    return this.dbtProjectIntegration.immediatelyExecuteSQL(query, modelName);
-  }
-
-  executeSQL(query: string, modelName: string): Promise<QueryExecution> {
-    const limit = workspace
-      .getConfiguration("dbt")
-      .get<number>("queryLimit", 500);
-    this.terminal.info("executeSQL", "Executed query: " + query, true, {
-      adapter: this.getAdapterType(),
-      limit: limit.toString(),
-    });
-    return this.dbtProjectIntegration.executeSQL(query, modelName);
-  }
-
   async dispose() {
     while (this.disposables.length) {
       const x = this.disposables.pop();
@@ -1092,14 +981,6 @@ export class DBTProject implements Disposable {
 
   getNonEphemeralParents(keys: string[]): string[] {
     return this.dbtProjectIntegration.getNonEphemeralParents(keys);
-  }
-
-  getChildrenModels({ table }: { table: string }): Table[] {
-    return this.dbtProjectIntegration.getChildrenModels({ table });
-  }
-
-  getParentModels({ table }: { table: string }): Table[] {
-    return this.dbtProjectIntegration.getParentModels({ table });
   }
 
   mergeColumnsFromDB(
@@ -1434,11 +1315,13 @@ export class DBTProject implements Disposable {
   private addCommandToQueue(queueName: string, command: DBTCommand): void {
     this.queues.get(queueName)!.push({
       command: async (signal) => {
+        const before =
+          this.dbtProjectIntegration.observeRunResultsBeforeCommand();
         const result = await command.execute(signal);
+        this.dbtProjectIntegration.parseRunResultsAfterCommand(before);
         // dbt CLI resolves normally even on failure (CommandProcessExecution.complete()
         // never rejects for non-zero exit). Detect pre-execution failures (compilation
-        // errors, config errors) by checking stdout. Runtime model failures generate
-        // run_results.json and are already handled via onHistoryChanged.
+        // errors, config errors) by checking stdout.
         if (result?.stdout?.includes("Encountered an error:")) {
           throw new Error(result.stdout.trim());
         }

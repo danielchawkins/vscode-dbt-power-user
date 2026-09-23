@@ -201,10 +201,6 @@ export class DBTProjectContainer implements Disposable {
     );
   }
 
-  generateDocs(modelPath: Uri) {
-    this.findDBTProject(modelPath)?.generateDocs();
-  }
-
   compileQuery(modelPath: Uri, query: string) {
     return this.findDBTProject(modelPath)?.compileQuery(query);
   }

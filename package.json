@@ -477,15 +477,6 @@
         }
       },
       {
-        "command": "dbtPowerUser.generateDBTDocs",
-        "title": "Run Dbt Docs Generate",
-        "category": "dbt Power User",
-        "icon": {
-          "light": "./media/images/run-light.svg",
-          "dark": "./media/images/run-dark.svg"
-        }
-      },
-      {
         "command": "dbtPowerUser.showCompiledSQL",
         "title": "Open dbt target folder compiled SQL",
         "category": "dbt Power User",
@@ -699,11 +690,6 @@
         {
           "command": "dbtPowerUser.runParentModels",
           "when": "view == parent_model_treeview",
-          "group": "navigation"
-        },
-        {
-          "command": "dbtPowerUser.generateDBTDocs",
-          "when": "view == documentation_treeview",
           "group": "navigation"
         },
         {

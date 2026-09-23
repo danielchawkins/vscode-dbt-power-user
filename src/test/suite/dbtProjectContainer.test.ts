@@ -90,7 +90,6 @@ describe("DBTProjectContainer", () => {
       runTest: jest.fn(),
       runModelTest: jest.fn(),
       compileModel: jest.fn(),
-      generateDocs: jest.fn(),
       compileQuery: jest.fn(async () => "compiled query"),
       showRunSQL: jest.fn(),
       showCompiledSql: jest.fn(),
@@ -506,12 +505,11 @@ describe("DBTProjectContainer", () => {
       },
     );
 
-    it("delegates model, test, docs, and schema operations", () => {
+    it("delegates model, test, and schema operations", () => {
       const model = Uri.file("/project1/models/test.sql");
 
       container.buildProject(model);
       container.compileModel(model);
-      container.generateDocs(model);
       container.generateSchemaYML(model, "test");
       container.runTest(model, "unique_test");
       container.runModelTest(model, "test");
@@ -523,7 +521,6 @@ describe("DBTProjectContainer", () => {
         modelName: "test",
         plusOperatorRight: "",
       });
-      expect(mockProject1.generateDocs).toHaveBeenCalled();
       expect(mockProject1.generateSchemaYML).toHaveBeenCalledWith(
         model,
         "test",

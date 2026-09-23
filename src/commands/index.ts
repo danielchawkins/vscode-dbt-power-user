@@ -1,6 +1,12 @@
-import { DBTTerminal, RunModelType } from "@altimateai/dbt-integration";
+import {
+  CATALOG_FILE,
+  DBTTerminal,
+  MANIFEST_FILE,
+  RunModelType,
+} from "@altimateai/dbt-integration";
 import { existsSync, readFileSync } from "fs";
 import { inject } from "inversify";
+import { join } from "path";
 import {
   CancellationTokenSource,
   CodeLens,
@@ -286,9 +292,6 @@ export class VSCodeCommands implements Disposable {
       ),
       commands.registerCommand("dbtPowerUser.generateSchemaYML", () =>
         this.runModel.generateSchemaYMLOnActiveWindow(),
-      ),
-      commands.registerCommand("dbtPowerUser.generateDBTDocs", () =>
-        this.runModel.generateDBTDocsOnActiveWindow(),
       ),
       commands.registerCommand("dbtPowerUser.executeSQL", () =>
         this.runModel.executeQueryOnActiveWindow(),
@@ -663,18 +666,25 @@ export class VSCodeCommands implements Disposable {
 
     this.diagnosticsOutputChannel.logNewLine();
 
+    const targetPath = project.getTargetPath();
     const paths = [
       {
         pathType: "DBT Project File",
         path: project.getDBTProjectFilePath(),
       },
-      { pathType: "Target", path: project.getTargetPath() },
+      { pathType: "Target", path: targetPath },
       {
         pathType: "PackageInstall",
         path: project.getPackageInstallPath(),
       },
-      { pathType: "Manifest", path: project.getManifestPath() },
-      { pathType: "Catalog", path: project.getCatalogPath() },
+      {
+        pathType: "Manifest",
+        path: targetPath ? join(targetPath, MANIFEST_FILE) : undefined,
+      },
+      {
+        pathType: "Catalog",
+        path: targetPath ? join(targetPath, CATALOG_FILE) : undefined,
+      },
       ...(project.getModelPaths() || []).map((path) => ({
         pathType: "Model",
         path,

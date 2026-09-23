@@ -3,7 +3,6 @@ import {
   DBT_PROJECT_FILE,
   DBTCommandFactory,
   DBTDiagnosticData,
-  DBTProjectIntegrationAdapterEvents,
   DBTTerminal,
   MANIFEST_FILE,
   ParsedManifest,
@@ -24,6 +23,7 @@ import * as vscode from "vscode";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
+import { FusionProjectIntegrationEvents } from "../../dbt_client/fusionProjectIntegration";
 import { PythonEnvironment } from "../../dbt_client/pythonEnvironment";
 import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
@@ -97,6 +97,7 @@ describe("DBTProject Test Suite", () => {
     // Mock RunHistoryService
     mockRunHistoryService = {
       addEntry: jest.fn(),
+      notifyCommandFailed: jest.fn(),
     } as unknown as jest.Mocked<RunHistoryService>;
 
     // Mock DBTCommandFactory
@@ -108,7 +109,7 @@ describe("DBTProject Test Suite", () => {
       }),
     } as unknown as jest.Mocked<DBTCommandFactory>;
 
-    // Mock DBTProjectIntegrationAdapter with EventEmitter functionality
+    // Mock FusionProjectIntegration with EventEmitter functionality
     const integrationEventEmitter = new EventEmitter();
     mockProjectIntegration = {
       on: jest.fn().mockImplementation((event: any, listener: any) => {
@@ -120,8 +121,6 @@ describe("DBTProject Test Suite", () => {
       getCurrentProjectIntegration: jest.fn(() => mockProjectIntegration),
       cleanupConnections: jest.fn(),
       getProjectName: jest.fn().mockReturnValue("test-project"),
-      getSelectedTarget: jest.fn().mockReturnValue("dev"),
-      getTargetNames: jest.fn().mockReturnValue(["dev", "prod"]),
       getColumnsOfModel: jest.fn(() => Promise.resolve([])),
       getColumnsOfSource: jest.fn(() => Promise.resolve([])),
       getCatalog: jest.fn(() => Promise.resolve({})),
@@ -129,8 +128,6 @@ describe("DBTProject Test Suite", () => {
       unsafeCompileQuery: jest.fn(),
       runQuery: jest.fn(),
       getColumnValues: jest.fn(),
-      unsafeGenerateDocsImmediately: jest.fn(),
-      setSelectedTarget: jest.fn(),
       getTargetPath: jest.fn().mockReturnValue("/project/target"),
       getPackageInstallPath: jest.fn().mockReturnValue("/project/dbt_packages"),
       getModelPaths: jest.fn().mockReturnValue(["/project/models"]),
@@ -147,6 +144,8 @@ describe("DBTProject Test Suite", () => {
       createDbtCommand: jest.fn(),
       runDbtCommand: jest.fn(),
       dispose: jest.fn(),
+      observeRunResultsBeforeCommand: jest.fn(() => null),
+      parseRunResultsAfterCommand: jest.fn(),
     };
 
     // Mock DBTProjectLog
@@ -178,7 +177,7 @@ describe("DBTProject Test Suite", () => {
       expect(DBT_PROJECT_FILE).toBe("dbt_project.yml");
       expect(MANIFEST_FILE).toBe("manifest.json");
       expect(RESOURCE_TYPE_MODEL).toBe("model");
-      expect(DBTProjectIntegrationAdapterEvents.SOURCE_FILE_CHANGED).toBe(
+      expect(FusionProjectIntegrationEvents.SOURCE_FILE_CHANGED).toBe(
         "sourceFileChanged",
       );
     });
@@ -252,54 +251,10 @@ describe("DBTProject Test Suite", () => {
       expect(dbtProject.getProjectRoot()).toBe("/test/project");
     });
 
-    it("should get selected target", () => {
-      expect(dbtProject.getSelectedTarget()).toBe("dev");
-      expect(mockProjectIntegration.getSelectedTarget).toHaveBeenCalled();
-    });
-
-    it("should get target names", () => {
-      expect(dbtProject.getTargetNames()).toEqual(["dev", "prod"]);
-      expect(mockProjectIntegration.getTargetNames).toHaveBeenCalled();
-    });
-
-    it("should set selected target with progress", async () => {
-      await dbtProject.setSelectedTarget("prod");
-
-      expect(vscode.window.withProgress).toHaveBeenCalledWith(
-        {
-          location: vscode.ProgressLocation.Notification,
-          title: "Changing target...",
-          cancellable: false,
-        },
-        expect.any(Function),
-      );
-      expect(mockProjectIntegration.setSelectedTarget).toHaveBeenCalledWith(
-        "prod",
-      );
-    });
-
     it("should get DBT project file path", () => {
       expect(dbtProject.getDBTProjectFilePath()).toBe(
         path.join("/test/project", DBT_PROJECT_FILE),
       );
-    });
-
-    it("should get manifest path", () => {
-      expect(dbtProject.getManifestPath()).toBe(
-        path.join("/project/target", "manifest.json"),
-      );
-    });
-
-    it("should get catalog path", () => {
-      expect(dbtProject.getCatalogPath()).toBe(
-        path.join("/project/target", "catalog.json"),
-      );
-    });
-
-    it("should return undefined for paths when target path is not available", () => {
-      mockProjectIntegration.getTargetPath.mockReturnValue(undefined);
-      expect(dbtProject.getManifestPath()).toBeUndefined();
-      expect(dbtProject.getCatalogPath()).toBeUndefined();
     });
   });
 
@@ -326,7 +281,7 @@ describe("DBTProject Test Suite", () => {
       // Trigger the event from the integration
       const onCall = mockProjectIntegration.on.mock.calls.find(
         (call: any) =>
-          call[0] === DBTProjectIntegrationAdapterEvents.SOURCE_FILE_CHANGED,
+          call[0] === FusionProjectIntegrationEvents.SOURCE_FILE_CHANGED,
       );
       expect(dbtProject.getPublicationEpoch()).toBe(0);
       onCall![1](); // Call the handler
@@ -366,7 +321,7 @@ describe("DBTProject Test Suite", () => {
       // Trigger the event from the integration
       const onCall = mockProjectIntegration.on.mock.calls.find(
         (call: any) =>
-          call[0] === DBTProjectIntegrationAdapterEvents.MANIFEST_PARSED,
+          call[0] === FusionProjectIntegrationEvents.MANIFEST_PARSED,
       );
       const lastPublication = () => {
         const calls = mockManifestChangedEmitter.fire.mock.calls;
@@ -416,7 +371,7 @@ describe("DBTProject Test Suite", () => {
       // Trigger the event from the integration
       const onCall = mockProjectIntegration.on.mock.calls.find(
         (call: any) =>
-          call[0] === DBTProjectIntegrationAdapterEvents.RUN_RESULTS_PARSED,
+          call[0] === FusionProjectIntegrationEvents.RUN_RESULTS_PARSED,
       );
       onCall![1](runResultsData);
 
@@ -712,6 +667,103 @@ describe("DBTProject Test Suite", () => {
       expect(mockProjectIntegration.dispose).toHaveBeenCalled();
       // dbtProjectLog is created in constructor and added to disposables in initialize
       expect(mockDbtProjectLog.dispose).toHaveBeenCalled();
+    });
+  });
+
+  describe("queued command run_results", () => {
+    it("parses fresh run_results before surfacing Encountered an error", async () => {
+      const projectUri = vscode.Uri.file("/test/project");
+      dbtProject = new DBTProject(
+        mockPythonEnvironment,
+        dbtProjectLogFactory as any,
+        mockCommandFactory,
+        mockTerminal,
+        mockSharedStateService,
+        jest.fn().mockReturnValue(mockProjectIntegration) as any,
+        mockRunHistoryService,
+        projectUri,
+        mockManifestChangedEmitter,
+      );
+      (
+        dbtProject as unknown as { createQueue: (queueName: string) => void }
+      ).createQueue("all");
+
+      mockProjectIntegration.observeRunResultsBeforeCommand.mockReturnValue(
+        null,
+      );
+      const mockCommand = {
+        execute: jest.fn(() =>
+          Promise.resolve({
+            stdout: "Encountered an error: model failed",
+          }),
+        ),
+        focus: false,
+        showProgress: false,
+        signal: undefined,
+        getCommandAsString: () => "dbt run --select my_model",
+      };
+
+      (
+        dbtProject as unknown as { addCommandToQueue: Function }
+      ).addCommandToQueue("all", mockCommand);
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(
+        mockProjectIntegration.observeRunResultsBeforeCommand,
+      ).toHaveBeenCalled();
+      expect(mockCommand.execute).toHaveBeenCalled();
+      expect(
+        mockProjectIntegration.parseRunResultsAfterCommand,
+      ).toHaveBeenCalledWith(null);
+      expect(mockRunHistoryService.notifyCommandFailed).toHaveBeenCalledWith(
+        "dbt run --select my_model",
+        expect.stringContaining("Encountered an error:"),
+      );
+      const parseOrder =
+        mockProjectIntegration.parseRunResultsAfterCommand.mock
+          .invocationCallOrder[0];
+      const failOrder =
+        mockRunHistoryService.notifyCommandFailed.mock.invocationCallOrder[0];
+      expect(parseOrder).toBeLessThan(failOrder);
+    });
+
+    it("does not parse run_results when execute rejects", async () => {
+      const projectUri = vscode.Uri.file("/test/project");
+      dbtProject = new DBTProject(
+        mockPythonEnvironment,
+        dbtProjectLogFactory as any,
+        mockCommandFactory,
+        mockTerminal,
+        mockSharedStateService,
+        jest.fn().mockReturnValue(mockProjectIntegration) as any,
+        mockRunHistoryService,
+        projectUri,
+        mockManifestChangedEmitter,
+      );
+      (
+        dbtProject as unknown as { createQueue: (queueName: string) => void }
+      ).createQueue("all");
+
+      const mockCommand = {
+        execute: jest.fn(() => Promise.reject(new Error("cancelled"))),
+        focus: false,
+        showProgress: false,
+        signal: undefined,
+        getCommandAsString: () => "dbt run --select my_model",
+      };
+
+      (
+        dbtProject as unknown as { addCommandToQueue: Function }
+      ).addCommandToQueue("all", mockCommand);
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(
+        mockProjectIntegration.parseRunResultsAfterCommand,
+      ).not.toHaveBeenCalled();
+      expect(mockRunHistoryService.notifyCommandFailed).toHaveBeenCalledWith(
+        "dbt run --select my_model",
+        "Error: cancelled",
+      );
     });
   });
 });

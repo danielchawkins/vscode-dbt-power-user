@@ -2,7 +2,6 @@ import {
   AltimateHttpClient,
   DBTDetection,
   DBTFusionCommandProjectIntegration,
-  DBTProjectIntegrationAdapter,
   DbtIntegrationClient,
   DeferConfig,
 } from "@altimateai/dbt-integration";
@@ -50,6 +49,8 @@ Object.assign(vscodeMockAny.extensions as Record<string, unknown>, {
     },
   })),
 });
+
+import { FusionProjectIntegration } from "../../dbt_client/fusionProjectIntegration";
 
 import { container } from "../../inversify.config";
 
@@ -104,17 +105,18 @@ describe("Fusion-only integration wiring", () => {
   });
 
   it("uses the Fusion project integration", () => {
-    type AdapterFactory = (
+    type IntegrationFactory = (
       projectRoot: string,
       deferConfig: DeferConfig | undefined,
-    ) => DBTProjectIntegrationAdapter;
+    ) => FusionProjectIntegration;
 
-    const factory = container.get<AdapterFactory>(
-      "Factory<DBTProjectIntegrationAdapter>",
+    const factory = container.get<IntegrationFactory>(
+      "Factory<FusionProjectIntegration>",
     );
-    const adapter = factory("/tmp/project", undefined);
+    const integration = factory("/tmp/project", undefined);
 
-    expect(adapter.getCurrentProjectIntegration()).toBeInstanceOf(
+    expect(integration).toBeInstanceOf(FusionProjectIntegration);
+    expect(integration.getCurrentProjectIntegration()).toBeInstanceOf(
       DBTFusionCommandProjectIntegration,
     );
   });
