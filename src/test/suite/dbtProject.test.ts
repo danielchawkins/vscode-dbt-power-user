@@ -797,4 +797,194 @@ describe("DBTProject Test Suite", () => {
       );
     });
   });
+
+  describe("Fusion CLI operation routing", () => {
+    let realCommandFactory: DBTCommandFactory;
+
+    beforeEach(() => {
+      realCommandFactory = new DBTCommandFactory({
+        getRunModelCommandAdditionalParams: () => [],
+        getBuildModelCommandAdditionalParams: () => [],
+        getTestModelCommandAdditionalParams: () => [],
+      } as unknown as ConstructorParameters<typeof DBTCommandFactory>[0]);
+    });
+
+    function buildProject(): DBTProject {
+      const projectUri = vscode.Uri.file("/test/project");
+      return new DBTProject(
+        dbtProjectLogFactory as any,
+        realCommandFactory,
+        mockTerminal,
+        mockSharedStateService,
+        jest.fn().mockReturnValue(mockProjectIntegration) as any,
+        mockRunHistoryService,
+        projectUri,
+        mockManifestChangedEmitter,
+      );
+    }
+
+    it.each([
+      ["", "", "run --select my_model"],
+      ["+", "", "run --select +my_model"],
+      ["", "+", "run --select my_model+"],
+      ["+", "+", "run --select +my_model+"],
+    ])(
+      "builds runModel args for %s my_model %s",
+      async (plusOperatorLeft, plusOperatorRight, expectedFragment) => {
+        dbtProject = buildProject();
+        mockProjectIntegration.runModel = jest.fn(() => Promise.resolve());
+
+        await dbtProject.runModel({
+          plusOperatorLeft,
+          modelName: "my_model",
+          plusOperatorRight,
+        });
+
+        const command = mockProjectIntegration.runModel.mock.calls[0][0];
+        expect(command.getCommandAsString()).toContain(expectedFragment);
+      },
+    );
+
+    it.each([
+      ["", "", "build --select my_model"],
+      ["+", "", "build --select +my_model"],
+      ["", "+", "build --select my_model+"],
+      ["+", "+", "build --select +my_model+"],
+    ])(
+      "builds buildModel args for %s my_model %s",
+      async (plusOperatorLeft, plusOperatorRight, expectedFragment) => {
+        dbtProject = buildProject();
+        mockProjectIntegration.buildModel = jest.fn(() => Promise.resolve());
+
+        await dbtProject.buildModel({
+          plusOperatorLeft,
+          modelName: "my_model",
+          plusOperatorRight,
+        });
+
+        const command = mockProjectIntegration.buildModel.mock.calls[0][0];
+        expect(command.getCommandAsString()).toContain(expectedFragment);
+      },
+    );
+
+    it("builds buildProject args with no select", async () => {
+      dbtProject = buildProject();
+      mockProjectIntegration.buildProject = jest.fn(() => Promise.resolve());
+
+      await dbtProject.buildProject();
+
+      const command = mockProjectIntegration.buildProject.mock.calls[0][0];
+      expect(command.getCommandAsString()).toContain("build");
+      expect(command.getCommandAsString()).not.toContain("--select");
+    });
+
+    it("builds runTest and runModelTest args with the test name selector", async () => {
+      dbtProject = buildProject();
+      mockProjectIntegration.runTest = jest.fn(() => Promise.resolve());
+      mockProjectIntegration.runModelTest = jest.fn(() => Promise.resolve());
+
+      await dbtProject.runTest("my_test");
+      await dbtProject.runModelTest("my_model");
+
+      expect(
+        mockProjectIntegration.runTest.mock.calls[0][0].getCommandAsString(),
+      ).toContain("test --select my_test");
+      expect(
+        mockProjectIntegration.runModelTest.mock.calls[0][0].getCommandAsString(),
+      ).toContain("test --select my_model");
+    });
+
+    it("compiles a model and queues the resulting command for execution", async () => {
+      dbtProject = buildProject();
+      (
+        dbtProject as unknown as { createQueue: (queueName: string) => void }
+      ).createQueue("all");
+      (vscode.window.withProgress as jest.Mock).mockImplementationOnce(
+        (_options: unknown, task: any) =>
+          task(undefined, {
+            onCancellationRequested: () => ({ dispose: () => undefined }),
+          }),
+      );
+      const executeSpy = jest.fn(() => Promise.resolve({ stdout: "" }));
+      mockProjectIntegration.compileModel = jest.fn(async (command: any) => {
+        expect(command.getCommandAsString()).toContain(
+          "compile --select my_model",
+        );
+        command.execute = executeSpy;
+        return command;
+      });
+
+      await dbtProject.compileModel({
+        plusOperatorLeft: "",
+        modelName: "my_model",
+        plusOperatorRight: "",
+      });
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(executeSpy).toHaveBeenCalled();
+    });
+
+    it("routes clean and installDeps through the Fusion project integration", async () => {
+      dbtProject = buildProject();
+      mockProjectIntegration.clean = jest.fn(() => Promise.resolve());
+      mockProjectIntegration.installDeps = jest.fn(() => Promise.resolve());
+
+      dbtProject.clean();
+      await dbtProject.installDeps();
+
+      expect(mockProjectIntegration.clean).toHaveBeenCalled();
+      expect(mockProjectIntegration.installDeps).toHaveBeenCalled();
+    });
+
+    it("propagates progress-token cancellation to the queued command's abort signal", async () => {
+      dbtProject = buildProject();
+      (
+        dbtProject as unknown as { createQueue: (queueName: string) => void }
+      ).createQueue("all");
+
+      let capturedCancel: (() => void) | undefined;
+      (vscode.window.withProgress as jest.Mock).mockImplementationOnce(
+        (_options: unknown, task: any) => {
+          const token = {
+            onCancellationRequested: (cb: () => void) => {
+              capturedCancel = cb;
+              return { dispose: () => undefined };
+            },
+          };
+          return task(undefined, token);
+        },
+      );
+
+      let observedSignal: AbortSignal | undefined;
+      const executeSpy = jest.fn((signal?: AbortSignal) => {
+        observedSignal = signal;
+        return new Promise((resolve) => {
+          signal?.addEventListener("abort", () =>
+            resolve({ stdout: "" } as any),
+          );
+        });
+      });
+      const mockCommand = {
+        execute: executeSpy,
+        focus: false,
+        showProgress: true,
+        signal: undefined,
+        getCommandAsString: () => "dbt run --select my_model",
+      };
+
+      (
+        dbtProject as unknown as { addCommandToQueue: Function }
+      ).addCommandToQueue("all", mockCommand);
+      await Promise.resolve();
+      await Promise.resolve();
+
+      expect(executeSpy).toHaveBeenCalled();
+      expect(observedSignal?.aborted).toBe(false);
+
+      capturedCancel?.();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(observedSignal?.aborted).toBe(true);
+    });
+  });
 });
