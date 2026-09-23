@@ -27,7 +27,7 @@ import {
 
 const useQueryPanelListeners = (): { loading: boolean } => {
   const dispatch = useQueryPanelDispatch();
-  const { loading, hintIndex, queryResults } = useQueryPanelState();
+  const { loading, hintIndex } = useQueryPanelState();
   const hintInterval = useRef<NodeJS.Timeout | undefined>(undefined);
   const hintIndexRef = useRef<number>(hintIndex);
   const queryExecutionTimer = useRef<NodeJS.Timeout | undefined>(undefined);
@@ -111,19 +111,6 @@ const useQueryPanelListeners = (): { loading: boolean } => {
     dispatch(setQueryHistory(args));
   };
 
-  const collectQueryResultsDebugInfo = () => {
-    const perspectiveViewer = document.querySelector("perspective-viewer");
-    const table = perspectiveViewer
-      ?.querySelector("perspective-datagrid-json-viewer-plugin")
-      ?.shadowRoot?.querySelectorAll("regular-table tr");
-    void executeRequestInSync("collectQueryResultsDebugInfo", {
-      perspectiveHeight: perspectiveViewer?.offsetHeight,
-      perspectiveScrollHeight: perspectiveViewer?.scrollHeight,
-      tableRowsCount: table?.length,
-      queryResults,
-    });
-  };
-
   const onMesssage = useCallback(
     (event: MessageEvent<IncomingMessageProps>) => {
       panelLogger.info("query panel onMesssage", event.data);
@@ -163,9 +150,6 @@ const useQueryPanelListeners = (): { loading: boolean } => {
               args.activeEditor as QueryPanelStateProps["activeEditor"],
             ),
           );
-          break;
-        case "collectQueryResultsDebugInfo":
-          collectQueryResultsDebugInfo();
           break;
         default:
           break;

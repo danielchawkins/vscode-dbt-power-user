@@ -77,7 +77,6 @@ interface InjectConfig {
 }
 
 enum InboundCommand {
-  CollectQueryResultsDebugInfo = "collectQueryResultsDebugInfo",
   Info = "info",
   Error = "error",
   UpdateConfig = "updateConfig",
@@ -159,13 +158,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
       }),
     );
 
-    this._disposables.push(
-      commands.registerCommand(
-        "dbtPowerUser.collectQueryResultsDebugInfo",
-        () => this.collectQueryResultsDebugInfo(),
-      ),
-      this,
-    );
+    this._disposables.push(this);
   }
 
   private async sendUpdatedContextToWebview() {
@@ -184,13 +177,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
         },
       });
     }
-  }
-
-  private collectQueryResultsDebugInfo() {
-    console.log("Collecting query results debug info");
-    this._panel?.webview?.postMessage({
-      command: "collectQueryResultsDebugInfo",
-    });
   }
 
   private async createQueryResultsPanelVirtualDocument(editorName: string) {
@@ -453,18 +439,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
             this.dbtProjectContainer.setToGlobalState(
               message.key,
               message.value,
-            );
-            break;
-          case InboundCommand.CollectQueryResultsDebugInfo:
-            const data = {
-              ...message,
-              historyItems: this._queryHistory.length,
-              historySize: JSON.stringify(this._queryHistory).length,
-            };
-            this.dbtTerminal.debug(
-              "CollectQueryResultsDebugInfo",
-              "collecting query results debug info",
-              data,
             );
             break;
           default:
