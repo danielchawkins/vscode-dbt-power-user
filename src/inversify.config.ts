@@ -102,7 +102,6 @@ import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 import { DocumentFormattingEditProviders } from "./document_formatting_edit_provider";
 import { DbtDocumentFormattingEditProvider } from "./document_formatting_edit_provider/dbtDocumentFormattingEditProvider";
 import { DbtPowerUserActionsCenter } from "./quickpick";
-import { DbtPowerUserControlCenterAction } from "./quickpick/actionsQuickPick";
 import { StatusBars } from "./statusbar";
 import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
 import { TreeviewProviders } from "./treeview_provider";
@@ -768,14 +767,6 @@ container
   })
   .inSingletonScope();
 
-// Bind quick pick components
-container
-  .bind(DbtPowerUserControlCenterAction)
-  .toDynamicValue(() => {
-    return new DbtPowerUserControlCenterAction();
-  })
-  .inSingletonScope();
-
 // Bind individual command components that are required by VSCodeCommands
 container
   .bind(RunModel)
@@ -965,10 +956,8 @@ container
   .bind(DbtPowerUserActionsCenter)
   .toDynamicValue((context) => {
     return new DbtPowerUserActionsCenter(
-      context.get(DbtPowerUserControlCenterAction),
       context.get(ProjectContext),
       context.get(DBTProjectContainer),
-      context.get(SharedStateService),
     );
   })
   .inSingletonScope();

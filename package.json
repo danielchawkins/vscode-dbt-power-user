@@ -353,19 +353,9 @@
     },
     "commands": [
       {
-        "command": "dbtPowerUser.collectQueryResultsDebugInfo",
-        "title": "Query Results Debug Info",
-        "category": "dbt Power User"
-      },
-      {
         "command": "dbtPowerUser.viewInDocEditor",
         "title": "View in documentation editor",
         "category": "dbt Power User"
-      },
-      {
-        "command": "dbtPowerUser.puQuickPick",
-        "category": "dbt Power User",
-        "title": "dbt Power User Quick Pick"
       },
       {
         "command": "dbtPowerUser.runCurrentModel",

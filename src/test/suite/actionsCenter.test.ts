@@ -4,8 +4,6 @@ import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { ProjectContext } from "../../projects/projectContext";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "../../quickpick";
-import { DbtPowerUserControlCenterAction } from "../../quickpick/actionsQuickPick";
-import { SharedStateService } from "../../services/sharedStateService";
 
 describe("DbtPowerUserActionsCenter project picker", () => {
   let context: jest.Mocked<ProjectContext>;
@@ -31,12 +29,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
       contains: () => true,
       dispose: jest.fn(),
     };
-    new DbtPowerUserActionsCenter(
-      { openActions: jest.fn() } as unknown as DbtPowerUserControlCenterAction,
-      context,
-      container,
-      {} as SharedStateService,
-    );
+    new DbtPowerUserActionsCenter(context, container);
   });
 
   it("stores an explicit Project Context pick for validate and install", async () => {

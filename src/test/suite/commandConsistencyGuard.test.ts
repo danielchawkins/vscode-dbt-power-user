@@ -108,7 +108,9 @@ describe("command contribution consistency", () => {
         "CodeLens-only; src/code_lens_provider",
       "dbtPowerUser.yamlRunModel": "CodeLens-only; src/code_lens_provider",
       "dbtPowerUser.yamlTestModel": "CodeLens-only; src/code_lens_provider",
-      "dbtPowerUser.pickProject": "CodeLens-only; src/code_lens_provider",
+      "dbtPowerUser.pickProject": "Declared Project picker; src/quickpick",
+      "dbtPowerUser.collectQueryResultsDebugInfo":
+        "Query results debug; webview_provider/queryResultPanel",
     };
 
     const nonLiteralAllowlist: Record<string, string> = {
