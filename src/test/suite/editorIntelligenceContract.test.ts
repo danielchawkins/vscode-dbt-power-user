@@ -59,7 +59,7 @@ describe("editor intelligence project resolution", () => {
 
     expect(callers).toEqual([
       "commands/index.ts",
-      "commands/walkthroughCommands.ts",
+      "commands/projectSetupCommands.ts",
       "quickpick/index.ts",
     ]);
   });

@@ -76,9 +76,9 @@ import { ProjectQuickPick } from "./quickpick/projectQuickPick";
 
 // Import missing providers and components
 import { VSCodeCommands } from "./commands";
+import { ProjectSetupCommands } from "./commands/projectSetupCommands";
 import { RunModel } from "./commands/runModel";
 import { RunTest } from "./commands/runTest";
-import { WalkthroughCommands } from "./commands/walkthroughCommands";
 import { ContentProviders } from "./content_provider";
 import { SqlPreviewContentProvider } from "./content_provider/sqlPreviewContentProvider";
 import { CteProfilerDecorationProvider } from "./cte_profiler/cteProfilerDecorationProvider";
@@ -658,9 +658,9 @@ container
   .inSingletonScope();
 
 container
-  .bind(WalkthroughCommands)
+  .bind(ProjectSetupCommands)
   .toDynamicValue((context) => {
-    return new WalkthroughCommands(
+    return new ProjectSetupCommands(
       context.get(DBTProjectContainer),
       context.get(ProjectQuickPick),
       context.get("DBTTerminal"),
@@ -675,7 +675,7 @@ container
       context.get(DBTProjectContainer),
       context.get(RunModel),
       context.get(RunTest),
-      context.get(WalkthroughCommands),
+      context.get(ProjectSetupCommands),
       context.get("DBTTerminal"),
       context.get(DiagnosticsOutputChannel),
       context.get(RunHistoryService),

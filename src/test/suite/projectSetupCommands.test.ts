@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { Uri, window } from "vscode";
-import { WalkthroughCommands } from "../../commands/walkthroughCommands";
+import { ProjectSetupCommands } from "../../commands/projectSetupCommands";
 import {
   ProjectQuickPick,
   ProjectQuickPickItem,
@@ -13,7 +13,7 @@ const pickedProject: ProjectQuickPickItem = {
   uri: projectUri,
 };
 
-describe("WalkthroughCommands project resolution", () => {
+describe("ProjectSetupCommands project resolution", () => {
   const mockDbtTerminal = {
     error: jest.fn(),
     debug: jest.fn(),
@@ -46,7 +46,7 @@ describe("WalkthroughCommands project resolution", () => {
       projectPicker: jest.fn(() => Promise.resolve(options.pickerResult)),
     };
 
-    const commands = new WalkthroughCommands(
+    const commands = new ProjectSetupCommands(
       mockContainer as never,
       mockPicker as unknown as ProjectQuickPick,
       mockDbtTerminal as never,

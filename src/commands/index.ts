@@ -38,9 +38,9 @@ import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { deepEqual, getFirstWorkspacePath } from "../utils";
+import { ProjectSetupCommands } from "./projectSetupCommands";
 import { RunModel } from "./runModel";
 import { RunTest } from "./runTest";
-import { WalkthroughCommands } from "./walkthroughCommands";
 
 export class VSCodeCommands implements Disposable {
   private disposables: Disposable[] = [];
@@ -49,7 +49,7 @@ export class VSCodeCommands implements Disposable {
     private dbtProjectContainer: DBTProjectContainer,
     private runModel: RunModel,
     private runTest: RunTest,
-    private walkthroughCommands: WalkthroughCommands,
+    private projectSetupCommands: ProjectSetupCommands,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private diagnosticsOutputChannel: DiagnosticsOutputChannel,
@@ -387,14 +387,14 @@ export class VSCodeCommands implements Disposable {
             "fusionPowerUser.projectSelected",
           );
 
-        await this.walkthroughCommands.validateProjects(pickedProject);
+        await this.projectSetupCommands.validateProjects(pickedProject);
       }),
       commands.registerCommand("fusionPowerUser.installDeps", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
           this.dbtProjectContainer.getFromWorkspaceState(
             "fusionPowerUser.projectSelected",
           );
-        await this.walkthroughCommands.installDeps(pickedProject);
+        await this.projectSetupCommands.installDeps(pickedProject);
       }),
       commands.registerCommand("fusionPowerUser.viewInDocEditor", () =>
         commands.executeCommand("fusionPowerUser.DocsEdit.focus"),

@@ -12,7 +12,7 @@ enum PromptAnswer {
   NO = "No",
 }
 
-export class WalkthroughCommands {
+export class ProjectSetupCommands {
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
     private projectQuickPick: ProjectQuickPick,
@@ -119,7 +119,7 @@ export class WalkthroughCommands {
       await project.installDeps();
     } catch (err) {
       this.dbtTerminal.debug(
-        "WalkthroughCommands.installDeps",
+        "ProjectSetupCommands.installDeps",
         "Could not install deps",
         err,
       );
