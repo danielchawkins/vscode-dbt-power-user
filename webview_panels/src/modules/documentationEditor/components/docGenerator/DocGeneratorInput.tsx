@@ -38,11 +38,7 @@ const DocGeneratorInput = ({
 }: Props): JSX.Element => {
   const stackRef = useRef<HTMLDivElement | null>(null);
   const {
-    state: {
-      incomingDocsData,
-      currentDocsData,
-      insertedEntityName,
-    },
+    state: { incomingDocsData, currentDocsData },
     dispatch,
   } = useDocumentationContext();
   const [description, setDescription] = useState("");
@@ -73,19 +69,6 @@ const DocGeneratorInput = ({
   useEffect(() => {
     setDescription(entity.description ?? "");
   }, [entity.description]);
-
-  useEffect(() => {
-    if (!insertedEntityName || !inputRef.current) {
-      return;
-    }
-
-    if (insertedEntityName === entity.name) {
-      const timeoutId = setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-      return () => clearTimeout(timeoutId);
-    }
-  }, [insertedEntityName, entity.name]);
 
   const onChange = (e: ChangeEvent<HTMLInputElement>) => {
     setDescription(e.target.value);

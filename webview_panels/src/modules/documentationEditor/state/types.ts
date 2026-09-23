@@ -71,7 +71,6 @@ export interface DocumentationStateProps {
   currentDocsTests?: DBTModelTest[];
   currentUnitTests?: DBTUnitTest[];
   project?: string;
-  insertedEntityName?: string;
   showSingleDocsPropRightPanel: boolean;
   showBulkDocsPropRightPanel: boolean;
   missingDocumentationMessage?: { message: string; type: "warning" | "error" };
