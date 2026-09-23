@@ -5,6 +5,7 @@ webview_panels/storybook-static
 .vscode-test/
 .cache/
 *.vsix
+vsix.sha256
 .DS_Store
 .idea
 .history

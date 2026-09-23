@@ -256,3 +256,22 @@ package:
       exit 1
     fi
     echo "VSIX $vsix contains 0 .py entries"
+
+# Local dry run of the release pipeline: build, checksum, verify the tag, publish nothing.
+[group("package")]
+release:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    version="$(node -p "require('./package.json').version")"
+    tag="v${version}"
+    just jj git fetch
+    existing="$(just jj tag list "exact:$tag")"
+    if [[ -n "$existing" ]]; then
+      echo "error: tag $tag already exists; bump package.json version before releasing" >&2
+      exit 1
+    fi
+    just check
+    just package
+    vsix="$(node -p "require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
+    shasum -a 256 "$vsix" | tee vsix.sha256
+    echo "dry run: would push tag $tag and publish $vsix with checksum $(awk '{print $1}' vsix.sha256)"
