@@ -17,7 +17,6 @@ import {
   DBTTerminal,
   ExecuteSQLError,
   ExecuteSQLResult,
-  PythonException,
   QueryExecution,
 } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
@@ -651,29 +650,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
       );
       return result;
     } catch (exc: any) {
-      if (exc instanceof PythonException) {
-        if (exc.exception.type.name === "KeyboardInterrupt") {
-          // query cancellation
-          this.transmitReset();
-          return;
-        }
-        window.showErrorMessage(
-          "An error occured while trying to execute your query: " +
-            exc.exception.message,
-        );
-        await this.transmitError(
-          {
-            error: {
-              code: -1,
-              message: exc.exception.message,
-              data: JSON.stringify(exc.stack, null, 2),
-            },
-          },
-          query,
-          query,
-        );
-        return;
-      }
       if (exc instanceof ExecuteSQLError) {
         window.showErrorMessage(
           "An error occured while trying to execute your query: " + exc.message,

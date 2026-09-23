@@ -1,6 +1,5 @@
 import {
   DBTTerminal,
-  PythonException,
   Table,
   TestMetaData,
   TestMetadataAcceptedValues,
@@ -724,22 +723,9 @@ export class DocsEditViewPanel implements WebviewViewProvider {
                   }
                 } catch (exc) {
                   this.transmitError();
-                  if (exc instanceof PythonException) {
-                    window.showErrorMessage(
-                      `An error occured while fetching metadata for ${modelName} from the database: ` +
-                        exc.exception.message,
-                    );
-                    this.terminal.error(
-                      "docsEditPanelLoadPythonError",
-                      `An error occured while fetching metadata for ${modelName} from the database`,
-                      exc,
-                      false,
-                    );
-                    return;
-                  }
                   window.showErrorMessage(
                     `An error occured while fetching metadata for ${modelName} from the database: ` +
-                      exc,
+                      (exc instanceof Error ? exc.message : String(exc)),
                   );
                   this.terminal.error(
                     "docsEditPanelLoadError",
@@ -1175,10 +1161,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         data: response,
       });
     } catch (error) {
-      const message =
-        error instanceof PythonException
-          ? error.exception.message
-          : (error as Error).message;
+      const message = error instanceof Error ? error.message : String(error);
       if (error instanceof UserInputError) {
         this.terminal.debug(command, message, error);
       } else {

@@ -79,10 +79,6 @@ export class DBTProjectContainer implements Disposable {
     this.dbtClient.setGlobalState(context.globalState);
   }
 
-  showErrorIfDbtOrPythonNotInstalled() {
-    return this.dbtClient.showErrorIfDbtOrPythonNotInstalled();
-  }
-
   showErrorIfDbtIsNotInstalled() {
     return this.dbtClient.showErrorIfDbtIsNotInstalled();
   }
@@ -131,10 +127,6 @@ export class DBTProjectContainer implements Disposable {
 
   get extensionId(): string {
     return this.context?.extension.id.toString() || "";
-  }
-
-  get pythonInstalled(): boolean {
-    return this.dbtClient.pythonInstalled ?? false;
   }
 
   get dbtInstalled(): boolean {
@@ -305,10 +297,6 @@ export class DBTProjectContainer implements Disposable {
         this.getProjects().map((project) => project.getAdapterType()),
       ),
     );
-  }
-
-  getPythonEnvironment() {
-    return this.dbtClient.getPythonEnvironment();
   }
 
   dispose() {

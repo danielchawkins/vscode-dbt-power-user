@@ -220,7 +220,6 @@ export class FusionProjectIntegration
   private projectConfigWatcher?: FSWatcher;
   private sourceFilesDebounced?: DebouncedHandler;
   private projectConfigDebounced?: DebouncedHandler;
-  private depsInitialized = false;
   private projectConfigDiagnostics: DBTDiagnosticData[] = [];
   private lastParsedManifest?: ParsedManifest;
   private deferConfig: DeferConfig;
@@ -394,25 +393,6 @@ export class FusionProjectIntegration
     this.emit(FusionProjectIntegrationEvents.REBUILD_MANIFEST_STATUS_CHANGE, {
       inProgress: true,
     });
-    const installDeps =
-      this.dbtConfiguration.getInstallDepsOnProjectInitialization();
-    if (!this.depsInitialized && installDeps) {
-      try {
-        this.terminal.debug(
-          "FusionProjectIntegration",
-          "Installing dbt dependencies before first manifest rebuild",
-        );
-        await this.installDeps();
-        this.depsInitialized = true;
-      } catch (error) {
-        this.terminal.warn(
-          "FusionProjectIntegration",
-          "An error occurred while installing dependencies",
-          false,
-          error,
-        );
-      }
-    }
     try {
       await this.currentIntegration.rebuildManifest();
       this.terminal.debug(

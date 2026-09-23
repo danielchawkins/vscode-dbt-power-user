@@ -67,11 +67,6 @@
             "type": "number",
             "description": "By default how much lineage should expand.",
             "default": 1
-          },
-          "dbt.installDepsOnProjectInitialization": {
-            "type": "boolean",
-            "description": "Install dbt deps on project initialization",
-            "default": true
           }
         }
       },
@@ -150,15 +145,6 @@
             "type": "string",
             "markdownDescription": "Regex to identify unquoted identifiers. Example: `^([_A-Z]+[_A-Z0-9$]*)$`"
           },
-          "dbt.dbtPythonPathOverride": {
-            "type": "string",
-            "description": "Path to a Python executable. Use this when the Python extension selects a different interpreter than the one where dbt is installed (e.g. dbt works in your terminal but not in the extension). You can set this manually or run the 'Detect Python from terminal' command to auto-detect it."
-          },
-          "dbt.dbtCustomRunnerImport": {
-            "type": "string",
-            "description": "Python import string to import custom dbt runner. (Only supported for dbt core)",
-            "default": "from dbt.cli.main import dbtRunner"
-          },
           "dbt.runModelCommandAdditionalParams": {
             "type": "array",
             "items": {
@@ -220,18 +206,6 @@
             "type": "string",
             "default": "base",
             "description": "Set the prefix that is used when generating a model from a source yml file."
-          },
-          "dbt.sqlFmtPath": {
-            "type": "string",
-            "description": "Path to `sqlfmt`. If not set, it will look on your PATH"
-          },
-          "dbt.sqlFmtAdditionalParams": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "default": [],
-            "description": "Add additional params to `sqlfmt`"
           },
           "dbt.disableDepthsCalculation": {
             "type": "boolean",
@@ -543,22 +517,10 @@
         "icon": "$(clear-all)"
       },
       {
-        "command": "dbtPowerUser.printEnvVars",
-        "title": "Print environment variables",
-        "category": "dbt Power User",
-        "icon": "$(gist-secret)"
-      },
-      {
         "command": "dbtPowerUser.diagnostics",
         "title": "Collect diagnostics",
         "category": "dbt Power User",
         "icon": "$(debug-console)"
-      },
-      {
-        "command": "dbtPowerUser.detectPythonFromTerminal",
-        "title": "Detect Python from terminal",
-        "category": "dbt Power User",
-        "icon": "$(terminal)"
       },
       {
         "command": "dbtPowerUser.applyDeferConfig",
@@ -849,7 +811,6 @@
     "@vscode/codicons": "^0.0.45",
     "@vscode/vsce": "^4.0.0",
     "inversify": "^8.2.3",
-    "parse-diff": "^0.12.0",
     "reflect-metadata": "^0.2.2",
     "semver": "^7.8.5",
     "vscode-languageclient": "10.1.1",

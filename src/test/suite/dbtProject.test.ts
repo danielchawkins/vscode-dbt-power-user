@@ -24,12 +24,10 @@ import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
 import { FusionProjectIntegrationEvents } from "../../dbt_client/fusionProjectIntegration";
-import { PythonEnvironment } from "../../dbt_client/pythonEnvironment";
 import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
 describe("DBTProject Test Suite", () => {
   let mockTerminal: jest.Mocked<DBTTerminal>;
-  let mockPythonEnvironment: jest.Mocked<PythonEnvironment>;
   let mockSharedStateService: jest.Mocked<SharedStateService>;
   let mockRunHistoryService: jest.Mocked<RunHistoryService>;
   let mockCommandFactory: jest.Mocked<DBTCommandFactory>;
@@ -83,14 +81,6 @@ describe("DBTProject Test Suite", () => {
       warn: jest.fn(),
     } as unknown as jest.Mocked<DBTTerminal>;
 
-    // Mock PythonEnvironment
-    mockPythonEnvironment = {
-      initialize: jest.fn(() => Promise.resolve()),
-      onPythonEnvironmentChanged: jest.fn().mockReturnValue({
-        dispose: jest.fn(),
-      }),
-    } as unknown as jest.Mocked<PythonEnvironment>;
-
     // Mock SharedStateService
     mockSharedStateService = {} as unknown as jest.Mocked<SharedStateService>;
 
@@ -134,7 +124,6 @@ describe("DBTProject Test Suite", () => {
       getSeedPaths: jest.fn().mockReturnValue(["/project/seeds"]),
       getMacroPaths: jest.fn().mockReturnValue(["/project/macros"]),
       getDiagnostics: jest.fn().mockReturnValue({
-        pythonBridgeDiagnostics: [],
         rebuildManifestDiagnostics: [],
         projectConfigDiagnostics: [],
       }),
@@ -187,7 +176,6 @@ describe("DBTProject Test Suite", () => {
       const projectConfig = {};
 
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,
@@ -209,7 +197,6 @@ describe("DBTProject Test Suite", () => {
       const projectUri = vscode.Uri.file("/test/project");
 
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,
@@ -230,7 +217,6 @@ describe("DBTProject Test Suite", () => {
     beforeEach(() => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,
@@ -262,7 +248,6 @@ describe("DBTProject Test Suite", () => {
     beforeEach(() => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,
@@ -386,7 +371,6 @@ describe("DBTProject Test Suite", () => {
     beforeEach(() => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,
@@ -414,8 +398,7 @@ describe("DBTProject Test Suite", () => {
       };
 
       (mockProjectIntegration.getDiagnostics as jest.Mock).mockReturnValue({
-        pythonBridgeDiagnostics: [mockDiagnosticData],
-        rebuildManifestDiagnostics: [],
+        rebuildManifestDiagnostics: [mockDiagnosticData],
         projectConfigDiagnostics: [],
       });
 
@@ -439,14 +422,12 @@ describe("DBTProject Test Suite", () => {
       };
 
       (mockProjectIntegration.getDiagnostics as jest.Mock).mockReturnValue({
-        pythonBridgeDiagnostics: [mockDiagnosticData],
         rebuildManifestDiagnostics: [mockDiagnosticData],
         projectConfigDiagnostics: [mockDiagnosticData],
       });
 
       dbtProject.updateDiagnosticsInProblemsPanel();
 
-      expect(dbtProject.pythonBridgeDiagnostics.set).toHaveBeenCalled();
       expect(dbtProject.rebuildManifestDiagnostics.set).toHaveBeenCalled();
       expect(dbtProject.projectConfigDiagnostics.set).toHaveBeenCalled();
     });
@@ -456,7 +437,6 @@ describe("DBTProject Test Suite", () => {
     beforeEach(() => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,
@@ -499,7 +479,6 @@ describe("DBTProject Test Suite", () => {
     beforeEach(() => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,
@@ -550,7 +529,6 @@ describe("DBTProject Test Suite", () => {
     beforeEach(() => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,
@@ -632,7 +610,6 @@ describe("DBTProject Test Suite", () => {
     it("should dispose all resources properly", async () => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,
@@ -646,10 +623,6 @@ describe("DBTProject Test Suite", () => {
       // Initialize to ensure dbtProjectLog is added to disposables
       await dbtProject.initialize();
 
-      const pythonBridgeDiagnosticsDispose = jest.spyOn(
-        dbtProject.pythonBridgeDiagnostics,
-        "dispose",
-      );
       const rebuildManifestDiagnosticsDispose = jest.spyOn(
         dbtProject.rebuildManifestDiagnostics,
         "dispose",
@@ -661,7 +634,6 @@ describe("DBTProject Test Suite", () => {
 
       await dbtProject.dispose();
 
-      expect(pythonBridgeDiagnosticsDispose).toHaveBeenCalled();
       expect(rebuildManifestDiagnosticsDispose).toHaveBeenCalled();
       expect(projectConfigDiagnosticsDispose).toHaveBeenCalled();
       expect(mockProjectIntegration.dispose).toHaveBeenCalled();
@@ -674,7 +646,6 @@ describe("DBTProject Test Suite", () => {
     it("parses fresh run_results before surfacing Encountered an error", async () => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,
@@ -730,7 +701,6 @@ describe("DBTProject Test Suite", () => {
     it("does not parse run_results when execute rejects", async () => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = new DBTProject(
-        mockPythonEnvironment,
         dbtProjectLogFactory as any,
         mockCommandFactory,
         mockTerminal,

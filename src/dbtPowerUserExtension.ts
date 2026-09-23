@@ -13,7 +13,6 @@ import { VSCodeCommands } from "./commands";
 import { ContentProviders } from "./content_provider";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DefinitionProviders } from "./definition_provider";
-import { DocumentFormattingEditProviders } from "./document_formatting_edit_provider";
 import { HoverProviders } from "./hover_provider";
 import { FusionClientPool } from "./lsp/fusionClientPool";
 import { FusionStatus } from "./lsp/fusionStatus";
@@ -56,7 +55,6 @@ export class DBTPowerUserExtension implements Disposable {
     private treeviewProviders: TreeviewProviders,
     private contentProviders: ContentProviders,
     private codeLensProviders: CodeLensProviders,
-    private documentFormattingEditProviders: DocumentFormattingEditProviders,
     private statusBars: StatusBars,
     private puStatusBars: DbtPowerUserActionsCenter,
     private dbtTerminal: DBTTerminal,
@@ -75,7 +73,6 @@ export class DBTPowerUserExtension implements Disposable {
       this.contentProviders,
       this.codeLensProviders,
       this.vscodeCommands,
-      this.documentFormattingEditProviders,
       this.statusBars,
       this.puStatusBars,
       this.hoverProviders,

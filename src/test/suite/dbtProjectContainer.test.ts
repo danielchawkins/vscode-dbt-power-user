@@ -39,12 +39,7 @@ describe("DBTProjectContainer", () => {
         .fn()
         .mockReturnValue({ dispose: jest.fn() }),
       setGlobalState: jest.fn(),
-      pythonInstalled: true,
       dbtInstalled: true,
-      getPythonEnvironment: jest
-        .fn()
-        .mockReturnValue({ pythonPath: "/path/to/python" }),
-      showErrorIfDbtOrPythonNotInstalled: jest.fn(),
       showErrorIfDbtIsNotInstalled: jest.fn(),
       detectDBT: jest.fn(),
       dispose: jest.fn(),
@@ -348,24 +343,16 @@ describe("DBTProjectContainer", () => {
       container.setContext(context);
 
       await container.detectDBT();
-      container.showErrorIfDbtOrPythonNotInstalled();
       container.showErrorIfDbtIsNotInstalled();
 
       expect(container.extensionUri).toBe(context.extensionUri);
       expect(container.extensionVersion).toBe("1");
       expect(container.extensionId).toBe("publisher.extension");
-      expect(container.pythonInstalled).toBe(true);
       expect(container.dbtInstalled).toBe(true);
-      expect(container.getPythonEnvironment()).toEqual({
-        pythonPath: "/path/to/python",
-      });
       expect(mockDbtClient.setGlobalState).toHaveBeenCalledWith(
         context.globalState,
       );
       expect(mockDbtClient.detectDBT).toHaveBeenCalled();
-      expect(
-        mockDbtClient.showErrorIfDbtOrPythonNotInstalled,
-      ).toHaveBeenCalled();
       expect(mockDbtClient.showErrorIfDbtIsNotInstalled).toHaveBeenCalled();
     });
 

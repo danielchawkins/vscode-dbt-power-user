@@ -11,8 +11,8 @@ import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FusionVersionDetection } from "../../fusion/fusionVersionDetection";
 import { FusionStatus } from "../../lsp/fusionStatus";
 
-// Stub env and extensions before importing the container, which constructs
-// Python services.
+import { FusionProjectIntegration } from "../../dbt_client/fusionProjectIntegration";
+import { HostProcessEnvironment } from "../../dbt_client/hostProcessEnvironment";
 import * as vscodeMock from "../mock/vscode";
 import { createMockLogOutputChannel } from "../mock/vscode";
 const vscodeMockAny = vscodeMock as Record<string, unknown>;
@@ -33,24 +33,6 @@ sharedWindow.createOutputChannel = jest.fn(
   (name?: string, _options?: { log?: boolean }) =>
     createMockLogOutputChannel(name),
 );
-Object.assign(vscodeMockAny.extensions as Record<string, unknown>, {
-  getExtension: jest.fn(() => ({
-    isActive: true,
-    activate: () => Promise.resolve(),
-    exports: {
-      settings: {
-        getExecutionDetails: () => ({ execCommand: ["python"] }),
-        onDidChangeExecutionDetails: () => ({ dispose: () => {} }),
-      },
-      environment: {
-        getEnvironmentPaths: async () => [],
-        getEnvironmentDetails: async () => ({ executable: { uri: undefined } }),
-      },
-    },
-  })),
-});
-
-import { FusionProjectIntegration } from "../../dbt_client/fusionProjectIntegration";
 
 import { container } from "../../inversify.config";
 
@@ -102,6 +84,13 @@ describe("Fusion-only integration wiring", () => {
     const extension = container.get(DBTPowerUserExtension);
     disposables.push(extension);
     expect(extension).toBeInstanceOf(DBTPowerUserExtension);
+  });
+
+  it("binds host process env for external CLI execution", () => {
+    const env = container.get(HostProcessEnvironment);
+    expect(env.pythonPath).toBeTruthy();
+    expect(env.pythonPath.includes("/")).toBe(false);
+    expect(env.getEnvironmentVariables("/tmp/project")).toBe(process.env);
   });
 
   it("uses the Fusion project integration", () => {

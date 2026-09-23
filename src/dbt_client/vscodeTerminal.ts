@@ -1,4 +1,4 @@
-import { DBTTerminal, PythonException } from "@altimateai/dbt-integration";
+import { DBTTerminal } from "@altimateai/dbt-integration";
 import { injectable } from "inversify";
 import { Disposable, EventEmitter, Terminal, window } from "vscode";
 import { stripANSI } from "../utils";
@@ -52,14 +52,12 @@ export class VSCodeDBTTerminal implements DBTTerminal {
   error(
     name: string,
     message: string,
-    e: PythonException | Error | unknown,
+    e: Error | unknown,
     _unused = true,
     ...args: any[]
   ) {
     let errorMessage = message;
-    if (e instanceof PythonException) {
-      errorMessage = `${message}:${e.toString()}`;
-    } else if (e instanceof Error) {
+    if (e instanceof Error) {
       errorMessage = `${message}:${e.message}`;
     } else if (e) {
       errorMessage = `${message}:${e}`;

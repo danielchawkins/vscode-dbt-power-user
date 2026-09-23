@@ -1,67 +1,8 @@
-import { defineConfig, RsbuildPlugin } from "@rsbuild/core";
-import { cpSync } from "fs";
+import { defineConfig } from "@rsbuild/core";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = path.dirname(fileURLToPath(import.meta.url));
-const DIST = path.resolve(ROOT, "dist");
-
-const copyAssetsPlugin: RsbuildPlugin = {
-  name: "copy-assets-plugin",
-  setup(api) {
-    api.onBeforeBuild(() => {
-      const patterns = [
-        {
-          from: path.resolve(
-            ROOT,
-            "node_modules/@altimateai/dbt-integration/dist/node_python_bridge.py",
-          ),
-          to: path.join(DIST, "node_python_bridge.py"),
-        },
-        {
-          from: path.resolve(
-            ROOT,
-            "node_modules/@altimateai/dbt-integration/dist/altimate_python_packages/dbt_core_integration.py",
-          ),
-          to: path.join(
-            DIST,
-            "altimate_python_packages/dbt_core_integration.py",
-          ),
-        },
-        {
-          from: path.resolve(
-            ROOT,
-            "node_modules/@altimateai/dbt-integration/dist/altimate_python_packages/dbt_utils.py",
-          ),
-          to: path.join(DIST, "altimate_python_packages/dbt_utils.py"),
-        },
-        {
-          from: path.resolve(
-            ROOT,
-            "node_modules/@altimateai/dbt-integration/dist/altimate_python_packages/altimate_packages/",
-          ),
-          to: path.join(DIST, "altimate_python_packages/altimate_packages/"),
-        },
-      ];
-
-      // These assets are runtime-required by the extension (Python bridge,
-      // kernel, and altimate-dbt-integration Python packages). Abort the
-      // build if any of them is missing — matches webpack's CopyPlugin
-      // default (noErrorOnMissing: false) that this code replaced.
-      for (const { from, to } of patterns) {
-        try {
-          cpSync(from, to, { recursive: true });
-        } catch (error) {
-          throw new Error(
-            `Required asset missing: failed to copy ${from} -> ${to}: ${
-              (error as Error).message
-            }`,
-          );
-        }
-      }
-    });
-  },
-};
 
 export default defineConfig({
   source: {
@@ -151,5 +92,4 @@ export default defineConfig({
       return config;
     },
   },
-  plugins: [copyAssetsPlugin],
 });

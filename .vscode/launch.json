@@ -37,7 +37,7 @@
       "preLaunchTask": "just compile"
     },
     {
-      "name": "Formatter Integration Tests",
+      "name": "Integration Tests",
       "type": "extensionHost",
       "request": "launch",
       "runtimeExecutable": "${execPath}",
@@ -48,14 +48,6 @@
       ],
       "outFiles": ["${workspaceFolder}/out/test/**/*.js"],
       "preLaunchTask": "just compile"
-    },
-    {
-      "name": "Debug Python: Current File including library code",
-      "type": "python",
-      "request": "launch",
-      "program": "${file}",
-      "console": "integratedTerminal",
-      "justMyCode": false
     }
   ]
 }

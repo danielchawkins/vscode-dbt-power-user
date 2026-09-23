@@ -1,4 +1,4 @@
-import { DBTTerminal, PythonException } from "@altimateai/dbt-integration";
+import { DBTTerminal } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import * as path from "path";
 import {
@@ -133,10 +133,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         data: response,
       });
     } catch (error) {
-      const message =
-        error instanceof PythonException
-          ? error.exception.message
-          : (error as Error).message;
+      const message = (error as Error).message;
       if (error instanceof UserInputError) {
         this.dbtTerminal.debug(command, message, error);
       } else {

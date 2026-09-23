@@ -240,4 +240,19 @@ jj *args:
 
 [group("package")]
 package:
+    #!/usr/bin/env bash
+    set -euo pipefail
     npm run package:vsix
+    vsix="$(node -p "require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
+    if [[ ! -f "$vsix" ]]; then
+      echo "error: expected VSIX not found: $vsix" >&2
+      exit 1
+    fi
+    entries="$(unzip -Z1 "$vsix")"
+    py_entries="$(printf '%s\n' "$entries" | awk '/\.py$/')"
+    if [[ -n "$py_entries" ]]; then
+      echo "error: VSIX contains .py entries: $vsix" >&2
+      printf '%s\n' "$py_entries" >&2
+      exit 1
+    fi
+    echo "VSIX $vsix contains 0 .py entries"

@@ -33,7 +33,6 @@ import { CteProfilerService } from "../cte_profiler/cteProfilerService";
 import { DBTClient } from "../dbt_client";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
@@ -54,8 +53,6 @@ export class VSCodeCommands implements Disposable {
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private diagnosticsOutputChannel: DiagnosticsOutputChannel,
-    @inject(PythonEnvironment)
-    private pythonEnvironment: PythonEnvironment,
     private dbtClient: DBTClient,
     private runHistoryService: RunHistoryService,
     private cteProfilerService: CteProfilerService,
@@ -401,120 +398,20 @@ export class VSCodeCommands implements Disposable {
       commands.registerCommand("dbtPowerUser.viewInDocEditor", () =>
         commands.executeCommand("dbtPowerUser.DocsEdit.focus"),
       ),
-      commands.registerCommand("dbtPowerUser.printEnvVars", () => {
-        const activeFolder = window.activeTextEditor
-          ? workspace.getWorkspaceFolder(window.activeTextEditor.document.uri)
-          : undefined;
-        return this.pythonEnvironment.printEnvVars(activeFolder);
-      }),
-      commands.registerCommand(
-        "dbtPowerUser.detectPythonFromTerminal",
-        async () => {
-          // Check if there's a terminal open that we can detect from
-          if (
-            !window.activeTerminal &&
-            !window.terminals.some((t) => t.shellIntegration)
-          ) {
-            const action = await window.showWarningMessage(
-              "No terminal is open. Please open a terminal with your dbt environment activated, then try again.",
-              "Open Terminal",
-            );
-            if (action === "Open Terminal") {
-              await commands.executeCommand(
-                "workbench.action.terminal.toggleTerminal",
-              );
-            }
-            return;
-          }
-
-          const detectedPath =
-            await this.pythonEnvironment.detectPythonFromShell();
-          if (!detectedPath) {
-            window.showWarningMessage(
-              "Could not find a Python interpreter with dbt installed in your terminal. " +
-                "Make sure dbt is installed and the correct environment is activated, then try again.",
-            );
-            return;
-          }
-
-          const currentOverride = workspace
-            .getConfiguration("dbt")
-            .get<string>("dbtPythonPathOverride", "");
-          if (currentOverride === detectedPath) {
-            window.showInformationMessage(
-              `Python path is already set to: ${detectedPath}`,
-            );
-            return;
-          }
-
-          const action = await window.showInformationMessage(
-            `Found Python with dbt at: ${detectedPath}. Use this as the Python interpreter?`,
-            "Yes",
-            "No",
-          );
-          if (action === "Yes") {
-            await workspace
-              .getConfiguration("dbt")
-              .update("dbtPythonPathOverride", detectedPath);
-            window.showInformationMessage(
-              `Python path set to: ${detectedPath}. The extension will reload.`,
-            );
-            // Re-detect dbt with the new path
-            await this.dbtProjectContainer.detectDBT();
-            await this.dbtProjectContainer.initialize();
-          }
-        },
-      ),
       commands.registerCommand("dbtPowerUser.diagnostics", async () => {
         try {
           this.diagnosticsOutputChannel.show();
           this.diagnosticsOutputChannel.logLine("Diagnostics started...");
           this.diagnosticsOutputChannel.logNewLine();
 
-          // Printing env vars per project
-          const dbtProjects = this.dbtProjectContainer.getProjects();
-          if (dbtProjects.length > 0) {
-            for (const project of dbtProjects) {
-              const projectFolder = workspace.getWorkspaceFolder(
-                project.projectRoot,
-              );
-              this.diagnosticsOutputChannel.logBlockWithHeader(
-                [
-                  `Printing environment variables for project: ${project.getProjectName()}`,
-                  `  (root: ${project.projectRoot.fsPath})`,
-                  "* Please remove any sensitive information before sending it to us",
-                ],
-                Object.entries(
-                  this.pythonEnvironment.getEnvironmentVariables(projectFolder),
-                ).map(([key, value]) => `${key}=${value}`),
-              );
-              this.diagnosticsOutputChannel.logNewLine();
-            }
-          } else {
-            const activeFolder = window.activeTextEditor
-              ? workspace.getWorkspaceFolder(
-                  window.activeTextEditor.document.uri,
-                )
-              : undefined;
-            this.diagnosticsOutputChannel.logBlockWithHeader(
-              [
-                "Printing environment variables...",
-                "* Please remove any sensitive information before sending it to us",
-              ],
-              Object.entries(
-                this.pythonEnvironment.getEnvironmentVariables(activeFolder),
-              ).map(([key, value]) => `${key}=${value}`),
-            );
-            this.diagnosticsOutputChannel.logNewLine();
-          }
-
-          // Printing python paths
           this.diagnosticsOutputChannel.logBlockWithHeader(
             [
-              "Printing all python paths...",
+              "Printing extension host environment variables...",
               "* Please remove any sensitive information before sending it to us",
             ],
-            this.pythonEnvironment.allPythonPaths.map(({ path }) => path),
+            Object.entries(process.env).map(
+              ([key, value]) => `${key}=${value}`,
+            ),
           );
           this.diagnosticsOutputChannel.logNewLine();
 
@@ -555,7 +452,6 @@ export class VSCodeCommands implements Disposable {
 
           // Printing extension and setup info
           this.diagnosticsOutputChannel.logBlock([
-            `Python Path=${this.pythonEnvironment.pythonPath}`,
             `VSCode version=${version}`,
             `Extension version=${
               extensions.getExtension("innoverio.vscode-dbt-power-user")
@@ -566,14 +462,6 @@ export class VSCodeCommands implements Disposable {
           ]);
           this.diagnosticsOutputChannel.logNewLine();
 
-          if (!this.dbtClient.pythonInstalled) {
-            this.diagnosticsOutputChannel.logLine("Python is not installed");
-            this.diagnosticsOutputChannel.logLine(
-              "Can't proceed further without fixing python installation",
-            );
-            return;
-          }
-          this.diagnosticsOutputChannel.logLine("Python is installed");
           if (!this.dbtClient.dbtInstalled) {
             this.diagnosticsOutputChannel.logLine("DBT is not installed");
             this.diagnosticsOutputChannel.logLine(

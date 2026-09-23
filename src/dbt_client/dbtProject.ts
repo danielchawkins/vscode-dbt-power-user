@@ -18,7 +18,6 @@ import {
   isResourceNode,
   NodeMetaData,
   ParsedManifest,
-  PythonException,
   QueryExecutionResult,
   RESOURCE_TYPE_MODEL,
   RESOURCE_TYPE_SOURCE,
@@ -65,8 +64,6 @@ import {
   FusionProjectIntegration,
   FusionProjectIntegrationEvents,
 } from "./fusionProjectIntegration";
-import { PythonEnvironment } from "./pythonEnvironment";
-
 interface FileNameTemplateMap {
   [key: string]: string;
 }
@@ -89,8 +86,6 @@ export class DBTProject implements Disposable {
   private _onSourceFileChanged = new EventEmitter<void>();
   public onSourceFileChanged = this._onSourceFileChanged.event;
   private dbtProjectLog?: DBTProjectLog;
-  public readonly pythonBridgeDiagnostics =
-    languages.createDiagnosticCollection("dbt-python-bridge");
   public readonly rebuildManifestDiagnostics =
     languages.createDiagnosticCollection("dbt-rebuild-manifest");
   public readonly projectConfigDiagnostics =
@@ -98,7 +93,6 @@ export class DBTProject implements Disposable {
   private disposables: Disposable[] = [
     this._onProjectConfigChanged,
     this._onSourceFileChanged,
-    this.pythonBridgeDiagnostics,
     this.rebuildManifestDiagnostics,
     this.projectConfigDiagnostics,
   ];
@@ -125,8 +119,6 @@ export class DBTProject implements Disposable {
   private queueStates: Map<string, boolean> = new Map<string, boolean>();
 
   constructor(
-    @inject(PythonEnvironment)
-    private PythonEnvironment: PythonEnvironment,
     @inject("Factory<DBTProjectLog>")
     private dbtProjectLogFactory: (
       onProjectConfigChanged: Event<ProjectConfigChangedEvent>,
@@ -269,33 +261,12 @@ export class DBTProject implements Disposable {
       }),
     );
 
-    // Initialize Python environment and set up change listener
-    this.initializePythonEnvironmentListener();
-
     this.terminal.debug(
       "DbtProject",
       `Created fusion dbt project ${this.getProjectName()} at ${
         this.projectRoot
       }`,
     );
-  }
-
-  private initializePythonEnvironmentListener(): void {
-    this.PythonEnvironment.initialize()
-      .then(() => {
-        this.disposables.push(
-          this.PythonEnvironment.onPythonEnvironmentChanged(() =>
-            this.onPythonEnvironmentChanged(),
-          ),
-        );
-      })
-      .catch((err) => {
-        this.terminal.error(
-          "dbtProject:initializePythonEnvironmentListener",
-          "Failed to initialize Python environment listener",
-          err,
-        );
-      });
   }
 
   private invalidateCacheUsingUniqueIds(uniqueIds: string[]) {
@@ -344,19 +315,6 @@ export class DBTProject implements Disposable {
 
     // Convert diagnostic data to VSCode Diagnostics
     const convertedDiagnostics = [
-      ...integrationDiagnostics.pythonBridgeDiagnostics.map(
-        (data) =>
-          new Diagnostic(
-            new Range(
-              data.range?.startLine || 0,
-              data.range?.startColumn || 0,
-              data.range?.endLine || 999,
-              data.range?.endColumn || 999,
-            ),
-            data.message,
-            this.mapSeverityToVSCode(data.severity),
-          ),
-      ),
       ...integrationDiagnostics.rebuildManifestDiagnostics.map(
         (data) =>
           new Diagnostic(
@@ -425,14 +383,6 @@ export class DBTProject implements Disposable {
     const integrationDiagnostics =
       this.getCurrentProjectIntegration().getDiagnostics();
 
-    // Update each diagnostic collection separately
-    this.pythonBridgeDiagnostics.set(
-      projectURI,
-      integrationDiagnostics.pythonBridgeDiagnostics.map((data) =>
-        this.convertDiagnosticDataToVSCode(data),
-      ),
-    );
-
     this.rebuildManifestDiagnostics.set(
       projectURI,
       integrationDiagnostics.rebuildManifestDiagnostics.map((data) =>
@@ -477,16 +427,6 @@ export class DBTProject implements Disposable {
 
   async rebuildManifest(): Promise<void> {
     this.dbtProjectIntegration.rebuildManifest();
-  }
-
-  private async onPythonEnvironmentChanged() {
-    this.terminal.debug(
-      "DbtProject",
-      `Python environment for dbt project ${this.getProjectName()} at ${
-        this.projectRoot
-      } has changed`,
-    );
-    await this.initialize();
   }
 
   async refreshProjectConfig(): Promise<void> {
@@ -588,27 +528,12 @@ export class DBTProject implements Disposable {
     this.throwDiagnosticsErrorIfAvailable();
     try {
       return await this.dbtProjectIntegration.unsafeCompileNode(modelName);
-    } catch (exc: any) {
-      if (exc instanceof PythonException) {
-        window.showErrorMessage(
-          `An error occured while trying to compile your node: ${modelName}` +
-            exc.exception.message +
-            ".",
-        );
-        return (
-          "Exception: " +
-          exc.exception.message +
-          "\n\n" +
-          "Detailed error information:\n" +
-          exc
-        );
-      }
-      // Unknown error
+    } catch (exc) {
       window.showErrorMessage(
         "Could not compile model " +
           modelName +
           ": " +
-          (exc as Error).message +
+          (exc instanceof Error ? exc.message : String(exc)) +
           ".",
       );
       return "Detailed error information:\n" + exc;
@@ -633,18 +558,10 @@ export class DBTProject implements Disposable {
         query,
         originalModelName,
       );
-    } catch (exc: any) {
-      if (exc instanceof PythonException) {
-        window.showErrorMessage(
-          "An error occured while trying to compile your query: " +
-            exc.exception.message +
-            ".",
-        );
-        return undefined;
-      }
-      // Unknown error
+    } catch (exc) {
       window.showErrorMessage(
-        "Could not compile query: " + (exc as Error).message,
+        "Could not compile query: " +
+          (exc instanceof Error ? exc.message : String(exc)),
       );
       return undefined;
     }
@@ -734,15 +651,7 @@ export class DBTProject implements Disposable {
     try {
       const result = await this.getCurrentProjectIntegration().getCatalog();
       return result;
-    } catch (exc: any) {
-      if (exc instanceof PythonException) {
-        window.showErrorMessage(
-          "Some of the scans could not run as connectivity to database for the project " +
-            this.getProjectName() +
-            " is not available. ",
-        );
-        return [];
-      }
+    } catch {
       window.showErrorMessage(
         "Some of the scans could not run as connectivity to database for the project " +
           this.getProjectName() +
@@ -774,16 +683,10 @@ export class DBTProject implements Disposable {
           `A file called ${modelName}_schema.yml already exists in ${currentDir}. If you want to generate the schema yml, please rename the other file or delete it if you want to generate the yml again.`,
         );
       }
-    } catch (exc: any) {
-      if (exc instanceof PythonException) {
-        window.showErrorMessage(
-          "An error occured while trying to generate the schema yml " +
-            exc.exception.message +
-            ".",
-        );
-      }
+    } catch (exc) {
       window.showErrorMessage(
-        "Could not generate schema yaml: " + (exc as Error).message,
+        "Could not generate schema yaml: " +
+          (exc instanceof Error ? exc.message : String(exc)),
       );
     }
   }
@@ -861,15 +764,11 @@ export class DBTProject implements Disposable {
               `A model called ${fileName} already exists in ${sourcePath}. If you want to generate the model, please rename the other model or delete it if you want to generate the model again.`,
             );
           }
-        } catch (exc: any) {
-          if (exc instanceof PythonException) {
-            window.showErrorMessage(
-              "An error occured while trying to generate the model " +
-                exc.exception.message,
-            );
-          }
+        } catch (exc) {
           window.showErrorMessage(
-            "An error occured while trying to generate the model:" + exc + ".",
+            "An error occured while trying to generate the model: " +
+              (exc instanceof Error ? exc.message : String(exc)) +
+              ".",
           );
         }
       },
@@ -1220,7 +1119,6 @@ export class DBTProject implements Disposable {
     const integrationDiagnostics =
       this.getCurrentProjectIntegration().getDiagnostics();
     const allIntegrationDiagnostics = [
-      ...integrationDiagnostics.pythonBridgeDiagnostics,
       ...integrationDiagnostics.rebuildManifestDiagnostics,
     ];
 
@@ -1232,7 +1130,6 @@ export class DBTProject implements Disposable {
 
     // Check VSCode diagnostic collections
     const vscodeCollections: DiagnosticCollection[] = [
-      this.pythonBridgeDiagnostics,
       this.rebuildManifestDiagnostics,
       this.projectConfigDiagnostics,
     ];

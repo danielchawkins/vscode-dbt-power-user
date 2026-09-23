@@ -9,12 +9,7 @@ import { getFirstWorkspacePath, resolveSettingsVariables } from "../utils";
 @injectable()
 export class VSCodeDBTConfiguration implements DBTConfiguration {
   getDbtCustomRunnerImport(): string {
-    return workspace
-      .getConfiguration("dbt")
-      .get<string>(
-        "dbtCustomRunnerImport",
-        DEFAULT_CONFIGURATION_VALUES.dbtCustomRunnerImport,
-      );
+    throw new Error("Python execution is unsupported");
   }
 
   getDbtIntegration(): string {
@@ -72,12 +67,7 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
   }
 
   getInstallDepsOnProjectInitialization(): boolean {
-    return workspace
-      .getConfiguration("dbt")
-      .get<boolean>(
-        "installDepsOnProjectInitialization",
-        DEFAULT_CONFIGURATION_VALUES.installDepsOnProjectInitialization,
-      );
+    return false;
   }
 
   getDisableDepthsCalculation(): boolean {

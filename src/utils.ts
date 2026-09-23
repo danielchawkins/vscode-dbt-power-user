@@ -102,9 +102,8 @@ export function stripANSI(src: string): string {
 }
 
 export function getFirstWorkspacePath(): string {
-  // If we are executing python via a wrapper like Meltano,
-  // we need to execute it from a (any) project directory
-  // By default, Command execution is in an ext dir context
+  // CLI commands run from a workspace folder when one is open; otherwise fall
+  // back to the extension host working directory.
   const folders = workspace.workspaceFolders;
   if (folders) {
     return folders[0].uri.fsPath;

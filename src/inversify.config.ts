@@ -33,11 +33,7 @@ import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
 import { FusionProjectIntegration } from "./dbt_client/fusionProjectIntegration";
-import { PythonEnvironment } from "./dbt_client/pythonEnvironment";
-import {
-  StaticRuntimePythonEnvironment,
-  VSCodeRuntimePythonEnvironmentProvider,
-} from "./dbt_client/runtimePythonEnvironmentProvider";
+import { HostProcessEnvironment } from "./dbt_client/hostProcessEnvironment";
 import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
@@ -98,8 +94,6 @@ import { SqlPreviewContentProvider } from "./content_provider/sqlPreviewContentP
 import { CteProfilerDecorationProvider } from "./cte_profiler/cteProfilerDecorationProvider";
 import { CteProfilerService } from "./cte_profiler/cteProfilerService";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
-import { DocumentFormattingEditProviders } from "./document_formatting_edit_provider";
-import { DbtDocumentFormattingEditProvider } from "./document_formatting_edit_provider/dbtDocumentFormattingEditProvider";
 import { DbtPowerUserActionsCenter } from "./quickpick";
 import { StatusBars } from "./statusbar";
 import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
@@ -218,16 +212,16 @@ container
   .to(VSCodeDBTTerminal)
   .inSingletonScope();
 
-// Bind RuntimePythonEnvironment (VSCode-free version for dbt_integration)
+container.bind(HostProcessEnvironment).toSelf().inSingletonScope();
+
 container
   .bind<RuntimePythonEnvironment>("RuntimePythonEnvironment")
-  .to(StaticRuntimePythonEnvironment)
+  .toDynamicValue((context) => context.get(HostProcessEnvironment))
   .inSingletonScope();
 
-// Bind PythonEnvironmentProvider
 container
   .bind<PythonEnvironmentProvider>("PythonEnvironmentProvider")
-  .to(VSCodeRuntimePythonEnvironmentProvider)
+  .toDynamicValue((context) => context.get(HostProcessEnvironment))
   .inSingletonScope();
 
 // Bind CommandProcessExecutionFactory
@@ -341,7 +335,6 @@ container
     ) => {
       const container = context;
       return new DBTProject(
-        container.get(PythonEnvironment),
         container.get("Factory<DBTProjectLog>"),
         container.get(DBTCommandFactory),
         container.get("DBTTerminal"),
@@ -513,13 +506,6 @@ container
   .inSingletonScope();
 // Bind manifest components
 container
-  .bind(PythonEnvironment)
-  .toDynamicValue((context) => {
-    return new PythonEnvironment(context.get("DBTTerminal"));
-  })
-  .inSingletonScope();
-
-container
   .bind(DBTProjectContainer)
   .toDynamicValue((context) => {
     return new DBTProjectContainer(
@@ -535,10 +521,7 @@ container
 container
   .bind(DBTClient)
   .toDynamicValue((context) => {
-    return new DBTClient(
-      context.get(PythonEnvironment),
-      context.get("Factory<DBTDetection>"),
-    );
+    return new DBTClient(context.get("Factory<DBTDetection>"));
   })
   .inSingletonScope();
 
@@ -732,16 +715,6 @@ container
   })
   .inSingletonScope();
 
-container
-  .bind(DbtDocumentFormattingEditProvider)
-  .toDynamicValue((context) => {
-    return new DbtDocumentFormattingEditProvider(
-      context.get(CommandProcessExecutionFactory),
-      context.get(PythonEnvironment),
-    );
-  })
-  .inSingletonScope();
-
 // Bind status bar components
 container
   .bind(DeferToProductionStatusBar)
@@ -805,7 +778,6 @@ container
       context.get(WalkthroughCommands),
       context.get("DBTTerminal"),
       context.get(DiagnosticsOutputChannel),
-      context.get(PythonEnvironment),
       context.get(DBTClient),
       context.get(RunHistoryService),
       context.get(CteProfilerService),
@@ -929,16 +901,6 @@ container
   })
   .inSingletonScope();
 
-// Bind DocumentFormattingEditProviders
-container
-  .bind(DocumentFormattingEditProviders)
-  .toDynamicValue((context) => {
-    return new DocumentFormattingEditProviders(
-      context.get(DbtDocumentFormattingEditProvider),
-    );
-  })
-  .inSingletonScope();
-
 // Bind StatusBars
 container
   .bind(StatusBars)
@@ -971,7 +933,6 @@ container
       context.get(TreeviewProviders),
       context.get(ContentProviders),
       context.get(CodeLensProviders),
-      context.get(DocumentFormattingEditProviders),
       context.get(StatusBars),
       context.get(DbtPowerUserActionsCenter),
       context.get("DBTTerminal"),
