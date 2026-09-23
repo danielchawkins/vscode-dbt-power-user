@@ -7,22 +7,25 @@ import {
   ManifestPathType,
 } from "@altimateai/dbt-integration";
 import { describe, expect, it, jest } from "@jest/globals";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
 import {
   ConfiguredFusionCommandProjectIntegration,
   createFusionCommandIntegrationFactory,
 } from "../../dbt_client/configuredFusionCommandIntegration";
 import { FusionExecutable } from "../../fusion/fusionExecutable";
 
-function mockTerminal(): DBTTerminal {
+function mockTerminal(): jest.Mocked<DBTTerminal> {
   return {
-    debug: () => undefined,
-    log: () => undefined,
-    error: () => undefined,
-    warn: () => undefined,
-    info: () => undefined,
-    trace: () => undefined,
-    show: () => Promise.resolve(),
-  } as unknown as DBTTerminal;
+    debug: jest.fn(),
+    log: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    info: jest.fn(),
+    trace: jest.fn(),
+    show: jest.fn(() => Promise.resolve()),
+  } as unknown as jest.Mocked<DBTTerminal>;
 }
 
 function setupIntegration(
@@ -31,6 +34,7 @@ function setupIntegration(
   integration: ConfiguredFusionCommandProjectIntegration;
   dbtCommandFactory: DBTCommandFactory;
   createCommandProcessExecution: jest.Mock;
+  terminal: jest.Mocked<DBTTerminal>;
 } {
   const executable: FusionExecutable = {
     path: "/resolved/bin/dbt",
@@ -54,10 +58,11 @@ function setupIntegration(
     getTestModelCommandAdditionalParams: () => [],
   } as unknown as ConstructorParameters<typeof DBTCommandFactory>[0]);
 
+  const terminal = mockTerminal();
   const factory = createFusionCommandIntegrationFactory(
     commandProcessExecutionFactory,
     dbtCommandFactory,
-    mockTerminal(),
+    terminal,
   );
   const integration = factory(
     executable,
@@ -67,7 +72,12 @@ function setupIntegration(
     () => undefined,
   ) as ConfiguredFusionCommandProjectIntegration;
 
-  return { integration, dbtCommandFactory, createCommandProcessExecution };
+  return {
+    integration,
+    dbtCommandFactory,
+    createCommandProcessExecution,
+    terminal,
+  };
 }
 
 describe("Fusion CLI executable routing", () => {
@@ -125,19 +135,63 @@ describe("Fusion defer argument construction", () => {
     expect(command.getCommandAsString()).toContain("--no-defer");
   });
 
-  it("does not add --defer, --state, or --favor-state even when a state directory is configured", async () => {
-    // The published integration's defer/--state/--favor-state argument construction
-    // (dbtCoreIntegration.ts's getDeferParams) is implemented only for dbt Core.
-    // DBTFusionCommandProjectIntegration has no override and inherits the base class's
-    // trivial version, which only ever emits "--no-defer" or nothing. manifestPathForDeferral
-    // and ManifestPathType are therefore inert for Fusion: 7.7's defer feature does not
-    // reach the CLI at all beyond suppressing --no-defer.
-    const deferConfig = new DeferConfig(
-      true,
-      true,
-      "/tmp/some-state-dir",
-      ManifestPathType.LOCAL,
-    );
+  it("adds --defer, --state, and --favor-state for a configured local state directory", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "fusion-defer-"));
+    try {
+      const deferConfig = new DeferConfig(
+        true,
+        true,
+        stateDir,
+        ManifestPathType.LOCAL,
+      );
+      const { integration, dbtCommandFactory } = setupIntegration(deferConfig);
+      await integration.initializeProject();
+
+      const runCommand = dbtCommandFactory.createRunModelCommand({
+        plusOperatorLeft: "",
+        modelName: "my_model",
+        plusOperatorRight: "",
+      });
+      const command = (await integration.runModel(runCommand)) as DBTCommand;
+      const commandString = command.getCommandAsString();
+
+      expect(commandString).toContain(`--defer --state ${stateDir}`);
+      expect(commandString).toContain("--favor-state");
+      expect(commandString).not.toContain("--no-defer");
+    } finally {
+      rmSync(stateDir, { recursive: true, force: true });
+    }
+  });
+
+  it("omits --favor-state when it is not set", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "fusion-defer-"));
+    try {
+      const deferConfig = new DeferConfig(
+        true,
+        false,
+        stateDir,
+        ManifestPathType.LOCAL,
+      );
+      const { integration, dbtCommandFactory } = setupIntegration(deferConfig);
+      await integration.initializeProject();
+
+      const runCommand = dbtCommandFactory.createRunModelCommand({
+        plusOperatorLeft: "",
+        modelName: "my_model",
+        plusOperatorRight: "",
+      });
+      const command = (await integration.runModel(runCommand)) as DBTCommand;
+      const commandString = command.getCommandAsString();
+
+      expect(commandString).toContain(`--defer --state ${stateDir}`);
+      expect(commandString).not.toContain("--favor-state");
+    } finally {
+      rmSync(stateDir, { recursive: true, force: true });
+    }
+  });
+
+  it("adds nothing when defer is enabled but no state path is configured", async () => {
+    const deferConfig = new DeferConfig(true, true, undefined, undefined);
     const { integration, dbtCommandFactory } = setupIntegration(deferConfig);
     await integration.initializeProject();
 
@@ -153,6 +207,160 @@ describe("Fusion defer argument construction", () => {
     expect(commandString).not.toContain("--state");
     expect(commandString).not.toContain("--favor-state");
     expect(commandString).not.toContain("--no-defer");
+  });
+
+  it("accepts a manifest.json file path and uses its containing directory", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "fusion-defer-"));
+    try {
+      const manifestPath = join(stateDir, "manifest.json");
+      writeFileSync(manifestPath, "{}");
+      const deferConfig = new DeferConfig(
+        true,
+        false,
+        manifestPath,
+        ManifestPathType.LOCAL,
+      );
+      const { integration, dbtCommandFactory } = setupIntegration(deferConfig);
+      await integration.initializeProject();
+
+      const runCommand = dbtCommandFactory.createRunModelCommand({
+        plusOperatorLeft: "",
+        modelName: "my_model",
+        plusOperatorRight: "",
+      });
+      const command = (await integration.runModel(runCommand)) as DBTCommand;
+
+      expect(command.getCommandAsString()).toContain(
+        `--defer --state ${stateDir}`,
+      );
+    } finally {
+      rmSync(stateDir, { recursive: true, force: true });
+    }
+  });
+
+  it("warns and adds nothing when the configured path does not exist", async () => {
+    const missingPath = join(tmpdir(), "fusion-defer-missing-path-xyz");
+    const deferConfig = new DeferConfig(
+      true,
+      true,
+      missingPath,
+      ManifestPathType.LOCAL,
+    );
+    const { integration, dbtCommandFactory, terminal } =
+      setupIntegration(deferConfig);
+    await integration.initializeProject();
+
+    const runCommand = dbtCommandFactory.createRunModelCommand({
+      plusOperatorLeft: "",
+      modelName: "my_model",
+      plusOperatorRight: "",
+    });
+    const command = (await integration.runModel(runCommand)) as DBTCommand;
+    const commandString = command.getCommandAsString();
+
+    expect(commandString).not.toContain("--defer");
+    expect(commandString).not.toContain("--state");
+    expect(commandString).not.toContain("--favor-state");
+    expect(terminal.warn).toHaveBeenCalledWith(
+      "deferMissingManifestPath",
+      expect.stringContaining("fusionPowerUser.defer.perProject"),
+      false,
+    );
+    expect(terminal.warn).toHaveBeenCalledWith(
+      "deferMissingManifestPath",
+      expect.stringContaining(missingPath),
+      false,
+    );
+  });
+
+  it("warns and adds nothing when the configured path is a file other than manifest.json", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "fusion-defer-"));
+    try {
+      const notManifest = join(stateDir, "notes.txt");
+      writeFileSync(notManifest, "hello");
+      const deferConfig = new DeferConfig(
+        true,
+        true,
+        notManifest,
+        ManifestPathType.LOCAL,
+      );
+      const { integration, dbtCommandFactory, terminal } =
+        setupIntegration(deferConfig);
+      await integration.initializeProject();
+
+      const runCommand = dbtCommandFactory.createRunModelCommand({
+        plusOperatorLeft: "",
+        modelName: "my_model",
+        plusOperatorRight: "",
+      });
+      const command = (await integration.runModel(runCommand)) as DBTCommand;
+
+      expect(command.getCommandAsString()).not.toContain("--defer");
+      expect(terminal.warn).toHaveBeenCalledWith(
+        "deferMissingManifestPath",
+        expect.stringContaining(notManifest),
+        false,
+      );
+    } finally {
+      rmSync(stateDir, { recursive: true, force: true });
+    }
+  });
+
+  it("adds defer arguments to a compileModel command", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "fusion-defer-"));
+    try {
+      const deferConfig = new DeferConfig(
+        true,
+        true,
+        stateDir,
+        ManifestPathType.LOCAL,
+      );
+      const { integration, dbtCommandFactory } = setupIntegration(deferConfig);
+      await integration.initializeProject();
+
+      const compileCommand = dbtCommandFactory.createCompileModelCommand({
+        plusOperatorLeft: "",
+        modelName: "my_model",
+        plusOperatorRight: "",
+      });
+      const command = (await integration.compileModel(
+        compileCommand,
+      )) as DBTCommand;
+
+      expect(command.getCommandAsString()).toContain(
+        `--defer --state ${stateDir}`,
+      );
+      expect(command.getCommandAsString()).toContain("--favor-state");
+    } finally {
+      rmSync(stateDir, { recursive: true, force: true });
+    }
+  });
+
+  it("does not apply defer arguments to installDeps or clean commands", async () => {
+    const stateDir = mkdtempSync(join(tmpdir(), "fusion-defer-"));
+    try {
+      const deferConfig = new DeferConfig(
+        true,
+        true,
+        stateDir,
+        ManifestPathType.LOCAL,
+      );
+      const { integration, dbtCommandFactory, createCommandProcessExecution } =
+        setupIntegration(deferConfig);
+      await integration.initializeProject();
+
+      const depsCommand = dbtCommandFactory.createInstallDepsCommand();
+      await integration.deps(depsCommand);
+      const cleanCommand = dbtCommandFactory.createCleanCommand();
+      await integration.clean(cleanCommand);
+
+      for (const call of createCommandProcessExecution.mock.calls) {
+        const args = (call[0] as { args: string[] }).args;
+        expect(args).not.toContain("--defer");
+      }
+    } finally {
+      rmSync(stateDir, { recursive: true, force: true });
+    }
   });
 });
 

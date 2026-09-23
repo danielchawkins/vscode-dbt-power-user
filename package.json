@@ -225,7 +225,7 @@
                   },
                   "manifestPathForDeferral": {
                     "type": "string",
-                    "description": "Manifest path to defer the parent models",
+                    "description": "Directory containing the deferral manifest.json (or the manifest.json path)",
                     "default": ""
                   },
                   "favorState": {

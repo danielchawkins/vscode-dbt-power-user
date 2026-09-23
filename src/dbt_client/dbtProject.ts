@@ -510,13 +510,9 @@ export class DBTProject implements Disposable {
   async compileModel(runModelParams: RunModelParams) {
     const compileModelCommand =
       this.dbtCommandFactory.createCompileModelCommand(runModelParams);
-    const command =
-      await this.getCurrentProjectIntegration().compileModel(
-        compileModelCommand,
-      );
-    if (command) {
-      this.addCommandToQueue("all", command);
-    }
+    await this.prepareAndQueue(compileModelCommand, () =>
+      this.getCurrentProjectIntegration().compileModel(compileModelCommand),
+    );
   }
 
   clean() {
@@ -1149,9 +1145,12 @@ export class DBTProject implements Disposable {
     if (currentConfig[relativePath]) {
       const config = currentConfig[relativePath];
       const resolvedManifestPath = config.manifestPathForDeferral
-        ? resolveSettingsVariables(
-            config.manifestPathForDeferral,
-            this.projectRoot,
+        ? path.resolve(
+            this.projectRoot.fsPath,
+            resolveSettingsVariables(
+              config.manifestPathForDeferral,
+              this.projectRoot,
+            ),
           )
         : config.manifestPathForDeferral;
       if (config.deferToProduction && !resolvedManifestPath) {

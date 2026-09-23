@@ -761,6 +761,62 @@ describe("DBTProject Test Suite", () => {
       );
     });
 
+    it("resolves a relative manifestPathForDeferral against the project root", async () => {
+      const projectUri = vscode.Uri.file("/test/workspace/finance_general");
+      const workspaceFolder = {
+        uri: vscode.Uri.file("/test/workspace"),
+        name: "Test Workspace",
+        index: 0,
+      };
+      (vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(
+        workspaceFolder,
+      );
+
+      const storedDeferConfig = {
+        deferToProduction: true,
+        favorState: false,
+        manifestPathForDeferral: "state",
+      };
+      (vscode.workspace.getConfiguration as jest.Mock).mockImplementation(
+        () => ({
+          get: jest.fn((key: string) => {
+            if (key === "defer.perProject") {
+              return { finance_general: storedDeferConfig };
+            }
+            if (key === "query.limit") {
+              return 500;
+            }
+            return undefined;
+          }),
+          has: jest.fn(),
+          update: jest.fn(),
+        }),
+      );
+      mockProjectIntegration.applyDeferConfig = jest.fn(() =>
+        Promise.resolve(),
+      );
+
+      dbtProject = new DBTProject(
+        dbtProjectLogFactory as any,
+        mockCommandFactory,
+        mockTerminal,
+        mockSharedStateService,
+        jest.fn().mockReturnValue(mockProjectIntegration) as any,
+        mockRunHistoryService,
+        projectUri,
+        mockManifestChangedEmitter,
+      );
+
+      await dbtProject.applyDeferConfig();
+
+      expect(mockProjectIntegration.applyDeferConfig).toHaveBeenCalledWith(
+        expect.objectContaining({
+          manifestPathForDeferral: path.join(projectUri.fsPath, "state"),
+          manifestPathType: ManifestPathType.LOCAL,
+        }),
+      );
+    });
+
     it("does not honor a remote manifestPathType or hosted integration id from settings", async () => {
       const projectUri = vscode.Uri.file("/test/workspace/finance_general");
       const workspaceFolder = {
@@ -1032,6 +1088,34 @@ describe("DBTProject Test Suite", () => {
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(executeSpy).toHaveBeenCalled();
+    });
+
+    it("logs a compile failure through prepareAndQueue instead of rejecting", async () => {
+      dbtProject = buildProject();
+      (
+        dbtProject as unknown as { createQueue: (queueName: string) => void }
+      ).createQueue("all");
+      mockProjectIntegration.compileModel = jest.fn(() =>
+        Promise.reject(new Error("compilation failed")),
+      );
+
+      await expect(
+        dbtProject.compileModel({
+          plusOperatorLeft: "",
+          modelName: "my_model",
+          plusOperatorRight: "",
+        }),
+      ).resolves.toBeUndefined();
+
+      expect(mockRunHistoryService.notifyCommandFailed).toHaveBeenCalledWith(
+        expect.stringContaining("compile --select my_model"),
+        "Error: compilation failed",
+      );
+      expect(mockTerminal.error).toHaveBeenCalledWith(
+        "commandPreparationError",
+        expect.stringContaining("compile --select my_model"),
+        expect.any(Error),
+      );
     });
 
     it("routes clean and installDeps through the Fusion project integration", async () => {
