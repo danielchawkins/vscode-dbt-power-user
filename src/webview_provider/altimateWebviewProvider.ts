@@ -28,12 +28,9 @@ import {
 import { UserInputError } from "../local/errors";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { extendErrorWithSupportLinks } from "../utils";
-
 export type UpdateConfigProps = {
   key: string;
   value: string | boolean | number;
-  isPreviewFeature?: boolean;
 };
 
 export interface HandleCommandProps extends Record<string, unknown> {
@@ -147,7 +144,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         this.dbtTerminal.error(command, message, error);
       }
       if (showErrorNotification) {
-        window.showErrorMessage(extendErrorWithSupportLinks(message));
+        window.showErrorMessage(message);
       }
       this.sendResponseToWebview({
         command: "response",

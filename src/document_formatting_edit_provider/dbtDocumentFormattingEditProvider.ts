@@ -19,7 +19,7 @@ import {
 } from "vscode";
 import which from "which";
 import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
-import { extendErrorWithSupportLinks, getFirstWorkspacePath } from "../utils";
+import { getFirstWorkspacePath } from "../utils";
 
 const execAsync = promisify(exec);
 
@@ -87,19 +87,15 @@ export class DbtDocumentFormattingEditProvider implements DocumentFormattingEdit
           return this.processDiffOutput(document, (e as Error).message);
         } catch (error) {
           window.showErrorMessage(
-            extendErrorWithSupportLinks(
-              "Could not process difference output from sqlfmt. Detailed error: " +
-                error +
-                ".",
-            ),
+            "Could not process difference output from sqlfmt. Detailed error: " +
+              error +
+              ".",
           );
         }
       }
     } catch (error) {
       window.showErrorMessage(
-        extendErrorWithSupportLinks(
-          "Could not run sqlfmt. Detailed error: " + error + ".",
-        ),
+        "Could not run sqlfmt. Detailed error: " + error + ".",
       );
     }
     return [];

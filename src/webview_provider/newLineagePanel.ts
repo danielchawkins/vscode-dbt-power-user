@@ -32,7 +32,6 @@ import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCach
 import { CllEvents, DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { extendErrorWithSupportLinks } from "../utils";
 import { AltimateWebviewProvider } from "./altimateWebviewProvider";
 import { LineagePanelView } from "./lineagePanel";
 
@@ -258,9 +257,7 @@ export class NewLineagePanel
         });
       } catch (error) {
         window.showErrorMessage(
-          extendErrorWithSupportLinks(
-            "Unable to generate lineage: " + (error as Error).message,
-          ),
+          "Unable to generate lineage: " + (error as Error).message,
         );
         this._panel?.webview.postMessage({
           command: "response",
@@ -537,13 +534,11 @@ export class NewLineagePanel
         );
         if (!ok) {
           window.showErrorMessage(
-            extendErrorWithSupportLinks(
-              "Unable to get columns from DB for model: " +
-                node.name +
-                " table: " +
-                _table.name +
-                ".",
-            ),
+            "Unable to get columns from DB for model: " +
+              node.name +
+              " table: " +
+              _table.name +
+              ".",
           );
           return;
         }
@@ -623,13 +618,11 @@ export class NewLineagePanel
       );
       if (!ok) {
         window.showErrorMessage(
-          extendErrorWithSupportLinks(
-            "Unable to get columns from DB for model: " +
-              node.name +
-              " table: " +
-              table +
-              ".",
-          ),
+          "Unable to get columns from DB for model: " +
+            node.name +
+            " table: " +
+            table +
+            ".",
         );
         return;
       }

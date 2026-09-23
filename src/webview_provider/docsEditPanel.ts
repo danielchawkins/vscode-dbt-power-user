@@ -49,7 +49,6 @@ import {
 import { DBTDocumentation, MetadataColumn } from "../services/docGenTypes";
 import { QueryManifestService } from "../services/queryManifestService";
 import {
-  extendErrorWithSupportLinks,
   getColumnNameByCase,
   getColumnTestConfigFromYml,
   isAcceptedValues,
@@ -1191,7 +1190,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         this.terminal.error(command, message, error);
       }
       if (showErrorNotification) {
-        window.showErrorMessage(extendErrorWithSupportLinks(message));
+        window.showErrorMessage(message);
       }
       this.sendResponseToWebview({
         command: "response",

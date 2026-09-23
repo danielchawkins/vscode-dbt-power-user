@@ -94,17 +94,6 @@ export const setupWatcherHandler: (
   watcher.onDidDelete(() => handler()),
 ];
 
-export function extendErrorWithSupportLinks(error: unknown): string {
-  const message =
-    error instanceof Error ? error.message : error == null ? "" : String(error);
-  const separator = message === "" || message.endsWith(" ") ? "" : " ";
-  return (
-    message +
-    separator +
-    "If the issue persists, please [contact us](https://www.altimate.ai/support?utm_source=dbt-power-user&utm_medium=extension) via chat or Slack"
-  );
-}
-
 export function stripANSI(src: string): string {
   return src.replace(
     /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,

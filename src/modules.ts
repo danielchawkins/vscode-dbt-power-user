@@ -9,4 +9,4 @@ export { DBTProject } from "./dbt_client/dbtProject";
 export { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 export { PythonEnvironment } from "./dbt_client/pythonEnvironment";
 export { QueryManifestService } from "./services/queryManifestService";
-export { extendErrorWithSupportLinks, getFirstWorkspacePath } from "./utils";
+export { getFirstWorkspacePath } from "./utils";

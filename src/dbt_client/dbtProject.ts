@@ -55,7 +55,6 @@ import { ModelNode } from "../local/lineageTypes";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
 import {
-  extendErrorWithSupportLinks,
   getColumnNameByCase,
   getProjectRelativePath,
   resolveSettingsVariables,
@@ -494,13 +493,11 @@ export class DBTProject implements Disposable {
       await this.dbtProjectIntegration.initialize();
     } catch (error) {
       window.showErrorMessage(
-        extendErrorWithSupportLinks(
-          "An unexpected error occured while initializing the dbt project at " +
-            this.projectRoot +
-            ": " +
-            error +
-            ".",
-        ),
+        "An unexpected error occured while initializing the dbt project at " +
+          this.projectRoot +
+          ": " +
+          error +
+          ".",
       );
     }
 
@@ -679,11 +676,9 @@ export class DBTProject implements Disposable {
     } catch (exc: any) {
       if (exc instanceof PythonException) {
         window.showErrorMessage(
-          extendErrorWithSupportLinks(
-            `An error occured while trying to compile your node: ${modelName}` +
-              exc.exception.message +
-              ".",
-          ),
+          `An error occured while trying to compile your node: ${modelName}` +
+            exc.exception.message +
+            ".",
         );
         return (
           "Exception: " +
@@ -695,13 +690,11 @@ export class DBTProject implements Disposable {
       }
       // Unknown error
       window.showErrorMessage(
-        extendErrorWithSupportLinks(
-          "Could not compile model " +
-            modelName +
-            ": " +
-            (exc as Error).message +
-            ".",
-        ),
+        "Could not compile model " +
+          modelName +
+          ": " +
+          (exc as Error).message +
+          ".",
       );
       return "Detailed error information:\n" + exc;
     }
@@ -728,19 +721,15 @@ export class DBTProject implements Disposable {
     } catch (exc: any) {
       if (exc instanceof PythonException) {
         window.showErrorMessage(
-          extendErrorWithSupportLinks(
-            "An error occured while trying to compile your query: " +
-              exc.exception.message +
-              ".",
-          ),
+          "An error occured while trying to compile your query: " +
+            exc.exception.message +
+            ".",
         );
         return undefined;
       }
       // Unknown error
       window.showErrorMessage(
-        extendErrorWithSupportLinks(
-          "Could not compile query: " + (exc as Error).message,
-        ),
+        "Could not compile query: " + (exc as Error).message,
       );
       return undefined;
     }
@@ -873,17 +862,13 @@ export class DBTProject implements Disposable {
     } catch (exc: any) {
       if (exc instanceof PythonException) {
         window.showErrorMessage(
-          extendErrorWithSupportLinks(
-            "An error occured while trying to generate the schema yml " +
-              exc.exception.message +
-              ".",
-          ),
+          "An error occured while trying to generate the schema yml " +
+            exc.exception.message +
+            ".",
         );
       }
       window.showErrorMessage(
-        extendErrorWithSupportLinks(
-          "Could not generate schema yaml: " + (exc as Error).message,
-        ),
+        "Could not generate schema yaml: " + (exc as Error).message,
       );
     }
   }
@@ -969,11 +954,7 @@ export class DBTProject implements Disposable {
             );
           }
           window.showErrorMessage(
-            extendErrorWithSupportLinks(
-              "An error occured while trying to generate the model:" +
-                exc +
-                ".",
-            ),
+            "An error occured while trying to generate the model:" + exc + ".",
           );
         }
       },

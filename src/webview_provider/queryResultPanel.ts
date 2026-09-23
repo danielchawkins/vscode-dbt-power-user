@@ -27,11 +27,7 @@ import * as path from "path";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import {
-  extendErrorWithSupportLinks,
-  getFormattedDateTime,
-  getStringSizeInMb,
-} from "../utils";
+import { getFormattedDateTime, getStringSizeInMb } from "../utils";
 import {
   AltimateWebviewProvider,
   SendMessageProps,
@@ -299,9 +295,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
       }
       return;
     } catch (error) {
-      window.showErrorMessage(
-        extendErrorWithSupportLinks((error as Error).message),
-      );
+      window.showErrorMessage((error as Error).message);
       this.dbtTerminal.error(
         "ExecuteSqlError",
         "Unable to execute query",
