@@ -14,27 +14,17 @@ import { QueryHistory } from "@modules/queryPanel/context/types";
 import Filters, { QueryFilters } from "../filters/Filters";
 import { ChevronRightIcon, NoHistoryIcon, OpenNewIcon } from "@assets/icons";
 import { executeRequestInAsync } from "@modules/app/requestExecutor";
-import useQueryPanelCommonActions from "@modules/queryPanel/useQueryPanelCommonActions";
 import AutoCollapsingNotification from "@modules/AutoCollapsingNotification/AutoCollapsingNotification";
 
 const QueryPanelHistory = (): JSX.Element => {
   const [filters, setFilters] = useState<QueryFilters>({ tags: [] });
 
   const [activeHistory, setActiveHistory] = useState<QueryHistory | null>(null);
-  const { queryHistory, queryBookmarksTagsFromDB } = useQueryPanelState();
-  const { refetchBookmarkTags } = useQueryPanelCommonActions();
+  const { queryHistory } = useQueryPanelState();
 
   useEffect(() => {
     void executeRequestInAsync("getQueryHistory", {});
   }, []);
-
-  useEffect(() => {
-    if (queryBookmarksTagsFromDB) {
-      return;
-    }
-
-    refetchBookmarkTags();
-  }, [queryBookmarksTagsFromDB]);
 
   const onFiltersChange = (data: { tags?: string[]; searchQuery?: string }) => {
     setFilters((prev) => ({ ...prev, ...data }));
@@ -95,7 +85,6 @@ const QueryPanelHistory = (): JSX.Element => {
             </div>
             <div>
               <h6>Execute your queries to view in history</h6>
-              <p>Queries can be bookmarked for sharing with team.</p>
               <p>
                 <Button
                   onClick={() => executeRequestInAsync("runAdhocQuery", {})}

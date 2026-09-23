@@ -18,7 +18,6 @@ export { default as FolderIcon } from "./folder.svg?react";
 export { default as HelpIcon } from "./help.svg?react";
 export { default as LikeIcon } from "./like.svg?react";
 export { default as LoaderIcon } from "./loader.svg?react";
-export { default as NoBookmarksIcon } from "./no-bookmarks.svg?react";
 export { default as NoHistoryIcon } from "./no-history.svg?react";
 export { default as PreviewIcon } from "./preview.svg?react";
 export { default as PropagateIcon } from "./propagate.svg?react";
@@ -154,10 +153,6 @@ export const LoadingIcon = (
 export const PlayCircleIcon = (
   props: HTMLAttributes<HTMLElement>,
 ): JSX.Element => <Icon icon="play-circle" {...props} />;
-
-export const BookmarkIcon = (
-  props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="bookmark" {...props} />;
 
 export const ShareIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
   <Icon icon="live-share" {...props} />

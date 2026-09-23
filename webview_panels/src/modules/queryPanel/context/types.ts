@@ -1,5 +1,4 @@
 import { QueryPanelTitleTabState } from "../components/QueryPanelContents/types";
-import { User } from "@modules/app/types";
 
 export type TableData = Record<string, unknown>[];
 
@@ -12,28 +11,6 @@ export interface QueryHistory {
   projectName: string;
   modelName: string;
   data?: TableData;
-}
-
-export interface QueryBookmarkResponse {
-  items: QueryBookmark[];
-  page: number;
-  pages: number;
-  size: number;
-  total: number;
-}
-
-export interface QueryBookmark {
-  id: number;
-  compiled_sql: string;
-  raw_sql: string;
-  name: string;
-  description: string;
-  adapter_type: string;
-  created_on: string;
-  updated_on: string;
-  tags: { id: number; tag: string }[];
-  privacy: "public" | "private";
-  created_by_user: User;
 }
 
 export enum QueryPanelViewType {
@@ -63,11 +40,6 @@ export interface QueryPanelStateProps {
   limit?: number;
   perspectiveTheme: string;
   queryHistory: QueryHistory[];
-  queryBookmarks: {
-    private?: QueryBookmarkResponse;
-    public?: QueryBookmarkResponse;
-  };
-  queryBookmarksTagsFromDB?: { id: number; tag: string }[];
   tabState: QueryPanelTitleTabState;
   activeEditor?: {
     filepath: string;
