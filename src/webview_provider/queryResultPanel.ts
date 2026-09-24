@@ -2,10 +2,7 @@ import {
   CancellationToken,
   ColorThemeKind,
   commands,
-  env,
-  ProgressLocation,
   Range,
-  Uri,
   ViewColumn,
   Webview,
   WebviewOptions,
@@ -19,19 +16,15 @@ import {
   DBTTerminal,
   ExecuteSQLError,
   ExecuteSQLResult,
-  PythonException,
   QueryExecution,
 } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import * as path from "path";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import {
-  extendErrorWithSupportLinks,
-  getFormattedDateTime,
-  getStringSizeInMb,
-} from "../utils";
+import { getFormattedDateTime, getStringSizeInMb } from "../utils";
 import {
   AltimateWebviewProvider,
   SendMessageProps,
@@ -59,7 +52,7 @@ enum OutboundCommand {
 
 interface RenderQuery {
   columnNames: string[];
-  columnTypes: string[];
+  columnTypes: (string | null)[];
   rows: JsonObj[];
   raw_sql: string;
   compiled_sql: string;
@@ -77,14 +70,9 @@ interface InjectConfig {
 }
 
 enum InboundCommand {
-  CollectQueryResultsDebugInfo = "collectQueryResultsDebugInfo",
-  Info = "info",
   Error = "error",
   UpdateConfig = "updateConfig",
-  OpenUrl = "openUrl",
-  GetSummary = "getSummary",
   CancelQuery = "cancelQuery",
-  SetContext = "setContext",
   GetQueryPanelContext = "getQueryPanelContext",
   GetQueryHistory = "getQueryHistory",
   ExecuteQuery = "executeQuery",
@@ -96,21 +84,12 @@ enum InboundCommand {
   ClearQueryHistory = "clearQueryHistory",
 }
 
-interface RecInfo {
-  text: string;
-}
-
 interface RecError {
   text: string;
 }
 
 interface RecConfig {
   limit?: number;
-  scale?: number;
-}
-
-interface RecOpenUrl {
-  url: string;
 }
 
 interface QueryHistory {
@@ -122,12 +101,12 @@ interface QueryHistory {
   projectName: string;
   data?: JsonObj[];
   columnNames: string[];
-  columnTypes: string[];
+  columnTypes: (string | null)[];
   modelName: string;
 }
 
 export class QueryResultPanel extends AltimateWebviewProvider {
-  public static readonly viewType = "dbtPowerUser.PreviewResults";
+  public static readonly viewType = "fusionPowerUser.PreviewResults";
   protected viewPath = "/query-panel";
   protected panelDescription = "Query results panel";
   private _queryTabData: any;
@@ -158,21 +137,15 @@ export class QueryResultPanel extends AltimateWebviewProvider {
         this.sendUpdatedContextToWebview();
       }),
     );
-
-    this._disposables.push(
-      commands.registerCommand(
-        "dbtPowerUser.collectQueryResultsDebugInfo",
-        () => this.collectQueryResultsDebugInfo(),
-      ),
-      this,
-    );
   }
 
   private async sendUpdatedContextToWebview() {
     const perspectiveTheme = workspace
-      .getConfiguration("dbt")
-      .get("perspectiveTheme", "Vintage");
-    const limit = workspace.getConfiguration("dbt").get<number>("queryLimit");
+      .getConfiguration(CONFIGURATION_SECTION)
+      .get("queryResults.theme", "Vintage");
+    const limit = workspace
+      .getConfiguration(CONFIGURATION_SECTION)
+      .get<number>("query.limit");
     if (this._panel) {
       await this._panel.webview.postMessage({
         command: OutboundCommand.GetContext,
@@ -184,13 +157,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
         },
       });
     }
-  }
-
-  private collectQueryResultsDebugInfo() {
-    console.log("Collecting query results debug info");
-    this._panel?.webview?.postMessage({
-      command: "collectQueryResultsDebugInfo",
-    });
   }
 
   private async createQueryResultsPanelVirtualDocument(editorName: string) {
@@ -313,9 +279,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
       }
       return;
     } catch (error) {
-      window.showErrorMessage(
-        extendErrorWithSupportLinks((error as Error).message),
-      );
+      window.showErrorMessage((error as Error).message);
       this.dbtTerminal.error(
         "ExecuteSqlError",
         "Unable to execute query",
@@ -414,58 +378,18 @@ export class QueryResultPanel extends AltimateWebviewProvider {
             const error = message as RecError;
             window.showErrorMessage(error.text);
             break;
-          case InboundCommand.Info:
-            const info = message as RecInfo;
-            window.withProgress(
-              {
-                title: info.text,
-                location: ProgressLocation.Notification,
-                cancellable: false,
-              },
-              async () => {
-                await new Promise((timer) => setTimeout(timer, 3000));
-              },
-            );
-            break;
           case InboundCommand.UpdateConfig:
             const configMessage = message as RecConfig;
             if (configMessage.limit !== undefined) {
               workspace
-                .getConfiguration("dbt")
-                .update("queryLimit", configMessage.limit);
-            }
-            if (configMessage.scale) {
-              workspace
-                .getConfiguration("dbt")
-                .update("queryScale", configMessage.scale);
+                .getConfiguration(CONFIGURATION_SECTION)
+                .update("query.limit", configMessage.limit);
             }
             if ("perspectiveTheme" in configMessage) {
               workspace
-                .getConfiguration("dbt")
-                .update("perspectiveTheme", configMessage.perspectiveTheme);
+                .getConfiguration(CONFIGURATION_SECTION)
+                .update("queryResults.theme", configMessage.perspectiveTheme);
             }
-            break;
-          case InboundCommand.OpenUrl:
-            const config = message as RecOpenUrl;
-            env.openExternal(Uri.parse(config.url));
-            break;
-          case InboundCommand.SetContext:
-            this.dbtProjectContainer.setToGlobalState(
-              message.key,
-              message.value,
-            );
-            break;
-          case InboundCommand.CollectQueryResultsDebugInfo:
-            const data = {
-              ...message,
-              historyItems: this._queryHistory.length,
-              historySize: JSON.stringify(this._queryHistory).length,
-            };
-            this.dbtTerminal.debug(
-              "CollectQueryResultsDebugInfo",
-              "collecting query results debug info",
-              data,
-            );
             break;
           default:
             super.handleCommand(message);
@@ -519,7 +443,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
   /** Sends query result data to webview */
   private async transmitData(
     columnNames: string[],
-    columnTypes: string[],
+    columnTypes: (string | null)[],
     rows: JsonObj[],
     raw_sql: string,
     compiled_sql: string,
@@ -557,7 +481,9 @@ export class QueryResultPanel extends AltimateWebviewProvider {
 
   /** Sends VSCode config data to webview */
   private transmitConfig() {
-    const limit = workspace.getConfiguration("dbt").get<number>("queryLimit");
+    const limit = workspace
+      .getConfiguration(CONFIGURATION_SECTION)
+      .get<number>("query.limit");
     if (this._panel) {
       this._panel.webview.postMessage({
         command: OutboundCommand.InjectConfig,
@@ -612,6 +538,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     }
     return await this.transmitData(
       result.table.column_names,
+      // FusionProjectIntegration already reports every column type as unknown.
       result.table.column_types,
       rows,
       query,
@@ -622,7 +549,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
   private updateQueryHistory(
     result: {
       columnNames: string[];
-      columnTypes: string[];
+      columnTypes: (string | null)[];
       rows: JsonObj[];
       raw_sql: string;
       compiled_sql: string;
@@ -676,10 +603,9 @@ export class QueryResultPanel extends AltimateWebviewProvider {
   ) {
     const start = Date.now();
     //using id to focus on the webview is more reliable than using the view title
-    await commands.executeCommand("dbtPowerUser.PreviewResults.focus");
+    await commands.executeCommand("fusionPowerUser.PreviewResults.focus");
     if (this._panel && this.isWebviewView(this._panel)) {
       this._panel.show(); // Show the view
-      this._panel.webview.postMessage({ command: "focus" }); // keyboard focus
     }
     this.transmitLoading();
     try {
@@ -696,29 +622,6 @@ export class QueryResultPanel extends AltimateWebviewProvider {
       );
       return result;
     } catch (exc: any) {
-      if (exc instanceof PythonException) {
-        if (exc.exception.type.name === "KeyboardInterrupt") {
-          // query cancellation
-          this.transmitReset();
-          return;
-        }
-        window.showErrorMessage(
-          "An error occured while trying to execute your query: " +
-            exc.exception.message,
-        );
-        await this.transmitError(
-          {
-            error: {
-              code: -1,
-              message: exc.exception.message,
-              data: JSON.stringify(exc.stack, null, 2),
-            },
-          },
-          query,
-          query,
-        );
-        return;
-      }
       if (exc instanceof ExecuteSQLError) {
         window.showErrorMessage(
           "An error occured while trying to execute your query: " + exc.message,

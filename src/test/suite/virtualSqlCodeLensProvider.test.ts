@@ -28,7 +28,7 @@ describe("VirtualSqlCodeLensProvider", () => {
     expect(lenses).toHaveLength(1);
     expect(lenses[0].command).toMatchObject({
       title,
-      command: "dbtPowerUser.pickProject",
+      command: "fusionPowerUser.pickProject",
     });
   });
 });

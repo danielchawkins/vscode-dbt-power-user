@@ -1,6 +1,6 @@
 import { commands, ExtensionContext } from "vscode";
 
-export const RUNTIME_TIMINGS_COMMAND = "dbtPowerUser.test.getRuntimeTimings";
+export const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 
 export interface WebviewRuntimeTiming {
   viewPath: string;

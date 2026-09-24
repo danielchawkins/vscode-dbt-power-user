@@ -5,6 +5,18 @@ smoke_root=$(cd "$(dirname "$0")" && pwd)
 # shellcheck source=scripts/smoke/common.sh
 source "$smoke_root/common.sh"
 
+force=0
+case "${1:-}" in
+  --force)
+    force=1
+    ;;
+  "") ;;
+  *)
+    echo "usage: fetch-cursor.sh [--force]" >&2
+    exit 2
+    ;;
+esac
+
 dest="$cache_root/cursor-${FPU_CURSOR_VERSION}-${FPU_CURSOR_PLATFORM}"
 cli=$(host_cli cursor)
 verify_cached_cursor() {
@@ -19,7 +31,7 @@ if actual != expected:
 PY
 }
 
-if [[ -x "$cli" ]] && verify_cached_cursor; then
+if [[ "$force" -eq 0 ]] && [[ -x "$cli" ]] && verify_cached_cursor; then
   echo "Cursor ${FPU_CURSOR_VERSION} already cached at $dest"
   exit 0
 fi

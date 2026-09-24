@@ -14,7 +14,6 @@ import {
   Uri,
   window,
 } from "vscode";
-import { DBTClient } from "../dbt_client";
 import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
 import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
 import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";
@@ -34,8 +33,6 @@ interface ProjectEntry {
 }
 
 export class DBTProjectContainer implements Disposable {
-  public onDBTInstallationVerification =
-    this.dbtClient.onDBTInstallationVerification;
   private _onDBTProjectsInitializationEvent =
     new EventEmitter<DBTProjectsInitializationEvent>();
   public readonly onDBTProjectsInitialization =
@@ -61,7 +58,6 @@ export class DBTProjectContainer implements Disposable {
   private disposed = false;
 
   constructor(
-    private dbtClient: DBTClient,
     private projectRegistry: ProjectRegistry,
     @inject("Factory<DBTProject>")
     private dbtProjectFactory: (
@@ -71,20 +67,11 @@ export class DBTProjectContainer implements Disposable {
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
-    this.disposables.push(this.dbtClient, this.dbtTerminal);
+    this.disposables.push(this.dbtTerminal);
   }
 
   setContext(context: ExtensionContext) {
     this.context = context;
-    this.dbtClient.setGlobalState(context.globalState);
-  }
-
-  showErrorIfDbtOrPythonNotInstalled() {
-    return this.dbtClient.showErrorIfDbtOrPythonNotInstalled();
-  }
-
-  showErrorIfDbtIsNotInstalled() {
-    return this.dbtClient.showErrorIfDbtIsNotInstalled();
   }
 
   async initializeDBTProjects(): Promise<void> {
@@ -133,14 +120,6 @@ export class DBTProjectContainer implements Disposable {
     return this.context?.extension.id.toString() || "";
   }
 
-  get pythonInstalled(): boolean {
-    return this.dbtClient.pythonInstalled ?? false;
-  }
-
-  get dbtInstalled(): boolean {
-    return this.dbtClient.dbtInstalled ?? false;
-  }
-
   getPackageName = (uri: Uri): string | undefined => {
     return this.findDBTProject(uri)?.findPackageName(uri);
   };
@@ -148,10 +127,6 @@ export class DBTProjectContainer implements Disposable {
   getProjectRootpath = (uri: Uri): Uri | undefined => {
     return this.findDBTProject(uri)?.projectRoot;
   };
-
-  async detectDBT(): Promise<void> {
-    await this.dbtClient.detectDBT();
-  }
 
   async initialize(): Promise<void> {
     await Promise.all(
@@ -199,10 +174,6 @@ export class DBTProjectContainer implements Disposable {
     this.findDBTProject(modelPath)?.compileModel(
       this.createModelParams(modelPath, type),
     );
-  }
-
-  generateDocs(modelPath: Uri) {
-    this.findDBTProject(modelPath)?.generateDocs();
   }
 
   compileQuery(modelPath: Uri, query: string) {
@@ -309,10 +280,6 @@ export class DBTProjectContainer implements Disposable {
         this.getProjects().map((project) => project.getAdapterType()),
       ),
     );
-  }
-
-  getPythonEnvironment() {
-    return this.dbtClient.getPythonEnvironment();
   }
 
   dispose() {

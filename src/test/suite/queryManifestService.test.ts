@@ -30,7 +30,6 @@ describe("QueryManifestService.rewire", () => {
       getProjectRootpath: jest.fn(() => {
         throw new Error("legacy root lookup must not run");
       }),
-      onDBTProjectsInitialization: jest.fn(),
       onManifestChanged: jest.fn(),
     };
 
@@ -50,7 +49,6 @@ describe("QueryManifestService.rewire", () => {
     service = new QueryManifestService(
       containerDouble as any,
       { debug: jest.fn(), error: jest.fn(), warn: jest.fn() } as any,
-      { fire: jest.fn() } as any,
       contextDouble as any,
     );
   });

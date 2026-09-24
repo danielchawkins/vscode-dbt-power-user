@@ -12,6 +12,7 @@ test-fixtures/**
 eslint.config.cjs
 **/*.map
 **/*.ts
+**/*.py
 **/*.node
 .github
 webview_panels

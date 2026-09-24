@@ -16,8 +16,6 @@ import { CancellationTokenSource, window } from "vscode";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import { ModelInfo } from "../local/lineageTypes";
 import { DBTTerminal, QueryManifestService } from "../modules";
-import { extendErrorWithSupportLinks } from "../utils";
-
 export enum CllEvents {
   START = "start",
   END = "end",
@@ -313,11 +311,9 @@ export class DbtLineageService {
 
     if (relationsWithoutColumns.length !== 0) {
       window.showErrorMessage(
-        extendErrorWithSupportLinks(
-          "Failed to fetch columns for " +
-            relationsWithoutColumns.join(", ") +
-            ". Probably the dbt models are not yet materialized.",
-        ),
+        "Failed to fetch columns for " +
+          relationsWithoutColumns.join(", ") +
+          ". Probably the dbt models are not yet materialized.",
       );
       // we still show the lineage for the rest of the models whose
       // schemas we could get so not returning here
@@ -383,9 +379,7 @@ export class DbtLineageService {
       }
 
       window.showErrorMessage(
-        extendErrorWithSupportLinks(
-          "Unable to compute column lineage. The native SQL engine is not loaded.",
-        ),
+        "Unable to compute column lineage. The native SQL engine is not loaded.",
       );
       this.dbtTerminal.warn(
         "dbtLineageService:getConnectedColumns",
@@ -394,10 +388,8 @@ export class DbtLineageService {
       return;
     } catch (error) {
       window.showErrorMessage(
-        extendErrorWithSupportLinks(
-          "Unable to compute column lineage: " +
-            (error instanceof Error ? error.message : String(error)),
-        ),
+        "Unable to compute column lineage: " +
+          (error instanceof Error ? error.message : String(error)),
       );
       this.dbtTerminal.error(
         "dbtLineageService:getConnectedColumns",

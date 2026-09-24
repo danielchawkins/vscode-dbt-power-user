@@ -355,13 +355,13 @@ describe("FusionLanguageClient lifecycle", () => {
     };
     jest.spyOn(workspace, "getConfiguration").mockReturnValue({
       get: jest.fn((key: string) => {
-        if (key === "staticAnalysisMode") {
+        if (key === "staticAnalysis") {
           return "baseline";
         }
-        if (key === "lintEnabled") {
+        if (key === "lint.enabled") {
           return true;
         }
-        if (key === "traceServer") {
+        if (key === "trace.server") {
           return "off";
         }
         return undefined;

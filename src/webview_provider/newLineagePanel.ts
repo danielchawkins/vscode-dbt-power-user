@@ -16,7 +16,6 @@ import * as path from "path";
 import {
   CancellationToken,
   CancellationTokenSource,
-  ColorThemeKind,
   commands,
   ProgressLocation,
   TextDocument,
@@ -29,10 +28,10 @@ import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
+import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { CllEvents, DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { extendErrorWithSupportLinks } from "../utils";
 import { AltimateWebviewProvider } from "./altimateWebviewProvider";
 import { LineagePanelView } from "./lineagePanel";
 
@@ -146,25 +145,8 @@ export class NewLineagePanel
     this.renderStartingNode();
   }
 
-  changedActiveColorTheme() {
-    if (!this._panel) {
-      return;
-    }
-    const theme = [
-      ColorThemeKind.Light,
-      ColorThemeKind.HighContrastLight,
-    ].includes(window.activeColorTheme.kind)
-      ? "light"
-      : "dark";
-    this._panel.webview.postMessage({
-      command: "setTheme",
-      args: { theme },
-    });
-  }
-
   init() {
     this.terminal.debug("newLineagePanel:init", "init", this._panel);
-    this.changedActiveColorTheme();
     this.renderStartingNode();
   }
 
@@ -258,9 +240,7 @@ export class NewLineagePanel
         });
       } catch (error) {
         window.showErrorMessage(
-          extendErrorWithSupportLinks(
-            "Unable to generate lineage: " + (error as Error).message,
-          ),
+          "Unable to generate lineage: " + (error as Error).message,
         );
         this._panel?.webview.postMessage({
           command: "response",
@@ -286,7 +266,9 @@ export class NewLineagePanel
     }
 
     if (command === "getLineageSettings") {
-      const config = workspace.getConfiguration("dbt.lineage");
+      const config = workspace.getConfiguration(
+        `${CONFIGURATION_SECTION}.lineage`,
+      );
       this._panel?.webview.postMessage({
         command: "response",
         args: {
@@ -307,7 +289,9 @@ export class NewLineagePanel
     }
 
     if (command === "persistLineageSettings") {
-      const config = workspace.getConfiguration("dbt.lineage");
+      const config = workspace.getConfiguration(
+        `${CONFIGURATION_SECTION}.lineage`,
+      );
       for (const k in params) {
         await config.update(k, params[k]);
       }
@@ -537,13 +521,11 @@ export class NewLineagePanel
         );
         if (!ok) {
           window.showErrorMessage(
-            extendErrorWithSupportLinks(
-              "Unable to get columns from DB for model: " +
-                node.name +
-                " table: " +
-                _table.name +
-                ".",
-            ),
+            "Unable to get columns from DB for model: " +
+              node.name +
+              " table: " +
+              _table.name +
+              ".",
           );
           return;
         }
@@ -623,13 +605,11 @@ export class NewLineagePanel
       );
       if (!ok) {
         window.showErrorMessage(
-          extendErrorWithSupportLinks(
-            "Unable to get columns from DB for model: " +
-              node.name +
-              " table: " +
-              table +
-              ".",
-          ),
+          "Unable to get columns from DB for model: " +
+            node.name +
+            " table: " +
+            table +
+            ".",
         );
         return;
       }

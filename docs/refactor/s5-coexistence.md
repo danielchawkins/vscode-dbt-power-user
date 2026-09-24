@@ -140,7 +140,7 @@ Fusion Power User registers `dbtPowerUser.associateFileExts` at runtime; it open
 
 ## Configuration keys
 
-Both use the `dbt.*` settings namespace but register different property ids. No property id is duplicated between the two manifests (official: `dbt.dbtPath`, `dbt.formatOnSave`, `dbt.lsp.linter.enabled`, etc.; Fusion Power User: `dbt.enabled`, `dbt.projects`, `dbt.altimateAiKey`, etc.). Shared prefix only; not a contribution-point id collision.
+Both use the `dbt.*` settings namespace but register different property ids. No property id is duplicated between the two manifests (official: `dbt.dbtPath`, `dbt.formatOnSave`, `dbt.lsp.linter.enabled`, etc.; Fusion Power User: `dbt.enabled`, `dbt.projects`, etc.). Shared prefix only; not a contribution-point id collision.
 
 ## What was not measured
 

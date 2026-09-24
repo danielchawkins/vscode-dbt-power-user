@@ -143,7 +143,7 @@ export class SourceModelCreationCodeLensProvider implements CodeLensProvider {
                     {
                       title: "Generate model",
                       tooltip: "Generate model based on source configuration",
-                      command: "dbtPowerUser.createModelBasedonSourceConfig",
+                      command: "fusionPowerUser.createModelBasedonSourceConfig",
                       arguments: [params],
                     },
                   ),

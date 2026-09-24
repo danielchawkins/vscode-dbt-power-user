@@ -15,7 +15,6 @@ import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
 import { useEffect, useState } from "react";
 import ActionWidget from "./ActionWidget";
-import DemoButton from "./components/demo/DemoButton";
 import styles from "./lineage.module.scss";
 import "./tailwind-globals.css";
 import { MissingLineageMessage, StaticLineageProps } from "./types";
@@ -140,16 +139,9 @@ const LineageView = (): JSX.Element | null => {
   return (
     <TooltipProvider>
       <div className={styles.lineageView}>
-        <ActionWidget
-          missingLineageMessage={missingLineageMessage}
-          aiEnabled={renderNode.aiEnabled}
-          lineageType={lineageType}
-        />
-        {lineageType === "sql" ? null : (
-          <div className="bottom-right-container">
-            <DemoButton />
-          </div>
-        )}
+        {lineageType === "dynamic" ? (
+          <ActionWidget missingLineageMessage={missingLineageMessage} />
+        ) : null}
         <div className={`${styles.lineageWrap} al-tw-scope`}>
           <Lineage
             theme={theme}

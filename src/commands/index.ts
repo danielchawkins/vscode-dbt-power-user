@@ -1,6 +1,12 @@
-import { DBTTerminal, RunModelType } from "@altimateai/dbt-integration";
+import {
+  CATALOG_FILE,
+  DBTTerminal,
+  MANIFEST_FILE,
+  RunModelType,
+} from "@altimateai/dbt-integration";
 import { existsSync, readFileSync } from "fs";
 import { inject } from "inversify";
+import { join } from "path";
 import {
   CancellationTokenSource,
   CodeLens,
@@ -24,18 +30,17 @@ import {
 import { SqlPreviewContentProvider } from "../content_provider/sqlPreviewContentProvider";
 import { CteProfilerDecorationProvider } from "../cte_profiler/cteProfilerDecorationProvider";
 import { CteProfilerService } from "../cte_profiler/cteProfilerService";
-import { DBTClient } from "../dbt_client";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import { PythonEnvironment } from "../dbt_client/pythonEnvironment";
+import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { deepEqual, getFirstWorkspacePath } from "../utils";
+import { ProjectSetupCommands } from "./projectSetupCommands";
 import { RunModel } from "./runModel";
 import { RunTest } from "./runTest";
-import { WalkthroughCommands } from "./walkthroughCommands";
 
 export class VSCodeCommands implements Disposable {
   private disposables: Disposable[] = [];
@@ -44,13 +49,10 @@ export class VSCodeCommands implements Disposable {
     private dbtProjectContainer: DBTProjectContainer,
     private runModel: RunModel,
     private runTest: RunTest,
-    private walkthroughCommands: WalkthroughCommands,
+    private projectSetupCommands: ProjectSetupCommands,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private diagnosticsOutputChannel: DiagnosticsOutputChannel,
-    @inject(PythonEnvironment)
-    private pythonEnvironment: PythonEnvironment,
-    private dbtClient: DBTClient,
     private runHistoryService: RunHistoryService,
     private cteProfilerService: CteProfilerService,
     private cteProfilerDecorationProvider: CteProfilerDecorationProvider,
@@ -59,21 +61,21 @@ export class VSCodeCommands implements Disposable {
     this.disposables.push(
       this.cteProfilerService,
       this.cteProfilerDecorationProvider,
-      commands.registerCommand("dbtPowerUser.runCurrentModel", () => {
+      commands.registerCommand("fusionPowerUser.runCurrentModel", () => {
         // `dbt run` on a singular test file is never meaningful; route it
-        // to `dbt test --select <test>` instead. See #1720.
+        // to `dbt test --select <test>` instead.
         if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
           return;
         }
         this.runModel.runModelOnActiveWindow();
       }),
       commands.registerCommand(
-        "dbtPowerUser.rerunFromHistory",
+        "fusionPowerUser.rerunFromHistory",
         (item: RunTreeItem) => {
           this.dbtProjectContainer.rerunFromHistory(item.entry);
         },
       ),
-      commands.registerCommand("dbtPowerUser.clearRunHistory", async () => {
+      commands.registerCommand("fusionPowerUser.clearRunHistory", async () => {
         const confirm = await window.showWarningMessage(
           "Clear all run history entries?",
           { modal: true },
@@ -84,7 +86,7 @@ export class VSCodeCommands implements Disposable {
         }
       }),
       commands.registerCommand(
-        "dbtPowerUser.profileCtes",
+        "fusionPowerUser.profileCtes",
         async (uri?: Uri, ctes?: CteInfo[]) => {
           // When called from command palette, args are undefined — use active editor
           const source = uri ? "codeLens" : "commandPalette";
@@ -125,7 +127,7 @@ export class VSCodeCommands implements Disposable {
             // Extract CteInfo from CodeLens arguments (index 1 is the ctes array)
             const profileLens = resolved.find(
               (cl: CodeLens) =>
-                cl.command?.command === "dbtPowerUser.profileCtes",
+                cl.command?.command === "fusionPowerUser.profileCtes",
             );
             ctes = profileLens?.command?.arguments?.[1] as
               CteInfo[] | undefined;
@@ -191,28 +193,28 @@ export class VSCodeCommands implements Disposable {
           );
         },
       ),
-      commands.registerCommand("dbtPowerUser.cancelCteProfiling", () => {
+      commands.registerCommand("fusionPowerUser.cancelCteProfiling", () => {
         this.cteProfilerService.cancel();
       }),
-      commands.registerCommand("dbtPowerUser.clearProfileResults", () =>
+      commands.registerCommand("fusionPowerUser.clearProfileResults", () =>
         this.cteProfilerService.clearResults(),
       ),
-      commands.registerCommand("dbtPowerUser.toggleProfileDecorations", () =>
+      commands.registerCommand("fusionPowerUser.toggleProfileDecorations", () =>
         this.cteProfilerDecorationProvider.toggle(),
       ),
-      commands.registerCommand("dbtPowerUser.testCurrentModel", () => {
+      commands.registerCommand("fusionPowerUser.testCurrentModel", () => {
         // Singular data tests must be selected by their own test name, not
-        // the surrounding model. See #1720.
+        // the surrounding model.
         if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
           return;
         }
         this.runModel.runTestsOnActiveWindow();
       }),
-      commands.registerCommand("dbtPowerUser.compileCurrentModel", () =>
+      commands.registerCommand("fusionPowerUser.compileCurrentModel", () =>
         this.runModel.compileModelOnActiveWindow(),
       ),
       commands.registerTextEditorCommand(
-        "dbtPowerUser.sqlPreview",
+        "fusionPowerUser.sqlPreview",
         async (editor: TextEditor) => {
           const uri = editor.document.uri.with({
             scheme: SqlPreviewContentProvider.SCHEME,
@@ -235,14 +237,14 @@ export class VSCodeCommands implements Disposable {
         },
       ),
       commands.registerCommand(
-        "dbtPowerUser.goToDocumentationEditor",
+        "fusionPowerUser.goToDocumentationEditor",
         async () => {
           await commands.executeCommand(
             "workbench.view.extension.docs_edit_view",
           );
         },
       ),
-      commands.registerCommand("dbtPowerUser.runTest", (model) => {
+      commands.registerCommand("fusionPowerUser.runTest", (model) => {
         // Tree-item invocation (from the test treeview): run the selected
         // test node — never a singular test, always a generic test.
         if (model !== undefined) {
@@ -251,63 +253,60 @@ export class VSCodeCommands implements Disposable {
         }
         // Command-palette invocation (no tree item): route singular test
         // files to `dbt test --select <test>`; otherwise fall back to
-        // running the generic tests attached to the active model. See #1720.
+        // running the generic tests attached to the active model.
         if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
           return;
         }
         this.runModel.runModelOnNodeTreeItem(RunModelType.TEST)(model);
       }),
-      commands.registerCommand("dbtPowerUser.runChildrenModels", (model) =>
+      commands.registerCommand("fusionPowerUser.runChildrenModels", (model) =>
         this.runModel.runModelOnNodeTreeItem(RunModelType.RUN_CHILDREN)(model),
       ),
       commands.registerCommand(
-        "dbtPowerUser.yamlRunModel",
+        "fusionPowerUser.yamlRunModel",
         (uri: Uri, modelName: string) => {
           this.dbtProjectContainer.runModelByName(uri, modelName);
         },
       ),
       commands.registerCommand(
-        "dbtPowerUser.yamlTestModel",
+        "fusionPowerUser.yamlTestModel",
         (uri: Uri, modelName: string) => {
           this.dbtProjectContainer.runModelTest(uri, modelName);
         },
       ),
-      commands.registerCommand("dbtPowerUser.runParentModels", (model) =>
+      commands.registerCommand("fusionPowerUser.runParentModels", (model) =>
         this.runModel.runModelOnNodeTreeItem(RunModelType.RUN_PARENTS)(model),
       ),
-      commands.registerCommand("dbtPowerUser.copyModelName", (model) =>
+      commands.registerCommand("fusionPowerUser.copyModelName", (model) =>
         env.clipboard.writeText(model.label.toString()),
       ),
-      commands.registerCommand("dbtPowerUser.showRunSQL", () =>
+      commands.registerCommand("fusionPowerUser.showRunSQL", () =>
         this.runModel.showRunSQLOnActiveWindow(),
       ),
-      commands.registerCommand("dbtPowerUser.showCompiledSQL", () =>
+      commands.registerCommand("fusionPowerUser.showCompiledSQL", () =>
         this.runModel.showCompiledSQLOnActiveWindow(),
       ),
-      commands.registerCommand("dbtPowerUser.generateSchemaYML", () =>
+      commands.registerCommand("fusionPowerUser.generateSchemaYML", () =>
         this.runModel.generateSchemaYMLOnActiveWindow(),
       ),
-      commands.registerCommand("dbtPowerUser.generateDBTDocs", () =>
-        this.runModel.generateDBTDocsOnActiveWindow(),
-      ),
-      commands.registerCommand("dbtPowerUser.executeSQL", () =>
+      commands.registerCommand("fusionPowerUser.executeSQL", () =>
         this.runModel.executeQueryOnActiveWindow(),
       ),
       commands.registerCommand(
-        "dbtPowerUser.runCteWithDependencies",
+        "fusionPowerUser.runCteWithDependencies",
         (uri: Uri, cteIndex: number, ctes: CteInfo[]) =>
           this.runCteWithDependencies(uri, cteIndex, ctes),
       ),
       commands.registerCommand(
-        "dbtPowerUser.createModelBasedonSourceConfig",
+        "fusionPowerUser.createModelBasedonSourceConfig",
         (params) => {
           this.runModel.createModelBasedonSourceConfig(params);
         },
       ),
-      commands.registerCommand("dbtPowerUser.buildCurrentModel", () =>
+      commands.registerCommand("fusionPowerUser.buildCurrentModel", () =>
         this.runModel.buildModelOnActiveWindow(),
       ),
-      commands.registerCommand("dbtPowerUser.buildCurrentProject", () => {
+      commands.registerCommand("fusionPowerUser.buildCurrentProject", () => {
         if (!window.activeTextEditor) {
           return;
         }
@@ -338,7 +337,7 @@ export class VSCodeCommands implements Disposable {
 
         dbtProject.buildProject();
       }),
-      commands.registerCommand("dbtPowerUser.cleanCurrentProject", () => {
+      commands.registerCommand("fusionPowerUser.cleanCurrentProject", () => {
         if (!window.activeTextEditor) {
           return;
         }
@@ -369,157 +368,61 @@ export class VSCodeCommands implements Disposable {
 
         dbtProject.clean();
       }),
-      commands.registerCommand("dbtPowerUser.buildChildrenModels", () =>
+      commands.registerCommand("fusionPowerUser.buildChildrenModels", () =>
         this.runModel.buildModelOnActiveWindow(RunModelType.BUILD_CHILDREN),
       ),
-      commands.registerCommand("dbtPowerUser.buildParentModels", () =>
+      commands.registerCommand("fusionPowerUser.buildParentModels", () =>
         this.runModel.buildModelOnActiveWindow(RunModelType.BUILD_PARENTS),
       ),
-      commands.registerCommand("dbtPowerUser.buildChildrenParentModels", () =>
-        this.runModel.buildModelOnActiveWindow(
-          RunModelType.BUILD_CHILDREN_PARENTS,
-        ),
-      ),
-      commands.registerCommand("dbtPowerUser.validateProject", async () => {
-        const pickedProject: ProjectQuickPickItem | undefined =
-          this.dbtProjectContainer.getFromWorkspaceState(
-            "dbtPowerUser.projectSelected",
-          );
-
-        await this.walkthroughCommands.validateProjects(pickedProject);
-      }),
-      commands.registerCommand("dbtPowerUser.installDeps", async () => {
-        const pickedProject: ProjectQuickPickItem | undefined =
-          this.dbtProjectContainer.getFromWorkspaceState(
-            "dbtPowerUser.projectSelected",
-          );
-        await this.walkthroughCommands.installDeps(pickedProject);
-      }),
-      commands.registerCommand("dbtPowerUser.viewInDocEditor", () =>
-        commands.executeCommand("dbtPowerUser.DocsEdit.focus"),
-      ),
-      commands.registerCommand("dbtPowerUser.printEnvVars", () => {
-        const activeFolder = window.activeTextEditor
-          ? workspace.getWorkspaceFolder(window.activeTextEditor.document.uri)
-          : undefined;
-        return this.pythonEnvironment.printEnvVars(activeFolder);
-      }),
       commands.registerCommand(
-        "dbtPowerUser.detectPythonFromTerminal",
-        async () => {
-          // Check if there's a terminal open that we can detect from
-          if (
-            !window.activeTerminal &&
-            !window.terminals.some((t) => t.shellIntegration)
-          ) {
-            const action = await window.showWarningMessage(
-              "No terminal is open. Please open a terminal with your dbt environment activated, then try again.",
-              "Open Terminal",
-            );
-            if (action === "Open Terminal") {
-              await commands.executeCommand(
-                "workbench.action.terminal.toggleTerminal",
-              );
-            }
-            return;
-          }
-
-          const detectedPath =
-            await this.pythonEnvironment.detectPythonFromShell();
-          if (!detectedPath) {
-            window.showWarningMessage(
-              "Could not find a Python interpreter with dbt installed in your terminal. " +
-                "Make sure dbt is installed and the correct environment is activated, then try again.",
-            );
-            return;
-          }
-
-          const currentOverride = workspace
-            .getConfiguration("dbt")
-            .get<string>("dbtPythonPathOverride", "");
-          if (currentOverride === detectedPath) {
-            window.showInformationMessage(
-              `Python path is already set to: ${detectedPath}`,
-            );
-            return;
-          }
-
-          const action = await window.showInformationMessage(
-            `Found Python with dbt at: ${detectedPath}. Use this as the Python interpreter?`,
-            "Yes",
-            "No",
-          );
-          if (action === "Yes") {
-            await workspace
-              .getConfiguration("dbt")
-              .update("dbtPythonPathOverride", detectedPath);
-            window.showInformationMessage(
-              `Python path set to: ${detectedPath}. The extension will reload.`,
-            );
-            // Re-detect dbt with the new path
-            await this.dbtProjectContainer.detectDBT();
-            await this.dbtProjectContainer.initialize();
-          }
-        },
+        "fusionPowerUser.buildChildrenParentModels",
+        () =>
+          this.runModel.buildModelOnActiveWindow(
+            RunModelType.BUILD_CHILDREN_PARENTS,
+          ),
       ),
-      commands.registerCommand("dbtPowerUser.diagnostics", async () => {
+      commands.registerCommand("fusionPowerUser.validateProject", async () => {
+        const pickedProject: ProjectQuickPickItem | undefined =
+          this.dbtProjectContainer.getFromWorkspaceState(
+            "fusionPowerUser.projectSelected",
+          );
+
+        await this.projectSetupCommands.validateProjects(pickedProject);
+      }),
+      commands.registerCommand("fusionPowerUser.installDeps", async () => {
+        const pickedProject: ProjectQuickPickItem | undefined =
+          this.dbtProjectContainer.getFromWorkspaceState(
+            "fusionPowerUser.projectSelected",
+          );
+        await this.projectSetupCommands.installDeps(pickedProject);
+      }),
+      commands.registerCommand("fusionPowerUser.viewInDocEditor", () =>
+        commands.executeCommand("fusionPowerUser.DocsEdit.focus"),
+      ),
+      commands.registerCommand("fusionPowerUser.diagnostics", async () => {
         try {
           this.diagnosticsOutputChannel.show();
           this.diagnosticsOutputChannel.logLine("Diagnostics started...");
           this.diagnosticsOutputChannel.logNewLine();
 
-          // Printing env vars per project
-          const dbtProjects = this.dbtProjectContainer.getProjects();
-          if (dbtProjects.length > 0) {
-            for (const project of dbtProjects) {
-              const projectFolder = workspace.getWorkspaceFolder(
-                project.projectRoot,
-              );
-              this.diagnosticsOutputChannel.logBlockWithHeader(
-                [
-                  `Printing environment variables for project: ${project.getProjectName()}`,
-                  `  (root: ${project.projectRoot.fsPath})`,
-                  "* Please remove any sensitive information before sending it to us",
-                ],
-                Object.entries(
-                  this.pythonEnvironment.getEnvironmentVariables(projectFolder),
-                ).map(([key, value]) => `${key}=${value}`),
-              );
-              this.diagnosticsOutputChannel.logNewLine();
-            }
-          } else {
-            const activeFolder = window.activeTextEditor
-              ? workspace.getWorkspaceFolder(
-                  window.activeTextEditor.document.uri,
-                )
-              : undefined;
-            this.diagnosticsOutputChannel.logBlockWithHeader(
-              [
-                "Printing environment variables...",
-                "* Please remove any sensitive information before sending it to us",
-              ],
-              Object.entries(
-                this.pythonEnvironment.getEnvironmentVariables(activeFolder),
-              ).map(([key, value]) => `${key}=${value}`),
-            );
-            this.diagnosticsOutputChannel.logNewLine();
-          }
-
-          // Printing python paths
           this.diagnosticsOutputChannel.logBlockWithHeader(
             [
-              "Printing all python paths...",
+              "Printing extension host environment variables...",
               "* Please remove any sensitive information before sending it to us",
             ],
-            this.pythonEnvironment.allPythonPaths.map(({ path }) => path),
+            Object.entries(process.env).map(
+              ([key, value]) => `${key}=${value}`,
+            ),
           );
           this.diagnosticsOutputChannel.logNewLine();
 
           // Printing extension settings
-          const dbtSettings = workspace.getConfiguration().inspect("dbt");
-          const globalValue: any = dbtSettings?.globalValue || {};
-          const defaultValue: any = dbtSettings?.defaultValue || {};
-          const workspaceValue: any = dbtSettings?.workspaceValue || {};
+          const extensionSettings = workspace
+            .getConfiguration()
+            .inspect(CONFIGURATION_SECTION);
+          const globalValue: any = extensionSettings?.globalValue || {};
+          const defaultValue: any = extensionSettings?.defaultValue || {};
+          const workspaceValue: any = extensionSettings?.workspaceValue || {};
           const settingKeys = [
             ...Object.keys(globalValue),
             ...Object.keys(defaultValue),
@@ -531,7 +434,9 @@ export class VSCodeCommands implements Disposable {
               "* Please remove any sensitive information before sending it to us",
             ],
             settingKeys.map((key) => {
-              const value = workspace.getConfiguration("dbt").get(key);
+              const value = workspace
+                .getConfiguration(CONFIGURATION_SECTION)
+                .get(key);
               let overridenText = "";
               if (!deepEqual(value, defaultValue[key])) {
                 if (deepEqual(value, workspaceValue[key])) {
@@ -552,7 +457,6 @@ export class VSCodeCommands implements Disposable {
 
           // Printing extension and setup info
           this.diagnosticsOutputChannel.logBlock([
-            `Python Path=${this.pythonEnvironment.pythonPath}`,
             `VSCode version=${version}`,
             `Extension version=${
               extensions.getExtension("innoverio.vscode-dbt-power-user")
@@ -562,23 +466,6 @@ export class VSCodeCommands implements Disposable {
             `First workspace path=${getFirstWorkspacePath()}`,
           ]);
           this.diagnosticsOutputChannel.logNewLine();
-
-          if (!this.dbtClient.pythonInstalled) {
-            this.diagnosticsOutputChannel.logLine("Python is not installed");
-            this.diagnosticsOutputChannel.logLine(
-              "Can't proceed further without fixing python installation",
-            );
-            return;
-          }
-          this.diagnosticsOutputChannel.logLine("Python is installed");
-          if (!this.dbtClient.dbtInstalled) {
-            this.diagnosticsOutputChannel.logLine("DBT is not installed");
-            this.diagnosticsOutputChannel.logLine(
-              "Can't proceed further without fixing dbt installation",
-            );
-            return;
-          }
-          this.diagnosticsOutputChannel.logLine("DBT is installed");
 
           const projects = this.dbtProjectContainer.getProjects();
           this.diagnosticsOutputChannel.logLine(
@@ -623,7 +510,7 @@ export class VSCodeCommands implements Disposable {
           this.diagnosticsOutputChannel.logLine(`Error=${e}`);
         }
       }),
-      commands.registerCommand("dbtPowerUser.applyDeferConfig", async () => {
+      commands.registerCommand("fusionPowerUser.applyDeferConfig", async () => {
         const projects = this.dbtProjectContainer.getProjects();
         try {
           await Promise.all(
@@ -663,18 +550,25 @@ export class VSCodeCommands implements Disposable {
 
     this.diagnosticsOutputChannel.logNewLine();
 
+    const targetPath = project.getTargetPath();
     const paths = [
       {
         pathType: "DBT Project File",
         path: project.getDBTProjectFilePath(),
       },
-      { pathType: "Target", path: project.getTargetPath() },
+      { pathType: "Target", path: targetPath },
       {
         pathType: "PackageInstall",
         path: project.getPackageInstallPath(),
       },
-      { pathType: "Manifest", path: project.getManifestPath() },
-      { pathType: "Catalog", path: project.getCatalogPath() },
+      {
+        pathType: "Manifest",
+        path: targetPath ? join(targetPath, MANIFEST_FILE) : undefined,
+      },
+      {
+        pathType: "Catalog",
+        path: targetPath ? join(targetPath, CATALOG_FILE) : undefined,
+      },
       ...(project.getModelPaths() || []).map((path) => ({
         pathType: "Model",
         path,

@@ -8,10 +8,10 @@ import {
 } from "@jest/globals";
 import { readFileSync } from "fs";
 import path from "path";
-import { Uri, WorkspaceFolder } from "vscode";
+import { Uri, window, WorkspaceFolder } from "vscode";
 import {
   ConfiguredFusionExecutableResolver,
-  FUSION_PATH_SETTING,
+  DBT_PATH_SETTING,
   FusionExecutable,
 } from "../../fusion/fusionExecutable";
 import { FusionVersionVerdict } from "../../fusion/fusionVersion";
@@ -318,6 +318,30 @@ describe("Fusion executable resolver", () => {
     expectInheritedEnv(env);
   });
 
+  it("preserves DBT_PROFILES_DIR from the host environment in the resolved env", async () => {
+    const priorProfilesDir = process.env.DBT_PROFILES_DIR;
+    process.env.DBT_PROFILES_DIR = "/Users/someone/.dbt";
+
+    try {
+      const { resolver, isExecutable, runVersion } = createResolver({
+        getConfiguredPath: () => "/opt/dbt",
+      });
+      isExecutable.mockResolvedValue(true);
+      runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+
+      const result = await resolver.resolve(scope);
+
+      assertFusionExecutable(result);
+      expect(result.env.DBT_PROFILES_DIR).toBe("/Users/someone/.dbt");
+    } finally {
+      if (priorProfilesDir === undefined) {
+        delete process.env.DBT_PROFILES_DIR;
+      } else {
+        process.env.DBT_PROFILES_DIR = priorProfilesDir;
+      }
+    }
+  });
+
   it("returns FusionExecutable for an ok version verdict", async () => {
     const raw = "dbt 2.0.5\n";
     const { resolver, findOnPath, runVersion } = createResolver();
@@ -362,7 +386,7 @@ describe("Fusion executable resolver", () => {
     });
   });
 
-  it("propagates tooOld, notFusion, and untestedMajor verdicts", async () => {
+  it("propagates blocking tooOld and notFusion verdicts", async () => {
     const cases = [
       {
         stdout: "dbt 2.0.4\n",
@@ -375,13 +399,6 @@ describe("Fusion executable resolver", () => {
         stdout: "Core:\n  - installed: 1.8.8\n",
         expected: { kind: "notFusion", raw: "Core:\n  - installed: 1.8.8\n" },
       },
-      {
-        stdout: "dbt 3.0.0\n",
-        expected: {
-          kind: "untestedMajor",
-          version: { major: 3, minor: 0, patch: 0, raw: "dbt 3.0.0\n" },
-        },
-      },
     ] as const;
 
     for (const { stdout, expected } of cases) {
@@ -392,6 +409,75 @@ describe("Fusion executable resolver", () => {
 
       await expect(resolver.resolve(scope)).resolves.toEqual(expected);
     }
+  });
+
+  it("resolves an untested newer major as a usable executable", async () => {
+    const raw = "dbt 3.0.0\n";
+    const { resolver, findOnPath, runVersion } = createResolver();
+
+    findOnPath.mockResolvedValue("/usr/local/bin/dbt");
+    runVersion.mockResolvedValue({ stdout: raw, stderr: "" });
+
+    const result = await resolver.resolve(scope);
+
+    assertFusionExecutable(result);
+    expect(result).toMatchObject({
+      path: "/usr/local/bin/dbt",
+      version: { major: 3, minor: 0, patch: 0, raw },
+    });
+  });
+
+  it("warns once per untested major, to the terminal only, across repeated resolutions", async () => {
+    const logWarning = jest.fn();
+    const stored = new Map<string, unknown>();
+    const getGlobalState = jest.fn(() => ({
+      get: <T>(key: string) => stored.get(key) as T | undefined,
+      update: (key: string, value: unknown) => {
+        stored.set(key, value);
+      },
+    }));
+    const { resolver, findOnPath, runVersion } = createResolver({
+      logWarning,
+      getGlobalState,
+    });
+
+    findOnPath.mockResolvedValue("/usr/local/bin/dbt");
+    runVersion.mockResolvedValue({ stdout: "dbt 3.0.0\n", stderr: "" });
+
+    await resolver.resolve(scope);
+    await resolver.resolve(scope);
+    runVersion.mockResolvedValue({ stdout: "dbt 3.1.2\n", stderr: "" });
+    await resolver.resolve(scope);
+
+    expect(logWarning).toHaveBeenCalledTimes(1);
+    expect(logWarning.mock.calls[0]?.[0]).toContain("major version 3");
+    expect(window.showWarningMessage).not.toHaveBeenCalled();
+    expect(window.showInformationMessage).not.toHaveBeenCalled();
+    expect(window.showErrorMessage).not.toHaveBeenCalled();
+  });
+
+  it("does not warn again once a major is already recorded in global state", async () => {
+    const logWarning = jest.fn();
+    const stored = new Map<string, unknown>([
+      ["fusionVersion.warnedMajor.3", true],
+    ]);
+    const getGlobalState = jest.fn(() => ({
+      get: <T>(key: string) => stored.get(key) as T | undefined,
+      update: (key: string, value: unknown) => {
+        stored.set(key, value);
+      },
+    }));
+    const { resolver, findOnPath, runVersion } = createResolver({
+      logWarning,
+      getGlobalState,
+    });
+
+    findOnPath.mockResolvedValue("/usr/local/bin/dbt");
+    runVersion.mockResolvedValue({ stdout: "dbt 3.0.0\n", stderr: "" });
+
+    await resolver.resolve(scope);
+
+    expect(logWarning).not.toHaveBeenCalled();
   });
 
   it("judges version output when runVersion rejects with stderr output", async () => {
@@ -446,7 +532,7 @@ describe("Fusion executable resolver", () => {
     const property = manifest.contributes.configuration
       .flatMap((section) => Object.entries(section.properties))
       .find(
-        ([key]) => key === `${CONFIGURATION_SECTION}.${FUSION_PATH_SETTING}`,
+        ([key]) => key === `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}`,
       )?.[1];
 
     expect(property).toMatchObject({

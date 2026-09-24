@@ -52,14 +52,14 @@ describe("editor intelligence project resolution", () => {
   it("limits projectSelected references to explicit user-invoked paths", () => {
     const callers = sourceFiles()
       .filter((file) =>
-        readFileSync(file, "utf8").includes("dbtPowerUser.projectSelected"),
+        readFileSync(file, "utf8").includes("fusionPowerUser.projectSelected"),
       )
       .map((file) => path.relative(srcRoot, file))
       .sort();
 
     expect(callers).toEqual([
       "commands/index.ts",
-      "commands/walkthroughCommands.ts",
+      "commands/projectSetupCommands.ts",
       "quickpick/index.ts",
     ]);
   });

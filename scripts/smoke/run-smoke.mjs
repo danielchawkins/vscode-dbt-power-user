@@ -11,6 +11,12 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
+const SURVIVING_PROCESS_TIMEOUT_MS = 5_000;
+const SURVIVING_PROCESS_POLL_MS = 250;
+
+// A Cursor-launched shell sets this for its own CLI; inherited, it makes the pinned
+// host run as a Node script against our launch args instead of opening a workbench.
+delete process.env.ELECTRON_RUN_AS_NODE;
 
 const args = Object.fromEntries(
   process.argv.slice(2).flatMap((arg, index, argv) => {
@@ -107,11 +113,38 @@ try {
       ...(process.env.FPU_RUNTIME_BENCHMARK
         ? { FPU_RUNTIME_BENCHMARK: process.env.FPU_RUNTIME_BENCHMARK }
         : {}),
+      ...(process.env.FPU_SMOKE_REQUIRE_FUSION
+        ? { FPU_SMOKE_REQUIRE_FUSION: process.env.FPU_SMOKE_REQUIRE_FUSION }
+        : {}),
     },
   });
+  await assertNoSurvivingFusionLspProcess(workspaceDir);
 } finally {
   process.removeListener("exit", cleanup);
   cleanup();
+}
+
+// A process still naming the disposable workspaceDir after this deadline leaked past host exit.
+async function assertNoSurvivingFusionLspProcess(scopedWorkspaceDir) {
+  const deadline = Date.now() + SURVIVING_PROCESS_TIMEOUT_MS;
+  let leaked = [];
+  do {
+    const ps = spawnSync("ps", ["-eo", "pid,command"], { encoding: "utf-8" });
+    leaked = ps.stdout
+      .split("\n")
+      .filter(
+        (line) => line.includes("lsp") && line.includes(scopedWorkspaceDir),
+      );
+    if (leaked.length === 0) {
+      return;
+    }
+    await new Promise((resolve) =>
+      setTimeout(resolve, SURVIVING_PROCESS_POLL_MS),
+    );
+  } while (Date.now() < deadline);
+  throw new Error(
+    `Surviving dbt lsp process after host exit:\n${leaked.join("\n")}`,
+  );
 }
 
 async function findAvailablePort(start) {

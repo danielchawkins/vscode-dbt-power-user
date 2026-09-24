@@ -1,6 +1,5 @@
 import {
   DBTTerminal,
-  PythonException,
   Table,
   TestMetaData,
   TestMetadataAcceptedValues,
@@ -13,10 +12,8 @@ import { gte } from "semver";
 import {
   CancellationToken,
   CancellationTokenSource,
-  ColorThemeKind,
   commands,
   Disposable,
-  env,
   ProgressLocation,
   TextEditor,
   Uri,
@@ -49,7 +46,6 @@ import {
 import { DBTDocumentation, MetadataColumn } from "../services/docGenTypes";
 import { QueryManifestService } from "../services/queryManifestService";
 import {
-  extendErrorWithSupportLinks,
   getColumnNameByCase,
   getColumnTestConfigFromYml,
   isAcceptedValues,
@@ -63,7 +59,7 @@ import { SendMessageProps } from "./altimateWebviewProvider";
 const DOCS_VIEW_PATH = "/docs-generator";
 
 export class DocsEditViewPanel implements WebviewViewProvider {
-  public static readonly viewType = "dbtPowerUser.DocsEdit";
+  public static readonly viewType = "fusionPowerUser.DocsEdit";
   protected viewPath = DOCS_VIEW_PATH;
   private _panel: WebviewView | undefined = undefined;
   private documentation?: DBTDocumentation;
@@ -85,15 +81,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     dbtProjectContainer.onManifestChanged((event) =>
       this.onManifestCacheChanged(event),
     );
-    window.onDidChangeActiveColorTheme(
-      async (e) => {
-        if (this._panel) {
-          this.updateGraphStyle();
-        }
-      },
-      null,
-      this._disposables,
-    );
     window.onDidChangeActiveTextEditor(
       async (event: TextEditor | undefined) => {
         this.documentation = undefined;
@@ -102,7 +89,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         }
         if (this._panel) {
           this.transmitData();
-          this.updateGraphStyle();
         }
       },
     );
@@ -185,21 +171,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     }
   }
 
-  private async updateGraphStyle() {
-    const theme = [
-      ColorThemeKind.Light,
-      ColorThemeKind.HighContrastLight,
-    ].includes(window.activeColorTheme.kind)
-      ? "light"
-      : "dark";
-
-    if (this._panel) {
-      await this._panel.webview.postMessage({
-        command: "setStylesByTheme",
-        theme: theme,
-      });
-    }
-  }
   public async resolveWebviewView(
     panel: WebviewView,
     context: WebviewViewResolveContext,
@@ -209,7 +180,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     this._panel = panel;
     this.setupWebviewOptions(context);
     this.renderWebviewView(context);
-    this.updateGraphStyle();
     this.setupWebviewHooks(context);
     this.transmitData();
   }
@@ -563,10 +533,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
           );
           return;
         }
-        if (command === "openURL" && params.url) {
-          await env.openExternal(Uri.parse(params.url as string));
-          return;
-        }
         if (command === "openProblemsTab") {
           await commands.executeCommand("workbench.action.problems.focus");
           return;
@@ -730,22 +696,9 @@ export class DocsEditViewPanel implements WebviewViewProvider {
                   }
                 } catch (exc) {
                   this.transmitError();
-                  if (exc instanceof PythonException) {
-                    window.showErrorMessage(
-                      `An error occured while fetching metadata for ${modelName} from the database: ` +
-                        exc.exception.message,
-                    );
-                    this.terminal.error(
-                      "docsEditPanelLoadPythonError",
-                      `An error occured while fetching metadata for ${modelName} from the database`,
-                      exc,
-                      false,
-                    );
-                    return;
-                  }
                   window.showErrorMessage(
                     `An error occured while fetching metadata for ${modelName} from the database: ` +
-                      exc,
+                      (exc instanceof Error ? exc.message : String(exc)),
                   );
                   this.terminal.error(
                     "docsEditPanelLoadError",
@@ -1181,17 +1134,14 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         data: response,
       });
     } catch (error) {
-      const message =
-        error instanceof PythonException
-          ? error.exception.message
-          : (error as Error).message;
+      const message = error instanceof Error ? error.message : String(error);
       if (error instanceof UserInputError) {
         this.terminal.debug(command, message, error);
       } else {
         this.terminal.error(command, message, error);
       }
       if (showErrorNotification) {
-        window.showErrorMessage(extendErrorWithSupportLinks(message));
+        window.showErrorMessage(message);
       }
       this.sendResponseToWebview({
         command: "response",
@@ -1235,7 +1185,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     this.loadedFromManifest = true;
     if (this._panel) {
       this.transmitData();
-      this.updateGraphStyle();
     }
   }
 }

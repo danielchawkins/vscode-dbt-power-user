@@ -54,7 +54,7 @@ describe("fusionNotificationPolicy", () => {
     (workspace as any).workspaceFolders = [folder];
     jest.spyOn(workspace, "getConfiguration").mockReturnValue({
       get: jest.fn((key: string, fallback?: unknown) => {
-        if (key === "staticAnalysisMode") {
+        if (key === "staticAnalysis") {
           return "baseline";
         }
         if (key === "enabled") {
@@ -75,7 +75,6 @@ describe("fusionNotificationPolicy", () => {
     Object.assign(extension, {
       dbtProjectContainer: {
         setContext: jest.fn(),
-        detectDBT: jest.fn(() => Promise.resolve()),
         initializeDBTProjects: jest.fn(() => Promise.resolve()),
       },
       projectRegistry: { initialize: jest.fn(() => Promise.resolve()) },

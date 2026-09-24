@@ -1,0 +1,40 @@
+name: Check and package
+
+on:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Install tools
+        uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+
+      - name: Install JavaScript dependencies
+        run: just sync
+
+      - name: Check
+        run: just check
+
+      - name: Package
+        run: just package
+
+      - name: Checksum
+        run: shasum -a 256 ./*.vsix | tee vsix.sha256
+
+      - name: Upload VSIX
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: fusion-power-user-vsix
+          path: |
+            *.vsix
+            vsix.sha256

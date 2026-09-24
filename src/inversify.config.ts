@@ -1,17 +1,8 @@
 import {
-  AltimateHttpClient,
   ChildrenParentParser,
-  CLIDBTCommandExecutionStrategy,
   CommandProcessExecutionFactory,
-  DBTCommandExecutionInfrastructure,
-  DBTCommandExecutionStrategy,
   DBTCommandFactory,
   DBTConfiguration,
-  DBTDetection,
-  DBTDiagnosticData,
-  DBTFusionCommandProjectIntegration,
-  DbtIntegrationClient,
-  DBTProjectIntegrationAdapter,
   DBTTerminal,
   DeferConfig,
   DocParser,
@@ -22,35 +13,29 @@ import {
   MetricParser,
   ModelDepthParser,
   NodeParser,
-  PythonEnvironmentProvider,
-  RuntimePythonEnvironment,
   SemanticModelParser,
   SourceParser,
   TestParser,
   UnitTestParser,
 } from "@altimateai/dbt-integration";
 import { Container, Factory, ResolutionContext } from "inversify";
-import { Event, EventEmitter, Memento, Uri } from "vscode";
+import { Event, EventEmitter, Uri } from "vscode";
+import { createFusionCommandIntegrationFactory } from "./dbt_client/configuredFusionCommandIntegration";
 import { DBTProject } from "./dbt_client/dbtProject";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
-import { PythonEnvironment } from "./dbt_client/pythonEnvironment";
-import {
-  StaticRuntimePythonEnvironment,
-  VSCodeRuntimePythonEnvironmentProvider,
-} from "./dbt_client/runtimePythonEnvironmentProvider";
+import { FusionProjectIntegration } from "./dbt_client/fusionProjectIntegration";
 import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
-import { FusionVersionDetection } from "./fusion/fusionVersionDetection";
-import { failClosedIntegrationFactory } from "./inversify/failClosedIntegrationFactory";
 import {
   createFusionClientPool,
   FusionClientPoolImpl,
 } from "./lsp/fusionClientPool";
 import { DefaultFusionClientFactory } from "./lsp/fusionLanguageClient";
 import { FusionStatus } from "./lsp/fusionStatus";
+import { createLocalModelDepthContext } from "./manifest/localModelDepthContext";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtLineageService } from "./services/dbtLineageService";
@@ -63,7 +48,6 @@ import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
 
 // Core extension components
-import { DBTClient } from "./dbt_client";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 
 // Import providers
@@ -92,18 +76,15 @@ import { ProjectQuickPick } from "./quickpick/projectQuickPick";
 
 // Import missing providers and components
 import { VSCodeCommands } from "./commands";
+import { ProjectSetupCommands } from "./commands/projectSetupCommands";
 import { RunModel } from "./commands/runModel";
 import { RunTest } from "./commands/runTest";
-import { WalkthroughCommands } from "./commands/walkthroughCommands";
 import { ContentProviders } from "./content_provider";
 import { SqlPreviewContentProvider } from "./content_provider/sqlPreviewContentProvider";
 import { CteProfilerDecorationProvider } from "./cte_profiler/cteProfilerDecorationProvider";
 import { CteProfilerService } from "./cte_profiler/cteProfilerService";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
-import { DocumentFormattingEditProviders } from "./document_formatting_edit_provider";
-import { DbtDocumentFormattingEditProvider } from "./document_formatting_edit_provider/dbtDocumentFormattingEditProvider";
 import { DbtPowerUserActionsCenter } from "./quickpick";
-import { DbtPowerUserControlCenterAction } from "./quickpick/actionsQuickPick";
 import { StatusBars } from "./statusbar";
 import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
 import { TreeviewProviders } from "./treeview_provider";
@@ -167,45 +148,15 @@ container
     (context) =>
       new ModelDepthParser(
         context.get("DBTTerminal"),
-        context.get(DbtIntegrationClient),
+        createLocalModelDepthContext(),
         context.get("DBTConfiguration"),
       ),
   );
-
-// Bind core dbt integration classes using factory functions
-container
-  .bind(CLIDBTCommandExecutionStrategy)
-  .toDynamicValue(() => {
-    // Note: CLIDBTCommandExecutionStrategy requires projectRoot and dbtPath at construction time
-    // These will be provided by the factory functions that create instances
-    throw new Error(
-      "CLIDBTCommandExecutionStrategy should be created via Factory<CLIDBTCommandExecutionStrategy>",
-    );
-  })
-  .inSingletonScope();
-
-container.bind(DBTCommandExecutionInfrastructure).toDynamicValue((context) => {
-  return new DBTCommandExecutionInfrastructure(
-    context.get("RuntimePythonEnvironment"),
-    context.get("DBTTerminal"),
-  );
-});
 
 container
   .bind(DBTCommandFactory)
   .toDynamicValue((context) => {
     return new DBTCommandFactory(context.get("DBTConfiguration"));
-  })
-  .inSingletonScope();
-
-// Note: DBTFusionCommandProjectIntegration requires projectRoot at construction time
-// It will be created via Factory<DBTFusionCommandProjectIntegration>
-container
-  .bind(DBTFusionCommandProjectIntegration)
-  .toDynamicValue(() => {
-    throw new Error(
-      "DBTFusionCommandProjectIntegration should be created via Factory<DBTFusionCommandProjectIntegration>",
-    );
   })
   .inSingletonScope();
 
@@ -221,18 +172,6 @@ container
   .to(VSCodeDBTTerminal)
   .inSingletonScope();
 
-// Bind RuntimePythonEnvironment (VSCode-free version for dbt_integration)
-container
-  .bind<RuntimePythonEnvironment>("RuntimePythonEnvironment")
-  .to(StaticRuntimePythonEnvironment)
-  .inSingletonScope();
-
-// Bind PythonEnvironmentProvider
-container
-  .bind<PythonEnvironmentProvider>("PythonEnvironmentProvider")
-  .to(VSCodeRuntimePythonEnvironmentProvider)
-  .inSingletonScope();
-
 // Bind CommandProcessExecutionFactory
 container
   .bind(CommandProcessExecutionFactory)
@@ -241,103 +180,27 @@ container
   })
   .inSingletonScope();
 
-// Bind AltimateHttpClient
 container
-  .bind(AltimateHttpClient)
-  .toDynamicValue((context) => {
-    return new AltimateHttpClient(
-      context.get("DBTTerminal"),
-      context.get("DBTConfiguration"),
-    );
-  })
-  .inSingletonScope();
-
-// Bind DbtIntegrationClient
-container
-  .bind(DbtIntegrationClient)
-  .toDynamicValue((context) => {
-    return new DbtIntegrationClient(
-      context.get(AltimateHttpClient),
-      context.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind<Factory<DBTDetection, [Memento | undefined]>>("Factory<DBTDetection>")
-  .toFactory((context: ResolutionContext) => {
-    return (globalState: Memento | undefined) => {
-      const container = context;
-      return new FusionVersionDetection(
-        container.get(CommandProcessExecutionFactory),
-        container.get("DBTTerminal"),
-        container.get("DBTConfiguration"),
-        globalState,
-      );
-    };
-  });
-
-container
-  .bind<Factory<DBTCommandExecutionStrategy, [string, string]>>(
-    "Factory<CLIDBTCommandExecutionStrategy>",
+  .bind<Factory<FusionProjectIntegration, [string, DeferConfig | undefined]>>(
+    "Factory<FusionProjectIntegration>",
   )
-  .toFactory((context: ResolutionContext) => {
-    return (projectRoot: string, dbtPath: string) => {
-      const container = context;
-      return new CLIDBTCommandExecutionStrategy(
-        container.get(CommandProcessExecutionFactory),
-        container.get("RuntimePythonEnvironment"),
-        container.get("DBTTerminal"),
-        projectRoot,
-        dbtPath,
-      );
-    };
-  });
-
-container
-  .bind<
-    Factory<
-      DBTFusionCommandProjectIntegration,
-      [string, DBTDiagnosticData[], DeferConfig, () => void]
-    >
-  >("Factory<DBTFusionCommandProjectIntegration>")
-  .toFactory((context: ResolutionContext) => {
-    return (
-      projectRoot: string,
-      projectConfigDiagnostics: DBTDiagnosticData[],
-      deferConfig: DeferConfig,
-      onDiagnosticsChanged: () => void,
-    ) => {
-      const container = context;
-      return new DBTFusionCommandProjectIntegration(
-        container.get(DBTCommandExecutionInfrastructure),
-        container.get(DBTCommandFactory),
-        container.get("Factory<CLIDBTCommandExecutionStrategy>"),
-        container.get("RuntimePythonEnvironment"),
-        container.get("PythonEnvironmentProvider"),
-        container.get("DBTTerminal"),
-        projectRoot,
-        projectConfigDiagnostics,
-        deferConfig,
-        onDiagnosticsChanged,
-      );
-    };
-  });
-
-container
-  .bind<
-    Factory<DBTProjectIntegrationAdapter, [string, DeferConfig | undefined]>
-  >("Factory<DBTProjectIntegrationAdapter>")
   .toFactory((context: ResolutionContext) => {
     return (projectRoot: string, deferConfig: DeferConfig | undefined) => {
       const container = context;
-      return new DBTProjectIntegrationAdapter(
+      const terminal = container.get<DBTTerminal>("DBTTerminal");
+      const commandProcessExecutionFactory = container.get(
+        CommandProcessExecutionFactory,
+      );
+      const dbtCommandFactory = container.get(DBTCommandFactory);
+      return new FusionProjectIntegration(
         container.get("DBTConfiguration"),
-        container.get(DBTCommandFactory),
-        failClosedIntegrationFactory,
-        failClosedIntegrationFactory,
-        container.get("Factory<DBTFusionCommandProjectIntegration>"),
-        failClosedIntegrationFactory,
+        dbtCommandFactory,
+        container.get(ConfiguredFusionExecutableResolver),
+        createFusionCommandIntegrationFactory(
+          commandProcessExecutionFactory,
+          dbtCommandFactory,
+          terminal,
+        ),
         projectRoot,
         deferConfig,
         container.get(ChildrenParentParser),
@@ -351,7 +214,7 @@ container
         container.get(ExposureParser),
         container.get(FunctionParser),
         container.get(DocParser),
-        container.get("DBTTerminal"),
+        terminal,
         container.get(ModelDepthParser),
         container.get(SemanticModelParser),
       );
@@ -369,12 +232,11 @@ container
     ) => {
       const container = context;
       return new DBTProject(
-        container.get(PythonEnvironment),
         container.get("Factory<DBTProjectLog>"),
         container.get(DBTCommandFactory),
         container.get("DBTTerminal"),
         container.get(SharedStateService),
-        container.get("Factory<DBTProjectIntegrationAdapter>"),
+        container.get("Factory<FusionProjectIntegration>"),
         container.get(RunHistoryService),
         path,
         _onManifestChanged,
@@ -446,7 +308,19 @@ container
 
 container
   .bind(ConfiguredFusionExecutableResolver)
-  .toDynamicValue(() => new ConfiguredFusionExecutableResolver())
+  .toDynamicValue((context) => {
+    const terminal = context.get<DBTTerminal>("DBTTerminal");
+    return new ConfiguredFusionExecutableResolver({
+      logWarning: (message) => terminal.warn("FusionVersion", message, false),
+      getGlobalState: () => {
+        const projectContainer = context.get(DBTProjectContainer);
+        return {
+          get: (key) => projectContainer.getFromGlobalState(key),
+          update: (key, value) => projectContainer.setToGlobalState(key, value),
+        };
+      },
+    });
+  })
   .inSingletonScope();
 
 container
@@ -486,7 +360,6 @@ container
     return new QueryManifestService(
       context.get(DBTProjectContainer),
       context.get("DBTTerminal"),
-      context.get(SharedStateService),
       context.get(ProjectContext),
     );
   })
@@ -541,31 +414,12 @@ container
   .inSingletonScope();
 // Bind manifest components
 container
-  .bind(PythonEnvironment)
-  .toDynamicValue((context) => {
-    return new PythonEnvironment(context.get("DBTTerminal"));
-  })
-  .inSingletonScope();
-
-container
   .bind(DBTProjectContainer)
   .toDynamicValue((context) => {
     return new DBTProjectContainer(
-      context.get(DBTClient),
       context.get(ProjectRegistry),
       context.get("Factory<DBTProject>"),
       context.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-// Bind dbt client
-container
-  .bind(DBTClient)
-  .toDynamicValue((context) => {
-    return new DBTClient(
-      context.get(PythonEnvironment),
-      context.get("Factory<DBTDetection>"),
     );
   })
   .inSingletonScope();
@@ -760,16 +614,6 @@ container
   })
   .inSingletonScope();
 
-container
-  .bind(DbtDocumentFormattingEditProvider)
-  .toDynamicValue((context) => {
-    return new DbtDocumentFormattingEditProvider(
-      context.get(CommandProcessExecutionFactory),
-      context.get(PythonEnvironment),
-    );
-  })
-  .inSingletonScope();
-
 // Bind status bar components
 container
   .bind(DeferToProductionStatusBar)
@@ -788,14 +632,6 @@ container
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),
     );
-  })
-  .inSingletonScope();
-
-// Bind quick pick components
-container
-  .bind(DbtPowerUserControlCenterAction)
-  .toDynamicValue(() => {
-    return new DbtPowerUserControlCenterAction();
   })
   .inSingletonScope();
 
@@ -821,9 +657,9 @@ container
   .inSingletonScope();
 
 container
-  .bind(WalkthroughCommands)
+  .bind(ProjectSetupCommands)
   .toDynamicValue((context) => {
-    return new WalkthroughCommands(
+    return new ProjectSetupCommands(
       context.get(DBTProjectContainer),
       context.get(ProjectQuickPick),
       context.get("DBTTerminal"),
@@ -838,11 +674,9 @@ container
       context.get(DBTProjectContainer),
       context.get(RunModel),
       context.get(RunTest),
-      context.get(WalkthroughCommands),
+      context.get(ProjectSetupCommands),
       context.get("DBTTerminal"),
       context.get(DiagnosticsOutputChannel),
-      context.get(PythonEnvironment),
-      context.get(DBTClient),
       context.get(RunHistoryService),
       context.get(CteProfilerService),
       context.get(CteProfilerDecorationProvider),
@@ -965,16 +799,6 @@ container
   })
   .inSingletonScope();
 
-// Bind DocumentFormattingEditProviders
-container
-  .bind(DocumentFormattingEditProviders)
-  .toDynamicValue((context) => {
-    return new DocumentFormattingEditProviders(
-      context.get(DbtDocumentFormattingEditProvider),
-    );
-  })
-  .inSingletonScope();
-
 // Bind StatusBars
 container
   .bind(StatusBars)
@@ -988,10 +812,8 @@ container
   .bind(DbtPowerUserActionsCenter)
   .toDynamicValue((context) => {
     return new DbtPowerUserActionsCenter(
-      context.get(DbtPowerUserControlCenterAction),
       context.get(ProjectContext),
       context.get(DBTProjectContainer),
-      context.get(SharedStateService),
     );
   })
   .inSingletonScope();
@@ -1009,7 +831,6 @@ container
       context.get(TreeviewProviders),
       context.get(ContentProviders),
       context.get(CodeLensProviders),
-      context.get(DocumentFormattingEditProviders),
       context.get(StatusBars),
       context.get(DbtPowerUserActionsCenter),
       context.get("DBTTerminal"),

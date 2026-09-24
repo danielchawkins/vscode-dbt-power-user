@@ -71,28 +71,6 @@ html.lineageBody {
         }
       }
     }
-    .demoModal {
-      overflow: hidden;
-      :global(.modal-content) {
-        width: 84%;
-        height: 94%;
-        margin: auto;
-        margin-top: 2%;
-        border-radius: 8px;
-
-        :global(.close-btn) {
-          position: absolute;
-          top: 0px;
-          right: -2rem;
-          color: #ffffff;
-          cursor: pointer;
-          background-color: var(--primary-color);
-          display: flex;
-          padding: 0.5rem;
-          border-radius: 0 0.25rem 0.25rem 0;
-        }
-      }
-    }
   }
 
   /* Icon-only button that expands to show text on hover,

@@ -5,6 +5,7 @@ webview_panels/storybook-static
 .vscode-test/
 .cache/
 *.vsix
+vsix.sha256
 .DS_Store
 .idea
 .history
@@ -25,6 +26,8 @@ test_dbt_project/
 test-workspace/
 src/test/fixtures/**/target/
 src/test/fixtures/**/logs/
+src/test/fixtures/**/*.duckdb
+src/test/fixtures/**/.user.yml
 
 # IDE and editor files
 *.swp

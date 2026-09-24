@@ -5,8 +5,6 @@ import { GenerateModelFromSourceParams } from "../code_lens_provider/sourceModel
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ProjectContext } from "../projects/projectContext";
 import { NodeTreeItem } from "../treeview_provider/modelTreeviewProvider";
-import { extendErrorWithSupportLinks } from "../utils";
-
 export class RunModel {
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
@@ -133,13 +131,6 @@ export class RunModel {
     }
   }
 
-  generateDBTDocsOnActiveWindow() {
-    const fullPath = window.activeTextEditor?.document.uri;
-    if (fullPath !== undefined) {
-      this.generateDBTDocs(fullPath);
-    }
-  }
-
   runDBTModel(modelPath: Uri, type?: RunModelType) {
     this.dbtProjectContainer.runModel(modelPath, type);
   }
@@ -150,10 +141,6 @@ export class RunModel {
 
   compileDBTModel(modelPath: Uri, type?: RunModelType) {
     this.dbtProjectContainer.compileModel(modelPath, type);
-  }
-
-  generateDBTDocs(modelPath: Uri, type?: RunModelType) {
-    this.dbtProjectContainer.generateDocs(modelPath);
   }
 
   compileDBTQuery(modelPath: Uri, query: string) {
@@ -197,11 +184,9 @@ export class RunModel {
       project.generateModel(params.sourceName, params.tableName, sourcePath);
     } else {
       window.showErrorMessage(
-        extendErrorWithSupportLinks(
-          "Could not generate model! No project found for " +
-            params.currentDoc.fsPath +
-            ".",
-        ),
+        "Could not generate model! No project found for " +
+          params.currentDoc.fsPath +
+          ".",
       );
     }
   }

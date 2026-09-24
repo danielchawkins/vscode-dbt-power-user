@@ -3,9 +3,13 @@ set -euo pipefail
 
 usage() {
   cat << 'EOF'
-usage: run-host-smoke.sh --host <vscode|cursor> [--vsix PATH] [--fixture PATH]
+usage: run-host-smoke.sh --host <vscode|cursor> [--vsix PATH] [--fixture PATH] [--force]
 
 Install the packaged VSIX into a disposable profile and run panel smoke tests.
+Unless --fixture is given, also runs the multi-root Fusion LSP smoke suite once,
+skipped when FPU_RUNTIME_BENCHMARK=1 selects the tight single-fixture timing loop.
+
+--force re-acquires the pinned host even if a cached copy already verifies.
 EOF
 }
 
@@ -16,7 +20,8 @@ source "$smoke_root/common.sh"
 
 host=""
 vsix=""
-fixture="$repo_root/src/test/fixtures/single-project"
+fixture=""
+force=0
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --host)
@@ -30,6 +35,10 @@ while [[ $# -gt 0 ]]; do
     --fixture)
       fixture=$2
       shift 2
+      ;;
+    --force)
+      force=1
+      shift
       ;;
     -h | --help)
       usage
@@ -48,7 +57,11 @@ if [[ -z "$host" ]]; then
   exit 2
 fi
 
-"$smoke_root/fetch-host.sh" "$host"
+if [[ "$force" -eq 1 ]]; then
+  "$smoke_root/fetch-host.sh" "$host" --force
+else
+  "$smoke_root/fetch-host.sh" "$host"
+fi
 executable=$(host_executable "$host")
 if [[ -z "$vsix" ]]; then
   vsix=$(find "$repo_root" -maxdepth 1 -name '*.vsix' -print | head -1)
@@ -62,8 +75,20 @@ echo "# host metadata ($host)"
 "$smoke_root/host-metadata.sh" "$host"
 echo
 
-node "$smoke_root/run-smoke.mjs" \
-  --host "$host" \
-  --host-app "$executable" \
-  --vsix "$vsix" \
-  --fixture "$fixture"
+run_fixture() {
+  node "$smoke_root/run-smoke.mjs" \
+    --host "$host" \
+    --host-app "$executable" \
+    --vsix "$vsix" \
+    --fixture "$1"
+}
+
+if [[ -n "$fixture" ]]; then
+  run_fixture "$fixture"
+else
+  run_fixture "$repo_root/src/test/fixtures/single-project"
+  if [[ "${FPU_RUNTIME_BENCHMARK:-}" != "1" ]]; then
+    export FPU_SKIP_INTEGRATION_COMPILE=1
+    run_fixture "$repo_root/src/test/fixtures/multi-root"
+  fi
+fi

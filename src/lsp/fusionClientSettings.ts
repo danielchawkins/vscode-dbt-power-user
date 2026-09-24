@@ -6,15 +6,15 @@ import {
   workspace,
   WorkspaceFolder,
 } from "vscode";
-import { FUSION_PATH_SETTING } from "../fusion/fusionExecutable";
+import { DBT_PATH_SETTING } from "../fusion/fusionExecutable";
 import { STATIC_ANALYSIS_MODE_SETTING } from "../fusion/staticAnalysisMode";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { resolveSettingsVariables } from "../utils";
 
 export const PROFILES_DIR_SETTING = "profilesDir";
 export const TARGET_SETTING = "target";
-export const LINT_ENABLED_SETTING = "lintEnabled";
-export const TRACE_SERVER_SETTING = "traceServer";
+export const LINT_ENABLED_SETTING = "lint.enabled";
+export const TRACE_SERVER_SETTING = "trace.server";
 
 const DEFAULT_LINT_ENABLED = true;
 const DEFAULT_TRACE_SERVER = "off";
@@ -23,7 +23,7 @@ export const TRACE_SERVER_LEVELS = ["off", "messages", "verbose"] as const;
 export type FusionTraceServerLevel = (typeof TRACE_SERVER_LEVELS)[number];
 
 const LAUNCH_SETTING_KEYS = [
-  FUSION_PATH_SETTING,
+  DBT_PATH_SETTING,
   STATIC_ANALYSIS_MODE_SETTING,
   PROFILES_DIR_SETTING,
   TARGET_SETTING,
@@ -119,5 +119,15 @@ export function affectsFusionLaunchConfiguration(
 ): boolean {
   return LAUNCH_SETTING_KEYS.some((key) =>
     event.affectsConfiguration(`${CONFIGURATION_SECTION}.${key}`, scope),
+  );
+}
+
+export function affectsFusionExecutablePath(
+  event: ConfigurationChangeEvent,
+  scope: Uri,
+): boolean {
+  return event.affectsConfiguration(
+    `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}`,
+    scope,
   );
 }

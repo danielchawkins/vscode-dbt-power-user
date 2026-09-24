@@ -9,7 +9,6 @@ import {
 } from "@jest/globals";
 import * as fs from "fs";
 import { EventEmitter, ExtensionContext, Uri, window } from "vscode";
-import { DBTClient } from "../../dbt_client";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import {
@@ -22,7 +21,6 @@ import { createEntry } from "../fixtures/runHistory";
 
 describe("DBTProjectContainer", () => {
   let container: DBTProjectContainer;
-  let mockDbtClient: jest.Mocked<DBTClient>;
   let mockDbtTerminal: jest.Mocked<DBTTerminal>;
   let mockProjectRegistry: any;
   let mockDbtProjectFactory: jest.Mock;
@@ -33,23 +31,6 @@ describe("DBTProjectContainer", () => {
   let registryOnDidChangeProjects: EventEmitter<void>;
 
   beforeEach(() => {
-    // Mock DBTClient
-    mockDbtClient = {
-      onDBTInstallationVerification: jest
-        .fn()
-        .mockReturnValue({ dispose: jest.fn() }),
-      setGlobalState: jest.fn(),
-      pythonInstalled: true,
-      dbtInstalled: true,
-      getPythonEnvironment: jest
-        .fn()
-        .mockReturnValue({ pythonPath: "/path/to/python" }),
-      showErrorIfDbtOrPythonNotInstalled: jest.fn(),
-      showErrorIfDbtIsNotInstalled: jest.fn(),
-      detectDBT: jest.fn(),
-      dispose: jest.fn(),
-    } as unknown as jest.Mocked<DBTClient>;
-
     // Mock DBTTerminal
     mockDbtTerminal = {
       debug: jest.fn(),
@@ -90,7 +71,6 @@ describe("DBTProjectContainer", () => {
       runTest: jest.fn(),
       runModelTest: jest.fn(),
       compileModel: jest.fn(),
-      generateDocs: jest.fn(),
       compileQuery: jest.fn(async () => "compiled query"),
       showRunSQL: jest.fn(),
       showCompiledSql: jest.fn(),
@@ -158,7 +138,6 @@ describe("DBTProjectContainer", () => {
     } as unknown as ProjectRegistry;
 
     container = new DBTProjectContainer(
-      mockDbtClient,
       mockProjectRegistry,
       mockDbtProjectFactory as any,
       mockDbtTerminal,
@@ -192,7 +171,6 @@ describe("DBTProjectContainer", () => {
     it("should initialize event even when no projects exist", async () => {
       mockProjectRegistry.projects = [];
       const container2 = new DBTProjectContainer(
-        mockDbtClient,
         mockProjectRegistry,
         mockDbtProjectFactory as any,
         mockDbtTerminal,
@@ -339,7 +317,7 @@ describe("DBTProjectContainer", () => {
       await container.initializeDBTProjects();
     });
 
-    it("exposes context, installation, and environment state", async () => {
+    it("exposes context state", async () => {
       const context = {
         extensionUri: Uri.file("/extension"),
         extension: { id: "publisher.extension", packageJSON: { version: "1" } },
@@ -348,26 +326,9 @@ describe("DBTProjectContainer", () => {
       } as unknown as ExtensionContext;
       container.setContext(context);
 
-      await container.detectDBT();
-      container.showErrorIfDbtOrPythonNotInstalled();
-      container.showErrorIfDbtIsNotInstalled();
-
       expect(container.extensionUri).toBe(context.extensionUri);
       expect(container.extensionVersion).toBe("1");
       expect(container.extensionId).toBe("publisher.extension");
-      expect(container.pythonInstalled).toBe(true);
-      expect(container.dbtInstalled).toBe(true);
-      expect(container.getPythonEnvironment()).toEqual({
-        pythonPath: "/path/to/python",
-      });
-      expect(mockDbtClient.setGlobalState).toHaveBeenCalledWith(
-        context.globalState,
-      );
-      expect(mockDbtClient.detectDBT).toHaveBeenCalled();
-      expect(
-        mockDbtClient.showErrorIfDbtOrPythonNotInstalled,
-      ).toHaveBeenCalled();
-      expect(mockDbtClient.showErrorIfDbtIsNotInstalled).toHaveBeenCalled();
     });
 
     it("initializes every project and awaits completion", async () => {
@@ -506,12 +467,11 @@ describe("DBTProjectContainer", () => {
       },
     );
 
-    it("delegates model, test, docs, and schema operations", () => {
+    it("delegates model, test, and schema operations", () => {
       const model = Uri.file("/project1/models/test.sql");
 
       container.buildProject(model);
       container.compileModel(model);
-      container.generateDocs(model);
       container.generateSchemaYML(model, "test");
       container.runTest(model, "unique_test");
       container.runModelTest(model, "test");
@@ -523,7 +483,6 @@ describe("DBTProjectContainer", () => {
         modelName: "test",
         plusOperatorRight: "",
       });
-      expect(mockProject1.generateDocs).toHaveBeenCalled();
       expect(mockProject1.generateSchemaYML).toHaveBeenCalledWith(
         model,
         "test",

@@ -7,7 +7,6 @@ disable = ["MD013", "MD029"]
 exclude = [
   "media/**",
   "altimate_packages/**",
-  "webview_panels/**",
   ".github/**",
   "CLAUDE.md",
   # Vendored sample dbt projects and formatter fixtures. Their Markdown is test input,

@@ -1,11 +1,10 @@
-import { DBTTerminal, PythonException } from "@altimateai/dbt-integration";
+import { DBTTerminal } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import * as path from "path";
 import {
   CancellationToken,
   commands,
   Disposable,
-  env,
   Uri,
   Webview,
   WebviewOptions,
@@ -28,14 +27,6 @@ import {
 import { UserInputError } from "../local/errors";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { extendErrorWithSupportLinks } from "../utils";
-
-export type UpdateConfigProps = {
-  key: string;
-  value: string | boolean | number;
-  isPreviewFeature?: boolean;
-};
-
 export interface HandleCommandProps extends Record<string, unknown> {
   command: string;
   syncRequestId?: string;
@@ -58,8 +49,8 @@ export interface SendMessageProps extends Record<string, unknown> {
  * Each panel needs to have its own provider which extends this class with correct viewPath and description
  */
 export class AltimateWebviewProvider implements WebviewViewProvider {
-  public viewType = "dbtPowerUser.Default";
-  protected viewPath = "/"; // webview route path from AppRoutes.tsx
+  public viewType = "fusionPowerUser.Default";
+  protected viewPath = "/"; // webview route path from AppConstants.tsx
   protected panelDescription = "Altimate default webview";
 
   protected _panel: WebviewView | WebviewPanel | undefined = undefined;
@@ -137,17 +128,14 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         data: response,
       });
     } catch (error) {
-      const message =
-        error instanceof PythonException
-          ? error.exception.message
-          : (error as Error).message;
+      const message = (error as Error).message;
       if (error instanceof UserInputError) {
         this.dbtTerminal.debug(command, message, error);
       } else {
         this.dbtTerminal.error(command, message, error);
       }
       if (showErrorNotification) {
-        window.showErrorMessage(extendErrorWithSupportLinks(message));
+        window.showErrorMessage(message);
       }
       this.sendResponseToWebview({
         command: "response",
@@ -169,14 +157,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
 
   protected async onEvent({ command, payload }: SharedStateEventEmitterProps) {
     switch (command) {
-      case "stream:chunk":
-        this.sendResponseToWebview({
-          command: "response",
-          syncRequestId: payload.syncRequestId as string | undefined,
-          data: payload.body,
-        });
-        break;
-
       default:
         break;
     }
@@ -187,13 +167,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
     this._panel!.webview.onDidReceiveMessage(this.handleCommand, this, []);
 
     webview.html = this.getHtml(webview, this.dbtProjectContainer.extensionUri);
-  }
-
-  // typegaurd to UpdateConfigProps
-  private isUpdateConfigProps(
-    data: UpdateConfigProps | Record<string, unknown>,
-  ): data is UpdateConfigProps {
-    return (data as UpdateConfigProps).key !== undefined;
   }
 
   protected onWebviewReady() {
@@ -228,36 +201,9 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
 
     try {
       switch (command) {
-        case "configEnabled":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              return workspace
-                .getConfiguration(params.section as string)
-                .get(params.config as string);
-            },
-            command,
-            true,
-          );
-          break;
-        case "setToWorkspaceState":
-          this.dbtProjectContainer.setToWorkspaceState(
-            params.key as string,
-            params.value,
-          );
-          break;
         case "openProblemsTab":
           commands.executeCommand("workbench.action.problems.focus");
 
-          break;
-        case "getProjectAdapterType":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              return this.queryManifestService.getProject()?.getAdapterType();
-            },
-            command,
-          );
           break;
         case "openFile":
           workspace.openTextDocument(params.path as string).then((doc) => {
@@ -266,49 +212,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
           break;
         case "webview:ready":
           this.onWebviewReady();
-          break;
-        case "openURL":
-          if (!params.url) {
-            return;
-          }
-          env.openExternal(Uri.parse(params.url as string));
-          break;
-        case "setContext":
-          this.dbtProjectContainer.setToGlobalState(
-            params.key as string,
-            params.value,
-          );
-          break;
-        case "getFromContext":
-          this.sendResponseToWebview({
-            command: "response",
-            data: this.dbtProjectContainer.getFromGlobalState(
-              params.key as string,
-            ),
-            syncRequestId,
-          });
-          break;
-        case "updateConfig":
-          if (!this.isUpdateConfigProps(params)) {
-            return;
-          }
-          this.dbtTerminal.debug(
-            "altimateWebviewProvider:handleCommand",
-            "Updating config",
-            params,
-          );
-          await workspace
-            .getConfiguration("dbt")
-            .update(params.key, params.value);
-          if (syncRequestId) {
-            this.sendResponseToWebview({
-              command: "response",
-              syncRequestId,
-              data: {
-                updated: true,
-              },
-            });
-          }
           break;
         case "showInformationMessage":
           const { infoMessage, items } = params as {
@@ -327,39 +230,11 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
             });
           }
           break;
-        case "showErrorMessage":
-          const args = params as {
-            infoMessage: string;
-            items: any[];
-          };
-          window.showErrorMessage(args.infoMessage, ...(args.items || []));
-          break;
         case "showWarningMessage":
           this.handleWarningMessage(
             params as Parameters<typeof this.handleWarningMessage>["0"],
             syncRequestId,
           );
-          break;
-        case "findPackageVersion":
-          this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              try {
-                return this.queryManifestService
-                  .getProject()
-                  ?.findPackageVersion(params.packageName as string);
-              } catch (err) {
-                this.dbtTerminal.debug(
-                  "findPackageVersion",
-                  (err as Error).message,
-                );
-              }
-              return undefined;
-            },
-            command,
-            false,
-          );
-
           break;
         case "queryResultTab:render":
           this.emitterService.fire({
@@ -454,17 +329,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         ),
       ),
     );
-    const LineageGif = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "lineage.gif",
-        ),
-      ),
-    );
     const codiconsUri = webview.asWebviewUri(
       Uri.joinPath(
         extensionUri,
@@ -493,7 +357,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
               vscode-resource protocol, and the CDN is unreachable from a
               webview, so a data URI is the only path that works offline.
               -->
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; worker-src blob:; font-src ${webview.cspSource} data:; style-src 'unsafe-inline' ${webview.cspSource}; img-src ${webview.cspSource} https: data:; script-src 'unsafe-eval' 'nonce-${nonce}' https://*.vscode-resource.vscode-cdn.net; connect-src https://*.s3.amazonaws.com">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; worker-src blob:; font-src ${webview.cspSource} data:; style-src 'unsafe-inline' ${webview.cspSource}; img-src ${webview.cspSource} https: data:; script-src 'unsafe-eval' 'nonce-${nonce}' https://*.vscode-resource.vscode-cdn.net">
             <title>VSCode DBT Power user extension</title>
             <link rel="stylesheet" type="text/css" href="${indexCss}">
             <link rel="stylesheet" type="text/css" href="${codiconsUri}">
@@ -506,7 +370,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
             <script nonce="${nonce}" >
               window.viewPath = "${this.viewPath}";
               var spinnerUrl = "${SpinnerUrl}"
-              var lineageGif = "${LineageGif}"
             </script>
             
             <script nonce="${nonce}" type="module" src="${indexJs}"></script>

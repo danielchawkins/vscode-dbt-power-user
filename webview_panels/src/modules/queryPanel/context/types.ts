@@ -25,7 +25,7 @@ export interface QueryPanelStateProps {
   queryResults?: {
     data: TableData;
     columnNames: string[];
-    columnTypes: string[];
+    columnTypes: (string | null)[];
     raw_sql: string;
     compiled_sql: string;
   };

@@ -16,7 +16,6 @@ export const initialState = {
   // read-only. Revisit if unit tests become editable.
   currentUnitTests: undefined,
   project: undefined,
-  insertedEntityName: undefined,
   missingDocumentationMessage: undefined,
   searchQuery: "",
   showSingleDocsPropRightPanel: false,
@@ -67,9 +66,6 @@ const documentationSlice = createSlice({
       action: PayloadAction<DocumentationStateProps["currentUnitTests"]>
     ) => {
       state.currentUnitTests = action.payload;
-    },
-    setInsertedEntityName: (state, action: PayloadAction<string | undefined>) => {
-      state.insertedEntityName = action.payload;
     },
     setIncomingDocsData: (
       state,
@@ -176,7 +172,6 @@ export const {
   updateColumnsAfterSync,
   setProject,
   setDocBlocks,
-  setInsertedEntityName,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
   setMissingDocumentationMessage,

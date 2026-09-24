@@ -9,8 +9,8 @@ import { QueryManifestService } from "../services/queryManifestService";
  *
  * These are not models and must not be dispatched through `RunModel`: running
  * them as a model spawns `dbt run`, which is never meaningful for a test file.
- * The original command entry points (`dbtPowerUser.runCurrentModel`,
- * `dbtPowerUser.testCurrentModel`, `dbtPowerUser.runTest`) consult this class
+ * The original command entry points (`fusionPowerUser.runCurrentModel`,
+ * `fusionPowerUser.testCurrentModel`, `fusionPowerUser.runTest`) consult this class
  * first and delegate to `RunModel` only when the active file is not a singular
  * test.
  */

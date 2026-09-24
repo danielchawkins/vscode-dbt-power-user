@@ -73,7 +73,14 @@ interface FlowCapture {
     diagnosticRelativeUri: string;
     exercised: boolean;
   }>;
-  getProjectInfo: RequestOutcome<{ shape: string }>;
+  getProjectInfo: RequestOutcome<{
+    shape: string;
+    modelsCount?: number;
+    modelsCountIsEstimate?: boolean;
+    adapterType?: string;
+  }>;
+  listNodesOfficialShape: RequestOutcome<{ shape: string }>;
+  getCurrentNodeOfficialShape: RequestOutcome<{ shape: string }>;
   flowProgress: ProgressRecord[];
   pullDiagnosticsAvailable: boolean;
   textDocumentSyncShape: string;
@@ -472,7 +479,7 @@ function prepareEditorFlowProject(tempRoot: string): void {
   );
   fs.writeFileSync(
     path.join(tempRoot, ".sqlfluff"),
-    ["[sqlfluff]", "dialect = snowflake", "templater = jinja", ""].join("\n"),
+    ["[sqlfluff]", "dialect = duckdb", "templater = jinja", ""].join("\n"),
   );
 }
 
@@ -1026,6 +1033,49 @@ async function runEditorFlows(
     },
   };
 
+  // Official client argument shapes (static bundle inspection, dbtlabsinc.dbt-0.104.0):
+  // listNodes takes a dbt selector string built from the file's project-relative path
+  // (`+models/child.sql+` for parents+children at depth 0), not `[]`; getCurrentNode
+  // takes that bare relative path string, not `{uri,line,character}`.
+  const childRelativeForNodes = relativeUri(
+    projectRoot,
+    fileUri(path.join(projectRoot, "models/child.sql")),
+  );
+  const listNodesRaw = await classifiedRequest(
+    fixture,
+    "workspace/executeCommand",
+    {
+      command: prefixedCommand("dbt.listNodes"),
+      arguments: [`+${childRelativeForNodes}+`],
+    },
+    REQUEST_MS,
+    (value) => (value === null ? "null" : "ok"),
+  );
+  const listNodesOutcome: RequestOutcome<{ shape: string }> = {
+    kind: listNodesRaw.kind,
+    lspErrorCode: listNodesRaw.lspErrorCode,
+    timeoutMethod: listNodesRaw.timeoutMethod,
+    requestFailed: listNodesRaw.requestFailed,
+    value: { shape: listNodesRaw.value === null ? "null" : "object" },
+  };
+  const getCurrentNodeRaw = await classifiedRequest(
+    fixture,
+    "workspace/executeCommand",
+    {
+      command: prefixedCommand("dbt.getCurrentNode"),
+      arguments: [childRelativeForNodes],
+    },
+    REQUEST_MS,
+    (value) => (value === null ? "null" : "ok"),
+  );
+  const getCurrentNodeOutcome: RequestOutcome<{ shape: string }> = {
+    kind: getCurrentNodeRaw.kind,
+    lspErrorCode: getCurrentNodeRaw.lspErrorCode,
+    timeoutMethod: getCurrentNodeRaw.timeoutMethod,
+    requestFailed: getCurrentNodeRaw.requestFailed,
+    value: { shape: getCurrentNodeRaw.value === null ? "null" : "object" },
+  };
+
   const projectInfoRaw = await classifiedRequest(
     fixture,
     "workspace/executeCommand",
@@ -1047,7 +1097,22 @@ async function runEditorFlows(
       return "ok";
     },
   );
-  const projectInfoOutcome: RequestOutcome<{ shape: string }> = {
+  const projectInfoPayload =
+    projectInfoRaw.value !== null &&
+    typeof projectInfoRaw.value === "object" &&
+    Object.keys(projectInfoRaw.value as object).length > 0
+      ? (projectInfoRaw.value as {
+          models_count?: number;
+          models_count_is_estimate?: boolean;
+          adapter_type?: string;
+        })
+      : null;
+  const projectInfoOutcome: RequestOutcome<{
+    shape: string;
+    modelsCount?: number;
+    modelsCountIsEstimate?: boolean;
+    adapterType?: string;
+  }> = {
     kind: projectInfoRaw.kind,
     lspErrorCode: projectInfoRaw.lspErrorCode,
     timeoutMethod: projectInfoRaw.timeoutMethod,
@@ -1056,10 +1121,12 @@ async function runEditorFlows(
       shape:
         projectInfoRaw.value === null || projectInfoRaw.value === undefined
           ? "null"
-          : typeof projectInfoRaw.value === "object" &&
-              Object.keys(projectInfoRaw.value as object).length === 0
+          : projectInfoPayload === null
             ? "empty-object"
             : "object",
+      modelsCount: projectInfoPayload?.models_count,
+      modelsCountIsEstimate: projectInfoPayload?.models_count_is_estimate,
+      adapterType: projectInfoPayload?.adapter_type,
     },
   };
 
@@ -1082,6 +1149,8 @@ async function runEditorFlows(
     brokenRefPull: pullOutcome,
     lintCodeAction: codeActionOutcome,
     getProjectInfo: projectInfoOutcome,
+    listNodesOfficialShape: listNodesOutcome,
+    getCurrentNodeOfficialShape: getCurrentNodeOutcome,
     flowProgress,
     pullDiagnosticsAvailable,
     textDocumentSyncShape: syncShape,
@@ -1158,12 +1227,9 @@ async function openProjectDocuments(
 }
 
 async function runArm(arm: ArmId, sourceRoot: string): Promise<ArmCapture> {
+  // Matches buildWorkspaceConfigurationResponse's minimal shape (official-client-contracts.md).
   const configurationBySection: Record<string, unknown> = {
-    dbt: {
-      maxErrorReporting: 100,
-      linter: { enabled: true },
-      formatter: { enabled: true },
-    },
+    dbt: { lsp: { linter: { enabled: true } } },
   };
   const fixture = await createLspFixture(sourceRoot, sourceRoot, {
     prepareProject: prepareEditorFlowProject,
@@ -1179,6 +1245,9 @@ async function runArm(arm: ArmId, sourceRoot: string): Promise<ArmCapture> {
       "--target",
       "test",
     ],
+    // cwd = project root and this env match the official client's spawn contract.
+    env: { DBT_LSP_USE_TARGET_LSP: "1" },
+    useProjectRootAsCwd: true,
     configurationBySection,
     defaultRequestTimeoutMs: REQUEST_MS,
   });
@@ -1401,6 +1470,8 @@ function redactedSummary(captures: ArmCapture[]): string {
         brokenRefPull: capture.flows.brokenRefPull,
         lintCodeAction: capture.flows.lintCodeAction,
         getProjectInfo: capture.flows.getProjectInfo,
+        listNodesOfficialShape: capture.flows.listNodesOfficialShape,
+        getCurrentNodeOfficialShape: capture.flows.getCurrentNodeOfficialShape,
         flowProgress: capture.flows.flowProgress.map((entry) => ({
           kind: entry.kind,
           title: entry.title,
@@ -1431,6 +1502,120 @@ function fusionSkipReason(
       return "dbt Fusion major version is untested";
     default:
       return "dbt Fusion on PATH is not supported for this capture";
+  }
+}
+
+interface SymlinkProbeResult {
+  getProjectInfo: RequestOutcome<{
+    shape: string;
+    modelsCount?: number;
+    modelsCountIsEstimate?: boolean;
+  }>;
+}
+
+const SYMLINK_PROBE_SETTLE_MS = 8_000;
+
+/**
+ * Opens the project via `--project-dir` and document URIs built from the same
+ * root, real or symlinked, mirroring how VS Code would present that workspace.
+ * Fusion canonicalizes `--project-dir` internally but not document URIs
+ * (official-client-contracts.md); this checks whether a symlinked root desyncs
+ * the two enough to stop the first-`didOpen`-triggers-compile behavior other
+ * arms rely on. Same code path for both, differing only in `useSymlink`.
+ */
+async function probeSymlinkedRoot(
+  sourceRoot: string,
+  useSymlink: boolean,
+): Promise<SymlinkProbeResult> {
+  const fixture = await createLspFixture(sourceRoot, sourceRoot, {
+    prepareProject: prepareEditorFlowProject,
+    extraArgs: [
+      "--command-prefix",
+      COMMAND_PREFIX,
+      "--profile",
+      "single_project",
+      "--target",
+      "test",
+    ],
+    env: { DBT_LSP_USE_TARGET_LSP: "1" },
+    useProjectRootAsCwd: true,
+    configurationBySection: { dbt: { lsp: { linter: { enabled: true } } } },
+    defaultRequestTimeoutMs: REQUEST_MS,
+    projectDirOverride: useSymlink
+      ? (root) => {
+          const link = `${root}-symlink`;
+          fs.symlinkSync(root, link, "dir");
+          return link;
+        }
+      : undefined,
+  });
+
+  try {
+    await fixture.connect(30_000);
+    await fixture.request(
+      "initialize",
+      {
+        processId: process.pid,
+        rootUri: fileUri(fixture.projectDirArg),
+        workspaceFolders: [
+          {
+            uri: fileUri(fixture.projectDirArg),
+            name: path.basename(fixture.projectDirArg),
+          },
+        ],
+        capabilities: initializeCapabilities(),
+      },
+      REQUEST_MS,
+    );
+    fixture.notify("initialized", {});
+
+    for (const relativePath of ["dbt_project.yml", "models/base.sql"]) {
+      const absolutePath = path.join(fixture.projectDirArg, relativePath);
+      const uri = fileUri(absolutePath);
+      fixture.notify("textDocument/didOpen", {
+        textDocument: {
+          uri,
+          languageId: relativePath.endsWith(".yml") ? "yaml" : "jinja-sql",
+          version: 1,
+          text: fs.readFileSync(
+            path.join(fixture.projectRoot, relativePath),
+            "utf-8",
+          ),
+        },
+      });
+      await waitForDocumentAck(fixture, uri, "Did open", SYNC_ACK_MS);
+    }
+    // Gives the background compile the same settle time the main capture's
+    // multi-probe sequence provides incidentally before it reads getProjectInfo.
+    await new Promise((resolve) =>
+      setTimeout(resolve, SYMLINK_PROBE_SETTLE_MS),
+    );
+
+    const getProjectInfo = await classifiedRequest<{
+      models_count?: number;
+      models_count_is_estimate?: boolean;
+    }>(
+      fixture,
+      "workspace/executeCommand",
+      { command: prefixedCommand("dbt.getProjectInfo"), arguments: [] },
+      REQUEST_MS,
+      (value) =>
+        typeof value === "object" && Object.keys(value as object).length === 0
+          ? "empty"
+          : "ok",
+    );
+    return {
+      getProjectInfo: {
+        kind: getProjectInfo.kind,
+        value: {
+          shape: getProjectInfo.kind,
+          modelsCount: getProjectInfo.value?.models_count,
+          modelsCountIsEstimate: getProjectInfo.value?.models_count_is_estimate,
+        },
+      },
+    };
+  } finally {
+    await fixture.close();
   }
 }
 
@@ -1495,5 +1680,17 @@ suite("Fusion editor flow capture", function () {
     }
 
     console.log(`FPU_EDITOR_FLOW_CAPTURE=${redactedSummary(passes[0])}`);
+  });
+
+  test("symlinked vs. real project root: first didOpen compile trigger", async function () {
+    this.timeout(90_000);
+    const control = await probeSymlinkedRoot(sourceRoot, false);
+    const symlinked = await probeSymlinkedRoot(sourceRoot, true);
+    console.log(
+      `FPU_SYMLINK_PROBE=${JSON.stringify({
+        control: control.getProjectInfo,
+        symlinked: symlinked.getProjectInfo,
+      })}`,
+    );
   });
 });

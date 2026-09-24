@@ -17,7 +17,7 @@ export type FusionCapability =
   | "selectStarHover"
   | "columnRename";
 
-export const STATIC_ANALYSIS_MODE_SETTING = "staticAnalysisMode";
+export const STATIC_ANALYSIS_MODE_SETTING = "staticAnalysis";
 
 export const DEFAULT_STATIC_ANALYSIS_MODE: StaticAnalysisMode = "baseline";
 

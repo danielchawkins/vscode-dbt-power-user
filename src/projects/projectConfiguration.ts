@@ -3,7 +3,7 @@ import { existsSync } from "fs";
 import * as path from "path";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
 
-export const CONFIGURATION_SECTION = "dbt";
+export const CONFIGURATION_SECTION = "fusionPowerUser";
 export const PROJECTS_SETTING = "projects";
 
 export type ProjectConfigurationProblem =

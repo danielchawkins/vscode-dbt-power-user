@@ -13,10 +13,11 @@ import { VSCodeCommands } from "./commands";
 import { ContentProviders } from "./content_provider";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DefinitionProviders } from "./definition_provider";
-import { DocumentFormattingEditProviders } from "./document_formatting_edit_provider";
 import { HoverProviders } from "./hover_provider";
+import { registerFusionClientDiagnostics } from "./lsp/fusionClientDiagnostics";
 import { FusionClientPool } from "./lsp/fusionClientPool";
 import { FusionStatus } from "./lsp/fusionStatus";
+import { CONFIGURATION_SECTION } from "./projects/projectConfiguration";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
@@ -56,7 +57,6 @@ export class DBTPowerUserExtension implements Disposable {
     private treeviewProviders: TreeviewProviders,
     private contentProviders: ContentProviders,
     private codeLensProviders: CodeLensProviders,
-    private documentFormattingEditProviders: DocumentFormattingEditProviders,
     private statusBars: StatusBars,
     private puStatusBars: DbtPowerUserActionsCenter,
     private dbtTerminal: DBTTerminal,
@@ -75,7 +75,6 @@ export class DBTPowerUserExtension implements Disposable {
       this.contentProviders,
       this.codeLensProviders,
       this.vscodeCommands,
-      this.documentFormattingEditProviders,
       this.statusBars,
       this.puStatusBars,
       this.hoverProviders,
@@ -123,7 +122,9 @@ export class DBTPowerUserExtension implements Disposable {
         folders.length > 0 &&
         folders.every(
           (folder) =>
-            !workspace.getConfiguration("dbt", folder.uri).get("enabled", true),
+            !workspace
+              .getConfiguration(CONFIGURATION_SECTION, folder.uri)
+              .get("enabled", true),
         )
       ) {
         return;
@@ -133,7 +134,11 @@ export class DBTPowerUserExtension implements Disposable {
       await this.projectRegistry.initialize();
       this.fusionClientPool.initialize();
       this.fusionStatus.initialize();
-      await this.dbtProjectContainer.detectDBT();
+      registerFusionClientDiagnostics(
+        context,
+        this.projectRegistry,
+        this.fusionClientPool,
+      );
       await this.dbtProjectContainer.initializeDBTProjects();
       await this.statusBars.initialize();
     } catch (error) {

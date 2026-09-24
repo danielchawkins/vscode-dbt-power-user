@@ -3,7 +3,6 @@ import {
   DBTConfiguration,
   DBTProjectIntegrationAdapter,
   DBTTerminal,
-  DbtIntegrationClient,
   DocParser,
   ExposureParser,
   FunctionParser,
@@ -26,6 +25,7 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../../dbt_client/event/manifestCacheChangedEvent";
+import { createLocalModelDepthContext } from "../../manifest/localModelDepthContext";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { esmDirname } from "../esmDirname";
@@ -230,7 +230,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
     );
     const modelDepthMap = new ModelDepthParser(
       terminal,
-      { throwIfNotAuthenticated: () => undefined } as DbtIntegrationClient,
+      createLocalModelDepthContext(),
       {
         getDisableDepthsCalculation: () => false,
       } as unknown as DBTConfiguration,

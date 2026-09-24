@@ -47,10 +47,6 @@ const PerspectiveErrorBoundary = ({
         <Button color="primary" onClick={handleClick}>
           Click here
         </Button>
-        <p>
-          Please <a href="https://app.myaltimate.com/contactus">contact us</a>{" "}
-          if the issue persists.
-        </p>
       </Stack>
     );
   };

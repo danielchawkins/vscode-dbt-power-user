@@ -40,7 +40,7 @@ function scanCommandRegistrations() {
             ts.isNoSubstitutionTemplateLiteral(arg0)
           ) {
             const cmd = arg0.text;
-            if (cmd.startsWith("dbtPowerUser.")) {
+            if (cmd.startsWith("fusionPowerUser.")) {
               literals.add(cmd);
             }
           } else {
@@ -84,35 +84,77 @@ function scanCommandRegistrations() {
   return { literals, nonLiterals };
 }
 
-function getContributedCommands(): Set<string> {
+type MenuEntry = { command?: string; submenu?: string; when?: string };
+
+type PackageJsonContributes = {
+  commands?: Array<{ command: string }>;
+  menus?: Record<string, MenuEntry[]>;
+  submenus?: Array<{ id: string }>;
+  keybindings?: Array<{ command: string }>;
+  [contributionPoint: string]: unknown;
+};
+
+function readContributes(): PackageJsonContributes {
   const content = readFileSync(packageJsonPath, "utf8");
   const packageJson = JSON.parse(content) as {
-    contributes?: { commands?: Array<{ command: string }> };
+    contributes: PackageJsonContributes;
   };
+  return packageJson.contributes;
+}
+
+function getContributedCommands(contributes: PackageJsonContributes) {
   const contributed = new Set<string>();
-  for (const cmd of packageJson.contributes?.commands ?? []) {
+  for (const cmd of contributes.commands ?? []) {
     contributed.add(cmd.command);
   }
   return contributed;
 }
 
+// Commands reachable only with a tree-item or context argument crash when VS
+// Code invokes them from the command palette with no argument. They must be
+// hidden there with a `menus.commandPalette` entry of `"when": "false"`.
+const paletteHiddenCommands = [
+  "fusionPowerUser.rerunFromHistory",
+  "fusionPowerUser.copyModelName",
+];
+
+// The complete set of `contributes` keys this extension uses. A key must be
+// added here deliberately, so a stray or copy-pasted contribution point
+// cannot land silently.
+const knownContributionPoints = new Set([
+  "snippets",
+  "configuration",
+  "viewsContainers",
+  "views",
+  "commands",
+  "keybindings",
+  "menus",
+  "submenus",
+  "languages",
+  "grammars",
+]);
+
 describe("command contribution consistency", () => {
+  const contributes = readContributes();
+
   it("enforces command consistency with allowlists", () => {
-    const contributed = getContributedCommands();
+    const contributed = getContributedCommands(contributes);
     const { literals, nonLiterals } = scanCommandRegistrations();
 
     const literalUncontributedAllowlist: Record<string, string> = {
-      "dbtPowerUser.createModelBasedonSourceConfig":
+      "fusionPowerUser.createModelBasedonSourceConfig":
         "CodeLens-only; src/code_lens_provider",
-      "dbtPowerUser.runCteWithDependencies":
+      "fusionPowerUser.runCteWithDependencies":
         "CodeLens-only; src/code_lens_provider",
-      "dbtPowerUser.yamlRunModel": "CodeLens-only; src/code_lens_provider",
-      "dbtPowerUser.yamlTestModel": "CodeLens-only; src/code_lens_provider",
-      "dbtPowerUser.pickProject": "CodeLens-only; src/code_lens_provider",
+      "fusionPowerUser.yamlRunModel": "CodeLens-only; src/code_lens_provider",
+      "fusionPowerUser.yamlTestModel": "CodeLens-only; src/code_lens_provider",
+      "fusionPowerUser.pickProject": "Declared Project picker; src/quickpick",
     };
 
     const nonLiteralAllowlist: Record<string, string> = {
       "benchmark/runtimeTimings.ts:RUNTIME_TIMINGS_COMMAND":
+        "Constant export; conditional registration",
+      "lsp/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":
         "Constant export; conditional registration",
     };
 
@@ -140,5 +182,73 @@ describe("command contribution consistency", () => {
         );
       }
     }
+  });
+
+  it("only contributes known contribution points", () => {
+    const unknown = Object.keys(contributes).filter(
+      (key) => !knownContributionPoints.has(key),
+    );
+
+    expect(unknown).toEqual([]);
+  });
+
+  it("every submenu id is declared and has a menu of its own", () => {
+    const submenuIds = new Set(
+      (contributes.submenus ?? []).map((submenu) => submenu.id),
+    );
+    const menus = contributes.menus ?? {};
+    const referencedSubmenus = new Set<string>();
+
+    for (const entries of Object.values(menus)) {
+      for (const entry of entries) {
+        if (entry.submenu) {
+          referencedSubmenus.add(entry.submenu);
+        }
+      }
+    }
+
+    const undeclaredReferences = Array.from(referencedSubmenus).filter(
+      (id) => !submenuIds.has(id),
+    );
+    const menuless = Array.from(submenuIds).filter((id) => !(id in menus));
+
+    expect(undeclaredReferences).toEqual([]);
+    expect(menuless).toEqual([]);
+  });
+
+  it("every menu and keybinding command is contributed", () => {
+    const contributed = getContributedCommands(contributes);
+    const menus = contributes.menus ?? {};
+    const referencedCommands = new Set<string>();
+
+    for (const entries of Object.values(menus)) {
+      for (const entry of entries) {
+        if (entry.command) {
+          referencedCommands.add(entry.command);
+        }
+      }
+    }
+    for (const keybinding of contributes.keybindings ?? []) {
+      referencedCommands.add(keybinding.command);
+    }
+
+    const orphanReferences = Array.from(referencedCommands)
+      .filter((cmd) => !contributed.has(cmd))
+      .sort();
+
+    expect(orphanReferences).toEqual([]);
+  });
+
+  it("hides tree- and context-only commands from the command palette", () => {
+    const commandPaletteEntries = contributes.menus?.commandPalette ?? [];
+    const hidden = new Set(
+      commandPaletteEntries
+        .filter((entry) => entry.when === "false")
+        .map((entry) => entry.command),
+    );
+
+    const missing = paletteHiddenCommands.filter((cmd) => !hidden.has(cmd));
+
+    expect(missing).toEqual([]);
   });
 });

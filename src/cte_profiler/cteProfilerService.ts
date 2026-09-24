@@ -104,8 +104,7 @@ export class CteProfilerService implements Disposable {
         // abort a query that's already in flight inside
         // `immediatelyExecuteSQLWithLimit()`, which is a shared helper without
         // a `CancellationToken`. Mid-query abort is tracked as a follow-up
-        // once that helper grows cancellation support across all dbt
-        // integrations (core/cloud/fusion/core-command + Python bridge).
+        // once that helper grows cancellation support across Fusion CLI paths.
         if (token.isCancellationRequested) {
           this.dbtTerminal.debug(
             "CteProfiler",

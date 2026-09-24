@@ -1,4 +1,3 @@
-import FeedbackButton from "@modules/commonActionButtons/FeedbackButton";
 import { Stack } from "@uicore";
 import { useEffect } from "react";
 import { useQueryPanelDispatch } from "./QueryPanelProvider";
@@ -7,7 +6,6 @@ import QueryPanelTitle from "./components/QueryPanelContents/QueryPanelTitle";
 import { QueryPanelTitleTabState } from "./components/QueryPanelContents/types";
 import ClearResultsButton from "./components/clearResultsButton/ClearResultsButton";
 import ShowInTabButton from "./components/openInTabButton/OpenInTabButton";
-import OptimizeWarehouseButton from "./components/optimizeWarehouseButton/OptimizeWarehouseButton";
 import QueryLimit from "./components/queryLimit/QueryLimit";
 import RunAdhocQueryButton from "./components/runAdhocQueryButton/RunAdhocQueryButton";
 import { setTabState } from "./context/queryPanelSlice";
@@ -41,13 +39,11 @@ const QueryPanel = (): JSX.Element => {
           {viewType === QueryPanelViewType.DEFAULT && (
             <>
               <QueryLimit />
-              <OptimizeWarehouseButton />
               <RunAdhocQueryButton />
               <ShowInTabButton />
               <ClearResultsButton />
             </>
           )}
-          <FeedbackButton url="https://form.jotform.com/251106305895153" />
         </Stack>
       </Stack>
       <div style={{ flex: 1, maxHeight: "calc(100% - 40px)" }}>

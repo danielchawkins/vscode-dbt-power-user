@@ -8,8 +8,9 @@ import {
 } from "vscode";
 import {
   ConfiguredFusionExecutableResolver,
-  FusionExecutable,
+  formatFusionExecutableResolutionFailure,
   FusionExecutableResolver,
+  isFusionExecutable,
 } from "../fusion/fusionExecutable";
 import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";
 import {
@@ -20,7 +21,6 @@ import {
   commandPrefixForProject,
   DefaultFusionClientFactory,
   FailedFusionClient,
-  formatExecutableFailure,
   FusionClient,
   FusionClientFactory,
   FusionClientOptions,
@@ -219,7 +219,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
     }
 
     const launch = resolveFusionLaunchSettings(project.root);
-    const client = isExecutable(verdict)
+    const client = isFusionExecutable(verdict)
       ? this.factory.create({
           project,
           executable: verdict,
@@ -228,7 +228,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
         } satisfies FusionClientOptions)
       : new FailedFusionClient(
           project,
-          formatExecutableFailure(project, verdict),
+          formatFusionExecutableResolutionFailure(project.name, verdict),
           this.terminal,
         );
 
@@ -244,12 +244,6 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
 function projectKey(project: DeclaredProject): string {
   return project.root.fsPath;
-}
-
-function isExecutable(
-  verdict: Awaited<ReturnType<FusionExecutableResolver["resolve"]>>,
-): verdict is FusionExecutable {
-  return "env" in verdict;
 }
 
 export type FusionClientPoolDependencies = {

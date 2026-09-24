@@ -27,13 +27,13 @@ export class SqlActionsCodeLensProvider
       new CodeLens(new Range(0, 0, 0, 0), {
         title: "$(play) Execute Query",
         tooltip: "Execute this SQL query",
-        command: "dbtPowerUser.executeSQL",
+        command: "fusionPowerUser.executeSQL",
         arguments: [],
       }),
       new CodeLens(new Range(0, 0, 0, 0), {
         title: "$(book) Document",
         tooltip: "Add documentation or tests for this model",
-        command: "dbtPowerUser.DocsEdit.focus",
+        command: "fusionPowerUser.DocsEdit.focus",
         arguments: [],
       }),
     ];
@@ -78,13 +78,13 @@ export class SqlActionsCodeLensProvider
                 new CodeLens(lensRange, {
                   title: "$(play) Run",
                   tooltip: `Run model ${properties.value.source}`,
-                  command: "dbtPowerUser.yamlRunModel",
+                  command: "fusionPowerUser.yamlRunModel",
                   arguments: [document.uri, properties.value.source],
                 }),
                 new CodeLens(lensRange, {
                   title: "$(beaker) Test",
                   tooltip: `Run tests for model ${properties.value.source}`,
-                  command: "dbtPowerUser.yamlTestModel",
+                  command: "fusionPowerUser.yamlTestModel",
                   arguments: [document.uri, properties.value.source],
                 }),
               );

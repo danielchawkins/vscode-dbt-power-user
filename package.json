@@ -51,68 +51,35 @@
     ],
     "configuration": [
       {
-        "title": "Altimate AI",
+        "title": "Lineage",
         "properties": {
-          "dbt.altimateAiKey": {
-            "type": "string",
-            "displayName": "Altimate AI API Key",
-            "markdownDescription": "Needed for features that require backend support. Sign up for a free Altimate AI account [here](https://app.myaltimate.com/register). API Key can be copied from Altimate AI UI (navigate to Settings->API Key)"
-          },
-          "dbt.altimateUrl": {
-            "type": "string",
-            "displayName": "Altimate API endpoint",
-            "description": "Select Altimate API endpoint",
-            "enum": [
-              "https://api.myaltimate.com",
-              "https://api.getaltimate.com"
-            ],
-            "enumDescriptions": [
-              "Community, Pro or Team Plan",
-              "Enterprise Plan"
-            ],
-            "default": "https://api.myaltimate.com"
-          },
-          "dbt.altimateInstanceName": {
-            "type": "string",
-            "displayName": "Altimate AI Instance Name",
-            "markdownDescription": "Needed for features that require backend support. Sign up for a free Altimate AI account [here](https://app.myaltimate.com/register). If your Altimate AI instance URL is https://betatest.app.myaltimate.com/, The instance name is betatest"
-          },
-          "dbt.enableNewLineagePanel": {
-            "type": "boolean",
-            "description": "Enable the new lineage panel in dbt."
-          },
-          "dbt.lineage.showSelectEdges": {
+          "fusionPowerUser.lineage.showSelectEdges": {
             "type": "boolean",
             "description": "Show select edges in lineage panel.",
             "default": true
           },
-          "dbt.lineage.showNonSelectEdges": {
+          "fusionPowerUser.lineage.showNonSelectEdges": {
             "type": "boolean",
             "description": "Show non-select edges in lineage panel.",
             "default": false
           },
-          "dbt.lineage.defaultExpansion": {
+          "fusionPowerUser.lineage.defaultExpansion": {
             "type": "number",
             "description": "By default how much lineage should expand.",
             "default": 1
-          },
-          "dbt.installDepsOnProjectInitialization": {
-            "type": "boolean",
-            "description": "Install dbt deps on project initialization",
-            "default": true
           }
         }
       },
       {
-        "title": "dbt Power User",
+        "title": "Fusion Power User",
         "properties": {
-          "dbt.enabled": {
+          "fusionPowerUser.enabled": {
             "type": "boolean",
             "description": "Enable Fusion Power User for this workspace folder.",
             "default": true,
             "scope": "resource"
           },
-          "dbt.projects": {
+          "fusionPowerUser.projects": {
             "type": "array",
             "items": {
               "type": "string"
@@ -121,7 +88,7 @@
             "scope": "resource",
             "description": "Declared Project roots for this workspace folder, relative to the folder or absolute. When unset or empty, the folder root is served if it contains dbt_project.yml. Every configured root must contain dbt_project.yml or no declared roots are served for the folder."
           },
-          "dbt.staticAnalysisMode": {
+          "fusionPowerUser.staticAnalysis": {
             "type": "string",
             "enum": [
               "off",
@@ -137,28 +104,28 @@
             "scope": "resource",
             "description": "Static analysis depth passed to Fusion when this Declared Project's language server starts."
           },
-          "dbt.fusionPath": {
+          "fusionPowerUser.dbtPath": {
             "type": "string",
             "scope": "resource",
             "description": "Path to the local dbt Fusion executable for this Declared Project. The extension will resolve this path first, then dbt on the extension host PATH. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. An invalid configured path blocks that project's language server and does not fall back to PATH."
           },
-          "dbt.profilesDir": {
+          "fusionPowerUser.profilesDir": {
             "type": "string",
             "scope": "resource",
             "description": "Profiles directory passed to Fusion when this Declared Project's language server starts. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. Relative paths resolve against the containing workspace folder."
           },
-          "dbt.target": {
+          "fusionPowerUser.target": {
             "type": "string",
             "scope": "resource",
             "description": "dbt target name passed to Fusion when this Declared Project's language server starts."
           },
-          "dbt.lintEnabled": {
+          "fusionPowerUser.lint.enabled": {
             "type": "boolean",
             "scope": "resource",
             "default": true,
             "description": "Whether Fusion lint diagnostics are enabled when this Declared Project's language server starts."
           },
-          "dbt.traceServer": {
+          "fusionPowerUser.trace.server": {
             "type": "string",
             "enum": [
               "off",
@@ -174,20 +141,11 @@
             "scope": "resource",
             "description": "Fusion server process log verbosity for this Declared Project. Server stdout and stderr appear in that project's Fusion LSP output channel; debug and verbose also increase Fusion's own project log file verbosity (for example logs/dbt.log)."
           },
-          "dbt.unquotedCaseInsensitiveIdentifierRegex": {
+          "fusionPowerUser.unquotedCaseInsensitiveIdentifierRegex": {
             "type": "string",
             "markdownDescription": "Regex to identify unquoted identifiers. Example: `^([_A-Z]+[_A-Z0-9$]*)$`"
           },
-          "dbt.dbtPythonPathOverride": {
-            "type": "string",
-            "description": "Path to a Python executable. Use this when the Python extension selects a different interpreter than the one where dbt is installed (e.g. dbt works in your terminal but not in the extension). You can set this manually or run the 'Detect Python from terminal' command to auto-detect it."
-          },
-          "dbt.dbtCustomRunnerImport": {
-            "type": "string",
-            "description": "Python import string to import custom dbt runner. (Only supported for dbt core)",
-            "default": "from dbt.cli.main import dbtRunner"
-          },
-          "dbt.runModelCommandAdditionalParams": {
+          "fusionPowerUser.run.additionalParams": {
             "type": "array",
             "items": {
               "type": "string"
@@ -195,7 +153,7 @@
             "default": [],
             "description": "Add additional params to the dbt run model command. Ex: --select model1 --target prod needs to be added as four different entries \n--select \nmodel1 \n--target \nprod "
           },
-          "dbt.buildModelCommandAdditionalParams": {
+          "fusionPowerUser.build.additionalParams": {
             "type": "array",
             "items": {
               "type": "string"
@@ -203,13 +161,21 @@
             "default": [],
             "description": "Add additional params to the dbt build model command. Ex: --select model1 --target prod needs to be added as four different entries \n--select \nmodel1 \n--target \nprod "
           },
-          "dbt.queryLimit": {
+          "fusionPowerUser.test.additionalParams": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "Add additional params to the dbt test model command. Ex: --select model1 --target prod needs to be added as four different entries \n--select \nmodel1 \n--target \nprod "
+          },
+          "fusionPowerUser.query.limit": {
             "type": "integer",
             "description": "The maximum number of rows the `Preview SQL Query` command returns.",
             "default": 500,
             "minimum": 1
           },
-          "dbt.perspectiveTheme": {
+          "fusionPowerUser.queryResults.theme": {
             "type": "string",
             "description": "Theme for perspective viewer in query results panel",
             "default": "Vintage",
@@ -223,17 +189,12 @@
               "Monokai"
             ]
           },
-          "dbt.queryTemplate": {
+          "fusionPowerUser.query.template": {
             "type": "string",
             "description": "Override the default query template that is used by the `Preview SQL Query` command. Use this if your database has special syntax to limit query results",
             "default": "select * from ({query}\n) as query limit {limit}"
           },
-          "dbt.queryScale": {
-            "type": "string",
-            "description": "Override the default scale of the result table that is used by the `Preview SQL Query` command.",
-            "default": 1
-          },
-          "dbt.fileNameTemplateGenerateModel": {
+          "fusionPowerUser.generateModel.fileNameTemplate": {
             "type": "string",
             "enum": [
               "{prefix}_{sourceName}_{tableName}",
@@ -244,29 +205,12 @@
             "default": "{prefix}_{sourceName}_{tableName}",
             "description": "Set the naming template that is used when generating a model from a source yml file."
           },
-          "dbt.prefixGenerateModel": {
+          "fusionPowerUser.generateModel.prefix": {
             "type": "string",
             "default": "base",
             "description": "Set the prefix that is used when generating a model from a source yml file."
           },
-          "dbt.sqlFmtPath": {
-            "type": "string",
-            "description": "Path to `sqlfmt`. If not set, it will look on your PATH"
-          },
-          "dbt.sqlFmtAdditionalParams": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "default": [],
-            "description": "Add additional params to `sqlfmt`"
-          },
-          "dbt.disableDepthsCalculation": {
-            "type": "boolean",
-            "description": "Disable DAG depth calculation and decoration",
-            "default": false
-          },
-          "dbt.deferConfigPerProject": {
+          "fusionPowerUser.defer.perProject": {
             "type": "object",
             "description": "Run subset of models without building their parent models",
             "scope": "resource",
@@ -281,7 +225,7 @@
                   },
                   "manifestPathForDeferral": {
                     "type": "string",
-                    "description": "Manifest path to defer the parent models",
+                    "description": "Directory containing the deferral manifest.json (or the manifest.json path)",
                     "default": ""
                   },
                   "favorState": {
@@ -300,9 +244,9 @@
       "activitybar": [
         {
           "id": "dbt_view",
-          "title": "dbt Power User",
+          "title": "Fusion Power User",
           "icon": "./media/images/dbt_icon.svg",
-          "contextualTitle": "dbt Power User"
+          "contextualTitle": "Fusion Power User"
         }
       ],
       "panel": [
@@ -349,21 +293,21 @@
       ],
       "dbt_preview_results": [
         {
-          "id": "dbtPowerUser.PreviewResults",
+          "id": "fusionPowerUser.PreviewResults",
           "name": "",
           "type": "webview"
         }
       ],
       "lineage_view": [
         {
-          "id": "dbtPowerUser.Lineage",
+          "id": "fusionPowerUser.Lineage",
           "name": "",
           "type": "webview"
         }
       ],
       "docs_edit_view": [
         {
-          "id": "dbtPowerUser.DocsEdit",
+          "id": "fusionPowerUser.DocsEdit",
           "name": "",
           "type": "webview"
         }
@@ -377,239 +321,208 @@
     },
     "commands": [
       {
-        "command": "dbtPowerUser.collectQueryResultsDebugInfo",
-        "title": "Query Results Debug Info",
-        "category": "dbt Power User"
-      },
-      {
-        "command": "dbtPowerUser.viewInDocEditor",
+        "command": "fusionPowerUser.viewInDocEditor",
         "title": "View in documentation editor",
-        "category": "dbt Power User"
+        "category": "Fusion Power User"
       },
       {
-        "command": "dbtPowerUser.puQuickPick",
-        "category": "dbt Power User",
-        "title": "dbt Power User Quick Pick"
-      },
-      {
-        "command": "dbtPowerUser.runCurrentModel",
+        "command": "fusionPowerUser.runCurrentModel",
         "title": "Run dbt Model",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/run-light.svg",
           "dark": "./media/images/run-dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.rerunFromHistory",
+        "command": "fusionPowerUser.rerunFromHistory",
         "title": "Re-run Command",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(debug-rerun)"
       },
       {
-        "command": "dbtPowerUser.clearRunHistory",
+        "command": "fusionPowerUser.clearRunHistory",
         "title": "Clear Run History",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(clear-all)"
       },
       {
-        "command": "dbtPowerUser.profileCtes",
+        "command": "fusionPowerUser.profileCtes",
         "title": "Profile CTEs",
-        "category": "dbt Power User"
+        "category": "Fusion Power User"
       },
       {
-        "command": "dbtPowerUser.cancelCteProfiling",
+        "command": "fusionPowerUser.cancelCteProfiling",
         "title": "Cancel CTE Profiling",
-        "category": "dbt Power User"
+        "category": "Fusion Power User"
       },
       {
-        "command": "dbtPowerUser.clearProfileResults",
+        "command": "fusionPowerUser.clearProfileResults",
         "title": "Clear CTE Profile Results",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(clear-all)"
       },
       {
-        "command": "dbtPowerUser.toggleProfileDecorations",
+        "command": "fusionPowerUser.toggleProfileDecorations",
         "title": "Toggle CTE Profile Decorations",
-        "category": "dbt Power User"
+        "category": "Fusion Power User"
       },
       {
-        "command": "dbtPowerUser.validateProject",
+        "command": "fusionPowerUser.validateProject",
         "title": "Validate dbt Project",
-        "category": "dbt Power User"
+        "category": "Fusion Power User"
       },
       {
-        "command": "dbtPowerUser.installDeps",
+        "command": "fusionPowerUser.installDeps",
         "title": "Install dbt Package Dependencies",
-        "category": "dbt Power User"
+        "category": "Fusion Power User"
       },
       {
-        "command": "dbtPowerUser.compileCurrentModel",
+        "command": "fusionPowerUser.compileCurrentModel",
         "title": "Compile dbt Model",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/build_light.svg",
           "dark": "./media/images/build_dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.sqlPreview",
+        "command": "fusionPowerUser.sqlPreview",
         "title": "Compiled dbt Preview",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(diff)"
       },
       {
-        "command": "dbtPowerUser.runTest",
+        "command": "fusionPowerUser.runTest",
         "title": "Run Test",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(pass)"
       },
       {
-        "command": "dbtPowerUser.testCurrentModel",
+        "command": "fusionPowerUser.testCurrentModel",
         "title": "Test dbt Model",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(pass)"
       },
       {
-        "command": "dbtPowerUser.runChildrenModels",
+        "command": "fusionPowerUser.runChildrenModels",
         "title": "Run Downstream Models",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(run-below)"
       },
       {
-        "command": "dbtPowerUser.runParentModels",
+        "command": "fusionPowerUser.runParentModels",
         "title": "Run Upstream Models",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(run-above)"
       },
       {
-        "command": "dbtPowerUser.copyModelName",
+        "command": "fusionPowerUser.copyModelName",
         "title": "Copy model name to clipboard",
-        "category": "dbt Power User"
+        "category": "Fusion Power User"
       },
       {
-        "command": "dbtPowerUser.showRunSQL",
+        "command": "fusionPowerUser.showRunSQL",
         "title": "Open dbt target folder run SQL",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/file-code_light.svg",
           "dark": "./media/images/file-code_dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.generateSchemaYML",
+        "command": "fusionPowerUser.generateSchemaYML",
         "title": "Generate Documentation YML",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/file-code_light.svg",
           "dark": "./media/images/file-code_dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.goToDocumentationEditor",
+        "command": "fusionPowerUser.goToDocumentationEditor",
         "title": "Open Documentation Editor",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/file-code_light.svg",
           "dark": "./media/images/file-code_dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.generateDBTDocs",
-        "title": "Run Dbt Docs Generate",
-        "category": "dbt Power User",
-        "icon": {
-          "light": "./media/images/run-light.svg",
-          "dark": "./media/images/run-dark.svg"
-        }
-      },
-      {
-        "command": "dbtPowerUser.showCompiledSQL",
+        "command": "fusionPowerUser.showCompiledSQL",
         "title": "Open dbt target folder compiled SQL",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/file-code_light.svg",
           "dark": "./media/images/file-code_dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.executeSQL",
+        "command": "fusionPowerUser.executeSQL",
         "title": "Execute dbt SQL",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(play)"
       },
       {
-        "command": "dbtPowerUser.buildCurrentModel",
+        "command": "fusionPowerUser.buildCurrentModel",
         "title": "Build dbt Model",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/build-model_light.svg",
           "dark": "./media/images/build-model_dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.buildChildrenModels",
+        "command": "fusionPowerUser.buildChildrenModels",
         "title": "Build Downstream Models (model+)",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/build-model_light.svg",
           "dark": "./media/images/build-model_dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.buildParentModels",
+        "command": "fusionPowerUser.buildParentModels",
         "title": "Build Upstream Models (+model)",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/build-model_light.svg",
           "dark": "./media/images/build-model_dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.buildChildrenParentModels",
+        "command": "fusionPowerUser.buildChildrenParentModels",
         "title": "Build Upstream and Downstream Models (+model+)",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/build-model_light.svg",
           "dark": "./media/images/build-model_dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.buildCurrentProject",
+        "command": "fusionPowerUser.buildCurrentProject",
         "title": "Build dbt Project",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": {
           "light": "./media/images/build-model_light.svg",
           "dark": "./media/images/build-model_dark.svg"
         }
       },
       {
-        "command": "dbtPowerUser.cleanCurrentProject",
+        "command": "fusionPowerUser.cleanCurrentProject",
         "title": "Clean dbt Project",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(clear-all)"
       },
       {
-        "command": "dbtPowerUser.printEnvVars",
-        "title": "Print environment variables",
-        "category": "dbt Power User",
-        "icon": "$(gist-secret)"
-      },
-      {
-        "command": "dbtPowerUser.diagnostics",
+        "command": "fusionPowerUser.diagnostics",
         "title": "Collect diagnostics",
-        "category": "dbt Power User",
+        "category": "Fusion Power User",
         "icon": "$(debug-console)"
       },
       {
-        "command": "dbtPowerUser.detectPythonFromTerminal",
-        "title": "Detect Python from terminal",
-        "category": "dbt Power User",
-        "icon": "$(terminal)"
-      },
-      {
-        "command": "dbtPowerUser.applyDeferConfig",
-        "category": "dbt Power User",
+        "command": "fusionPowerUser.applyDeferConfig",
+        "category": "Fusion Power User",
         "title": "Apply defer configuration"
       }
     ],
@@ -617,197 +530,202 @@
       {
         "key": "Ctrl+Enter",
         "mac": "Cmd+Enter",
-        "command": "dbtPowerUser.executeSQL",
+        "command": "fusionPowerUser.executeSQL",
         "when": "editorFocus && resourceLangId =~ /^sql$|^jinja-sql$/"
       },
       {
         "key": "Ctrl+'",
         "mac": "Cmd+'",
-        "command": "dbtPowerUser.sqlPreview"
+        "command": "fusionPowerUser.sqlPreview"
       }
     ],
     "menus": {
       "editor/title": [
         {
-          "command": "dbtPowerUser.executeSQL",
+          "command": "fusionPowerUser.executeSQL",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@1"
         },
         {
-          "command": "dbtPowerUser.runCurrentModel",
+          "command": "fusionPowerUser.runCurrentModel",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@3"
         },
         {
-          "command": "dbtPowerUser.testCurrentModel",
+          "command": "fusionPowerUser.testCurrentModel",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@4"
         },
         {
-          "command": "dbtPowerUser.sqlPreview",
+          "command": "fusionPowerUser.sqlPreview",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@5"
         }
       ],
       "editor/context": [
         {
-          "submenu": "dbtPowerUser.buildModel",
+          "submenu": "fusionPowerUser.buildModel",
           "group": "dbt@5",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
         },
         {
-          "command": "dbtPowerUser.showCompiledSQL",
+          "command": "fusionPowerUser.showCompiledSQL",
           "group": "dbt@5",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
         },
         {
-          "command": "dbtPowerUser.showRunSQL",
+          "command": "fusionPowerUser.showRunSQL",
           "group": "dbt@6",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
         },
         {
-          "command": "dbtPowerUser.goToDocumentationEditor",
+          "command": "fusionPowerUser.goToDocumentationEditor",
           "group": "dbt@7",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
         },
         {
-          "command": "dbtPowerUser.testCurrentModel",
+          "command": "fusionPowerUser.testCurrentModel",
           "group": "dbt@2",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
         },
         {
-          "command": "dbtPowerUser.runCurrentModel",
+          "command": "fusionPowerUser.runCurrentModel",
           "group": "dbt@1",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
         },
         {
-          "command": "dbtPowerUser.compileCurrentModel",
+          "command": "fusionPowerUser.compileCurrentModel",
           "group": "dbt@4",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
         }
       ],
       "editor/title/run": [
         {
-          "command": "dbtPowerUser.buildCurrentProject",
+          "command": "fusionPowerUser.buildCurrentProject",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
-          "command": "dbtPowerUser.buildCurrentModel",
+          "command": "fusionPowerUser.buildCurrentModel",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
-          "command": "dbtPowerUser.buildChildrenModels",
+          "command": "fusionPowerUser.buildChildrenModels",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
-          "command": "dbtPowerUser.buildParentModels",
+          "command": "fusionPowerUser.buildParentModels",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
-          "command": "dbtPowerUser.buildChildrenParentModels",
+          "command": "fusionPowerUser.buildChildrenParentModels",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
-          "command": "dbtPowerUser.runCurrentModel",
+          "command": "fusionPowerUser.runCurrentModel",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
-          "command": "dbtPowerUser.cleanCurrentProject",
+          "command": "fusionPowerUser.cleanCurrentProject",
           "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         }
       ],
       "view/title": [
         {
-          "command": "dbtPowerUser.testCurrentModel",
+          "command": "fusionPowerUser.testCurrentModel",
           "when": "view == model_test_treeview",
           "group": "navigation"
         },
         {
-          "command": "dbtPowerUser.runChildrenModels",
+          "command": "fusionPowerUser.runChildrenModels",
           "when": "view == children_model_treeview",
           "group": "navigation"
         },
         {
-          "command": "dbtPowerUser.runParentModels",
+          "command": "fusionPowerUser.runParentModels",
           "when": "view == parent_model_treeview",
           "group": "navigation"
         },
         {
-          "command": "dbtPowerUser.generateDBTDocs",
-          "when": "view == documentation_treeview",
-          "group": "navigation"
-        },
-        {
-          "command": "dbtPowerUser.clearRunHistory",
+          "command": "fusionPowerUser.clearRunHistory",
           "when": "view == run_history_treeview",
           "group": "2_clear"
         }
       ],
       "view/item/context": [
         {
-          "command": "dbtPowerUser.rerunFromHistory",
+          "command": "fusionPowerUser.rerunFromHistory",
           "when": "view == run_history_treeview && viewItem == runHistoryEntry",
           "group": "inline"
         },
         {
-          "command": "dbtPowerUser.runTest",
+          "command": "fusionPowerUser.runTest",
           "when": "view == model_test_treeview && viewItem != source",
           "group": "inline"
         },
         {
-          "command": "dbtPowerUser.runChildrenModels",
+          "command": "fusionPowerUser.runChildrenModels",
           "when": "view == children_model_treeview && viewItem != source",
           "group": "inline"
         },
         {
-          "command": "dbtPowerUser.runParentModels",
+          "command": "fusionPowerUser.runParentModels",
           "when": "view == parent_model_treeview && viewItem != source",
           "group": "inline"
         },
         {
-          "command": "dbtPowerUser.copyModelName",
+          "command": "fusionPowerUser.copyModelName",
           "when": "(view == parent_model_treeview || view ==  children_model_treeview || view == documentation_treeview) && viewItem != source",
           "group": "navigation"
         },
         {
-          "command": "dbtPowerUser.goToDocumentationEditor",
+          "command": "fusionPowerUser.goToDocumentationEditor",
           "when": "view == documentation_treeview",
           "group": "inline"
         }
+      ],
+      "fusionPowerUser.buildModel": [
+        {
+          "command": "fusionPowerUser.buildCurrentModel",
+          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "group": "inline"
+        },
+        {
+          "command": "fusionPowerUser.buildChildrenModels",
+          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "group": "inline"
+        },
+        {
+          "command": "fusionPowerUser.buildParentModels",
+          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "group": "inline"
+        },
+        {
+          "command": "fusionPowerUser.buildChildrenParentModels",
+          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "group": "inline"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "fusionPowerUser.rerunFromHistory",
+          "when": "false"
+        },
+        {
+          "command": "fusionPowerUser.copyModelName",
+          "when": "false"
+        }
       ]
     },
-    "dbtPowerUser.buildModel": [
-      {
-        "command": "dbtPowerUser.buildCurrentModel",
-        "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
-        "group": "inline"
-      },
-      {
-        "command": "dbtPowerUser.buildChildrenModels",
-        "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
-        "group": "inline"
-      },
-      {
-        "command": "dbtPowerUser.buildParentModels",
-        "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
-        "group": "inline"
-      },
-      {
-        "command": "dbtPowerUser.buildChildrenParentModels",
-        "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
-        "group": "inline"
-      }
-    ],
     "submenus": [
       {
-        "id": "dbtPowerUser.buildModel",
+        "id": "fusionPowerUser.buildModel",
         "label": "Build dbt Model",
         "icon": {
           "light": "./media/images/build-model_light.svg",
@@ -901,8 +819,6 @@
     "@vscode/codicons": "^0.0.45",
     "@vscode/vsce": "^4.0.0",
     "inversify": "^8.2.3",
-    "node-abort-controller": "^3.1.1",
-    "parse-diff": "^0.12.0",
     "reflect-metadata": "^0.2.2",
     "semver": "^7.8.5",
     "vscode-languageclient": "10.1.1",

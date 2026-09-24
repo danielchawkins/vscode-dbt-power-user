@@ -15,12 +15,12 @@ import {
   workspace,
 } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
+import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
 
 const UPSTREAM_EXTENSION = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_ACTION = "Uninstall Power User";
 
 const activationHarness = (enabled: boolean) => {
-  const detectDBT = jest.fn(() => Promise.resolve());
   const initializeDBTProjects = jest.fn(() => Promise.resolve());
   const initializeStatusBars = jest.fn(() => Promise.resolve());
   const registryInitialize = jest.fn(() => Promise.resolve());
@@ -30,7 +30,6 @@ const activationHarness = (enabled: boolean) => {
   Object.assign(extension, {
     dbtProjectContainer: {
       setContext: jest.fn(),
-      detectDBT,
       initializeDBTProjects,
     },
     projectRegistry: { initialize: registryInitialize },
@@ -52,7 +51,6 @@ const activationHarness = (enabled: boolean) => {
   const context = { subscriptions: [] } as unknown as ExtensionContext;
   return {
     context,
-    detectDBT,
     extension,
     folder,
     initializeDBTProjects,
@@ -106,7 +104,6 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(harness.registryInitialize).not.toHaveBeenCalled();
     expect(harness.fusionClientPoolInitialize).not.toHaveBeenCalled();
     expect(harness.fusionStatusInitialize).not.toHaveBeenCalled();
-    expect(harness.detectDBT).not.toHaveBeenCalled();
     expect(harness.initializeDBTProjects).not.toHaveBeenCalled();
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
@@ -120,14 +117,13 @@ describe("DBTPowerUserExtension.activate", () => {
     await harness.extension.activate(context);
 
     expect(workspace.getConfiguration).toHaveBeenCalledWith(
-      "dbt",
+      CONFIGURATION_SECTION,
       harness.folder.uri,
     );
     expect(window.showErrorMessage).not.toHaveBeenCalled();
     expect(harness.registryInitialize).not.toHaveBeenCalled();
     expect(harness.fusionClientPoolInitialize).not.toHaveBeenCalled();
     expect(harness.fusionStatusInitialize).not.toHaveBeenCalled();
-    expect(harness.detectDBT).not.toHaveBeenCalled();
     expect(harness.initializeDBTProjects).not.toHaveBeenCalled();
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
@@ -152,7 +148,7 @@ describe("DBTPowerUserExtension.activate", () => {
     await harness.extension.activate(context);
 
     expect(harness.registryInitialize).toHaveBeenCalledTimes(1);
-    expect(harness.detectDBT).toHaveBeenCalledTimes(1);
+    expect(harness.initializeDBTProjects).toHaveBeenCalledTimes(1);
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
   });
 
@@ -184,7 +180,7 @@ describe("DBTPowerUserExtension.activate", () => {
     );
   });
 
-  it("activates and initializes registry before detectDBT on happy path", async () => {
+  it("activates startup steps without global executable detection", async () => {
     const harness = activationHarness(true);
     context = harness.context;
 
@@ -193,8 +189,8 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(harness.registryInitialize).toHaveBeenCalled();
     expect(harness.fusionClientPoolInitialize).toHaveBeenCalled();
     expect(harness.fusionStatusInitialize).toHaveBeenCalled();
-    expect(harness.detectDBT).toHaveBeenCalled();
     expect(harness.initializeDBTProjects).toHaveBeenCalled();
+    expect(harness.initializeStatusBars).toHaveBeenCalled();
 
     const registryCall = (harness.registryInitialize as jest.Mock).mock
       .invocationCallOrder[0];
@@ -202,14 +198,11 @@ describe("DBTPowerUserExtension.activate", () => {
       .invocationCallOrder[0];
     const statusCall = (harness.fusionStatusInitialize as jest.Mock).mock
       .invocationCallOrder[0];
-    const detectCall = (harness.detectDBT as jest.Mock).mock
+    const projectsCall = (harness.initializeDBTProjects as jest.Mock).mock
       .invocationCallOrder[0];
     expect(registryCall).toBeLessThan(poolCall);
     expect(poolCall).toBeLessThan(statusCall);
-    expect(statusCall).toBeLessThan(detectCall);
-    expect(registryCall).toBeLessThan(
-      (harness.initializeDBTProjects as jest.Mock).mock.invocationCallOrder[0],
-    );
+    expect(statusCall).toBeLessThan(projectsCall);
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
   });
 });

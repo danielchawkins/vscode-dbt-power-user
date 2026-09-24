@@ -9,6 +9,7 @@ import {
   workspace,
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 
 export class DeferToProductionStatusBar implements Disposable {
   readonly statusBar: StatusBarItem = window.createStatusBarItem(
@@ -25,7 +26,9 @@ export class DeferToProductionStatusBar implements Disposable {
     this.disposables.push(
       workspace.onDidChangeConfiguration(
         async (e) => {
-          if (!e.affectsConfiguration("dbt.deferConfigPerProject")) {
+          if (
+            !e.affectsConfiguration(`${CONFIGURATION_SECTION}.defer.perProject`)
+          ) {
             return;
           }
           this.updateStatusBar();

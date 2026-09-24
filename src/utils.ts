@@ -15,6 +15,7 @@ import {
   workspace,
 } from "vscode";
 import { parseDocument } from "yaml";
+import { CONFIGURATION_SECTION } from "./projects/projectConfiguration";
 
 export const isEnclosedWithinCodeBlock = (
   document: TextDocument,
@@ -94,17 +95,6 @@ export const setupWatcherHandler: (
   watcher.onDidDelete(() => handler()),
 ];
 
-export function extendErrorWithSupportLinks(error: unknown): string {
-  const message =
-    error instanceof Error ? error.message : error == null ? "" : String(error);
-  const separator = message === "" || message.endsWith(" ") ? "" : " ";
-  return (
-    message +
-    separator +
-    "If the issue persists, please [contact us](https://www.altimate.ai/support?utm_source=dbt-power-user&utm_medium=extension) via chat or Slack"
-  );
-}
-
 export function stripANSI(src: string): string {
   return src.replace(
     /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
@@ -113,9 +103,8 @@ export function stripANSI(src: string): string {
 }
 
 export function getFirstWorkspacePath(): string {
-  // If we are executing python via a wrapper like Meltano,
-  // we need to execute it from a (any) project directory
-  // By default, Command execution is in an ext dir context
+  // CLI commands run from a workspace folder when one is open; otherwise fall
+  // back to the extension host working directory.
   const folders = workspace.workspaceFolders;
   if (folders) {
     return folders[0].uri.fsPath;
@@ -164,10 +153,7 @@ export const getColumnNameByCase = (columnName: string, adapter: string) => {
   if (isQuotedIdentifier(columnName, adapter)) {
     return columnName;
   }
-  const showColumnNamesInLowercase = workspace
-    .getConfiguration("dbt")
-    .get<boolean>("showColumnNamesInLowercase", true);
-  return showColumnNamesInLowercase ? columnName.toLowerCase() : columnName;
+  return columnName.toLowerCase();
 };
 
 export const isColumnNameEqual = (
@@ -182,20 +168,12 @@ export const isColumnNameEqual = (
     return true;
   }
 
-  const showColumnNamesInLowercase = workspace
-    .getConfiguration("dbt")
-    .get<boolean>("showColumnNamesInLowercase", true);
-
-  if (showColumnNamesInLowercase) {
-    return columnNameFromYml.toLowerCase() === incomingColumnName.toLowerCase();
-  }
-
-  return false;
+  return columnNameFromYml.toLowerCase() === incomingColumnName.toLowerCase();
 };
 
 export const isQuotedIdentifier = (columnName: string, adapter: string) => {
   const regexFromConfig = workspace
-    .getConfiguration("dbt")
+    .getConfiguration(CONFIGURATION_SECTION)
     .get<string>("unquotedCaseInsensitiveIdentifierRegex", "");
   if (regexFromConfig) {
     console.log(
@@ -398,31 +376,20 @@ export function removeProtocol(input: string): string {
   return input.replace(/^[^:]+:\/\//, "");
 }
 
+const MEDIUM_DEPTH_THRESHOLD = 5;
+const HIGH_DEPTH_THRESHOLD = 10;
+const LOW_DEPTH_COLOR = "#00ff00";
+const MEDIUM_DEPTH_COLOR = "#ffa500";
+const HIGH_DEPTH_COLOR = "#ff0000";
+
 export function getDepthColor(depth: number): string {
-  const mediumDepthThreshold = workspace
-    .getConfiguration("dbt")
-    .get<number>("mediumDepthThreshold", 5);
-  const highDepthThreshold = workspace
-    .getConfiguration("dbt")
-    .get<number>("highDepthThreshold", 10);
-
-  const lowDepthColor = workspace
-    .getConfiguration("dbt")
-    .get<string>("lowDepthColor", "#00ff00");
-  const mediumDepthColor = workspace
-    .getConfiguration("dbt")
-    .get<string>("mediumDepthColor", "#ffa500");
-  const highDepthColor = workspace
-    .getConfiguration("dbt")
-    .get<string>("highDepthColor", "#ff0000");
-
-  if (depth >= highDepthThreshold) {
-    return highDepthColor; // Configurable color for high depth
-  } else if (depth >= mediumDepthThreshold) {
-    return mediumDepthColor; // Configurable color for medium depth
-  } else {
-    return lowDepthColor; // Configurable color for low depth
+  if (depth >= HIGH_DEPTH_THRESHOLD) {
+    return HIGH_DEPTH_COLOR;
   }
+  if (depth >= MEDIUM_DEPTH_THRESHOLD) {
+    return MEDIUM_DEPTH_COLOR;
+  }
+  return LOW_DEPTH_COLOR;
 }
 
 /**

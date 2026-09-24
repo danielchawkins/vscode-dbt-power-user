@@ -77,12 +77,6 @@ export const DefaultQueryPanelView = {
   parameters: {
     vscode: {
       func: (request: Record<string, unknown>): unknown => {
-        if (request.command === "configEnabled") {
-          return true;
-        }
-        if (request.command === "getProjectAdapterType") {
-          return "snowflake";
-        }
         if (request.command === "getQueryPanelContext") {
           window.postMessage({
             command: "getContext",

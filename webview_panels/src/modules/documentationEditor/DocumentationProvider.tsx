@@ -17,12 +17,10 @@ import documentationSlice, {
   initialState,
   setDocBlocks,
   setIncomingDocsData,
-  setInsertedEntityName,
   setMissingDocumentationMessage,
   setProject,
   updateBulkDocsPropRightPanel,
   updateColumnsAfterSync,
-  updateColumnsInCurrentDocsData,
   updateCurrentDocsData,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
@@ -33,7 +31,6 @@ import {
   DBTModelTest,
   DBTUnitTest,
   DocBlock,
-  MetadataColumn,
 } from "./state/types";
 import { ContextProps } from "./types";
 import { isStateDirty } from "./utils";
@@ -73,14 +70,6 @@ const DocumentationProvider = (): JSX.Element => {
   );
   const stateRef = useRef(state);
 
-  const updateFocus = (name?: string) => {
-    dispatch(setInsertedEntityName(name));
-    // reset the name, so re insert will still focus
-    setTimeout(() => {
-      dispatch(setInsertedEntityName(undefined));
-    }, 1000);
-  };
-
   const renderDocumentation = (event: IncomingMessageEvent) => {
     dispatch(
       setIncomingDocsData({
@@ -97,7 +86,7 @@ const DocumentationProvider = (): JSX.Element => {
   };
 
   const onMessage = useCallback((event: IncomingMessageEvent) => {
-    const { command, ...params } = event.data;
+    const { command } = event.data;
     switch (command) {
       case "renderDocumentation": {
         const {
@@ -158,28 +147,6 @@ const DocumentationProvider = (): JSX.Element => {
             }),
           );
         }
-        break;
-      case "docgen:insert":
-        panelLogger.info("received new doc gen", event.data);
-        // insert model desc
-        if (params.model) {
-          dispatch(
-            updateCurrentDocsData({
-              description: params.description,
-              name: params.model,
-            }),
-          );
-          updateFocus(params.model);
-          return;
-        }
-        // insert column desc
-        dispatch(
-          updateColumnsInCurrentDocsData({
-            columns: [params],
-          }),
-        );
-        updateFocus((params as Partial<MetadataColumn>).name);
-
         break;
       default:
         break;

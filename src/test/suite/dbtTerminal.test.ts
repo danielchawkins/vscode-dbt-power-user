@@ -1,4 +1,4 @@
-import { DBTTerminal, PythonException } from "@altimateai/dbt-integration";
+import { DBTTerminal } from "@altimateai/dbt-integration";
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import * as vscode from "vscode";
 import { VSCodeDBTTerminal } from "../../dbt_client/vscodeTerminal";
@@ -43,20 +43,6 @@ describe("DBTTerminal Test Suite", () => {
     terminal.error(name, message, error);
     expect(mockOutputChannel.error).toHaveBeenCalledWith(
       `${name}:${message}:${error.message}`,
-      [],
-    );
-  });
-
-  it("should handle Python exceptions", () => {
-    const name = "python_error";
-    const message = "Python error occurred";
-    const pythonError = {
-      exception: { message: "Test Python error" },
-      toString: () => "Test Python error",
-    } as PythonException;
-    terminal.error(name, message, pythonError);
-    expect(mockOutputChannel.error).toHaveBeenCalledWith(
-      `${name}:${message}:${pythonError.toString()}`,
       [],
     );
   });

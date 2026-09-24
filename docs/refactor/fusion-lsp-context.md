@@ -70,12 +70,7 @@ The existing Fusion integration is therefore a CLI-and-artifact adapter beneath 
 
 The current `DBTFusionCommandProjectIntegration` extends the Cloud integration. Although it overrides command execution to call the local CLI, inherited run, build, test, compile, and defer paths can still pass through Cloud helpers that call `throwIfNotAuthenticated()`. Extract a Fusion-only operation layer before deleting hosted validation or authentication code.
 
-Fusion is also coupled to Python in two places:
-
-- `DBTClient` verifies and reports Python before it accepts the Fusion installation; and
-- the shared CLI execution strategy reads environment variables through the Python environment abstraction.
-
-Introduce Fusion-native executable and environment services before removing the Python bridge or the Python extension dependency. Characterization tests must demonstrate local run/build/test and environment inheritance without Python or Altimate state.
+After Phase 8.2, direct Fusion CLI execution uses the extension host's inherited `process.env` through a per-project boundary configured from `ConfiguredFusionExecutableResolver` — the same resolver and env snapshot contract as the LSP client. Changing the folder-scoped executable-path setting re-resolves that project, replaces its CLI delegate, and keeps LSP and CLI on the same path and env snapshot; sibling projects stay isolated. The Python bridge, Python extension dependency, terminal-interpreter detection, and ms-python `.env` merging are removed. Characterization tests must demonstrate local run/build/test without Python or Altimate state.
 
 The current parse and metadata flow is separate:
 
@@ -161,7 +156,7 @@ Launch each process with:
 2. dbt's normal project-root `.env` behavior; and
 3. optional non-secret per-project overrides such as profiles directory, profile, target, and a folder-scoped environment-file path.
 
-Do not reuse `python.envFile`; it configures the Python extension, not VS Code generally. Do not prompt for or store warehouse credentials.
+Direct Fusion CLI commands inherit the same host environment as the LSP child process. Do not reuse `python.envFile`; it configures the Python extension, not VS Code generally, and this extension no longer depends on the Python extension. Do not prompt for or store warehouse credentials.
 
 ### LSP project session
 
