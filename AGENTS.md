@@ -39,6 +39,8 @@ just lint                                   # read-only code, shell, lockfile, a
 just check                                  # lint plus compile and unit tests
 just jj ...                                 # run jj, gating git push on just check
 just package                                # build the VSIX
+just smoke                                  # packaged-VSIX smoke against both pinned hosts
+just release                                # local dry run of the tag-triggered release
 just --list
 ```
 
@@ -48,21 +50,25 @@ Just is the workflow authority. The root file owns repository workflows and dele
 
 ## Architecture
 
+See [`docs/architecture.md`](docs/architecture.md) for the *why* behind activation, Declared Projects, the Fusion client pool, and the metadata port.
+
 Two build outputs from one repository: the extension host bundle (TypeScript, rsbuild) and the webview panels (React 18 + Vite + Redux Toolkit, built separately under `webview_panels/`). They communicate through VS Code's webview messaging with typed message contracts.
 
-`src/extension.ts` → `src/dbtPowerUserExtension.ts` is the single activation path. Every collaborator is constructed through an Inversify container configured in `src/inversify.config.ts`, which holds the factories that currently switch between Core, Cloud, and Fusion integrations.
+`src/extension.ts` → `src/dbtPowerUserExtension.ts` is the single activation path. Every collaborator is constructed through an Inversify container configured in `src/inversify.config.ts`. Fusion is the only constructible `DBTProjectIntegration`; dbt Core and dbt Cloud construction is removed.
 
 Load-bearing directories (abridged):
 
 ```text
 src/
-├── dbt_client/              # dbt integrations and command execution
-├── manifest/                # project discovery, parsing, metadata maps
+├── projects/                # Project Registry and Project Context (Declared Project scoping)
+├── fusion/                  # executable resolution, version gate, static-analysis mode
+├── lsp/                     # Fusion client pool, reverse-socket transport, status
+├── metadata/                # ProjectMetadataSource port and its manifest implementation
+├── dbt_client/              # dbt integrations, manifest parsing, command execution
 ├── services/                # business logic, incl. queryManifestService
 ├── autocompletion_provider/ # language features, one provider per concern
 ├── definition_provider/
 ├── hover_provider/
-├── validation_provider/
 ├── commands/                # VS Code command implementations
 ├── treeview_provider/
 ├── webview_provider/        # panel hosts
@@ -73,8 +79,8 @@ Tests are Jest with `ts-jest` against a hand-written VS Code mock (`src/test/moc
 
 Two facts dominate change ordering, both detailed in the plan:
 
-- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps, and every panel, tree, lens, and language provider consumes them through `QueryManifestService` via `ManifestCacheProjectAddedEvent`. The refactor swaps that producer for the LSP behind the existing event; do not introduce a second consumer seam.
-- **`DBTProjectIntegrationAdapter` is the ordering constraint.** Fusion does not inherit from dbt Cloud — the published integration extends `DBTBaseProjectIntegration`. But that external adapter owns the parsers, the ambient target watcher, and a constructor requiring Core, Cloud, Fusion, and Core-command factories, so Cloud cannot be deleted until the adapter is retired. Never patch `node_modules`.
+- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps, and every panel, tree, lens, and language provider consumes them through `QueryManifestService` via `ManifestCacheProjectAddedEvent`. `ProjectMetadataSource` (`src/metadata/`) is the producer port; the Fusion LSP payload cannot populate the full contract (see `docs/lsp-metadata-gaps.md`), so the manifest source remains the only implementation. Do not introduce a second consumer seam.
+- **`DBTProjectIntegrationAdapter` is retired from production code.** The published Fusion integration extends `DBTBaseProjectIntegration`, not dbt Cloud, and `FusionProjectIntegration` (`src/dbt_client/fusionProjectIntegration.ts`) composes it directly; the adapter class name survives only as a parser-boundary type cast, never constructed. Core and Cloud construction is gone. Never patch `node_modules`.
 
 ## Comments and prose
 
@@ -86,7 +92,7 @@ Two facts dominate change ordering, both detailed in the plan:
 
 ## Gates
 
-`just check` and `just package` must pass. Product refactoring starts only after the tooling baseline is green.
+`just check` and `just package` must pass on every PR bookmark tip. `just smoke` runs the packaged-VSIX smoke assertions locally; CI runs the same assertions through `smoke-vscode` and `smoke-cursor`.
 
 ## Jujutsu
 

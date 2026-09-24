@@ -15,3 +15,7 @@ Fusion Power User is a local-first editor for dbt Fusion projects. It provides d
 **Hosted Capability**: A feature that depends on an extension vendor's API, account, or hosted state. *Avoid*: Premium feature, advanced feature
 
 **Consumer Repository**: A project that installs and configures a released Fusion Power User VSIX. *Avoid*: Client repository, downstream repository
+
+**Fusion Client**: The reverse-socket `LanguageClient` connected to one Declared Project's `dbt lsp` process. *Avoid*: LSP connection, client wrapper
+
+**Project Metadata Source**: The producer behind `ManifestCacheProjectAddedEvent` for one Declared Project. *Avoid*: Metadata provider, manifest producer

@@ -91,9 +91,11 @@ Fusion uses `window/workDoneProgress/create` and `$/progress`. The `dbt/progress
 
 The server did not advertise pull diagnostics. Fusion Power User initially passes standard push diagnostics through unchanged; dependency filtering is added only if a production-shaped test demonstrates harmful noise.
 
-## Known Symlink Hazard
+## Symlinked Project Roots
 
-The editor capture showed Fusion canonicalizing `--project-dir` but not document URIs. A project opened through a symlink may therefore fail to trigger compilation on `didOpen`. This is a known server-path limitation; this correction does not add path rewriting. Reproduced directly in `src/test/integration/fusionEditorFlowsCapture.test.ts`'s `probeSymlinkedRoot` (2026-09-23): the same code path against a real `--project-dir` reaches `getProjectInfo.models_count:7, is_estimate:false` 8s after `didOpen`, while a `--project-dir` pointed at a symlink to that identical temp copy, opened with document URIs built from the symlink, stays at `models_count:0, is_estimate:true` after the same wait. This is an **open product finding**, not fixed here: `src/lsp/fusionLanguageClient.ts:577` builds the document selector from `project.root`, `:585` passes `project.root.fsPath` as `--project-dir`, and `:603` passes the same unmodified path as spawn `cwd`; document URIs VS Code sends for files under a symlinked workspace folder keep the symlinked path, so a Consumer Repository workspace opened through a symlink may never compile on `didOpen`.
+Fusion canonicalizes `--project-dir` but not document URIs. Driving `dbt lsp` directly with `--project-dir` and document URIs both built from a symlink to the project loads no models: `probeSymlinkedRoot` in `src/test/integration/fusionEditorFlowsCapture.test.ts` reaches `getProjectInfo.models_count:7` on the real path and stays at `models_count:0, is_estimate:true` through the symlink after the same wait.
+
+Through the extension this does not reproduce. `src/test/integration/symlinkedWorkspace.test.ts` runs in a second extension-host launch that opens the fixture through a symlink, and it passes: the workspace folder is the symlink, activation writes `target/manifest.json` with both models, and definition on `ref("base")` resolves. It passed identically with and without a client change that launched Fusion on the realpath and translated document URIs between the two roots, so that change was not kept. The direct-server result is a property of raw `dbt lsp` usage, not of how the extension launches it.
 
 ## Argument Shapes (static bundle inspection, dbtLabsInc.dbt-0.104.0-universal, 2026-09-23)
 
