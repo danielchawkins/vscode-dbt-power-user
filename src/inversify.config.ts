@@ -51,27 +51,11 @@ import { SharedStateService } from "./services/sharedStateService";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 
 // Import providers
-import { AutocompletionProviders } from "./autocompletion_provider";
-import { DocAutocompletionProvider } from "./autocompletion_provider/docAutocompletionProvider";
-import { MacroAutocompletionProvider } from "./autocompletion_provider/macroAutocompletionProvider";
-import { ModelAutocompletionProvider } from "./autocompletion_provider/modelAutocompletionProvider";
-import { SourceAutocompletionProvider } from "./autocompletion_provider/sourceAutocompletionProvider";
 import { CodeLensProviders } from "./code_lens_provider";
 import { CteCodeLensProvider } from "./code_lens_provider/cteCodeLensProvider";
 import { SourceModelCreationCodeLensProvider } from "./code_lens_provider/sourceModelCreationCodeLensProvider";
 import { SqlActionsCodeLensProvider } from "./code_lens_provider/sqlActionsCodeLensProvider";
 import { VirtualSqlCodeLensProvider } from "./code_lens_provider/virtualSqlCodeLensProvider";
-import { DefinitionProviders } from "./definition_provider";
-import { DocDefinitionProvider } from "./definition_provider/docDefinitionProvider";
-import { MacroDefinitionProvider } from "./definition_provider/macroDefinitionProvider";
-import { ModelDefinitionProvider } from "./definition_provider/modelDefinitionProvider";
-import { SourceDefinitionProvider } from "./definition_provider/sourceDefinitionProvider";
-import { HoverProviders } from "./hover_provider";
-import { DepthDecorationProvider } from "./hover_provider/depthDecorationProvider";
-import { MacroHoverProvider } from "./hover_provider/macroHoverProvider";
-import { ModelHoverProvider } from "./hover_provider/modelHoverProvider";
-import { SourceHoverProvider } from "./hover_provider/sourceHoverProvider";
-import { YamlModelHoverProvider } from "./hover_provider/yamlModelHoverProvider";
 import { ProjectQuickPick } from "./quickpick/projectQuickPick";
 
 // Import missing providers and components
@@ -424,47 +408,6 @@ container
   })
   .inSingletonScope();
 
-// Bind autocompletion providers
-container
-  .bind(AutocompletionProviders)
-  .toDynamicValue((context) => {
-    return new AutocompletionProviders(
-      context.get(MacroAutocompletionProvider),
-      context.get(ModelAutocompletionProvider),
-      context.get(SourceAutocompletionProvider),
-      context.get(DocAutocompletionProvider),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(DocAutocompletionProvider)
-  .toDynamicValue((context) => {
-    return new DocAutocompletionProvider(context.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
-container
-  .bind(MacroAutocompletionProvider)
-  .toDynamicValue((context) => {
-    return new MacroAutocompletionProvider(context.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
-container
-  .bind(ModelAutocompletionProvider)
-  .toDynamicValue((context) => {
-    return new ModelAutocompletionProvider(context.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
-container
-  .bind(SourceAutocompletionProvider)
-  .toDynamicValue((context) => {
-    return new SourceAutocompletionProvider(context.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
 // Bind code lens providers
 container
   .bind(CodeLensProviders)
@@ -504,105 +447,6 @@ container
   .bind(VirtualSqlCodeLensProvider)
   .toDynamicValue((context) => {
     return new VirtualSqlCodeLensProvider(context.get(QueryManifestService));
-  })
-  .inSingletonScope();
-
-// Bind definition providers
-container
-  .bind(DefinitionProviders)
-  .toDynamicValue((context) => {
-    return new DefinitionProviders(
-      context.get(ModelDefinitionProvider),
-      context.get(MacroDefinitionProvider),
-      context.get(SourceDefinitionProvider),
-      context.get(DocDefinitionProvider),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(DocDefinitionProvider)
-  .toDynamicValue((context) => {
-    return new DocDefinitionProvider(context.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
-container
-  .bind(MacroDefinitionProvider)
-  .toDynamicValue((context) => {
-    return new MacroDefinitionProvider(context.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
-container
-  .bind(ModelDefinitionProvider)
-  .toDynamicValue((context) => {
-    return new ModelDefinitionProvider(
-      context.get(DBTProjectContainer),
-      context.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(SourceDefinitionProvider)
-  .toDynamicValue((context) => {
-    return new SourceDefinitionProvider(context.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
-// Bind hover providers
-container
-  .bind(HoverProviders)
-  .toDynamicValue((context) => {
-    return new HoverProviders(
-      context.get(ModelHoverProvider),
-      context.get(SourceHoverProvider),
-      context.get(MacroHoverProvider),
-      context.get(DepthDecorationProvider),
-      context.get(YamlModelHoverProvider),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(DepthDecorationProvider)
-  .toDynamicValue((context) => {
-    return new DepthDecorationProvider(context.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
-container
-  .bind(MacroHoverProvider)
-  .toDynamicValue((context) => {
-    return new MacroHoverProvider(
-      context.get("DBTTerminal"),
-      context.get(QueryManifestService),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(ModelHoverProvider)
-  .toDynamicValue((context) => {
-    return new ModelHoverProvider(
-      context.get(DBTProjectContainer),
-      context.get("DBTTerminal"),
-    );
-  })
-  .inSingletonScope();
-
-container
-  .bind(SourceHoverProvider)
-  .toDynamicValue((context) => {
-    return new SourceHoverProvider(context.get(DBTProjectContainer));
-  })
-  .inSingletonScope();
-
-container
-  .bind(YamlModelHoverProvider)
-  .toDynamicValue((context) => {
-    return new YamlModelHoverProvider(context.get(DBTProjectContainer));
   })
   .inSingletonScope();
 
@@ -825,8 +669,6 @@ container
     return new DBTPowerUserExtension(
       context.get(DBTProjectContainer),
       context.get(WebviewViewProviders),
-      context.get(AutocompletionProviders),
-      context.get(DefinitionProviders),
       context.get(VSCodeCommands),
       context.get(TreeviewProviders),
       context.get(ContentProviders),
@@ -834,7 +676,6 @@ container
       context.get(StatusBars),
       context.get(DbtPowerUserActionsCenter),
       context.get("DBTTerminal"),
-      context.get(HoverProviders),
       context.get(ProjectRegistry),
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),
