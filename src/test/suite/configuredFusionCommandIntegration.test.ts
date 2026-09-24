@@ -1,11 +1,3 @@
-import {
-  CommandProcessExecutionFactory,
-  DBTCommand,
-  DBTCommandFactory,
-  DBTTerminal,
-  DeferConfig,
-  ManifestPathType,
-} from "@altimateai/dbt-integration";
 import { describe, expect, it, jest } from "@jest/globals";
 import { mkdtempSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
@@ -15,6 +7,14 @@ import {
   ConfiguredFusionCommandProjectIntegration,
   createFusionCommandIntegrationFactory,
 } from "../../dbt_client/configuredFusionCommandIntegration";
+import {
+  CommandProcessExecutionFactory,
+  DBTCommand,
+  DBTCommandFactory,
+  DBTTerminal,
+  DeferConfig,
+  ManifestPathType,
+} from "../../dbt_integration";
 import { FusionExecutable } from "../../fusion/fusionExecutable";
 import { PROFILES_DIR_SETTING } from "../../lsp/fusionClientSettings";
 

@@ -12,15 +12,15 @@ import {
   workspace,
 } from "vscode";
 
+import { inject } from "inversify";
+import * as path from "path";
+import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
   DBTTerminal,
   ExecuteSQLError,
   ExecuteSQLResult,
   QueryExecution,
-} from "@altimateai/dbt-integration";
-import { inject } from "inversify";
-import * as path from "path";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+} from "../dbt_integration";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";

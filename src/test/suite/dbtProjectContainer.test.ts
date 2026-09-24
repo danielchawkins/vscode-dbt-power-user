@@ -1,4 +1,3 @@
-import { DBTTerminal, RunModelType } from "@altimateai/dbt-integration";
 import {
   afterEach,
   beforeEach,
@@ -15,6 +14,7 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../../dbt_client/event/manifestCacheChangedEvent";
+import { DBTTerminal, RunModelType } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 import { createEntry } from "../fixtures/runHistory";

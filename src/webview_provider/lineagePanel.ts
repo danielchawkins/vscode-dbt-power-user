@@ -1,4 +1,3 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import {
   CancellationToken,
@@ -16,6 +15,7 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
+import { DBTTerminal } from "../dbt_integration";
 import { NewLineagePanel } from "./newLineagePanel";
 
 export interface LineagePanelView extends WebviewViewProvider {

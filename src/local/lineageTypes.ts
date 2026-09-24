@@ -1,4 +1,4 @@
-import { ColumnMetaData } from "@altimateai/dbt-integration";
+import { ColumnMetaData } from "../dbt_integration";
 
 export type ModelNode = {
   database: string;

@@ -30,7 +30,6 @@ export default {
     "^vscode$": "<rootDir>/src/test/mock/vscode.ts",
     "^vscode-languageclient/node$":
       "<rootDir>/src/test/mock/vscode-languageclient-node.ts",
-    "^@altimateai/dbt-integration$": "@altimateai/dbt-integration",
     "^@extension$": "<rootDir>/src/modules.ts",
   },
 };

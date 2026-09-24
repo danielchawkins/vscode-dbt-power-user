@@ -1,11 +1,3 @@
-import {
-  CommandProcessExecutionFactory,
-  DBTCommand,
-  DBTCommandFactory,
-  DBTTerminal,
-  DeferConfig,
-  ManifestPathType,
-} from "@altimateai/dbt-integration";
 import * as assert from "assert";
 import { execFile as execFileCb } from "child_process";
 import * as fs from "fs";
@@ -14,6 +6,14 @@ import * as path from "path";
 import "reflect-metadata";
 import { promisify } from "util";
 import { createFusionCommandIntegrationFactory } from "../../dbt_client/configuredFusionCommandIntegration";
+import {
+  CommandProcessExecutionFactory,
+  DBTCommand,
+  DBTCommandFactory,
+  DBTTerminal,
+  DeferConfig,
+  ManifestPathType,
+} from "../../dbt_integration";
 import { FusionExecutable } from "../../fusion/fusionExecutable";
 import { checkFusionVersion, getExtensionRoot } from "./helpers/testFixtures";
 

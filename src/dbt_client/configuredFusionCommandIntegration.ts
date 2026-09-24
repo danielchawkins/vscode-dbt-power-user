@@ -1,19 +1,17 @@
-import {
-  CLIDBTCommandExecutionStrategy,
-  CommandProcessExecutionFactory,
-  DBTCommand,
-  DBTCommandExecutionInfrastructure,
-  DBTCommandFactory,
-  DBTDiagnosticData,
-  DBTFusionCommandProjectIntegration,
-  DBTTerminal,
-  DeferConfig,
-  MANIFEST_FILE,
-  ManifestPathType,
-} from "@altimateai/dbt-integration";
 import { existsSync, statSync } from "fs";
 import { basename, dirname } from "path";
 import { Uri } from "vscode";
+import { CommandProcessExecutionFactory } from "../dbt_integration/commandProcessExecution";
+import { DBTFusionCommandProjectIntegration } from "../dbt_integration/dbtFusionCommandIntegration";
+import {
+  CLIDBTCommandExecutionStrategy,
+  DBTCommand,
+  DBTCommandFactory,
+  DeferConfig,
+} from "../dbt_integration/dbtIntegration";
+import { DBTDiagnosticData } from "../dbt_integration/diagnostics";
+import { MANIFEST_FILE, ManifestPathType } from "../dbt_integration/domain";
+import { DBTTerminal } from "../dbt_integration/terminal";
 import { FusionExecutable } from "../fusion/fusionExecutable";
 import { resolveFusionLaunchSettings } from "../lsp/fusionClientSettings";
 import { FusionCommandIntegrationFactory } from "./fusionProjectIntegration";
@@ -21,12 +19,8 @@ import { ProjectFusionProcessEnvironment } from "./projectFusionProcessEnvironme
 
 const PROFILES_DIR_ARGUMENT = "--profiles-dir";
 
-/** Assigns the resolved executable path and builds local-state defer arguments. */
+/** Builds local-state defer arguments and applies the configured profiles directory. */
 export class ConfiguredFusionCommandProjectIntegration extends DBTFusionCommandProjectIntegration {
-  override async initializeProject(): Promise<void> {
-    this.dbtPath = this.pythonEnvironment.pythonPath;
-  }
-
   protected override async getDeferParams(): Promise<string[]> {
     const { deferToProduction, favorState } = this.deferConfig;
     if (!deferToProduction) {
@@ -118,24 +112,18 @@ export function createFusionCommandIntegrationFactory(
     deferConfig: DeferConfig,
     onDiagnosticsChanged: () => void,
   ) => {
-    const projectEnv = new ProjectFusionProcessEnvironment(executable);
-    const infrastructure = new DBTCommandExecutionInfrastructure(
-      projectEnv,
-      terminal,
-    );
+    const processEnvironment = new ProjectFusionProcessEnvironment(executable);
     return new ConfiguredFusionCommandProjectIntegration(
-      infrastructure,
       dbtCommandFactory,
       (cwd, dbtPath) =>
         new CLIDBTCommandExecutionStrategy(
           commandProcessExecutionFactory,
-          projectEnv,
+          processEnvironment,
           terminal,
           cwd,
           dbtPath,
         ),
-      projectEnv,
-      projectEnv,
+      executable.path,
       terminal,
       projectRoot,
       projectConfigDiagnostics,

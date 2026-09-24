@@ -1,4 +1,19 @@
 import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import {
+  FusionProjectIntegration,
+  FusionProjectIntegrationEvents,
+} from "../../dbt_client/fusionProjectIntegration";
+import {
   ChildrenParentParser,
   DBTCommandFactory,
   DBTConfiguration,
@@ -18,23 +33,7 @@ import {
   SourceParser,
   TestParser,
   UnitTestParser,
-} from "@altimateai/dbt-integration";
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
-import {
-  FusionProjectIntegration,
-  FusionProjectIntegrationEvents,
-} from "../../dbt_client/fusionProjectIntegration";
-import { createLocalModelDepthContext } from "../../manifest/localModelDepthContext";
+} from "../../dbt_integration";
 import { esmDirname } from "../esmDirname";
 
 const fixtureRoot = path.resolve(
@@ -74,7 +73,6 @@ function stubDelegate(
     getDiagnostics: () => ({
       projectConfigDiagnostics: [],
       rebuildManifestDiagnostics: [],
-      pythonBridgeDiagnostics: [],
     }),
     getDebounceForRebuildManifest: () => 500,
     getProjectName: () => "single_project",
@@ -121,11 +119,7 @@ async function buildIntegration(
     new FunctionParser(terminal),
     new DocParser(terminal),
     terminal,
-    new ModelDepthParser(
-      terminal,
-      createLocalModelDepthContext(),
-      configuration,
-    ),
+    new ModelDepthParser(terminal),
     new SemanticModelParser(terminal),
   );
   await integration.initialize();
@@ -439,7 +433,6 @@ describe("FusionProjectIntegration file watchers", () => {
           getDiagnostics: () => ({
             projectConfigDiagnostics: [],
             rebuildManifestDiagnostics: [],
-            pythonBridgeDiagnostics: [],
           }),
           dispose: jest.fn(async () => undefined),
         }) as unknown as DBTProjectIntegration,
@@ -457,11 +450,7 @@ describe("FusionProjectIntegration file watchers", () => {
       new FunctionParser(terminal),
       new DocParser(terminal),
       terminal,
-      new ModelDepthParser(
-        terminal,
-        createLocalModelDepthContext(),
-        configuration,
-      ),
+      new ModelDepthParser(terminal),
       new SemanticModelParser(terminal),
     );
   }

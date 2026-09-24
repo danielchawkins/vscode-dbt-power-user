@@ -1,3 +1,4 @@
+import { Uri } from "vscode";
 import {
   DocMetaMap,
   ExposureMetaMap,
@@ -10,8 +11,7 @@ import {
   SourceMetaMap,
   TestMetaMap,
   UnitTestMetaMap,
-} from "@altimateai/dbt-integration";
-import { Uri } from "vscode";
+} from "../../dbt_integration";
 
 import { DBTProject } from "../dbtProject";
 

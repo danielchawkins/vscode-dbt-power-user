@@ -1,12 +1,4 @@
 import {
-  CommandProcessExecution,
-  CommandProcessExecutionFactory,
-  DBTCommand,
-  DBTCommandFactory,
-  DBTProjectIntegration,
-  DBTTerminal,
-} from "@altimateai/dbt-integration";
-import {
   afterEach,
   beforeEach,
   describe,
@@ -24,6 +16,14 @@ import {
   FusionProjectIntegration,
   FusionProjectIntegrationEvents,
 } from "../../dbt_client/fusionProjectIntegration";
+import {
+  CommandProcessExecution,
+  CommandProcessExecutionFactory,
+  DBTCommand,
+  DBTCommandFactory,
+  DBTProjectIntegration,
+  DBTTerminal,
+} from "../../dbt_integration";
 import {
   DBT_PATH_SETTING,
   FusionExecutable,
@@ -116,7 +116,6 @@ function stubDelegate(
     getDiagnostics: () => ({
       projectConfigDiagnostics: [],
       rebuildManifestDiagnostics: [],
-      pythonBridgeDiagnostics: [],
     }),
     getDebounceForRebuildManifest: () => 500,
     getProjectName: () => "cli_test",

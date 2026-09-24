@@ -1,5 +1,24 @@
 import { existsSync, writeFileSync } from "fs";
 
+import { inject } from "inversify";
+import * as path from "path";
+import {
+  commands,
+  Diagnostic,
+  DiagnosticCollection,
+  DiagnosticSeverity,
+  Disposable,
+  Event,
+  EventEmitter,
+  languages,
+  ProgressLocation,
+  Range,
+  RelativePattern,
+  Uri,
+  ViewColumn,
+  window,
+  workspace,
+} from "vscode";
 import {
   Catalog,
   ColumnMetaData,
@@ -25,26 +44,7 @@ import {
   RunModelParams,
   RunResultsEventData,
   SourceNode,
-} from "@altimateai/dbt-integration";
-import { inject } from "inversify";
-import * as path from "path";
-import {
-  commands,
-  Diagnostic,
-  DiagnosticCollection,
-  DiagnosticSeverity,
-  Disposable,
-  Event,
-  EventEmitter,
-  languages,
-  ProgressLocation,
-  Range,
-  RelativePattern,
-  Uri,
-  ViewColumn,
-  window,
-  workspace,
-} from "vscode";
+} from "../dbt_integration";
 import { ModelNode } from "../local/lineageTypes";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { RunHistoryService } from "../services/runHistoryService";

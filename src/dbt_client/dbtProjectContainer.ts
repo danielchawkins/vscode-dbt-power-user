@@ -1,9 +1,3 @@
-import type { RunResultsEventData } from "@altimateai/dbt-integration";
-import {
-  DBTTerminal,
-  RunModelParams,
-  RunModelType,
-} from "@altimateai/dbt-integration";
 import * as fs from "fs";
 import { inject } from "inversify";
 import { basename } from "path";
@@ -14,6 +8,8 @@ import {
   Uri,
   window,
 } from "vscode";
+import type { RunResultsEventData } from "../dbt_integration";
+import { DBTTerminal, RunModelParams, RunModelType } from "../dbt_integration";
 import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
 import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
 import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";

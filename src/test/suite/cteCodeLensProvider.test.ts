@@ -1,10 +1,10 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import { Position, TextDocument } from "vscode";
 import {
   CteCodeLensProvider,
   CteInfo,
 } from "../../code_lens_provider/cteCodeLensProvider";
+import { DBTTerminal } from "../../dbt_integration";
 
 describe("CteCodeLensProvider", () => {
   let mockDBTTerminal: jest.Mocked<DBTTerminal>;

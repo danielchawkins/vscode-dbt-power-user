@@ -1,4 +1,3 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { spawn, type ChildProcess } from "child_process";
 import { createHash } from "crypto";
 import { existsSync, realpathSync } from "fs";
@@ -19,6 +18,7 @@ import {
   type ServerOptions,
 } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
+import { DBTTerminal } from "../dbt_integration";
 import { FusionExecutable } from "../fusion/fusionExecutable";
 import {
   resolveConfiguredStaticAnalysisMode,
