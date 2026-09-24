@@ -182,7 +182,7 @@ These current couplings make deletion order part of correctness:
 3. Add and characterize the native LSP before deleting any completion, hover, definition, validation, or formatting provider.
 4. Keep the manifest watcher only for named local panel consumers. Migrate those consumers behind a project-session interface before deleting the parser.
 5. Separate query-results and lineage webviews from shared Altimate base classes before removing hosted webview libraries.
-6. Remove the exposed `generateDBTDocs` command early: the current Fusion implementation throws because docs generation is unsupported.
+6. Remove the exposed `generateDBTDocs` command early: the published Fusion integration's `generateDocs` throws unconditionally. Fusion 2.0.5 itself does run `dbt docs generate` (it writes `index.html`, assets, and a parquet catalog, but no `catalog.json`), so the command could return through the CLI path if a local docs viewer is wanted.
 7. Constructor-time credential validation is removed (was hosted validation in ValidationProvider).
 
 ## Package identity and contributions
