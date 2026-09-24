@@ -30,6 +30,7 @@ async function main() {
   );
   const workspaceDir = path.join(workspaceParent, path.basename(fixtureSource));
   cpSync(fixtureSource, workspaceDir, { recursive: true });
+  configureProfilesThroughSetting(workspaceDir);
   const modelsDir = path.join(workspaceDir, "models");
   rmSync(path.join(modelsDir, "broken_ref.sql"), { force: true });
   writeFileSync(path.join(modelsDir, "base.sql"), "select 1 as id\n");
@@ -80,19 +81,8 @@ async function main() {
         `--user-data-dir=${userDataDir}`,
         `--extensions-dir=${extensionsDir}`,
         "--use-inmemory-secretstorage",
-        // Without this, VS Code resolves the host's environment by running the
-        // developer's login shell, which re-exports whatever ~/.zprofile sets
-        // and silently overwrites the profiles directories below.
-        "--force-disable-user-env",
       ],
-      // dbt reads profiles.yml from these before falling back to the working
-      // directory and then the home directory, so pointing them at the fixture
-      // makes the project resolvable on any machine. The extension passes no
-      // profiles flag, leaving dbt's own cascade to find the fixture's file.
-      extensionTestsEnv: {
-        DBT_PROFILES_DIR: workspaceDir,
-        DBT_ENGINE_PROFILES_DIR: workspaceDir,
-      },
+      extensionTestsEnv: conflictingProfilesEnv(workspaceParent),
     });
 
     // Second launch: open the fixture through a symlink instead of its real
@@ -111,11 +101,9 @@ async function main() {
           `--user-data-dir=${userDataDir}`,
           `--extensions-dir=${extensionsDir}`,
           "--use-inmemory-secretstorage",
-          "--force-disable-user-env",
         ],
         extensionTestsEnv: {
-          DBT_PROFILES_DIR: workspaceDir,
-          DBT_ENGINE_PROFILES_DIR: workspaceDir,
+          ...conflictingProfilesEnv(workspaceParent),
           FPU_SYMLINKED_WORKSPACE: "1",
         },
       });
@@ -129,6 +117,31 @@ async function main() {
     process.removeListener("exit", cleanup);
     cleanup();
   }
+}
+
+/**
+ * `fusionPowerUser.profilesDir` is the documented override for a profiles directory the environment gets
+ * wrong, so the fixture's profiles are reached only through it. The fixture keeps its profiles.yml at the
+ * project root.
+ */
+function configureProfilesThroughSetting(dir: string): void {
+  const vscodeDir = path.join(dir, ".vscode");
+  mkdirSync(vscodeDir, { recursive: true });
+  writeFileSync(
+    path.join(vscodeDir, "settings.json"),
+    JSON.stringify({ "fusionPowerUser.profilesDir": "${workspaceFolder}" }),
+  );
+}
+
+/**
+ * Names an empty profiles directory in both variables dbt reads, as a user's environment can. A developer's
+ * login shell may substitute its own value; either way the environment points away from the fixture, so
+ * only the setting can make dbt resolve the fixture profile.
+ */
+function conflictingProfilesEnv(parent: string): Record<string, string> {
+  const decoy = path.join(parent, "decoy-profiles");
+  mkdirSync(decoy, { recursive: true });
+  return { DBT_PROFILES_DIR: decoy, DBT_ENGINE_PROFILES_DIR: decoy };
 }
 
 main();

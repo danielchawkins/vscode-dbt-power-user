@@ -31,6 +31,8 @@ if (compile.status !== 0) {
   process.exit(compile.status ?? 1);
 }
 
+// One smoke run takes seconds; a hung host would otherwise hold the job until its own timeout with no output.
+const RUN_TIMEOUT_MS = 5 * 60_000;
 const samples = [];
 let hostMetadata;
 let runtime;
@@ -52,11 +54,18 @@ for (let index = 0; index < 10; index += 1) {
         FPU_SKIP_INTEGRATION_COMPILE: "1",
       },
       maxBuffer: 10 * 1024 * 1024,
+      timeout: RUN_TIMEOUT_MS,
+      killSignal: "SIGKILL",
     },
   );
   if (result.status !== 0) {
-    process.stdout.write(result.stdout);
-    process.stderr.write(result.stderr);
+    process.stdout.write(result.stdout ?? "");
+    process.stderr.write(result.stderr ?? "");
+    if (result.signal) {
+      console.error(
+        `smoke run ${index + 1} for ${host} killed by ${result.signal} after ${RUN_TIMEOUT_MS} ms`,
+      );
+    }
     process.exit(result.status ?? 1);
   }
   const match = result.stdout.match(/^FPU_RUNTIME_SAMPLE=(.+)$/m);
