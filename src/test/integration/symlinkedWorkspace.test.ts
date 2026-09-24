@@ -6,15 +6,10 @@ import { checkFusionVersion } from "./helpers/testFixtures";
 import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 
 /**
- * Proves the Fusion LSP client works when the opened project root is a
- * symlink to the fixture, not its realpath. runTests.ts launches a second
- * host against `<workspaceParent>/single-project-link`, a symlink to the
- * same fixture copy used by every other integration suite. Fusion
- * canonicalizes --project-dir but not document URIs, so fusionLanguageClient
- * passes canonicalRoot to the CLI and installs uriConverters to remap LSP
- * requests/responses between the symlinked root VS Code opened and the
- * realpath Fusion actually indexed. Without that remap, definition/hover
- * lookups on documents opened via the symlink return nothing.
+ * Proves the Fusion LSP client works when the opened project root is a symlink, not its realpath. runTests.ts
+ * launches a second host against `<workspaceParent>/single-project-link`, a symlink to a fresh fixture copy.
+ * Fusion matches document URIs literally, so without the client's realpath launch and URI converters the
+ * definition request below returns nothing.
  */
 
 const ACTIVATION_TIMEOUT_MS = 20_000;
@@ -150,8 +145,7 @@ suite("Symlinked workspace (extension)", function () {
     const targetUri = "targetUri" in first ? first.targetUri : first.uri;
     assert.ok(
       targetUri.fsPath.includes("single-project-link"),
-      "the converters must remap the LSP response back to the symlinked " +
-        `root that VS Code opened; got ${targetUri.fsPath}`,
+      `the definition must resolve under the symlinked root; got ${targetUri.fsPath}`,
     );
   });
 });
