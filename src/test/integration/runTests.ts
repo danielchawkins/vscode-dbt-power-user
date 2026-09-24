@@ -28,16 +28,20 @@ async function main() {
   const workspaceParent = mkdtempSync(
     path.join(temporaryRoot, "fpu-integration-workspace-"),
   );
-  const workspaceDir = path.join(workspaceParent, path.basename(fixtureSource));
-  cpSync(fixtureSource, workspaceDir, { recursive: true });
-  configureProfilesThroughSetting(workspaceDir);
-  const modelsDir = path.join(workspaceDir, "models");
-  rmSync(path.join(modelsDir, "broken_ref.sql"), { force: true });
-  writeFileSync(path.join(modelsDir, "base.sql"), "select 1 as id\n");
-  writeFileSync(
-    path.join(modelsDir, "child.sql"),
-    'select * from {{ ref("base") }}\n',
-  );
+  const prepareWorkspace = (name: string) => {
+    const dir = path.join(workspaceParent, name);
+    cpSync(fixtureSource, dir, { recursive: true });
+    configureProfilesThroughSetting(dir);
+    const modelsDir = path.join(dir, "models");
+    rmSync(path.join(modelsDir, "broken_ref.sql"), { force: true });
+    writeFileSync(path.join(modelsDir, "base.sql"), "select 1 as id\n");
+    writeFileSync(
+      path.join(modelsDir, "child.sql"),
+      'select * from {{ ref("base") }}\n',
+    );
+    return dir;
+  };
+  const workspaceDir = prepareWorkspace(path.basename(fixtureSource));
   const fusionPath = process.env.FPU_INTEGRATION_DBT_PATH;
   if (fusionPath && !path.isAbsolute(fusionPath)) {
     throw new Error("FPU_INTEGRATION_DBT_PATH must be absolute");
@@ -85,12 +89,16 @@ async function main() {
       extensionTestsEnv: conflictingProfilesEnv(workspaceParent),
     });
 
-    // Second launch: open the fixture through a symlink instead of its real
-    // path. Fusion canonicalizes --project-dir but not document URIs, so this
-    // is the only way to exercise fusionLanguageClient's uriConverters, which
-    // remap LSP responses between the symlinked root and the realpath.
+    // Second launch opens a fresh copy through a symlink, proving the client works when the opened root is
+    // not the realpath Fusion canonicalizes --project-dir to. A fresh copy and user-data dir keep the first
+    // launch's editor state and LSP cache out of it.
+    const linkedDir = prepareWorkspace("single-project-real");
+    const linkedUserDataDir = mkdtempSync(
+      path.join(temporaryRoot, "fpu-integration-user-"),
+    );
+    cpSync(userDir, path.join(linkedUserDataDir, "User"), { recursive: true });
     const symlinkPath = path.join(workspaceParent, "single-project-link");
-    symlinkSync(workspaceDir, symlinkPath);
+    symlinkSync(linkedDir, symlinkPath);
     try {
       await runTests({
         version: "1.128.0",
@@ -98,7 +106,7 @@ async function main() {
         extensionTestsPath,
         launchArgs: [
           symlinkPath,
-          `--user-data-dir=${userDataDir}`,
+          `--user-data-dir=${linkedUserDataDir}`,
           `--extensions-dir=${extensionsDir}`,
           "--use-inmemory-secretstorage",
         ],
@@ -109,6 +117,7 @@ async function main() {
       });
     } finally {
       rmSync(symlinkPath, { force: true });
+      rmSync(linkedUserDataDir, { recursive: true, force: true });
     }
   } catch (err) {
     console.error("Failed to run integration tests:", err);
