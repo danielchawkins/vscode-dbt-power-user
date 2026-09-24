@@ -5,6 +5,7 @@ import {
   mkdtempSync,
   realpathSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from "fs";
 import { tmpdir } from "os";
@@ -93,6 +94,34 @@ async function main() {
         DBT_ENGINE_PROFILES_DIR: workspaceDir,
       },
     });
+
+    // Second launch: open the fixture through a symlink instead of its real
+    // path. Fusion canonicalizes --project-dir but not document URIs, so this
+    // is the only way to exercise fusionLanguageClient's uriConverters, which
+    // remap LSP responses between the symlinked root and the realpath.
+    const symlinkPath = path.join(workspaceParent, "single-project-link");
+    symlinkSync(workspaceDir, symlinkPath);
+    try {
+      await runTests({
+        version: "1.128.0",
+        extensionDevelopmentPath,
+        extensionTestsPath,
+        launchArgs: [
+          symlinkPath,
+          `--user-data-dir=${userDataDir}`,
+          `--extensions-dir=${extensionsDir}`,
+          "--use-inmemory-secretstorage",
+          "--force-disable-user-env",
+        ],
+        extensionTestsEnv: {
+          DBT_PROFILES_DIR: workspaceDir,
+          DBT_ENGINE_PROFILES_DIR: workspaceDir,
+          FPU_SYMLINKED_WORKSPACE: "1",
+        },
+      });
+    } finally {
+      rmSync(symlinkPath, { force: true });
+    }
   } catch (err) {
     console.error("Failed to run integration tests:", err);
     process.exitCode = 1;
