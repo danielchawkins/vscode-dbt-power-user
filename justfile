@@ -232,7 +232,7 @@ jj *args:
       previous=$argument
     done
     if $push && ! $dry_run; then just check; fi
-    jj "$@"
+    jj --no-pager "$@"
 
 ####################
 # Packaging
