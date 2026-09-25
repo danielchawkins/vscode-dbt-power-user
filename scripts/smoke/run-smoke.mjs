@@ -11,6 +11,7 @@ import {
   mkdtempSync,
   readdirSync,
   readFileSync,
+  realpathSync,
   rmSync,
   statSync,
   writeFileSync,
@@ -72,7 +73,10 @@ const extensionsDir = mkdtempSync(
   path.join(tmpdir(), `fpu-smoke-ext-${host}-`),
 );
 const workspaceParent = mkdtempSync(
-  path.join(tmpdir(), `fpu-smoke-workspace-${host}-`),
+  path.join(
+    process.env.FPU_DIAG_REALPATH === "1" ? realpathSync(tmpdir()) : tmpdir(),
+    `fpu-smoke-workspace-${host}-`,
+  ),
 );
 const workspaceDir = path.join(workspaceParent, path.basename(fixture));
 cpSync(fixture, workspaceDir, { recursive: true });
@@ -119,9 +123,10 @@ if (install.status !== 0) {
   process.exit(install.status ?? 1);
 }
 
-const watchdog = setTimeout(() => {
+const watchdog = setTimeout(async () => {
   // Synchronous writes: process.exit discards pending async output on a piped stderr.
   const out = (text) => writeSync(2, `${text}\n`);
+  await dumpRendererStacks(cdpPort, out);
   out(
     `FPU_SMOKE_WATCHDOG: ${host} did not finish within ${HOST_WATCHDOG_MS} ms`,
   );
@@ -215,6 +220,105 @@ async function assertNoSurvivingFusionLspProcess(scopedWorkspaceDir) {
   throw new Error(
     `Surviving dbt lsp process after host exit:\n${leaked.join("\n")}`,
   );
+}
+/**
+ * Pauses every workbench page through the host's DevTools port and prints its JavaScript stack. A native
+ * sample of a spinning renderer names only V8 internals; the paused frames name the workbench code.
+ */
+async function dumpRendererStacks(port, out) {
+  let targets;
+  try {
+    targets = await (await fetch(`http://127.0.0.1:${port}/json/list`)).json();
+  } catch (error) {
+    out(`FPU_SMOKE_JS_STACK unavailable: ${error}`);
+    return;
+  }
+  for (const target of targets.filter(
+    (entry) => entry.type === "page" && entry.webSocketDebuggerUrl,
+  )) {
+    out(`FPU_SMOKE_JS_STACK ${target.title} ${target.url.slice(0, 120)}`);
+    out(await pausedStack(target.webSocketDebuggerUrl).catch(String));
+  }
+}
+
+function pausedStack(url) {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(url);
+    const timer = setTimeout(() => {
+      socket.close();
+      reject(new Error("no Debugger.paused within 20 s"));
+    }, 20_000);
+    let id = 0;
+    const replies = new Map();
+    const scriptUrls = new Map();
+    const send = (method, params = {}) =>
+      new Promise((done) => {
+        replies.set(++id, done);
+        socket.send(JSON.stringify({ id, method, params }));
+      });
+    socket.onopen = () => {
+      send("Debugger.enable");
+      send("Debugger.setAsyncCallStackDepth", { maxDepth: 20 });
+      send("Debugger.pause");
+    };
+    socket.onerror = (event) => {
+      clearTimeout(timer);
+      reject(new Error(`CDP socket error: ${event.message ?? event.type}`));
+    };
+    socket.onmessage = async (event) => {
+      const message = JSON.parse(event.data);
+      if (message.id !== undefined) {
+        replies.get(message.id)?.(message.result);
+        replies.delete(message.id);
+        return;
+      }
+      if (message.method === "Debugger.scriptParsed") {
+        scriptUrls.set(message.params.scriptId, message.params.url);
+        return;
+      }
+      if (message.method !== "Debugger.paused") {
+        return;
+      }
+      clearTimeout(timer);
+      // Minified bundles report one line per file, so a source excerpt around each frame identifies it.
+      const sources = new Map();
+      const excerpt = async ({ scriptId, lineNumber, columnNumber }) => {
+        if (!sources.has(scriptId)) {
+          const result = await send("Debugger.getScriptSource", { scriptId });
+          sources.set(scriptId, (result?.scriptSource ?? "").split("\n"));
+        }
+        const line = sources.get(scriptId)[lineNumber] ?? "";
+        return line.slice(Math.max(0, columnNumber - 60), columnNumber + 60);
+      };
+      const frames = [];
+      for (const [index, frame] of message.params.callFrames
+        .slice(0, 60)
+        .entries()) {
+        const url = scriptUrls.get(frame.location.scriptId) || frame.url;
+        const where = `${path.basename(url)}:${frame.location.lineNumber + 1}:${frame.location.columnNumber + 1}`;
+        frames.push(`  at ${frame.functionName || "<anonymous>"} ${where}`);
+        if (index < 25) {
+          frames.push(
+            `      | ${(await excerpt(frame.location)).replace(/\s+/g, " ")}`,
+          );
+        }
+      }
+      let asyncTrace = message.params.asyncStackTrace;
+      while (asyncTrace && frames.length < 140) {
+        frames.push(`  -- async ${asyncTrace.description ?? ""}`);
+        for (const frame of asyncTrace.callFrames.slice(0, 10)) {
+          const url = scriptUrls.get(frame.scriptId) || frame.url;
+          frames.push(
+            `  at ${frame.functionName || "<anonymous>"} ${path.basename(url)}:${frame.lineNumber + 1}`,
+          );
+        }
+        asyncTrace = asyncTrace.parent;
+      }
+      await send("Debugger.resume");
+      socket.close();
+      resolve(frames.join("\n"));
+    };
+  });
 }
 
 function listLogs(dir) {

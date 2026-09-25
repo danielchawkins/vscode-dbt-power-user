@@ -1,7 +1,7 @@
 import { DBTTerminal } from "@altimateai/dbt-integration";
 import { spawn, type ChildProcess } from "child_process";
 import { createHash } from "crypto";
-import { realpathSync } from "fs";
+import { existsSync, realpathSync } from "fs";
 import * as path from "path";
 import {
   CancellationToken,
@@ -699,6 +699,15 @@ class FusionLanguageClientImpl implements FusionClient {
             index: this.options.project.folder.index,
           },
           middleware: {
+            handleDiagnostics: (uri, diagnostics, next) => {
+              if (uri.scheme === "file" && !existsSync(uri.fsPath)) {
+                this._logChannel.appendLine(
+                  `FPU_DIAG dropped diagnostics for missing ${uri.fsPath}`,
+                );
+                return;
+              }
+              next(uri, diagnostics);
+            },
             workspace: {
               configuration: async (params) => {
                 const results: unknown[] = [];
