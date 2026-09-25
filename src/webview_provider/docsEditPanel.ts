@@ -4,7 +4,6 @@ import * as path from "path";
 import { gte } from "semver";
 import {
   CancellationToken,
-  CancellationTokenSource,
   commands,
   Disposable,
   ProgressLocation,
@@ -30,13 +29,11 @@ import {
 } from "../dbt_client/event/manifestCacheChangedEvent";
 import {
   DBTTerminal,
-  Table,
   TestMetaData,
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
 } from "../dbt_integration";
 import { UserInputError } from "../local/errors";
-import { DbtLineageService } from "../services/dbtLineageService";
 import { DbtTestService } from "../services/dbtTestService";
 import {
   DocGenService,
@@ -67,7 +64,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
   private eventMap: Map<string, ManifestCacheProjectAddedEvent> = new Map();
   private _disposables: Disposable[] = [];
   private onMessageDisposable: Disposable | undefined;
-  private cancellationTokenSource: CancellationTokenSource | undefined;
 
   public constructor(
     private dbtProjectContainer: DBTProjectContainer,
@@ -76,7 +72,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     private queryManifestService: QueryManifestService,
     @inject("DBTTerminal")
     private terminal: DBTTerminal,
-    private dbtLineageService: DbtLineageService,
   ) {
     dbtProjectContainer.onManifestChanged((event) =>
       this.onManifestCacheChanged(event),
@@ -721,66 +716,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
             );
 
             break;
-          case "getDownstreamColumns": {
-            const targets = params.targets as [string, string][];
-            const testsResult = await Promise.all(
-              targets.map(async (t) => {
-                if (!t[0].startsWith("model")) {
-                  return;
-                }
-                const splits = t[0].split(".");
-                const modelName = splits[splits.length - 1];
-                return await this.dbtTestService.getTestsForModel(modelName);
-              }),
-            );
-            const tests: Record<string, unknown> = {};
-            targets.forEach((t, i) => {
-              tests[t[0]] = testsResult[i];
-            });
-            const _tables = targets
-              .map(
-                (t) =>
-                  this.dbtLineageService.getUpstreamTables({ table: t[0] })
-                    ?.tables,
-              )
-              .filter((t) => Boolean(t))
-              .flat() as Table[];
-            const tables = _tables.map((t) => t?.table);
-            if (tables.length === 0) {
-              this.handleSyncRequestFromWebview(
-                syncRequestId,
-                () => ({ column_lineage: [], tables: [], tests }),
-                "response",
-              );
-              return;
-            }
-            const selectedColumn = {
-              table: params.model as string,
-              name: params.column as string,
-            };
-            const currAnd1HopTables = [...tables, ...targets.map((t) => t[0])];
-            this.cancellationTokenSource = new CancellationTokenSource();
-            const columns = await this.dbtLineageService.getConnectedColumns(
-              {
-                targets,
-                currAnd1HopTables,
-                selectedColumn,
-                upstreamExpansion: true,
-                showIndirectEdges: false,
-              },
-              this.cancellationTokenSource!,
-            );
-            this.handleSyncRequestFromWebview(
-              syncRequestId,
-              () => ({ ...columns, tables: _tables, tests }),
-              "response",
-            );
-            break;
-          }
-          case "cancelColumnLineage": {
-            this.cancellationTokenSource?.cancel();
-            break;
-          }
           case "saveDocumentation":
             window.withProgress(
               {
@@ -813,64 +748,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
               },
             );
             break;
-          case "saveDocumentationBulk": {
-            // Transform raw data into models array
-            const {
-              allColumns,
-              selectedColumns,
-              tableMetadata,
-              testsMetadata,
-              currentDocsData,
-              startColumns,
-            } = message;
-
-            const defaultPackageName = tableMetadata.filter(
-              (t: any) => t.packageName,
-            )[0]?.packageName;
-            const defaultPatchPath = defaultPackageName
-              ? defaultPackageName + "://models/schema.yml"
-              : "";
-
-            const models = [];
-
-            for (const item of allColumns) {
-              const key = item.model + "/" + item.column;
-              if (!selectedColumns[key]) {
-                continue;
-              }
-              const splits = item.model.split(".");
-              const modelName = splits[splits.length - 1];
-              const node = tableMetadata.find(
-                (t: any) => t.table === item.model,
-              );
-              const columnDescription =
-                currentDocsData?.columns.find((c: any) => c.name === item.root)
-                  ?.description ?? "";
-              models.push({
-                name: modelName,
-                description: node?.description,
-                columns: [
-                  { name: item.column, description: columnDescription },
-                ],
-                dialogType: "Existing file",
-                patchPath: node?.patchPath || defaultPatchPath,
-                filePath: node?.url,
-                updatedTests: testsMetadata[item.model],
-              });
-            }
-
-            const successfulSaves: string[] = [];
-            for (const item of models) {
-              await this.saveDocumentation(item, syncRequestId);
-              successfulSaves.push(item.name);
-            }
-            if (successfulSaves.length > 0) {
-              window.showInformationMessage(
-                `Successfully propagated to: ${Array.from(new Set(successfulSaves)).join(", ")}`,
-              );
-            }
-            break;
-          }
           default:
             this.terminal.debug(
               "docsEditPanel:unhandledCommand",

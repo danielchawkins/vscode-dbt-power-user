@@ -55,11 +55,7 @@ export default defineConfig({
   },
   tools: {
     rspack: (config) => {
-      config.externals = [
-        "vscode",
-        "@altimateai/altimate-core",
-        /^@altimateai\/altimate-core-/,
-      ];
+      config.externals = ["vscode"];
 
       config.node = { __dirname: "node-module", __filename: "node-module" };
 

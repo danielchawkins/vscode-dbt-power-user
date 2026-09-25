@@ -10,7 +10,6 @@ export { default as LikeIcon } from "./like.svg?react";
 export { default as LoaderIcon } from "./loader.svg?react";
 export { default as NoHistoryIcon } from "./no-history.svg?react";
 export { default as PreviewIcon } from "./preview.svg?react";
-export { default as PropagateIcon } from "./propagate.svg?react";
 export { default as SelectCheckedIcon } from "./select-checked.svg?react";
 export { default as SelectUncheckedIcon } from "./select-unchecked.svg?react";
 export { default as ShinesIcon } from "./shines.svg?react";

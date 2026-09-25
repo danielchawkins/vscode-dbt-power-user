@@ -9,8 +9,3 @@ export type ModelNode = {
   columns: { [columnName: string]: ColumnMetaData };
   path: string | undefined;
 };
-
-export type ModelInfo = {
-  model_node: ModelNode;
-  compiled_sql?: string;
-};

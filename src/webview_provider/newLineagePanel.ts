@@ -1,8 +1,6 @@
 import { inject } from "inversify";
 import * as path from "path";
 import {
-  CancellationToken,
-  CancellationTokenSource,
   commands,
   ProgressLocation,
   TextDocument,
@@ -29,7 +27,7 @@ import {
   Table,
 } from "../dbt_integration";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
-import { CllEvents, DbtLineageService } from "../services/dbtLineageService";
+import { DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
 import { AltimateWebviewProvider } from "./altimateWebviewProvider";
@@ -54,23 +52,12 @@ function lineAtOffset(text: string, offset: number): number {
   return line;
 }
 
-class DerivedCancellationTokenSource extends CancellationTokenSource {
-  constructor(linkedToken: CancellationToken) {
-    super();
-    linkedToken.onCancellationRequested(() => {
-      super.cancel();
-    });
-  }
-}
-
 export class NewLineagePanel
   extends AltimateWebviewProvider
   implements LineagePanelView
 {
   protected viewPath = "/lineage";
   protected panelDescription = "Lineage panel";
-  private cllProgressResolve: () => void = () => {};
-  private cancellationTokenSource: CancellationTokenSource | undefined;
   // The source unique_id the panel last rooted at when a source YAML is the
   // active file. Used to avoid redundant re-renders on every cursor move; the
   // panel only re-roots when the cursor moves onto a different source table.
@@ -227,35 +214,10 @@ export class NewLineagePanel
     }
 
     if (command === "getConnectedColumns") {
-      try {
-        const body = await this.dbtLineageService.getConnectedColumns(
-          params as Parameters<
-            typeof this.dbtLineageService.getConnectedColumns
-          >[0],
-          this.cancellationTokenSource ?? new CancellationTokenSource(),
-        );
-        this._panel?.webview.postMessage({
-          command: "response",
-          args: { id, syncRequestId, body, status: !!body },
-        });
-      } catch (error) {
-        window.showErrorMessage(
-          "Unable to generate lineage: " + (error as Error).message,
-        );
-        this._panel?.webview.postMessage({
-          command: "response",
-          args: { id, error, status: false },
-        });
-      }
-      return;
-    }
-
-    if (command === "columnLineage") {
-      this.handleColumnLineage(args, () => {
-        this._panel?.webview.postMessage({
-          command: "columnLineage",
-          args: { event: CllEvents.CANCEL },
-        });
+      // The lineage component requests column lineage on column click; none is computed.
+      this._panel?.webview.postMessage({
+        command: "response",
+        args: { id, syncRequestId, body: { column_lineage: [] }, status: true },
       });
       return;
     }
@@ -276,8 +238,8 @@ export class NewLineagePanel
           syncRequestId,
           status: true,
           body: {
-            showSelectEdges: config.get("showSelectEdges", true),
-            showNonSelectEdges: config.get("showNonSelectEdges", false),
+            showSelectEdges: true,
+            showNonSelectEdges: false,
             defaultExpansion: Math.min(
               config.get<number>("defaultExpansion", 1),
               5,
@@ -292,8 +254,8 @@ export class NewLineagePanel
       const config = workspace.getConfiguration(
         `${CONFIGURATION_SECTION}.lineage`,
       );
-      for (const k in params) {
-        await config.update(k, params[k]);
+      if (params.defaultExpansion !== undefined) {
+        await config.update("defaultExpansion", params.defaultExpansion);
       }
       this._panel?.webview.postMessage({
         command: "response",
@@ -313,43 +275,6 @@ export class NewLineagePanel
       message,
     );
     super.handleCommand(message);
-  }
-
-  private async handleColumnLineage(
-    { event }: { event: CllEvents },
-    onCancel: () => void,
-  ) {
-    if (event === CllEvents.START) {
-      window.withProgress(
-        {
-          title: "Retrieving column level lineage",
-          location: ProgressLocation.Notification,
-          cancellable: true,
-        },
-        async (_, token) => {
-          await new Promise<void>((resolve) => {
-            this.cancellationTokenSource = new DerivedCancellationTokenSource(
-              token,
-            );
-            this.cllProgressResolve = resolve;
-            token.onCancellationRequested(() => {
-              onCancel();
-            });
-          });
-        },
-      );
-      return;
-    }
-    if (event === CllEvents.END) {
-      this.cllProgressResolve();
-      this.cancellationTokenSource?.dispose();
-      return;
-    }
-    if (event === CllEvents.CANCEL) {
-      this.cllProgressResolve();
-      this.cancellationTokenSource?.cancel();
-      return;
-    }
   }
 
   private async addModelColumnsFromDB(project: DBTProject, node: NodeMetaData) {

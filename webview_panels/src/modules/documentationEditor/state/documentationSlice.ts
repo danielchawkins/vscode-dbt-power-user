@@ -18,8 +18,6 @@ export const initialState = {
   project: undefined,
   missingDocumentationMessage: undefined,
   searchQuery: "",
-  showSingleDocsPropRightPanel: false,
-  showBulkDocsPropRightPanel: false,
   docBlocks: [],
 } as DocumentationStateProps;
 
@@ -35,18 +33,6 @@ const documentationSlice = createSlice({
       action: PayloadAction<DocumentationStateProps["missingDocumentationMessage"]>
     ) => {
       state.missingDocumentationMessage = action.payload;
-    },
-    updateSingleDocsPropRightPanel: (
-      state,
-      action: PayloadAction<DocumentationStateProps["showSingleDocsPropRightPanel"]>
-    ) => {
-      state.showSingleDocsPropRightPanel = action.payload;
-    },
-    updateBulkDocsPropRightPanel: (
-      state,
-      action: PayloadAction<DocumentationStateProps["showBulkDocsPropRightPanel"]>
-    ) => {
-      state.showBulkDocsPropRightPanel = action.payload;
     },
     setProject: (state, action: PayloadAction<DocumentationStateProps["project"]>) => {
       state.project = action.payload;
@@ -176,7 +162,5 @@ export const {
   updateCurrentUnitTests,
   setMissingDocumentationMessage,
   setSearchQuery,
-  updateSingleDocsPropRightPanel,
-  updateBulkDocsPropRightPanel,
 } = documentationSlice.actions;
 export default documentationSlice;

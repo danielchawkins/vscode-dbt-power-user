@@ -1,8 +1,6 @@
 import type { Table } from "@altimateai/ui-components/lineage";
 import {
   ApiHelper,
-  CLL,
-  CllEvents,
   Lineage,
   TooltipProvider,
 } from "@altimateai/ui-components/lineage";
@@ -53,8 +51,6 @@ const LineageView = (): JSX.Element | null => {
         case "showInfoNotification":
         case "getRelationships":
           return executeRequestInSync(url, { args: { params: data ?? {} } });
-        case "columnLineage":
-          return executeRequestInSync(url, { args: data });
 
         default:
           break;
@@ -90,32 +86,15 @@ const LineageView = (): JSX.Element | null => {
     setRenderNode(data);
   };
 
-  const columnLineage = ({ event }: { event: CllEvents }) => {
-    if (event === CllEvents.CANCEL) {
-      CLL.onCancel();
-    }
-  };
-
   useEffect(() => {
-    const commandMap = {
-      render,
-      columnLineage: (data: { event: CllEvents }) => {
-        columnLineage(data);
-      },
-    };
-
     const onMessage = (
-      event: MessageEvent<{ command: string; args: Record<string, unknown> }>,
+      event: MessageEvent<{ command: string; args: Parameters<typeof render>[0] }>,
     ) => {
       panelLogger.log("lineage:message -> ", JSON.stringify(event.data));
       const { command, args } = event.data;
 
-      if (command in commandMap) {
-        (
-          commandMap[command as keyof typeof commandMap] as (
-            args: Record<string, unknown>,
-          ) => void
-        )(args);
+      if (command === "render") {
+        render(args);
       }
     };
 

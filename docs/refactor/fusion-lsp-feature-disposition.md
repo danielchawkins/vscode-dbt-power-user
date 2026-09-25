@@ -40,7 +40,7 @@ These are part of the target product:
 - run, build, test, and clean projects or selected nodes;
 - run parent, child, and combined graph selections;
 - model-level lineage;
-- column-level lineage when the local Fusion LSP exposes the required data; remove the current hosted implementation and rebuild the local contract rather than retaining its API client;
+- column-level lineage when the local Fusion LSP exposes the required data (not implemented; see [Removed pending rebuild](#removed-pending-rebuild));
 - parent, child, test, and documentation trees;
 - query results, export, tables, charts, and analysis;
 - CTE preview and profiling;
@@ -110,6 +110,10 @@ Likely source areas:
 - hosted and AI modules under `webview_panels/src/modules/`
 - Python files and packaged Python dependencies
 - Altimate documentation, images, walkthroughs, and localization strings
+
+## Removed pending rebuild
+
+Column-level lineage and documentation propagation are removed. Both depended on the native `@altimateai/altimate-core` SQL engine, which the VSIX never shipped, so neither worked in an installed extension. The lineage panel keeps model-level lineage; clicking a column returns no column lineage. The `fusionPowerUser.lineage.showSelectEdges` and `fusionPowerUser.lineage.showNonSelectEdges` settings went with them. Both features are to be rebuilt without that dependency.
 
 ## Resolve with focused spikes
 
