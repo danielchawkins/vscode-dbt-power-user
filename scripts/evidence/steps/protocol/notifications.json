@@ -1,0 +1,313 @@
+[
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [
+        {
+          "uri": "$ROOT_URI",
+          "name": "lineage_probe"
+        }
+      ],
+      "capabilities": {
+        "workspace": {
+          "configuration": true,
+          "didChangeWatchedFiles": {
+            "dynamicRegistration": true
+          }
+        },
+        "window": {
+          "workDoneProgress": true
+        }
+      }
+    }
+  },
+  {
+    "include": "open-and-load.json"
+  },
+  {
+    "wait": 3000,
+    "label": "settle after load"
+  },
+  {
+    "snapshot": "00-loaded"
+  },
+  {
+    "notify": "textDocument/didSave",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)"
+      }
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle didSave no text unchanged"
+  },
+  {
+    "snapshot": "01-didSave-no-text-unchanged"
+  },
+  {
+    "notify": "textDocument/didSave",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)"
+      },
+      "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle didSave text unchanged"
+  },
+  {
+    "snapshot": "02-didSave-text-unchanged"
+  },
+  {
+    "writeFile": "models/order_totals.sql",
+    "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status, max(amount) as biggest\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+  },
+  {
+    "notify": "textDocument/didSave",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)"
+      }
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle disk edit then didSave no text"
+  },
+  {
+    "snapshot": "03-disk-edit-then-didSave-no-text"
+  },
+  {
+    "writeFile": "models/order_totals.sql",
+    "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+  },
+  {
+    "notify": "textDocument/didSave",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)"
+      },
+      "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle disk revert then didSave text"
+  },
+  {
+    "snapshot": "04-disk-revert-then-didSave-text"
+  },
+  {
+    "notify": "workspace/didChangeWatchedFiles",
+    "params": {
+      "changes": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "type": 2
+        }
+      ]
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle didChangeWatchedFiles changed unchanged file"
+  },
+  {
+    "snapshot": "05-didChangeWatchedFiles-changed-unchanged-file"
+  },
+  {
+    "writeFile": "models/order_totals.sql",
+    "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status, max(amount) as biggest\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+  },
+  {
+    "notify": "workspace/didChangeWatchedFiles",
+    "params": {
+      "changes": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "type": 2
+        }
+      ]
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle disk edit then didChangeWatchedFiles changed"
+  },
+  {
+    "snapshot": "06-disk-edit-then-didChangeWatchedFiles-changed"
+  },
+  {
+    "writeFile": "models/new_model.sql",
+    "text": "select 1 as id\n"
+  },
+  {
+    "notify": "workspace/didChangeWatchedFiles",
+    "params": {
+      "changes": [
+        {
+          "uri": "$FILE_URI(models/new_model.sql)",
+          "type": 1
+        }
+      ]
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle didChangeWatchedFiles created"
+  },
+  {
+    "snapshot": "07-didChangeWatchedFiles-created"
+  },
+  {
+    "deleteFile": "models/new_model.sql"
+  },
+  {
+    "notify": "workspace/didChangeWatchedFiles",
+    "params": {
+      "changes": [
+        {
+          "uri": "$FILE_URI(models/new_model.sql)",
+          "type": 3
+        }
+      ]
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle didChangeWatchedFiles deleted"
+  },
+  {
+    "snapshot": "08-didChangeWatchedFiles-deleted"
+  },
+  {
+    "notify": "workspace/didChangeConfiguration",
+    "params": {
+      "settings": {
+        "dbt": {
+          "lsp": {
+            "linter": {
+              "enabled": false
+            }
+          }
+        }
+      }
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle didChangeConfiguration dbt settings"
+  },
+  {
+    "snapshot": "09-didChangeConfiguration-dbt-settings"
+  },
+  {
+    "notify": "workspace/didChangeConfiguration",
+    "params": {
+      "settings": null
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle didChangeConfiguration null"
+  },
+  {
+    "snapshot": "10-didChangeConfiguration-null"
+  },
+  {
+    "notify": "textDocument/didClose",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)"
+      }
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle didClose"
+  },
+  {
+    "snapshot": "11-didClose"
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{uri,limit}] (cancelled)",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "limit": 2
+        }
+      ]
+    },
+    "async": true,
+    "timeoutMs": 30000
+  },
+  {
+    "notify": "$/cancelRequest",
+    "params": {
+      "id": "$LAST_ID"
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle cancel show"
+  },
+  {
+    "snapshot": "12-cancel-show"
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileFile [uri] (cancelled)",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["$FILE_URI(models/order_totals.sql)"]
+    },
+    "async": true,
+    "timeoutMs": 30000
+  },
+  {
+    "notify": "$/cancelRequest",
+    "params": {
+      "id": "$LAST_ID"
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle cancel compileFile"
+  },
+  {
+    "snapshot": "13-cancel-compileFile"
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [+order_totals+] (cancelled)",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+order_totals+"]
+    },
+    "async": true,
+    "timeoutMs": 30000
+  },
+  {
+    "notify": "$/cancelRequest",
+    "params": {
+      "id": "$LAST_ID"
+    }
+  },
+  {
+    "wait": 6000,
+    "label": "settle cancel listNodes"
+  },
+  {
+    "snapshot": "14-cancel-listNodes"
+  }
+]

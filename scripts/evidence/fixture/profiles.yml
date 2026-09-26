@@ -1,0 +1,6 @@
+lineage_probe:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: probe.duckdb

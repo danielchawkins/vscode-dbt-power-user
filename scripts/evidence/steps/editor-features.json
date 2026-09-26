@@ -1,0 +1,228 @@
+[
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [{ "uri": "$ROOT_URI", "name": "lineage_probe" }],
+      "capabilities": {
+        "workspace": {
+          "configuration": true,
+          "workspaceEdit": { "documentChanges": true },
+          "didChangeWatchedFiles": { "dynamicRegistration": true }
+        },
+        "window": { "workDoneProgress": true },
+        "textDocument": {
+          "hover": { "contentFormat": ["markdown"] },
+          "definition": { "linkSupport": true },
+          "references": {},
+          "rename": { "prepareSupport": true },
+          "documentHighlight": {},
+          "codeLens": {},
+          "inlayHint": {}
+        }
+      }
+    }
+  },
+  { "notify": "initialized", "params": {} },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/stg_orders.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "select * from {{ source('raw', 'orders') }}\n"
+      }
+    }
+  },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+      }
+    }
+  },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/totals_downstream.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "select customer_id, total as grand_total from {{ ref('order_totals') }}\n"
+      }
+    }
+  },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/hard.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "with j as (\n  select o.id, c.name, case when o.status = 'x' then o.amount else 0 end as amt,\n         row_number() over (partition by o.customer_id order by o.id) as rn\n  from {{ source('raw','orders') }} o join {{ source('raw','customers') }} c on o.customer_id = c.id\n  where c.active\n)\nselect id, name as label, amt, rn from j\nunion all\nselect user_id, contact, 0, 0 from {{ source('raw','contacts') }}\n"
+      }
+    }
+  },
+  { "wait": 10000 },
+
+  {
+    "request": "textDocument/hover",
+    "label": "hover star stg_orders",
+    "at": { "file": "models/stg_orders.sql", "find": "*" }
+  },
+  {
+    "request": "textDocument/hover",
+    "label": "hover passthrough customer_id",
+    "at": {
+      "file": "models/order_totals.sql",
+      "find": "customer_id,",
+      "offset": 2
+    }
+  },
+  {
+    "request": "textDocument/hover",
+    "label": "hover alias total",
+    "at": { "file": "models/order_totals.sql", "find": "as total", "offset": 4 }
+  },
+  {
+    "request": "textDocument/hover",
+    "label": "hover ref stg_orders",
+    "at": {
+      "file": "models/order_totals.sql",
+      "find": "stg_orders",
+      "offset": 2
+    }
+  },
+
+  {
+    "request": "textDocument/definition",
+    "label": "definition passthrough customer_id",
+    "at": {
+      "file": "models/order_totals.sql",
+      "find": "customer_id,",
+      "offset": 2
+    }
+  },
+  {
+    "request": "textDocument/definition",
+    "label": "definition downstream total",
+    "at": {
+      "file": "models/totals_downstream.sql",
+      "find": "total as",
+      "offset": 1
+    }
+  },
+  {
+    "request": "textDocument/definition",
+    "label": "definition join key o.customer_id",
+    "at": {
+      "file": "models/hard.sql",
+      "find": "o.customer_id = c.id",
+      "offset": 4
+    }
+  },
+  {
+    "request": "textDocument/definition",
+    "label": "definition group-by key",
+    "at": {
+      "file": "models/order_totals.sql",
+      "find": "group by customer_id",
+      "offset": 11
+    }
+  },
+
+  {
+    "request": "textDocument/references",
+    "label": "references alias total",
+    "at": {
+      "file": "models/order_totals.sql",
+      "find": "as total",
+      "offset": 4
+    },
+    "params": { "context": { "includeDeclaration": true } }
+  },
+  {
+    "request": "textDocument/references",
+    "label": "references passthrough customer_id",
+    "at": {
+      "file": "models/order_totals.sql",
+      "find": "customer_id,",
+      "offset": 2
+    },
+    "params": { "context": { "includeDeclaration": true } }
+  },
+  {
+    "request": "textDocument/references",
+    "label": "references star stg_orders",
+    "at": { "file": "models/stg_orders.sql", "find": "*" },
+    "params": { "context": { "includeDeclaration": true } }
+  },
+
+  {
+    "request": "textDocument/prepareRename",
+    "label": "prepareRename alias total",
+    "at": { "file": "models/order_totals.sql", "find": "as total", "offset": 4 }
+  },
+  {
+    "request": "textDocument/rename",
+    "label": "rename alias total",
+    "at": {
+      "file": "models/order_totals.sql",
+      "find": "as total",
+      "offset": 4
+    },
+    "params": { "newName": "total_amount" }
+  },
+  {
+    "request": "textDocument/rename",
+    "label": "rename downstream use of total",
+    "at": {
+      "file": "models/totals_downstream.sql",
+      "find": "total as",
+      "offset": 1
+    },
+    "params": { "newName": "total_amount" }
+  },
+  {
+    "request": "textDocument/rename",
+    "label": "rename passthrough customer_id",
+    "at": {
+      "file": "models/order_totals.sql",
+      "find": "customer_id,",
+      "offset": 2
+    },
+    "params": { "newName": "cust_id" }
+  },
+  {
+    "request": "textDocument/rename",
+    "label": "rename alias label (hard.sql)",
+    "at": { "file": "models/hard.sql", "find": "as label", "offset": 4 },
+    "params": { "newName": "customer_name" }
+  },
+
+  {
+    "request": "textDocument/codeLens",
+    "label": "codeLens order_totals",
+    "params": {
+      "textDocument": { "uri": "$FILE_URI(models/order_totals.sql)" }
+    }
+  },
+  {
+    "request": "textDocument/inlayHint",
+    "label": "inlayHint stg_orders",
+    "params": {
+      "textDocument": { "uri": "$FILE_URI(models/stg_orders.sql)" },
+      "range": {
+        "start": { "line": 0, "character": 0 },
+        "end": { "line": 1, "character": 0 }
+      }
+    }
+  }
+]

@@ -1,0 +1,40 @@
+[
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [
+        {
+          "uri": "$ROOT_URI",
+          "name": "lineage_probe"
+        }
+      ],
+      "capabilities": {
+        "workspace": {
+          "configuration": true,
+          "didChangeWatchedFiles": {
+            "dynamicRegistration": true
+          }
+        },
+        "window": {
+          "workDoneProgress": true
+        }
+      },
+      "initializationOptions": {
+        "generate_info_schema": true,
+        "static_analysis": "strict",
+        "maxErrorReporting": 1,
+        "lsp": {
+          "linter": {
+            "enabled": false
+          }
+        }
+      }
+    }
+  },
+  {
+    "include": "open-and-load.json"
+  }
+]
