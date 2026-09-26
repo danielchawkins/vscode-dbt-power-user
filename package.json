@@ -88,7 +88,7 @@
             "enumDescriptions": [
               "Ask Fusion to skip SQL analysis for the model and its descendants.",
               "Ask Fusion for Jinja, YAML, and SQL syntax diagnostics, ref and source navigation, table-level lineage, and ref autocomplete.",
-              "Ask Fusion for baseline analysis plus column-level lineage, SQL type and schema diagnostics, column go-to-definition, select-star hover, and column rename when the local project and warehouse profile support them."
+              "Ask Fusion for baseline analysis plus SQL type and schema diagnostics, column hover and go-to-definition, column references, and alias rename."
             ],
             "default": "baseline",
             "scope": "resource",

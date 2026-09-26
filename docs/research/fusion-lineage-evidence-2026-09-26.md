@@ -1,5 +1,7 @@
 # Fusion column lineage and editor features: evidence
 
+**Run record only.** The consolidated findings are in [evidence/README.md](evidence/README.md); where this file disagrees, that one wins.
+
 Captured 2026-09-26 with dbt Fusion 2.0.6 (`dbt --version`: `dbt 2.0.6`) on Darwin 25.5.0 arm64, Node v24.21.0, DuckDB adapter, no `dbt login`. Every result below comes from `scripts/evidence/run.sh <experiment>`. The runner copies `scripts/evidence/fixture/` into a fresh directory under `$TMPDIR/fpu-evidence/<experiment>/project`, creates the three source tables with `dbt run-operation setup_raw`, deletes `target/` and `logs/`, and then runs `scripts/evidence/experiments/<experiment>.sh`.
 
 For each step the runner writes `steps/NN-<label>/` with:

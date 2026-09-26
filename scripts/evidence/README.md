@@ -1,6 +1,6 @@
 # Evidence harness
 
-Reproducible runs of `dbt lsp` and the `dbt` CLI against a small synthetic project. Findings live in `docs/research/fusion-lineage-evidence-2026-09-26.md`; this directory is how to regenerate them.
+Reproducible runs of `dbt lsp` and the `dbt` CLI against a small synthetic project. Findings live in `docs/research/evidence/README.md`; this directory is how to regenerate them.
 
 ```sh
 scripts/evidence/run.sh <experiment> [output-root]   # output-root defaults to $TMPDIR/fpu-evidence
@@ -11,7 +11,7 @@ scripts/evidence/run.sh <experiment> [output-root]   # output-root defaults to $
 - `steps/*.json`: language-server step files for `lsp-session.mjs` (`request`, `notify`, `wait`, `writeFile`; `at` resolves a text position; `$FILE_URI(rel)` and `$ROOT_URI` expand).
 - `lsp-session.mjs`: a raw JSON-RPC client that records every message.
 
-`DBT_BIN` must be an absolute path to the `dbt` executable (for example `export DBT_BIN="$(mise where aqua:getdbt.com/dbt-fusion@2.0.6)/dbt"`); `PATH` is not consulted. Nothing here runs in CI or ships in the VSIX. Nothing here runs in CI or ships in the VSIX.
+`DBT_BIN` must be an absolute path to the `dbt` executable (for example `export DBT_BIN="$(mise where aqua:getdbt.com/dbt-fusion@2.0.6)/dbt"`); `PATH` is not consulted. Nothing here runs in CI or ships in the VSIX.
 
 ## `lsp-session.mjs` step types
 
