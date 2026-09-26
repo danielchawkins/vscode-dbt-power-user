@@ -384,6 +384,14 @@ export interface DBTProjectIntegration {
     query: string,
     originalModelName: string | undefined,
   ): Promise<string>;
+  /**
+   * Runs `show --inline <sql> --output json --limit -1 --quiet`. With `--quiet` and no `--log-format`, stdout
+   * is one JSON array (evidence README section 5).
+   */
+  showColumnLineage(
+    sql: string,
+    signal?: AbortSignal,
+  ): Promise<CommandProcessResult>;
   validateSQLDryRun(query: string): Promise<SqlDryRunResult>;
   getColumnsOfSource(
     sourceName: string,

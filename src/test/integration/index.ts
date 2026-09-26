@@ -20,8 +20,12 @@ export async function run(): Promise<void> {
   const selectedFiles = isSymlinkedRun
     ? files.filter((file) => file.includes("symlinkedWorkspace.test.js"))
     : isNativeEditorRun
-      ? files.filter((file) => file.includes("nativeEditorFeatures.test.js"))
-      : files;
+      ? files.filter(
+          (file) =>
+            file.includes("nativeEditorFeatures.test.js") ||
+            file.includes("columnLineage.test.js"),
+        )
+      : files.filter((file) => !file.includes("columnLineage.test.js"));
 
   for (const file of selectedFiles) {
     mocha.addFile(path.resolve(testsRoot, file));

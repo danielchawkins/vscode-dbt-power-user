@@ -45,6 +45,12 @@ import {
   SourceNode,
 } from "../dbt_integration";
 import {
+  buildLineageQuery,
+  classifyLineageRead,
+  LineageDirection,
+  LineageRead,
+} from "../fusion/columnLineage";
+import {
   hasProjectStrictAnalysis,
   resolveSchemaOrigin,
   SchemaOriginStatus,
@@ -625,6 +631,28 @@ export class DBTProject implements Disposable {
       query,
       originalModelName,
     );
+  }
+
+  /** Reads column lineage edges into or out of `uniqueIds` from the last strict info-schema compile. */
+  async readColumnLineage(
+    uniqueIds: readonly string[],
+    direction: LineageDirection,
+    signal?: AbortSignal,
+  ): Promise<LineageRead> {
+    try {
+      const result = await this.dbtProjectIntegration.showColumnLineage(
+        buildLineageQuery(uniqueIds, direction),
+        signal,
+      );
+      return classifyLineageRead(result, (message) =>
+        this.terminal.warn("columnLineage", message, false),
+      );
+    } catch (error) {
+      return {
+        kind: "failed",
+        message: error instanceof Error ? error.message : String(error),
+      };
+    }
   }
 
   async getColumnsOfModel(modelName: string) {

@@ -3,6 +3,7 @@ import { homedir } from "os";
 import path, { join } from "path";
 import { parse } from "yaml";
 
+import { CommandProcessResult } from "./commandProcessExecution";
 import { DBTBaseProjectIntegration } from "./dbtBaseProjectIntegration";
 import {
   DBTCommand,
@@ -475,6 +476,25 @@ export class DBTFusionCommandProjectIntegration
         };
       },
     );
+  }
+
+  async showColumnLineage(
+    sql: string,
+    signal?: AbortSignal,
+  ): Promise<CommandProcessResult> {
+    const command = this.wrapCommand(
+      new DBTCommand("Reading column lineage...", [
+        "show",
+        "--inline",
+        sql,
+        "--output",
+        "json",
+        "--limit",
+        "-1",
+        "--quiet",
+      ]),
+    );
+    return command.execute(signal);
   }
 
   async unsafeCompileNode(modelName: string): Promise<string> {

@@ -53,6 +53,8 @@ export interface CommandProcessResult {
   stdout: string;
   stderr: string;
   fullOutput: string;
+  /** Null when the process was ended by a signal. */
+  exitCode?: number | null;
 }
 
 export class CommandProcessExecution {
@@ -115,14 +117,19 @@ export class CommandProcessExecution {
         fullOutput += chunk;
       });
 
-      commandProcess.once("close", () => {
+      commandProcess.once("close", (exitCode: number | null) => {
         this.terminal.debug(
           "CommandProcessExecution",
           "Return value from command: " + this.command,
           this.args,
           fullOutput,
         );
-        resolve({ stdout: stdoutBuffer, stderr: stderrBuffer, fullOutput });
+        resolve({
+          stdout: stdoutBuffer,
+          stderr: stderrBuffer,
+          fullOutput,
+          exitCode,
+        });
       });
 
       commandProcess.once("error", (error) => {
@@ -171,8 +178,13 @@ export class CommandProcessExecution {
         this.terminal.log(line);
         fullOutput += line;
       });
-      commandProcess.once("close", () => {
-        resolve({ stdout: stdoutBuffer, stderr: stderrBuffer, fullOutput });
+      commandProcess.once("close", (exitCode: number | null) => {
+        resolve({
+          stdout: stdoutBuffer,
+          stderr: stderrBuffer,
+          fullOutput,
+          exitCode,
+        });
         this.terminal.log("");
       });
       commandProcess.once("error", (error) => {

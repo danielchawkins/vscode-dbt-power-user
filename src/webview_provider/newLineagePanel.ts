@@ -26,6 +26,7 @@ import {
   SourceTable,
   Table,
 } from "../dbt_integration";
+import { LineageRead } from "../fusion/columnLineage";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
@@ -39,6 +40,25 @@ interface ResolvedSourceTable {
   key: string;
   sourceName: string;
   table: SourceTable;
+}
+
+/**
+ * The lineage component shows `errors[table]` as a tooltip on that table. Column lineage exists only after a
+ * `dbt compile --static-analysis strict --generate-info-schema`, so an empty read explains how to produce it.
+ */
+export function noLineageErrors(
+  targets: [string, string][],
+  read: Exclude<LineageRead, { kind: "edges" }>,
+): Record<string, string[]> {
+  const message =
+    read.kind === "failed"
+      ? `Could not read column lineage: ${read.message}`
+      : "No column lineage yet. Run `dbt compile --static-analysis strict --generate-info-schema` for this project.";
+  const errors: Record<string, string[]> = {};
+  for (const [table] of targets) {
+    errors[table] = [message];
+  }
+  return errors;
 }
 
 // 0-based line of `offset` within `text`.
@@ -214,10 +234,17 @@ export class NewLineagePanel
     }
 
     if (command === "getConnectedColumns") {
-      // The lineage component requests column lineage on column click; none is computed.
+      const result = await this.dbtLineageService.getConnectedColumns(params);
+      const body =
+        result.kind === "lineage"
+          ? { column_lineage: result.columnLineage }
+          : {
+              column_lineage: [],
+              errors: noLineageErrors(params.targets ?? [], result.read),
+            };
       this._panel?.webview.postMessage({
         command: "response",
-        args: { id, syncRequestId, body: { column_lineage: [] }, status: true },
+        args: { id, syncRequestId, body, status: true },
       });
       return;
     }

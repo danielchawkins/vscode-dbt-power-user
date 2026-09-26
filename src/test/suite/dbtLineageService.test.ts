@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it, jest } from "@jest/globals";
 import { DbtLineageService } from "../../services/dbtLineageService";
 
 // Minimal NodeData-shaped edge.
@@ -93,5 +93,93 @@ describe("DbtLineageService — foreign-key-only edge hiding", () => {
     const svc = makeService({ children, parents: new Map() });
     const count = (svc as any).getConnectedNodeCount(children, "model.p.fact");
     expect(count).toBe(1);
+  });
+});
+
+describe("DbtLineageService.getConnectedColumns", () => {
+  const edge = (parent: string, child: string) => {
+    const [parentId, parentColumn] = parent.split(":");
+    const [childId, childColumn] = child.split(":");
+    return {
+      parent: { uniqueId: parentId, column: parentColumn },
+      child: { uniqueId: childId, column: childColumn },
+      evolution: "copy" as const,
+    };
+  };
+
+  function withProject(readColumnLineage: jest.Mock | undefined) {
+    const svc = Object.create(DbtLineageService.prototype) as DbtLineageService;
+    (svc as any).queryManifestService = {
+      getProject: () => (readColumnLineage ? { readColumnLineage } : undefined),
+    };
+    return svc;
+  }
+
+  it("reads upstream edges for the target tables and keeps the requested child columns", async () => {
+    const read = jest.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({
+      kind: "edges",
+      edges: [
+        edge("model.p.a:x", "model.p.b:total"),
+        edge("model.p.a:y", "model.p.b:n"),
+      ],
+    });
+    const result = await withProject(read).getConnectedColumns({
+      targets: [["model.p.b", "TOTAL"]],
+      upstreamExpansion: true,
+    });
+
+    expect(read).toHaveBeenCalledWith(["model.p.b"], "upstream", undefined);
+    expect(result).toEqual({
+      kind: "lineage",
+      columnLineage: [
+        {
+          source: ["model.p.a", "x"],
+          target: ["model.p.b", "total"],
+          type: "direct",
+          viewsType: "Alias",
+        },
+      ],
+    });
+  });
+
+  it("reads downstream edges and keeps the requested parent columns", async () => {
+    const read = jest.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({
+      kind: "edges",
+      edges: [
+        edge("model.p.a:x", "model.p.b:x"),
+        edge("model.p.a:y", "model.p.b:y"),
+      ],
+    });
+    const result = await withProject(read).getConnectedColumns({
+      targets: [
+        ["model.p.a", "x"],
+        ["model.p.a", "y"],
+      ],
+      upstreamExpansion: false,
+    });
+
+    expect(read).toHaveBeenCalledWith(["model.p.a"], "downstream", undefined);
+    expect(result.kind === "lineage" && result.columnLineage).toHaveLength(2);
+  });
+
+  it("passes a non-edge read through", async () => {
+    const read = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockResolvedValue({ kind: "unavailable" });
+    expect(
+      await withProject(read).getConnectedColumns({
+        targets: [["model.p.a", "x"]],
+        upstreamExpansion: true,
+      }),
+    ).toEqual({ kind: "noLineage", read: { kind: "unavailable" } });
+  });
+
+  it("answers empty without a current project", async () => {
+    expect(
+      await withProject(undefined).getConnectedColumns({
+        targets: [["model.p.a", "x"]],
+        upstreamExpansion: true,
+      }),
+    ).toEqual({ kind: "noLineage", read: { kind: "empty" } });
   });
 });
