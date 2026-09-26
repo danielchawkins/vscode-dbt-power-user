@@ -1,14 +1,14 @@
-import {
-  CommandProcessExecution,
-  CommandProcessExecutionFactory,
-  DBTTerminal,
-} from "@altimateai/dbt-integration";
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { anything, instance, mock, verify, when } from "ts-mockito";
 import { VSCodeDBTTerminal } from "../../dbt_client/vscodeTerminal";
+import {
+  CommandProcessExecution,
+  CommandProcessExecutionFactory,
+  DBTTerminal,
+} from "../../dbt_integration";
 
 describe("CommandProcessExecution Tests", () => {
   let mockTerminal: DBTTerminal;

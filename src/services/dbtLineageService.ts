@@ -1,3 +1,6 @@
+import { inject } from "inversify";
+import { CancellationTokenSource, window } from "vscode";
+import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import {
   computeColumnLineage,
   GraphMetaMap,
@@ -10,10 +13,7 @@ import {
   RESOURCE_TYPE_SNAPSHOT,
   RESOURCE_TYPE_SOURCE,
   Table,
-} from "@altimateai/dbt-integration";
-import { inject } from "inversify";
-import { CancellationTokenSource, window } from "vscode";
-import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
+} from "../dbt_integration";
 import { ModelInfo } from "../local/lineageTypes";
 import { DBTTerminal, QueryManifestService } from "../modules";
 export enum CllEvents {

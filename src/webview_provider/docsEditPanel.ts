@@ -1,10 +1,3 @@
-import {
-  DBTTerminal,
-  Table,
-  TestMetaData,
-  TestMetadataAcceptedValues,
-  TestMetadataRelationships,
-} from "@altimateai/dbt-integration";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { inject } from "inversify";
 import * as path from "path";
@@ -35,6 +28,13 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
+import {
+  DBTTerminal,
+  Table,
+  TestMetaData,
+  TestMetadataAcceptedValues,
+  TestMetadataRelationships,
+} from "../dbt_integration";
 import { UserInputError } from "../local/errors";
 import { DbtLineageService } from "../services/dbtLineageService";
 import { DbtTestService } from "../services/dbtTestService";

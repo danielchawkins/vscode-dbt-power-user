@@ -1,16 +1,3 @@
-import {
-  DBTTerminal,
-  ExposureMetaData,
-  FunctionMetaData,
-  NodeMetaData,
-  Ref,
-  RelationshipParser,
-  RESOURCE_TYPE_FUNCTION,
-  RESOURCE_TYPE_SOURCE,
-  SourceMetaMap,
-  SourceTable,
-  Table,
-} from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import * as path from "path";
 import {
@@ -28,6 +15,19 @@ import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
+import {
+  DBTTerminal,
+  ExposureMetaData,
+  FunctionMetaData,
+  NodeMetaData,
+  Ref,
+  RelationshipParser,
+  RESOURCE_TYPE_FUNCTION,
+  RESOURCE_TYPE_SOURCE,
+  SourceMetaMap,
+  SourceTable,
+  Table,
+} from "../dbt_integration";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { CllEvents, DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";

@@ -1,4 +1,3 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import {
   commands,
   Disposable,
@@ -11,6 +10,7 @@ import { CodeLensProviders } from "./code_lens_provider";
 import { VSCodeCommands } from "./commands";
 import { ContentProviders } from "./content_provider";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
+import { DBTTerminal } from "./dbt_integration";
 import { registerFusionClientDiagnostics } from "./lsp/fusionClientDiagnostics";
 import { FusionClientPool } from "./lsp/fusionClientPool";
 import { FusionStatus } from "./lsp/fusionStatus";

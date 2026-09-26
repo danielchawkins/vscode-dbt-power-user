@@ -1,6 +1,6 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { injectable } from "inversify";
 import { Disposable, EventEmitter, Terminal, window } from "vscode";
+import { DBTTerminal } from "../dbt_integration";
 import { stripANSI } from "../utils";
 
 @injectable()

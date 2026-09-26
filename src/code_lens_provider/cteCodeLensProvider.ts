@@ -1,4 +1,3 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import {
   CancellationToken,
@@ -9,6 +8,7 @@ import {
   Range,
   TextDocument,
 } from "vscode";
+import { DBTTerminal } from "../dbt_integration";
 export interface CteInfo {
   name: string;
   range: Range;

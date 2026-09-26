@@ -1,3 +1,13 @@
+import { Container, Factory, ResolutionContext } from "inversify";
+import { Event, EventEmitter, Uri } from "vscode";
+import { createFusionCommandIntegrationFactory } from "./dbt_client/configuredFusionCommandIntegration";
+import { DBTProject } from "./dbt_client/dbtProject";
+import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
+import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
+import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
+import { FusionProjectIntegration } from "./dbt_client/fusionProjectIntegration";
+import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
+import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import {
   ChildrenParentParser,
   CommandProcessExecutionFactory,
@@ -17,17 +27,7 @@ import {
   SourceParser,
   TestParser,
   UnitTestParser,
-} from "@altimateai/dbt-integration";
-import { Container, Factory, ResolutionContext } from "inversify";
-import { Event, EventEmitter, Uri } from "vscode";
-import { createFusionCommandIntegrationFactory } from "./dbt_client/configuredFusionCommandIntegration";
-import { DBTProject } from "./dbt_client/dbtProject";
-import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
-import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
-import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
-import { FusionProjectIntegration } from "./dbt_client/fusionProjectIntegration";
-import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
-import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
+} from "./dbt_integration";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import {
   createFusionClientPool,
@@ -35,7 +35,6 @@ import {
 } from "./lsp/fusionClientPool";
 import { DefaultFusionClientFactory } from "./lsp/fusionLanguageClient";
 import { FusionStatus } from "./lsp/fusionStatus";
-import { createLocalModelDepthContext } from "./manifest/localModelDepthContext";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtLineageService } from "./services/dbtLineageService";
@@ -129,12 +128,7 @@ container
 container
   .bind(ModelDepthParser)
   .toDynamicValue(
-    (context) =>
-      new ModelDepthParser(
-        context.get("DBTTerminal"),
-        createLocalModelDepthContext(),
-        context.get("DBTConfiguration"),
-      ),
+    (context) => new ModelDepthParser(context.get("DBTTerminal")),
   );
 
 container

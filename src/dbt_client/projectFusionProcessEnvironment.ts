@@ -1,31 +1,12 @@
-import {
-  EnvironmentVariables,
-  PythonEnvironmentProvider,
-  RuntimePythonEnvironment,
-} from "@altimateai/dbt-integration";
+import { EnvironmentVariables } from "../dbt_integration/domain";
+import { FusionProcessEnvironment } from "../dbt_integration/fusionProcessEnvironment";
 import { FusionExecutable } from "../fusion/fusionExecutable";
 
 /** Immutable per-project host env for external Fusion CLI execution. */
-export class ProjectFusionProcessEnvironment
-  implements RuntimePythonEnvironment, PythonEnvironmentProvider
-{
+export class ProjectFusionProcessEnvironment implements FusionProcessEnvironment {
   constructor(private readonly executable: FusionExecutable) {}
 
-  get pythonPath(): string {
-    return this.executable.path;
-  }
-
-  getEnvironmentVariables(_workspacePath: string): EnvironmentVariables {
+  getEnvironmentVariables(): EnvironmentVariables {
     return this.executable.env as EnvironmentVariables;
-  }
-
-  getCurrentEnvironment(): RuntimePythonEnvironment {
-    return this;
-  }
-
-  onEnvironmentChanged(
-    _callback: (environment: RuntimePythonEnvironment) => void,
-  ): () => void {
-    return () => {};
   }
 }

@@ -1,4 +1,3 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import {
   Disposable,
@@ -9,6 +8,7 @@ import {
   workspace,
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { DBTTerminal } from "../dbt_integration";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 
 export class DeferToProductionStatusBar implements Disposable {

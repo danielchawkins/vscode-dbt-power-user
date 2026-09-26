@@ -16,7 +16,6 @@
     "moduleResolution": "bundler",
     "types": ["node", "jest", "mocha", "vscode"],
     "paths": {
-      // "@altimateai/dbt-integration": ["../altimate-dbt-integration/src/index.ts"],
       "@extension": ["./src/modules.ts"]
     },
     "experimentalDecorators": true,

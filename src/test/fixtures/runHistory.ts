@@ -1,7 +1,7 @@
 import type {
   RunResultEntry,
   RunResultsEventData,
-} from "@altimateai/dbt-integration";
+} from "../../dbt_integration";
 
 export const createResult = (
   overrides: Partial<RunResultEntry> = {},

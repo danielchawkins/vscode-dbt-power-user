@@ -1,14 +1,14 @@
-import {
-  DBTTerminal,
-  NodeMetaData,
-  RESOURCE_TYPE_MODEL,
-} from "@altimateai/dbt-integration";
 import { promises as fs } from "fs";
 import { inject } from "inversify";
 import * as yaml from "js-yaml";
 import * as path from "path";
 import { Uri, window } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import {
+  DBTTerminal,
+  NodeMetaData,
+  RESOURCE_TYPE_MODEL,
+} from "../dbt_integration";
 import { removeProtocol } from "../utils";
 import { DBTDocumentation, Source } from "./docGenTypes";
 import { QueryManifestService } from "./queryManifestService";

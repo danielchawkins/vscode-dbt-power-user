@@ -18,6 +18,10 @@ const forbiddenInProductionSource: Array<{ label: string; pattern: RegExp }> = [
   { label: "node_python_bridge.py", pattern: /node_python_bridge\.py/ },
   { label: "altimate_python_packages", pattern: /altimate_python_packages/ },
   { label: "dbt_core_integration.py", pattern: /dbt_core_integration\.py/ },
+  {
+    label: "@altimateai/dbt-integration",
+    pattern: /@altimateai\/dbt-integration/,
+  },
 ];
 
 const forbiddenInPackageJson: Array<{ label: string; pattern: RegExp }> = [
@@ -29,6 +33,10 @@ const forbiddenInPackageJson: Array<{ label: string; pattern: RegExp }> = [
     pattern: /installDepsOnProjectInitialization/,
   },
   { label: "sqlFmtPath setting", pattern: /sqlFmtPath/ },
+  {
+    label: "@altimateai/dbt-integration dependency",
+    pattern: /@altimateai\/dbt-integration/,
+  },
   { label: "printEnvVars command", pattern: /\bprintEnvVars\b/ },
   {
     label: "detectPythonFromTerminal command",

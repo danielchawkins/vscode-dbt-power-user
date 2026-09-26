@@ -1,12 +1,9 @@
-import {
-  getExternalProjectNamesFromDbtLoomConfig,
-  RateLimitException,
-} from "@altimateai/dbt-integration";
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { Position, Uri, window, workspace } from "vscode";
+import { getExternalProjectNamesFromDbtLoomConfig } from "../../dbt_integration";
 import {
   arrayEquals,
   debounce,
@@ -145,12 +142,6 @@ describe("utils tests", () => {
     const disposables = setupWatcherHandler(watcher, handler);
     expect(handler).toHaveBeenCalledTimes(3);
     expect(disposables).toHaveLength(3);
-  });
-
-  it("custom exceptions expose properties", () => {
-    const rl = new RateLimitException("msg", 42);
-    expect(rl.retryAfter).toBe(42);
-    expect(rl).toBeInstanceOf(Error);
   });
 
   it("arrayEquals compares arrays regardless of order", () => {

@@ -1,4 +1,3 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import {
   ConfigurationChangeEvent,
   Disposable,
@@ -6,6 +5,7 @@ import {
   EventEmitter,
   workspace,
 } from "vscode";
+import { DBTTerminal } from "../dbt_integration";
 import {
   ConfiguredFusionExecutableResolver,
   formatFusionExecutableResolutionFailure,

@@ -1,22 +1,14 @@
+import { injectable } from "inversify";
+import { workspace } from "vscode";
 import {
   DBTConfiguration,
   DEFAULT_CONFIGURATION_VALUES,
-} from "@altimateai/dbt-integration";
-import { injectable } from "inversify";
-import { workspace } from "vscode";
+} from "../dbt_integration";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
-import { getFirstWorkspacePath, resolveSettingsVariables } from "../utils";
+import { resolveSettingsVariables } from "../utils";
 
 @injectable()
 export class VSCodeDBTConfiguration implements DBTConfiguration {
-  getDbtCustomRunnerImport(): string {
-    throw new Error("Python execution is unsupported");
-  }
-
-  getDbtIntegration(): string {
-    return "fusion";
-  }
-
   getRunModelCommandAdditionalParams(): string[] {
     const params = workspace
       .getConfiguration(CONFIGURATION_SECTION)
@@ -60,41 +52,5 @@ export class VSCodeDBTConfiguration implements DBTConfiguration {
     return workspace
       .getConfiguration(CONFIGURATION_SECTION)
       .get<number>("query.limit", DEFAULT_CONFIGURATION_VALUES.queryLimit);
-  }
-
-  getEnableNotebooks(): boolean {
-    return false;
-  }
-
-  getDisableQueryHistory(): boolean {
-    return false;
-  }
-
-  getInstallDepsOnProjectInitialization(): boolean {
-    return false;
-  }
-
-  getDisableDepthsCalculation(): boolean {
-    return false;
-  }
-
-  getWorkingDirectory(): string {
-    return getFirstWorkspacePath();
-  }
-
-  getAltimateUrl(): string {
-    return "";
-  }
-
-  getIsLocalMode(): boolean {
-    return true;
-  }
-
-  getAltimateInstanceName(): string | undefined {
-    return undefined;
-  }
-
-  getAltimateAiKey(): string | undefined {
-    return undefined;
   }
 }
