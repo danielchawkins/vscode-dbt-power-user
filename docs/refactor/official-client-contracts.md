@@ -89,13 +89,17 @@ Fusion uses `window/workDoneProgress/create` and `$/progress`. The `dbt/progress
 
 ## Diagnostics Policy
 
-The server did not advertise pull diagnostics. Fusion Power User initially passes standard push diagnostics through unchanged; dependency filtering is added only if a production-shaped test demonstrates harmful noise.
+The server did not advertise pull diagnostics. Fusion Power User passes standard push diagnostics through, except for files that do not exist.
+
+### Diagnostics for Nonexistent Files
+
+After each compile, Fusion 2.0.5 publishes about 134 empty `publishDiagnostics` notifications for files that are not in the project, such as `macros/adapters.sql` and `tests/generic/builtin.sql`, placed under the project root. They come from Fusion's bundled adapter packages. Under Cursor 3.21.16 on CI, receiving them left the workbench renderer at about 100% CPU in a deep recursive `v8::Array::Iterate`; it never recovered. The hang did not depend on a symlinked workspace, and VS Code 1.128 was unaffected. The Cursor smoke hung whenever Fusion compiled and passed 10 of 10 runs once `ExistingFileDiagnostics` in `src/lsp/fusionLanguageClient.ts` dropped notifications for missing files. The filter keeps forwarding a URI once it has forwarded it, so a file that had diagnostics and was then deleted still receives its clear.
 
 ## Symlinked Project Roots
 
-Fusion canonicalizes `--project-dir` but not document URIs. Driving `dbt lsp` directly with `--project-dir` and document URIs both built from a symlink to the project loads no models: `probeSymlinkedRoot` in `src/test/integration/fusionEditorFlowsCapture.test.ts` reaches `getProjectInfo.models_count:7` on the real path and stays at `models_count:0, is_estimate:true` through the symlink after the same wait.
+Fusion canonicalizes `--project-dir` but matches document URIs literally against the realpath, in 2.0.5 and 2.0.6. Driving `dbt lsp` directly with document URIs built from a symlink to the project loads no models, whichever path `--project-dir` and the spawn `cwd` use; symlinks inside the project resolve normally. The official dbt extension 0.107.8 sends document URIs unchanged and resolves no definitions in a workspace opened through a symlink.
 
-Through the extension this does not reproduce. `src/test/integration/symlinkedWorkspace.test.ts` runs in a second extension-host launch that opens the fixture through a symlink, and it passes: the workspace folder is the symlink, activation writes `target/manifest.json` with both models, and definition on `ref("base")` resolves. It passed identically with and without a client change that launched Fusion on the realpath and translated document URIs between the two roots, so that change was not kept. The direct-server result is a property of raw `dbt lsp` usage, not of how the extension launches it.
+The same hazard reaches the extension once definition requests go only to Fusion. `src/test/integration/symlinkedWorkspace.test.ts` runs in a second extension-host launch that opens a fresh fixture copy through a symlink; definition on `ref("base")` returns nothing unless the client launches Fusion on the realpath. An earlier run passed without that change only because the legacy manifest-backed definition provider answered first. `canonicalProjectRoot` in `src/lsp/fusionLanguageClient.ts` passes the realpath as `--project-dir` and spawn `cwd`, and installs `uriConverters` that move document URIs between the opened root and the realpath.
 
 ## Argument Shapes (static bundle inspection, dbtLabsInc.dbt-0.104.0-universal, 2026-09-23)
 
