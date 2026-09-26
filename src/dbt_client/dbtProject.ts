@@ -634,6 +634,19 @@ export class DBTProject implements Disposable {
   }
 
   /** Reads column lineage edges into or out of `uniqueIds` from the last strict info-schema compile. */
+  /** Runs the strict info-schema compile that writes column lineage; `env` applies to that process only. */
+  compileColumnLineage(
+    selectors: readonly string[],
+    env: Record<string, string>,
+    signal?: AbortSignal,
+  ) {
+    return this.dbtProjectIntegration.compileColumnLineage(
+      selectors,
+      env,
+      signal,
+    );
+  }
+
   async readColumnLineage(
     uniqueIds: readonly string[],
     direction: LineageDirection,

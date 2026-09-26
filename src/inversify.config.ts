@@ -69,6 +69,7 @@ import { CteProfilerDecorationProvider } from "./cte_profiler/cteProfilerDecorat
 import { CteProfilerService } from "./cte_profiler/cteProfilerService";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 import { DbtPowerUserActionsCenter } from "./quickpick";
+import { ColumnLineageRefreshController } from "./services/columnLineageRefreshController";
 import { StatusBars } from "./statusbar";
 import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
 import { TreeviewProviders } from "./treeview_provider";
@@ -651,6 +652,18 @@ container
 
 // Bind DbtPowerUserActionsCenter
 container
+  .bind(ColumnLineageRefreshController)
+  .toDynamicValue(
+    (context) =>
+      new ColumnLineageRefreshController(
+        context.get(DBTProjectContainer),
+        context.get(ProjectContext),
+        context.get("DBTTerminal"),
+      ),
+  )
+  .inSingletonScope();
+
+container
   .bind(ProjectConfigCommands)
   .toDynamicValue(
     (context) =>
@@ -689,6 +702,7 @@ container
       context.get(FusionClientPoolImpl),
       context.get(FusionStatus),
       context.get(ProjectConfigCommands),
+      context.get(ColumnLineageRefreshController),
     );
   })
   .inSingletonScope();

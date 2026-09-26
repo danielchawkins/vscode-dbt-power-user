@@ -646,3 +646,23 @@ describe("NewLineagePanel — source YAML rooting", () => {
     expect(result.aiEnabled).toBe(true);
   });
 });
+
+describe("NewLineagePanel — compute column lineage", () => {
+  it("runs the refresh command", async () => {
+    const { commands } = await import("vscode");
+    const panel = Object.create(NewLineagePanel.prototype);
+    (panel as any)._panel = { webview: { postMessage: jest.fn() } };
+    const execute = jest
+      .spyOn(commands, "executeCommand")
+      .mockResolvedValue(undefined as never);
+
+    await (panel as any).handleCommand({
+      command: "computeColumnLineage",
+      args: {},
+    });
+
+    expect(execute).toHaveBeenCalledWith(
+      "fusionPowerUser.refreshColumnLineage",
+    );
+  });
+});

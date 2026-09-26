@@ -497,6 +497,24 @@ export class DBTFusionCommandProjectIntegration
     return command.execute(signal);
   }
 
+  async compileColumnLineage(
+    selectors: readonly string[],
+    env: Record<string, string>,
+    signal?: AbortSignal,
+  ): Promise<CommandProcessResult> {
+    const command = this.wrapCommand(
+      new DBTCommand("Computing column lineage...", [
+        "compile",
+        ...(selectors.length > 0 ? ["--select", ...selectors] : []),
+        "--static-analysis",
+        "strict",
+        "--generate-info-schema",
+      ]),
+    );
+    command.env = env;
+    return command.execute(signal);
+  }
+
   async unsafeCompileNode(modelName: string): Promise<string> {
     const compileQueryCommand = this.wrapCommand(
       new DBTCommand("Compiling model...", [

@@ -19,6 +19,7 @@ import { CONFIGURATION_SECTION } from "./projects/projectConfiguration";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
+import { ColumnLineageRefreshController } from "./services/columnLineageRefreshController";
 import { StatusBars } from "./statusbar";
 import { TreeviewProviders } from "./treeview_provider";
 import { WebviewViewProviders } from "./webview_provider";
@@ -61,6 +62,7 @@ export class DBTPowerUserExtension implements Disposable {
     private fusionClientPool: FusionClientPool,
     private fusionStatus: FusionStatus,
     private projectConfigCommands: ProjectConfigCommands,
+    private columnLineageRefresh: ColumnLineageRefreshController,
   ) {
     this.disposables.push(
       this.dbtProjectContainer,
@@ -76,6 +78,7 @@ export class DBTPowerUserExtension implements Disposable {
       this.fusionClientPool,
       this.fusionStatus,
       this.projectConfigCommands,
+      this.columnLineageRefresh,
     );
   }
 

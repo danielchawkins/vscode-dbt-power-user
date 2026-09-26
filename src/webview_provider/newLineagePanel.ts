@@ -27,6 +27,7 @@ import {
   Table,
 } from "../dbt_integration";
 import { LineageRead } from "../fusion/columnLineage";
+import { optInLines, ProjectOptIns } from "../lsp/fusionStatus";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
@@ -49,14 +50,22 @@ interface ResolvedSourceTable {
 export function noLineageErrors(
   targets: [string, string][],
   read: Exclude<LineageRead, { kind: "edges" }>,
+  optIns?: ProjectOptIns,
 ): Record<string, string[]> {
   const message =
     read.kind === "failed"
       ? `Could not read column lineage: ${read.message}`
-      : "No column lineage yet. Run `dbt compile --static-analysis strict --generate-info-schema` for this project.";
+      : "No column lineage yet. Use Compute column lineage, which runs `dbt compile --static-analysis strict --generate-info-schema` for this project.";
+  // Markdown links render as text in the component's tooltip; drop them and keep the sentence.
+  const lines = [
+    message,
+    ...optInLines(optIns).map((line) =>
+      line.replace(/\s*\[[^\]]*\]\(command:[^)]*\)/g, ""),
+    ),
+  ];
   const errors: Record<string, string[]> = {};
   for (const [table] of targets) {
-    errors[table] = [message];
+    errors[table] = lines;
   }
   return errors;
 }
@@ -179,6 +188,10 @@ export class NewLineagePanel
       commands.executeCommand("workbench.action.problems.focus");
       return;
     }
+    if (command === "computeColumnLineage") {
+      void commands.executeCommand("fusionPowerUser.refreshColumnLineage");
+      return;
+    }
     if (command === "upstreamTables") {
       const body = this.dbtLineageService.getUpstreamTables(params);
       this._panel?.webview.postMessage({
@@ -240,7 +253,11 @@ export class NewLineagePanel
           ? { column_lineage: result.columnLineage }
           : {
               column_lineage: [],
-              errors: noLineageErrors(params.targets ?? [], result.read),
+              errors: noLineageErrors(
+                params.targets ?? [],
+                result.read,
+                this.queryManifestService.getProject()?.projectOptIns(),
+              ),
             };
       this._panel?.webview.postMessage({
         command: "response",

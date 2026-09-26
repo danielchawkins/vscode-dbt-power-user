@@ -1,6 +1,6 @@
+import { executeRequestInAsync } from "@modules/app/requestExecutor";
 import { Alert, Button } from "@uicore";
 import { MissingLineageMessage } from "./types";
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
 
 const MissingLineageMessageComponent = ({
   missingLineageMessage,
