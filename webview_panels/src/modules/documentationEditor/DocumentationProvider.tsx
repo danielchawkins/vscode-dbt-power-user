@@ -19,12 +19,10 @@ import documentationSlice, {
   setIncomingDocsData,
   setMissingDocumentationMessage,
   setProject,
-  updateBulkDocsPropRightPanel,
   updateColumnsAfterSync,
   updateCurrentDocsData,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
-  updateSingleDocsPropRightPanel,
 } from "./state/documentationSlice";
 import {
   DBTDocumentation,
@@ -89,18 +87,8 @@ const DocumentationProvider = (): JSX.Element => {
     const { command } = event.data;
     switch (command) {
       case "renderDocumentation": {
-        const {
-          currentDocsData,
-          showBulkDocsPropRightPanel,
-          showSingleDocsPropRightPanel,
-        } = stateRef.current;
-        if (
-          !(
-            isStateDirty(stateRef.current) ||
-            showBulkDocsPropRightPanel ||
-            showSingleDocsPropRightPanel
-          )
-        ) {
+        const { currentDocsData } = stateRef.current;
+        if (!isStateDirty(stateRef.current)) {
           renderDocumentation(event);
           break;
         }
@@ -115,12 +103,6 @@ const DocumentationProvider = (): JSX.Element => {
                 dispatch(updateCurrentDocsData(event.data.docs));
                 dispatch(updateCurrentDocsTests(event.data.tests));
                 dispatch(updateCurrentUnitTests(event.data.unitTests));
-                if (showBulkDocsPropRightPanel) {
-                  dispatch(updateBulkDocsPropRightPanel(false));
-                }
-                if (showSingleDocsPropRightPanel) {
-                  dispatch(updateSingleDocsPropRightPanel(false));
-                }
                 renderDocumentation(event);
                 break;
               }

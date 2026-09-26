@@ -1,15 +1,15 @@
-import {
-  DBTProjectIntegrationAdapter,
-  DBTTerminal,
-  TestParser,
-} from "@altimateai/dbt-integration";
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import * as path from "path";
 import { EventEmitter } from "vscode";
+import {
+  DBTTerminal,
+  ManifestProject,
+  TestParser,
+} from "../../dbt_integration";
 
 describe("TestParser Test Suite", () => {
   let testParser: TestParser;
-  let mockAdapter: DBTProjectIntegrationAdapter;
+  let mockAdapter: ManifestProject;
   let mockTerminal: DBTTerminal;
 
   beforeEach(() => {
@@ -46,7 +46,7 @@ describe("TestParser Test Suite", () => {
     mockAdapter = {
       getProjectRoot: () => "/mock/project/path",
       getProjectName: () => "mock_project",
-    } as unknown as DBTProjectIntegrationAdapter;
+    } as unknown as ManifestProject;
   });
 
   it("should handle null/undefined testsMap", async () => {

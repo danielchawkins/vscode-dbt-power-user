@@ -1,17 +1,17 @@
+import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import {
   CLIDBTCommandExecutionStrategy,
   CommandProcessExecution,
   CommandProcessExecutionFactory,
   DBTCommand,
   DBTTerminal,
-  RuntimePythonEnvironment,
-} from "@altimateai/dbt-integration";
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
+  FusionProcessEnvironment,
+} from "../../dbt_integration";
 
 describe("CLIDBTCommandExecutionStrategy Tests", () => {
   let strategy: CLIDBTCommandExecutionStrategy;
   let mockCommandProcessExecutionFactory: jest.Mocked<CommandProcessExecutionFactory>;
-  let mockPythonEnvironment: jest.Mocked<RuntimePythonEnvironment>;
+  let mockProcessEnvironment: jest.Mocked<FusionProcessEnvironment>;
   let mockTerminal: jest.Mocked<DBTTerminal>;
   let mockCommandProcessExecution: jest.Mocked<CommandProcessExecution>;
 
@@ -39,13 +39,11 @@ describe("CLIDBTCommandExecutionStrategy Tests", () => {
         .mockReturnValue(mockCommandProcessExecution),
     } as unknown as jest.Mocked<CommandProcessExecutionFactory>;
 
-    mockPythonEnvironment = {
-      pythonPath: "/path/to/python",
-      environmentVariables: { PATH: "/some/path" },
+    mockProcessEnvironment = {
       getEnvironmentVariables: jest
         .fn()
         .mockReturnValue({ PATH: "/some/path" }),
-    } as unknown as jest.Mocked<RuntimePythonEnvironment>;
+    } as unknown as jest.Mocked<FusionProcessEnvironment>;
 
     mockTerminal = {
       show: jest.fn(),
@@ -60,7 +58,7 @@ describe("CLIDBTCommandExecutionStrategy Tests", () => {
     // Create strategy instance
     strategy = new CLIDBTCommandExecutionStrategy(
       mockCommandProcessExecutionFactory,
-      mockPythonEnvironment,
+      mockProcessEnvironment,
       mockTerminal,
       "/test/workspace",
       "dbt",
@@ -167,23 +165,6 @@ describe("CLIDBTCommandExecutionStrategy Tests", () => {
 
     // Verify complete was called since logToTerminal is false
     expect(mockCommandProcessExecution.complete).toHaveBeenCalled();
-  });
-
-  it("should throw error when python environment is not available", async () => {
-    // Arrange
-    const command = new DBTCommand("Running dbt command", [
-      "run",
-      "--select",
-      "my_model",
-    ]);
-
-    // Remove python environment
-    (strategy as any).pythonEnvironment = {};
-
-    // Act & Assert
-    await expect(strategy.execute(command)).rejects.toThrow(
-      "Could not launch command as python environment is not available",
-    );
   });
 });
 

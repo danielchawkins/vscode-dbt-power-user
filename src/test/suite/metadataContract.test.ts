@@ -1,21 +1,3 @@
-import {
-  ChildrenParentParser,
-  DBTConfiguration,
-  DBTProjectIntegrationAdapter,
-  DBTTerminal,
-  DocParser,
-  ExposureParser,
-  FunctionParser,
-  GraphParser,
-  MacroParser,
-  MetricParser,
-  ModelDepthParser,
-  NodeParser,
-  SemanticModelParser,
-  SourceParser,
-  TestParser,
-  UnitTestParser,
-} from "@altimateai/dbt-integration";
 import { describe, expect, it } from "@jest/globals";
 import * as fs from "fs";
 import * as path from "path";
@@ -25,7 +7,23 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../../dbt_client/event/manifestCacheChangedEvent";
-import { createLocalModelDepthContext } from "../../manifest/localModelDepthContext";
+import {
+  ChildrenParentParser,
+  DBTTerminal,
+  DocParser,
+  ExposureParser,
+  FunctionParser,
+  GraphParser,
+  MacroParser,
+  ManifestProject,
+  MetricParser,
+  ModelDepthParser,
+  NodeParser,
+  SemanticModelParser,
+  SourceParser,
+  TestParser,
+  UnitTestParser,
+} from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { esmDirname } from "../esmDirname";
@@ -189,7 +187,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
       getProjectName: () => "single_project",
       getPackageInstallPath: () => path.join(fixtureRoot, "dbt_packages"),
       getTargetPath: () => path.join(fixtureRoot, "target"),
-    } as unknown as DBTProjectIntegrationAdapter;
+    } as unknown as ManifestProject;
     const nodeMetaMap = await new NodeParser(terminal).createNodeMetaMap(
       manifest.nodes,
       adapter,
@@ -228,13 +226,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
       functionMetaMap,
       parentMaps.constraintOnlyParents,
     );
-    const modelDepthMap = new ModelDepthParser(
-      terminal,
-      createLocalModelDepthContext(),
-      {
-        getDisableDepthsCalculation: () => false,
-      } as unknown as DBTConfiguration,
-    ).createModelDepthsMap(
+    const modelDepthMap = new ModelDepthParser(terminal).createModelDepthsMap(
       manifest.nodes,
       parentMaps.parentMetaMap,
       parentMaps.childMetaMap,

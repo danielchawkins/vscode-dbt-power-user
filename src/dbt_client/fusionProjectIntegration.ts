@@ -1,6 +1,9 @@
 import { existsSync, FSWatcher, readFileSync, watch } from "fs";
 import { extname, isAbsolute, join } from "path";
 
+import { EventEmitter } from "events";
+import { ConfigurationChangeEvent, Disposable, Uri, workspace } from "vscode";
+import { YAMLError } from "yaml";
 import {
   ChildrenParentParser,
   DBT_PROJECT_FILE,
@@ -10,7 +13,6 @@ import {
   type DBTDiagnosticData,
   type DBTDiagnosticResult,
   DBTProjectIntegration,
-  DBTProjectIntegrationAdapter,
   DBTTerminal,
   DeferConfig,
   DocParser,
@@ -20,6 +22,7 @@ import {
   GraphParser,
   MacroParser,
   MANIFEST_FILE,
+  type ManifestProject,
   MetricParser,
   ModelDepthParser,
   NodeParser,
@@ -34,10 +37,7 @@ import {
   SourceParser,
   TestParser,
   UnitTestParser,
-} from "@altimateai/dbt-integration";
-import { EventEmitter } from "events";
-import { ConfigurationChangeEvent, Disposable, Uri, workspace } from "vscode";
-import { YAMLError } from "yaml";
+} from "../dbt_integration";
 import {
   formatFusionExecutableResolutionFailure,
   FusionExecutable,
@@ -55,14 +55,6 @@ export type FusionCommandIntegrationFactory = (
 ) => DBTProjectIntegration;
 
 const EXECUTABLE_DIAGNOSTIC_SOURCE = "fusion-executable";
-
-/** Parser-facing project context; upstream types require the adapter class name. */
-export interface ManifestParserProjectContext {
-  getProjectRoot(): string;
-  getProjectName(): string;
-  getPackageInstallPath(): string | undefined;
-  getTargetPath(): string | undefined;
-}
 
 /** Snapshot of run_results.json content before a command; null when absent. */
 export type RunResultsObservation = string | null;
@@ -93,12 +85,6 @@ function createDebounced(fn: () => void, ms: number): DebouncedHandler {
       timeout = undefined;
     },
   };
-}
-
-function asParserProject(
-  ctx: ManifestParserProjectContext,
-): DBTProjectIntegrationAdapter {
-  return ctx as DBTProjectIntegrationAdapter;
 }
 
 /**
@@ -251,7 +237,7 @@ function parseRunResultsJson(
 
 export class FusionProjectIntegration
   extends EventEmitter
-  implements ManifestParserProjectContext
+  implements ManifestProject
 {
   private currentIntegration?: DBTProjectIntegration;
   private configurationSubscription?: Disposable;
@@ -376,7 +362,6 @@ export class FusionProjectIntegration
     return {
       projectConfigDiagnostics: [...this.projectConfigDiagnostics],
       rebuildManifestDiagnostics: delegate?.rebuildManifestDiagnostics ?? [],
-      pythonBridgeDiagnostics: delegate?.pythonBridgeDiagnostics ?? [],
     };
   }
 
@@ -748,7 +733,7 @@ export class FusionProjectIntegration
     }
     const previous = this.currentIntegration;
     this.currentIntegration = delegate;
-    const parserProject = asParserProject(this);
+    const parserProject: ManifestProject = this;
     // manifest.json stores resource maps as objects; published parser types say arrays.
     const {
       nodes,

@@ -1,9 +1,3 @@
-import {
-  CATALOG_FILE,
-  DBTTerminal,
-  MANIFEST_FILE,
-  RunModelType,
-} from "@altimateai/dbt-integration";
 import { existsSync, readFileSync } from "fs";
 import { inject } from "inversify";
 import { join } from "path";
@@ -32,6 +26,12 @@ import { CteProfilerDecorationProvider } from "../cte_profiler/cteProfilerDecora
 import { CteProfilerService } from "../cte_profiler/cteProfilerService";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import {
+  CATALOG_FILE,
+  DBTTerminal,
+  MANIFEST_FILE,
+  RunModelType,
+} from "../dbt_integration";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";

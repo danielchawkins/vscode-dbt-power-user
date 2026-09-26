@@ -1,7 +1,7 @@
-import { DBT_PROJECT_FILE } from "@altimateai/dbt-integration";
 import { existsSync } from "fs";
 import * as path from "path";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
+import { DBT_PROJECT_FILE } from "../dbt_integration";
 
 export const CONFIGURATION_SECTION = "fusionPowerUser";
 export const PROJECTS_SETTING = "projects";

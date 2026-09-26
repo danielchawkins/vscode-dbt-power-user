@@ -1,6 +1,6 @@
-import type { RunResultsEventData } from "@altimateai/dbt-integration";
 import { injectable } from "inversify";
 import { Disposable, Event, EventEmitter } from "vscode";
+import type { RunResultsEventData } from "../dbt_integration";
 
 export interface CommandFailedEvent {
   command: string;
@@ -11,7 +11,7 @@ export type {
   RunResultEntry,
   RunResultsEventData,
   RunStatus,
-} from "@altimateai/dbt-integration";
+} from "../dbt_integration";
 
 @injectable()
 export class RunHistoryService implements Disposable {

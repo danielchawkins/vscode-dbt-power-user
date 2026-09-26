@@ -1,31 +1,5 @@
 import { existsSync, writeFileSync } from "fs";
 
-import {
-  Catalog,
-  ColumnMetaData,
-  DBColumn,
-  DBT_PROJECT_FILE,
-  DBTCommand,
-  DBTCommandExecution,
-  DBTCommandFactory,
-  DBTDiagnosticData,
-  DBTNode,
-  DBTProjectIntegration,
-  DBTTerminal,
-  DeferConfig,
-  extractOutputColumns,
-  isResourceHasDbColumns,
-  isResourceNode,
-  ManifestPathType,
-  NodeMetaData,
-  ParsedManifest,
-  QueryExecutionResult,
-  RESOURCE_TYPE_MODEL,
-  RESOURCE_TYPE_SOURCE,
-  RunModelParams,
-  RunResultsEventData,
-  SourceNode,
-} from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import * as path from "path";
 import {
@@ -45,6 +19,31 @@ import {
   window,
   workspace,
 } from "vscode";
+import {
+  Catalog,
+  ColumnMetaData,
+  DBColumn,
+  DBT_PROJECT_FILE,
+  DBTCommand,
+  DBTCommandExecution,
+  DBTCommandFactory,
+  DBTDiagnosticData,
+  DBTNode,
+  DBTProjectIntegration,
+  DBTTerminal,
+  DeferConfig,
+  isResourceHasDbColumns,
+  isResourceNode,
+  ManifestPathType,
+  NodeMetaData,
+  ParsedManifest,
+  QueryExecutionResult,
+  RESOURCE_TYPE_MODEL,
+  RESOURCE_TYPE_SOURCE,
+  RunModelParams,
+  RunResultsEventData,
+  SourceNode,
+} from "../dbt_integration";
 import { ModelNode } from "../local/lineageTypes";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { RunHistoryService } from "../services/runHistoryService";
@@ -1002,71 +1001,27 @@ export class DBTProject implements Disposable {
       (r) => r.resource_type !== RESOURCE_TYPE_MODEL,
     );
 
-    const sqlglotSchemaRequest = bulkSchemaRequest.filter(
+    const modelSchemaRequest = bulkSchemaRequest.filter(
       (r) => r.resource_type === RESOURCE_TYPE_MODEL,
     );
     let startTime = Date.now();
-    const sqlglotSchemaResponse = await this.getBulkCompiledSql(
-      sqlglotSchemaRequest.map((r) => r.unique_id),
+    const mappedCompiledSql = await this.getBulkCompiledSql(
+      modelSchemaRequest.map((r) => r.unique_id),
     );
     const compiledSqlTime = Date.now() - startTime;
 
     if (signal.aborted) {
-      return {
-        mappedNode,
-        relationsWithoutColumns,
-        mappedCompiledSql: sqlglotSchemaResponse,
-      };
+      return { mappedNode, relationsWithoutColumns, mappedCompiledSql };
     }
-
-    const sqlglotSchemas: Record<string, DBColumn[]> = {};
-    const dialect = this.getAdapterType();
+    dbSchemaRequest.push(...modelSchemaRequest);
 
     startTime = Date.now();
-    for (const r of sqlglotSchemaRequest) {
-      if (!sqlglotSchemaResponse[r.unique_id]) {
-        dbSchemaRequest.push(r);
-        continue;
-      }
-
-      try {
-        const columns = await extractOutputColumns(
-          sqlglotSchemaResponse[r.unique_id],
-          dialect,
-        );
-        sqlglotSchemas[r.unique_id] = columns.map((c) => ({
-          column: c,
-          dtype: "string",
-        }));
-      } catch (e) {
-        this.terminal.warn(
-          "sqlglotSchemaFetchingFailed",
-          `Error while schema fetching for ${r.unique_id}`,
-          true,
-          e,
-        );
-        dbSchemaRequest.push(r);
-      }
-    }
-    const sqlglotSchemaTime = Date.now() - startTime;
-
-    if (signal.aborted) {
-      return {
-        mappedNode,
-        relationsWithoutColumns,
-        mappedCompiledSql: sqlglotSchemaResponse,
-      };
-    }
-
-    startTime = Date.now();
-    const dbSchemaResponse =
+    const bulkSchemaResponse =
       await this.getCurrentProjectIntegration().getBulkSchemaFromDB(
         dbSchemaRequest,
         signal,
       );
     const dbFetchTime = Date.now() - startTime;
-
-    const bulkSchemaResponse = { ...dbSchemaResponse, ...sqlglotSchemas };
 
     for (const key of modelsToFetch) {
       if (!bulkSchemaRequest.find((r) => r.unique_id === key)) {
@@ -1090,16 +1045,11 @@ export class DBTProject implements Disposable {
 
     console.log("getNodesWithDBColumnsTimings", {
       compiledSqlTime,
-      sqlglotSchemaTime,
       dbFetchTime,
       modelInfosLength: modelsToFetch.length,
     });
 
-    return {
-      mappedNode,
-      relationsWithoutColumns,
-      mappedCompiledSql: sqlglotSchemaResponse,
-    };
+    return { mappedNode, relationsWithoutColumns, mappedCompiledSql };
   }
 
   async applyDeferConfig(): Promise<void> {

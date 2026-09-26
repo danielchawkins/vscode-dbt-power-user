@@ -1,7 +1,7 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import { window } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { DBTTerminal } from "../dbt_integration";
 import {
   ProjectQuickPick,
   ProjectQuickPickItem,

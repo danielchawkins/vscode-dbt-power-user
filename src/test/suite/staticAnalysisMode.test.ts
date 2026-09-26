@@ -32,7 +32,6 @@ const EXPECTED_STATIC_ANALYSIS_MODES = [
 ] as const satisfies readonly StaticAnalysisMode[];
 
 const STRICT_ONLY_CAPABILITIES: readonly FusionCapability[] = [
-  "columnLineage",
   "columnDefinition",
   "typeDiagnostics",
   "selectStarHover",
@@ -99,7 +98,7 @@ describe("staticAnalysisMode", () => {
     const second = capabilitiesFor("strict");
 
     expect(first).not.toBe(second);
-    (first as Set<FusionCapability>).delete("columnLineage");
+    (first as Set<FusionCapability>).delete("columnDefinition");
     expect([...second]).toEqual([...STRICT_ONLY_CAPABILITIES]);
   });
 
@@ -115,13 +114,13 @@ describe("staticAnalysisMode", () => {
     expect(
       selectionAdmitsCapability(
         { configured: "baseline", effective: "strict" },
-        "columnLineage",
+        "columnDefinition",
       ),
     ).toBe(true);
     expect(
       selectionAdmitsCapability(
         { configured: "strict", effective: "baseline" },
-        "columnLineage",
+        "columnDefinition",
       ),
     ).toBe(false);
   });

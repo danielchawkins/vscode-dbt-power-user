@@ -71,8 +71,6 @@ export interface DocumentationStateProps {
   currentDocsTests?: DBTModelTest[];
   currentUnitTests?: DBTUnitTest[];
   project?: string;
-  showSingleDocsPropRightPanel: boolean;
-  showBulkDocsPropRightPanel: boolean;
   missingDocumentationMessage?: { message: string; type: "warning" | "error" };
   searchQuery: string;
   docBlocks: DocBlock[];

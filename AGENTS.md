@@ -80,7 +80,7 @@ Tests are Jest with `ts-jest` against a hand-written VS Code mock (`src/test/moc
 Two facts dominate change ordering, both detailed in the plan:
 
 - The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps, and every panel, tree, lens, and language provider consumes them through `QueryManifestService` via `ManifestCacheProjectAddedEvent`. `ProjectMetadataSource` (`src/metadata/`) is the producer port; the Fusion LSP payload cannot populate the full contract (see `docs/lsp-metadata-gaps.md`), so the manifest source remains the only implementation. Do not introduce a second consumer seam.
-- **`DBTProjectIntegrationAdapter` is retired from production code.** The published Fusion integration extends `DBTBaseProjectIntegration`, not dbt Cloud, and `FusionProjectIntegration` (`src/dbt_client/fusionProjectIntegration.ts`) composes it directly; the adapter class name survives only as a parser-boundary type cast, never constructed. Core and Cloud construction is gone. Never patch `node_modules`.
+- **The dbt integration layer is owned code in `src/dbt_integration/`.** It holds the manifest parsers, the Fusion CLI command integration, and the shared domain types, vendored from the MIT-licensed `@altimateai/dbt-integration` with Core, Cloud, Python, and hosted paths removed. Parsers depend on `ManifestProject`, which `FusionProjectIntegration` implements. Column-level lineage is not implemented. Never patch `node_modules`.
 
 ## Comments and prose
 

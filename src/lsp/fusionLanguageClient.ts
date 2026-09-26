@@ -1,6 +1,7 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { spawn, type ChildProcess } from "child_process";
 import { createHash } from "crypto";
+import { existsSync, realpathSync } from "fs";
+import * as path from "path";
 import {
   CancellationToken,
   Disposable,
@@ -17,6 +18,7 @@ import {
   type ServerOptions,
 } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
+import { DBTTerminal } from "../dbt_integration";
 import { FusionExecutable } from "../fusion/fusionExecutable";
 import {
   resolveConfiguredStaticAnalysisMode,
@@ -139,6 +141,88 @@ export function prefixedCommand(
   command: FusionLspCommand,
 ): string {
   return `${commandPrefix}${command}`;
+}
+
+/**
+ * Fusion canonicalizes `--project-dir` but matches document URIs literally, so a project opened through a
+ * symlink loads no documents. Returns the realpath to launch Fusion on and converters that move URIs between
+ * the opened root and that realpath; converters are undefined when the two are the same.
+ */
+export function canonicalProjectRoot(
+  root: string,
+  realpath: (fsPath: string) => string = realpathSync.native,
+): {
+  launchRoot: string;
+  uriConverters?: LanguageClientOptions["uriConverters"];
+} {
+  let launchRoot: string;
+  try {
+    launchRoot = realpath(root);
+  } catch {
+    return { launchRoot: root };
+  }
+  if (launchRoot === root) {
+    return { launchRoot };
+  }
+  const remap = (
+    fsPath: string,
+    from: string,
+    to: string,
+  ): string | undefined => {
+    if (fsPath === from) {
+      return to;
+    }
+    return fsPath.startsWith(from + path.sep)
+      ? to + fsPath.slice(from.length)
+      : undefined;
+  };
+  return {
+    launchRoot,
+    uriConverters: {
+      code2Protocol: (uri) => {
+        const mapped =
+          uri.scheme === "file"
+            ? remap(uri.fsPath, root, launchRoot)
+            : undefined;
+        return (mapped ? Uri.file(mapped) : uri).toString();
+      },
+      protocol2Code: (value) => {
+        const uri = Uri.parse(value);
+        const mapped =
+          uri.scheme === "file"
+            ? remap(uri.fsPath, launchRoot, root)
+            : undefined;
+        return mapped ? Uri.file(mapped) : uri;
+      },
+    },
+  };
+}
+
+/**
+ * Decides which `publishDiagnostics` notifications reach the editor. Fusion publishes diagnostics for its bundled
+ * package macros under the project root although those files do not exist there; Cursor's renderer stalls on
+ * them. A URI whose file is missing is dropped unless an earlier notification for it was forwarded, so the clear
+ * for a file deleted after it had diagnostics still arrives.
+ */
+export class ExistingFileDiagnostics {
+  private readonly forwarded = new Set<string>();
+
+  constructor(
+    private readonly exists: (fsPath: string) => boolean = existsSync,
+  ) {}
+
+  shouldForward(uri: Uri): boolean {
+    const key = uri.toString();
+    if (
+      uri.scheme !== "file" ||
+      this.forwarded.has(key) ||
+      this.exists(uri.fsPath)
+    ) {
+      this.forwarded.add(key);
+      return true;
+    }
+    return false;
+  }
 }
 
 export function buildFusionLspArgs(input: FusionLaunchArgsInput): string[] {
@@ -575,6 +659,10 @@ class FusionLanguageClientImpl implements FusionClient {
       resolveStaticAnalysisSelection(this.options.project.root),
     );
     const selector = documentSelectorForProject(this.options.project.root);
+    const { launchRoot, uriConverters } = canonicalProjectRoot(
+      this.options.project.root.fsPath,
+    );
+    const diagnosticsFilter = new ExistingFileDiagnostics();
 
     const server = await listen();
     this.reverseSocket = server;
@@ -582,7 +670,7 @@ class FusionLanguageClientImpl implements FusionClient {
     try {
       const args = buildFusionLspArgs({
         port: server.port,
-        projectRoot: this.options.project.root.fsPath,
+        projectRoot: launchRoot,
         commandPrefix: this.options.commandPrefix,
         lintEnabled: this.options.lintEnabled,
         staticAnalysisMode,
@@ -600,7 +688,7 @@ class FusionLanguageClientImpl implements FusionClient {
         this.options.executable.path,
         args,
         env,
-        this.options.project.root.fsPath,
+        launchRoot,
       );
       const processAdapter = new SpawnedLspProcess(child, (line) => {
         this._logChannel.appendLine(line);
@@ -630,6 +718,7 @@ class FusionLanguageClientImpl implements FusionClient {
         serverOptions,
         {
           documentSelector: selector,
+          uriConverters,
           connectionOptions: { maxRestartCount: 0 },
           outputChannel: this._logChannel,
           workspaceFolder: {
@@ -638,6 +727,11 @@ class FusionLanguageClientImpl implements FusionClient {
             index: this.options.project.folder.index,
           },
           middleware: {
+            handleDiagnostics: (uri, diagnostics, next) => {
+              if (diagnosticsFilter.shouldForward(uri)) {
+                next(uri, diagnostics);
+              }
+            },
             workspace: {
               configuration: async (params) => {
                 const results: unknown[] = [];

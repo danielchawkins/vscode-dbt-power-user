@@ -1,4 +1,3 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { inject, injectable } from "inversify";
 import {
   CancellationTokenSource,
@@ -11,6 +10,7 @@ import {
 } from "vscode";
 import { CteInfo } from "../code_lens_provider/cteCodeLensProvider";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { DBTTerminal } from "../dbt_integration";
 import { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
 
 @injectable()

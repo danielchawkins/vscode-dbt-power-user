@@ -1,4 +1,3 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { inject } from "inversify";
 import {
   DecorationOptions,
@@ -11,6 +10,7 @@ import {
   Uri,
   window,
 } from "vscode";
+import { DBTTerminal } from "../dbt_integration";
 import { extensionRoot } from "../extensionRoot";
 import { CteProfilerService } from "./cteProfilerService";
 import { CteProfileEntry } from "./cteProfilerTypes";

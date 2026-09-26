@@ -1,14 +1,14 @@
-import type {
-  RunResultEntry,
-  RunResultsEventData,
-  RunStatus,
-} from "@altimateai/dbt-integration";
 import {
   ThemeColor,
   ThemeIcon,
   TreeItem,
   TreeItemCollapsibleState,
 } from "vscode";
+import type {
+  RunResultEntry,
+  RunResultsEventData,
+  RunStatus,
+} from "../dbt_integration";
 
 /**
  * Top-level tree item representing a dbt command execution (e.g., `dbt run`, `dbt test`).

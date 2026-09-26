@@ -1,3 +1,7 @@
+import { readFileSync } from "fs";
+import { inject } from "inversify";
+import * as path from "path";
+import { parse, stringify } from "yaml";
 import {
   DBTTerminal,
   MacroMetaMap,
@@ -5,11 +9,7 @@ import {
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
   UnitTestMetaData,
-} from "@altimateai/dbt-integration";
-import { readFileSync } from "fs";
-import { inject } from "inversify";
-import * as path from "path";
-import { parse, stringify } from "yaml";
+} from "../dbt_integration";
 import {
   getColumnTestConfigFromYml,
   isColumnNameEqual,

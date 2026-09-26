@@ -1,8 +1,8 @@
-import { RunModelType } from "@altimateai/dbt-integration";
 import * as path from "path";
 import { Uri, window } from "vscode";
 import { GenerateModelFromSourceParams } from "../code_lens_provider/sourceModelCreationCodeLensProvider";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { RunModelType } from "../dbt_integration";
 import { ProjectContext } from "../projects/projectContext";
 import { NodeTreeItem } from "../treeview_provider/modelTreeviewProvider";
 export class RunModel {

@@ -13,7 +13,7 @@
   "bugs": {
     "url": "https://github.com/danielchawkins/vscode-dbt-power-user/issues"
   },
-  "version": "0.2.0-alpha.0",
+  "version": "0.3.0-alpha.0",
   "type": "module",
   "engines": {
     "vscode": "^1.128.0",
@@ -53,16 +53,6 @@
       {
         "title": "Lineage",
         "properties": {
-          "fusionPowerUser.lineage.showSelectEdges": {
-            "type": "boolean",
-            "description": "Show select edges in lineage panel.",
-            "default": true
-          },
-          "fusionPowerUser.lineage.showNonSelectEdges": {
-            "type": "boolean",
-            "description": "Show non-select edges in lineage panel.",
-            "default": false
-          },
           "fusionPowerUser.lineage.defaultExpansion": {
             "type": "number",
             "description": "By default how much lineage should expand.",
@@ -815,7 +805,6 @@
     "webpack": "^5.111.1"
   },
   "dependencies": {
-    "@altimateai/dbt-integration": "^0.3.13",
     "@vscode/codicons": "^0.0.45",
     "@vscode/vsce": "^4.0.0",
     "inversify": "^8.2.3",

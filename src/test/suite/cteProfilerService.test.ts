@@ -1,7 +1,7 @@
-import { DBTTerminal } from "@altimateai/dbt-integration";
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import { CteProfilerService } from "../../cte_profiler/cteProfilerService";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
+import { DBTTerminal } from "../../dbt_integration";
 
 describe("CteProfilerService.extractRowCount", () => {
   let svc: CteProfilerService;

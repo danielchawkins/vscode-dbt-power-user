@@ -2,12 +2,6 @@ import { unmanaged } from "inversify";
 import * as path from "path";
 
 import {
-  GraphMetaMap,
-  NodeData,
-  NodeMetaData,
-  NodeMetaMap,
-} from "@altimateai/dbt-integration";
-import {
   Command,
   Disposable,
   Event,
@@ -26,6 +20,12 @@ import {
   ManifestCacheChangedEvent,
   ManifestCacheProjectAddedEvent,
 } from "../dbt_client/event/manifestCacheChangedEvent";
+import {
+  GraphMetaMap,
+  NodeData,
+  NodeMetaData,
+  NodeMetaMap,
+} from "../dbt_integration";
 import { extensionRoot } from "../extensionRoot";
 import {
   getCurrentlySelectedModelNameInYamlConfig,

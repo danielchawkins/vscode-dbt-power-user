@@ -1,7 +1,3 @@
-import {
-  TestMetadataAcceptedValues,
-  TestMetadataRelationships,
-} from "@altimateai/dbt-integration";
 import { homedir } from "os";
 import * as path from "path";
 import {
@@ -15,6 +11,10 @@ import {
   workspace,
 } from "vscode";
 import { parseDocument } from "yaml";
+import {
+  TestMetadataAcceptedValues,
+  TestMetadataRelationships,
+} from "./dbt_integration";
 import { CONFIGURATION_SECTION } from "./projects/projectConfiguration";
 
 export const isEnclosedWithinCodeBlock = (

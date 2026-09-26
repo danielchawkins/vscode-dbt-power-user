@@ -1,8 +1,3 @@
-import {
-  DBT_PROJECT_FILE,
-  DBTTerminal,
-  readAndParseProjectConfig,
-} from "@altimateai/dbt-integration";
 import { realpathSync } from "fs";
 import * as path from "path";
 import {
@@ -15,6 +10,11 @@ import {
   workspace,
   WorkspaceFolder,
 } from "vscode";
+import {
+  DBT_PROJECT_FILE,
+  DBTTerminal,
+  readAndParseProjectConfig,
+} from "../dbt_integration";
 import {
   CONFIGURATION_SECTION,
   PROJECTS_SETTING,

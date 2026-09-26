@@ -1,16 +1,4 @@
 import {
-  Catalog,
-  DBT_PROJECT_FILE,
-  DBTCommandFactory,
-  DBTDiagnosticData,
-  DBTTerminal,
-  MANIFEST_FILE,
-  ManifestPathType,
-  ParsedManifest,
-  RESOURCE_TYPE_MODEL,
-  RunResultsEventData,
-} from "@altimateai/dbt-integration";
-import {
   afterEach,
   beforeEach,
   describe,
@@ -25,6 +13,18 @@ import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
 import { FusionProjectIntegrationEvents } from "../../dbt_client/fusionProjectIntegration";
+import {
+  Catalog,
+  DBT_PROJECT_FILE,
+  DBTCommandFactory,
+  DBTDiagnosticData,
+  DBTTerminal,
+  MANIFEST_FILE,
+  ManifestPathType,
+  ParsedManifest,
+  RESOURCE_TYPE_MODEL,
+  RunResultsEventData,
+} from "../../dbt_integration";
 import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
 import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
@@ -163,7 +163,7 @@ describe("DBTProject Test Suite", () => {
   });
 
   describe("Constructor and Initialization", () => {
-    it("should have access to constants from @altimateai/dbt-integration", () => {
+    it("should have access to dbt integration constants", () => {
       // Verify constants are defined
       expect(DBT_PROJECT_FILE).toBe("dbt_project.yml");
       expect(MANIFEST_FILE).toBe("manifest.json");

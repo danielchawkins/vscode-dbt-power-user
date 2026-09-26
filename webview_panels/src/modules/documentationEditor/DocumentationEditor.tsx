@@ -4,7 +4,6 @@ import { Stack } from "@uicore";
 import { useMemo } from "react";
 import DocGeneratorColumnsList from "./components/docGenerator/DocGeneratorColumnsList";
 import DocGeneratorInput from "./components/docGenerator/DocGeneratorInput";
-import { BulkDocumentationPropagationPanel } from "./components/documentationPropagation/DocumentationPropagation";
 import DocumentationHelpContent from "./components/help/DocumentationHelpContent";
 import SaveDocumentation from "./components/saveDocumentation/SaveDocumentation";
 import EntityWithTests from "./components/tests/EntityWithTests";
@@ -66,7 +65,6 @@ const DocumentationEditor = (): JSX.Element => {
           </Stack>
         </Stack>
       </div>
-      <BulkDocumentationPropagationPanel />
     </div>
   );
 };
