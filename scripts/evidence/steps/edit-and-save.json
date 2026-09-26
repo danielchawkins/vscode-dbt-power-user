@@ -1,0 +1,87 @@
+[
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [{ "uri": "$ROOT_URI", "name": "lineage_probe" }],
+      "capabilities": {
+        "workspace": {
+          "configuration": true,
+          "didChangeWatchedFiles": { "dynamicRegistration": true }
+        },
+        "window": { "workDoneProgress": true }
+      }
+    }
+  },
+  { "notify": "initialized", "params": {} },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+      }
+    }
+  },
+  { "wait": 10000 },
+  {
+    "writeFile": "models/order_totals.sql",
+    "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status, max(amount) as biggest\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+  },
+  {
+    "notify": "textDocument/didChange",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)",
+        "version": 2
+      },
+      "contentChanges": [
+        {
+          "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status, max(amount) as biggest\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+        }
+      ]
+    }
+  },
+  {
+    "notify": "textDocument/didSave",
+    "params": {
+      "textDocument": { "uri": "$FILE_URI(models/order_totals.sql)" },
+      "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status, max(amount) as biggest\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+    }
+  },
+  {
+    "notify": "workspace/didChangeWatchedFiles",
+    "params": {
+      "changes": [{ "uri": "$FILE_URI(models/order_totals.sql)", "type": 2 }]
+    }
+  },
+  { "wait": 10000 },
+  {
+    "request": "workspace/executeCommand",
+    "label": "executeCommand dbt.compileLsp []",
+    "params": { "command": "dbt.compileLsp", "arguments": [] }
+  },
+  { "wait": 8000 },
+  {
+    "request": "workspace/executeCommand",
+    "label": "executeCommand dbt.compileFile [uri]",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["$FILE_URI(models/order_totals.sql)"]
+    }
+  },
+  { "wait": 5000 },
+  {
+    "request": "textDocument/hover",
+    "label": "hover new column biggest",
+    "at": {
+      "file": "models/order_totals.sql",
+      "find": "as biggest",
+      "offset": 4
+    }
+  }
+]

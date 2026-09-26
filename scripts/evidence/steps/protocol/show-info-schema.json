@@ -1,0 +1,339 @@
+[
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [
+        {
+          "uri": "$ROOT_URI",
+          "name": "lineage_probe"
+        }
+      ],
+      "capabilities": {
+        "workspace": {
+          "configuration": true,
+          "didChangeWatchedFiles": {
+            "dynamicRegistration": true
+          }
+        },
+        "window": {
+          "workDoneProgress": true
+        }
+      }
+    }
+  },
+  {
+    "include": "open-and-load.json"
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show column_lineage [{inline}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ info_schema('column_lineage') }}"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show column_lineage [{inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ info_schema('column_lineage') }}",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show column_lineage [{uri,inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "inline": "select * from {{ info_schema('column_lineage') }}",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show models [{inline}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ info_schema('models') }}"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show models [{inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ info_schema('models') }}",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show models [{uri,inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "inline": "select * from {{ info_schema('models') }}",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show column_lineage limit-in-sql [{inline}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ info_schema('column_lineage') }} limit 5"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show column_lineage limit-in-sql [{inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ info_schema('column_lineage') }} limit 5",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show column_lineage limit-in-sql [{uri,inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "inline": "select * from {{ info_schema('column_lineage') }} limit 5",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show dbt.column_lineage raw [{inline}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from dbt.column_lineage"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show dbt.column_lineage raw [{inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from dbt.column_lineage",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show dbt.column_lineage raw [{uri,inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "inline": "select * from dbt.column_lineage",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show node_columns [{inline}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ info_schema('node_columns') }}"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show node_columns [{inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ info_schema('node_columns') }}",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show node_columns [{uri,inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "inline": "select * from {{ info_schema('node_columns') }}",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show read_parquet column_lineage [{inline}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from read_parquet('target/info_schema/v1/dbt.column_lineage.parquet')"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show read_parquet column_lineage [{inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from read_parquet('target/info_schema/v1/dbt.column_lineage.parquet')",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show read_parquet column_lineage [{uri,inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "inline": "select * from read_parquet('target/info_schema/v1/dbt.column_lineage.parquet')",
+          "limit": 5
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "snapshot": "after-show"
+  }
+]

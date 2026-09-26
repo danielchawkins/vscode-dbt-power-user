@@ -1,0 +1,31 @@
+[
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [
+        {
+          "uri": "$ROOT_URI",
+          "name": "lineage_probe"
+        }
+      ],
+      "capabilities": {
+        "workspace": {
+          "configuration": true,
+          "didChangeWatchedFiles": {
+            "dynamicRegistration": true
+          }
+        },
+        "window": {
+          "workDoneProgress": true
+        }
+      },
+      "initializationOptions": {}
+    }
+  },
+  {
+    "include": "open-and-load.json"
+  }
+]

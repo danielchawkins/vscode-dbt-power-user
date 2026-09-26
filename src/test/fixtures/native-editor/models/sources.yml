@@ -1,0 +1,21 @@
+version: 2
+sources:
+  - name: raw
+    schema: main
+    tables:
+      - name: orders
+        columns:
+          - { name: id, data_type: integer }
+          - { name: customer_id, data_type: integer }
+          - { name: amount, data_type: "decimal(10,2)" }
+          - { name: status, data_type: varchar }
+          - { name: note, data_type: varchar }
+      - name: customers
+        columns:
+          - { name: id, data_type: integer }
+          - { name: name, data_type: varchar }
+          - { name: active, data_type: boolean }
+      - name: contacts
+        columns:
+          - { name: user_id, data_type: integer }
+          - { name: contact, data_type: varchar }

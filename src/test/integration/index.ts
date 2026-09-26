@@ -16,9 +16,12 @@ export async function run(): Promise<void> {
   // execute symlinkedWorkspace.test.js; the other suites assume the realpath
   // workspace and would either fail or double-run pointlessly against it.
   const isSymlinkedRun = process.env.FPU_SYMLINKED_WORKSPACE === "1";
+  const isNativeEditorRun = process.env.FPU_NATIVE_EDITOR_MODE !== undefined;
   const selectedFiles = isSymlinkedRun
     ? files.filter((file) => file.includes("symlinkedWorkspace.test.js"))
-    : files;
+    : isNativeEditorRun
+      ? files.filter((file) => file.includes("nativeEditorFeatures.test.js"))
+      : files;
 
   for (const file of selectedFiles) {
     mocha.addFile(path.resolve(testsRoot, file));

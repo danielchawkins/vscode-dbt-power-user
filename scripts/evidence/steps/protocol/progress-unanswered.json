@@ -1,0 +1,59 @@
+[
+  { "clientAnswers": { "window/workDoneProgress/create": "$NO_ANSWER" } },
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [{ "uri": "$ROOT_URI", "name": "lineage_probe" }],
+      "capabilities": {
+        "workspace": {
+          "configuration": true,
+          "didChangeWatchedFiles": { "dynamicRegistration": true }
+        },
+        "window": { "workDoneProgress": true }
+      }
+    }
+  },
+  { "include": "open-and-load.json" },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode [relpath] (progress/create unanswered)",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/order_totals.sql"]
+    },
+    "timeoutMs": 20000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [+order_totals+] (progress/create unanswered)",
+    "params": { "command": "dbt.listNodes", "arguments": ["+order_totals+"] },
+    "timeoutMs": 20000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileFile [uri] (progress/create unanswered)",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["$FILE_URI(models/order_totals.sql)"]
+    },
+    "timeoutMs": 20000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{uri,limit}] (progress/create unanswered)",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [{ "uri": "$FILE_URI(models/order_totals.sql)", "limit": 2 }]
+    },
+    "timeoutMs": 20000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getProjectInfo [] (progress/create unanswered)",
+    "params": { "command": "dbt.getProjectInfo", "arguments": [] },
+    "timeoutMs": 20000
+  }
+]

@@ -1,4 +1,5 @@
 import { runTests } from "@vscode/test-electron";
+import { spawnSync } from "child_process";
 import {
   cpSync,
   mkdirSync,
@@ -119,6 +120,19 @@ async function main() {
       rmSync(symlinkPath, { force: true });
       rmSync(linkedUserDataDir, { recursive: true, force: true });
     }
+    if (process.env.FPU_RUN_NATIVE_EDITOR_EVIDENCE === "1") {
+      for (const mode of ["strict", "baseline"]) {
+        await runNativeEditorLaunch({
+          mode,
+          workspaceParent,
+          userDir,
+          temporaryRoot,
+          extensionsDir,
+          extensionDevelopmentPath,
+          extensionTestsPath,
+        });
+      }
+    }
   } catch (err) {
     console.error("Failed to run integration tests:", err);
     process.exitCode = 1;
@@ -140,6 +154,74 @@ function configureProfilesThroughSetting(dir: string): void {
     path.join(vscodeDir, "settings.json"),
     JSON.stringify({ "fusionPowerUser.profilesDir": "${workspaceFolder}" }),
   );
+}
+
+/**
+ * Opens a fresh copy of the native-editor fixture with one static-analysis mode, so that mode's Fusion Client
+ * starts with it. The sources are created with `setup_raw` before launch, and the schema-origin hook is set in
+ * the host environment, which the extension passes to `dbt lsp`.
+ */
+async function runNativeEditorLaunch(input: {
+  mode: string;
+  workspaceParent: string;
+  userDir: string;
+  temporaryRoot: string;
+  extensionsDir: string;
+  extensionDevelopmentPath: string;
+  extensionTestsPath: string;
+}): Promise<void> {
+  const dir = path.join(input.workspaceParent, `native-editor-${input.mode}`);
+  cpSync(fixturePath("native-editor"), dir, { recursive: true });
+  writeFileSync(
+    path.join(dir, ".vscode", "settings.json"),
+    JSON.stringify({
+      "fusionPowerUser.staticAnalysis": input.mode,
+      "fusionPowerUser.profilesDir": "${workspaceFolder}",
+      "fusionPowerUser.lint.enabled": false,
+    }),
+  );
+  const setupArgs = ["run-operation", "setup_raw", "--profiles-dir", dir];
+  const setup = spawnSync("dbt", setupArgs, {
+    cwd: dir,
+    encoding: "utf-8",
+    timeout: 120_000,
+  });
+  writeFileSync(
+    path.join(dir, ".native-editor-setup.json"),
+    JSON.stringify({
+      command: `dbt ${setupArgs.join(" ")}`,
+      cwd: dir,
+      exitCode: setup.status,
+      error: setup.error?.message,
+      outputTail: `${setup.stdout ?? ""}\n${setup.stderr ?? ""}`
+        .trim()
+        .slice(-600),
+    }),
+  );
+  const userDataDir = mkdtempSync(
+    path.join(input.temporaryRoot, "fpu-integration-user-"),
+  );
+  cpSync(input.userDir, path.join(userDataDir, "User"), { recursive: true });
+  try {
+    await runTests({
+      version: "1.128.0",
+      extensionDevelopmentPath: input.extensionDevelopmentPath,
+      extensionTestsPath: input.extensionTestsPath,
+      launchArgs: [
+        dir,
+        `--user-data-dir=${userDataDir}`,
+        `--extensions-dir=${input.extensionsDir}`,
+        "--use-inmemory-secretstorage",
+      ],
+      extensionTestsEnv: {
+        ...conflictingProfilesEnv(input.workspaceParent),
+        FPU_NATIVE_EDITOR_MODE: input.mode,
+        FUSION_POWER_USER_SCHEMA_ORIGIN: "local",
+      },
+    });
+  } finally {
+    rmSync(userDataDir, { recursive: true, force: true });
+  }
 }
 
 /**
