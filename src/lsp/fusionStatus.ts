@@ -1,14 +1,22 @@
 import {
   Disposable,
+  Event,
   MarkdownString,
   StatusBarAlignment,
   StatusBarItem,
   window,
 } from "vscode";
+import { SchemaOriginStatus } from "../fusion/schemaOrigin";
 import { ProjectContext } from "../projects/projectContext";
 import { DeclaredProject } from "../projects/projectRegistry";
 import { FusionClientPool } from "./fusionClientPool";
 import { FusionClient, FusionClientState } from "./fusionLanguageClient";
+
+/** What a project has opted into in its own dbt_project.yml, for the tooltip. */
+export interface ProjectOptIns {
+  strict: boolean;
+  schemaOrigin: SchemaOriginStatus;
+}
 
 export class FusionStatus implements Disposable {
   readonly statusBar: StatusBarItem = window.createStatusBarItem(
@@ -21,7 +29,14 @@ export class FusionStatus implements Disposable {
   constructor(
     private readonly projectContext: ProjectContext,
     private readonly clientPool: FusionClientPool,
+    private readonly optIns: (
+      project: DeclaredProject,
+    ) => ProjectOptIns | undefined = () => undefined,
+    onDidChangeOptIns?: Event<unknown>,
   ) {
+    if (onDidChangeOptIns) {
+      this.disposables.push(onDidChangeOptIns(() => this.render()));
+    }
     this.disposables.push(
       this.projectContext.onDidChangeCurrent(() => {
         this.rewireClientListener();
@@ -85,11 +100,52 @@ export class FusionStatus implements Disposable {
 
     this.statusBar.text = statusText(
       client.state,
-      `static: ${client.staticAnalysis.effective}`,
+      `static: ${client.staticAnalysis}`,
     );
-    this.statusBar.tooltip = buildTooltip(project, client);
+    this.statusBar.tooltip = buildTooltip(
+      project,
+      client,
+      this.optIns(project),
+    );
     this.statusBar.show();
   }
+}
+
+/**
+ * Tooltip lines for the column-lineage opt-ins that are missing. Links run the commands that add them;
+ * nothing is written without that command's confirmation.
+ */
+export function optInLines(optIns: ProjectOptIns | undefined): string[] {
+  if (!optIns) {
+    return [];
+  }
+  const lines: string[] = [];
+  if (!optIns.strict) {
+    lines.push(
+      "Strict analysis is not enabled in dbt_project.yml. [Enable](command:fusionPowerUser.enableStrictAnalysis)",
+    );
+  }
+  const origin = optIns.schemaOrigin;
+  switch (origin.kind) {
+    case "local":
+      break;
+    case "noHook":
+      lines.push(
+        "Sources read their schemas from the warehouse. [Add schema-origin hook](command:fusionPowerUser.addSchemaOriginHook)",
+      );
+      break;
+    case "unsupportedFusion":
+      lines.push(
+        `Local source schemas need dbt Fusion 2.0.6 or later (found ${origin.version}).`,
+      );
+      break;
+    case "untypedSources":
+      lines.push(
+        `${origin.missing.length} source column(s) or table(s) lack a data_type, so strict analysis still needs the warehouse.`,
+      );
+      break;
+  }
+  return lines;
 }
 
 export function statusText(
@@ -135,15 +191,14 @@ export function failureSummary(
 export function buildTooltip(
   project: DeclaredProject,
   client: FusionClient,
+  optIns?: ProjectOptIns,
 ): MarkdownString {
   const lines = [
     `**${project.name}**`,
     "",
     `State: ${client.state}`,
     "",
-    `Effective static analysis: ${client.staticAnalysis.effective}`,
-    "",
-    `Configured static analysis: ${client.staticAnalysis.configured}`,
+    `Static analysis: ${client.staticAnalysis}`,
     "",
     `Output: ${client.outputChannel.name}`,
     "",
@@ -154,8 +209,17 @@ export function buildTooltip(
       lines.push(`Failure: ${summary}. See the output channel for full logs.`);
     }
   }
+  for (const line of optInLines(optIns)) {
+    lines.push("", line);
+  }
   const tooltip = new MarkdownString(lines.join("\n"), true);
-  tooltip.isTrusted = false;
+  // Project and failure text is untrusted; only these two command links may run.
+  tooltip.isTrusted = { enabledCommands: [...OPT_IN_COMMANDS] };
   tooltip.supportHtml = false;
   return tooltip;
 }
+
+const OPT_IN_COMMANDS = [
+  "fusionPowerUser.enableStrictAnalysis",
+  "fusionPowerUser.addSchemaOriginHook",
+] as const;

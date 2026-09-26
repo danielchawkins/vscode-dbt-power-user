@@ -1,0 +1,4 @@
+
+=================== Errors and Warnings ====================
+[error] [UnresolvedIdentifier (dbt0227)]: No column no_such_column found. Available are probe.main.stg_orders.amount, probe.main.stg_orders.note, probe.main.stg_orders.status, probe.main.stg_orders.customer_id, probe.main.stg_orders.id
+  --> models/probe_strict.sql:1:8 (target/compiled/lineage_probe/models/probe_strict.sql:1:8)

@@ -1,0 +1,935 @@
+[
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [
+        {
+          "uri": "$ROOT_URI",
+          "name": "lineage_probe"
+        }
+      ],
+      "capabilities": {
+        "workspace": {
+          "configuration": true,
+          "didChangeWatchedFiles": {
+            "dynamicRegistration": true
+          }
+        },
+        "window": {
+          "workDoneProgress": true
+        }
+      }
+    }
+  },
+  {
+    "include": "open-and-load.json"
+  },
+  {
+    "snapshot": "before-commands"
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getProjectInfo []",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": []
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getProjectInfo [{}]",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": [{}]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getProjectInfo [uri]",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": ["$FILE_URI(models/order_totals.sql)"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getProjectInfo [relpath]",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": ["models/order_totals.sql"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getProjectInfo [{uri}]",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getProjectInfo [{file_uri}]",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": [
+        {
+          "file_uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes []",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": []
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [{}]",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [{}]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [uri]",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["$FILE_URI(models/order_totals.sql)"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [relpath]",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["models/order_totals.sql"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [{uri}]",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [{file_uri}]",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        {
+          "file_uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [selector +rel+]",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+models/order_totals.sql+"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [selector order_totals]",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["order_totals"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [selector +order_totals+]",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+order_totals+"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [{select}]",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        {
+          "select": "+order_totals+"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes [{selector}]",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        {
+          "selector": "+order_totals+"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode []",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": []
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode [{}]",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [{}]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode [uri]",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["$FILE_URI(models/order_totals.sql)"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode [relpath]",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/order_totals.sql"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode [{uri}]",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode [{file_uri}]",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [
+        {
+          "file_uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode [{uri,line,character}]",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "line": 0,
+          "character": 20
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode [{uri,position}]",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "position": {
+            "line": 0,
+            "character": 20
+          }
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode [{textDocument,position}]",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [
+        {
+          "textDocument": {
+            "uri": "$FILE_URI(models/order_totals.sql)"
+          },
+          "position": {
+            "line": 0,
+            "character": 20
+          }
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getCurrentNode [relpath stg_orders]",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/stg_orders.sql"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileFile []",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": []
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileFile [{}]",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": [{}]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileFile [uri]",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["$FILE_URI(models/order_totals.sql)"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileFile [relpath]",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["models/order_totals.sql"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileFile [{uri}]",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileFile [{file_uri}]",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": [
+        {
+          "file_uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileFile [uri stg_orders]",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["$FILE_URI(models/stg_orders.sql)"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show []",
+    "params": {
+      "command": "dbt.show",
+      "arguments": []
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [{}]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [uri]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": ["$FILE_URI(models/order_totals.sql)"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [relpath]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": ["models/order_totals.sql"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{uri}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{file_uri}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "file_uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{uri,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "limit": 3
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{inline}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select 1 as one"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{uri,inline}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "inline": "select 1 as one"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{uri,inline,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "inline": "select 1 as one",
+          "limit": 1
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{sql}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "sql": "select 1 as one"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{select}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "select": "order_totals"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{selector}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "selector": "order_totals"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{uri stg_orders,limit}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/stg_orders.sql)",
+          "limit": 2
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show [{uri,inline ref}]",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)",
+          "inline": "select * from {{ ref('stg_orders') }}",
+          "limit": 2
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileLsp []",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": []
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileLsp [{}]",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": [{}]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileLsp [uri]",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": ["$FILE_URI(models/order_totals.sql)"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileLsp [relpath]",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": ["models/order_totals.sql"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileLsp [{uri}]",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.compileLsp [{file_uri}]",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": [
+        {
+          "file_uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.clearTarget []",
+    "params": {
+      "command": "dbt.clearTarget",
+      "arguments": []
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.clearTarget [{}]",
+    "params": {
+      "command": "dbt.clearTarget",
+      "arguments": [{}]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.clearTarget [uri]",
+    "params": {
+      "command": "dbt.clearTarget",
+      "arguments": ["$FILE_URI(models/order_totals.sql)"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.clearTarget [relpath]",
+    "params": {
+      "command": "dbt.clearTarget",
+      "arguments": ["models/order_totals.sql"]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.clearTarget [{uri}]",
+    "params": {
+      "command": "dbt.clearTarget",
+      "arguments": [
+        {
+          "uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.clearTarget [{file_uri}]",
+    "params": {
+      "command": "dbt.clearTarget",
+      "arguments": [
+        {
+          "file_uri": "$FILE_URI(models/order_totals.sql)"
+        }
+      ]
+    },
+    "timeoutMs": 60000
+  },
+  {
+    "wait": 500
+  },
+  {
+    "wait": 3000
+  },
+  {
+    "snapshot": "after-commands"
+  }
+]

@@ -1,0 +1,64 @@
+[
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [{ "uri": "$ROOT_URI", "name": "lineage_probe" }],
+      "capabilities": {
+        "workspace": { "configuration": true },
+        "window": { "workDoneProgress": true }
+      }
+    }
+  },
+  { "notify": "initialized", "params": {} },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+      }
+    }
+  },
+  { "wait": 10000 },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show inline info_schema('column_lineage')",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        { "inline": "select * from {{ info_schema('column_lineage') }}" }
+      ]
+    }
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show inline info_schema('models')",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [{ "inline": "select * from {{ info_schema('models') }}" }]
+    }
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.show uri order_totals",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [{ "uri": "$FILE_URI(models/order_totals.sql)" }]
+    }
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.listNodes []",
+    "params": { "command": "dbt.listNodes", "arguments": [] }
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "dbt.getProjectInfo []",
+    "params": { "command": "dbt.getProjectInfo", "arguments": [] }
+  }
+]

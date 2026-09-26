@@ -108,7 +108,7 @@ Copy the contract and verification from `fusion-lsp-plan.md`. The notes below ar
 
 ### Phase 3
 
-3.1 through 3.15 and 4.1 through 4.5 are complete at this tip. Phase 5 steps 5.0 through 5.4 are merged. Step 5.5 passes Fusion diagnostics through unchanged; step 5.6 deletes each inherited provider with its production-shaped replacement test. Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
+3.1 through 3.15 and 4.1 through 4.5 are complete at this tip. Phase 5 steps 5.0 through 5.6 are merged, and `v0.3.0-alpha.0` is tagged. Remaining work is sequenced in [column-lineage-ship-plan.md](column-lineage-ship-plan.md). Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
 
 ### Phases 4–10 and v2
 

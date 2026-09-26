@@ -88,7 +88,10 @@ const LineageView = (): JSX.Element | null => {
 
   useEffect(() => {
     const onMessage = (
-      event: MessageEvent<{ command: string; args: Parameters<typeof render>[0] }>,
+      event: MessageEvent<{
+        command: string;
+        args: Parameters<typeof render>[0];
+      }>,
     ) => {
       panelLogger.log("lineage:message -> ", JSON.stringify(event.data));
       const { command, args } = event.data;

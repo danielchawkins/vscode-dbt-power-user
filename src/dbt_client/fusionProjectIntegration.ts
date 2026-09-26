@@ -44,6 +44,7 @@ import {
   FusionExecutableResolver,
   isFusionExecutable,
 } from "../fusion/fusionExecutable";
+import { FusionVersion } from "../fusion/fusionVersion";
 import { affectsFusionExecutablePath } from "../lsp/fusionClientSettings";
 
 export type FusionCommandIntegrationFactory = (
@@ -240,6 +241,7 @@ export class FusionProjectIntegration
   implements ManifestProject
 {
   private currentIntegration?: DBTProjectIntegration;
+  private currentFusionVersion?: FusionVersion;
   private configurationSubscription?: Disposable;
   private refreshChain: Promise<void> = Promise.resolve();
   private refreshGeneration = 0;
@@ -479,6 +481,7 @@ export class FusionProjectIntegration
     generation: number,
   ): Promise<void> {
     const candidate = this.createDelegate(executable);
+    const candidateVersion = executable.version;
 
     await candidate.initializeProject();
     if (!(await this.abandonIfStale(generation, candidate))) {
@@ -499,6 +502,9 @@ export class FusionProjectIntegration
     }
 
     await this.commitCandidate(generation, candidate);
+    if (this.currentIntegration === candidate) {
+      this.currentFusionVersion = candidateVersion;
+    }
     if (parsed && this.isActivationCurrent(generation)) {
       this.publishParsedManifest(parsed);
     }
@@ -1193,6 +1199,27 @@ export class FusionProjectIntegration
     return this.requireIntegration().unsafeCompileQuery(
       query,
       originalModelName,
+    );
+  }
+
+  /** Version of the Fusion executable behind the active integration, once one is committed. */
+  getFusionVersion(): FusionVersion | undefined {
+    return this.currentIntegration ? this.currentFusionVersion : undefined;
+  }
+
+  async showColumnLineage(sql: string, signal?: AbortSignal) {
+    return this.requireIntegration().showColumnLineage(sql, signal);
+  }
+
+  async compileColumnLineage(
+    selectors: readonly string[],
+    env: Record<string, string>,
+    signal?: AbortSignal,
+  ) {
+    return this.requireIntegration().compileColumnLineage(
+      selectors,
+      env,
+      signal,
     );
   }
 

@@ -13,10 +13,7 @@ import {
   window,
   WorkspaceFolder,
 } from "vscode";
-import {
-  createStaticAnalysisSelection,
-  StaticAnalysisSelection,
-} from "../../fusion/staticAnalysisMode";
+import { StaticAnalysisMode } from "../../fusion/staticAnalysisMode";
 import { FusionClientPool } from "../../lsp/fusionClientPool";
 import {
   FusionClient,
@@ -27,6 +24,7 @@ import {
   buildTooltip,
   failureSummary,
   FusionStatus,
+  optInLines,
   statusText,
 } from "../../lsp/fusionStatus";
 import { ProjectContext } from "../../projects/projectContext";
@@ -51,10 +49,9 @@ function makeProject(name: string, rootPath: string): DeclaredProject {
 
 class FakeClient implements FusionClient {
   private readonly stateEmitter = new EventEmitter<FusionClientState>();
-  private readonly analysisEmitter =
-    new EventEmitter<StaticAnalysisSelection>();
+  private readonly analysisEmitter = new EventEmitter<StaticAnalysisMode>();
   private _state: FusionClientState;
-  private _analysis: StaticAnalysisSelection;
+  private _analysis: StaticAnalysisMode;
 
   readonly outputChannel = createMockLogOutputChannel(
     "dbt Fusion LSP (general · abc)",
@@ -64,9 +61,7 @@ class FakeClient implements FusionClient {
   constructor(
     readonly project: DeclaredProject,
     state: FusionClientState = "running",
-    analysis: StaticAnalysisSelection = createStaticAnalysisSelection(
-      "baseline",
-    ),
+    analysis: StaticAnalysisMode = "baseline",
     failureReason?: string,
   ) {
     this._state = state;
@@ -78,7 +73,7 @@ class FakeClient implements FusionClient {
     return this._state;
   }
 
-  get staticAnalysis(): StaticAnalysisSelection {
+  get staticAnalysis(): StaticAnalysisMode {
     return this._analysis;
   }
 
@@ -95,7 +90,7 @@ class FakeClient implements FusionClient {
     this.stateEmitter.fire(state);
   }
 
-  setAnalysis(analysis: StaticAnalysisSelection): void {
+  setAnalysis(analysis: StaticAnalysisMode): void {
     this._analysis = analysis;
     this.analysisEmitter.fire(analysis);
   }
@@ -120,8 +115,8 @@ class FakeClient implements FusionClient {
 
 describe("fusionStatus helpers", () => {
   it("shows static analysis in status text, never configured", () => {
-    expect(statusText("running", "static: unknown")).toBe(
-      "$(check) dbt Fusion · static: unknown",
+    expect(statusText("running", "static: project")).toBe(
+      "$(check) dbt Fusion · static: project",
     );
     expect(statusText("failed", "static: unknown")).toContain("$(error)");
     expect(statusText("starting", "static: unknown")).toContain(
@@ -132,16 +127,12 @@ describe("fusionStatus helpers", () => {
     );
   });
 
-  it("labels configured mode only in the tooltip", () => {
+  it("shows the configured mode in the tooltip", () => {
     const project = makeProject("general", "/workspace/general");
-    const client = new FakeClient(
-      project,
-      "running",
-      createStaticAnalysisSelection("strict"),
-    );
+    const client = new FakeClient(project, "running", "strict");
     const tooltip = buildTooltip(project, client).value;
-    expect(tooltip).toContain("Effective static analysis: unknown");
-    expect(tooltip).toContain("Configured static analysis: strict");
+    expect(tooltip).toContain("Static analysis: strict");
+    expect(tooltip).not.toContain("Effective");
     expect(tooltip).not.toContain("fallback");
     expect(tooltip).not.toContain("login");
   });
@@ -151,7 +142,7 @@ describe("fusionStatus helpers", () => {
     const client = new FakeClient(
       project,
       "failed",
-      createStaticAnalysisSelection("baseline"),
+      "baseline",
       "Fusion executable not found",
     );
     const tooltip = buildTooltip(project, client);
@@ -166,6 +157,59 @@ describe("fusionStatus helpers", () => {
       "$(error) line one\n$(sync~spin) second line with more detail",
     );
     expect(summary).toBe("line one");
+  });
+
+  it("lists nothing when both opt-ins are in place", () => {
+    expect(
+      optInLines({ strict: true, schemaOrigin: { kind: "local" } }),
+    ).toEqual([]);
+    expect(optInLines(undefined)).toEqual([]);
+  });
+
+  it("links each missing opt-in to its command", () => {
+    const lines = optInLines({
+      strict: false,
+      schemaOrigin: { kind: "noHook" },
+    });
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain("command:fusionPowerUser.enableStrictAnalysis");
+    expect(lines[1]).toContain("command:fusionPowerUser.addSchemaOriginHook");
+  });
+
+  it("counts untyped sources and names an old Fusion", () => {
+    expect(
+      optInLines({
+        strict: true,
+        schemaOrigin: {
+          kind: "untypedSources",
+          missing: [
+            { source: "raw", table: "a", column: "x" },
+            { source: "raw", table: "b" },
+          ],
+        },
+      }),
+    ).toEqual([expect.stringMatching(/^2 source column/)]);
+    expect(
+      optInLines({
+        strict: true,
+        schemaOrigin: { kind: "unsupportedFusion", version: "2.0.5" },
+      })[0],
+    ).toContain("2.0.5");
+  });
+
+  it("trusts only the two opt-in commands", () => {
+    const project = makeProject("general", "/workspace/general");
+    const tooltip = buildTooltip(project, new FakeClient(project), {
+      strict: false,
+      schemaOrigin: { kind: "noHook" },
+    });
+    expect(tooltip.isTrusted).toEqual({
+      enabledCommands: [
+        "fusionPowerUser.enableStrictAnalysis",
+        "fusionPowerUser.addSchemaOriginHook",
+      ],
+    });
+    expect(tooltip.value).toContain("Strict analysis is not enabled");
   });
 });
 
@@ -255,7 +299,7 @@ describe("FusionStatus", () => {
     const status = createStatus();
     currentProject = generalA;
     status.initialize();
-    expect(statusBar.text).toBe("$(check) dbt Fusion · static: unknown");
+    expect(statusBar.text).toBe("$(check) dbt Fusion · static: baseline");
     expect((statusBar.tooltip as { value: string }).value).toContain(
       fusionOutputChannelName(generalA),
     );

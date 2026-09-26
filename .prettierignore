@@ -10,3 +10,5 @@ src/lib
 webview_panels/dist
 webview_panels/storybook-static
 webview_panels/src/lib
+# Captured dbt stdout; byte-exact
+src/test/suite/fixtures

@@ -59,6 +59,7 @@ import { ProjectQuickPick } from "./quickpick/projectQuickPick";
 
 // Import missing providers and components
 import { VSCodeCommands } from "./commands";
+import { ProjectConfigCommands } from "./commands/projectConfigCommands";
 import { ProjectSetupCommands } from "./commands/projectSetupCommands";
 import { RunModel } from "./commands/runModel";
 import { RunTest } from "./commands/runTest";
@@ -68,6 +69,7 @@ import { CteProfilerDecorationProvider } from "./cte_profiler/cteProfilerDecorat
 import { CteProfilerService } from "./cte_profiler/cteProfilerService";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 import { DbtPowerUserActionsCenter } from "./quickpick";
+import { ColumnLineageRefreshController } from "./services/columnLineageRefreshController";
 import { StatusBars } from "./statusbar";
 import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
 import { TreeviewProviders } from "./treeview_provider";
@@ -466,6 +468,13 @@ container
     return new FusionStatus(
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),
+      (declared) => {
+        const project = context
+          .get(DBTProjectContainer)
+          .findDBTProject(declared.root);
+        return project ? project.projectOptIns() : undefined;
+      },
+      context.get(DBTProjectContainer).onManifestChanged,
     );
   })
   .inSingletonScope();
@@ -566,6 +575,8 @@ container
       context.get(DbtLineageService),
       context.get(SharedStateService),
       context.get(QueryManifestService),
+      (root) =>
+        context.get(ColumnLineageRefreshController).lastCompileOutcome(root),
     );
   })
   .inSingletonScope();
@@ -643,6 +654,28 @@ container
 
 // Bind DbtPowerUserActionsCenter
 container
+  .bind(ColumnLineageRefreshController)
+  .toDynamicValue(
+    (context) =>
+      new ColumnLineageRefreshController(
+        context.get(DBTProjectContainer),
+        context.get(ProjectContext),
+        context.get("DBTTerminal"),
+      ),
+  )
+  .inSingletonScope();
+
+container
+  .bind(ProjectConfigCommands)
+  .toDynamicValue(
+    (context) =>
+      new ProjectConfigCommands(
+        context.get(ProjectContext),
+        context.get("DBTTerminal"),
+      ),
+  )
+  .inSingletonScope();
+container
   .bind(DbtPowerUserActionsCenter)
   .toDynamicValue((context) => {
     return new DbtPowerUserActionsCenter(
@@ -670,6 +703,8 @@ container
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),
       context.get(FusionStatus),
+      context.get(ProjectConfigCommands),
+      context.get(ColumnLineageRefreshController),
     );
   })
   .inSingletonScope();

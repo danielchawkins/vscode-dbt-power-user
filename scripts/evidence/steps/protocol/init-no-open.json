@@ -1,0 +1,27 @@
+[
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [{ "uri": "$ROOT_URI", "name": "lineage_probe" }],
+      "capabilities": {
+        "workspace": {
+          "configuration": true,
+          "didChangeWatchedFiles": { "dynamicRegistration": true }
+        },
+        "window": { "workDoneProgress": true }
+      }
+    }
+  },
+  { "notify": "initialized", "params": {} },
+  { "waitForProgressEnd": "Analyzing", "timeoutMs": 20000 },
+  {
+    "request": "workspace/executeCommand",
+    "label": "getProjectInfo 20s after initialized, no didOpen",
+    "params": { "command": "dbt.getProjectInfo", "arguments": [] },
+    "timeoutMs": 30000
+  },
+  { "snapshot": "no-open" }
+]

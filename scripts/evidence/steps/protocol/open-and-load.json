@@ -1,0 +1,41 @@
+[
+  { "notify": "initialized", "params": {} },
+  {
+    "request": "workspace/executeCommand",
+    "label": "getProjectInfo right after initialized",
+    "params": { "command": "dbt.getProjectInfo", "arguments": [] },
+    "timeoutMs": 30000
+  },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+      }
+    }
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "getProjectInfo right after didOpen",
+    "params": { "command": "dbt.getProjectInfo", "arguments": [] },
+    "timeoutMs": 30000
+  },
+  { "waitForProgressEnd": "Analyzing", "timeoutMs": 90000 },
+  {
+    "request": "workspace/executeCommand",
+    "label": "getProjectInfo after Analyzing end",
+    "params": { "command": "dbt.getProjectInfo", "arguments": [] },
+    "timeoutMs": 30000
+  },
+  { "wait": 5000 },
+  {
+    "request": "workspace/executeCommand",
+    "label": "getProjectInfo +5s",
+    "params": { "command": "dbt.getProjectInfo", "arguments": [] },
+    "timeoutMs": 30000
+  },
+  { "snapshot": "loaded" }
+]

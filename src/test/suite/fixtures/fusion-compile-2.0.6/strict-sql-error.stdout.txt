@@ -1,0 +1,8 @@
+       dbt 2.0.6
+   Loading profiles.yml
+    Failed model main.probe_strict (view) [2 of 2 in 0.00s]
+
+==================== Execution Summary =====================
+Finished 'compile' with 1 error for target 'dev' [322ms]
+Processed: 2 models
+Summary: 2 total | 1 success | 1 error

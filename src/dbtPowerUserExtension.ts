@@ -8,6 +8,7 @@ import {
 } from "vscode";
 import { CodeLensProviders } from "./code_lens_provider";
 import { VSCodeCommands } from "./commands";
+import { ProjectConfigCommands } from "./commands/projectConfigCommands";
 import { ContentProviders } from "./content_provider";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "./dbt_integration";
@@ -18,6 +19,7 @@ import { CONFIGURATION_SECTION } from "./projects/projectConfiguration";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
+import { ColumnLineageRefreshController } from "./services/columnLineageRefreshController";
 import { StatusBars } from "./statusbar";
 import { TreeviewProviders } from "./treeview_provider";
 import { WebviewViewProviders } from "./webview_provider";
@@ -59,6 +61,8 @@ export class DBTPowerUserExtension implements Disposable {
     private projectContext: ProjectContext,
     private fusionClientPool: FusionClientPool,
     private fusionStatus: FusionStatus,
+    private projectConfigCommands: ProjectConfigCommands,
+    private columnLineageRefresh: ColumnLineageRefreshController,
   ) {
     this.disposables.push(
       this.dbtProjectContainer,
@@ -73,6 +77,8 @@ export class DBTPowerUserExtension implements Disposable {
       this.projectContext,
       this.fusionClientPool,
       this.fusionStatus,
+      this.projectConfigCommands,
+      this.columnLineageRefresh,
     );
   }
 

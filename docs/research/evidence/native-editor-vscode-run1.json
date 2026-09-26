@@ -1,0 +1,333 @@
+{
+  "strict": {
+    "meta": {
+      "recordedAt": "2026-09-26T14:59:06.596Z",
+      "vscodeVersion": "1.128.0",
+      "vscodeLanguageclientVersion": "10.1.1",
+      "platform": "darwin 25.5.0 arm64",
+      "projectDir": "/private/var/folders/3b/1tz4rz151k7ft52s78vnzc5m0000gn/T/fpu-integration-workspace-dzyHiU/native-editor-strict",
+      "configuredStaticAnalysis": "strict",
+      "setupRaw": {
+        "command": "dbt run-operation setup_raw --profiles-dir /private/var/folders/3b/1tz4rz151k7ft52s78vnzc5m0000gn/T/fpu-integration-workspace-dzyHiU/native-editor-strict",
+        "cwd": "/private/var/folders/3b/1tz4rz151k7ft52s78vnzc5m0000gn/T/fpu-integration-workspace-dzyHiU/native-editor-strict",
+        "exitCode": 0,
+        "outputTail": "dbt 2.0.6\n   Loading profiles.yml\n\n==================== Execution Summary =====================\nFinished 'run-operation' successfully for target 'dev' [519ms]"
+      },
+      "dbtOnExtensionHostPath": {
+        "whichDbt": "/Users/daniel/.local/share/mise/installs/aqua-getdbt-com-dbt-fusion/2.0.6/dbt",
+        "realpath": "/Users/daniel/.local/share/mise/installs/aqua-getdbt-com-dbt-fusion/2.0.6/dbt",
+        "sha256": "9fc5cd633558235a5eb4e265b5fea2aa8dbb4eb803a5e13872e6e80a5bbd4c15",
+        "version": "dbt 2.0.6",
+        "configuredDbtPath": ""
+      },
+      "extensionHostEnv": {
+        "FUSION_POWER_USER_SCHEMA_ORIGIN": "local",
+        "DBT_PROFILES_DIR": "/Users/daniel/.dbt"
+      },
+      "languageIds": {
+        "stg_orders.sql": "sql",
+        "order_totals.sql": "sql",
+        "totals_downstream.sql": "sql",
+        "hard.sql": "sql"
+      },
+      "fusionLspProcesses": [
+        "/Users/daniel/.local/share/mise/installs/aqua-getdbt-com-dbt-fusion/2.0.6/dbt lsp --socket 56212 --project-dir /private/var/folders/3b/1tz4rz151k7ft52s78vnzc5m0000gn/T/fpu-integration-workspace-dzyHiU/native-editor-strict --lint-enabled false --static-analysis strict --no-version-check --command-prefix fusionPowerUser:yD-RSAQa5PDA: --profiles-dir /private/var/folders/3b/1tz4rz151k7ft52s78vnzc5m0000gn/T/fpu-integration-workspace-dzyHiU/native-editor-strict"
+      ]
+    },
+    "results": {
+      "hover ref('stg_orders') (readiness)": {
+        "ok": true,
+        "value": [
+          {
+            "range": "1:13-1:23",
+            "contents": [
+              "**Parent Models**\n\n- orders\n\n**Children Models**\n\n- order_totals\n\n| Column | Description |\n| :--- | :--- |\n| id |  |\n| customer_id |  |\n| amount |  |\n| status |  |\n| note |  |\n"
+            ]
+          }
+        ],
+        "elapsedMs": 257,
+        "attempts": 1
+      },
+      "hover * in stg_orders": {
+        "ok": true,
+        "value": [
+          {
+            "range": "0:7-0:7",
+            "contents": [
+              "| Column | Type | Origin |\n| :--- | :--- | :--- |\n| amount | decimal(10, 2) | probe.main.orders |\n| customer_id | integer | probe.main.orders |\n| id | integer | probe.main.orders |\n| note | varchar | probe.main.orders |\n| status | varchar | probe.main.orders |\n"
+            ]
+          }
+        ],
+        "elapsedMs": 1,
+        "attempts": 1
+      },
+      "hover customer_id in order_totals": {
+        "ok": true,
+        "value": [
+          {
+            "range": "0:7-0:18",
+            "contents": [
+              "| Column | Type | Origin |\n| :--- | :--- | :--- |\n| customer_id | integer | probe.main.stg_orders |\n"
+            ]
+          }
+        ],
+        "elapsedMs": 0,
+        "attempts": 1
+      },
+      "hover alias total in order_totals": {
+        "ok": true,
+        "value": [
+          {
+            "range": "0:35-0:40",
+            "contents": [
+              "| Alias | Type |\n| :--- | :--- |\n| total | decimal(38, 2) |\n"
+            ]
+          }
+        ],
+        "elapsedMs": 1,
+        "attempts": 1
+      },
+      "definition customer_id in order_totals": {
+        "ok": true,
+        "value": [
+          {
+            "file": "stg_orders.sql",
+            "range": "0:7-0:8"
+          }
+        ],
+        "elapsedMs": 1,
+        "attempts": 1
+      },
+      "definition total in totals_downstream": {
+        "ok": true,
+        "value": [
+          {
+            "file": "order_totals.sql",
+            "range": "0:20-0:40"
+          }
+        ],
+        "elapsedMs": 0,
+        "attempts": 1
+      },
+      "references alias total": {
+        "ok": true,
+        "value": [
+          {
+            "file": "order_totals.sql",
+            "range": "0:35-0:40"
+          },
+          {
+            "file": "totals_downstream.sql",
+            "range": "0:20-0:25"
+          }
+        ],
+        "elapsedMs": 1264,
+        "attempts": 1
+      },
+      "prepareRename alias total": {
+        "ok": true,
+        "value": {
+          "range": "0:35-0:40",
+          "placeholder": "total"
+        },
+        "elapsedMs": 1,
+        "attempts": 1
+      },
+      "rename alias total -> total_amount": {
+        "ok": true,
+        "value": [
+          {
+            "file": "order_totals.sql",
+            "edits": [
+              {
+                "range": "0:35-0:40",
+                "newText": "total_amount"
+              }
+            ]
+          },
+          {
+            "file": "totals_downstream.sql",
+            "edits": [
+              {
+                "range": "0:20-0:25",
+                "newText": "total_amount"
+              }
+            ]
+          }
+        ],
+        "elapsedMs": 1,
+        "attempts": 1
+      },
+      "rename customer_id -> cust_id": {
+        "ok": false,
+        "error": "Cannot rename a column that is not an alias.",
+        "elapsedMs": 1,
+        "attempts": 1
+      },
+      "rename alias label in hard.sql -> customer_name": {
+        "ok": true,
+        "value": [
+          {
+            "file": "hard.sql",
+            "edits": [
+              {
+                "range": "6:19-6:24",
+                "newText": "customer_name"
+              }
+            ]
+          }
+        ],
+        "elapsedMs": 1,
+        "attempts": 1
+      },
+      "codeLens order_totals": {
+        "ok": true,
+        "value": [
+          {
+            "range": "0:0-0:0",
+            "title": "$(play) Execute Query",
+            "command": "fusionPowerUser.executeSQL"
+          },
+          {
+            "range": "0:0-0:0",
+            "title": "$(book) Document",
+            "command": "fusionPowerUser.DocsEdit.focus"
+          }
+        ],
+        "elapsedMs": 2,
+        "attempts": 1
+      }
+    }
+  },
+  "baseline": {
+    "meta": {
+      "recordedAt": "2026-09-26T14:59:11.486Z",
+      "vscodeVersion": "1.128.0",
+      "vscodeLanguageclientVersion": "10.1.1",
+      "platform": "darwin 25.5.0 arm64",
+      "projectDir": "/private/var/folders/3b/1tz4rz151k7ft52s78vnzc5m0000gn/T/fpu-integration-workspace-dzyHiU/native-editor-baseline",
+      "configuredStaticAnalysis": "baseline",
+      "setupRaw": {
+        "command": "dbt run-operation setup_raw --profiles-dir /private/var/folders/3b/1tz4rz151k7ft52s78vnzc5m0000gn/T/fpu-integration-workspace-dzyHiU/native-editor-baseline",
+        "cwd": "/private/var/folders/3b/1tz4rz151k7ft52s78vnzc5m0000gn/T/fpu-integration-workspace-dzyHiU/native-editor-baseline",
+        "exitCode": 0,
+        "outputTail": "dbt 2.0.6\n   Loading profiles.yml\n\n==================== Execution Summary =====================\nFinished 'run-operation' successfully for target 'dev' [476ms]"
+      },
+      "dbtOnExtensionHostPath": {
+        "whichDbt": "/Users/daniel/.local/share/mise/installs/aqua-getdbt-com-dbt-fusion/2.0.6/dbt",
+        "realpath": "/Users/daniel/.local/share/mise/installs/aqua-getdbt-com-dbt-fusion/2.0.6/dbt",
+        "sha256": "9fc5cd633558235a5eb4e265b5fea2aa8dbb4eb803a5e13872e6e80a5bbd4c15",
+        "version": "dbt 2.0.6",
+        "configuredDbtPath": ""
+      },
+      "extensionHostEnv": {
+        "FUSION_POWER_USER_SCHEMA_ORIGIN": "local",
+        "DBT_PROFILES_DIR": "/Users/daniel/.dbt"
+      },
+      "languageIds": {
+        "stg_orders.sql": "sql",
+        "order_totals.sql": "sql",
+        "totals_downstream.sql": "sql",
+        "hard.sql": "sql"
+      },
+      "fusionLspProcesses": [
+        "/Users/daniel/.local/share/mise/installs/aqua-getdbt-com-dbt-fusion/2.0.6/dbt lsp --socket 56227 --project-dir /private/var/folders/3b/1tz4rz151k7ft52s78vnzc5m0000gn/T/fpu-integration-workspace-dzyHiU/native-editor-baseline --lint-enabled false --static-analysis baseline --no-version-check --command-prefix fusionPowerUser:yC-mX0V9gydg: --profiles-dir /private/var/folders/3b/1tz4rz151k7ft52s78vnzc5m0000gn/T/fpu-integration-workspace-dzyHiU/native-editor-baseline"
+      ]
+    },
+    "results": {
+      "hover ref('stg_orders') (readiness)": {
+        "ok": true,
+        "value": [
+          {
+            "range": "1:13-1:23",
+            "contents": [
+              "**Parent Models**\n\n- orders\n\n**Children Models**\n\n- order_totals"
+            ]
+          }
+        ],
+        "elapsedMs": 277,
+        "attempts": 1
+      },
+      "hover * in stg_orders": {
+        "ok": true,
+        "value": [],
+        "elapsedMs": 20015,
+        "attempts": 80
+      },
+      "hover customer_id in order_totals": {
+        "ok": true,
+        "value": [],
+        "elapsedMs": 1,
+        "attempts": 1
+      },
+      "hover alias total in order_totals": {
+        "ok": true,
+        "value": [],
+        "elapsedMs": 1,
+        "attempts": 1
+      },
+      "definition customer_id in order_totals": {
+        "ok": true,
+        "value": [],
+        "elapsedMs": 2,
+        "attempts": 1
+      },
+      "definition total in totals_downstream": {
+        "ok": true,
+        "value": [],
+        "elapsedMs": 2,
+        "attempts": 1
+      },
+      "references alias total": {
+        "ok": true,
+        "value": [],
+        "elapsedMs": 2,
+        "attempts": 1
+      },
+      "prepareRename alias total": {
+        "ok": true,
+        "value": {
+          "range": "0:35-0:40",
+          "placeholder": "total"
+        },
+        "elapsedMs": 0,
+        "attempts": 1
+      },
+      "rename alias total -> total_amount": {
+        "ok": false,
+        "error": "No result.",
+        "elapsedMs": 2,
+        "attempts": 1
+      },
+      "rename customer_id -> cust_id": {
+        "ok": false,
+        "error": "No result.",
+        "elapsedMs": 2,
+        "attempts": 1
+      },
+      "rename alias label in hard.sql -> customer_name": {
+        "ok": false,
+        "error": "No result.",
+        "elapsedMs": 1,
+        "attempts": 1
+      },
+      "codeLens order_totals": {
+        "ok": true,
+        "value": [
+          {
+            "range": "0:0-0:0",
+            "title": "$(play) Execute Query",
+            "command": "fusionPowerUser.executeSQL"
+          },
+          {
+            "range": "0:0-0:0",
+            "title": "$(book) Document",
+            "command": "fusionPowerUser.DocsEdit.focus"
+          }
+        ],
+        "elapsedMs": 2,
+        "attempts": 1
+      }
+    }
+  }
+}

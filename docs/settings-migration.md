@@ -84,7 +84,7 @@ Example fragment:
   "fusionPowerUser.enabled": true,
   "fusionPowerUser.projects": ["transformation/dbt/finance_general"],
   "fusionPowerUser.dbtPath": "${env:HOME}/.local/bin/dbt",
-  "fusionPowerUser.staticAnalysis": "baseline",
+  "fusionPowerUser.staticAnalysis": "project",
   "fusionPowerUser.query.limit": 500
 }
 ```

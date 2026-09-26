@@ -12,7 +12,7 @@ We tested three routes on dbt-shaped queries. `openlineage-sql` compiles to WebA
 
 The extension gets column lineage from Fusion and ships no SQL parser.
 
-- **Compute.** After an edit, run `dbt compile -s <model> --static-analysis strict --generate-info-schema` for the edited model. Selection recomputes lineage for the selected nodes only and `DESCRIBE`s only their direct inputs.
+- **Compute.** After an edit, run `dbt compile -s +<model> --static-analysis strict --generate-info-schema` for the edited model. A bare `-s <model>` `DESCRIBE`s each unbuilt parent and sets `static_analysis` off for the model (evidence README sections 4 and 7).
 - **Read.** Read lineage with `dbt show --info column_lineage --output json`, which serves the stored Parquet without compiling or querying the warehouse.
 - **Schema origin.** Source schemas come from the warehouse by default. A project that wants YAML-declared source schemas sets one project-level line in `dbt_project.yml`, and the extension controls it per command through the named environment variable:
 

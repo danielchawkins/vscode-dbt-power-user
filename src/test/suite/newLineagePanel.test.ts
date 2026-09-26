@@ -151,22 +151,67 @@ describe("NewLineagePanel", () => {
     });
   });
 
-  it("answers getConnectedColumns with no column lineage", async () => {
+  it("answers getConnectedColumns with the service's lineage", async () => {
+    const lineage = [
+      {
+        source: ["model.p.a", "id"],
+        target: ["model.p.b", "id"],
+        type: "direct",
+        viewsType: "Unchanged",
+      },
+    ];
+    const getConnectedColumns = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockResolvedValue({ kind: "lineage", columnLineage: lineage });
+    (panel as any).dbtLineageService = { getConnectedColumns };
+
     await (panel as any).handleCommand({
       command: "getConnectedColumns",
-      args: { params: { targets: [["model.p.a", "id"]] } },
+      args: {
+        params: { targets: [["model.p.b", "id"]], upstreamExpansion: true },
+      },
       syncRequestId: "cll-1",
     });
 
+    expect(getConnectedColumns).toHaveBeenCalledWith({
+      targets: [["model.p.b", "id"]],
+      upstreamExpansion: true,
+    });
     expect(mockPostMessage).toHaveBeenCalledWith({
       command: "response",
       args: {
         id: "cll-1",
         syncRequestId: "cll-1",
-        body: { column_lineage: [] },
+        body: { column_lineage: lineage },
         status: true,
       },
     });
+  });
+
+  it.each([
+    [{ kind: "empty" }, "No column lineage yet"],
+    [{ kind: "unavailable" }, "No column lineage yet"],
+    [
+      { kind: "failed", message: "boom" },
+      "Could not read column lineage: boom",
+    ],
+  ])("explains %j on each target table", async (read, expected) => {
+    (panel as any).dbtLineageService = {
+      getConnectedColumns: jest
+        .fn<(...args: any[]) => Promise<any>>()
+        .mockResolvedValue({ kind: "noLineage", read }),
+    };
+
+    await (panel as any).handleCommand({
+      command: "getConnectedColumns",
+      args: { params: { targets: [["model.p.a", "id"]] } },
+      syncRequestId: "cll-2",
+    });
+
+    const body = (mockPostMessage.mock.calls[0][0] as any).args.body;
+    expect(body.column_lineage).toEqual([]);
+    expect(Object.keys(body.errors)).toEqual(["model.p.a"]);
+    expect(body.errors["model.p.a"][0]).toContain(expected);
   });
 });
 
@@ -599,5 +644,25 @@ describe("NewLineagePanel — source YAML rooting", () => {
     const result = (panel as any).getStartingNode();
 
     expect(result.aiEnabled).toBe(true);
+  });
+});
+
+describe("NewLineagePanel — compute column lineage", () => {
+  it("runs the refresh command", async () => {
+    const { commands } = await import("vscode");
+    const panel = Object.create(NewLineagePanel.prototype);
+    (panel as any)._panel = { webview: { postMessage: jest.fn() } };
+    const execute = jest
+      .spyOn(commands, "executeCommand")
+      .mockResolvedValue(undefined as never);
+
+    await (panel as any).handleCommand({
+      command: "computeColumnLineage",
+      args: {},
+    });
+
+    expect(execute).toHaveBeenCalledWith(
+      "fusionPowerUser.refreshColumnLineage",
+    );
   });
 });

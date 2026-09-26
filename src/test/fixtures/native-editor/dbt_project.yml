@@ -1,0 +1,6 @@
+name: lineage_probe
+version: "1.0"
+profile: lineage_probe
+# The extension's documented hook: FUSION_POWER_USER_SCHEMA_ORIGIN selects remote (default) or local per command.
+sources:
+  +schema_origin: "{{ env_var('FUSION_POWER_USER_SCHEMA_ORIGIN', 'remote') }}"

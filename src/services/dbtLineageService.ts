@@ -8,10 +8,59 @@ import {
   RESOURCE_TYPE_SOURCE,
   Table,
 } from "../dbt_integration";
+import {
+  ColumnLineage,
+  LineageRead,
+  toPanelLineage,
+} from "../fusion/columnLineage";
 import { QueryManifestService } from "../modules";
+
+/** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */
+export interface ConnectedColumnsRequest {
+  /** `[table, column]` pairs; the table is the node's unique ID, as `createTable` keys it. */
+  targets: [string, string][];
+  upstreamExpansion: boolean;
+}
+
+export type ConnectedColumnsResult =
+  | { kind: "lineage"; columnLineage: ColumnLineage[] }
+  | { kind: "noLineage"; read: Exclude<LineageRead, { kind: "edges" }> };
 
 export class DbtLineageService {
   public constructor(private queryManifestService: QueryManifestService) {}
+
+  /**
+   * Answers the panel's column click from Fusion's `column_lineage` view. Edges are read for the target
+   * tables in the requested direction and kept only when their end on the target side is a requested column.
+   */
+  async getConnectedColumns(
+    request: ConnectedColumnsRequest,
+    signal?: AbortSignal,
+  ): Promise<ConnectedColumnsResult> {
+    const project = this.queryManifestService.getProject();
+    if (!project || request.targets.length === 0) {
+      return { kind: "noLineage", read: { kind: "empty" } };
+    }
+    const direction = request.upstreamExpansion ? "upstream" : "downstream";
+    const tables = [...new Set(request.targets.map(([table]) => table))];
+    const read = await project.readColumnLineage(tables, direction, signal);
+    if (read.kind !== "edges") {
+      return { kind: "noLineage", read };
+    }
+    const key = (table: string, column: string) =>
+      `${table}\u0000${column.toLowerCase()}`;
+    const wanted = new Set(
+      request.targets.map(([table, column]) => key(table, column)),
+    );
+    const edges = read.edges.filter(({ parent, child }) => {
+      const end = direction === "upstream" ? child : parent;
+      return wanted.has(key(end.uniqueId, end.column));
+    });
+    return {
+      kind: "lineage",
+      columnLineage: toPanelLineage(edges, (uniqueId) => uniqueId),
+    };
+  }
 
   getUpstreamTables({ table }: { table: string }) {
     return { tables: this.getConnectedTables("children", table) };

@@ -260,12 +260,18 @@ export class CLIDBTCommandExecutionStrategy implements DBTCommandExecutionStrate
       args,
       signal: combinedSignal,
       cwd: this.cwd,
-      envVars: this.processEnvironment.getEnvironmentVariables(),
+      envVars: {
+        ...this.processEnvironment.getEnvironmentVariables(),
+        ...command.env,
+      },
     });
   }
 }
 
 export class DBTCommand {
+  /** Variables added to this command's process only, on top of the project's environment. */
+  env: Record<string, string> = {};
+
   constructor(
     public statusMessage: string,
     public args: string[],
@@ -384,6 +390,23 @@ export interface DBTProjectIntegration {
     query: string,
     originalModelName: string | undefined,
   ): Promise<string>;
+  /**
+   * Runs `show --inline <sql> --output json --limit -1 --quiet`. With `--quiet` and no `--log-format`, stdout
+   * is one JSON array (evidence README section 5).
+   */
+  showColumnLineage(
+    sql: string,
+    signal?: AbortSignal,
+  ): Promise<CommandProcessResult>;
+  /**
+   * Runs `compile [-s <selector>...] --static-analysis strict --generate-info-schema`, the only command that
+   * writes column lineage (evidence README section 3). `env` applies to this process only.
+   */
+  compileColumnLineage(
+    selectors: readonly string[],
+    env: Record<string, string>,
+    signal?: AbortSignal,
+  ): Promise<CommandProcessResult>;
   validateSQLDryRun(query: string): Promise<SqlDryRunResult>;
   getColumnsOfSource(
     sourceName: string,

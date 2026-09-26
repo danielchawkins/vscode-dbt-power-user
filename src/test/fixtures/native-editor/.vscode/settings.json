@@ -1,0 +1,5 @@
+{
+  "fusionPowerUser.staticAnalysis": "strict",
+  "fusionPowerUser.profilesDir": "${workspaceFolder}",
+  "fusionPowerUser.lint.enabled": false
+}

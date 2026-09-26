@@ -26,6 +26,12 @@ import {
   SourceTable,
   Table,
 } from "../dbt_integration";
+import { LineageRead } from "../fusion/columnLineage";
+import {
+  CompileOutcome,
+  describeCompileOutcome,
+} from "../fusion/lineageDiagnostics";
+import { optInLines, ProjectOptIns } from "../lsp/fusionStatus";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
@@ -39,6 +45,37 @@ interface ResolvedSourceTable {
   key: string;
   sourceName: string;
   table: SourceTable;
+}
+
+/**
+ * The lineage component shows `errors[table]` as a tooltip on that table. Column lineage exists only after a
+ * `dbt compile --static-analysis strict --generate-info-schema`, so an empty read explains how to produce it.
+ */
+export function noLineageErrors(
+  targets: [string, string][],
+  read: Exclude<LineageRead, { kind: "edges" }>,
+  optIns?: ProjectOptIns,
+  lastCompile?: CompileOutcome,
+): Record<string, string[]> {
+  const message =
+    read.kind === "failed"
+      ? `Could not read column lineage: ${read.message}`
+      : "No column lineage yet. Use Compute column lineage, which runs `dbt compile --static-analysis strict --generate-info-schema` for this project.";
+  // Markdown links render as text in the component's tooltip; drop them and keep the sentence.
+  const lines = [
+    message,
+    ...(lastCompile && lastCompile.kind !== "analyzed"
+      ? [`Last compile: ${describeCompileOutcome(lastCompile)}`]
+      : []),
+    ...optInLines(optIns).map((line) =>
+      line.replace(/\s*\[[^\]]*\]\(command:[^)]*\)/g, ""),
+    ),
+  ];
+  const errors: Record<string, string[]> = {};
+  for (const [table] of targets) {
+    errors[table] = lines;
+  }
+  return errors;
 }
 
 // 0-based line of `offset` within `text`.
@@ -70,6 +107,9 @@ export class NewLineagePanel
     private dbtLineageService: DbtLineageService,
     eventEmitterService: SharedStateService,
     protected queryManifestService: QueryManifestService,
+    private readonly lastCompileOutcome: (
+      projectRoot: string,
+    ) => CompileOutcome | undefined = () => undefined,
   ) {
     super(
       dbtProjectContainer,
@@ -159,6 +199,10 @@ export class NewLineagePanel
       commands.executeCommand("workbench.action.problems.focus");
       return;
     }
+    if (command === "computeColumnLineage") {
+      void commands.executeCommand("fusionPowerUser.refreshColumnLineage");
+      return;
+    }
     if (command === "upstreamTables") {
       const body = this.dbtLineageService.getUpstreamTables(params);
       this._panel?.webview.postMessage({
@@ -214,10 +258,25 @@ export class NewLineagePanel
     }
 
     if (command === "getConnectedColumns") {
-      // The lineage component requests column lineage on column click; none is computed.
+      const result = await this.dbtLineageService.getConnectedColumns(params);
+      const project = this.queryManifestService.getProject();
+      const body =
+        result.kind === "lineage"
+          ? { column_lineage: result.columnLineage }
+          : {
+              column_lineage: [],
+              errors: noLineageErrors(
+                params.targets ?? [],
+                result.read,
+                project?.projectOptIns(),
+                project
+                  ? this.lastCompileOutcome(project.projectRoot.fsPath)
+                  : undefined,
+              ),
+            };
       this._panel?.webview.postMessage({
         command: "response",
-        args: { id, syncRequestId, body: { column_lineage: [] }, status: true },
+        args: { id, syncRequestId, body, status: true },
       });
       return;
     }

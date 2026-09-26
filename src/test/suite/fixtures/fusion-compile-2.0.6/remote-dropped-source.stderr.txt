@@ -1,0 +1,7 @@
+
+=================== Errors and Warnings ====================
+[warning] [RemoteError (dbt1014)]: Failed to download source schema for 'source.lineage_probe.raw.contacts'. Setting 'static_analysis' to off. Skipping analysis for 'model.lineage_probe.hard': Catalog Error: Table with name contacts does not exist!
+Did you mean "customers"?
+
+LINE 1: DESCRIBE "probe"."main"."contacts";
+                 ^
