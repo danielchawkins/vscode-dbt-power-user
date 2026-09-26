@@ -94,7 +94,7 @@ Each session starts on an empty `target/` and runs `steps/editor-features.json`.
 
 **What this establishes:** on this machine, with `dbt login status` reporting unauthenticated, strict analysis took effect in every run. That held with the real HOME and with an empty one, with remote licence fetch skipped, and with a backdated install date.
 
-**What it does not establish:** whether this is intended (a trial or grace window), a gap in 2.0.6, or behaviour that a later release or a network call will change. The `DBT_CLIENT_INSTALL_DATE` values may not be in the format the binary expects. For the extension this is a product risk: the shipped plan depends on strict. It should detect a fall-back to baseline at run time rather than assume strict is available. See the plan's open questions.
+**What it does not establish:** whether this is intended (a trial or grace window), a gap in 2.0.6, or behaviour that a later release or a network call will change. The `DBT_CLIENT_INSTALL_DATE` values may not be in the format the binary expects. For the extension this is a product risk: the shipped plan depends on strict. It should detect a fall-back to baseline at run time rather than assume strict is available. See the open questions in [column-lineage-ship-plan.md](../../refactor/column-lineage-ship-plan.md).
 
 ## 3. Writing column lineage
 
@@ -109,6 +109,13 @@ Every result in this section comes from runs where strict was set with the flag 
 | `FUSION_POWER_USER_SCHEMA_ORIGIN=remote` with a source table dropped fell back to `static_analysis: off` for the dependent model (dbt1014); `local` did not                                                                                                                                                                                | c5/11, c5/13                                         |
 | No `dbt lsp` flag tried made the server write lineage. Tried: `--generate-info-schema`, `--info-schema-dir`, `--target-path`, `--metadata-dir`, `--write-json`, `--write-catalog`, `--selector`, `-s`, state and defer flags, and `--static-analysis strict` in every session. Nor did any `initializationOptions` variant or notification | lsp-flags l1–l4, l7; lsp-protocol P1, P5             |
 | With a CLI-written lineage file present, the server did not rewrite it after edit and save                                                                                                                                                                                                                                                 | lsp-flags l7; lsp-protocol P5 step 04 snapshots      |
+
+**What the extension classifies** (experiment `f1-compile-outcomes`; its stdout, stderr and exit code are the unit fixtures in `src/test/suite/fixtures/fusion-compile-2.0.6/`):
+
+- strict with local origin: exit 0, no warning (step 02);
+- `--generate-info-schema` under baseline: exit 0, `[warning] [Generic (dbt1000)]` on stderr (03);
+- a SQL error under strict: exit 1, `[error] [UnresolvedIdentifier (dbt0227)]` (04);
+- remote origin with a dropped source: exit 0, `[warning] [RemoteError (dbt1014)]: … Setting 'static_analysis' to off. Skipping analysis for 'model.lineage_probe.hard'` (06).
 
 ## 4. Refreshing one edited model
 
@@ -126,6 +133,7 @@ After a full strict compile and an edit to `order_totals`, with parent `stg_orde
 - **Without `--quiet`:** stdout also carries the version banner and the execution summary (r1/31–34).
 - **`--log-format json` or `otel`:** stdout carries log events even with `--quiet` (r2/07–12).
 - **Filtering and joins:** `--inline` over `{{ info_schema('column_lineage') }}` accepted WHERE, IN, joins to `{{ info_schema('node_columns') }}` and `WITH RECURSIVE` (r3).
+- **The panel's read:** `dbt show --inline "<select of the five lineage columns> where child_node_unique_id in (…)" --output json --limit -1 --quiet` printed one JSON array line with an empty stderr, both upstream and downstream; a filter matching no node printed `[]` with exit 0; before any compile it exited 1 with `dbt1656` on stderr and empty stdout (r9).
 - **What it reads:** `show --info` read `target/private/metadata/`. It succeeded with the DuckDB file moved away (r6) and with `target/info_schema/` deleted (r7/18, 21).
 - **No metadata** (before any compile, after `dbt clean`, or with a non-matching `--target-path`): exit 1, `InfoSchemaUnavailable (dbt1656)` (r7).
 - **Ambiguous empty result:** after a compile without `--generate-info-schema`, the read gave exit 0 and `[]` (r7/06).
@@ -145,6 +153,29 @@ After a full strict compile and an edit to `order_totals`, with parent `stg_orde
 
   With `baseline`, every column call returned empty (native-editor-vscode run 1 and run 2 evidence JSON).
 - **Through a raw client with `--static-analysis strict`:** the same results, except that `textDocument/prepareRename` returned `No such method` (E3, lsp-flags l6).
+
+## 7. Warehouse-free strict compiles: experiment `w1-warehouse-free`
+
+The fixture sets `sources: +schema_origin: "{{ env_var('FUSION_POWER_USER_SCHEMA_ORIGIN', 'remote') }}"` and declares a `data_type` on every source column. Every step starts on an empty `target/` with `stg_orders` never built. Each step dir holds Fusion's `logs/query_log.sql` for that step as `query_log.sql`. All compiles pass `--static-analysis strict --generate-info-schema`.
+
+| Step | Origin | Change from the fixture                                                        | Selector        | Exit | `DESCRIBE`s | Diagnostic |
+| ---- | ------ | ------------------------------------------------------------------------------ | --------------- | ---- | ----------- | ---------- |
+| 02   | local  | —                                                                              | —               | 0    | 0           | —          |
+| 03   | local  | —                                                                              | `order_totals`  | 0    | 1           | dbt1014    |
+| 04   | local  | —                                                                              | `+order_totals` | 0    | 0           | —          |
+| 05   | local  | every column of `stg_orders` and `order_totals` typed; `stg_orders` contracted | `order_totals`  | 0    | 1           | dbt1014    |
+| 06   | local  | as 05, plus `models: +schema_origin: local`                                    | `order_totals`  | 1    | 0           | dbt1013    |
+| 07   | local  | `probe.duckdb` moved away                                                      | —               | 0    | 0           | —          |
+| 09   | local  | `probe.duckdb` moved away                                                      | `+order_totals` | 0    | 0           | —          |
+| 11   | remote | —                                                                              | —               | 0    | 3           | —          |
+
+- **Full compile and `+<model>`:** with local origin and typed sources, neither queried the warehouse (02, 04). Both succeeded with the DuckDB file absent (07, 09), and step 10's listing shows no file was recreated. Step 08 read 32 lineage rows after step 07.
+- **Bare `-s <model>`:** `DESCRIBE`d the unbuilt parent and emitted `dbt1014 … Setting 'static_analysis' to off` (03). Typing every model column and enforcing a contract on the parent did not change that (05).
+- **`+schema_origin` on models** is rejected: `SerializationError (dbt1013): Invalid model definition '+schema_origin'` (06).
+- **Remote origin** `DESCRIBE`d the three source tables (11).
+- **Source (open crates at `9977b6c`):** `crates/dbt-tasks-core/src/local_schema_builder.rs:140-150` builds local schemas only for sources whose origin is local and sends every other unselected node to the remote frontier; `crates/dbt-schemas/src/schemas/nodes.rs:666` defaults every node to `Remote`. The schema download and the fall-back to `off` are not in the open crates; they are in the closed `dbt-schema-hydration` and `dbt-tasks` crates, as are the analyzer (`sdf-frontend`) and lineage (`dbt-lineage`).
+
+**What this establishes:** in this fixture, warehouse-free strict analysis needs local origin and a `data_type` on every source column, and a refresh must select `+<model>`. Model column types are not used for unselected parents.
 
 ## Superseded premises
 

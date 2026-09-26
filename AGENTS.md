@@ -66,9 +66,6 @@ src/
 ├── metadata/                # ProjectMetadataSource port and its manifest implementation
 ├── dbt_client/              # dbt integrations, manifest parsing, command execution
 ├── services/                # business logic, incl. queryManifestService
-├── autocompletion_provider/ # language features, one provider per concern
-├── definition_provider/
-├── hover_provider/
 ├── commands/                # VS Code command implementations
 ├── treeview_provider/
 ├── webview_provider/        # panel hosts

@@ -1,5 +1,7 @@
 # S10: static-analysis mode
 
+> **Resolved by** the consolidated [evidence README](../research/evidence/README.md): section 1 (where the CLI and the language server take strict from, and precedence), section 6 (strict answers column hover, definition, references and alias rename through VS Code; baseline returns nothing), and section 7 (warehouse-free strict with typed sources and local schema origin). The inconclusive load below was a warehouse-profile problem; the new runs use a local DuckDB fixture. Decisions based on it are in [column-lineage-ship-plan.md](column-lineage-ship-plan.md) step 2. The text below is kept as a historical record.
+
 Captured 2026-09-22 on dbt Fusion 2.0.5. The operator opted in to profile `finance_general`, target `dev`, through the profiles directory under the home `.dbt` folder. No other profile or target was used. There is no login arm.
 
 The result is inconclusive for mode comparison. `dbt parse` on the synthetic fixture succeeded, but neither `baseline` nor `strict` finished project load within five minutes per mode, so diagnostic, hover, and effective-mode measurements did not run against a loaded project. Follow-up diagnosis on 2026-09-22 tested Fusion 2.0.5 and 2.0.6 with short direct harness runs and a valid official-extension control; no loaded-project state was reproduced during that diagnosis window. What changed since earlier green captures on the same machine remains unknown.
