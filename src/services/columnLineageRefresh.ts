@@ -1,4 +1,6 @@
 import { CommandProcessResult } from "../dbt_integration/commandProcessExecution";
+import { LineageRead } from "../fusion/columnLineage";
+import { classifyCompile, CompileOutcome } from "../fusion/lineageDiagnostics";
 import { SCHEMA_ORIGIN_ENV, SchemaOriginStatus } from "../fusion/schemaOrigin";
 import { StaticAnalysisMode } from "../fusion/staticAnalysisMode";
 
@@ -11,6 +13,16 @@ export interface RefreshableProject {
     signal?: AbortSignal,
   ): Promise<CommandProcessResult>;
   schemaOriginStatus(): SchemaOriginStatus;
+  /**
+   * Unique IDs of the named models that the manifest lists with at least one column; only those are expected
+   * to have lineage after a strict compile.
+   */
+  modelsWithColumns(models: readonly string[]): string[];
+  readColumnLineage(
+    uniqueIds: readonly string[],
+    direction: "upstream" | "downstream",
+    signal?: AbortSignal,
+  ): Promise<LineageRead>;
 }
 
 export type RefreshOutcome =
@@ -18,6 +30,7 @@ export type RefreshOutcome =
       kind: "completed";
       selectors: readonly string[];
       result: CommandProcessResult;
+      compile: CompileOutcome;
     }
   | { kind: "aborted" }
   | { kind: "failed"; message: string };
@@ -133,7 +146,17 @@ export class ColumnLineageRefresh {
       );
       outcome = controller.signal.aborted
         ? { kind: "aborted" }
-        : { kind: "completed", selectors, result };
+        : {
+            kind: "completed",
+            selectors,
+            result,
+            compile: await this.classify(
+              project,
+              selectors,
+              result,
+              controller.signal,
+            ),
+          };
     } catch (error) {
       outcome = controller.signal.aborted
         ? { kind: "aborted" }
@@ -148,5 +171,36 @@ export class ColumnLineageRefresh {
     }
     this.listener?.onEnd(project, outcome);
     return outcome;
+  }
+
+  /**
+   * `[]` from the view is ambiguous (evidence README section 5), so after an exit-0 model compile that the
+   * output calls analysed, an empty read for models the manifest shows with columns means strict did not
+   * take effect.
+   */
+  private async classify(
+    project: RefreshableProject,
+    selectors: readonly string[],
+    result: CommandProcessResult,
+    signal: AbortSignal,
+  ): Promise<CompileOutcome> {
+    const compile = classifyCompile(
+      result.exitCode,
+      result.stdout,
+      result.stderr,
+    );
+    if (compile.kind !== "analyzed" || selectors.length === 0) {
+      return compile;
+    }
+    const expected = project.modelsWithColumns(
+      selectors.map((selector) => selector.replace(/^\+/, "")),
+    );
+    if (expected.length === 0) {
+      return compile;
+    }
+    const read = await project.readColumnLineage(expected, "upstream", signal);
+    return read.kind === "empty"
+      ? { kind: "strictUnavailable", signal: "emptyAfterStrict" }
+      : compile;
   }
 }

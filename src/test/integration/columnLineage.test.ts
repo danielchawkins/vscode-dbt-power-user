@@ -155,4 +155,47 @@ suite("Column lineage read through the pinned dbt", function () {
       fs.renameSync(moved, warehouse);
     }
   });
+
+  test("a remote-origin project compile with a dropped source reports skipped with dbt1014", async function () {
+    const projectFile = path.join(projectDir, "dbt_project.yml");
+    const original = fs.readFileSync(projectFile, "utf-8");
+    // Drop first: editing dbt_project.yml starts a reparse that holds the DuckDB file lock.
+    const drop = dbt(["run-operation", "drop_contacts"]);
+    assert.strictEqual(drop.status, 0, `${drop.stdout}\n${drop.stderr}`);
+    // Remote origin whatever env the extension passes, so the missing table must be downloaded.
+    fs.writeFileSync(
+      projectFile,
+      original.replace(
+        /sources:\n\s+\+schema_origin:[^\n]*\n/,
+        "sources:\n  +schema_origin: remote\n",
+      ),
+    );
+    try {
+      // The reparse may still hold the lock; a locked run fails with dbt1308, so retry until one classifies.
+      const deadline = Date.now() + 60_000;
+      let outcome:
+        | { kind: string; compile?: { kind: string; models?: string[] } }
+        | undefined;
+      do {
+        outcome = await vscode.commands.executeCommand(
+          "fusionPowerUser.refreshColumnLineage",
+        );
+        const lockHeld =
+          outcome?.kind === "completed" &&
+          outcome.compile?.kind === "failed" &&
+          JSON.stringify(outcome.compile).includes("dbt1308");
+        if (!lockHeld) {
+          break;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 1_000));
+      } while (Date.now() < deadline);
+      assert.strictEqual(outcome?.kind, "completed", JSON.stringify(outcome));
+      assert.deepStrictEqual(outcome?.compile, {
+        kind: "skipped",
+        models: ["model.lineage_probe.hard"],
+      });
+    } finally {
+      fs.writeFileSync(projectFile, original);
+    }
+  });
 });

@@ -647,6 +647,26 @@ export class DBTProject implements Disposable {
     );
   }
 
+  /** Unique IDs of the named models that the manifest lists with at least one column. */
+  modelsWithColumns(models: readonly string[]): string[] {
+    const nodes = this._manifestCacheEvent?.nodeMetaMap;
+    if (!nodes) {
+      return [];
+    }
+    const wanted = new Set(models);
+    const ids: string[] = [];
+    for (const node of nodes.nodes()) {
+      if (
+        node.resource_type === "model" &&
+        wanted.has(node.name) &&
+        Object.keys(node.columns ?? {}).length > 0
+      ) {
+        ids.push(node.unique_id);
+      }
+    }
+    return ids;
+  }
+
   async readColumnLineage(
     uniqueIds: readonly string[],
     direction: LineageDirection,

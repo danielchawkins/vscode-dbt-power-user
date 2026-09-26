@@ -27,6 +27,10 @@ import {
   Table,
 } from "../dbt_integration";
 import { LineageRead } from "../fusion/columnLineage";
+import {
+  CompileOutcome,
+  describeCompileOutcome,
+} from "../fusion/lineageDiagnostics";
 import { optInLines, ProjectOptIns } from "../lsp/fusionStatus";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { DbtLineageService } from "../services/dbtLineageService";
@@ -51,6 +55,7 @@ export function noLineageErrors(
   targets: [string, string][],
   read: Exclude<LineageRead, { kind: "edges" }>,
   optIns?: ProjectOptIns,
+  lastCompile?: CompileOutcome,
 ): Record<string, string[]> {
   const message =
     read.kind === "failed"
@@ -59,6 +64,9 @@ export function noLineageErrors(
   // Markdown links render as text in the component's tooltip; drop them and keep the sentence.
   const lines = [
     message,
+    ...(lastCompile && lastCompile.kind !== "analyzed"
+      ? [`Last compile: ${describeCompileOutcome(lastCompile)}`]
+      : []),
     ...optInLines(optIns).map((line) =>
       line.replace(/\s*\[[^\]]*\]\(command:[^)]*\)/g, ""),
     ),
@@ -99,6 +107,9 @@ export class NewLineagePanel
     private dbtLineageService: DbtLineageService,
     eventEmitterService: SharedStateService,
     protected queryManifestService: QueryManifestService,
+    private readonly lastCompileOutcome: (
+      projectRoot: string,
+    ) => CompileOutcome | undefined = () => undefined,
   ) {
     super(
       dbtProjectContainer,
@@ -248,6 +259,7 @@ export class NewLineagePanel
 
     if (command === "getConnectedColumns") {
       const result = await this.dbtLineageService.getConnectedColumns(params);
+      const project = this.queryManifestService.getProject();
       const body =
         result.kind === "lineage"
           ? { column_lineage: result.columnLineage }
@@ -256,7 +268,10 @@ export class NewLineagePanel
               errors: noLineageErrors(
                 params.targets ?? [],
                 result.read,
-                this.queryManifestService.getProject()?.projectOptIns(),
+                project?.projectOptIns(),
+                project
+                  ? this.lastCompileOutcome(project.projectRoot.fsPath)
+                  : undefined,
               ),
             };
       this._panel?.webview.postMessage({

@@ -575,6 +575,8 @@ container
       context.get(DbtLineageService),
       context.get(SharedStateService),
       context.get(QueryManifestService),
+      (root) =>
+        context.get(ColumnLineageRefreshController).lastCompileOutcome(root),
     );
   })
   .inSingletonScope();

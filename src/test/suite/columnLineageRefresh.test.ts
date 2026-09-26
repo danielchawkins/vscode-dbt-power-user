@@ -1,4 +1,5 @@
 import { describe, expect, it, jest } from "@jest/globals";
+import { LineageRead } from "../../fusion/columnLineage";
 import { SchemaOriginStatus } from "../../fusion/schemaOrigin";
 import {
   ColumnLineageRefresh,
@@ -9,7 +10,11 @@ import {
 function project(
   origin: SchemaOriginStatus["kind"] = "local",
   root = "/p",
-): RefreshableProject & { compileColumnLineage: jest.Mock } {
+  lineage: LineageRead = { kind: "edges", edges: [] },
+): RefreshableProject & {
+  compileColumnLineage: jest.Mock;
+  readColumnLineage: jest.Mock;
+} {
   const status = (
     origin === "untypedSources"
       ? { kind: origin, missing: [] }
@@ -35,6 +40,9 @@ function project(
           );
         }),
     ) as any,
+    modelsWithColumns: (models: readonly string[]) =>
+      models.map((model) => `model.p.${model}`),
+    readColumnLineage: jest.fn(() => Promise.resolve(lineage)) as any,
   };
 }
 
@@ -164,5 +172,54 @@ describe("modelForFile", () => {
     expect(
       modelForFile({ getMetadataSnapshot: () => undefined } as any, "/x.sql"),
     ).toBeUndefined();
+  });
+});
+
+describe("ColumnLineageRefresh fall-back detection", () => {
+  it("reports emptyAfterStrict when the view has no lineage for a model with columns", async () => {
+    jest.useFakeTimers();
+    const refresh = new ColumnLineageRefresh();
+    const p = project("local", "/p", { kind: "empty" });
+    const run = refresh.refreshModel(p, ["order_totals"]);
+    await jest.advanceTimersByTimeAsync(20);
+
+    expect(await run).toMatchObject({
+      compile: { kind: "strictUnavailable", signal: "emptyAfterStrict" },
+    });
+    expect(p.readColumnLineage.mock.calls[0].slice(0, 2)).toEqual([
+      ["model.p.order_totals"],
+      "upstream",
+    ]);
+    jest.useRealTimers();
+  });
+
+  it("keeps analyzed when the view has lineage", async () => {
+    jest.useFakeTimers();
+    const refresh = new ColumnLineageRefresh();
+    const p = project("local", "/p", {
+      kind: "edges",
+      edges: [
+        {
+          parent: { uniqueId: "model.p.a", column: "x" },
+          child: { uniqueId: "model.p.order_totals", column: "x" },
+          evolution: "copy",
+        },
+      ],
+    });
+    const run = refresh.refreshModel(p, ["order_totals"]);
+    await jest.advanceTimersByTimeAsync(20);
+    expect(await run).toMatchObject({ compile: { kind: "analyzed" } });
+    jest.useRealTimers();
+  });
+
+  it("does not read the view after a project compile", async () => {
+    jest.useFakeTimers();
+    const refresh = new ColumnLineageRefresh();
+    const p = project("local", "/p", { kind: "empty" });
+    const run = refresh.refreshProject(p);
+    await jest.advanceTimersByTimeAsync(20);
+    expect(await run).toMatchObject({ compile: { kind: "analyzed" } });
+    expect(p.readColumnLineage).not.toHaveBeenCalled();
+    jest.useRealTimers();
   });
 });

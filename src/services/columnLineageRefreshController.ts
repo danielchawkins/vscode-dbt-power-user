@@ -2,6 +2,10 @@ import { commands, Disposable, TextDocument, window, workspace } from "vscode";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../dbt_integration/terminal";
+import {
+  CompileOutcome,
+  describeCompileOutcome,
+} from "../fusion/lineageDiagnostics";
 import { resolveConfiguredStaticAnalysisMode } from "../fusion/staticAnalysisMode";
 import { ProjectContext } from "../projects/projectContext";
 import {
@@ -17,7 +21,9 @@ import {
 export class ColumnLineageRefreshController implements Disposable {
   private readonly disposables: Disposable[] = [];
   private readonly refresh: ColumnLineageRefresh;
+  private readonly lastOutcome = new Map<string, CompileOutcome>();
   private progress: Disposable | undefined;
+  private warning: Disposable | undefined;
 
   constructor(
     private readonly dbtProjectContainer: DBTProjectContainer,
@@ -56,6 +62,7 @@ export class ColumnLineageRefreshController implements Disposable {
 
   dispose(): void {
     this.progress?.dispose();
+    this.warning?.dispose();
     this.refresh.dispose();
     while (this.disposables.length) {
       this.disposables.pop()?.dispose();
@@ -88,9 +95,24 @@ export class ColumnLineageRefreshController implements Disposable {
         `compile ${outcome.selectors.join(" ") || "(project)"} exited ${exitCode}`,
         { project: project.projectRoot.fsPath, stdout, stderr },
       );
+      const message = describeCompileOutcome(outcome.compile);
+      this.lastOutcome.set(project.projectRoot.fsPath, outcome.compile);
+      if (outcome.compile.kind !== "analyzed") {
+        this.terminal.warn("columnLineageRefresh", message, false);
+        this.warning?.dispose();
+        this.warning = window.setStatusBarMessage(
+          `$(warning) ${message}`,
+          10_000,
+        );
+      }
     } else if (outcome.kind === "failed") {
       this.terminal.warn("columnLineageRefresh", outcome.message, false);
     }
+  }
+
+  /** The last refresh's outcome for the project at `root`, for the lineage panel. */
+  lastCompileOutcome(root: string): CompileOutcome | undefined {
+    return this.lastOutcome.get(root);
   }
 }
 
