@@ -90,6 +90,19 @@ Two facts dominate change ordering, both detailed in the plan:
 - **Three homes.** Inline comments carry a rare local gotcha — a line that looks wrong but is correct — ideally one line. TSDoc carries the contract. `docs/` carries the rationale; the *why* never lives in code.
 - **Avoid mannered prose.** Do not use metaphor or a striking phrase where a plain statement would do. A metaphor carries associations the writer did not intend. When a literal phrase is available, use it.
 
+## Editor diagnostics
+
+The Problems panel is the union of every extension's diagnostics, so an entry is not necessarily a gate failure. How an agent reads it depends on where it runs:
+
+- **Copilot in VS Code:** attach `#problems` to the prompt, or call the built-in errors tool (`get_errors`); with no file paths it returns the whole panel, with paths it returns those files only.
+- **Claude Code with the VS Code extension connected (`/ide`):** call `mcp__ide__getDiagnostics`, optionally with a file URI.
+- **Any agent without editor access:** reproduce the source instead of reading the panel. `just check` covers TypeScript, ESLint, Prettier and the tests; `just lint-markdown` covers dprint and rumdl.
+
+Known false positives in this repo:
+
+- `dbt configuration is invalid : dbt not found` on fixture `dbt_project.yml` files comes from the upstream dbt Power User (`innoverio.vscode-dbt-power-user`), not this extension. `.vscode/settings.json` sets `dbt.enabled: false` and `dbt.allowListFolders: [".vscode"]` to turn it off; reload the window after changing them, or disable that extension for the workspace.
+- `Unable to find reusable workflow` on `.github/workflows/ci.yml` comes from the GitHub Actions extension in a secondary jj workspace, which has no `.git` directory. The file exists; CI resolves it.
+
 ## Gates
 
 `just check` and `just package` must pass on every PR bookmark tip. `just smoke` runs the packaged-VSIX smoke assertions locally; CI runs the same assertions through `smoke-vscode` and `smoke-cursor`.

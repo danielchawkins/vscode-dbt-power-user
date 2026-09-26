@@ -6,5 +6,6 @@
     "dprint.dprint",
     "rvben.rumdl",
     "nefrob.vscode-just-syntax"
-  ]
+  ],
+  "unwantedRecommendations": ["innoverio.vscode-dbt-power-user"]
 }
