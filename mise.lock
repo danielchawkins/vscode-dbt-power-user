@@ -33,28 +33,31 @@ checksum = "sha256:1038af32fade7a79f9c3a690d9546bb17be13dd7b4568a3684692fdcb0a52
 url = "https://github.com/dprint/dprint/releases/download/0.57.4/dprint-x86_64-pc-windows-msvc.zip"
 
 [[tools."aqua:getdbt.com/dbt-fusion"]]
-version = "2.0.5"
+version = "2.0.6"
 backend = "aqua:getdbt.com/dbt-fusion"
 
 [tools."aqua:getdbt.com/dbt-fusion"."platforms.linux-arm64"]
-url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.5-aarch64-unknown-linux-gnu.tar.gz"
+url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.6-aarch64-unknown-linux-gnu.tar.gz"
 
 [tools."aqua:getdbt.com/dbt-fusion"."platforms.linux-arm64-musl"]
-url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.5-aarch64-unknown-linux-musl.tar.gz"
+url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.6-aarch64-unknown-linux-musl.tar.gz"
 
 [tools."aqua:getdbt.com/dbt-fusion"."platforms.linux-x64"]
-url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.5-x86_64-unknown-linux-gnu.tar.gz"
+url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.6-x86_64-unknown-linux-gnu.tar.gz"
 
 [tools."aqua:getdbt.com/dbt-fusion"."platforms.linux-x64-musl"]
-url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.5-x86_64-unknown-linux-musl.tar.gz"
+url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.6-x86_64-unknown-linux-musl.tar.gz"
 
 [tools."aqua:getdbt.com/dbt-fusion"."platforms.macos-arm64"]
-checksum = "sha256:fcbe6a3e1296564f7099b9a72b9f7bbc366f0fe9eca247e2a36eeab65a90cef2"
-url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.5-aarch64-apple-darwin.tar.gz"
+checksum = "sha256:1ff8e942149c9c42e0a26419f294c3293e500b84264ccb95a1ff9b6585c88ddb"
+url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.6-aarch64-apple-darwin.tar.gz"
 
 [tools."aqua:getdbt.com/dbt-fusion"."platforms.macos-x64"]
-checksum = "sha256:485d416570900d84264acadf1ff86d1cd7f488565e75c75d686f8c431eb6ecad"
-url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.5-x86_64-apple-darwin.tar.gz"
+checksum = "sha256:dbe6dfe67efab3f2269779c956d0965866cea7e89459383b6dbe7e8a336bafa0"
+url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.6-x86_64-apple-darwin.tar.gz"
+
+[tools."aqua:getdbt.com/dbt-fusion"."platforms.windows-x64"]
+url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.6-x86_64-pc-windows-msvc.zip"
 
 [[tools."aqua:jj-vcs/jj"]]
 version = "0.45.1"

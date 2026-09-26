@@ -11,7 +11,7 @@ lefthook = "latest"
 "aqua:mvdan/sh" = "latest"
 "aqua:koalaman/shellcheck" = "latest"
 "aqua:jj-vcs/jj" = "latest"
-"aqua:getdbt.com/dbt-fusion" = "2.0.5"
+"aqua:getdbt.com/dbt-fusion" = "2.0.6"
 
 [settings]
 lockfile = true
