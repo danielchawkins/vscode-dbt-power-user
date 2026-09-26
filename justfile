@@ -242,6 +242,8 @@ jj *args:
 package:
     #!/usr/bin/env bash
     set -euo pipefail
+    # rsbuild keeps dist/ between builds, so stale chunks would otherwise ship.
+    rm -rf dist
     npm run package:vsix
     vsix="$(node -p "require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
     if [[ ! -f "$vsix" ]]; then
@@ -256,6 +258,10 @@ package:
       exit 1
     fi
     echo "VSIX $vsix contains 0 .py entries"
+    if printf '%s\n' "$entries" | grep -qi 'altimate-core'; then
+      echo "error: VSIX contains altimate-core entries: $vsix" >&2
+      exit 1
+    fi
 
 # Local dry run of the release pipeline: build, checksum, verify the tag, publish nothing.
 [group("package")]

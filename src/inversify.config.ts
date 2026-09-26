@@ -235,10 +235,7 @@ container
 container
   .bind(DbtLineageService)
   .toDynamicValue((context) => {
-    return new DbtLineageService(
-      context.get("DBTTerminal"),
-      context.get(QueryManifestService),
-    );
+    return new DbtLineageService(context.get(QueryManifestService));
   })
   .inSingletonScope();
 
@@ -545,7 +542,6 @@ container
       context.get(DbtTestService),
       context.get(QueryManifestService),
       context.get("DBTTerminal"),
-      context.get(DbtLineageService),
     );
   })
   .inSingletonScope();

@@ -22,5 +22,4 @@ export * from "./parsers/sourceParser";
 export * from "./parsers/testParser";
 export * from "./parsers/unitTestParser";
 export * from "./parsers/utils";
-export * from "./sqlEngine";
 export * from "./terminal";

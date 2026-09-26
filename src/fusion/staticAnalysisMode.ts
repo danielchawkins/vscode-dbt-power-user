@@ -11,11 +11,7 @@ export interface StaticAnalysisSelection {
 }
 
 export type FusionCapability =
-  | "columnLineage"
-  | "columnDefinition"
-  | "typeDiagnostics"
-  | "selectStarHover"
-  | "columnRename";
+  "columnDefinition" | "typeDiagnostics" | "selectStarHover" | "columnRename";
 
 export const STATIC_ANALYSIS_MODE_SETTING = "staticAnalysis";
 
@@ -28,7 +24,6 @@ const STATIC_ANALYSIS_MODES = [
 ] as const satisfies readonly StaticAnalysisMode[];
 
 const STRICT_CAPABILITIES: readonly FusionCapability[] = [
-  "columnLineage",
   "columnDefinition",
   "typeDiagnostics",
   "selectStarHover",

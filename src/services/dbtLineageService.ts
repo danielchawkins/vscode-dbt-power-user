@@ -1,48 +1,17 @@
-import { inject } from "inversify";
-import { CancellationTokenSource, window } from "vscode";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import {
-  computeColumnLineage,
   GraphMetaMap,
   NodeGraphMap,
-  RESOURCE_TYPE_ANALYSIS,
   RESOURCE_TYPE_EXPOSURE,
   RESOURCE_TYPE_FUNCTION,
   RESOURCE_TYPE_METRIC,
-  RESOURCE_TYPE_MODEL,
-  RESOURCE_TYPE_SNAPSHOT,
   RESOURCE_TYPE_SOURCE,
   Table,
 } from "../dbt_integration";
-import { ModelInfo } from "../local/lineageTypes";
-import { DBTTerminal, QueryManifestService } from "../modules";
-export enum CllEvents {
-  START = "start",
-  END = "end",
-  CANCEL = "cancel",
-}
-
-const CAN_COMPILE_SQL_NODE = [
-  RESOURCE_TYPE_MODEL,
-  RESOURCE_TYPE_SNAPSHOT,
-  RESOURCE_TYPE_ANALYSIS,
-];
-const canCompileSQL = (nodeType: string) =>
-  CAN_COMPILE_SQL_NODE.includes(nodeType);
-
-export type ColumnLineageCompute = typeof computeColumnLineage;
+import { QueryManifestService } from "../modules";
 
 export class DbtLineageService {
-  private columnLineageCompute: ColumnLineageCompute;
-
-  public constructor(
-    @inject("DBTTerminal")
-    private dbtTerminal: DBTTerminal,
-    private queryManifestService: QueryManifestService,
-    columnLineageCompute?: ColumnLineageCompute,
-  ) {
-    this.columnLineageCompute = columnLineageCompute ?? computeColumnLineage;
-  }
+  public constructor(private queryManifestService: QueryManifestService) {}
 
   getUpstreamTables({ table }: { table: string }) {
     return { tables: this.getConnectedTables("children", table) };
@@ -218,186 +187,5 @@ export class DbtLineageService {
     // data-flow edges actually drawn in the lineage panel.
     return (g.get(key)?.nodes || []).filter((n) => n.edgeType !== "constraint")
       .length;
-  }
-
-  async getConnectedColumns(
-    {
-      targets,
-      upstreamExpansion,
-      currAnd1HopTables,
-      selectedColumn,
-      showIndirectEdges,
-    }: {
-      targets: [string, string][];
-      upstreamExpansion: boolean;
-      currAnd1HopTables: string[];
-      selectedColumn: { name: string; table: string };
-      showIndirectEdges: boolean;
-    },
-    cancellationTokenSource: CancellationTokenSource,
-  ) {
-    const _event = this.queryManifestService.getEventByCurrentProject();
-    if (!_event) {
-      return;
-    }
-    const { event } = _event;
-    if (!event) {
-      return;
-    }
-    const project = this.queryManifestService.getProject();
-    if (!project) {
-      return;
-    }
-
-    const modelInfos: ModelInfo[] = [];
-    let auxiliaryTables: string[] = [];
-    let sqlTables: string[] = [];
-    currAnd1HopTables = Array.from(new Set(currAnd1HopTables));
-    const currTables = new Set(targets.map((t) => t[0]));
-    if (upstreamExpansion) {
-      const hop1Tables = currAnd1HopTables.filter((t) => !currTables.has(t));
-      sqlTables = [...hop1Tables];
-      auxiliaryTables = project.getNonEphemeralParents(hop1Tables);
-    } else {
-      auxiliaryTables = project.getNonEphemeralParents(Array.from(currTables));
-      sqlTables = Array.from(currTables);
-    }
-    currAnd1HopTables = Array.from(new Set(currAnd1HopTables));
-    const modelsToFetch = Array.from(
-      new Set([...currAnd1HopTables, ...auxiliaryTables, selectedColumn.table]),
-    );
-    // using artifacts(mappedCompiledSql) from getNodesWithDBColumns as optimization
-    const abortController = new AbortController();
-    cancellationTokenSource.token.onCancellationRequested(() =>
-      abortController.abort(),
-    );
-    const { mappedNode, relationsWithoutColumns, mappedCompiledSql } =
-      await project.getNodesWithDBColumns(
-        modelsToFetch,
-        abortController.signal,
-      );
-
-    if (cancellationTokenSource.token.isCancellationRequested) {
-      return;
-    }
-
-    const modelsToCompile = modelsToFetch.filter((key) => {
-      if (!sqlTables.includes(key)) {
-        return false;
-      }
-      const nodeType = key.split(".")[0];
-      if (!canCompileSQL(nodeType)) {
-        return false;
-      }
-      return true;
-    });
-    const bulkCompiledSql = await project.getBulkCompiledSql(
-      modelsToCompile.filter((m) => !mappedCompiledSql[m]),
-    );
-    for (const key of modelsToFetch) {
-      const node = mappedNode[key];
-      if (!node) {
-        continue;
-      }
-      if (modelsToCompile.includes(key)) {
-        modelInfos.push({
-          model_node: node,
-          compiled_sql: mappedCompiledSql[key] || bulkCompiledSql[key],
-        });
-      } else {
-        modelInfos.push({ model_node: node });
-      }
-    }
-
-    if (relationsWithoutColumns.length !== 0) {
-      window.showErrorMessage(
-        "Failed to fetch columns for " +
-          relationsWithoutColumns.join(", ") +
-          ". Probably the dbt models are not yet materialized.",
-      );
-      // we still show the lineage for the rest of the models whose
-      // schemas we could get so not returning here
-    }
-
-    const targetTables = Array.from(new Set(targets.map((t) => t[0])));
-    // targets should not empty
-    if (targets.length === 0 || modelInfos.length < targetTables.length) {
-      this.dbtTerminal.error(
-        "columnLineageLogicError",
-        "Unable to match lineage targets to models",
-        undefined,
-        false,
-        {
-          targets,
-          modelInfos,
-          upstreamExpansion,
-          currAnd1HopTables,
-        },
-      );
-      return { column_lineage: [] };
-    }
-
-    // the case where upstream/downstream only has ephemeral models
-    if (modelInfos.length === targetTables.length) {
-      return { column_lineage: [] };
-    }
-    const models = modelInfos.map((m) => m.model_node.uniqueId);
-    const hasAllModels = targets.every((t) => models.includes(t[0]));
-    if (!hasAllModels) {
-      // most probably error message is already shown in above checks
-      return { column_lineage: [] };
-    }
-
-    const modelDialect = project.getAdapterType();
-
-    try {
-      const localResult = await this.columnLineageCompute(
-        modelDialect,
-        modelInfos,
-        {
-          showIndirectEdges,
-          isCancelled: () =>
-            cancellationTokenSource.token.isCancellationRequested,
-        },
-      );
-
-      // Check cancellation before returning to avoid partial results.
-      if (cancellationTokenSource.token.isCancellationRequested) {
-        return;
-      }
-
-      if (localResult) {
-        this.dbtTerminal.debug(
-          "dbtLineageService:getConnectedColumns",
-          "local column lineage result",
-          {
-            lineageCount: localResult.column_lineage.length,
-            errors: localResult.errors,
-          },
-        );
-        return localResult;
-      }
-
-      window.showErrorMessage(
-        "Unable to compute column lineage. The native SQL engine is not loaded.",
-      );
-      this.dbtTerminal.warn(
-        "dbtLineageService:getConnectedColumns",
-        "computeColumnLineage returned null",
-      );
-      return;
-    } catch (error) {
-      window.showErrorMessage(
-        "Unable to compute column lineage: " +
-          (error instanceof Error ? error.message : String(error)),
-      );
-      this.dbtTerminal.error(
-        "dbtLineageService:getConnectedColumns",
-        "local column lineage computation failed",
-        error,
-        false,
-      );
-      return;
-    }
   }
 }

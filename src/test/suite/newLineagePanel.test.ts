@@ -150,6 +150,24 @@ describe("NewLineagePanel", () => {
       );
     });
   });
+
+  it("answers getConnectedColumns with no column lineage", async () => {
+    await (panel as any).handleCommand({
+      command: "getConnectedColumns",
+      args: { params: { targets: [["model.p.a", "id"]] } },
+      syncRequestId: "cll-1",
+    });
+
+    expect(mockPostMessage).toHaveBeenCalledWith({
+      command: "response",
+      args: {
+        id: "cll-1",
+        syncRequestId: "cll-1",
+        body: { column_lineage: [] },
+        status: true,
+      },
+    });
+  });
 });
 
 describe("NewLineagePanel — source YAML rooting", () => {
@@ -572,7 +590,7 @@ describe("NewLineagePanel — source YAML rooting", () => {
     expect((panel as any).dbtLineageService.createTable).not.toHaveBeenCalled();
   });
 
-  it("getStartingNode returns aiEnabled true for local lineage", () => {
+  it("getStartingNode keeps the lineage component's relationship features enabled", () => {
     (panel as any).queryManifestService = {
       getEventByCurrentProject: jest.fn().mockReturnValue(undefined),
       getProject: jest.fn().mockReturnValue(undefined),

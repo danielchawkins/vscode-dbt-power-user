@@ -18,7 +18,6 @@ import {
   useRef,
   useState,
 } from "react";
-import { DocumentationPropagationButton } from "../documentationPropagation/DocumentationPropagation";
 import DocBlockInserter from "./DocBlockInserter";
 import classes from "./docGenInput.module.scss";
 
@@ -173,7 +172,6 @@ const DocGeneratorInput = ({
             inputRef={inputRef}
             onInsert={handleInsertDocBlock}
           />
-          <DocumentationPropagationButton type={type} name={entity.name} />
         </Stack>
       </Stack>
       <Stack ref={stackRef}>
