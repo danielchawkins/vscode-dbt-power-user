@@ -1,28 +1,19 @@
 import * as assert from "assert";
-import { spawnSync } from "child_process";
-import { createHash } from "crypto";
 import * as fs from "fs";
-import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
-import which from "which";
-import { getExtensionRoot } from "./helpers/testFixtures";
 import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 
 /**
- * Records what native Fusion LSP editor features return through VS Code, vscode-languageclient and this
- * extension. runTests.ts opens a fresh native-editor fixture copy once per static-analysis mode when
- * FPU_RUN_NATIVE_EDITOR_EVIDENCE=1, naming the mode in FPU_NATIVE_EDITOR_MODE. Each launch merges its results
- * into the JSON file at NATIVE_EDITOR_EVIDENCE_OUT (default under os.tmpdir()).
+ * Native Fusion LSP editor features through VS Code, vscode-languageclient and this extension. runTests.ts opens
+ * a fresh native-editor fixture copy once per static-analysis mode, naming the mode in FPU_NATIVE_EDITOR_MODE.
+ * `project` launches with `+static_analysis: strict` in the fixture's dbt_project.yml, so it must match `strict`.
  */
 
 const MODE = process.env.FPU_NATIVE_EDITOR_MODE;
 const READY_TIMEOUT_MS = 90_000;
 const COLUMN_SETTLE_TIMEOUT_MS = 20_000;
 const POLL_INTERVAL_MS = 250;
-const EVIDENCE_PATH =
-  process.env.NATIVE_EDITOR_EVIDENCE_OUT ??
-  path.join(os.tmpdir(), "fpu-native-editor-evidence.json");
 
 type Recorded =
   | { ok: true; value: unknown; elapsedMs: number; attempts: number }
@@ -144,62 +135,10 @@ async function record<T>(
   }
 }
 
-function fusionProcesses(projectDir: string): string[] {
-  const ps = spawnSync("ps", ["-axww", "-o", "command="], {
-    encoding: "utf-8",
-  });
-  return (ps.stdout ?? "")
-    .split("\n")
-    .filter((line) => line.includes(" lsp ") && line.includes(projectDir));
-}
-
-function describeDbtOnHostPath(): Record<string, unknown> {
-  const resolved = which.sync("dbt", { nothrow: true });
-  const real = resolved ? fs.realpathSync(resolved) : null;
-  const version = spawnSync("dbt", ["--version"], {
-    encoding: "utf-8",
-    timeout: 10_000,
-  });
-  return {
-    whichDbt: resolved,
-    realpath: real,
-    sha256: real
-      ? createHash("sha256").update(fs.readFileSync(real)).digest("hex")
-      : null,
-    version: (version.stdout || version.stderr || "").trim(),
-    configuredDbtPath:
-      vscode.workspace.getConfiguration("fusionPowerUser").get("dbtPath") ??
-      null,
-  };
-}
-
-function languageClientVersion(): string {
-  const manifest = path.join(
-    getExtensionRoot(),
-    "node_modules",
-    "vscode-languageclient",
-    "package.json",
-  );
-  return (JSON.parse(fs.readFileSync(manifest, "utf-8")) as { version: string })
-    .version;
-}
-
-function readEvidence(): Record<string, unknown> {
-  try {
-    return JSON.parse(fs.readFileSync(EVIDENCE_PATH, "utf-8")) as Record<
-      string,
-      unknown
-    >;
-  } catch {
-    return {};
-  }
-}
-
-suite("Native Fusion editor features through VS Code (evidence)", function () {
+suite("Native Fusion editor features through VS Code", function () {
   this.timeout(10 * 60_000);
 
   const results: Record<string, Recorded> = {};
-  const meta: Record<string, unknown> = {};
   let projectDir = "";
 
   suiteSetup(async function () {
@@ -210,40 +149,24 @@ suite("Native Fusion editor features through VS Code (evidence)", function () {
     await waitForExtensionActivation(30_000);
     projectDir = vscode.workspace.workspaceFolders![0].uri.fsPath;
     const setupFile = path.join(projectDir, ".native-editor-setup.json");
-    Object.assign(meta, {
-      recordedAt: new Date().toISOString(),
-      vscodeVersion: vscode.version,
-      vscodeLanguageclientVersion: languageClientVersion(),
-      platform: `${os.platform()} ${os.release()} ${os.arch()}`,
-      projectDir,
-      configuredStaticAnalysis: vscode.workspace
-        .getConfiguration("fusionPowerUser", vscode.Uri.file(projectDir))
-        .get("staticAnalysis"),
-      setupRaw: fs.existsSync(setupFile)
-        ? JSON.parse(fs.readFileSync(setupFile, "utf-8"))
-        : null,
-      dbtOnExtensionHostPath: describeDbtOnHostPath(),
-      extensionHostEnv: {
-        FUSION_POWER_USER_SCHEMA_ORIGIN:
-          process.env.FUSION_POWER_USER_SCHEMA_ORIGIN ?? null,
-        DBT_PROFILES_DIR: process.env.DBT_PROFILES_DIR ?? null,
-      },
-    });
+    const setup = JSON.parse(fs.readFileSync(setupFile, "utf-8")) as {
+      exitCode: number | null;
+    };
+    assert.strictEqual(
+      setup.exitCode,
+      0,
+      `setup_raw failed: ${JSON.stringify(setup)}`,
+    );
   });
 
   suiteTeardown(async function () {
     if (!MODE) {
       return;
     }
-    const evidence = readEvidence();
-    evidence[MODE] = { meta, results };
-    fs.mkdirSync(path.dirname(EVIDENCE_PATH), { recursive: true });
-    fs.writeFileSync(EVIDENCE_PATH, `${JSON.stringify(evidence, null, 2)}\n`);
-    console.log(`native editor evidence (${MODE}) written to ${EVIDENCE_PATH}`);
     await vscode.commands.executeCommand("workbench.action.closeAllEditors");
   });
 
-  test(`records hover, definition, references, rename and codeLens (${MODE ?? "unset"})`, async function () {
+  test(`hover, definition, references, rename and codeLens (${MODE ?? "unset"})`, async function () {
     const documents = new Map<string, vscode.TextDocument>();
     for (const name of [
       "stg_orders.sql",
@@ -257,9 +180,6 @@ suite("Native Fusion editor features through VS Code (evidence)", function () {
       await vscode.window.showTextDocument(document, { preview: false });
       documents.set(name, document);
     }
-    meta.languageIds = Object.fromEntries(
-      [...documents].map(([name, document]) => [name, document.languageId]),
-    );
 
     const at = (probe: Probe): [vscode.Uri, vscode.Position] => {
       const document = documents.get(probe.file)!;
@@ -371,9 +291,7 @@ suite("Native Fusion editor features through VS Code (evidence)", function () {
         ),
       serializeCodeLenses,
     );
-    meta.fusionLspProcesses = fusionProcesses(fs.realpathSync(projectDir));
 
-    // Assertions are written from the first recorded run; the evidence file is the primary output.
     assertObserved(MODE!, results);
   });
 });
@@ -413,7 +331,7 @@ function assertObserved(mode: string, results: Record<string, Recorded>) {
     /Parent Models.*orders.*Children Models.*order_totals/,
   );
 
-  if (mode === "strict") {
+  if (mode === "strict" || mode === "project") {
     assert.match(json("hover * in stg_orders"), /amount \| decimal\(10, 2\)/);
     assert.match(
       json("hover customer_id in order_totals"),

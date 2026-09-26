@@ -85,7 +85,7 @@ export class FusionStatus implements Disposable {
 
     this.statusBar.text = statusText(
       client.state,
-      `static: ${client.staticAnalysis.effective}`,
+      `static: ${client.staticAnalysis}`,
     );
     this.statusBar.tooltip = buildTooltip(project, client);
     this.statusBar.show();
@@ -141,9 +141,7 @@ export function buildTooltip(
     "",
     `State: ${client.state}`,
     "",
-    `Effective static analysis: ${client.staticAnalysis.effective}`,
-    "",
-    `Configured static analysis: ${client.staticAnalysis.configured}`,
+    `Static analysis: ${client.staticAnalysis}`,
     "",
     `Output: ${client.outputChannel.name}`,
     "",

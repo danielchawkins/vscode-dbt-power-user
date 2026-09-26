@@ -22,9 +22,8 @@ import { DBTTerminal } from "../dbt_integration";
 import { FusionExecutable } from "../fusion/fusionExecutable";
 import {
   resolveConfiguredStaticAnalysisMode,
-  resolveStaticAnalysisSelection,
   staticAnalysisLaunchArgument,
-  type StaticAnalysisSelection,
+  type StaticAnalysisMode,
 } from "../fusion/staticAnalysisMode";
 import { DeclaredProject } from "../projects/projectRegistry";
 import {
@@ -70,11 +69,12 @@ export interface FusionClientOptions {
 export interface FusionClient extends Disposable {
   readonly project: DeclaredProject;
   readonly state: FusionClientState;
-  readonly staticAnalysis: StaticAnalysisSelection;
+  /** Configured `fusionPowerUser.staticAnalysis` for this Declared Project; no server field reports an effective mode. */
+  readonly staticAnalysis: StaticAnalysisMode;
   readonly outputChannel: LogOutputChannel;
   readonly failureReason: string | undefined;
   readonly onDidChangeState: Event<FusionClientState>;
-  readonly onDidChangeStaticAnalysis: Event<StaticAnalysisSelection>;
+  readonly onDidChangeStaticAnalysis: Event<StaticAnalysisMode>;
   request<T>(
     command: FusionLspCommand,
     payload: unknown,
@@ -100,7 +100,7 @@ export interface FusionLaunchArgsInput {
   projectRoot: string;
   commandPrefix: string;
   lintEnabled: boolean;
-  staticAnalysisMode: ReturnType<typeof resolveConfiguredStaticAnalysisMode>;
+  staticAnalysisMode: StaticAnalysisMode;
   traceServer: FusionTraceServerLevel;
   profilesDir?: string;
   target?: string;
@@ -226,6 +226,7 @@ export class ExistingFileDiagnostics {
 }
 
 export function buildFusionLspArgs(input: FusionLaunchArgsInput): string[] {
+  const staticAnalysis = staticAnalysisLaunchArgument(input.staticAnalysisMode);
   const args = [
     "lsp",
     "--socket",
@@ -234,11 +235,7 @@ export function buildFusionLspArgs(input: FusionLaunchArgsInput): string[] {
     input.projectRoot,
     "--lint-enabled",
     input.lintEnabled ? "true" : "false",
-    "--static-analysis",
-    staticAnalysisLaunchArgument({
-      configured: input.staticAnalysisMode,
-      effective: "unknown",
-    }),
+    ...(staticAnalysis ? ["--static-analysis", staticAnalysis] : []),
     "--no-version-check",
     "--command-prefix",
     input.commandPrefix,
@@ -462,11 +459,11 @@ export class DefaultFusionClientFactory implements FusionClientFactory {
 
 class FusionLanguageClientImpl implements FusionClient {
   private _state: FusionClientState = "stopped";
-  private _staticAnalysis: StaticAnalysisSelection;
+  private _staticAnalysis: StaticAnalysisMode;
   private _failureReason: string | undefined;
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
   private readonly _onDidChangeStaticAnalysis =
-    new EventEmitter<StaticAnalysisSelection>();
+    new EventEmitter<StaticAnalysisMode>();
   private readonly _logChannel: LogOutputChannel;
   private languageClient:
     | Pick<
@@ -496,7 +493,7 @@ class FusionLanguageClientImpl implements FusionClient {
     this._logChannel = createOutputChannel(
       fusionOutputChannelName(this.options.project),
     );
-    this._staticAnalysis = resolveStaticAnalysisSelection(
+    this._staticAnalysis = resolveConfiguredStaticAnalysisMode(
       this.options.project.root,
     );
     void this.begin();
@@ -514,11 +511,11 @@ class FusionLanguageClientImpl implements FusionClient {
     return this._onDidChangeState.event;
   }
 
-  get staticAnalysis(): StaticAnalysisSelection {
+  get staticAnalysis(): StaticAnalysisMode {
     return this._staticAnalysis;
   }
 
-  get onDidChangeStaticAnalysis(): Event<StaticAnalysisSelection> {
+  get onDidChangeStaticAnalysis(): Event<StaticAnalysisMode> {
     return this._onDidChangeStaticAnalysis.event;
   }
 
@@ -655,9 +652,7 @@ class FusionLanguageClientImpl implements FusionClient {
     const staticAnalysisMode = resolveConfiguredStaticAnalysisMode(
       this.options.project.root,
     );
-    this.setStaticAnalysis(
-      resolveStaticAnalysisSelection(this.options.project.root),
-    );
+    this.setStaticAnalysis(staticAnalysisMode);
     const selector = documentSelectorForProject(this.options.project.root);
     const { launchRoot, uriConverters } = canonicalProjectRoot(
       this.options.project.root.fsPath,
@@ -899,11 +894,8 @@ class FusionLanguageClientImpl implements FusionClient {
     await this.teardownTransport();
   }
 
-  private setStaticAnalysis(next: StaticAnalysisSelection): void {
-    if (
-      this._staticAnalysis.configured === next.configured &&
-      this._staticAnalysis.effective === next.effective
-    ) {
+  private setStaticAnalysis(next: StaticAnalysisMode): void {
+    if (this._staticAnalysis === next) {
       return;
     }
     this._staticAnalysis = next;
@@ -936,9 +928,9 @@ class FusionLanguageClientImpl implements FusionClient {
 export class FailedFusionClient implements FusionClient {
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
   private readonly _onDidChangeStaticAnalysis =
-    new EventEmitter<StaticAnalysisSelection>();
+    new EventEmitter<StaticAnalysisMode>();
   readonly state: FusionClientState = "failed";
-  readonly staticAnalysis: StaticAnalysisSelection;
+  readonly staticAnalysis: StaticAnalysisMode;
   readonly outputChannel: LogOutputChannel;
   readonly failureReason: string;
 
@@ -950,7 +942,7 @@ export class FailedFusionClient implements FusionClient {
       window.createOutputChannel(name, { log: true }),
   ) {
     this.failureReason = message;
-    this.staticAnalysis = resolveStaticAnalysisSelection(project.root);
+    this.staticAnalysis = resolveConfiguredStaticAnalysisMode(project.root);
     this.outputChannel = createOutputChannel(fusionOutputChannelName(project));
     this.outputChannel.appendLine(message);
     this.terminal.warn("fusionLsp", message);
@@ -960,7 +952,7 @@ export class FailedFusionClient implements FusionClient {
     return this._onDidChangeState.event;
   }
 
-  get onDidChangeStaticAnalysis(): Event<StaticAnalysisSelection> {
+  get onDidChangeStaticAnalysis(): Event<StaticAnalysisMode> {
     return this._onDidChangeStaticAnalysis.event;
   }
 

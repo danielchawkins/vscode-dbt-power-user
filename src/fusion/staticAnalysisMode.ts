@@ -1,43 +1,19 @@
 import { ConfigurationChangeEvent, Uri, workspace } from "vscode";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 
-export type StaticAnalysisMode = "off" | "baseline" | "strict";
-
-export interface StaticAnalysisSelection {
-  /** Resource-scoped setting value, or the product default when unset. */
-  readonly configured: StaticAnalysisMode;
-  /** What the server is actually running, once a client has reported. */
-  readonly effective: StaticAnalysisMode | "unknown";
-}
-
-export type FusionCapability =
-  "columnDefinition" | "typeDiagnostics" | "selectStarHover" | "columnRename";
+/** `project` passes no `--static-analysis`, so the project's own `+static_analysis` model config applies. */
+export type StaticAnalysisMode = "project" | "off" | "baseline" | "strict";
 
 export const STATIC_ANALYSIS_MODE_SETTING = "staticAnalysis";
 
-export const DEFAULT_STATIC_ANALYSIS_MODE: StaticAnalysisMode = "baseline";
+export const DEFAULT_STATIC_ANALYSIS_MODE: StaticAnalysisMode = "project";
 
 const STATIC_ANALYSIS_MODES = [
+  "project",
   "off",
   "baseline",
   "strict",
 ] as const satisfies readonly StaticAnalysisMode[];
-
-const STRICT_CAPABILITIES: readonly FusionCapability[] = [
-  "columnDefinition",
-  "typeDiagnostics",
-  "selectStarHover",
-  "columnRename",
-];
-
-export function capabilitiesFor(
-  mode: StaticAnalysisMode,
-): ReadonlySet<FusionCapability> {
-  if (mode === "strict") {
-    return new Set(STRICT_CAPABILITIES);
-  }
-  return new Set();
-}
 
 export function parseStaticAnalysisMode(raw: unknown): StaticAnalysisMode {
   return (
@@ -55,25 +31,11 @@ export function resolveConfiguredStaticAnalysisMode(
   return parseStaticAnalysisMode(raw);
 }
 
-export function createStaticAnalysisSelection(
-  configured: StaticAnalysisMode,
-): StaticAnalysisSelection {
-  return { configured, effective: "unknown" };
-}
-
-export function resolveStaticAnalysisSelection(
-  scope: Uri,
-): StaticAnalysisSelection {
-  return createStaticAnalysisSelection(
-    resolveConfiguredStaticAnalysisMode(scope),
-  );
-}
-
-/** Launch flag value derived from the configured mode. */
+/** `--static-analysis` value for the language server, or undefined to defer to project config. */
 export function staticAnalysisLaunchArgument(
-  selection: StaticAnalysisSelection,
-): StaticAnalysisMode {
-  return selection.configured;
+  mode: StaticAnalysisMode,
+): Exclude<StaticAnalysisMode, "project"> | undefined {
+  return mode === "project" ? undefined : mode;
 }
 
 export function affectsStaticAnalysisModeConfiguration(
@@ -84,14 +46,4 @@ export function affectsStaticAnalysisModeConfiguration(
     `${CONFIGURATION_SECTION}.${STATIC_ANALYSIS_MODE_SETTING}`,
     scope,
   );
-}
-
-export function selectionAdmitsCapability(
-  selection: StaticAnalysisSelection,
-  capability: FusionCapability,
-): boolean {
-  if (selection.effective === "unknown") {
-    return false;
-  }
-  return capabilitiesFor(selection.effective).has(capability);
 }

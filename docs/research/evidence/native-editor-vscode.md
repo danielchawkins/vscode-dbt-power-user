@@ -1,6 +1,8 @@
 # Native Fusion editor features through VS Code
 
 > **Run record only.** Superseded by [README.md](README.md), the consolidated evidence. Where this file names `DBT_STATIC_ANALYSIS`, `DBT_GENERATE_INFO_SCHEMA`, `DBT_INFO_SCHEMA_DIR`, `DBT_METADATA_DIR` or `DBT_TARGET_PATH` as configuration, it used legacy or undocumented names; see README "Superseded premises". The experiments that tested only those names (`c3`, `l5`) have been deleted.
+>
+> The `FPU_RUN_NATIVE_EDITOR_EVIDENCE` gate and the evidence-JSON writer described below no longer exist: `just test-integration` now runs `nativeEditorFeatures.test.ts` for `strict`, `baseline` and `project` on every run and asserts the results recorded here.
 
 Captured 2026-09-26. This note records what dbt Fusion 2.0.6's language server returns for hover, definition, references, rename and code lens when the request goes through VS Code, `vscode-languageclient` and Fusion Power User, and compares that with the raw JSON-RPC client results in [E3](../fusion-lineage-evidence-2026-09-26.md#e3-native-editor-features-by-static-analysis-mode-no-prior-compile).
 

@@ -16,10 +16,7 @@ import {
   DBT_PATH_SETTING,
   FusionExecutableResolver,
 } from "../../fusion/fusionExecutable";
-import {
-  createStaticAnalysisSelection,
-  StaticAnalysisSelection,
-} from "../../fusion/staticAnalysisMode";
+import { StaticAnalysisMode } from "../../fusion/staticAnalysisMode";
 import { FusionClientPoolImpl } from "../../lsp/fusionClientPool";
 import {
   LINT_ENABLED_SETTING,
@@ -78,9 +75,9 @@ class FakeClient implements FusionClient {
     _listener: (state: FusionClient["state"]) => void,
   ) => ({ dispose: () => {} });
   readonly onDidChangeStaticAnalysis = (
-    _listener: (selection: StaticAnalysisSelection) => void,
+    _listener: (mode: StaticAnalysisMode) => void,
   ) => ({ dispose: () => {} });
-  readonly staticAnalysis = createStaticAnalysisSelection("baseline");
+  readonly staticAnalysis: StaticAnalysisMode = "baseline";
   readonly outputChannel = createMockLogOutputChannel("dbt Fusion LSP (test)");
   readonly failureReason = undefined;
   restart = jest.fn(() => Promise.resolve());

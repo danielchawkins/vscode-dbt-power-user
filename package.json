@@ -81,18 +81,20 @@
           "fusionPowerUser.staticAnalysis": {
             "type": "string",
             "enum": [
+              "project",
               "off",
               "baseline",
               "strict"
             ],
             "enumDescriptions": [
+              "Pass no mode to Fusion, so the project's own `+static_analysis` model config applies. To turn on strict for a project, add `models: <project name>: +static_analysis: strict` to dbt_project.yml.",
               "Ask Fusion to skip SQL analysis for the model and its descendants.",
               "Ask Fusion for Jinja, YAML, and SQL syntax diagnostics, ref and source navigation, table-level lineage, and ref autocomplete.",
               "Ask Fusion for baseline analysis plus SQL type and schema diagnostics, column hover and go-to-definition, column references, and alias rename."
             ],
-            "default": "baseline",
+            "default": "project",
             "scope": "resource",
-            "description": "Static analysis depth passed to Fusion when this Declared Project's language server starts."
+            "description": "Static analysis mode passed to Fusion when this Declared Project's language server starts. Any value other than `project` overrides the project's own config."
           },
           "fusionPowerUser.dbtPath": {
             "type": "string",

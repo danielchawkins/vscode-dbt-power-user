@@ -1,6 +1,7 @@
 import { runTests } from "@vscode/test-electron";
 import { spawnSync } from "child_process";
 import {
+  appendFileSync,
   cpSync,
   mkdirSync,
   mkdtempSync,
@@ -120,18 +121,17 @@ async function main() {
       rmSync(symlinkPath, { force: true });
       rmSync(linkedUserDataDir, { recursive: true, force: true });
     }
-    if (process.env.FPU_RUN_NATIVE_EDITOR_EVIDENCE === "1") {
-      for (const mode of ["strict", "baseline"]) {
-        await runNativeEditorLaunch({
-          mode,
-          workspaceParent,
-          userDir,
-          temporaryRoot,
-          extensionsDir,
-          extensionDevelopmentPath,
-          extensionTestsPath,
-        });
-      }
+    for (const mode of ["strict", "baseline", "project"] as const) {
+      await runNativeEditorLaunch({
+        mode,
+        dbt: fusionPath ?? "dbt",
+        workspaceParent,
+        userDir,
+        temporaryRoot,
+        extensionsDir,
+        extensionDevelopmentPath,
+        extensionTestsPath,
+      });
     }
   } catch (err) {
     console.error("Failed to run integration tests:", err);
@@ -158,11 +158,14 @@ function configureProfilesThroughSetting(dir: string): void {
 
 /**
  * Opens a fresh copy of the native-editor fixture with one static-analysis mode, so that mode's Fusion Client
- * starts with it. The sources are created with `setup_raw` before launch, and the schema-origin hook is set in
- * the host environment, which the extension passes to `dbt lsp`.
+ * starts with it. `project` sets no mode and puts `+static_analysis: strict` in dbt_project.yml instead. The
+ * sources are created with `setup_raw` before launch, and the schema-origin hook is set in the host environment,
+ * which the extension passes to `dbt lsp`.
  */
 async function runNativeEditorLaunch(input: {
-  mode: string;
+  mode: "strict" | "baseline" | "project";
+  /** The executable the extension launches: FPU_INTEGRATION_DBT_PATH, else `dbt` on PATH. */
+  dbt: string;
   workspaceParent: string;
   userDir: string;
   temporaryRoot: string;
@@ -180,8 +183,14 @@ async function runNativeEditorLaunch(input: {
       "fusionPowerUser.lint.enabled": false,
     }),
   );
+  if (input.mode === "project") {
+    appendFileSync(
+      path.join(dir, "dbt_project.yml"),
+      "models:\n  lineage_probe:\n    +static_analysis: strict\n",
+    );
+  }
   const setupArgs = ["run-operation", "setup_raw", "--profiles-dir", dir];
-  const setup = spawnSync("dbt", setupArgs, {
+  const setup = spawnSync(input.dbt, setupArgs, {
     cwd: dir,
     encoding: "utf-8",
     timeout: 120_000,
@@ -189,7 +198,7 @@ async function runNativeEditorLaunch(input: {
   writeFileSync(
     path.join(dir, ".native-editor-setup.json"),
     JSON.stringify({
-      command: `dbt ${setupArgs.join(" ")}`,
+      command: `${input.dbt} ${setupArgs.join(" ")}`,
       cwd: dir,
       exitCode: setup.status,
       error: setup.error?.message,

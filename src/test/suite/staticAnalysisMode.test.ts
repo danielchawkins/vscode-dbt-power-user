@@ -9,14 +9,9 @@ import {
 } from "vscode";
 import {
   affectsStaticAnalysisModeConfiguration,
-  capabilitiesFor,
-  createStaticAnalysisSelection,
   DEFAULT_STATIC_ANALYSIS_MODE,
-  FusionCapability,
   parseStaticAnalysisMode,
   resolveConfiguredStaticAnalysisMode,
-  resolveStaticAnalysisSelection,
-  selectionAdmitsCapability,
   STATIC_ANALYSIS_MODE_SETTING,
   staticAnalysisLaunchArgument,
   StaticAnalysisMode,
@@ -26,103 +21,43 @@ import { esmDirname } from "../esmDirname";
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
 const EXPECTED_STATIC_ANALYSIS_MODES = [
+  "project",
   "off",
   "baseline",
   "strict",
 ] as const satisfies readonly StaticAnalysisMode[];
-
-const STRICT_ONLY_CAPABILITIES: readonly FusionCapability[] = [
-  "columnDefinition",
-  "typeDiagnostics",
-  "selectStarHover",
-  "columnRename",
-];
 
 describe("staticAnalysisMode", () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
+  it("defaults to project", () => {
+    expect(DEFAULT_STATIC_ANALYSIS_MODE).toBe("project");
+  });
+
   it.each([
+    ["project", "project"],
     ["off", "off"],
     ["baseline", "baseline"],
     ["strict", "strict"],
-    [undefined, DEFAULT_STATIC_ANALYSIS_MODE],
+    [undefined, "project"],
   ] as const)("resolves configured mode %s as %s", (raw, expected) => {
     mockStaticAnalysisMode(raw);
     expect(resolveConfiguredStaticAnalysisMode(scopeUri())).toBe(expected);
   });
 
-  it("defaults invalid raw values to baseline", () => {
-    expect(parseStaticAnalysisMode("not-a-mode")).toBe("baseline");
-    expect(parseStaticAnalysisMode(3)).toBe("baseline");
-    expect(parseStaticAnalysisMode(null)).toBe("baseline");
+  it("defaults invalid raw values to project", () => {
+    expect(parseStaticAnalysisMode("not-a-mode")).toBe("project");
+    expect(parseStaticAnalysisMode(3)).toBe("project");
+    expect(parseStaticAnalysisMode(null)).toBe("project");
   });
 
-  it("starts with effective unknown", () => {
-    expect(createStaticAnalysisSelection("strict")).toEqual({
-      configured: "strict",
-      effective: "unknown",
-    });
-    expect(resolveStaticAnalysisSelection(scopeUri())).toEqual({
-      configured: DEFAULT_STATIC_ANALYSIS_MODE,
-      effective: "unknown",
-    });
-  });
-
-  it("uses configured mode for the launch argument", () => {
-    const selection = {
-      configured: "off" as const,
-      effective: "strict" as const,
-    };
-
-    expect(staticAnalysisLaunchArgument(selection)).toBe("off");
-    expect(
-      staticAnalysisLaunchArgument({
-        configured: "baseline",
-        effective: "unknown",
-      }),
-    ).toBe("baseline");
-  });
-
-  it("matches the D5 capability matrix for known effective modes", () => {
-    expect([...capabilitiesFor("off")]).toEqual([]);
-    expect([...capabilitiesFor("baseline")]).toEqual([]);
-    expect([...capabilitiesFor("strict")]).toEqual([
-      ...STRICT_ONLY_CAPABILITIES,
-    ]);
-  });
-
-  it("returns fresh strict capability sets", () => {
-    const first = capabilitiesFor("strict");
-    const second = capabilitiesFor("strict");
-
-    expect(first).not.toBe(second);
-    (first as Set<FusionCapability>).delete("columnDefinition");
-    expect([...second]).toEqual([...STRICT_ONLY_CAPABILITIES]);
-  });
-
-  it("admits no strict-only capability while effective is unknown", () => {
-    const selection = createStaticAnalysisSelection("strict");
-
-    for (const capability of STRICT_ONLY_CAPABILITIES) {
-      expect(selectionAdmitsCapability(selection, capability)).toBe(false);
-    }
-  });
-
-  it("delegates to capabilitiesFor once effective is known", () => {
-    expect(
-      selectionAdmitsCapability(
-        { configured: "baseline", effective: "strict" },
-        "columnDefinition",
-      ),
-    ).toBe(true);
-    expect(
-      selectionAdmitsCapability(
-        { configured: "strict", effective: "baseline" },
-        "columnDefinition",
-      ),
-    ).toBe(false);
+  it("passes no launch argument for project and the mode otherwise", () => {
+    expect(staticAnalysisLaunchArgument("project")).toBeUndefined();
+    expect(staticAnalysisLaunchArgument("off")).toBe("off");
+    expect(staticAnalysisLaunchArgument("baseline")).toBe("baseline");
+    expect(staticAnalysisLaunchArgument("strict")).toBe("strict");
   });
 
   it("delegates configuration changes to affectsConfiguration", () => {
@@ -135,13 +70,6 @@ describe("staticAnalysisMode", () => {
       `${CONFIGURATION_SECTION}.${STATIC_ANALYSIS_MODE_SETTING}`,
       scope,
     );
-  });
-
-  it("does not model login or fallback semantics", () => {
-    const selection = createStaticAnalysisSelection("baseline");
-
-    expect(selection).not.toHaveProperty("fellBack");
-    expect(Object.keys(selection).sort()).toEqual(["configured", "effective"]);
   });
 
   it("matches the package manifest for staticAnalysisMode", () => {
@@ -157,13 +85,17 @@ describe("staticAnalysisMode", () => {
       .find(
         ([key]) =>
           key === `${CONFIGURATION_SECTION}.${STATIC_ANALYSIS_MODE_SETTING}`,
-      )?.[1];
+      )?.[1] as { enumDescriptions?: string[] } | undefined;
 
     expect(property).toMatchObject({
       enum: [...EXPECTED_STATIC_ANALYSIS_MODES],
       default: DEFAULT_STATIC_ANALYSIS_MODE,
       scope: "resource",
     });
+    // The server never writes column lineage (evidence README section 3).
+    for (const description of property?.enumDescriptions ?? []) {
+      expect(description).not.toMatch(/lineage.*column|column.*lineage/i);
+    }
   });
 });
 

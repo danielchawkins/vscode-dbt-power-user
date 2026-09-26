@@ -186,19 +186,35 @@ describe("fusionLanguageClient helpers", () => {
     );
   });
 
-  it("uses configured static analysis mode, not effective mode", () => {
+  it("passes no --static-analysis for project mode", () => {
     const args = buildFusionLspArgs({
       port: 1,
       projectRoot: "/workspace/general",
       commandPrefix: "fusionPowerUser:abc:",
       lintEnabled: true,
-      staticAnalysisMode: "off",
+      staticAnalysisMode: "project",
       traceServer: "off",
     });
 
-    expect(args).toContain("off");
-    expect(args).not.toContain("strict");
+    expect(args).not.toContain("--static-analysis");
   });
+
+  it.each(["off", "baseline", "strict"] as const)(
+    "passes exactly one --static-analysis %s",
+    (mode) => {
+      const args = buildFusionLspArgs({
+        port: 1,
+        projectRoot: "/workspace/general",
+        commandPrefix: "fusionPowerUser:abc:",
+        lintEnabled: true,
+        staticAnalysisMode: mode,
+        traceServer: "off",
+      });
+
+      expect(args.filter((arg) => arg === "--static-analysis")).toHaveLength(1);
+      expect(args[args.indexOf("--static-analysis") + 1]).toBe(mode);
+    },
+  );
 
   it("applies the same prefix for advertised commands and requests", () => {
     const prefix = commandPrefixForProject(makeProject());
@@ -499,7 +515,7 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
   });
 
-  it("keeps effective static analysis unknown at the client seam", async () => {
+  it("reports the configured static analysis mode at the client seam", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const factory = new DefaultFusionClientFactory(terminal as any, {
@@ -522,8 +538,7 @@ describe("FusionLanguageClient lifecycle", () => {
     });
 
     await waitForState(client, "running");
-    expect(client.staticAnalysis.effective).toBe("unknown");
-    expect(client.staticAnalysis.configured).toBe("baseline");
+    expect(client.staticAnalysis).toBe("baseline");
 
     await client.stop();
     client.dispose();
