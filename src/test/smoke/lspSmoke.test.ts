@@ -1,4 +1,6 @@
 import * as assert from "assert";
+import * as fs from "fs";
+import * as path from "path";
 import "reflect-metadata";
 import * as vscode from "vscode";
 import {
@@ -69,9 +71,57 @@ suite("Multi-root LSP smoke", function () {
       );
     }
 
+    await assertEachProjectUsedItsOwnProfilesDir();
     await assertNoWorkbenchNotifications(cdpPort, smokeHost);
   });
 });
+
+/**
+ * Opened as a workspace, each project folder's `fusionPowerUser.profilesDir` names a different directory
+ * and the environment names neither. A manifest for each project proves every folder's own setting reached
+ * the dbt command run for that project.
+ */
+async function assertEachProjectUsedItsOwnProfilesDir(): Promise<void> {
+  assert.ok(
+    vscode.workspace.workspaceFile,
+    "multi-root must be opened as a workspace so each folder's settings apply",
+  );
+  for (const name of EXPECTED_PROJECT_NAMES) {
+    const folder = vscode.workspace.workspaceFolders?.find(
+      (candidate) => candidate.name === name,
+    );
+    assert.ok(folder, `workspace must contain the ${name} folder`);
+    const configured = vscode.workspace
+      .getConfiguration("fusionPowerUser", folder.uri)
+      .get<string>("profilesDir");
+    assert.ok(configured, `${name} must set fusionPowerUser.profilesDir`);
+    const profilesDir = configured.replace(
+      "${workspaceFolder}",
+      folder.uri.fsPath,
+    );
+
+    const root = folder.uri.fsPath;
+    const manifestPath = path.join(root, "target", "manifest.json");
+    const deadline = Date.now() + LSP_WAIT_TIMEOUT_MS;
+    while (!fs.existsSync(manifestPath) && Date.now() < deadline) {
+      await sleep(250);
+    }
+    const dbtLog = path.join(root, "logs", "dbt.log");
+    const log = fs.existsSync(dbtLog) ? fs.readFileSync(dbtLog, "utf-8") : "";
+    assert.ok(
+      fs.existsSync(manifestPath),
+      `${name} parse must write target/manifest.json using its own profilesDir (${profilesDir}); ` +
+        `dbt.log tail: ${log.slice(-800)}`,
+    );
+    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as {
+      nodes: Record<string, unknown>;
+    };
+    assert.ok(
+      `model.${name}.${name}_model` in manifest.nodes,
+      `${name} manifest must contain its own model`,
+    );
+  }
+}
 
 async function waitForFusionClientStates(): Promise<FusionClientStateReport[]> {
   const deadline = Date.now() + LSP_WAIT_TIMEOUT_MS;

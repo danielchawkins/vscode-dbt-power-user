@@ -76,6 +76,7 @@ suite("Pinned-host VSIX smoke", function () {
 
     const folder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(folder, "fixture workspace should be open");
+    await assertParsedWithConfiguredProfiles(folder.uri.fsPath);
     const doc = await vscode.workspace.openTextDocument(
       vscode.Uri.joinPath(folder.uri, "models/child.sql"),
     );
@@ -195,4 +196,34 @@ async function openPanel(panel: {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * The harness points `fusionPowerUser.profilesDir` at the fixture profiles and the environment at a decoy.
+ * A manifest listing the fixture's models proves the extension's parse honoured the setting.
+ */
+async function assertParsedWithConfiguredProfiles(root: string): Promise<void> {
+  const manifestPath = path.join(root, "target", "manifest.json");
+  const deadline = Date.now() + 30_000;
+  while (!fs.existsSync(manifestPath) && Date.now() < deadline) {
+    await sleep(250);
+  }
+  const dbtLog = path.join(root, "logs", "dbt.log");
+  const log = fs.existsSync(dbtLog) ? fs.readFileSync(dbtLog, "utf-8") : "";
+  assert.ok(
+    fs.existsSync(manifestPath),
+    "the extension's dbt parse must write target/manifest.json using fusionPowerUser.profilesDir; " +
+      `dbt.log tail: ${log.slice(-800)}`,
+  );
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as {
+    nodes: Record<string, unknown>;
+  };
+  assert.ok(
+    "model.single_project.child" in manifest.nodes,
+    "manifest must contain the fixture's child model",
+  );
+  assert.ok(
+    !log.includes("decoy-profiles-"),
+    "dbt read the decoy profiles directory from the environment instead of fusionPowerUser.profilesDir",
+  );
 }

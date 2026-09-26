@@ -28,6 +28,8 @@ src/test/fixtures/**/target/
 src/test/fixtures/**/logs/
 src/test/fixtures/**/*.duckdb
 src/test/fixtures/**/.user.yml
+src/test/fixtures/**/logs/
+src/test/fixtures/**/target/
 
 # IDE and editor files
 *.swp
@@ -38,6 +40,7 @@ src/test/fixtures/**/.user.yml
 !.vscode/settings.json
 !.vscode/tasks.json
 *.code-workspace
+!src/test/fixtures/**/*.code-workspace
 mise.local.toml
 
 # Version control metadata

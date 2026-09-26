@@ -29,8 +29,10 @@ describe("fixture workspaces", () => {
       };
       expect(parsed.name).toEqual(expect.any(String));
       expect(parsed.profile).toEqual(expect.any(String));
+      const projectDir = path.dirname(projectFile);
       expect(
-        existsSync(path.join(path.dirname(projectFile), "profiles.yml")),
+        existsSync(path.join(projectDir, "profiles.yml")) ||
+          existsSync(path.join(projectDir, "profiles", "profiles.yml")),
       ).toBe(true);
     }
   });
@@ -54,6 +56,33 @@ describe("fixture workspaces", () => {
     expect(stateCopies).toEqual([
       path.join("projects", "general", ".state_copy", "dbt_project.yml"),
     ]);
+  });
+
+  it("opens multi-root as a workspace whose project folders name different profiles directories", () => {
+    const root = path.join(fixtures, "multi-root");
+    const workspaceFile = JSON.parse(
+      readFileSync(path.join(root, "multi-root.code-workspace"), "utf8"),
+    ) as { folders: { path: string }[] };
+    expect(workspaceFile.folders.map((folder) => folder.path)).toEqual([
+      "projects/general",
+      "projects/sox",
+      "pipelines",
+    ]);
+    const profilesDirs = ["general", "sox"].map(
+      (name) =>
+        (
+          JSON.parse(
+            readFileSync(
+              path.join(root, "projects", name, ".vscode", "settings.json"),
+              "utf8",
+            ),
+          ) as Record<string, string>
+        )["fusionPowerUser.profilesDir"],
+    );
+    expect(new Set(profilesDirs).size).toBe(2);
+    expect(existsSync(path.join(root, "projects", "sox", "profiles.yml"))).toBe(
+      false,
+    );
   });
 
   it("keeps nested-project without a root dbt_project.yml", () => {

@@ -93,7 +93,7 @@ suite("Artifact production (extension)", function () {
     );
   });
 
-  test("dbt commands resolve profiles from the workspace, not the developer's home directory", function () {
+  test("dbt commands resolve profiles from fusionPowerUser.profilesDir, not the environment", function () {
     const root = workspaceRoot();
     const dbtLog = path.join(root, "logs", "dbt.log");
     assert.ok(
@@ -111,12 +111,13 @@ suite("Artifact production (extension)", function () {
     // Fusion renders that path.
     const literalHomeDbtDir = "~/.dbt";
     assert.ok(
-      !contents.includes(literalHomeDbtDir) && !contents.includes(homeDbtDir),
+      !contents.includes(literalHomeDbtDir) &&
+        !contents.includes(homeDbtDir) &&
+        !contents.includes("decoy-profiles"),
       "dbt.log must never reference the developer's home directory profiles " +
-        `(saw "${literalHomeDbtDir}" or "${homeDbtDir}"); the harness points ` +
-        "the profiles directories at the workspace and starts the host " +
-        "without the developer's shell environment, so dbt's own cascade " +
-        "must select the fixture's profiles.yml",
+        `or the environment's decoy (saw "${literalHomeDbtDir}", "${homeDbtDir}", or "decoy-profiles"); ` +
+        "fusionPowerUser.profilesDir " +
+        "names the fixture and must override any profiles directory the environment sets",
     );
   });
 
@@ -186,15 +187,21 @@ suite("Artifact production (extension)", function () {
     assert.ok(baseResult, "run_results.json must report the base model");
     assert.strictEqual(baseResult?.status, "success");
 
-    // Confirm the relation actually materialized in DuckDB, not just that dbt
-    // reported success — query it back through the CLI (no duckdb npm binding
-    // is available to this workspace). Pass no profiles flag and inherit this
-    // process's environment so the check resolves its profile exactly as the
-    // extension's own invocations do.
+    // Confirm the relation materialized in DuckDB by querying it back through the CLI. The host environment
+    // names a decoy profiles directory, so this direct invocation exports the fixture's own.
     const show = spawnSync(
       "dbt",
       ["show", "--select", "base", "--limit", "1", "--output", "json"],
-      { cwd: root, encoding: "utf-8", timeout: 5_000 },
+      {
+        cwd: root,
+        encoding: "utf-8",
+        timeout: 5_000,
+        env: {
+          ...process.env,
+          DBT_PROFILES_DIR: root,
+          DBT_ENGINE_PROFILES_DIR: root,
+        },
+      },
     );
     assert.strictEqual(
       show.status,
