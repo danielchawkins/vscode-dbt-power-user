@@ -1,5 +1,7 @@
 # Fusion editor flow capture (Phase 5.6)
 
+> **Historical.** Step 5.6 is complete and `src/test/integration/fusionEditorFlowsCapture.test.ts` is deleted. The flow tests are `src/test/integration/lspEditorFeatures.test.ts` and `nativeEditorFeatures.test.ts`; current evidence is in [docs/research/evidence/README.md](../research/evidence/README.md). Commands below that run the capture no longer work.
+
 Captured with the merged `LspFixture` harness in `src/test/integration/fusionEditorFlowsCapture.test.ts`. Dummy Snowflake profile only (`single_project` / `test`). No warehouse login, no `clearTarget`, no persisted SQL. The test is **opt-in** (`FPU_RUN_EDITOR_FLOW_CAPTURE=1`); default integration runs skip it. Indexed here and in the Before 5.6 gate row in [`remaining-implementation.md`](remaining-implementation.md); no separate numbered spike-table row — this harness is the gate artifact itself.
 
 ## Method

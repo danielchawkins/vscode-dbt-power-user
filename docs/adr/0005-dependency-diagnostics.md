@@ -2,7 +2,7 @@
 
 **Status:** D3 decided: pass standard Fusion diagnostics through unchanged. The 2026-09-22 S1 rerun established a parse-clean control but observed no positive loaded-project probe and no `textDocument/publishDiagnostics`; it therefore found no harmful dependency noise that would justify filtering or a synthetic project blocker. Add either only with a production-shaped regression.
 
-Captured 2026-09-22 on dbt Fusion 2.0.5 with the merged `LspFixture` / `LspProtocolClient` harness in `src/test/integration/s1DependencyDiagnosticsCapture.test.ts`. The suite is opt-in: `FPU_RUN_S1_CAPTURE=1 just test-integration --grep "S1 dependency diagnostics capture"`. Default `just test-integration` skips it. Each arm used a fresh temporary copy of `src/test/fixtures/single-project` with the inherited `child.sql` / `broken_ref.sql` chain removed. The dummy Snowflake profile in the copy was the only profiles source. There was no warehouse and no `dbt login`.
+Captured 2026-09-22 on dbt Fusion 2.0.5 with the merged `LspFixture` / `LspProtocolClient` harness in `src/test/integration/s1DependencyDiagnosticsCapture.test.ts`, since deleted: the decision is made, and the suite only recorded evidence. The suite was opt-in: `FPU_RUN_S1_CAPTURE=1 just test-integration --grep "S1 dependency diagnostics capture"`. Each arm used a fresh temporary copy of `src/test/fixtures/single-project` with the inherited `child.sql` / `broken_ref.sql` chain removed. The dummy Snowflake profile in the copy was the only profiles source. There was no warehouse and no `dbt login`.
 
 ## Launch argv
 
