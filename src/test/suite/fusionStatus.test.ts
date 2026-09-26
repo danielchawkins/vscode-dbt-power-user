@@ -24,6 +24,7 @@ import {
   buildTooltip,
   failureSummary,
   FusionStatus,
+  optInLines,
   statusText,
 } from "../../lsp/fusionStatus";
 import { ProjectContext } from "../../projects/projectContext";
@@ -156,6 +157,59 @@ describe("fusionStatus helpers", () => {
       "$(error) line one\n$(sync~spin) second line with more detail",
     );
     expect(summary).toBe("line one");
+  });
+
+  it("lists nothing when both opt-ins are in place", () => {
+    expect(
+      optInLines({ strict: true, schemaOrigin: { kind: "local" } }),
+    ).toEqual([]);
+    expect(optInLines(undefined)).toEqual([]);
+  });
+
+  it("links each missing opt-in to its command", () => {
+    const lines = optInLines({
+      strict: false,
+      schemaOrigin: { kind: "noHook" },
+    });
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain("command:fusionPowerUser.enableStrictAnalysis");
+    expect(lines[1]).toContain("command:fusionPowerUser.addSchemaOriginHook");
+  });
+
+  it("counts untyped sources and names an old Fusion", () => {
+    expect(
+      optInLines({
+        strict: true,
+        schemaOrigin: {
+          kind: "untypedSources",
+          missing: [
+            { source: "raw", table: "a", column: "x" },
+            { source: "raw", table: "b" },
+          ],
+        },
+      }),
+    ).toEqual([expect.stringMatching(/^2 source column/)]);
+    expect(
+      optInLines({
+        strict: true,
+        schemaOrigin: { kind: "unsupportedFusion", version: "2.0.5" },
+      })[0],
+    ).toContain("2.0.5");
+  });
+
+  it("trusts only the two opt-in commands", () => {
+    const project = makeProject("general", "/workspace/general");
+    const tooltip = buildTooltip(project, new FakeClient(project), {
+      strict: false,
+      schemaOrigin: { kind: "noHook" },
+    });
+    expect(tooltip.isTrusted).toEqual({
+      enabledCommands: [
+        "fusionPowerUser.enableStrictAnalysis",
+        "fusionPowerUser.addSchemaOriginHook",
+      ],
+    });
+    expect(tooltip.value).toContain("Strict analysis is not enabled");
   });
 });
 

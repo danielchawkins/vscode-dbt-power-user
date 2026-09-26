@@ -370,6 +370,16 @@
         "category": "Fusion Power User"
       },
       {
+        "command": "fusionPowerUser.enableStrictAnalysis",
+        "title": "Enable Strict Static Analysis in dbt_project.yml",
+        "category": "Fusion Power User"
+      },
+      {
+        "command": "fusionPowerUser.addSchemaOriginHook",
+        "title": "Add Source Schema-Origin Hook to dbt_project.yml",
+        "category": "Fusion Power User"
+      },
+      {
         "command": "fusionPowerUser.compileCurrentModel",
         "title": "Compile dbt Model",
         "category": "Fusion Power User",

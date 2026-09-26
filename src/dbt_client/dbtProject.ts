@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from "fs";
+import { existsSync, readFileSync, writeFileSync } from "fs";
 
 import { inject } from "inversify";
 import * as path from "path";
@@ -44,6 +44,11 @@ import {
   RunResultsEventData,
   SourceNode,
 } from "../dbt_integration";
+import {
+  hasProjectStrictAnalysis,
+  resolveSchemaOrigin,
+  SchemaOriginStatus,
+} from "../fusion/schemaOrigin";
 import { ModelNode } from "../local/lineageTypes";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { RunHistoryService } from "../services/runHistoryService";
@@ -295,6 +300,29 @@ export class DBTProject implements Disposable {
 
   getDBTProjectFilePath() {
     return path.join(this.projectRoot.fsPath, DBT_PROJECT_FILE);
+  }
+
+  /** Whether strict analysis of this project can run without the warehouse; see `resolveSchemaOrigin`. */
+  schemaOriginStatus(): SchemaOriginStatus {
+    return this.projectOptIns().schemaOrigin;
+  }
+
+  /** The column-lineage opt-ins this project has made in its own dbt_project.yml. */
+  projectOptIns(): { strict: boolean; schemaOrigin: SchemaOriginStatus } {
+    let projectYaml = "";
+    try {
+      projectYaml = readFileSync(this.getDBTProjectFilePath(), "utf8");
+    } catch {
+      // An unreadable file reports as no opt-ins.
+    }
+    return {
+      strict: hasProjectStrictAnalysis(projectYaml),
+      schemaOrigin: resolveSchemaOrigin({
+        projectYaml,
+        fusionVersion: this.dbtProjectIntegration.getFusionVersion(),
+        sources: this._manifestCacheEvent?.sourceMetaMap ?? new Map(),
+      }),
+    };
   }
 
   getTargetPath() {

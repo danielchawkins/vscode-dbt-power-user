@@ -59,6 +59,7 @@ import { ProjectQuickPick } from "./quickpick/projectQuickPick";
 
 // Import missing providers and components
 import { VSCodeCommands } from "./commands";
+import { ProjectConfigCommands } from "./commands/projectConfigCommands";
 import { ProjectSetupCommands } from "./commands/projectSetupCommands";
 import { RunModel } from "./commands/runModel";
 import { RunTest } from "./commands/runTest";
@@ -466,6 +467,13 @@ container
     return new FusionStatus(
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),
+      (declared) => {
+        const project = context
+          .get(DBTProjectContainer)
+          .findDBTProject(declared.root);
+        return project ? project.projectOptIns() : undefined;
+      },
+      context.get(DBTProjectContainer).onManifestChanged,
     );
   })
   .inSingletonScope();
@@ -643,6 +651,16 @@ container
 
 // Bind DbtPowerUserActionsCenter
 container
+  .bind(ProjectConfigCommands)
+  .toDynamicValue(
+    (context) =>
+      new ProjectConfigCommands(
+        context.get(ProjectContext),
+        context.get("DBTTerminal"),
+      ),
+  )
+  .inSingletonScope();
+container
   .bind(DbtPowerUserActionsCenter)
   .toDynamicValue((context) => {
     return new DbtPowerUserActionsCenter(
@@ -670,6 +688,7 @@ container
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),
       context.get(FusionStatus),
+      context.get(ProjectConfigCommands),
     );
   })
   .inSingletonScope();

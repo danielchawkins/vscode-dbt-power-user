@@ -75,6 +75,14 @@ export class Range {
   }
 }
 
+export class WorkspaceEdit {
+  readonly replacements: { uri: unknown; range: Range; newText: string }[] = [];
+
+  replace(uri: unknown, range: Range, newText: string): void {
+    this.replacements.push({ uri, range, newText });
+  }
+}
+
 export class Location {
   public range: Range | Position;
   constructor(
@@ -364,6 +372,9 @@ export const workspace = {
     dispose: jest.fn(),
   }),
   findFiles: jest.fn(() => Promise.resolve([])),
+  textDocuments: [],
+  applyEdit: jest.fn(() => Promise.resolve(true)),
+  openTextDocument: jest.fn(),
   registerTextDocumentContentProvider: mockRegisterProvider,
 } as any;
 

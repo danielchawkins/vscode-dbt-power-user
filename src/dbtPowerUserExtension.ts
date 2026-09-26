@@ -8,6 +8,7 @@ import {
 } from "vscode";
 import { CodeLensProviders } from "./code_lens_provider";
 import { VSCodeCommands } from "./commands";
+import { ProjectConfigCommands } from "./commands/projectConfigCommands";
 import { ContentProviders } from "./content_provider";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "./dbt_integration";
@@ -59,6 +60,7 @@ export class DBTPowerUserExtension implements Disposable {
     private projectContext: ProjectContext,
     private fusionClientPool: FusionClientPool,
     private fusionStatus: FusionStatus,
+    private projectConfigCommands: ProjectConfigCommands,
   ) {
     this.disposables.push(
       this.dbtProjectContainer,
@@ -73,6 +75,7 @@ export class DBTPowerUserExtension implements Disposable {
       this.projectContext,
       this.fusionClientPool,
       this.fusionStatus,
+      this.projectConfigCommands,
     );
   }
 
