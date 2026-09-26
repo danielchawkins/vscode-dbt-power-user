@@ -28,8 +28,9 @@ src/test/fixtures/**/target/
 src/test/fixtures/**/logs/
 src/test/fixtures/**/*.duckdb
 src/test/fixtures/**/.user.yml
-src/test/fixtures/**/logs/
-src/test/fixtures/**/target/
+# dbt run from the repository root, which is not a dbt project, still writes these.
+/logs/
+/target/
 
 # IDE and editor files
 *.swp
