@@ -14,14 +14,9 @@ suite("Extension Integration Tests", function () {
   const fusionVerdict = checkFusionVersion();
 
   suiteSetup(function () {
-    const pinned =
-      fusionVerdict.kind === "ok" &&
-      fusionVerdict.version.major === 2 &&
-      fusionVerdict.version.minor === 0 &&
-      fusionVerdict.version.patch === 5;
-    if (!pinned) {
+    if (fusionVerdict.kind !== "ok") {
       console.warn(
-        "Skipping Fusion integration tests: dbt Fusion 2.0.5 is required on PATH.",
+        "Skipping Fusion integration tests: dbt Fusion 2.0.5 or later is required on PATH.",
       );
       this.skip();
     }
