@@ -7,13 +7,10 @@ import {
   window,
   workspace,
 } from "vscode";
-import { AutocompletionProviders } from "./autocompletion_provider";
 import { CodeLensProviders } from "./code_lens_provider";
 import { VSCodeCommands } from "./commands";
 import { ContentProviders } from "./content_provider";
 import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
-import { DefinitionProviders } from "./definition_provider";
-import { HoverProviders } from "./hover_provider";
 import { registerFusionClientDiagnostics } from "./lsp/fusionClientDiagnostics";
 import { FusionClientPool } from "./lsp/fusionClientPool";
 import { FusionStatus } from "./lsp/fusionStatus";
@@ -51,8 +48,6 @@ export class DBTPowerUserExtension implements Disposable {
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
     private webviewViewProviders: WebviewViewProviders,
-    private autocompletionProviders: AutocompletionProviders,
-    private definitionProviders: DefinitionProviders,
     private vscodeCommands: VSCodeCommands,
     private treeviewProviders: TreeviewProviders,
     private contentProviders: ContentProviders,
@@ -60,7 +55,6 @@ export class DBTPowerUserExtension implements Disposable {
     private statusBars: StatusBars,
     private puStatusBars: DbtPowerUserActionsCenter,
     private dbtTerminal: DBTTerminal,
-    private hoverProviders: HoverProviders,
     private projectRegistry: ProjectRegistry,
     private projectContext: ProjectContext,
     private fusionClientPool: FusionClientPool,
@@ -69,15 +63,12 @@ export class DBTPowerUserExtension implements Disposable {
     this.disposables.push(
       this.dbtProjectContainer,
       this.webviewViewProviders,
-      this.definitionProviders,
-      this.autocompletionProviders,
       this.treeviewProviders,
       this.contentProviders,
       this.codeLensProviders,
       this.vscodeCommands,
       this.statusBars,
       this.puStatusBars,
-      this.hoverProviders,
       this.projectRegistry,
       this.projectContext,
       this.fusionClientPool,
