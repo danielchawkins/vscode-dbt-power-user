@@ -43,6 +43,17 @@
   "typescript.preferences.importModuleSpecifier": "relative",
 
   //////////////////////////////////////////////////////////////////////////////
+  // Upstream dbt Power User (innoverio). The fixtures are not projects to build;
+  // without these it reports "dbt not found" on every fixture dbt_project.yml.
+  // Fusion Power User reads fusionPowerUser.*, so neither setting reaches it.
+  //////////////////////////////////////////////////////////////////////////////
+  // Honored only by the finance-pipelines patched build (`just patch-dbt-power-user`).
+  "dbt.enabled": false,
+  // Stock builds: an existing folder with no dbt_project.yml matches no project.
+  // A missing folder is dropped, and an empty list disables filtering.
+  "dbt.allowListFolders": [".vscode"],
+
+  //////////////////////////////////////////////////////////////////////////////
   // Noise. Build output, caches, generated dependencies, and compatibility links.
   //////////////////////////////////////////////////////////////////////////////
   "files.exclude": {
