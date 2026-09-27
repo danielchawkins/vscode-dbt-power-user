@@ -79,7 +79,7 @@ Advertised server capabilities observed on Fusion 2.0.6 `initialize`: `completio
 
 `initialize` on Fusion 2.0.5+ advertises seven `executeCommandProvider` commands: `dbt.listNodes`, `dbt.getCurrentNode`, `dbt.compileFile`, `dbt.compileLsp`, `dbt.clearTarget`, `dbt.getProjectInfo`, and `dbt.show`.
 
-`dbt.previewCte` and `dbt.goToDefinition` are not advertised; the server returned `null` when they were executed. The official-client capture observed bare `dbt.previewCte` commands in code lenses, so the extension must rewrite them to fork-owned command IDs in Phase 5.6.
+`dbt.previewCte` and `dbt.goToDefinition` are not advertised; the server returned `null` when they were executed. The server emits bare `dbt.previewCte` commands in CTE code lenses; the extension drops those lenses because `CteCodeLensProvider` already offers per-CTE execution.
 
 Fusion uses standard `window/workDoneProgress/create` and `$/progress`; `dbt/progress/*` strings are tokens, not notification methods. Captured or statically identified retained-feature tokens include `dbt/progress/listNodes` ("Computing Lineage"), `dbt/progress/getCurrentNode` ("Getting Columns"), `dbt/progress/compileFile` ("Compiling File"), and `dbt/progress/show` ("Running Preview"). `dbt.listNodes` is the lineage source and `dbt.getCurrentNode` the column source.
 
@@ -543,7 +543,7 @@ export const FUSION_LSP_COMMANDS = {
 } as const;
 ```
 
-`request` applies the prefix. `dbt.previewCte` is a client command emitted bare by server code lenses, not an execute command; middleware rewrites it to a fork-owned command.
+`request` applies the prefix. `dbt.previewCte` is a client command emitted bare by server code lenses, not an execute command; middleware drops those lenses.
 
 **Compile semantics:** Do not bootstrap `compileLsp` or `clearTarget` at startup. First `didOpen` on a file automatically triggers compile; both commands are explicit user-invoked operations only.
 
