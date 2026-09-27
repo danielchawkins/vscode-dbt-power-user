@@ -35,6 +35,7 @@ import {
 } from "./lsp/fusionClientPool";
 import { DefaultFusionClientFactory } from "./lsp/fusionLanguageClient";
 import { FusionStatus } from "./lsp/fusionStatus";
+import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtLineageService } from "./services/dbtLineageService";
@@ -705,6 +706,11 @@ container
       context.get(FusionStatus),
       context.get(ProjectConfigCommands),
       context.get(ColumnLineageRefreshController),
+      new DbtTemplateLanguage(
+        context.get(ProjectRegistry),
+        context.get(ProjectContext),
+        context.get("DBTTerminal"),
+      ),
     );
   })
   .inSingletonScope();

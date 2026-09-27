@@ -89,11 +89,17 @@ suite("Pinned-host VSIX smoke", function () {
       vscode.Uri.joinPath(folder.uri, "models/child.sql"),
     );
     await vscode.window.showTextDocument(doc);
+    const modelLanguage = await waitForActiveLanguage("jinja-sql");
+    assert.strictEqual(
+      modelLanguage,
+      "jinja-sql",
+      "a model under model-paths must open as jinja-sql",
+    );
     await evidence?.capture({
       name: "model editor",
       expect:
         "models/child.sql open with jinja-sql highlighting and the Execute Query | Document code lens on line 1",
-      measured: { languageId: doc.languageId, lineCount: doc.lineCount },
+      measured: { languageId: modelLanguage, lineCount: doc.lineCount },
     });
 
     const contributedCommand = "fusionPowerUser.viewInDocEditor";
@@ -217,6 +223,19 @@ async function openPanel(panel: {
     await vscode.commands.executeCommand(panel.container);
   }
   await vscode.commands.executeCommand(panel.command);
+}
+
+async function waitForActiveLanguage(
+  languageId: string,
+): Promise<string | undefined> {
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const current = vscode.window.activeTextEditor?.document.languageId;
+    if (current === languageId) {
+      return current;
+    }
+    await sleep(100);
+  }
+  return vscode.window.activeTextEditor?.document.languageId;
 }
 
 function sleep(ms: number): Promise<void> {
