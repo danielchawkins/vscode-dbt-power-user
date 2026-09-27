@@ -542,6 +542,11 @@
         "icon": "$(debug-console)"
       },
       {
+        "command": "fusionPowerUser.configureFileAssociations",
+        "title": "Configure dbt file associations",
+        "category": "Fusion Power User"
+      },
+      {
         "command": "fusionPowerUser.applyDeferConfig",
         "category": "Fusion Power User",
         "title": "Apply defer configuration"
@@ -760,7 +765,22 @@
         "icon": {
           "light": "./media/images/dbt_file_icon.svg",
           "dark": "./media/images/dbt_file_icon.svg"
-        }
+        },
+        "filenamePatterns": [
+          "**/models/**/*.sql",
+          "**/macros/**/*.sql",
+          "**/snapshots/**/*.sql",
+          "**/analyses/**/*.sql",
+          "**/tests/**/*.sql",
+          "**/dbt_packages/**/*.sql"
+        ]
+      },
+      {
+        "id": "sql",
+        "filenamePatterns": [
+          "**/target/compiled/**/*.sql",
+          "**/target/run/**/*.sql"
+        ]
       }
     ],
     "semanticTokenScopes": [
@@ -823,6 +843,7 @@
     "@types/js-yaml": "^4.0.9",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.13.6",
+    "@types/picomatch": "^4.0.3",
     "@types/semver": "^7.8.0",
     "@types/vscode": "1.125.0",
     "@types/which": "^3.0.4",
@@ -857,6 +878,7 @@
     "@vscode/codicons": "^0.0.45",
     "@vscode/vsce": "^4.0.0",
     "inversify": "^8.2.3",
+    "picomatch": "^4.0.7",
     "reflect-metadata": "^0.2.2",
     "semver": "^7.8.5",
     "vscode-languageclient": "10.1.1",

@@ -95,6 +95,15 @@ suite("Pinned-host VSIX smoke", function () {
       "jinja-sql",
       "a model under model-paths must open as jinja-sql",
     );
+    // openTextDocument resolves the language from associations alone; no editor or extension switch is involved.
+    const unopened = await vscode.workspace.openTextDocument(
+      vscode.Uri.joinPath(folder.uri, "models/broken_ref.sql"),
+    );
+    assert.strictEqual(
+      unopened.languageId,
+      "jinja-sql",
+      "an unopened model must resolve to jinja-sql from contributed filename patterns",
+    );
     await evidence?.capture({
       name: "model editor",
       expect:

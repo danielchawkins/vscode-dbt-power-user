@@ -1,5 +1,17 @@
-import { Disposable, languages, TextDocument, workspace } from "vscode";
+import {
+  commands,
+  ConfigurationTarget,
+  Disposable,
+  languages,
+  TextDocument,
+  window,
+  workspace,
+} from "vscode";
 import { DBTTerminal } from "../dbt_integration";
+import {
+  associatedLanguage,
+  dbtTemplateAssociations,
+} from "../dbt_integration/dbtAssociations";
 import {
   isDbtTemplateFile,
   ProjectPaths,
@@ -9,9 +21,9 @@ import { ProjectContext } from "../projects/projectContext";
 import { ProjectRegistry } from "../projects/projectRegistry";
 
 /**
- * Opens dbt models, macros, snapshots, analyses and tests as `jinja-sql` when VS Code resolved them to plain `sql`.
- * Only files under the paths a project's `dbt_project.yml` declares, or dbt's default layout, change; compiled
- * output under the target path, ad-hoc SQL, and any language a user association chose other than `sql` stay.
+ * Language for dbt `.sql` files, in precedence order: the user's `files.associations`; the `filenamePatterns` this
+ * extension contributes for dbt's standard layout; then, on open, the paths a project's `dbt_project.yml` declares.
+ * A file a user association names, compiled output under the target path, and ad-hoc SQL are never changed.
  */
 export class DbtTemplateLanguage implements Disposable {
   private readonly disposables: Disposable[] = [];
@@ -26,6 +38,10 @@ export class DbtTemplateLanguage implements Disposable {
   /** Starts listening; call after the registry has resolved Declared Projects. */
   start(): void {
     this.disposables.push(
+      commands.registerCommand(
+        "fusionPowerUser.configureFileAssociations",
+        () => this.writeFolderAssociations(),
+      ),
       workspace.onDidOpenTextDocument((doc) => void this.apply(doc)),
       this.registry.onDidChangeProjects(() => {
         this.pathsByRoot.clear();
@@ -55,12 +71,20 @@ export class DbtTemplateLanguage implements Disposable {
     if (!project) {
       return;
     }
-    const root = project.root.fsPath;
-    let paths = this.pathsByRoot.get(root);
-    if (!paths) {
-      paths = resolveProjectPaths(root);
-      this.pathsByRoot.set(root, paths);
+    const userAssociations = workspace
+      .getConfiguration("files", doc.uri)
+      .get<Record<string, string>>("associations", {});
+    if (
+      associatedLanguage(
+        userAssociations,
+        project.folder.uri.fsPath,
+        doc.uri.fsPath,
+      )
+    ) {
+      return;
     }
+    const root = project.root.fsPath;
+    const paths = this.pathsFor(root);
     if (!isDbtTemplateFile(paths, doc.uri.fsPath)) {
       return;
     }
@@ -73,6 +97,51 @@ export class DbtTemplateLanguage implements Disposable {
         error,
       );
     }
+  }
+
+  private pathsFor(root: string): ProjectPaths {
+    let paths = this.pathsByRoot.get(root);
+    if (!paths) {
+      paths = resolveProjectPaths(root);
+      this.pathsByRoot.set(root, paths);
+    }
+    return paths;
+  }
+
+  /**
+   * Adds workspace-folder `files.associations` for every Declared Project's template paths, so files outside dbt's
+   * standard layout get `jinja-sql` in the explorer before they are opened. Existing entries are kept unchanged.
+   */
+  async writeFolderAssociations(): Promise<number> {
+    let added = 0;
+    for (const project of this.registry.projects) {
+      const config = workspace.getConfiguration("files", project.folder.uri);
+      const current =
+        config.inspect<Record<string, string>>("associations")
+          ?.workspaceFolderValue ?? {};
+      const wanted = dbtTemplateAssociations(
+        project.folder.uri.fsPath,
+        this.pathsFor(project.root.fsPath),
+      );
+      const missing = Object.entries(wanted).filter(
+        ([pattern]) => !(pattern in current),
+      );
+      if (missing.length === 0) {
+        continue;
+      }
+      await config.update(
+        "associations",
+        { ...current, ...Object.fromEntries(missing) },
+        ConfigurationTarget.WorkspaceFolder,
+      );
+      added += missing.length;
+    }
+    void window.showInformationMessage(
+      added === 0
+        ? "dbt file associations are already configured."
+        : `Added ${added} dbt file association${added === 1 ? "" : "s"} to workspace folder settings.`,
+    );
+    return added;
   }
 
   dispose(): void {

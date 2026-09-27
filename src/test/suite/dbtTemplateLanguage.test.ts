@@ -17,6 +17,7 @@ import { ProjectRegistry } from "../../projects/projectRegistry";
 describe("DbtTemplateLanguage", () => {
   let root: string;
   let opened: (doc: unknown) => void;
+  let userAssociations: Record<string, string>;
   const setLanguage = jest.fn(async (doc: unknown, _language: string) => doc);
 
   beforeEach(() => {
@@ -40,13 +41,17 @@ describe("DbtTemplateLanguage", () => {
     ).onDidSaveTextDocument = () => ({
       dispose: () => undefined,
     });
+    userAssociations = {};
+    (workspace.getConfiguration as jest.Mock).mockReturnValue({
+      get: (_key: string, fallback: unknown) => userAssociations ?? fallback,
+    });
     setLanguage.mockClear();
   });
 
   afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
   const create = () => {
-    const project = { root: Uri.file(root) };
+    const project = { root: Uri.file(root), folder: { uri: Uri.file(root) } };
     const registry = {
       onDidChangeProjects: new EventEmitter<void>().event,
     } as unknown as ProjectRegistry;
@@ -80,6 +85,15 @@ describe("DbtTemplateLanguage", () => {
     if (expected) {
       expect(setLanguage).toHaveBeenCalledWith(d, "jinja-sql");
     }
+    subject.dispose();
+  });
+
+  it("leaves a file alone when the user's files.associations names it", async () => {
+    const subject = create();
+    userAssociations = { "**/transform/**/*.sql": "snowflake-sql" };
+    opened(doc("transform/a.sql"));
+    await new Promise((r) => setImmediate(r));
+    expect(setLanguage).not.toHaveBeenCalled();
     subject.dispose();
   });
 });
