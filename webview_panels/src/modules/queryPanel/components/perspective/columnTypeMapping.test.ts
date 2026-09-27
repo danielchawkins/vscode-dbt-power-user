@@ -17,27 +17,36 @@ describe("mapColumnType", () => {
 });
 
 describe("buildPerspectiveTableInit", () => {
-  it("hands Perspective the row data directly when every column type is unknown", () => {
-    const data = [{ int_col: 1, str_col: "x", bool_col: true }];
-
+  it("gives unreported columns a string schema and renders their values as text", () => {
     const result = buildPerspectiveTableInit(
-      ["int_col", "str_col", "bool_col"],
-      [null, null, null],
-      data,
+      ["n", "mixed", "flag", "obj"],
+      [null, null, null, null],
+      [
+        { n: 1, mixed: 6, flag: true, obj: { a: 1 } },
+        { n: 2.5, mixed: "x", flag: null, obj: null },
+      ],
     );
 
-    expect(result).toBe(data);
+    expect(result.schema).toEqual({
+      n: "string",
+      mixed: "string",
+      flag: "string",
+      obj: "string",
+    });
+    expect(result.rows).toEqual([
+      { n: "1", mixed: "6", flag: "true", obj: '{"a":1}' },
+      { n: "2.5", mixed: "x", flag: null, obj: null },
+    ]);
   });
 
-  it("builds an explicit schema, with BigInteger forced to string, when a type is known", () => {
-    const data = [{ id: "9007199254740993", name: "a" }];
-
+  it("keeps reported types, with BigInteger forced to string", () => {
     const result = buildPerspectiveTableInit(
-      ["id", "name"],
-      ["BigInteger", null],
-      data,
+      ["id", "amount"],
+      ["BigInteger", "Number"],
+      [{ id: "9007199254740993", amount: 1.5 }],
     );
 
-    expect(result).toEqual({ id: "string", name: "string" });
+    expect(result.schema).toEqual({ id: "string", amount: "float" });
+    expect(result.rows).toEqual([{ id: "9007199254740993", amount: 1.5 }]);
   });
 });

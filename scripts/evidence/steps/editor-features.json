@@ -20,6 +20,13 @@
           "rename": { "prepareSupport": true },
           "documentHighlight": {},
           "codeLens": {},
+          "completion": { "completionItem": { "labelDetailsSupport": true } },
+          "semanticTokens": {
+            "requests": { "full": true, "range": true },
+            "tokenTypes": [],
+            "tokenModifiers": [],
+            "formats": ["relative"]
+          },
           "inlayHint": {}
         }
       }
@@ -220,6 +227,34 @@
     "params": {
       "textDocument": { "uri": "$FILE_URI(models/hard.sql)" }
     }
+  },
+  {
+    "request": "textDocument/semanticTokens/full",
+    "label": "semanticTokens hard",
+    "params": {
+      "textDocument": { "uri": "$FILE_URI(models/hard.sql)" }
+    }
+  },
+  {
+    "request": "textDocument/semanticTokens/full",
+    "label": "semanticTokens order_totals",
+    "params": {
+      "textDocument": { "uri": "$FILE_URI(models/order_totals.sql)" }
+    }
+  },
+  {
+    "request": "textDocument/completion",
+    "label": "completion select list order_totals",
+    "at": {
+      "file": "models/order_totals.sql",
+      "find": "customer_id,",
+      "offset": 3
+    }
+  },
+  {
+    "request": "textDocument/completion",
+    "label": "completion qualified cte column hard",
+    "at": { "file": "models/hard.sql", "find": "rn from j", "offset": 1 }
   },
   {
     "request": "textDocument/inlayHint",

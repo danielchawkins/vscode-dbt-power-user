@@ -17,27 +17,46 @@ export const mapColumnType = (agateType: string | null | undefined): string => {
   }
 };
 
+const toText = (value: unknown): string | null => {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return value.toString();
+  }
+  return JSON.stringify(value);
+};
+
 /**
- * dbt show --output json fabricates no column types, but its row values are real JSON:
- * numbers, booleans, strings, and null arrive typed. When every column's type is unknown,
- * hand Perspective the row data directly so it infers real types instead of forcing every
- * column into a string schema. When at least one column's type is known, build the explicit
- * schema so known types keep their mapping (including BigInteger's precision safeguard).
+ * Explicit Perspective schema plus rows that conform to it. A column whose type was not reported is `string`, and
+ * its values are shown as text; types are never guessed from values.
  */
 export function buildPerspectiveTableInit(
   columnNames: string[],
   columnTypes: (string | null | undefined)[],
   data: TableData,
-): TableData | Record<string, string> {
-  const hasKnownType = columnTypes.some(
-    (type) => type !== null && type !== undefined,
-  );
-  if (!hasKnownType) {
-    return data;
-  }
+): { schema: Record<string, string>; rows: Record<string, unknown>[] } {
+  const rows = Array.isArray(data) ? data : [];
   const schema: Record<string, string> = {};
-  for (let i = 0; i < columnNames.length; i++) {
-    schema[columnNames[i]] = mapColumnType(columnTypes[i]);
-  }
-  return schema;
+  columnNames.forEach((name, i) => {
+    schema[name] = mapColumnType(columnTypes[i]);
+  });
+  return {
+    schema,
+    rows: rows.map((row) =>
+      Object.fromEntries(
+        columnNames.map((name) => [
+          name,
+          schema[name] === "string" ? toText(row[name]) : (row[name] ?? null),
+        ]),
+      ),
+    ),
+  };
 }
