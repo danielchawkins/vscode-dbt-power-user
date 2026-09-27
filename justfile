@@ -262,6 +262,13 @@ package:
       echo "error: VSIX contains altimate-core entries: $vsix" >&2
       exit 1
     fi
+    # The query results panel cannot render without Perspective's engine and viewer WebAssembly.
+    for wasm in perspective-server.wasm perspective-viewer.wasm; do
+      if ! printf '%s\n' "$entries" | grep -qx "extension/webview_panels/dist/assets/$wasm"; then
+        echo "error: VSIX is missing webview_panels/dist/assets/$wasm: $vsix" >&2
+        exit 1
+      fi
+    done
 
 # Local dry run of the release pipeline: build, checksum, verify the tag, publish nothing.
 [group("package")]

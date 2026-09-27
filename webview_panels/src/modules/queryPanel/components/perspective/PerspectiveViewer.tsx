@@ -1,3 +1,4 @@
+import "./initPerspective";
 import perspective from "@finos/perspective";
 import "@finos/perspective-viewer";
 import type { ColumnConfigValues } from "@finos/perspective-viewer";

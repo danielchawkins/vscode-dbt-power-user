@@ -38,6 +38,8 @@ function copyCodicons(): Plugin {
 
 // https://vitejs.dev/config/
 export const viteConfig = defineConfig({
+  // Webviews load main.js from a vscode-resource URL, so emitted asset URLs must resolve relative to it.
+  base: "./",
   plugins: [svgr(), react(), copyCodicons()],
   build: {
     target: "chrome148",
