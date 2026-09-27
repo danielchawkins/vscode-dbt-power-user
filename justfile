@@ -214,6 +214,13 @@ smoke *args:
     just smoke-vscode "$@"
     just smoke-cursor "$@"
 
+# Smoke both hosts and write screenshot checkpoints plus their text measurements under `out`.
+[group("tests")]
+smoke-visual out="out/smoke-visual" *args:
+    rm -rf "{{ out }}"
+    FPU_SMOKE_SCREENSHOTS="{{ out }}" just smoke {{ args }}
+    @echo "visual evidence: {{ out }}/index.json per host and fixture"
+
 ####################
 # Version control
 ####################

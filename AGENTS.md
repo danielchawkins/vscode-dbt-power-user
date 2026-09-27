@@ -40,6 +40,7 @@ just check                                  # lint plus compile and unit tests
 just jj ...                                 # run jj, gating git push on just check
 just package                                # build the VSIX
 just smoke                                  # packaged-VSIX smoke against both pinned hosts
+just smoke-visual [out]                     # smoke plus screenshot checkpoints under out/
 just release                                # local dry run of the tag-triggered release
 just --list
 ```
@@ -103,6 +104,10 @@ Known false positives in this repo:
 ## Gates
 
 `just check` and `just package` must pass on every PR bookmark tip. `just smoke` runs the packaged-VSIX smoke assertions locally; CI runs the same assertions through `smoke-vscode` and `smoke-cursor`.
+
+## Visual evidence
+
+For any change a user sees (panels, editor language, highlighting, lenses, menus), run `just smoke-visual` after `just package` and include the result in the review. Each checkpoint under `<out>/<host>/<fixture>/` is a workbench PNG plus a JSON record: `expect` (what should be visible), `measured` (text and state the test read at the same moment), and `notifications`. Open every PNG and confirm it agrees with its `measured` and `expect`; report any disagreement as a finding, since text alone missed a model opening as plain SQL and a legend covering the graph. The smoke installs the newest `*.vsix` in the repository root.
 
 ## Jujutsu
 

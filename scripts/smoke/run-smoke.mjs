@@ -185,6 +185,13 @@ try {
       ...(process.env.FPU_SMOKE_REQUIRE_FUSION
         ? { FPU_SMOKE_REQUIRE_FUSION: process.env.FPU_SMOKE_REQUIRE_FUSION }
         : {}),
+      ...(process.env.FPU_SMOKE_SCREENSHOTS
+        ? {
+            FPU_SMOKE_SCREENSHOTS: path.resolve(
+              process.env.FPU_SMOKE_SCREENSHOTS,
+            ),
+          }
+        : {}),
     },
   });
   await assertNoSurvivingFusionLspProcess(workspaceDir);

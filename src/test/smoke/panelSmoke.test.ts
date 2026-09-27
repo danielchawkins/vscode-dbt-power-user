@@ -6,11 +6,18 @@ import * as vscode from "vscode";
 import { ActivationMetric, readActivationMetric } from "./activationReport";
 import {
   assertNoWorkbenchNotifications,
+  captureWorkbenchScreenshot,
+  readWorkbenchNotificationTexts,
   validateSmokeHost,
   waitForWebviewPaint,
   WebviewPaintMetric,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import {
+  screenshotDirectory,
+  VisualCheckpoint,
+  writeCheckpoint,
+} from "./visualEvidence";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
@@ -73,6 +80,7 @@ suite("Pinned-host VSIX smoke", function () {
     }
 
     const runtimeEnabled = process.env.FPU_RUNTIME_BENCHMARK === "1";
+    const evidence = visualEvidence(cdpPort, smokeHost);
 
     const folder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(folder, "fixture workspace should be open");
@@ -81,6 +89,12 @@ suite("Pinned-host VSIX smoke", function () {
       vscode.Uri.joinPath(folder.uri, "models/child.sql"),
     );
     await vscode.window.showTextDocument(doc);
+    await evidence?.capture({
+      name: "model editor",
+      expect:
+        "models/child.sql open with jinja-sql highlighting and the Execute Query | Document code lens on line 1",
+      measured: { languageId: doc.languageId, lineCount: doc.lineCount },
+    });
 
     const contributedCommand = "fusionPowerUser.viewInDocEditor";
     const registeredCommands = await vscode.commands.getCommands(true);
@@ -119,6 +133,17 @@ suite("Pinned-host VSIX smoke", function () {
       } else {
         await openPanel(panel);
         await sleep(2_000);
+      }
+      if (evidence) {
+        const paint = await waitForWebviewPaint(cdpPort, panel.viewPath, 50);
+        await evidence.capture({
+          name: `panel ${panel.viewPath}`,
+          expect: `The ${panel.viewPath} panel is visible and its text matches measured.bodyText`,
+          measured: {
+            bodyText: paint.bodyText,
+            stylesheets: paint.stylesheets,
+          },
+        });
       }
     }
 
@@ -196,6 +221,40 @@ async function openPanel(panel: {
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Screenshot checkpoints when `FPU_SMOKE_SCREENSHOTS` names a directory; undefined otherwise. Each checkpoint also
+ * records the workbench notification texts at capture time so the image and the text measurements can be compared.
+ */
+function visualEvidence(cdpPort: string, host: string) {
+  const dir = screenshotDirectory();
+  if (!dir) {
+    return undefined;
+  }
+  let sequence = 0;
+  return {
+    async capture(checkpoint: VisualCheckpoint): Promise<void> {
+      await sleep(500);
+      const png = await captureWorkbenchScreenshot(cdpPort, host);
+      const notifications = await readWorkbenchNotificationTexts(cdpPort, host);
+      sequence += 1;
+      const file = writeCheckpoint(
+        path.join(dir, host, currentFixtureName() ?? "unknown-fixture"),
+        sequence,
+        { ...checkpoint, measured: { ...checkpoint.measured, notifications } },
+        png,
+        {
+          host,
+          fixture: currentFixtureName(),
+          activeEditor:
+            vscode.window.activeTextEditor?.document.uri.fsPath ?? null,
+          capturedAt: new Date().toISOString(),
+        },
+      );
+      console.log(`FPU_SMOKE_SCREENSHOT=${file}`);
+    },
+  };
 }
 
 /**

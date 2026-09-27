@@ -64,7 +64,7 @@ else
 fi
 executable=$(host_executable "$host")
 if [[ -z "$vsix" ]]; then
-  vsix=$(find "$repo_root" -maxdepth 1 -name '*.vsix' -print | head -1)
+  vsix=$(find "$repo_root" -maxdepth 1 -name '*.vsix' -print0 | xargs -0 ls -t 2> /dev/null | head -1)
 fi
 if [[ ! -f "$vsix" ]]; then
   echo "VSIX not found; run just package first" >&2

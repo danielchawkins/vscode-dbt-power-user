@@ -374,6 +374,49 @@ function evaluateContexts(
   });
 }
 
+/** PNG of the whole workbench window as the user sees it, webviews included. */
+export async function captureWorkbenchScreenshot(
+  port: string,
+  host: string,
+): Promise<Buffer> {
+  const target = await findWorkbenchPageTarget(port, validateSmokeHost(host));
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(target.webSocketDebuggerUrl!);
+    const timeout = setTimeout(() => {
+      socket.close();
+      reject(new Error("CDP screenshot timed out"));
+    }, 10_000);
+    socket.addEventListener("open", () => {
+      socket.send(
+        JSON.stringify({
+          id: 1,
+          method: "Page.captureScreenshot",
+          params: { format: "png", fromSurface: true },
+        }),
+      );
+    });
+    socket.addEventListener("message", (event) => {
+      const message = JSON.parse(String(event.data));
+      if (message.id !== 1) {
+        return;
+      }
+      clearTimeout(timeout);
+      socket.close();
+      if (message.error || typeof message.result?.data !== "string") {
+        reject(
+          new Error(`CDP screenshot failed: ${JSON.stringify(message.error)}`),
+        );
+        return;
+      }
+      resolve(Buffer.from(message.result.data as string, "base64"));
+    });
+    socket.addEventListener("error", () => {
+      clearTimeout(timeout);
+      reject(new Error("CDP screenshot socket failed"));
+    });
+  });
+}
+
 function isWebviewPaintMetric(value: unknown): value is WebviewPaintMetric {
   if (!value || typeof value !== "object") {
     return false;
