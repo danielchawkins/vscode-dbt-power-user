@@ -356,8 +356,10 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
               Emitted font files don't reliably resolve through the
               vscode-resource protocol, and the CDN is unreachable from a
               webview, so a data URI is the only path that works offline.
+
+              connect-src lets the query panel fetch Perspective's .wasm assets.
               -->
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; worker-src blob:; font-src ${webview.cspSource} data:; style-src 'unsafe-inline' ${webview.cspSource}; img-src ${webview.cspSource} https: data:; script-src 'unsafe-eval' 'nonce-${nonce}' https://*.vscode-resource.vscode-cdn.net">
+            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; worker-src blob:; connect-src ${webview.cspSource}; font-src ${webview.cspSource} data:; style-src 'unsafe-inline' ${webview.cspSource}; img-src ${webview.cspSource} https: data:; script-src 'unsafe-eval' 'nonce-${nonce}' https://*.vscode-resource.vscode-cdn.net">
             <title>VSCode DBT Power user extension</title>
             <link rel="stylesheet" type="text/css" href="${indexCss}">
             <link rel="stylesheet" type="text/css" href="${codiconsUri}">
