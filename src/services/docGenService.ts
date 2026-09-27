@@ -1,8 +1,8 @@
 import { promises as fs } from "fs";
 import { inject } from "inversify";
-import * as yaml from "js-yaml";
 import * as path from "path";
 import { Uri, window } from "vscode";
+import { parse as parseYaml } from "yaml";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
   DBTTerminal,
@@ -216,7 +216,7 @@ export class DocGenService {
         removeProtocol(currentNode.patch_path),
       );
       const content = await fs.readFile(yamlPath, "utf8");
-      const parsedDoc = yaml.load(content) as DocumentationSchema;
+      const parsedDoc = parseYaml(content) as DocumentationSchema;
       const modelDef = parsedDoc.models?.find(
         (model) => model.name === modelName,
       );

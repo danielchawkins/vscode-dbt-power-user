@@ -141,6 +141,16 @@ fmt-code:
 lint-code:
     npm run lint
 
+# Unused files, exports and dependencies. On demand only: refactors pass through states with dead code.
+[group("quality")]
+lint-unused:
+    npm run lint:unused
+
+# Drop baseline entries for lint violations that have been fixed, so the baseline only shrinks.
+[group("quality")]
+lint-prune:
+    npm run lint:prune
+
 [group("quality")]
 lint-format:
     npm run check:format
