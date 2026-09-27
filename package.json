@@ -111,6 +111,20 @@
             "scope": "resource",
             "description": "dbt target name passed to Fusion when this Declared Project's language server starts."
           },
+          "fusionPowerUser.lsp.compiledOutput": {
+            "type": "string",
+            "enum": [
+              "separate",
+              "shared"
+            ],
+            "enumDescriptions": [
+              "The language server writes compiled SQL to target/.lsp/, so editing never overwrites what a dbt CLI run wrote.",
+              "The language server writes compiled SQL to the same target/ as the dbt CLI, so each model has one compiled copy. An edit overwrites the last CLI output for that model."
+            ],
+            "default": "separate",
+            "scope": "resource",
+            "markdownDescription": "Where the language server writes compiled SQL. The `FUSION_POWER_USER_LSP_COMPILED_OUTPUT` environment variable, when set to `separate` or `shared`, overrides this for every project. A change restarts the project's language server."
+          },
           "fusionPowerUser.lint.enabled": {
             "type": "boolean",
             "scope": "resource",
