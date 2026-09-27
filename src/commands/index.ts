@@ -215,26 +215,8 @@ export class VSCodeCommands implements Disposable {
       ),
       commands.registerTextEditorCommand(
         "fusionPowerUser.sqlPreview",
-        async (editor: TextEditor) => {
-          const uri = editor.document.uri.with({
-            scheme: SqlPreviewContentProvider.SCHEME,
-          });
-          const doc = await workspace.openTextDocument(uri);
-          const isOpen = window.visibleTextEditors.some(
-            (e) => e.document.uri === uri,
-          );
-          await window.showTextDocument(doc, ViewColumn.Beside, false);
-          await languages.setTextDocumentLanguage(doc, "sql");
-          if (!isOpen) {
-            await commands.executeCommand("workbench.action.lockEditorGroup");
-            await commands.executeCommand(
-              "workbench.action.focusPreviousGroup",
-            );
-          } else {
-            await commands.executeCommand("workbench.action.closeActiveEditor");
-            return;
-          }
-        },
+        (editor: TextEditor) =>
+          this.openCompiledPreview(editor.document.uri, true),
       ),
       commands.registerCommand(
         "fusionPowerUser.goToDocumentationEditor",
@@ -283,9 +265,10 @@ export class VSCodeCommands implements Disposable {
       commands.registerCommand("fusionPowerUser.showRunSQL", () =>
         this.runModel.showRunSQLOnActiveWindow(),
       ),
-      commands.registerCommand("fusionPowerUser.showCompiledSQL", () =>
-        this.runModel.showCompiledSQLOnActiveWindow(),
-      ),
+      commands.registerCommand("fusionPowerUser.showCompiledSQL", () => {
+        const uri = window.activeTextEditor?.document.uri;
+        return uri ? this.openCompiledPreview(uri, false) : undefined;
+      }),
       commands.registerCommand("fusionPowerUser.generateSchemaYML", () =>
         this.runModel.generateSchemaYMLOnActiveWindow(),
       ),
@@ -529,6 +512,35 @@ export class VSCodeCommands implements Disposable {
         }
       }),
     );
+  }
+
+  /**
+   * Shows the model's single live compiled preview beside it as SQL, reusing a visible preview's group and
+   * keeping focus on the model. With `toggle`, a visible preview closes instead.
+   */
+  async openCompiledPreview(modelUri: Uri, toggle: boolean): Promise<void> {
+    const uri = modelUri.with({ scheme: SqlPreviewContentProvider.SCHEME });
+    const visible = window.visibleTextEditors.find(
+      (e) => e.document.uri.toString() === uri.toString(),
+    );
+    if (visible && toggle) {
+      await window.showTextDocument(
+        visible.document,
+        visible.viewColumn,
+        false,
+      );
+      await commands.executeCommand("workbench.action.closeActiveEditor");
+      return;
+    }
+    const doc = await languages.setTextDocumentLanguage(
+      await workspace.openTextDocument(uri),
+      "sql",
+    );
+    await window.showTextDocument(doc, {
+      viewColumn: visible?.viewColumn ?? ViewColumn.Beside,
+      preserveFocus: true,
+      preview: false,
+    });
   }
 
   private async printProjectInfo(project: DBTProject) {

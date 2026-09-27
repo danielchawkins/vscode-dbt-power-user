@@ -112,12 +112,6 @@ export class RunModel {
     };
   }
 
-  showCompiledSQLOnActiveWindow() {
-    const fullPath = window.activeTextEditor?.document.uri;
-    if (fullPath !== undefined) {
-      this.showCompiledSQL(fullPath);
-    }
-  }
   generateSchemaYMLOnActiveWindow() {
     const fullPath = window.activeTextEditor?.document.uri;
     if (fullPath !== undefined) {
@@ -162,10 +156,6 @@ export class RunModel {
       return;
     }
     this.dbtProjectContainer.executeSQL(declared.root, query, modelName);
-  }
-
-  showCompiledSQL(modelPath: Uri) {
-    this.dbtProjectContainer.showCompiledSQL(modelPath);
   }
 
   generateSchemaYML(modelPath: Uri) {
