@@ -117,6 +117,17 @@ The client left every `window/workDoneProgress/create` unanswered (`clientAnswer
 | `dbt.show [{uri,limit}]`           | no response within 20000 ms                                                                                  |
 | `dbt.getProjectInfo []`            | same as above                                                                                                |
 
+## E3: semantic tokens, completion and hover (`e3-lsp-editor-features`)
+
+Fusion 2.0.6 advertises `semanticTokensProvider` with `full` and `range`, token types `property, function, macro, type, variable, keyword`, and no token modifiers. Decoded `semanticTokens/full`, baseline and strict alike:
+
+| File                                                                                                                                   | Tokens                                                                                            |
+| -------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `order_totals.sql`: `select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status from {{ ref('stg_orders') }}` | every column and alias `property`; `ref` `keyword`; no token for `sum`, `count`, `max`            |
+| `hard.sql`: a CTE `j`, table aliases `o`/`c`, `source()` twice, `union all`                                                            | every column and alias `property`; `source` `keyword`; no token for `j`, `o`, `c` or any relation |
+
+`function`, `macro`, `type` and `variable` were declared but not emitted. Column and alias share one token type, so a theme cannot colour them apart. VS Code already falls back from these standard types to TextMate scopes (`property` → `variable.other.property`, `function` → `entity.name.function`, `type` → `entity.name.type`, `macro` → `entity.name.function.preprocessor`, `variable` → `variable.other.readwrite`, `keyword` → `keyword.control`). The `keyword` fallback would recolour `ref`/`source` as control keywords, so `package.json` `semanticTokenScopes` maps only `keyword` back to the grammar's `support.function.dbt.jinja`, for both `jinja-sql` and `sql`. Colour columns with `editor.semanticTokenColorCustomizations` rules such as `"property:jinja-sql"`. Hover does distinguish them: a column hover is a `Column | Type | Origin` table, an alias hover is `Alias | Type`, and a `ref` hover lists parent and child models and columns. Completion in a select list returned 642 items, all kind 3 (function); no column, table or CTE items. `inlayHint` returned `[]`.
+
 ## What the recorded runs show
 
 In this fixture with this binary:

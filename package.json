@@ -763,6 +763,24 @@
         }
       }
     ],
+    "semanticTokenScopes": [
+      {
+        "language": "jinja-sql",
+        "scopes": {
+          "keyword": [
+            "support.function.dbt.jinja"
+          ]
+        }
+      },
+      {
+        "language": "sql",
+        "scopes": {
+          "keyword": [
+            "support.function.dbt.jinja"
+          ]
+        }
+      }
+    ],
     "grammars": [
       {
         "language": "jinja-sql",
