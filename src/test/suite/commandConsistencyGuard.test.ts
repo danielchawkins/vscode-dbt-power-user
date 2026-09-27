@@ -132,6 +132,7 @@ const knownContributionPoints = new Set([
   "submenus",
   "languages",
   "grammars",
+  "semanticTokenScopes",
 ]);
 
 describe("command contribution consistency", () => {
@@ -250,5 +251,46 @@ describe("command contribution consistency", () => {
     const missing = paletteHiddenCommands.filter((cmd) => !hidden.has(cmd));
 
     expect(missing).toEqual([]);
+  });
+});
+
+describe("semantic token scopes", () => {
+  // Fusion 2.0.6 initialize legend; recorded by scripts/evidence/steps/editor-features.json.
+  const fusionTokenTypes = new Set([
+    "property",
+    "function",
+    "macro",
+    "type",
+    "variable",
+    "keyword",
+  ]);
+
+  it("overrides only Fusion token types, for both languages Fusion serves", () => {
+    const contributes = readContributes() as unknown as {
+      semanticTokenScopes: {
+        language: string;
+        scopes: Record<string, string[]>;
+      }[];
+    };
+    const entries = contributes.semanticTokenScopes;
+
+    expect(entries.map((e) => e.language).sort()).toEqual(["jinja-sql", "sql"]);
+    for (const entry of entries) {
+      expect(
+        Object.keys(entry.scopes).filter((t) => !fusionTokenTypes.has(t)),
+      ).toEqual([]);
+    }
+  });
+
+  it("keeps ref and source on the grammar's dbt scope instead of the keyword fallback", () => {
+    const contributes = readContributes() as unknown as {
+      semanticTokenScopes: {
+        language: string;
+        scopes: Record<string, string[]>;
+      }[];
+    };
+    for (const entry of contributes.semanticTokenScopes) {
+      expect(entry.scopes.keyword).toEqual(["support.function.dbt.jinja"]);
+    }
   });
 });
