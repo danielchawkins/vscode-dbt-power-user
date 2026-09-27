@@ -39,7 +39,7 @@ just lint                                   # read-only code, shell, lockfile, a
 just check                                  # lint plus compile and unit tests
 just jj ...                                 # run jj, gating git push on just check
 just package                                # build the VSIX
-just smoke                                  # packaged-VSIX smoke against both pinned hosts
+just smoke                                  # package, then smoke that VSIX on both pinned hosts
 just smoke-visual [out]                     # smoke plus screenshot checkpoints under out/
 just release                                # local dry run of the tag-triggered release
 just --list
@@ -105,9 +105,11 @@ Known false positives in this repo:
 
 `just check` and `just package` must pass on every PR bookmark tip. `just smoke` runs the packaged-VSIX smoke assertions locally; CI runs the same assertions through `smoke-vscode` and `smoke-cursor`.
 
+Unit tests and the integration suite run from source. Anything that claims to show what a user gets (smoke runs, visual evidence, manual emulation in an isolated VS Code) runs against the VSIX `just package` just built. `just package` deletes every other `*.vsix` in the repository root and records the new path in `out/latest-vsix`; a smoke recipe without `--vsix` packages first, and CI passes its checksum-verified artifact with `--vsix`. Each run prints `FPU_SMOKE_VSIX=<path> sha256=<hash>`, and visual evidence stores the same line in `vsix.sha256`, so a result names the build it tested.
+
 ## Visual evidence
 
-For any change a user sees (panels, editor language, highlighting, lenses, menus), run `just smoke-visual` after `just package` and include the result in the review. Each checkpoint under `<out>/<host>/<fixture>/` is a workbench PNG plus a JSON record: `expect` (what should be visible), `measured` (text and state the test read at the same moment), and `notifications`. Open every PNG and confirm it agrees with its `measured` and `expect`; report any disagreement as a finding, since text alone missed a model opening as plain SQL and a legend covering the graph. The smoke installs the newest `*.vsix` in the repository root.
+For any change a user sees (panels, editor language, highlighting, lenses, menus), run `just smoke-visual` after `just package` and include the result in the review. Each checkpoint under `<out>/<host>/<fixture>/` is a workbench PNG plus a JSON record: `expect` (what should be visible), `measured` (text and state the test read at the same moment), and `notifications`. Open every PNG and confirm it agrees with its `measured` and `expect`; report any disagreement as a finding, since text alone missed a model opening as plain SQL and a legend covering the graph.
 
 ## Jujutsu
 

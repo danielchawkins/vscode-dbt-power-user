@@ -93,6 +93,14 @@ const cleanup = () => {
   rmSync(workspaceParent, { recursive: true, force: true });
 };
 process.once("exit", cleanup);
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.once(signal, () => {
+    cleanup();
+    process.exit(
+      128 + (signal === "SIGINT" ? 2 : signal === "SIGTERM" ? 15 : 1),
+    );
+  });
+}
 
 const cdpPort =
   process.env.FPU_CDP_PORT ??

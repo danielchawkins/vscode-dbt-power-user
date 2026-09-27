@@ -193,10 +193,12 @@ test-integration *args:
 benchmark *args:
     bash scripts/benchmark/run-baseline.sh "$@"
 
+# Without --vsix, packages the working copy first and smokes exactly that build.
 [group("tests")]
 smoke-vscode *args:
     bash scripts/smoke/run-host-smoke.sh --host vscode "$@"
 
+# Without --vsix, packages the working copy first and smokes exactly that build.
 [group("tests")]
 smoke-cursor *args:
     bash scripts/smoke/run-host-smoke.sh --host cursor "$@"
@@ -209,17 +211,22 @@ benchmark-runtime-vscode vsix:
 benchmark-runtime-cursor vsix:
     node scripts/benchmark/measure-runtime.mjs --host cursor --vsix "{{ vsix }}"
 
+# Packages once, then smokes that one VSIX on both hosts.
 [group("tests")]
 smoke *args:
-    just smoke-vscode "$@"
-    just smoke-cursor "$@"
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just package
+    vsix="$(cat out/latest-vsix)"
+    just smoke-vscode --vsix "$vsix" "$@"
+    just smoke-cursor --vsix "$vsix" "$@"
 
 # Smoke both hosts and write screenshot checkpoints plus their text measurements under `out`.
 [group("tests")]
 smoke-visual out="out/smoke-visual" *args:
     rm -rf "{{ out }}"
     FPU_SMOKE_SCREENSHOTS="{{ out }}" just smoke {{ args }}
-    @echo "visual evidence: {{ out }}/index.json per host and fixture"
+    @echo "visual evidence: {{ out }}/<host>/<fixture>/index.json"
 
 ####################
 # Version control
@@ -251,6 +258,8 @@ package:
     set -euo pipefail
     # rsbuild keeps dist/ between builds, so stale chunks would otherwise ship.
     rm -rf dist
+    # Only the VSIX built here may exist, so nothing downstream can install an older one.
+    rm -f ./*.vsix out/latest-vsix
     npm run package:vsix
     vsix="$(node -p "require('./package.json').name + '-' + require('./package.json').version + '.vsix'")"
     if [[ ! -f "$vsix" ]]; then
@@ -276,6 +285,8 @@ package:
         exit 1
       fi
     done
+    mkdir -p out
+    realpath "$vsix" > out/latest-vsix
 
 # Local dry run of the release pipeline: build, checksum, verify the tag, publish nothing.
 [group("package")]
