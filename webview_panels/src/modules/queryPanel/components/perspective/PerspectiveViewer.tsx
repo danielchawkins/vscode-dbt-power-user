@@ -174,16 +174,17 @@ const PerspectiveViewer = ({
       return;
     }
 
-    const tableInit = buildPerspectiveTableInit(columnNames, columnTypes, data);
+    const { schema, rows } = buildPerspectiveTableInit(
+      columnNames,
+      columnTypes,
+      data,
+    );
     try {
       const worker = await perspective.worker();
-      // Perspective accepts a schema object or the row data directly; its generated type
-      // only declares the row-data overload.
+      // Perspective accepts a schema object; its generated type only declares the row-data overload.
       // @ts-expect-error schema initialization is supported at runtime
-      const table = await worker.table(tableInit);
-      if (!Array.isArray(tableInit)) {
-        await table.replace(data);
-      }
+      const table = await worker.table(schema);
+      await table.replace(rows);
 
       await perspectiveViewerRef.current.load(table);
       await perspectiveViewerRef.current.resetThemes([
