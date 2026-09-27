@@ -1,5 +1,7 @@
 # Remaining implementation
 
+> **Closed.** The v1 refactor is complete for beta. [`rearchitecture-plan.md`](rearchitecture-plan.md) is the authoritative plan; its *Closing the v1 refactor* section records how each part of this document ended. Kept as history.
+>
 > **Historical tracker.** Remaining work to the next release and 1.0.0 is sequenced in [column-lineage-ship-plan.md](column-lineage-ship-plan.md). This file keeps the phase history, landing loop, gotchas and gates; where it disagrees with the ship plan, the ship plan wins.
 
 This is the executor plan for work still ahead of `main`. Contracts, file lists, spikes, and Confirm gates stay in [`fusion-lsp-plan.md`](fusion-lsp-plan.md). Landing rules stay in [`implementation-dispatch.md`](implementation-dispatch.md). Do not invent vocabulary; use `CONTEXT.md`.

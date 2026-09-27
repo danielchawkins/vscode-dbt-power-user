@@ -1,5 +1,7 @@
 # Column lineage plan
 
+> **Closed.** The v1 refactor is complete for beta. [`rearchitecture-plan.md`](rearchitecture-plan.md) is the authoritative plan; its *Closing the v1 refactor* section records how each part of this document ended. Kept as history.
+>
 > **Superseded** by [column-lineage-ship-plan.md](column-lineage-ship-plan.md), which is based on the consolidated [evidence README](../research/evidence/README.md). Step 1 below landed (PR #97); step 2's reader is being rewritten in place on PR #98 as ship-plan step 3. Kept for its history; do not implement from it.
 
 This plan rebuilds column-level lineage on dbt Fusion's strict static analysis, as decided in [ADR 0006](../adr/0006-column-lineage-from-fusion-static-analysis.md). The measurements behind it are in [column-lineage-approaches.md](../research/column-lineage-approaches.md). Each step is one bookmark and pull request against `main`, landed per [implementation-dispatch.md](implementation-dispatch.md), and ends with `just check` green. Steps that touch packaging also pass `just package`; steps that touch Fusion behaviour also pass `just test-integration`.

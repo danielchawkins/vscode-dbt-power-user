@@ -1,5 +1,7 @@
 # Fusion Power User: refactor plan
 
+> **Closed.** The v1 refactor is complete for beta. [`rearchitecture-plan.md`](rearchitecture-plan.md) is the authoritative plan; its *Closing the v1 refactor* section records how each part of this document ended. Kept as history.
+
 Land each step as a feature bookmark and a pull request against `main`. [`implementation-dispatch.md`](implementation-dispatch.md) is the execution layer: trunk, focused revisions, serial jj workspaces, pipelined landing, and file-path corrections. This file remains the spec: contracts, file lists, verification, spikes, and Confirm gates. Section 3 is v1, the incremental refactor through consumer adoption; Section 4 is the v2 north-star horizon that follows it. Remaining work is sequenced in [`remaining-implementation.md`](remaining-implementation.md).
 
 ## 1. Goal and scope
