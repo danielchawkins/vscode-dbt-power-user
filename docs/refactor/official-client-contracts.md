@@ -74,7 +74,8 @@ As observed on Fusion 2.0.6 `initialize` response:
 
 **Not Advertised:**
 
-- `dbt.previewCte` and `dbt.goToDefinition` are not in the advertised list. The server returned `null` when they were executed. The official-client capture observed bare `dbt.previewCte` commands in code lenses, so Fusion Power User must rewrite those lenses to a fork-owned command ID.
+- `dbt.previewCte` and `dbt.goToDefinition` are not in the advertised list. The server returned `null` when they were executed. `dbt.previewCte` is a client command that the server emits bare in code lenses.
+- Fusion 2.0.6 emits one `Preview CTE` lens per CTE (`scripts/evidence/steps/editor-features.json`, `codeLens hard cte`). Its arguments are `[modelFsPath, {name, start, stop, start_location, compiled_path, compiled_start, compiled_stop}]`, where `compiled_path` is under `target/.lsp/compiled` in `separate` mode. Clicking it failed with "command 'dbt.previewCte' not found". `withoutUnregisteredLspLenses` in `src/lsp/fusionLanguageClient.ts` drops these lenses, and `CteCodeLensProvider` supplies Execute CTE and Profile CTEs instead.
 
 ## Progress Notifications
 

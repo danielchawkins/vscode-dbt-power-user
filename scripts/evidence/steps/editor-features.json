@@ -215,6 +215,13 @@
     }
   },
   {
+    "request": "textDocument/codeLens",
+    "label": "codeLens hard cte",
+    "params": {
+      "textDocument": { "uri": "$FILE_URI(models/hard.sql)" }
+    }
+  },
+  {
     "request": "textDocument/inlayHint",
     "label": "inlayHint stg_orders",
     "params": {

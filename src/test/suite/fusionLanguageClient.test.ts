@@ -42,6 +42,7 @@ import {
   ProcessStreamBuffer,
   SpawnedLspProcess,
   validateDocumentSelectorPatterns,
+  withoutUnregisteredLspLenses,
 } from "../../lsp/fusionLanguageClient";
 import {
   ExitingProcess,
@@ -1431,6 +1432,23 @@ describe("canonicalProjectRoot", () => {
     expect(uriConverters!.protocol2Code("file:///elsewhere/a.sql").fsPath).toBe(
       "/elsewhere/a.sql",
     );
+  });
+});
+
+describe("withoutUnregisteredLspLenses", () => {
+  it("drops Fusion's dbt.previewCte lenses and keeps the rest", () => {
+    const preview = {
+      command: { command: "dbt.previewCte", title: "Preview CTE" },
+    };
+    const other = {
+      command: { command: "fusionPowerUser.other", title: "Other" },
+    };
+    const unresolved = {};
+    expect(withoutUnregisteredLspLenses([preview, other, unresolved])).toEqual([
+      other,
+      unresolved,
+    ]);
+    expect(withoutUnregisteredLspLenses(null)).toBeUndefined();
   });
 });
 

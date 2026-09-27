@@ -49,7 +49,7 @@ export const FUSION_LSP_COMMANDS = {
   show: "dbt.show",
 } as const;
 
-/** Unverified; not advertised by Fusion 2.0.5 initialize. */
+/** Client command in Fusion's CTE code lenses; not advertised by initialize, and no command here handles it. */
 export const FUSION_LSP_PREVIEW_CTE = "dbt.previewCte" as const;
 
 export type FusionLspCommand =
@@ -197,6 +197,18 @@ export function canonicalProjectRoot(
       },
     },
   };
+}
+
+/**
+ * Drops server code lenses whose command no extension here registers. Fusion emits `dbt.previewCte` lenses for
+ * the official dbt extension's client command; `CteCodeLensProvider` supplies the CTE actions instead.
+ */
+export function withoutUnregisteredLspLenses<
+  T extends { command?: { command: string } },
+>(lenses: T[] | null | undefined): T[] | null | undefined {
+  return lenses?.filter(
+    (lens) => lens.command?.command !== FUSION_LSP_PREVIEW_CTE,
+  );
 }
 
 /**
@@ -725,6 +737,8 @@ class FusionLanguageClientImpl implements FusionClient {
             index: this.options.project.folder.index,
           },
           middleware: {
+            provideCodeLenses: async (document, token, next) =>
+              withoutUnregisteredLspLenses(await next(document, token)),
             handleDiagnostics: (uri, diagnostics, next) => {
               if (diagnosticsFilter.shouldForward(uri)) {
                 next(uri, diagnostics);
