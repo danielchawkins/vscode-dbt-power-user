@@ -603,10 +603,6 @@ export class DBTProject implements Disposable {
     }
   }
 
-  showCompiledSql(modelPath: Uri) {
-    this.findModelInTargetfolder(modelPath, "compiled");
-  }
-
   showRunSQL(modelPath: Uri) {
     this.findModelInTargetfolder(modelPath, "run");
   }

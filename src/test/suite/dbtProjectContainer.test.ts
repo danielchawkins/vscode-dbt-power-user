@@ -73,7 +73,6 @@ describe("DBTProjectContainer", () => {
       compileModel: jest.fn(),
       compileQuery: jest.fn(async () => "compiled query"),
       showRunSQL: jest.fn(),
-      showCompiledSql: jest.fn(),
       generateSchemaYML: jest.fn(),
       onRebuildManifestStatusChange: jest
         .fn()
@@ -367,7 +366,6 @@ describe("DBTProjectContainer", () => {
         "compiled query",
       );
       container.showRunSQL(model);
-      container.showCompiledSQL(model);
 
       expect(mockProject1.executeSQLOnQueryPanel).toHaveBeenCalledWith(
         "select 1",
@@ -375,7 +373,6 @@ describe("DBTProjectContainer", () => {
       );
       expect(mockProject1.compileQuery).toHaveBeenCalledWith("select 1");
       expect(mockProject1.showRunSQL).toHaveBeenCalledWith(model);
-      expect(mockProject1.showCompiledSql).toHaveBeenCalledWith(model);
     });
 
     it.each([

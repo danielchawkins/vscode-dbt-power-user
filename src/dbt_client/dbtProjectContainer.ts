@@ -180,10 +180,6 @@ export class DBTProjectContainer implements Disposable {
     this.findDBTProject(modelPath)?.showRunSQL(modelPath);
   }
 
-  showCompiledSQL(modelPath: Uri) {
-    this.findDBTProject(modelPath)?.showCompiledSql(modelPath);
-  }
-
   generateSchemaYML(modelPath: Uri, modelName: string) {
     this.findDBTProject(modelPath)?.generateSchemaYML(modelPath, modelName);
   }
