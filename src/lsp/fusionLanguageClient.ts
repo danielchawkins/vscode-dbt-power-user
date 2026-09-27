@@ -29,6 +29,7 @@ import { DeclaredProject } from "../projects/projectRegistry";
 import {
   fusionLogLevelArgument,
   FusionTraceServerLevel,
+  lspCompiledOutputEnv,
   resolveFusionLaunchSettings,
 } from "./fusionClientSettings";
 import {
@@ -674,9 +675,11 @@ class FusionLanguageClientImpl implements FusionClient {
         target: launch.target,
       });
 
+      const { [DBT_LSP_USE_TARGET_LSP]: _inherited, ...inheritedEnv } =
+        this.options.executable.env;
       const env = {
-        ...this.options.executable.env,
-        [DBT_LSP_USE_TARGET_LSP]: "1",
+        ...inheritedEnv,
+        ...lspCompiledOutputEnv(launch.lspCompiledOutput),
       };
 
       const child = spawnProcess(

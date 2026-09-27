@@ -10,6 +10,9 @@ import {
 import {
   affectsFusionLaunchConfiguration,
   LINT_ENABLED_SETTING,
+  LSP_COMPILED_OUTPUT_ENV,
+  LSP_COMPILED_OUTPUT_SETTING,
+  lspCompiledOutputEnv,
   PROFILES_DIR_SETTING,
   resolveFusionLaunchSettings,
   TARGET_SETTING,
@@ -44,13 +47,48 @@ describe("fusionClientSettings", () => {
       resolveFusionLaunchSettings(scope, {
         getWorkspaceFolder: () => folder,
         getUserHome: () => "/home/test",
+        env: {},
       }),
     ).toEqual({
       profilesDir: undefined,
       target: undefined,
       lintEnabled: true,
       traceServer: "off",
+      lspCompiledOutput: "separate",
     });
+  });
+
+  it.each([
+    [undefined, undefined, "separate"],
+    ["shared", undefined, "shared"],
+    ["separate", "shared", "shared"],
+    ["shared", "separate", "separate"],
+    ["shared", "bogus", "shared"],
+    ["bogus", undefined, "separate"],
+  ])(
+    "resolves lsp.compiledOutput setting %s with env %s as %s",
+    (setting, env, expected) => {
+      jest.spyOn(workspace, "getConfiguration").mockReturnValue({
+        get: jest.fn((key: string) =>
+          key === LSP_COMPILED_OUTPUT_SETTING ? setting : undefined,
+        ),
+      } as any);
+
+      expect(
+        resolveFusionLaunchSettings(scope, {
+          getWorkspaceFolder: () => folder,
+          getUserHome: () => "/home/test",
+          env: env === undefined ? {} : { [LSP_COMPILED_OUTPUT_ENV]: env },
+        }).lspCompiledOutput,
+      ).toBe(expected);
+    },
+  );
+
+  it("maps compiled output to the server environment", () => {
+    expect(lspCompiledOutputEnv("separate")).toEqual({
+      DBT_LSP_USE_TARGET_LSP: "1",
+    });
+    expect(lspCompiledOutputEnv("shared")).toEqual({});
   });
 
   it("resolves profilesDir with workspace and env substitution", () => {
@@ -108,6 +146,7 @@ describe("fusionClientSettings", () => {
         "fusionPowerUser.profilesDir",
         "fusionPowerUser.target",
         "fusionPowerUser.lint.enabled",
+        "fusionPowerUser.lsp.compiledOutput",
       ]),
     );
   });

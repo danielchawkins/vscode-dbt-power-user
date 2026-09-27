@@ -608,6 +608,49 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
   });
 
+  it("drops an inherited DBT_LSP_USE_TARGET_LSP when lsp.compiledOutput is shared", async () => {
+    jest.mocked(workspace.getConfiguration).mockReturnValue({
+      get: jest.fn((key: string) =>
+        key === "lsp.compiledOutput" ? "shared" : undefined,
+      ),
+    } as any);
+    const streams = makeStreams();
+    const server = new FakeReverseSocketServer(streams);
+    const spawnProcess = jest.fn(
+      (
+        _executable: string,
+        _args: string[],
+        _env: Record<string, string>,
+        _cwd?: string,
+      ) => new FakeExitingProcess() as any,
+    );
+    const factory = new DefaultFusionClientFactory(terminal as any, {
+      listenForServer: async () => server,
+      acceptWithProcessExit: async () => streams,
+      spawnProcess,
+      createLanguageClient: async () => makeLanguageClient() as any,
+      sleep: async () => {},
+    });
+
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
+        env: { PATH: "/opt/bin", [DBT_LSP_USE_TARGET_LSP]: "1" },
+      },
+      lintEnabled: true,
+      commandPrefix: "fusionPowerUser:test:",
+    });
+
+    await flushAsync();
+
+    expect(spawnProcess.mock.calls[0][2]).toEqual({ PATH: "/opt/bin" });
+
+    await client.stop();
+    client.dispose();
+  });
+
   it("uses options.lintEnabled in launch args", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
