@@ -1,5 +1,7 @@
 # Ship plan: native editor features, column lineage, and the next release
 
+> **Closed.** The v1 refactor is complete for beta. [`rearchitecture-plan.md`](rearchitecture-plan.md) is the authoritative plan; its *Closing the v1 refactor* section records how each part of this document ended. Kept as history.
+
 This is the authoritative plan for all remaining work up to the next release and through Phase 10 to 1.0.0. It supersedes [column-lineage-plan.md](column-lineage-plan.md), the "Next" list in [remaining-implementation.md](remaining-implementation.md), and step 7.5 of [fusion-lsp-plan.md](fusion-lsp-plan.md). Landing rules stay in [implementation-dispatch.md](implementation-dispatch.md); vocabulary is [CONTEXT.md](../../CONTEXT.md). Every claim about Fusion behaviour cites a section of the consolidated evidence, [docs/research/evidence/README.md](../research/evidence/README.md) ("evidence README"); the per-area files in that folder are run records only and are not cited. [ADR 0006](../adr/0006-column-lineage-from-fusion-static-analysis.md) still decides that column lineage comes from Fusion strict static analysis.
 
 Each numbered step is one bookmark and one pull request against `main`, built serially per the dispatch loop, and ends with `just check` green at its tip. Steps that change Fusion behaviour also pass `just test-integration`; steps that change `package.json` contributions also pass `just package` and `just smoke`.

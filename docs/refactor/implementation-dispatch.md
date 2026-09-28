@@ -1,6 +1,6 @@
 # Implementation dispatch
 
-This is the execution layer on top of [`fusion-lsp-plan.md`](fusion-lsp-plan.md). The plan remains the spec: contracts, file lists, verification, spikes, and Confirm gates. This file says how work is implemented serially, pipelined through review and CI, and landed.
+This is the execution layer on top of [`rearchitecture-plan.md`](rearchitecture-plan.md). The plan is the spec: goals, exits, verification, and order. This file says how work is implemented serially, pipelined through review and CI, and landed.
 
 ## Trunk
 
@@ -50,7 +50,7 @@ After the initial implementation for PR N is locally reviewed and pushed, the or
 
 ## Agent contract
 
-1. Read `CONTEXT.md`, the ADRs named by the step, this file, and the matching section of `fusion-lsp-plan.md`. Use the vocabulary: Declared Project, Dependency Project, Project Context, Local Capability, Hosted Capability, Consumer Repository.
+1. Read `CONTEXT.md`, the ADRs named by the step, this file, and the matching phase of `rearchitecture-plan.md`. Use the vocabulary: Declared Project, Dependency Project, Project Context, Local Capability, Hosted Capability, Consumer Repository.
 2. This is **product** work. The shipped extension (`src/`, `webview_panels/`, `package.json` contributions) must not invoke `mise` or `just`, read `mise.toml`, or assume a Consumer Repository layout.
 3. TDD at the seam the step names. Split the PR into focused revisions by concern and file group; keep implementation and its focused tests together. Put plan or user documentation in a separate revision. The bookmark tip must pass `just check`, plus `just package` when packaging changes.
 4. No issue or PR numbers in code. Lines under 120 characters. Markdown: one physical line per prose paragraph.
@@ -87,7 +87,7 @@ Steps 1.2 through 3.15 and Phase 4.1 through 4.5 are complete at this tip. Phase
 
 ## Step briefs (execute from the spec)
 
-Copy the contract and verification from `fusion-lsp-plan.md`. The notes below are only the deltas an agent would otherwise get wrong.
+Copy the goal, exit and verification from `rearchitecture-plan.md`. The notes below are only the deltas an agent would otherwise get wrong.
 
 ### 1.2 — Fusion version gate
 

@@ -1,0 +1,19 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    ".": {
+      "entry": [
+        "src/extension.ts",
+        "src/test/**/*.ts",
+        "scripts/**/*.{mjs,ts}",
+        "rsbuild.config.ts",
+        "jest.config.js"
+      ],
+      "project": ["src/**/*.ts", "scripts/**/*.{mjs,ts}"],
+      "ignore": ["src/test/fixtures/**", "src/test/mock/**"],
+      "ignoreDependencies": ["@types/vscode", "ts-loader"],
+      "ignoreBinaries": ["sample", "dbt"]
+    }
+  },
+  "ignoreWorkspaces": ["webview_panels"]
+}

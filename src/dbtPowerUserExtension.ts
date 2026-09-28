@@ -15,6 +15,7 @@ import { DBTTerminal } from "./dbt_integration";
 import { registerFusionClientDiagnostics } from "./lsp/fusionClientDiagnostics";
 import { FusionClientPool } from "./lsp/fusionClientPool";
 import { FusionStatus } from "./lsp/fusionStatus";
+import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { CONFIGURATION_SECTION } from "./projects/projectConfiguration";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
@@ -63,6 +64,7 @@ export class DBTPowerUserExtension implements Disposable {
     private fusionStatus: FusionStatus,
     private projectConfigCommands: ProjectConfigCommands,
     private columnLineageRefresh: ColumnLineageRefreshController,
+    private dbtTemplateLanguage: DbtTemplateLanguage,
   ) {
     this.disposables.push(
       this.dbtProjectContainer,
@@ -79,6 +81,7 @@ export class DBTPowerUserExtension implements Disposable {
       this.fusionStatus,
       this.projectConfigCommands,
       this.columnLineageRefresh,
+      this.dbtTemplateLanguage,
     );
   }
 
@@ -129,6 +132,7 @@ export class DBTPowerUserExtension implements Disposable {
 
       this.dbtProjectContainer.setContext(context);
       await this.projectRegistry.initialize();
+      this.dbtTemplateLanguage.start();
       this.fusionClientPool.initialize();
       this.fusionStatus.initialize();
       registerFusionClientDiagnostics(

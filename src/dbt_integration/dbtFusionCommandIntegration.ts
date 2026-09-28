@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "fs";
 import { homedir } from "os";
-import path, { join } from "path";
+import path from "path";
 import { parse } from "yaml";
 
 import { CommandProcessResult } from "./commandProcessExecution";
@@ -22,6 +22,7 @@ import {
   DBTNode,
   NodeMetaData,
 } from "./domain";
+import { resolveProjectPaths } from "./projectPaths";
 import { DBTTerminal } from "./terminal";
 
 export class DBTFusionCommandProjectIntegration
@@ -90,12 +91,12 @@ export class DBTFusionCommandProjectIntegration
   }
 
   protected async initializePaths() {
-    // No way to get these paths from the fusion executable
-    this.targetPath = join(this.projectRoot, "target");
-    this.modelPaths = [join(this.projectRoot, "models")];
-    this.seedPaths = [join(this.projectRoot, "seeds")];
-    this.macroPaths = [join(this.projectRoot, "macros")];
-    this.packagesInstallPath = join(this.projectRoot, "dbt_packages");
+    const paths = resolveProjectPaths(this.projectRoot);
+    this.targetPath = paths.targetPath;
+    this.modelPaths = paths.modelPaths;
+    this.seedPaths = paths.seedPaths;
+    this.macroPaths = paths.macroPaths;
+    this.packagesInstallPath = paths.packagesInstallPath;
     try {
       const projectConfig = readAndParseProjectConfig(this.projectRoot);
       this.projectName = projectConfig.name;
@@ -803,7 +804,10 @@ export class DBTFusionCommandProjectIntegration
     nodes?: Record<string, unknown>;
     sources?: Record<string, unknown>;
   } | null {
-    const manifestPath = path.join(this.projectRoot, "target", "manifest.json");
+    const manifestPath = path.join(
+      this.targetPath ?? resolveProjectPaths(this.projectRoot).targetPath,
+      "manifest.json",
+    );
     if (!existsSync(manifestPath)) {
       return null;
     }

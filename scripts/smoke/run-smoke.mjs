@@ -93,6 +93,14 @@ const cleanup = () => {
   rmSync(workspaceParent, { recursive: true, force: true });
 };
 process.once("exit", cleanup);
+for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
+  process.once(signal, () => {
+    cleanup();
+    process.exit(
+      128 + (signal === "SIGINT" ? 2 : signal === "SIGTERM" ? 15 : 1),
+    );
+  });
+}
 
 const cdpPort =
   process.env.FPU_CDP_PORT ??
@@ -184,6 +192,13 @@ try {
         : {}),
       ...(process.env.FPU_SMOKE_REQUIRE_FUSION
         ? { FPU_SMOKE_REQUIRE_FUSION: process.env.FPU_SMOKE_REQUIRE_FUSION }
+        : {}),
+      ...(process.env.FPU_SMOKE_SCREENSHOTS
+        ? {
+            FPU_SMOKE_SCREENSHOTS: path.resolve(
+              process.env.FPU_SMOKE_SCREENSHOTS,
+            ),
+          }
         : {}),
     },
   });

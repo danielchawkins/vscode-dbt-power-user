@@ -4,11 +4,9 @@ These documents define the independent, local-first Fusion Power User fork.
 
 ## Current status
 
-Phases 0 through 4 are complete. Phase 5 is complete through 5.5: one `FusionClient` per Declared Project runs over the reverse-socket transport, and Fusion diagnostics pass through unfiltered per D3. Step 5.6, deleting the legacy manifest-backed `autocompletion_provider`, `definition_provider`, and `hover_provider` in favor of that client, is complete, with `lspEditorFeatures.test.ts` as the flow test, and `0.3.0-alpha.0` is tagged. Phase 6 is settled — 6.3's producer flip stays deferred by design, since no LSP producer can discharge the full metadata contract. Phase 7's operation-routing steps are tracked in the plan; see its per-step status there rather than here. Phase 8 (dbt Core and dbt Cloud removal, the Python bridge, and Altimate/hosted remnants) is complete, and steps 9.1 through 9.4 are complete: the `fusionPowerUser.*` namespace rename, this documentation set, the extended VSIX smoke assertions, and the tag-triggered release pipeline. Project Registry defines the served project set, DBTProjectContainer is its sole DBTProject producer, and Project Context selects only Declared Projects. `DBTProjectIntegrationAdapter` is retired from production code; Core and Cloud are no longer constructible. The repository tooling baseline is green, dbt Fusion 2.0.5 is pinned for development and tests, and the extension packages as `danielchawkins.fusion-power-user` `0.2.0-alpha.0`.
+The v1 refactor is complete for beta: `v0.4.0-beta.1` is published, one Fusion Client serves each Declared Project, and dbt Core, dbt Cloud, the Python bridge, and hosted Altimate code are gone. [`rearchitecture-plan.md`](rearchitecture-plan.md) is the authoritative plan from here: phases R1–R10 replace inherited indirection with one Project model, one settings module, a composition root, framework-provided editor mechanisms, one webview contract, and one styling system, then adopt the fork in finance-pipelines and cut 1.0.0. [`rearchitecture-critiques.md`](rearchitecture-critiques.md) records the three review rounds behind it.
 
-The product runtime remains manifest-driven: the Fusion LSP payload cannot populate the full metadata contract (see [`../lsp-metadata-gaps.md`](../lsp-metadata-gaps.md)), so `ManifestMetadataSource` remains the only `ProjectMetadataSource`. Telemetry, AI, MCP, collaboration, credits, notebooks, hosted Altimate, authentication, and the Python bridge are gone.
-
-Next is [`column-lineage-ship-plan.md`](column-lineage-ship-plan.md), the authoritative plan for all remaining work: the `project` static-analysis default, column lineage from the Fusion CLI, the consumer adoption in Phase 10, and the 1.0.0 release. Step 5.6 is complete: the legacy language providers are deleted. [`remaining-implementation.md`](remaining-implementation.md) is the historical phase tracker and [`column-lineage-plan.md`](column-lineage-plan.md) is superseded. Execution rules are in [`implementation-dispatch.md`](implementation-dispatch.md).
+The v1 plans — [`fusion-lsp-plan.md`](fusion-lsp-plan.md), [`remaining-implementation.md`](remaining-implementation.md), [`column-lineage-ship-plan.md`](column-lineage-ship-plan.md) and [`column-lineage-plan.md`](column-lineage-plan.md) — are closed and kept as history. Execution rules are in [`implementation-dispatch.md`](implementation-dispatch.md).
 
 Read in order:
 
@@ -16,8 +14,8 @@ Read in order:
 2. [`fusion-lsp-context.md`](fusion-lsp-context.md) — repositories, current architecture, target architecture, and contracts.
 3. [`tooling-adoption.md`](tooling-adoption.md) — contributor environment decisions before product changes.
 4. [`fusion-lsp-feature-disposition.md`](fusion-lsp-feature-disposition.md) — retain, replace, remove, and spike inventory.
-5. [`fusion-lsp-plan.md`](fusion-lsp-plan.md) — the spec: v1 phases and prereleases in Section 3, the v2 north-star horizon in Section 4.
-6. [`column-lineage-ship-plan.md`](column-lineage-ship-plan.md) — the remaining steps to the next release and 1.0.0, grounded in the [evidence README](../research/evidence/README.md).
+5. [`rearchitecture-plan.md`](rearchitecture-plan.md) — the plan: target model, phases R1–R10, conventions, and dependency targets.
+6. [`../research/codebase-audit-host-september-2026.md`](../research/codebase-audit-host-september-2026.md), [`../research/codebase-audit-webview-september-2026.md`](../research/codebase-audit-webview-september-2026.md) and [`../research/vscode-extension-practice-september-2026.md`](../research/vscode-extension-practice-september-2026.md) — the evidence the plan cites.
 7. [`implementation-dispatch.md`](implementation-dispatch.md) — trunk, serial jj workspaces, pipelined landing, and agent handoff.
 8. [`finance-pipelines-integration.md`](finance-pipelines-integration.md) — first Consumer Repository adoption.
 

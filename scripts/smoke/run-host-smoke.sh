@@ -64,11 +64,19 @@ else
 fi
 executable=$(host_executable "$host")
 if [[ -z "$vsix" ]]; then
-  vsix=$(find "$repo_root" -maxdepth 1 -name '*.vsix' -print | head -1)
+  # A local run always smokes the working copy; CI passes the checksum-verified artifact with --vsix.
+  (cd "$repo_root" && just package)
+  vsix=$(cat "$repo_root/out/latest-vsix")
 fi
 if [[ ! -f "$vsix" ]]; then
-  echo "VSIX not found; run just package first" >&2
+  echo "VSIX not found: $vsix" >&2
   exit 1
+fi
+vsix=$(realpath "$vsix")
+echo "FPU_SMOKE_VSIX=$vsix sha256=$(shasum -a 256 "$vsix" | cut -d' ' -f1)"
+if [[ -n "${FPU_SMOKE_SCREENSHOTS:-}" ]]; then
+  mkdir -p "$FPU_SMOKE_SCREENSHOTS"
+  shasum -a 256 "$vsix" > "$FPU_SMOKE_SCREENSHOTS/vsix.sha256"
 fi
 
 echo "# host metadata ($host)"

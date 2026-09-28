@@ -8,7 +8,7 @@ Read before planning or changing code:
 
 - [`CONTEXT.md`](CONTEXT.md) — canonical product language. The vocabulary is fixed; extend it rather than inventing synonyms.
 - [`docs/adr/`](docs/adr/) — the product boundary, the LSP decision, and project scoping.
-- [`docs/refactor/fusion-lsp-plan.md`](docs/refactor/fusion-lsp-plan.md) — phased implementation plan. Work the steps in order; each PR bookmark contains focused revisions and ends with green tests.
+- [`docs/refactor/rearchitecture-plan.md`](docs/refactor/rearchitecture-plan.md) — the plan: phases R1–R10, the target model, naming conventions, and dependency targets. Work the steps in order; each PR bookmark contains focused revisions and ends with green tests. The v1 plans it replaces are closed and kept as history.
 - [`docs/refactor/implementation-dispatch.md`](docs/refactor/implementation-dispatch.md) — land each step as a feature PR against `main`.
 
 The parent session orchestrates implementation. Use a fast coding agent for implementation and accepted fixes, a different higher-reasoning read-only agent for detailed review, then perform a quick evidence check before resuming the same coding agent. Both roles inspect revisions through `just jj`; implementers create focused revisions but never push, and reviewers never mutate the workspace.
@@ -39,7 +39,8 @@ just lint                                   # read-only code, shell, lockfile, a
 just check                                  # lint plus compile and unit tests
 just jj ...                                 # run jj, gating git push on just check
 just package                                # build the VSIX
-just smoke                                  # packaged-VSIX smoke against both pinned hosts
+just smoke                                  # package, then smoke that VSIX on both pinned hosts
+just smoke-visual [out]                     # smoke plus screenshot checkpoints under out/
 just release                                # local dry run of the tag-triggered release
 just --list
 ```
@@ -103,6 +104,12 @@ Known false positives in this repo:
 ## Gates
 
 `just check` and `just package` must pass on every PR bookmark tip. `just smoke` runs the packaged-VSIX smoke assertions locally; CI runs the same assertions through `smoke-vscode` and `smoke-cursor`.
+
+Unit tests and the integration suite run from source. Anything that claims to show what a user gets (smoke runs, visual evidence, manual emulation in an isolated VS Code) runs against the VSIX `just package` just built. `just package` deletes every other `*.vsix` in the repository root and records the new path in `out/latest-vsix`; a smoke recipe without `--vsix` packages first, and CI passes its checksum-verified artifact with `--vsix`. Each run prints `FPU_SMOKE_VSIX=<path> sha256=<hash>`, and visual evidence stores the same line in `vsix.sha256`, so a result names the build it tested.
+
+## Visual evidence
+
+For any change a user sees (panels, editor language, highlighting, lenses, menus), run `just smoke-visual` after `just package` and include the result in the review. Each checkpoint under `<out>/<host>/<fixture>/` is a workbench PNG plus a JSON record: `expect` (what should be visible), `measured` (text and state the test read at the same moment), and `notifications`. Open every PNG and confirm it agrees with its `measured` and `expect`; report any disagreement as a finding, since text alone missed a model opening as plain SQL and a legend covering the graph.
 
 ## Jujutsu
 
