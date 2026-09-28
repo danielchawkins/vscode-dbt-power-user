@@ -10,9 +10,29 @@ macOS only. Requires dbt Fusion 2.0.5 or later; an untested newer major logs one
 
 Fusion Power User ships as a VSIX attached to a [GitHub Release](https://github.com/danielchawkins/vscode-dbt-power-user/releases), checksummed with SHA-256. There is no marketplace or OpenVSX publication.
 
-1. Download `fusion-power-user-<version>.vsix` and `vsix.sha256` from the release you want.
-2. Verify the checksum from the download directory: `shasum -a 256 -c vsix.sha256`.
-3. Install into VS Code: `code --install-extension fusion-power-user-<version>.vsix`. Into Cursor: `cursor --install-extension fusion-power-user-<version>.vsix`.
+Requirements: VS Code or Cursor on Extensions API 1.128 or later, and dbt Fusion 2.0.5 or later on `PATH` or at `fusionPowerUser.dbtPath`. The upstream dbt Power User (`innoverio.vscode-dbt-power-user`) must not be installed; Fusion Power User refuses to start beside it.
+
+```sh
+# 1. Download a release and verify it (replace the tag).
+gh release download v0.4.0-beta.1 -R danielchawkins/vscode-dbt-power-user --dir /tmp/fpu
+cd /tmp/fpu && shasum -a 256 -c vsix.sha256
+
+# 2. Remove the upstream extension if present.
+code --uninstall-extension innoverio.vscode-dbt-power-user
+
+# 3. Install; --force replaces an installed version.
+code --install-extension fusion-power-user-0.4.0-beta.1.vsix --force
+cursor --install-extension fusion-power-user-0.4.0-beta.1.vsix --force
+
+# 4. Confirm, then run "Developer: Reload Window" in each open window.
+code --list-extensions --show-versions | grep fusion-power-user
+```
+
+Without the `gh` CLI, download `fusion-power-user-<version>.vsix` and `vsix.sha256` from the release page; in the editor, **Extensions → … → Install from VSIX…** does the same as step 3.
+
+- **Upgrade:** repeat the steps with the new tag. `--force` replaces the old version in place; settings are kept.
+- **Uninstall:** `code --uninstall-extension danielchawkins.fusion-power-user`.
+- **From source:** `just package` builds the VSIX from the working copy and records its path in `out/latest-vsix`; install it with `code --install-extension "$(cat out/latest-vsix)" --force`.
 
 Pin a specific version and its checksum rather than tracking a moving release; see [`docs/releasing.md`](docs/releasing.md) for rollback.
 
