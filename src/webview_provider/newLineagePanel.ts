@@ -7,7 +7,6 @@ import {
   TextEditor,
   Webview,
   window,
-  workspace,
 } from "vscode";
 import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { DBTProject } from "../dbt_client/dbtProject";
@@ -35,7 +34,7 @@ import { optInLines, ProjectOptIns } from "../lsp/fusionStatus";
 import { DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { CONFIGURATION_SECTION } from "../settings";
+import { readSetting, writeSetting } from "../settings";
 import { AltimateWebviewProvider } from "./altimateWebviewProvider";
 import { LineagePanelView } from "./lineagePanel";
 
@@ -287,9 +286,6 @@ export class NewLineagePanel
     }
 
     if (command === "getLineageSettings") {
-      const config = workspace.getConfiguration(
-        `${CONFIGURATION_SECTION}.lineage`,
-      );
       this._panel?.webview.postMessage({
         command: "response",
         args: {
@@ -300,7 +296,7 @@ export class NewLineagePanel
             showSelectEdges: true,
             showNonSelectEdges: false,
             defaultExpansion: Math.min(
-              config.get<number>("defaultExpansion", 1),
+              readSetting("lineage.defaultExpansion"),
               5,
             ),
           },
@@ -310,11 +306,8 @@ export class NewLineagePanel
     }
 
     if (command === "persistLineageSettings") {
-      const config = workspace.getConfiguration(
-        `${CONFIGURATION_SECTION}.lineage`,
-      );
       if (params.defaultExpansion !== undefined) {
-        await config.update("defaultExpansion", params.defaultExpansion);
+        await writeSetting("lineage.defaultExpansion", params.defaultExpansion);
       }
       this._panel?.webview.postMessage({
         command: "response",

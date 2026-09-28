@@ -3,16 +3,22 @@ import { readFileSync } from "fs";
 import path from "path";
 import {
   ConfigurationChangeEvent,
+  ConfigurationTarget,
   Uri,
   workspace,
   WorkspaceConfiguration,
 } from "vscode";
 import {
   CONFIGURATION_SECTION,
+  inspectSettings,
   onDidChangeSettings,
+  readFileAssociations,
+  readFolderFileAssociations,
   readSetting,
   SETTING_SCOPES,
   SettingsChange,
+  writeFolderFileAssociations,
+  writeSetting,
 } from "../../settings";
 import { esmDirname } from "../esmDirname";
 
@@ -65,6 +71,88 @@ describe("settings", () => {
     expect(getConfiguration).toHaveBeenLastCalledWith(
       CONFIGURATION_SECTION,
       undefined,
+    );
+  });
+
+  it("writes a window-scoped key, letting VS Code pick the target", async () => {
+    const update = jest.fn((..._args: unknown[]) => Promise.resolve());
+    const getConfiguration = jest
+      .spyOn(workspace, "getConfiguration")
+      .mockReturnValue({ update } as unknown as WorkspaceConfiguration);
+
+    await writeSetting("query.limit", 100);
+    await writeSetting("queryResults.theme", undefined);
+
+    expect(getConfiguration).toHaveBeenCalledWith(CONFIGURATION_SECTION);
+    expect(update).toHaveBeenNthCalledWith(1, "query.limit", 100);
+    expect(update).toHaveBeenNthCalledWith(2, "queryResults.theme", undefined);
+  });
+
+  it("inspects each key of the user, default and workspace layers", () => {
+    const effective: Record<string, unknown> = {
+      "query.limit": 100,
+      enabled: true,
+      staticAnalysis: "strict",
+      "lint.enabled": false,
+      projects: ["a", "b"],
+    };
+    jest.spyOn(workspace, "getConfiguration").mockImplementation(
+      (section?: string) =>
+        ({
+          inspect: (key: string) => {
+            expect(section).toBeUndefined();
+            expect(key).toBe(CONFIGURATION_SECTION);
+            return {
+              key,
+              globalValue: { "query.limit": 100, staticAnalysis: "strict" },
+              defaultValue: { "query.limit": 500, enabled: true },
+              workspaceValue: {
+                staticAnalysis: "strict",
+                "lint.enabled": false,
+                projects: ["a", "b"],
+              },
+            };
+          },
+          get: (key: string) => effective[key],
+        }) as unknown as WorkspaceConfiguration,
+    );
+
+    expect(inspectSettings()).toEqual([
+      { key: "query.limit", value: 100, overriddenIn: "user" },
+      { key: "staticAnalysis", value: "strict", overriddenIn: "workspace" },
+      { key: "query.limit", value: 100, overriddenIn: "user" },
+      { key: "enabled", value: true },
+      { key: "staticAnalysis", value: "strict", overriddenIn: "workspace" },
+      { key: "lint.enabled", value: false, overriddenIn: "workspace" },
+      { key: "projects", value: ["a", "b"], overriddenIn: "workspace" },
+    ]);
+  });
+
+  it("reads and writes files.associations for a folder", async () => {
+    const folder = Uri.file("/workspace/general");
+    const update = jest.fn((..._args: unknown[]) => Promise.resolve());
+    const getConfiguration = jest
+      .spyOn(workspace, "getConfiguration")
+      .mockReturnValue({
+        get: (_key: string, fallback: unknown) => fallback,
+        inspect: () => ({
+          key: "associations",
+          workspaceFolderValue: { "*.sql": "jinja-sql" },
+        }),
+        update,
+      } as unknown as WorkspaceConfiguration);
+
+    expect(readFileAssociations(folder)).toEqual({});
+    expect(readFolderFileAssociations(folder)).toEqual({
+      "*.sql": "jinja-sql",
+    });
+    await writeFolderFileAssociations(folder, { "a/*.sql": "jinja-sql" });
+
+    expect(getConfiguration).toHaveBeenCalledWith("files", folder);
+    expect(update).toHaveBeenCalledWith(
+      "associations",
+      { "a/*.sql": "jinja-sql" },
+      ConfigurationTarget.WorkspaceFolder,
     );
   });
 
