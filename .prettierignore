@@ -13,3 +13,4 @@ webview_panels/src/lib
 # Captured dbt stdout; byte-exact
 src/test/suite/fixtures
 eslint-suppressions.json
+.dependency-cruiser-known-violations.json

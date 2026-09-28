@@ -835,7 +835,9 @@
     "test:integration": "node out/test/integration/runTests.js",
     "package:vsix": "vsce package",
     "lint:prune": "eslint src scripts --prune-suppressions",
-    "lint:unused": "knip"
+    "lint:unused": "knip",
+    "lint:imports": "depcruise src --config .dependency-cruiser.cjs --ignore-known .dependency-cruiser-known-violations.json --output-type err",
+    "lint:imports:baseline": "depcruise src --config .dependency-cruiser.cjs --output-type baseline --output-to .dependency-cruiser-known-violations.json"
   },
   "devDependencies": {
     "@jest/globals": "^30.5.2",
@@ -852,10 +854,12 @@
     "@typescript-eslint/parser": "^8.70.0",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.0.0",
+    "dependency-cruiser": "^18.4.0",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.6",
     "eslint-plugin-sonarjs": "^4.2.1",
+    "fast-check": "^4.10.2",
     "glob": "^13.0.6",
     "istanbul-lib-coverage": "^3.2.2",
     "istanbul-lib-instrument": "^6.0.3",
