@@ -2,7 +2,7 @@ import { existsSync, FSWatcher, readFileSync, watch } from "fs";
 import { extname, isAbsolute, join } from "path";
 
 import { EventEmitter } from "events";
-import { ConfigurationChangeEvent, Disposable, Uri, workspace } from "vscode";
+import { Disposable, Uri } from "vscode";
 import { YAMLError } from "yaml";
 import {
   ChildrenParentParser,
@@ -39,13 +39,14 @@ import {
   UnitTestParser,
 } from "../dbt_integration";
 import {
+  DBT_PATH_SETTING,
   formatFusionExecutableResolutionFailure,
   FusionExecutable,
   FusionExecutableResolver,
   isFusionExecutable,
 } from "../fusion/fusionExecutable";
 import { FusionVersion } from "../fusion/fusionVersion";
-import { affectsFusionExecutablePath } from "../lsp/fusionClientSettings";
+import { onDidChangeSettings, SettingsChange } from "../settings";
 
 export type FusionCommandIntegrationFactory = (
   executable: FusionExecutable,
@@ -531,17 +532,16 @@ export class FusionProjectIntegration
     if (this.configurationSubscription) {
       return;
     }
-    this.configurationSubscription = workspace.onDidChangeConfiguration(
-      (event) => {
-        void this.enqueueExecutableRefresh(event).catch(() => undefined);
+    this.configurationSubscription = onDidChangeSettings(
+      [DBT_PATH_SETTING],
+      (change) => {
+        void this.enqueueExecutableRefresh(change).catch(() => undefined);
       },
     );
   }
 
-  private enqueueExecutableRefresh(
-    event: ConfigurationChangeEvent,
-  ): Promise<void> {
-    if (!affectsFusionExecutablePath(event, Uri.file(this.projectRoot))) {
+  private enqueueExecutableRefresh(change: SettingsChange): Promise<void> {
+    if (!change.affects(Uri.file(this.projectRoot))) {
       return this.refreshChain;
     }
     if (this.disposed) {

@@ -1,14 +1,11 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { readFileSync } from "fs";
 import path from "path";
+import { Uri, workspace, WorkspaceFolder } from "vscode";
+import { DBT_PATH_SETTING } from "../../fusion/fusionExecutable";
+import { STATIC_ANALYSIS_MODE_SETTING } from "../../fusion/staticAnalysisMode";
 import {
-  ConfigurationChangeEvent,
-  Uri,
-  workspace,
-  WorkspaceFolder,
-} from "vscode";
-import {
-  affectsFusionLaunchConfiguration,
+  FUSION_LAUNCH_SETTINGS,
   LINT_ENABLED_SETTING,
   LSP_COMPILED_OUTPUT_ENV,
   LSP_COMPILED_OUTPUT_SETTING,
@@ -16,8 +13,8 @@ import {
   PROFILES_DIR_SETTING,
   resolveFusionLaunchSettings,
   TARGET_SETTING,
+  TRACE_SERVER_SETTING,
 } from "../../lsp/fusionClientSettings";
-import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
 import { esmDirname } from "../esmDirname";
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
@@ -35,12 +32,9 @@ describe("fusionClientSettings", () => {
 
   it("resolves optional launch settings with defaults", () => {
     jest.spyOn(workspace, "getConfiguration").mockReturnValue({
-      get: jest.fn((key: string) => {
-        if (key === LINT_ENABLED_SETTING) {
-          return undefined;
-        }
-        return undefined;
-      }),
+      get: jest.fn((key: string) =>
+        key === LINT_ENABLED_SETTING ? true : undefined,
+      ),
     } as any);
 
     expect(
@@ -111,25 +105,18 @@ describe("fusionClientSettings", () => {
     delete process.env.FUSION_PROFILES;
   });
 
-  it("matches launch-affecting configuration keys per scope", () => {
-    const event = {
-      affectsConfiguration: jest.fn((key: string, uri?: Uri) => {
-        return (
-          key === `${CONFIGURATION_SECTION}.${TARGET_SETTING}` &&
-          uri?.fsPath === scope.fsPath
-        );
-      }),
-    } as unknown as ConfigurationChangeEvent;
-
-    expect(affectsFusionLaunchConfiguration(event, scope)).toBe(true);
-    expect(
-      affectsFusionLaunchConfiguration(
-        {
-          affectsConfiguration: () => false,
-        } as unknown as ConfigurationChangeEvent,
-        scope,
-      ),
-    ).toBe(false);
+  it("treats every launch input as launch-affecting", () => {
+    expect([...FUSION_LAUNCH_SETTINGS].sort()).toEqual(
+      [
+        DBT_PATH_SETTING,
+        STATIC_ANALYSIS_MODE_SETTING,
+        PROFILES_DIR_SETTING,
+        TARGET_SETTING,
+        LINT_ENABLED_SETTING,
+        TRACE_SERVER_SETTING,
+        LSP_COMPILED_OUTPUT_SETTING,
+      ].sort(),
+    );
   });
 
   it("matches the package manifest for launch settings", () => {

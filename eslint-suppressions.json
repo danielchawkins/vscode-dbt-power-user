@@ -103,9 +103,6 @@
     },
     "max-params": {
       "count": 1
-    },
-    "no-restricted-properties": {
-      "count": 1
     }
   },
   "src/dbt_client/dbtProject.ts": {
@@ -129,9 +126,6 @@
     },
     "no-restricted-imports": {
       "count": 1
-    },
-    "no-restricted-properties": {
-      "count": 4
     },
     "sonarjs/cognitive-complexity": {
       "count": 1
@@ -172,14 +166,6 @@
     },
     "max-params": {
       "count": 1
-    },
-    "no-restricted-properties": {
-      "count": 1
-    }
-  },
-  "src/dbt_client/vscodeConfiguration.ts": {
-    "no-restricted-properties": {
-      "count": 5
     }
   },
   "src/dbt_client/vscodeTerminal.ts": {
@@ -336,33 +322,13 @@
       "count": 3
     }
   },
-  "src/fusion/fusionExecutable.ts": {
-    "no-restricted-properties": {
-      "count": 1
-    }
-  },
   "src/fusion/schemaOrigin.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
     }
   },
-  "src/fusion/staticAnalysisMode.ts": {
-    "no-restricted-properties": {
-      "count": 1
-    }
-  },
   "src/inversify.config.ts": {
     "max-lines": {
-      "count": 1
-    }
-  },
-  "src/lsp/fusionClientPool.ts": {
-    "no-restricted-properties": {
-      "count": 1
-    }
-  },
-  "src/lsp/fusionClientSettings.ts": {
-    "no-restricted-properties": {
       "count": 1
     }
   },
@@ -385,19 +351,11 @@
       "count": 2
     }
   },
-  "src/projects/projectConfiguration.ts": {
-    "no-restricted-properties": {
-      "count": 1
-    }
-  },
   "src/projects/projectRegistry.ts": {
     "complexity": {
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "no-restricted-properties": {
       "count": 1
     },
     "sonarjs/cognitive-complexity": {
@@ -431,11 +389,6 @@
       "count": 1
     },
     "no-restricted-imports": {
-      "count": 1
-    }
-  },
-  "src/statusbar/deferToProductionStatusBar.ts": {
-    "no-restricted-properties": {
       "count": 1
     }
   },
@@ -522,9 +475,6 @@
       "count": 2
     },
     "complexity": {
-      "count": 1
-    },
-    "no-restricted-properties": {
       "count": 1
     },
     "sonarjs/cognitive-complexity": {

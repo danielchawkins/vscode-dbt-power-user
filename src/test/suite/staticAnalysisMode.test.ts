@@ -1,14 +1,8 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { readFileSync } from "fs";
 import path from "path";
+import { Uri, workspace, WorkspaceConfiguration } from "vscode";
 import {
-  ConfigurationChangeEvent,
-  Uri,
-  workspace,
-  WorkspaceConfiguration,
-} from "vscode";
-import {
-  affectsStaticAnalysisModeConfiguration,
   DEFAULT_STATIC_ANALYSIS_MODE,
   parseStaticAnalysisMode,
   resolveConfiguredStaticAnalysisMode,
@@ -16,7 +10,7 @@ import {
   staticAnalysisLaunchArgument,
   StaticAnalysisMode,
 } from "../../fusion/staticAnalysisMode";
-import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
+import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
@@ -58,18 +52,6 @@ describe("staticAnalysisMode", () => {
     expect(staticAnalysisLaunchArgument("off")).toBe("off");
     expect(staticAnalysisLaunchArgument("baseline")).toBe("baseline");
     expect(staticAnalysisLaunchArgument("strict")).toBe("strict");
-  });
-
-  it("delegates configuration changes to affectsConfiguration", () => {
-    const scope = scopeUri();
-    const affectsConfiguration = jest.fn().mockReturnValue(true);
-    const event = { affectsConfiguration } as ConfigurationChangeEvent;
-
-    expect(affectsStaticAnalysisModeConfiguration(event, scope)).toBe(true);
-    expect(affectsConfiguration).toHaveBeenCalledWith(
-      `${CONFIGURATION_SECTION}.${STATIC_ANALYSIS_MODE_SETTING}`,
-      scope,
-    );
   });
 
   it("matches the package manifest for staticAnalysisMode", () => {

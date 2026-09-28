@@ -15,8 +15,8 @@ import {
   DBTTerminal,
   readAndParseProjectConfig,
 } from "../dbt_integration";
+import { onDidChangeSettings } from "../settings";
 import {
-  CONFIGURATION_SECTION,
   PROJECTS_SETTING,
   resolveDeclaredProjectRoots,
 } from "./projectConfiguration";
@@ -65,12 +65,8 @@ export class ProjectRegistry implements Disposable {
     this.initialized = true;
     this.reconcile();
     this.subscriptions.push(
-      workspace.onDidChangeConfiguration((event) => {
-        if (
-          event.affectsConfiguration(
-            `${CONFIGURATION_SECTION}.${PROJECTS_SETTING}`,
-          )
-        ) {
+      onDidChangeSettings([PROJECTS_SETTING], (change) => {
+        if (change.affects()) {
           this.reconcile();
         }
       }),

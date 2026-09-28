@@ -1,10 +1,4 @@
-import {
-  ConfigurationChangeEvent,
-  Disposable,
-  Event,
-  EventEmitter,
-  workspace,
-} from "vscode";
+import { Disposable, Event, EventEmitter } from "vscode";
 import { DBTTerminal } from "../dbt_integration";
 import {
   ConfiguredFusionExecutableResolver,
@@ -13,8 +7,9 @@ import {
   isFusionExecutable,
 } from "../fusion/fusionExecutable";
 import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";
+import { onDidChangeSettings, SettingsChange } from "../settings";
 import {
-  affectsFusionLaunchConfiguration,
+  FUSION_LAUNCH_SETTINGS,
   resolveFusionLaunchSettings,
 } from "./fusionClientSettings";
 import {
@@ -61,8 +56,8 @@ export class FusionClientPoolImpl implements FusionClientPool {
       this.registry.onDidChangeProjects(() => {
         void this.enqueue(() => this.reconcile());
       }),
-      workspace.onDidChangeConfiguration((event) => {
-        void this.enqueue(() => this.handleConfigurationChange(event));
+      onDidChangeSettings(FUSION_LAUNCH_SETTINGS, (change) => {
+        void this.enqueue(() => this.handleConfigurationChange(change));
       }),
     );
   }
@@ -129,7 +124,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
   }
 
   private async handleConfigurationChange(
-    event: ConfigurationChangeEvent,
+    change: SettingsChange,
   ): Promise<void> {
     if (!this.initialized || this.disposed) {
       return;
@@ -137,7 +132,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
     let changed = false;
     for (const project of this.registry.projects) {
-      if (!affectsFusionLaunchConfiguration(event, project.root)) {
+      if (!change.affects(project.root)) {
         continue;
       }
       const key = projectKey(project);

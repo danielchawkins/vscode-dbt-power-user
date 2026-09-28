@@ -32,10 +32,10 @@ import {
   describeCompileOutcome,
 } from "../fusion/lineageDiagnostics";
 import { optInLines, ProjectOptIns } from "../lsp/fusionStatus";
-import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { DbtLineageService } from "../services/dbtLineageService";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
+import { CONFIGURATION_SECTION } from "../settings";
 import { AltimateWebviewProvider } from "./altimateWebviewProvider";
 import { LineagePanelView } from "./lineagePanel";
 

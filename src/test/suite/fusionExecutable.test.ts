@@ -15,7 +15,7 @@ import {
   FusionExecutable,
 } from "../../fusion/fusionExecutable";
 import { FusionVersionVerdict } from "../../fusion/fusionVersion";
-import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
+import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");

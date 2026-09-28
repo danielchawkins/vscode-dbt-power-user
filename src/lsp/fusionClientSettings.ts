@@ -1,14 +1,9 @@
 import { homedir } from "os";
 import * as path from "path";
-import {
-  ConfigurationChangeEvent,
-  Uri,
-  workspace,
-  WorkspaceFolder,
-} from "vscode";
+import { Uri, workspace, WorkspaceFolder } from "vscode";
 import { DBT_PATH_SETTING } from "../fusion/fusionExecutable";
 import { STATIC_ANALYSIS_MODE_SETTING } from "../fusion/staticAnalysisMode";
-import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
+import { readSetting, SettingKey } from "../settings";
 import { resolveSettingsVariables } from "../utils";
 
 export const PROFILES_DIR_SETTING = "profilesDir";
@@ -19,7 +14,6 @@ export const LSP_COMPILED_OUTPUT_SETTING = "lsp.compiledOutput";
 /** Overrides `fusionPowerUser.lsp.compiledOutput` for every project in the extension host's environment. */
 export const LSP_COMPILED_OUTPUT_ENV = "FUSION_POWER_USER_LSP_COMPILED_OUTPUT";
 
-const DEFAULT_LINT_ENABLED = true;
 const DEFAULT_TRACE_SERVER = "off";
 
 export const TRACE_SERVER_LEVELS = ["off", "messages", "verbose"] as const;
@@ -34,7 +28,8 @@ export const LSP_COMPILED_OUTPUTS = ["separate", "shared"] as const;
 export type LspCompiledOutput = (typeof LSP_COMPILED_OUTPUTS)[number];
 const DEFAULT_LSP_COMPILED_OUTPUT: LspCompiledOutput = "separate";
 
-const LAUNCH_SETTING_KEYS = [
+/** Settings whose change restarts a project's language server. */
+export const FUSION_LAUNCH_SETTINGS: readonly SettingKey[] = [
   DBT_PATH_SETTING,
   STATIC_ANALYSIS_MODE_SETTING,
   PROFILES_DIR_SETTING,
@@ -42,7 +37,7 @@ const LAUNCH_SETTING_KEYS = [
   LINT_ENABLED_SETTING,
   TRACE_SERVER_SETTING,
   LSP_COMPILED_OUTPUT_SETTING,
-] as const;
+];
 
 export interface FusionLaunchSettings {
   readonly profilesDir: string | undefined;
@@ -92,24 +87,22 @@ export function resolveFusionLaunchSettings(
     deps.getWorkspaceFolder ?? ((uri) => workspace.getWorkspaceFolder(uri));
   const getUserHome = deps.getUserHome ?? homedir;
   const folder = getWorkspaceFolder(scope);
-  const config = workspace.getConfiguration(CONFIGURATION_SECTION, scope);
 
   const profilesDir = resolveOptionalPath(
-    config.get<string>(PROFILES_DIR_SETTING),
+    readSetting(PROFILES_DIR_SETTING, scope),
     folder,
     getUserHome(),
   );
-  const target = config.get<string>(TARGET_SETTING)?.trim() || undefined;
-  const lintEnabled =
-    config.get<boolean>(LINT_ENABLED_SETTING) ?? DEFAULT_LINT_ENABLED;
+  const target = readSetting(TARGET_SETTING, scope)?.trim() || undefined;
+  const lintEnabled = readSetting(LINT_ENABLED_SETTING, scope);
   const traceServer = parseTraceServerLevel(
-    config.get<unknown>(TRACE_SERVER_SETTING),
+    readSetting(TRACE_SERVER_SETTING, scope),
   );
   const lspCompiledOutput =
     parseLspCompiledOutput(
       (deps.env ?? process.env)[LSP_COMPILED_OUTPUT_ENV],
     ) ??
-    parseLspCompiledOutput(config.get<unknown>(LSP_COMPILED_OUTPUT_SETTING)) ??
+    parseLspCompiledOutput(readSetting(LSP_COMPILED_OUTPUT_SETTING, scope)) ??
     DEFAULT_LSP_COMPILED_OUTPUT;
 
   return { profilesDir, target, lintEnabled, traceServer, lspCompiledOutput };
@@ -146,23 +139,4 @@ export function fusionLogLevelArgument(
     return "trace";
   }
   return undefined;
-}
-
-export function affectsFusionLaunchConfiguration(
-  event: ConfigurationChangeEvent,
-  scope: Uri,
-): boolean {
-  return LAUNCH_SETTING_KEYS.some((key) =>
-    event.affectsConfiguration(`${CONFIGURATION_SECTION}.${key}`, scope),
-  );
-}
-
-export function affectsFusionExecutablePath(
-  event: ConfigurationChangeEvent,
-  scope: Uri,
-): boolean {
-  return event.affectsConfiguration(
-    `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}`,
-    scope,
-  );
 }

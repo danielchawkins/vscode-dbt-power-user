@@ -25,9 +25,9 @@ import {
   RESOURCE_TYPE_MODEL,
   RunResultsEventData,
 } from "../../dbt_integration";
-import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
 import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
+import { CONFIGURATION_SECTION } from "../../settings";
 describe("DBTProject Test Suite", () => {
   let mockTerminal: jest.Mocked<DBTTerminal>;
   let mockSharedStateService: jest.Mocked<SharedStateService>;

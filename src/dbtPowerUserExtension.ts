@@ -16,11 +16,11 @@ import { registerFusionClientDiagnostics } from "./lsp/fusionClientDiagnostics";
 import { FusionClientPool } from "./lsp/fusionClientPool";
 import { FusionStatus } from "./lsp/fusionStatus";
 import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
-import { CONFIGURATION_SECTION } from "./projects/projectConfiguration";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
 import { ColumnLineageRefreshController } from "./services/columnLineageRefreshController";
+import { readSetting } from "./settings";
 import { StatusBars } from "./statusbar";
 import { TreeviewProviders } from "./treeview_provider";
 import { WebviewViewProviders } from "./webview_provider";
@@ -120,12 +120,7 @@ export class DBTPowerUserExtension implements Disposable {
       const folders = workspace.workspaceFolders ?? [];
       if (
         folders.length > 0 &&
-        folders.every(
-          (folder) =>
-            !workspace
-              .getConfiguration(CONFIGURATION_SECTION, folder.uri)
-              .get("enabled", true),
-        )
+        folders.every((folder) => !readSetting("enabled", folder.uri))
       ) {
         return;
       }

@@ -21,9 +21,9 @@ import {
   ExecuteSQLResult,
   QueryExecution,
 } from "../dbt_integration";
-import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
+import { CONFIGURATION_SECTION } from "../settings";
 import { getFormattedDateTime, getStringSizeInMb } from "../utils";
 import {
   AltimateWebviewProvider,

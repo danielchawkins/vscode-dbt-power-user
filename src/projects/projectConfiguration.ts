@@ -1,9 +1,9 @@
 import { existsSync } from "fs";
 import * as path from "path";
-import { Uri, workspace, WorkspaceFolder } from "vscode";
+import { Uri, WorkspaceFolder } from "vscode";
 import { DBT_PROJECT_FILE } from "../dbt_integration";
+import { readSetting } from "../settings";
 
-export const CONFIGURATION_SECTION = "fusionPowerUser";
 export const PROJECTS_SETTING = "projects";
 
 export type ProjectConfigurationProblem =
@@ -24,9 +24,7 @@ export interface DeclaredProjectRoots {
 export function resolveDeclaredProjectRoots(
   folder: WorkspaceFolder,
 ): DeclaredProjectRoots {
-  const value = workspace
-    .getConfiguration(CONFIGURATION_SECTION, folder.uri)
-    .get<unknown>(PROJECTS_SETTING, []);
+  const value: unknown = readSetting(PROJECTS_SETTING, folder.uri);
 
   if (!Array.isArray(value) || value.length === 0) {
     return {
