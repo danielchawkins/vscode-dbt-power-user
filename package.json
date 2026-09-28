@@ -832,7 +832,7 @@
     "check:lockfile:webviews": "lockfile-lint --path webview_panels/package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
-    "test:integration": "node out/test/integration/runTests.js",
+    "test:integration": "node scripts/test/run-integration.mjs",
     "package:vsix": "vsce package",
     "lint:prune": "eslint src scripts --prune-suppressions",
     "lint:unused": "knip",
@@ -852,6 +852,7 @@
     "@types/which": "^3.0.4",
     "@typescript-eslint/eslint-plugin": "^8.70.0",
     "@typescript-eslint/parser": "^8.70.0",
+    "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.0.0",
     "dependency-cruiser": "^18.4.0",
@@ -888,7 +889,7 @@
     "uuid": "^14.0.0",
     "serialize-javascript": "^7.0.0",
     "diff": "^8.0.3",
-    "brace-expansion": "^2.0.2"
+    "brace-expansion@<2.0.2": "^2.0.2"
   },
   "packageManager": "npm@11.19.0",
   "allowScripts": {

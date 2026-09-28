@@ -28,7 +28,7 @@ suite("Column lineage read through the pinned dbt", function () {
       return;
     }
     projectDir = vscode.workspace.workspaceFolders![0].uri.fsPath;
-    // The same executable the extension launches; runTests sets it from FPU_INTEGRATION_DBT_PATH.
+    // The same executable the extension launches; the runner sets it from FPU_INTEGRATION_DBT_PATH.
     dbtPath =
       vscode.workspace
         .getConfiguration("fusionPowerUser")
