@@ -42,7 +42,12 @@ export function buildPerspectiveTableInit(
   columnNames: string[],
   columnTypes: (string | null | undefined)[],
   data: TableData,
-): { schema: Record<string, string>; rows: Record<string, unknown>[] } {
+): {
+  schema: Record<string, string>;
+  rows: Record<string, unknown>[];
+  /** Result column order; an object's key order moves integer-like names first, so the schema cannot carry it. */
+  columns: string[];
+} {
   const rows = Array.isArray(data) ? data : [];
   const schema: Record<string, string> = {};
   columnNames.forEach((name, i) => {
@@ -50,6 +55,7 @@ export function buildPerspectiveTableInit(
   });
   return {
     schema,
+    columns: [...columnNames],
     rows: rows.map((row) =>
       Object.fromEntries(
         columnNames.map((name) => [

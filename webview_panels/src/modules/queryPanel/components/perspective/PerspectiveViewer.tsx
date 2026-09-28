@@ -88,7 +88,7 @@ const PerspectiveViewer = ({
   const config: ViewerConfigUpdate = {
     theme: perspectiveTheme,
     title: "query result",
-    columns: [], // reset columns
+    columns: [...columnNames],
     columns_config: columnsConfig,
     settings: false,
     plugin_config: { editable: false },
