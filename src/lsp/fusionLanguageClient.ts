@@ -1,4 +1,3 @@
-import { spawn, type ChildProcess } from "child_process";
 import { createHash } from "crypto";
 import { existsSync, realpathSync } from "fs";
 import * as path from "path";
@@ -20,6 +19,7 @@ import {
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
 import { DBTTerminal } from "../dbt_integration";
 import { FusionExecutable } from "../fusion/fusionExecutable";
+import { spawnProcess, type ChildProcess } from "../fusion/process";
 import {
   resolveConfiguredStaticAnalysisMode,
   staticAnalysisLaunchArgument,
@@ -651,13 +651,12 @@ class FusionLanguageClientImpl implements FusionClient {
   private async startTransport(): Promise<void> {
     const listen = this.deps.listenForServer ?? listenForServer;
     const accept = this.deps.acceptWithProcessExit ?? acceptWithProcessExit;
-    const spawnProcess =
+    const spawnServer =
       this.deps.spawnProcess ??
       ((executable, args, env, cwd) =>
-        spawn(executable, args, {
+        spawnProcess(executable, args, {
           env,
           cwd,
-          shell: false,
           stdio: ["ignore", "pipe", "pipe"],
         }));
 
@@ -694,7 +693,7 @@ class FusionLanguageClientImpl implements FusionClient {
         ...lspCompiledOutputEnv(launch.lspCompiledOutput),
       };
 
-      const child = spawnProcess(
+      const child = spawnServer(
         this.options.executable.path,
         args,
         env,

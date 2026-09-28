@@ -6,7 +6,6 @@ import {
   it,
   jest,
 } from "@jest/globals";
-import type { ChildProcess } from "child_process";
 import { EventEmitter } from "events";
 import { PassThrough } from "stream";
 import {
@@ -17,6 +16,7 @@ import {
 } from "vscode";
 import { LanguageClientOptions, State } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
+import type { ChildProcess } from "../../fusion/process";
 import {
   fusionLogLevelArgument,
   parseTraceServerLevel,
