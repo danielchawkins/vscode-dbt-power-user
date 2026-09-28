@@ -5,6 +5,65 @@ const prettier = require("eslint-plugin-prettier/recommended");
 
 // Violations present when a rule was introduced live in eslint-suppressions.json; new ones fail `just lint`.
 // Fixing one requires `npm run lint:prune` so the baseline only ever shrinks.
+
+// Flat config replaces rule options per file, so an exemption re-sets the whole rule minus its own entries.
+const SETTINGS_MESSAGE = "Read settings through src/settings/.";
+const PROCESS_MESSAGE = "Spawn processes through src/fusion/process.ts.";
+const WRITE_MESSAGE = "Change user files through WorkspaceEdit; fs writes belong in the extension's storage module.";
+const FS_WRITES = [
+  "writeFile",
+  "writeFileSync",
+  "appendFile",
+  "appendFileSync",
+  "rm",
+  "rmSync",
+  "rmdir",
+  "rmdirSync",
+  "unlink",
+  "unlinkSync",
+  "rename",
+  "renameSync",
+  "copyFile",
+  "copyFileSync",
+  "cp",
+  "cpSync",
+  "createWriteStream",
+  "truncate",
+  "truncateSync",
+  "mkdir",
+  "mkdirSync",
+  "symlink",
+  "symlinkSync",
+];
+const SETTINGS_NAMES = "/^(getConfiguration|onDidChangeConfiguration)$/";
+const settingsProperties = ["getConfiguration", "onDidChangeConfiguration"].map((property) => ({
+  object: "workspace",
+  property,
+  message: SETTINGS_MESSAGE,
+}));
+const fsWriteProperties = FS_WRITES.map((property) => ({ object: "fs", property, message: WRITE_MESSAGE }));
+const processImports = ["child_process", "node:child_process"].map((name) => ({ name, message: PROCESS_MESSAGE }));
+const fsWriteImports = [
+  ...["fs", "node:fs"].map((name) => ({ name, importNames: ["default", "promises", ...FS_WRITES] })),
+  ...["fs/promises", "node:fs/promises"].map((name) => ({ name, importNames: FS_WRITES })),
+].map((path) => ({ ...path, message: WRITE_MESSAGE }));
+const settingsSyntax = [
+  `MemberExpression[object.type='MemberExpression'][object.property.name='workspace'][property.name=${SETTINGS_NAMES}]`,
+  `MemberExpression[object.name='workspace'][computed=true][property.value=${SETTINGS_NAMES}]`,
+  `VariableDeclarator[init.name='workspace'] > ObjectPattern > Property[key.name=${SETTINGS_NAMES}]`,
+  `VariableDeclarator[init.property.name='workspace'] > ObjectPattern > Property[key.name=${SETTINGS_NAMES}]`,
+].map((selector) => ({ selector, message: SETTINGS_MESSAGE }));
+const processSyntax = [
+  "ImportExpression[source.value=/^(node:)?child_process$/]",
+  "CallExpression[callee.name='require'][arguments.0.value=/^(node:)?child_process$/]",
+].map((selector) => ({ selector, message: PROCESS_MESSAGE }));
+const fsRequireSyntax = [
+  {
+    selector: "CallExpression[callee.name='require'][arguments.0.value=/^(node:)?(fs|fs\\/promises)$/]",
+    message: WRITE_MESSAGE,
+  },
+];
+
 module.exports = [
   { ignores: ["out/**", "dist/**", "webview_panels/**", "src/test/fixtures/**", "**/*.d.ts"] },
   typescriptEslint.configs["flat/base"],
@@ -42,6 +101,25 @@ module.exports = [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
       ],
+      // Confinement: settings reads, process spawning and user-file writes each have one home.
+      "no-restricted-properties": ["error", ...settingsProperties, ...fsWriteProperties],
+      "no-restricted-syntax": ["error", ...settingsSyntax, ...processSyntax, ...fsRequireSyntax],
+      "@typescript-eslint/no-require-imports": "error",
+      "no-restricted-imports": ["error", { paths: [...processImports, ...fsWriteImports] }],
+    },
+  },
+  {
+    files: ["src/settings/**/*.ts"],
+    rules: {
+      "no-restricted-properties": ["error", ...fsWriteProperties],
+      "no-restricted-syntax": ["error", ...processSyntax, ...fsRequireSyntax],
+    },
+  },
+  {
+    files: ["src/fusion/process.ts"],
+    rules: {
+      "no-restricted-syntax": ["error", ...settingsSyntax, ...fsRequireSyntax],
+      "no-restricted-imports": ["error", { paths: fsWriteImports }],
     },
   },
   {
@@ -52,6 +130,10 @@ module.exports = [
       "max-lines-per-function": "off",
       "sonarjs/no-identical-functions": "off",
       "@typescript-eslint/no-explicit-any": "off",
+      "no-restricted-properties": "off",
+      "no-restricted-syntax": "off",
+      "no-restricted-imports": "off",
+      "@typescript-eslint/no-require-imports": "off",
     },
   },
 ];
