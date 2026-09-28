@@ -2,13 +2,12 @@ import { describe, expect, it } from "@jest/globals";
 import { readFileSync } from "fs";
 import path from "path";
 import {
-  affectsFusionLaunchConfiguration,
   fusionLogLevelArgument,
   parseTraceServerLevel,
   TRACE_SERVER_LEVELS,
   TRACE_SERVER_SETTING,
 } from "../../lsp/fusionClientSettings";
-import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
+import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
@@ -42,17 +41,5 @@ describe("fusion trace settings", () => {
     expect(fusionLogLevelArgument("off")).toBeUndefined();
     expect(fusionLogLevelArgument("messages")).toBe("debug");
     expect(fusionLogLevelArgument("verbose")).toBe("trace");
-  });
-
-  it("treats traceServer changes as launch-affecting", () => {
-    expect(
-      affectsFusionLaunchConfiguration(
-        {
-          affectsConfiguration: (key: string) =>
-            key === `${CONFIGURATION_SECTION}.${TRACE_SERVER_SETTING}`,
-        } as any,
-        { fsPath: "/workspace/general" } as any,
-      ),
-    ).toBe(true);
   });
 });

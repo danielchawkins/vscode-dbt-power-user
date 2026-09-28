@@ -3,7 +3,7 @@ import { homedir } from "os";
 import * as path from "path";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
 import which from "which";
-import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
+import { readSetting } from "../settings";
 import { resolveSettingsVariables } from "../utils";
 import {
   FusionVersion,
@@ -166,10 +166,7 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
   constructor(deps: FusionExecutableResolverDependencies = {}) {
     this.getConfiguredPath =
       deps.getConfiguredPath ??
-      ((scope) =>
-        workspace
-          .getConfiguration(CONFIGURATION_SECTION, scope)
-          .get<string>(DBT_PATH_SETTING));
+      ((scope) => readSetting(DBT_PATH_SETTING, scope));
     this.getWorkspaceFolder =
       deps.getWorkspaceFolder ??
       ((scope) => workspace.getWorkspaceFolder(scope));

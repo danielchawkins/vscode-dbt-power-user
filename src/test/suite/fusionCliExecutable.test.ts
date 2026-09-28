@@ -28,7 +28,7 @@ import {
   DBT_PATH_SETTING,
   FusionExecutable,
 } from "../../fusion/fusionExecutable";
-import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
+import { CONFIGURATION_SECTION } from "../../settings";
 
 const ENV_MARKER = "FUSION_PU_CLI_ENV";
 

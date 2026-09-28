@@ -28,11 +28,11 @@ import {
   FusionClientFactory,
   FusionClientOptions,
 } from "../../lsp/fusionLanguageClient";
-import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
 import {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/projectRegistry";
+import { CONFIGURATION_SECTION } from "../../settings";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
 const folder: WorkspaceFolder = {

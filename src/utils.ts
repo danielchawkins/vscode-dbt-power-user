@@ -15,7 +15,7 @@ import {
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
 } from "./dbt_integration";
-import { CONFIGURATION_SECTION } from "./projects/projectConfiguration";
+import { readSetting } from "./settings";
 
 export const isEnclosedWithinCodeBlock = (
   document: TextDocument,
@@ -172,9 +172,7 @@ export const isColumnNameEqual = (
 };
 
 export const isQuotedIdentifier = (columnName: string, adapter: string) => {
-  const regexFromConfig = workspace
-    .getConfiguration(CONFIGURATION_SECTION)
-    .get<string>("unquotedCaseInsensitiveIdentifierRegex", "");
+  const regexFromConfig = readSetting("unquotedCaseInsensitiveIdentifierRegex");
   if (regexFromConfig) {
     console.log(
       "[isQuotedIdentifier] using user provider regex for",

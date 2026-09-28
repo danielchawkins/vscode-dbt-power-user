@@ -5,11 +5,10 @@ import {
   StatusBarItem,
   TextEditor,
   window,
-  workspace,
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../dbt_integration";
-import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
+import { onDidChangeSettings } from "../settings";
 
 export class DeferToProductionStatusBar implements Disposable {
   readonly statusBar: StatusBarItem = window.createStatusBarItem(
@@ -24,18 +23,11 @@ export class DeferToProductionStatusBar implements Disposable {
     private dbtTerminal: DBTTerminal,
   ) {
     this.disposables.push(
-      workspace.onDidChangeConfiguration(
-        async (e) => {
-          if (
-            !e.affectsConfiguration(`${CONFIGURATION_SECTION}.defer.perProject`)
-          ) {
-            return;
-          }
+      onDidChangeSettings(["defer.perProject"], (change) => {
+        if (change.affects()) {
           this.updateStatusBar();
-        },
-        this,
-        this.disposables,
-      ),
+        }
+      }),
     );
     this.disposables.push(
       window.onDidChangeActiveTextEditor(

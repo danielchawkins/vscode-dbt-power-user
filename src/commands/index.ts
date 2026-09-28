@@ -32,10 +32,10 @@ import {
   MANIFEST_FILE,
   RunModelType,
 } from "../dbt_integration";
-import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
+import { CONFIGURATION_SECTION } from "../settings";
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { deepEqual, getFirstWorkspacePath } from "../utils";
 import { ProjectSetupCommands } from "./projectSetupCommands";

@@ -1,6 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
-import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
+import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");

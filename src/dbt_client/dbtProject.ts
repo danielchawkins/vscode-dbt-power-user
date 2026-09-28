@@ -56,9 +56,9 @@ import {
   SchemaOriginStatus,
 } from "../fusion/schemaOrigin";
 import { ModelNode } from "../local/lineageTypes";
-import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
+import { readSetting } from "../settings";
 import {
   getColumnNameByCase,
   getProjectRelativePath,
@@ -78,13 +78,6 @@ import {
 } from "./fusionProjectIntegration";
 interface FileNameTemplateMap {
   [key: string]: string;
-}
-
-/** Settings shape for `fusionPowerUser.defer.perProject`. */
-interface DeferSettingsEntry {
-  deferToProduction: boolean;
-  favorState: boolean;
-  manifestPathForDeferral?: string;
 }
 
 interface JsonObj {
@@ -791,9 +784,7 @@ export class DBTProject implements Disposable {
       },
       async () => {
         try {
-          const prefix = workspace
-            .getConfiguration(CONFIGURATION_SECTION)
-            .get<string>("generateModel.prefix", "base");
+          const prefix = readSetting("generateModel.prefix");
 
           // Map setting to fileName
           const fileNameTemplateMap: FileNameTemplateMap = {
@@ -806,12 +797,9 @@ export class DBTProject implements Disposable {
           // Default filename template
           let fileName = `${prefix}_${sourceName}_${tableName}`;
 
-          const fileNameTemplate = workspace
-            .getConfiguration(CONFIGURATION_SECTION)
-            .get<string>(
-              "generateModel.fileNameTemplate",
-              "{prefix}_{sourceName}_{tableName}",
-            );
+          const fileNameTemplate = readSetting(
+            "generateModel.fileNameTemplate",
+          );
 
           // Parse setting to fileName
           if (fileNameTemplate in fileNameTemplateMap) {
@@ -863,9 +851,7 @@ export class DBTProject implements Disposable {
   }
 
   async executeSQLOnQueryPanel(query: string, modelName: string) {
-    const limit = workspace
-      .getConfiguration(CONFIGURATION_SECTION)
-      .get<number>("query.limit", 500);
+    const limit = readSetting("query.limit");
     return this.executeSQLWithLimitOnQueryPanel(query, modelName, limit);
   }
 
@@ -1174,9 +1160,8 @@ export class DBTProject implements Disposable {
 
   private retrieveDeferConfigFromSettings(): DeferConfig | undefined {
     const relativePath = getProjectRelativePath(this.projectRoot);
-    const currentConfig: Record<string, DeferSettingsEntry> = workspace
-      .getConfiguration(CONFIGURATION_SECTION, this.projectRoot)
-      .get("defer.perProject", {});
+    const currentConfig =
+      readSetting("defer.perProject", this.projectRoot) ?? {};
     if (currentConfig[relativePath]) {
       const config = currentConfig[relativePath];
       const resolvedManifestPath = config.manifestPathForDeferral

@@ -15,7 +15,7 @@ import {
   workspace,
 } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
-import { CONFIGURATION_SECTION } from "../../projects/projectConfiguration";
+import { CONFIGURATION_SECTION } from "../../settings";
 
 const UPSTREAM_EXTENSION = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_ACTION = "Uninstall Power User";

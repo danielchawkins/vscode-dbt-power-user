@@ -7,10 +7,10 @@ import {
   WorkspaceFolder,
 } from "vscode";
 import {
-  CONFIGURATION_SECTION,
   PROJECTS_SETTING,
   resolveDeclaredProjectRoots,
 } from "../../projects/projectConfiguration";
+import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 
 const fixturesRoot = path.resolve(esmDirname(import.meta.url), "../fixtures");
