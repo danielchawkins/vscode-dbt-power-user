@@ -128,10 +128,11 @@ Serial PRs:
 5. **Names**: `DBTProject` → `Project`, `newLineagePanel` → `lineagePanel`, `AltimateWebviewProvider` → `PanelHost` (fully built in R6), Project Context → Current Project. The remaining Altimate references (host audit §1) go in the same PR. Exit: `grep -ci altimate src` and `grep -cw DBTProject src` are 0.
 6. **Manifest parsers** move from `src/dbt_integration/parsers/` to `core/manifest/`. Exit: the directory is gone and the R1.5 graph properties pass from the new location.
 7. **Evidence tasks**, each an experiment under `scripts/evidence/experiments/` with a decision rule fixed before it runs:
-   - Strict without authentication on a fresh machine: if it still works, no change; if it fails, column lineage reports `strictUnavailable` (already implemented) and the docs say so.
-   - View contents after a selective compile: if views are populated, refresh on save uses `-s +<model>` alone; if not, it adds the views to the selection.
-   - Downstream `select *` children after `-s +<model>`: if a new column reaches them, keep `+<model>`; if not, use `+<model>+`.
-   - Whether Fusion registers file watching with the client (`client/registerCapability` for `workspace/didChangeWatchedFiles`): if it does, the extension's source watchers are deleted; if not, the client's `synchronize.fileEvents` carries them per project instead of hand-written watchers.
+   - Strict without authentication on a fresh machine (`d1-strict-fresh-machine`): works online; no change.
+   - Selection for refresh on save (`d2-view-after-plus-model`, `d3-star-child-plus-model`): a selective compile leaves `column_lineage` holding only the selected models, and a new column reaches `select *` children only with `+<model>+`, which still drops unrelated models. Refresh on save therefore compiles the whole project. Its cost is measured before step 3 with a new script under `scripts/benchmark/`, because the existing ones measure only build, payload and host runtime.
+   - File watching (`d4-lsp-watch-registration`): Fusion registers `workspace/didChangeWatchedFiles` for `**/*` with the capabilities vscode-languageclient sends, so the language server gets file events through its own registration and the extension forwards none. The manifest rebuild trigger stays: in step 3, `src/projects/manifest.ts` replaces `FusionProjectIntegration`'s recursive `fs.watch` watchers with one `workspace.createFileSystemWatcher` per Declared Project.
+
+   Evidence: [section 8 of the evidence README](../research/evidence/README.md#8-project-model-decisions-experiments-d1d4).
 
 Verify: the host audit's call-path count re-measured and recorded; changing target in settings updates status, restarts the client, and applies to the next CLI command with no reload (integration test); the ESLint baseline shrinks by the deleted files' entries.
 
