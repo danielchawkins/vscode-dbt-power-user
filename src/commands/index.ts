@@ -1,6 +1,6 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import { inject } from "inversify";
-import { join } from "path";
+import { dirname, join } from "path";
 import {
   CancellationTokenSource,
   CodeLens,
@@ -22,6 +22,7 @@ import {
   CteInfo,
 } from "../code_lens_provider/cteCodeLensProvider";
 import { SqlPreviewContentProvider } from "../content_provider/sqlPreviewContentProvider";
+import { DBT_PROJECT_FILE, readDbtProjectFile } from "../core/project";
 import { CteProfilerDecorationProvider } from "../cte_profiler/cteProfilerDecorationProvider";
 import { CteProfilerService } from "../cte_profiler/cteProfilerService";
 import { DBTProject } from "../dbt_client/dbtProject";
@@ -589,14 +590,20 @@ export class VSCodeCommands implements Disposable {
       this.diagnosticsOutputChannel.logLine(line);
     }
 
-    const dbtProjectFilePath = project.getDBTProjectFilePath();
-    if (existsSync(dbtProjectFilePath)) {
+    const projectFile = readDbtProjectFile(
+      dirname(project.getDBTProjectFilePath()),
+    );
+    if (projectFile.kind === "unreadable") {
+      throw new Error(projectFile.message);
+    }
+    if (projectFile.kind !== "missing") {
       this.diagnosticsOutputChannel.logNewLine();
       this.diagnosticsOutputChannel.logNewLine();
-      this.diagnosticsOutputChannel.logLine("dbt_project.yml");
+      this.diagnosticsOutputChannel.logLine(DBT_PROJECT_FILE);
       this.diagnosticsOutputChannel.logHorizontalRule();
-      const fileContent = readFileSync(dbtProjectFilePath, "utf8");
-      this.diagnosticsOutputChannel.logLine(fileContent.replace(/\n/g, "\r\n"));
+      this.diagnosticsOutputChannel.logLine(
+        projectFile.text.replace(/\n/g, "\r\n"),
+      );
       this.diagnosticsOutputChannel.logHorizontalRule();
     }
 

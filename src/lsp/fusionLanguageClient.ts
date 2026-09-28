@@ -17,13 +17,13 @@ import {
   type ServerOptions,
 } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
+import { type StaticAnalysisMode } from "../core/project";
 import { DBTTerminal } from "../dbt_integration";
 import { FusionExecutable } from "../fusion/fusionExecutable";
 import { spawnProcess, type ChildProcess } from "../fusion/process";
 import {
   resolveConfiguredStaticAnalysisMode,
   staticAnalysisLaunchArgument,
-  type StaticAnalysisMode,
 } from "../fusion/staticAnalysisMode";
 import { DeclaredProject } from "../projects/projectRegistry";
 import {

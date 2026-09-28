@@ -3,6 +3,12 @@ import { homedir } from "os";
 import path from "path";
 import { parse } from "yaml";
 
+import {
+  DBT_PROJECT_FILE,
+  declaredProjectName,
+  readDbtProjectFile,
+  resolveProjectPaths,
+} from "../core/project";
 import { CommandProcessResult } from "./commandProcessExecution";
 import { DBTBaseProjectIntegration } from "./dbtBaseProjectIntegration";
 import {
@@ -12,17 +18,9 @@ import {
   DBTProjectIntegration,
   DeferConfig,
   QueryExecution,
-  readAndParseProjectConfig,
 } from "./dbtIntegration";
 import { DBTDiagnosticData } from "./diagnostics";
-import {
-  Catalog,
-  DBColumn,
-  DBT_PROJECT_FILE,
-  DBTNode,
-  NodeMetaData,
-} from "./domain";
-import { resolveProjectPaths } from "./projectPaths";
+import { Catalog, DBColumn, DBTNode, NodeMetaData } from "./domain";
 import { DBTTerminal } from "./terminal";
 
 export class DBTFusionCommandProjectIntegration
@@ -91,21 +89,26 @@ export class DBTFusionCommandProjectIntegration
   }
 
   protected async initializePaths() {
-    const paths = resolveProjectPaths(this.projectRoot);
+    const file = readDbtProjectFile(this.projectRoot);
+    const paths = resolveProjectPaths(this.projectRoot, file.config);
     this.targetPath = paths.targetPath;
     this.modelPaths = paths.modelPaths;
     this.seedPaths = paths.seedPaths;
     this.macroPaths = paths.macroPaths;
     this.packagesInstallPath = paths.packagesInstallPath;
-    try {
-      const projectConfig = readAndParseProjectConfig(this.projectRoot);
-      this.projectName = projectConfig.name;
-    } catch (error) {
+    const name = declaredProjectName(file.config);
+    if (name) {
+      this.projectName = name;
+    } else {
       this.terminal.warn(
         "DBTFusionProjectNameFromConfigExceptionError",
-        "project name could not be read from dbt_project.yml, ignoring",
+        `project name could not be read from ${DBT_PROJECT_FILE}, ignoring`,
         true,
-        error,
+        file.kind === "parsed"
+          ? "no name key"
+          : file.kind === "missing"
+            ? "file is missing"
+            : file.message,
       );
     }
 
@@ -185,8 +188,9 @@ export class DBTFusionCommandProjectIntegration
         return [];
       }
 
-      const projectConfig = readAndParseProjectConfig(this.projectRoot);
-      const profileName = projectConfig.profile || this.projectName;
+      const profile = readDbtProjectFile(this.projectRoot).config.profile;
+      const profileName =
+        typeof profile === "string" && profile ? profile : this.projectName;
 
       const profilesContent = readFileSync(profilesPath, "utf8");
       const profilesData = parse(profilesContent);
@@ -805,7 +809,11 @@ export class DBTFusionCommandProjectIntegration
     sources?: Record<string, unknown>;
   } | null {
     const manifestPath = path.join(
-      this.targetPath ?? resolveProjectPaths(this.projectRoot).targetPath,
+      this.targetPath ??
+        resolveProjectPaths(
+          this.projectRoot,
+          readDbtProjectFile(this.projectRoot).config,
+        ).targetPath,
       "manifest.json",
     );
     if (!existsSync(manifestPath)) {

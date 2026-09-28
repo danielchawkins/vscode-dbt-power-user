@@ -3,8 +3,12 @@ import { homedir } from "os";
 import * as path from "path";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
 import which from "which";
-import { readEnvironment, readSetting } from "../settings";
-import { resolveSettingsVariables } from "../utils";
+import { resolveExecutable } from "../core/project";
+import {
+  readEnvironment,
+  readEnvironmentVariable,
+  readSetting,
+} from "../settings";
 import {
   FusionVersion,
   FusionVersionVerdict,
@@ -169,43 +173,21 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
   }
 
   async resolve(scope: Uri): Promise<FusionExecutable | FusionVersionVerdict> {
-    const configured = this.getConfiguredPath(scope)?.trim();
-    if (configured) {
-      return this.resolveConfigured(scope, configured);
+    const executable = resolveExecutable(this.getConfiguredPath(scope), {
+      folder: this.getWorkspaceFolder(scope)?.uri.fsPath,
+      userHome: this.getUserHome(),
+      lookup: readEnvironmentVariable,
+    });
+    if (executable.source === "path") {
+      return this.resolveFromPath();
     }
-    return this.resolveFromPath();
-  }
-
-  private async resolveConfigured(
-    scope: Uri,
-    configured: string,
-  ): Promise<FusionExecutable | FusionVersionVerdict> {
-    const folder = this.getWorkspaceFolder(scope);
-    const substituted = resolveSettingsVariables(
-      configured,
-      folder?.uri ?? null,
-      this.getUserHome(),
-    );
-
-    if (substituted.includes("${workspaceFolder}")) {
-      return { kind: "notFound", path: substituted, source: "configured" };
+    if (
+      executable.source === "unresolvable" ||
+      !(await this.isExecutable(executable.path))
+    ) {
+      return { kind: "notFound", path: executable.path, source: "configured" };
     }
-
-    const resolved = path.isAbsolute(substituted)
-      ? path.resolve(substituted)
-      : folder
-        ? path.resolve(folder.uri.fsPath, substituted)
-        : substituted;
-
-    if (!path.isAbsolute(resolved)) {
-      return { kind: "notFound", path: resolved, source: "configured" };
-    }
-
-    if (!(await this.isExecutable(resolved))) {
-      return { kind: "notFound", path: resolved, source: "configured" };
-    }
-
-    return this.probe(resolved);
+    return this.probe(executable.path);
   }
 
   private async resolveFromPath(): Promise<

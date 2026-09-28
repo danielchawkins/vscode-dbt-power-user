@@ -13,16 +13,20 @@ module.exports = {
       to: { circular: true },
     },
     {
+      name: "core-is-pure",
+      severity: "error",
+      comment: "core/ imports neither vscode nor any other layer.",
+      from: { path: "^src/core/" },
+      to: { path: "^vscode$|^node_modules/@types/vscode/|^src/", pathNot: "^src/core/" },
+    },
+    {
       name: "pure-modules-stay-pure",
       severity: "error",
       comment: "These modules hold logic that property tests cover without the vscode module.",
       from: {
-        path: [
-          "^src/dbt_integration/projectPaths\\.ts$",
-          "^src/dbt_integration/dbtAssociations\\.ts$",
-        ],
+        path: ["^src/dbt_integration/dbtAssociations\\.ts$"],
       },
-      to: { path: "^vscode$|^src/" , pathNot: "^src/dbt_integration/(projectPaths|dbtAssociations)\\.ts$" },
+      to: { path: "^vscode$|^node_modules/@types/vscode/|^src/", pathNot: "^src/core/" },
     },
   ],
   options: {

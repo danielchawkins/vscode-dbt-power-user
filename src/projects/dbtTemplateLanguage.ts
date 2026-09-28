@@ -1,3 +1,4 @@
+import * as path from "path";
 import {
   commands,
   Disposable,
@@ -6,16 +7,18 @@ import {
   window,
   workspace,
 } from "vscode";
+import {
+  DBT_PROJECT_FILE,
+  isDbtTemplateFile,
+  ProjectPaths,
+  readDbtProjectFile,
+  resolveProjectPaths,
+} from "../core/project";
 import { DBTTerminal } from "../dbt_integration";
 import {
   associatedLanguage,
   dbtTemplateAssociations,
 } from "../dbt_integration/dbtAssociations";
-import {
-  isDbtTemplateFile,
-  ProjectPaths,
-  resolveProjectPaths,
-} from "../dbt_integration/projectPaths";
 import { ProjectContext } from "../projects/projectContext";
 import { ProjectRegistry } from "../projects/projectRegistry";
 import {
@@ -26,7 +29,7 @@ import {
 
 /**
  * Language for dbt `.sql` files, in precedence order: the user's `files.associations`; the `filenamePatterns` this
- * extension contributes for dbt's standard layout; then, on open, the paths a project's `dbt_project.yml` declares.
+ * extension contributes for dbt's standard layout; then, on open, the paths a project's project file declares.
  * A file a user association names, compiled output under the target path, and ad-hoc SQL are never changed.
  */
 export class DbtTemplateLanguage implements Disposable {
@@ -52,7 +55,7 @@ export class DbtTemplateLanguage implements Disposable {
         this.applyToOpen();
       }),
       workspace.onDidSaveTextDocument((doc) => {
-        if (doc.uri.fsPath.endsWith("dbt_project.yml")) {
+        if (path.basename(doc.uri.fsPath) === DBT_PROJECT_FILE) {
           this.pathsByRoot.clear();
           this.applyToOpen();
         }
@@ -103,7 +106,7 @@ export class DbtTemplateLanguage implements Disposable {
   private pathsFor(root: string): ProjectPaths {
     let paths = this.pathsByRoot.get(root);
     if (!paths) {
-      paths = resolveProjectPaths(root);
+      paths = resolveProjectPaths(root, readDbtProjectFile(root).config);
       this.pathsByRoot.set(root, paths);
     }
     return paths;

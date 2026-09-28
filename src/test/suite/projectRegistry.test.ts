@@ -10,7 +10,7 @@ import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import * as path from "path";
 import { RelativePattern, Uri, workspace, WorkspaceFolder } from "vscode";
-import { DBT_PROJECT_FILE } from "../../dbt_integration";
+import { DBT_PROJECT_FILE } from "../../core/project";
 import { PROJECTS_SETTING } from "../../projects/projectConfiguration";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 import { esmDirname } from "../esmDirname";

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "@jest/globals";
+import { parseDbtProjectYaml } from "../../core/project";
 import { SourceMetaMap } from "../../dbt_integration/domain";
 import {
   hasProjectStrictAnalysis,
@@ -8,6 +9,7 @@ import {
 } from "../../fusion/schemaOrigin";
 
 const withHook = `name: p\nsources:\n  +schema_origin: "${SCHEMA_ORIGIN_HOOK}"\n`;
+const config = (yaml: string) => parseDbtProjectYaml(yaml).config;
 const v = (major: number, minor: number, patch: number) => ({
   major,
   minor,
@@ -55,7 +57,7 @@ describe("resolveSchemaOrigin", () => {
   it("is local with the hook, Fusion 2.0.6 and every source column typed", () => {
     expect(
       resolveSchemaOrigin({
-        projectYaml: withHook,
+        projectConfig: config(withHook),
         fusionVersion: v(2, 0, 6),
         sources: sources({ orders: { id: "integer", note: "varchar" } }),
       }),
@@ -65,7 +67,7 @@ describe("resolveSchemaOrigin", () => {
   it("reports noHook first", () => {
     expect(
       resolveSchemaOrigin({
-        projectYaml: "name: p\n",
+        projectConfig: config("name: p\n"),
         fusionVersion: v(2, 0, 5),
         sources: sources({ orders: {} }),
       }),
@@ -78,7 +80,7 @@ describe("resolveSchemaOrigin", () => {
   ])("reports unsupportedFusion for %j", (fusionVersion, version) => {
     expect(
       resolveSchemaOrigin({
-        projectYaml: withHook,
+        projectConfig: config(withHook),
         fusionVersion,
         sources: sources({}),
       }),
@@ -88,7 +90,7 @@ describe("resolveSchemaOrigin", () => {
   it("accepts later Fusion versions", () => {
     expect(
       resolveSchemaOrigin({
-        projectYaml: withHook,
+        projectConfig: config(withHook),
         fusionVersion: v(2, 1, 0),
         sources: sources({}),
       }).kind,
@@ -98,7 +100,7 @@ describe("resolveSchemaOrigin", () => {
   it("lists untyped columns and tables with no columns", () => {
     expect(
       resolveSchemaOrigin({
-        projectYaml: withHook,
+        projectConfig: config(withHook),
         fusionVersion: v(2, 0, 6),
         sources: sources({
           orders: { id: "integer", note: undefined, amount: "  " },
@@ -122,8 +124,9 @@ describe("hasSchemaOriginHook", () => {
     ["sources:\n  +schema_origin: local\n", false],
     ["name: p\n", false],
     ["sources: []\n", false],
+    [`${withHook}bad: [\n`, false],
   ])("%j -> %s", (yaml, expected) => {
-    expect(hasSchemaOriginHook(yaml)).toBe(expected);
+    expect(hasSchemaOriginHook(config(yaml))).toBe(expected);
   });
 });
 
@@ -134,7 +137,8 @@ describe("hasProjectStrictAnalysis", () => {
     ["name: p\nmodels:\n  other:\n    +static_analysis: strict\n", false],
     ["name: p\nflags:\n  static_analysis: strict\n", false],
     ["models:\n  p:\n    +static_analysis: strict\n", false],
+    ["name: p\nmodels:\n  p:\n    +static_analysis: strict\nbad: [\n", false],
   ])("%j -> %s", (yaml, expected) => {
-    expect(hasProjectStrictAnalysis(yaml)).toBe(expected);
+    expect(hasProjectStrictAnalysis(config(yaml))).toBe(expected);
   });
 });

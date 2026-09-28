@@ -28,7 +28,7 @@ export class RunTest {
    * without `test_metadata` (generic tests like `not_null` / `unique` have
    * `test_metadata` populated and live in `schema.yml`, not in `.sql` files).
    * Detection uses the parsed manifest rather than a hardcoded `tests/`
-   * prefix, so projects with custom `test-paths` in `dbt_project.yml` are
+   * prefix, so projects with custom `test-paths` in their project file are
    * handled correctly.
    */
   getSingularTestName(uri: Uri): string | undefined {

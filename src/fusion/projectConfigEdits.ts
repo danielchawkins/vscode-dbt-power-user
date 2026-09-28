@@ -1,6 +1,7 @@
 import { parseDocument } from "yaml";
+import { DBT_PROJECT_FILE } from "../core/project";
 
-/** One key a command may add to dbt_project.yml. */
+/** One key a command may add to a project file. */
 export interface ProjectConfigInsertion {
   /** Key path from the document root, for example `["models", "jaffle", "+static_analysis"]`. */
   path: readonly string[];
@@ -12,7 +13,7 @@ export type ProjectConfigEditPlan =
   | { kind: "insert"; text: string; preview: string };
 
 /**
- * Plans adding `insertion` to a dbt_project.yml, preserving comments and existing keys. Never overwrites: if
+ * Plans adding `insertion` to a project file, preserving comments and existing keys. Never overwrites: if
  * the key path already holds a value, the plan is `exists`. `preview` is the lines the user confirms.
  */
 export function planProjectConfigInsertion(
@@ -22,7 +23,7 @@ export function planProjectConfigInsertion(
   const document = parseDocument(projectYaml);
   if (document.errors.length > 0) {
     throw new Error(
-      `dbt_project.yml does not parse: ${document.errors[0].message}`,
+      `${DBT_PROJECT_FILE} does not parse: ${document.errors[0].message}`,
     );
   }
   const current: unknown = document.getIn(insertion.path);

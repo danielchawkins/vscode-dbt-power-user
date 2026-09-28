@@ -1,8 +1,8 @@
+import { StaticAnalysisMode } from "../core/project";
 import { CommandProcessResult } from "../dbt_integration/commandProcessExecution";
 import { LineageRead } from "../fusion/columnLineage";
 import { classifyCompile, CompileOutcome } from "../fusion/lineageDiagnostics";
 import { SCHEMA_ORIGIN_ENV, SchemaOriginStatus } from "../fusion/schemaOrigin";
-import { StaticAnalysisMode } from "../fusion/staticAnalysisMode";
 
 /** The slice of DBTProject a refresh needs. */
 export interface RefreshableProject {

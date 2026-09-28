@@ -1,10 +1,18 @@
 import { homedir } from "os";
-import * as path from "path";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
+import {
+  LspCompiledOutput,
+  resolveFolderPath,
+  resolveLspCompiledOutput,
+} from "../core/project";
 import { DBT_PATH_SETTING } from "../fusion/fusionExecutable";
 import { STATIC_ANALYSIS_MODE_SETTING } from "../fusion/staticAnalysisMode";
-import { readEnvironmentOverride, readSetting, SettingKey } from "../settings";
-import { resolveSettingsVariables } from "../utils";
+import {
+  readEnvironmentOverride,
+  readEnvironmentVariable,
+  readSetting,
+  SettingKey,
+} from "../settings";
 
 export const PROFILES_DIR_SETTING = "profilesDir";
 export const TARGET_SETTING = "target";
@@ -16,15 +24,6 @@ const DEFAULT_TRACE_SERVER = "off";
 
 export const TRACE_SERVER_LEVELS = ["off", "messages", "verbose"] as const;
 export type FusionTraceServerLevel = (typeof TRACE_SERVER_LEVELS)[number];
-
-/**
- * Where the language server writes compiled SQL. `separate`: `target/.lsp/`, so editing never overwrites what a
- * CLI run wrote. `shared`: the CLI's own `target/`, one copy per model. Fusion's only control is
- * `DBT_LSP_USE_TARGET_LSP`; `dbt lsp --target-path` does not move this output (evidence experiment l8).
- */
-export const LSP_COMPILED_OUTPUTS = ["separate", "shared"] as const;
-export type LspCompiledOutput = (typeof LSP_COMPILED_OUTPUTS)[number];
-const DEFAULT_LSP_COMPILED_OUTPUT: LspCompiledOutput = "separate";
 
 /** Settings whose change restarts a project's language server. */
 export const FUSION_LAUNCH_SETTINGS: readonly SettingKey[] = [
@@ -50,27 +49,11 @@ function resolveOptionalPath(
   folder: WorkspaceFolder | undefined,
   userHome: string,
 ): string | undefined {
-  const trimmed = raw?.trim();
-  if (!trimmed) {
-    return undefined;
-  }
-
-  const substituted = resolveSettingsVariables(
-    trimmed,
-    folder?.uri ?? null,
+  return resolveFolderPath(raw, {
+    folder: folder?.uri.fsPath,
     userHome,
-  );
-  if (substituted.includes("${workspaceFolder}")) {
-    return undefined;
-  }
-
-  if (path.isAbsolute(substituted)) {
-    return path.resolve(substituted);
-  }
-  if (folder) {
-    return path.resolve(folder.uri.fsPath, substituted);
-  }
-  return undefined;
+    lookup: readEnvironmentVariable,
+  });
 }
 
 export function resolveFusionLaunchSettings(
@@ -95,19 +78,12 @@ export function resolveFusionLaunchSettings(
   const traceServer = parseTraceServerLevel(
     readSetting(TRACE_SERVER_SETTING, scope),
   );
-  const lspCompiledOutput =
-    parseLspCompiledOutput(readEnvironmentOverride("lspCompiledOutput")) ??
-    parseLspCompiledOutput(readSetting(LSP_COMPILED_OUTPUT_SETTING, scope)) ??
-    DEFAULT_LSP_COMPILED_OUTPUT;
+  const lspCompiledOutput = resolveLspCompiledOutput(
+    readEnvironmentOverride("lspCompiledOutput"),
+    readSetting(LSP_COMPILED_OUTPUT_SETTING, scope),
+  );
 
   return { profilesDir, target, lintEnabled, traceServer, lspCompiledOutput };
-}
-
-export function parseLspCompiledOutput(
-  raw: unknown,
-): LspCompiledOutput | undefined {
-  const value = typeof raw === "string" ? raw.trim() : raw;
-  return LSP_COMPILED_OUTPUTS.find((mode) => mode === value);
 }
 
 /** The environment that selects `mode` for `dbt lsp`. */

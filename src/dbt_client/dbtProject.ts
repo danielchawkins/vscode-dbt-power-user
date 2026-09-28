@@ -1,6 +1,7 @@
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, writeFileSync } from "fs";
 
 import { inject } from "inversify";
+import { homedir } from "os";
 import * as path from "path";
 import {
   commands,
@@ -20,10 +21,15 @@ import {
   workspace,
 } from "vscode";
 import {
+  dbtProjectFilePath,
+  deferSettingsKey,
+  readDbtProjectFile,
+  resolveDefer,
+} from "../core/project";
+import {
   Catalog,
   ColumnMetaData,
   DBColumn,
-  DBT_PROJECT_FILE,
   DBTCommand,
   DBTCommandExecution,
   DBTCommandFactory,
@@ -58,12 +64,8 @@ import {
 import { ModelNode } from "../local/lineageTypes";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
-import { readSetting } from "../settings";
-import {
-  getColumnNameByCase,
-  getProjectRelativePath,
-  resolveSettingsVariables,
-} from "../utils";
+import { readEnvironmentVariable, readSetting } from "../settings";
+import { getColumnNameByCase } from "../utils";
 import { DBTProjectLog } from "./dbtProjectLog";
 import {
   ManifestCacheChangedEvent,
@@ -298,7 +300,7 @@ export class DBTProject implements Disposable {
   }
 
   getDBTProjectFilePath() {
-    return path.join(this.projectRoot.fsPath, DBT_PROJECT_FILE);
+    return dbtProjectFilePath(this.projectRoot.fsPath);
   }
 
   /** Whether strict analysis of this project can run without the warehouse; see `resolveSchemaOrigin`. */
@@ -306,18 +308,13 @@ export class DBTProject implements Disposable {
     return this.projectOptIns().schemaOrigin;
   }
 
-  /** The column-lineage opt-ins this project has made in its own dbt_project.yml. */
+  /** The column-lineage opt-ins this project has made in its own project file; none when it is unreadable. */
   projectOptIns(): { strict: boolean; schemaOrigin: SchemaOriginStatus } {
-    let projectYaml = "";
-    try {
-      projectYaml = readFileSync(this.getDBTProjectFilePath(), "utf8");
-    } catch {
-      // An unreadable file reports as no opt-ins.
-    }
+    const projectConfig = readDbtProjectFile(this.projectRoot.fsPath).config;
     return {
-      strict: hasProjectStrictAnalysis(projectYaml),
+      strict: hasProjectStrictAnalysis(projectConfig),
       schemaOrigin: resolveSchemaOrigin({
-        projectYaml,
+        projectConfig,
         fusionVersion: this.dbtProjectIntegration.getFusionVersion(),
         sources: this._manifestCacheEvent?.sourceMetaMap ?? new Map(),
       }),
@@ -411,9 +408,7 @@ export class DBTProject implements Disposable {
   }
 
   updateDiagnosticsInProblemsPanel(): void {
-    const projectURI = Uri.file(
-      path.join(this.projectRoot.fsPath, DBT_PROJECT_FILE),
-    );
+    const projectURI = Uri.file(this.getDBTProjectFilePath());
     const integrationDiagnostics = this.dbtProjectIntegration.getDiagnostics();
 
     this.rebuildManifestDiagnostics.set(
@@ -1159,35 +1154,30 @@ export class DBTProject implements Disposable {
   }
 
   private retrieveDeferConfigFromSettings(): DeferConfig | undefined {
-    const relativePath = getProjectRelativePath(this.projectRoot);
-    const currentConfig =
-      readSetting("defer.perProject", this.projectRoot) ?? {};
-    if (currentConfig[relativePath]) {
-      const config = currentConfig[relativePath];
-      const resolvedManifestPath = config.manifestPathForDeferral
-        ? path.resolve(
-            this.projectRoot.fsPath,
-            resolveSettingsVariables(
-              config.manifestPathForDeferral,
-              this.projectRoot,
-            ),
-          )
-        : config.manifestPathForDeferral;
-      if (config.deferToProduction && !resolvedManifestPath) {
-        this.terminal.warn(
-          "deferMissingManifestPath",
-          `fusionPowerUser.defer.perProject has deferToProduction enabled for ` +
-            `${relativePath} but no manifestPathForDeferral; defer will not apply.`,
-          false,
-        );
-      }
-      return new DeferConfig(
-        config.deferToProduction,
-        config.favorState,
-        resolvedManifestPath,
-        resolvedManifestPath ? ManifestPathType.LOCAL : undefined,
+    const folder = workspace.getWorkspaceFolder(this.projectRoot)?.uri.fsPath;
+    const relativePath = deferSettingsKey(this.projectRoot.fsPath, folder);
+    const defer = resolveDefer(
+      readSetting("defer.perProject", this.projectRoot)?.[relativePath],
+      this.projectRoot.fsPath,
+      { userHome: homedir(), lookup: readEnvironmentVariable },
+    );
+    if (!defer) {
+      return undefined;
+    }
+    if (defer.deferToProduction && !defer.manifestPath) {
+      this.terminal.warn(
+        "deferMissingManifestPath",
+        `fusionPowerUser.defer.perProject has deferToProduction enabled for ` +
+          `${relativePath} but no manifestPathForDeferral; defer will not apply.`,
+        false,
       );
     }
+    return new DeferConfig(
+      defer.deferToProduction,
+      defer.favorState,
+      defer.manifestPath,
+      defer.manifestPath ? ManifestPathType.LOCAL : undefined,
+    );
   }
 
   getDeferConfig(): DeferConfig {

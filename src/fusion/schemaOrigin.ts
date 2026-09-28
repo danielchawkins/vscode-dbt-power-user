@@ -1,4 +1,4 @@
-import { parseDocument } from "yaml";
+import { DbtProjectConfig, declaredProjectName } from "../core/project";
 import { SourceMetaMap } from "../dbt_integration/domain";
 import { FusionVersion } from "./fusionVersion";
 
@@ -28,11 +28,11 @@ export type SchemaOriginStatus =
  * shown to exclude them.
  */
 export function resolveSchemaOrigin(input: {
-  projectYaml: string;
+  projectConfig: DbtProjectConfig;
   fusionVersion: FusionVersion | undefined;
   sources: SourceMetaMap;
 }): SchemaOriginStatus {
-  if (!hasSchemaOriginHook(input.projectYaml)) {
+  if (!hasSchemaOriginHook(input.projectConfig)) {
     return { kind: "noHook" };
   }
   const version = input.fusionVersion;
@@ -68,20 +68,25 @@ export function resolveSchemaOrigin(input: {
     : { kind: "local" };
 }
 
-/** True when `sources: +schema_origin` in dbt_project.yml reads the extension's variable. */
-export function hasSchemaOriginHook(projectYaml: string): boolean {
-  const value = parseDocument(projectYaml).getIn(["sources", "+schema_origin"]);
+/** True when `sources: +schema_origin` in the project file reads the extension's variable. */
+export function hasSchemaOriginHook(config: DbtProjectConfig): boolean {
+  const value = child(config.sources, "+schema_origin");
   return typeof value === "string" && value.includes(SCHEMA_ORIGIN_ENV);
 }
 
 /** True when `models: <project name>: +static_analysis` is `strict`, the project-level opt-in. */
-export function hasProjectStrictAnalysis(projectYaml: string): boolean {
-  const document = parseDocument(projectYaml);
-  const name: unknown = document.get("name");
+export function hasProjectStrictAnalysis(config: DbtProjectConfig): boolean {
+  const name = declaredProjectName(config);
   return (
-    typeof name === "string" &&
-    document.getIn(["models", name, "+static_analysis"]) === "strict"
+    name !== undefined &&
+    child(child(config.models, name), "+static_analysis") === "strict"
   );
+}
+
+function child(value: unknown, key: string): unknown {
+  return value && typeof value === "object" && !Array.isArray(value)
+    ? (value as Record<string, unknown>)[key]
+    : undefined;
 }
 
 function atLeast(
