@@ -7,6 +7,7 @@ import {
   FUSION_CLIENT_STATES_COMMAND,
   FusionClientStateReport,
 } from "../../lsp/fusionClientDiagnostics";
+import { HARNESS_SWITCHES } from "../../settings/environment";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
 import { assertNoWorkbenchNotifications, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
@@ -27,7 +28,9 @@ suite("Multi-root LSP smoke", function () {
 
     const cdpPort = process.env.FPU_CDP_PORT;
     assert.ok(cdpPort, "smoke requires CDP port");
-    const smokeHost = validateSmokeHost(process.env.FPU_SMOKE_HOST ?? "");
+    const smokeHost = validateSmokeHost(
+      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
+    );
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");

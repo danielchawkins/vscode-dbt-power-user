@@ -1,5 +1,6 @@
 import { commands, ExtensionContext } from "vscode";
 import { ProjectRegistry } from "../projects/projectRegistry";
+import { readHarnessSwitch } from "../settings";
 import { FusionClientPool } from "./fusionClientPool";
 import { FusionClientState } from "./fusionLanguageClient";
 
@@ -14,10 +15,8 @@ export interface FusionClientStateReport {
 }
 
 function enabled(): boolean {
-  return (
-    process.env.FPU_SMOKE_HOST === "vscode" ||
-    process.env.FPU_SMOKE_HOST === "cursor"
-  );
+  const host = readHarnessSwitch("smokeHost");
+  return host === "vscode" || host === "cursor";
 }
 
 export function registerFusionClientDiagnostics(

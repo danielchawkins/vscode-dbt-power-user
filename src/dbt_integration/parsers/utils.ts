@@ -2,12 +2,13 @@ import { existsSync, readFileSync } from "fs";
 import * as path from "path";
 
 import { parse } from "yaml";
+import { readEnvironmentOverride } from "../../settings";
 
 export const getExternalProjectNamesFromDbtLoomConfig = (
   projectRoot: string,
 ) => {
   const dbtLoomConfigPath =
-    process.env.DBT_LOOM_CONFIG_PATH ||
+    readEnvironmentOverride("dbtLoomConfigPath") ||
     path.join(projectRoot, "dbt_loom.config.yml");
 
   try {

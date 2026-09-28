@@ -15,7 +15,7 @@ import {
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
 } from "./dbt_integration";
-import { readSetting } from "./settings";
+import { readEnvironmentVariable, readSetting } from "./settings";
 
 export const isEnclosedWithinCodeBlock = (
   document: TextDocument,
@@ -398,7 +398,7 @@ export function resolveSettingsVariables(
   //    `/home/$USER/project`.
   // Unresolved placeholders (env var not set) are left as-is.
   value = value.replace(/\$\{env:(.*?)\}/g, (match, varName) => {
-    const envValue = process.env[varName];
+    const envValue = readEnvironmentVariable(varName);
     return envValue !== undefined ? envValue : match;
   });
 

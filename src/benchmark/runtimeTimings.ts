@@ -1,4 +1,5 @@
 import { commands, ExtensionContext } from "vscode";
+import { readHarnessSwitch } from "../settings";
 
 export const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 
@@ -13,7 +14,7 @@ const resolveStarts = new Map<string, number>();
 const records: WebviewRuntimeTiming[] = [];
 
 function enabled(): boolean {
-  return process.env.FPU_RUNTIME_BENCHMARK === "1";
+  return readHarnessSwitch("runtimeBenchmark") === "1";
 }
 
 export function beginWebviewResolve(viewPath: string): void {

@@ -3,6 +3,7 @@ import * as fs from "fs";
 import * as path from "path";
 import "reflect-metadata";
 import * as vscode from "vscode";
+import { HARNESS_SWITCHES } from "../../settings/environment";
 import { ActivationMetric, readActivationMetric } from "./activationReport";
 import {
   assertNoWorkbenchNotifications,
@@ -38,7 +39,7 @@ suite("Pinned-host VSIX smoke", function () {
 
   test("reports host runtime versions", () => {
     const payload = {
-      host: process.env.FPU_SMOKE_HOST ?? "unknown",
+      host: process.env[HARNESS_SWITCHES.smokeHost] ?? "unknown",
       node: process.versions.node,
       electron: process.versions.electron,
       chrome: process.versions.chrome,
@@ -58,7 +59,9 @@ suite("Pinned-host VSIX smoke", function () {
     }
     const cdpPort = process.env.FPU_CDP_PORT;
     assert.ok(cdpPort, "smoke requires CDP port");
-    const smokeHost = validateSmokeHost(process.env.FPU_SMOKE_HOST ?? "");
+    const smokeHost = validateSmokeHost(
+      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
+    );
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
@@ -79,7 +82,8 @@ suite("Pinned-host VSIX smoke", function () {
       );
     }
 
-    const runtimeEnabled = process.env.FPU_RUNTIME_BENCHMARK === "1";
+    const runtimeEnabled =
+      process.env[HARNESS_SWITCHES.runtimeBenchmark] === "1";
     const evidence = visualEvidence(cdpPort, smokeHost);
 
     const folder = vscode.workspace.workspaceFolders?.[0];

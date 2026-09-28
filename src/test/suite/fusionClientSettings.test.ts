@@ -1,4 +1,11 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
 import { readFileSync } from "fs";
 import path from "path";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
@@ -7,7 +14,6 @@ import { STATIC_ANALYSIS_MODE_SETTING } from "../../fusion/staticAnalysisMode";
 import {
   FUSION_LAUNCH_SETTINGS,
   LINT_ENABLED_SETTING,
-  LSP_COMPILED_OUTPUT_ENV,
   LSP_COMPILED_OUTPUT_SETTING,
   lspCompiledOutputEnv,
   PROFILES_DIR_SETTING,
@@ -26,8 +32,21 @@ const folder: WorkspaceFolder = {
 };
 
 describe("fusionClientSettings", () => {
+  const originalCompiledOutput =
+    process.env.FUSION_POWER_USER_LSP_COMPILED_OUTPUT;
+
+  beforeEach(() => {
+    delete process.env.FUSION_POWER_USER_LSP_COMPILED_OUTPUT;
+  });
+
   afterEach(() => {
     jest.mocked(workspace.getConfiguration).mockRestore();
+    if (originalCompiledOutput === undefined) {
+      delete process.env.FUSION_POWER_USER_LSP_COMPILED_OUTPUT;
+    } else {
+      process.env.FUSION_POWER_USER_LSP_COMPILED_OUTPUT =
+        originalCompiledOutput;
+    }
   });
 
   it("resolves optional launch settings with defaults", () => {
@@ -41,7 +60,6 @@ describe("fusionClientSettings", () => {
       resolveFusionLaunchSettings(scope, {
         getWorkspaceFolder: () => folder,
         getUserHome: () => "/home/test",
-        env: {},
       }),
     ).toEqual({
       profilesDir: undefined,
@@ -68,11 +86,14 @@ describe("fusionClientSettings", () => {
         ),
       } as any);
 
+      if (env !== undefined) {
+        process.env.FUSION_POWER_USER_LSP_COMPILED_OUTPUT = env;
+      }
+
       expect(
         resolveFusionLaunchSettings(scope, {
           getWorkspaceFolder: () => folder,
           getUserHome: () => "/home/test",
-          env: env === undefined ? {} : { [LSP_COMPILED_OUTPUT_ENV]: env },
         }).lspCompiledOutput,
       ).toBe(expected);
     },
