@@ -190,9 +190,6 @@
   "src/dbt_integration/commandProcessExecution.ts": {
     "max-params": {
       "count": 1
-    },
-    "no-restricted-imports": {
-      "count": 1
     }
   },
   "src/dbt_integration/dbtBaseProjectIntegration.ts": {
@@ -340,9 +337,6 @@
     }
   },
   "src/fusion/fusionExecutable.ts": {
-    "no-restricted-imports": {
-      "count": 1
-    },
     "no-restricted-properties": {
       "count": 1
     }
@@ -380,9 +374,6 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 1
-    },
-    "no-restricted-imports": {
       "count": 1
     },
     "sonarjs/cognitive-complexity": {
@@ -455,11 +446,6 @@
   },
   "src/test/integration/nativeEditorFeatures.test.ts": {
     "eqeqeq": {
-      "count": 1
-    }
-  },
-  "src/test/integration/runTests.ts": {
-    "@typescript-eslint/no-floating-promises": {
       "count": 1
     }
   },

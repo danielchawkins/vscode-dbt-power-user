@@ -1,4 +1,4 @@
-import { spawn } from "child_process";
+import { spawnProcess } from "../fusion/process";
 
 import { EnvironmentVariables } from "./domain";
 import { DBTTerminal } from "./terminal";
@@ -69,7 +69,7 @@ export class CommandProcessExecution {
   ) {}
 
   private spawn() {
-    const proc = spawn(this.command, this.args, {
+    const proc = spawnProcess(this.command, this.args ?? [], {
       cwd: this.cwd,
       env: this.envVars,
       stdio: ["pipe", "pipe", "pipe"],

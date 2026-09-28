@@ -1,8 +1,6 @@
-import { execFile as execFileCb } from "child_process";
 import { access, constants } from "fs/promises";
 import { homedir } from "os";
 import * as path from "path";
-import { promisify } from "util";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
 import which from "which";
 import { CONFIGURATION_SECTION } from "../projects/projectConfiguration";
@@ -14,8 +12,7 @@ import {
   MINIMUM_FUSION,
   parseFusionVersion,
 } from "./fusionVersion";
-
-const execFile = promisify(execFileCb);
+import { execFileText } from "./process";
 
 export const DBT_PATH_SETTING = "dbtPath";
 
@@ -121,11 +118,10 @@ async function defaultRunVersion(
   executable: string,
   env: Record<string, string>,
 ): Promise<{ stdout: string; stderr: string }> {
-  const { stdout, stderr } = await execFile(executable, ["--version"], {
+  return execFileText(executable, ["--version"], {
     env,
     maxBuffer: 1024 * 1024,
   });
-  return { stdout, stderr };
 }
 
 export function isFusionExecutable(
