@@ -88,7 +88,8 @@
     "@babel/runtime": "^7.26.10",
     "serialize-javascript": "^7.0.0",
     "brace-expansion": "^2.0.2",
-    "minimatch": "^9.0.7"
+    "minimatch": "^9.0.7",
+    "maplibre-gl": "^6.11.2"
   },
   "allowScripts": {
     "@parcel/watcher@2.6.0": true,
