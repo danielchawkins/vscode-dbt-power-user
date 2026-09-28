@@ -14,6 +14,8 @@ Fusion Power User ships as a VSIX attached to a [GitHub Release](https://github.
 2. Verify the checksum from the download directory: `shasum -a 256 -c vsix.sha256`.
 3. Install into VS Code: `code --install-extension fusion-power-user-<version>.vsix`. Into Cursor: `cursor --install-extension fusion-power-user-<version>.vsix`.
 
+In an untrusted workspace the extension stays disabled, because it runs the `dbt` executable that workspace settings name; VS Code enables it when you trust the folder (Restricted Mode shows the state).
+
 Pin a specific version and its checksum rather than tracking a moving release; see [`docs/releasing.md`](docs/releasing.md) for rollback.
 
 ## dbt Fusion resolution

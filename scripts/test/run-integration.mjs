@@ -1,10 +1,15 @@
-import { downloadAndUnzipVSCode } from "@vscode/test-electron";
+import {
+  downloadAndUnzipVSCode,
+  resolveCliArgsFromVSCodeExecutablePath,
+} from "@vscode/test-electron";
 import { spawn, spawnSync } from "child_process";
 import {
   appendFileSync,
   cpSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
+  readFileSync,
   realpathSync,
   rmSync,
   symlinkSync,
@@ -18,8 +23,10 @@ import {
   LABELS,
   nativeMode,
   ROOT_ENV,
+  TRUSTED_VSIX_LABEL,
   UNTRUSTED_LABEL,
   VSCODE_VERSION,
+  VSIX_LABELS,
 } from "./integration-layout.mjs";
 
 const root = path.resolve(
@@ -28,9 +35,11 @@ const root = path.resolve(
 );
 const fixtures = path.join(root, "src/test/fixtures");
 const { labels, rest } = splitLabels(process.argv.slice(2));
-const cliLabels = labels.filter((label) => label !== UNTRUSTED_LABEL);
+const cliLabels = labels.filter((label) => !VSIX_LABELS.includes(label));
 const runCli = !labels.length || cliLabels.length > 0;
-const runUntrusted = !labels.length || labels.includes(UNTRUSTED_LABEL);
+const vsixLabels = VSIX_LABELS.filter(
+  (label) => !labels.length || labels.includes(label),
+);
 
 const fusionPath = process.env.FPU_INTEGRATION_DBT_PATH;
 if (fusionPath && !path.isAbsolute(fusionPath)) {
@@ -74,7 +83,7 @@ process.on("SIGINT", onSignal);
 process.on("SIGTERM", onSignal);
 
 try {
-  for (const label of [...LABELS, UNTRUSTED_LABEL]) {
+  for (const label of [...LABELS, ...VSIX_LABELS]) {
     prepareLabel(label);
   }
   let failed = false;
@@ -90,8 +99,10 @@ try {
         [ROOT_ENV]: ephemeralRoot,
       })) !== 0;
   }
-  if (runUntrusted && !signalled) {
-    failed ||= (await runUntrustedLaunch()) !== 0;
+  for (const label of vsixLabels) {
+    if (!signalled) {
+      failed ||= (await runVsixLaunch(label)) !== 0;
+    }
   }
   process.exitCode = exitSignal ? signalCode(exitSignal) : failed ? 1 : 0;
 } catch (error) {
@@ -149,41 +160,86 @@ function killGroup(proc, signal) {
   }
 }
 
-/** Launches the pinned host directly, since `@vscode/test-electron` always passes `--disable-workspace-trust`. */
-async function runUntrustedLaunch() {
-  const layout = labelLayout(ephemeralRoot, UNTRUSTED_LABEL);
+/**
+ * Launches the pinned host directly, since `@vscode/test-electron` always passes `--disable-workspace-trust`. The
+ * extension is installed from the VSIX `just package` built: VS Code applies workspace-trust enablement to installed
+ * extensions only, so a development-path extension would load in an untrusted workspace regardless of its manifest.
+ * `label` selects the untrusted launch or its trusted positive control; the runner reads it from `FPU_VSIX_LABEL`.
+ */
+async function runVsixLaunch(label) {
+  const layout = labelLayout(ephemeralRoot, label);
   const electron = await downloadAndUnzipVSCode(VSCODE_VERSION);
   const { ELECTRON_RUN_AS_NODE: _, ...env } = process.env;
+  const vsix = readLatestVsix();
+  const [cli, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(electron);
+  const installed = spawnSync(
+    cli,
+    [
+      ...cliArgs,
+      `--user-data-dir=${layout.userData}`,
+      `--extensions-dir=${layout.extensions}`,
+      "--install-extension",
+      vsix,
+    ],
+    { stdio: "inherit", env },
+  );
+  if (installed.status !== 0) {
+    return installed.status ?? 1;
+  }
+  // The runner is a development extension that only hosts the mocha entry; it declares trust support so it loads.
+  cpSync(
+    path.join(root, "src/test/integration/untrusted/runner-package.json"),
+    path.join(root, "out/test/integration/untrusted/package.json"),
+  );
   return run(
     electron,
     [
       layout.workspace,
       `--user-data-dir=${layout.userData}`,
       `--extensions-dir=${layout.extensions}`,
-      `--extensionDevelopmentPath=${root}`,
+      `--extensionDevelopmentPath=${path.join(root, "out/test/integration/untrusted")}`,
       `--extensionTestsPath=${path.join(root, "out/test/integration/untrusted/index.js")}`,
       "--skip-welcome",
       "--skip-release-notes",
       "--use-inmemory-secretstorage",
     ],
-    env,
+    {
+      ...env,
+      FPU_VSIX_EXTENSIONS_DIR: layout.extensions,
+      FPU_VSIX_LABEL: label,
+    },
   );
+}
+
+/** The VSIX recorded by `just package`; the VSIX launches refuse to guess one. */
+function readLatestVsix() {
+  const record = path.join(root, "out/latest-vsix");
+  if (!existsSync(record)) {
+    throw new Error(
+      "The VSIX launches test the packaged VSIX; run `just package` first.",
+    );
+  }
+  return readFileSync(record, "utf8").trim();
 }
 
 function prepareLabel(label) {
   const layout = labelLayout(ephemeralRoot, label);
   mkdirSync(layout.decoyProfiles, { recursive: true });
   mkdirSync(layout.extensions, { recursive: true });
-  const userSettings =
-    label === UNTRUSTED_LABEL
-      ? {
-          "security.workspace.trust.enabled": true,
-          "security.workspace.trust.startupPrompt": "never",
-          "security.workspace.trust.untrustedFiles": "open",
-        }
-      : fusionPath
-        ? { "fusionPowerUser.dbtPath": fusionPath }
-        : {};
+  const trustSettings = {
+    [UNTRUSTED_LABEL]: {
+      "security.workspace.trust.enabled": true,
+      "security.workspace.trust.startupPrompt": "never",
+      "security.workspace.trust.untrustedFiles": "open",
+    },
+    [TRUSTED_VSIX_LABEL]: { "security.workspace.trust.enabled": false },
+  }[label];
+  const userSettings = {
+    ...trustSettings,
+    ...(fusionPath && label !== UNTRUSTED_LABEL
+      ? { "fusionPowerUser.dbtPath": fusionPath }
+      : {}),
+  };
   writeJson(path.join(layout.userData, "User", "settings.json"), userSettings);
   const mode = nativeMode(label);
   if (mode) {
