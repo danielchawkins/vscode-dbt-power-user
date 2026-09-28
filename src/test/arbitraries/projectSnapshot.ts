@@ -1,0 +1,125 @@
+import fc from "fast-check";
+import * as path from "path";
+import { relativeDir, segment, staticAnalysisMode } from ".";
+import {
+  DbtProjectFile,
+  deferSettingsKey,
+  ProjectSnapshotInputs,
+  ProjectSnapshotSettings,
+} from "../../core/project";
+
+export const snapshotFolder = path.join("/", "ws");
+
+export const noSettings: ProjectSnapshotSettings = {
+  dbtPath: undefined,
+  target: undefined,
+  profilesDir: undefined,
+  staticAnalysis: undefined,
+  lspCompiledOutput: undefined,
+  deferPerProject: undefined,
+  runParams: [],
+  buildParams: [],
+  testParams: [],
+};
+
+const parsed = (config: Record<string, unknown>): DbtProjectFile => ({
+  kind: "parsed",
+  text: "",
+  config,
+});
+
+const pathKeys = fc.record(
+  {
+    "model-paths": fc.array(relativeDir, { minLength: 1, maxLength: 3 }),
+    "macro-paths": fc.array(relativeDir, { minLength: 1, maxLength: 2 }),
+    "test-paths": fc.array(relativeDir, { minLength: 1, maxLength: 2 }),
+    "target-path": relativeDir,
+    "packages-install-path": relativeDir,
+    name: segment,
+  },
+  { requiredKeys: [] },
+);
+
+/** A flag the snapshot may also derive, in each form dbt accepts: `--flag`, `--flag=value` and `-t`. */
+const derivedFlag = fc.oneof(
+  fc.constantFrom("--target", "--profiles-dir", "--project-dir", "-t"),
+  fc
+    .tuple(
+      fc.constantFrom("--target", "--profiles-dir", "--project-dir", "-t"),
+      segment,
+    )
+    .map(([flag, value]) =>
+      flag === "-t" ? `-t${value}` : `${flag}=${value}`,
+    ),
+);
+
+/** A user command param: a derived flag, a plain flag, or free text. */
+const commandParam = fc.oneof(
+  derivedFlag,
+  fc.constantFrom("--full-refresh", "--threads", "--target-path"),
+  segment,
+  fc.string(),
+);
+
+const commandParams = fc.array(commandParam, { maxLength: 4 });
+
+const deferEntry = fc.record(
+  {
+    deferToProduction: fc.boolean(),
+    favorState: fc.boolean(),
+    manifestPathForDeferral: fc.oneof(
+      relativeDir,
+      relativeDir.map((dir) => `${dir}/manifest.json`),
+      fc.constantFrom("manifest.json", ""),
+    ),
+  },
+  { requiredKeys: ["deferToProduction", "favorState"] },
+);
+
+/** Inputs for `resolveProjectSnapshot`, with the project at or under `snapshotFolder`. */
+export const snapshotInputs: fc.Arbitrary<ProjectSnapshotInputs> = fc
+  .record({
+    rel: fc.array(segment, { maxLength: 2 }),
+    config: pathKeys,
+    target: fc.option(fc.oneof(segment, fc.constant("  ")), {
+      nil: undefined,
+    }),
+    profilesDir: fc.option(relativeDir, { nil: undefined }),
+    staticAnalysis: fc.oneof(staticAnalysisMode, fc.string()),
+    lspCompiledOutput: fc.constantFrom(
+      "separate",
+      "shared",
+      "bogus",
+      undefined,
+    ),
+    override: fc.constantFrom("separate", "shared", "bogus", undefined),
+    defer: fc.option(deferEntry, { nil: undefined }),
+    runParams: commandParams,
+    buildParams: commandParams,
+    testParams: commandParams,
+  })
+  .map((v): ProjectSnapshotInputs => {
+    const root = path.join(snapshotFolder, ...v.rel);
+    return {
+      root,
+      folder: snapshotFolder,
+      firstWorkspaceFolder: snapshotFolder,
+      userHome: path.join("/", "home", "u"),
+      environment: { HOME: "/home/u" },
+      lspCompiledOutputOverride: v.override,
+      settings: {
+        ...noSettings,
+        target: v.target,
+        profilesDir: v.profilesDir,
+        staticAnalysis: v.staticAnalysis,
+        lspCompiledOutput: v.lspCompiledOutput,
+        deferPerProject: v.defer && {
+          [deferSettingsKey(root, snapshotFolder)]: v.defer,
+        },
+        runParams: v.runParams,
+        buildParams: v.buildParams,
+        testParams: v.testParams,
+      },
+      projectFile: parsed(v.config),
+    };
+  });
