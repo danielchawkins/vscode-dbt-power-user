@@ -48,6 +48,11 @@ fmt:
 lint:
     npm run lint
 
+# Drop baseline entries for lint violations that have been fixed, so the baseline only shrinks.
+[group("quality")]
+lint-prune:
+    npm run lint:prune
+
 [group("tests")]
 test *args:
     npm test -- "$@"

@@ -151,6 +151,7 @@ lint-unused:
 [group("quality")]
 lint-prune:
     npm run lint:prune
+    just webviews::lint-prune
 
 [group("quality")]
 lint-format:

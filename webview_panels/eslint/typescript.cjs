@@ -1,7 +1,7 @@
 module.exports = {
   "@typescript-eslint/no-explicit-any": "error",
-  "@typescript-eslint/explicit-module-boundary-types": "warn", // on because it's good
-  "@typescript-eslint/no-shadow": "warn", // on because it's good
+  "@typescript-eslint/explicit-module-boundary-types": "error", // on because it's good
+  "@typescript-eslint/no-shadow": "error", // on because it's good
   "@typescript-eslint/naming-convention": [
     "error",
     {
@@ -21,8 +21,8 @@ module.exports = {
       format: ["PascalCase"],
     },
   ],
-  "@typescript-eslint/no-loop-func": "warn", // on because it's good
-  "@typescript-eslint/no-inferrable-types": "warn", // on because it's good
+  "@typescript-eslint/no-loop-func": "error", // on because it's good
+  "@typescript-eslint/no-inferrable-types": "error", // on because it's good
   "@typescript-eslint/no-var-requires": "off", // allow top level require,
   "@typescript-eslint/no-misused-promises": [
     "error",
@@ -31,7 +31,7 @@ module.exports = {
     },
   ],
   "@typescript-eslint/no-restricted-types": [
-    "warn",
+    "error",
     {
       types: {
         "React.FC": {
