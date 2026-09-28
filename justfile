@@ -140,6 +140,7 @@ fmt-code:
 [group("quality")]
 lint-code:
     npm run lint
+    npm run lint:imports
 
 # Unused files, exports and dependencies. On demand only: refactors pass through states with dead code.
 [group("quality")]
@@ -150,6 +151,7 @@ lint-unused:
 [group("quality")]
 lint-prune:
     npm run lint:prune
+    just webviews::lint-prune
 
 [group("quality")]
 lint-format:

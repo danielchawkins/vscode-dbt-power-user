@@ -9,15 +9,19 @@ import jsxA11yX from "eslint-plugin-jsx-a11y-x";
 import prettier from "eslint-config-prettier";
 import storybook from "eslint-plugin-storybook";
 import lodashUnderscore from "eslint-plugin-you-dont-need-lodash-underscore";
+import sonarjs from "eslint-plugin-sonarjs";
 import globals from "globals";
 
 const require = createRequire(import.meta.url);
 const typescriptRules = require("./eslint/typescript.cjs");
 
-const isPreCommit = process.env.PRE_COMMIT === "true";
 const tsFiles = ["**/*.{ts,tsx}"];
-const testFiles = ["src/**/*.test.{ts,tsx}", "src/test/**/*.ts"];
+const testFiles = ["src/**/*.test.{ts,tsx}", "src/test/**/*.{ts,tsx}"];
 const storybookConfigFiles = [".storybook/**/*.{ts,tsx}"];
+const storyFiles = ["src/**/*.stories.{ts,tsx}"];
+
+// Violations present when a rule was introduced live in eslint-suppressions.json; new ones fail `just lint`.
+// Fixing one requires `npm run lint:prune` so the baseline only ever shrinks.
 
 export default defineConfig(
   {
@@ -78,7 +82,7 @@ export default defineConfig(
       "no-restricted-exports": "off",
       "no-underscore-dangle": "error",
       "no-param-reassign": [
-        "warn",
+        "error",
         {
           props: true,
           ignorePropertyModificationsFor: [
@@ -88,25 +92,25 @@ export default defineConfig(
           ],
         },
       ],
-      "@typescript-eslint/dot-notation": isPreCommit ? "off" : "warn",
-      "@typescript-eslint/no-implied-eval": isPreCommit ? "off" : "error",
-      "@typescript-eslint/only-throw-error": isPreCommit ? "off" : "error",
-      "@typescript-eslint/return-await": isPreCommit ? "off" : "warn",
+      "@typescript-eslint/dot-notation": "error",
+      "@typescript-eslint/no-implied-eval": "error",
+      "@typescript-eslint/only-throw-error": "error",
+      "@typescript-eslint/return-await": "error",
       "@typescript-eslint/default-param-last": "off",
       "@eslint-react/dom-no-unsafe-target-blank": "error",
       "@eslint-react/rules-of-hooks": "error",
       "@eslint-react/no-nested-component-definitions": "error",
       "@eslint-react/set-state-in-render": "error",
       "@eslint-react/static-components": "error",
-      "@eslint-react/no-unused-props": "warn",
-      "@eslint-react/exhaustive-deps": "warn",
-      "@eslint-react/set-state-in-effect": "warn",
-      "@eslint-react/use-state": "warn",
-      "@eslint-react/naming-convention-ref-name": "warn",
-      "@eslint-react/purity": "warn",
-      "@eslint-react/web-api-no-leaked-event-listener": "warn",
-      "@eslint-react/web-api-no-leaked-timeout": "warn",
-      "jsx-a11y-x/no-autofocus": "warn",
+      "@eslint-react/no-unused-props": "error",
+      "@eslint-react/exhaustive-deps": "error",
+      "@eslint-react/set-state-in-effect": "error",
+      "@eslint-react/use-state": "error",
+      "@eslint-react/naming-convention-ref-name": "error",
+      "@eslint-react/purity": "error",
+      "@eslint-react/web-api-no-leaked-event-listener": "error",
+      "@eslint-react/web-api-no-leaked-timeout": "error",
+      "jsx-a11y-x/no-autofocus": "error",
     },
   },
   {
@@ -136,7 +140,7 @@ export default defineConfig(
     },
     rules: {
       "@eslint-react/rules-of-hooks": "error",
-      "@eslint-react/exhaustive-deps": "warn",
+      "@eslint-react/exhaustive-deps": "error",
     },
   },
   {
@@ -184,9 +188,33 @@ export default defineConfig(
     },
     rules: {
       "react-refresh/only-export-components": [
-        "warn",
+        "error",
         { allowConstantExport: true },
       ],
+    },
+  },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: [...testFiles, ...storyFiles],
+    plugins: { sonarjs },
+    rules: {
+      complexity: ["error", 15],
+      "max-depth": ["error", 4],
+      "max-params": ["error", 5],
+      "max-lines": [
+        "error",
+        { max: 600, skipBlankLines: true, skipComments: true },
+      ],
+      "max-lines-per-function": [
+        "error",
+        { max: 80, skipBlankLines: true, skipComments: true },
+      ],
+      "sonarjs/cognitive-complexity": ["error", 15],
+      "sonarjs/no-identical-functions": "error",
+      "sonarjs/no-duplicated-branches": "error",
+      "sonarjs/no-collapsible-if": "error",
+      "sonarjs/no-inverted-boolean-check": "error",
+      "sonarjs/prefer-single-boolean-return": "error",
     },
   },
 );

@@ -11,7 +11,7 @@ import { waitForExtensionActivation } from "./helpers/workspaceHelper";
  * Proves the extension actually drives Fusion end to end in the integration
  * workspace: activation parses the project, and the CLI-backed model commands
  * (compile/build) write the artifacts a Consumer Repository would expect under
- * target/. Runs against the single-project fixture copy that runTests.ts opens
+ * target/. Runs against the single-project fixture copy the `trusted` label opens
  * as the workspace root (models/base.sql has no deps; models/child.sql refs it).
  */
 

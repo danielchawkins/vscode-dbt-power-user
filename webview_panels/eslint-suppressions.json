@@ -1,0 +1,197 @@
+{
+  "src/modules/app/AppProvider.tsx": {
+    "react-refresh/only-export-components": {
+      "count": 1
+    }
+  },
+  "src/modules/app/useListeners.ts": {
+    "@eslint-react/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/DocumentationProvider.tsx": {
+    "@eslint-react/exhaustive-deps": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "react-refresh/only-export-components": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/docGenerator/DocBlockInserter.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/docGenerator/DocGenSelectedColumns.tsx": {
+    "@eslint-react/use-state": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/docGenerator/DocGeneratorInput.tsx": {
+    "@eslint-react/set-state-in-effect": {
+      "count": 2
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx": {
+    "@eslint-react/set-state-in-effect": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/DbtTestCode.tsx": {
+    "@eslint-react/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/DisplayTestDetails.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/EntityWithTests.tsx": {
+    "@eslint-react/use-state": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/EntityWithUnitTests.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/TestDetails.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/forms/AcceptedValues.tsx": {
+    "@eslint-react/set-state-in-effect": {
+      "count": 1
+    },
+    "@eslint-react/use-state": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/forms/Relationships.tsx": {
+    "@eslint-react/use-state": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/forms/TestForm.tsx": {
+    "@eslint-react/exhaustive-deps": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/hooks/useTestFormSave.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/utils.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/modules/lineage/LineageView.tsx": {
+    "@eslint-react/set-state-in-effect": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/QueryPanel.tsx": {
+    "@eslint-react/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/QueryPanelProvider.tsx": {
+    "react-refresh/only-export-components": {
+      "count": 2
+    }
+  },
+  "src/modules/queryPanel/components/QueryPanelContents/QueryPanelTitle.tsx": {
+    "@eslint-react/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/components/filters/Filters.tsx": {
+    "@eslint-react/exhaustive-deps": {
+      "count": 1
+    },
+    "jsx-a11y-x/no-autofocus": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/components/perspective/PerspectiveViewer.tsx": {
+    "@eslint-react/exhaustive-deps": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/components/queryLimit/QueryLimit.tsx": {
+    "@eslint-react/exhaustive-deps": {
+      "count": 1
+    },
+    "@eslint-react/set-state-in-effect": {
+      "count": 3
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/components/queryPanelQueryHistory/QueryPanelHistory.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/useQueryPanelListeners.ts": {
+    "@eslint-react/exhaustive-deps": {
+      "count": 4
+    },
+    "@eslint-react/naming-convention-ref-name": {
+      "count": 3
+    },
+    "@eslint-react/purity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/button/Button.tsx": {
+    "@eslint-react/set-state-in-effect": {
+      "count": 1
+    }
+  }
+}

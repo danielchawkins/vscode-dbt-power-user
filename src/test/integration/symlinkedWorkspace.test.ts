@@ -6,8 +6,8 @@ import { checkFusionVersion } from "./helpers/testFixtures";
 import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 
 /**
- * Proves the Fusion LSP client works when the opened project root is a symlink, not its realpath. runTests.ts
- * launches a second host against `<workspaceParent>/single-project-link`, a symlink to a fresh fixture copy.
+ * Proves the Fusion LSP client works when the opened project root is a symlink, not its realpath. The `symlinked`
+ * label opens `single-project-link`, a symlink to a fresh fixture copy.
  * Fusion matches document URIs literally, so without the client's realpath launch and URI converters the
  * definition request below returns nothing.
  */
@@ -49,8 +49,8 @@ suite("Symlinked workspace (extension)", function () {
   suiteSetup(async function () {
     if (process.env.FPU_SYMLINKED_WORKSPACE !== "1") {
       console.warn(
-        "Skipping symlinked workspace tests: only runs in the dedicated " +
-          "second launch (FPU_SYMLINKED_WORKSPACE=1) that opens the fixture " +
+        "Skipping symlinked workspace tests: only runs in the `symlinked` " +
+          "label (FPU_SYMLINKED_WORKSPACE=1), which opens the fixture " +
           "through a symlink.",
       );
       this.skip();
@@ -76,7 +76,7 @@ suite("Symlinked workspace (extension)", function () {
     assert.strictEqual(
       path.basename(folder!.uri.fsPath),
       "single-project-link",
-      "runTests.ts must have opened the symlink path, proving this suite " +
+      "The symlinked label must have opened the symlink path, proving this suite " +
         "actually exercises a symlinked project root",
     );
   });

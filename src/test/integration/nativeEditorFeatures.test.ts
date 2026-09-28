@@ -5,8 +5,8 @@ import * as vscode from "vscode";
 import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 
 /**
- * Native Fusion LSP editor features through VS Code, vscode-languageclient and this extension. runTests.ts opens
- * a fresh native-editor fixture copy once per static-analysis mode, naming the mode in FPU_NATIVE_EDITOR_MODE.
+ * Native Fusion LSP editor features through VS Code, vscode-languageclient and this extension. Each `native-*`
+ * label opens a fresh native-editor fixture copy with one static-analysis mode, named in FPU_NATIVE_EDITOR_MODE.
  * `project` launches with `+static_analysis: strict` in the fixture's dbt_project.yml, so it must match `strict`.
  */
 
