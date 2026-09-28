@@ -44,9 +44,6 @@
     }
   },
   "src/commands/index.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    },
     "@typescript-eslint/no-floating-promises": {
       "count": 2
     },
@@ -64,9 +61,6 @@
     },
     "max-params": {
       "count": 1
-    },
-    "no-restricted-properties": {
-      "count": 2
     }
   },
   "src/commands/projectSetupCommands.ts": {
@@ -346,11 +340,6 @@
       "count": 1
     }
   },
-  "src/projects/dbtTemplateLanguage.ts": {
-    "no-restricted-properties": {
-      "count": 2
-    }
-  },
   "src/projects/projectRegistry.ts": {
     "complexity": {
       "count": 1
@@ -469,7 +458,7 @@
   },
   "src/utils.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 5
+      "count": 3
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
@@ -548,9 +537,6 @@
     "max-params": {
       "count": 1
     },
-    "no-restricted-properties": {
-      "count": 2
-    },
     "sonarjs/cognitive-complexity": {
       "count": 3
     }
@@ -573,9 +559,6 @@
     },
     "max-lines-per-function": {
       "count": 2
-    },
-    "no-restricted-properties": {
-      "count": 5
     },
     "sonarjs/no-collapsible-if": {
       "count": 1

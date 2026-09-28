@@ -1,6 +1,5 @@
 import {
   commands,
-  ConfigurationTarget,
   Disposable,
   languages,
   TextDocument,
@@ -19,6 +18,11 @@ import {
 } from "../dbt_integration/projectPaths";
 import { ProjectContext } from "../projects/projectContext";
 import { ProjectRegistry } from "../projects/projectRegistry";
+import {
+  readFileAssociations,
+  readFolderFileAssociations,
+  writeFolderFileAssociations,
+} from "../settings";
 
 /**
  * Language for dbt `.sql` files, in precedence order: the user's `files.associations`; the `filenamePatterns` this
@@ -71,12 +75,9 @@ export class DbtTemplateLanguage implements Disposable {
     if (!project) {
       return;
     }
-    const userAssociations = workspace
-      .getConfiguration("files", doc.uri)
-      .get<Record<string, string>>("associations", {});
     if (
       associatedLanguage(
-        userAssociations,
+        readFileAssociations(doc.uri),
         project.folder.uri.fsPath,
         doc.uri.fsPath,
       )
@@ -115,10 +116,7 @@ export class DbtTemplateLanguage implements Disposable {
   async writeFolderAssociations(): Promise<number> {
     let added = 0;
     for (const project of this.registry.projects) {
-      const config = workspace.getConfiguration("files", project.folder.uri);
-      const current =
-        config.inspect<Record<string, string>>("associations")
-          ?.workspaceFolderValue ?? {};
+      const current = readFolderFileAssociations(project.folder.uri);
       const wanted = dbtTemplateAssociations(
         project.folder.uri.fsPath,
         this.pathsFor(project.root.fsPath),
@@ -129,11 +127,10 @@ export class DbtTemplateLanguage implements Disposable {
       if (missing.length === 0) {
         continue;
       }
-      await config.update(
-        "associations",
-        { ...current, ...Object.fromEntries(missing) },
-        ConfigurationTarget.WorkspaceFolder,
-      );
+      await writeFolderFileAssociations(project.folder.uri, {
+        ...current,
+        ...Object.fromEntries(missing),
+      });
       added += missing.length;
     }
     void window.showInformationMessage(

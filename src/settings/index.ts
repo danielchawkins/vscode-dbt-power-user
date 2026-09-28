@@ -1,4 +1,4 @@
-import { Disposable, Uri, workspace } from "vscode";
+import { ConfigurationTarget, Disposable, Uri, workspace } from "vscode";
 
 export const CONFIGURATION_SECTION = "fusionPowerUser";
 
@@ -88,6 +88,98 @@ export function readSetting<K extends SettingKey>(
   return workspace
     .getConfiguration(CONFIGURATION_SECTION, resource)
     .get<SettingsSchema[K]>(key) as SettingsSchema[K];
+}
+
+/** Writes one window-scoped setting; `undefined` removes it. */
+export function writeSetting<K extends WindowSettingKey>(
+  key: K,
+  value: SettingsSchema[K] | undefined,
+): Thenable<void> {
+  return workspace.getConfiguration(CONFIGURATION_SECTION).update(key, value);
+}
+
+/** One top-level `fusionPowerUser` entry: its effective value and the layer overriding the default, if any. */
+export interface SettingInspection {
+  key: string;
+  value: unknown;
+  overriddenIn?: "workspace" | "user";
+}
+
+/**
+ * Inspects every key present in the user, default or workspace value of the section, in that order. Keys set in
+ * several layers repeat. A value differing from the default is attributed to the workspace layer when it matches
+ * it, else to the user layer when it matches that.
+ */
+export function inspectSettings(): SettingInspection[] {
+  const inspected = workspace
+    .getConfiguration()
+    .inspect<Record<string, unknown>>(CONFIGURATION_SECTION);
+  const globalValue = inspected?.globalValue || {};
+  const defaultValue = inspected?.defaultValue || {};
+  const workspaceValue = inspected?.workspaceValue || {};
+  const section = workspace.getConfiguration(CONFIGURATION_SECTION);
+  return [
+    ...Object.keys(globalValue),
+    ...Object.keys(defaultValue),
+    ...Object.keys(workspaceValue),
+  ].map((key) => {
+    const value = section.get(key);
+    if (deepEqual(value, defaultValue[key])) {
+      return { key, value };
+    }
+    if (deepEqual(value, workspaceValue[key])) {
+      return { key, value, overriddenIn: "workspace" };
+    }
+    if (deepEqual(value, globalValue[key])) {
+      return { key, value, overriddenIn: "user" };
+    }
+    return { key, value };
+  });
+}
+
+const deepEqual = (a: unknown, b: unknown): boolean => {
+  if (a === b) {
+    return true;
+  }
+  if (typeof a !== "object" || typeof b !== "object" || !a || !b) {
+    return false;
+  }
+  const left = a as Record<string, unknown>;
+  const right = b as Record<string, unknown>;
+  const keys = Object.keys(left);
+  return (
+    keys.length === Object.keys(right).length &&
+    keys.every((key) => key in right && deepEqual(left[key], right[key]))
+  );
+};
+
+/** VS Code's `files.associations` glob-to-language map. */
+export type FileAssociations = Readonly<Record<string, string>>;
+
+/** Effective `files.associations` for `resource`. */
+export function readFileAssociations(resource: Uri): FileAssociations {
+  return workspace
+    .getConfiguration("files", resource)
+    .get<FileAssociations>("associations", {});
+}
+
+/** `files.associations` set in `folder`'s own settings, excluding inherited values. */
+export function readFolderFileAssociations(folder: Uri): FileAssociations {
+  return (
+    workspace
+      .getConfiguration("files", folder)
+      .inspect<FileAssociations>("associations")?.workspaceFolderValue ?? {}
+  );
+}
+
+/** Replaces `files.associations` in `folder`'s own settings. */
+export function writeFolderFileAssociations(
+  folder: Uri,
+  associations: FileAssociations,
+): Thenable<void> {
+  return workspace
+    .getConfiguration("files", folder)
+    .update("associations", associations, ConfigurationTarget.WorkspaceFolder);
 }
 
 /** A configuration change, queried for the keys it was subscribed with. */

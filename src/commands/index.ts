@@ -35,9 +35,9 @@ import {
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
-import { CONFIGURATION_SECTION } from "../settings";
+import { inspectSettings } from "../settings";
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
-import { deepEqual, getFirstWorkspacePath } from "../utils";
+import { getFirstWorkspacePath } from "../utils";
 import { ProjectSetupCommands } from "./projectSetupCommands";
 import { RunModel } from "./runModel";
 import { RunTest } from "./runTest";
@@ -400,35 +400,15 @@ export class VSCodeCommands implements Disposable {
           this.diagnosticsOutputChannel.logNewLine();
 
           // Printing extension settings
-          const extensionSettings = workspace
-            .getConfiguration()
-            .inspect(CONFIGURATION_SECTION);
-          const globalValue: any = extensionSettings?.globalValue || {};
-          const defaultValue: any = extensionSettings?.defaultValue || {};
-          const workspaceValue: any = extensionSettings?.workspaceValue || {};
-          const settingKeys = [
-            ...Object.keys(globalValue),
-            ...Object.keys(defaultValue),
-            ...Object.keys(workspaceValue),
-          ];
           this.diagnosticsOutputChannel.logBlockWithHeader(
             [
               "Printing extension settings...",
               "* Please remove any sensitive information before sending it to us",
             ],
-            settingKeys.map((key) => {
-              const value = workspace
-                .getConfiguration(CONFIGURATION_SECTION)
-                .get(key);
-              let overridenText = "";
-              if (!deepEqual(value, defaultValue[key])) {
-                if (deepEqual(value, workspaceValue[key])) {
-                  overridenText = `${key} is overridden in workspace settings`;
-                } else if (deepEqual(value, globalValue[key])) {
-                  overridenText = `${key} is overridden in user settings`;
-                }
-              }
-
+            inspectSettings().map(({ key, value, overriddenIn }) => {
+              const overridenText = overriddenIn
+                ? `${key} is overridden in ${overriddenIn} settings`
+                : "";
               const valueText =
                 Array.isArray(value) || typeof value === "object"
                   ? JSON.stringify(value)

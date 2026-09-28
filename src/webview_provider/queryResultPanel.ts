@@ -23,7 +23,7 @@ import {
 } from "../dbt_integration";
 import { QueryManifestService } from "../services/queryManifestService";
 import { SharedStateService } from "../services/sharedStateService";
-import { CONFIGURATION_SECTION } from "../settings";
+import { readSetting, writeSetting } from "../settings";
 import { getFormattedDateTime, getStringSizeInMb } from "../utils";
 import {
   AltimateWebviewProvider,
@@ -90,6 +90,7 @@ interface RecError {
 
 interface RecConfig {
   limit?: number;
+  perspectiveTheme?: string;
 }
 
 interface QueryHistory {
@@ -140,12 +141,8 @@ export class QueryResultPanel extends AltimateWebviewProvider {
   }
 
   private async sendUpdatedContextToWebview() {
-    const perspectiveTheme = workspace
-      .getConfiguration(CONFIGURATION_SECTION)
-      .get("queryResults.theme", "Vintage");
-    const limit = workspace
-      .getConfiguration(CONFIGURATION_SECTION)
-      .get<number>("query.limit");
+    const perspectiveTheme = readSetting("queryResults.theme");
+    const limit = readSetting("query.limit");
     if (this._panel) {
       await this._panel.webview.postMessage({
         command: OutboundCommand.GetContext,
@@ -381,14 +378,13 @@ export class QueryResultPanel extends AltimateWebviewProvider {
           case InboundCommand.UpdateConfig:
             const configMessage = message as RecConfig;
             if (configMessage.limit !== undefined) {
-              workspace
-                .getConfiguration(CONFIGURATION_SECTION)
-                .update("query.limit", configMessage.limit);
+              void writeSetting("query.limit", configMessage.limit);
             }
             if ("perspectiveTheme" in configMessage) {
-              workspace
-                .getConfiguration(CONFIGURATION_SECTION)
-                .update("queryResults.theme", configMessage.perspectiveTheme);
+              void writeSetting(
+                "queryResults.theme",
+                configMessage.perspectiveTheme,
+              );
             }
             break;
           default:
@@ -481,9 +477,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
 
   /** Sends VSCode config data to webview */
   private transmitConfig() {
-    const limit = workspace
-      .getConfiguration(CONFIGURATION_SECTION)
-      .get<number>("query.limit");
+    const limit = readSetting("query.limit");
     if (this._panel) {
       this._panel.webview.postMessage({
         command: OutboundCommand.InjectConfig,

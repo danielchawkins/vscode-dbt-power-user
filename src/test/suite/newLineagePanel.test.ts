@@ -63,12 +63,9 @@ describe("NewLineagePanel", () => {
       const mockConfig = {
         get: jest
           .fn<any>()
-          .mockImplementation((key: string, defaultVal: unknown) => {
-            if (key === "defaultExpansion") {
-              return 10;
-            }
-            return defaultVal;
-          }),
+          .mockImplementation((key: string) =>
+            key === "lineage.defaultExpansion" ? 10 : undefined,
+          ),
       };
       (workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
 
@@ -95,12 +92,9 @@ describe("NewLineagePanel", () => {
       const mockConfig = {
         get: jest
           .fn<any>()
-          .mockImplementation((key: string, defaultVal: unknown) => {
-            if (key === "defaultExpansion") {
-              return 3;
-            }
-            return defaultVal;
-          }),
+          .mockImplementation((key: string) =>
+            key === "lineage.defaultExpansion" ? 3 : undefined,
+          ),
       };
       (workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
 
@@ -116,34 +110,6 @@ describe("NewLineagePanel", () => {
           args: expect.objectContaining({
             body: expect.objectContaining({
               defaultExpansion: 3,
-            }),
-          }),
-        }),
-      );
-    });
-
-    it("should use default value of 1 when setting is not configured", async () => {
-      const mockConfig = {
-        get: jest
-          .fn<any>()
-          .mockImplementation((_key: string, defaultVal: unknown) => {
-            return defaultVal;
-          }),
-      };
-      (workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
-
-      await (panel as any).handleCommand({
-        command: "getLineageSettings",
-        args: {},
-        syncRequestId: "test-sync-3",
-      });
-
-      expect(mockPostMessage).toHaveBeenCalledWith(
-        expect.objectContaining({
-          command: "response",
-          args: expect.objectContaining({
-            body: expect.objectContaining({
-              defaultExpansion: 1,
             }),
           }),
         }),

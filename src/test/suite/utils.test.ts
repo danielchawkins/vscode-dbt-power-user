@@ -7,7 +7,6 @@ import { getExternalProjectNamesFromDbtLoomConfig } from "../../dbt_integration"
 import {
   arrayEquals,
   debounce,
-  deepEqual,
   getColumnNameByCase,
   getColumnTestConfigFromYml,
   getCurrentlySelectedModelNameInYamlConfig,
@@ -26,14 +25,6 @@ import {
 describe("utils tests", () => {
   afterEach(() => {
     jest.restoreAllMocks();
-  });
-
-  it("deepEqual compares nested objects", () => {
-    const obj1 = { a: 1, b: { c: [1, 2] } };
-    const obj2 = { b: { c: [1, 2] }, a: 1 };
-    const obj3 = { a: 1, b: { c: [2, 1] } };
-    expect(deepEqual(obj1, obj2)).toBe(true);
-    expect(deepEqual(obj1, obj3)).toBe(false);
   });
 
   it("getStringSizeInMb handles multibyte characters", () => {
