@@ -3,7 +3,7 @@ import * as path from "path";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
 import { DBT_PATH_SETTING } from "../fusion/fusionExecutable";
 import { STATIC_ANALYSIS_MODE_SETTING } from "../fusion/staticAnalysisMode";
-import { readSetting, SettingKey } from "../settings";
+import { readEnvironmentOverride, readSetting, SettingKey } from "../settings";
 import { resolveSettingsVariables } from "../utils";
 
 export const PROFILES_DIR_SETTING = "profilesDir";
@@ -11,8 +11,6 @@ export const TARGET_SETTING = "target";
 export const LINT_ENABLED_SETTING = "lint.enabled";
 export const TRACE_SERVER_SETTING = "trace.server";
 export const LSP_COMPILED_OUTPUT_SETTING = "lsp.compiledOutput";
-/** Overrides `fusionPowerUser.lsp.compiledOutput` for every project in the extension host's environment. */
-export const LSP_COMPILED_OUTPUT_ENV = "FUSION_POWER_USER_LSP_COMPILED_OUTPUT";
 
 const DEFAULT_TRACE_SERVER = "off";
 
@@ -80,7 +78,6 @@ export function resolveFusionLaunchSettings(
   deps: {
     getWorkspaceFolder?: (scope: Uri) => WorkspaceFolder | undefined;
     getUserHome?: () => string;
-    env?: NodeJS.ProcessEnv;
   } = {},
 ): FusionLaunchSettings {
   const getWorkspaceFolder =
@@ -99,9 +96,7 @@ export function resolveFusionLaunchSettings(
     readSetting(TRACE_SERVER_SETTING, scope),
   );
   const lspCompiledOutput =
-    parseLspCompiledOutput(
-      (deps.env ?? process.env)[LSP_COMPILED_OUTPUT_ENV],
-    ) ??
+    parseLspCompiledOutput(readEnvironmentOverride("lspCompiledOutput")) ??
     parseLspCompiledOutput(readSetting(LSP_COMPILED_OUTPUT_SETTING, scope)) ??
     DEFAULT_LSP_COMPILED_OUTPUT;
 

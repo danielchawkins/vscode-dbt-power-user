@@ -35,7 +35,7 @@ import {
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
-import { inspectSettings } from "../settings";
+import { inspectSettings, readEnvironment } from "../settings";
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { getFirstWorkspacePath } from "../utils";
 import { ProjectSetupCommands } from "./projectSetupCommands";
@@ -393,7 +393,7 @@ export class VSCodeCommands implements Disposable {
               "Printing extension host environment variables...",
               "* Please remove any sensitive information before sending it to us",
             ],
-            Object.entries(process.env).map(
+            Object.entries(readEnvironment()).map(
               ([key, value]) => `${key}=${value}`,
             ),
           );

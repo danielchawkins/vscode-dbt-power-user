@@ -41,6 +41,13 @@ const settingsProperties = ["getConfiguration", "onDidChangeConfiguration"].map(
   property,
   message: SETTINGS_MESSAGE,
 }));
+const ENVIRONMENT_MESSAGE = "Read the environment through src/settings/.";
+const environmentProperties = [{ object: "process", property: "env", message: ENVIRONMENT_MESSAGE }];
+const environmentImports = ["process", "node:process"].map((name) => ({
+  name,
+  importNames: ["env"],
+  message: ENVIRONMENT_MESSAGE,
+}));
 const fsWriteProperties = FS_WRITES.map((property) => ({ object: "fs", property, message: WRITE_MESSAGE }));
 const processImports = ["child_process", "node:child_process"].map((name) => ({ name, message: PROCESS_MESSAGE }));
 const fsWriteImports = [
@@ -101,11 +108,11 @@ module.exports = [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
       ],
-      // Confinement: settings reads, process spawning and user-file writes each have one home.
-      "no-restricted-properties": ["error", ...settingsProperties, ...fsWriteProperties],
+      // Confinement: settings and environment reads, process spawning and user-file writes each have one home.
+      "no-restricted-properties": ["error", ...settingsProperties, ...environmentProperties, ...fsWriteProperties],
       "no-restricted-syntax": ["error", ...settingsSyntax, ...processSyntax, ...fsRequireSyntax],
       "@typescript-eslint/no-require-imports": "error",
-      "no-restricted-imports": ["error", { paths: [...processImports, ...fsWriteImports] }],
+      "no-restricted-imports": ["error", { paths: [...processImports, ...environmentImports, ...fsWriteImports] }],
     },
   },
   {
@@ -113,13 +120,14 @@ module.exports = [
     rules: {
       "no-restricted-properties": ["error", ...fsWriteProperties],
       "no-restricted-syntax": ["error", ...processSyntax, ...fsRequireSyntax],
+      "no-restricted-imports": ["error", { paths: [...processImports, ...fsWriteImports] }],
     },
   },
   {
     files: ["src/fusion/process.ts"],
     rules: {
       "no-restricted-syntax": ["error", ...settingsSyntax, ...fsRequireSyntax],
-      "no-restricted-imports": ["error", { paths: fsWriteImports }],
+      "no-restricted-imports": ["error", { paths: [...environmentImports, ...fsWriteImports] }],
     },
   },
   {

@@ -1,5 +1,7 @@
 import { ConfigurationTarget, Disposable, Uri, workspace } from "vscode";
 
+export * from "./environment";
+
 export const CONFIGURATION_SECTION = "fusionPowerUser";
 
 /** One project's entry in `fusionPowerUser.defer.perProject`, keyed by project-relative path. */

@@ -3,7 +3,7 @@ import { homedir } from "os";
 import * as path from "path";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
 import which from "which";
-import { readSetting } from "../settings";
+import { readEnvironment, readSetting } from "../settings";
 import { resolveSettingsVariables } from "../utils";
 import {
   FusionVersion,
@@ -53,16 +53,6 @@ export type FusionExecutableResolverDependencies = {
   /** Lazily resolved because `ExtensionContext.globalState` isn't ready at construction. */
   getGlobalState?: () => FusionExecutableGlobalState | undefined;
 };
-
-function inheritedEnv(): Record<string, string> {
-  const env: Record<string, string> = {};
-  for (const [key, value] of Object.entries(process.env)) {
-    if (value !== undefined) {
-      env[key] = value;
-    }
-  }
-  return env;
-}
 
 function readOptionalString(value: unknown): string {
   return typeof value === "string" ? value : "";
@@ -237,7 +227,7 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
     executablePath: string,
   ): Promise<FusionExecutable | FusionVersionVerdict> {
     const absolutePath = path.resolve(executablePath);
-    const env = inheritedEnv();
+    const env = readEnvironment();
     let stdout = "";
     let stderr = "";
     let runError: string | undefined;
