@@ -34,8 +34,8 @@ email=$(git config user.email || true)
 if [ -n "$name" ]; then jj config set --repo user.name "$name"; fi
 if [ -n "$email" ]; then jj config set --repo user.email "$email"; fi
 jj config set --repo git.push origin
-jj config set --repo 'revset-aliases."trunk()"' master@origin
-jj bookmark track master --remote origin || true
+jj config set --repo 'revset-aliases."trunk()"' main@origin
+jj bookmark track main --remote origin || true
 
 # The working-copy commit predates the identity just configured, so it would be unpushable.
 if [ "$initialized" = true ]; then jj metaedit --update-author; fi
