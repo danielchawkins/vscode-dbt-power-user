@@ -1,0 +1,7 @@
+{
+  "name": "fusion-power-user-untrusted-runner",
+  "publisher": "danielchawkins",
+  "version": "0.0.0",
+  "engines": { "vscode": "^1.128.0" },
+  "capabilities": { "untrustedWorkspaces": { "supported": true } }
+}

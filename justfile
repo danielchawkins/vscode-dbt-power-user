@@ -196,6 +196,7 @@ test-coverage *args:
 [group("tests")]
 test-integration *args:
     just clean
+    just package
     npm run build:dev
     npm run compile:integration
     cp src/test/integration/out-package.json out/package.json

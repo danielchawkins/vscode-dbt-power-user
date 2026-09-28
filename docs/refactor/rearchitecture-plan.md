@@ -249,7 +249,7 @@ These extend `AGENTS.md`; the ESLint config enforces what it can.
 ## Risks
 
 - **R3 touches every feature.** Seven PRs, each green with smoke and visual evidence; R4 follows so the wiring is rewritten once, on the smaller graph.
-- **Workspace trust** changes first-run behaviour in untrusted folders. The status item explains the state, and the change ships in a prerelease with release notes.
+- **Workspace trust** changes first-run behaviour in untrusted folders: the extension is disabled until the folder is trusted, and VS Code's Restricted Mode UI explains why. The change ships in a prerelease with release notes.
 - **Perspective migration** may change query-panel behaviour. The spike runs first; issue #118 lands on the new package.
 - **The lineage renderer** is the only hard-to-reverse step: benchmark gate, old component reachable, prerelease.
 - **Fusion releases** can change evidence. The evidence harness reruns on each Fusion bump, and the experiments named in steps are the check.

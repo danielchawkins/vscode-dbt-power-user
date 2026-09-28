@@ -21,7 +21,11 @@
     "npm": ">=11"
   },
   "capabilities": {
-    "hoverProvider": true
+    "hoverProvider": true,
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "Runs the dbt executable that workspace settings choose, so it stays disabled until the workspace is trusted."
+    }
   },
   "categories": [
     "Other",

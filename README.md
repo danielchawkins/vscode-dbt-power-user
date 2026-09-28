@@ -34,6 +34,8 @@ Without the `gh` CLI, download `fusion-power-user-<version>.vsix` and `vsix.sha2
 - **Uninstall:** `code --uninstall-extension danielchawkins.fusion-power-user`.
 - **From source:** `just package` builds the VSIX from the working copy and records its path in `out/latest-vsix`; install it with `code --install-extension "$(cat out/latest-vsix)" --force`.
 
+In an untrusted workspace the extension stays disabled, because it runs the `dbt` executable that workspace settings name; VS Code enables it when you trust the folder (Restricted Mode shows the state).
+
 Pin a specific version and its checksum rather than tracking a moving release; see [`docs/releasing.md`](docs/releasing.md) for rollback.
 
 ## dbt Fusion resolution
