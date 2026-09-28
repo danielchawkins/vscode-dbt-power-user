@@ -2,84 +2,14 @@ import { describe, expect, it } from "@jest/globals";
 import fc from "fast-check";
 import * as path from "path";
 import {
-  DbtProjectFile,
-  ProjectSnapshotInputs,
-  ProjectSnapshotSettings,
   resolveProjectSnapshot,
   substituteVariables,
 } from "../../core/project";
+import { NUM_RUNS } from "../arbitraries";
 import {
-  NUM_RUNS,
-  relativeDir,
-  segment,
-  staticAnalysisMode,
-} from "../arbitraries";
-
-const folder = path.join("/", "ws");
-
-const noSettings: ProjectSnapshotSettings = {
-  dbtPath: undefined,
-  target: undefined,
-  profilesDir: undefined,
-  staticAnalysis: undefined,
-  lspCompiledOutput: undefined,
-  deferPerProject: undefined,
-  runParams: [],
-  buildParams: [],
-  testParams: [],
-};
-
-const parsed = (config: Record<string, unknown>): DbtProjectFile => ({
-  kind: "parsed",
-  text: "",
-  config,
-});
-
-const pathKeys = fc.record(
-  {
-    "model-paths": fc.array(relativeDir, { minLength: 1, maxLength: 3 }),
-    "macro-paths": fc.array(relativeDir, { minLength: 1, maxLength: 2 }),
-    "test-paths": fc.array(relativeDir, { minLength: 1, maxLength: 2 }),
-    "target-path": relativeDir,
-    "packages-install-path": relativeDir,
-    name: segment,
-  },
-  { requiredKeys: [] },
-);
-
-const inputs: fc.Arbitrary<ProjectSnapshotInputs> = fc
-  .record({
-    rel: fc.array(segment, { maxLength: 2 }),
-    config: pathKeys,
-    target: fc.option(fc.oneof(segment, fc.constant("  ")), {
-      nil: undefined,
-    }),
-    profilesDir: fc.option(relativeDir, { nil: undefined }),
-    staticAnalysis: fc.oneof(staticAnalysisMode, fc.string()),
-    lspCompiledOutput: fc.constantFrom(
-      "separate",
-      "shared",
-      "bogus",
-      undefined,
-    ),
-    override: fc.constantFrom("separate", "shared", "bogus", undefined),
-  })
-  .map((v): ProjectSnapshotInputs => ({
-    root: path.join(folder, ...v.rel),
-    folder,
-    firstWorkspaceFolder: folder,
-    userHome: path.join("/", "home", "u"),
-    environment: { HOME: "/home/u" },
-    lspCompiledOutputOverride: v.override,
-    settings: {
-      ...noSettings,
-      target: v.target,
-      profilesDir: v.profilesDir,
-      staticAnalysis: v.staticAnalysis,
-      lspCompiledOutput: v.lspCompiledOutput,
-    },
-    projectFile: parsed(v.config),
-  }));
+  snapshotFolder as folder,
+  snapshotInputs as inputs,
+} from "../arbitraries/projectSnapshot";
 
 const inside = (root: string, p: string) => {
   const rel = path.relative(root, p);
