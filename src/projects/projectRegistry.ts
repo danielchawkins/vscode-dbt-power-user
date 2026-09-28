@@ -12,9 +12,10 @@ import {
 } from "vscode";
 import {
   DBT_PROJECT_FILE,
-  DBTTerminal,
-  readAndParseProjectConfig,
-} from "../dbt_integration";
+  declaredProjectName,
+  readDbtProjectFile,
+} from "../core/project";
+import { DBTTerminal } from "../dbt_integration";
 import { onDidChangeSettings } from "../settings";
 import {
   PROJECTS_SETTING,
@@ -91,19 +92,16 @@ export class ProjectRegistry implements Disposable {
         });
       }
       for (const root of resolved.roots) {
-        let name = path.basename(root.fsPath);
-        try {
-          const cfg = readAndParseProjectConfig(root.fsPath);
-          if (cfg?.name) {
-            name = cfg.name;
-          }
-        } catch (error) {
+        const file = readDbtProjectFile(root.fsPath);
+        if (file.kind !== "parsed") {
           this.terminal.warn(
             "projectRegistry",
-            `Parse error at ${root.fsPath}: ${error}`,
+            `Parse error at ${root.fsPath}: ${file.kind === "missing" ? "file is missing" : file.message}`,
           );
           continue;
         }
+        const name =
+          declaredProjectName(file.config) ?? path.basename(root.fsPath);
         candidates.push({
           folder,
           root,

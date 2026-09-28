@@ -1,14 +1,11 @@
 import { describe, expect, it } from "@jest/globals";
 import fc from "fast-check";
 import * as path from "path";
+import { isDbtTemplateFile, ProjectPaths } from "../../core/project";
 import {
   associatedLanguage,
   dbtTemplateAssociations,
 } from "../../dbt_integration/dbtAssociations";
-import {
-  isDbtTemplateFile,
-  ProjectPaths,
-} from "../../dbt_integration/projectPaths";
 import { buildFusionLspArgs } from "../../lsp/fusionLanguageClient";
 import {
   NUM_RUNS,

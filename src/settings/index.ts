@@ -1,15 +1,9 @@
 import { ConfigurationTarget, Disposable, Uri, workspace } from "vscode";
+import { DeferSettingsEntry } from "../core/project";
 
 export * from "./environment";
 
 export const CONFIGURATION_SECTION = "fusionPowerUser";
-
-/** One project's entry in `fusionPowerUser.defer.perProject`, keyed by project-relative path. */
-export interface DeferSettingsEntry {
-  deferToProduction: boolean;
-  favorState: boolean;
-  manifestPathForDeferral?: string;
-}
 
 /**
  * Every contributed `fusionPowerUser.*` setting, keyed relative to the section. Enum-valued settings are `string`

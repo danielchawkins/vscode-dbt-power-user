@@ -9,13 +9,13 @@ import {
 import { EventEmitter } from "events";
 import * as path from "path";
 import * as vscode from "vscode";
+import { DBT_PROJECT_FILE } from "../../core/project";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
 import { FusionProjectIntegrationEvents } from "../../dbt_client/fusionProjectIntegration";
 import {
   Catalog,
-  DBT_PROJECT_FILE,
   DBTCommandFactory,
   DBTDiagnosticData,
   DBTTerminal,

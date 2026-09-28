@@ -10,7 +10,12 @@ import {
   workspace,
   WorkspaceEdit,
 } from "vscode";
-import { parseDocument } from "yaml";
+import {
+  DBT_PROJECT_FILE,
+  dbtProjectFilePath,
+  declaredProjectName,
+  parseDbtProjectYaml,
+} from "../core/project";
 import { DBTTerminal } from "../dbt_integration/terminal";
 import {
   planProjectConfigInsertion,
@@ -23,7 +28,7 @@ import { DeclaredProject } from "../projects/projectRegistry";
 const CONFIRM = "Add";
 
 /**
- * Opt-ins a project makes in its own dbt_project.yml. Each adds one key after a modal that shows the exact
+ * Opt-ins a project makes in its own project file. Each adds one key after a modal that shows the exact
  * lines, never overwrites an existing value, and applies as a WorkspaceEdit so Undo reverts it.
  */
 export class ProjectConfigCommands implements Disposable {
@@ -78,12 +83,13 @@ export async function applyProjectConfigInsertion(
   insertion: (projectName: string) => ProjectConfigInsertion,
   terminal: DBTTerminal,
 ): Promise<boolean> {
-  const file = Uri.file(path.join(project.root.fsPath, "dbt_project.yml"));
+  const file = Uri.file(dbtProjectFilePath(project.root.fsPath));
   const open = workspace.textDocuments.find(
     (document) => document.uri.fsPath === file.fsPath,
   );
   const text = open?.getText() ?? readFileSync(file.fsPath, "utf8");
-  const projectName = readProjectName(text) ?? project.name;
+  const projectName =
+    declaredProjectName(parseDbtProjectYaml(text).config) ?? project.name;
   const wanted = insertion(projectName);
   let plan;
   try {
@@ -106,7 +112,7 @@ export async function applyProjectConfigInsertion(
     return false;
   }
   const answer = await window.showInformationMessage(
-    `Add to ${project.name}/dbt_project.yml?`,
+    `Add to ${project.name}/${DBT_PROJECT_FILE}?`,
     { modal: true, detail: plan.preview },
     CONFIRM,
   );
@@ -128,9 +134,4 @@ export async function applyProjectConfigInsertion(
     await document.save();
   }
   return applied;
-}
-
-function readProjectName(text: string): string | undefined {
-  const name: unknown = parseDocument(text).get("name");
-  return typeof name === "string" ? name : undefined;
 }

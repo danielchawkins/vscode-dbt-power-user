@@ -4,8 +4,12 @@ import * as os from "os";
 import * as path from "path";
 import {
   isDbtTemplateFile,
+  readDbtProjectFile,
   resolveProjectPaths,
-} from "../../dbt_integration/projectPaths";
+} from "../../core/project";
+
+const pathsOnDisk = (root: string) =>
+  resolveProjectPaths(root, readDbtProjectFile(root).config);
 
 describe("resolveProjectPaths", () => {
   const dirs: string[] = [];
@@ -25,7 +29,7 @@ describe("resolveProjectPaths", () => {
 
   it("uses dbt's standard layout when nothing is declared", () => {
     const root = project("name: p\n");
-    expect(resolveProjectPaths(root)).toEqual({
+    expect(pathsOnDisk(root)).toEqual({
       modelPaths: [path.join(root, "models")],
       seedPaths: [path.join(root, "seeds")],
       macroPaths: [path.join(root, "macros")],
@@ -41,7 +45,7 @@ describe("resolveProjectPaths", () => {
     const root = project(
       "name: p\nmodel-paths: [transform, marts]\nmacro_paths: [lib]\ntarget-path: build\n",
     );
-    const paths = resolveProjectPaths(root);
+    const paths = pathsOnDisk(root);
     expect(paths.modelPaths).toEqual([
       path.join(root, "transform"),
       path.join(root, "marts"),
@@ -57,7 +61,7 @@ describe("resolveProjectPaths", () => {
     ["wrong shapes", "model-paths: models\ntarget-path: [a]\n"],
   ])("falls back to defaults for %s", (_label, yaml) => {
     const root = project(yaml);
-    const paths = resolveProjectPaths(root);
+    const paths = pathsOnDisk(root);
     expect(paths.modelPaths).toEqual([path.join(root, "models")]);
     expect(paths.targetPath).toEqual(path.join(root, "target"));
   });
@@ -100,13 +104,13 @@ describe("isDbtTemplateFile across path aliases", () => {
     fs.writeFileSync(path.join(real, "models", "a.sql"), "select 1");
     fs.symlinkSync(real, link);
     try {
-      const paths = resolveProjectPaths(fs.realpathSync(real));
+      const paths = pathsOnDisk(fs.realpathSync(real));
       expect(isDbtTemplateFile(paths, path.join(link, "models", "a.sql"))).toBe(
         true,
       );
       expect(
         isDbtTemplateFile(
-          resolveProjectPaths(link),
+          pathsOnDisk(link),
           path.join(real, "models", "a.sql"),
         ),
       ).toBe(true);

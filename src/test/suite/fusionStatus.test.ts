@@ -13,7 +13,7 @@ import {
   window,
   WorkspaceFolder,
 } from "vscode";
-import { StaticAnalysisMode } from "../../fusion/staticAnalysisMode";
+import { StaticAnalysisMode } from "../../core/project";
 import { FusionClientPool } from "../../lsp/fusionClientPool";
 import {
   FusionClient,

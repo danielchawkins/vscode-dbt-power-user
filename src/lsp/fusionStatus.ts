@@ -6,13 +6,14 @@ import {
   StatusBarItem,
   window,
 } from "vscode";
+import { DBT_PROJECT_FILE } from "../core/project";
 import { SchemaOriginStatus } from "../fusion/schemaOrigin";
 import { ProjectContext } from "../projects/projectContext";
 import { DeclaredProject } from "../projects/projectRegistry";
 import { FusionClientPool } from "./fusionClientPool";
 import { FusionClient, FusionClientState } from "./fusionLanguageClient";
 
-/** What a project has opted into in its own dbt_project.yml, for the tooltip. */
+/** What a project has opted into in its own project file, for the tooltip. */
 export interface ProjectOptIns {
   strict: boolean;
   schemaOrigin: SchemaOriginStatus;
@@ -122,7 +123,7 @@ export function optInLines(optIns: ProjectOptIns | undefined): string[] {
   const lines: string[] = [];
   if (!optIns.strict) {
     lines.push(
-      "Strict analysis is not enabled in dbt_project.yml. [Enable](command:fusionPowerUser.enableStrictAnalysis)",
+      `Strict analysis is not enabled in ${DBT_PROJECT_FILE}. [Enable](command:fusionPowerUser.enableStrictAnalysis)`,
     );
   }
   const origin = optIns.schemaOrigin;

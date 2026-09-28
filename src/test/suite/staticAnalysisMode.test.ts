@@ -5,10 +5,12 @@ import { Uri, workspace, WorkspaceConfiguration } from "vscode";
 import {
   DEFAULT_STATIC_ANALYSIS_MODE,
   parseStaticAnalysisMode,
+  StaticAnalysisMode,
+} from "../../core/project";
+import {
   resolveConfiguredStaticAnalysisMode,
   STATIC_ANALYSIS_MODE_SETTING,
   staticAnalysisLaunchArgument,
-  StaticAnalysisMode,
 } from "../../fusion/staticAnalysisMode";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";

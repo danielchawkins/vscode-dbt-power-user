@@ -1,8 +1,4 @@
 import * as crypto from "crypto";
-import { existsSync, readFileSync } from "fs";
-import path from "path";
-
-import { parse } from "yaml";
 
 import {
   CommandProcessExecution,
@@ -14,10 +10,7 @@ import { DBTDiagnosticResult } from "./diagnostics";
 import {
   Catalog,
   DBColumn,
-  DBT_PROJECT_FILE,
   DBTNode,
-  DEFAULT_PACKAGES_INSTALL_DIR,
-  EXCLUDED_PROJECT_DIRS,
   ManifestPathType,
   NodeMetaData,
   RunModelParams,
@@ -69,135 +62,6 @@ function combineAbortSignals(
   });
 
   return combinedSignal;
-}
-
-export interface DBTProjectConfig {
-  name: string;
-  version?: string;
-  profile?: string;
-  model_paths?: string[];
-  analysis_paths?: string[];
-  test_paths?: string[];
-  seed_paths?: string[];
-  macro_paths?: string[];
-  snapshot_paths?: string[];
-  target_path?: string;
-  clean_targets?: string[];
-  log_path?: string;
-  packages_install_path?: string;
-}
-
-export function readAndParseProjectConfig(
-  projectRoot: string,
-): DBTProjectConfig {
-  const dbtProjectConfigLocation = path.join(projectRoot, DBT_PROJECT_FILE);
-  const dbtProjectYamlFile = readFileSync(dbtProjectConfigLocation, "utf8");
-  return parse(dbtProjectYamlFile, {
-    strict: false,
-    uniqueKeys: false,
-    maxAliasCount: -1,
-  }) as unknown as DBTProjectConfig;
-}
-
-/**
- * Resolve a project's `packages-install-path` without running dbt.
- *
- * Synchronous by design: callers decide whether to register a project on hot
- * paths (file watchers firing while `dbt deps` writes package files) and cannot
- * await an adapter. Falls back to `<projectDirectory>/dbt_packages` — dbt's
- * default — when the file is absent, unparseable, or does not configure a path.
- *
- * A malformed `dbt_project.yml` must not throw here: callers use this to decide
- * what to *skip*, and an exception would abort discovery entirely rather than
- * let the caller surface a per-project diagnostic.
- */
-export function resolvePackagesInstallPath(
-  projectDirectory: string,
-  onParseError?: (message: string) => void,
-): string {
-  const defaultPath = path.join(projectDirectory, DEFAULT_PACKAGES_INSTALL_DIR);
-  const dbtProjectFile = path.join(projectDirectory, DBT_PROJECT_FILE);
-  if (!existsSync(dbtProjectFile)) {
-    return defaultPath;
-  }
-  let parsed: unknown;
-  try {
-    parsed = parse(readFileSync(dbtProjectFile, "utf8"));
-  } catch (error) {
-    onParseError?.(error instanceof Error ? error.message : String(error));
-    return defaultPath;
-  }
-  const configuredPath =
-    typeof parsed === "object" && parsed !== null
-      ? (parsed as Record<string, unknown>)["packages-install-path"]
-      : undefined;
-  if (typeof configuredPath === "string" && configuredPath.length > 0) {
-    return path.isAbsolute(configuredPath)
-      ? configuredPath
-      : path.join(projectDirectory, configuredPath);
-  }
-  return defaultPath;
-}
-
-/**
- * Reduce a path to a form the prefix test below can compare. A packages path
- * reaches us from dbt, from a `dbt_project.yml`, or from a VS Code URI, so it
- * may carry a trailing separator, use a different separator than the candidate
- * it is compared against, or — on Windows — disagree on drive-letter case
- * (`C:\…` from the Python bridge vs `c:\…` from a URI) while naming the very
- * same directory.
- *
- * Case is folded on win32 only. Windows filesystems are case-insensitive, so
- * folding there resolves a genuine ambiguity; on Linux `DBT_PACKAGES` really is
- * a different directory from `dbt_packages`, and folding would silently exclude
- * a real project.
- */
-function normalizeForCompare(value: string): string {
-  const normalized = value.replace(/[\\/]+/g, "/").replace(/\/$/, "");
-  return process.platform === "win32" ? normalized.toLowerCase() : normalized;
-}
-
-function isPathInside(candidatePath: string, parentPath: string): boolean {
-  if (!parentPath || !candidatePath) {
-    return false;
-  }
-  const candidate = normalizeForCompare(candidatePath);
-  const parent = normalizeForCompare(parentPath);
-  if (!parent) {
-    return false;
-  }
-  if (candidate === parent) {
-    return true;
-  }
-  // Match on a separator boundary so `/w/dbt_packages_old` is not treated as
-  // living inside `/w/dbt_packages`.
-  return candidate.startsWith(`${parent}/`);
-}
-
-/**
- * True when `candidatePath` sits inside an installed-packages or virtualenv
- * directory, and so must not be registered as a standalone dbt project.
- *
- * The `EXCLUDED_PROJECT_DIRS` segment check runs first and needs no I/O, which
- * covers the default layout on the hot path. `packagesInstallPaths` is only
- * consulted for projects that configure `packages-install-path` outside that
- * list; pass already-resolved paths (see `resolvePackagesInstallPath`) so this
- * stays free of hidden file reads.
- *
- * Separator-agnostic: a Windows or UNC path is classified correctly regardless
- * of the host platform.
- */
-export function isInsidePackagesPath(
-  candidatePath: string,
-  packagesInstallPaths: string[] = [],
-): boolean {
-  const segments = candidatePath.split(/[\\/]/);
-  if (segments.some((segment) => EXCLUDED_PROJECT_DIRS.includes(segment))) {
-    return true;
-  }
-  return packagesInstallPaths.some((packagesInstallPath) =>
-    isPathInside(candidatePath, packagesInstallPath),
-  );
 }
 
 export function hashProjectRoot(projectRoot: string) {

@@ -1,6 +1,6 @@
 import * as path from "path";
 import picomatch from "picomatch";
-import { ProjectPaths } from "./projectPaths";
+import { ProjectPaths } from "../core/project";
 
 const matches = (value: string, pattern: string) =>
   picomatch.isMatch(value, pattern, { dot: true, nocase: true });

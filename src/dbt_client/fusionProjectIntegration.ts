@@ -3,10 +3,14 @@ import { extname, isAbsolute, join } from "path";
 
 import { EventEmitter } from "events";
 import { Disposable, Uri } from "vscode";
-import { YAMLError } from "yaml";
+import {
+  DBT_PROJECT_FILE,
+  dbtProjectFilePath,
+  declaredProjectName,
+  readDbtProjectFile,
+} from "../core/project";
 import {
   ChildrenParentParser,
-  DBT_PROJECT_FILE,
   DBTCommand,
   DBTCommandFactory,
   type DBTConfiguration,
@@ -29,7 +33,6 @@ import {
   ParsedManifest,
   QueryExecution,
   type QueryExecutionResult,
-  readAndParseProjectConfig,
   RESOURCE_TYPE_MODEL,
   RUN_RESULTS_FILE,
   type RunResultsEventData,
@@ -295,11 +298,11 @@ export class FusionProjectIntegration
   }
 
   private readProjectNameFromConfig(): string {
-    try {
-      return readAndParseProjectConfig(this.projectRoot).name;
-    } catch {
-      return this.projectRoot.split(/[/\\]/).pop() ?? this.projectRoot;
-    }
+    return (
+      declaredProjectName(readDbtProjectFile(this.projectRoot).config) ??
+      this.projectRoot.split(/[/\\]/).pop() ??
+      this.projectRoot
+    );
   }
 
   getProjectName(): string {
@@ -318,7 +321,7 @@ export class FusionProjectIntegration
   }
 
   getDBTProjectFilePath(): string {
-    return join(this.projectRoot, DBT_PROJECT_FILE);
+    return dbtProjectFilePath(this.projectRoot);
   }
 
   getTargetPath(): string | undefined {
@@ -602,22 +605,6 @@ export class FusionProjectIntegration
       await delegate.refreshProjectConfig();
       this.clearProjectConfigDiagnostics();
     } catch (error) {
-      const projectFile = this.getDBTProjectFilePath();
-      if (error instanceof YAMLError) {
-        this.addProjectConfigDiagnostic({
-          filePath: projectFile,
-          message: "dbt_project.yml is invalid : " + error.message,
-          severity: "error",
-          range: {
-            startLine: 0,
-            startColumn: 0,
-            endLine: 999,
-            endColumn: 999,
-          },
-          source: "dbt-project",
-          category: "project-config",
-        });
-      }
       this.terminal.debug(
         "FusionProjectIntegration",
         `An error occurred while trying to refresh the project "${this.getProjectName()}" at ${this.projectRoot} configuration`,
@@ -1123,7 +1110,7 @@ export class FusionProjectIntegration
       this.projectConfigDebounced = createDebounced(async () => {
         this.terminal.debug(
           "FusionProjectIntegration",
-          "dbt_project.yml changed, refreshing project config",
+          `${DBT_PROJECT_FILE} changed, refreshing project config`,
         );
         try {
           await this.refreshProjectConfig();
@@ -1141,7 +1128,7 @@ export class FusionProjectIntegration
         if (event === "change") {
           this.terminal.debug(
             "FusionProjectIntegration",
-            `dbt_project.yml ${event} detected`,
+            `${DBT_PROJECT_FILE} ${event} detected`,
           );
           this.projectConfigDebounced?.schedule();
         }

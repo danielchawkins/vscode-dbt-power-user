@@ -1,7 +1,7 @@
 import { existsSync } from "fs";
 import * as path from "path";
 import { Uri, WorkspaceFolder } from "vscode";
-import { DBT_PROJECT_FILE } from "../dbt_integration";
+import { DBT_PROJECT_FILE } from "../core/project";
 import { readSetting } from "../settings";
 
 export const PROJECTS_SETTING = "projects";

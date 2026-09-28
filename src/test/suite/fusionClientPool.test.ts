@@ -12,11 +12,11 @@ import {
   workspace,
   WorkspaceFolder,
 } from "vscode";
+import { StaticAnalysisMode } from "../../core/project";
 import {
   DBT_PATH_SETTING,
   FusionExecutableResolver,
 } from "../../fusion/fusionExecutable";
-import { StaticAnalysisMode } from "../../fusion/staticAnalysisMode";
 import { FusionClientPoolImpl } from "../../lsp/fusionClientPool";
 import {
   LINT_ENABLED_SETTING,

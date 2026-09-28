@@ -464,22 +464,6 @@ export interface EnvironmentVariables {
   [key: string]: string | undefined;
 }
 
-export const DBT_PROJECT_FILE = "dbt_project.yml";
-/** dbt's default `packages-install-path`. */
-export const DEFAULT_PACKAGES_INSTALL_DIR = "dbt_packages";
-/**
- * Directory names whose nested `dbt_project.yml` files belong to installed
- * packages or a Python virtualenv rather than to a standalone dbt project.
- *
- * A project may point `packages-install-path` somewhere outside this list,
- * which it cannot know about — use `resolvePackagesInstallPath` to cover the
- * configured location.
- */
-export const EXCLUDED_PROJECT_DIRS = [
-  DEFAULT_PACKAGES_INSTALL_DIR,
-  "site-packages",
-  "dbt_internal_packages",
-];
 export const MANIFEST_FILE = "manifest.json";
 export const RUN_RESULTS_FILE = "run_results.json";
 export const CATALOG_FILE = "catalog.json";

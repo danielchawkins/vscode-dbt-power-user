@@ -1,5 +1,4 @@
 import { homedir } from "os";
-import * as path from "path";
 import {
   Disposable,
   FileSystemWatcher,
@@ -11,6 +10,7 @@ import {
   workspace,
 } from "vscode";
 import { parseDocument } from "yaml";
+import { substituteVariables } from "./core/project";
 import {
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
@@ -113,11 +113,6 @@ export function getFirstWorkspacePath(): string {
     return Uri.file("./").fsPath;
   }
 }
-
-export const getProjectRelativePath = (projectRoot: Uri) => {
-  const ws = workspace.getWorkspaceFolder(projectRoot);
-  return path.relative(ws?.uri.fsPath || "", projectRoot.fsPath);
-};
 
 export const getColumnNameByCase = (columnName: string, adapter: string) => {
   if (isQuotedIdentifier(columnName, adapter)) {
@@ -386,35 +381,13 @@ export function resolveSettingsVariables(
   if (!value) {
     return value;
   }
-
-  // Resolve ${env:VAR_NAME}
-  // Use a callback-based replace to:
-  // 1. Avoid desynchronizing a stateful global regex with the mutating string
-  //    (the previous while-loop skipped subsequent placeholders in strings
-  //    containing multiple `${env:VAR}` references).
-  // 2. Treat the replacement as a literal string — passing an env value
-  //    directly to replace() causes `$1`, `$&`, etc. in the value to be
-  //    interpreted as backreferences, silently corrupting paths like
-  //    `/home/$USER/project`.
-  // Unresolved placeholders (env var not set) are left as-is.
-  value = value.replace(/\$\{env:(.*?)\}/g, (match, varName) => {
-    const envValue = readEnvironmentVariable(varName);
-    return envValue !== undefined ? envValue : match;
-  });
-
-  // Resolve ${userHome}
-  value = value.replace(/\$\{userHome\}/g, () => userHome);
-
-  // Resolve ${workspaceFolder}
-  // Also use a callback for the same `$`-interpretation reason: workspace
-  // paths can legitimately contain `$` on Windows.
   const folder =
     workspaceFolder === null
       ? undefined
       : (workspaceFolder ?? workspace.workspaceFolders?.[0]?.uri);
-  if (folder) {
-    value = value.replace(/\$\{workspaceFolder\}/g, () => folder.fsPath);
-  }
-
-  return value;
+  return substituteVariables(value, {
+    folder: folder?.fsPath,
+    userHome,
+    lookup: readEnvironmentVariable,
+  });
 }
