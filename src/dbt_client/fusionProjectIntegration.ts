@@ -2,7 +2,6 @@ import { FSWatcher, readFileSync, watch } from "fs";
 import { extname, isAbsolute, join } from "path";
 
 import { EventEmitter } from "events";
-import { Disposable, Uri } from "vscode";
 import {
   DBT_PROJECT_FILE,
   dbtProjectFilePath,
@@ -34,23 +33,17 @@ import {
   TestParser,
   UnitTestParser,
 } from "../dbt_integration";
-import { FusionCli } from "../fusion/fusionCli";
 import {
-  DBT_PATH_SETTING,
-  formatFusionExecutableResolutionFailure,
-  FusionExecutable,
-  FusionExecutableResolver,
-  isFusionExecutable,
-} from "../fusion/fusionExecutable";
+  EXECUTABLE_DIAGNOSTIC_SOURCE,
+  ExecutableLifecycle,
+  FusionCommandIntegrationFactory,
+} from "../fusion/executableLifecycle";
+import { FusionCli } from "../fusion/fusionCli";
+import { FusionExecutableResolver } from "../fusion/fusionExecutable";
 import { FusionVersion } from "../fusion/fusionVersion";
-import { onDidChangeSettings, SettingsChange } from "../settings";
 
-export type FusionCommandIntegrationFactory = (
-  executable: FusionExecutable,
-  projectRoot: string,
-) => FusionCli;
+export type { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
 
-const EXECUTABLE_DIAGNOSTIC_SOURCE = "fusion-executable";
 const REBUILD_MANIFEST_DEBOUNCE_MS = 500;
 
 export const FusionProjectIntegrationEvents = {
@@ -122,11 +115,9 @@ export class FusionProjectIntegration
   extends EventEmitter
   implements ManifestProject
 {
-  private currentIntegration?: FusionCli;
-  private currentFusionVersion?: FusionVersion;
-  private configurationSubscription?: Disposable;
-  private refreshChain: Promise<void> = Promise.resolve();
-  private refreshGeneration = 0;
+  private readonly lifecycle: ExecutableLifecycle;
+  /** A candidate being parsed before commit; parsers read project paths through it. */
+  private parsingCandidate?: FusionCli;
   private disposed = false;
   private consecutiveReadFailures = 0;
   private sourceFileWatchers: FSWatcher[] = [];
@@ -140,8 +131,8 @@ export class FusionProjectIntegration
   private adapterType = "unknown";
 
   constructor(
-    private readonly resolver: FusionExecutableResolver,
-    private readonly fusionIntegrationFactory: FusionCommandIntegrationFactory,
+    resolver: FusionExecutableResolver,
+    fusionIntegrationFactory: FusionCommandIntegrationFactory,
     private readonly projectRoot: string,
     private readonly childrenParentParser: ChildrenParentParser,
     private readonly nodeParser: NodeParser,
@@ -159,6 +150,38 @@ export class FusionProjectIntegration
     private readonly semanticModelParser: SemanticModelParser,
   ) {
     super();
+    this.lifecycle = new ExecutableLifecycle(
+      resolver,
+      fusionIntegrationFactory,
+      projectRoot,
+      terminal,
+      {
+        activate: (candidate, generation) =>
+          this.prepareCandidate(candidate, generation),
+        deactivate: () => {
+          this.stopFileWatching();
+          this.stopProjectConfigWatcher();
+        },
+      },
+    );
+    this.lifecycle.onDidCommit(() => {
+      this.emit(FusionProjectIntegrationEvents.PROJECT_CONFIG_CHANGED);
+      this.startProjectConfigWatcher();
+      this.startSourceFilesWatcher();
+    });
+    this.lifecycle.onDidFailResolution((diagnostic) => {
+      this.clearExecutableResolutionDiagnostics();
+      if (diagnostic) {
+        this.addProjectConfigDiagnostic(diagnostic);
+      }
+    });
+  }
+
+  private get currentIntegration(): FusionCli | undefined {
+    if (this.disposed) {
+      return undefined;
+    }
+    return this.parsingCandidate ?? this.lifecycle.current();
   }
 
   private requireIntegration(): FusionCli {
@@ -243,57 +266,7 @@ export class FusionProjectIntegration
   }
 
   async initialize(): Promise<void> {
-    this.startExecutableConfigurationWatcher();
-    await this.enqueueRefresh(async () => {
-      await this.activateFromResolvedExecutable(this.refreshGeneration);
-    });
-  }
-
-  private async activateFromResolvedExecutable(
-    generation: number,
-  ): Promise<void> {
-    const executable = await this.resolveExecutable(generation);
-    if (!executable) {
-      return;
-    }
-    await this.activateWithExecutable(executable, generation);
-  }
-
-  private async resolveExecutable(
-    generation: number,
-  ): Promise<FusionExecutable | undefined> {
-    const verdict = await this.resolver.resolve(Uri.file(this.projectRoot));
-    if (generation !== this.refreshGeneration) {
-      return undefined;
-    }
-    if (isFusionExecutable(verdict)) {
-      this.clearExecutableResolutionDiagnostics();
-      return verdict;
-    }
-    const message = formatFusionExecutableResolutionFailure(
-      this.projectRoot,
-      verdict,
-    );
-    this.terminal.error("FusionProjectIntegration", message, false);
-    this.setExecutableResolutionFailure(message);
-    return undefined;
-  }
-
-  private setExecutableResolutionFailure(message: string): void {
-    this.clearExecutableResolutionDiagnostics();
-    this.addProjectConfigDiagnostic({
-      filePath: this.getDBTProjectFilePath(),
-      message,
-      severity: "error",
-      range: {
-        startLine: 0,
-        startColumn: 0,
-        endLine: 999,
-        endColumn: 999,
-      },
-      source: EXECUTABLE_DIAGNOSTIC_SOURCE,
-      category: "project-config",
-    });
+    await this.lifecycle.initialize();
   }
 
   private clearExecutableResolutionDiagnostics(): void {
@@ -316,127 +289,25 @@ export class FusionProjectIntegration
     }
   }
 
-  private createDelegate(executable: FusionExecutable): FusionCli {
-    return this.fusionIntegrationFactory(executable, this.projectRoot);
-  }
-
   private isActivationCurrent(generation: number): boolean {
-    return !this.disposed && generation === this.refreshGeneration;
+    return this.lifecycle.isCurrent(generation);
   }
 
-  private async abandonIfStale(
-    generation: number,
+  /** Refreshes config and builds the manifest for a candidate; the returned step publishes it. */
+  private async prepareCandidate(
     candidate: FusionCli,
-  ): Promise<boolean> {
-    if (this.isActivationCurrent(generation)) {
-      return true;
-    }
-    await candidate.dispose();
-    return false;
-  }
-
-  private async activateWithExecutable(
-    executable: FusionExecutable,
     generation: number,
-  ): Promise<void> {
-    const candidate = this.createDelegate(executable);
-    const candidateVersion = executable.version;
-
+  ): Promise<(() => void) | undefined> {
     await this.refreshIntegrationProjectConfig(candidate, false);
-    if (!(await this.abandonIfStale(generation, candidate))) {
-      return;
+    if (!this.isActivationCurrent(generation)) {
+      return undefined;
     }
-
     let parsed: ParsedManifest | undefined;
     await this.runManifestRebuild(candidate, generation, async () => {
       parsed = await this.buildParsedManifest(candidate, generation);
     });
-    if (!(await this.abandonIfStale(generation, candidate))) {
-      return;
-    }
-
-    await this.commitCandidate(generation, candidate);
-    if (this.currentIntegration === candidate) {
-      this.currentFusionVersion = candidateVersion;
-    }
-    if (parsed && this.isActivationCurrent(generation)) {
-      this.publishParsedManifest(parsed);
-    }
-  }
-
-  private async commitCandidate(
-    generation: number,
-    candidate: FusionCli,
-  ): Promise<void> {
-    if (!(await this.abandonIfStale(generation, candidate))) {
-      return;
-    }
-    const previous = this.currentIntegration;
-    this.currentIntegration = candidate;
-    if (previous && previous !== candidate) {
-      await previous.dispose();
-    }
-    this.emit(FusionProjectIntegrationEvents.PROJECT_CONFIG_CHANGED);
-    this.startProjectConfigWatcher();
-    this.startSourceFilesWatcher();
-  }
-
-  private startExecutableConfigurationWatcher(): void {
-    if (this.configurationSubscription) {
-      return;
-    }
-    this.configurationSubscription = onDidChangeSettings(
-      [DBT_PATH_SETTING],
-      (change) => {
-        void this.enqueueExecutableRefresh(change).catch(() => undefined);
-      },
-    );
-  }
-
-  private enqueueExecutableRefresh(change: SettingsChange): Promise<void> {
-    if (!change.affects(Uri.file(this.projectRoot))) {
-      return this.refreshChain;
-    }
-    if (this.disposed) {
-      return Promise.resolve();
-    }
-    const generation = ++this.refreshGeneration;
-    return this.enqueueRefresh(async () => {
-      this.stopFileWatching();
-      this.stopProjectConfigWatcher();
-      await this.disposeDelegate();
-      await this.activateFromResolvedExecutable(generation);
-    });
-  }
-
-  private enqueueRefresh(task: () => Promise<void>): Promise<void> {
-    if (this.disposed) {
-      return Promise.resolve();
-    }
-    const run = this.refreshChain.then(async () => {
-      if (this.disposed) {
-        return;
-      }
-      await task();
-    });
-    this.refreshChain = run.catch((error: unknown) => {
-      this.terminal.error(
-        "FusionProjectIntegration",
-        "Fusion executable refresh failed",
-        error,
-        false,
-      );
-    });
-    return run;
-  }
-
-  private async disposeDelegate(): Promise<void> {
-    const delegate = this.currentIntegration;
-    this.currentIntegration = undefined;
-    if (!delegate) {
-      return;
-    }
-    await delegate.dispose();
+    const result = parsed;
+    return result ? () => this.publishParsedManifest(result) : undefined;
   }
 
   async refreshProjectConfig(): Promise<void> {
@@ -488,7 +359,7 @@ export class FusionProjectIntegration
       `Going to rebuild the manifest for project at ${this.projectRoot}`,
     );
     const delegate = this.requireIntegration();
-    const generation = this.refreshGeneration;
+    const generation = this.lifecycle.generation;
     await this.runManifestRebuild(delegate, generation, async () => {
       const parsed = await this.buildParsedManifest(delegate, generation);
       if (parsed) {
@@ -532,7 +403,7 @@ export class FusionProjectIntegration
   }
 
   async parseManifest(): Promise<ParsedManifest | undefined> {
-    const generation = this.refreshGeneration;
+    const generation = this.lifecycle.generation;
     const parsed = await this.buildParsedManifest(
       this.requireIntegration(),
       generation,
@@ -578,8 +449,11 @@ export class FusionProjectIntegration
       this.adapterType =
         manifestJson.metadata?.adapter_type || this.adapterType;
     }
-    const previous = this.currentIntegration;
-    this.currentIntegration = delegate;
+    const previous = this.parsingCandidate;
+    const isCandidate = delegate !== this.lifecycle.current();
+    if (isCandidate) {
+      this.parsingCandidate = delegate;
+    }
     const parserProject: ManifestProject = this;
     // manifest.json stores resource maps as objects; published parser types say arrays.
     const {
@@ -674,10 +548,13 @@ export class FusionProjectIntegration
       exposureMetaMapPromise,
       functionMetaMapPromise,
     ]);
-    if (!this.isActivationCurrent(generation)) {
-      if (this.currentIntegration === delegate && previous !== delegate) {
-        this.currentIntegration = previous;
+    const restore = () => {
+      if (isCandidate && this.parsingCandidate === delegate) {
+        this.parsingCandidate = previous;
       }
+    };
+    if (!this.isActivationCurrent(generation)) {
+      restore();
       return;
     }
     const modelDepthMap = this.modelDepthParser.createModelDepthsMap(
@@ -709,9 +586,7 @@ export class FusionProjectIntegration
       semanticModelMetaMap,
       modelDepthMap,
     };
-    if (this.currentIntegration === delegate && previous !== delegate) {
-      this.currentIntegration = previous;
-    }
+    restore();
     return parsed;
   }
 
@@ -967,7 +842,7 @@ export class FusionProjectIntegration
 
   /** Version of the Fusion executable behind the active integration, once one is committed. */
   getFusionVersion(): FusionVersion | undefined {
-    return this.currentIntegration ? this.currentFusionVersion : undefined;
+    return this.currentIntegration ? this.lifecycle.version : undefined;
   }
 
   installDeps() {
@@ -1117,12 +992,7 @@ export class FusionProjectIntegration
       return;
     }
     this.disposed = true;
-    this.refreshGeneration++;
-    this.configurationSubscription?.dispose();
-    this.configurationSubscription = undefined;
-    this.stopFileWatching();
-    this.stopProjectConfigWatcher();
-    await this.disposeDelegate();
+    await this.lifecycle.dispose();
     this.removeAllListeners();
   }
 }
