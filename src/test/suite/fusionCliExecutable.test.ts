@@ -27,6 +27,7 @@ import {
 } from "../../fusion/fusionExecutable";
 import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { CONFIGURATION_SECTION } from "../../settings";
+import { createdFileSystemWatchers } from "../mock/vscode";
 
 const ENV_MARKER = "FUSION_PU_CLI_ENV";
 
@@ -449,6 +450,7 @@ describe("Fusion CLI executable wiring", () => {
         projectConfigChanged,
       );
 
+      const watchersBefore = createdFileSystemWatchers.length;
       const initPromise = integration.initialize();
       const gatedMock = hooks[gatedMethod] as jest.Mock;
       await waitFor(() => expect(gatedMock.mock.calls.length).toBe(1));
@@ -460,10 +462,7 @@ describe("Fusion CLI executable wiring", () => {
       expect(delegateDispose).toHaveBeenCalled();
       expect(() => integration.getFusionCli()).toThrow();
       expect(projectConfigChanged).not.toHaveBeenCalled();
-      expect(
-        (integration as unknown as { isWatchingSourceFiles: boolean })
-          .isWatchingSourceFiles,
-      ).toBe(false);
+      expect(createdFileSystemWatchers.slice(watchersBefore)).toEqual([]);
 
       fs.rmSync(root, { recursive: true, force: true });
     },

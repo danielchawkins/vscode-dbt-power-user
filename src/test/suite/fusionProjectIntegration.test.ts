@@ -33,6 +33,10 @@ import {
 } from "../../dbt_integration";
 import { FusionCli } from "../../fusion/fusionCli";
 import { esmDirname } from "../esmDirname";
+import {
+  createdFileSystemWatchers,
+  type MockFileSystemWatcher,
+} from "../mock/vscode";
 
 const fixtureRoot = path.resolve(
   esmDirname(import.meta.url),
@@ -277,149 +281,80 @@ describe("FusionProjectIntegration", () => {
   });
 });
 
-describe("FusionProjectIntegration file watchers", () => {
-  let tempRoot: string;
-  let watchMock: jest.Mock;
-  let FusionProjectIntegrationClass: typeof FusionProjectIntegration;
-  let mockRebuildManifest: jest.Mock<() => Promise<void>>;
-  let usingFakeTimers = false;
+describe("FusionProjectIntegration manifest trigger", () => {
+  const root = "/project";
+  let rebuildManifest: jest.Mock<() => Promise<void>>;
+  let refreshProjectConfig: jest.Mock<() => Promise<void>>;
+  let integration: FusionProjectIntegration;
+  let watcher: MockFileSystemWatcher;
 
   beforeEach(async () => {
-    mockRebuildManifest = jest.fn(async () => undefined);
-    watchMock = jest.fn();
-    jest.resetModules();
-    await jest.unstable_mockModule("fs", () => {
-      const actual = jest.requireActual("fs") as typeof import("fs");
-      return {
-        ...actual,
-        watch: watchMock,
-      };
-    });
-    ({ FusionProjectIntegration: FusionProjectIntegrationClass } =
-      await import("../../dbt_client/fusionProjectIntegration"));
+    jest.useFakeTimers();
+    createdFileSystemWatchers.length = 0;
+    rebuildManifest = jest.fn(async () => undefined);
+    refreshProjectConfig = jest.fn(async () => undefined);
+    integration = await buildIntegration(
+      root,
+      stubDelegate(root, { rebuildManifest, refreshProjectConfig }),
+    );
+    expect(createdFileSystemWatchers).toHaveLength(1);
+    watcher = createdFileSystemWatchers[0];
+    rebuildManifest.mockClear();
+    refreshProjectConfig.mockClear();
   });
 
   afterEach(async () => {
-    if (usingFakeTimers) {
-      jest.useRealTimers();
-      usingFakeTimers = false;
-    }
-    jest.restoreAllMocks();
-    jest.resetModules();
-    await jest.unstable_unmockModule("fs");
-    if (tempRoot && fs.existsSync(tempRoot)) {
-      fs.rmSync(tempRoot, { recursive: true, force: true });
-    }
-  });
-
-  function buildMockedIntegration(projectRoot: string) {
-    const terminal = mockTerminal();
-    return new FusionProjectIntegrationClass(
-      {
-        resolve: jest.fn(async () => ({
-          path: "/mock/bin/dbt",
-          version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5\n" },
-          env: process.env as Record<string, string>,
-        })),
-      },
-      (_executable, root) =>
-        ({
-          refreshProjectConfig: jest.fn(async () => undefined),
-          rebuildManifest: mockRebuildManifest,
-          getProjectName: () => "single_project",
-          getModelPaths: () => [path.join(root, "models")],
-          getMacroPaths: () => [path.join(root, "macros")],
-          getSeedPaths: () => [path.join(root, "seeds")],
-          getTargetPath: () => path.join(root, "target"),
-          getDiagnostics: () => ({
-            projectConfigDiagnostics: [],
-            rebuildManifestDiagnostics: [],
-          }),
-          dispose: jest.fn(),
-        }) as Partial<FusionCli> as FusionCli,
-      projectRoot,
-      new ChildrenParentParser(),
-      new NodeParser(terminal),
-      new MacroParser(terminal),
-      new MetricParser(terminal),
-      new GraphParser(terminal),
-      new SourceParser(terminal),
-      new TestParser(terminal),
-      new UnitTestParser(terminal),
-      new ExposureParser(terminal),
-      new FunctionParser(terminal),
-      new DocParser(terminal),
-      terminal,
-      new ModelDepthParser(terminal),
-      new SemanticModelParser(terminal),
-    );
-  }
-
-  it("watches model, macro, seed, and dbt_project.yml paths only via initialize", async () => {
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-watch-"));
-    fs.mkdirSync(path.join(tempRoot, "models"), { recursive: true });
-    fs.mkdirSync(path.join(tempRoot, "macros"), { recursive: true });
-    fs.mkdirSync(path.join(tempRoot, "seeds"), { recursive: true });
-    fs.mkdirSync(path.join(tempRoot, "target"), { recursive: true });
-
-    const closeMock = jest.fn();
-    watchMock.mockReturnValue({ close: closeMock } as unknown as fs.FSWatcher);
-
-    const integration = buildMockedIntegration(tempRoot);
-    await integration.initialize();
-
-    const watchedPaths = watchMock.mock.calls.map(([watchedPath]) =>
-      String(watchedPath),
-    );
-    expect(watchedPaths).toEqual(
-      expect.arrayContaining([
-        path.join(tempRoot, "models"),
-        path.join(tempRoot, "macros"),
-        path.join(tempRoot, "seeds"),
-        path.join(tempRoot, "dbt_project.yml"),
-      ]),
-    );
-    expect(
-      watchedPaths.some((watchedPath) => watchedPath.includes("target")),
-    ).toBe(false);
-
     await integration.dispose();
-    expect(closeMock).toHaveBeenCalledTimes(4);
-
-    watchMock.mockClear();
-    closeMock.mockClear();
-    const reinitialized = buildMockedIntegration(tempRoot);
-    await reinitialized.initialize();
-    expect(watchMock).toHaveBeenCalledTimes(4);
-    await reinitialized.dispose();
-    expect(closeMock).toHaveBeenCalledTimes(4);
+    jest.useRealTimers();
   });
 
-  it("cancels pending source debounce timers on dispose", async () => {
-    usingFakeTimers = true;
-    jest.useFakeTimers();
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-debounce-"));
-    fs.mkdirSync(path.join(tempRoot, "models"), { recursive: true });
-    fs.mkdirSync(path.join(tempRoot, "macros"), { recursive: true });
-    fs.mkdirSync(path.join(tempRoot, "seeds"), { recursive: true });
-    fs.mkdirSync(path.join(tempRoot, "target"), { recursive: true });
-
-    let changeHandler: ((event: string, filename?: string) => void) | undefined;
-    watchMock.mockImplementation((...args: unknown[]) => {
-      const listener = args.find((arg) => typeof arg === "function") as
-        ((event: string, filename?: string) => void) | undefined;
-      if (listener) {
-        changeHandler = listener;
-      }
-      return { close: jest.fn() } as unknown as fs.FSWatcher;
+  it("watches source extensions under the project root", () => {
+    expect(watcher.pattern).toEqual({
+      base: root,
+      pattern: "**/*.{sql,yml,yaml,csv}",
     });
+  });
 
-    const integration = buildMockedIntegration(tempRoot);
-    await integration.initialize();
-    changeHandler?.("change", "model.sql");
-    jest.advanceTimersByTime(400);
+  it("rebuilds once after the debounce for model edits", async () => {
+    watcher.fire("change", path.join(root, "models", "a.sql"));
+    watcher.fire("create", path.join(root, "models", "b.sql"));
+    watcher.fire("delete", path.join(root, "seeds", "c.csv"));
+    await jest.advanceTimersByTimeAsync(499);
+    expect(rebuildManifest).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+    expect(rebuildManifest).toHaveBeenCalledTimes(1);
+    expect(refreshProjectConfig).not.toHaveBeenCalled();
+  });
+
+  it("ignores edits outside the model, macro and seed paths", async () => {
+    watcher.fire("change", path.join(root, "target", "compiled", "a.sql"));
+    watcher.fire("change", path.join(root, "models_old", "a.sql"));
+    await jest.advanceTimersByTimeAsync(1000);
+    expect(rebuildManifest).not.toHaveBeenCalled();
+  });
+
+  it("refreshes config, then rebuilds, after a dbt_project.yml edit", async () => {
+    const configChanged = jest.fn();
+    integration.on(
+      FusionProjectIntegrationEvents.PROJECT_CONFIG_CHANGED,
+      configChanged,
+    );
+    watcher.fire("change", path.join(root, "dbt_project.yml"));
+    await jest.advanceTimersByTimeAsync(500);
+    expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
+    expect(configChanged).toHaveBeenCalledTimes(1);
+    expect(rebuildManifest).toHaveBeenCalledTimes(1);
+    expect(refreshProjectConfig.mock.invocationCallOrder[0]).toBeLessThan(
+      rebuildManifest.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("drops a pending rebuild and stops watching on dispose", async () => {
+    watcher.fire("change", path.join(root, "models", "a.sql"));
     await integration.dispose();
-    jest.advanceTimersByTime(500);
-    expect(mockRebuildManifest).toHaveBeenCalledTimes(1);
+    await jest.advanceTimersByTimeAsync(1000);
+    expect(rebuildManifest).not.toHaveBeenCalled();
+    expect(watcher.dispose).toHaveBeenCalled();
+    expect(watcher.listeners.change).toHaveLength(0);
   });
 });

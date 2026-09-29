@@ -347,6 +347,65 @@ export const window = {
   registerUriHandler: jest.fn().mockReturnValue({ dispose: jest.fn() }),
 };
 
+type MockUriListener = (uri: { fsPath: string }) => unknown;
+type MockSubscribe = jest.Mock<
+  (listener: MockUriListener) => { dispose: () => void }
+>;
+
+/** A watcher from `workspace.createFileSystemWatcher` with the listeners it received. */
+export interface MockFileSystemWatcher {
+  pattern: unknown;
+  listeners: {
+    create: MockUriListener[];
+    change: MockUriListener[];
+    delete: MockUriListener[];
+  };
+  /** Delivers an event with `Uri.file(fsPath)` to every listener of that kind. */
+  fire(kind: "create" | "change" | "delete", fsPath: string): void;
+  onDidCreate: MockSubscribe;
+  onDidChange: MockSubscribe;
+  onDidDelete: MockSubscribe;
+  dispose: jest.Mock;
+}
+
+/** Watchers created through the mock, oldest first; tests clear it as needed. */
+export const createdFileSystemWatchers: MockFileSystemWatcher[] = [];
+
+function createMockFileSystemWatcher(pattern?: unknown): MockFileSystemWatcher {
+  const listeners: MockFileSystemWatcher["listeners"] = {
+    create: [],
+    change: [],
+    delete: [],
+  };
+  const subscribe = (kind: keyof typeof listeners) =>
+    jest.fn((listener: MockUriListener) => {
+      listeners[kind].push(listener);
+      return {
+        dispose: jest.fn(() => {
+          const index = listeners[kind].indexOf(listener);
+          if (index >= 0) {
+            listeners[kind].splice(index, 1);
+          }
+        }),
+      };
+    });
+  const watcher: MockFileSystemWatcher = {
+    pattern,
+    listeners,
+    fire: (kind, fsPath) => {
+      for (const listener of [...listeners[kind]]) {
+        listener(Uri.file(fsPath));
+      }
+    },
+    onDidCreate: subscribe("create"),
+    onDidChange: subscribe("change"),
+    onDidDelete: subscribe("delete"),
+    dispose: jest.fn(),
+  };
+  createdFileSystemWatchers.push(watcher);
+  return watcher;
+}
+
 export const workspace = {
   getConfiguration: jest.fn().mockReturnValue({
     get: jest.fn(),
@@ -367,12 +426,7 @@ export const workspace = {
   onDidChangeWorkspaceFolders: jest
     .fn()
     .mockReturnValue({ dispose: jest.fn() }),
-  createFileSystemWatcher: jest.fn().mockReturnValue({
-    onDidChange: jest.fn().mockReturnValue({ dispose: jest.fn() }),
-    onDidCreate: jest.fn().mockReturnValue({ dispose: jest.fn() }),
-    onDidDelete: jest.fn().mockReturnValue({ dispose: jest.fn() }),
-    dispose: jest.fn(),
-  }),
+  createFileSystemWatcher: jest.fn(createMockFileSystemWatcher),
   findFiles: jest.fn(() => Promise.resolve([])),
   textDocuments: [],
   applyEdit: jest.fn(() => Promise.resolve(true)),
