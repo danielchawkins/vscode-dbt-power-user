@@ -17,7 +17,6 @@ import {
   DBTTerminal,
   ExposureMetaData,
   FunctionMetaData,
-  NodeMetaData,
   Ref,
   RelationshipParser,
   RESOURCE_TYPE_FUNCTION,
@@ -342,12 +341,6 @@ export class NewLineagePanel
     super.handleCommand(message);
   }
 
-  private async addModelColumnsFromDB(project: DBTProject, node: NodeMetaData) {
-    const columnsFromDB = await project.getColumnsOfModel(node.name);
-    console.log("addColumnsFromDB: ", node.name, " -> ", columnsFromDB);
-    return project.mergeColumnsFromDB(node, columnsFromDB);
-  }
-
   private async addSourceColumnsFromDB(
     project: DBTProject,
     nodeName: string,
@@ -576,35 +569,7 @@ export class NewLineagePanel
     if (!node) {
       return;
     }
-    if (refresh) {
-      if (node.config.materialized === "ephemeral") {
-        window.showInformationMessage(
-          "Cannot fetch columns for ephemeral models.",
-        );
-        return;
-      }
-      const ok = await window.withProgress(
-        {
-          title: "Fetching metadata",
-          location: ProgressLocation.Notification,
-          cancellable: false,
-        },
-        async () => {
-          return await this.addModelColumnsFromDB(project, node);
-        },
-      );
-      if (!ok) {
-        window.showErrorMessage(
-          "Unable to get columns from DB for model: " +
-            node.name +
-            " table: " +
-            table +
-            ".",
-        );
-        return;
-      }
-    }
-
+    // `refresh` is ignored: the language server already supplies model columns and types.
     const inferred = node.path
       ? await this.dbtLineageService.getInferredColumns(
           project.projectRoot.fsPath,

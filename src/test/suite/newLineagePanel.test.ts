@@ -154,6 +154,87 @@ describe("NewLineagePanel", () => {
     ]);
   });
 
+  it("answers a model refresh with inferred columns and never queries the DB", async () => {
+    const node = {
+      unique_id: "model.p.a",
+      name: "a",
+      path: "/p/models/a.sql",
+      description: "A",
+      config: { materialized: "table" },
+      columns: {},
+      meta: {},
+    };
+    const getColumnsOfModel = jest.fn();
+    const mergeColumnsFromDB = jest.fn();
+    (panel as any).queryManifestService = {
+      getEventByCurrentProject: () => ({
+        event: { nodeMetaMap: { lookupByUniqueId: () => node } },
+      }),
+      getProject: () => ({
+        projectRoot: { fsPath: "/p" },
+        getColumnsOfModel,
+        mergeColumnsFromDB,
+      }),
+    };
+    (panel as any).dbtLineageService = {
+      getInferredColumns: jest
+        .fn<(...args: any[]) => Promise<any>>()
+        .mockResolvedValue([{ name: "id", datatype: "integer" }]),
+    };
+    (window.withProgress as jest.Mock).mockClear();
+
+    const body = await (panel as any).getColumns({
+      table: "model.p.a",
+      refresh: true,
+    });
+
+    expect(getColumnsOfModel).not.toHaveBeenCalled();
+    expect(mergeColumnsFromDB).not.toHaveBeenCalled();
+    expect(window.withProgress).not.toHaveBeenCalled();
+    expect(body.columns.map((c: any) => [c.name, c.datatype])).toEqual([
+      ["id", "integer"],
+    ]);
+  });
+
+  it("syncs a source's columns from the DB on refresh", async () => {
+    const table = {
+      name: "orders",
+      description: "Raw orders",
+      columns: {} as Record<string, any>,
+    };
+    const getColumnsOfSource = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockResolvedValue([{ column: "id", dtype: "INTEGER" }]);
+    const mergeColumnsFromDB = jest.fn((t: any, _columns: unknown) => {
+      t.columns.id = { name: "id", data_type: "INTEGER", description: "" };
+      return true;
+    });
+    (panel as any).queryManifestService = {
+      getEventByCurrentProject: () => ({
+        event: {
+          sourceMetaMap: new Map([["raw", { name: "raw", tables: [table] }]]),
+        },
+      }),
+      getProject: () => ({ getColumnsOfSource, mergeColumnsFromDB }),
+    };
+    (window.withProgress as jest.Mock).mockImplementation(
+      async (_opts: any, task: any) => task(),
+    );
+
+    const body = await (panel as any).getColumns({
+      table: "source.p.raw.orders",
+      refresh: true,
+    });
+
+    expect(getColumnsOfSource).toHaveBeenCalledWith("raw", "orders");
+    expect(mergeColumnsFromDB).toHaveBeenCalledWith(table, [
+      { column: "id", dtype: "INTEGER" },
+    ]);
+    expect(body.columns.map((c: any) => [c.name, c.datatype])).toEqual([
+      ["id", "integer"],
+    ]);
+  });
+
   it("answers getConnectedColumns with the service's lineage", async () => {
     const lineage = [
       {
