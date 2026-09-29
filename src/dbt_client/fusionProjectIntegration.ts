@@ -1,4 +1,4 @@
-import { existsSync, FSWatcher, readFileSync, watch } from "fs";
+import { FSWatcher, readFileSync, watch } from "fs";
 import { extname, isAbsolute, join } from "path";
 
 import { EventEmitter } from "events";
@@ -29,8 +29,6 @@ import {
   QueryExecution,
   type QueryExecutionResult,
   RESOURCE_TYPE_MODEL,
-  RUN_RESULTS_FILE,
-  type RunResultsEventData,
   SemanticModelParser,
   SourceParser,
   TestParser,
@@ -55,16 +53,12 @@ export type FusionCommandIntegrationFactory = (
 const EXECUTABLE_DIAGNOSTIC_SOURCE = "fusion-executable";
 const REBUILD_MANIFEST_DEBOUNCE_MS = 500;
 
-/** Snapshot of run_results.json content before a command; null when absent. */
-export type RunResultsObservation = string | null;
-
 export const FusionProjectIntegrationEvents = {
   DIAGNOSTICS_CHANGED: "diagnosticsChanged",
   PROJECT_CONFIG_CHANGED: "projectConfigChanged",
   REBUILD_MANIFEST_STATUS_CHANGE: "rebuildManifestStatusChange",
   MANIFEST_PARSED: "manifestParsed",
   SOURCE_FILE_CHANGED: "sourceFileChanged",
-  RUN_RESULTS_PARSED: "runResultsParsed",
 } as const;
 
 interface DebouncedHandler {
@@ -122,117 +116,6 @@ interface ManifestJson {
   exposures: Record<string, unknown>;
   functions?: Record<string, unknown>;
   unit_tests?: Record<string, unknown>;
-}
-
-interface RawRunResults {
-  metadata?: { invocation_id?: string; generated_at?: string };
-  args?: {
-    which?: string;
-    select?: string | string[];
-    exclude?: string | string[];
-    selector?: string | string[];
-    full_refresh?: boolean;
-    defer?: boolean;
-    state?: string;
-    target?: string;
-  };
-  results?: Array<{
-    unique_id: string;
-    status: string;
-    execution_time?: number | null;
-    message?: string;
-  }>;
-  elapsed_time?: number;
-}
-
-function normalizeStringOrArray(
-  value: string | string[] | undefined,
-): string[] {
-  if (!value) {
-    return [];
-  }
-  return Array.isArray(value) ? value : [value];
-}
-
-function resolveRunStatus(
-  status: string,
-): RunResultsEventData["results"][0]["status"] {
-  switch (status) {
-    case "success":
-    case "pass":
-      return "success";
-    case "error":
-    case "fail":
-      return "error";
-    case "warn":
-      return "warn";
-    default:
-      return "skipped";
-  }
-}
-
-function parseRunResultsJson(
-  raw: unknown,
-  projectName: string,
-): RunResultsEventData {
-  const data = raw as RawRunResults;
-  if (
-    !data.metadata?.invocation_id ||
-    !data.metadata?.generated_at ||
-    !data.args?.which
-  ) {
-    throw new Error(
-      "Malformed run_results.json: missing required fields (metadata.invocation_id, metadata.generated_at, or args.which)",
-    );
-  }
-  const which = data.args.which;
-  const parts = [`dbt ${which}`];
-  const select = normalizeStringOrArray(data.args.select);
-  if (select.length > 0) {
-    parts.push(`--select ${select.join(" ")}`);
-  }
-  const exclude = normalizeStringOrArray(data.args.exclude);
-  if (exclude.length > 0) {
-    parts.push(`--exclude ${exclude.join(" ")}`);
-  }
-  const selector = normalizeStringOrArray(data.args.selector);
-  if (selector.length > 0) {
-    parts.push(`--selector ${selector.join(" ")}`);
-  }
-  if (data.args.full_refresh === true) {
-    parts.push("--full-refresh");
-  }
-  if (data.args.defer === true) {
-    parts.push("--defer");
-  }
-  if (data.args.state) {
-    parts.push(`--state ${data.args.state}`);
-  }
-  if (data.args.target) {
-    parts.push(`--target ${data.args.target}`);
-  }
-  const args = select;
-  const results = Array.isArray(data.results)
-    ? data.results.map((entry) => ({
-        name: entry.unique_id.split(".").pop() ?? entry.unique_id,
-        uniqueId: entry.unique_id,
-        status: resolveRunStatus(entry.status),
-        executionTime: entry.execution_time ?? null,
-        message: entry.message,
-        resourceType: entry.unique_id.split(
-          ".",
-        )[0] as RunResultsEventData["results"][0]["resourceType"],
-      }))
-    : [];
-  return {
-    id: data.metadata.invocation_id,
-    command: parts.join(" "),
-    args,
-    completedAt: new Date(data.metadata.generated_at),
-    projectName,
-    results,
-    elapsedTime: data.elapsed_time ?? 0,
-  };
 }
 
 export class FusionProjectIntegration
@@ -861,62 +744,6 @@ export class FusionProjectIntegration
     }
   }
 
-  observeRunResultsBeforeCommand(): RunResultsObservation {
-    return this.readRunResultsSnapshot();
-  }
-
-  /** Post-command read of run_results.json; no ambient target watcher. */
-  parseRunResultsAfterCommand(
-    before: RunResultsObservation,
-  ): RunResultsEventData | null {
-    const after = this.readRunResultsSnapshot();
-    if (after === null) {
-      this.terminal.trace("Run results file does not exist after command");
-      return null;
-    }
-    if (after === before) {
-      this.terminal.trace("Ignoring unchanged run_results.json after command");
-      return null;
-    }
-    try {
-      const event = parseRunResultsJson(
-        JSON.parse(after),
-        this.getProjectName(),
-      );
-      this.emit(FusionProjectIntegrationEvents.RUN_RESULTS_PARSED, event);
-      this.terminal.debug(
-        "runResultsParsed",
-        "Run results successfully parsed",
-        event,
-      );
-      return event;
-    } catch (error) {
-      this.terminal.error(
-        "FusionProjectIntegration",
-        `Unable to parse run_results.json: ${(error as Error).message}`,
-        error,
-      );
-      return null;
-    }
-  }
-
-  private readRunResultsSnapshot(): RunResultsObservation {
-    const targetPath = this.getTargetPath();
-    if (!targetPath) {
-      return null;
-    }
-    const runResultsPath = join(targetPath, RUN_RESULTS_FILE);
-    if (!existsSync(runResultsPath)) {
-      return null;
-    }
-    try {
-      const raw = readFileSync(runResultsPath, "utf8");
-      return raw || null;
-    } catch {
-      return null;
-    }
-  }
-
   private startSourceFilesWatcher(): void {
     if (this.isWatchingSourceFiles) {
       return;
@@ -1134,14 +961,6 @@ export class FusionProjectIntegration
     }
   }
 
-  /** Runs `deps`, `clean` or `debug` silently, then reads any run_results.json it wrote. */
-  private async runImmediately(kind: "deps" | "clean" | "debug") {
-    const before = this.observeRunResultsBeforeCommand();
-    const result = await this.requireIntegration().run({ kind });
-    this.parseRunResultsAfterCommand(before);
-    return result;
-  }
-
   async unsafeCompileQuery(query: string) {
     return this.requireIntegration().compileInline(query);
   }
@@ -1152,11 +971,11 @@ export class FusionProjectIntegration
   }
 
   installDeps() {
-    return this.runImmediately("deps");
+    return this.requireIntegration().run({ kind: "deps" });
   }
 
   clean() {
-    return this.runImmediately("clean");
+    return this.requireIntegration().run({ kind: "clean" });
   }
 
   debug() {

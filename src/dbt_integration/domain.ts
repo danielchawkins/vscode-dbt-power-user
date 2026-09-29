@@ -488,14 +488,6 @@ export function isResourceNode(resourceType: string): boolean {
   );
 }
 
-export interface DBTCommandExecution {
-  command: (signal?: AbortSignal) => Promise<void>;
-  statusMessage: string;
-  showProgress?: boolean;
-  focus?: boolean;
-  signal?: AbortSignal;
-}
-
 export interface RunModelParams {
   plusOperatorLeft: string;
   modelName: string;

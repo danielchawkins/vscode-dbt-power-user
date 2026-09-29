@@ -29,13 +29,11 @@ import {
   ColumnMetaData,
   DBColumn,
   DBTCommand,
-  DBTCommandExecution,
   DBTDiagnosticData,
   DBTTerminal,
   ParsedManifest,
   QueryExecutionResult,
   RunModelParams,
-  RunResultsEventData,
 } from "../dbt_integration";
 import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
 import {
@@ -44,7 +42,13 @@ import {
   SchemaOriginStatus,
 } from "../fusion/schemaOrigin";
 import { ModelNode } from "../local/lineageTypes";
+import { CommandQueue, formatCommandStatus } from "../projects/commandQueue";
 import { readProjectSnapshot } from "../projects/readProjectSnapshot";
+import {
+  RunResultsHistory,
+  RunResultsReader,
+  withRunResults,
+} from "../projects/runResults";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
 import { readSetting } from "../settings";
@@ -120,11 +124,15 @@ export class DBTProject implements Disposable {
     return this._manifestCacheEvent;
   }
 
-  private queues: Map<string, DBTCommandExecution[]> = new Map<
-    string,
-    DBTCommandExecution[]
-  >();
-  private queueStates: Map<string, boolean> = new Map<string, boolean>();
+  private readonly commandQueue = new CommandQueue();
+  private readonly runResultsReader: RunResultsReader;
+  private readonly runHistory: RunResultsHistory = {
+    addEntry: (entry) => {
+      this.runHistoryService.addEntry(entry);
+      const uniqueIds = entry.results.map((r) => r.uniqueId);
+      this._onRunResults.fire(new RunResultsEvent(this, uniqueIds));
+    },
+  };
 
   constructor(
     @inject("Factory<DBTProjectLog>")
@@ -141,6 +149,15 @@ export class DBTProject implements Disposable {
     private _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
   ) {
     this.projectRoot = path;
+    this.disposables.push(
+      this.commandQueue,
+      this.commandQueue.onFailed(({ statusMessage, error }) =>
+        this.runHistoryService.notifyCommandFailed(
+          statusMessage,
+          String(error),
+        ),
+      ),
+    );
 
     this.dbtProjectLog = this.dbtProjectLogFactory(this.onProjectConfigChanged);
 
@@ -222,21 +239,10 @@ export class DBTProject implements Disposable {
       },
     );
 
-    // Handle runResultsCreated events from dbtIntegrationAdapter
-    this.dbtProjectIntegration.on(
-      FusionProjectIntegrationEvents.RUN_RESULTS_PARSED,
-      (eventData: RunResultsEventData) => {
-        this.terminal.debug(
-          "DBTProject",
-          "Received runResultsParsed event from dbtIntegrationAdapter",
-        );
-
-        this.runHistoryService.addEntry(eventData);
-
-        const uniqueIds = eventData.results.map((r) => r.uniqueId);
-        const runResultsEvent = new RunResultsEvent(this, uniqueIds);
-        this._onRunResults.fire(runResultsEvent);
-      },
+    this.runResultsReader = new RunResultsReader(
+      () => this.dbtProjectIntegration.getTargetPath(),
+      () => this.dbtProjectIntegration.getProjectName(),
+      this.terminal,
     );
 
     // Handle diagnosticsChanged events from dbtIntegrationAdapter
@@ -414,9 +420,6 @@ export class DBTProject implements Disposable {
   }
 
   async initialize(): Promise<void> {
-    // Create command queue for this project
-    this.createQueue("all");
-
     try {
       await this.dbtProjectIntegration.initialize();
     } catch (error) {
@@ -500,7 +503,7 @@ export class DBTProject implements Disposable {
   }
 
   clean() {
-    return this.dbtProjectIntegration.clean();
+    return this.withRunResults(() => this.dbtProjectIntegration.clean());
   }
 
   debug() {
@@ -508,7 +511,11 @@ export class DBTProject implements Disposable {
   }
 
   async installDeps() {
-    return this.dbtProjectIntegration.installDeps();
+    return this.withRunResults(() => this.dbtProjectIntegration.installDeps());
+  }
+
+  private withRunResults<T>(run: () => Promise<T>): Promise<T> {
+    return withRunResults(this.runResultsReader, this.runHistory, run);
   }
 
   async compileQuery(query: string): Promise<string | undefined> {
@@ -834,22 +841,9 @@ export class DBTProject implements Disposable {
     return readProjectSnapshot(this.projectRoot).invocation.defer;
   }
 
-  private createQueue(queueName: string) {
-    this.queues.set(queueName, []);
-  }
-
-  private formatCommandStatus(command: DBTCommand): string {
-    return command
-      .getCommandAsString()
-      .replace(/\s*--project-dir\s+\S+/g, "")
-      .replace(/\s*--profiles-dir\s+\S+/g, "")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
   private async prepareAndQueue(cli: QueuedCliCommand): Promise<void> {
     try {
-      this.addCommandToQueue("all", this.fusionCli().prepare(cli));
+      this.addCommandToQueue(this.fusionCli().prepare(cli));
     } catch (error) {
       const statusMessage = formatCliStatus(
         cli,
@@ -864,13 +858,10 @@ export class DBTProject implements Disposable {
     }
   }
 
-  private addCommandToQueue(queueName: string, command: DBTCommand): void {
-    this.queues.get(queueName)!.push({
-      command: async (signal) => {
-        const before =
-          this.dbtProjectIntegration.observeRunResultsBeforeCommand();
-        const result = await command.execute(signal);
-        this.dbtProjectIntegration.parseRunResultsAfterCommand(before);
+  private addCommandToQueue(command: DBTCommand): void {
+    this.commandQueue.enqueue(
+      async (signal) => {
+        const result = await this.withRunResults(() => command.execute(signal));
         // dbt CLI resolves normally even on failure (CommandProcessExecution.complete()
         // never rejects for non-zero exit). Detect pre-execution failures (compilation
         // errors, config errors) by checking stdout.
@@ -878,52 +869,12 @@ export class DBTProject implements Disposable {
           throw new Error(result.stdout.trim());
         }
       },
-      statusMessage: this.formatCommandStatus(command),
-      focus: command.focus,
-      signal: command.signal,
-      showProgress: command.showProgress,
-    });
-    this.pickCommandToRun(queueName);
-  }
-
-  private async pickCommandToRun(queueName: string): Promise<void> {
-    const queue = this.queues.get(queueName)!;
-    const running = this.queueStates.get(queueName);
-    if (!running && queue.length > 0) {
-      this.queueStates.set(queueName, true);
-      const { command, statusMessage, focus, showProgress } = queue.shift()!;
-      const commandExecution = async (signal?: AbortSignal) => {
-        try {
-          await command(signal);
-        } catch (error) {
-          this.runHistoryService.notifyCommandFailed(
-            statusMessage,
-            String(error),
-          );
-        }
-      };
-
-      if (showProgress) {
-        await window.withProgress(
-          {
-            location: focus
-              ? ProgressLocation.Notification
-              : ProgressLocation.Window,
-            cancellable: true,
-            title: statusMessage,
-          },
-          async (_, token) => {
-            const abortController = new AbortController();
-            token.onCancellationRequested(() => abortController.abort());
-            await commandExecution(abortController.signal);
-          },
-        );
-      } else {
-        await commandExecution();
-      }
-      this.queueStates.set(queueName, false);
-      this.pickCommandToRun(queueName);
-    }
+      {
+        statusMessage: formatCommandStatus(command),
+        focus: command.focus,
+        showProgress: command.showProgress,
+      },
+    );
   }
 
   private fusionCli(): FusionCli {
