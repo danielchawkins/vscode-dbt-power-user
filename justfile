@@ -130,7 +130,7 @@ lint-just:
 
 [group("quality")]
 lint-mise-lock:
-    tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT; MISE_DATA_DIR="$tmp" mise install --locked --dry-run
+    tmp=$(mktemp -d); trap 'rm -rf "$tmp"' EXIT; MISE_IGNORED_CONFIG_PATHS="${XDG_CONFIG_HOME:-$HOME/.config}/mise" MISE_DATA_DIR="$tmp" mise install --locked --dry-run
 
 [group("quality")]
 fmt-code:
