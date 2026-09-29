@@ -1,0 +1,212 @@
+[
+  {
+    "request": "initialize",
+    "label": "initialize",
+    "params": {
+      "processId": null,
+      "rootUri": "$ROOT_URI",
+      "workspaceFolders": [
+        {
+          "uri": "$ROOT_URI",
+          "name": "lineage_probe"
+        }
+      ],
+      "capabilities": {
+        "workspace": {
+          "configuration": true,
+          "workspaceEdit": {
+            "documentChanges": true
+          },
+          "didChangeWatchedFiles": {
+            "dynamicRegistration": true
+          }
+        },
+        "window": {
+          "workDoneProgress": true
+        },
+        "textDocument": {
+          "hover": {
+            "contentFormat": ["markdown"]
+          },
+          "definition": {
+            "linkSupport": true
+          },
+          "references": {},
+          "rename": {
+            "prepareSupport": true
+          },
+          "documentHighlight": {},
+          "codeLens": {},
+          "completion": {
+            "completionItem": {
+              "labelDetailsSupport": true
+            }
+          },
+          "semanticTokens": {
+            "requests": {
+              "full": true,
+              "range": true
+            },
+            "tokenTypes": [],
+            "tokenModifiers": [],
+            "formats": ["relative"]
+          },
+          "inlayHint": {}
+        }
+      }
+    }
+  },
+  {
+    "notify": "initialized",
+    "params": {}
+  },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/stg_orders.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "select * from {{ source('raw', 'orders') }}\n"
+      }
+    }
+  },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+      }
+    }
+  },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/totals_downstream.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "select customer_id, total as grand_total from {{ ref('order_totals') }}\n"
+      }
+    }
+  },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/hard.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "with j as (\n  select o.id, c.name, case when o.status = 'x' then o.amount else 0 end as amt,\n         row_number() over (partition by o.customer_id order by o.id) as rn\n  from {{ source('raw','orders') }} o join {{ source('raw','customers') }} c on o.customer_id = c.id\n  where c.active\n)\nselect id, name as label, amt, rn from j\nunion all\nselect user_id, contact, 0, 0 from {{ source('raw','contacts') }}\n"
+      }
+    }
+  },
+  {
+    "writeFile": "models/totals_star.sql",
+    "text": "select * from {{ ref('order_totals') }}\n"
+  },
+  {
+    "notify": "textDocument/didOpen",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/totals_star.sql)",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "select * from {{ ref('order_totals') }}\n"
+      }
+    }
+  },
+  {
+    "wait": 10000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "before edit: biggest",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.lineage_probe.order_totals",
+        "+column:model.lineage_probe.order_totals.biggest+"
+      ]
+    }
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "before edit: total",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.lineage_probe.order_totals",
+        "+column:model.lineage_probe.order_totals.total+"
+      ]
+    }
+  },
+  {
+    "notify": "textDocument/didChange",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)",
+        "version": 2
+      },
+      "contentChanges": [
+        {
+          "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status, max(amount) as biggest\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+        }
+      ]
+    }
+  },
+  {
+    "wait": 6000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "after unsaved didChange: biggest",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.lineage_probe.order_totals",
+        "+column:model.lineage_probe.order_totals.biggest+"
+      ]
+    }
+  },
+  {
+    "writeFile": "models/order_totals.sql",
+    "text": "select customer_id, sum(amount) as total, count(*) as n, max(status) as last_status, max(amount) as biggest\nfrom {{ ref('stg_orders') }}\ngroup by customer_id\n"
+  },
+  {
+    "notify": "textDocument/didSave",
+    "params": {
+      "textDocument": {
+        "uri": "$FILE_URI(models/order_totals.sql)"
+      }
+    }
+  },
+  {
+    "wait": 6000
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "after save: biggest",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.lineage_probe.order_totals",
+        "+column:model.lineage_probe.order_totals.biggest+"
+      ]
+    }
+  },
+  {
+    "request": "workspace/executeCommand",
+    "label": "after save: star child biggest",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.lineage_probe.totals_star",
+        "+column:model.lineage_probe.totals_star.biggest+"
+      ]
+    }
+  }
+]
