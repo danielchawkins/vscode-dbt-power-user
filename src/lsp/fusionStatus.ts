@@ -70,17 +70,7 @@ export class FusionStatus implements Disposable {
       this.clientSubscription = undefined;
       return;
     }
-    const subscriptions: Disposable[] = [
-      client.onDidChangeState(() => this.render()),
-      client.onDidChangeStaticAnalysis(() => this.render()),
-    ];
-    this.clientSubscription = {
-      dispose: () => {
-        for (const subscription of subscriptions) {
-          subscription.dispose();
-        }
-      },
-    };
+    this.clientSubscription = client.onDidChangeState(() => this.render());
   }
 
   private currentClient(): FusionClient | undefined {

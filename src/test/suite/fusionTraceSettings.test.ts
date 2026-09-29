@@ -1,12 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { readFileSync } from "fs";
 import path from "path";
-import {
-  fusionLogLevelArgument,
-  parseTraceServerLevel,
-  TRACE_SERVER_LEVELS,
-  TRACE_SERVER_SETTING,
-} from "../../lsp/fusionClientSettings";
+import { parseTraceServerLevel, TRACE_SERVER_LEVELS } from "../../core/project";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 
@@ -23,9 +18,7 @@ describe("fusion trace settings", () => {
     };
     const property = manifest.contributes.configuration
       .flatMap((section) => Object.entries(section.properties))
-      .find(
-        ([key]) => key === `${CONFIGURATION_SECTION}.${TRACE_SERVER_SETTING}`,
-      )?.[1];
+      .find(([key]) => key === `${CONFIGURATION_SECTION}.trace.server`)?.[1];
 
     expect(property).toMatchObject({
       enum: [...TRACE_SERVER_LEVELS],
@@ -35,11 +28,9 @@ describe("fusion trace settings", () => {
     expect(JSON.stringify(property)).not.toContain("protocol");
   });
 
-  it("maps traceServer to Fusion server process log level only", () => {
+  it("parses unknown levels as off", () => {
     expect(parseTraceServerLevel("verbose")).toBe("verbose");
     expect(parseTraceServerLevel(undefined)).toBe("off");
-    expect(fusionLogLevelArgument("off")).toBeUndefined();
-    expect(fusionLogLevelArgument("messages")).toBe("debug");
-    expect(fusionLogLevelArgument("verbose")).toBe("trace");
+    expect(parseTraceServerLevel("protocol")).toBe("off");
   });
 });

@@ -10,7 +10,6 @@ import {
 import {
   resolveConfiguredStaticAnalysisMode,
   STATIC_ANALYSIS_MODE_SETTING,
-  staticAnalysisLaunchArgument,
 } from "../../fusion/staticAnalysisMode";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
@@ -47,13 +46,6 @@ describe("staticAnalysisMode", () => {
     expect(parseStaticAnalysisMode("not-a-mode")).toBe("project");
     expect(parseStaticAnalysisMode(3)).toBe("project");
     expect(parseStaticAnalysisMode(null)).toBe("project");
-  });
-
-  it("passes no launch argument for project and the mode otherwise", () => {
-    expect(staticAnalysisLaunchArgument("project")).toBeUndefined();
-    expect(staticAnalysisLaunchArgument("off")).toBe("off");
-    expect(staticAnalysisLaunchArgument("baseline")).toBe("baseline");
-    expect(staticAnalysisLaunchArgument("strict")).toBe("strict");
   });
 
   it("matches the package manifest for staticAnalysisMode", () => {

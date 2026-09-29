@@ -49,9 +49,7 @@ function makeProject(name: string, rootPath: string): DeclaredProject {
 
 class FakeClient implements FusionClient {
   private readonly stateEmitter = new EventEmitter<FusionClientState>();
-  private readonly analysisEmitter = new EventEmitter<StaticAnalysisMode>();
   private _state: FusionClientState;
-  private _analysis: StaticAnalysisMode;
 
   readonly outputChannel = createMockLogOutputChannel(
     "dbt Fusion LSP (general · abc)",
@@ -61,11 +59,10 @@ class FakeClient implements FusionClient {
   constructor(
     readonly project: DeclaredProject,
     state: FusionClientState = "running",
-    analysis: StaticAnalysisMode = "baseline",
+    readonly staticAnalysis: StaticAnalysisMode = "baseline",
     failureReason?: string,
   ) {
     this._state = state;
-    this._analysis = analysis;
     this.failureReason = failureReason;
   }
 
@@ -73,26 +70,13 @@ class FakeClient implements FusionClient {
     return this._state;
   }
 
-  get staticAnalysis(): StaticAnalysisMode {
-    return this._analysis;
-  }
-
   get onDidChangeState() {
     return this.stateEmitter.event;
-  }
-
-  get onDidChangeStaticAnalysis() {
-    return this.analysisEmitter.event;
   }
 
   setState(state: FusionClientState): void {
     this._state = state;
     this.stateEmitter.fire(state);
-  }
-
-  setAnalysis(analysis: StaticAnalysisMode): void {
-    this._analysis = analysis;
-    this.analysisEmitter.fire(analysis);
   }
 
   request<T>(): Promise<T> {
@@ -109,7 +93,6 @@ class FakeClient implements FusionClient {
 
   dispose(): void {
     this.stateEmitter.dispose();
-    this.analysisEmitter.dispose();
   }
 }
 
@@ -353,6 +336,25 @@ describe("FusionStatus", () => {
     poolListeners.forEach((listener) => listener());
 
     expect(statusBar.text).toContain("$(error)");
+    status.dispose();
+  });
+
+  it("shows the replacement client's static analysis mode", () => {
+    const project = makeProject("general", "/workspace/general");
+    clients.set(project.root.fsPath, new FakeClient(project, "running"));
+
+    const status = createStatus();
+    currentProject = project;
+    status.initialize();
+    expect(statusBar.text).toBe("$(check) dbt Fusion · static: baseline");
+
+    const replacement = new FakeClient(project, "running", "strict");
+    clients.set(project.root.fsPath, replacement);
+    poolListeners.forEach((listener) => listener());
+
+    expect(statusBar.text).toBe("$(check) dbt Fusion · static: strict");
+    replacement.setState("restarting");
+    expect(statusBar.text).toContain("dbt Fusion restarting");
     status.dispose();
   });
 

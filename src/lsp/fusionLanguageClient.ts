@@ -65,12 +65,11 @@ export interface FusionClientOptions {
 export interface FusionClient extends Disposable {
   readonly project: DeclaredProject;
   readonly state: FusionClientState;
-  /** Configured `fusionPowerUser.staticAnalysis` for this Declared Project; no server field reports an effective mode. */
+  /** Configured `fusionPowerUser.staticAnalysis` for this Declared Project; fixed for the client's lifetime. */
   readonly staticAnalysis: StaticAnalysisMode;
   readonly outputChannel: LogOutputChannel;
   readonly failureReason: string | undefined;
   readonly onDidChangeState: Event<FusionClientState>;
-  readonly onDidChangeStaticAnalysis: Event<StaticAnalysisMode>;
   /** Sends `workspace/executeCommand`; `dbt.listNodes` requests are sent one at a time. */
   request<T>(
     command: FusionLspCommand,
@@ -426,8 +425,6 @@ class FusionLanguageClientImpl implements FusionClient {
   private _state: FusionClientState = "stopped";
   private _failureReason: string | undefined;
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
-  private readonly _onDidChangeStaticAnalysis =
-    new EventEmitter<StaticAnalysisMode>();
   private readonly _logChannel: LogOutputChannel;
   private languageClient:
     | Pick<
@@ -475,10 +472,6 @@ class FusionLanguageClientImpl implements FusionClient {
 
   get staticAnalysis(): StaticAnalysisMode {
     return this.options.launch.staticAnalysis;
-  }
-
-  get onDidChangeStaticAnalysis(): Event<StaticAnalysisMode> {
-    return this._onDidChangeStaticAnalysis.event;
   }
 
   get failureReason(): string | undefined {
@@ -542,7 +535,6 @@ class FusionLanguageClientImpl implements FusionClient {
     void this.stop().finally(() => {
       this._logChannel.dispose();
       this._onDidChangeState.dispose();
-      this._onDidChangeStaticAnalysis.dispose();
     });
   }
 
@@ -884,8 +876,6 @@ class FusionLanguageClientImpl implements FusionClient {
 
 export class FailedFusionClient implements FusionClient {
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
-  private readonly _onDidChangeStaticAnalysis =
-    new EventEmitter<StaticAnalysisMode>();
   readonly state: FusionClientState = "failed";
   readonly staticAnalysis: StaticAnalysisMode;
   readonly outputChannel: LogOutputChannel;
@@ -910,10 +900,6 @@ export class FailedFusionClient implements FusionClient {
     return this._onDidChangeState.event;
   }
 
-  get onDidChangeStaticAnalysis(): Event<StaticAnalysisMode> {
-    return this._onDidChangeStaticAnalysis.event;
-  }
-
   request<T>(): Promise<T> {
     return Promise.reject(new Error(this.message));
   }
@@ -929,7 +915,6 @@ export class FailedFusionClient implements FusionClient {
   dispose(): void {
     this.outputChannel.dispose();
     this._onDidChangeState.dispose();
-    this._onDidChangeStaticAnalysis.dispose();
   }
 }
 

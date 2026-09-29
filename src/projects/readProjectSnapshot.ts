@@ -9,7 +9,23 @@ import {
   readEnvironment,
   readEnvironmentOverride,
   readSetting,
+  SettingKey,
 } from "../settings";
+
+/** Every setting `readProjectSnapshot` reads; a change to any of them may change a snapshot. */
+export const PROJECT_SNAPSHOT_SETTINGS: readonly SettingKey[] = [
+  "dbtPath",
+  "target",
+  "profilesDir",
+  "staticAnalysis",
+  "lsp.compiledOutput",
+  "lint.enabled",
+  "trace.server",
+  "defer.perProject",
+  "run.additionalParams",
+  "build.additionalParams",
+  "test.additionalParams",
+];
 
 /** Reads every input of one Declared Project's snapshot, each once, and resolves it. */
 export function readProjectSnapshot(root: Uri): ProjectSnapshot {

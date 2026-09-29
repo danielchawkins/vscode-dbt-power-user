@@ -10,7 +10,16 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { Uri, workspace } from "vscode";
-import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
+import {
+  PROJECT_SNAPSHOT_SETTINGS,
+  readProjectSnapshot,
+} from "../../projects/readProjectSnapshot";
+import { esmDirname } from "../esmDirname";
+
+const sourcePath = path.resolve(
+  esmDirname(import.meta.url),
+  "../../projects/readProjectSnapshot.ts",
+);
 
 describe("readProjectSnapshot", () => {
   let folder: string;
@@ -71,5 +80,18 @@ describe("readProjectSnapshot", () => {
     expect(snapshot.name).toBe("shop");
     expect(snapshot.paths.modelPaths).toEqual([path.join(root, "src_models")]);
     expect(snapshot.paths.targetPath).toBe(path.join(root, "build"));
+  });
+
+  it("lists every setting it reads in PROJECT_SNAPSHOT_SETTINGS", () => {
+    const source = fs.readFileSync(sourcePath, "utf8");
+    const read = [...source.matchAll(/readSetting\(\s*"([^"]+)"/g)].map(
+      ([, key]) => key,
+    );
+
+    expect(read.length).toBeGreaterThan(0);
+    expect(source).not.toMatch(/readSetting\(\s*[^"\s]/);
+    expect([...PROJECT_SNAPSHOT_SETTINGS].sort()).toEqual(
+      [...new Set(read)].sort(),
+    );
   });
 });

@@ -11,10 +11,3 @@ export function resolveConfiguredStaticAnalysisMode(
     readSetting(STATIC_ANALYSIS_MODE_SETTING, scope),
   );
 }
-
-/** `--static-analysis` value for the language server, or undefined to defer to project config. */
-export function staticAnalysisLaunchArgument(
-  mode: StaticAnalysisMode,
-): Exclude<StaticAnalysisMode, "project"> | undefined {
-  return mode === "project" ? undefined : mode;
-}
