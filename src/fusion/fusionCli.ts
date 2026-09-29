@@ -11,29 +11,22 @@ import {
   showPreview,
   toCliArgs,
 } from "../core/cli";
-import { DBT_PROJECT_FILE, ProjectSnapshot } from "../core/project";
 import {
-  DBTCommand,
-  DBTProjectIntegration,
-  QueryExecution,
-} from "../dbt_integration/dbtIntegration";
+  DBT_PROJECT_FILE,
+  deferSettingsKey,
+  ProjectSnapshot,
+} from "../core/project";
+import { DBTCommand, QueryExecution } from "../dbt_integration/dbtIntegration";
 import {
   DBTDiagnosticData,
   DBTDiagnosticResult,
 } from "../dbt_integration/diagnostics";
-import {
-  Catalog,
-  DBColumn,
-  DBTNode,
-  NodeMetaData,
-  SqlDryRunResult,
-} from "../dbt_integration/domain";
+import { DBColumn } from "../dbt_integration/domain";
 import { DBTTerminal } from "../dbt_integration/terminal";
 import {
   CommandProcessExecutionFactory,
   CommandProcessResult,
 } from "./commandProcessExecution";
-import { fusionCatalog } from "./fusionCatalog";
 
 /** The resolved dbt binary and the environment every invocation inherits. */
 export interface FusionCliExecutable {
@@ -86,26 +79,25 @@ function anySignal(
   return controller.signal;
 }
 
-/** The `--select` value of a factory-built command. */
-function selectOf(command: DBTCommand): string {
-  const at = command.args.indexOf("--select");
-  const select = at < 0 ? undefined : command.args[at + 1];
-  if (select === undefined) {
-    throw new Error(`No --select in dbt ${command.args.join(" ")}`);
-  }
-  return select;
-}
+/** The command kinds DBTProject queues. */
+export type QueuedCliCommand = Extract<
+  CliCommand,
+  { kind: "run" | "build" | "test" | "compile" }
+>;
 
-const IMMEDIATE_KINDS = ["deps", "clean", "debug"] as const;
-
-function immediateKind(command: DBTCommand): CliCommand {
-  const kind = IMMEDIATE_KINDS.find(
-    (k) => command.args.length === 1 && command.args[0] === k,
-  );
-  if (kind === undefined) {
-    throw new Error(`Unsupported command: dbt ${command.args.join(" ")}`);
+function queuedStatus(cli: QueuedCliCommand): string {
+  switch (cli.kind) {
+    case "run":
+      return "Running dbt model...";
+    case "build":
+      return cli.select === undefined
+        ? "Building dbt project..."
+        : "Building dbt model...";
+    case "test":
+      return "Testing dbt model...";
+    case "compile":
+      return "Compiling dbt models...";
   }
-  return { kind };
 }
 
 const REBUILD_RANGE = {
@@ -119,36 +111,11 @@ const columnsQuery = (relation: string) =>
   `{% set output = [] %}{% for result in adapter.get_columns_in_relation(${relation}) %} ` +
   `{% do output.append({"column": result.name, "dtype": result.dtype}) %} {% endfor %} {{ tojson(output) }}`;
 
-function bulkSchemaQuery(nodes: DBTNode[]): string {
-  return `
-{% set result = {} %}
-{% for n in ${JSON.stringify(nodes)} %}
-  {% set columns = adapter.get_columns_in_relation(ref(n["name"])) %}
-  {% set new_columns = [] %}
-  {% for column in columns %}
-    {% do new_columns.append({"column": column.name, "dtype": column.dtype}) %}
-  {% endfor %}
-  {% do result.update({n["unique_id"]:new_columns}) %}
-{% endfor %}
-{% for n in graph.sources.values() %}
-  {% set columns = adapter.get_columns_in_relation(source(n["source_name"], n["identifier"])) %}
-  {% set new_columns = [] %}
-  {% for column in columns %}
-    {% do new_columns.append({"column": column.name, "dtype": column.dtype}) %}
-  {% endfor %}
-  {% do result.update({n["unique_id"]:new_columns}) %}
-{% endfor %}
-{{ tojson(result) }}`
-    .trim()
-    .split("\n")
-    .join("");
-}
-
 /**
  * Runs dbt Fusion commands for one project. Every command reads the snapshot afresh; the name and path getters read
  * one cached snapshot that `refreshProjectConfig` replaces.
  */
-export class FusionCli implements DBTProjectIntegration {
+export class FusionCli {
   private readonly warnedDeferPaths = new Set<string>();
   private config: ProjectSnapshot | undefined;
   private rebuildManifestDiagnostics: DBTDiagnosticData[] = [];
@@ -162,8 +129,8 @@ export class FusionCli implements DBTProjectIntegration {
   ) {}
 
   /**
-   * Runs `command` in the project root. Warns once per defer state path that is neither a directory nor a
-   * `manifest.json` file. Resolves with the process result whatever the exit code.
+   * Runs `command` in the project root. Warns once when defer is enabled without a state path, and once per
+   * state path that is neither a directory nor a `manifest.json` file. Resolves with the process result whatever the exit code.
    */
   async run(
     command: CliCommand,
@@ -238,8 +205,6 @@ export class FusionCli implements DBTProjectIntegration {
     this.rebuildAbort = undefined;
   }
 
-  async initializeProject(): Promise<void> {}
-
   /** Rereads the snapshot behind the name and path getters. */
   async refreshProjectConfig(): Promise<void> {
     this.config = this.snapshot();
@@ -248,14 +213,6 @@ export class FusionCli implements DBTProjectIntegration {
   private projectConfig(): ProjectSnapshot {
     this.config ??= this.snapshot();
     return this.config;
-  }
-
-  async setSelectedTarget(_targetName: string): Promise<void> {
-    throw new Error("The target comes from fusionPowerUser.target");
-  }
-
-  getSelectedTarget(): string | undefined {
-    return this.snapshot().invocation.target;
   }
 
   getTargetPath(): string {
@@ -278,20 +235,8 @@ export class FusionCli implements DBTProjectIntegration {
     return this.projectConfig().paths.packagesInstallPath;
   }
 
-  getAdapterType(): string {
-    return "unknown";
-  }
-
-  getVersion(): number[] {
-    return [0, 0, 0];
-  }
-
   getProjectName(): string {
     return this.projectConfig().name;
-  }
-
-  getDebounceForRebuildManifest(): number {
-    return 500;
   }
 
   getDiagnostics(): DBTDiagnosticResult {
@@ -300,21 +245,6 @@ export class FusionCli implements DBTProjectIntegration {
       projectConfigDiagnostics: [],
     };
   }
-
-  findPackageVersion(_packageName: string): string | undefined {
-    return undefined;
-  }
-
-  /** Defer comes from the snapshot on every run. */
-  async applyDeferConfig(): Promise<void> {}
-
-  async applySelectedTarget(): Promise<void> {}
-
-  isInitialized(): boolean {
-    return true;
-  }
-
-  async cleanupConnections(): Promise<void> {}
 
   // -------- parse --------
 
@@ -371,55 +301,6 @@ export class FusionCli implements DBTProjectIntegration {
     }
   }
 
-  // -------- queued commands --------
-
-  async runModel(command: DBTCommand): Promise<DBTCommand> {
-    return this.queued(command, { kind: "run", select: selectOf(command) });
-  }
-
-  async buildModel(command: DBTCommand): Promise<DBTCommand> {
-    return this.queued(command, { kind: "build", select: selectOf(command) });
-  }
-
-  async buildProject(command: DBTCommand): Promise<DBTCommand> {
-    return this.queued(command, { kind: "build" });
-  }
-
-  async runTest(command: DBTCommand): Promise<DBTCommand> {
-    return this.queued(command, { kind: "test", select: selectOf(command) });
-  }
-
-  async runModelTest(command: DBTCommand): Promise<DBTCommand> {
-    return this.queued(command, { kind: "test", select: selectOf(command) });
-  }
-
-  async compileModel(command: DBTCommand): Promise<DBTCommand> {
-    return this.queued(command, { kind: "compile", select: selectOf(command) });
-  }
-
-  async generateDocs(_command: DBTCommand): Promise<DBTCommand | undefined> {
-    throw new Error("dbt fusion does not support docs generation");
-  }
-
-  /** Runs `deps`, `clean` or `debug` now; any other command throws. */
-  async executeCommandImmediately(
-    command: DBTCommand,
-  ): Promise<CommandProcessResult> {
-    return this.execute(command, immediateKind(command), command.signal);
-  }
-
-  async clean(_command: DBTCommand): Promise<string> {
-    throw new Error("Use executeCommandImmediately");
-  }
-
-  async deps(_command: DBTCommand): Promise<string> {
-    throw new Error("Use executeCommandImmediately");
-  }
-
-  async debug(_command: DBTCommand): Promise<string> {
-    throw new Error("Use executeCommandImmediately");
-  }
-
   // -------- queries --------
 
   async executeSQL(
@@ -448,27 +329,6 @@ export class FusionCli implements DBTProjectIntegration {
     );
   }
 
-  /** The compiled SQL of one model; its record wins over the tests compiled with it. */
-  async unsafeCompileNode(modelName: string): Promise<string> {
-    const { stdout, stderr } = await this.run({
-      kind: "compileNode",
-      node: modelName,
-    });
-    throwLogErrors(stderr);
-    return compiledOutput(stdout, "model");
-  }
-
-  async unsafeCompileQuery(
-    query: string,
-    _originalModelName: string | undefined,
-  ): Promise<string> {
-    return this.compileInline(query);
-  }
-
-  async validateSQLDryRun(_query: string): Promise<SqlDryRunResult> {
-    throw new Error("validateSQLDryRun is not supported");
-  }
-
   /** Throws the raw stderr when there is any. */
   async getColumnsOfSource(
     sourceName: string,
@@ -491,53 +351,20 @@ export class FusionCli implements DBTProjectIntegration {
     ) as DBColumn[];
   }
 
-  /** Columns of `nodes` and of every source, keyed by unique id. */
-  async getBulkSchemaFromDB(
-    nodes: DBTNode[],
-    signal: AbortSignal,
-  ): Promise<Record<string, DBColumn[]>> {
-    if (nodes.length === 0) {
-      return {};
-    }
-    return JSON.parse(
-      await this.compileInline(bulkSchemaQuery(nodes), { signal }),
-    ) as Record<string, DBColumn[]>;
-  }
-
-  /** Compiled SQL per unique id; a model that fails to compile is logged and left out. */
-  async getBulkCompiledSQL(
-    models: NodeMetaData[],
-  ): Promise<Record<string, string>> {
-    const result: Record<string, string> = {};
-    for (const node of models) {
-      try {
-        result[node.unique_id] = await this.unsafeCompileNode(node.name);
-      } catch (e) {
-        this.terminal.error(
-          "getBulkCompiledSQL",
-          `Unable to compile sql for model ${node.unique_id}`,
-          e,
-          true,
-        );
-      }
-    }
-    return result;
-  }
-
-  async getCatalog(): Promise<Catalog> {
-    return fusionCatalog(
-      this.getTargetPath(),
-      (sql) => this.compileInline(sql),
-      this.terminal,
-    );
-  }
+  // -------- queued commands --------
 
   /**
-   * Gives `command` this project's argv for display and an execution strategy that runs `cli`. The argv is computed
-   * again when the command runs, so it can differ from the argv shown when it was queued.
+   * A command for the project queue, with this project's argv for display and an execution strategy that runs `cli`.
+   * The argv is computed again when the command runs, so it can differ from the argv shown when it was queued.
    */
-  private queued(command: DBTCommand, cli: CliCommand): DBTCommand {
-    command.args = toCliArgs(this.snapshot(), cli, diskProbe);
+  prepare(cli: QueuedCliCommand): DBTCommand {
+    const command = new DBTCommand(
+      queuedStatus(cli),
+      toCliArgs(this.snapshot(), cli, diskProbe),
+      true,
+      true,
+      true,
+    );
     command.setExecutionStrategy({
       execute: (c, signal) => this.execute(c, cli, signal),
     });
@@ -551,7 +378,6 @@ export class FusionCli implements DBTProjectIntegration {
   ): Promise<CommandProcessResult> {
     return this.run(cli, {
       signal: anySignal(signal, command.signal),
-      env: command.env,
       terminalOutput: command.logToTerminal
         ? { focus: command.focus }
         : undefined,
@@ -560,6 +386,17 @@ export class FusionCli implements DBTProjectIntegration {
 
   private warnUnusableDefer(snapshot: ProjectSnapshot): void {
     const state = deferState(snapshot.invocation.defer, diskProbe);
+    if (state.kind === "unset" && !this.warnedDeferPaths.has("")) {
+      this.warnedDeferPaths.add("");
+      this.terminal.warn(
+        "deferMissingManifestPath",
+        `fusionPowerUser.defer.perProject has deferToProduction enabled for ` +
+          `${deferSettingsKey(snapshot.root, snapshot.folder)} but no manifestPathForDeferral; ` +
+          `running without --state.`,
+        false,
+      );
+      return;
+    }
     if (
       state.kind !== "unusable" ||
       this.warnedDeferPaths.has(state.manifestPath)

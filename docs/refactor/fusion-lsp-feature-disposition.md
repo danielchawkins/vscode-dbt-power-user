@@ -173,7 +173,6 @@ Expected retention includes:
 
 - VS Code APIs and dependency injection while they still reduce migration risk;
 - webview infrastructure needed by retained local panels;
-- `semver` for Fusion compatibility;
 - YAML support needed by local documentation editing; and
 - process/path utilities needed by the local executable resolver.
 

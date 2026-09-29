@@ -488,24 +488,12 @@ export function isResourceNode(resourceType: string): boolean {
   );
 }
 
-export function isResourceHasDbColumns(resourceType: string): boolean {
-  return (
-    resourceType === RESOURCE_TYPE_MODEL ||
-    resourceType === RESOURCE_TYPE_SEED ||
-    resourceType === RESOURCE_TYPE_SNAPSHOT
-  );
-}
 export interface DBTCommandExecution {
   command: (signal?: AbortSignal) => Promise<void>;
   statusMessage: string;
   showProgress?: boolean;
   focus?: boolean;
   signal?: AbortSignal;
-}
-
-export enum ManifestPathType {
-  LOCAL = "local",
-  REMOTE = "remote",
 }
 
 export interface RunModelParams {
@@ -516,39 +504,11 @@ export interface RunModelParams {
 
 export type DBColumn = { column: string; dtype: string };
 
-export type Node = {
-  unique_id: string;
-  name: string;
-  resource_type: string;
-};
-
-export type SourceNode = {
-  unique_id: string;
-  name: string;
-  resource_type: "source";
-  table: string;
-};
-
-export type DBTNode = Node | SourceNode;
-
-type CatalogItem = {
-  table_database: string;
-  table_schema: string;
-  table_name: string;
-  column_name: string;
-  column_type: string;
-};
-
-export type Catalog = CatalogItem[];
 export interface HealthcheckArgs {
   manifestPath: string;
   catalogPath?: string;
   config?: any;
   configPath?: string;
-}
-
-export interface SqlDryRunResult {
-  bytes_processed: string;
 }
 
 export interface QueryExecutionResult {

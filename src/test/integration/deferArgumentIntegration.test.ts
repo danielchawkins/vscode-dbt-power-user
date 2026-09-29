@@ -6,7 +6,7 @@ import * as path from "path";
 import "reflect-metadata";
 import { promisify } from "util";
 import { readDbtProjectFile, resolveProjectSnapshot } from "../../core/project";
-import { DBTCommand, DBTTerminal } from "../../dbt_integration";
+import { DBTTerminal } from "../../dbt_integration";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { checkFusionVersion, getExtensionRoot } from "./helpers/testFixtures";
@@ -203,9 +203,7 @@ suite("Fusion defer argument integration", function () {
     );
 
     const cli = buildCli();
-    const command = await cli.runModel(
-      new DBTCommand("Running", ["run", "--select", "model_b"]),
-    );
+    const command = cli.prepare({ kind: "run", select: "model_b" });
     assert.ok(
       command.getCommandAsString().includes(`--defer --state ${stateDir}`),
       `expected --defer --state ${stateDir} in: ${command.getCommandAsString()}`,

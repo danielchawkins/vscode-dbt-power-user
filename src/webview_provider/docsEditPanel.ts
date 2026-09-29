@@ -1,7 +1,6 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import { inject } from "inversify";
 import * as path from "path";
-import { gte } from "semver";
 import {
   CancellationToken,
   commands,
@@ -203,7 +202,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
   private getTestDataByModel(
     message: any,
     modelName: string,
-    project?: DBTProject,
     existingModel?: any,
   ) {
     const tests = message.updatedTests as undefined | TestMetaData[];
@@ -248,15 +246,8 @@ export class DocsEditViewPanel implements WebviewViewProvider {
       return;
     }
 
-    // dbt >= 1.8 renamed model-level `tests:` to `data_tests:`. Mirror the
-    // column-level selection logic: prefer `data_tests` on new dbt versions,
-    // but preserve `tests` if the user's YAML already uses that key.
-    const dbtVersion = project?.getDBTVersion();
-    if (
-      dbtVersion &&
-      gte(dbtVersion.join("."), "1.8.0") &&
-      existingModel?.tests === undefined
-    ) {
+    // Keeps `tests` when the model's YAML already uses that key.
+    if (existingModel?.tests === undefined) {
       return { data_tests: filteredTests };
     }
 
@@ -290,7 +281,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
   private getTestDataByColumn(
     message: any,
     columnNameFromWebview: string,
-    project: DBTProject,
     existingColumn?: any,
   ) {
     const tests = message.updatedTests as undefined | TestMetaData[];
@@ -368,10 +358,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     }
 
     const dataWithoutDupes = this.dbtTestService.removeDuplicateTests(data);
-    const dbtVersion = project.getDBTVersion();
     if (
-      dbtVersion &&
-      gte(dbtVersion.join("."), "1.8.0") && // Compare versions
       existingColumn?.name === columnNameFromWebview &&
       existingColumn?.tests === undefined
     ) {
@@ -858,9 +845,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
                   ...this.getTestDataByColumn(
                     message,
                     column.name,
-                    project,
-                    // passing column to get correct key: data_tests or tests
-                    // https://github.com/AltimateAI/vscode-dbt-power-user/issues/1449
+                    // A column without a `tests` key gets `data_tests`.
                     { name: column.name },
                   ),
                   ...(isQuotedIdentifier(
@@ -890,7 +875,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         const modelTests = this.getTestDataByModel(
           message,
           model.get("name") as string,
-          project,
           model.toJSON(),
         );
         this.setOrDeleteInParsedDocument(model, "tests", modelTests?.tests);
@@ -925,7 +909,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
             const allTests = this.getTestDataByColumn(
               message,
               column.name,
-              project,
               existingColumn.toJSON(),
             );
             this.setOrDeleteInParsedDocument(
@@ -947,7 +930,9 @@ export class DocsEditViewPanel implements WebviewViewProvider {
               name,
               description: column.description?.trim() || undefined,
               data_type: column.type?.toLowerCase(),
-              ...this.getTestDataByColumn(message, column.name, project),
+              ...this.getTestDataByColumn(message, column.name, {
+                name: column.name,
+              }),
               ...(isQuotedIdentifier(
                 column.name,
                 projectByFilePath.getAdapterType(),

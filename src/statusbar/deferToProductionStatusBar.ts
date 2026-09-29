@@ -62,8 +62,7 @@ export class DeferToProductionStatusBar implements Disposable {
       if (!currentProject) {
         this.statusBar.hide();
       }
-      const config = currentProject.getDeferConfig();
-      if (config.deferToProduction) {
+      if (currentProject.getDeferConfig()?.deferToProduction) {
         this.showTextInStatusBar("$(sync) Defer");
         this.statusBar.show();
         return;

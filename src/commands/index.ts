@@ -37,6 +37,7 @@ import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
 import { inspectSettings, readEnvironment } from "../settings";
+import { DeferToProductionStatusBar } from "../statusbar/deferToProductionStatusBar";
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { getFirstWorkspacePath } from "../utils";
 import { ProjectSetupCommands } from "./projectSetupCommands";
@@ -58,6 +59,7 @@ export class VSCodeCommands implements Disposable {
     private cteProfilerService: CteProfilerService,
     private cteProfilerDecorationProvider: CteProfilerDecorationProvider,
     private cteCodeLensProvider: CteCodeLensProvider,
+    private deferToProductionStatusBar: DeferToProductionStatusBar,
   ) {
     this.disposables.push(
       this.cteProfilerService,
@@ -474,23 +476,10 @@ export class VSCodeCommands implements Disposable {
           this.diagnosticsOutputChannel.logLine(`Error=${e}`);
         }
       }),
-      commands.registerCommand("fusionPowerUser.applyDeferConfig", async () => {
-        const projects = this.dbtProjectContainer.getProjects();
-        try {
-          await Promise.all(
-            projects.map((project) => project.applyDeferConfig()),
-          );
-          window.showInformationMessage("Applied defer configuration");
-        } catch (error) {
-          this.dbtTerminal.error(
-            "applyDeferConfig",
-            "Failed to apply defer configuration",
-            error,
-          );
-          window.showErrorMessage(
-            `Failed to apply defer configuration: ${error}`,
-          );
-        }
+      // Commands read defer settings when they run; this only refreshes the status bar.
+      commands.registerCommand("fusionPowerUser.applyDeferConfig", () => {
+        this.deferToProductionStatusBar.updateStatusBar();
+        window.showInformationMessage("Applied defer configuration");
       }),
     );
   }
@@ -532,14 +521,12 @@ export class VSCodeCommands implements Disposable {
       `Adapter Type=${project.getAdapterType()}`,
     );
 
-    const dbtVersion = project.getDBTVersion();
-    if (!dbtVersion) {
-      this.diagnosticsOutputChannel.logLine("DBT is not initialized properly");
-    } else {
-      this.diagnosticsOutputChannel.logLine(
-        `DBT version=${dbtVersion.join(".")}`,
-      );
-    }
+    const fusionVersion = project.getFusionVersion();
+    this.diagnosticsOutputChannel.logLine(
+      fusionVersion
+        ? `Fusion version=${fusionVersion.raw.trim()}`
+        : "Fusion is not initialized properly",
+    );
 
     this.diagnosticsOutputChannel.logNewLine();
 
@@ -615,7 +602,7 @@ export class VSCodeCommands implements Disposable {
     for (const d of diagnostics) {
       this.diagnosticsOutputChannel.logLine(d.message);
     }
-    await project.debug(false);
+    await project.debug();
   }
 
   private async runCteWithDependencies(

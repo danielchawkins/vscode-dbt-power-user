@@ -1,7 +1,6 @@
 import { existsSync, writeFileSync } from "fs";
 
 import { inject } from "inversify";
-import { homedir } from "os";
 import * as path from "path";
 import {
   commands,
@@ -20,45 +19,35 @@ import {
   window,
   workspace,
 } from "vscode";
+import { commandParamsFor } from "../core/cli";
 import {
   dbtProjectFilePath,
-  deferSettingsKey,
   readDbtProjectFile,
-  resolveDefer,
+  ResolvedDefer,
 } from "../core/project";
 import {
-  Catalog,
   ColumnMetaData,
   DBColumn,
   DBTCommand,
   DBTCommandExecution,
-  DBTCommandFactory,
   DBTDiagnosticData,
-  DBTNode,
-  DBTProjectIntegration,
   DBTTerminal,
-  DeferConfig,
-  isResourceHasDbColumns,
-  isResourceNode,
-  ManifestPathType,
-  NodeMetaData,
   ParsedManifest,
   QueryExecutionResult,
-  RESOURCE_TYPE_MODEL,
-  RESOURCE_TYPE_SOURCE,
   RunModelParams,
   RunResultsEventData,
-  SourceNode,
 } from "../dbt_integration";
+import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
 import {
   hasProjectStrictAnalysis,
   resolveSchemaOrigin,
   SchemaOriginStatus,
 } from "../fusion/schemaOrigin";
 import { ModelNode } from "../local/lineageTypes";
+import { readProjectSnapshot } from "../projects/readProjectSnapshot";
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
-import { readEnvironmentVariable, readSetting } from "../settings";
+import { readSetting } from "../settings";
 import { getColumnNameByCase } from "../utils";
 import { DBTProjectLog } from "./dbtProjectLog";
 import {
@@ -72,12 +61,24 @@ import {
   FusionProjectIntegration,
   FusionProjectIntegrationEvents,
 } from "./fusionProjectIntegration";
-interface FileNameTemplateMap {
-  [key: string]: string;
+function selection(params: RunModelParams): string {
+  return `${params.plusOperatorLeft}${params.modelName}${params.plusOperatorRight}`;
 }
 
-interface JsonObj {
-  [key: string]: string | number | undefined;
+/** The status line for a command that could not be prepared: its selection and `commandParams`. */
+function formatCliStatus(
+  cli: QueuedCliCommand,
+  params: readonly string[],
+): string {
+  const body =
+    cli.kind === "build" && cli.select === undefined
+      ? "dbt build"
+      : `dbt ${cli.kind} --select ${cli.select}`;
+  return [body, ...params].join(" ");
+}
+
+interface FileNameTemplateMap {
+  [key: string]: string;
 }
 
 export class DBTProject implements Disposable {
@@ -119,7 +120,6 @@ export class DBTProject implements Disposable {
     return this._manifestCacheEvent;
   }
 
-  private dbSchemaCache: Record<string, ModelNode> = {};
   private queues: Map<string, DBTCommandExecution[]> = new Map<
     string,
     DBTCommandExecution[]
@@ -131,12 +131,10 @@ export class DBTProject implements Disposable {
     private dbtProjectLogFactory: (
       onProjectConfigChanged: Event<ProjectConfigChangedEvent>,
     ) => DBTProjectLog,
-    private dbtCommandFactory: DBTCommandFactory,
     private terminal: DBTTerminal,
     private eventEmitterService: SharedStateService,
     private dbtIntegrationAdapterFactory: (
       projectRoot: string,
-      deferConfig: DeferConfig | undefined,
     ) => FusionProjectIntegration,
     private runHistoryService: RunHistoryService,
     path: Uri,
@@ -149,7 +147,6 @@ export class DBTProject implements Disposable {
     // Create the integration adapter which will handle the integration selection internally
     this.dbtProjectIntegration = this.dbtIntegrationAdapterFactory(
       this.projectRoot.fsPath,
-      this.retrieveDeferConfigFromSettings(),
     );
 
     // Set up Node.js watcher events to emit VSCode events directly
@@ -264,9 +261,6 @@ export class DBTProject implements Disposable {
           this._manifestCacheEvent = addedEvent;
         }
       }),
-      this.onRunResults((event) => {
-        this.invalidateCacheUsingUniqueIds(event.uniqueIds || []);
-      }),
     );
 
     this.terminal.debug(
@@ -275,14 +269,6 @@ export class DBTProject implements Disposable {
         this.projectRoot
       }`,
     );
-  }
-
-  private invalidateCacheUsingUniqueIds(uniqueIds: string[]) {
-    for (const uniqueId of uniqueIds) {
-      if (uniqueId in this.dbSchemaCache) {
-        delete this.dbSchemaCache[uniqueId];
-      }
-    }
   }
 
   getProjectName() {
@@ -295,6 +281,11 @@ export class DBTProject implements Disposable {
 
   getDBTProjectFilePath() {
     return dbtProjectFilePath(this.projectRoot.fsPath);
+  }
+
+  /** Version of the committed Fusion executable; undefined until one is committed. */
+  getFusionVersion() {
+    return this.dbtProjectIntegration.getFusionVersion();
   }
 
   /** Whether strict analysis of this project can run without the warehouse; see `resolveSchemaOrigin`. */
@@ -484,100 +475,45 @@ export class DBTProject implements Disposable {
     );
   }
 
-  async runModel(runModelParams: RunModelParams) {
-    const runModelCommand =
-      this.dbtCommandFactory.createRunModelCommand(runModelParams);
-    await this.prepareAndQueue(runModelCommand, () =>
-      this.getCurrentProjectIntegration().runModel(runModelCommand),
-    );
+  async runModel(params: RunModelParams) {
+    await this.prepareAndQueue({ kind: "run", select: selection(params) });
   }
 
-  async buildModel(runModelParams: RunModelParams) {
-    const buildModelCommand =
-      this.dbtCommandFactory.createBuildModelCommand(runModelParams);
-    await this.prepareAndQueue(buildModelCommand, () =>
-      this.getCurrentProjectIntegration().buildModel(buildModelCommand),
-    );
+  async buildModel(params: RunModelParams) {
+    await this.prepareAndQueue({ kind: "build", select: selection(params) });
   }
 
   async buildProject() {
-    const buildProjectCommand =
-      this.dbtCommandFactory.createBuildProjectCommand();
-    await this.prepareAndQueue(buildProjectCommand, () =>
-      this.getCurrentProjectIntegration().buildProject(buildProjectCommand),
-    );
+    await this.prepareAndQueue({ kind: "build" });
   }
 
   async runTest(testName: string) {
-    const testModelCommand =
-      this.dbtCommandFactory.createTestModelCommand(testName);
-    await this.prepareAndQueue(testModelCommand, () =>
-      this.getCurrentProjectIntegration().runTest(testModelCommand),
-    );
+    await this.prepareAndQueue({ kind: "test", select: testName });
   }
 
   async runModelTest(modelName: string) {
-    const testModelCommand =
-      this.dbtCommandFactory.createTestModelCommand(modelName);
-    await this.prepareAndQueue(testModelCommand, () =>
-      this.getCurrentProjectIntegration().runModelTest(testModelCommand),
-    );
+    await this.prepareAndQueue({ kind: "test", select: modelName });
   }
 
-  async compileModel(runModelParams: RunModelParams) {
-    const compileModelCommand =
-      this.dbtCommandFactory.createCompileModelCommand(runModelParams);
-    await this.prepareAndQueue(compileModelCommand, () =>
-      this.getCurrentProjectIntegration().compileModel(compileModelCommand),
-    );
+  async compileModel(params: RunModelParams) {
+    await this.prepareAndQueue({ kind: "compile", select: selection(params) });
   }
 
   clean() {
     return this.dbtProjectIntegration.clean();
   }
 
-  debug(focus: boolean = true) {
-    return this.dbtProjectIntegration.debug(focus);
+  debug() {
+    return this.dbtProjectIntegration.debug();
   }
 
   async installDeps() {
     return this.dbtProjectIntegration.installDeps();
   }
 
-  async compileNode(modelName: string): Promise<string | undefined> {
-    this.throwDiagnosticsErrorIfAvailable();
+  async compileQuery(query: string): Promise<string | undefined> {
     try {
-      return await this.dbtProjectIntegration.unsafeCompileNode(modelName);
-    } catch (exc) {
-      window.showErrorMessage(
-        "Could not compile model " +
-          modelName +
-          ": " +
-          (exc instanceof Error ? exc.message : String(exc)) +
-          ".",
-      );
-      return "Detailed error information:\n" + exc;
-    }
-  }
-
-  async unsafeCompileNode(modelName: string): Promise<string | undefined> {
-    this.throwDiagnosticsErrorIfAvailable();
-    return this.dbtProjectIntegration.unsafeCompileNode(modelName);
-  }
-
-  getDBTVersion(): number[] | undefined {
-    return this.getCurrentProjectIntegration().getVersion();
-  }
-
-  async compileQuery(
-    query: string,
-    originalModelName: string | undefined = undefined,
-  ): Promise<string | undefined> {
-    try {
-      return await this.dbtProjectIntegration.unsafeCompileQuery(
-        query,
-        originalModelName,
-      );
+      return await this.dbtProjectIntegration.unsafeCompileQuery(query);
     } catch (exc) {
       window.showErrorMessage(
         "Could not compile query: " +
@@ -603,80 +539,26 @@ export class DBTProject implements Disposable {
     return yamlString;
   }
 
-  async unsafeCompileQuery(
-    query: string,
-    originalModelName: string | undefined = undefined,
-  ) {
-    return this.dbtProjectIntegration.unsafeCompileQuery(
-      query,
-      originalModelName,
-    );
+  async unsafeCompileQuery(query: string) {
+    return this.dbtProjectIntegration.unsafeCompileQuery(query);
   }
 
   async getColumnsOfModel(modelName: string) {
-    const result =
-      await this.dbtProjectIntegration.getColumnsOfModel(modelName);
-    await this.getCurrentProjectIntegration().cleanupConnections();
-    return result;
+    return this.dbtProjectIntegration.getColumnsOfModel(modelName);
   }
 
   async getColumnsOfSource(sourceName: string, tableName: string) {
-    const result = await this.dbtProjectIntegration.getColumnsOfSource(
-      sourceName,
-      tableName,
-    );
-    await this.getCurrentProjectIntegration().cleanupConnections();
-    return result;
+    return this.dbtProjectIntegration.getColumnsOfSource(sourceName, tableName);
   }
 
   async getColumnValues(model: string, column: string) {
-    try {
-      this.terminal.debug(
-        "getColumnValues",
-        "finding distinct values for column",
-        true,
-        { model, column },
-      );
-      const result = await this.dbtProjectIntegration.getColumnValues(
-        model,
-        column,
-      );
-      return result;
-    } catch (error) {
-      throw error;
-    } finally {
-      await this.getCurrentProjectIntegration().cleanupConnections();
-    }
-  }
-
-  async getBulkSchemaFromDB(req: DBTNode[], signal: AbortSignal) {
-    try {
-      const result =
-        await this.getCurrentProjectIntegration().getBulkSchemaFromDB(
-          req,
-          signal,
-        );
-      await this.getCurrentProjectIntegration().cleanupConnections();
-      return result;
-    } finally {
-      await this.getCurrentProjectIntegration().cleanupConnections();
-    }
-  }
-
-  async getCatalog(): Promise<Catalog> {
-    try {
-      const result = await this.getCurrentProjectIntegration().getCatalog();
-      return result;
-    } catch {
-      window.showErrorMessage(
-        "Some of the scans could not run as connectivity to database for the project " +
-          this.getProjectName() +
-          " is not available. ",
-      );
-      return [];
-    } finally {
-      await this.getCurrentProjectIntegration().cleanupConnections();
-    }
+    this.terminal.debug(
+      "getColumnValues",
+      "finding distinct values for column",
+      true,
+      { model, column },
+    );
+    return this.dbtProjectIntegration.getColumnValues(model, column);
   }
 
   async generateSchemaYML(modelPath: Uri, modelName: string) {
@@ -879,14 +761,6 @@ export class DBTProject implements Disposable {
     }
   }
 
-  static isResourceNode(resourceType: string): boolean {
-    return isResourceNode(resourceType);
-  }
-
-  static isResourceHasDbColumns(resourceType: string): boolean {
-    return isResourceHasDbColumns(resourceType);
-  }
-
   getNonEphemeralParents(keys: string[]): string[] {
     return this.dbtProjectIntegration.getNonEphemeralParents(keys);
   }
@@ -925,145 +799,6 @@ export class DBTProject implements Disposable {
     return true;
   }
 
-  async getBulkCompiledSql(models: string[]) {
-    if (models.length === 0) {
-      return {};
-    }
-    if (!this._manifestCacheEvent) {
-      throw new Error("The dbt manifest is not available");
-    }
-    const { nodeMetaMap } = this._manifestCacheEvent;
-    return this.getCurrentProjectIntegration().getBulkCompiledSQL(
-      models
-        .map((m) => nodeMetaMap.lookupByUniqueId(m))
-        .filter(Boolean) as NodeMetaData[],
-    );
-  }
-
-  async getNodesWithDBColumns(modelsToFetch: string[], signal: AbortSignal) {
-    const mappedNode: Record<string, ModelNode> = {};
-    const relationsWithoutColumns: string[] = [];
-    if (modelsToFetch.length === 0) {
-      return { mappedNode, relationsWithoutColumns, mappedCompiledSql: {} };
-    }
-    if (!this._manifestCacheEvent) {
-      throw new Error("The dbt manifest is not available");
-    }
-    const { nodeMetaMap, sourceMetaMap } = this._manifestCacheEvent;
-    const bulkSchemaRequest: DBTNode[] = [];
-
-    for (const key of modelsToFetch) {
-      if (this.dbSchemaCache[key]) {
-        mappedNode[key] = this.dbSchemaCache[key];
-        continue;
-      }
-      const splits = key.split(".");
-      const resource_type = splits[0];
-      if (resource_type === RESOURCE_TYPE_SOURCE) {
-        const source = sourceMetaMap.get(splits[2]);
-        const tableName = splits[3];
-        if (!source) {
-          continue;
-        }
-        const table = source?.tables.find((t) => t.name === tableName);
-        if (!table) {
-          continue;
-        }
-        bulkSchemaRequest.push({
-          unique_id: key,
-          name: source.name,
-          resource_type,
-          table: table.name,
-        } as SourceNode);
-        const node = {
-          database: source.database,
-          schema: source.schema,
-          name: table.name,
-          alias: table.identifier,
-          uniqueId: key,
-          columns: table.columns,
-          path: table.path,
-        };
-        mappedNode[key] = node;
-      } else if (DBTProject.isResourceNode(resource_type)) {
-        const node = nodeMetaMap.lookupByUniqueId(key);
-        if (!node) {
-          continue;
-        }
-        if (DBTProject.isResourceHasDbColumns(resource_type)) {
-          bulkSchemaRequest.push({
-            unique_id: key,
-            name: node.name,
-            resource_type,
-          });
-        }
-        mappedNode[key] = {
-          uniqueId: key,
-          ...node,
-        };
-      }
-    }
-
-    const dbSchemaRequest = bulkSchemaRequest.filter(
-      (r) => r.resource_type !== RESOURCE_TYPE_MODEL,
-    );
-
-    const modelSchemaRequest = bulkSchemaRequest.filter(
-      (r) => r.resource_type === RESOURCE_TYPE_MODEL,
-    );
-    let startTime = Date.now();
-    const mappedCompiledSql = await this.getBulkCompiledSql(
-      modelSchemaRequest.map((r) => r.unique_id),
-    );
-    const compiledSqlTime = Date.now() - startTime;
-
-    if (signal.aborted) {
-      return { mappedNode, relationsWithoutColumns, mappedCompiledSql };
-    }
-    dbSchemaRequest.push(...modelSchemaRequest);
-
-    startTime = Date.now();
-    const bulkSchemaResponse =
-      await this.getCurrentProjectIntegration().getBulkSchemaFromDB(
-        dbSchemaRequest,
-        signal,
-      );
-    const dbFetchTime = Date.now() - startTime;
-
-    for (const key of modelsToFetch) {
-      if (!bulkSchemaRequest.find((r) => r.unique_id === key)) {
-        continue;
-      }
-      const node = mappedNode[key];
-      if (!node) {
-        continue;
-      }
-      const dbColumnAdded = this.mergeColumnsFromDB(
-        node,
-        bulkSchemaResponse[key],
-      );
-      if (!dbColumnAdded) {
-        relationsWithoutColumns.push(key);
-      } else {
-        // only adding to cache when successfully fetched columns from db
-        this.dbSchemaCache[key] = mappedNode[key];
-      }
-    }
-
-    console.log("getNodesWithDBColumnsTimings", {
-      compiledSqlTime,
-      dbFetchTime,
-      modelInfosLength: modelsToFetch.length,
-    });
-
-    return { mappedNode, relationsWithoutColumns, mappedCompiledSql };
-  }
-
-  async applyDeferConfig(): Promise<void> {
-    const deferConfig = this.retrieveDeferConfigFromSettings();
-    await this.dbtProjectIntegration.applyDeferConfig(deferConfig);
-  }
-
   throwDiagnosticsErrorIfAvailable() {
     const integrationDiagnostics = this.dbtProjectIntegration.getDiagnostics();
     const allIntegrationDiagnostics = [
@@ -1094,38 +829,9 @@ export class DBTProject implements Disposable {
     }
   }
 
-  private retrieveDeferConfigFromSettings(): DeferConfig | undefined {
-    const folder = workspace.getWorkspaceFolder(this.projectRoot)?.uri.fsPath;
-    const relativePath = deferSettingsKey(this.projectRoot.fsPath, folder);
-    const defer = resolveDefer(
-      readSetting("defer.perProject", this.projectRoot)?.[relativePath],
-      this.projectRoot.fsPath,
-      { userHome: homedir(), lookup: readEnvironmentVariable },
-    );
-    if (!defer) {
-      return undefined;
-    }
-    if (defer.deferToProduction && !defer.manifestPath) {
-      this.terminal.warn(
-        "deferMissingManifestPath",
-        `fusionPowerUser.defer.perProject has deferToProduction enabled for ` +
-          `${relativePath} but no manifestPathForDeferral; defer will not apply.`,
-        false,
-      );
-    }
-    return new DeferConfig(
-      defer.deferToProduction,
-      defer.favorState,
-      defer.manifestPath,
-      defer.manifestPath ? ManifestPathType.LOCAL : undefined,
-    );
-  }
-
-  getDeferConfig(): DeferConfig {
-    if (!this.dbtProjectIntegration) {
-      throw new Error("DBT Project Integration is not initialized.");
-    }
-    return this.dbtProjectIntegration.getDeferConfig();
+  /** This project's defer settings, read from the same snapshot commands are built from. */
+  getDeferConfig(): ResolvedDefer | undefined {
+    return readProjectSnapshot(this.projectRoot).invocation.defer;
   }
 
   private createQueue(queueName: string) {
@@ -1141,17 +847,14 @@ export class DBTProject implements Disposable {
       .trim();
   }
 
-  private async prepareAndQueue(
-    requestedCommand: DBTCommand,
-    prepare: () => Promise<DBTCommand | undefined>,
-  ): Promise<void> {
+  private async prepareAndQueue(cli: QueuedCliCommand): Promise<void> {
     try {
-      const command = await prepare();
-      if (command) {
-        this.addCommandToQueue("all", command);
-      }
+      this.addCommandToQueue("all", this.fusionCli().prepare(cli));
     } catch (error) {
-      const statusMessage = this.formatCommandStatus(requestedCommand);
+      const statusMessage = formatCliStatus(
+        cli,
+        commandParamsFor(readProjectSnapshot(this.projectRoot), cli),
+      );
       this.runHistoryService.notifyCommandFailed(statusMessage, String(error));
       this.terminal.error(
         "commandPreparationError",
@@ -1223,8 +926,8 @@ export class DBTProject implements Disposable {
     }
   }
 
-  private getCurrentProjectIntegration(): DBTProjectIntegration {
-    return this.dbtProjectIntegration.getCurrentProjectIntegration();
+  private fusionCli(): FusionCli {
+    return this.dbtProjectIntegration.getFusionCli();
   }
 
   getPublicationEpoch(): number {

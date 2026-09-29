@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
-import { DeferConfig } from "../../dbt_integration";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FusionStatus } from "../../lsp/fusionStatus";
 
@@ -119,19 +118,14 @@ describe("Fusion-only integration wiring", () => {
   });
 
   it("uses the Fusion project integration", () => {
-    type IntegrationFactory = (
-      projectRoot: string,
-      deferConfig: DeferConfig | undefined,
-    ) => FusionProjectIntegration;
+    type IntegrationFactory = (projectRoot: string) => FusionProjectIntegration;
 
     const factory = container.get<IntegrationFactory>(
       "Factory<FusionProjectIntegration>",
     );
-    const integration = factory("/tmp/project", undefined);
+    const integration = factory("/tmp/project");
 
     expect(integration).toBeInstanceOf(FusionProjectIntegration);
-    expect(() => integration.getCurrentProjectIntegration()).toThrow(
-      /not initialized/,
-    );
+    expect(() => integration.getFusionCli()).toThrow(/not initialized/);
   });
 });
