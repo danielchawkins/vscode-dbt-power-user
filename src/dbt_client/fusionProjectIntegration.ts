@@ -11,14 +11,9 @@ import {
 } from "../core/project";
 import {
   ChildrenParentParser,
-  DBTCommand,
-  DBTCommandFactory,
-  type DBTConfiguration,
   type DBTDiagnosticData,
   type DBTDiagnosticResult,
-  DBTProjectIntegration,
   DBTTerminal,
-  DeferConfig,
   DocParser,
   type ExecuteSQLResult,
   ExposureParser,
@@ -41,6 +36,7 @@ import {
   TestParser,
   UnitTestParser,
 } from "../dbt_integration";
+import { FusionCli } from "../fusion/fusionCli";
 import {
   DBT_PATH_SETTING,
   formatFusionExecutableResolutionFailure,
@@ -54,9 +50,10 @@ import { onDidChangeSettings, SettingsChange } from "../settings";
 export type FusionCommandIntegrationFactory = (
   executable: FusionExecutable,
   projectRoot: string,
-) => DBTProjectIntegration;
+) => FusionCli;
 
 const EXECUTABLE_DIAGNOSTIC_SOURCE = "fusion-executable";
+const REBUILD_MANIFEST_DEBOUNCE_MS = 500;
 
 /** Snapshot of run_results.json content before a command; null when absent. */
 export type RunResultsObservation = string | null;
@@ -242,7 +239,7 @@ export class FusionProjectIntegration
   extends EventEmitter
   implements ManifestProject
 {
-  private currentIntegration?: DBTProjectIntegration;
+  private currentIntegration?: FusionCli;
   private currentFusionVersion?: FusionVersion;
   private configurationSubscription?: Disposable;
   private refreshChain: Promise<void> = Promise.resolve();
@@ -258,15 +255,11 @@ export class FusionProjectIntegration
   private projectConfigDiagnostics: DBTDiagnosticData[] = [];
   private lastParsedManifest?: ParsedManifest;
   private adapterType = "unknown";
-  private deferConfig: DeferConfig;
 
   constructor(
-    private readonly dbtConfiguration: DBTConfiguration,
-    private readonly dbtCommandFactory: DBTCommandFactory,
     private readonly resolver: FusionExecutableResolver,
     private readonly fusionIntegrationFactory: FusionCommandIntegrationFactory,
     private readonly projectRoot: string,
-    deferConfig: DeferConfig | undefined,
     private readonly childrenParentParser: ChildrenParentParser,
     private readonly nodeParser: NodeParser,
     private readonly macroParser: MacroParser,
@@ -283,10 +276,9 @@ export class FusionProjectIntegration
     private readonly semanticModelParser: SemanticModelParser,
   ) {
     super();
-    this.deferConfig = deferConfig ?? this.getDefaultDeferConfig();
   }
 
-  private requireIntegration(): DBTProjectIntegration {
+  private requireIntegration(): FusionCli {
     const integration = this.currentIntegration;
     if (!integration) {
       throw new Error(
@@ -313,10 +305,6 @@ export class FusionProjectIntegration
 
   getProjectRoot(): string {
     return this.projectRoot;
-  }
-
-  getDefaultDeferConfig(): DeferConfig {
-    return DeferConfig.createFusionDefaults();
   }
 
   getDBTProjectFilePath(): string {
@@ -348,18 +336,8 @@ export class FusionProjectIntegration
     return this.adapterType;
   }
 
-  getDeferConfig(): DeferConfig {
-    return this.deferConfig;
-  }
-
-  async applyDeferConfig(deferConfig: DeferConfig | undefined): Promise<void> {
-    this.deferConfig = deferConfig ?? this.getDefaultDeferConfig();
-    if (this.currentIntegration) {
-      await this.currentIntegration.applyDeferConfig(this.deferConfig);
-    }
-  }
-
-  getCurrentProjectIntegration(): DBTProjectIntegration {
+  /** The CLI of the committed executable; throws until one is committed. */
+  getFusionCli(): FusionCli {
     return this.requireIntegration();
   }
 
@@ -455,7 +433,7 @@ export class FusionProjectIntegration
     }
   }
 
-  private createDelegate(executable: FusionExecutable): DBTProjectIntegration {
+  private createDelegate(executable: FusionExecutable): FusionCli {
     return this.fusionIntegrationFactory(executable, this.projectRoot);
   }
 
@@ -465,7 +443,7 @@ export class FusionProjectIntegration
 
   private async abandonIfStale(
     generation: number,
-    candidate: DBTProjectIntegration,
+    candidate: FusionCli,
   ): Promise<boolean> {
     if (this.isActivationCurrent(generation)) {
       return true;
@@ -480,11 +458,6 @@ export class FusionProjectIntegration
   ): Promise<void> {
     const candidate = this.createDelegate(executable);
     const candidateVersion = executable.version;
-
-    await candidate.initializeProject();
-    if (!(await this.abandonIfStale(generation, candidate))) {
-      return;
-    }
 
     await this.refreshIntegrationProjectConfig(candidate, false);
     if (!(await this.abandonIfStale(generation, candidate))) {
@@ -510,7 +483,7 @@ export class FusionProjectIntegration
 
   private async commitCandidate(
     generation: number,
-    candidate: DBTProjectIntegration,
+    candidate: FusionCli,
   ): Promise<void> {
     if (!(await this.abandonIfStale(generation, candidate))) {
       return;
@@ -588,7 +561,7 @@ export class FusionProjectIntegration
   }
 
   private async refreshIntegrationProjectConfig(
-    delegate: DBTProjectIntegration,
+    delegate: FusionCli,
     updateWatchers: boolean,
   ): Promise<void> {
     this.terminal.debug(
@@ -642,7 +615,7 @@ export class FusionProjectIntegration
   }
 
   private async runManifestRebuild(
-    delegate: DBTProjectIntegration,
+    delegate: FusionCli,
     generation: number,
     afterRebuild: () => Promise<void>,
   ): Promise<void> {
@@ -698,7 +671,7 @@ export class FusionProjectIntegration
   }
 
   private async buildParsedManifest(
-    delegate: DBTProjectIntegration,
+    delegate: FusionCli,
     generation: number,
   ): Promise<ParsedManifest | undefined> {
     this.terminal.debug(
@@ -944,10 +917,6 @@ export class FusionProjectIntegration
     }
   }
 
-  getDebounceForRebuildManifest(): number {
-    return this.requireIntegration().getDebounceForRebuildManifest?.() ?? 500;
-  }
-
   private startSourceFilesWatcher(): void {
     if (this.isWatchingSourceFiles) {
       return;
@@ -1035,7 +1004,7 @@ export class FusionProjectIntegration
           error,
         );
       }
-    }, this.getDebounceForRebuildManifest());
+    }, REBUILD_MANIFEST_DEBOUNCE_MS);
     for (const sourcePath of this.currentSourcePaths) {
       try {
         const watcher = watch(
@@ -1165,26 +1134,16 @@ export class FusionProjectIntegration
     }
   }
 
-  private async runImmediately(command: DBTCommand) {
-    command.focus = false;
-    command.showProgress = false;
-    command.logToTerminal = false;
+  /** Runs `deps`, `clean` or `debug` silently, then reads any run_results.json it wrote. */
+  private async runImmediately(kind: "deps" | "clean" | "debug") {
     const before = this.observeRunResultsBeforeCommand();
-    const result =
-      await this.requireIntegration().executeCommandImmediately(command);
+    const result = await this.requireIntegration().run({ kind });
     this.parseRunResultsAfterCommand(before);
     return result;
   }
 
-  async unsafeCompileNode(modelName: string) {
-    return this.requireIntegration().unsafeCompileNode(modelName);
-  }
-
-  async unsafeCompileQuery(query: string, originalModelName?: string) {
-    return this.requireIntegration().unsafeCompileQuery(
-      query,
-      originalModelName,
-    );
+  async unsafeCompileQuery(query: string) {
+    return this.requireIntegration().compileInline(query);
   }
 
   /** Version of the Fusion executable behind the active integration, once one is committed. */
@@ -1192,20 +1151,16 @@ export class FusionProjectIntegration
     return this.currentIntegration ? this.currentFusionVersion : undefined;
   }
 
-  async installDeps() {
-    const command = this.dbtCommandFactory.createInstallDepsCommand();
-    return this.runImmediately(command);
+  installDeps() {
+    return this.runImmediately("deps");
   }
 
   clean() {
-    return this.runImmediately(this.dbtCommandFactory.createCleanCommand());
+    return this.runImmediately("clean");
   }
 
-  debug(focus = true) {
-    const command = this.dbtCommandFactory.createDebugCommand(focus);
-    command.showProgress = false;
-    command.logToTerminal = false;
-    return this.requireIntegration().executeCommandImmediately(command);
+  debug() {
+    return this.requireIntegration().run({ kind: "debug" });
   }
 
   async executeSQLWithLimit(

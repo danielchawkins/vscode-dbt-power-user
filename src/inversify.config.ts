@@ -5,14 +5,10 @@ import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
 import { FusionProjectIntegration } from "./dbt_client/fusionProjectIntegration";
-import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import {
   ChildrenParentParser,
-  DBTCommandFactory,
-  DBTConfiguration,
   DBTTerminal,
-  DeferConfig,
   DocParser,
   ExposureParser,
   FunctionParser,
@@ -135,19 +131,6 @@ container
     (context) => new ModelDepthParser(context.get("DBTTerminal")),
   );
 
-container
-  .bind(DBTCommandFactory)
-  .toDynamicValue((context) => {
-    return new DBTCommandFactory(context.get("DBTConfiguration"));
-  })
-  .inSingletonScope();
-
-// Bind DBTConfiguration
-container
-  .bind<DBTConfiguration>("DBTConfiguration")
-  .to(VSCodeDBTConfiguration)
-  .inSingletonScope();
-
 // Bind DBTTerminal
 container
   .bind<DBTTerminal>("DBTTerminal")
@@ -163,19 +146,17 @@ container
   .inSingletonScope();
 
 container
-  .bind<Factory<FusionProjectIntegration, [string, DeferConfig | undefined]>>(
+  .bind<Factory<FusionProjectIntegration, [string]>>(
     "Factory<FusionProjectIntegration>",
   )
   .toFactory((context: ResolutionContext) => {
-    return (projectRoot: string, deferConfig: DeferConfig | undefined) => {
+    return (projectRoot: string) => {
       const container = context;
       const terminal = container.get<DBTTerminal>("DBTTerminal");
       const commandProcessExecutionFactory = container.get(
         CommandProcessExecutionFactory,
       );
       return new FusionProjectIntegration(
-        container.get("DBTConfiguration"),
-        container.get(DBTCommandFactory),
         container.get(ConfiguredFusionExecutableResolver),
         (executable, root) =>
           new FusionCli(
@@ -185,7 +166,6 @@ container
             terminal,
           ),
         projectRoot,
-        deferConfig,
         container.get(ChildrenParentParser),
         container.get(NodeParser),
         container.get(MacroParser),
@@ -216,7 +196,6 @@ container
       const container = context;
       return new DBTProject(
         container.get("Factory<DBTProjectLog>"),
-        container.get(DBTCommandFactory),
         container.get("DBTTerminal"),
         container.get(SharedStateService),
         container.get("Factory<FusionProjectIntegration>"),
@@ -541,6 +520,7 @@ container
       context.get(CteProfilerService),
       context.get(CteProfilerDecorationProvider),
       context.get(CteCodeLensProvider),
+      context.get(DeferToProductionStatusBar),
     );
   })
   .inSingletonScope();

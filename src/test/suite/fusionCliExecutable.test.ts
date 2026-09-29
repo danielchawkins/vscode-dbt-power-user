@@ -15,12 +15,7 @@ import {
   FusionProjectIntegration,
   FusionProjectIntegrationEvents,
 } from "../../dbt_client/fusionProjectIntegration";
-import {
-  DBTCommand,
-  DBTCommandFactory,
-  DBTProjectIntegration,
-  DBTTerminal,
-} from "../../dbt_integration";
+import { DBTTerminal } from "../../dbt_integration";
 import {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
@@ -107,12 +102,8 @@ function recordingExecutionFactory(): {
   return { factory, calls };
 }
 
-function stubDelegate(
-  root: string,
-  hooks: Partial<DBTProjectIntegration> = {},
-): DBTProjectIntegration {
-  return {
-    initializeProject: jest.fn(async () => undefined),
+function stubDelegate(root: string, hooks: Partial<FusionCli> = {}): FusionCli {
+  const stub: Partial<FusionCli> = {
     refreshProjectConfig: jest.fn(async () => undefined),
     rebuildManifest: jest.fn(async () => undefined),
     dispose: jest.fn(async () => undefined),
@@ -120,23 +111,20 @@ function stubDelegate(
       projectConfigDiagnostics: [],
       rebuildManifestDiagnostics: [],
     }),
-    getDebounceForRebuildManifest: () => 500,
     getProjectName: () => "cli_test",
     getModelPaths: () => [path.join(root, "models")],
     getMacroPaths: () => [path.join(root, "macros")],
     getSeedPaths: () => [path.join(root, "seeds")],
     getTargetPath: () => path.join(root, "target"),
-    executeCommandImmediately: jest.fn(async () => ({
-      stdout: "",
-      stderr: "",
-    })),
+    run: jest.fn(async () => ({ stdout: "", stderr: "", fullOutput: "" })),
     ...hooks,
-  } as unknown as DBTProjectIntegration;
+  };
+  return stub as FusionCli;
 }
 
 function lifecycleFactory(
   root: string,
-  hooks: Partial<DBTProjectIntegration>,
+  hooks: Partial<FusionCli>,
 ): FusionCommandIntegrationFactory {
   return () => stubDelegate(root, hooks);
 }
@@ -150,12 +138,9 @@ function buildIntegration(
 ): FusionProjectIntegration {
   const terminal = mockTerminal();
   return new FusionProjectIntegration(
-    { getInstallDepsOnProjectInitialization: () => false } as never,
-    {} as DBTCommandFactory,
     { resolve: jest.fn(async () => resolve()) },
     fusionIntegrationFactory,
     projectRoot,
-    undefined,
     {} as never,
     {} as never,
     {} as never,
@@ -278,13 +263,8 @@ describe("Fusion CLI executable wiring", () => {
     await integrationA.initialize();
     await integrationB.initialize();
 
-    const command = new DBTCommand("deps", ["deps"], false, true, false);
-    await integrationA
-      .getCurrentProjectIntegration()
-      .executeCommandImmediately(command);
-    await integrationB
-      .getCurrentProjectIntegration()
-      .executeCommandImmediately(command);
+    await integrationA.getFusionCli().run({ kind: "deps" });
+    await integrationB.getFusionCli().run({ kind: "deps" });
 
     expect(recordingA.calls[0]).toMatchObject({
       command: "/project/a/bin/dbt",
@@ -326,9 +306,7 @@ describe("Fusion CLI executable wiring", () => {
         }),
       ]),
     );
-    expect(() => integration.getCurrentProjectIntegration()).toThrow(
-      /not initialized/,
-    );
+    expect(() => integration.getFusionCli()).toThrow(/not initialized/);
 
     fs.rmSync(root, { recursive: true, force: true });
   });
@@ -352,11 +330,11 @@ describe("Fusion CLI executable wiring", () => {
       }),
       lifecycleFactory(failedRoot, {}),
     );
-    const initializeProject = jest.fn(async () => undefined);
+    const refreshProjectConfig = jest.fn(async () => undefined);
     const healthyIntegration = buildIntegration(
       healthyRoot,
       async () => sampleExecutable("/opt/healthy/dbt"),
-      lifecycleFactory(healthyRoot, { initializeProject }),
+      lifecycleFactory(healthyRoot, { refreshProjectConfig }),
     );
 
     await Promise.all([
@@ -372,11 +350,9 @@ describe("Fusion CLI executable wiring", () => {
         }),
       ]),
     );
-    expect(() => failedIntegration.getCurrentProjectIntegration()).toThrow(
-      /not initialized/,
-    );
-    expect(healthyIntegration.getCurrentProjectIntegration()).toBeDefined();
-    expect(initializeProject).toHaveBeenCalledTimes(1);
+    expect(() => failedIntegration.getFusionCli()).toThrow(/not initialized/);
+    expect(healthyIntegration.getFusionCli()).toBeDefined();
+    expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
     expect(window.showErrorMessage).not.toHaveBeenCalled();
     expect(window.showWarningMessage).not.toHaveBeenCalled();
     expect(window.showInformationMessage).not.toHaveBeenCalled();
@@ -421,24 +397,16 @@ describe("Fusion CLI executable wiring", () => {
 
     await integrationA.initialize();
     await integrationB.initialize();
-    expect(() => integrationA.getCurrentProjectIntegration()).toThrow();
+    expect(() => integrationA.getFusionCli()).toThrow();
 
     pathA = "/project/a/recovered/dbt";
     for (const listener of configListeners) {
       listener(pathChangeEvent(rootA));
     }
-    await waitFor(() => integrationA.getCurrentProjectIntegration());
+    await waitFor(() => integrationA.getFusionCli());
 
-    await integrationA
-      .getCurrentProjectIntegration()
-      .executeCommandImmediately(
-        new DBTCommand("deps", ["deps"], false, true, false),
-      );
-    await integrationB
-      .getCurrentProjectIntegration()
-      .executeCommandImmediately(
-        new DBTCommand("deps", ["deps"], false, true, false),
-      );
+    await integrationA.getFusionCli().run({ kind: "deps" });
+    await integrationB.getFusionCli().run({ kind: "deps" });
 
     expect(recordingA.calls[0]).toMatchObject({
       command: "/project/a/recovered/dbt",
@@ -479,13 +447,9 @@ describe("Fusion CLI executable wiring", () => {
       listener(pathChangeEvent(root));
     }
     await waitFor(() => expect(resolve.mock.calls.length).toBe(3));
-    await waitFor(() => integration.getCurrentProjectIntegration());
+    await waitFor(() => integration.getFusionCli());
 
-    await integration
-      .getCurrentProjectIntegration()
-      .executeCommandImmediately(
-        new DBTCommand("deps", ["deps"], false, true, false),
-      );
+    await integration.getFusionCli().run({ kind: "deps" });
     expect(recording.calls[recording.calls.length - 1]).toMatchObject({
       command: "/project/a/v3/dbt",
       cwd: root,
@@ -510,7 +474,7 @@ describe("Fusion CLI executable wiring", () => {
     const gate = new Promise<void>((resolve) => {
       releaseGate = resolve;
     });
-    const initializeProject = jest.fn(async () => {
+    const refreshProjectConfig = jest.fn(async () => {
       await gate;
     });
     const resolve = jest.fn(async () => sampleExecutable("/project/dbt"));
@@ -521,7 +485,7 @@ describe("Fusion CLI executable wiring", () => {
       async () => resolve(),
       (...args) => {
         factoryCalls();
-        return stubDelegate(root, { initializeProject });
+        return stubDelegate(root, { refreshProjectConfig });
       },
     );
     integration.on(
@@ -530,7 +494,7 @@ describe("Fusion CLI executable wiring", () => {
     );
 
     const initPromise = integration.initialize();
-    await waitFor(() => expect(initializeProject).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(refreshProjectConfig).toHaveBeenCalledTimes(1));
 
     for (const listener of configListeners) {
       listener(pathChangeEvent(root));
@@ -543,8 +507,8 @@ describe("Fusion CLI executable wiring", () => {
 
     expect(resolve).toHaveBeenCalledTimes(1);
     expect(factoryCalls).toHaveBeenCalledTimes(1);
-    expect(initializeProject).toHaveBeenCalledTimes(1);
-    expect(() => integration.getCurrentProjectIntegration()).toThrow();
+    expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
+    expect(() => integration.getFusionCli()).toThrow();
     expect(projectConfigChanged).not.toHaveBeenCalled();
     expect(
       (integration as unknown as { isWatchingSourceFiles: boolean })
@@ -582,14 +546,13 @@ describe("Fusion CLI executable wiring", () => {
       listener(pathChangeEvent(root));
     }
     await waitFor(() => expect(resolve.mock.calls.length).toBe(2));
-    await waitFor(() => integration.getCurrentProjectIntegration());
+    await waitFor(() => integration.getFusionCli());
 
     await integration.dispose();
     fs.rmSync(root, { recursive: true, force: true });
   });
 
   it.each([
-    ["initializeProject", "initializeProject"],
     ["refreshProjectConfig", "refreshProjectConfig"],
     ["rebuildManifest", "rebuildManifest"],
   ] as const)(
@@ -603,7 +566,7 @@ describe("Fusion CLI executable wiring", () => {
       const gate = new Promise<void>((resolve) => {
         releaseGate = resolve;
       });
-      const hooks: Partial<DBTProjectIntegration> = {
+      const hooks: Partial<FusionCli> = {
         [gatedMethod]: jest.fn(async () => {
           await gate;
         }),
@@ -615,7 +578,7 @@ describe("Fusion CLI executable wiring", () => {
         async () => sampleExecutable("/project/race/dbt"),
         lifecycleFactory(root, {
           ...hooks,
-          dispose: delegateDispose,
+          dispose: delegateDispose as () => void,
         }),
       );
       integration.on(
@@ -631,7 +594,7 @@ describe("Fusion CLI executable wiring", () => {
       await initPromise;
 
       expect(delegateDispose).toHaveBeenCalled();
-      expect(() => integration.getCurrentProjectIntegration()).toThrow();
+      expect(() => integration.getFusionCli()).toThrow();
       expect(projectConfigChanged).not.toHaveBeenCalled();
       expect(
         (integration as unknown as { isWatchingSourceFiles: boolean })

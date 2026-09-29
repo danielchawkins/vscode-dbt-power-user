@@ -15,9 +15,6 @@ import {
 } from "../../dbt_client/fusionProjectIntegration";
 import {
   ChildrenParentParser,
-  DBTCommandFactory,
-  DBTConfiguration,
-  DBTProjectIntegration,
   DBTTerminal,
   DocParser,
   ExposureParser,
@@ -34,6 +31,7 @@ import {
   TestParser,
   UnitTestParser,
 } from "../../dbt_integration";
+import { FusionCli } from "../../fusion/fusionCli";
 import { esmDirname } from "../esmDirname";
 
 const fixtureRoot = path.resolve(
@@ -63,40 +61,32 @@ function mockTerminal(): DBTTerminal {
 
 function stubDelegate(
   projectRoot: string,
-  overrides: Partial<DBTProjectIntegration> = {},
-): DBTProjectIntegration {
-  return {
-    initializeProject: jest.fn(async () => undefined),
+  overrides: Partial<FusionCli> = {},
+): FusionCli {
+  const stub: Partial<FusionCli> = {
     refreshProjectConfig: jest.fn(async () => undefined),
     rebuildManifest: jest.fn(async () => undefined),
-    dispose: jest.fn(async () => undefined),
+    dispose: jest.fn(),
     getDiagnostics: () => ({
       projectConfigDiagnostics: [],
       rebuildManifestDiagnostics: [],
     }),
-    getDebounceForRebuildManifest: () => 500,
     getProjectName: () => "single_project",
     getModelPaths: () => [path.join(projectRoot, "models")],
     getMacroPaths: () => [path.join(projectRoot, "macros")],
     getSeedPaths: () => [path.join(projectRoot, "seeds")],
     getTargetPath: () => path.join(projectRoot, "target"),
     ...overrides,
-  } as unknown as DBTProjectIntegration;
+  };
+  return stub as FusionCli;
 }
 
 async function buildIntegration(
   projectRoot: string,
-  fusionDelegate: DBTProjectIntegration,
+  fusionDelegate: FusionCli,
 ): Promise<FusionProjectIntegration> {
   const terminal = mockTerminal();
-  const configuration = {
-    getInstallDepsOnProjectInitialization: () => false,
-    getQueryLimit: () => 500,
-    getDisableDepthsCalculation: () => false,
-  } as unknown as DBTConfiguration;
   const integration = new FusionProjectIntegration(
-    configuration,
-    {} as DBTCommandFactory,
     {
       resolve: jest.fn(async () => ({
         path: "/mock/bin/dbt",
@@ -106,7 +96,6 @@ async function buildIntegration(
     },
     () => fusionDelegate,
     projectRoot,
-    undefined,
     new ChildrenParentParser(),
     new NodeParser(terminal),
     new MacroParser(terminal),
@@ -439,14 +428,7 @@ describe("FusionProjectIntegration file watchers", () => {
 
   function buildMockedIntegration(projectRoot: string) {
     const terminal = mockTerminal();
-    const configuration = {
-      getInstallDepsOnProjectInitialization: () => false,
-      getQueryLimit: () => 500,
-      getDisableDepthsCalculation: () => false,
-    } as unknown as DBTConfiguration;
     return new FusionProjectIntegrationClass(
-      configuration,
-      {} as DBTCommandFactory,
       {
         resolve: jest.fn(async () => ({
           path: "/mock/bin/dbt",
@@ -456,7 +438,6 @@ describe("FusionProjectIntegration file watchers", () => {
       },
       (_executable, root) =>
         ({
-          initializeProject: jest.fn(async () => undefined),
           refreshProjectConfig: jest.fn(async () => undefined),
           rebuildManifest: mockRebuildManifest,
           getProjectName: () => "single_project",
@@ -464,15 +445,13 @@ describe("FusionProjectIntegration file watchers", () => {
           getMacroPaths: () => [path.join(root, "macros")],
           getSeedPaths: () => [path.join(root, "seeds")],
           getTargetPath: () => path.join(root, "target"),
-          getDebounceForRebuildManifest: () => 500,
           getDiagnostics: () => ({
             projectConfigDiagnostics: [],
             rebuildManifestDiagnostics: [],
           }),
-          dispose: jest.fn(async () => undefined),
-        }) as unknown as DBTProjectIntegration,
+          dispose: jest.fn(),
+        }) as Partial<FusionCli> as FusionCli,
       projectRoot,
-      undefined,
       new ChildrenParentParser(),
       new NodeParser(terminal),
       new MacroParser(terminal),

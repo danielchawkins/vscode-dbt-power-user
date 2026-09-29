@@ -1,5 +1,4 @@
 import { readFileSync } from "fs";
-import * as path from "path";
 import {
   Disposable,
   Event,
@@ -112,7 +111,6 @@ export class SqlPreviewContentProvider
   private async requestCompilation(uri: Uri) {
     try {
       const fsPath = decodeURI(uri.fsPath);
-      const modelName = path.basename(fsPath, ".sql");
 
       // Read from the active document if available, otherwise fall back to file
       const actualFileUri = uri.with({ scheme: "file" });
@@ -128,7 +126,7 @@ export class SqlPreviewContentProvider
         return "Still loading dbt project, please try again later...";
       }
       await project.refreshProjectConfig();
-      return await project.unsafeCompileQuery(query, modelName);
+      return await project.unsafeCompileQuery(query);
     } catch (error: any) {
       const errorMessage = (error as Error).message;
       window.showErrorMessage(`Error while compiling: ${errorMessage}`);

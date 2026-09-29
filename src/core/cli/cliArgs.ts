@@ -30,7 +30,8 @@ export const DEFERRABLE_KINDS: readonly CliCommand["kind"][] = [
 const JSON_LOGS = ["--output", "json", "--log-format", "json"];
 const DEBUG_JSON_LOGS = [...JSON_LOGS, "--log-level", "debug"];
 
-function commandParamsFor(
+/** The configured additional params `command` carries. */
+export function commandParamsFor(
   snapshot: ProjectSnapshot,
   command: CliCommand,
 ): readonly string[] {

@@ -45,7 +45,7 @@ describe("fusionPowerUser.diagnostics", () => {
     const failedProject = {
       getProjectName: () => "failed-project",
       getAdapterType: () => "unknown",
-      getDBTVersion: () => undefined,
+      getFusionVersion: () => undefined,
       getTargetPath: () => undefined,
       getDBTProjectFilePath: () => "/failed/dbt_project.yml",
       getPackageInstallPath: () => undefined,
@@ -63,7 +63,12 @@ describe("fusionPowerUser.diagnostics", () => {
     const healthyProject = {
       getProjectName: () => "healthy-project",
       getAdapterType: () => "snowflake",
-      getDBTVersion: () => [2, 0, 5],
+      getFusionVersion: () => ({
+        major: 2,
+        minor: 0,
+        patch: 6,
+        raw: "dbt 2.0.6-preview.3 (a1b2c3d 2026-09-01)\n",
+      }),
       getTargetPath: () => "/healthy/target",
       getDBTProjectFilePath: () => "/healthy/dbt_project.yml",
       getPackageInstallPath: () => "/healthy/dbt_packages",
@@ -81,6 +86,7 @@ describe("fusionPowerUser.diagnostics", () => {
       {} as never,
       { error: jest.fn(), debug: jest.fn() } as never,
       diagnosticsOutputChannel,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,
@@ -113,7 +119,10 @@ describe("fusionPowerUser.diagnostics", () => {
       "Configured dbt executable not found at /missing/dbt",
     );
     expect(lines).toContain("Printing information for healthy-project");
-    expect(lines).toContain("DBT version=2.0.5");
+    expect(lines).toContain("Fusion is not initialized properly");
+    expect(lines).toContain(
+      "Fusion version=dbt 2.0.6-preview.3 (a1b2c3d 2026-09-01)",
+    );
     expect(lines).toContain("Diagnostics completed successfully...");
   });
 });
