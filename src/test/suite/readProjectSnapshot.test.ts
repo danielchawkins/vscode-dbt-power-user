@@ -50,6 +50,15 @@ describe("readProjectSnapshot", () => {
     expect(invocation.profilesDir).toBe(path.join(folder, "profiles"));
   });
 
+  it("reads the language server options for the root", () => {
+    mockSettings({ "lint.enabled": false, "trace.server": "messages" });
+
+    expect(readProjectSnapshot(Uri.file(root)).invocation.lsp).toEqual({
+      lintEnabled: false,
+      traceServer: "messages",
+    });
+  });
+
   it("reads paths and name from dbt_project.yml", () => {
     mockSettings({});
     fs.writeFileSync(

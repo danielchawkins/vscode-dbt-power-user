@@ -1,18 +1,17 @@
 import { describe, expect, it } from "@jest/globals";
 import fc from "fast-check";
 import * as path from "path";
+import { toLspArgs } from "../../core/lsp";
 import { isDbtTemplateFile, ProjectPaths } from "../../core/project";
 import {
   associatedLanguage,
   dbtTemplateAssociations,
 } from "../../dbt_integration/dbtAssociations";
-import { buildFusionLspArgs } from "../../lsp/fusionLanguageClient";
 import {
   NUM_RUNS,
   relativeDir,
   segment,
   staticAnalysisMode,
-  traceLevel,
 } from "../arbitraries";
 
 const root = path.join("/", "repo", "proj");
@@ -150,17 +149,36 @@ describe("associatedLanguage properties", () => {
   });
 });
 
-describe("buildFusionLspArgs properties", () => {
+describe("toLspArgs properties", () => {
   const input = fc.record({
     port: fc.integer({ min: 1, max: 65535 }),
-    projectRoot: relativeDir.map(abs),
+    projectDir: relativeDir.map(abs),
     commandPrefix: segment.map((s) => `fusionPowerUser:${s}:`),
     lintEnabled: fc.boolean(),
-    staticAnalysisMode,
-    traceServer: traceLevel,
+    staticAnalysis: staticAnalysisMode,
+    logLevel: fc.constantFrom(undefined, "debug" as const, "trace" as const),
     profilesDir: fc.option(relativeDir.map(abs), { nil: undefined }),
     target: fc.option(segment, { nil: undefined }),
   });
+  type Input = typeof input extends fc.Arbitrary<infer T> ? T : never;
+  const argsFor = (i: Input) =>
+    toLspArgs(
+      {
+        executable: { source: "path" },
+        projectDir: i.projectDir,
+        target: i.target,
+        profilesDir: i.profilesDir,
+        staticAnalysis: i.staticAnalysis,
+        lintEnabled: i.lintEnabled,
+        logLevel: i.logLevel,
+        environment: {},
+      },
+      {
+        port: i.port,
+        commandPrefix: i.commandPrefix,
+        projectDir: i.projectDir,
+      },
+    );
 
   const valueOf = (args: string[], flag: string) => {
     const i = args.indexOf(flag);
@@ -170,15 +188,16 @@ describe("buildFusionLspArgs properties", () => {
   it("carries every input as a flag value exactly once and never an empty argument", () => {
     fc.assert(
       fc.property(input, (i) => {
-        const args = buildFusionLspArgs(i);
+        const args = argsFor(i);
         expect(args[0]).toBe("lsp");
         expect(args.every((a) => a.length > 0)).toBe(true);
         expect(valueOf(args, "--socket")).toBe(String(i.port));
-        expect(valueOf(args, "--project-dir")).toBe(i.projectRoot);
+        expect(valueOf(args, "--project-dir")).toBe(i.projectDir);
         expect(valueOf(args, "--command-prefix")).toBe(i.commandPrefix);
         expect(valueOf(args, "--lint-enabled")).toBe(String(i.lintEnabled));
         expect(valueOf(args, "--profiles-dir")).toBe(i.profilesDir);
         expect(valueOf(args, "--target")).toBe(i.target);
+        expect(valueOf(args, "--log-level")).toBe(i.logLevel);
         for (const flag of args.filter((a) => a.startsWith("--"))) {
           expect(args.filter((a) => a === flag)).toHaveLength(1);
         }
@@ -190,9 +209,9 @@ describe("buildFusionLspArgs properties", () => {
   it("omits --static-analysis exactly when the mode is project", () => {
     fc.assert(
       fc.property(input, (i) => {
-        const value = valueOf(buildFusionLspArgs(i), "--static-analysis");
+        const value = valueOf(argsFor(i), "--static-analysis");
         expect(value).toBe(
-          i.staticAnalysisMode === "project" ? undefined : i.staticAnalysisMode,
+          i.staticAnalysis === "project" ? undefined : i.staticAnalysis,
         );
       }),
       { numRuns: NUM_RUNS },

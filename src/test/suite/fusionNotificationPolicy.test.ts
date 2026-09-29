@@ -14,6 +14,7 @@ import {
   workspace,
   WorkspaceFolder,
 } from "vscode";
+import { toLspLaunch } from "../../core/lsp";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FusionClientPoolImpl } from "../../lsp/fusionClientPool";
 import {
@@ -24,6 +25,7 @@ import {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/projectRegistry";
+import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
@@ -107,7 +109,7 @@ describe("fusionNotificationPolicy", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: toLspLaunch(readProjectSnapshot(makeProject().root)),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -138,6 +140,7 @@ describe("fusionNotificationPolicy", () => {
       terminal as any,
       resolver as any,
       factory as any,
+      { readSnapshot: readProjectSnapshot },
     );
     pool.initialize();
     await flushAsync();

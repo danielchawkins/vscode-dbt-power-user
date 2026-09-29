@@ -17,21 +17,12 @@ import {
   type ServerOptions,
 } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
+import { toLspArgs, type LspLaunch } from "../core/lsp";
 import { type StaticAnalysisMode } from "../core/project";
 import { DBTTerminal } from "../dbt_integration";
 import { FusionExecutable } from "../fusion/fusionExecutable";
 import { spawnProcess, type ChildProcess } from "../fusion/process";
-import {
-  resolveConfiguredStaticAnalysisMode,
-  staticAnalysisLaunchArgument,
-} from "../fusion/staticAnalysisMode";
 import { DeclaredProject } from "../projects/projectRegistry";
-import {
-  fusionLogLevelArgument,
-  FusionTraceServerLevel,
-  lspCompiledOutputEnv,
-  resolveFusionLaunchSettings,
-} from "./fusionClientSettings";
 import {
   acceptWithProcessExit,
   ExitingProcess,
@@ -61,11 +52,13 @@ export type FusionClientState =
 
 export interface FusionClientOptions {
   project: DeclaredProject;
+  /** Supplies the spawned path; its environment is not used. */
   executable: FusionExecutable;
-  lintEnabled: boolean;
+  /** Reused by `restart()` and unexpected-exit restarts. */
+  launch: LspLaunch;
   /** Namespaces workspace/executeCommand so two extensions can serve the same window. */
   commandPrefix: string;
-  /** Added to the executable's environment for this server process. */
+  /** Layered over `launch.environment` for this server process. */
   env?: Record<string, string>;
 }
 
@@ -98,17 +91,6 @@ export type FusionDocumentFilter = {
   language: string;
   pattern: LspRelativePattern;
 };
-
-export interface FusionLaunchArgsInput {
-  port: number;
-  projectRoot: string;
-  commandPrefix: string;
-  lintEnabled: boolean;
-  staticAnalysisMode: StaticAnalysisMode;
-  traceServer: FusionTraceServerLevel;
-  profilesDir?: string;
-  target?: string;
-}
 
 const EXTENSION_PREFIX_NAMESPACE = "fusionPowerUser";
 export const CONNECTION_TIMEOUT_MS = 30_000;
@@ -239,37 +221,6 @@ export class ExistingFileDiagnostics {
     }
     return false;
   }
-}
-
-export function buildFusionLspArgs(input: FusionLaunchArgsInput): string[] {
-  const staticAnalysis = staticAnalysisLaunchArgument(input.staticAnalysisMode);
-  const args = [
-    "lsp",
-    "--socket",
-    String(input.port),
-    "--project-dir",
-    input.projectRoot,
-    "--lint-enabled",
-    input.lintEnabled ? "true" : "false",
-    ...(staticAnalysis ? ["--static-analysis", staticAnalysis] : []),
-    "--no-version-check",
-    "--command-prefix",
-    input.commandPrefix,
-  ];
-
-  if (input.profilesDir) {
-    args.push("--profiles-dir", input.profilesDir);
-  }
-  if (input.target) {
-    args.push("--target", input.target);
-  }
-
-  const logLevel = fusionLogLevelArgument(input.traceServer);
-  if (logLevel) {
-    args.push("--log-level", logLevel);
-  }
-
-  return args;
 }
 
 /**
@@ -432,8 +383,6 @@ export class SpawnedLspProcess implements ExitingProcess {
   }
 }
 
-export const DBT_LSP_USE_TARGET_LSP = "DBT_LSP_USE_TARGET_LSP" as const;
-
 export type FusionLanguageClientDependencies = {
   listenForServer?: typeof listenForServer;
   acceptWithProcessExit?: typeof acceptWithProcessExit;
@@ -475,7 +424,6 @@ export class DefaultFusionClientFactory implements FusionClientFactory {
 
 class FusionLanguageClientImpl implements FusionClient {
   private _state: FusionClientState = "stopped";
-  private _staticAnalysis: StaticAnalysisMode;
   private _failureReason: string | undefined;
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
   private readonly _onDidChangeStaticAnalysis =
@@ -510,9 +458,6 @@ class FusionLanguageClientImpl implements FusionClient {
     this._logChannel = createOutputChannel(
       fusionOutputChannelName(this.options.project),
     );
-    this._staticAnalysis = resolveConfiguredStaticAnalysisMode(
-      this.options.project.root,
-    );
     void this.begin();
   }
 
@@ -529,7 +474,7 @@ class FusionLanguageClientImpl implements FusionClient {
   }
 
   get staticAnalysis(): StaticAnalysisMode {
-    return this._staticAnalysis;
+    return this.options.launch.staticAnalysis;
   }
 
   get onDidChangeStaticAnalysis(): Event<StaticAnalysisMode> {
@@ -679,11 +624,7 @@ class FusionLanguageClientImpl implements FusionClient {
           stdio: ["ignore", "pipe", "pipe"],
         }));
 
-    const launch = resolveFusionLaunchSettings(this.options.project.root);
-    const staticAnalysisMode = resolveConfiguredStaticAnalysisMode(
-      this.options.project.root,
-    );
-    this.setStaticAnalysis(staticAnalysisMode);
+    const { launch } = this.options;
     const selector = documentSelectorForProject(this.options.project.root);
     const { launchRoot, uriConverters } = canonicalProjectRoot(
       this.options.project.root.fsPath,
@@ -694,24 +635,12 @@ class FusionLanguageClientImpl implements FusionClient {
     this.reverseSocket = server;
 
     try {
-      const args = buildFusionLspArgs({
+      const args = toLspArgs(launch, {
         port: server.port,
-        projectRoot: launchRoot,
+        projectDir: launchRoot,
         commandPrefix: this.options.commandPrefix,
-        lintEnabled: this.options.lintEnabled,
-        staticAnalysisMode,
-        traceServer: launch.traceServer,
-        profilesDir: launch.profilesDir,
-        target: launch.target,
       });
-
-      const { [DBT_LSP_USE_TARGET_LSP]: _inherited, ...inheritedEnv } =
-        this.options.executable.env;
-      const env = {
-        ...inheritedEnv,
-        ...this.options.env,
-        ...lspCompiledOutputEnv(launch.lspCompiledOutput),
-      };
+      const env = { ...launch.environment, ...this.options.env };
 
       const child = spawnServer(
         this.options.executable.path,
@@ -770,7 +699,7 @@ class FusionLanguageClientImpl implements FusionClient {
                   results.push(
                     buildWorkspaceConfigurationResponse(
                       item.section ?? "",
-                      this.options.lintEnabled,
+                      launch.lintEnabled,
                     ),
                   );
                 }
@@ -930,14 +859,6 @@ class FusionLanguageClientImpl implements FusionClient {
     await this.teardownTransport();
   }
 
-  private setStaticAnalysis(next: StaticAnalysisMode): void {
-    if (this._staticAnalysis === next) {
-      return;
-    }
-    this._staticAnalysis = next;
-    this._onDidChangeStaticAnalysis.fire(next);
-  }
-
   private recordFailure(message: string): void {
     if (!this._failureReason) {
       this._failureReason = message;
@@ -974,11 +895,12 @@ export class FailedFusionClient implements FusionClient {
     readonly project: DeclaredProject,
     private readonly message: string,
     private readonly terminal: DBTTerminal,
+    staticAnalysis: StaticAnalysisMode,
     createOutputChannel: (name: string) => LogOutputChannel = (name) =>
       window.createOutputChannel(name, { log: true }),
   ) {
     this.failureReason = message;
-    this.staticAnalysis = resolveConfiguredStaticAnalysisMode(project.root);
+    this.staticAnalysis = staticAnalysis;
     this.outputChannel = createOutputChannel(fusionOutputChannelName(project));
     this.outputChannel.appendLine(message);
     this.terminal.warn("fusionLsp", message);

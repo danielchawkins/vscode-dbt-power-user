@@ -165,6 +165,13 @@ export function carriesFlag(
   );
 }
 
+/** The environment every CLI invocation for the snapshot inherits. */
+export function toCliEnvironment(
+  snapshot: ProjectSnapshot,
+): Readonly<Record<string, string>> {
+  return snapshot.invocation.environment;
+}
+
 /**
  * The argv after the executable for one command against one snapshot. Order: the kind's body, its `commandParams`,
  * then `--profiles-dir`, `--project-dir` and `--target` unless the `commandParams` carry them, then defer flags on
