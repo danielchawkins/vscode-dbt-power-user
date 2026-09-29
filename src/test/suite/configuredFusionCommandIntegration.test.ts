@@ -8,13 +8,13 @@ import {
   createFusionCommandIntegrationFactory,
 } from "../../dbt_client/configuredFusionCommandIntegration";
 import {
-  CommandProcessExecutionFactory,
   DBTCommand,
   DBTCommandFactory,
   DBTTerminal,
   DeferConfig,
   ManifestPathType,
 } from "../../dbt_integration";
+import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionExecutable } from "../../fusion/fusionExecutable";
 import { PROFILES_DIR_SETTING } from "../../lsp/fusionClientSettings";
 

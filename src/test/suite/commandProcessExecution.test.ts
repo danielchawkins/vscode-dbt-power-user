@@ -4,11 +4,11 @@ import * as os from "os";
 import * as path from "path";
 import { anything, instance, mock, verify, when } from "ts-mockito";
 import { VSCodeDBTTerminal } from "../../dbt_client/vscodeTerminal";
+import { DBTTerminal } from "../../dbt_integration";
 import {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
-  DBTTerminal,
-} from "../../dbt_integration";
+} from "../../fusion/commandProcessExecution";
 
 describe("CommandProcessExecution Tests", () => {
   let mockTerminal: DBTTerminal;

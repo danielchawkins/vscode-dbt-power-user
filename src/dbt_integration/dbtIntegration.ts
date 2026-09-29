@@ -4,7 +4,7 @@ import {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
   CommandProcessResult,
-} from "./commandProcessExecution";
+} from "../fusion/commandProcessExecution";
 import { DBTConfiguration } from "./configuration";
 import { DBTDiagnosticResult } from "./diagnostics";
 import {

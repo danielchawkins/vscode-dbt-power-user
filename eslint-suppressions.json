@@ -167,11 +167,6 @@
       "count": 5
     }
   },
-  "src/dbt_integration/commandProcessExecution.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/dbt_integration/dbtBaseProjectIntegration.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 2
@@ -314,6 +309,11 @@
   "src/dbt_integration/parsers/unitTestParser.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
+    }
+  },
+  "src/fusion/commandProcessExecution.ts": {
+    "max-params": {
+      "count": 1
     }
   },
   "src/fusion/schemaOrigin.ts": {

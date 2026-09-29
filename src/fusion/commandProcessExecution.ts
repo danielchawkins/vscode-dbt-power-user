@@ -1,7 +1,7 @@
-import { spawnProcess } from "../fusion/process";
+import { spawnProcess } from "./process";
 
-import { EnvironmentVariables } from "./domain";
-import { DBTTerminal } from "./terminal";
+import { EnvironmentVariables } from "../dbt_integration/domain";
+import { DBTTerminal } from "../dbt_integration/terminal";
 
 function isCommandNotFoundError(error: unknown): boolean {
   return (

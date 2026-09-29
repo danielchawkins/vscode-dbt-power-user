@@ -1,12 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import {
   CLIDBTCommandExecutionStrategy,
-  CommandProcessExecution,
-  CommandProcessExecutionFactory,
   DBTCommand,
   DBTTerminal,
   FusionProcessEnvironment,
 } from "../../dbt_integration";
+import {
+  CommandProcessExecution,
+  CommandProcessExecutionFactory,
+} from "../../fusion/commandProcessExecution";
 
 describe("CLIDBTCommandExecutionStrategy Tests", () => {
   let strategy: CLIDBTCommandExecutionStrategy;

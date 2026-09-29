@@ -28,6 +28,13 @@ module.exports = {
       },
       to: { path: "^vscode$|^node_modules/@types/vscode/|^src/", pathNot: "^src/core/" },
     },
+    {
+      name: "snapshot-reader-reads-only",
+      severity: "error",
+      comment: "readProjectSnapshot gathers inputs through settings/ and resolves them in core/.",
+      from: { path: "^src/projects/readProjectSnapshot\\.ts$" },
+      to: { path: "^src/|^node_modules/", pathNot: "^src/(core|settings)/|^node_modules/@types/vscode/" },
+    },
   ],
   options: {
     tsConfig: { fileName: "tsconfig.json" },
