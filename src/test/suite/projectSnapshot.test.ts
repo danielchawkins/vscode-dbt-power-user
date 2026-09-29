@@ -16,6 +16,8 @@ const noSettings: ProjectSnapshotSettings = {
   profilesDir: undefined,
   staticAnalysis: undefined,
   lspCompiledOutput: undefined,
+  lintEnabled: undefined,
+  traceServer: undefined,
   deferPerProject: undefined,
   runParams: [],
   buildParams: [],
@@ -57,6 +59,7 @@ describe("resolveProjectSnapshot", () => {
         mode: "separate",
         dir: path.join(base.root, "target", ".lsp"),
       },
+      lsp: { lintEnabled: true, traceServer: "off" },
       defer: undefined,
       environment: base.environment,
       commandParams: { run: [], build: [], test: [] },
@@ -75,6 +78,17 @@ describe("resolveProjectSnapshot", () => {
     });
     expect(snapshot.name).toBe("proj");
     expect(snapshot.paths.targetPath).toBe(path.join(base.root, "target"));
+  });
+
+  it("parses the language server options, with invalid trace levels off", () => {
+    expect(
+      withSettings({ lintEnabled: false, traceServer: "verbose" }).invocation
+        .lsp,
+    ).toEqual({ lintEnabled: false, traceServer: "verbose" });
+    expect(withSettings({ traceServer: "bogus" }).invocation.lsp).toEqual({
+      lintEnabled: true,
+      traceServer: "off",
+    });
   });
 
   it("trims the target and leaves a blank one unset", () => {

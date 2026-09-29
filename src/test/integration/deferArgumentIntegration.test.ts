@@ -140,7 +140,7 @@ suite("Fusion defer argument integration", function () {
       folder,
       firstWorkspaceFolder: folder,
       userHome: os.homedir(),
-      environment: {},
+      environment: process.env as Record<string, string>,
       lspCompiledOutputOverride: undefined,
       settings: {
         dbtPath: undefined,
@@ -148,6 +148,8 @@ suite("Fusion defer argument integration", function () {
         profilesDir: projectDir,
         staticAnalysis: undefined,
         lspCompiledOutput: undefined,
+        lintEnabled: undefined,
+        traceServer: undefined,
         deferPerProject: {
           [path.basename(projectDir)]: {
             deferToProduction: true,
@@ -162,7 +164,7 @@ suite("Fusion defer argument integration", function () {
       projectFile: readDbtProjectFile(projectDir),
     });
     return new FusionCli(
-      { path: "dbt", env: process.env as Record<string, string> },
+      { path: "dbt", env: {} },
       () => snapshot,
       new CommandProcessExecutionFactory(terminal),
       terminal,

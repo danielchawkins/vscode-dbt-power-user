@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import * as path from "path";
-import { relativeDir, segment, staticAnalysisMode } from ".";
+import { relativeDir, segment, staticAnalysisMode, traceLevel } from ".";
 import {
   DbtProjectFile,
   deferSettingsKey,
@@ -16,6 +16,8 @@ export const noSettings: ProjectSnapshotSettings = {
   profilesDir: undefined,
   staticAnalysis: undefined,
   lspCompiledOutput: undefined,
+  lintEnabled: undefined,
+  traceServer: undefined,
   deferPerProject: undefined,
   runParams: [],
   buildParams: [],
@@ -93,6 +95,22 @@ export const snapshotInputs: fc.Arbitrary<ProjectSnapshotInputs> = fc
       undefined,
     ),
     override: fc.constantFrom("separate", "shared", "bogus", undefined),
+    lintEnabled: fc.option(fc.boolean(), { nil: undefined }),
+    traceServer: fc.oneof(traceLevel, fc.string()),
+    environment: fc.dictionary(
+      fc.oneof(segment, fc.constant("DBT_LSP_USE_TARGET_LSP")),
+      fc.string(),
+      { maxKeys: 3 },
+    ),
+    dbtPath: fc.option(
+      fc.oneof(
+        relativeDir,
+        relativeDir.map((d) => `/${d}`),
+      ),
+      {
+        nil: undefined,
+      },
+    ),
     defer: fc.option(deferEntry, { nil: undefined }),
     runParams: commandParams,
     buildParams: commandParams,
@@ -105,14 +123,17 @@ export const snapshotInputs: fc.Arbitrary<ProjectSnapshotInputs> = fc
       folder: snapshotFolder,
       firstWorkspaceFolder: snapshotFolder,
       userHome: path.join("/", "home", "u"),
-      environment: { HOME: "/home/u" },
+      environment: { HOME: "/home/u", ...v.environment },
       lspCompiledOutputOverride: v.override,
       settings: {
         ...noSettings,
+        dbtPath: v.dbtPath,
         target: v.target,
         profilesDir: v.profilesDir,
         staticAnalysis: v.staticAnalysis,
         lspCompiledOutput: v.lspCompiledOutput,
+        lintEnabled: v.lintEnabled,
+        traceServer: v.traceServer,
         deferPerProject: v.defer && {
           [deferSettingsKey(root, snapshotFolder)]: v.defer,
         },

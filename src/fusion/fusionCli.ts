@@ -10,6 +10,7 @@ import {
   ShowPreview,
   showPreview,
   toCliArgs,
+  toCliEnvironment,
 } from "../core/cli";
 import {
   DBT_PROJECT_FILE,
@@ -156,7 +157,7 @@ export class FusionCli {
       args,
       cwd: snapshot.root,
       signal: options.signal,
-      envVars: { ...this.executable.env, ...options.env },
+      envVars: { ...toCliEnvironment(snapshot), ...options.env },
     });
     if (!options.terminalOutput) {
       return execution.complete();

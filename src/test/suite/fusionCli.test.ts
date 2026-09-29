@@ -122,16 +122,22 @@ describe("FusionCli", () => {
     expect(targets).toEqual(["a", "b"]);
   });
 
-  it("merges the run environment over the executable's", async () => {
+  it("merges the run environment over the snapshot's, ignoring the executable's", async () => {
     const { calls, factory } = fakeProcesses();
     const cli = new FusionCli(
       executable,
-      () => snapshot(),
+      () => ({
+        ...snapshot(),
+        invocation: {
+          ...snapshot().invocation,
+          environment: { S: "1", B: "snapshot" },
+        },
+      }),
       factory,
       fakeTerminal().terminal,
     );
     await cli.run({ kind: "debug" }, { env: { B: "run", C: "3" } });
-    expect(calls[0].envVars).toEqual({ A: "1", B: "run", C: "3" });
+    expect(calls[0].envVars).toEqual({ S: "1", B: "run", C: "3" });
   });
 
   it("warns once about an unusable defer state path", async () => {

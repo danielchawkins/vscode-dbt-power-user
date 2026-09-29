@@ -47,6 +47,13 @@ export function resolveLspCompiledOutput(
   );
 }
 
+export const TRACE_SERVER_LEVELS = ["off", "messages", "verbose"] as const;
+export type TraceServerLevel = (typeof TRACE_SERVER_LEVELS)[number];
+
+export function parseTraceServerLevel(raw: unknown): TraceServerLevel {
+  return TRACE_SERVER_LEVELS.find((level) => level === raw) ?? "off";
+}
+
 /** One project's entry in `fusionPowerUser.defer.perProject`, keyed by project-relative path. */
 export interface DeferSettingsEntry {
   deferToProduction: boolean;
@@ -61,6 +68,8 @@ export interface ProjectSnapshotSettings {
   profilesDir: string | undefined;
   staticAnalysis: unknown;
   lspCompiledOutput: unknown;
+  lintEnabled: boolean | undefined;
+  traceServer: unknown;
   deferPerProject: Readonly<Record<string, DeferSettingsEntry>> | undefined;
   runParams: readonly string[];
   buildParams: readonly string[];
@@ -106,6 +115,8 @@ interface ProjectInvocation {
   profilesDir: string | undefined;
   staticAnalysis: StaticAnalysisMode;
   compiledOutput: { mode: LspCompiledOutput; dir: string };
+  /** Language-server-only launch options. */
+  lsp: { lintEnabled: boolean; traceServer: TraceServerLevel };
   defer: ResolvedDefer | undefined;
   environment: Readonly<Record<string, string>>;
   commandParams: {
@@ -267,6 +278,10 @@ export function resolveProjectSnapshot(
           compiledOutput === "separate"
             ? path.join(paths.targetPath, ".lsp")
             : paths.targetPath,
+      },
+      lsp: {
+        lintEnabled: settings.lintEnabled ?? true,
+        traceServer: parseTraceServerLevel(settings.traceServer),
       },
       defer: resolveDefer(
         settings.deferPerProject?.[deferSettingsKey(root, folder)],

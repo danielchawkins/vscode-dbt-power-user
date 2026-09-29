@@ -34,6 +34,7 @@ import {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/projectRegistry";
+import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
@@ -148,6 +149,7 @@ describe("FusionClientPool", () => {
       terminal as any,
       resolver,
       factory,
+      { readSnapshot: readProjectSnapshot },
     );
   }
 
@@ -437,7 +439,7 @@ describe("FusionClientPool", () => {
     expect(factory.create).toHaveBeenCalledTimes(3);
     const latestGeneral =
       factory.create.mock.calls[factory.create.mock.calls.length - 1]?.[0];
-    expect(latestGeneral?.lintEnabled).toBe(false);
+    expect(latestGeneral?.launch.lintEnabled).toBe(false);
     await pool.stop();
   });
 
@@ -502,7 +504,7 @@ describe("FusionClientPool", () => {
     await pool.stop();
   });
 
-  it("passes lintEnabled from launch settings to the factory", async () => {
+  it("passes the snapshot launch to the factory", async () => {
     lintEnabled = false;
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
@@ -517,7 +519,13 @@ describe("FusionClientPool", () => {
     await flushAsync();
 
     expect(factory.create).toHaveBeenCalledWith(
-      expect.objectContaining({ lintEnabled: false }),
+      expect.objectContaining({
+        launch: expect.objectContaining({
+          lintEnabled: false,
+          staticAnalysis: "baseline",
+          projectDir: "/workspace/general",
+        }),
+      }),
     );
     await pool.stop();
   });
@@ -596,7 +604,10 @@ describe("FusionClientPool", () => {
       terminal as any,
       resolver,
       factory,
-      { resolve, onDidChange: changed.event },
+      {
+        readSnapshot: readProjectSnapshot,
+        launchEnv: { resolve, onDidChange: changed.event },
+      },
     );
     const project = makeProject("general", "/workspace/general");
     pool.initialize();

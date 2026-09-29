@@ -26,6 +26,8 @@ export function readProjectSnapshot(root: Uri): ProjectSnapshot {
       profilesDir: readSetting("profilesDir", root),
       staticAnalysis: readSetting("staticAnalysis", root),
       lspCompiledOutput: readSetting("lsp.compiledOutput", root),
+      lintEnabled: readSetting("lint.enabled", root),
+      traceServer: readSetting("trace.server", root),
       deferPerProject: readSetting("defer.perProject", root),
       runParams: readSetting("run.additionalParams") ?? [],
       buildParams: readSetting("build.additionalParams") ?? [],

@@ -232,19 +232,14 @@ describe("Fusion CLI executable wiring", () => {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
-  it("executes CLI with per-project path, cwd, and env isolation", async () => {
+  it("executes CLI with per-project path and cwd, and the snapshot environment", async () => {
     const rootA = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-cli-a-"));
     const rootB = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-cli-b-"));
     prepareProjectRoot(rootA);
     prepareProjectRoot(rootB);
-    const envA = { ...process.env, [ENV_MARKER]: "a" } as Record<
-      string,
-      string
-    >;
-    const envB = { ...process.env, [ENV_MARKER]: "b" } as Record<
-      string,
-      string
-    >;
+    const envA = { [ENV_MARKER]: "executable-a" };
+    const envB = { [ENV_MARKER]: "executable-b" };
+    process.env[ENV_MARKER] = "host";
     const recordingA = recordingExecutionFactory();
     const recordingB = recordingExecutionFactory();
     const terminal = mockTerminal();
@@ -269,12 +264,12 @@ describe("Fusion CLI executable wiring", () => {
     expect(recordingA.calls[0]).toMatchObject({
       command: "/project/a/bin/dbt",
       cwd: rootA,
-      envVars: envA,
+      envVars: expect.objectContaining({ [ENV_MARKER]: "host" }),
     });
     expect(recordingB.calls[0]).toMatchObject({
       command: "/project/b/bin/dbt",
       cwd: rootB,
-      envVars: envB,
+      envVars: expect.objectContaining({ [ENV_MARKER]: "host" }),
     });
 
     await integrationA.dispose();
@@ -363,7 +358,7 @@ describe("Fusion CLI executable wiring", () => {
     fs.rmSync(healthyRoot, { recursive: true, force: true });
   });
 
-  it("re-resolves on scoped path change, keeps sibling path/env, and executes B after A refresh", async () => {
+  it("re-resolves on scoped path change, keeps sibling path, and executes B after A refresh", async () => {
     const rootA = fs.mkdtempSync(
       path.join(os.tmpdir(), "fusion-cli-refresh-a-"),
     );
@@ -372,10 +367,7 @@ describe("Fusion CLI executable wiring", () => {
     );
     prepareProjectRoot(rootA);
     prepareProjectRoot(rootB);
-    const envB = { ...process.env, [ENV_MARKER]: "b" } as Record<
-      string,
-      string
-    >;
+    const envB = { [ENV_MARKER]: "executable-b" };
     let pathA = "/missing/a/dbt";
     const recordingA = recordingExecutionFactory();
     const recordingB = recordingExecutionFactory();
@@ -415,7 +407,6 @@ describe("Fusion CLI executable wiring", () => {
     expect(recordingB.calls[0]).toMatchObject({
       command: "/project/b/bin/dbt",
       cwd: rootB,
-      envVars: envB,
     });
 
     await integrationA.dispose();

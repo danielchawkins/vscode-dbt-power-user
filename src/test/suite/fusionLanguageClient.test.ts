@@ -1,32 +1,16 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { EventEmitter } from "events";
 import { PassThrough } from "stream";
-import {
-  type CancellationToken,
-  Uri,
-  workspace,
-  WorkspaceFolder,
-} from "vscode";
+import { type CancellationToken, Uri, WorkspaceFolder } from "vscode";
 import { LanguageClientOptions, State } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
+import { DBT_LSP_USE_TARGET_LSP, LspLaunch } from "../../core/lsp";
+import { parseTraceServerLevel } from "../../core/project";
 import type { ChildProcess } from "../../fusion/process";
 import {
-  fusionLogLevelArgument,
-  parseTraceServerLevel,
-} from "../../lsp/fusionClientSettings";
-import {
-  buildFusionLspArgs,
   buildWorkspaceConfigurationResponse,
   canonicalProjectRoot,
   commandPrefixForProject,
-  DBT_LSP_USE_TARGET_LSP,
   DefaultFusionClientFactory,
   DISPOSAL_GRACE_MS,
   documentSelectorForProject,
@@ -77,6 +61,20 @@ function makeProject(
   };
 }
 
+function makeLaunch(overrides: Partial<LspLaunch> = {}): LspLaunch {
+  return {
+    executable: { source: "path" },
+    projectDir: "/workspace/general",
+    target: undefined,
+    profilesDir: undefined,
+    staticAnalysis: "baseline",
+    lintEnabled: true,
+    logLevel: undefined,
+    environment: {},
+    ...overrides,
+  };
+}
+
 function makeStreams(): ReverseSocketStreams {
   return {
     reader: new PassThrough(),
@@ -123,55 +121,6 @@ class FakeExitingProcess extends EventEmitter implements ExitingProcess {
 }
 
 describe("fusionLanguageClient helpers", () => {
-  it("builds args in the required order with optional launch flags", () => {
-    const args = buildFusionLspArgs({
-      port: 4242,
-      projectRoot: "/workspace/general",
-      commandPrefix: "fusionPowerUser:abc:",
-      lintEnabled: false,
-      staticAnalysisMode: "strict",
-      traceServer: "verbose",
-      profilesDir: "/profiles",
-      target: "dev",
-    });
-
-    expect(args).toEqual([
-      "lsp",
-      "--socket",
-      "4242",
-      "--project-dir",
-      "/workspace/general",
-      "--lint-enabled",
-      "false",
-      "--static-analysis",
-      "strict",
-      "--no-version-check",
-      "--command-prefix",
-      "fusionPowerUser:abc:",
-      "--profiles-dir",
-      "/profiles",
-      "--target",
-      "dev",
-      "--log-level",
-      "trace",
-    ]);
-  });
-
-  it("omits log level when traceServer is off", () => {
-    const args = buildFusionLspArgs({
-      port: 1,
-      projectRoot: "/workspace/general",
-      commandPrefix: "fusionPowerUser:abc:",
-      lintEnabled: true,
-      staticAnalysisMode: "baseline",
-      traceServer: "off",
-    });
-    expect(args).not.toContain("--log-level");
-    expect(fusionLogLevelArgument("off")).toBeUndefined();
-    expect(fusionLogLevelArgument("messages")).toBe("debug");
-    expect(fusionLogLevelArgument("verbose")).toBe("trace");
-  });
-
   it("parses traceServer launch setting values", () => {
     expect(parseTraceServerLevel("verbose")).toBe("verbose");
     expect(parseTraceServerLevel("unexpected")).toBe("off");
@@ -187,36 +136,6 @@ describe("fusionLanguageClient helpers", () => {
       fusionOutputChannelName(duplicateName),
     );
   });
-
-  it("passes no --static-analysis for project mode", () => {
-    const args = buildFusionLspArgs({
-      port: 1,
-      projectRoot: "/workspace/general",
-      commandPrefix: "fusionPowerUser:abc:",
-      lintEnabled: true,
-      staticAnalysisMode: "project",
-      traceServer: "off",
-    });
-
-    expect(args).not.toContain("--static-analysis");
-  });
-
-  it.each(["off", "baseline", "strict"] as const)(
-    "passes exactly one --static-analysis %s",
-    (mode) => {
-      const args = buildFusionLspArgs({
-        port: 1,
-        projectRoot: "/workspace/general",
-        commandPrefix: "fusionPowerUser:abc:",
-        lintEnabled: true,
-        staticAnalysisMode: mode,
-        traceServer: "off",
-      });
-
-      expect(args.filter((arg) => arg === "--static-analysis")).toHaveLength(1);
-      expect(args[args.indexOf("--static-analysis") + 1]).toBe(mode);
-    },
-  );
 
   it("applies the same prefix for advertised commands and requests", () => {
     const prefix = commandPrefixForProject(makeProject());
@@ -373,24 +292,6 @@ describe("FusionLanguageClient lifecycle", () => {
       error: jest.fn(),
       info: jest.fn(),
     };
-    jest.spyOn(workspace, "getConfiguration").mockReturnValue({
-      get: jest.fn((key: string) => {
-        if (key === "staticAnalysis") {
-          return "baseline";
-        }
-        if (key === "lint.enabled") {
-          return true;
-        }
-        if (key === "trace.server") {
-          return "off";
-        }
-        return undefined;
-      }),
-    } as any);
-  });
-
-  afterEach(async () => {
-    jest.mocked(workspace.getConfiguration).mockRestore();
   });
 
   it("creates one output channel and passes it to LanguageClient", async () => {
@@ -433,7 +334,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -496,7 +397,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -517,7 +418,7 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
   });
 
-  it("reports the configured static analysis mode at the client seam", async () => {
+  it("reports the launch's static analysis mode at the client seam", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const factory = new DefaultFusionClientFactory(terminal as any, {
@@ -535,7 +436,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -546,7 +447,7 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
   });
 
-  it("spawns directly without shell and passes executable env", async () => {
+  it("spawns directly without shell and passes the launch environment", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
@@ -575,13 +476,15 @@ describe("FusionLanguageClient lifecycle", () => {
       executable: {
         path: "/opt/dbt",
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
-        env: {
+        env: { PROBE_ONLY: "1" },
+      },
+      launch: makeLaunch({
+        environment: {
           PATH: "/opt/bin",
           TEST_ENV: "1",
-          [DBT_LSP_USE_TARGET_LSP]: "0",
+          [DBT_LSP_USE_TARGET_LSP]: "1",
         },
-      },
-      lintEnabled: true,
+      }),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -610,12 +513,7 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
   });
 
-  it("drops an inherited DBT_LSP_USE_TARGET_LSP when lsp.compiledOutput is shared", async () => {
-    jest.mocked(workspace.getConfiguration).mockReturnValue({
-      get: jest.fn((key: string) =>
-        key === "lsp.compiledOutput" ? "shared" : undefined,
-      ),
-    } as any);
+  it("layers options.env over the launch environment", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const spawnProcess = jest.fn(
@@ -639,21 +537,25 @@ describe("FusionLanguageClient lifecycle", () => {
       executable: {
         path: "/opt/dbt",
         version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: { PATH: "/opt/bin", [DBT_LSP_USE_TARGET_LSP]: "1" },
+        env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch({ environment: { PATH: "/opt/bin", ORIGIN: "a" } }),
       commandPrefix: "fusionPowerUser:test:",
+      env: { ORIGIN: "b" },
     });
 
     await flushAsync();
 
-    expect(spawnProcess.mock.calls[0][2]).toEqual({ PATH: "/opt/bin" });
+    expect(spawnProcess.mock.calls[0][2]).toEqual({
+      PATH: "/opt/bin",
+      ORIGIN: "b",
+    });
 
     await client.stop();
     client.dispose();
   });
 
-  it("uses options.lintEnabled in launch args", async () => {
+  it("uses launch.lintEnabled in launch args", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const spawnProcess = jest.fn(() => new FakeExitingProcess() as any);
@@ -673,7 +575,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: false,
+      launch: makeLaunch({ lintEnabled: false }),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -720,7 +622,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -749,7 +651,7 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
   });
 
-  it("middleware responds to lintEnabled false", async () => {
+  it("middleware responds to launch.lintEnabled false", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     let capturedClientOptions: LanguageClientOptions | undefined;
@@ -777,7 +679,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: false,
+      launch: makeLaunch({ lintEnabled: false }),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -829,7 +731,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
     client.onDidChangeState((state) => states.push(state));
@@ -886,7 +788,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -930,7 +832,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -969,7 +871,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -1013,7 +915,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -1050,7 +952,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -1091,7 +993,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -1123,7 +1025,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -1158,7 +1060,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -1193,7 +1095,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -1234,7 +1136,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -1273,7 +1175,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
     });
 
@@ -1307,7 +1209,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: prefix,
     });
 
@@ -1365,7 +1267,7 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
-      lintEnabled: true,
+      launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:q:",
     });
     await waitForState(client, "running");

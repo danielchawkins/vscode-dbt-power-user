@@ -2,8 +2,11 @@ import { homedir } from "os";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
 import {
   LspCompiledOutput,
+  parseTraceServerLevel,
   resolveFolderPath,
   resolveLspCompiledOutput,
+  TRACE_SERVER_LEVELS,
+  TraceServerLevel,
 } from "../core/project";
 import { DBT_PATH_SETTING } from "../fusion/fusionExecutable";
 import { STATIC_ANALYSIS_MODE_SETTING } from "../fusion/staticAnalysisMode";
@@ -20,10 +23,8 @@ export const LINT_ENABLED_SETTING = "lint.enabled";
 export const TRACE_SERVER_SETTING = "trace.server";
 export const LSP_COMPILED_OUTPUT_SETTING = "lsp.compiledOutput";
 
-const DEFAULT_TRACE_SERVER = "off";
-
-export const TRACE_SERVER_LEVELS = ["off", "messages", "verbose"] as const;
-export type FusionTraceServerLevel = (typeof TRACE_SERVER_LEVELS)[number];
+export { parseTraceServerLevel, TRACE_SERVER_LEVELS };
+export type FusionTraceServerLevel = TraceServerLevel;
 
 /** Settings whose change restarts a project's language server. */
 export const FUSION_LAUNCH_SETTINGS: readonly SettingKey[] = [
@@ -91,12 +92,6 @@ export function lspCompiledOutputEnv(
   mode: LspCompiledOutput,
 ): Record<string, string> {
   return mode === "separate" ? { DBT_LSP_USE_TARGET_LSP: "1" } : {};
-}
-
-export function parseTraceServerLevel(raw: unknown): FusionTraceServerLevel {
-  return (
-    TRACE_SERVER_LEVELS.find((level) => level === raw) ?? DEFAULT_TRACE_SERVER
-  );
 }
 
 /** Fusion server process `--log-level`; omit for off. */

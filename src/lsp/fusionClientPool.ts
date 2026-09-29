@@ -1,4 +1,6 @@
-import { Disposable, Event, EventEmitter } from "vscode";
+import { Disposable, Event, EventEmitter, Uri } from "vscode";
+import { LspLaunch, toLspLaunch } from "../core/lsp";
+import { ProjectSnapshot } from "../core/project";
 import { DBTTerminal } from "../dbt_integration";
 import {
   ConfiguredFusionExecutableResolver,
@@ -10,10 +12,7 @@ import {
 import { FusionVersion } from "../fusion/fusionVersion";
 import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";
 import { onDidChangeSettings, SettingsChange } from "../settings";
-import {
-  FUSION_LAUNCH_SETTINGS,
-  resolveFusionLaunchSettings,
-} from "./fusionClientSettings";
+import { FUSION_LAUNCH_SETTINGS } from "./fusionClientSettings";
 import {
   commandPrefixForProject,
   DefaultFusionClientFactory,
@@ -37,6 +36,7 @@ type ManagedClient = {
   projectKey: string;
   project: DeclaredProject;
   client: FusionClient;
+  launch: LspLaunch;
   env: Record<string, string>;
   /** Undefined for a client that failed to resolve an executable. */
   executable: FusionExecutable | undefined;
@@ -52,6 +52,12 @@ export interface FusionLaunchEnvironment {
   readonly onDidChange: Event<unknown>;
 }
 
+/** Per-project launch inputs the pool reads before each client start. */
+export interface FusionLaunchSources {
+  readSnapshot: (root: Uri) => ProjectSnapshot;
+  launchEnv?: FusionLaunchEnvironment;
+}
+
 export class FusionClientPoolImpl implements FusionClientPool {
   private readonly clients = new Map<string, ManagedClient>();
   private readonly subscriptions: Disposable[] = [];
@@ -60,14 +66,18 @@ export class FusionClientPoolImpl implements FusionClientPool {
   private stopPromise: Promise<void> | undefined;
   private initialized = false;
   private disposed = false;
+  private readonly readSnapshot: (root: Uri) => ProjectSnapshot;
+  private readonly launchEnv: FusionLaunchEnvironment | undefined;
 
   constructor(
     private readonly registry: ProjectRegistry,
     private readonly terminal: DBTTerminal,
     private readonly resolver: FusionExecutableResolver,
     private readonly factory: FusionClientFactory,
-    private readonly launchEnv?: FusionLaunchEnvironment,
+    sources: FusionLaunchSources,
   ) {
+    this.readSnapshot = sources.readSnapshot;
+    this.launchEnv = sources.launchEnv;
     this.subscriptions.push(
       this.registry.onDidChangeProjects(() => {
         void this.enqueue(() => this.reconcile());
@@ -76,9 +86,9 @@ export class FusionClientPoolImpl implements FusionClientPool {
         void this.enqueue(() => this.handleConfigurationChange(change));
       }),
     );
-    if (launchEnv) {
+    if (this.launchEnv) {
       this.subscriptions.push(
-        launchEnv.onDidChange(() => {
+        this.launchEnv.onDidChange(() => {
           void this.enqueue(() => this.handleLaunchEnvChange());
         }),
       );
@@ -270,14 +280,14 @@ export class FusionClientPoolImpl implements FusionClientPool {
       return;
     }
 
-    const launch = resolveFusionLaunchSettings(project.root);
+    const launch = toLspLaunch(this.readSnapshot(project.root));
     const executable = isFusionExecutable(verdict) ? verdict : undefined;
     const env = executable ? this.resolveEnv(project, executable) : {};
     const client = isFusionExecutable(verdict)
       ? this.factory.create({
           project,
           executable: verdict,
-          lintEnabled: launch.lintEnabled,
+          launch,
           commandPrefix: commandPrefixForProject(project),
           env,
         } satisfies FusionClientOptions)
@@ -285,6 +295,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
           project,
           formatFusionExecutableResolutionFailure(project.name, verdict),
           this.terminal,
+          launch.staticAnalysis,
         );
 
     if (this.disposed || this.findDesiredProject(key) !== project) {
@@ -297,6 +308,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
       projectKey: key,
       project,
       client,
+      launch,
       env,
       executable,
     });
@@ -317,24 +329,20 @@ function sameEnv(
   );
 }
 
-export type FusionClientPoolDependencies = {
+export type FusionClientPoolDependencies = FusionLaunchSources & {
   resolver?: FusionExecutableResolver;
   factory?: FusionClientFactory;
-  launchEnv?: FusionLaunchEnvironment;
 };
 
 export function createFusionClientPool(
   registry: ProjectRegistry,
   terminal: DBTTerminal,
-  deps: FusionClientPoolDependencies = {},
+  deps: FusionClientPoolDependencies,
 ): FusionClientPoolImpl {
   const resolver = deps.resolver ?? new ConfiguredFusionExecutableResolver();
   const factory = deps.factory ?? new DefaultFusionClientFactory(terminal);
-  return new FusionClientPoolImpl(
-    registry,
-    terminal,
-    resolver,
-    factory,
-    deps.launchEnv,
-  );
+  return new FusionClientPoolImpl(registry, terminal, resolver, factory, {
+    readSnapshot: deps.readSnapshot,
+    launchEnv: deps.launchEnv,
+  });
 }

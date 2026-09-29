@@ -303,6 +303,7 @@ container
       {
         resolver: context.get(ConfiguredFusionExecutableResolver),
         factory: context.get(DefaultFusionClientFactory),
+        readSnapshot: readProjectSnapshot,
         launchEnv: {
           resolve: (declared, fusionVersion) =>
             schemaOriginLaunchEnv(
