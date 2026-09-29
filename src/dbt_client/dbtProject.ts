@@ -5,7 +5,6 @@ import * as path from "path";
 import {
   commands,
   Diagnostic,
-  DiagnosticCollection,
   DiagnosticSeverity,
   Disposable,
   Event,
@@ -35,6 +34,7 @@ import {
   QueryExecutionResult,
   RunModelParams,
 } from "../dbt_integration";
+import { EXECUTABLE_DIAGNOSTIC_SOURCE } from "../fusion/executableLifecycle";
 import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
 import {
   hasProjectStrictAnalysis,
@@ -81,6 +81,9 @@ function formatCliStatus(
   return [body, ...params].join(" ");
 }
 
+type ProjectDiagnosticKind =
+  "rebuild-manifest" | "project-config" | "fusion-executable";
+
 interface FileNameTemplateMap {
   [key: string]: string;
 }
@@ -99,15 +102,17 @@ export class DBTProject implements Disposable {
   private _onSourceFileChanged = new EventEmitter<void>();
   public onSourceFileChanged = this._onSourceFileChanged.event;
   private dbtProjectLog?: DBTProjectLog;
-  public readonly rebuildManifestDiagnostics =
-    languages.createDiagnosticCollection("dbt-rebuild-manifest");
-  public readonly projectConfigDiagnostics =
-    languages.createDiagnosticCollection("dbt-project-config");
+  private readonly diagnostics = languages.createDiagnosticCollection(
+    "fusionPowerUser.project",
+  );
+  private readonly diagnosticsByKind = new Map<
+    ProjectDiagnosticKind,
+    Diagnostic[]
+  >();
   private disposables: Disposable[] = [
     this._onProjectConfigChanged,
     this._onSourceFileChanged,
-    this.rebuildManifestDiagnostics,
-    this.projectConfigDiagnostics,
+    this.diagnostics,
   ];
   private _onRebuildManifestStatusChange =
     new EventEmitter<RebuildManifestStatusChange>();
@@ -197,6 +202,9 @@ export class DBTProject implements Disposable {
           "DBTProject",
           `Received rebuildManifestStatusChange event: inProgress=${status.inProgress}`,
         );
+        if (!status.inProgress) {
+          this.updateRebuildManifestDiagnostics();
+        }
         const event: RebuildManifestStatusChange = {
           project: this,
           inProgress: status.inProgress,
@@ -335,39 +343,9 @@ export class DBTProject implements Disposable {
   }
 
   getAllDiagnostic(): Diagnostic[] {
-    const integrationDiagnostics = this.dbtProjectIntegration.getDiagnostics();
-
-    // Convert diagnostic data to VSCode Diagnostics
-    const convertedDiagnostics = [
-      ...integrationDiagnostics.rebuildManifestDiagnostics.map(
-        (data) =>
-          new Diagnostic(
-            new Range(
-              data.range?.startLine || 0,
-              data.range?.startColumn || 0,
-              data.range?.endLine || 999,
-              data.range?.endColumn || 999,
-            ),
-            data.message,
-            this.mapSeverityToVSCode(data.severity),
-          ),
-      ),
-      ...(integrationDiagnostics.projectConfigDiagnostics || []).map(
-        (data) =>
-          new Diagnostic(
-            new Range(
-              data.range?.startLine || 0,
-              data.range?.startColumn || 0,
-              data.range?.endLine || 999,
-              data.range?.endColumn || 999,
-            ),
-            data.message,
-            this.mapSeverityToVSCode(data.severity),
-          ),
-      ),
-    ];
-
-    return convertedDiagnostics;
+    const diagnostics: Diagnostic[] = [];
+    this.diagnostics.forEach((_, entries) => diagnostics.push(...entries));
+    return diagnostics;
   }
 
   private mapSeverityToVSCode(severity: string): DiagnosticSeverity {
@@ -385,7 +363,10 @@ export class DBTProject implements Disposable {
     }
   }
 
-  private convertDiagnosticDataToVSCode(data: DBTDiagnosticData): Diagnostic {
+  private convertDiagnosticDataToVSCode(
+    data: DBTDiagnosticData,
+    kind: ProjectDiagnosticKind,
+  ): Diagnostic {
     const diagnostic = new Diagnostic(
       new Range(
         data.range?.startLine || 0,
@@ -397,25 +378,45 @@ export class DBTProject implements Disposable {
       this.mapSeverityToVSCode(data.severity),
     );
     diagnostic.source = "Fusion Power User";
+    diagnostic.code = kind;
     return diagnostic;
   }
 
-  updateDiagnosticsInProblemsPanel(): void {
-    const projectURI = Uri.file(this.getDBTProjectFilePath());
-    const integrationDiagnostics = this.dbtProjectIntegration.getDiagnostics();
-
-    this.rebuildManifestDiagnostics.set(
-      projectURI,
-      integrationDiagnostics.rebuildManifestDiagnostics.map((data) =>
-        this.convertDiagnosticDataToVSCode(data),
-      ),
+  /** Replaces one kind's diagnostics and publishes every kind for `dbt_project.yml`. */
+  private setDiagnostics(
+    kind: ProjectDiagnosticKind,
+    data: readonly DBTDiagnosticData[],
+  ): void {
+    this.diagnosticsByKind.set(
+      kind,
+      data.map((entry) => this.convertDiagnosticDataToVSCode(entry, kind)),
     );
+    this.diagnostics.set(
+      Uri.file(this.getDBTProjectFilePath()),
+      [...this.diagnosticsByKind.values()].flat(),
+    );
+  }
 
-    this.projectConfigDiagnostics.set(
-      projectURI,
-      integrationDiagnostics.projectConfigDiagnostics.map((data) =>
-        this.convertDiagnosticDataToVSCode(data),
-      ),
+  private updateRebuildManifestDiagnostics(): void {
+    this.setDiagnostics(
+      "rebuild-manifest",
+      this.dbtProjectIntegration.getDiagnostics().rebuildManifestDiagnostics,
+    );
+  }
+
+  updateDiagnosticsInProblemsPanel(): void {
+    const { projectConfigDiagnostics } =
+      this.dbtProjectIntegration.getDiagnostics();
+    const isExecutable = (data: DBTDiagnosticData) =>
+      data.source === EXECUTABLE_DIAGNOSTIC_SOURCE;
+    this.updateRebuildManifestDiagnostics();
+    this.setDiagnostics(
+      "project-config",
+      projectConfigDiagnostics.filter((data) => !isExecutable(data)),
+    );
+    this.setDiagnostics(
+      "fusion-executable",
+      projectConfigDiagnostics.filter(isExecutable),
     );
   }
 
@@ -803,32 +804,11 @@ export class DBTProject implements Disposable {
   }
 
   throwDiagnosticsErrorIfAvailable() {
-    const integrationDiagnostics = this.dbtProjectIntegration.getDiagnostics();
-    const allIntegrationDiagnostics = [
-      ...integrationDiagnostics.rebuildManifestDiagnostics,
-    ];
-
-    for (const diagnostic of allIntegrationDiagnostics) {
-      if (diagnostic.severity === "error") {
-        throw new Error(diagnostic.message);
-      }
-    }
-
-    // Check VSCode diagnostic collections
-    const vscodeCollections: DiagnosticCollection[] = [
-      this.rebuildManifestDiagnostics,
-      this.projectConfigDiagnostics,
-    ];
-
-    for (const diagnosticCollection of vscodeCollections) {
-      for (const [_, diagnostics] of diagnosticCollection) {
-        const error = diagnostics.find(
-          (diagnostic) => diagnostic.severity === DiagnosticSeverity.Error,
-        );
-        if (error) {
-          throw new Error(error.message);
-        }
-      }
+    const error = this.getAllDiagnostic().find(
+      (diagnostic) => diagnostic.severity === DiagnosticSeverity.Error,
+    );
+    if (error) {
+      throw new Error(error.message);
     }
   }
 
