@@ -4,7 +4,7 @@ Contracts and decisions live in [`docs/adr/`](adr/); this document links to them
 
 ## Activation
 
-`src/extension.ts` calls `DBTPowerUserExtension.activate` in `src/dbtPowerUserExtension.ts`, the single activation path. Every collaborator is constructed beforehand through the Inversify container in `src/inversify.config.ts`. Activation first checks for the conflicting upstream `innoverio.vscode-dbt-power-user` extension and blocks with one actionable error if present, then checks the resource-scoped `fusionPowerUser.enabled` setting. It then initializes the Project Registry, the Fusion client pool, and Fusion status reporting, registers Fusion client diagnostics, and builds the initial `DBTProject` set. Startup is silent — only user-invoked actions and blocking configuration failures may show a notification, per decision 9 and plan step 5.4 (`src/lsp/fusionStatus.ts`).
+`src/extension.ts` calls `DBTPowerUserExtension.activate` in `src/dbtPowerUserExtension.ts`, the single activation path. Every collaborator is constructed beforehand through the Inversify container in `src/inversify.config.ts`. Activation first checks for the conflicting upstream `innoverio.vscode-dbt-power-user` extension and blocks with one actionable error if present, then checks the resource-scoped `fusionPowerUser.enabled` setting. It then initializes the Project Registry, the Fusion client pool, and Fusion status reporting, registers Fusion client diagnostics, and builds the initial `DBTProject` set. Startup is silent — only user-invoked actions and blocking configuration failures may show a notification, per decision 9 and plan step 5.4 (`src/fusion/fusionStatus.ts`).
 
 ## Declared Projects: Project Registry and Project Context
 
@@ -16,7 +16,7 @@ A Declared Project is a dbt project that receives independent editor services, s
 
 ## The Fusion client pool and operation routing (target)
 
-`src/lsp/fusionClientPool.ts` owns one `FusionClient` per Declared Project, created and torn down as the registry and launch-affecting configuration change, over the reverse-socket transport from plan step 5.2, per [ADR 0002](adr/0002-use-the-native-fusion-lsp.md). The pool serializes reconciliation through an internal operation chain so overlapping registry and configuration events cannot race a client's replacement.
+`src/fusion/fusionClientPool.ts` owns one `FusionClient` per Declared Project, created and torn down as the registry and launch-affecting configuration change, over the reverse-socket transport from plan step 5.2, per [ADR 0002](adr/0002-use-the-native-fusion-lsp.md). The pool serializes reconciliation through an internal operation chain so overlapping registry and configuration events cannot race a client's replacement. Each client is launched from `toLspLaunch` over the project's snapshot; a settings change replaces the client only when that launch differs, and a manual or crash restart reuses the launch captured when the client was created, including the `FUSION_POWER_USER_LSP_COMPILED_OUTPUT` override read at that time.
 
 Plan section 2.9 sets the target operation routing: the Fusion client becomes authoritative for realtime completions, hovers, definitions, references, renames, formatting, code actions, lenses, and diagnostics, and direct CLI invocations of the same resolved executable handle only operations the LSP has no command for. That target is reached for editor features: step 5.6 deleted the legacy manifest-backed completion, definition and hover providers, and `vscode-languageclient` registers every provider Fusion advertises. Extension code lenses remain because Fusion returns none.
 
@@ -26,7 +26,7 @@ The codebase is manifest-driven: `dbt parse` produces `manifest.json`, and `Fusi
 
 The Fusion LSP does not populate this port: `dbt.getProjectInfo`, `dbt.listNodes`, and `dbt.getCurrentNode` lack macros, docs, exposures, tests, metrics, semantic models, and depth inputs (see [`docs/lsp-metadata-gaps.md`](lsp-metadata-gaps.md)). A source that always refuses to publish is dead code, so no LSP metadata source exists; the manifest source remains selected until a contract-complete LSP payload exists.
 
-`DBTProjectIntegrationAdapter`, the published integration's external base type, survives only as a type-level cast for the parser boundary — it is never constructed. `FusionProjectIntegration` composes the published Fusion integration directly, owns model, macro, seed, and `dbt_project.yml` watching, and reads `run_results.json` only after a command it launched and awaited, comparing pre- and post-command content; it has no ambient `target/` watcher.
+`FusionProjectIntegration` runs dbt through `FusionCli`, owns model, macro, seed, and `dbt_project.yml` watching, and reads `run_results.json` only after a command it launched and awaited, comparing pre- and post-command content; it has no ambient `target/` watcher.
 
 ## Panels and webview messaging
 

@@ -8,7 +8,7 @@ import {
   listenForServer,
   ReverseSocketServer,
   ReverseSocketStreams,
-} from "../../lsp/reverseSocketTransport";
+} from "../../fusion/reverseSocketTransport";
 
 class FakeExitingProcess extends EventEmitter implements ExitingProcess {
   private _exitCode: number | null = null;

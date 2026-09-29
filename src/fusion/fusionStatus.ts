@@ -7,11 +7,11 @@ import {
   window,
 } from "vscode";
 import { DBT_PROJECT_FILE } from "../core/project";
-import { SchemaOriginStatus } from "../fusion/schemaOrigin";
 import { ProjectContext } from "../projects/projectContext";
 import { DeclaredProject } from "../projects/projectRegistry";
 import { FusionClientPool } from "./fusionClientPool";
 import { FusionClient, FusionClientState } from "./fusionLanguageClient";
+import { SchemaOriginStatus } from "./schemaOrigin";
 
 /** What a project has opted into in its own project file, for the tooltip. */
 export interface ProjectOptIns {

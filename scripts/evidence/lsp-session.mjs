@@ -110,7 +110,7 @@ sock.on("data", (d) => {
         send({ jsonrpc: "2.0", id: m.id, result: clientAnswers[m.method] });
         continue;
       }
-      // Same answers the extension gives (src/lsp/fusionLanguageClient.ts buildWorkspaceConfigurationResponse).
+      // Same answers the extension gives (src/fusion/fusionLanguageClient.ts buildWorkspaceConfigurationResponse).
       const result =
         m.method === "workspace/configuration"
           ? m.params.items.map((i) =>

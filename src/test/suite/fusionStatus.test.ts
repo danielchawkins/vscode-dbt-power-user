@@ -14,19 +14,19 @@ import {
   WorkspaceFolder,
 } from "vscode";
 import { StaticAnalysisMode } from "../../core/project";
-import { FusionClientPool } from "../../lsp/fusionClientPool";
+import { FusionClientPool } from "../../fusion/fusionClientPool";
 import {
   FusionClient,
   FusionClientState,
   fusionOutputChannelName,
-} from "../../lsp/fusionLanguageClient";
+} from "../../fusion/fusionLanguageClient";
 import {
   buildTooltip,
   failureSummary,
   FusionStatus,
   optInLines,
   statusText,
-} from "../../lsp/fusionStatus";
+} from "../../fusion/fusionStatus";
 import { ProjectContext } from "../../projects/projectContext";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";

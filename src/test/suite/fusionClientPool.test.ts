@@ -14,18 +14,18 @@ import {
   WorkspaceFolder,
 } from "vscode";
 import { StaticAnalysisMode } from "../../core/project";
+import { FusionClientPoolImpl } from "../../fusion/fusionClientPool";
 import {
   DBT_PATH_SETTING,
   FusionExecutableResolver,
 } from "../../fusion/fusionExecutable";
-import { schemaOriginLaunchEnv } from "../../fusion/schemaOrigin";
-import { FusionClientPoolImpl } from "../../lsp/fusionClientPool";
 import {
   FailedFusionClient,
   FusionClient,
   FusionClientFactory,
   FusionClientOptions,
-} from "../../lsp/fusionLanguageClient";
+} from "../../fusion/fusionLanguageClient";
+import { schemaOriginLaunchEnv } from "../../fusion/schemaOrigin";
 import {
   DeclaredProject,
   ProjectRegistry,

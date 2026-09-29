@@ -24,14 +24,14 @@ import {
 } from "./dbt_integration";
 import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
 import { FusionCli } from "./fusion/fusionCli";
-import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
-import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
 import {
   createFusionClientPool,
   FusionClientPoolImpl,
-} from "./lsp/fusionClientPool";
-import { DefaultFusionClientFactory } from "./lsp/fusionLanguageClient";
-import { FusionStatus } from "./lsp/fusionStatus";
+} from "./fusion/fusionClientPool";
+import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
+import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
+import { FusionStatus } from "./fusion/fusionStatus";
+import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
 import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";

@@ -26,8 +26,8 @@ import {
   FUSION_LSP_COMMANDS,
   FusionClient,
   FusionClientState,
-} from "../lsp/fusionLanguageClient";
-import { failureSummary } from "../lsp/fusionStatus";
+} from "../fusion/fusionLanguageClient";
+import { failureSummary } from "../fusion/fusionStatus";
 import { QueryManifestService } from "../modules";
 
 /** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */

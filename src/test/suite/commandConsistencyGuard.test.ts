@@ -155,7 +155,7 @@ describe("command contribution consistency", () => {
     const nonLiteralAllowlist: Record<string, string> = {
       "benchmark/runtimeTimings.ts:RUNTIME_TIMINGS_COMMAND":
         "Constant export; conditional registration",
-      "lsp/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":
+      "fusion/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":
         "Constant export; conditional registration",
       "services/connectedColumnsCommand.ts:CONNECTED_COLUMNS_COMMAND":
         "Constant export; conditional registration",

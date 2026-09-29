@@ -62,8 +62,7 @@ Load-bearing directories (abridged):
 ```text
 src/
 ├── projects/                # Project Registry and Project Context (Declared Project scoping)
-├── fusion/                  # executable resolution, version gate, static-analysis mode
-├── lsp/                     # Fusion client pool, reverse-socket transport, status
+├── fusion/                  # executable resolution, version gate, static-analysis mode, client pool, transport, status
 ├── metadata/                # ProjectMetadataSource port and its manifest implementation
 ├── dbt_client/              # dbt integrations, manifest parsing, command execution
 ├── services/                # business logic, incl. queryManifestService

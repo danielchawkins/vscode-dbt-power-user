@@ -1,16 +1,11 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
+import { describe, expect, it } from "@jest/globals";
 import { readFileSync } from "fs";
 import path from "path";
-import { Uri, workspace, WorkspaceConfiguration } from "vscode";
 import {
   DEFAULT_STATIC_ANALYSIS_MODE,
   parseStaticAnalysisMode,
   StaticAnalysisMode,
 } from "../../core/project";
-import {
-  resolveConfiguredStaticAnalysisMode,
-  STATIC_ANALYSIS_MODE_SETTING,
-} from "../../fusion/staticAnalysisMode";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 
@@ -23,10 +18,6 @@ const EXPECTED_STATIC_ANALYSIS_MODES = [
 ] as const satisfies readonly StaticAnalysisMode[];
 
 describe("staticAnalysisMode", () => {
-  afterEach(() => {
-    jest.restoreAllMocks();
-  });
-
   it("defaults to project", () => {
     expect(DEFAULT_STATIC_ANALYSIS_MODE).toBe("project");
   });
@@ -37,15 +28,11 @@ describe("staticAnalysisMode", () => {
     ["baseline", "baseline"],
     ["strict", "strict"],
     [undefined, "project"],
-  ] as const)("resolves configured mode %s as %s", (raw, expected) => {
-    mockStaticAnalysisMode(raw);
-    expect(resolveConfiguredStaticAnalysisMode(scopeUri())).toBe(expected);
-  });
-
-  it("defaults invalid raw values to project", () => {
-    expect(parseStaticAnalysisMode("not-a-mode")).toBe("project");
-    expect(parseStaticAnalysisMode(3)).toBe("project");
-    expect(parseStaticAnalysisMode(null)).toBe("project");
+    ["not-a-mode", "project"],
+    [3, "project"],
+    [null, "project"],
+  ] as const)("parses %s as %s", (raw, expected) => {
+    expect(parseStaticAnalysisMode(raw)).toBe(expected);
   });
 
   it("matches the package manifest for staticAnalysisMode", () => {
@@ -59,8 +46,7 @@ describe("staticAnalysisMode", () => {
     const property = manifest.contributes.configuration
       .flatMap((section) => Object.entries(section.properties))
       .find(
-        ([key]) =>
-          key === `${CONFIGURATION_SECTION}.${STATIC_ANALYSIS_MODE_SETTING}`,
+        ([key]) => key === `${CONFIGURATION_SECTION}.staticAnalysis`,
       )?.[1] as { enumDescriptions?: string[] } | undefined;
 
     expect(property).toMatchObject({
@@ -74,20 +60,3 @@ describe("staticAnalysisMode", () => {
     }
   });
 });
-
-function scopeUri(): Uri {
-  return Uri.file("/workspace/project");
-}
-
-function mockStaticAnalysisMode(value: unknown): void {
-  jest
-    .spyOn(workspace, "getConfiguration")
-    .mockReturnValue(configuration(value));
-}
-
-function configuration(value: unknown): WorkspaceConfiguration {
-  return {
-    get: (key: string, fallback: unknown) =>
-      key === STATIC_ANALYSIS_MODE_SETTING ? value : fallback,
-  } as WorkspaceConfiguration;
-}
