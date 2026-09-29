@@ -111,9 +111,6 @@
     },
     "max-params": {
       "count": 1
-    },
-    "no-restricted-imports": {
-      "count": 1
     }
   },
   "src/dbt_client/dbtProjectContainer.ts": {
@@ -296,6 +293,11 @@
   },
   "src/inversify.config.ts": {
     "max-lines": {
+      "count": 1
+    }
+  },
+  "src/projects/projectCodegen.ts": {
+    "no-restricted-imports": {
       "count": 1
     }
   },
