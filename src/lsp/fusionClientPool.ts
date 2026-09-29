@@ -1,5 +1,5 @@
 import { Disposable, Event, EventEmitter, Uri } from "vscode";
-import { LspLaunch, toLspLaunch } from "../core/lsp";
+import { LspLaunch, sameLspLaunch, toLspLaunch } from "../core/lsp";
 import { ProjectSnapshot } from "../core/project";
 import { DBTTerminal } from "../dbt_integration";
 import {
@@ -11,8 +11,8 @@ import {
 } from "../fusion/fusionExecutable";
 import { FusionVersion } from "../fusion/fusionVersion";
 import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";
+import { PROJECT_SNAPSHOT_SETTINGS } from "../projects/readProjectSnapshot";
 import { onDidChangeSettings, SettingsChange } from "../settings";
-import { FUSION_LAUNCH_SETTINGS } from "./fusionClientSettings";
 import {
   commandPrefixForProject,
   DefaultFusionClientFactory,
@@ -82,7 +82,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
       this.registry.onDidChangeProjects(() => {
         void this.enqueue(() => this.reconcile());
       }),
-      onDidChangeSettings(FUSION_LAUNCH_SETTINGS, (change) => {
+      onDidChangeSettings(PROJECT_SNAPSHOT_SETTINGS, (change) => {
         void this.enqueue(() => this.handleConfigurationChange(change));
       }),
     );
@@ -169,7 +169,14 @@ export class FusionClientPoolImpl implements FusionClientPool {
         continue;
       }
       const key = projectKey(project);
-      if (!this.clients.has(key)) {
+      const managed = this.clients.get(key);
+      if (
+        !managed ||
+        sameLspLaunch(
+          managed.launch,
+          toLspLaunch(this.readSnapshot(project.root)),
+        )
+      ) {
         continue;
       }
       await this.replaceClient(project, key);

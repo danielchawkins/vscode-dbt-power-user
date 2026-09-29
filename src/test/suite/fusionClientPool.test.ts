@@ -21,10 +21,6 @@ import {
 import { schemaOriginLaunchEnv } from "../../fusion/schemaOrigin";
 import { FusionClientPoolImpl } from "../../lsp/fusionClientPool";
 import {
-  LINT_ENABLED_SETTING,
-  TRACE_SERVER_SETTING,
-} from "../../lsp/fusionClientSettings";
-import {
   FailedFusionClient,
   FusionClient,
   FusionClientFactory,
@@ -77,9 +73,6 @@ class FakeClient implements FusionClient {
   readonly onDidChangeState = (
     _listener: (state: FusionClient["state"]) => void,
   ) => ({ dispose: () => {} });
-  readonly onDidChangeStaticAnalysis = (
-    _listener: (mode: StaticAnalysisMode) => void,
-  ) => ({ dispose: () => {} });
   readonly staticAnalysis: StaticAnalysisMode = "baseline";
   readonly outputChannel = createMockLogOutputChannel("dbt Fusion LSP (test)");
   readonly failureReason = undefined;
@@ -103,7 +96,19 @@ describe("FusionClientPool", () => {
   let resolver: jest.Mocked<FusionExecutableResolver>;
   let factory: jest.Mocked<FusionClientFactory>;
   let configListener: ((event: ConfigurationChangeEvent) => void) | undefined;
-  let lintEnabled = true;
+  let settings: Record<string, unknown>;
+
+  /** Fires a change of `key` for `root`, first storing the value when one is given. */
+  function changeSetting(key: string, root: Uri, ...update: [unknown?]): void {
+    if (update.length) {
+      settings[key] = update[0];
+    }
+    configListener?.({
+      affectsConfiguration: (section: string, scope?: Uri) =>
+        section === `${CONFIGURATION_SECTION}.${key}` &&
+        scope?.fsPath === root.fsPath,
+    } as ConfigurationChangeEvent);
+  }
 
   beforeEach(() => {
     terminal = { warn: jest.fn(), error: jest.fn() };
@@ -117,7 +122,7 @@ describe("FusionClientPool", () => {
           new FakeClient(options.project, options),
       ),
     } as jest.Mocked<FusionClientFactory>;
-    lintEnabled = true;
+    settings = { "lint.enabled": true, staticAnalysis: "baseline" };
 
     jest
       .spyOn(workspace, "onDidChangeConfiguration")
@@ -126,15 +131,7 @@ describe("FusionClientPool", () => {
         return { dispose: jest.fn() };
       });
     jest.spyOn(workspace, "getConfiguration").mockReturnValue({
-      get: jest.fn((key: string) => {
-        if (key === LINT_ENABLED_SETTING) {
-          return lintEnabled;
-        }
-        if (key === "staticAnalysis") {
-          return "baseline";
-        }
-        return undefined;
-      }),
+      get: jest.fn((key: string) => settings[key]),
     } as any);
   });
 
@@ -266,11 +263,7 @@ describe("FusionClientPool", () => {
     await flushAsync();
     expect(pool.get(project)).toBeDefined();
 
-    configListener?.({
-      affectsConfiguration: (key: string, scope?: Uri) =>
-        key === `${CONFIGURATION_SECTION}.${TRACE_SERVER_SETTING}` &&
-        scope?.fsPath === project.root.fsPath,
-    } as ConfigurationChangeEvent);
+    changeSetting("trace.server", project.root, "verbose");
     await flushAsync();
     expect(pool.get(project)).toBeUndefined();
 
@@ -425,12 +418,7 @@ describe("FusionClientPool", () => {
     const generalClient = pool.get(general)! as FakeClient;
     const soxClient = pool.get(sox)! as FakeClient;
 
-    lintEnabled = false;
-    configListener?.({
-      affectsConfiguration: (key: string, scope?: Uri) =>
-        key === `${CONFIGURATION_SECTION}.${LINT_ENABLED_SETTING}` &&
-        scope?.fsPath === general.root.fsPath,
-    } as ConfigurationChangeEvent);
+    changeSetting("lint.enabled", general.root, false);
     await flushAsync();
 
     expect(generalClient.restart).not.toHaveBeenCalled();
@@ -463,11 +451,7 @@ describe("FusionClientPool", () => {
     await flushAsync();
 
     const firstClient = pool.get(project)! as FakeClient;
-    configListener?.({
-      affectsConfiguration: (key: string, scope?: Uri) =>
-        key === `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}` &&
-        scope?.fsPath === project.root.fsPath,
-    } as ConfigurationChangeEvent);
+    changeSetting(DBT_PATH_SETTING, project.root, "/opt/dbt-new");
     await flushAsync();
 
     expect(resolver.resolve).toHaveBeenCalledTimes(2);
@@ -492,11 +476,7 @@ describe("FusionClientPool", () => {
     await flushAsync();
 
     const firstClient = pool.get(project)! as FakeClient;
-    configListener?.({
-      affectsConfiguration: (key: string, scope?: Uri) =>
-        key === `${CONFIGURATION_SECTION}.${TRACE_SERVER_SETTING}` &&
-        scope?.fsPath === project.root.fsPath,
-    } as ConfigurationChangeEvent);
+    changeSetting("trace.server", project.root, "messages");
     await flushAsync();
 
     expect(firstClient.dispose).toHaveBeenCalled();
@@ -504,8 +484,80 @@ describe("FusionClientPool", () => {
     await pool.stop();
   });
 
+  it("does not restart when a settings change leaves the launch equal", async () => {
+    settings.target = "dev";
+    const pool = createPool();
+    resolver.resolve.mockResolvedValue({
+      path: "/opt/dbt",
+      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      env: {},
+    });
+    const project = makeProject("general", "/workspace/general");
+    pool.initialize();
+    registry.setProjects([project]);
+    await flushAsync();
+    const client = pool.get(project)! as FakeClient;
+    const onChange = jest.fn();
+    pool.onDidChangeClients(onChange);
+
+    changeSetting("target", project.root, " dev ");
+    changeSetting("defer.perProject", project.root, {});
+    await flushAsync();
+
+    expect(pool.get(project)).toBe(client);
+    expect(client.dispose).not.toHaveBeenCalled();
+    expect(factory.create).toHaveBeenCalledTimes(1);
+    expect(onChange).not.toHaveBeenCalled();
+    await pool.stop();
+  });
+
+  it("restarts exactly once when the target changes", async () => {
+    const pool = createPool();
+    resolver.resolve.mockResolvedValue({
+      path: "/opt/dbt",
+      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      env: {},
+    });
+    const project = makeProject("general", "/workspace/general");
+    pool.initialize();
+    registry.setProjects([project]);
+    await flushAsync();
+    const client = pool.get(project)! as FakeClient;
+
+    changeSetting("target", project.root, "prod");
+    await flushAsync();
+    changeSetting("target", project.root);
+    await flushAsync();
+
+    expect(client.dispose).toHaveBeenCalledTimes(1);
+    expect(factory.create).toHaveBeenCalledTimes(2);
+    expect(factory.create.mock.calls[1][0].launch.target).toBe("prod");
+    await pool.stop();
+  });
+
+  it("does not restart a project the settings change does not affect", async () => {
+    const pool = createPool();
+    resolver.resolve.mockResolvedValue({
+      path: "/opt/dbt",
+      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      env: {},
+    });
+    const general = makeProject("general", "/workspace/general");
+    pool.initialize();
+    registry.setProjects([general]);
+    await flushAsync();
+    const client = pool.get(general)! as FakeClient;
+
+    changeSetting("target", Uri.file("/workspace/sox"), "prod");
+    await flushAsync();
+
+    expect(client.dispose).not.toHaveBeenCalled();
+    expect(factory.create).toHaveBeenCalledTimes(1);
+    await pool.stop();
+  });
+
   it("passes the snapshot launch to the factory", async () => {
-    lintEnabled = false;
+    settings["lint.enabled"] = false;
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
