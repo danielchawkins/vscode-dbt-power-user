@@ -1,7 +1,6 @@
 import { existsSync, statSync } from "fs";
 import { basename, dirname } from "path";
 import { Uri } from "vscode";
-import { CommandProcessExecutionFactory } from "../dbt_integration/commandProcessExecution";
 import { DBTFusionCommandProjectIntegration } from "../dbt_integration/dbtFusionCommandIntegration";
 import {
   CLIDBTCommandExecutionStrategy,
@@ -12,6 +11,7 @@ import {
 import { DBTDiagnosticData } from "../dbt_integration/diagnostics";
 import { MANIFEST_FILE, ManifestPathType } from "../dbt_integration/domain";
 import { DBTTerminal } from "../dbt_integration/terminal";
+import { CommandProcessExecutionFactory } from "../fusion/commandProcessExecution";
 import { FusionExecutable } from "../fusion/fusionExecutable";
 import { resolveFusionLaunchSettings } from "../lsp/fusionClientSettings";
 import { FusionCommandIntegrationFactory } from "./fusionProjectIntegration";

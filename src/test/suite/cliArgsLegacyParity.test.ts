@@ -14,13 +14,13 @@ import {
   createFusionCommandIntegrationFactory,
 } from "../../dbt_client/configuredFusionCommandIntegration";
 import {
-  CommandProcessExecutionFactory,
   DBTCommand,
   DBTCommandFactory,
   DBTTerminal,
   DeferConfig,
   ManifestPathType,
 } from "../../dbt_integration";
+import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { PROFILES_DIR_SETTING } from "../../lsp/fusionClientSettings";
 import { noSettings, snapshotFolder } from "../arbitraries/projectSnapshot";
 

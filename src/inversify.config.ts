@@ -10,7 +10,6 @@ import { VSCodeDBTConfiguration } from "./dbt_client/vscodeConfiguration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import {
   ChildrenParentParser,
-  CommandProcessExecutionFactory,
   DBTCommandFactory,
   DBTConfiguration,
   DBTTerminal,
@@ -28,6 +27,7 @@ import {
   TestParser,
   UnitTestParser,
 } from "./dbt_integration";
+import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
 import {

@@ -17,13 +17,15 @@ import {
   FusionProjectIntegrationEvents,
 } from "../../dbt_client/fusionProjectIntegration";
 import {
-  CommandProcessExecution,
-  CommandProcessExecutionFactory,
   DBTCommand,
   DBTCommandFactory,
   DBTProjectIntegration,
   DBTTerminal,
 } from "../../dbt_integration";
+import {
+  CommandProcessExecution,
+  CommandProcessExecutionFactory,
+} from "../../fusion/commandProcessExecution";
 import {
   DBT_PATH_SETTING,
   FusionExecutable,
