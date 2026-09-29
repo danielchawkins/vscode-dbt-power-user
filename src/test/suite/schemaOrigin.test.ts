@@ -6,6 +6,8 @@ import {
   hasSchemaOriginHook,
   resolveSchemaOrigin,
   SCHEMA_ORIGIN_HOOK,
+  schemaOriginEnv,
+  schemaOriginLaunchEnv,
 } from "../../fusion/schemaOrigin";
 
 const withHook = `name: p\nsources:\n  +schema_origin: "${SCHEMA_ORIGIN_HOOK}"\n`;
@@ -140,5 +142,44 @@ describe("hasProjectStrictAnalysis", () => {
     ["name: p\nmodels:\n  p:\n    +static_analysis: strict\nbad: [\n", false],
   ])("%j -> %s", (yaml, expected) => {
     expect(hasProjectStrictAnalysis(config(yaml))).toBe(expected);
+  });
+});
+
+describe("schemaOriginEnv", () => {
+  it("always sets the origin: local only for a warehouse-free project", () => {
+    expect(schemaOriginEnv({ kind: "local" })).toEqual({
+      FUSION_POWER_USER_SCHEMA_ORIGIN: "local",
+    });
+    expect(schemaOriginEnv({ kind: "noHook" })).toEqual({
+      FUSION_POWER_USER_SCHEMA_ORIGIN: "remote",
+    });
+    expect(schemaOriginEnv({ kind: "untypedSources", missing: [] })).toEqual({
+      FUSION_POWER_USER_SCHEMA_ORIGIN: "remote",
+    });
+  });
+});
+
+describe("schemaOriginLaunchEnv", () => {
+  const project = (snapshot: unknown, kind: "local" | "noHook") => ({
+    getMetadataSnapshot: () => snapshot,
+    schemaOriginStatus: () => ({ kind }) as const,
+  });
+
+  it("is remote before the project's first parse", () => {
+    expect(schemaOriginLaunchEnv(undefined, v(2, 0, 6))).toEqual({
+      FUSION_POWER_USER_SCHEMA_ORIGIN: "remote",
+    });
+    expect(
+      schemaOriginLaunchEnv(project(undefined, "local"), v(2, 0, 6)),
+    ).toEqual({ FUSION_POWER_USER_SCHEMA_ORIGIN: "remote" });
+  });
+
+  it("follows the project's status after a parse", () => {
+    expect(schemaOriginLaunchEnv(project({}, "local"), v(2, 0, 6))).toEqual({
+      FUSION_POWER_USER_SCHEMA_ORIGIN: "local",
+    });
+    expect(schemaOriginLaunchEnv(project({}, "noHook"), v(2, 0, 6))).toEqual({
+      FUSION_POWER_USER_SCHEMA_ORIGIN: "remote",
+    });
   });
 });

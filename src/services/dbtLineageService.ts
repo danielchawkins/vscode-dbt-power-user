@@ -1,3 +1,17 @@
+import * as path from "path";
+import { Uri, workspace } from "vscode";
+import {
+  ColumnEdge,
+  columnEdges,
+  ColumnLineage,
+  columnLineageArgs,
+  CurrentNodeResult,
+  InferredColumn,
+  inferredColumns,
+  ListNodesResult,
+  toPanelLineage,
+} from "../core/lineage";
+import { StaticAnalysisMode } from "../core/project";
 import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import {
   GraphMetaMap,
@@ -9,57 +23,189 @@ import {
   Table,
 } from "../dbt_integration";
 import {
-  ColumnLineage,
-  LineageRead,
-  toPanelLineage,
-} from "../fusion/columnLineage";
+  FUSION_LSP_COMMANDS,
+  FusionClient,
+  FusionClientState,
+} from "../lsp/fusionLanguageClient";
+import { failureSummary } from "../lsp/fusionStatus";
 import { QueryManifestService } from "../modules";
 
 /** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */
 export interface ConnectedColumnsRequest {
   /** `[table, column]` pairs; the table is the node's unique ID, as `createTable` keys it. */
   targets: [string, string][];
+  /** The component's right-hand expansion: true asks for the targets' children, false for their parents. */
   upstreamExpansion: boolean;
 }
 
+/** Why a request produced no column lineage. */
+export type NoLineage =
+  | { kind: "notRunning"; state: FusionClientState; failure?: string }
+  /** No column nodes while the client runs with a mode that computes none. */
+  | { kind: "staticAnalysis"; mode: StaticAnalysisMode }
+  | { kind: "empty" }
+  | { kind: "failed"; message: string };
+
 export type ConnectedColumnsResult =
-  | { kind: "lineage"; columnLineage: ColumnLineage[] }
-  | { kind: "noLineage"; read: Exclude<LineageRead, { kind: "edges" }> };
+  | {
+      kind: "lineage";
+      columnLineage: ColumnLineage[];
+      /** Targets whose request failed while others answered. */
+      failures?: TargetFailure[];
+    }
+  | { kind: "noLineage"; reason: NoLineage };
+
+export interface TargetFailure {
+  target: [string, string];
+  message: string;
+}
+
+/** LSP `RequestCancelled` and `ServerCancelled`. */
+const CANCELLED_CODES = new Set([-32800, -32802]);
+
+/** One sentence for the panel's per-table tooltip. */
+export function describeNoLineage(reason: NoLineage): string {
+  switch (reason.kind) {
+    case "notRunning":
+      return `The dbt Fusion language server for this project is ${reason.state}; column lineage needs it running.${
+        reason.failure ? ` ${reason.failure}` : ""
+      }`;
+    case "staticAnalysis":
+      return `Column lineage needs strict static analysis, but fusionPowerUser.staticAnalysis is "${reason.mode}" for this project.`;
+    case "empty":
+      return "dbt Fusion has no recorded column lineage for this column. If the model is new, save it.";
+    case "failed":
+      return `Could not read column lineage: ${reason.message}`;
+  }
+}
 
 export class DbtLineageService {
-  public constructor(private queryManifestService: QueryManifestService) {}
+  public constructor(
+    private queryManifestService: QueryManifestService,
+    /** The Fusion Client of the Current Project. */
+    private currentClient: () => FusionClient | undefined = () => undefined,
+  ) {}
 
   /**
-   * Answers the panel's column click from Fusion's `column_lineage` view. Edges are read for the target
-   * tables in the requested direction and kept only when their end on the target side is a requested column.
+   * Answers the panel's column click from the Fusion Client's `dbt.listNodes`, one request per distinct target
+   * column. Only edges with a requested column on the side the component expands from are kept, spelled as
+   * requested. A failed request drops only its target when another answered.
    */
   async getConnectedColumns(
     request: ConnectedColumnsRequest,
-    signal?: AbortSignal,
   ): Promise<ConnectedColumnsResult> {
-    const project = this.queryManifestService.getProject();
-    if (!project || request.targets.length === 0) {
-      return { kind: "noLineage", read: { kind: "empty" } };
+    const client = this.currentClient();
+    if (!client || client.state !== "running") {
+      return {
+        kind: "noLineage",
+        reason: {
+          kind: "notRunning",
+          state: client?.state ?? "stopped",
+          failure: failureSummary(client?.failureReason),
+        },
+      };
     }
-    const direction = request.upstreamExpansion ? "upstream" : "downstream";
-    const tables = [...new Set(request.targets.map(([table]) => table))];
-    const read = await project.readColumnLineage(tables, direction, signal);
-    if (read.kind !== "edges") {
-      return { kind: "noLineage", read };
-    }
-    const key = (table: string, column: string) =>
-      `${table}\u0000${column.toLowerCase()}`;
-    const wanted = new Set(
-      request.targets.map(([table, column]) => key(table, column)),
+    const targets = distinctTargets(request.targets);
+    const listNodes = async (table: string, column: string) => {
+      const result = await client.request<ListNodesResult>(
+        FUSION_LSP_COMMANDS.listNodes,
+        columnLineageArgs(table, column),
+      );
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+      return result ?? {};
+    };
+    const settled = await Promise.allSettled(
+      targets.map(async ([table, column]) => {
+        try {
+          return await listNodes(table, column);
+        } catch (error) {
+          if (!isCancelled(error)) {
+            throw error;
+          }
+          return await listNodes(table, column);
+        }
+      }),
     );
-    const edges = read.edges.filter(({ parent, child }) => {
-      const end = direction === "upstream" ? child : parent;
-      return wanted.has(key(end.uniqueId, end.column));
+    const results: ListNodesResult[] = [];
+    const failures: TargetFailure[] = [];
+    settled.forEach((outcome, index) => {
+      if (outcome.status === "fulfilled") {
+        results.push(outcome.value);
+      } else {
+        failures.push({
+          target: targets[index],
+          message: errorMessage(outcome.reason),
+        });
+      }
     });
+    if (results.length === 0) {
+      return {
+        kind: "noLineage",
+        reason: {
+          kind: "failed",
+          message: [...new Set(failures.map((f) => f.message))].join("; "),
+        },
+      };
+    }
+    if (failures.length === 0 && results.every((r) => !r.nodes?.length)) {
+      const mode = client.staticAnalysis;
+      return {
+        kind: "noLineage",
+        reason:
+          mode === "baseline" || mode === "off"
+            ? { kind: "staticAnalysis", mode }
+            : { kind: "empty" },
+      };
+    }
     return {
       kind: "lineage",
-      columnLineage: toPanelLineage(edges, (uniqueId) => uniqueId),
+      columnLineage: toPanelLineage(
+        adjacentEdges(
+          results.flatMap((result) => columnEdges(result)),
+          targets,
+          request.upstreamExpansion,
+        ),
+      ),
+      ...(failures.length > 0 ? { failures } : {}),
     };
+  }
+
+  /**
+   * The columns the Fusion Client infers for the node defined in `file`, from `dbt.getCurrentNode`. A null answer,
+   * seen before any document of the project was opened, opens the document without showing it and asks once more.
+   * `undefined` when the client is not running, fails, or still names no node.
+   */
+  async getInferredColumns(
+    projectRoot: string,
+    file: string,
+  ): Promise<InferredColumn[] | undefined> {
+    const client = this.currentClient();
+    if (!client || client.state !== "running") {
+      return undefined;
+    }
+    const relativePath = path
+      .relative(projectRoot, file)
+      .split(path.sep)
+      .join("/");
+    const ask = async () =>
+      inferredColumns(
+        await client.request<CurrentNodeResult>(
+          FUSION_LSP_COMMANDS.getCurrentNode,
+          [relativePath],
+        ),
+      );
+    try {
+      const columns = await ask();
+      if (columns !== undefined) {
+        return columns;
+      }
+      await workspace.openTextDocument(Uri.file(file));
+      return await ask();
+    } catch {
+      return undefined;
+    }
   }
 
   getUpstreamTables({ table }: { table: string }) {
@@ -237,4 +383,63 @@ export class DbtLineageService {
     return (g.get(key)?.nodes || []).filter((n) => n.edgeType !== "constraint")
       .length;
   }
+}
+
+const columnKey = (table: string, column: string) =>
+  `${table}\u0000${column.toLowerCase()}`;
+
+/** The targets with case-insensitive duplicate columns dropped, keeping the first spelling. */
+function distinctTargets(targets: [string, string][]): [string, string][] {
+  const seen = new Map<string, [string, string]>();
+  for (const [table, column] of targets) {
+    const key = columnKey(table, column);
+    if (!seen.has(key)) {
+      seen.set(key, [table, column]);
+    }
+  }
+  return [...seen.values()];
+}
+
+/** Whether a `dbt.listNodes` failure is the server cancelling the request rather than answering it. */
+function isCancelled(error: unknown): boolean {
+  const code = (error as { code?: unknown } | undefined)?.code;
+  return (
+    (typeof code === "number" && CANCELLED_CODES.has(code)) ||
+    /\bcancell?ed\b/i.test(errorMessage(error))
+  );
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
+}
+
+/**
+ * Edges one hop from a requested column in the requested direction, deduplicated across requests. The requested
+ * end carries the column as the panel spelled it, because the component matches column names exactly.
+ */
+function adjacentEdges(
+  edges: ColumnEdge[],
+  targets: [string, string][],
+  upstreamExpansion: boolean,
+): ColumnEdge[] {
+  const wanted = new Map(
+    targets.map(([table, column]) => [columnKey(table, column), column]),
+  );
+  const kept = new Map<string, ColumnEdge>();
+  for (const edge of edges) {
+    const end = upstreamExpansion ? edge.parent : edge.child;
+    const spelling = wanted.get(columnKey(end.uniqueId, end.column));
+    const id = `${columnKey(edge.parent.uniqueId, edge.parent.column)}\u0000${columnKey(edge.child.uniqueId, edge.child.column)}`;
+    if (spelling === undefined || kept.has(id)) {
+      continue;
+    }
+    const requested = { ...end, column: spelling };
+    kept.set(
+      id,
+      upstreamExpansion
+        ? { ...edge, parent: requested }
+        : { ...edge, child: requested },
+    );
+  }
+  return [...kept.values()];
 }

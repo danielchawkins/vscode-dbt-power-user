@@ -65,6 +65,8 @@ export interface FusionClientOptions {
   lintEnabled: boolean;
   /** Namespaces workspace/executeCommand so two extensions can serve the same window. */
   commandPrefix: string;
+  /** Added to the executable's environment for this server process. */
+  env?: Record<string, string>;
 }
 
 export interface FusionClient extends Disposable {
@@ -76,6 +78,7 @@ export interface FusionClient extends Disposable {
   readonly failureReason: string | undefined;
   readonly onDidChangeState: Event<FusionClientState>;
   readonly onDidChangeStaticAnalysis: Event<StaticAnalysisMode>;
+  /** Sends `workspace/executeCommand`; `dbt.listNodes` requests are sent one at a time. */
   request<T>(
     command: FusionLspCommand,
     payload: unknown,
@@ -494,6 +497,7 @@ class FusionLanguageClientImpl implements FusionClient {
   private processExitListener: (() => void) | undefined;
   private transportGeneration = 0;
   private unexpectedStopHandledGeneration = 0;
+  private listNodesQueue: Promise<unknown> = Promise.resolve();
 
   constructor(
     private readonly options: FusionClientOptions,
@@ -544,6 +548,21 @@ class FusionLanguageClientImpl implements FusionClient {
   }
 
   request<T>(
+    command: FusionLspCommand,
+    payload: unknown,
+    token?: CancellationToken,
+  ): Promise<T> {
+    if (command !== FUSION_LSP_COMMANDS.listNodes) {
+      return this.send(command, payload, token);
+    }
+    const sent = this.listNodesQueue.then(() =>
+      this.send<T>(command, payload, token),
+    );
+    this.listNodesQueue = sent.catch(() => undefined);
+    return sent;
+  }
+
+  private send<T>(
     command: FusionLspCommand,
     payload: unknown,
     token?: CancellationToken,
@@ -690,6 +709,7 @@ class FusionLanguageClientImpl implements FusionClient {
         this.options.executable.env;
       const env = {
         ...inheritedEnv,
+        ...this.options.env,
         ...lspCompiledOutputEnv(launch.lspCompiledOutput),
       };
 

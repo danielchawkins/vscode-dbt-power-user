@@ -1,7 +1,0 @@
-       dbt 2.0.6
-   Loading profiles.yml
-
-==================== Execution Summary =====================
-Finished 'compile' with 1 warning for target 'dev' [453ms]
-Processed: 2 models
-Summary: 2 total | 2 success

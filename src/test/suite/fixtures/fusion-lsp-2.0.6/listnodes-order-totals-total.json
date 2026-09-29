@@ -1,0 +1,68 @@
+{
+  "error": null,
+  "error_kind": null,
+  "grain": "column",
+  "nodes": [
+    {
+      "is_primary_key": false,
+      "materialized": "view",
+      "name": "total",
+      "node_name": "order_totals",
+      "op": "mod",
+      "original_file_path": "models/order_totals.sql",
+      "parents": ["model.lineage_probe.stg_orders.amount"],
+      "resource_type": "model",
+      "transformation_type": "transformation",
+      "unique_id": "model.lineage_probe.order_totals.total"
+    },
+    {
+      "is_primary_key": false,
+      "materialized": "view",
+      "name": "amount",
+      "node_name": "stg_orders",
+      "op": "copy",
+      "original_file_path": "models/stg_orders.sql",
+      "parents": ["source.lineage_probe.raw.orders.amount"],
+      "resource_type": "model",
+      "transformation_type": "passthrough",
+      "unique_id": "model.lineage_probe.stg_orders.amount"
+    },
+    {
+      "is_primary_key": false,
+      "materialized": "view",
+      "name": "grand_total",
+      "node_name": "totals_downstream",
+      "op": "copy",
+      "original_file_path": "models/totals_downstream.sql",
+      "parents": ["model.lineage_probe.order_totals.total"],
+      "resource_type": "model",
+      "transformation_type": "rename",
+      "unique_id": "model.lineage_probe.totals_downstream.grand_total"
+    },
+    {
+      "is_primary_key": false,
+      "materialized": "view",
+      "name": "total",
+      "node_name": "totals_star",
+      "op": "copy",
+      "original_file_path": "models/totals_star.sql",
+      "parents": ["model.lineage_probe.order_totals.total"],
+      "resource_type": "model",
+      "transformation_type": "passthrough",
+      "unique_id": "model.lineage_probe.totals_star.total"
+    },
+    {
+      "is_primary_key": false,
+      "materialized": "external",
+      "name": "amount",
+      "node_name": "orders",
+      "op": "unknown",
+      "original_file_path": "models/sources.yml",
+      "parents": [],
+      "resource_type": "source",
+      "transformation_type": "raw",
+      "unique_id": "source.lineage_probe.raw.orders.amount"
+    }
+  ],
+  "root_project": "lineage_probe"
+}

@@ -3,9 +3,11 @@ import { DBTTerminal } from "../dbt_integration";
 import {
   ConfiguredFusionExecutableResolver,
   formatFusionExecutableResolutionFailure,
+  FusionExecutable,
   FusionExecutableResolver,
   isFusionExecutable,
 } from "../fusion/fusionExecutable";
+import { FusionVersion } from "../fusion/fusionVersion";
 import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";
 import { onDidChangeSettings, SettingsChange } from "../settings";
 import {
@@ -35,7 +37,20 @@ type ManagedClient = {
   projectKey: string;
   project: DeclaredProject;
   client: FusionClient;
+  env: Record<string, string>;
+  /** Undefined for a client that failed to resolve an executable. */
+  executable: FusionExecutable | undefined;
 };
+
+/** Environment a project's language server launches with, beyond the extension host's. */
+export interface FusionLaunchEnvironment {
+  resolve(
+    project: DeclaredProject,
+    fusionVersion: FusionVersion,
+  ): Record<string, string>;
+  /** Fires when `resolve` may answer differently; clients whose environment changed are relaunched. */
+  readonly onDidChange: Event<unknown>;
+}
 
 export class FusionClientPoolImpl implements FusionClientPool {
   private readonly clients = new Map<string, ManagedClient>();
@@ -51,6 +66,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
     private readonly terminal: DBTTerminal,
     private readonly resolver: FusionExecutableResolver,
     private readonly factory: FusionClientFactory,
+    private readonly launchEnv?: FusionLaunchEnvironment,
   ) {
     this.subscriptions.push(
       this.registry.onDidChangeProjects(() => {
@@ -60,6 +76,13 @@ export class FusionClientPoolImpl implements FusionClientPool {
         void this.enqueue(() => this.handleConfigurationChange(change));
       }),
     );
+    if (launchEnv) {
+      this.subscriptions.push(
+        launchEnv.onDidChange(() => {
+          void this.enqueue(() => this.handleLaunchEnvChange());
+        }),
+      );
+    }
   }
 
   get onDidChangeClients(): Event<void> {
@@ -151,6 +174,40 @@ export class FusionClientPoolImpl implements FusionClientPool {
     }
   }
 
+  private async handleLaunchEnvChange(): Promise<void> {
+    if (!this.initialized || this.disposed) {
+      return;
+    }
+    let changed = false;
+    for (const [key, managed] of [...this.clients]) {
+      if (
+        managed.executable === undefined ||
+        sameEnv(
+          managed.env,
+          this.resolveEnv(managed.project, managed.executable),
+        )
+      ) {
+        continue;
+      }
+      await this.replaceClient(managed.project, key);
+      if (this.disposed) {
+        return;
+      }
+      changed = true;
+    }
+    if (changed) {
+      this._onDidChangeClients.fire();
+    }
+  }
+
+  /** The resolved variables; they override the executable's own environment. */
+  private resolveEnv(
+    project: DeclaredProject,
+    executable: FusionExecutable,
+  ): Record<string, string> {
+    return this.launchEnv?.resolve(project, executable.version) ?? {};
+  }
+
   private async reconcile(): Promise<void> {
     if (!this.initialized || this.disposed) {
       return;
@@ -214,12 +271,15 @@ export class FusionClientPoolImpl implements FusionClientPool {
     }
 
     const launch = resolveFusionLaunchSettings(project.root);
+    const executable = isFusionExecutable(verdict) ? verdict : undefined;
+    const env = executable ? this.resolveEnv(project, executable) : {};
     const client = isFusionExecutable(verdict)
       ? this.factory.create({
           project,
           executable: verdict,
           lintEnabled: launch.lintEnabled,
           commandPrefix: commandPrefixForProject(project),
+          env,
         } satisfies FusionClientOptions)
       : new FailedFusionClient(
           project,
@@ -233,7 +293,13 @@ export class FusionClientPoolImpl implements FusionClientPool {
       return;
     }
 
-    this.clients.set(key, { projectKey: key, project, client });
+    this.clients.set(key, {
+      projectKey: key,
+      project,
+      client,
+      env,
+      executable,
+    });
   }
 }
 
@@ -241,9 +307,20 @@ function projectKey(project: DeclaredProject): string {
   return project.root.fsPath;
 }
 
+function sameEnv(
+  a: Record<string, string>,
+  b: Record<string, string>,
+): boolean {
+  const keys = Object.keys(a);
+  return (
+    keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k])
+  );
+}
+
 export type FusionClientPoolDependencies = {
   resolver?: FusionExecutableResolver;
   factory?: FusionClientFactory;
+  launchEnv?: FusionLaunchEnvironment;
 };
 
 export function createFusionClientPool(
@@ -253,5 +330,11 @@ export function createFusionClientPool(
 ): FusionClientPoolImpl {
   const resolver = deps.resolver ?? new ConfiguredFusionExecutableResolver();
   const factory = deps.factory ?? new DefaultFusionClientFactory(terminal);
-  return new FusionClientPoolImpl(registry, terminal, resolver, factory);
+  return new FusionClientPoolImpl(
+    registry,
+    terminal,
+    resolver,
+    factory,
+    deps.launchEnv,
+  );
 }

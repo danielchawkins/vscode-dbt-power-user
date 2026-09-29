@@ -1,6 +1,7 @@
 # shellcheck shell=bash
 # Sourced by scripts/evidence/run.sh.
-# F1: the compile output the extension's refresh classifies (src/fusion/lineageDiagnostics.ts). One step per
+# F1: the compile output the extension's former lineage refresh classified; superseded by evidence README section 10.
+# One step per
 # outcome: analysed, dbt1014 fall-back (remote origin, dropped source), dbt1000 (info schema without strict),
 # and a SQL error under strict.
 with FUSION_POWER_USER_SCHEMA_ORIGIN=local

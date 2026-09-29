@@ -155,21 +155,11 @@ function legacyCases(
     ],
     [
       "show preview",
-      { kind: "show", sql: "select 1", limit: 500, output: "preview" },
+      { kind: "show", sql: "select 1", limit: 500 },
       () =>
         spawned(l, async () =>
           (await i.executeSQL("select 1", 500, "a")).executeQuery(),
         ),
-    ],
-    [
-      "show lineage",
-      { kind: "show", sql: "select 1", limit: -1, output: "lineage" },
-      () => spawned(l, () => i.showColumnLineage("select 1")),
-    ],
-    [
-      "compileColumnLineage",
-      { kind: "compileColumnLineage", select: ["a", "b+"] },
-      () => spawned(l, () => i.compileColumnLineage(["a", "b+"], {})),
     ],
     [
       "deps",

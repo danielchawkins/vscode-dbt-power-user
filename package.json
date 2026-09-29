@@ -398,11 +398,6 @@
         "category": "Fusion Power User"
       },
       {
-        "command": "fusionPowerUser.refreshColumnLineage",
-        "title": "Compute Column Lineage",
-        "category": "Fusion Power User"
-      },
-      {
         "command": "fusionPowerUser.compileCurrentModel",
         "title": "Compile dbt Model",
         "category": "Fusion Power User",

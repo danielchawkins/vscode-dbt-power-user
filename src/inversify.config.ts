@@ -29,6 +29,7 @@ import {
   UnitTestParser,
 } from "./dbt_integration";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
+import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
 import {
   createFusionClientPool,
   FusionClientPoolImpl,
@@ -70,7 +71,6 @@ import { CteProfilerDecorationProvider } from "./cte_profiler/cteProfilerDecorat
 import { CteProfilerService } from "./cte_profiler/cteProfilerService";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 import { DbtPowerUserActionsCenter } from "./quickpick";
-import { ColumnLineageRefreshController } from "./services/columnLineageRefreshController";
 import { StatusBars } from "./statusbar";
 import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
 import { TreeviewProviders } from "./treeview_provider";
@@ -238,7 +238,12 @@ container
 container
   .bind(DbtLineageService)
   .toDynamicValue((context) => {
-    return new DbtLineageService(context.get(QueryManifestService));
+    return new DbtLineageService(context.get(QueryManifestService), () => {
+      const project = context.get(ProjectContext).current;
+      return project
+        ? context.get(FusionClientPoolImpl).get(project)
+        : undefined;
+    });
   })
   .inSingletonScope();
 
@@ -317,6 +322,14 @@ container
       {
         resolver: context.get(ConfiguredFusionExecutableResolver),
         factory: context.get(DefaultFusionClientFactory),
+        launchEnv: {
+          resolve: (declared, fusionVersion) =>
+            schemaOriginLaunchEnv(
+              context.get(DBTProjectContainer).findDBTProject(declared.root),
+              fusionVersion,
+            ),
+          onDidChange: context.get(DBTProjectContainer).onManifestChanged,
+        },
       },
     );
   })
@@ -576,8 +589,6 @@ container
       context.get(DbtLineageService),
       context.get(SharedStateService),
       context.get(QueryManifestService),
-      (root) =>
-        context.get(ColumnLineageRefreshController).lastCompileOutcome(root),
     );
   })
   .inSingletonScope();
@@ -655,18 +666,6 @@ container
 
 // Bind DbtPowerUserActionsCenter
 container
-  .bind(ColumnLineageRefreshController)
-  .toDynamicValue(
-    (context) =>
-      new ColumnLineageRefreshController(
-        context.get(DBTProjectContainer),
-        context.get(ProjectContext),
-        context.get("DBTTerminal"),
-      ),
-  )
-  .inSingletonScope();
-
-container
   .bind(ProjectConfigCommands)
   .toDynamicValue(
     (context) =>
@@ -705,12 +704,12 @@ container
       context.get(FusionClientPoolImpl),
       context.get(FusionStatus),
       context.get(ProjectConfigCommands),
-      context.get(ColumnLineageRefreshController),
       new DbtTemplateLanguage(
         context.get(ProjectRegistry),
         context.get(ProjectContext),
         context.get("DBTTerminal"),
       ),
+      context.get(DbtLineageService),
     );
   })
   .inSingletonScope();

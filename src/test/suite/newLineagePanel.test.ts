@@ -117,6 +117,43 @@ describe("NewLineagePanel", () => {
     });
   });
 
+  it("lists a model's inferred columns merged with its declared ones", async () => {
+    const node = {
+      unique_id: "model.p.a",
+      path: "/p/models/a.sql",
+      description: "A",
+      config: { materialized: "table" },
+      columns: { id: { name: "id", description: "Key", data_type: "" } },
+      meta: {},
+    };
+    (panel as any).queryManifestService = {
+      getEventByCurrentProject: () => ({
+        event: { nodeMetaMap: { lookupByUniqueId: () => node } },
+      }),
+      getProject: () => ({ projectRoot: { fsPath: "/p" } }),
+    };
+    const getInferredColumns = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockResolvedValue([
+        { name: "id", datatype: "integer" },
+        { name: "total", datatype: "bigint" },
+      ]);
+    (panel as any).dbtLineageService = { getInferredColumns };
+
+    const body = await (panel as any).getColumns({
+      table: "model.p.a",
+      refresh: false,
+    });
+
+    expect(getInferredColumns).toHaveBeenCalledWith("/p", "/p/models/a.sql");
+    expect(
+      body.columns.map((c: any) => [c.name, c.datatype, c.description]),
+    ).toEqual([
+      ["id", "integer", "Key"],
+      ["total", "bigint", ""],
+    ]);
+  });
+
   it("answers getConnectedColumns with the service's lineage", async () => {
     const lineage = [
       {
@@ -155,17 +192,21 @@ describe("NewLineagePanel", () => {
   });
 
   it.each([
-    [{ kind: "empty" }, "No column lineage yet"],
-    [{ kind: "unavailable" }, "No column lineage yet"],
+    [{ kind: "empty" }, "no recorded column lineage"],
+    [
+      { kind: "staticAnalysis", mode: "baseline" },
+      "fusionPowerUser.staticAnalysis",
+    ],
+    [{ kind: "notRunning", state: "failed" }, "is failed"],
     [
       { kind: "failed", message: "boom" },
       "Could not read column lineage: boom",
     ],
-  ])("explains %j on each target table", async (read, expected) => {
+  ])("explains %j on each target table", async (reason, expected) => {
     (panel as any).dbtLineageService = {
       getConnectedColumns: jest
         .fn<(...args: any[]) => Promise<any>>()
-        .mockResolvedValue({ kind: "noLineage", read }),
+        .mockResolvedValue({ kind: "noLineage", reason }),
     };
 
     await (panel as any).handleCommand({
@@ -178,6 +219,63 @@ describe("NewLineagePanel", () => {
     expect(body.column_lineage).toEqual([]);
     expect(Object.keys(body.errors)).toEqual(["model.p.a"]);
     expect(body.errors["model.p.a"][0]).toContain(expected);
+  });
+
+  it("keeps lineage and reports each failed column", async () => {
+    (panel as any).dbtLineageService = {
+      getConnectedColumns: jest
+        .fn<(...args: any[]) => Promise<any>>()
+        .mockResolvedValue({
+          kind: "lineage",
+          columnLineage: [],
+          failures: [{ target: ["model.p.x", "y"], message: "timeout" }],
+        }),
+    };
+
+    await (panel as any).handleCommand({
+      command: "getConnectedColumns",
+      args: { params: { targets: [["model.p.x", "y"]] } },
+      syncRequestId: "cll-3",
+    });
+
+    const body = (mockPostMessage.mock.calls[0][0] as any).args.body;
+    expect(body.errors).toEqual({
+      "model.p.x": ["Could not read column lineage for y: timeout"],
+    });
+  });
+});
+
+describe("NewLineagePanel — after a save", () => {
+  it("tells the webview when the current project's manifest is replaced", () => {
+    const panel = Object.create(NewLineagePanel.prototype);
+    const postMessage = jest.fn();
+    (panel as any)._panel = { webview: { postMessage } };
+    (panel as any).dbtTerminal = { info: jest.fn(), error: jest.fn() };
+    (panel as any).queryManifestService = {
+      getProject: () => ({
+        projectRoot: { fsPath: "/p" },
+        throwDiagnosticsErrorIfAvailable: jest.fn(),
+      }),
+      getEventByCurrentProject: () => undefined,
+    };
+    const first = { project: {} } as any;
+    const second = { project: {} } as any;
+
+    panel.eventMapChanged(new Map([["/p", first]]));
+    expect(postMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ command: "render" }),
+    );
+    panel.eventMapChanged(
+      new Map([
+        ["/p", first],
+        ["/q", second],
+      ]),
+    );
+    expect(postMessage).toHaveBeenLastCalledWith(
+      expect.objectContaining({ command: "render" }),
+    );
+    panel.eventMapChanged(new Map([["/p", second]]));
+    expect(postMessage).toHaveBeenLastCalledWith({ command: "projectSaved" });
   });
 });
 
@@ -610,25 +708,5 @@ describe("NewLineagePanel — source YAML rooting", () => {
     const result = (panel as any).getStartingNode();
 
     expect(result.aiEnabled).toBe(true);
-  });
-});
-
-describe("NewLineagePanel — compute column lineage", () => {
-  it("runs the refresh command", async () => {
-    const { commands } = await import("vscode");
-    const panel = Object.create(NewLineagePanel.prototype);
-    (panel as any)._panel = { webview: { postMessage: jest.fn() } };
-    const execute = jest
-      .spyOn(commands, "executeCommand")
-      .mockResolvedValue(undefined as never);
-
-    await (panel as any).handleCommand({
-      command: "computeColumnLineage",
-      args: {},
-    });
-
-    expect(execute).toHaveBeenCalledWith(
-      "fusionPowerUser.refreshColumnLineage",
-    );
   });
 });

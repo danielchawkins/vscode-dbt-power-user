@@ -32,6 +32,8 @@ const LineageView = (): JSX.Element | null => {
   const [missingLineageMessage, setMissingLineageMessage] = useState<
     MissingLineageMessage | undefined
   >();
+  // Bumped when a save arrives while column lineage is drawn; a new key remounts the graph, which requests `init`.
+  const [graphKey, setGraphKey] = useState(0);
 
   useEffect(() => {
     panelLogger.info("LineageView updating components api helper");
@@ -99,6 +101,14 @@ const LineageView = (): JSX.Element | null => {
       if (command === "render") {
         render(args);
       }
+      if (command === "projectSaved") {
+        // The component can only redraw column lineage by remounting; keep table exploration otherwise.
+        if (document.querySelector(".react-flow__node-column")) {
+          setGraphKey((key) => key + 1);
+        } else {
+          executeRequestInAsync("init", {});
+        }
+      }
     };
 
     window.addEventListener("message", onMessage);
@@ -126,6 +136,7 @@ const LineageView = (): JSX.Element | null => {
         ) : null}
         <div className={`${styles.lineageWrap} al-tw-scope`}>
           <Lineage
+            key={graphKey}
             theme={theme}
             dynamicLineage={renderNode}
             lineageType={lineageType}

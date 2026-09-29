@@ -8,6 +8,7 @@ import {
 } from "@jest/globals";
 import {
   ConfigurationChangeEvent,
+  EventEmitter,
   Uri,
   workspace,
   WorkspaceFolder,
@@ -17,6 +18,7 @@ import {
   DBT_PATH_SETTING,
   FusionExecutableResolver,
 } from "../../fusion/fusionExecutable";
+import { schemaOriginLaunchEnv } from "../../fusion/schemaOrigin";
 import { FusionClientPoolImpl } from "../../lsp/fusionClientPool";
 import {
   LINT_ENABLED_SETTING,
@@ -570,6 +572,55 @@ describe("FusionClientPool", () => {
     expect(generalClient.stop).toHaveBeenCalled();
     expect(soxClient.stop).toHaveBeenCalled();
     expect(pool.get(general)).toBeUndefined();
+  });
+
+  it("launches remote before a parse, relaunches local after a typed parse, and not when stable", async () => {
+    resolver.resolve.mockResolvedValue({
+      path: "/opt/dbt",
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
+      env: { FUSION_POWER_USER_SCHEMA_ORIGIN: "local" },
+    });
+    const dbtProject = {
+      snapshot: undefined as unknown,
+      getMetadataSnapshot(): unknown {
+        return this.snapshot;
+      },
+      schemaOriginStatus: () => ({ kind: "local" }) as const,
+    };
+    const changed = new EventEmitter<unknown>();
+    const resolve = jest.fn((_project: DeclaredProject, version: any) =>
+      schemaOriginLaunchEnv(dbtProject, version),
+    );
+    const pool = new FusionClientPoolImpl(
+      registry as unknown as ProjectRegistry,
+      terminal as any,
+      resolver,
+      factory,
+      { resolve, onDidChange: changed.event },
+    );
+    const project = makeProject("general", "/workspace/general");
+    pool.initialize();
+    registry.setProjects([project]);
+    await flushAsync();
+
+    expect(factory.create.mock.calls[0][0].env).toEqual({
+      FUSION_POWER_USER_SCHEMA_ORIGIN: "remote",
+    });
+    changed.fire(undefined);
+    await flushAsync();
+    expect(factory.create).toHaveBeenCalledTimes(1);
+
+    dbtProject.snapshot = {};
+    changed.fire(undefined);
+    await flushAsync();
+    expect(factory.create).toHaveBeenCalledTimes(2);
+    expect(factory.create.mock.calls[1][0].env).toEqual({
+      FUSION_POWER_USER_SCHEMA_ORIGIN: "local",
+    });
+    changed.fire(undefined);
+    await flushAsync();
+    expect(factory.create).toHaveBeenCalledTimes(2);
+    await pool.stop();
   });
 });
 

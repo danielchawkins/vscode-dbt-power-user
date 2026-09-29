@@ -22,7 +22,10 @@ export default defineConfig(
     const { files, env } = mode
       ? {
           files: [`${suites}/nativeEditorFeatures.test.js`, `${suites}/columnLineage.test.js`],
-          env: { FPU_NATIVE_EDITOR_MODE: mode, FUSION_POWER_USER_SCHEMA_ORIGIN: "local" },
+          env: {
+            FPU_NATIVE_EDITOR_MODE: mode,
+            FPU_INTEGRATION_COMMANDS: "1",
+          },
         }
       : selection[label];
     return {

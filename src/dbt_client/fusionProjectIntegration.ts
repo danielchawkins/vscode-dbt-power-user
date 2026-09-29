@@ -1194,22 +1194,6 @@ export class FusionProjectIntegration
     return this.currentIntegration ? this.currentFusionVersion : undefined;
   }
 
-  async showColumnLineage(sql: string, signal?: AbortSignal) {
-    return this.requireIntegration().showColumnLineage(sql, signal);
-  }
-
-  async compileColumnLineage(
-    selectors: readonly string[],
-    env: Record<string, string>,
-    signal?: AbortSignal,
-  ) {
-    return this.requireIntegration().compileColumnLineage(
-      selectors,
-      env,
-      signal,
-    );
-  }
-
   async installDeps() {
     const command = this.dbtCommandFactory.createInstallDepsCommand();
     return this.runImmediately(command);
