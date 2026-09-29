@@ -1,5 +1,5 @@
 import * as net from "net";
-import type { Disposable } from "../../lsp/reverseSocketTransport";
+import type { Disposable } from "../../fusion/reverseSocketTransport";
 
 const HEADER_DELIMITER = Buffer.from("\r\n\r\n");
 

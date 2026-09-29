@@ -6,7 +6,6 @@ import { LanguageClientOptions, State } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
 import { DBT_LSP_USE_TARGET_LSP, LspLaunch } from "../../core/lsp";
 import { parseTraceServerLevel } from "../../core/project";
-import type { ChildProcess } from "../../fusion/process";
 import {
   buildWorkspaceConfigurationResponse,
   canonicalProjectRoot,
@@ -27,12 +26,13 @@ import {
   SpawnedLspProcess,
   validateDocumentSelectorPatterns,
   withoutUnregisteredLspLenses,
-} from "../../lsp/fusionLanguageClient";
+} from "../../fusion/fusionLanguageClient";
+import type { ChildProcess } from "../../fusion/process";
 import {
   ExitingProcess,
   ReverseSocketServer,
   ReverseSocketStreams,
-} from "../../lsp/reverseSocketTransport";
+} from "../../fusion/reverseSocketTransport";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { DbtLineageService } from "../../services/dbtLineageService";
 import { createMockLogOutputChannel } from "../mock/vscode";
@@ -513,7 +513,7 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
   });
 
-  it("layers options.env over the launch environment", async () => {
+  it("layers options.env over the launch environment, except DBT_LSP_USE_TARGET_LSP", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const spawnProcess = jest.fn(
@@ -539,9 +539,15 @@ describe("FusionLanguageClient lifecycle", () => {
         version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
-      launch: makeLaunch({ environment: { PATH: "/opt/bin", ORIGIN: "a" } }),
+      launch: makeLaunch({
+        environment: {
+          PATH: "/opt/bin",
+          ORIGIN: "a",
+          DBT_LSP_USE_TARGET_LSP: "1",
+        },
+      }),
       commandPrefix: "fusionPowerUser:test:",
-      env: { ORIGIN: "b" },
+      env: { ORIGIN: "b", DBT_LSP_USE_TARGET_LSP: "0" },
     });
 
     await flushAsync();
@@ -549,6 +555,7 @@ describe("FusionLanguageClient lifecycle", () => {
     expect(spawnProcess.mock.calls[0][2]).toEqual({
       PATH: "/opt/bin",
       ORIGIN: "b",
+      DBT_LSP_USE_TARGET_LSP: "1",
     });
 
     await client.stop();

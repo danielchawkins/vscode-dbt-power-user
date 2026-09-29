@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
-import { FusionStatus } from "../../lsp/fusionStatus";
+import { FusionStatus } from "../../fusion/fusionStatus";
 
 import { FusionProjectIntegration } from "../../dbt_client/fusionProjectIntegration";
 import { ConfiguredFusionExecutableResolver } from "../../fusion/fusionExecutable";

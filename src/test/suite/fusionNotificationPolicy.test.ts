@@ -16,11 +16,11 @@ import {
 } from "vscode";
 import { toLspLaunch } from "../../core/lsp";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
-import { FusionClientPoolImpl } from "../../lsp/fusionClientPool";
+import { FusionClientPoolImpl } from "../../fusion/fusionClientPool";
 import {
   DefaultFusionClientFactory,
   FailedFusionClient,
-} from "../../lsp/fusionLanguageClient";
+} from "../../fusion/fusionLanguageClient";
 import {
   DeclaredProject,
   ProjectRegistry,

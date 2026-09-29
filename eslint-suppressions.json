@@ -295,7 +295,7 @@
       "count": 1
     }
   },
-  "src/lsp/fusionLanguageClient.ts": {
+  "src/fusion/fusionLanguageClient.ts": {
     "@typescript-eslint/no-floating-promises": {
       "count": 1
     },

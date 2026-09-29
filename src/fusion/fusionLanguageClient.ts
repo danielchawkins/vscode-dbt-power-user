@@ -17,12 +17,12 @@ import {
   type ServerOptions,
 } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
-import { toLspArgs, type LspLaunch } from "../core/lsp";
+import { DBT_LSP_USE_TARGET_LSP, toLspArgs, type LspLaunch } from "../core/lsp";
 import { type StaticAnalysisMode } from "../core/project";
 import { DBTTerminal } from "../dbt_integration";
-import { FusionExecutable } from "../fusion/fusionExecutable";
-import { spawnProcess, type ChildProcess } from "../fusion/process";
 import { DeclaredProject } from "../projects/projectRegistry";
+import { FusionExecutable } from "./fusionExecutable";
+import { spawnProcess, type ChildProcess } from "./process";
 import {
   acceptWithProcessExit,
   ExitingProcess,
@@ -58,7 +58,7 @@ export interface FusionClientOptions {
   launch: LspLaunch;
   /** Namespaces workspace/executeCommand so two extensions can serve the same window. */
   commandPrefix: string;
-  /** Layered over `launch.environment` for this server process. */
+  /** Layered over `launch.environment`; the launch's `DBT_LSP_USE_TARGET_LSP` choice still wins. */
   env?: Record<string, string>;
 }
 
@@ -632,7 +632,9 @@ class FusionLanguageClientImpl implements FusionClient {
         projectDir: launchRoot,
         commandPrefix: this.options.commandPrefix,
       });
-      const env = { ...launch.environment, ...this.options.env };
+      const { [DBT_LSP_USE_TARGET_LSP]: _ignored, ...callerEnv } =
+        this.options.env ?? {};
+      const env = { ...launch.environment, ...callerEnv };
 
       const child = spawnServer(
         this.options.executable.path,

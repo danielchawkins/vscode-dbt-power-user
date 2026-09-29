@@ -3,13 +3,13 @@ import * as fs from "fs";
 import * as net from "net";
 import * as os from "os";
 import * as path from "path";
-import type { Disposable } from "../../lsp/reverseSocketTransport";
+import type { Disposable } from "../../fusion/reverseSocketTransport";
 import {
   acceptWithProcessExit,
   ExitingProcess,
   listenForServer,
   ReverseSocketServer,
-} from "../../lsp/reverseSocketTransport";
+} from "../../fusion/reverseSocketTransport";
 import {
   attachLspProtocolClient,
   CAPTURE_LIMITS,

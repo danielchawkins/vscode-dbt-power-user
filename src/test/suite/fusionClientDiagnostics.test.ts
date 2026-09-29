@@ -3,8 +3,8 @@ import { commands, ExtensionContext, Uri } from "vscode";
 import {
   FUSION_CLIENT_STATES_COMMAND,
   registerFusionClientDiagnostics,
-} from "../../lsp/fusionClientDiagnostics";
-import { FusionClientPool } from "../../lsp/fusionClientPool";
+} from "../../fusion/fusionClientDiagnostics";
+import { FusionClientPool } from "../../fusion/fusionClientPool";
 import {
   DeclaredProject,
   ProjectRegistry,
