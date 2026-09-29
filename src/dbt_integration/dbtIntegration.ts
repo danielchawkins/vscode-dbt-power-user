@@ -217,7 +217,6 @@ export interface DBTProjectIntegration {
   refreshProjectConfig(): Promise<void>;
   // Change target
   setSelectedTarget(targetName: string): Promise<void>;
-  getTargetNames(): Promise<Array<string>>;
   // retrieve dbt configs
   getTargetPath(): string | undefined;
   getModelPaths(): string[] | undefined;

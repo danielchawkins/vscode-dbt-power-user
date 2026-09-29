@@ -1,6 +1,5 @@
 import { Container, Factory, ResolutionContext } from "inversify";
 import { Event, EventEmitter, Uri } from "vscode";
-import { createFusionCommandIntegrationFactory } from "./dbt_client/configuredFusionCommandIntegration";
 import { DBTProject } from "./dbt_client/dbtProject";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
@@ -28,6 +27,7 @@ import {
   UnitTestParser,
 } from "./dbt_integration";
 import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
+import { FusionCli } from "./fusion/fusionCli";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
 import {
@@ -39,6 +39,7 @@ import { FusionStatus } from "./lsp/fusionStatus";
 import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
+import { readProjectSnapshot } from "./projects/readProjectSnapshot";
 import { DbtLineageService } from "./services/dbtLineageService";
 import { DbtTestService } from "./services/dbtTestService";
 import { DiagnosticsOutputChannel } from "./services/diagnosticsOutputChannel";
@@ -172,16 +173,17 @@ container
       const commandProcessExecutionFactory = container.get(
         CommandProcessExecutionFactory,
       );
-      const dbtCommandFactory = container.get(DBTCommandFactory);
       return new FusionProjectIntegration(
         container.get("DBTConfiguration"),
-        dbtCommandFactory,
+        container.get(DBTCommandFactory),
         container.get(ConfiguredFusionExecutableResolver),
-        createFusionCommandIntegrationFactory(
-          commandProcessExecutionFactory,
-          dbtCommandFactory,
-          terminal,
-        ),
+        (executable, root) =>
+          new FusionCli(
+            executable,
+            () => readProjectSnapshot(Uri.file(root)),
+            commandProcessExecutionFactory,
+            terminal,
+          ),
         projectRoot,
         deferConfig,
         container.get(ChildrenParentParser),

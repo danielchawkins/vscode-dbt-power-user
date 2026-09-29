@@ -5,16 +5,10 @@ import * as os from "os";
 import * as path from "path";
 import "reflect-metadata";
 import { promisify } from "util";
-import { createFusionCommandIntegrationFactory } from "../../dbt_client/configuredFusionCommandIntegration";
-import {
-  DBTCommand,
-  DBTCommandFactory,
-  DBTTerminal,
-  DeferConfig,
-  ManifestPathType,
-} from "../../dbt_integration";
+import { readDbtProjectFile, resolveProjectSnapshot } from "../../core/project";
+import { DBTCommand, DBTTerminal } from "../../dbt_integration";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
-import { FusionExecutable } from "../../fusion/fusionExecutable";
+import { FusionCli } from "../../fusion/fusionCli";
 import { checkFusionVersion, getExtensionRoot } from "./helpers/testFixtures";
 
 const execFile = promisify(execFileCb);
@@ -97,8 +91,7 @@ function writeProject(projectDir: string): void {
 }
 
 /**
- * Exercises the fork's own defer-argument construction (`ConfiguredFusionCommandProjectIntegration
- * .getDeferParams`) against the real, mise-pinned Fusion binary rather than fixture-backed
+ * Exercises the defer arguments `FusionCli` builds from a project snapshot against the real, mise-pinned Fusion binary rather than fixture-backed
  * captured state. `src/test/fixtures/**` is being converted to working DuckDB projects in a
  * parallel change; this test builds its own throwaway project instead of depending on that.
  */
@@ -139,36 +132,41 @@ suite("Fusion defer argument integration", function () {
     );
   });
 
-  function buildIntegration(deferConfig: DeferConfig) {
+  function buildCli(): FusionCli {
     const terminal = silentTerminal();
-    const commandProcessExecutionFactory = new CommandProcessExecutionFactory(
+    const folder = path.dirname(projectDir);
+    const snapshot = resolveProjectSnapshot({
+      root: projectDir,
+      folder,
+      firstWorkspaceFolder: folder,
+      userHome: os.homedir(),
+      environment: {},
+      lspCompiledOutputOverride: undefined,
+      settings: {
+        dbtPath: undefined,
+        target: undefined,
+        profilesDir: projectDir,
+        staticAnalysis: undefined,
+        lspCompiledOutput: undefined,
+        deferPerProject: {
+          [path.basename(projectDir)]: {
+            deferToProduction: true,
+            favorState: true,
+            manifestPathForDeferral: stateDir,
+          },
+        },
+        runParams: [],
+        buildParams: [],
+        testParams: [],
+      },
+      projectFile: readDbtProjectFile(projectDir),
+    });
+    return new FusionCli(
+      { path: "dbt", env: process.env as Record<string, string> },
+      () => snapshot,
+      new CommandProcessExecutionFactory(terminal),
       terminal,
     );
-    const dbtCommandFactory = new DBTCommandFactory({
-      getRunModelCommandAdditionalParams: () => [],
-      getBuildModelCommandAdditionalParams: () => [],
-      getTestModelCommandAdditionalParams: () => [],
-    } as unknown as ConstructorParameters<typeof DBTCommandFactory>[0]);
-    const executable: FusionExecutable = {
-      path: "dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "" },
-      env: process.env as Record<string, string>,
-    };
-    const factory = createFusionCommandIntegrationFactory(
-      commandProcessExecutionFactory,
-      dbtCommandFactory,
-      terminal,
-    );
-    return {
-      integration: factory(
-        executable,
-        projectDir,
-        [],
-        deferConfig,
-        () => undefined,
-      ),
-      dbtCommandFactory,
-    };
   }
 
   test("runs a deferred model successfully once its dependency's table already exists", async function () {
@@ -204,21 +202,10 @@ suite("Fusion defer argument integration", function () {
       "dbt parse should produce a manifest in the state directory",
     );
 
-    const deferConfig = new DeferConfig(
-      true,
-      true,
-      stateDir,
-      ManifestPathType.LOCAL,
+    const cli = buildCli();
+    const command = await cli.runModel(
+      new DBTCommand("Running", ["run", "--select", "model_b"]),
     );
-    const { integration, dbtCommandFactory } = buildIntegration(deferConfig);
-    await integration.initializeProject();
-
-    const runCommand = dbtCommandFactory.createRunModelCommand({
-      plusOperatorLeft: "",
-      modelName: "model_b",
-      plusOperatorRight: "",
-    });
-    const command = (await integration.runModel(runCommand)) as DBTCommand;
     assert.ok(
       command.getCommandAsString().includes(`--defer --state ${stateDir}`),
       `expected --defer --state ${stateDir} in: ${command.getCommandAsString()}`,

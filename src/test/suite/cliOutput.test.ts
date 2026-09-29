@@ -1,12 +1,7 @@
 import { describe, expect, it } from "@jest/globals";
 import { readFileSync } from "fs";
 import path from "path";
-import {
-  compiledOutput,
-  jsonLogErrors,
-  parseLogEntries,
-  showPreview,
-} from "../../core/cli";
+import { compiledOutput, parseLogEntries, showPreview } from "../../core/cli";
 import { esmDirname } from "../esmDirname";
 
 /** stderr of a `compile` with an SQL error, Fusion 2.0.6, text log format. */
@@ -43,32 +38,6 @@ const SHOW_STDOUT = [
     info: { code: "Q041", level: "info", name: "ShowNode" },
   }),
 ].join("\n");
-
-describe("jsonLogErrors", () => {
-  it("returns nothing for empty stderr", () => {
-    expect(jsonLogErrors("")).toEqual([]);
-  });
-
-  it("keeps error and fatal messages in order", () => {
-    const stderr = [
-      log("info", "i"),
-      log("error", "e1"),
-      log("warn", "w"),
-      log("fatal", "f"),
-    ].join("\n");
-    expect(jsonLogErrors(stderr)).toEqual(["e1", "f"]);
-  });
-
-  it("turns text-format stderr into one could-not-process entry", () => {
-    const [entry, ...rest] = jsonLogErrors(TEXT_STDERR);
-    expect(rest).toEqual([]);
-    expect(entry.startsWith(`Could not process ${TEXT_STDERR}: `)).toBe(true);
-  });
-
-  it("turns a record without info into one could-not-process entry", () => {
-    expect(jsonLogErrors('{"data":{}}')).toHaveLength(1);
-  });
-});
 
 describe("parseLogEntries", () => {
   it("lists errors before warnings and skips other levels and non-JSON lines", () => {

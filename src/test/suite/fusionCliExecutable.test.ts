@@ -10,7 +10,6 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { ConfigurationChangeEvent, Uri, window, workspace } from "vscode";
-import { createFusionCommandIntegrationFactory } from "../../dbt_client/configuredFusionCommandIntegration";
 import {
   FusionCommandIntegrationFactory,
   FusionProjectIntegration,
@@ -26,10 +25,12 @@ import {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
 } from "../../fusion/commandProcessExecution";
+import { FusionCli } from "../../fusion/fusionCli";
 import {
   DBT_PATH_SETTING,
   FusionExecutable,
 } from "../../fusion/fusionExecutable";
+import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { CONFIGURATION_SECTION } from "../../settings";
 
 const ENV_MARKER = "FUSION_PU_CLI_ENV";
@@ -200,35 +201,51 @@ describe("Fusion CLI executable wiring", () => {
     jest.restoreAllMocks();
   });
 
-  function productionFactory(
-    projectRoot: string,
+  function fusionCliFactory(
     terminal: DBTTerminal,
     commandProcessExecutionFactory: CommandProcessExecutionFactory,
   ): FusionCommandIntegrationFactory {
-    const base = createFusionCommandIntegrationFactory(
-      commandProcessExecutionFactory,
-      {} as DBTCommandFactory,
-      terminal,
-    );
+    return (executable, root) =>
+      new FusionCli(
+        executable,
+        () => readProjectSnapshot(Uri.file(root)),
+        commandProcessExecutionFactory,
+        terminal,
+      );
+  }
+
+  function productionFactory(
+    _projectRoot: string,
+    terminal: DBTTerminal,
+    commandProcessExecutionFactory: CommandProcessExecutionFactory,
+  ): FusionCommandIntegrationFactory {
+    const base = fusionCliFactory(terminal, commandProcessExecutionFactory);
     return (...args) => {
       const delegate = base(...args);
-      jest.spyOn(delegate, "refreshProjectConfig").mockResolvedValue(undefined);
       jest.spyOn(delegate, "rebuildManifest").mockResolvedValue(undefined);
-      jest
-        .spyOn(delegate, "getModelPaths")
-        .mockReturnValue([path.join(projectRoot, "models")]);
-      jest
-        .spyOn(delegate, "getMacroPaths")
-        .mockReturnValue([path.join(projectRoot, "macros")]);
-      jest
-        .spyOn(delegate, "getSeedPaths")
-        .mockReturnValue([path.join(projectRoot, "seeds")]);
-      jest
-        .spyOn(delegate, "getTargetPath")
-        .mockReturnValue(path.join(projectRoot, "target"));
       return delegate;
     };
   }
+
+  it("spawns only dbt parse when a project activates", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-cli-activate-"));
+    prepareProjectRoot(root);
+    const recording = recordingExecutionFactory();
+    const integration = buildIntegration(
+      root,
+      async () => sampleExecutable("/bin/dbt"),
+      fusionCliFactory(mockTerminal(), recording.factory),
+    );
+
+    await integration.initialize();
+
+    const subcommands = recording.calls.map(
+      (call) => (call.args as string[])[0],
+    );
+    expect(subcommands).toEqual(["parse"]);
+    await integration.dispose();
+    fs.rmSync(root, { recursive: true, force: true });
+  });
 
   it("executes CLI with per-project path, cwd, and env isolation", async () => {
     const rootA = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-cli-a-"));
@@ -261,13 +278,7 @@ describe("Fusion CLI executable wiring", () => {
     await integrationA.initialize();
     await integrationB.initialize();
 
-    const command = new DBTCommand(
-      "version",
-      ["--version"],
-      false,
-      true,
-      false,
-    );
+    const command = new DBTCommand("deps", ["deps"], false, true, false);
     await integrationA
       .getCurrentProjectIntegration()
       .executeCommandImmediately(command);
@@ -421,12 +432,12 @@ describe("Fusion CLI executable wiring", () => {
     await integrationA
       .getCurrentProjectIntegration()
       .executeCommandImmediately(
-        new DBTCommand("version", ["--version"], false, true, false),
+        new DBTCommand("deps", ["deps"], false, true, false),
       );
     await integrationB
       .getCurrentProjectIntegration()
       .executeCommandImmediately(
-        new DBTCommand("version", ["--version"], false, true, false),
+        new DBTCommand("deps", ["deps"], false, true, false),
       );
 
     expect(recordingA.calls[0]).toMatchObject({
@@ -473,7 +484,7 @@ describe("Fusion CLI executable wiring", () => {
     await integration
       .getCurrentProjectIntegration()
       .executeCommandImmediately(
-        new DBTCommand("version", ["--version"], false, true, false),
+        new DBTCommand("deps", ["deps"], false, true, false),
       );
     expect(recording.calls[recording.calls.length - 1]).toMatchObject({
       command: "/project/a/v3/dbt",

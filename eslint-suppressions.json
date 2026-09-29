@@ -167,28 +167,6 @@
       "count": 5
     }
   },
-  "src/dbt_integration/dbtBaseProjectIntegration.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
-  "src/dbt_integration/dbtFusionCommandIntegration.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "max-lines": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 1
-    },
-    "sonarjs/no-identical-functions": {
-      "count": 1
-    }
-  },
   "src/dbt_integration/dbtIntegration.ts": {
     "max-params": {
       "count": 1

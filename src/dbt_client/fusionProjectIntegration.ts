@@ -54,9 +54,6 @@ import { onDidChangeSettings, SettingsChange } from "../settings";
 export type FusionCommandIntegrationFactory = (
   executable: FusionExecutable,
   projectRoot: string,
-  projectConfigDiagnostics: DBTDiagnosticData[],
-  deferConfig: DeferConfig,
-  onDiagnosticsChanged: () => void,
 ) => DBTProjectIntegration;
 
 const EXECUTABLE_DIAGNOSTIC_SOURCE = "fusion-executable";
@@ -119,6 +116,7 @@ type FunctionParserInput = Parameters<
 const EMPTY_FUNCTION_MAP = {} as FunctionParserInput;
 
 interface ManifestJson {
+  metadata?: { adapter_type?: string };
   nodes: Record<string, unknown>;
   sources: Record<string, unknown>;
   macros: Record<string, unknown>;
@@ -259,6 +257,7 @@ export class FusionProjectIntegration
   private projectConfigDebounced?: DebouncedHandler;
   private projectConfigDiagnostics: DBTDiagnosticData[] = [];
   private lastParsedManifest?: ParsedManifest;
+  private adapterType = "unknown";
   private deferConfig: DeferConfig;
 
   constructor(
@@ -344,8 +343,9 @@ export class FusionProjectIntegration
     return this.currentIntegration?.getMacroPaths();
   }
 
+  /** The last `metadata.adapter_type` a manifest carried; `"unknown"` until one has. */
   getAdapterType(): string {
-    return this.currentIntegration?.getAdapterType() || "unknown";
+    return this.adapterType;
   }
 
   getDeferConfig(): DeferConfig {
@@ -456,13 +456,7 @@ export class FusionProjectIntegration
   }
 
   private createDelegate(executable: FusionExecutable): DBTProjectIntegration {
-    return this.fusionIntegrationFactory(
-      executable,
-      this.projectRoot,
-      this.projectConfigDiagnostics,
-      this.deferConfig,
-      () => this.emit(FusionProjectIntegrationEvents.DIAGNOSTICS_CHANGED),
-    );
+    return this.fusionIntegrationFactory(executable, this.projectRoot);
   }
 
   private isActivationCurrent(generation: number): boolean {
@@ -723,6 +717,10 @@ export class FusionProjectIntegration
     const manifestJson = this.readAndParseManifestFile(targetPath);
     if (manifestJson === undefined) {
       return;
+    }
+    if (this.isActivationCurrent(generation)) {
+      this.adapterType =
+        manifestJson.metadata?.adapter_type || this.adapterType;
     }
     const previous = this.currentIntegration;
     this.currentIntegration = delegate;

@@ -19,7 +19,8 @@ export type CliCommand =
   | { kind: "clean" }
   | { kind: "debug" };
 
-const DEFERRABLE_KINDS: readonly CliCommand["kind"][] = [
+/** The command kinds that take defer flags. */
+export const DEFERRABLE_KINDS: readonly CliCommand["kind"][] = [
   "run",
   "build",
   "test",

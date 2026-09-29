@@ -116,9 +116,6 @@ describe("Fusion-only integration wiring", () => {
     const resolver = container.get(ConfiguredFusionExecutableResolver);
     expect(resolver).toBeInstanceOf(ConfiguredFusionExecutableResolver);
     expect(container.isBound("RuntimePythonEnvironment")).toBe(false);
-    expect(
-      container.isBound("Factory<DBTFusionCommandProjectIntegration>"),
-    ).toBe(false);
   });
 
   it("uses the Fusion project integration", () => {

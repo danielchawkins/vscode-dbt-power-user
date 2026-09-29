@@ -1,6 +1,4 @@
 export * from "./configuration";
-export * from "./dbtBaseProjectIntegration";
-export * from "./dbtFusionCommandIntegration";
 export * from "./dbtIntegration";
 export * from "./diagnostics";
 export * from "./domain";
