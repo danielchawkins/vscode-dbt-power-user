@@ -62,6 +62,23 @@ export interface BuiltManifest {
   adapterType?: string;
 }
 
+const publicationEpochs = new Map<string, number>();
+
+/** Stamps `parsed` as the next manifest publication for `project`'s root, advancing that root's epoch. */
+export function nextManifestPublication<
+  P extends { projectRoot: { fsPath: string } },
+>(project: P, parsed: ParsedManifest) {
+  const projectKey = project.projectRoot.fsPath;
+  const publicationEpoch = (publicationEpochs.get(projectKey) ?? 0) + 1;
+  publicationEpochs.set(projectKey, publicationEpoch);
+  return {
+    ...parsed,
+    project,
+    publicationEpoch,
+    metadataProducer: "manifest" as const,
+  };
+}
+
 type FunctionParserInput = Parameters<
   FunctionParser["createFunctionMetaMap"]
 >[0];

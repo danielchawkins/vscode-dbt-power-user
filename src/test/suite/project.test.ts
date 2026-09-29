@@ -1,0 +1,1096 @@
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
+import * as vscode from "vscode";
+import { DBT_PROJECT_FILE } from "../../core/project";
+import { DBTProject } from "../../dbt_client/dbtProject";
+import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
+import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
+import {
+  ChildrenParentParser,
+  DBTCommand,
+  DBTDiagnosticData,
+  DBTTerminal,
+  DocParser,
+  ExposureParser,
+  FunctionParser,
+  GraphParser,
+  MacroParser,
+  MANIFEST_FILE,
+  MetricParser,
+  ModelDepthParser,
+  NodeParser,
+  QueryExecution,
+  RESOURCE_TYPE_MODEL,
+  SemanticModelParser,
+  SourceParser,
+  TestParser,
+  UnitTestParser,
+} from "../../dbt_integration";
+import { FusionCli } from "../../fusion/fusionCli";
+import { ManifestParsers } from "../../projects/manifest";
+import { Project } from "../../projects/project";
+import {
+  enqueueCommand,
+  ProjectCommandDeps,
+} from "../../projects/projectCommands";
+import { ProjectDiagnostics } from "../../projects/projectDiagnostics";
+import { RunHistoryService } from "../../services/runHistoryService";
+import { SharedStateService } from "../../services/sharedStateService";
+import { CONFIGURATION_SECTION } from "../../settings";
+import { esmDirname } from "../esmDirname";
+import {
+  createdFileSystemWatchers,
+  type MockFileSystemWatcher,
+} from "../mock/vscode";
+import { buildTestProject } from "../projectHarness";
+
+const fixtureRoot = path.resolve(
+  esmDirname(import.meta.url),
+  "../fixtures/single-project",
+);
+
+const commandDeps = (project: Project) =>
+  (project as unknown as { commandDeps: ProjectCommandDeps }).commandDeps;
+const projectDiagnostics = (project: Project) =>
+  (project as unknown as { diagnostics: ProjectDiagnostics }).diagnostics;
+const flush = async () => {
+  for (let i = 0; i < 5; i++) {
+    await new Promise((resolve) => setImmediate(resolve));
+  }
+};
+
+function realParsers(terminal: DBTTerminal): ManifestParsers {
+  return {
+    childrenParentParser: new ChildrenParentParser(),
+    nodeParser: new NodeParser(terminal),
+    macroParser: new MacroParser(terminal),
+    metricParser: new MetricParser(terminal),
+    graphParser: new GraphParser(terminal),
+    sourceParser: new SourceParser(terminal),
+    testParser: new TestParser(terminal),
+    unitTestParser: new UnitTestParser(terminal),
+    exposureParser: new ExposureParser(terminal),
+    functionParser: new FunctionParser(terminal),
+    docParser: new DocParser(terminal),
+    modelDepthParser: new ModelDepthParser(terminal),
+    semanticModelParser: new SemanticModelParser(terminal),
+  };
+}
+
+describe("Project Test Suite", () => {
+  let mockTerminal: jest.Mocked<DBTTerminal>;
+  let mockSharedStateService: jest.Mocked<SharedStateService>;
+  let mockRunHistoryService: jest.Mocked<RunHistoryService>;
+  let mockFusionCli: any;
+  let mockDbtProjectLog: jest.Mocked<DBTProjectLog>;
+  let mockManifestChangedEmitter: jest.Mocked<
+    vscode.EventEmitter<ManifestCacheChangedEvent>
+  >;
+  let dbtProject: DBTProject;
+
+  function newProject(
+    projectUri = vscode.Uri.file("/test/project"),
+  ): DBTProject {
+    return buildTestProject(projectUri.fsPath, () => mockFusionCli, {
+      dbtProjectLogFactory: () => mockDbtProjectLog,
+      terminal: mockTerminal,
+      sharedState: mockSharedStateService,
+      runHistoryService: mockRunHistoryService,
+      projectRoot: projectUri,
+      onManifestChanged: mockManifestChangedEmitter,
+    });
+  }
+
+  async function initializedProject(): Promise<DBTProject> {
+    const project = newProject();
+    await project.initialize();
+    return project;
+  }
+
+  beforeEach(() => {
+    const workspaceFolder = {
+      uri: vscode.Uri.file("/test/workspace"),
+      name: "Test Workspace",
+      index: 0,
+    };
+    Object.assign(vscode.workspace as object, {
+      workspaceFolders: [workspaceFolder],
+    });
+    (vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(
+      workspaceFolder,
+    );
+    (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+      get: jest.fn((key: string) => {
+        if (key === "query.limit") {
+          return 500;
+        }
+        if (key === "defer.perProject") {
+          return {};
+        }
+        return undefined;
+      }),
+      has: jest.fn(),
+      update: jest.fn(),
+    });
+    mockTerminal = {
+      show: jest.fn(),
+      log: jest.fn(),
+      trace: jest.fn(),
+      debug: jest.fn(),
+      info: jest.fn(),
+      error: jest.fn(),
+      dispose: jest.fn(),
+      logNewLine: jest.fn(),
+      logLine: jest.fn(),
+      logHorizontalRule: jest.fn(),
+      logBlock: jest.fn(),
+      warn: jest.fn(),
+    } as unknown as jest.Mocked<DBTTerminal>;
+    mockSharedStateService = {} as unknown as jest.Mocked<SharedStateService>;
+    mockRunHistoryService = {
+      addEntry: jest.fn(),
+      notifyCommandFailed: jest.fn(),
+    } as unknown as jest.Mocked<RunHistoryService>;
+
+    mockFusionCli = {
+      prepare: jest.fn(),
+      run: jest.fn(() => Promise.resolve()),
+      refreshProjectConfig: jest.fn(async () => undefined),
+      rebuildManifest: jest.fn(async () => undefined),
+      dispose: jest.fn(async () => undefined),
+      getProjectName: jest.fn().mockReturnValue("test-project"),
+      getColumnsOfModel: jest.fn(() => Promise.resolve([])),
+      getColumnsOfSource: jest.fn(() => Promise.resolve([])),
+      compileInline: jest.fn(),
+      executeSQL: jest.fn(),
+      getTargetPath: jest.fn().mockReturnValue("/project/target"),
+      getPackageInstallPath: jest.fn().mockReturnValue("/project/dbt_packages"),
+      getModelPaths: jest.fn().mockReturnValue(["/project/models"]),
+      getSeedPaths: jest.fn().mockReturnValue(["/project/seeds"]),
+      getMacroPaths: jest.fn().mockReturnValue(["/project/macros"]),
+      getDiagnostics: jest.fn().mockReturnValue({
+        rebuildManifestDiagnostics: [],
+        projectConfigDiagnostics: [],
+      }),
+    };
+    mockDbtProjectLog = {
+      dispose: jest.fn(),
+    } as unknown as jest.Mocked<DBTProjectLog>;
+    mockManifestChangedEmitter = {
+      event: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+      fire: jest.fn(),
+      dispose: jest.fn(),
+    } as unknown as jest.Mocked<vscode.EventEmitter<ManifestCacheChangedEvent>>;
+  });
+
+  afterEach(async () => {
+    jest.clearAllMocks();
+    if (dbtProject) {
+      await dbtProject.dispose();
+    }
+  });
+
+  describe("Constructor and Initialization", () => {
+    it("should have access to dbt integration constants", () => {
+      expect(DBT_PROJECT_FILE).toBe("dbt_project.yml");
+      expect(MANIFEST_FILE).toBe("manifest.json");
+      expect(RESOURCE_TYPE_MODEL).toBe("model");
+    });
+
+    it("should create DBTProject instance with correct configuration", () => {
+      const projectUri = vscode.Uri.file("/test/project");
+      dbtProject = newProject(projectUri);
+
+      expect(dbtProject).toBeInstanceOf(Project);
+      expect(dbtProject.projectRoot).toBe(projectUri);
+      expect(mockTerminal.debug).toHaveBeenCalledWith(
+        "Project",
+        expect.stringContaining("Created fusion dbt project"),
+      );
+    });
+
+    it("should commit the Fusion CLI on initialize()", async () => {
+      dbtProject = newProject();
+      expect(() => dbtProject.getFusionCli()).toThrow(/not initialized/);
+
+      await dbtProject.initialize();
+
+      expect(dbtProject.getFusionCli()).toBe(mockFusionCli);
+      expect(mockFusionCli.refreshProjectConfig).toHaveBeenCalled();
+      expect(mockFusionCli.rebuildManifest).toHaveBeenCalled();
+    });
+  });
+
+  describe("Project Configuration Methods", () => {
+    beforeEach(async () => {
+      dbtProject = await initializedProject();
+    });
+
+    it("should get project name", () => {
+      expect(dbtProject.getProjectName()).toBe("test-project");
+      expect(mockFusionCli.getProjectName).toHaveBeenCalled();
+    });
+
+    it("should get project root", () => {
+      expect(dbtProject.getProjectRoot()).toBe("/test/project");
+    });
+
+    it("should get DBT project file path", () => {
+      expect(dbtProject.getDBTProjectFilePath()).toBe(
+        path.join("/test/project", DBT_PROJECT_FILE),
+      );
+    });
+
+    it("falls back to the directory name before a CLI is committed", async () => {
+      await dbtProject.dispose();
+      dbtProject = newProject();
+      expect(dbtProject.getProjectName()).toBe("project");
+    });
+  });
+
+  describe("Diagnostics", () => {
+    beforeEach(async () => {
+      dbtProject = await initializedProject();
+    });
+
+    it("should get all diagnostics", () => {
+      const mockDiagnosticData: DBTDiagnosticData = {
+        message: "Test diagnostic",
+        severity: "error",
+        filePath: "/test/file.sql",
+        source: "dbt",
+        category: "error",
+        range: {
+          startLine: 1,
+          startColumn: 0,
+          endLine: 1,
+          endColumn: 10,
+        },
+      };
+
+      (mockFusionCli.getDiagnostics as jest.Mock).mockReturnValue({
+        rebuildManifestDiagnostics: [mockDiagnosticData],
+        projectConfigDiagnostics: [],
+      });
+      dbtProject.updateDiagnosticsInProblemsPanel();
+
+      const diagnostics = dbtProject.getAllDiagnostic();
+
+      expect(diagnostics).toHaveLength(1);
+      expect(diagnostics[0]).toMatchObject({
+        message: mockDiagnosticData.message,
+        severity: vscode.DiagnosticSeverity.Error,
+        source: "Fusion Power User",
+        code: "rebuild-manifest",
+      });
+      expect(() => dbtProject.throwDiagnosticsErrorIfAvailable()).toThrow(
+        "Test diagnostic",
+      );
+    });
+
+    it("publishes every kind in one collection under dbt_project.yml", async () => {
+      const data = (message: string, source: string): DBTDiagnosticData => ({
+        message,
+        severity: "warning",
+        filePath: "/test/file.sql",
+        source,
+        category: "warning",
+      });
+      const getDiagnostics = mockFusionCli.getDiagnostics as jest.Mock;
+      getDiagnostics.mockReturnValue({
+        rebuildManifestDiagnostics: [data("rebuild", "dbt-fusion")],
+        projectConfigDiagnostics: [],
+      });
+
+      dbtProject.updateDiagnosticsInProblemsPanel();
+      projectDiagnostics(dbtProject).addConfig(data("config", "dbt"));
+      projectDiagnostics(dbtProject).addConfig(
+        data("executable", "fusion-executable"),
+      );
+
+      const collections = (
+        vscode.languages.createDiagnosticCollection as jest.Mock
+      ).mock.results.map((result) => result.value as any);
+      expect(
+        (vscode.languages.createDiagnosticCollection as jest.Mock).mock.calls,
+      ).toEqual([["fusionPowerUser.project"]]);
+      const [collection] = collections;
+      const published = collection.get(
+        vscode.Uri.file(dbtProject.getDBTProjectFilePath()),
+      );
+      expect(
+        published.map((d: vscode.Diagnostic) => [d.message, d.code, d.source]),
+      ).toEqual([
+        ["rebuild", "rebuild-manifest", "Fusion Power User"],
+        ["config", "project-config", "Fusion Power User"],
+        ["executable", "fusion-executable", "Fusion Power User"],
+      ]);
+
+      // A rebuild that clears its own diagnostics keeps the other kinds.
+      getDiagnostics.mockReturnValue({
+        rebuildManifestDiagnostics: [],
+        projectConfigDiagnostics: [],
+      });
+      const statuses: boolean[] = [];
+      dbtProject.onRebuildManifestStatusChange((e) =>
+        statuses.push(e.inProgress),
+      );
+      await dbtProject.rebuildManifest();
+      await flush();
+      expect(statuses).toEqual([true, false]);
+      expect(dbtProject.getAllDiagnostic().map((d) => d.code)).toEqual([
+        "project-config",
+        "fusion-executable",
+      ]);
+    });
+  });
+
+  describe("Query Execution", () => {
+    beforeEach(async () => {
+      dbtProject = await initializedProject();
+    });
+
+    it("should compile query", async () => {
+      const mockCompiledSQL = "SELECT col1 FROM table";
+      mockFusionCli.compileInline.mockResolvedValue(mockCompiledSQL);
+
+      const result = await dbtProject.compileQuery(
+        "SELECT col1 FROM {{ ref('table') }}",
+      );
+
+      expect(result).toEqual(mockCompiledSQL);
+      expect(mockFusionCli.compileInline).toHaveBeenCalledWith(
+        "SELECT col1 FROM {{ ref('table') }}",
+      );
+    });
+
+    it("should get column values", async () => {
+      mockFusionCli.executeSQL.mockResolvedValue(
+        new QueryExecution(
+          async () => undefined,
+          async () => ({
+            table: {
+              column_names: ["col"],
+              column_types: ["string"],
+              rows: [["value1"], ["value2"]],
+            },
+            compiled_sql: "",
+            raw_sql: "",
+            modelName: "model",
+          }),
+        ),
+      );
+
+      const result = await dbtProject.getColumnValues("model", "col");
+
+      expect(result).toEqual(["value1", "value2"]);
+      expect(mockFusionCli.executeSQL).toHaveBeenCalledWith(
+        "SELECT DISTINCT col FROM {{ ref('model') }}",
+        100,
+        "model",
+      );
+    });
+  });
+
+  describe("Column Operations", () => {
+    beforeEach(async () => {
+      dbtProject = await initializedProject();
+    });
+
+    it("should get columns of model", async () => {
+      const mockColumns = [
+        { name: "col1", type: "varchar" },
+        { name: "col2", type: "integer" },
+      ];
+      mockFusionCli.getColumnsOfModel.mockImplementation(() =>
+        Promise.resolve(mockColumns),
+      );
+
+      const result = await dbtProject.getColumnsOfModel("model.test.my_model");
+
+      expect(result).toEqual(mockColumns);
+      expect(mockFusionCli.getColumnsOfModel).toHaveBeenCalledWith(
+        "model.test.my_model",
+      );
+    });
+
+    it("should get columns of source", async () => {
+      const mockColumns = [{ name: "col1", type: "varchar" }];
+      mockFusionCli.getColumnsOfSource.mockImplementation(() =>
+        Promise.resolve(mockColumns),
+      );
+
+      const result = await dbtProject.getColumnsOfSource(
+        "my_source",
+        "my_table",
+      );
+
+      expect(result).toEqual(mockColumns);
+      expect(mockFusionCli.getColumnsOfSource).toHaveBeenCalledWith(
+        "my_source",
+        "my_table",
+      );
+    });
+  });
+
+  describe("Disposal", () => {
+    it("should dispose all resources properly", async () => {
+      dbtProject = await initializedProject();
+
+      const { results } = (
+        vscode.languages.createDiagnosticCollection as jest.Mock
+      ).mock;
+      const collection = results[results.length - 1]
+        .value as vscode.DiagnosticCollection;
+
+      await dbtProject.dispose();
+
+      expect(collection.dispose).toHaveBeenCalled();
+      expect(mockFusionCli.dispose).toHaveBeenCalled();
+      expect(mockDbtProjectLog.dispose).toHaveBeenCalled();
+      expect(() => dbtProject.getFusionCli()).toThrow();
+    });
+
+    it("ignores a rebuild that finishes after dispose", async () => {
+      dbtProject = await initializedProject();
+      const { results } = (
+        vscode.languages.createDiagnosticCollection as jest.Mock
+      ).mock;
+      const collection = results[results.length - 1].value as any;
+      let release!: () => void;
+      mockFusionCli.rebuildManifest.mockImplementation(
+        () => new Promise<void>((resolve) => (release = resolve)),
+      );
+      const statuses: boolean[] = [];
+      dbtProject.onRebuildManifestStatusChange((e) =>
+        statuses.push(e.inProgress),
+      );
+
+      await dbtProject.rebuildManifest();
+      await flush();
+      expect(statuses).toEqual([true]);
+      await dbtProject.dispose();
+      collection.set.mockClear();
+      release();
+      await flush();
+
+      expect(statuses).toEqual([true]);
+      expect(collection.set).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("queued command run_results", () => {
+    let targetDir: string;
+
+    beforeEach(() => {
+      targetDir = fs.mkdtempSync(path.join(os.tmpdir(), "dbt-project-run-"));
+      mockFusionCli.getTargetPath.mockReturnValue(targetDir);
+    });
+
+    afterEach(() => {
+      fs.rmSync(targetDir, { recursive: true, force: true });
+    });
+
+    function writeRunResults(): void {
+      fs.writeFileSync(
+        path.join(targetDir, "run_results.json"),
+        JSON.stringify({
+          metadata: {
+            invocation_id: "inv-1",
+            generated_at: "2026-01-01T00:00:00Z",
+          },
+          args: { which: "run" },
+          results: [{ unique_id: "model.test.model1", status: "error" }],
+        }),
+      );
+    }
+
+    function mockDeferSettings(storedDeferConfig: Record<string, unknown>) {
+      (vscode.workspace.getConfiguration as jest.Mock).mockImplementation(
+        () => ({
+          get: jest.fn((key: string) => {
+            if (key === "defer.perProject") {
+              return { finance_general: storedDeferConfig };
+            }
+            if (key === "query.limit") {
+              return 500;
+            }
+            return undefined;
+          }),
+          has: jest.fn(),
+          update: jest.fn(),
+        }),
+      );
+    }
+
+    const financeUri = vscode.Uri.file("/test/workspace/finance_general");
+
+    it("records fresh run_results before surfacing Encountered an error", async () => {
+      dbtProject = await initializedProject();
+      const runResultsHandler = jest.fn();
+      dbtProject.onRunResults(runResultsHandler);
+
+      const mockCommand = {
+        execute: jest.fn(() => {
+          writeRunResults();
+          return Promise.resolve({
+            stdout: "Encountered an error: model failed",
+          });
+        }),
+        focus: false,
+        showProgress: false,
+        signal: undefined,
+        getCommandAsString: () => "dbt run --select my_model",
+      };
+
+      enqueueCommand(
+        commandDeps(dbtProject),
+        mockCommand as unknown as DBTCommand,
+      );
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(mockCommand.execute).toHaveBeenCalled();
+      expect(mockRunHistoryService.addEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "inv-1", projectName: "test-project" }),
+      );
+      expect(runResultsHandler).toHaveBeenCalledWith(
+        expect.objectContaining({ uniqueIds: ["model.test.model1"] }),
+      );
+      expect(mockRunHistoryService.notifyCommandFailed).toHaveBeenCalledWith(
+        "dbt run --select my_model",
+        expect.stringContaining("Encountered an error:"),
+      );
+      const addOrder =
+        mockRunHistoryService.addEntry.mock.invocationCallOrder[0];
+      const failOrder =
+        mockRunHistoryService.notifyCommandFailed.mock.invocationCallOrder[0];
+      expect(addOrder).toBeLessThan(failOrder);
+    });
+
+    it("reads defer.perProject scoped to the project root", async () => {
+      mockDeferSettings({
+        deferToProduction: true,
+        favorState: false,
+        manifestPathForDeferral: "/tmp/manifest.json",
+      });
+      dbtProject = newProject(financeUri);
+
+      expect(dbtProject.getDeferConfig()).toEqual({
+        deferToProduction: true,
+        favorState: false,
+        manifestPath: path.resolve("/tmp/manifest.json"),
+      });
+      expect(vscode.workspace.getConfiguration).toHaveBeenCalledWith(
+        CONFIGURATION_SECTION,
+        financeUri,
+      );
+    });
+
+    it("resolves a relative manifestPathForDeferral against the project root", async () => {
+      mockDeferSettings({
+        deferToProduction: true,
+        favorState: false,
+        manifestPathForDeferral: "state",
+      });
+      dbtProject = newProject(financeUri);
+
+      expect(dbtProject.getDeferConfig()?.manifestPath).toBe(
+        path.join(financeUri.fsPath, "state"),
+      );
+    });
+
+    it("does not honor a remote manifestPathType or hosted integration id from settings", async () => {
+      // Not part of the settings schema, but exercised in case a user's settings.json sets it directly.
+      mockDeferSettings({
+        deferToProduction: true,
+        favorState: false,
+        manifestPathForDeferral: "/tmp/manifest.json",
+        manifestPathType: "remote",
+        dbtCoreIntegrationId: 42,
+      });
+      dbtProject = newProject(financeUri);
+
+      expect(dbtProject.getDeferConfig()).toEqual({
+        deferToProduction: true,
+        favorState: false,
+        manifestPath: path.resolve("/tmp/manifest.json"),
+      });
+    });
+
+    it("does not parse run_results when execute rejects", async () => {
+      dbtProject = await initializedProject();
+
+      const mockCommand = {
+        execute: jest.fn(() => {
+          writeRunResults();
+          return Promise.reject(new Error("cancelled"));
+        }),
+        focus: false,
+        showProgress: false,
+        signal: undefined,
+        getCommandAsString: () => "dbt run --select my_model",
+      };
+
+      enqueueCommand(
+        commandDeps(dbtProject),
+        mockCommand as unknown as DBTCommand,
+      );
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(mockRunHistoryService.addEntry).not.toHaveBeenCalled();
+      expect(mockRunHistoryService.notifyCommandFailed).toHaveBeenCalledWith(
+        "dbt run --select my_model",
+        "Error: cancelled",
+      );
+    });
+  });
+
+  describe("Fusion CLI operation routing", () => {
+    async function queued() {
+      const execute = jest.fn(() => Promise.resolve({ stdout: "" }));
+      mockFusionCli.prepare.mockImplementation(() => ({
+        execute,
+        focus: false,
+        showProgress: false,
+        signal: undefined,
+        getCommandAsString: () => "dbt",
+      }));
+      dbtProject = await initializedProject();
+      return execute;
+    }
+
+    it.each([
+      ["", "", "my_model"],
+      ["+", "", "+my_model"],
+      ["", "+", "my_model+"],
+      ["+", "+", "+my_model+"],
+    ])(
+      "prepares run and build for %s my_model %s",
+      async (plusOperatorLeft, plusOperatorRight, select) => {
+        await queued();
+        const params = {
+          plusOperatorLeft,
+          modelName: "my_model",
+          plusOperatorRight,
+        };
+
+        await dbtProject.runModel(params);
+        await dbtProject.buildModel(params);
+        await dbtProject.compileModel(params);
+
+        expect(mockFusionCli.prepare.mock.calls.map(([c]: any) => c)).toEqual([
+          { kind: "run", select },
+          { kind: "build", select },
+          { kind: "compile", select },
+        ]);
+      },
+    );
+
+    it("prepares a whole-project build and test selections", async () => {
+      await queued();
+
+      await dbtProject.buildProject();
+      await dbtProject.runTest("my_test");
+      await dbtProject.runModelTest("my_model");
+
+      expect(mockFusionCli.prepare.mock.calls.map(([c]: any) => c)).toEqual([
+        { kind: "build" },
+        { kind: "test", select: "my_test" },
+        { kind: "test", select: "my_model" },
+      ]);
+    });
+
+    it("queues the prepared command for execution", async () => {
+      const execute = await queued();
+
+      await dbtProject.compileModel({
+        plusOperatorLeft: "",
+        modelName: "my_model",
+        plusOperatorRight: "",
+      });
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(execute).toHaveBeenCalled();
+    });
+
+    it("logs a preparation failure instead of rejecting", async () => {
+      dbtProject = await initializedProject();
+      mockFusionCli.prepare.mockImplementation(() => {
+        throw new Error("compilation failed");
+      });
+
+      await expect(
+        dbtProject.compileModel({
+          plusOperatorLeft: "",
+          modelName: "my_model",
+          plusOperatorRight: "",
+        }),
+      ).resolves.toBeUndefined();
+
+      expect(mockRunHistoryService.notifyCommandFailed).toHaveBeenCalledWith(
+        "dbt compile --select my_model",
+        "Error: compilation failed",
+      );
+      expect(mockTerminal.error).toHaveBeenCalledWith(
+        "commandPreparationError",
+        "Unable to prepare dbt compile --select my_model",
+        expect.any(Error),
+      );
+    });
+
+    it("names the configured commandParams in a preparation failure", async () => {
+      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
+        get: jest.fn((key: string) =>
+          key === "run.additionalParams" ? ["--full-refresh"] : undefined,
+        ),
+        has: jest.fn(),
+        update: jest.fn(),
+      });
+      dbtProject = await initializedProject();
+      mockFusionCli.prepare.mockImplementation(() => {
+        throw new Error("no executable");
+      });
+
+      await dbtProject.runModel({
+        plusOperatorLeft: "+",
+        modelName: "my_model",
+        plusOperatorRight: "",
+      });
+
+      expect(mockRunHistoryService.notifyCommandFailed).toHaveBeenCalledWith(
+        "dbt run --select +my_model --full-refresh",
+        "Error: no executable",
+      );
+    });
+
+    it("routes clean and installDeps through the Fusion CLI", async () => {
+      dbtProject = await initializedProject();
+
+      await dbtProject.clean();
+      await dbtProject.installDeps();
+
+      expect(mockFusionCli.run).toHaveBeenCalledWith({ kind: "clean" });
+      expect(mockFusionCli.run).toHaveBeenCalledWith({ kind: "deps" });
+    });
+  });
+});
+
+function mockTerminal(): DBTTerminal {
+  return {
+    debug: () => undefined,
+    info: () => undefined,
+    log: () => undefined,
+    error: () => undefined,
+    warn: () => undefined,
+    trace: () => undefined,
+  } as unknown as DBTTerminal;
+}
+
+function stubDelegate(
+  projectRoot: string,
+  overrides: Partial<FusionCli> = {},
+): FusionCli {
+  const stub: Partial<FusionCli> = {
+    refreshProjectConfig: jest.fn(async () => undefined),
+    rebuildManifest: jest.fn(async () => undefined),
+    dispose: jest.fn(),
+    getDiagnostics: () => ({
+      projectConfigDiagnostics: [],
+      rebuildManifestDiagnostics: [],
+    }),
+    getProjectName: () => "single_project",
+    getModelPaths: () => [path.join(projectRoot, "models")],
+    getMacroPaths: () => [path.join(projectRoot, "macros")],
+    getSeedPaths: () => [path.join(projectRoot, "seeds")],
+    getTargetPath: () => path.join(projectRoot, "target"),
+    ...overrides,
+  };
+  return stub as FusionCli;
+}
+
+async function buildProject(
+  projectRoot: string,
+  fusionDelegate: FusionCli,
+  onManifestChanged = new vscode.EventEmitter<ManifestCacheChangedEvent>(),
+): Promise<Project> {
+  const terminal = mockTerminal();
+  const project = buildTestProject(projectRoot, () => fusionDelegate, {
+    terminal,
+    parsers: realParsers(terminal),
+    onManifestChanged,
+  });
+  await project.initialize();
+  return project;
+}
+
+function copyFixture(prefix: string): { root: string; targetDir: string } {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), prefix));
+  fs.cpSync(fixtureRoot, root, { recursive: true });
+  return { root, targetDir: path.join(root, "target") };
+}
+
+describe("Project manifest", () => {
+  let tempRoot: string;
+
+  afterEach(() => {
+    if (tempRoot && fs.existsSync(tempRoot)) {
+      fs.rmSync(tempRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("publishes contract map keys from manifest.json", async () => {
+    const { root, targetDir } = copyFixture("fusion-int-");
+    tempRoot = root;
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.copyFileSync(
+      path.join(fixtureRoot, "manifest.contract.json"),
+      path.join(targetDir, MANIFEST_FILE),
+    );
+    const emitter = new vscode.EventEmitter<ManifestCacheChangedEvent>();
+    const fire = jest.spyOn(emitter, "fire");
+    const project = await buildProject(
+      root,
+      stubDelegate(root, {
+        getTargetPath: () => targetDir,
+        getPackageInstallPath: () => path.join(root, "dbt_packages"),
+      }),
+      emitter,
+    );
+    const lastPublication = () => {
+      const calls = fire.mock.calls;
+      const publication = calls[calls.length - 1]?.[0].added?.[0];
+      if (!publication) {
+        throw new Error("Expected a published manifest event");
+      }
+      return publication;
+    };
+
+    await project.parseManifest();
+    const first = lastPublication();
+    await project.parseManifest();
+    const second = lastPublication();
+
+    expect([...first.nodeMetaMap.nodes()].length).toBeGreaterThan(0);
+    expect(first.graphMetaMap.parents.size).toBeGreaterThan(0);
+    expect(first.macroMetaMap.size).toBeGreaterThan(0);
+    expect(first.modelDepthMap.size).toBeGreaterThan(0);
+    expect(first).toEqual(
+      expect.objectContaining({ project, metadataProducer: "manifest" }),
+    );
+    expect(second.publicationEpoch).toBe(first.publicationEpoch + 1);
+    expect(project.getPublicationEpoch()).toBe(second.publicationEpoch);
+    expect(project.getMetadataSnapshot()).toBe(second);
+    await project.dispose();
+  });
+
+  it("reads the adapter type from manifest metadata, unknown before a manifest", async () => {
+    const { root, targetDir } = copyFixture("fusion-adapter-");
+    tempRoot = root;
+    const project = await buildProject(
+      root,
+      stubDelegate(root, {
+        getTargetPath: () => targetDir,
+        getPackageInstallPath: () => path.join(root, "dbt_packages"),
+      }),
+    );
+    expect(project.getAdapterType()).toBe("unknown");
+
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(fixtureRoot, "manifest.contract.json"), "utf8"),
+    );
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(targetDir, MANIFEST_FILE),
+      JSON.stringify({ ...manifest, metadata: { adapter_type: "duckdb" } }),
+    );
+    await project.parseManifest();
+
+    expect(project.getAdapterType()).toBe("duckdb");
+
+    const { metadata: _metadata, ...withoutMetadata } = manifest;
+    fs.writeFileSync(
+      path.join(targetDir, MANIFEST_FILE),
+      JSON.stringify(withoutMetadata),
+    );
+    await project.parseManifest();
+    expect(project.getAdapterType()).toBe("duckdb");
+    await project.dispose();
+  });
+
+  describe("query column types", () => {
+    function fabricatedExecuteSQL(): jest.Mock<() => Promise<QueryExecution>> {
+      // Mirrors the published integration's real dbt show --output json shape: real row
+      // values, but column_types fabricated as the literal string "string" for every column.
+      return jest.fn(
+        async () =>
+          new QueryExecution(
+            async () => undefined,
+            async () => ({
+              table: {
+                column_names: ["a", "b"],
+                column_types: ["string", "string"],
+                rows: [[1, "x"]],
+              },
+              compiled_sql: "select 1 as a, 'x' as b",
+              raw_sql: "select 1 as a, 'x' as b",
+              modelName: "my_model",
+            }),
+          ),
+      );
+    }
+
+    it("reports every column type as unknown for executeSQLWithLimit", async () => {
+      tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-show-"));
+      const executeSQL = fabricatedExecuteSQL();
+      const project = await buildProject(
+        tempRoot,
+        stubDelegate(tempRoot, { executeSQL }),
+      );
+
+      const execution = await project.executeSQLWithLimit(
+        "select 1 as a, 'x' as b",
+        "my_model",
+        500,
+      );
+      const result = await execution.executeQuery();
+
+      expect(executeSQL).toHaveBeenCalled();
+      expect(result.table.column_types).toEqual([null, null]);
+      expect(result.table.column_names).toEqual(["a", "b"]);
+      await project.dispose();
+    });
+
+    it("reports every column type as unknown for immediatelyExecuteSQLWithLimit", async () => {
+      tempRoot = fs.mkdtempSync(
+        path.join(os.tmpdir(), "fusion-show-immediate-"),
+      );
+      const project = await buildProject(
+        tempRoot,
+        stubDelegate(tempRoot, { executeSQL: fabricatedExecuteSQL() }),
+      );
+
+      const result = await project.immediatelyExecuteSQLWithLimit(
+        "select 1 as a, 'x' as b",
+        "my_model",
+        500,
+      );
+
+      expect(result.columnTypes).toEqual([null, null]);
+      await project.dispose();
+    });
+
+    it("forwards cancellation to the underlying query execution", async () => {
+      tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-show-cancel-"));
+      const cancel = jest.fn(async () => undefined);
+      const project = await buildProject(
+        tempRoot,
+        stubDelegate(tempRoot, {
+          executeSQL: jest.fn(
+            async () =>
+              new QueryExecution(cancel, async () => {
+                throw new Error("should not execute after cancel in this test");
+              }),
+          ),
+        }),
+      );
+
+      const execution = await project.executeSQLWithLimit(
+        "select 1",
+        "my_model",
+        500,
+      );
+      await execution.cancel();
+
+      expect(cancel).toHaveBeenCalled();
+      await project.dispose();
+    });
+  });
+});
+
+describe("Project manifest trigger", () => {
+  const root = "/project";
+  let rebuildManifest: jest.Mock<() => Promise<void>>;
+  let refreshProjectConfig: jest.Mock<() => Promise<void>>;
+  let project: Project;
+  let watcher: MockFileSystemWatcher;
+
+  beforeEach(async () => {
+    jest.useFakeTimers();
+    createdFileSystemWatchers.length = 0;
+    rebuildManifest = jest.fn(async () => undefined);
+    refreshProjectConfig = jest.fn(async () => undefined);
+    project = await buildProject(
+      root,
+      stubDelegate(root, { rebuildManifest, refreshProjectConfig }),
+    );
+    expect(createdFileSystemWatchers).toHaveLength(1);
+    watcher = createdFileSystemWatchers[0];
+    rebuildManifest.mockClear();
+    refreshProjectConfig.mockClear();
+  });
+
+  afterEach(async () => {
+    await project.dispose();
+    jest.useRealTimers();
+  });
+
+  it("watches source extensions under the project root", () => {
+    expect(watcher.pattern).toEqual({
+      base: root,
+      pattern: "**/*.{sql,yml,yaml,csv}",
+    });
+  });
+
+  it("rebuilds once after the debounce for model edits", async () => {
+    const sourceFileChanged = jest.fn();
+    project.onSourceFileChanged(sourceFileChanged);
+    watcher.fire("change", path.join(root, "models", "a.sql"));
+    watcher.fire("create", path.join(root, "models", "b.sql"));
+    watcher.fire("delete", path.join(root, "seeds", "c.csv"));
+    await jest.advanceTimersByTimeAsync(499);
+    expect(rebuildManifest).not.toHaveBeenCalled();
+    await jest.advanceTimersByTimeAsync(1);
+    expect(rebuildManifest).toHaveBeenCalledTimes(1);
+    expect(refreshProjectConfig).not.toHaveBeenCalled();
+    expect(sourceFileChanged).toHaveBeenCalledTimes(1);
+    expect(project.getPublicationEpoch()).toBe(0);
+  });
+
+  it("ignores edits outside the model, macro and seed paths", async () => {
+    watcher.fire("change", path.join(root, "target", "compiled", "a.sql"));
+    watcher.fire("change", path.join(root, "models_old", "a.sql"));
+    await jest.advanceTimersByTimeAsync(1000);
+    expect(rebuildManifest).not.toHaveBeenCalled();
+  });
+
+  it("refreshes config, then rebuilds, after a dbt_project.yml edit", async () => {
+    const configChanged = jest.fn();
+    project.onProjectConfigChanged(configChanged);
+    watcher.fire("change", path.join(root, "dbt_project.yml"));
+    await jest.advanceTimersByTimeAsync(500);
+    expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
+    expect(configChanged).toHaveBeenCalledTimes(1);
+    expect(rebuildManifest).toHaveBeenCalledTimes(1);
+    expect(refreshProjectConfig.mock.invocationCallOrder[0]).toBeLessThan(
+      rebuildManifest.mock.invocationCallOrder[0],
+    );
+  });
+
+  it("drops a pending rebuild and stops watching on dispose", async () => {
+    watcher.fire("change", path.join(root, "models", "a.sql"));
+    await project.dispose();
+    await jest.advanceTimersByTimeAsync(1000);
+    expect(rebuildManifest).not.toHaveBeenCalled();
+    expect(watcher.dispose).toHaveBeenCalled();
+    expect(watcher.listeners.change).toHaveLength(0);
+  });
+});

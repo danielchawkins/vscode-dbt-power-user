@@ -22,11 +22,11 @@ Plan section 2.9 sets the target operation routing: the Fusion client becomes au
 
 ## The metadata port
 
-The codebase is manifest-driven: `dbt parse` produces `manifest.json`, and `FusionProjectIntegration` (`src/dbt_client/fusionProjectIntegration.ts`) builds the metadata maps behind `ManifestCacheProjectAddedEvent` (`src/dbt_client/event/manifestCacheChangedEvent.ts`). `src/metadata/projectMetadataSource.ts` declares `ProjectMetadataSource`, the port every producer implements; `src/metadata/manifestMetadataSource.ts` is the only implementation, a thin adapter over `DBTProject.rebuildManifest` and manifest publication. Every panel, tree, lens, and language provider consumes the event through `QueryManifestService`, which is the sole mediator and must not gain a second consumer seam.
+The codebase is manifest-driven: `dbt parse` produces `manifest.json`, and `Project` (`src/projects/project.ts`, exported to existing callers as `DBTProject`) builds the metadata maps through `ManifestRebuild` behind `ManifestCacheProjectAddedEvent` (`src/dbt_client/event/manifestCacheChangedEvent.ts`). `src/metadata/projectMetadataSource.ts` declares `ProjectMetadataSource`, the port every producer implements; `src/metadata/manifestMetadataSource.ts` is the only implementation, a thin adapter over `DBTProject.rebuildManifest` and manifest publication. Every panel, tree, lens, and language provider consumes the event through `QueryManifestService`, which is the sole mediator and must not gain a second consumer seam.
 
 The Fusion LSP does not populate this port: `dbt.getProjectInfo`, `dbt.listNodes`, and `dbt.getCurrentNode` lack macros, docs, exposures, tests, metrics, semantic models, and depth inputs (see [`docs/lsp-metadata-gaps.md`](lsp-metadata-gaps.md)). A source that always refuses to publish is dead code, so no LSP metadata source exists; the manifest source remains selected until a contract-complete LSP payload exists.
 
-`FusionProjectIntegration` runs dbt through `FusionCli`, owns model, macro, seed, and `dbt_project.yml` watching, and reads `run_results.json` only after a command it launched and awaited, comparing pre- and post-command content; it has no ambient `target/` watcher.
+`Project` runs dbt through `FusionCli`, owns model, macro, seed, and `dbt_project.yml` watching, and reads `run_results.json` only after a command it launched and awaited, comparing pre- and post-command content; it has no ambient `target/` watcher.
 
 ## Panels and webview messaging
 

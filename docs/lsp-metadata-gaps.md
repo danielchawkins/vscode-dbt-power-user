@@ -24,7 +24,7 @@ The three commands closest to project metadata are `dbt.getProjectInfo`, `dbt.li
 
 ## Why no LSP source is written
 
-A `ProjectMetadataSource` that can never publish a complete event is dead code — it would either omit required fields or `refresh()` into permanent failure. Because the commands available on Fusion 2.0.5 supply at most a project name, an adapter type, and an unreliable model count, no LSP-backed implementation exists. `FusionProjectIntegration` continues to parse `manifest.json` locally and publish through `ManifestMetadataSource`, per plan step 6.2 and [`docs/architecture.md`](architecture.md#the-metadata-port).
+A `ProjectMetadataSource` that can never publish a complete event is dead code — it would either omit required fields or `refresh()` into permanent failure. Because the commands available on Fusion 2.0.5 supply at most a project name, an adapter type, and an unreliable model count, no LSP-backed implementation exists. `Project` continues to parse `manifest.json` locally and publish through `ManifestMetadataSource`, per plan step 6.2 and [`docs/architecture.md`](architecture.md#the-metadata-port).
 
 ## Revisiting this gap
 

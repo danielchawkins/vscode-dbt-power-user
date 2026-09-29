@@ -9,25 +9,29 @@ import {
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { ConfigurationChangeEvent, Uri, window, workspace } from "vscode";
 import {
-  FusionCommandIntegrationFactory,
-  FusionProjectIntegration,
-  FusionProjectIntegrationEvents,
-} from "../../dbt_client/fusionProjectIntegration";
+  ConfigurationChangeEvent,
+  DiagnosticSeverity,
+  Uri,
+  window,
+  workspace,
+} from "vscode";
 import { DBTTerminal } from "../../dbt_integration";
 import {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
 } from "../../fusion/commandProcessExecution";
+import { FusionCommandIntegrationFactory } from "../../fusion/executableLifecycle";
 import { FusionCli } from "../../fusion/fusionCli";
 import {
   DBT_PATH_SETTING,
   FusionExecutable,
 } from "../../fusion/fusionExecutable";
+import { Project } from "../../projects/project";
 import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { createdFileSystemWatchers } from "../mock/vscode";
+import { buildTestProject } from "../projectHarness";
 
 const ENV_MARKER = "FUSION_PU_CLI_ENV";
 
@@ -136,27 +140,21 @@ function buildIntegration(
     FusionExecutable | { kind: "notFound"; path: string; source: "configured" }
   >,
   fusionIntegrationFactory: FusionCommandIntegrationFactory,
-): FusionProjectIntegration {
-  const terminal = mockTerminal();
-  return new FusionProjectIntegration(
-    { resolve: jest.fn(async () => resolve()) },
-    fusionIntegrationFactory,
-    projectRoot,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    terminal,
-    {} as never,
-    {} as never,
-  );
+): Project {
+  return buildTestProject(projectRoot, fusionIntegrationFactory, {
+    resolver: { resolve: jest.fn(async () => resolve()) },
+    terminal: mockTerminal(),
+  });
+}
+
+function executableErrors(project: Project) {
+  return project
+    .getAllDiagnostic()
+    .filter(
+      (diagnostic) =>
+        diagnostic.code === "fusion-executable" &&
+        diagnostic.severity === DiagnosticSeverity.Error,
+    );
 }
 
 function pathChangeEvent(root: string): ConfigurationChangeEvent {
@@ -294,14 +292,7 @@ describe("Fusion CLI executable wiring", () => {
     );
 
     await integration.initialize();
-    expect(integration.getDiagnostics().projectConfigDiagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          source: "fusion-executable",
-          severity: "error",
-        }),
-      ]),
-    );
+    expect(executableErrors(integration)).toHaveLength(1);
     expect(() => integration.getFusionCli()).toThrow(/not initialized/);
 
     fs.rmSync(root, { recursive: true, force: true });
@@ -338,14 +329,7 @@ describe("Fusion CLI executable wiring", () => {
       healthyIntegration.initialize(),
     ]);
 
-    expect(failedIntegration.getDiagnostics().projectConfigDiagnostics).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          source: "fusion-executable",
-          severity: "error",
-        }),
-      ]),
-    );
+    expect(executableErrors(failedIntegration)).toHaveLength(1);
     expect(() => failedIntegration.getFusionCli()).toThrow(/not initialized/);
     expect(healthyIntegration.getFusionCli()).toBeDefined();
     expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
@@ -416,6 +400,50 @@ describe("Fusion CLI executable wiring", () => {
     fs.rmSync(rootB, { recursive: true, force: true });
   });
 
+  it("clears the previous executable's rebuild diagnostics when re-resolution fails", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-cli-stale-"));
+    prepareProjectRoot(root);
+    let missing = false;
+    const integration = buildIntegration(
+      root,
+      async () =>
+        missing
+          ? { kind: "notFound", path: "/missing/dbt", source: "configured" }
+          : sampleExecutable("/bin/dbt"),
+      lifecycleFactory(root, {
+        getDiagnostics: () => ({
+          projectConfigDiagnostics: [],
+          rebuildManifestDiagnostics: [
+            {
+              message: "stale rebuild error",
+              severity: "error",
+              filePath: path.join(root, "models", "a.sql"),
+              source: "dbt",
+              category: "error",
+            },
+          ],
+        }),
+      }),
+    );
+    await integration.initialize();
+    integration.updateDiagnosticsInProblemsPanel();
+    expect(integration.getAllDiagnostic().map((d) => d.code)).toEqual([
+      "rebuild-manifest",
+    ]);
+
+    missing = true;
+    for (const listener of configListeners) {
+      listener(pathChangeEvent(root));
+    }
+    await waitFor(() => expect(executableErrors(integration)).toHaveLength(1));
+
+    expect(integration.getAllDiagnostic().map((d) => d.code)).toEqual([
+      "fusion-executable",
+    ]);
+    await integration.dispose();
+    fs.rmSync(root, { recursive: true, force: true });
+  });
+
   it.each([
     ["refreshProjectConfig", "refreshProjectConfig"],
     ["rebuildManifest", "rebuildManifest"],
@@ -445,10 +473,7 @@ describe("Fusion CLI executable wiring", () => {
           dispose: delegateDispose as () => void,
         }),
       );
-      integration.on(
-        FusionProjectIntegrationEvents.PROJECT_CONFIG_CHANGED,
-        projectConfigChanged,
-      );
+      integration.onProjectConfigChanged(projectConfigChanged);
 
       const watchersBefore = createdFileSystemWatchers.length;
       const initPromise = integration.initialize();

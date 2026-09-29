@@ -1,10 +1,12 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
+import { EventEmitter, Uri } from "vscode";
+import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FusionStatus } from "../../fusion/fusionStatus";
+import { Project } from "../../projects/project";
 
-import { FusionProjectIntegration } from "../../dbt_client/fusionProjectIntegration";
 import { ConfiguredFusionExecutableResolver } from "../../fusion/fusionExecutable";
 import { esmDirname } from "../esmDirname";
 import * as vscodeMock from "../mock/vscode";
@@ -117,15 +119,18 @@ describe("Fusion-only integration wiring", () => {
     expect(container.isBound("RuntimePythonEnvironment")).toBe(false);
   });
 
-  it("uses the Fusion project integration", () => {
-    type IntegrationFactory = (projectRoot: string) => FusionProjectIntegration;
+  it("builds a Project from Factory<DBTProject>", async () => {
+    type ProjectFactory = (
+      projectRoot: Uri,
+      onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
+    ) => Project;
 
-    const factory = container.get<IntegrationFactory>(
-      "Factory<FusionProjectIntegration>",
-    );
-    const integration = factory("/tmp/project");
+    expect(container.isBound("Factory<FusionProjectIntegration>")).toBe(false);
+    const factory = container.get<ProjectFactory>("Factory<DBTProject>");
+    const project = factory(Uri.file("/tmp/project"), new EventEmitter());
 
-    expect(integration).toBeInstanceOf(FusionProjectIntegration);
-    expect(() => integration.getFusionCli()).toThrow(/not initialized/);
+    expect(project).toBeInstanceOf(Project);
+    expect(() => project.getFusionCli()).toThrow(/not initialized/);
+    await project.dispose();
   });
 });

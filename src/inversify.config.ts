@@ -4,7 +4,6 @@ import { DBTProject } from "./dbt_client/dbtProject";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
-import { FusionProjectIntegration } from "./dbt_client/fusionProjectIntegration";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import {
   ChildrenParentParser,
@@ -146,63 +145,49 @@ container
   .inSingletonScope();
 
 container
-  .bind<Factory<FusionProjectIntegration, [string]>>(
-    "Factory<FusionProjectIntegration>",
+  .bind<Factory<DBTProject, [Uri, EventEmitter<ManifestCacheChangedEvent>]>>(
+    "Factory<DBTProject>",
   )
   .toFactory((context: ResolutionContext) => {
-    return (projectRoot: string) => {
-      const container = context;
-      const terminal = container.get<DBTTerminal>("DBTTerminal");
-      const commandProcessExecutionFactory = container.get(
+    return (
+      projectRoot: Uri,
+      onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
+    ) => {
+      const terminal = context.get<DBTTerminal>("DBTTerminal");
+      const commandProcessExecutionFactory = context.get(
         CommandProcessExecutionFactory,
       );
-      return new FusionProjectIntegration(
-        container.get(ConfiguredFusionExecutableResolver),
-        (executable, root) =>
+      return new DBTProject({
+        dbtProjectLogFactory: context.get("Factory<DBTProjectLog>"),
+        terminal,
+        sharedState: context.get(SharedStateService),
+        runHistoryService: context.get(RunHistoryService),
+        resolver: context.get(ConfiguredFusionExecutableResolver),
+        cliFactory: (executable, root) =>
           new FusionCli(
             executable,
             () => readProjectSnapshot(Uri.file(root)),
             commandProcessExecutionFactory,
             terminal,
           ),
+        parsers: {
+          childrenParentParser: context.get(ChildrenParentParser),
+          nodeParser: context.get(NodeParser),
+          macroParser: context.get(MacroParser),
+          metricParser: context.get(MetricParser),
+          graphParser: context.get(GraphParser),
+          sourceParser: context.get(SourceParser),
+          testParser: context.get(TestParser),
+          unitTestParser: context.get(UnitTestParser),
+          exposureParser: context.get(ExposureParser),
+          functionParser: context.get(FunctionParser),
+          docParser: context.get(DocParser),
+          modelDepthParser: context.get(ModelDepthParser),
+          semanticModelParser: context.get(SemanticModelParser),
+        },
         projectRoot,
-        container.get(ChildrenParentParser),
-        container.get(NodeParser),
-        container.get(MacroParser),
-        container.get(MetricParser),
-        container.get(GraphParser),
-        container.get(SourceParser),
-        container.get(TestParser),
-        container.get(UnitTestParser),
-        container.get(ExposureParser),
-        container.get(FunctionParser),
-        container.get(DocParser),
-        terminal,
-        container.get(ModelDepthParser),
-        container.get(SemanticModelParser),
-      );
-    };
-  });
-
-container
-  .bind<Factory<DBTProject, [Uri, EventEmitter<ManifestCacheChangedEvent>]>>(
-    "Factory<DBTProject>",
-  )
-  .toFactory((context: ResolutionContext) => {
-    return (
-      path: Uri,
-      _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
-    ) => {
-      const container = context;
-      return new DBTProject(
-        container.get("Factory<DBTProjectLog>"),
-        container.get("DBTTerminal"),
-        container.get(SharedStateService),
-        container.get("Factory<FusionProjectIntegration>"),
-        container.get(RunHistoryService),
-        path,
-        _onManifestChanged,
-      );
+        onManifestChanged,
+      });
     };
   });
 

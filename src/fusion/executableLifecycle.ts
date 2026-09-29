@@ -18,7 +18,7 @@ export type FusionCommandIntegrationFactory = (
 ) => FusionCli;
 
 export const EXECUTABLE_DIAGNOSTIC_SOURCE = "fusion-executable";
-const LOG_SOURCE = "FusionProjectIntegration";
+const LOG_SOURCE = "Project";
 
 export interface ExecutableLifecycleHooks {
   /**

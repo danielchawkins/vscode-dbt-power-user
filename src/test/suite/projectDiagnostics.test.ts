@@ -68,4 +68,29 @@ describe("ProjectDiagnostics", () => {
 
     expect(diagnostics.firstError()?.message).toBe("broken");
   });
+
+  it("splits config data by source and clears executable data alone", () => {
+    const diagnostics = new ProjectDiagnostics(file);
+    const executable = { ...data("missing dbt", "error") };
+    executable.source = "fusion-executable";
+    diagnostics.addConfig(data("config", "warning"));
+    diagnostics.addConfig(executable);
+    const codes = () => diagnostics.all().map((d) => [d.message, d.code]);
+
+    expect(codes()).toEqual([
+      ["config", "project-config"],
+      ["missing dbt", "fusion-executable"],
+    ]);
+
+    diagnostics.replaceExecutable(undefined);
+    expect(codes()).toEqual([["config", "project-config"]]);
+
+    diagnostics.replaceExecutable(executable);
+    expect(codes()).toEqual([
+      ["config", "project-config"],
+      ["missing dbt", "fusion-executable"],
+    ]);
+    diagnostics.clearConfig();
+    expect(codes()).toEqual([]);
+  });
 });

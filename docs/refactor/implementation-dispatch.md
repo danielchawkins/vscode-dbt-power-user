@@ -68,7 +68,7 @@ Steps 1.2 through 3.15 and Phase 4.1 through 4.5 are complete at this tip. Phase
 
 **Research artifacts precede plan integration.** Stack reviewed research revisions directly beneath the plan revision that consumes them, so every link resolves and evidence changes remain independently reviewable.
 
-**Correction to the plan's file path for 1.2:** `DBTFusionCommandDetection` lives in `@altimateai/dbt-integration`, not `src/dbt_client/dbtFusionCommandIntegration.ts`. Do not patch `node_modules`. Put `parseFusionVersion` / `judgeFusionVersion` in `src/fusion/fusionVersion.ts`. Executable resolution and version judgment are per Declared Project through `ConfiguredFusionExecutableResolver` during `FusionProjectIntegration.initialize`; there is no global bare-`dbt` activation gate.
+**Correction to the plan's file path for 1.2:** `DBTFusionCommandDetection` lives in `@altimateai/dbt-integration`, not `src/dbt_client/dbtFusionCommandIntegration.ts`. Do not patch `node_modules`. Put `parseFusionVersion` / `judgeFusionVersion` in `src/fusion/fusionVersion.ts`. Executable resolution and version judgment are per Declared Project through `ConfiguredFusionExecutableResolver` during `Project.initialize`; there is no global bare-`dbt` activation gate.
 
 **Correction for 1.3:** collaborators are constructed by Inversify before `activate()`. An early return in `activate()` cannot un-construct them. The contract is: decide conflict and `enabled` before `initializeDBTProjects()`, before MCP start, before watchers and status bars initialize, and before any notification other than the conflict error. Do not re-architect the container in this step.
 

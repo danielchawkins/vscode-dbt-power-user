@@ -99,17 +99,6 @@
       "count": 1
     }
   },
-  "src/dbt_client/dbtProject.ts": {
-    "@typescript-eslint/no-floating-promises": {
-      "count": 3
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/dbt_client/dbtProjectContainer.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 4
@@ -124,11 +113,6 @@
       "count": 1
     },
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/dbt_client/fusionProjectIntegration.ts": {
-    "max-params": {
       "count": 1
     }
   },
@@ -365,14 +349,6 @@
     }
   },
   "src/test/suite/cteCodeLensProvider.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/test/suite/dbtProject.test.ts": {
-    "@typescript-eslint/no-floating-promises": {
-      "count": 2
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     }

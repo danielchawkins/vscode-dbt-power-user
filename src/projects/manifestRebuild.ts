@@ -90,17 +90,13 @@ export class ManifestRebuild {
         return;
       }
       this.terminal.debug(
-        "FusionProjectIntegration",
+        "Project",
         `Finished rebuilding the manifest for project at ${this.project.getProjectRoot()}`,
       );
       await afterRebuild();
     } catch (error) {
       if (this.lifecycle.isCurrent(generation)) {
-        this.terminal.error(
-          "FusionProjectIntegration",
-          "Error rebuilding manifest",
-          error,
-        );
+        this.terminal.error("Project", "Error rebuilding manifest", error);
         throw error;
       }
     } finally {
@@ -115,7 +111,7 @@ export class ManifestRebuild {
     const targetPath = delegate.getTargetPath();
     if (!targetPath) {
       this.terminal.debug(
-        "FusionProjectIntegration",
+        "Project",
         "targetPath should be defined at this stage for project " +
           this.project.getProjectRoot(),
       );

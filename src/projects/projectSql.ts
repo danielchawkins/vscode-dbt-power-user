@@ -1,4 +1,6 @@
+import { window } from "vscode";
 import {
+  type DBTTerminal,
   type ExecuteSQLResult,
   QueryExecution,
   type QueryExecutionResult,
@@ -6,6 +8,27 @@ import {
 import { FusionCli } from "../fusion/fusionCli";
 
 type SqlExecutor = Pick<FusionCli, "executeSQL">;
+
+/** The project state the query wrappers read. */
+export interface SqlProject {
+  getFusionCli(): SqlExecutor;
+  getProjectName(): string;
+  getAdapterType(): string;
+  throwDiagnosticsErrorIfAvailable(): void;
+}
+
+/** The collaborators the query wrappers run against. */
+export interface SqlDeps {
+  project: SqlProject;
+  terminal: DBTTerminal;
+}
+
+/** A deferred query execution the query panel runs. */
+export type QueryPanelPayload = {
+  query: string;
+  fn: Promise<QueryExecution>;
+  projectName: string;
+};
 
 /**
  * `dbt show --output json` reports no column types; the published integration fabricates
@@ -102,12 +125,104 @@ export async function executeSql(
   };
 }
 
+async function queryExecution(
+  project: SqlProject,
+  query: string,
+  modelName: string,
+  limit: number,
+): Promise<QueryExecution> {
+  return executeSql(project.getFusionCli(), query, modelName, limit, false);
+}
+
+function logQuery(deps: SqlDeps, query: string, limit: number): void {
+  deps.terminal.info("executeSQL", "Executed query: " + query, true, {
+    adapter: deps.project.getAdapterType(),
+    limit: limit.toString(),
+  });
+}
+
+/** The query-panel payload for a deferred run of `query`; undefined, after a message, when `limit` <= 0. */
+export function queryPanelPayload(
+  deps: SqlDeps,
+  query: string,
+  modelName: string,
+  limit: number,
+): QueryPanelPayload | undefined {
+  if (limit <= 0) {
+    void window.showErrorMessage(
+      "Please enter a positive number for query limit",
+    );
+    return undefined;
+  }
+  logQuery(deps, query, limit);
+  return {
+    query,
+    fn: queryExecution(deps.project, query, modelName, limit),
+    projectName: deps.project.getProjectName(),
+  };
+}
+
+/** Runs `query` after checking project diagnostics; `immediate` awaits and row-shapes the result. */
+export async function executeWithLimit(
+  deps: SqlDeps,
+  query: string,
+  modelName: string,
+  limit: number,
+  immediate: true,
+): Promise<QueryExecutionResult>;
+export async function executeWithLimit(
+  deps: SqlDeps,
+  query: string,
+  modelName: string,
+  limit: number,
+  immediate: false,
+): Promise<QueryExecution>;
+export async function executeWithLimit(
+  deps: SqlDeps,
+  query: string,
+  modelName: string,
+  limit: number,
+  immediate: boolean,
+): Promise<QueryExecution | QueryExecutionResult> {
+  deps.project.throwDiagnosticsErrorIfAvailable();
+  logQuery(deps, query, limit);
+  return immediate
+    ? executeSql(deps.project.getFusionCli(), query, modelName, limit, true)
+    : queryExecution(deps.project, query, modelName, limit);
+}
+
+/** Compiles `query`, showing an error message and returning undefined when compilation fails. */
+export async function compileOrReport(
+  compile: (query: string) => Promise<string | undefined>,
+  query: string,
+): Promise<string | undefined> {
+  try {
+    return await compile(query);
+  } catch (exc) {
+    void window.showErrorMessage(
+      "Could not compile query: " +
+        (exc instanceof Error ? exc.message : String(exc)),
+    );
+    return undefined;
+  }
+}
+
 /** Returns up to 100 distinct values of `column` in `model`. */
 export async function getColumnValues(
   cli: SqlExecutor,
+  terminal: DBTTerminal,
   model: string,
   column: string,
 ) {
+  terminal.debug(
+    "getColumnValues",
+    "finding distinct values for column",
+    true,
+    {
+      model,
+      column,
+    },
+  );
   const query = `SELECT DISTINCT ${column} FROM {{ ref('${model}') }}`;
   const result = await executeSql(cli, query, model, 100, true);
   return result.data.map((row) => Object.values(row)[0]);
