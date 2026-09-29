@@ -10,7 +10,6 @@ import {
   type DBTDiagnosticResult,
   DBTTerminal,
   DocParser,
-  type ExecuteSQLResult,
   ExposureParser,
   FunctionParser,
   GraphParser,
@@ -40,6 +39,7 @@ import {
   ManifestParsers,
   ManifestTrigger,
 } from "../projects/manifest";
+import { executeSql, getColumnValues } from "../projects/projectSql";
 
 export type { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
 
@@ -50,26 +50,6 @@ export const FusionProjectIntegrationEvents = {
   MANIFEST_PARSED: "manifestParsed",
   SOURCE_FILE_CHANGED: "sourceFileChanged",
 } as const;
-
-/**
- * `dbt show --output json` reports no column types; the published integration fabricates
- * the literal string "string" for every column regardless of its real type. Report every
- * column type as unknown here, the one seam both `executeSQLWithLimit` and
- * `immediatelyExecuteSQLWithLimit` consumers read through, instead of forwarding that
- * placeholder.
- */
-function markColumnTypesUnknown(result: ExecuteSQLResult): ExecuteSQLResult {
-  return {
-    ...result,
-    table: {
-      ...result.table,
-      // Cast: the library types column_types as string[], but never returns a real type.
-      column_types: result.table.column_types.map(
-        () => null,
-      ) as unknown as string[],
-    },
-  };
-}
 
 export class FusionProjectIntegration
   extends EventEmitter
@@ -475,7 +455,13 @@ export class FusionProjectIntegration
     modelName: string,
     limit: number,
   ): Promise<QueryExecution> {
-    return this.runSql(query, modelName, limit, false);
+    return executeSql(
+      this.requireIntegration(),
+      query,
+      modelName,
+      limit,
+      false,
+    );
   }
 
   async immediatelyExecuteSQLWithLimit(
@@ -483,70 +469,7 @@ export class FusionProjectIntegration
     modelName: string,
     limit: number,
   ): Promise<QueryExecutionResult> {
-    return this.runSql(query, modelName, limit, true);
-  }
-
-  private async runSql(
-    query: string,
-    modelName: string,
-    limit: number,
-    immediate: true,
-  ): Promise<QueryExecutionResult>;
-  private async runSql(
-    query: string,
-    modelName: string,
-    limit: number,
-    immediate: false,
-  ): Promise<QueryExecution>;
-  private async runSql(
-    query: string,
-    modelName: string,
-    limit: number,
-    immediate: boolean,
-  ): Promise<QueryExecution | QueryExecutionResult> {
-    let normalizedQuery = query.replace(/;\s*$/, "");
-    const limitMatch = /\bLIMIT\s+(\d+)\s*(?:;?\s*(?:--[^\n]*)?\s*)$/i.exec(
-      normalizedQuery,
-    );
-    if (limitMatch) {
-      const parsedLimit = parseInt(limitMatch[1], 10);
-      if (parsedLimit > 0) {
-        limit = parsedLimit;
-      }
-      normalizedQuery = normalizedQuery.replace(limitMatch[0], "").trim();
-    }
-    if (limit <= 0) {
-      throw new Error("Limit must be greater than 0");
-    }
-    const rawExecution = await this.requireIntegration().executeSQL(
-      normalizedQuery,
-      limit,
-      modelName,
-    );
-    const execution = new QueryExecution(
-      () => rawExecution.cancel(),
-      async () => markColumnTypesUnknown(await rawExecution.executeQuery()),
-    );
-    if (!immediate) {
-      return execution;
-    }
-    const result = await execution.executeQuery();
-    const rows: Record<string, unknown>[] = [];
-    for (let rowIndex = 0; rowIndex < result.table.rows.length; rowIndex++) {
-      result.table.rows[rowIndex].forEach((value, columnIndex) => {
-        rows[rowIndex] = {
-          ...rows[rowIndex],
-          [result.table.column_names[columnIndex]]: value,
-        };
-      });
-    }
-    return {
-      columnNames: result.table.column_names,
-      columnTypes: result.table.column_types,
-      data: rows,
-      rawSql: normalizedQuery,
-      compiledSql: result.compiled_sql,
-    };
+    return executeSql(this.requireIntegration(), query, modelName, limit, true);
   }
 
   async getColumnsOfModel(modelName: string) {
@@ -558,9 +481,7 @@ export class FusionProjectIntegration
   }
 
   async getColumnValues(model: string, column: string) {
-    const query = `SELECT DISTINCT ${column} FROM {{ ref('${model}') }}`;
-    const result = await this.immediatelyExecuteSQLWithLimit(query, model, 100);
-    return result.data.map((row) => Object.values(row)[0]);
+    return getColumnValues(this.requireIntegration(), model, column);
   }
 
   async dispose(): Promise<void> {
