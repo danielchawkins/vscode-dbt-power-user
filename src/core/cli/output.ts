@@ -36,31 +36,6 @@ function dataWith(line: unknown, key: string): JsonRecord | undefined {
   return data && hasOwn(data, key) ? data : undefined;
 }
 
-/**
- * The `msg` of every `error` or `fatal` record in `--log-format json` stderr. Output that is not JSON lines becomes
- * one `Could not process` entry.
- */
-export function jsonLogErrors(stderr: string): string[] {
-  if (!stderr) {
-    return [];
-  }
-  try {
-    return jsonLines(stderr).flatMap((line) => {
-      const info = asRecord(line)?.info;
-      if (info === undefined || info === null) {
-        throw new TypeError("record has no info");
-      }
-      const level = asRecord(info)?.level;
-      const msg = asRecord(info)?.msg;
-      return level === "error" || level === "fatal"
-        ? [msg === undefined || msg === null ? "" : String(msg)]
-        : [];
-    });
-  } catch (error) {
-    return [`Could not process ${stderr}: ${String(error)}`];
-  }
-}
-
 /** Errors (`error`, `fatal`), then warnings (`warn`), from `--log-format json` stderr; other lines are skipped. */
 export function parseLogEntries(stderr: string): LogEntry[] {
   const errors: LogEntry[] = [];

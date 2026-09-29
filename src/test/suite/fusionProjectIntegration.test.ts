@@ -196,6 +196,41 @@ describe("FusionProjectIntegration", () => {
     await integration.dispose();
   });
 
+  it("reads the adapter type from manifest metadata, unknown before a manifest", async () => {
+    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-adapter-"));
+    fs.cpSync(fixtureRoot, tempRoot, { recursive: true });
+    const targetDir = path.join(tempRoot, "target");
+    const integration = await buildIntegration(
+      tempRoot,
+      stubDelegate(tempRoot, {
+        getTargetPath: () => targetDir,
+        getPackageInstallPath: () => path.join(tempRoot, "dbt_packages"),
+      }),
+    );
+    expect(integration.getAdapterType()).toBe("unknown");
+
+    const manifest = JSON.parse(
+      fs.readFileSync(path.join(fixtureRoot, "manifest.contract.json"), "utf8"),
+    );
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.writeFileSync(
+      path.join(targetDir, "manifest.json"),
+      JSON.stringify({ ...manifest, metadata: { adapter_type: "duckdb" } }),
+    );
+    await integration.parseManifest();
+
+    expect(integration.getAdapterType()).toBe("duckdb");
+
+    const { metadata: _metadata, ...withoutMetadata } = manifest;
+    fs.writeFileSync(
+      path.join(targetDir, "manifest.json"),
+      JSON.stringify(withoutMetadata),
+    );
+    await integration.parseManifest();
+    expect(integration.getAdapterType()).toBe("duckdb");
+    await integration.dispose();
+  });
+
   it("parses run_results.json when content appears after command start", async () => {
     tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-run-fresh-"));
     prepareWatcherPaths(tempRoot);

@@ -165,6 +165,31 @@ describe("FusionCli", () => {
     expect(String(warn.mock.calls[0][1])).toContain(manifestPath);
   });
 
+  it("warns about an unusable defer state path only for deferrable commands", async () => {
+    const { factory } = fakeProcesses({
+      stdout: JSON.stringify({
+        data: { compiled: "x", preview: "[]" },
+      }),
+    });
+    const { terminal, warn } = fakeTerminal();
+    const deferring = snapshot({
+      deferPerProject: {
+        proj: {
+          deferToProduction: true,
+          favorState: false,
+          manifestPathForDeferral: path.join(root, "no-such-state"),
+        },
+      },
+    });
+    const cli = new FusionCli(executable, () => deferring, factory, terminal);
+    await cli.run({ kind: "parse" });
+    await cli.show("select 1", 1);
+    await cli.compileInline("select 1");
+    expect(warn).not.toHaveBeenCalled();
+    await cli.run({ kind: "compile", select: "m" });
+    expect(warn).toHaveBeenCalledTimes(1);
+  });
+
   it("reads compiled SQL from stdout after checking stderr", async () => {
     const ok = fakeProcesses({
       stdout: JSON.stringify({ data: { compiled: "select 1" } }),
@@ -188,6 +213,39 @@ describe("FusionCli", () => {
       fakeTerminal().terminal,
     );
     await expect(failingCli.compileInline("x")).rejects.toThrow("boom");
+  });
+
+  it("ignores stderr lines that are not JSON and non-error records", async () => {
+    const columns = [{ column: "id", dtype: "int" }];
+    const { factory } = fakeProcesses({
+      stdout: JSON.stringify({ data: { compiled: JSON.stringify(columns) } }),
+      stderr: [
+        "warning: text noise",
+        JSON.stringify({ info: { level: "warn", msg: "w" } }),
+      ].join("\n"),
+    });
+    const cli = new FusionCli(
+      executable,
+      () => snapshot(),
+      factory,
+      fakeTerminal().terminal,
+    );
+    await expect(cli.getColumnsOfModel("m")).resolves.toEqual(columns);
+
+    const failing = fakeProcesses({
+      stdout: JSON.stringify({ data: { compiled: "[]" } }),
+      stderr: [
+        "text noise",
+        JSON.stringify({ info: { level: "fatal", msg: "down" } }),
+      ].join("\n"),
+    });
+    const failingCli = new FusionCli(
+      executable,
+      () => snapshot(),
+      failing.factory,
+      fakeTerminal().terminal,
+    );
+    await expect(failingCli.getColumnsOfModel("m")).rejects.toThrow("down");
   });
 
   it("returns the show preview", async () => {
@@ -248,6 +306,36 @@ describe("FusionCli as DBTProjectIntegration", () => {
     expect(cli.getSeedPaths()).toEqual([path.join(root, "seeds")]);
     expect(cli.getMacroPaths()).toEqual([path.join(root, "macros")]);
     expect(cli.getPackageInstallPath()).toBe(path.join(root, "dbt_packages"));
+  });
+
+  it("reads the project file once for the getters until refreshProjectConfig", async () => {
+    let targetPath = "target";
+    const read = jest.fn(() =>
+      resolveProjectSnapshot({
+        root,
+        folder: snapshotFolder,
+        firstWorkspaceFolder: snapshotFolder,
+        userHome: "/home/u",
+        environment: {},
+        lspCompiledOutputOverride: undefined,
+        settings: noSettings,
+        projectFile: {
+          kind: "parsed",
+          text: "",
+          config: { name: "proj", "target-path": targetPath },
+        },
+      }),
+    );
+    const { cli } = cliWith({}, read);
+    for (let i = 0; i < 50; i++) {
+      cli.getTargetPath();
+      cli.getProjectName();
+    }
+    expect(read).toHaveBeenCalledTimes(1);
+    targetPath = "out";
+    expect(cli.getTargetPath()).toBe(path.join(root, "target"));
+    await cli.refreshProjectConfig();
+    expect(cli.getTargetPath()).toBe(path.join(root, "out"));
   });
 
   it("turns parse stderr into errors then warnings on the project file", async () => {

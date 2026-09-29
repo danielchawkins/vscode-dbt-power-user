@@ -3,8 +3,8 @@ import * as path from "path";
 import {
   CliCommand,
   compiledOutput,
+  DEFERRABLE_KINDS,
   deferState,
-  jsonLogErrors,
   parseLogEntries,
   PathKind,
   ShowPreview,
@@ -70,12 +70,18 @@ function anySignal(
     return present[0];
   }
   const controller = new AbortController();
-  for (const signal of present) {
-    if (signal.aborted) {
-      controller.abort();
-    } else {
-      signal.addEventListener("abort", () => controller.abort());
+  const abort = () => {
+    for (const signal of present) {
+      signal.removeEventListener("abort", abort);
     }
+    controller.abort();
+  };
+  if (present.some((s) => s.aborted)) {
+    controller.abort();
+    return controller.signal;
+  }
+  for (const signal of present) {
+    signal.addEventListener("abort", abort);
   }
   return controller.signal;
 }
@@ -138,9 +144,13 @@ function bulkSchemaQuery(nodes: DBTNode[]): string {
     .join("");
 }
 
-/** Runs dbt Fusion commands for one project, reading the snapshot afresh on every call. */
+/**
+ * Runs dbt Fusion commands for one project. Every command reads the snapshot afresh; the name and path getters read
+ * one cached snapshot that `refreshProjectConfig` replaces.
+ */
 export class FusionCli implements DBTProjectIntegration {
   private readonly warnedDeferPaths = new Set<string>();
+  private config: ProjectSnapshot | undefined;
   private rebuildManifestDiagnostics: DBTDiagnosticData[] = [];
   private rebuildAbort: AbortController | undefined;
 
@@ -160,8 +170,20 @@ export class FusionCli implements DBTProjectIntegration {
     options: FusionCliRunOptions = {},
   ): Promise<CommandProcessResult> {
     const snapshot = this.snapshot();
-    this.warnUnusableDefer(snapshot);
+    if (DEFERRABLE_KINDS.includes(command.kind)) {
+      this.warnUnusableDefer(snapshot);
+    }
     const args = toCliArgs(snapshot, command, diskProbe);
+    const commandLine = `dbt ${args.join(" ")}`;
+    this.terminal.info(
+      "dbtCommand",
+      `Executed dbt command: ${commandLine}`,
+      true,
+      {
+        command: commandLine,
+        execution: "cli",
+      },
+    );
     const execution = this.processes.createCommandProcessExecution({
       command: this.executable.path,
       args,
@@ -218,15 +240,18 @@ export class FusionCli implements DBTProjectIntegration {
 
   async initializeProject(): Promise<void> {}
 
-  /** The snapshot is read on every call, so there is nothing to refresh. */
-  async refreshProjectConfig(): Promise<void> {}
+  /** Rereads the snapshot behind the name and path getters. */
+  async refreshProjectConfig(): Promise<void> {
+    this.config = this.snapshot();
+  }
+
+  private projectConfig(): ProjectSnapshot {
+    this.config ??= this.snapshot();
+    return this.config;
+  }
 
   async setSelectedTarget(_targetName: string): Promise<void> {
     throw new Error("The target comes from fusionPowerUser.target");
-  }
-
-  async getTargetNames(): Promise<string[]> {
-    return [];
   }
 
   getSelectedTarget(): string | undefined {
@@ -234,23 +259,23 @@ export class FusionCli implements DBTProjectIntegration {
   }
 
   getTargetPath(): string {
-    return this.snapshot().paths.targetPath;
+    return this.projectConfig().paths.targetPath;
   }
 
   getModelPaths(): string[] {
-    return this.snapshot().paths.modelPaths;
+    return this.projectConfig().paths.modelPaths;
   }
 
   getSeedPaths(): string[] {
-    return this.snapshot().paths.seedPaths;
+    return this.projectConfig().paths.seedPaths;
   }
 
   getMacroPaths(): string[] {
-    return this.snapshot().paths.macroPaths;
+    return this.projectConfig().paths.macroPaths;
   }
 
   getPackageInstallPath(): string {
-    return this.snapshot().paths.packagesInstallPath;
+    return this.projectConfig().paths.packagesInstallPath;
   }
 
   getAdapterType(): string {
@@ -262,7 +287,7 @@ export class FusionCli implements DBTProjectIntegration {
   }
 
   getProjectName(): string {
-    return this.snapshot().name;
+    return this.projectConfig().name;
   }
 
   getDebounceForRebuildManifest(): number {
@@ -507,7 +532,10 @@ export class FusionCli implements DBTProjectIntegration {
     );
   }
 
-  /** Gives `command` this project's argv for display and an execution strategy that runs `cli`. */
+  /**
+   * Gives `command` this project's argv for display and an execution strategy that runs `cli`. The argv is computed
+   * again when the command runs, so it can differ from the argv shown when it was queued.
+   */
   private queued(command: DBTCommand, cli: CliCommand): DBTCommand {
     command.args = toCliArgs(this.snapshot(), cli, diskProbe);
     command.setExecutionStrategy({
@@ -521,16 +549,6 @@ export class FusionCli implements DBTProjectIntegration {
     cli: CliCommand,
     signal: AbortSignal | undefined,
   ): Promise<CommandProcessResult> {
-    const commandLine = `dbt ${toCliArgs(this.snapshot(), cli, diskProbe).join(" ")}`;
-    this.terminal.info(
-      "dbtCommand",
-      "Executed dbt command: " + commandLine,
-      true,
-      {
-        command: commandLine,
-        execution: "cli",
-      },
-    );
     return this.run(cli, {
       signal: anySignal(signal, command.signal),
       env: command.env,
@@ -556,8 +574,11 @@ export class FusionCli implements DBTProjectIntegration {
   }
 }
 
+/** Throws the `error`/`fatal` messages of JSON stderr records; lines that are not JSON are ignored. */
 function throwLogErrors(stderr: string): void {
-  const errors = jsonLogErrors(stderr);
+  const errors = parseLogEntries(stderr)
+    .filter((entry) => entry.level === "error")
+    .map((entry) => entry.message);
   if (errors.length > 0) {
     throw new Error(errors.join("\n"));
   }

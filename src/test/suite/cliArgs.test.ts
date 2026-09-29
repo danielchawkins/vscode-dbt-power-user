@@ -386,3 +386,120 @@ describe("deferState", () => {
     }
   });
 });
+
+describe("toCliArgs with a profiles directory, params and each defer state", () => {
+  const settings = {
+    profilesDir: "/p",
+    runParams: ["--threads", "4"],
+    buildParams: ["--fail-fast"],
+    testParams: ["--indirect-selection", "cautious"],
+  };
+  const flags = ["--profiles-dir", "/p", ...projectDir];
+  const on = ["--defer", "--state", "/state", "--favor-state"];
+  const bodies: [CliCommand, string[], boolean][] = [
+    [
+      { kind: "run", select: "+a" },
+      ["run", "--select", "+a", "--threads", "4"],
+      true,
+    ],
+    [
+      { kind: "build", select: "+a" },
+      ["build", "--select", "+a", "--fail-fast"],
+      true,
+    ],
+    [{ kind: "build" }, ["build"], true],
+    [
+      { kind: "test", select: "a" },
+      ["test", "--select", "a", "--indirect-selection", "cautious"],
+      true,
+    ],
+    [{ kind: "compile", select: "+a" }, ["compile", "--select", "+a"], true],
+    [
+      { kind: "compileNode", node: "a" },
+      [
+        "compile",
+        "--select",
+        "a",
+        "--output",
+        "json",
+        "--log-format",
+        "json",
+        "--log-level",
+        "debug",
+      ],
+      false,
+    ],
+    [
+      { kind: "compileInline", sql: "select 1", output: "json" },
+      [
+        "compile",
+        "--inline",
+        "select 1",
+        "--output",
+        "json",
+        "--log-format",
+        "json",
+        "--log-level",
+        "debug",
+      ],
+      false,
+    ],
+    [
+      { kind: "show", sql: "select 1", limit: 500 },
+      [
+        "show",
+        "--log-level",
+        "debug",
+        "--inline",
+        "select 1",
+        "--limit",
+        "500",
+        "--output",
+        "json",
+        "--log-format",
+        "json",
+      ],
+      false,
+    ],
+    [{ kind: "parse" }, ["parse", "--log-format", "json"], false],
+    [{ kind: "deps" }, ["deps"], false],
+    [{ kind: "clean" }, ["clean"], false],
+    [{ kind: "debug" }, ["debug"], false],
+  ];
+
+  it.each(bodies)("%j with defer off", (command, body, queued) => {
+    expect(args(snapshot(settings), command)).toEqual([
+      ...body,
+      ...flags,
+      ...(queued ? ["--no-defer"] : []),
+    ]);
+  });
+
+  it.each(bodies)("%j with defer on", (command, body, queued) => {
+    const s = deferred(
+      {
+        deferToProduction: true,
+        favorState: true,
+        manifestPathForDeferral: "/state",
+      },
+      settings,
+    );
+    expect(args(s, command)).toEqual([
+      ...body,
+      ...flags,
+      ...(queued ? on : []),
+    ]);
+  });
+
+  it.each(bodies)("%j with defer at a missing path", (command, body) => {
+    const s = deferred(
+      {
+        deferToProduction: true,
+        favorState: false,
+        manifestPathForDeferral: "/state/missing",
+      },
+      settings,
+    );
+    expect(args(s, command, every("missing"))).toEqual([...body, ...flags]);
+  });
+});
