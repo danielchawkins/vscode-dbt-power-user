@@ -1,9 +1,0 @@
-       dbt 2.0.6
-   Loading profiles.yml
-   Started downloading schemas (3 items)
-  Finished [  1.03s] downloading schemas (3 items)
-
-==================== Execution Summary =====================
-Finished 'compile' with 1 warning for target 'dev' [1.4s]
-Processed: 4 models
-Summary: 4 total | 4 success

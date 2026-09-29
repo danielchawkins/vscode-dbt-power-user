@@ -133,30 +133,7 @@ describe("toCliArgs builds each kind's body, then command params, then snapshot 
       ["compile", "--inline", "select 1", "--quiet", ...projectDir],
     ],
     [
-      { kind: "compileColumnLineage", select: ["a", "b+"] },
-      [
-        "compile",
-        "--select",
-        "a",
-        "b+",
-        "--static-analysis",
-        "strict",
-        "--generate-info-schema",
-        ...projectDir,
-      ],
-    ],
-    [
-      { kind: "compileColumnLineage", select: [] },
-      [
-        "compile",
-        "--static-analysis",
-        "strict",
-        "--generate-info-schema",
-        ...projectDir,
-      ],
-    ],
-    [
-      { kind: "show", sql: "select 1", limit: 500, output: "preview" },
+      { kind: "show", sql: "select 1", limit: 500 },
       [
         "show",
         "--log-level",
@@ -169,20 +146,6 @@ describe("toCliArgs builds each kind's body, then command params, then snapshot 
         "json",
         "--log-format",
         "json",
-        ...projectDir,
-      ],
-    ],
-    [
-      { kind: "show", sql: "select 1", limit: -1, output: "lineage" },
-      [
-        "show",
-        "--inline",
-        "select 1",
-        "--output",
-        "json",
-        "--limit",
-        "-1",
-        "--quiet",
         ...projectDir,
       ],
     ],

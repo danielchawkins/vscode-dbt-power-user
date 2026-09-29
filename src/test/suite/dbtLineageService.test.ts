@@ -1,5 +1,9 @@
 import { describe, expect, it, jest } from "@jest/globals";
-import { DbtLineageService } from "../../services/dbtLineageService";
+import { workspace } from "vscode";
+import {
+  DbtLineageService,
+  describeNoLineage,
+} from "../../services/dbtLineageService";
 
 // Minimal NodeData-shaped edge.
 function node(key: string, edgeType?: "data" | "constraint") {
@@ -97,38 +101,55 @@ describe("DbtLineageService — foreign-key-only edge hiding", () => {
 });
 
 describe("DbtLineageService.getConnectedColumns", () => {
-  const edge = (parent: string, child: string) => {
-    const [parentId, parentColumn] = parent.split(":");
-    const [childId, childColumn] = child.split(":");
-    return {
-      parent: { uniqueId: parentId, column: parentColumn },
-      child: { uniqueId: childId, column: childColumn },
-      evolution: "copy" as const,
-    };
-  };
+  const listNodes = (...nodes: [string, string[], string?][]) => ({
+    error: null,
+    nodes: nodes.map(([uniqueId, parents, op = "copy"]) => ({
+      unique_id: uniqueId,
+      name: uniqueId.slice(uniqueId.lastIndexOf(".") + 1),
+      parents,
+      op,
+    })),
+  });
 
-  function withProject(readColumnLineage: jest.Mock | undefined) {
-    const svc = Object.create(DbtLineageService.prototype) as DbtLineageService;
-    (svc as any).queryManifestService = {
-      getProject: () => (readColumnLineage ? { readColumnLineage } : undefined),
-    };
-    return svc;
+  function fakeClient(
+    request: jest.Mock<(...args: any[]) => Promise<any>>,
+    overrides: Partial<{
+      state: string;
+      staticAnalysis: string;
+      failureReason: string;
+    }> = {},
+  ) {
+    return {
+      state: "running",
+      staticAnalysis: "strict",
+      failureReason: undefined,
+      request,
+      ...overrides,
+    } as any;
   }
 
-  it("reads upstream edges for the target tables and keeps the requested child columns", async () => {
-    const read = jest.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({
-      kind: "edges",
-      edges: [
-        edge("model.p.a:x", "model.p.b:total"),
-        edge("model.p.a:y", "model.p.b:n"),
-      ],
-    });
-    const result = await withProject(read).getConnectedColumns({
-      targets: [["model.p.b", "TOTAL"]],
-      upstreamExpansion: true,
+  const service = (client: unknown) =>
+    new DbtLineageService({} as any, () => client as any);
+
+  const lineage = listNodes(
+    ["model.p.b.total", ["model.p.a.x"], "mod"],
+    ["model.p.a.x", ["source.p.raw.t.x"]],
+    ["model.p.c.total", ["model.p.b.total"]],
+  );
+
+  it("asks listNodes for each target column and keeps its parents when expanding left", async () => {
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockResolvedValue(lineage);
+    const result = await service(fakeClient(request)).getConnectedColumns({
+      targets: [["model.p.b", "total"]],
+      upstreamExpansion: false,
     });
 
-    expect(read).toHaveBeenCalledWith(["model.p.b"], "upstream", undefined);
+    expect(request).toHaveBeenCalledWith("dbt.listNodes", [
+      "@model.p.b",
+      "+column:model.p.b.total+",
+    ]);
     expect(result).toEqual({
       kind: "lineage",
       columnLineage: [
@@ -136,50 +157,259 @@ describe("DbtLineageService.getConnectedColumns", () => {
           source: ["model.p.a", "x"],
           target: ["model.p.b", "total"],
           type: "direct",
-          viewsType: "Alias",
+          viewsType: "Transformation",
         },
       ],
     });
   });
 
-  it("reads downstream edges and keeps the requested parent columns", async () => {
-    const read = jest.fn<(...args: any[]) => Promise<any>>().mockResolvedValue({
-      kind: "edges",
-      edges: [
-        edge("model.p.a:x", "model.p.b:x"),
-        edge("model.p.a:y", "model.p.b:y"),
-      ],
-    });
-    const result = await withProject(read).getConnectedColumns({
-      targets: [
-        ["model.p.a", "x"],
-        ["model.p.a", "y"],
-      ],
-      upstreamExpansion: false,
-    });
-
-    expect(read).toHaveBeenCalledWith(["model.p.a"], "downstream", undefined);
-    expect(result.kind === "lineage" && result.columnLineage).toHaveLength(2);
-  });
-
-  it("passes a non-edge read through", async () => {
-    const read = jest
+  it("keeps the target's children when expanding right, one request per distinct column, spelled as requested", async () => {
+    const request = jest
       .fn<(...args: any[]) => Promise<any>>()
-      .mockResolvedValue({ kind: "unavailable" });
-    expect(
-      await withProject(read).getConnectedColumns({
-        targets: [["model.p.a", "x"]],
-        upstreamExpansion: true,
-      }),
-    ).toEqual({ kind: "noLineage", read: { kind: "unavailable" } });
+      .mockResolvedValue(lineage);
+    const result = await service(fakeClient(request)).getConnectedColumns({
+      targets: [
+        ["model.p.b", "TOTAL"],
+        ["model.p.b", "total"],
+      ],
+      upstreamExpansion: true,
+    });
+
+    expect(request).toHaveBeenCalledTimes(1);
+    expect(result).toEqual({
+      kind: "lineage",
+      columnLineage: [
+        {
+          source: ["model.p.b", "TOTAL"],
+          target: ["model.p.c", "total"],
+          type: "direct",
+          viewsType: "Unchanged",
+        },
+      ],
+    });
   });
 
-  it("answers empty without a current project", async () => {
-    expect(
-      await withProject(undefined).getConnectedColumns({
+  it("keeps the lineage that answered and reports the target that failed", async () => {
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockImplementation(async (_command: string, args: string[]) => {
+        if (args[0] === "@model.p.x") {
+          throw new Error("timeout");
+        }
+        return lineage;
+      });
+    const result = await service(fakeClient(request)).getConnectedColumns({
+      targets: [
+        ["model.p.b", "total"],
+        ["model.p.x", "y"],
+      ],
+      upstreamExpansion: true,
+    });
+
+    expect(result).toEqual({
+      kind: "lineage",
+      columnLineage: [
+        expect.objectContaining({ target: ["model.p.c", "total"] }),
+      ],
+      failures: [{ target: ["model.p.x", "y"], message: "timeout" }],
+    });
+  });
+
+  it.each([
+    [
+      "a RequestCancelled code",
+      Object.assign(new Error("x"), { code: -32800 }),
+    ],
+    ["an Operation cancelled message", new Error("Operation cancelled")],
+  ])("retries a request cancelled with %s once", async (_name, cancelled) => {
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockRejectedValueOnce(cancelled)
+      .mockResolvedValueOnce(lineage);
+    const result = await service(fakeClient(request)).getConnectedColumns({
+      targets: [["model.p.b", "total"]],
+      upstreamExpansion: true,
+    });
+
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(result.kind).toBe("lineage");
+  });
+
+  it("reports a request cancelled twice as failed", async () => {
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockRejectedValue(new Error("Operation cancelled"));
+    const result = await service(fakeClient(request)).getConnectedColumns({
+      targets: [["model.p.b", "total"]],
+      upstreamExpansion: true,
+    });
+
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(result).toEqual({
+      kind: "noLineage",
+      reason: { kind: "failed", message: "Operation cancelled" },
+    });
+  });
+
+  it("does not retry other failures", async () => {
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockRejectedValue(new Error("timeout"));
+    await service(fakeClient(request)).getConnectedColumns({
+      targets: [["model.p.b", "total"]],
+      upstreamExpansion: true,
+    });
+
+    expect(request).toHaveBeenCalledTimes(1);
+  });
+
+  it.each([
+    [undefined, "stopped"],
+    [fakeClient(jest.fn(), { state: "starting" }), "starting"],
+  ])(
+    "reports the client's state when it is not running",
+    async (client, state) => {
+      const result = await service(client).getConnectedColumns({
         targets: [["model.p.a", "x"]],
         upstreamExpansion: true,
-      }),
-    ).toEqual({ kind: "noLineage", read: { kind: "empty" } });
+      });
+      expect(result).toEqual({
+        kind: "noLineage",
+        reason: { kind: "notRunning", state, failure: undefined },
+      });
+    },
+  );
+
+  it("names the failure of a failed client", async () => {
+    const result = await service(
+      fakeClient(jest.fn(), { state: "failed", failureReason: "boom\nmore" }),
+    ).getConnectedColumns({
+      targets: [["model.p.a", "x"]],
+      upstreamExpansion: true,
+    });
+    expect(result).toEqual({
+      kind: "noLineage",
+      reason: { kind: "notRunning", state: "failed", failure: "boom" },
+    });
+  });
+
+  it.each(["baseline", "off"])(
+    "names the static-analysis mode when %s returns no nodes",
+    async (mode) => {
+      const request = jest
+        .fn<(...args: any[]) => Promise<any>>()
+        .mockResolvedValue({ error: null, nodes: [] });
+      const result = await service(
+        fakeClient(request, { staticAnalysis: mode }),
+      ).getConnectedColumns({
+        targets: [["model.p.a", "x"]],
+        upstreamExpansion: true,
+      });
+      expect(result).toEqual({
+        kind: "noLineage",
+        reason: { kind: "staticAnalysis", mode },
+      });
+      expect(describeNoLineage((result as any).reason)).toContain(
+        "fusionPowerUser.staticAnalysis",
+      );
+    },
+  );
+
+  it("answers empty for no nodes under strict or project", async () => {
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockResolvedValue({ error: null, nodes: [] });
+    const result = await service(
+      fakeClient(request, { staticAnalysis: "project" }),
+    ).getConnectedColumns({
+      targets: [["model.p.a", "x"]],
+      upstreamExpansion: true,
+    });
+    expect(result).toEqual({ kind: "noLineage", reason: { kind: "empty" } });
+    const message = describeNoLineage({ kind: "empty" });
+    expect(message).toContain("no recorded column lineage");
+    expect(message).not.toContain("strict");
+  });
+
+  it("passes the result's error field through", async () => {
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockResolvedValue({ error: "no such node", nodes: [] });
+    const result = await service(fakeClient(request)).getConnectedColumns({
+      targets: [["model.p.a", "x"]],
+      upstreamExpansion: true,
+    });
+    expect(result).toEqual({
+      kind: "noLineage",
+      reason: { kind: "failed", message: "no such node" },
+    });
+  });
+
+  it("reports a rejected request as failed", async () => {
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockRejectedValue(new Error("timeout"));
+    const result = await service(fakeClient(request)).getConnectedColumns({
+      targets: [["model.p.a", "x"]],
+      upstreamExpansion: true,
+    });
+    expect(result).toEqual({
+      kind: "noLineage",
+      reason: { kind: "failed", message: "timeout" },
+    });
+  });
+});
+
+describe("DbtLineageService.getInferredColumns", () => {
+  const node = {
+    node: { columns: { customer_id: { data_type: "integer" } } },
+  };
+  const client = (request: jest.Mock<(...args: any[]) => Promise<any>>) =>
+    new DbtLineageService(
+      {} as any,
+      () => ({ state: "running", request }) as any,
+    );
+
+  it("asks getCurrentNode with the project-relative path", async () => {
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockResolvedValue(node);
+    const columns = await client(request).getInferredColumns(
+      "/p",
+      "/p/models/a.sql",
+    );
+    expect(request).toHaveBeenCalledWith("dbt.getCurrentNode", [
+      "models/a.sql",
+    ]);
+    expect(columns).toEqual([{ name: "customer_id", datatype: "integer" }]);
+  });
+
+  it("opens the document and asks once more after a null answer", async () => {
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(node);
+    const columns = await client(request).getInferredColumns(
+      "/p",
+      "/p/models/a.sql",
+    );
+    expect(workspace.openTextDocument).toHaveBeenCalled();
+    expect(request).toHaveBeenCalledTimes(2);
+    expect(columns).toHaveLength(1);
+  });
+
+  it("is undefined when the client is not running or the request fails", async () => {
+    expect(
+      await new DbtLineageService(
+        {} as any,
+        () => undefined,
+      ).getInferredColumns("/p", "/p/a.sql"),
+    ).toBeUndefined();
+    const request = jest
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockRejectedValue(new Error("boom"));
+    expect(
+      await client(request).getInferredColumns("/p", "/p/a.sql"),
+    ).toBeUndefined();
   });
 });

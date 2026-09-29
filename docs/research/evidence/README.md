@@ -110,7 +110,7 @@ Every result in this section comes from runs where strict was set with the flag 
 | No `dbt lsp` flag tried made the server write lineage. Tried: `--generate-info-schema`, `--info-schema-dir`, `--target-path`, `--metadata-dir`, `--write-json`, `--write-catalog`, `--selector`, `-s`, state and defer flags, and `--static-analysis strict` in every session. Nor did any `initializationOptions` variant or notification | lsp-flags l1–l4, l7; lsp-protocol P1, P5             |
 | With a CLI-written lineage file present, the server did not rewrite it after edit and save                                                                                                                                                                                                                                                 | lsp-flags l7; lsp-protocol P5 step 04 snapshots      |
 
-**What the extension classifies** (experiment `f1-compile-outcomes`; its stdout, stderr and exit code are the unit fixtures in `src/test/suite/fixtures/fusion-compile-2.0.6/`):
+**What the extension classified** (experiment `f1-compile-outcomes`; superseded by section 10, the extension no longer runs or classifies a lineage compile):
 
 - strict with local origin: exit 0, no warning (step 02);
 - `--generate-info-schema` under baseline: exit 0, `[warning] [Generic (dbt1000)]` on stderr (03);
@@ -240,6 +240,7 @@ A second ad hoc run (not scripted) repeated the same steps for each combination 
 - Under `baseline`, every `listNodes` column request returned 0 nodes with either origin.
 - Under `strict`, both origins gave the table above, and `logs/query_log.sql` recorded no `DESCRIBE`.
 - In this run the unsaved-`didChange` request already returned `biggest`, while the first run's did not. Whether an unsaved edit is reflected is therefore not established; after a save it was reflected in both runs.
+- Two `dbt.listNodes` requests sent concurrently on Fusion 2.0.6: the earlier one returned 0 nodes after 3 ms with the server logging "Compilation cancelled", or failed with "Operation cancelled", while the later one answered; sent one after the other they returned 4 nodes and 1 node. The official extension sends its lineage requests one at a time on one queue.
 
 ## Superseded premises
 

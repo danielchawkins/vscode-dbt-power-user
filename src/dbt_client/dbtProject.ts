@@ -51,12 +51,6 @@ import {
   SourceNode,
 } from "../dbt_integration";
 import {
-  buildLineageQuery,
-  classifyLineageRead,
-  LineageDirection,
-  LineageRead,
-} from "../fusion/columnLineage";
-import {
   hasProjectStrictAnalysis,
   resolveSchemaOrigin,
   SchemaOriginStatus,
@@ -304,8 +298,14 @@ export class DBTProject implements Disposable {
   }
 
   /** Whether strict analysis of this project can run without the warehouse; see `resolveSchemaOrigin`. */
-  schemaOriginStatus(): SchemaOriginStatus {
-    return this.projectOptIns().schemaOrigin;
+  schemaOriginStatus(
+    fusionVersion = this.dbtProjectIntegration.getFusionVersion(),
+  ): SchemaOriginStatus {
+    return resolveSchemaOrigin({
+      projectConfig: readDbtProjectFile(this.projectRoot.fsPath).config,
+      fusionVersion,
+      sources: this._manifestCacheEvent?.sourceMetaMap ?? new Map(),
+    });
   }
 
   /** The column-lineage opt-ins this project has made in its own project file; none when it is unreadable. */
@@ -313,11 +313,7 @@ export class DBTProject implements Disposable {
     const projectConfig = readDbtProjectFile(this.projectRoot.fsPath).config;
     return {
       strict: hasProjectStrictAnalysis(projectConfig),
-      schemaOrigin: resolveSchemaOrigin({
-        projectConfig,
-        fusionVersion: this.dbtProjectIntegration.getFusionVersion(),
-        sources: this._manifestCacheEvent?.sourceMetaMap ?? new Map(),
-      }),
+      schemaOrigin: this.schemaOriginStatus(),
     };
   }
 
@@ -615,61 +611,6 @@ export class DBTProject implements Disposable {
       query,
       originalModelName,
     );
-  }
-
-  /** Reads column lineage edges into or out of `uniqueIds` from the last strict info-schema compile. */
-  /** Runs the strict info-schema compile that writes column lineage; `env` applies to that process only. */
-  compileColumnLineage(
-    selectors: readonly string[],
-    env: Record<string, string>,
-    signal?: AbortSignal,
-  ) {
-    return this.dbtProjectIntegration.compileColumnLineage(
-      selectors,
-      env,
-      signal,
-    );
-  }
-
-  /** Unique IDs of the named models that the manifest lists with at least one column. */
-  modelsWithColumns(models: readonly string[]): string[] {
-    const nodes = this._manifestCacheEvent?.nodeMetaMap;
-    if (!nodes) {
-      return [];
-    }
-    const wanted = new Set(models);
-    const ids: string[] = [];
-    for (const node of nodes.nodes()) {
-      if (
-        node.resource_type === "model" &&
-        wanted.has(node.name) &&
-        Object.keys(node.columns ?? {}).length > 0
-      ) {
-        ids.push(node.unique_id);
-      }
-    }
-    return ids;
-  }
-
-  async readColumnLineage(
-    uniqueIds: readonly string[],
-    direction: LineageDirection,
-    signal?: AbortSignal,
-  ): Promise<LineageRead> {
-    try {
-      const result = await this.dbtProjectIntegration.showColumnLineage(
-        buildLineageQuery(uniqueIds, direction),
-        signal,
-      );
-      return classifyLineageRead(result, (message) =>
-        this.terminal.warn("columnLineage", message, false),
-      );
-    } catch (error) {
-      return {
-        kind: "failed",
-        message: error instanceof Error ? error.message : String(error),
-      };
-    }
   }
 
   async getColumnsOfModel(modelName: string) {

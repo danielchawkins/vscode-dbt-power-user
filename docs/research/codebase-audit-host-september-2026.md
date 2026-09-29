@@ -38,6 +38,7 @@ executeSQL: `commands/index.ts:775` → `RunModel.executeSQL` (`runModel.ts:153`
 - Profiles dir/target: `lsp/fusionClientSettings.ts:83-115`, used by `fusionLanguageClient.ts:664`, `fusionClientPool.ts:221`, `configuredFusionCommandIntegration.ts:89` (CLI adds only `--profiles-dir`, never `--target`); separately scraped from `dbt debug` (`dbtFusionCommandIntegration.ts:116-124`).
 - Static analysis: `fusion/staticAnalysisMode.ts:25,35`, read at `fusionLanguageClient.ts:509,665,962`, `columnLineageRefreshController.ts:9`; hard-coded `strict` at `dbtFusionCommandIntegration.ts:510`.
 - Per-call env: `columnLineageRefresh.ts:135`.
+- Note: `columnLineageRefresh.ts` and `columnLineageRefreshController.ts` were removed when column lineage moved to the language server.
 - Project dir/cwd: `--project-dir` in `fusionLanguageClient.ts:247`; CLI uses `cwd=projectRoot` (`dbtFusionCommandIntegration.ts:70`).
 - Defer: `dbtProject.ts:1175`.
   **PR:** one `resolveInvocationContext(projectRoot)` → `{executable, env, profilesDir, target, staticAnalysis, defer}` used by LSP launch and CLI; apply `--target` to CLI too.

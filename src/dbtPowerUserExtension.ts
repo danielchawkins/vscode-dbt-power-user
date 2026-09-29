@@ -19,7 +19,8 @@ import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "./quickpick";
-import { ColumnLineageRefreshController } from "./services/columnLineageRefreshController";
+import { registerConnectedColumnsCommand } from "./services/connectedColumnsCommand";
+import { DbtLineageService } from "./services/dbtLineageService";
 import { readSetting } from "./settings";
 import { StatusBars } from "./statusbar";
 import { TreeviewProviders } from "./treeview_provider";
@@ -63,8 +64,8 @@ export class DBTPowerUserExtension implements Disposable {
     private fusionClientPool: FusionClientPool,
     private fusionStatus: FusionStatus,
     private projectConfigCommands: ProjectConfigCommands,
-    private columnLineageRefresh: ColumnLineageRefreshController,
     private dbtTemplateLanguage: DbtTemplateLanguage,
+    private dbtLineageService: DbtLineageService,
   ) {
     this.disposables.push(
       this.dbtProjectContainer,
@@ -80,7 +81,6 @@ export class DBTPowerUserExtension implements Disposable {
       this.fusionClientPool,
       this.fusionStatus,
       this.projectConfigCommands,
-      this.columnLineageRefresh,
       this.dbtTemplateLanguage,
     );
   }
@@ -135,6 +135,7 @@ export class DBTPowerUserExtension implements Disposable {
         this.projectRegistry,
         this.fusionClientPool,
       );
+      registerConnectedColumnsCommand(context, this.dbtLineageService);
       await this.dbtProjectContainer.initializeDBTProjects();
       await this.statusBars.initialize();
     } catch (error) {

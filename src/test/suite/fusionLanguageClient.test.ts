@@ -50,6 +50,7 @@ import {
   ReverseSocketStreams,
 } from "../../lsp/reverseSocketTransport";
 import { DeclaredProject } from "../../projects/projectRegistry";
+import { DbtLineageService } from "../../services/dbtLineageService";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
 const folder: WorkspaceFolder = {
@@ -1323,6 +1324,79 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       undefined,
     );
+
+    await client.stop();
+    client.dispose();
+  });
+
+  it("never has two listNodes requests in flight for concurrent upstream and downstream lineage", async () => {
+    const streams = makeStreams();
+    const languageClient = makeLanguageClient();
+    let inFlight = 0;
+    let peak = 0;
+    let listNodes = 0;
+    languageClient.sendRequest.mockImplementation((async (
+      _type: unknown,
+      param: unknown,
+    ) => {
+      if (!(param as { command: string }).command.endsWith("dbt.listNodes")) {
+        return undefined;
+      }
+      const first = listNodes++ === 0;
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 2));
+      inFlight--;
+      if (first) {
+        throw new Error("boom");
+      }
+      return { error: null, nodes: [] };
+    }) as never);
+    const client = new DefaultFusionClientFactory(terminal as any, {
+      listenForServer: async () => new FakeReverseSocketServer(streams),
+      acceptWithProcessExit: async () => streams,
+      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      createLanguageClient: async () => languageClient as any,
+      sleep: async () => {},
+    }).create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
+        env: {},
+      },
+      lintEnabled: true,
+      commandPrefix: "fusionPowerUser:q:",
+    });
+    await waitForState(client, "running");
+    const service = new DbtLineageService({} as any, () => client);
+
+    const [upstream, downstream] = await Promise.all([
+      service.getConnectedColumns({
+        targets: [
+          ["model.p.b", "total"],
+          ["model.p.b", "n"],
+        ],
+        upstreamExpansion: false,
+      }),
+      service.getConnectedColumns({
+        targets: [["model.p.b", "total"]],
+        upstreamExpansion: true,
+      }),
+      client.request(FUSION_LSP_COMMANDS.show, {}),
+    ]);
+
+    expect(listNodes).toBe(3);
+    expect(peak).toBe(1);
+    expect(upstream).toEqual({
+      kind: "lineage",
+      columnLineage: [],
+      failures: [{ target: ["model.p.b", "total"], message: "boom" }],
+    });
+    expect(downstream).toEqual({
+      kind: "noLineage",
+      reason: { kind: "staticAnalysis", mode: "baseline" },
+    });
 
     await client.stop();
     client.dispose();

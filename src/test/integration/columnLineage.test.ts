@@ -1,26 +1,36 @@
 import * as assert from "assert";
-import { spawnSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
+import type { ColumnLineage } from "../../core/lineage";
 import {
-  buildLineageQuery,
-  classifyLineageRead,
-  toPanelLineage,
-} from "../../fusion/columnLineage";
+  CONNECTED_COLUMNS_COMMAND,
+  LINEAGE_COLUMNS_COMMAND,
+} from "../../services/connectedColumnsCommand";
+import type {
+  ConnectedColumnsRequest,
+  ConnectedColumnsResult,
+} from "../../services/dbtLineageService";
 
 /**
- * Pins the column-lineage read against the dbt binary the launch uses: a strict info-schema compile of the
- * native-editor fixture, then the exact argv `showColumnLineage` sends, parsed by the extension's reader. A
- * Fusion release that renames the view's columns or changes `--quiet` framing fails here. Runs only in the
- * `strict` native-editor launch, whose fixture copy has sources set up and local schema origin in the env.
+ * Pins column lineage from the language server against the pinned dbt: the extension's service sends
+ * `dbt.listNodes` to the project's Fusion Client, and a saved edit shows up downstream through `select *`
+ * with no CLI compile, and the panel lists a model's columns from `dbt.getCurrentNode` with no YAML declaration.
+ * Runs only in the `strict` native-editor launch; the extension sets the schema origin.
+ * The fixture's setup run writes `target/`, so only the CLI lineage outputs are asserted absent.
  */
 const MODE = process.env.FPU_NATIVE_EDITOR_MODE;
+const ORDER_TOTALS = "model.lineage_probe.order_totals";
+const TOTALS_STAR = "model.lineage_probe.totals_star";
+const COLUMNS_PROBE = "model.lineage_probe.columns_probe";
+const CLI_LINEAGE_OUTPUTS = [
+  ["target", "info_schema"],
+  ["target", "private", "metadata", "compile", "column_lineage"],
+];
 
-suite("Column lineage read through the pinned dbt", function () {
+suite("Column lineage from the language server", function () {
   this.timeout(5 * 60_000);
   let projectDir = "";
-  let dbtPath = "dbt";
 
   suiteSetup(function () {
     if (MODE !== "strict") {
@@ -28,174 +38,194 @@ suite("Column lineage read through the pinned dbt", function () {
       return;
     }
     projectDir = vscode.workspace.workspaceFolders![0].uri.fsPath;
-    // The same executable the extension launches; the runner sets it from FPU_INTEGRATION_DBT_PATH.
-    dbtPath =
-      vscode.workspace
-        .getConfiguration("fusionPowerUser")
-        .get<string>("dbtPath") || "dbt";
   });
 
-  const dbt = (args: string[]) =>
-    spawnSync(dbtPath, [...args, "--profiles-dir", projectDir], {
-      cwd: projectDir,
-      encoding: "utf-8",
-      timeout: 120_000,
-      env: { ...process.env, FUSION_POWER_USER_SCHEMA_ORIGIN: "local" },
-    });
-
-  test("reads order_totals.total upstream edges after a strict compile", function () {
-    const compile = dbt([
-      "compile",
-      "--static-analysis",
-      "strict",
-      "--generate-info-schema",
-    ]);
-    assert.strictEqual(
-      compile.status,
-      0,
-      `${compile.stdout}\n${compile.stderr}`,
-    );
-
-    const show = dbt([
-      "show",
-      "--inline",
-      buildLineageQuery(["model.lineage_probe.order_totals"], "upstream"),
-      "--output",
-      "json",
-      "--limit",
-      "-1",
-      "--quiet",
-    ]);
-    assert.strictEqual(show.stderr, "", "--quiet read wrote to stderr");
-    const read = classifyLineageRead({
-      exitCode: show.status,
-      stdout: show.stdout,
-      stderr: show.stderr,
-    });
-    assert.strictEqual(read.kind, "edges", JSON.stringify(read));
-    if (read.kind !== "edges") {
-      return;
+  function assertNoCliLineage(): void {
+    for (const parts of CLI_LINEAGE_OUTPUTS) {
+      const written = path.join(projectDir, ...parts);
+      assert.ok(!fs.existsSync(written), `${written} was written`);
     }
+  }
 
-    const total = toPanelLineage(
-      read.edges.filter((edge) => edge.child.column === "total"),
-      (uniqueId) => uniqueId,
+  const request = (body: ConnectedColumnsRequest) =>
+    vscode.commands.executeCommand<ConnectedColumnsResult>(
+      CONNECTED_COLUMNS_COMMAND,
+      body,
     );
-    assert.deepStrictEqual(
-      total.map(({ source, viewsType }) => [...source, viewsType]).sort(),
-      [
-        ["model.lineage_probe.stg_orders", "amount", "Transformation"],
-        ["model.lineage_probe.stg_orders", "customer_id", "Non select"],
-      ],
-    );
-  });
 
-  test("saving a model refreshes its lineage through the extension with no warehouse file", async function () {
-    const warehouse = path.join(projectDir, "probe.duckdb");
-    const moved = `${warehouse}.moved`;
-    const model = vscode.Uri.file(
-      path.join(projectDir, "models", "order_totals.sql"),
-    );
-    const original = fs.readFileSync(model.fsPath, "utf-8");
-    fs.renameSync(warehouse, moved);
-    try {
-      const document = await vscode.workspace.openTextDocument(model);
-      const editor = await vscode.window.showTextDocument(document);
-      await editor.edit((edit) =>
-        edit.replace(
-          new vscode.Range(
-            document.positionAt(0),
-            document.positionAt(document.getText().length),
-          ),
-          original.replace(
-            "count(*) as n,",
-            "count(*) as n, min(amount) as smallest,",
-          ),
-        ),
-      );
-      await document.save();
-
-      const deadline = Date.now() + 90_000;
-      let columns: string[] = [];
-      while (Date.now() < deadline) {
-        const show = dbt([
-          "show",
-          "--inline",
-          buildLineageQuery(["model.lineage_probe.order_totals"], "upstream"),
-          "--output",
-          "json",
-          "--limit",
-          "-1",
-          "--quiet",
-        ]);
-        const read = classifyLineageRead({
-          exitCode: show.status,
-          stdout: show.stdout,
-          stderr: show.stderr,
-        });
-        columns =
-          read.kind === "edges"
-            ? read.edges.map((edge) => edge.child.column)
-            : [];
-        if (columns.includes("smallest")) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1_000));
+  /** Retries until `done` holds, for the client start and the reanalysis after a save. */
+  async function until(
+    body: ConnectedColumnsRequest,
+    done: (lineage: ColumnLineage[]) => boolean,
+  ): Promise<ColumnLineage[]> {
+    const deadline = Date.now() + 120_000;
+    let last: ConnectedColumnsResult | undefined;
+    while (Date.now() < deadline) {
+      last = await request(body);
+      if (last?.kind === "lineage" && done(last.columnLineage)) {
+        return last.columnLineage;
       }
-      assert.ok(
-        columns.includes("smallest"),
-        `save did not refresh lineage; columns: ${columns.join(", ")}`,
-      );
-      assert.ok(
-        !fs.existsSync(warehouse),
-        "the refresh recreated the warehouse file",
-      );
-    } finally {
-      fs.writeFileSync(model.fsPath, original);
-      fs.renameSync(moved, warehouse);
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
     }
-  });
+    assert.fail(`no matching lineage: ${JSON.stringify(last)}`);
+  }
 
-  test("a remote-origin project compile with a dropped source reports skipped with dbt1014", async function () {
-    const projectFile = path.join(projectDir, "dbt_project.yml");
-    const original = fs.readFileSync(projectFile, "utf-8");
-    // Drop first: editing dbt_project.yml starts a reparse that holds the DuckDB file lock.
-    const drop = dbt(["run-operation", "drop_contacts"]);
-    assert.strictEqual(drop.status, 0, `${drop.stdout}\n${drop.stderr}`);
-    // Remote origin whatever env the extension passes, so the missing table must be downloaded.
-    fs.writeFileSync(
-      projectFile,
-      original.replace(
-        /sources:\n\s+\+schema_origin:[^\n]*\n/,
-        "sources:\n  +schema_origin: remote\n",
+  const edges = (lineage: ColumnLineage[]) =>
+    lineage.map(({ source, target, viewsType }) =>
+      [...source, ...target, viewsType].join(" "),
+    );
+
+  async function save(file: string, text: string): Promise<void> {
+    const uri = vscode.Uri.file(path.join(projectDir, "models", file));
+    const document = await vscode.workspace.openTextDocument(uri);
+    const editor = await vscode.window.showTextDocument(document);
+    await editor.edit((edit) =>
+      edit.replace(
+        new vscode.Range(
+          document.positionAt(0),
+          document.positionAt(document.getText().length),
+        ),
+        text,
       ),
     );
+    await document.save();
+  }
+
+  test("lists inferred columns with types for models whose YAML declares none, including an unopened file", async function () {
+    const file = path.join(projectDir, "models", "columns_probe.sql");
+    fs.writeFileSync(
+      file,
+      "select customer_id, total from {{ ref('order_totals') }}\n",
+    );
     try {
-      // The reparse may still hold the lock; a locked run fails with dbt1308, so retry until one classifies.
-      const deadline = Date.now() + 60_000;
-      let outcome:
-        | { kind: string; compile?: { kind: string; models?: string[] } }
-        | undefined;
-      do {
-        outcome = await vscode.commands.executeCommand(
-          "fusionPowerUser.refreshColumnLineage",
-        );
-        const lockHeld =
-          outcome?.kind === "completed" &&
-          outcome.compile?.kind === "failed" &&
-          JSON.stringify(outcome.compile).includes("dbt1308");
-        if (!lockHeld) {
-          break;
-        }
-        await new Promise((resolve) => setTimeout(resolve, 1_000));
-      } while (Date.now() < deadline);
-      assert.strictEqual(outcome?.kind, "completed", JSON.stringify(outcome));
-      assert.deepStrictEqual(outcome?.compile, {
-        kind: "skipped",
-        models: ["model.lineage_probe.hard"],
-      });
+      await vscode.window.showTextDocument(
+        vscode.Uri.file(path.join(projectDir, "models", "stg_orders.sql")),
+      );
+      assert.ok(
+        !vscode.workspace.textDocuments.some((d) => d.uri.fsPath === file),
+      );
+      assert.deepStrictEqual(await columnsOf(ORDER_TOTALS), [
+        "customer_id integer",
+        "last_status character varying(256)",
+        "n bigint",
+        "total decimal(38, 2)",
+      ]);
+      assert.deepStrictEqual(await columnsOf(COLUMNS_PROBE), [
+        "customer_id integer",
+        "total decimal(38, 2)",
+      ]);
     } finally {
-      fs.writeFileSync(projectFile, original);
+      await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+      fs.rmSync(file, { force: true });
+    }
+  });
+
+  /** The panel's columns of `table` as `name datatype`, once the manifest and server know it. */
+  async function columnsOf(table: string): Promise<string[]> {
+    const deadline = Date.now() + 120_000;
+    let columns: string[] = [];
+    while (Date.now() < deadline) {
+      const body = await vscode.commands.executeCommand<
+        { columns: { name: string; datatype: string }[] } | undefined
+      >(LINEAGE_COLUMNS_COMMAND, table);
+      columns = (body?.columns ?? []).map((c) => `${c.name} ${c.datatype}`);
+      if (columns.length > 0) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+    return columns;
+  }
+
+  test("answers concurrent upstream and downstream requests for one column", async function () {
+    const star = path.join(projectDir, "models", "totals_star.sql");
+    fs.writeFileSync(star, "select * from {{ ref('order_totals') }}\n");
+    try {
+      await vscode.window.showTextDocument(
+        vscode.Uri.file(path.join(projectDir, "models", "order_totals.sql")),
+      );
+      await until(
+        { targets: [[ORDER_TOTALS, "total"]], upstreamExpansion: true },
+        (lineage) => lineage.length > 1,
+      );
+      const [upstream, downstream] = (
+        await Promise.all([
+          request({
+            targets: [[ORDER_TOTALS, "total"]],
+            upstreamExpansion: false,
+          }),
+          request({
+            targets: [[ORDER_TOTALS, "total"]],
+            upstreamExpansion: true,
+          }),
+        ])
+      ).map((result) => {
+        assert.ok(result?.kind === "lineage", JSON.stringify(result));
+        return edges(result.columnLineage);
+      });
+      assert.ok(
+        upstream.includes(
+          `model.lineage_probe.stg_orders amount ${ORDER_TOTALS} total Transformation`,
+        ),
+        JSON.stringify(upstream),
+      );
+      assert.deepStrictEqual(
+        downstream.map((edge) => edge.split(" ").slice(2, 4).join(".")).sort(),
+        [
+          "model.lineage_probe.totals_downstream.grand_total",
+          `${TOTALS_STAR}.total`,
+        ],
+      );
+    } finally {
+      await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+      fs.rmSync(star, { force: true });
+    }
+  });
+
+  test("reads a column's lineage and a saved edit through select *, with no CLI lineage output", async function () {
+    const star = path.join(projectDir, "models", "totals_star.sql");
+    const model = path.join(projectDir, "models", "order_totals.sql");
+    const original = fs.readFileSync(model, "utf-8");
+    try {
+      await vscode.window.showTextDocument(vscode.Uri.file(model));
+      const upstream = await until(
+        { targets: [[ORDER_TOTALS, "total"]], upstreamExpansion: false },
+        (lineage) => lineage.length > 0,
+      );
+      assert.deepStrictEqual(edges(upstream), [
+        `model.lineage_probe.stg_orders amount ${ORDER_TOTALS} total Transformation`,
+      ]);
+      assertNoCliLineage();
+
+      fs.writeFileSync(star, "select * from {{ ref('order_totals') }}\n");
+      await save(
+        "order_totals.sql",
+        original.replace(
+          "count(*) as n,",
+          "count(*) as n, min(amount) as smallest,",
+        ),
+      );
+      await vscode.window.showTextDocument(vscode.Uri.file(model));
+
+      const added = await until(
+        { targets: [[ORDER_TOTALS, "smallest"]], upstreamExpansion: true },
+        (lineage) => lineage.length > 0,
+      );
+      assert.deepStrictEqual(edges(added), [
+        `${ORDER_TOTALS} smallest ${TOTALS_STAR} smallest Unchanged`,
+      ]);
+      const child = await until(
+        { targets: [[TOTALS_STAR, "smallest"]], upstreamExpansion: false },
+        (lineage) => lineage.length > 0,
+      );
+      assert.deepStrictEqual(edges(child), [
+        `${ORDER_TOTALS} smallest ${TOTALS_STAR} smallest Unchanged`,
+      ]);
+      assertNoCliLineage();
+    } finally {
+      await vscode.commands.executeCommand("workbench.action.closeAllEditors");
+      fs.writeFileSync(model, original);
+      fs.rmSync(star, { force: true });
     }
   });
 });

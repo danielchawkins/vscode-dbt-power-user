@@ -19,7 +19,7 @@ The extension gets column lineage from the Fusion language server of the file's 
 - **Columns of a node.** `dbt.getCurrentNode` with the file's project-relative path.
 - **Freshness.** The server answers from the saved project; whether it also reflects unsaved edits varied between runs. The panel re-requests after a save of a file in the project.
 - **Static analysis.** Column lineage needs the client launched with `--static-analysis strict`; under `baseline` the server returns no column nodes. The panel says so and names `fusionPowerUser.staticAnalysis` instead of showing an empty graph.
-- **Schema origin.** Unchanged from the first version: sources come from the warehouse unless the project sets the documented `+schema_origin` line and the extension sets `FUSION_POWER_USER_SCHEMA_ORIGIN=local` in the server's environment.
+- **Schema origin.** Sources come from the warehouse unless the project sets the documented `+schema_origin` line and the extension resolves local origin. The extension always sets `FUSION_POWER_USER_SCHEMA_ORIGIN` in the server's environment, `local` or `remote`, so the host's environment never decides. Source types are read from the manifest, so a hooked project's first launch is remote and the server restarts once with local origin after the first parse.
 
 The CLI lineage compile, the `column_lineage` info-schema read, refresh on save and the "Refresh column lineage" command are removed.
 

@@ -12,6 +12,8 @@ export const HARNESS_SWITCHES = {
   runtimeBenchmark: "FPU_RUNTIME_BENCHMARK",
   /** The smoke-test host (`"vscode"` or `"cursor"`); enables test-only commands. */
   smokeHost: "FPU_SMOKE_HOST",
+  /** `"1"` enables the test-only commands the integration suites call. */
+  integrationCommands: "FPU_INTEGRATION_COMMANDS",
 } as const;
 
 export type EnvironmentOverride = keyof typeof ENVIRONMENT_OVERRIDES;

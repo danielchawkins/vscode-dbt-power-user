@@ -2,9 +2,40 @@ import { DbtProjectConfig, declaredProjectName } from "../core/project";
 import { SourceMetaMap } from "../dbt_integration/domain";
 import { FusionVersion } from "./fusionVersion";
 
-/** The documented hook (ADR 0006): the extension controls it per command through this variable. */
-export const SCHEMA_ORIGIN_ENV = "FUSION_POWER_USER_SCHEMA_ORIGIN";
+/** The documented hook (ADR 0006): the extension sets this variable in the language server's environment. */
+const SCHEMA_ORIGIN_ENV = "FUSION_POWER_USER_SCHEMA_ORIGIN";
 export const SCHEMA_ORIGIN_HOOK = `{{ env_var('${SCHEMA_ORIGIN_ENV}', 'remote') }}`;
+
+/**
+ * The schema-origin variable for the language server: `local` for a project known to be warehouse-free, `remote`
+ * otherwise. Always set, so the extension host's environment never decides the origin.
+ */
+export function schemaOriginEnv(
+  status: SchemaOriginStatus,
+): Record<string, string> {
+  return { [SCHEMA_ORIGIN_ENV]: status.kind === "local" ? "local" : "remote" };
+}
+
+/** The parts of a project `schemaOriginLaunchEnv` reads. */
+export interface SchemaOriginProject {
+  getMetadataSnapshot(): unknown;
+  schemaOriginStatus(fusionVersion: FusionVersion): SchemaOriginStatus;
+}
+
+/**
+ * The schema-origin environment a project's language server launches with. Source types are unknown until the
+ * project's first parse, so it is `remote` until then; the manifest event re-resolves it.
+ */
+export function schemaOriginLaunchEnv(
+  project: SchemaOriginProject | undefined,
+  fusionVersion: FusionVersion,
+): Record<string, string> {
+  return schemaOriginEnv(
+    project?.getMetadataSnapshot()
+      ? project.schemaOriginStatus(fusionVersion)
+      : { kind: "untypedSources", missing: [] },
+  );
+}
 
 export interface UntypedSource {
   source: string;

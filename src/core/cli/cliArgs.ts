@@ -13,8 +13,7 @@ export type CliCommand =
   /** JSON output from which the compiled SQL is read back. */
   | { kind: "compileNode"; node: string }
   | { kind: "compileInline"; sql: string; output: "json" | "quiet" }
-  | { kind: "compileColumnLineage"; select: readonly string[] }
-  | { kind: "show"; sql: string; limit: number; output: "preview" | "lineage" }
+  | { kind: "show"; sql: string; limit: number }
   | { kind: "parse" }
   | { kind: "deps" }
   | { kind: "clean" }
@@ -49,11 +48,17 @@ function commandParamsFor(
 
 type ShowCommand = Extract<CliCommand, { kind: "show" }>;
 
-function showBody({ sql, limit, output }: ShowCommand): string[] {
-  const rows = ["--limit", String(limit)];
-  return output === "preview"
-    ? ["show", "--log-level", "debug", "--inline", sql, ...rows, ...JSON_LOGS]
-    : ["show", "--inline", sql, "--output", "json", ...rows, "--quiet"];
+function showBody({ sql, limit }: ShowCommand): string[] {
+  return [
+    "show",
+    "--log-level",
+    "debug",
+    "--inline",
+    sql,
+    "--limit",
+    String(limit),
+    ...JSON_LOGS,
+  ];
 }
 
 /** Subcommand, selection or payload, and the kind's fixed flags. */
@@ -75,14 +80,6 @@ function body(command: CliCommand): string[] {
         "--inline",
         command.sql,
         ...(command.output === "json" ? DEBUG_JSON_LOGS : ["--quiet"]),
-      ];
-    case "compileColumnLineage":
-      return [
-        "compile",
-        ...(command.select.length > 0 ? ["--select", ...command.select] : []),
-        "--static-analysis",
-        "strict",
-        "--generate-info-schema",
       ];
     case "show":
       return showBody(command);

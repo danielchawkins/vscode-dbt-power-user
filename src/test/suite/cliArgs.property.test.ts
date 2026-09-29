@@ -33,13 +33,9 @@ const commands: fc.Arbitrary<CliCommand> = fc.oneof(
       output,
     })),
   fc
-    .array(payload, { maxLength: 3 })
-    .map((select): CliCommand => ({ kind: "compileColumnLineage", select })),
-  fc
     .record({
       sql: payload,
       limit: fc.integer({ min: -1, max: 10_000 }),
-      output: fc.constantFrom("preview", "lineage"),
     })
     .map((show): CliCommand => ({ kind: "show", ...show })),
   fc.constantFrom<CliCommand>(
@@ -83,8 +79,6 @@ function payloadOf(c: CliCommand): string[] {
       return [c.node];
     case "compileInline":
       return [c.sql];
-    case "compileColumnLineage":
-      return [...c.select];
     case "show":
       return [];
     default:
@@ -235,17 +229,16 @@ describe("toCliArgs properties", () => {
     });
   });
 
-  it("emits --static-analysis strict and --generate-info-schema exactly on column lineage", () => {
+  it("never adds --static-analysis or --generate-info-schema", () => {
     property((s, c, args) => {
-      const lineage = c.kind === "compileColumnLineage" ? 1 : 0;
       const given = supplied(s, c);
       expect(
         count(args, "--generate-info-schema") -
           count(given, "--generate-info-schema"),
-      ).toBe(lineage);
+      ).toBe(0);
       expect(
         count(args, "--static-analysis") - count(given, "--static-analysis"),
-      ).toBe(lineage);
+      ).toBe(0);
     });
   });
 });

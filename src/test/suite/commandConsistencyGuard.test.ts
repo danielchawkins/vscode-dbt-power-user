@@ -157,6 +157,10 @@ describe("command contribution consistency", () => {
         "Constant export; conditional registration",
       "lsp/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":
         "Constant export; conditional registration",
+      "services/connectedColumnsCommand.ts:CONNECTED_COLUMNS_COMMAND":
+        "Constant export; conditional registration",
+      "services/connectedColumnsCommand.ts:LINEAGE_COLUMNS_COMMAND":
+        "Constant export; conditional registration",
     };
 
     const orphans = Array.from(contributed).filter((cmd) => !literals.has(cmd));

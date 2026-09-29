@@ -1,3 +1,0 @@
-
-=================== Errors and Warnings ====================
-[warning] [Generic (dbt1000)]: --generate-info-schema: column types will not be populated without `--static-analysis strict`, which also enables column-level lineage.
