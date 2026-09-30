@@ -1,22 +1,15 @@
-import { existsSync, writeFileSync } from "fs";
-
 import { inject } from "inversify";
 import * as path from "path";
 import {
-  commands,
   Diagnostic,
   DiagnosticSeverity,
   Disposable,
   Event,
   EventEmitter,
   languages,
-  ProgressLocation,
   Range,
-  RelativePattern,
   Uri,
-  ViewColumn,
   window,
-  workspace,
 } from "vscode";
 import { commandParamsFor } from "../core/cli";
 import {
@@ -25,7 +18,6 @@ import {
   ResolvedDefer,
 } from "../core/project";
 import {
-  ColumnMetaData,
   DBColumn,
   DBTCommand,
   DBTDiagnosticData,
@@ -43,6 +35,13 @@ import {
 } from "../fusion/schemaOrigin";
 import { ModelNode } from "../local/lineageTypes";
 import { CommandQueue, formatCommandStatus } from "../projects/commandQueue";
+import {
+  createYMLContent,
+  findModelInTargetfolder,
+  generateModel,
+  generateSchemaYML,
+  mergeColumnsFromDB,
+} from "../projects/projectCodegen";
 import { readProjectSnapshot } from "../projects/readProjectSnapshot";
 import {
   RunResultsHistory,
@@ -52,7 +51,6 @@ import {
 import { RunHistoryService } from "../services/runHistoryService";
 import { SharedStateService } from "../services/sharedStateService";
 import { readSetting } from "../settings";
-import { getColumnNameByCase } from "../utils";
 import { DBTProjectLog } from "./dbtProjectLog";
 import {
   ManifestCacheChangedEvent,
@@ -83,10 +81,6 @@ function formatCliStatus(
 
 type ProjectDiagnosticKind =
   "rebuild-manifest" | "project-config" | "fusion-executable";
-
-interface FileNameTemplateMap {
-  [key: string]: string;
-}
 
 export class DBTProject implements Disposable {
   private static readonly publicationEpochs = new Map<string, number>();
@@ -539,12 +533,7 @@ export class DBTProject implements Disposable {
     columnsInRelation: { [key: string]: string }[],
     modelName: string,
   ): string {
-    let yamlString = "version: 2\n\nmodels:\n";
-    yamlString += `  - name: ${modelName}\n    description: ""\n    columns:\n`;
-    for (const item of columnsInRelation) {
-      yamlString += `    - name: ${item.column}\n      description: ""\n`;
-    }
-    return yamlString;
+    return createYMLContent(columnsInRelation, modelName);
   }
 
   async unsafeCompileQuery(query: string) {
@@ -570,31 +559,7 @@ export class DBTProject implements Disposable {
   }
 
   async generateSchemaYML(modelPath: Uri, modelName: string) {
-    try {
-      // Create filePath based on model location
-      const currentDir = path.dirname(modelPath.fsPath);
-      const location = path.join(currentDir, modelName + "_schema.yml");
-      if (!existsSync(location)) {
-        const columnsInRelation = await this.getColumnsOfModel(modelName);
-        // Generate yml file content
-        const fileContents = this.createYMLContent(
-          columnsInRelation,
-          modelName,
-        );
-        writeFileSync(location, fileContents);
-        const doc = await workspace.openTextDocument(Uri.file(location));
-        window.showTextDocument(doc);
-      } else {
-        window.showErrorMessage(
-          `A file called ${modelName}_schema.yml already exists in ${currentDir}. If you want to generate the schema yml, please rename the other file or delete it if you want to generate the yml again.`,
-        );
-      }
-    } catch (exc) {
-      window.showErrorMessage(
-        "Could not generate schema yaml: " +
-          (exc instanceof Error ? exc.message : String(exc)),
-      );
-    }
+    return generateSchemaYML(this, modelPath, modelName);
   }
 
   async generateModel(
@@ -602,77 +567,12 @@ export class DBTProject implements Disposable {
     tableName: string,
     sourcePath: string,
   ) {
-    await window.withProgress(
-      {
-        location: ProgressLocation.Notification,
-        title: "Generating model...",
-        cancellable: false,
-      },
-      async () => {
-        try {
-          const prefix = readSetting("generateModel.prefix");
-
-          // Map setting to fileName
-          const fileNameTemplateMap: FileNameTemplateMap = {
-            "{prefix}_{sourceName}_{tableName}": `${prefix}_${sourceName}_${tableName}`,
-            "{prefix}_{sourceName}__{tableName}": `${prefix}_${sourceName}__${tableName}`,
-            "{prefix}_{tableName}": `${prefix}_${tableName}`,
-            "{tableName}": `${tableName}`,
-          };
-
-          // Default filename template
-          let fileName = `${prefix}_${sourceName}_${tableName}`;
-
-          const fileNameTemplate = readSetting(
-            "generateModel.fileNameTemplate",
-          );
-
-          // Parse setting to fileName
-          if (fileNameTemplate in fileNameTemplateMap) {
-            fileName = fileNameTemplateMap[fileNameTemplate];
-          }
-          // Create filePath based on source.yml location
-          const location = path.join(sourcePath, fileName + ".sql");
-          if (!existsSync(location)) {
-            const columnsInRelation = await this.getColumnsOfSource(
-              sourceName,
-              tableName,
-            );
-            this.terminal.debug(
-              "dbtProject:generateModel",
-              `Generating columns for source ${sourceName} and table ${tableName}`,
-              columnsInRelation,
-            );
-
-            const fileContents = `with source as (
-        select * from {{ source('${sourceName}', '${tableName}') }}
-  ),
-  renamed as (
-      select
-          ${columnsInRelation
-            .map((column) => `{{ adapter.quote("${column.column}") }}`)
-            .join(",\n        ")}
-
-      from source
-  )
-  select * from renamed
-    `;
-            writeFileSync(location, fileContents);
-            const doc = await workspace.openTextDocument(Uri.file(location));
-            window.showTextDocument(doc);
-          } else {
-            window.showErrorMessage(
-              `A model called ${fileName} already exists in ${sourcePath}. If you want to generate the model, please rename the other model or delete it if you want to generate the model again.`,
-            );
-          }
-        } catch (exc) {
-          window.showErrorMessage(
-            "An error occured while trying to generate the model: " +
-              (exc instanceof Error ? exc.message : String(exc)) +
-              ".",
-          );
-        }
-      },
+    return generateModel(
+      this,
+      this.terminal,
+      sourceName,
+      tableName,
+      sourcePath,
     );
   }
 
@@ -748,59 +648,15 @@ export class DBTProject implements Disposable {
   }
 
   private async findModelInTargetfolder(modelPath: Uri, type: string) {
-    const targetPath = this.getTargetPath();
-    if (!targetPath) {
-      return;
-    }
-    const relativePath = path.relative(
-      this.projectRoot.fsPath,
-      modelPath.fsPath,
-    );
-
-    const targetModels = await workspace.findFiles(
-      new RelativePattern(targetPath, path.join(type, "**", relativePath)),
-    );
-    if (targetModels.length > 0) {
-      commands.executeCommand("vscode.open", targetModels[0], {
-        preview: false,
-        preserveFocus: true,
-        viewColumn: ViewColumn.Beside,
-      });
-    }
+    const root = this.projectRoot.fsPath;
+    return findModelInTargetfolder(root, this.getTargetPath(), modelPath, type);
   }
 
   mergeColumnsFromDB(
     node: Pick<ModelNode, "columns">,
     columnsFromDB: DBColumn[],
   ) {
-    if (!columnsFromDB || columnsFromDB.length === 0) {
-      return false;
-    }
-    const columnsFromManifest: Record<string, ColumnMetaData> = {};
-    Object.entries(node.columns).forEach(([k, v]) => {
-      columnsFromManifest[getColumnNameByCase(k, this.getAdapterType())] = v;
-    });
-
-    for (const c of columnsFromDB) {
-      const columnNameFromDB = getColumnNameByCase(
-        c.column,
-        this.getAdapterType(),
-      );
-      const existing_column = columnsFromManifest[columnNameFromDB];
-      if (existing_column) {
-        existing_column.data_type = (
-          existing_column.data_type || c.dtype
-        )?.toLowerCase();
-        continue;
-      }
-      node.columns[columnNameFromDB] = {
-        name: columnNameFromDB,
-        data_type: c.dtype?.toLowerCase(),
-        description: "",
-        meta: {},
-      };
-    }
-    return true;
+    return mergeColumnsFromDB(this.getAdapterType(), node, columnsFromDB);
   }
 
   throwDiagnosticsErrorIfAvailable() {
