@@ -1,12 +1,5 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
 import * as fs from "fs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { ProjectSnapshot } from "../../core/project";
 import { DBTTerminal, RunModelType } from "../../dbt_integration";
@@ -35,13 +28,13 @@ describe("modelParamsFor", () => {
   const model = Uri.file("/project/models/orders.sql");
 
   beforeEach(() => {
-    jest
-      .spyOn(fs.realpathSync, "native")
-      .mockImplementation((value) => value as string);
+    vi.spyOn(fs.realpathSync, "native").mockImplementation(
+      (value) => value as string,
+    );
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it.each([
@@ -61,9 +54,9 @@ describe("modelParamsFor", () => {
   });
 
   it("names the model after the file's real path", () => {
-    jest
-      .spyOn(fs.realpathSync, "native")
-      .mockReturnValue("/elsewhere/customers.sql");
+    vi.spyOn(fs.realpathSync, "native").mockReturnValue(
+      "/elsewhere/customers.sql",
+    );
 
     expect(modelParamsFor(model).modelName).toBe("customers");
   });
@@ -84,9 +77,9 @@ describe("formatCliStatus", () => {
 
 describe("queueCli", () => {
   it("notifies failure and queues nothing when prepare throws", async () => {
-    const enqueue = jest.fn();
-    const notifyFailed = jest.fn();
-    const error = jest.fn();
+    const enqueue = vi.fn();
+    const notifyFailed = vi.fn();
+    const error = vi.fn();
     const deps: ProjectCommandDeps = {
       commandQueue: { enqueue } as unknown as CommandQueue,
       cli: () =>

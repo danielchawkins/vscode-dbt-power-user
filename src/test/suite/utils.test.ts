@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Position, Uri, window, workspace } from "vscode";
 import { getExternalProjectNamesFromDbtLoomConfig } from "../../core/manifest";
 import {
@@ -24,7 +24,7 @@ import {
 
 describe("utils tests", () => {
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("getStringSizeInMb handles multibyte characters", () => {
@@ -35,7 +35,7 @@ describe("utils tests", () => {
   });
 
   it("isQuotedIdentifier respects custom regex", () => {
-    jest.spyOn(workspace, "getConfiguration").mockReturnValue({
+    vi.spyOn(workspace, "getConfiguration").mockReturnValue({
       get: (key: string) =>
         key === "unquotedCaseInsensitiveIdentifierRegex"
           ? "^[a-z]+$"
@@ -46,7 +46,7 @@ describe("utils tests", () => {
   });
 
   it("getColumnNameByCase and isColumnNameEqual lowercase unquoted names", () => {
-    jest.spyOn(workspace, "getConfiguration").mockReturnValue({
+    vi.spyOn(workspace, "getConfiguration").mockReturnValue({
       get: () => "",
     } as any);
     expect(getColumnNameByCase("TEST", "snowflake")).toBe("test");
@@ -55,7 +55,7 @@ describe("utils tests", () => {
 
   it("getFirstWorkspacePath falls back when no workspace", () => {
     (workspace.workspaceFolders as any) = undefined;
-    jest.spyOn(Uri, "file").mockReturnValue({ fsPath: "./" } as any);
+    vi.spyOn(Uri, "file").mockReturnValue({ fsPath: "./" } as any);
     expect(getFirstWorkspacePath()).toBe("./");
   });
 
@@ -137,11 +137,11 @@ describe("utils tests", () => {
 
   it("setupWatcherHandler wires events", () => {
     const watcher = {
-      onDidChange: jest.fn((cb: any) => (cb(), { dispose: jest.fn() })),
-      onDidCreate: jest.fn((cb: any) => (cb(), { dispose: jest.fn() })),
-      onDidDelete: jest.fn((cb: any) => (cb(), { dispose: jest.fn() })),
+      onDidChange: vi.fn((cb: any) => (cb(), { dispose: vi.fn() })),
+      onDidCreate: vi.fn((cb: any) => (cb(), { dispose: vi.fn() })),
+      onDidDelete: vi.fn((cb: any) => (cb(), { dispose: vi.fn() })),
     } as any;
-    const handler = jest.fn();
+    const handler = vi.fn();
     const disposables = setupWatcherHandler(watcher, handler);
     expect(handler).toHaveBeenCalledTimes(3);
     expect(disposables).toHaveLength(3);
@@ -153,15 +153,15 @@ describe("utils tests", () => {
   });
 
   it("debounce delays execution", () => {
-    jest.useFakeTimers();
-    const fn = jest.fn();
+    vi.useFakeTimers();
+    const fn = vi.fn();
     const debounced = debounce(fn as any, 50);
     debounced();
-    jest.advanceTimersByTime(49);
+    vi.advanceTimersByTime(49);
     expect(fn).not.toHaveBeenCalled();
-    jest.advanceTimersByTime(1);
+    vi.advanceTimersByTime(1);
     expect(fn).toHaveBeenCalled();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("stripANSI removes escape codes", () => {

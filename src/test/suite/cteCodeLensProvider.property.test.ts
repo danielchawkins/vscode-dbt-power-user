@@ -1,5 +1,5 @@
-import { describe, expect, it } from "@jest/globals";
 import fc from "fast-check";
+import { describe, expect, it } from "vitest";
 import { Position, TextDocument } from "vscode";
 import { DBTTerminal } from "../../dbt_integration";
 import {

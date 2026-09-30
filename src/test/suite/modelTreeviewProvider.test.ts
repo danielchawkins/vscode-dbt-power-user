@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter, Uri, window } from "vscode";
 import {
   DocumentationTreeview,
@@ -57,7 +57,7 @@ describe("model tree views", () => {
     projects = {
       onDidChangeManifest: changed.event,
       onDidRemoveProject: removed.event,
-      get: jest.fn((uri: Uri) =>
+      get: vi.fn((uri: Uri) =>
         [...byRoot.values()].find((p) =>
           uri.fsPath.startsWith(`${p.projectRoot.fsPath}/`),
         ),
@@ -74,7 +74,7 @@ describe("model tree views", () => {
 
   it("refreshes on a manifest change for project A and empties when A is removed", async () => {
     const tree = new ParentModelTreeview(projects);
-    const onRefresh = jest.fn();
+    const onRefresh = vi.fn();
     tree.onDidChangeTreeData(onRefresh);
 
     expect(await tree.getChildren()).toEqual([]);
@@ -103,7 +103,7 @@ describe("model tree views", () => {
 
   it("documentation tree refreshes on manifest change and removal", async () => {
     const tree = new DocumentationTreeview(projects);
-    const onRefresh = jest.fn();
+    const onRefresh = vi.fn();
     tree.onDidChangeTreeData(onRefresh);
 
     const projectA = { projectRoot: rootA, manifest: manifest() };

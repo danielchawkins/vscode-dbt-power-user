@@ -1,14 +1,15 @@
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import {
   afterEach,
   beforeEach,
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
+  type Mock,
+  vi,
+} from "vitest";
 import {
   ConfigurationChangeEvent,
   DiagnosticSeverity,
@@ -88,30 +89,28 @@ function recordingExecutionFactory(): {
 } {
   const calls: Array<Record<string, unknown>> = [];
   const execution = {
-    complete: jest.fn(async () => ({ stdout: "", stderr: "", exitCode: 0 })),
-    completeWithTerminalOutput: jest.fn(async () => ({
+    complete: vi.fn(async () => ({ stdout: "", stderr: "", exitCode: 0 })),
+    completeWithTerminalOutput: vi.fn(async () => ({
       stdout: "",
       stderr: "",
       exitCode: 0,
     })),
-    dispose: jest.fn(),
+    dispose: vi.fn(),
   } as unknown as CommandProcessExecution;
   const factory = {
-    createCommandProcessExecution: jest.fn(
-      (options: Record<string, unknown>) => {
-        calls.push(options);
-        return execution;
-      },
-    ),
+    createCommandProcessExecution: vi.fn((options: Record<string, unknown>) => {
+      calls.push(options);
+      return execution;
+    }),
   } as unknown as CommandProcessExecutionFactory;
   return { factory, calls };
 }
 
 function stubDelegate(root: string, hooks: Partial<FusionCli> = {}): FusionCli {
   const stub: Partial<FusionCli> = {
-    refreshProjectConfig: jest.fn(async () => undefined),
-    rebuildManifest: jest.fn(async () => undefined),
-    dispose: jest.fn(async () => undefined),
+    refreshProjectConfig: vi.fn(async () => undefined),
+    rebuildManifest: vi.fn(async () => undefined),
+    dispose: vi.fn(async () => undefined),
     getDiagnostics: () => ({
       projectConfigDiagnostics: [],
       rebuildManifestDiagnostics: [],
@@ -121,7 +120,7 @@ function stubDelegate(root: string, hooks: Partial<FusionCli> = {}): FusionCli {
     getMacroPaths: () => [path.join(root, "macros")],
     getSeedPaths: () => [path.join(root, "seeds")],
     getTargetPath: () => path.join(root, "target"),
-    run: jest.fn(async () => ({ stdout: "", stderr: "", fullOutput: "" })),
+    run: vi.fn(async () => ({ stdout: "", stderr: "", fullOutput: "" })),
     ...hooks,
   };
   return stub as FusionCli;
@@ -142,7 +141,7 @@ function buildIntegration(
   fusionIntegrationFactory: FusionCommandIntegrationFactory,
 ): Project {
   return buildTestProject(projectRoot, fusionIntegrationFactory, {
-    resolver: { resolve: jest.fn(async () => resolve()) },
+    resolver: { resolve: vi.fn(async () => resolve()) },
     terminal: mockTerminal(),
   });
 }
@@ -170,19 +169,19 @@ describe("Fusion CLI executable wiring", () => {
 
   beforeEach(() => {
     configListeners = [];
-    jest
-      .spyOn(workspace, "onDidChangeConfiguration")
-      .mockImplementation((listener) => {
+    vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(
+      (listener) => {
         configListeners.push(
           listener as (event: ConfigurationChangeEvent) => void,
         );
-        return { dispose: jest.fn() };
-      });
+        return { dispose: vi.fn() };
+      },
+    );
   });
 
   afterEach(() => {
     delete process.env[ENV_MARKER];
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   function fusionCliFactory(
@@ -206,7 +205,7 @@ describe("Fusion CLI executable wiring", () => {
     const base = fusionCliFactory(terminal, commandProcessExecutionFactory);
     return (...args) => {
       const delegate = base(...args);
-      jest.spyOn(delegate, "rebuildManifest").mockResolvedValue(undefined);
+      vi.spyOn(delegate, "rebuildManifest").mockResolvedValue(undefined);
       return delegate;
     };
   }
@@ -317,7 +316,7 @@ describe("Fusion CLI executable wiring", () => {
       }),
       lifecycleFactory(failedRoot, {}),
     );
-    const refreshProjectConfig = jest.fn(async () => undefined);
+    const refreshProjectConfig = vi.fn(async () => undefined);
     const healthyIntegration = buildIntegration(
       healthyRoot,
       async () => sampleExecutable("/opt/healthy/dbt"),
@@ -459,12 +458,12 @@ describe("Fusion CLI executable wiring", () => {
         releaseGate = resolve;
       });
       const hooks: Partial<FusionCli> = {
-        [gatedMethod]: jest.fn(async () => {
+        [gatedMethod]: vi.fn(async () => {
           await gate;
         }),
       };
-      const delegateDispose = jest.fn(async () => undefined);
-      const projectConfigChanged = jest.fn();
+      const delegateDispose = vi.fn(async () => undefined);
+      const projectConfigChanged = vi.fn();
       const integration = buildIntegration(
         root,
         async () => sampleExecutable("/project/race/dbt"),
@@ -477,7 +476,7 @@ describe("Fusion CLI executable wiring", () => {
 
       const watchersBefore = createdFileSystemWatchers.length;
       const initPromise = integration.initialize();
-      const gatedMock = hooks[gatedMethod] as jest.Mock;
+      const gatedMock = hooks[gatedMethod] as Mock;
       await waitFor(() => expect(gatedMock.mock.calls.length).toBe(1));
       await integration.dispose();
       expect(() => integration.getFusionCli()).toThrow();

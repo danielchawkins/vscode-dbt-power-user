@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri, window } from "vscode";
 import { QueryManifestService } from "../../projects/queryManifestService";
 
@@ -9,7 +9,7 @@ describe("QueryManifestService.rewire", () => {
   let mockProject: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     (window.activeTextEditor as any) = undefined;
 
     mockProject = {
@@ -22,15 +22,15 @@ describe("QueryManifestService.rewire", () => {
     };
 
     projectsDouble = {
-      get: jest.fn((uri: any) =>
+      get: vi.fn((uri: any) =>
         (uri as any)?.fsPath === "/workspace/projects/general"
           ? mockProject
           : undefined,
       ),
-      all: jest.fn(() => []),
+      all: vi.fn(() => []),
     };
 
-    const forResourceMock = jest.fn((uri: any) =>
+    const forResourceMock = vi.fn((uri: any) =>
       (uri as any)?.fsPath ===
       "/workspace/projects/general/models/general_model.sql"
         ? declaredProject
@@ -40,12 +40,12 @@ describe("QueryManifestService.rewire", () => {
     contextDouble = {
       forResource: forResourceMock,
       current: declaredProject,
-      requireForCommand: jest.fn(),
+      requireForCommand: vi.fn(),
     };
 
     service = new QueryManifestService(
       projectsDouble as any,
-      { debug: jest.fn(), error: jest.fn(), warn: jest.fn() } as any,
+      { debug: vi.fn(), error: vi.fn(), warn: vi.fn() } as any,
       contextDouble as any,
     );
   });
@@ -115,9 +115,9 @@ describe("QueryManifestService.rewire", () => {
       );
       (window.activeTextEditor as any) = { document: { uri: editorUri } };
 
-      jest
-        .spyOn(contextDouble, "requireForCommand" as any)
-        .mockResolvedValue({ root: Uri.file("/workspace/projects/general") });
+      vi.spyOn(contextDouble, "requireForCommand" as any).mockResolvedValue({
+        root: Uri.file("/workspace/projects/general"),
+      });
 
       const result = await service.getOrPickProjectFromWorkspace();
 
@@ -126,9 +126,9 @@ describe("QueryManifestService.rewire", () => {
     });
 
     it("returns undefined when requireForCommand resolves undefined (cancel or no projects)", async () => {
-      jest
-        .spyOn(contextDouble, "requireForCommand" as any)
-        .mockResolvedValue(undefined);
+      vi.spyOn(contextDouble, "requireForCommand" as any).mockResolvedValue(
+        undefined,
+      );
 
       const result = await service.getOrPickProjectFromWorkspace();
       expect(result).toBeUndefined();
@@ -186,7 +186,7 @@ describe("QueryManifestService.rewire", () => {
       ]);
       expect(contextDouble.forResource).toHaveBeenCalledWith(file);
 
-      jest.clearAllMocks();
+      vi.clearAllMocks();
       expect(Array.from(service.getModelsInProject(file) ?? [])).toEqual([
         "model1",
       ]);

@@ -1,6 +1,6 @@
-// Jest Snapshot v1, https://jestjs.io/docs/snapshot-testing
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
 
-exports[`Metadata contract — shape and key set snapshot snapshots parser maps on Manifest 1`] = `
+exports[`Metadata contract — shape and key set snapshot > snapshots parser maps on Manifest 1`] = `
 {
   "docKeys": [],
   "exposureKeys": [],

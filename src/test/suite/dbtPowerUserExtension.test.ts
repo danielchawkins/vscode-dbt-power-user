@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import { commands, extensions, Uri, window, workspace } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import {
@@ -14,34 +14,34 @@ const UPSTREAM_EXTENSION = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_ACTION = "Uninstall Power User";
 
 const activationHarness = (enabled: boolean) => {
-  const initializeProjects = jest.fn(() => Promise.resolve());
-  const initializeStatusBars = jest.fn(() => Promise.resolve());
-  const registryInitialize = jest.fn(() => Promise.resolve());
-  const fusionClientPoolInitialize = jest.fn();
-  const fusionStatusInitialize = jest.fn();
+  const initializeProjects = vi.fn(() => Promise.resolve());
+  const initializeStatusBars = vi.fn(() => Promise.resolve());
+  const registryInitialize = vi.fn(() => Promise.resolve());
+  const fusionClientPoolInitialize = vi.fn();
+  const fusionStatusInitialize = vi.fn();
   const extension = new (DBTPowerUserExtension as any)() as any;
   Object.assign(extension, {
     projects: {
-      setContext: jest.fn(),
+      setContext: vi.fn(),
       initialize: initializeProjects,
     },
     projectRegistry: { initialize: registryInitialize },
     fusionClientPool: { initialize: fusionClientPoolInitialize },
     fusionStatus: { initialize: fusionStatusInitialize },
     currentProject: {},
-    dbtTemplateLanguage: { start: jest.fn() },
+    dbtTemplateLanguage: { start: vi.fn() },
     statusBars: { initialize: initializeStatusBars },
-    dbtTerminal: { error: jest.fn() },
-    runHistoryService: { dispose: jest.fn() },
-    sharedState: { dispose: jest.fn() },
+    dbtTerminal: { error: vi.fn() },
+    runHistoryService: { dispose: vi.fn() },
+    sharedState: { dispose: vi.fn() },
     startupGate: new StartupGate(),
     disposables: [],
   });
 
   const folder = { uri: Uri.file("/workspace"), name: "workspace", index: 0 };
   (workspace as any).workspaceFolders = [folder];
-  (workspace.getConfiguration as jest.Mock).mockReturnValue({
-    get: jest.fn((key: string, fallback: unknown) =>
+  (workspace.getConfiguration as Mock).mockReturnValue({
+    get: vi.fn((key: string, fallback: unknown) =>
       key === "enabled" ? enabled : fallback,
     ),
   });
@@ -60,15 +60,13 @@ const activationHarness = (enabled: boolean) => {
 
 describe("DBTPowerUserExtension startup gate", () => {
   const gatedCommand = (extension: DBTPowerUserExtension) => {
-    const requireForCommand = jest.fn(() => Promise.resolve(undefined));
+    const requireForCommand = vi.fn(() => Promise.resolve(undefined));
     new ProjectConfigCommands(
       (extension as any).startupGate,
       { requireForCommand } as never,
-      { error: jest.fn() } as never,
+      { error: vi.fn() } as never,
     );
-    const registration = (
-      commands.registerCommand as jest.Mock
-    ).mock.calls.find(
+    const registration = (commands.registerCommand as Mock).mock.calls.find(
       ([command]) => command === "fusionPowerUser.enableStrictAnalysis",
     );
     return {
@@ -78,9 +76,9 @@ describe("DBTPowerUserExtension startup gate", () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    (extensions.getExtension as jest.Mock).mockReturnValue(undefined);
-    (window.showErrorMessage as jest.Mock).mockReturnValue(Promise.resolve());
+    vi.clearAllMocks();
+    (extensions.getExtension as Mock).mockReturnValue(undefined);
+    (window.showErrorMessage as Mock).mockReturnValue(Promise.resolve());
   });
 
   it("holds gated commands until startup settles", async () => {
@@ -114,7 +112,7 @@ describe("DBTPowerUserExtension startup gate", () => {
 
   it("runs gated commands when Power User is installed", async () => {
     const harness = activationHarness(true);
-    (extensions.getExtension as jest.Mock).mockReturnValue({
+    (extensions.getExtension as Mock).mockReturnValue({
       id: UPSTREAM_EXTENSION,
     });
     const command = gatedCommand(harness.extension);
@@ -151,17 +149,17 @@ describe("DBTPowerUserExtension startup gate", () => {
 
 describe("DBTPowerUserExtension.activate", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (extensions.getExtension as jest.Mock).mockReturnValue(undefined);
-    (window.showErrorMessage as jest.Mock).mockReturnValue(Promise.resolve());
+    vi.clearAllMocks();
+    (extensions.getExtension as Mock).mockReturnValue(undefined);
+    (window.showErrorMessage as Mock).mockReturnValue(Promise.resolve());
   });
 
   it("offers to uninstall Power User and stops activation on conflict", async () => {
     const harness = activationHarness(true);
-    (extensions.getExtension as jest.Mock).mockReturnValue({
+    (extensions.getExtension as Mock).mockReturnValue({
       id: UPSTREAM_EXTENSION,
     });
-    (window.showErrorMessage as jest.Mock).mockReturnValue(
+    (window.showErrorMessage as Mock).mockReturnValue(
       Promise.resolve(UNINSTALL_ACTION),
     );
 
@@ -193,18 +191,18 @@ describe("DBTPowerUserExtension.activate", () => {
     const harness = activationHarness(true);
     const previous = process.env.FPU_INTEGRATION_COMMANDS;
     process.env.FPU_INTEGRATION_COMMANDS = "1";
-    (extensions.getExtension as jest.Mock).mockReturnValue({
+    (extensions.getExtension as Mock).mockReturnValue({
       id: UPSTREAM_EXTENSION,
     });
     let answer: (value: undefined) => void = () => {};
-    (window.showErrorMessage as jest.Mock).mockReturnValue(
+    (window.showErrorMessage as Mock).mockReturnValue(
       new Promise((resolve) => (answer = resolve)),
     );
 
     try {
       const ready = harness.extension.activate();
 
-      const registered = (commands.registerCommand as jest.Mock).mock.calls.map(
+      const registered = (commands.registerCommand as Mock).mock.calls.map(
         ([command]) => command,
       );
       expect(registered).toEqual(
@@ -287,7 +285,7 @@ describe("DBTPowerUserExtension.activate", () => {
       index: 1,
     };
     (workspace as any).workspaceFolders = [harness.folder, enabledFolder];
-    (workspace.getConfiguration as jest.Mock).mockImplementation(
+    (workspace.getConfiguration as Mock).mockImplementation(
       (...args: unknown[]) => ({
         get: () => (args[1] as Uri).fsPath === enabledFolder.uri.fsPath,
       }),
@@ -303,15 +301,15 @@ describe("DBTPowerUserExtension.activate", () => {
   it("deactivate awaits pool stop before disposing collaborators", async () => {
     const order: string[] = [];
     const fusionClientPool = {
-      initialize: jest.fn(),
-      stop: jest.fn(async () => {
+      initialize: vi.fn(),
+      stop: vi.fn(async () => {
         order.push("pool.stop");
       }),
-      dispose: jest.fn(() => {
+      dispose: vi.fn(() => {
         order.push("pool.dispose");
       }),
     };
-    const disposable = { dispose: jest.fn(() => order.push("other.dispose")) };
+    const disposable = { dispose: vi.fn(() => order.push("other.dispose")) };
     const extension = new (
       DBTPowerUserExtension as any
     )() as DBTPowerUserExtension;
@@ -340,13 +338,13 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(harness.initializeProjects).toHaveBeenCalled();
     expect(harness.initializeStatusBars).toHaveBeenCalled();
 
-    const registryCall = (harness.registryInitialize as jest.Mock).mock
+    const registryCall = (harness.registryInitialize as Mock).mock
       .invocationCallOrder[0];
-    const poolCall = (harness.fusionClientPoolInitialize as jest.Mock).mock
+    const poolCall = (harness.fusionClientPoolInitialize as Mock).mock
       .invocationCallOrder[0];
-    const statusCall = (harness.fusionStatusInitialize as jest.Mock).mock
+    const statusCall = (harness.fusionStatusInitialize as Mock).mock
       .invocationCallOrder[0];
-    const projectsCall = (harness.initializeProjects as jest.Mock).mock
+    const projectsCall = (harness.initializeProjects as Mock).mock
       .invocationCallOrder[0];
     expect(registryCall).toBeLessThan(poolCall);
     expect(poolCall).toBeLessThan(statusCall);

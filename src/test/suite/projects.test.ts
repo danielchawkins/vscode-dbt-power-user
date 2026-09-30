@@ -4,8 +4,10 @@ import {
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
+  type Mock,
+  type Mocked,
+  vi,
+} from "vitest";
 import { EventEmitter, Uri } from "vscode";
 import { DBTTerminal } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
@@ -15,11 +17,11 @@ import { Projects } from "../../projects/projects";
 
 describe("Projects", () => {
   let projects: Projects;
-  let mockDbtTerminal: jest.Mocked<DBTTerminal>;
+  let mockDbtTerminal: Mocked<DBTTerminal>;
   let mockProjectRegistry: any;
-  let mockDbtProjectFactory: jest.Mock;
-  let mockProject1: jest.Mocked<Project>;
-  let mockProject2: jest.Mocked<Project>;
+  let mockDbtProjectFactory: Mock;
+  let mockProject1: Mocked<Project>;
+  let mockProject2: Mocked<Project>;
   let declaredProject1: any;
   let declaredProject2: any;
   let registryOnDidChangeProjects: EventEmitter<void>;
@@ -29,27 +31,27 @@ describe("Projects", () => {
   beforeEach(() => {
     // Mock DBTTerminal
     mockDbtTerminal = {
-      debug: jest.fn(),
-      error: jest.fn(),
-      info: jest.fn(),
-      dispose: jest.fn(),
-    } as unknown as jest.Mocked<DBTTerminal>;
+      debug: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      dispose: vi.fn(),
+    } as unknown as Mocked<DBTTerminal>;
 
     // Create mock declared projects
     declaredProject1 = {
       root: Uri.file("/project1"),
       name: "project1",
       folder: { uri: Uri.file("/ws"), name: "ws", index: 0 },
-      contains: jest.fn((uri: Uri) => uri.fsPath.startsWith("/project1")),
-      dispose: jest.fn(),
+      contains: vi.fn((uri: Uri) => uri.fsPath.startsWith("/project1")),
+      dispose: vi.fn(),
     };
 
     declaredProject2 = {
       root: Uri.file("/project2"),
       name: "project2",
       folder: { uri: Uri.file("/ws"), name: "ws", index: 0 },
-      contains: jest.fn((uri: Uri) => uri.fsPath.startsWith("/project2")),
-      dispose: jest.fn(),
+      contains: vi.fn((uri: Uri) => uri.fsPath.startsWith("/project2")),
+      dispose: vi.fn(),
     };
 
     project1Manifest = new EventEmitter<Project>();
@@ -58,28 +60,28 @@ describe("Projects", () => {
     // Mock Project instances
     mockProject1 = {
       projectRoot: Uri.file("/project1"),
-      getProjectName: jest.fn().mockReturnValue("project1"),
-      getAdapterType: jest.fn().mockReturnValue("snowflake"),
-      initialize: jest.fn(),
-      dispose: jest.fn(),
+      getProjectName: vi.fn().mockReturnValue("project1"),
+      getAdapterType: vi.fn().mockReturnValue("snowflake"),
+      initialize: vi.fn(),
+      dispose: vi.fn(),
       manifest: undefined,
       onDidChangeManifest: project1Manifest.event,
-      rebuildManifest: jest.fn(),
-    } as unknown as jest.Mocked<Project>;
+      rebuildManifest: vi.fn(),
+    } as unknown as Mocked<Project>;
 
     mockProject2 = {
       projectRoot: Uri.file("/project2"),
-      getProjectName: jest.fn().mockReturnValue("project2"),
-      getAdapterType: jest.fn().mockReturnValue("snowflake"),
-      initialize: jest.fn(),
-      dispose: jest.fn(),
+      getProjectName: vi.fn().mockReturnValue("project2"),
+      getAdapterType: vi.fn().mockReturnValue("snowflake"),
+      initialize: vi.fn(),
+      dispose: vi.fn(),
       manifest: undefined,
       onDidChangeManifest: project2Manifest.event,
-      rebuildManifest: jest.fn(),
-    } as unknown as jest.Mocked<Project>;
+      rebuildManifest: vi.fn(),
+    } as unknown as Mocked<Project>;
 
     // Mock factory
-    mockDbtProjectFactory = jest.fn((uri: Uri) => {
+    mockDbtProjectFactory = vi.fn((uri: Uri) => {
       const project =
         uri.fsPath === "/project1"
           ? mockProject1
@@ -99,7 +101,7 @@ describe("Projects", () => {
       get onDidChangeProjects() {
         return registryOnDidChangeProjects.event;
       },
-      findProject: jest.fn((uri: Uri) => {
+      findProject: vi.fn((uri: Uri) => {
         if (uri.fsPath.startsWith("/project1")) {
           return declaredProject1;
         }
@@ -108,7 +110,7 @@ describe("Projects", () => {
         }
         return undefined;
       }),
-      dispose: jest.fn(),
+      dispose: vi.fn(),
     } as unknown as ProjectRegistry;
 
     projects = new Projects(
@@ -119,8 +121,8 @@ describe("Projects", () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.restoreAllMocks();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   describe("initialization and sync", () => {
@@ -147,7 +149,7 @@ describe("Projects", () => {
         mockDbtTerminal,
       );
 
-      const initHandler = jest.fn();
+      const initHandler = vi.fn();
       other.onDidInitialize(initHandler);
 
       await other.initialize();
@@ -185,7 +187,7 @@ describe("Projects", () => {
     });
 
     it("should fire project removed before disposing removed projects", async () => {
-      const removedHandler = jest.fn();
+      const removedHandler = vi.fn();
       projects.onDidRemoveProject(removedHandler);
 
       // Reduce registry to one project
@@ -196,12 +198,12 @@ describe("Projects", () => {
       expect(removedHandler).toHaveBeenCalledWith(mockProject2.projectRoot);
       expect(mockProject2.dispose).toHaveBeenCalled();
       expect(removedHandler.mock.invocationCallOrder[0]).toBeLessThan(
-        (mockProject2.dispose as jest.Mock).mock.invocationCallOrder[0],
+        (mockProject2.dispose as Mock).mock.invocationCallOrder[0],
       );
     });
 
     it("fires the removed project's root on onDidRemoveProject", async () => {
-      const removedHandler = jest.fn();
+      const removedHandler = vi.fn();
       projects.onDidRemoveProject(removedHandler);
 
       mockProjectRegistry.projects = [declaredProject1];
@@ -213,7 +215,7 @@ describe("Projects", () => {
     });
 
     it("aggregates onDidChangeManifest across projects and stops after removal", async () => {
-      const changedHandler = jest.fn();
+      const changedHandler = vi.fn();
       projects.onDidChangeManifest(changedHandler);
 
       project1Manifest.fire(mockProject1);
@@ -319,7 +321,7 @@ describe("Projects", () => {
     });
 
     it("should fire project removed on disposal", () => {
-      const removedHandler = jest.fn<(root: Uri) => void>();
+      const removedHandler = vi.fn<(root: Uri) => void>();
       projects.onDidRemoveProject(removedHandler);
 
       projects.dispose();
@@ -337,9 +339,9 @@ describe("Projects", () => {
     });
 
     it("routes each publication once and drops events after removal", async () => {
-      const changed = jest.fn<(project: Project) => void>();
-      const removed = jest.fn<(root: Uri) => void>();
-      const sourceDispose = jest.spyOn(
+      const changed = vi.fn<(project: Project) => void>();
+      const removed = vi.fn<(root: Uri) => void>();
+      const sourceDispose = vi.spyOn(
         ManifestMetadataSource.prototype,
         "dispose",
       );
@@ -374,7 +376,7 @@ describe("Projects", () => {
       const replacement = {
         ...declaredProject1,
         name: "renamed-project",
-        dispose: jest.fn(),
+        dispose: vi.fn(),
       };
 
       mockProjectRegistry.projects = [replacement, declaredProject2];

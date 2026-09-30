@@ -1,11 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { parse } from "yaml";
 import { DbtTestService } from "../../features/docs/dbtTestService";
@@ -42,7 +35,7 @@ function testKeyPanel(panelClass: typeof DocsEditViewPanel): TestKeyPanel {
   };
   const instance = Object.create(panelClass.prototype);
   instance.dbtTestService = Object.create(DbtTestService.prototype);
-  instance.terminal = { debug: jest.fn(), error: jest.fn() };
+  instance.terminal = { debug: vi.fn(), error: vi.fn() };
   instance.projects = { get: () => project };
   instance.getProject = () => project;
   return instance as TestKeyPanel;
@@ -90,13 +83,13 @@ describe("docs editor test key", () => {
 describe("docs editor save", () => {
   const schemaYaml =
     "models:\n  - name: orders\n    columns:\n      - name: amount\n";
-  const writeFileSync = jest.fn();
+  const writeFileSync = vi.fn();
   let panel: TestKeyPanel;
 
   beforeEach(async () => {
-    jest.resetModules();
-    jest.unstable_mockModule("fs", () => ({
-      ...(jest.requireActual("fs") as typeof import("fs")),
+    vi.resetModules();
+    vi.doMock("fs", async () => ({
+      ...(await vi.importActual<typeof import("fs")>("fs")),
       existsSync: () => true,
       readFileSync: () => Buffer.from(schemaYaml),
       writeFileSync,
@@ -108,8 +101,8 @@ describe("docs editor save", () => {
 
   afterEach(async () => {
     writeFileSync.mockReset();
-    jest.resetModules();
-    jest.unstable_unmockModule("fs");
+    vi.resetModules();
+    vi.doUnmock("fs");
   });
 
   it("writes data_tests for a column added to a model that already has YAML", async () => {

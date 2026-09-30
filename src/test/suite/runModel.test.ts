@@ -1,12 +1,13 @@
+import * as fs from "fs";
 import {
   afterEach,
   beforeEach,
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
-import * as fs from "fs";
+  type Mocked,
+  vi,
+} from "vitest";
 import { Uri, window } from "vscode";
 import { RunModelType } from "../../dbt_integration";
 import { RunModel } from "../../features/run/runModel";
@@ -22,35 +23,35 @@ const untitledUri = {
 } as Uri;
 
 describe("RunModel SQL execution", () => {
-  let dbtProject: jest.Mocked<Project>;
-  let projects: jest.Mocked<Projects>;
-  let context: jest.Mocked<CurrentProject>;
+  let dbtProject: Mocked<Project>;
+  let projects: Mocked<Projects>;
+  let context: Mocked<CurrentProject>;
   let runModel: RunModel;
   let project: DeclaredProject;
 
   beforeEach(() => {
     dbtProject = {
-      executeSQLOnQueryPanel: jest.fn(),
-    } as unknown as jest.Mocked<Project>;
+      executeSQLOnQueryPanel: vi.fn(),
+    } as unknown as Mocked<Project>;
     projects = {
-      get: jest.fn().mockReturnValue(dbtProject),
-    } as unknown as jest.Mocked<Projects>;
+      get: vi.fn().mockReturnValue(dbtProject),
+    } as unknown as Mocked<Projects>;
     context = {
-      requireForCommand: jest.fn(),
-    } as unknown as jest.Mocked<CurrentProject>;
+      requireForCommand: vi.fn(),
+    } as unknown as Mocked<CurrentProject>;
     project = {
       root: Uri.file("/project"),
       name: "project",
       folder: { uri: Uri.file("/workspace"), name: "workspace", index: 0 },
       contains: () => true,
-      dispose: jest.fn(),
+      dispose: vi.fn(),
     };
     runModel = new RunModel(projects, context);
   });
 
   afterEach(() => {
     (window.activeTextEditor as unknown) = undefined;
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it.each([Uri.file("/project/models/model.sql"), untitledUri])(
@@ -87,7 +88,7 @@ describe("RunModel SQL execution", () => {
     (window.activeTextEditor as unknown) = {
       document: {
         uri: untitledUri,
-        getText: jest.fn().mockReturnValue("select 1"),
+        getText: vi.fn().mockReturnValue("select 1"),
       },
       selection: { isEmpty: true },
     };
@@ -115,32 +116,32 @@ describe("RunModel SQL execution", () => {
 
 describe("RunModel project commands", () => {
   const model = Uri.file("/project/models/orders.sql");
-  let project: jest.Mocked<Project>;
-  let projects: jest.Mocked<Projects>;
+  let project: Mocked<Project>;
+  let projects: Mocked<Projects>;
   let runModel: RunModel;
 
   beforeEach(() => {
-    jest
-      .spyOn(fs.realpathSync, "native")
-      .mockImplementation((value) => value as string);
+    vi.spyOn(fs.realpathSync, "native").mockImplementation(
+      (value) => value as string,
+    );
     project = {
-      runModel: jest.fn(),
-      buildModel: jest.fn(),
-      compileModel: jest.fn(),
-      compileQuery: jest.fn(),
-      runTest: jest.fn(),
-      runModelTest: jest.fn(),
-      generateSchemaYML: jest.fn(),
-      showRunSQL: jest.fn(),
-    } as unknown as jest.Mocked<Project>;
+      runModel: vi.fn(),
+      buildModel: vi.fn(),
+      compileModel: vi.fn(),
+      compileQuery: vi.fn(),
+      runTest: vi.fn(),
+      runModelTest: vi.fn(),
+      generateSchemaYML: vi.fn(),
+      showRunSQL: vi.fn(),
+    } as unknown as Mocked<Project>;
     projects = {
-      get: jest.fn().mockReturnValue(project),
-    } as unknown as jest.Mocked<Projects>;
+      get: vi.fn().mockReturnValue(project),
+    } as unknown as Mocked<Projects>;
     runModel = new RunModel(projects, {} as CurrentProject);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   const orders = {

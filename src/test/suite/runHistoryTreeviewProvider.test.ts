@@ -1,11 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   ResultTreeItem,
   RunTreeItem,
@@ -26,7 +19,7 @@ describe("RunHistoryTreeviewProvider", () => {
   afterEach(() => {
     provider.dispose();
     service.dispose();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("getTreeItem", () => {
@@ -104,7 +97,7 @@ describe("RunHistoryTreeviewProvider", () => {
 
   describe("onDidChangeTreeData", () => {
     it("should fire when history changes", () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       provider.onDidChangeTreeData(listener);
 
       service.addEntry(createEntry({ command: "dbt run" }));

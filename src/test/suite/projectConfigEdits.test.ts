@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { planProjectConfigInsertion } from "../../fusion/projectConfigEdits";
 import { SCHEMA_ORIGIN_HOOK } from "../../fusion/schemaOrigin";

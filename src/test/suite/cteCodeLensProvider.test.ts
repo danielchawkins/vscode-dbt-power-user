@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mocked,
+  vi,
+} from "vitest";
 import { Position, TextDocument } from "vscode";
 import { DBTTerminal } from "../../dbt_integration";
 import {
@@ -7,18 +15,18 @@ import {
 } from "../../features/cte/cteCodeLensProvider";
 
 describe("CteCodeLensProvider", () => {
-  let mockDBTTerminal: jest.Mocked<DBTTerminal>;
+  let mockDBTTerminal: Mocked<DBTTerminal>;
   let provider: CteCodeLensProvider;
 
   beforeEach(() => {
     // Mock DBTTerminal
     mockDBTTerminal = {
-      debug: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      info: jest.fn(),
-      log: jest.fn(),
-      trace: jest.fn(),
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      log: vi.fn(),
+      trace: vi.fn(),
     } as any;
 
     // Create provider instance
@@ -26,7 +34,7 @@ describe("CteCodeLensProvider", () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   // Helper function to create a mock TextDocument
@@ -72,13 +80,13 @@ describe("CteCodeLensProvider", () => {
       isUntitled: false,
       isDirty: false,
       isClosed: false,
-      save: jest.fn(),
+      save: vi.fn(),
       eol: 1,
       lineCount: lines.length,
-      lineAt: jest.fn(),
-      validateRange: jest.fn(),
-      validatePosition: jest.fn(),
-      getWordRangeAtPosition: jest.fn(),
+      lineAt: vi.fn(),
+      validateRange: vi.fn(),
+      validatePosition: vi.fn(),
+      getWordRangeAtPosition: vi.fn(),
       version: 1,
     } as any;
   };

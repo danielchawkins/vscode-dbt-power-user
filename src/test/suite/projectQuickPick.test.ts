@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from "@jest/globals";
+import { describe, expect, it, type Mock, vi } from "vitest";
 import { Uri, window } from "vscode";
 import { ProjectQuickPick } from "../../projects/projectQuickPick";
 import { DeclaredProject } from "../../projects/projectRegistry";
@@ -8,20 +8,20 @@ describe("ProjectQuickPick.declaredProjectPicker", () => {
     root: Uri.file("/workspace/projects/general"),
     name: "general_project",
     folder: { uri: Uri.file("/workspace") } as any,
-    contains: jest.fn(() => true),
-    dispose: jest.fn(),
+    contains: vi.fn(() => true),
+    dispose: vi.fn(),
   };
 
   const project2: DeclaredProject = {
     root: Uri.file("/workspace/projects/sox"),
     name: "sox_project",
     folder: { uri: Uri.file("/workspace") } as any,
-    contains: jest.fn(() => true),
-    dispose: jest.fn(),
+    contains: vi.fn(() => true),
+    dispose: vi.fn(),
   };
 
   it("returns selected DeclaredProject with name/path items and canPickMany false", async () => {
-    jest.spyOn(window, "showQuickPick").mockResolvedValue({
+    vi.spyOn(window, "showQuickPick").mockResolvedValue({
       label: "general_project",
       description: "/workspace/projects/general",
       project: project1,
@@ -32,7 +32,7 @@ describe("ProjectQuickPick.declaredProjectPicker", () => {
 
     expect(result).toBe(project1);
 
-    const [items, options] = (window.showQuickPick as jest.Mock).mock
+    const [items, options] = (window.showQuickPick as Mock).mock
       .calls[0] as any[];
     expect(items[0].label).toBe("general_project");
     expect(items[0].description).toBe("/workspace/projects/general");
@@ -41,7 +41,7 @@ describe("ProjectQuickPick.declaredProjectPicker", () => {
   });
 
   it("returns undefined on cancellation", async () => {
-    jest.spyOn(window, "showQuickPick").mockResolvedValue(undefined);
+    vi.spyOn(window, "showQuickPick").mockResolvedValue(undefined);
 
     const picker = new ProjectQuickPick();
     const result = await picker.declaredProjectPicker([project1]);

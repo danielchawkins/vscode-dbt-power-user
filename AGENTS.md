@@ -67,10 +67,10 @@ src/
 ├── dbt_client/              # dbt integrations, manifest parsing, command execution
 ├── webview/                 # PanelHost, the shared webview panel infrastructure
 ├── features/                # commands, trees, panels, lenses; imported only by the roots
-└── test/                    # Jest suites, hand-written VS Code mocks
+└── test/                    # Vitest suites, hand-written VS Code mocks
 ```
 
-Tests are Jest with `ts-jest` against a hand-written VS Code mock (`src/test/mock/vscode.ts`). Debug the extension with the "Launch Extension" configuration.
+Unit tests are Vitest (`vitest.config.ts`) against a hand-written VS Code mock (`src/test/mock/vscode.ts`). Debug the extension with the "Launch Extension" configuration.
 
 Two facts dominate change ordering, both detailed in the plan:
 

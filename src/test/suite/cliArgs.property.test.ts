@@ -1,6 +1,6 @@
-import { describe, expect, it } from "@jest/globals";
 import fc from "fast-check";
 import * as path from "path";
+import { describe, expect, it } from "vitest";
 import { CliCommand, PathKind, toCliArgs } from "../../core/cli";
 import { ProjectSnapshot, resolveProjectSnapshot } from "../../core/project";
 import { snapshotInputs } from "../arbitraries/projectSnapshot";

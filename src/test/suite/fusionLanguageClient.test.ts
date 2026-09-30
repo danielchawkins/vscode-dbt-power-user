@@ -1,6 +1,6 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { EventEmitter } from "events";
 import { PassThrough } from "stream";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import {
   type CancellationToken,
   Uri,
@@ -93,8 +93,8 @@ function makeStreams(): ReverseSocketStreams {
 class FakeReverseSocketServer implements ReverseSocketServer {
   readonly port = 42_424;
 
-  accept = jest.fn<(timeoutMs: number) => Promise<ReverseSocketStreams>>();
-  dispose = jest.fn();
+  accept = vi.fn<(timeoutMs: number) => Promise<ReverseSocketStreams>>();
+  dispose = vi.fn();
 
   constructor(private readonly streams: ReverseSocketStreams) {
     this.accept.mockResolvedValue(streams);
@@ -104,7 +104,7 @@ class FakeReverseSocketServer implements ReverseSocketServer {
 class FakeExitingProcess extends EventEmitter implements ExitingProcess {
   private _exitCode: number | null = null;
   private _signalCode: NodeJS.Signals | null = null;
-  kill = jest.fn((signal: NodeJS.Signals) => {
+  kill = vi.fn((signal: NodeJS.Signals) => {
     this._signalCode = signal;
     this._exitCode = 0;
     this.emit("exit");
@@ -292,13 +292,13 @@ describe("SpawnedLspProcess streams", () => {
 });
 
 describe("FusionLanguageClient lifecycle", () => {
-  let terminal: { warn: jest.Mock; error: jest.Mock; info: jest.Mock };
+  let terminal: { warn: Mock; error: Mock; info: Mock };
 
   beforeEach(() => {
     terminal = {
-      warn: jest.fn(),
-      error: jest.fn(),
-      info: jest.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
     };
   });
 
@@ -308,12 +308,12 @@ describe("FusionLanguageClient lifecycle", () => {
     const outputChannel = createMockLogOutputChannel(
       fusionOutputChannelName(makeProject()),
     );
-    const createOutputChannel = jest.fn(
+    const createOutputChannel = vi.fn(
       (_name: string) => outputChannel,
     ) as NonNullable<
       ConstructorParameters<typeof DefaultFusionClientFactory>[1]
     >["createOutputChannel"];
-    const createLanguageClient = jest.fn(
+    const createLanguageClient = vi.fn(
       async (
         _id: string,
         _name: string,
@@ -329,7 +329,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const factory = new DefaultFusionClientFactory(terminal as any, {
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
-      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
       createLanguageClient,
       createOutputChannel,
       sleep: async () => {},
@@ -363,16 +363,14 @@ describe("FusionLanguageClient lifecycle", () => {
   it("disposes the deleted-file watcher when the client stops", async () => {
     const streams = makeStreams();
     const watcher = {
-      onDidDelete: jest.fn().mockReturnValue({ dispose: jest.fn() }),
-      dispose: jest.fn(),
+      onDidDelete: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+      dispose: vi.fn(),
     };
-    (workspace.createFileSystemWatcher as jest.Mock).mockReturnValueOnce(
-      watcher,
-    );
+    (workspace.createFileSystemWatcher as Mock).mockReturnValueOnce(watcher);
     const factory = new DefaultFusionClientFactory(terminal as any, {
       listenForServer: async () => new FakeReverseSocketServer(streams),
       acceptWithProcessExit: async () => streams,
-      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
       createLanguageClient: async () => makeLanguageClient() as any,
       createOutputChannel: (name) => createMockLogOutputChannel(name),
       sleep: async () => {},
@@ -401,7 +399,7 @@ describe("FusionLanguageClient lifecycle", () => {
       fusionOutputChannelName(makeProject()),
     );
     const channels: unknown[] = [];
-    const createLanguageClient = jest.fn(
+    const createLanguageClient = vi.fn(
       async (
         _id: string,
         _name: string,
@@ -422,9 +420,9 @@ describe("FusionLanguageClient lifecycle", () => {
         return new FakeReverseSocketServer(streams);
       },
       acceptWithProcessExit: async () => streams,
-      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
       createLanguageClient,
-      createOutputChannel: jest.fn(
+      createOutputChannel: vi.fn(
         (_name: string) => outputChannel,
       ) as NonNullable<
         ConstructorParameters<typeof DefaultFusionClientFactory>[1]
@@ -466,7 +464,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const factory = new DefaultFusionClientFactory(terminal as any, {
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
-      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
       createLanguageClient: async () => makeLanguageClient() as any,
       sleep: async () => {},
     });
@@ -493,7 +491,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
-    const spawnProcess = jest.fn(
+    const spawnProcess = vi.fn(
       (
         _executable: string,
         _args: string[],
@@ -501,9 +499,7 @@ describe("FusionLanguageClient lifecycle", () => {
         _cwd?: string,
       ) => processAdapter as any,
     );
-    const createLanguageClient = jest.fn(
-      async () => makeLanguageClient() as any,
-    );
+    const createLanguageClient = vi.fn(async () => makeLanguageClient() as any);
 
     const factory = new DefaultFusionClientFactory(terminal as any, {
       listenForServer: async () => server,
@@ -558,7 +554,7 @@ describe("FusionLanguageClient lifecycle", () => {
   it("layers options.env over the launch environment, except DBT_LSP_USE_TARGET_LSP", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
-    const spawnProcess = jest.fn(
+    const spawnProcess = vi.fn(
       (
         _executable: string,
         _args: string[],
@@ -607,7 +603,7 @@ describe("FusionLanguageClient lifecycle", () => {
   it("uses launch.lintEnabled in launch args", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
-    const spawnProcess = jest.fn(() => new FakeExitingProcess() as any);
+    const spawnProcess = vi.fn(() => new FakeExitingProcess() as any);
 
     const factory = new DefaultFusionClientFactory(terminal as any, {
       listenForServer: async () => server,
@@ -681,7 +677,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const configMiddleware = (capturedClientOptions?.middleware as any)
       ?.workspace?.configuration;
     expect(configMiddleware).toBeDefined();
-    const next = jest.fn();
+    const next = vi.fn();
 
     const result = await configMiddleware(
       { items: [{ section: "dbt" }, { section: "python" }] },
@@ -736,7 +732,7 @@ describe("FusionLanguageClient lifecycle", () => {
 
     const configMiddleware = (capturedClientOptions?.middleware as any)
       ?.workspace?.configuration;
-    const next = jest.fn();
+    const next = vi.fn();
     const result = await configMiddleware(
       { items: [{ section: "dbt" }] },
       cancellationToken,
@@ -753,11 +749,11 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("backs off on repeated process exits then fails", async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
-    const spawnProcess = jest.fn(() => processAdapter as any);
+    const spawnProcess = vi.fn(() => processAdapter as any);
     const sleeps: number[] = [];
     const languageClient = makeLanguageClient();
     const states: string[] = [];
@@ -769,7 +765,7 @@ describe("FusionLanguageClient lifecycle", () => {
       createLanguageClient: async () => languageClient as any,
       sleep: async (ms) => {
         sleeps.push(ms);
-        await jest.advanceTimersByTimeAsync(ms);
+        await vi.advanceTimersByTimeAsync(ms);
       },
     });
 
@@ -785,17 +781,17 @@ describe("FusionLanguageClient lifecycle", () => {
     });
     client.onDidChangeState((state) => states.push(state));
 
-    await jest.runAllTimersAsync();
+    await vi.runAllTimersAsync();
     await waitForState(client, "running");
 
     for (let attempt = 0; attempt < MAX_UNEXPECTED_EXIT_RETRIES; attempt += 1) {
       processAdapter.exit();
-      await jest.runAllTimersAsync();
+      await vi.runAllTimersAsync();
       await waitForState(client, "running");
     }
 
     processAdapter.exit();
-    await jest.runAllTimersAsync();
+    await vi.runAllTimersAsync();
     await waitForState(client, "failed");
 
     expect(states).toContain("failed");
@@ -805,16 +801,16 @@ describe("FusionLanguageClient lifecycle", () => {
     expect(sleeps).toEqual([500, 1000, 2000]);
 
     await client.stop();
-    await jest.runAllTimersAsync();
+    await vi.runAllTimersAsync();
     client.dispose();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("handles State.Stopped while running as unexpected stop", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
-    const spawnProcess = jest.fn(() => processAdapter as any);
+    const spawnProcess = vi.fn(() => processAdapter as any);
     const sleeps: number[] = [];
     const languageClient = makeLanguageClient();
 
@@ -858,7 +854,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
-    const spawnProcess = jest.fn(() => processAdapter as any);
+    const spawnProcess = vi.fn(() => processAdapter as any);
     const sleeps: number[] = [];
     const languageClient = makeLanguageClient();
 
@@ -902,7 +898,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
-    const spawnProcess = jest.fn(() => processAdapter as any);
+    const spawnProcess = vi.fn(() => processAdapter as any);
     const languageClient = makeLanguageClient();
 
     const factory = new DefaultFusionClientFactory(terminal as any, {
@@ -939,7 +935,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
-    const spawnProcess = jest.fn(() => processAdapter as any);
+    const spawnProcess = vi.fn(() => processAdapter as any);
     let releaseBackoff = (): void => {};
     const backoffGate = new Promise<void>((resolve) => {
       releaseBackoff = resolve;
@@ -983,7 +979,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
-    const spawnProcess = jest.fn(() => processAdapter as any);
+    const spawnProcess = vi.fn(() => processAdapter as any);
     const languageClient = makeLanguageClient();
 
     const factory = new DefaultFusionClientFactory(terminal as any, {
@@ -1023,7 +1019,7 @@ describe("FusionLanguageClient lifecycle", () => {
   });
 
   it("cleans up when listen fails", async () => {
-    const spawnProcess = jest.fn(
+    const spawnProcess = vi.fn(
       (_executable: string, _args: string[], _env: Record<string, string>) =>
         new FakeExitingProcess() as any,
     );
@@ -1057,7 +1053,7 @@ describe("FusionLanguageClient lifecycle", () => {
   it("cleans up socket and process when spawn fails", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
-    const spawnProcess = jest.fn(() => {
+    const spawnProcess = vi.fn(() => {
       throw new Error("spawn failed");
     });
 
@@ -1090,7 +1086,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
-    const spawnProcess = jest.fn(() => processAdapter as any);
+    const spawnProcess = vi.fn(() => processAdapter as any);
     const languageClient = makeLanguageClient();
     languageClient.start.mockRejectedValue(new Error("start failed"));
 
@@ -1126,7 +1122,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
-    const spawnProcess = jest.fn(() => processAdapter as any);
+    const spawnProcess = vi.fn(() => processAdapter as any);
     const languageClient = makeLanguageClient();
 
     const factory = new DefaultFusionClientFactory(terminal as any, {
@@ -1207,7 +1203,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
     const processAdapter = new FakeExitingProcess();
-    const spawnProcess = jest.fn(() => processAdapter as any);
+    const spawnProcess = vi.fn(() => processAdapter as any);
 
     const factory = new DefaultFusionClientFactory(terminal as any, {
       listenForServer: async () => server,
@@ -1245,7 +1241,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const factory = new DefaultFusionClientFactory(terminal as any, {
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
-      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
       createLanguageClient: async () => languageClient as any,
       sleep: async () => {},
     });
@@ -1306,7 +1302,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const client = new DefaultFusionClientFactory(terminal as any, {
       listenForServer: async () => new FakeReverseSocketServer(streams),
       acceptWithProcessExit: async () => streams,
-      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
       createLanguageClient: async () => languageClient as any,
       sleep: async () => {},
     }).create({
@@ -1357,13 +1353,12 @@ describe("FusionLanguageClient lifecycle", () => {
 function makeLanguageClient() {
   const stateEmitter = new EventEmitter();
   return {
-    start: jest.fn(() => Promise.resolve()),
-    stop: jest.fn(() => Promise.resolve()),
-    sendRequest: jest.fn(
-      (_type?: unknown, _param?: unknown, _token?: unknown) =>
-        Promise.resolve(undefined),
+    start: vi.fn(() => Promise.resolve()),
+    stop: vi.fn(() => Promise.resolve()),
+    sendRequest: vi.fn((_type?: unknown, _param?: unknown, _token?: unknown) =>
+      Promise.resolve(undefined),
     ),
-    onDidChangeState: jest.fn(
+    onDidChangeState: vi.fn(
       (listener: (event: { newState: State }) => void) => {
         stateEmitter.on("state", listener);
         return {
@@ -1371,7 +1366,7 @@ function makeLanguageClient() {
         };
       },
     ),
-    dispose: jest.fn(),
+    dispose: vi.fn(),
   };
 }
 
@@ -1437,7 +1432,7 @@ describe("canonicalProjectRoot", () => {
       () => "/real/project",
     );
     expect(launchRoot).toBe("/real/project");
-    (Uri.parse as jest.Mock).mockImplementation((value: unknown) =>
+    (Uri.parse as Mock).mockImplementation((value: unknown) =>
       Uri.file(String(value).replace(/^file:\/\//, "")),
     );
 
@@ -1533,19 +1528,17 @@ describe("clearDiagnosticsOnDelete", () => {
   function watch(entries: string[]) {
     const onDelete: Array<(uri: Uri) => void> = [];
     const watcher = {
-      onDidDelete: jest.fn((listener: (uri: Uri) => void) => {
+      onDidDelete: vi.fn((listener: (uri: Uri) => void) => {
         onDelete.push(listener);
-        return { dispose: jest.fn() };
+        return { dispose: vi.fn() };
       }),
-      dispose: jest.fn(),
+      dispose: vi.fn(),
     };
-    (workspace.createFileSystemWatcher as jest.Mock).mockReturnValueOnce(
-      watcher,
-    );
+    (workspace.createFileSystemWatcher as Mock).mockReturnValueOnce(watcher);
     const uris = entries.map((entry) => Uri.file(entry));
     const collection = {
-      forEach: jest.fn((cb: (uri: Uri) => void) => uris.forEach((u) => cb(u))),
-      delete: jest.fn(),
+      forEach: vi.fn((cb: (uri: Uri) => void) => uris.forEach((u) => cb(u))),
+      delete: vi.fn(),
     };
     const disposable = clearDiagnosticsOnDelete(
       Uri.file("/p"),
@@ -1561,7 +1554,7 @@ describe("clearDiagnosticsOnDelete", () => {
 
   it("watches only deletions of project files under the root", () => {
     watch([]);
-    const { calls } = (workspace.createFileSystemWatcher as jest.Mock).mock;
+    const { calls } = (workspace.createFileSystemWatcher as Mock).mock;
     expect(calls[calls.length - 1]).toEqual([
       { base: Uri.file("/p"), pattern: "**/*" },
       true,

@@ -4,8 +4,10 @@ import {
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
+  type Mock,
+  type Mocked,
+  vi,
+} from "vitest";
 import { EventEmitter, Uri } from "vscode";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { Manifest } from "../../projects/manifestTypes";
@@ -14,8 +16,8 @@ import { DeclaredProject } from "../../projects/projectRegistry";
 
 describe("ManifestMetadataSource", () => {
   let source: ManifestMetadataSource;
-  let mockDeclaredProject: jest.Mocked<DeclaredProject>;
-  let mockProject: jest.Mocked<Project>;
+  let mockDeclaredProject: Mocked<DeclaredProject>;
+  let mockProject: Mocked<Project>;
   let manifestChangedEmitter: EventEmitter<Project>;
   let mockManifest: Manifest | undefined;
 
@@ -60,9 +62,9 @@ describe("ManifestMetadataSource", () => {
         name: "test",
         index: 0,
       },
-      contains: jest.fn(),
-      dispose: jest.fn(),
-    } as unknown as jest.Mocked<DeclaredProject>;
+      contains: vi.fn(),
+      dispose: vi.fn(),
+    } as unknown as Mocked<DeclaredProject>;
 
     mockManifest = undefined;
     manifestChangedEmitter = new EventEmitter<Project>();
@@ -73,9 +75,9 @@ describe("ManifestMetadataSource", () => {
         return mockManifest;
       },
       onDidChangeManifest: manifestChangedEmitter.event,
-      rebuildManifest: jest.fn().mockImplementation(() => Promise.resolve()),
-      dispose: jest.fn(),
-    } as unknown as jest.Mocked<Project>;
+      rebuildManifest: vi.fn().mockImplementation(() => Promise.resolve()),
+      dispose: vi.fn(),
+    } as unknown as Mocked<Project>;
 
     source = new ManifestMetadataSource(mockDeclaredProject, mockProject);
   });
@@ -114,9 +116,7 @@ describe("ManifestMetadataSource", () => {
 
   it("should propagate errors from refresh", async () => {
     const error = new Error("Rebuild failed");
-    (mockProject.rebuildManifest as jest.Mock).mockRejectedValueOnce(
-      error as never,
-    );
+    (mockProject.rebuildManifest as Mock).mockRejectedValueOnce(error as never);
 
     await expect(source.refresh()).rejects.toThrow("Rebuild failed");
   });

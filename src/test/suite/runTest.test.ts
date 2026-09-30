@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { beforeEach, describe, expect, it, type Mocked, vi } from "vitest";
 import { Uri, window } from "vscode";
 import { RunTest } from "../../features/run/runTest";
 import { Manifest } from "../../projects/manifestTypes";
@@ -17,9 +17,9 @@ import { QueryManifestService } from "../../projects/queryManifestService";
  * itself — the command-layer dispatch is exercised by integration testing.
  */
 describe("RunTest — singular test classification and dispatch", () => {
-  let mockProject: jest.Mocked<Project>;
-  let mockProjects: jest.Mocked<Projects>;
-  let mockQueryManifestService: jest.Mocked<QueryManifestService>;
+  let mockProject: Mocked<Project>;
+  let mockProjects: Mocked<Projects>;
+  let mockQueryManifestService: Mocked<QueryManifestService>;
   let runTest: RunTest;
 
   const singularTestPath =
@@ -87,14 +87,14 @@ describe("RunTest — singular test classification and dispatch", () => {
   };
 
   beforeEach(() => {
-    mockProject = { runTest: jest.fn() } as unknown as jest.Mocked<Project>;
+    mockProject = { runTest: vi.fn() } as unknown as Mocked<Project>;
     mockProjects = {
-      get: jest.fn().mockReturnValue(mockProject),
-    } as unknown as jest.Mocked<Projects>;
+      get: vi.fn().mockReturnValue(mockProject),
+    } as unknown as Mocked<Projects>;
 
     mockQueryManifestService = {
-      getEventByDocument: jest.fn().mockReturnValue(makeEvent()),
-    } as unknown as jest.Mocked<QueryManifestService>;
+      getEventByDocument: vi.fn().mockReturnValue(makeEvent()),
+    } as unknown as Mocked<QueryManifestService>;
 
     runTest = new RunTest(mockProjects, mockQueryManifestService);
   });
@@ -122,7 +122,7 @@ describe("RunTest — singular test classification and dispatch", () => {
     });
 
     it("returns undefined when the manifest event is missing", () => {
-      mockQueryManifestService.getEventByDocument = jest
+      mockQueryManifestService.getEventByDocument = vi
         .fn()
         .mockReturnValue(undefined) as any;
       expect(
@@ -164,7 +164,7 @@ describe("RunTest — singular test classification and dispatch", () => {
 
     it("returns false when the manifest has no matching test", () => {
       setActiveEditor(singularTestPath);
-      mockQueryManifestService.getEventByDocument = jest
+      mockQueryManifestService.getEventByDocument = vi
         .fn()
         .mockReturnValue(undefined) as any;
 

@@ -4,8 +4,9 @@ import {
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
+  type Mock,
+  vi,
+} from "vitest";
 import {
   EventEmitter,
   StatusBarAlignment,
@@ -200,9 +201,9 @@ describe("FusionStatus", () => {
   let statusBar: {
     text: string;
     tooltip: unknown;
-    show: jest.Mock;
-    hide: jest.Mock;
-    dispose: jest.Mock;
+    show: Mock;
+    hide: Mock;
+    dispose: Mock;
   };
   let currentProject: DeclaredProject | undefined;
   let clients: Map<string, FusionClient>;
@@ -213,20 +214,20 @@ describe("FusionStatus", () => {
     statusBar = {
       text: "",
       tooltip: undefined,
-      show: jest.fn(),
-      hide: jest.fn(),
-      dispose: jest.fn(),
+      show: vi.fn(),
+      hide: vi.fn(),
+      dispose: vi.fn(),
     };
     currentProject = undefined;
     clients = new Map();
     poolListeners = [];
     contextListeners = [];
 
-    jest.spyOn(window, "createStatusBarItem").mockReturnValue(statusBar as any);
+    vi.spyOn(window, "createStatusBarItem").mockReturnValue(statusBar as any);
   });
 
   afterEach(() => {
-    jest.mocked(window.createStatusBarItem).mockRestore();
+    vi.mocked(window.createStatusBarItem).mockRestore();
   });
 
   function createStatus(): FusionStatus {

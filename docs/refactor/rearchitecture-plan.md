@@ -175,7 +175,7 @@ Goal: one readable wiring file with plain constructors. The container already ca
 
 Verify: cold activation and extension bundle size within 10% of the `v0.4.0-beta.1` baseline or better; `activationEvents` has no `**` glob; `just smoke` on both hosts; `npm ls inversify jest` empty.
 
-**R4 progress.**
+**Result (R4 complete).**
 
 - **Merged.** Steps 4.1–4.3: the composition root in `src/compositionRoot.ts`; Inversify, `reflect-metadata`, the decorator compiler options and `ts-loader` removed; each owner disposes its own collection.
 - **Activation.** The activation event is `workspaceContains:dbt_project.yml`. `activate` returns synchronously, and commands wait on a startup gate until startup finishes, stops early, fails, or the extension is disposed.
@@ -190,7 +190,9 @@ Verify: cold activation and extension bundle size within 10% of the `v0.4.0-beta
   | Startup to ready | 1,034    | 597 (p90 674) |
 
   The baseline's `activate` awaited startup, so its ready time equals finish activate. Time to ready fell 42%, and the host sees activation complete in about 28 ms instead of about 1,052 ms. Loading code costs 7 ms more and calling `activate` 3 ms more; both are small in absolute terms.
-- **Remaining.** Steps 4.5 and 4.6.
+- **Features layer.** Commands, code lenses, trees, content providers, status bars and panel hosts live under `src/features/<feature>/`; `PanelHost` is in `src/webview/`, and the services `projects/` needs moved there. dependency-cruiser enforces `nothing-imports-features` and `features-are-independent`.
+- **Unit tests.** Host unit tests run on Vitest 5 with the same 1,024 test names Jest ran. `jest`, `ts-jest`, `@jest/globals`, `@types/jest`, `jest.config.js` and `tsconfig.jest.json` are gone.
+- **Verify.** Bundle 1,157,191 bytes against 2,839,500 (−59%); time to ready 597 ms against 1,034 ms; `activationEvents` is `workspaceContains:dbt_project.yml` with no `**` glob; `just smoke` passes on VS Code and Cursor; `npm ls inversify jest` is empty.
 
 ### R5 — Framework-first editor integration
 

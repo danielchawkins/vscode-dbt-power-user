@@ -1,13 +1,6 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
 import { readFileSync } from "fs";
 import path from "path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri, window, WorkspaceFolder } from "vscode";
 import {
   ConfiguredFusionExecutableResolver,
@@ -50,10 +43,10 @@ function createResolver(
     ConstructorParameters<typeof ConfiguredFusionExecutableResolver>[0]
   > = {},
 ) {
-  const findOnPath = jest.fn<(name: string) => Promise<string | undefined>>();
-  const isExecutable = jest.fn<(filePath: string) => Promise<boolean>>();
+  const findOnPath = vi.fn<(name: string) => Promise<string | undefined>>();
+  const isExecutable = vi.fn<(filePath: string) => Promise<boolean>>();
   const runVersion =
-    jest.fn<
+    vi.fn<
       (
         executable: string,
         env: Record<string, string>,
@@ -78,7 +71,7 @@ describe("Fusion executable resolver", () => {
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     delete process.env[ENV_SENTINEL];
   });
 
@@ -428,9 +421,9 @@ describe("Fusion executable resolver", () => {
   });
 
   it("warns once per untested major, to the terminal only, across repeated resolutions", async () => {
-    const logWarning = jest.fn();
+    const logWarning = vi.fn();
     const stored = new Map<string, unknown>();
-    const getGlobalState = jest.fn(() => ({
+    const getGlobalState = vi.fn(() => ({
       get: <T>(key: string) => stored.get(key) as T | undefined,
       update: (key: string, value: unknown) => {
         stored.set(key, value);
@@ -457,11 +450,11 @@ describe("Fusion executable resolver", () => {
   });
 
   it("does not warn again once a major is already recorded in global state", async () => {
-    const logWarning = jest.fn();
+    const logWarning = vi.fn();
     const stored = new Map<string, unknown>([
       ["fusionVersion.warnedMajor.3", true],
     ]);
-    const getGlobalState = jest.fn(() => ({
+    const getGlobalState = vi.fn(() => ({
       get: <T>(key: string) => stored.get(key) as T | undefined,
       update: (key: string, value: unknown) => {
         stored.set(key, value);

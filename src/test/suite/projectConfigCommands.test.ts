@@ -1,7 +1,7 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import * as path from "path";
+import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
 import { Uri, window, workspace } from "vscode";
 import { applyProjectConfigInsertion } from "../../features/projectSetup/projectConfigCommands";
 import { DeclaredProject } from "../../projects/projectRegistry";
@@ -13,7 +13,7 @@ const strict = (name: string) => ({
 
 describe("applyProjectConfigInsertion", () => {
   let dir = "";
-  const terminal = { warn: jest.fn() } as any;
+  const terminal = { warn: vi.fn() } as any;
 
   function project(yaml: string): DeclaredProject {
     dir = mkdtempSync(path.join(tmpdir(), "fpu-config-edit-"));
@@ -28,24 +28,24 @@ describe("applyProjectConfigInsertion", () => {
       lineAt: (line: number) => ({
         range: { end: { line, character: lines[line].length } },
       }),
-      save: jest.fn(() => Promise.resolve(true)),
+      save: vi.fn(() => Promise.resolve(true)),
     };
   }
 
   afterEach(() => {
     rmSync(dir, { recursive: true, force: true });
-    jest.restoreAllMocks();
-    jest.clearAllMocks();
+    vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   it("applies the edit after the modal confirms, and saves", async () => {
     const yaml = "name: jaffle\n";
     const declared = project(yaml);
     const document = fakeDocument(yaml);
-    (workspace.openTextDocument as jest.Mock).mockReturnValue(
+    (workspace.openTextDocument as Mock).mockReturnValue(
       Promise.resolve(document),
     );
-    const modal = jest
+    const modal = vi
       .spyOn(window, "showInformationMessage")
       .mockResolvedValue("Add" as never);
 
@@ -61,16 +61,16 @@ describe("applyProjectConfigInsertion", () => {
       },
       "Add",
     ]);
-    const edit = (workspace.applyEdit as jest.Mock).mock.calls[0][0] as any;
+    const edit = (workspace.applyEdit as Mock).mock.calls[0][0] as any;
     expect(edit.replacements[0].newText).toContain("+static_analysis: strict");
     expect(document.save).toHaveBeenCalled();
   });
 
   it("writes nothing when the modal is dismissed", async () => {
     const declared = project("name: jaffle\n");
-    jest
-      .spyOn(window, "showInformationMessage")
-      .mockResolvedValue(undefined as never);
+    vi.spyOn(window, "showInformationMessage").mockResolvedValue(
+      undefined as never,
+    );
 
     expect(await applyProjectConfigInsertion(declared, strict, terminal)).toBe(
       false,
@@ -85,7 +85,7 @@ describe("applyProjectConfigInsertion", () => {
     const declared = project(
       "name: jaffle\nmodels:\n  jaffle:\n    +static_analysis: baseline\n",
     );
-    const info = jest
+    const info = vi
       .spyOn(window, "showInformationMessage")
       .mockResolvedValue(undefined as never);
 
@@ -99,7 +99,7 @@ describe("applyProjectConfigInsertion", () => {
 
   it("uses the name in dbt_project.yml over the Declared Project name", async () => {
     const declared = project("name: real_name\n");
-    const modal = jest
+    const modal = vi
       .spyOn(window, "showInformationMessage")
       .mockResolvedValue(undefined as never);
 

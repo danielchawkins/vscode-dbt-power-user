@@ -14,7 +14,7 @@
     "allowJs": true,
     "checkJs": false,
     "moduleResolution": "bundler",
-    "types": ["node", "jest", "mocha", "vscode"],
+    "types": ["node", "mocha", "vscode"],
     "paths": {
       "@extension": ["./src/modules.ts"]
     }

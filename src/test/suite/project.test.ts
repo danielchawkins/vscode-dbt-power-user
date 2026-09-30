@@ -1,14 +1,16 @@
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import {
   afterEach,
   beforeEach,
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
+  type Mock,
+  type Mocked,
+  vi,
+} from "vitest";
 import * as vscode from "vscode";
 import {
   ChildrenParentParser,
@@ -88,11 +90,11 @@ function realParsers(terminal: DBTTerminal): ManifestParsers {
 }
 
 describe("Project Test Suite", () => {
-  let mockTerminal: jest.Mocked<DBTTerminal>;
-  let mockSharedStateService: jest.Mocked<SharedStateService>;
-  let mockRunHistoryService: jest.Mocked<RunHistoryService>;
+  let mockTerminal: Mocked<DBTTerminal>;
+  let mockSharedStateService: Mocked<SharedStateService>;
+  let mockRunHistoryService: Mocked<RunHistoryService>;
   let mockFusionCli: any;
-  let mockDbtProjectLog: jest.Mocked<DBTProjectLog>;
+  let mockDbtProjectLog: Mocked<DBTProjectLog>;
   let dbtProject: Project;
 
   function newProject(projectUri = vscode.Uri.file("/test/project")): Project {
@@ -120,11 +122,11 @@ describe("Project Test Suite", () => {
     Object.assign(vscode.workspace as object, {
       workspaceFolders: [workspaceFolder],
     });
-    (vscode.workspace.getWorkspaceFolder as jest.Mock).mockReturnValue(
+    (vscode.workspace.getWorkspaceFolder as Mock).mockReturnValue(
       workspaceFolder,
     );
-    (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-      get: jest.fn((key: string) => {
+    (vscode.workspace.getConfiguration as Mock).mockReturnValue({
+      get: vi.fn((key: string) => {
         if (key === "query.limit") {
           return 500;
         }
@@ -133,57 +135,57 @@ describe("Project Test Suite", () => {
         }
         return undefined;
       }),
-      has: jest.fn(),
-      update: jest.fn(),
+      has: vi.fn(),
+      update: vi.fn(),
     });
     mockTerminal = {
-      show: jest.fn(),
-      log: jest.fn(),
-      trace: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      error: jest.fn(),
-      dispose: jest.fn(),
-      logNewLine: jest.fn(),
-      logLine: jest.fn(),
-      logHorizontalRule: jest.fn(),
-      logBlock: jest.fn(),
-      warn: jest.fn(),
-    } as unknown as jest.Mocked<DBTTerminal>;
-    mockSharedStateService = {} as unknown as jest.Mocked<SharedStateService>;
+      show: vi.fn(),
+      log: vi.fn(),
+      trace: vi.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      error: vi.fn(),
+      dispose: vi.fn(),
+      logNewLine: vi.fn(),
+      logLine: vi.fn(),
+      logHorizontalRule: vi.fn(),
+      logBlock: vi.fn(),
+      warn: vi.fn(),
+    } as unknown as Mocked<DBTTerminal>;
+    mockSharedStateService = {} as unknown as Mocked<SharedStateService>;
     mockRunHistoryService = {
-      addEntry: jest.fn(),
-      notifyCommandFailed: jest.fn(),
-    } as unknown as jest.Mocked<RunHistoryService>;
+      addEntry: vi.fn(),
+      notifyCommandFailed: vi.fn(),
+    } as unknown as Mocked<RunHistoryService>;
 
     mockFusionCli = {
-      prepare: jest.fn(),
-      run: jest.fn(() => Promise.resolve()),
-      refreshProjectConfig: jest.fn(async () => undefined),
-      rebuildManifest: jest.fn(async () => undefined),
-      dispose: jest.fn(async () => undefined),
-      getProjectName: jest.fn().mockReturnValue("test-project"),
-      getColumnsOfModel: jest.fn(() => Promise.resolve([])),
-      getColumnsOfSource: jest.fn(() => Promise.resolve([])),
-      compileInline: jest.fn(),
-      executeSQL: jest.fn(),
-      getTargetPath: jest.fn().mockReturnValue("/project/target"),
-      getPackageInstallPath: jest.fn().mockReturnValue("/project/dbt_packages"),
-      getModelPaths: jest.fn().mockReturnValue(["/project/models"]),
-      getSeedPaths: jest.fn().mockReturnValue(["/project/seeds"]),
-      getMacroPaths: jest.fn().mockReturnValue(["/project/macros"]),
-      getDiagnostics: jest.fn().mockReturnValue({
+      prepare: vi.fn(),
+      run: vi.fn(() => Promise.resolve()),
+      refreshProjectConfig: vi.fn(async () => undefined),
+      rebuildManifest: vi.fn(async () => undefined),
+      dispose: vi.fn(async () => undefined),
+      getProjectName: vi.fn().mockReturnValue("test-project"),
+      getColumnsOfModel: vi.fn(() => Promise.resolve([])),
+      getColumnsOfSource: vi.fn(() => Promise.resolve([])),
+      compileInline: vi.fn(),
+      executeSQL: vi.fn(),
+      getTargetPath: vi.fn().mockReturnValue("/project/target"),
+      getPackageInstallPath: vi.fn().mockReturnValue("/project/dbt_packages"),
+      getModelPaths: vi.fn().mockReturnValue(["/project/models"]),
+      getSeedPaths: vi.fn().mockReturnValue(["/project/seeds"]),
+      getMacroPaths: vi.fn().mockReturnValue(["/project/macros"]),
+      getDiagnostics: vi.fn().mockReturnValue({
         rebuildManifestDiagnostics: [],
         projectConfigDiagnostics: [],
       }),
     };
     mockDbtProjectLog = {
-      dispose: jest.fn(),
-    } as unknown as jest.Mocked<DBTProjectLog>;
+      dispose: vi.fn(),
+    } as unknown as Mocked<DBTProjectLog>;
   });
 
   afterEach(async () => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     if (dbtProject) {
       await dbtProject.dispose();
     }
@@ -267,7 +269,7 @@ describe("Project Test Suite", () => {
         },
       };
 
-      (mockFusionCli.getDiagnostics as jest.Mock).mockReturnValue({
+      (mockFusionCli.getDiagnostics as Mock).mockReturnValue({
         rebuildManifestDiagnostics: [mockDiagnosticData],
         projectConfigDiagnostics: [],
       });
@@ -295,7 +297,7 @@ describe("Project Test Suite", () => {
         source,
         category: "warning",
       });
-      const getDiagnostics = mockFusionCli.getDiagnostics as jest.Mock;
+      const getDiagnostics = mockFusionCli.getDiagnostics as Mock;
       getDiagnostics.mockReturnValue({
         rebuildManifestDiagnostics: [data("rebuild", "dbt-fusion")],
         projectConfigDiagnostics: [],
@@ -308,10 +310,10 @@ describe("Project Test Suite", () => {
       );
 
       const collections = (
-        vscode.languages.createDiagnosticCollection as jest.Mock
+        vscode.languages.createDiagnosticCollection as Mock
       ).mock.results.map((result) => result.value as any);
       expect(
-        (vscode.languages.createDiagnosticCollection as jest.Mock).mock.calls,
+        (vscode.languages.createDiagnosticCollection as Mock).mock.calls,
       ).toEqual([["fusionPowerUser.project"]]);
       const [collection] = collections;
       const published = collection.get(
@@ -431,9 +433,8 @@ describe("Project Test Suite", () => {
     it("should dispose all resources properly", async () => {
       dbtProject = await initializedProject();
 
-      const { results } = (
-        vscode.languages.createDiagnosticCollection as jest.Mock
-      ).mock;
+      const { results } = (vscode.languages.createDiagnosticCollection as Mock)
+        .mock;
       const collection = results[results.length - 1]
         .value as vscode.DiagnosticCollection;
 
@@ -447,9 +448,8 @@ describe("Project Test Suite", () => {
 
     it("ignores a rebuild that finishes after dispose", async () => {
       dbtProject = await initializedProject();
-      const { results } = (
-        vscode.languages.createDiagnosticCollection as jest.Mock
-      ).mock;
+      const { results } = (vscode.languages.createDiagnosticCollection as Mock)
+        .mock;
       const collection = results[results.length - 1].value as any;
       let release!: () => void;
       mockFusionCli.rebuildManifest.mockImplementation(
@@ -494,32 +494,30 @@ describe("Project Test Suite", () => {
     }
 
     function mockDeferSettings(storedDeferConfig: Record<string, unknown>) {
-      (vscode.workspace.getConfiguration as jest.Mock).mockImplementation(
-        () => ({
-          get: jest.fn((key: string) => {
-            if (key === "defer.perProject") {
-              return { finance_general: storedDeferConfig };
-            }
-            if (key === "query.limit") {
-              return 500;
-            }
-            return undefined;
-          }),
-          has: jest.fn(),
-          update: jest.fn(),
+      (vscode.workspace.getConfiguration as Mock).mockImplementation(() => ({
+        get: vi.fn((key: string) => {
+          if (key === "defer.perProject") {
+            return { finance_general: storedDeferConfig };
+          }
+          if (key === "query.limit") {
+            return 500;
+          }
+          return undefined;
         }),
-      );
+        has: vi.fn(),
+        update: vi.fn(),
+      }));
     }
 
     const financeUri = vscode.Uri.file("/test/workspace/finance_general");
 
     it("records fresh run_results before surfacing Encountered an error", async () => {
       dbtProject = await initializedProject();
-      const runResultsHandler = jest.fn();
+      const runResultsHandler = vi.fn();
       dbtProject.onRunResults(runResultsHandler);
 
       const mockCommand = {
-        execute: jest.fn(() => {
+        execute: vi.fn(() => {
           writeRunResults();
           return Promise.resolve({
             stdout: "Encountered an error: model failed",
@@ -559,7 +557,7 @@ describe("Project Test Suite", () => {
       dbtProject = await initializedProject();
       mockFusionCli.prepare.mockImplementation(() => ({
         args: ["run", "--select", "stg_orders", "--profiles-dir", "/p"],
-        execute: jest.fn(() => {
+        execute: vi.fn(() => {
           writeRunResults();
           return Promise.resolve({ stdout: "" });
         }),
@@ -637,7 +635,7 @@ describe("Project Test Suite", () => {
       dbtProject = await initializedProject();
 
       const mockCommand = {
-        execute: jest.fn(() => {
+        execute: vi.fn(() => {
           writeRunResults();
           return Promise.reject(new Error("cancelled"));
         }),
@@ -663,7 +661,7 @@ describe("Project Test Suite", () => {
 
   describe("Fusion CLI operation routing", () => {
     async function queued() {
-      const execute = jest.fn(() => Promise.resolve({ stdout: "" }));
+      const execute = vi.fn(() => Promise.resolve({ stdout: "" }));
       mockFusionCli.prepare.mockImplementation(() => ({
         execute,
         focus: false,
@@ -755,12 +753,12 @@ describe("Project Test Suite", () => {
     });
 
     it("names the configured commandParams in a preparation failure", async () => {
-      (vscode.workspace.getConfiguration as jest.Mock).mockReturnValue({
-        get: jest.fn((key: string) =>
+      (vscode.workspace.getConfiguration as Mock).mockReturnValue({
+        get: vi.fn((key: string) =>
           key === "run.additionalParams" ? ["--full-refresh"] : undefined,
         ),
-        has: jest.fn(),
-        update: jest.fn(),
+        has: vi.fn(),
+        update: vi.fn(),
       });
       dbtProject = await initializedProject();
       mockFusionCli.prepare.mockImplementation(() => {
@@ -807,9 +805,9 @@ function stubDelegate(
   overrides: Partial<FusionCli> = {},
 ): FusionCli {
   const stub: Partial<FusionCli> = {
-    refreshProjectConfig: jest.fn(async () => undefined),
-    rebuildManifest: jest.fn(async () => undefined),
-    dispose: jest.fn(),
+    refreshProjectConfig: vi.fn(async () => undefined),
+    rebuildManifest: vi.fn(async () => undefined),
+    dispose: vi.fn(),
     getDiagnostics: () => ({
       projectConfigDiagnostics: [],
       rebuildManifestDiagnostics: [],
@@ -910,7 +908,7 @@ describe("Project manifest", () => {
         getPackageInstallPath: () => path.join(root, "dbt_packages"),
       }),
     );
-    const changed = jest.fn((p: Project) => p.manifest);
+    const changed = vi.fn((p: Project) => p.manifest);
     project.onDidChangeManifest(changed);
 
     await project.parseManifest();
@@ -960,10 +958,10 @@ describe("Project manifest", () => {
   });
 
   describe("query column types", () => {
-    function fabricatedExecuteSQL(): jest.Mock<() => Promise<QueryExecution>> {
+    function fabricatedExecuteSQL(): Mock<() => Promise<QueryExecution>> {
       // Mirrors the published integration's real dbt show --output json shape: real row
       // values, but column_types fabricated as the literal string "string" for every column.
-      return jest.fn(
+      return vi.fn(
         async () =>
           new QueryExecution(
             async () => undefined,
@@ -1023,11 +1021,11 @@ describe("Project manifest", () => {
 
     it("forwards cancellation to the underlying query execution", async () => {
       tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-show-cancel-"));
-      const cancel = jest.fn(async () => undefined);
+      const cancel = vi.fn(async () => undefined);
       const project = await buildProject(
         tempRoot,
         stubDelegate(tempRoot, {
-          executeSQL: jest.fn(
+          executeSQL: vi.fn(
             async () =>
               new QueryExecution(cancel, async () => {
                 throw new Error("should not execute after cancel in this test");
@@ -1051,16 +1049,16 @@ describe("Project manifest", () => {
 
 describe("Project manifest trigger", () => {
   const root = "/project";
-  let rebuildManifest: jest.Mock<() => Promise<void>>;
-  let refreshProjectConfig: jest.Mock<() => Promise<void>>;
+  let rebuildManifest: Mock<() => Promise<void>>;
+  let refreshProjectConfig: Mock<() => Promise<void>>;
   let project: Project;
   let watcher: MockFileSystemWatcher;
 
   beforeEach(async () => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
     createdFileSystemWatchers.length = 0;
-    rebuildManifest = jest.fn(async () => undefined);
-    refreshProjectConfig = jest.fn(async () => undefined);
+    rebuildManifest = vi.fn(async () => undefined);
+    refreshProjectConfig = vi.fn(async () => undefined);
     project = await buildProject(
       root,
       stubDelegate(root, { rebuildManifest, refreshProjectConfig }),
@@ -1073,7 +1071,7 @@ describe("Project manifest trigger", () => {
 
   afterEach(async () => {
     await project.dispose();
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   it("watches source extensions under the project root", () => {
@@ -1084,14 +1082,14 @@ describe("Project manifest trigger", () => {
   });
 
   it("rebuilds once after the debounce for model edits", async () => {
-    const sourceFileChanged = jest.fn();
+    const sourceFileChanged = vi.fn();
     project.onSourceFileChanged(sourceFileChanged);
     watcher.fire("change", path.join(root, "models", "a.sql"));
     watcher.fire("create", path.join(root, "models", "b.sql"));
     watcher.fire("delete", path.join(root, "seeds", "c.csv"));
-    await jest.advanceTimersByTimeAsync(499);
+    await vi.advanceTimersByTimeAsync(499);
     expect(rebuildManifest).not.toHaveBeenCalled();
-    await jest.advanceTimersByTimeAsync(1);
+    await vi.advanceTimersByTimeAsync(1);
     expect(rebuildManifest).toHaveBeenCalledTimes(1);
     expect(refreshProjectConfig).not.toHaveBeenCalled();
     expect(sourceFileChanged).toHaveBeenCalledTimes(1);
@@ -1101,15 +1099,15 @@ describe("Project manifest trigger", () => {
   it("ignores edits outside the model, macro and seed paths", async () => {
     watcher.fire("change", path.join(root, "target", "compiled", "a.sql"));
     watcher.fire("change", path.join(root, "models_old", "a.sql"));
-    await jest.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(1000);
     expect(rebuildManifest).not.toHaveBeenCalled();
   });
 
   it("refreshes config, then rebuilds, after a dbt_project.yml edit", async () => {
-    const configChanged = jest.fn();
+    const configChanged = vi.fn();
     project.onProjectConfigChanged(configChanged);
     watcher.fire("change", path.join(root, "dbt_project.yml"));
-    await jest.advanceTimersByTimeAsync(500);
+    await vi.advanceTimersByTimeAsync(500);
     expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
     expect(configChanged).toHaveBeenCalledTimes(1);
     expect(rebuildManifest).toHaveBeenCalledTimes(1);
@@ -1121,7 +1119,7 @@ describe("Project manifest trigger", () => {
   it("drops a pending rebuild and stops watching on dispose", async () => {
     watcher.fire("change", path.join(root, "models", "a.sql"));
     await project.dispose();
-    await jest.advanceTimersByTimeAsync(1000);
+    await vi.advanceTimersByTimeAsync(1000);
     expect(rebuildManifest).not.toHaveBeenCalled();
     expect(watcher.dispose).toHaveBeenCalled();
     expect(watcher.listeners.change).toHaveLength(0);

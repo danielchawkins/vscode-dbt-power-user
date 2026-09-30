@@ -1,6 +1,6 @@
-import { describe, expect, it } from "@jest/globals";
 import * as fs from "fs";
 import * as path from "path";
+import { beforeAll, describe, expect, it } from "vitest";
 import { esmDirname } from "../esmDirname";
 
 const testDir = esmDirname(import.meta.url);

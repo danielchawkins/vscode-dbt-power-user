@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mock,
+  type Mocked,
+  vi,
+} from "vitest";
 import { commands, Uri, window } from "vscode";
 import { ExtensionContextStore } from "../../extensionContext";
 import { DbtPowerUserActionsCenter } from "../../features/projectPicker/actionsCenter";
@@ -6,18 +14,18 @@ import { CurrentProject } from "../../projects/currentProject";
 import { DeclaredProject } from "../../projects/projectRegistry";
 
 describe("DbtPowerUserActionsCenter project picker", () => {
-  let context: jest.Mocked<CurrentProject>;
-  let store: jest.Mocked<ExtensionContextStore>;
+  let context: Mocked<CurrentProject>;
+  let store: Mocked<ExtensionContextStore>;
   let project: DeclaredProject;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     context = {
-      pickForCommand: jest.fn(),
-    } as unknown as jest.Mocked<CurrentProject>;
+      pickForCommand: vi.fn(),
+    } as unknown as Mocked<CurrentProject>;
     store = {
-      setToWorkspaceState: jest.fn(),
-    } as unknown as jest.Mocked<ExtensionContextStore>;
+      setToWorkspaceState: vi.fn(),
+    } as unknown as Mocked<ExtensionContextStore>;
     project = {
       root: Uri.file("/project"),
       name: "project",
@@ -27,7 +35,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
         index: 0,
       },
       contains: () => true,
-      dispose: jest.fn(),
+      dispose: vi.fn(),
     };
     new DbtPowerUserActionsCenter(context, store);
   });
@@ -60,7 +68,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
 });
 
 function pickProjectCommand(): () => Promise<void> {
-  const registration = (commands.registerCommand as jest.Mock).mock.calls.find(
+  const registration = (commands.registerCommand as Mock).mock.calls.find(
     ([command]) => command === "fusionPowerUser.pickProject",
   );
   return registration?.[1] as () => Promise<void>;

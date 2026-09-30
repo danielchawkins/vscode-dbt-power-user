@@ -4,8 +4,9 @@ import {
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
+  type Mock,
+  vi,
+} from "vitest";
 import { commands, Disposable, ExtensionContext, window } from "vscode";
 import {
   registerRuntimeTimings,
@@ -35,7 +36,7 @@ const HARNESS_COMMANDS = [
   PARENT_TABLES_COMMAND,
 ];
 
-const registrations = new Map<string, { dispose: jest.Mock }>();
+const registrations = new Map<string, { dispose: Mock }>();
 
 function enableHarness(on: boolean) {
   for (const name of SWITCHES) {
@@ -49,18 +50,18 @@ function enableHarness(on: boolean) {
 
 describe("disposable ownership", () => {
   const original = SWITCHES.map((name) => process.env[name]);
-  const createOutputChannel = jest
+  const createOutputChannel = vi
     .mocked(window.createOutputChannel)
     .getMockImplementation();
-  const createStatusBarItem = jest
+  const createStatusBarItem = vi
     .mocked(window.createStatusBarItem)
     .getMockImplementation();
 
   beforeEach(() => {
     registrations.clear();
-    (commands.registerCommand as jest.Mock).mockImplementation(
+    (commands.registerCommand as Mock).mockImplementation(
       (command: unknown) => {
-        const registration = { dispose: jest.fn() };
+        const registration = { dispose: vi.fn() };
         registrations.set(command as string, registration);
         return registration;
       },
@@ -68,15 +69,15 @@ describe("disposable ownership", () => {
   });
 
   afterEach(() => {
-    (commands.registerCommand as jest.Mock).mockReturnValue({
-      dispose: jest.fn(),
+    (commands.registerCommand as Mock).mockReturnValue({
+      dispose: vi.fn(),
     });
-    jest
-      .mocked(window.createOutputChannel)
-      .mockImplementation(createOutputChannel!);
-    jest
-      .mocked(window.createStatusBarItem)
-      .mockImplementation(createStatusBarItem!);
+    vi.mocked(window.createOutputChannel).mockImplementation(
+      createOutputChannel!,
+    );
+    vi.mocked(window.createStatusBarItem).mockImplementation(
+      createStatusBarItem!,
+    );
     SWITCHES.forEach((name, i) => {
       if (original[i] === undefined) {
         delete process.env[name];
@@ -120,23 +121,21 @@ describe("disposable ownership", () => {
 
   it("only the extension enters context.subscriptions, and it releases the harness commands", async () => {
     enableHarness(true);
-    const created: { dispose: jest.Mock }[] = [];
+    const created: { dispose: Mock }[] = [];
     const track = (item: object): never => {
-      const tracked = { ...item, dispose: jest.fn() };
+      const tracked = { ...item, dispose: vi.fn() };
       created.push(tracked);
       return tracked as never;
     };
-    jest
-      .mocked(window.createOutputChannel)
-      .mockImplementation(((name: string) =>
-        track(createMockLogOutputChannel(name))) as never);
-    jest
-      .mocked(window.createStatusBarItem)
-      .mockImplementation(() => track({ show: jest.fn(), hide: jest.fn() }));
+    vi.mocked(window.createOutputChannel).mockImplementation(((name: string) =>
+      track(createMockLogOutputChannel(name))) as never);
+    vi.mocked(window.createStatusBarItem).mockImplementation(() =>
+      track({ show: vi.fn(), hide: vi.fn() }),
+    );
     const context = {
       subscriptions: [] as { dispose(): unknown }[],
-      workspaceState: { get: jest.fn(), update: jest.fn() },
-      globalState: { get: jest.fn(), update: jest.fn() },
+      workspaceState: { get: vi.fn(), update: vi.fn() },
+      globalState: { get: vi.fn(), update: vi.fn() },
     } as unknown as ExtensionContext;
 
     const { ready } = activate(context);

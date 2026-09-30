@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "@jest/globals";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DBTTerminal } from "../../dbt_integration";
 import { CteProfilerService } from "../../features/cte/cteProfilerService";
 import { Projects } from "../../projects/projects";
@@ -8,12 +8,12 @@ describe("CteProfilerService.extractRowCount", () => {
 
   beforeEach(() => {
     const dbtTerminal = {
-      debug: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
-      info: jest.fn(),
-      log: jest.fn(),
-      trace: jest.fn(),
+      debug: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      info: vi.fn(),
+      log: vi.fn(),
+      trace: vi.fn(),
     } as unknown as DBTTerminal;
     const projects = {} as Projects;
     svc = new CteProfilerService(projects, dbtTerminal);

@@ -1,14 +1,15 @@
+import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import * as path from "path";
 import {
   afterEach,
   beforeEach,
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "fs";
-import { tmpdir } from "os";
-import * as path from "path";
+  type Mock,
+  vi,
+} from "vitest";
 import { RelativePattern, Uri, workspace, WorkspaceFolder } from "vscode";
 import { DBT_PROJECT_FILE } from "../../core/project";
 import { PROJECTS_SETTING } from "../../projects/projectConfiguration";
@@ -25,38 +26,37 @@ const makeFolder = (name: string): WorkspaceFolder => ({
 
 const makeConfig = (projects: string[] = []) =>
   ({
-    get: jest.fn((key) => (key === PROJECTS_SETTING ? projects : undefined)),
-    has: jest.fn(),
-    update: jest.fn(),
-    inspect: jest.fn(),
+    get: vi.fn((key) => (key === PROJECTS_SETTING ? projects : undefined)),
+    has: vi.fn(),
+    update: vi.fn(),
+    inspect: vi.fn(),
   }) as any;
 
 describe("ProjectRegistry", () => {
   let terminal: any;
 
   beforeEach((): void => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     terminal = {
-      warn: jest.fn(),
-      debug: jest.fn(),
-      info: jest.fn(),
-      error: jest.fn(),
+      warn: vi.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      error: vi.fn(),
     } as any;
   });
 
   afterEach((): void => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("registers declared projects in order with correct names", async () => {
     const general = makeFolder("multi-root");
-    jest
-      .spyOn(workspace, "getConfiguration")
-      .mockImplementation((_section, scope) =>
+    vi.spyOn(workspace, "getConfiguration").mockImplementation(
+      (_section, scope) =>
         scope === general.uri
           ? makeConfig(["projects/general", "projects/sox"])
           : makeConfig([]),
-      );
+    );
     (workspace.workspaceFolders as any) = [general];
 
     const registry = new ProjectRegistry(terminal);
@@ -81,7 +81,7 @@ describe("ProjectRegistry", () => {
       name: "sox",
       index: 1,
     };
-    const getConfiguration = jest.spyOn(workspace, "getConfiguration");
+    const getConfiguration = vi.spyOn(workspace, "getConfiguration");
     getConfiguration.mockImplementation((_section, scope) =>
       scope === parent.uri
         ? makeConfig(["projects/general", "projects/sox"])
@@ -110,13 +110,12 @@ describe("ProjectRegistry", () => {
 
   it("attributes copied-tree files to their declared parent", async () => {
     const general = makeFolder("multi-root");
-    jest
-      .spyOn(workspace, "getConfiguration")
-      .mockImplementation((_section, scope) =>
+    vi.spyOn(workspace, "getConfiguration").mockImplementation(
+      (_section, scope) =>
         scope === general.uri
           ? makeConfig(["projects/general", "projects/sox"])
           : makeConfig([]),
-      );
+    );
     (workspace.workspaceFolders as any) = [general];
 
     const registry = new ProjectRegistry(terminal);
@@ -135,7 +134,7 @@ describe("ProjectRegistry", () => {
 
   it("falls back to folder root when no explicit declaration", async () => {
     const single = makeFolder("single-project");
-    jest.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
+    vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
     (workspace.workspaceFolders as any) = [single];
 
     const registry = new ProjectRegistry(terminal);
@@ -147,9 +146,9 @@ describe("ProjectRegistry", () => {
 
   it("registers nothing when folder has no dbt_project.yml", async () => {
     const nested = makeFolder("nested-project");
-    jest.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
-    const findFiles = jest.spyOn(workspace, "findFiles");
-    const createWatcher = jest.spyOn(workspace, "createFileSystemWatcher");
+    vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
+    const findFiles = vi.spyOn(workspace, "findFiles");
+    const createWatcher = vi.spyOn(workspace, "createFileSystemWatcher");
     (workspace.workspaceFolders as any) = [nested];
 
     const registry = new ProjectRegistry(terminal);
@@ -163,13 +162,12 @@ describe("ProjectRegistry", () => {
   it("applies fail-closed semantics: invalid entry blocks folder, sibling succeeds", async () => {
     const general = makeFolder("multi-root");
     const single = makeFolder("single-project");
-    jest
-      .spyOn(workspace, "getConfiguration")
-      .mockImplementation((_section, scope) =>
+    vi.spyOn(workspace, "getConfiguration").mockImplementation(
+      (_section, scope) =>
         scope === general.uri
           ? makeConfig(["projects/general", "projects/typo"])
           : makeConfig([]),
-      );
+    );
     (workspace.workspaceFolders as any) = [general, single];
 
     const registry = new ProjectRegistry(terminal);
@@ -201,16 +199,14 @@ describe("ProjectRegistry", () => {
         name: "test",
         index: 0,
       };
-      jest
-        .spyOn(workspace, "getConfiguration")
-        .mockImplementation((_s, scope) =>
-          scope === folder.uri
-            ? makeConfig([
-                path.relative(tmpDir, root),
-                path.relative(tmpDir, dep),
-              ])
-            : makeConfig([]),
-        );
+      vi.spyOn(workspace, "getConfiguration").mockImplementation((_s, scope) =>
+        scope === folder.uri
+          ? makeConfig([
+              path.relative(tmpDir, root),
+              path.relative(tmpDir, dep),
+            ])
+          : makeConfig([]),
+      );
       (workspace.workspaceFolders as any) = [folder];
 
       const registry = new ProjectRegistry(terminal);
@@ -231,27 +227,25 @@ describe("ProjectRegistry", () => {
   it("deduplicates same root across folders: first folder wins", async () => {
     const general = makeFolder("multi-root");
     const single = makeFolder("single-project");
-    jest
-      .spyOn(workspace, "getConfiguration")
-      .mockImplementation((_s, scope) => {
-        if (scope === general.uri) {
-          return makeConfig([
-            path.relative(
-              general.uri.fsPath,
-              path.join(fixturesRoot, "multi-root", "projects/general"),
-            ),
-          ]);
-        }
-        if (scope === single.uri) {
-          return makeConfig([
-            path.relative(
-              single.uri.fsPath,
-              path.join(fixturesRoot, "multi-root", "projects/general"),
-            ),
-          ]);
-        }
-        return makeConfig([]);
-      });
+    vi.spyOn(workspace, "getConfiguration").mockImplementation((_s, scope) => {
+      if (scope === general.uri) {
+        return makeConfig([
+          path.relative(
+            general.uri.fsPath,
+            path.join(fixturesRoot, "multi-root", "projects/general"),
+          ),
+        ]);
+      }
+      if (scope === single.uri) {
+        return makeConfig([
+          path.relative(
+            single.uri.fsPath,
+            path.join(fixturesRoot, "multi-root", "projects/general"),
+          ),
+        ]);
+      }
+      return makeConfig([]);
+    });
     (workspace.workspaceFolders as any) = [general, single];
 
     const registry = new ProjectRegistry(terminal);
@@ -277,9 +271,9 @@ describe("ProjectRegistry", () => {
         name: "test",
         index: 0,
       };
-      jest
-        .spyOn(workspace, "getConfiguration")
-        .mockReturnValue(makeConfig(["project", "alias"]));
+      vi.spyOn(workspace, "getConfiguration").mockReturnValue(
+        makeConfig(["project", "alias"]),
+      );
       (workspace.workspaceFolders as any) = [folder];
 
       const registry = new ProjectRegistry(terminal);
@@ -304,7 +298,7 @@ describe("ProjectRegistry", () => {
         name: "test",
         index: 0,
       };
-      jest.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
+      vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
       (workspace.workspaceFolders as any) = [folder];
 
       const registry = new ProjectRegistry(terminal);
@@ -331,9 +325,7 @@ describe("ProjectRegistry", () => {
           name: "test",
           index: 0,
         };
-        jest
-          .spyOn(workspace, "getConfiguration")
-          .mockReturnValue(makeConfig([]));
+        vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
         (workspace.workspaceFolders as any) = [folder];
 
         const registry = new ProjectRegistry(terminal);
@@ -367,16 +359,14 @@ describe("ProjectRegistry", () => {
         name: "test",
         index: 0,
       };
-      jest
-        .spyOn(workspace, "getConfiguration")
-        .mockImplementation((_s, scope) =>
-          scope === folder.uri
-            ? makeConfig([
-                path.relative(tmpDir, a),
-                path.relative(tmpDir, aNested),
-              ])
-            : makeConfig([]),
-        );
+      vi.spyOn(workspace, "getConfiguration").mockImplementation((_s, scope) =>
+        scope === folder.uri
+          ? makeConfig([
+              path.relative(tmpDir, a),
+              path.relative(tmpDir, aNested),
+            ])
+          : makeConfig([]),
+      );
       (workspace.workspaceFolders as any) = [folder];
 
       const registry = new ProjectRegistry(terminal);
@@ -397,7 +387,7 @@ describe("ProjectRegistry", () => {
 
   it("contains matches exact or separator-prefix", async () => {
     const single = makeFolder("single-project");
-    jest.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
+    vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
     (workspace.workspaceFolders as any) = [single];
 
     const registry = new ProjectRegistry(terminal);
@@ -418,13 +408,11 @@ describe("ProjectRegistry", () => {
 
   it("preserves registration order across folder and declaration order", async () => {
     const general = makeFolder("multi-root");
-    jest
-      .spyOn(workspace, "getConfiguration")
-      .mockImplementation((_s, scope) =>
-        scope === general.uri
-          ? makeConfig(["projects/sox", "projects/general"])
-          : makeConfig([]),
-      );
+    vi.spyOn(workspace, "getConfiguration").mockImplementation((_s, scope) =>
+      scope === general.uri
+        ? makeConfig(["projects/sox", "projects/general"])
+        : makeConfig([]),
+    );
     (workspace.workspaceFolders as any) = [general];
 
     const registry = new ProjectRegistry(terminal);
@@ -436,23 +424,21 @@ describe("ProjectRegistry", () => {
 
   it("creates watchers for each registered project", async () => {
     const general = makeFolder("multi-root");
-    jest
-      .spyOn(workspace, "getConfiguration")
-      .mockImplementation((_s, scope) =>
-        scope === general.uri
-          ? makeConfig(["projects/general", "projects/sox"])
-          : makeConfig([]),
-      );
+    vi.spyOn(workspace, "getConfiguration").mockImplementation((_s, scope) =>
+      scope === general.uri
+        ? makeConfig(["projects/general", "projects/sox"])
+        : makeConfig([]),
+    );
     (workspace.workspaceFolders as any) = [general];
 
     let watcherCount = 0;
-    jest.spyOn(workspace, "createFileSystemWatcher").mockImplementation(() => {
+    vi.spyOn(workspace, "createFileSystemWatcher").mockImplementation(() => {
       watcherCount++;
       return {
-        onDidCreate: jest.fn(),
-        onDidChange: jest.fn(),
-        onDidDelete: jest.fn(),
-        dispose: jest.fn(),
+        onDidCreate: vi.fn(),
+        onDidChange: vi.fn(),
+        onDidDelete: vi.fn(),
+        dispose: vi.fn(),
       } as any;
     });
 
@@ -461,9 +447,10 @@ describe("ProjectRegistry", () => {
 
     expect(watcherCount).toBe(2);
     expect(
-      (RelativePattern as unknown as jest.Mock).mock.calls.map(
-        ([root, pattern]) => [(root as Uri).fsPath, pattern],
-      ),
+      (RelativePattern as unknown as Mock).mock.calls.map(([root, pattern]) => [
+        (root as Uri).fsPath,
+        pattern,
+      ]),
     ).toEqual([
       [path.join(general.uri.fsPath, "projects/general"), DBT_PROJECT_FILE],
       [path.join(general.uri.fsPath, "projects/sox"), DBT_PROJECT_FILE],
@@ -476,17 +463,17 @@ describe("ProjectRegistry", () => {
     let onConfiguration:
       | ((event: { affectsConfiguration(section: string): boolean }) => void)
       | undefined;
-    jest
-      .spyOn(workspace, "getConfiguration")
-      .mockImplementation(() => makeConfig(projects));
-    jest
-      .spyOn(workspace, "onDidChangeConfiguration")
-      .mockImplementation((listener) => {
+    vi.spyOn(workspace, "getConfiguration").mockImplementation(() =>
+      makeConfig(projects),
+    );
+    vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(
+      (listener) => {
         onConfiguration = listener as typeof onConfiguration;
-        return { dispose: jest.fn() };
-      });
+        return { dispose: vi.fn() };
+      },
+    );
     (workspace.workspaceFolders as any) = [general];
-    const changed = jest.fn();
+    const changed = vi.fn();
     const registry = new ProjectRegistry(terminal);
     registry.onDidChangeProjects(changed);
     await registry.initialize();
@@ -506,15 +493,15 @@ describe("ProjectRegistry", () => {
   it("reconciles workspace folder changes", async () => {
     const single = makeFolder("single-project");
     let onFolders: (() => void) | undefined;
-    jest.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
-    jest
-      .spyOn(workspace, "onDidChangeWorkspaceFolders")
-      .mockImplementation((listener) => {
+    vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
+    vi.spyOn(workspace, "onDidChangeWorkspaceFolders").mockImplementation(
+      (listener) => {
         onFolders = listener as () => void;
-        return { dispose: jest.fn() };
-      });
+        return { dispose: vi.fn() };
+      },
+    );
     (workspace.workspaceFolders as any) = [];
-    const changed = jest.fn();
+    const changed = vi.fn();
     const registry = new ProjectRegistry(terminal);
     registry.onDidChangeProjects(changed);
     await registry.initialize();
@@ -532,16 +519,16 @@ describe("ProjectRegistry", () => {
     const general = makeFolder("multi-root");
     let projects = ["projects/general"];
     let onDelete: (() => void) | undefined;
-    jest
-      .spyOn(workspace, "getConfiguration")
-      .mockImplementation(() => makeConfig(projects));
-    jest.spyOn(workspace, "createFileSystemWatcher").mockReturnValue({
-      onDidCreate: jest.fn(),
-      onDidChange: jest.fn(),
-      onDidDelete: jest.fn((listener) => {
+    vi.spyOn(workspace, "getConfiguration").mockImplementation(() =>
+      makeConfig(projects),
+    );
+    vi.spyOn(workspace, "createFileSystemWatcher").mockReturnValue({
+      onDidCreate: vi.fn(),
+      onDidChange: vi.fn(),
+      onDidDelete: vi.fn((listener) => {
         onDelete = listener as () => void;
       }),
-      dispose: jest.fn(),
+      dispose: vi.fn(),
     } as any);
     (workspace.workspaceFolders as any) = [general];
     const registry = new ProjectRegistry(terminal);
@@ -555,22 +542,22 @@ describe("ProjectRegistry", () => {
 
   it("initializes once and disposes watchers and listeners", async () => {
     const single = makeFolder("single-project");
-    const watcherDispose = jest.fn();
-    const configurationDispose = jest.fn();
-    const foldersDispose = jest.fn();
-    jest.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
-    jest.spyOn(workspace, "createFileSystemWatcher").mockReturnValue({
-      onDidCreate: jest.fn(),
-      onDidChange: jest.fn(),
-      onDidDelete: jest.fn(),
+    const watcherDispose = vi.fn();
+    const configurationDispose = vi.fn();
+    const foldersDispose = vi.fn();
+    vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
+    vi.spyOn(workspace, "createFileSystemWatcher").mockReturnValue({
+      onDidCreate: vi.fn(),
+      onDidChange: vi.fn(),
+      onDidDelete: vi.fn(),
       dispose: watcherDispose,
     } as any);
-    jest
-      .spyOn(workspace, "onDidChangeConfiguration")
-      .mockReturnValue({ dispose: configurationDispose } as any);
-    jest
-      .spyOn(workspace, "onDidChangeWorkspaceFolders")
-      .mockReturnValue({ dispose: foldersDispose } as any);
+    vi.spyOn(workspace, "onDidChangeConfiguration").mockReturnValue({
+      dispose: configurationDispose,
+    } as any);
+    vi.spyOn(workspace, "onDidChangeWorkspaceFolders").mockReturnValue({
+      dispose: foldersDispose,
+    } as any);
     (workspace.workspaceFolders as any) = [single];
     const registry = new ProjectRegistry(terminal);
 
@@ -591,7 +578,7 @@ describe("ProjectRegistry", () => {
     const tmpDir = mkdtempSync(path.join(tmpdir(), "fpu-project-registry-"));
     const projectFile = path.join(tmpDir, "dbt_project.yml");
     let onChange: (() => void) | undefined;
-    const watcherDispose = jest.fn();
+    const watcherDispose = vi.fn();
     try {
       writeFileSync(projectFile, "name: first\nversion: '1.0'\n");
       const folder: WorkspaceFolder = {
@@ -599,15 +586,15 @@ describe("ProjectRegistry", () => {
         name: "test",
         index: 0,
       };
-      jest.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
-      const createWatcher = jest
+      vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
+      const createWatcher = vi
         .spyOn(workspace, "createFileSystemWatcher")
         .mockReturnValue({
-          onDidCreate: jest.fn(),
-          onDidChange: jest.fn((listener) => {
+          onDidCreate: vi.fn(),
+          onDidChange: vi.fn((listener) => {
             onChange = listener as () => void;
           }),
-          onDidDelete: jest.fn(),
+          onDidDelete: vi.fn(),
           dispose: watcherDispose,
         } as any);
       (workspace.workspaceFolders as any) = [folder];
@@ -632,9 +619,9 @@ describe("ProjectRegistry", () => {
 
   it("reports configuration problems to terminal", async () => {
     const general = makeFolder("multi-root");
-    jest
-      .spyOn(workspace, "getConfiguration")
-      .mockImplementation(() => makeConfig(["", "projects/typo"]));
+    vi.spyOn(workspace, "getConfiguration").mockImplementation(() =>
+      makeConfig(["", "projects/typo"]),
+    );
     (workspace.workspaceFolders as any) = [general];
 
     const registry = new ProjectRegistry(terminal);

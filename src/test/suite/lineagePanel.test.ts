@@ -4,17 +4,18 @@ import {
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
+  type Mock,
+  vi,
+} from "vitest";
 import { window, workspace } from "vscode";
 import { LineagePanel } from "../../features/lineage/lineagePanel";
 
 describe("LineagePanel", () => {
   let panel: LineagePanel;
-  let mockPostMessage: jest.Mock;
+  let mockPostMessage: Mock;
 
   beforeEach(() => {
-    mockPostMessage = jest.fn();
+    mockPostMessage = vi.fn();
 
     // Create a minimal instance by bypassing the constructor DI.
     // We only need the methods under test and the _panel webview stub.
@@ -27,13 +28,13 @@ describe("LineagePanel", () => {
 
     // Stub dependencies used by getStartingNode / renderStartingNode
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest.fn().mockReturnValue(undefined),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
     (panel as any).dbtTerminal = {
-      info: jest.fn(),
-      debug: jest.fn(),
-      error: jest.fn(),
+      info: vi.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
     };
   });
 
@@ -57,13 +58,13 @@ describe("LineagePanel", () => {
   describe("getLineageSettings — defaultExpansion cap", () => {
     it("should cap defaultExpansion at 5 when user sets a higher value", async () => {
       const mockConfig = {
-        get: jest
-          .fn<any>()
+        get: vi
+          .fn<(key: string) => unknown>()
           .mockImplementation((key: string) =>
             key === "lineage.defaultExpansion" ? 10 : undefined,
           ),
       };
-      (workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+      (workspace.getConfiguration as Mock).mockReturnValue(mockConfig);
 
       // Call handleCommand with getLineageSettings
       await (panel as any).handleCommand({
@@ -86,13 +87,13 @@ describe("LineagePanel", () => {
 
     it("should pass through defaultExpansion when within limit", async () => {
       const mockConfig = {
-        get: jest
-          .fn<any>()
+        get: vi
+          .fn<(key: string) => unknown>()
           .mockImplementation((key: string) =>
             key === "lineage.defaultExpansion" ? 3 : undefined,
           ),
       };
-      (workspace.getConfiguration as jest.Mock).mockReturnValue(mockConfig);
+      (workspace.getConfiguration as Mock).mockReturnValue(mockConfig);
 
       await (panel as any).handleCommand({
         command: "getLineageSettings",
@@ -128,7 +129,7 @@ describe("LineagePanel", () => {
       }),
       getProject: () => ({ projectRoot: { fsPath: "/p" } }),
     };
-    const getInferredColumns = jest
+    const getInferredColumns = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue([
         { name: "id", datatype: "integer" },
@@ -160,8 +161,8 @@ describe("LineagePanel", () => {
       columns: {},
       meta: {},
     };
-    const getColumnsOfModel = jest.fn();
-    const mergeColumnsFromDB = jest.fn();
+    const getColumnsOfModel = vi.fn();
+    const mergeColumnsFromDB = vi.fn();
     (panel as any).queryManifestService = {
       getEventByCurrentProject: () => ({
         event: { nodeMetaMap: { lookupByUniqueId: () => node } },
@@ -173,11 +174,11 @@ describe("LineagePanel", () => {
       }),
     };
     (panel as any).dbtLineageService = {
-      getInferredColumns: jest
+      getInferredColumns: vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue([{ name: "id", datatype: "integer" }]),
     };
-    (window.withProgress as jest.Mock).mockClear();
+    (window.withProgress as Mock).mockClear();
 
     const body = await (panel as any).getColumns({
       table: "model.p.a",
@@ -198,10 +199,10 @@ describe("LineagePanel", () => {
       description: "Raw orders",
       columns: {} as Record<string, any>,
     };
-    const getColumnsOfSource = jest
+    const getColumnsOfSource = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue([{ column: "id", dtype: "INTEGER" }]);
-    const mergeColumnsFromDB = jest.fn((t: any, _columns: unknown) => {
+    const mergeColumnsFromDB = vi.fn((t: any, _columns: unknown) => {
       t.columns.id = { name: "id", data_type: "INTEGER", description: "" };
       return true;
     });
@@ -213,7 +214,7 @@ describe("LineagePanel", () => {
       }),
       getProject: () => ({ getColumnsOfSource, mergeColumnsFromDB }),
     };
-    (window.withProgress as jest.Mock).mockImplementation(
+    (window.withProgress as Mock).mockImplementation(
       async (_opts: any, task: any) => task(),
     );
 
@@ -232,10 +233,10 @@ describe("LineagePanel", () => {
   });
 
   it("answers childTables with children and parentTables with parents", async () => {
-    const getChildTables = jest
+    const getChildTables = vi
       .fn<(...args: any[]) => any>()
       .mockReturnValue({ tables: [{ table: "child" }] });
-    const getParentTables = jest
+    const getParentTables = vi
       .fn<(...args: any[]) => any>()
       .mockReturnValue({ tables: [{ table: "parent" }] });
     (panel as any).dbtLineageService = { getChildTables, getParentTables };
@@ -283,7 +284,7 @@ describe("LineagePanel", () => {
         viewsType: "Unchanged",
       },
     ];
-    const getConnectedColumns = jest
+    const getConnectedColumns = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue({ kind: "lineage", columnLineage: lineage });
     (panel as any).dbtLineageService = { getConnectedColumns };
@@ -324,7 +325,7 @@ describe("LineagePanel", () => {
     ],
   ])("explains %j on each target table", async (reason, expected) => {
     (panel as any).dbtLineageService = {
-      getConnectedColumns: jest
+      getConnectedColumns: vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue({ kind: "noLineage", reason }),
     };
@@ -343,7 +344,7 @@ describe("LineagePanel", () => {
 
   it("keeps lineage and reports each failed column", async () => {
     (panel as any).dbtLineageService = {
-      getConnectedColumns: jest
+      getConnectedColumns: vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue({
           kind: "lineage",
@@ -368,12 +369,12 @@ describe("LineagePanel", () => {
 describe("LineagePanel — after a save", () => {
   it("tells the webview when the current project's manifest is replaced", () => {
     const panel = Object.create(LineagePanel.prototype);
-    const postMessage = jest.fn();
+    const postMessage = vi.fn();
     (panel as any)._panel = { webview: { postMessage } };
-    (panel as any).dbtTerminal = { info: jest.fn(), error: jest.fn() };
+    (panel as any).dbtTerminal = { info: vi.fn(), error: vi.fn() };
     const current = {
       projectRoot: { fsPath: "/p" },
-      throwDiagnosticsErrorIfAvailable: jest.fn(),
+      throwDiagnosticsErrorIfAvailable: vi.fn(),
       manifest: { publicationEpoch: 1 } as any,
     };
     const other = { manifest: { publicationEpoch: 1 } as any } as any;
@@ -403,12 +404,12 @@ describe("LineagePanel — after a save", () => {
     "re-renders on a project switch with %s epochs",
     (_label, epochA, epochB) => {
       const panel = Object.create(LineagePanel.prototype);
-      const postMessage = jest.fn();
+      const postMessage = vi.fn();
       (panel as any)._panel = { webview: { postMessage } };
-      (panel as any).dbtTerminal = { info: jest.fn(), error: jest.fn() };
+      (panel as any).dbtTerminal = { info: vi.fn(), error: vi.fn() };
       const project = (root: string, publicationEpoch: number) => ({
         projectRoot: { fsPath: root },
-        throwDiagnosticsErrorIfAvailable: jest.fn(),
+        throwDiagnosticsErrorIfAvailable: vi.fn(),
         manifest: { publicationEpoch } as any,
       });
       const a = project("/a", epochA);
@@ -461,21 +462,21 @@ describe("LineagePanel — source YAML rooting", () => {
   const makeEvent = (sourceMetaMap: Map<string, any>) => ({
     event: {
       sourceMetaMap,
-      nodeMetaMap: { lookupByBaseName: jest.fn().mockReturnValue(undefined) },
+      nodeMetaMap: { lookupByBaseName: vi.fn().mockReturnValue(undefined) },
       functionMetaMap: new Map(),
     },
   });
 
   beforeEach(() => {
     panel = Object.create(LineagePanel.prototype);
-    (panel as any)._panel = { webview: { postMessage: jest.fn() } };
+    (panel as any)._panel = { webview: { postMessage: vi.fn() } };
     (panel as any).dbtTerminal = {
-      info: jest.fn(),
-      debug: jest.fn(),
-      error: jest.fn(),
+      info: vi.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
     };
     (panel as any).dbtLineageService = {
-      createTable: jest.fn((_e: unknown, _u: unknown, key: string) => ({
+      createTable: vi.fn((_e: unknown, _u: unknown, key: string) => ({
         table: key,
       })),
     };
@@ -521,10 +522,10 @@ describe("LineagePanel — source YAML rooting", () => {
       ],
     ]);
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest
+      getEventByCurrentProject: vi
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -556,10 +557,10 @@ describe("LineagePanel — source YAML rooting", () => {
       ],
     ]);
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest
+      getEventByCurrentProject: vi
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -603,10 +604,10 @@ describe("LineagePanel — source YAML rooting", () => {
       ],
     ]);
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest
+      getEventByCurrentProject: vi
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
     // Cursor on line 4 → the "tracks" table.
     (window as any).activeTextEditor = makeEditor(filePath, body, 4);
@@ -639,10 +640,10 @@ describe("LineagePanel — source YAML rooting", () => {
       ],
     ]);
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest
+      getEventByCurrentProject: vi
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
     // Cursor on line 0 (the `sources:` line), above any table name.
     (window as any).activeTextEditor = makeEditor(filePath, body, 0);
@@ -681,10 +682,10 @@ describe("LineagePanel — source YAML rooting", () => {
       ],
     ]);
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest
+      getEventByCurrentProject: vi
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(filePath, body, 2);
 
@@ -723,10 +724,10 @@ describe("LineagePanel — source YAML rooting", () => {
       ],
     ]);
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest
+      getEventByCurrentProject: vi
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
     // Cursor on line 6 → ga's "events", not seg's (a name-only lookup
     // would find seg's declaration line for both candidates).
@@ -750,13 +751,13 @@ describe("LineagePanel — source YAML rooting", () => {
       ],
     ]);
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest
+      getEventByCurrentProject: vi
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
     (panel as any).dbtLineageService = {
-      createTable: jest.fn().mockReturnValue(undefined),
+      createTable: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -786,10 +787,10 @@ describe("LineagePanel — source YAML rooting", () => {
       ],
     ]);
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest
+      getEventByCurrentProject: vi
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
     const editor = makeEditor(
       filePath,
@@ -797,7 +798,7 @@ describe("LineagePanel — source YAML rooting", () => {
       3,
     );
     (window as any).activeTextEditor = editor;
-    const resolveSpy = jest.spyOn(
+    const resolveSpy = vi.spyOn(
       panel as any,
       "resolveSourceStartingNode" as any,
     );
@@ -832,10 +833,10 @@ describe("LineagePanel — source YAML rooting", () => {
       ],
     ]);
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest
+      getEventByCurrentProject: vi
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -853,8 +854,8 @@ describe("LineagePanel — source YAML rooting", () => {
 
   it("getStartingNode keeps the lineage component's relationship features enabled", () => {
     (panel as any).queryManifestService = {
-      getEventByCurrentProject: jest.fn().mockReturnValue(undefined),
-      getProject: jest.fn().mockReturnValue(undefined),
+      getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
+      getProject: vi.fn().mockReturnValue(undefined),
     };
 
     const result = (panel as any).getStartingNode();

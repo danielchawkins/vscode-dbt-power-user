@@ -4,44 +4,45 @@ import {
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
+  type Mock,
+  vi,
+} from "vitest";
 import { commands, extensions, Uri, workspace } from "vscode";
 import { VSCodeCommands } from "../../features/commands";
 import { DiagnosticsOutputChannel } from "../../features/diagnostics/diagnosticsOutputChannel";
 
 describe("fusionPowerUser.diagnostics", () => {
   let diagnosticsHandler: (() => Promise<void>) | undefined;
-  let logLine: jest.Mock;
+  let logLine: Mock;
   let diagnosticsOutputChannel: DiagnosticsOutputChannel;
   let initialize: () => void;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     const initialized = new Promise<void>((resolve) => (initialize = resolve));
-    logLine = jest.fn();
+    logLine = vi.fn();
     diagnosticsOutputChannel = {
-      show: jest.fn(),
+      show: vi.fn(),
       logLine,
-      logNewLine: jest.fn(),
-      logBlock: jest.fn(),
-      logBlockWithHeader: jest.fn(),
-      logHorizontalRule: jest.fn(),
+      logNewLine: vi.fn(),
+      logBlock: vi.fn(),
+      logBlockWithHeader: vi.fn(),
+      logHorizontalRule: vi.fn(),
     } as unknown as DiagnosticsOutputChannel;
 
     (workspace as any).workspaceFolders = [
       { uri: Uri.file("/workspace"), name: "workspace", index: 0 },
     ];
-    (extensions.getExtension as jest.Mock).mockReturnValue({
+    (extensions.getExtension as Mock).mockReturnValue({
       packageJSON: { version: "0.2.0" },
     });
-    (workspace.getConfiguration as jest.Mock).mockReturnValue({
-      inspect: jest.fn(() => ({
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      inspect: vi.fn(() => ({
         globalValue: {},
         defaultValue: {},
         workspaceValue: {},
       })),
-      get: jest.fn(),
+      get: vi.fn(),
     });
 
     const failedProject = {
@@ -60,7 +61,7 @@ describe("fusionPowerUser.diagnostics", () => {
           source: "fusion-executable",
         },
       ],
-      debug: jest.fn(() => Promise.resolve()),
+      debug: vi.fn(() => Promise.resolve()),
     };
     const healthyProject = {
       getProjectName: () => "healthy-project",
@@ -78,7 +79,7 @@ describe("fusionPowerUser.diagnostics", () => {
       getSeedPaths: () => [],
       getMacroPaths: () => [],
       getAllDiagnostic: () => [],
-      debug: jest.fn(() => Promise.resolve()),
+      debug: vi.fn(() => Promise.resolve()),
     };
 
     new VSCodeCommands(
@@ -89,7 +90,7 @@ describe("fusionPowerUser.diagnostics", () => {
       {} as never,
       {} as never,
       {} as never,
-      { error: jest.fn(), debug: jest.fn() } as never,
+      { error: vi.fn(), debug: vi.fn() } as never,
       diagnosticsOutputChannel,
       {} as never,
       {} as never,
@@ -99,9 +100,9 @@ describe("fusionPowerUser.diagnostics", () => {
       { whenSettled: () => initialized },
     );
 
-    const registration = (
-      commands.registerCommand as jest.Mock
-    ).mock.calls.find(([command]) => command === "fusionPowerUser.diagnostics");
+    const registration = (commands.registerCommand as Mock).mock.calls.find(
+      ([command]) => command === "fusionPowerUser.diagnostics",
+    );
     diagnosticsHandler = registration?.[1] as () => Promise<void>;
   });
 

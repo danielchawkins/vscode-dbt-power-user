@@ -16,7 +16,6 @@ export async function run(): Promise<void> {
     });
 
     return new Promise<void>((resolve, reject) => {
-      // Run the Jest test
       process.on("unhandledRejection", (err) => {
         console.error(err);
         reject(err);

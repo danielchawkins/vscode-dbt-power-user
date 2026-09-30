@@ -1,7 +1,7 @@
-import { describe, expect, it } from "@jest/globals";
 import { mkdtempSync, rmSync, statSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import * as path from "path";
+import { describe, expect, it } from "vitest";
 import {
   CliCommand,
   deferState,

@@ -1,6 +1,6 @@
-import { describe, expect, it } from "@jest/globals";
 import { realpathSync } from "fs";
 import { tmpdir } from "os";
+import { describe, expect, it } from "vitest";
 import { execFileText, spawnProcess } from "../../fusion/process";
 
 const node = process.execPath;

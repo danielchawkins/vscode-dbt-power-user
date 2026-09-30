@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import * as path from "path";
+import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import { EventEmitter, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { CurrentProject } from "../../projects/currentProject";
 import { ProjectQuickPick } from "../../projects/projectQuickPick";
@@ -24,14 +24,14 @@ const other = project("/other/project", "other", otherFolder);
 
 describe("CurrentProject", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     (window.activeTextEditor as unknown) = undefined;
-    jest.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(undefined);
+    vi.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(undefined);
   });
 
   it("tracks the active editor's Declared Project", () => {
     const harness = createHarness([general, sox]);
-    const changed = jest.fn();
+    const changed = vi.fn();
     harness.context.onDidChangeCurrent(changed);
 
     setEditor("/workspace/projects/general/models/one.sql");
@@ -48,7 +48,7 @@ describe("CurrentProject", () => {
   it("returns undefined for a non-project file in a multi-project folder", () => {
     const harness = createHarness([general, sox]);
     setEditor("/workspace/pipelines/pipeline.sql");
-    jest.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(folder);
+    vi.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(folder);
 
     expect(harness.context.current).toBeUndefined();
     expect(window.showErrorMessage).not.toHaveBeenCalled();
@@ -58,7 +58,7 @@ describe("CurrentProject", () => {
 
   it("uses the active folder only when it owns exactly one project", () => {
     setEditor("/workspace/pipelines/pipeline.sql");
-    jest.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(folder);
+    vi.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(folder);
 
     expect(createHarness([general, other]).context.current).toBe(general);
     expect(
@@ -132,7 +132,7 @@ describe("CurrentProject", () => {
     expect(harness.picker.declaredProjectPicker).toHaveBeenCalledTimes(1);
 
     setEditor("/workspace/pipelines/pipeline.sql");
-    jest.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(folder);
+    vi.spyOn(workspace, "getWorkspaceFolder").mockReturnValue(folder);
     expect(harness.context.current).toBeUndefined();
   });
 
@@ -179,12 +179,12 @@ describe("CurrentProject", () => {
   });
 
   it("reacts to registry changes and stops after disposal", () => {
-    const editorDispose = jest.fn();
-    jest
-      .spyOn(window, "onDidChangeActiveTextEditor")
-      .mockReturnValue({ dispose: editorDispose });
+    const editorDispose = vi.fn();
+    vi.spyOn(window, "onDidChangeActiveTextEditor").mockReturnValue({
+      dispose: editorDispose,
+    });
     const harness = createHarness([]);
-    const changed = jest.fn();
+    const changed = vi.fn();
     harness.context.onDidChangeCurrent(changed);
     setEditor("/workspace/projects/general/models/model.sql");
 
@@ -202,7 +202,7 @@ describe("CurrentProject", () => {
 
   it("is inert before the registry contains projects", () => {
     const harness = createHarness([]);
-    const changed = jest.fn();
+    const changed = vi.fn();
     harness.context.onDidChangeCurrent(changed);
     setEditor("/workspace/projects/general/models/model.sql");
     fireEditorChange();
@@ -221,13 +221,13 @@ function createHarness(initialProjects: DeclaredProject[]) {
       return projects;
     },
     onDidChangeProjects: registryEmitter.event,
-    findProject: jest.fn((uri: Uri) =>
+    findProject: vi.fn((uri: Uri) =>
       projects.find((candidate) => candidate.contains(uri)),
     ),
   } as unknown as ProjectRegistry;
   const picker = {
     declaredProjectPicker:
-      jest.fn<
+      vi.fn<
         (
           projects: readonly DeclaredProject[],
         ) => Promise<DeclaredProject | undefined>
@@ -255,7 +255,7 @@ function project(
     folder: owningFolder,
     contains: (uri) =>
       uri.fsPath === rootPath || uri.fsPath.startsWith(rootPath + path.sep),
-    dispose: jest.fn(),
+    dispose: vi.fn(),
   };
 }
 
@@ -266,8 +266,8 @@ function setEditor(fsPath: string): void {
 }
 
 function fireEditorChange(): void {
-  for (const [listener] of (window.onDidChangeActiveTextEditor as jest.Mock)
-    .mock.calls) {
+  for (const [listener] of (window.onDidChangeActiveTextEditor as Mock).mock
+    .calls) {
     (listener as (editor: unknown) => void)(window.activeTextEditor);
   }
 }

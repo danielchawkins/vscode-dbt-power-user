@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
+import { afterEach, describe, expect, it, type Mocked, vi } from "vitest";
 import { window } from "vscode";
 import {
   parseHistoryArgs,
@@ -8,14 +8,14 @@ import {
 import { parseRunResultsJson } from "../../projects/runResults";
 import { createEntry } from "../fixtures/runHistory";
 
-function createProject(): jest.Mocked<ReplayProject> {
+function createProject(): Mocked<ReplayProject> {
   return {
-    runModel: jest.fn(),
-    buildModel: jest.fn(),
-    buildProject: jest.fn(),
-    runTest: jest.fn(),
-    compileModel: jest.fn(),
-  } as unknown as jest.Mocked<ReplayProject>;
+    runModel: vi.fn(),
+    buildModel: vi.fn(),
+    buildProject: vi.fn(),
+    runTest: vi.fn(),
+    compileModel: vi.fn(),
+  } as unknown as Mocked<ReplayProject>;
 }
 
 describe("parseHistoryArgs", () => {
@@ -56,7 +56,7 @@ describe("rerunFromHistory", () => {
     ({ project1: project, project2: other })[name];
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("reports a project that is not loaded", () => {

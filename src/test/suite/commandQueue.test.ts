@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from "@jest/globals";
+import { describe, expect, it, type Mock, vi } from "vitest";
 import * as vscode from "vscode";
 import { DBTCommand } from "../../dbt_integration";
 import {
@@ -59,7 +59,7 @@ describe("CommandQueue", () => {
     const queue = new CommandQueue();
     const failures: QueuedCommandFailure[] = [];
     queue.onFailed((failure) => failures.push(failure));
-    const later = jest.fn(async () => undefined);
+    const later = vi.fn(async () => undefined);
 
     queue.enqueue(() => Promise.reject(new Error("cancelled")), {
       statusMessage: "dbt run --select my_model",
@@ -76,7 +76,7 @@ describe("CommandQueue", () => {
   it("propagates progress-token cancellation to the command's abort signal", async () => {
     const queue = new CommandQueue();
     let capturedCancel: (() => void) | undefined;
-    (vscode.window.withProgress as jest.Mock).mockImplementationOnce(
+    (vscode.window.withProgress as Mock).mockImplementationOnce(
       (_options: unknown, task: any) => {
         const token = {
           onCancellationRequested: (cb: () => void) => {
@@ -89,7 +89,7 @@ describe("CommandQueue", () => {
     );
 
     let observedSignal: AbortSignal | undefined;
-    const command = jest.fn((signal?: AbortSignal) => {
+    const command = vi.fn((signal?: AbortSignal) => {
       observedSignal = signal;
       return new Promise<void>((resolve) => {
         signal?.addEventListener("abort", () => resolve());

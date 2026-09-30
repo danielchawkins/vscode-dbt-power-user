@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FusionStatus } from "../../fusion/fusionStatus";
@@ -17,14 +17,14 @@ Object.assign(vscodeMockAny.env as Record<string, unknown>, {
   sessionId: "test-session",
 });
 const sharedWindow = vscodeMockAny.window as Record<string, unknown>;
-sharedWindow.createStatusBarItem = jest.fn(() => ({
+sharedWindow.createStatusBarItem = vi.fn(() => ({
   text: "",
   tooltip: undefined,
-  show: jest.fn(),
-  hide: jest.fn(),
-  dispose: jest.fn(),
+  show: vi.fn(),
+  hide: vi.fn(),
+  dispose: vi.fn(),
 }));
-sharedWindow.createOutputChannel = jest.fn(
+sharedWindow.createOutputChannel = vi.fn(
   (name?: string, _options?: { log?: boolean }) =>
     createMockLogOutputChannel(name),
 );
@@ -34,8 +34,8 @@ import { VSCodeDBTTerminal } from "../../dbt_client/vscodeTerminal";
 
 function stubContext(workspaceValue?: string) {
   return {
-    workspaceState: { get: jest.fn(() => workspaceValue), update: jest.fn() },
-    globalState: { get: jest.fn(), update: jest.fn() },
+    workspaceState: { get: vi.fn(() => workspaceValue), update: vi.fn() },
+    globalState: { get: vi.fn(), update: vi.fn() },
   } as never;
 }
 

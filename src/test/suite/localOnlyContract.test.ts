@@ -1,6 +1,6 @@
-import { describe, expect, it } from "@jest/globals";
 import { readdirSync, readFileSync } from "fs";
 import * as path from "path";
+import { describe, expect, it } from "vitest";
 import { esmDirname } from "../esmDirname";
 
 const srcRoot = path.resolve(esmDirname(import.meta.url), "../../");

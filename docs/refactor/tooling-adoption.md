@@ -10,7 +10,7 @@ Keep package management Node-native and make Just the workflow authority:
 - package scripts expose package-local operations and required npm or VS Code lifecycle hooks;
 - the root `justfile` owns repository workflows and delegates webview-specific work to `webview_panels/justfile`;
 - ESLint and Prettier continue to own TypeScript, JavaScript, JSON, CSS, and webview formatting;
-- Jest and the existing VS Code test infrastructure remain the test frameworks; and
+- Vitest and the existing VS Code test infrastructure remain the test frameworks; and
 - Lefthook is the Git hook implementation, replacing Husky and lint-staged, because staged-file scoping reads more clearly in one declarative file.
 
 Add a small contributor layer:
@@ -117,7 +117,7 @@ Retain and simplify rather than replace:
 - `package.json` scripts;
 - package lockfiles;
 - ESLint and Prettier configuration;
-- Jest configuration and mocks;
+- Vitest configuration and mocks;
 - rsbuild/Vite while retained extension and webview bundles require them.
 
 ## Do not adopt

@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { readFileSync } from "fs";
 import path from "path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ConfigurationChangeEvent,
   ConfigurationTarget,
@@ -48,7 +48,7 @@ function contributedScopes(): Record<string, string> {
 
 describe("settings", () => {
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("declares exactly the contributed settings with their scopes", () => {
@@ -57,8 +57,8 @@ describe("settings", () => {
 
   it("reads resource-scoped keys for a resource and window keys unscoped", () => {
     const scope = Uri.file("/workspace/general");
-    const get = jest.fn<(key: string) => unknown>();
-    const getConfiguration = jest
+    const get = vi.fn<(key: string) => unknown>();
+    const getConfiguration = vi
       .spyOn(workspace, "getConfiguration")
       .mockReturnValue({ get } as unknown as WorkspaceConfiguration);
 
@@ -75,8 +75,8 @@ describe("settings", () => {
   });
 
   it("writes a window-scoped key, letting VS Code pick the target", async () => {
-    const update = jest.fn((..._args: unknown[]) => Promise.resolve());
-    const getConfiguration = jest
+    const update = vi.fn((..._args: unknown[]) => Promise.resolve());
+    const getConfiguration = vi
       .spyOn(workspace, "getConfiguration")
       .mockReturnValue({ update } as unknown as WorkspaceConfiguration);
 
@@ -96,7 +96,7 @@ describe("settings", () => {
       "lint.enabled": false,
       projects: ["a", "b"],
     };
-    jest.spyOn(workspace, "getConfiguration").mockImplementation(
+    vi.spyOn(workspace, "getConfiguration").mockImplementation(
       (section?: string) =>
         ({
           inspect: (key: string) => {
@@ -130,8 +130,8 @@ describe("settings", () => {
 
   it("reads and writes files.associations for a folder", async () => {
     const folder = Uri.file("/workspace/general");
-    const update = jest.fn((..._args: unknown[]) => Promise.resolve());
-    const getConfiguration = jest
+    const update = vi.fn((..._args: unknown[]) => Promise.resolve());
+    const getConfiguration = vi
       .spyOn(workspace, "getConfiguration")
       .mockReturnValue({
         get: (_key: string, fallback: unknown) => fallback,
@@ -159,12 +159,12 @@ describe("settings", () => {
   it("reports whether a subscribed key changed for a resource", () => {
     const scope = Uri.file("/workspace/general");
     let fire: ((event: ConfigurationChangeEvent) => void) | undefined;
-    jest
-      .spyOn(workspace, "onDidChangeConfiguration")
-      .mockImplementation((listener) => {
+    vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(
+      (listener) => {
         fire = listener as typeof fire;
-        return { dispose: jest.fn() };
-      });
+        return { dispose: vi.fn() };
+      },
+    );
     const changes: SettingsChange[] = [];
     onDidChangeSettings(["target", "dbtPath"], (change) =>
       changes.push(change),

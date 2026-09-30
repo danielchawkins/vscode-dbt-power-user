@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mocked,
+  vi,
+} from "vitest";
 import * as vscode from "vscode";
 import { DiagnosticsOutputChannel } from "../../features/diagnostics/diagnosticsOutputChannel";
 
@@ -6,28 +14,28 @@ import { DiagnosticsOutputChannel } from "../../features/diagnostics/diagnostics
 process.env.NODE_ENV = "test";
 
 describe("DiagnosticsOutputChannel Test Suite", () => {
-  let mockOutputChannel: jest.Mocked<any>;
+  let mockOutputChannel: Mocked<any>;
   let diagnosticsChannel: DiagnosticsOutputChannel;
 
   beforeEach(() => {
     mockOutputChannel = {
-      appendLine: jest.fn(),
-      show: jest.fn(),
-      clear: jest.fn(),
-      dispose: jest.fn(),
+      appendLine: vi.fn(),
+      show: vi.fn(),
+      clear: vi.fn(),
+      dispose: vi.fn(),
     };
 
     // Mock vscode.window.createOutputChannel
-    jest
-      .spyOn(vscode.window, "createOutputChannel")
-      .mockReturnValue(mockOutputChannel);
+    vi.spyOn(vscode.window, "createOutputChannel").mockReturnValue(
+      mockOutputChannel,
+    );
 
     diagnosticsChannel = new DiagnosticsOutputChannel();
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
-    jest.restoreAllMocks();
+    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("should create output channel with correct name", () => {

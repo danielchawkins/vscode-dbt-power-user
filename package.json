@@ -829,8 +829,8 @@
     "check:format": "prettier --check \"**/*.{js,css,html,json}\" \"scripts/**/*.mjs\"",
     "check:lockfile": "lockfile-lint --path package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity",
     "check:lockfile:webviews": "lockfile-lint --path webview_panels/package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity",
-    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:integration": "node scripts/test/run-integration.mjs",
     "package:vsix": "vsce package",
     "lint:prune": "eslint src scripts --prune-suppressions",
@@ -839,10 +839,8 @@
     "lint:imports:baseline": "depcruise src --config .dependency-cruiser.cjs --output-type baseline --output-to .dependency-cruiser-known-violations.json"
   },
   "devDependencies": {
-    "@jest/globals": "^30.5.2",
     "@rsbuild/core": "^2.2.8",
     "@types/istanbul-lib-coverage": "^2.0.6",
-    "@types/jest": "^30.0.0",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.13.6",
     "@types/picomatch": "^4.0.3",
@@ -850,6 +848,7 @@
     "@types/which": "^3.0.4",
     "@typescript-eslint/eslint-plugin": "^8.70.0",
     "@typescript-eslint/parser": "^8.70.0",
+    "@vitest/coverage-v8": "^5.0.3",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.0.0",
@@ -862,15 +861,14 @@
     "glob": "^13.0.6",
     "istanbul-lib-coverage": "^3.2.2",
     "istanbul-lib-instrument": "^6.0.3",
-    "jest": "^30.5.2",
     "knip": "^6.38.0",
     "lockfile-lint": "^5.0.1",
     "mocha": "^12.0.2",
     "prettier": "^3.9.8",
     "prettier-plugin-organize-imports": "^4.3.0",
-    "ts-jest": "^29.4.12",
     "ts-mockito": "^2.6.1",
-    "typescript": "^6.0.3"
+    "typescript": "^6.0.3",
+    "vitest": "^5.0.3"
   },
   "dependencies": {
     "picomatch": "^4.0.7",
@@ -889,6 +887,7 @@
   "allowScripts": {
     "@parcel/watcher@2.6.0": false,
     "@vscode/vsce-sign@2.1.0": true,
+    "fsevents@2.3.3": false,
     "unrs-resolver@1.12.2": false
   }
 }

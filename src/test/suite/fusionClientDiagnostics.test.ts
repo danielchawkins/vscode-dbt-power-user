@@ -1,4 +1,12 @@
-import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mock,
+  vi,
+} from "vitest";
 import { commands, Uri } from "vscode";
 import {
   FUSION_CLIENT_STATES_COMMAND,
@@ -16,12 +24,12 @@ function project(name: string): DeclaredProject {
     name,
     folder: { uri: Uri.file("/workspace"), name: "workspace", index: 0 },
     contains: () => true,
-    dispose: jest.fn(),
+    dispose: vi.fn(),
   };
 }
 
 function commandHandler(): () => unknown {
-  const registration = (commands.registerCommand as jest.Mock).mock.calls.find(
+  const registration = (commands.registerCommand as Mock).mock.calls.find(
     ([command]) => command === FUSION_CLIENT_STATES_COMMAND,
   );
   return registration?.[1] as () => unknown;
@@ -31,7 +39,7 @@ describe("registerFusionClientDiagnostics", () => {
   const originalHost = process.env.FPU_SMOKE_HOST;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -43,7 +51,7 @@ describe("registerFusionClientDiagnostics", () => {
   });
 
   it.each([undefined, "", "other"])(
-    "does not register when FPU_SMOKE_HOST is %p",
+    "does not register when FPU_SMOKE_HOST is %j",
     (value) => {
       if (value === undefined) {
         delete process.env.FPU_SMOKE_HOST;
@@ -53,7 +61,7 @@ describe("registerFusionClientDiagnostics", () => {
 
       registerFusionClientDiagnostics(
         { projects: [] } as unknown as ProjectRegistry,
-        { get: jest.fn() } as unknown as FusionClientPool,
+        { get: vi.fn() } as unknown as FusionClientPool,
       );
 
       expect(commands.registerCommand).not.toHaveBeenCalled();
@@ -67,7 +75,7 @@ describe("registerFusionClientDiagnostics", () => {
 
       registerFusionClientDiagnostics(
         { projects: [] } as unknown as ProjectRegistry,
-        { get: jest.fn() } as unknown as FusionClientPool,
+        { get: vi.fn() } as unknown as FusionClientPool,
       );
 
       expect(commands.registerCommand).toHaveBeenCalledWith(
@@ -82,12 +90,12 @@ describe("registerFusionClientDiagnostics", () => {
     const general = project("general");
     const sox = project("sox");
     const pool = {
-      get: jest.fn((declared: DeclaredProject) =>
+      get: vi.fn((declared: DeclaredProject) =>
         declared === general
           ? { state: "running", failureReason: undefined }
           : undefined,
       ),
-      getLaunch: jest.fn((declared: DeclaredProject) =>
+      getLaunch: vi.fn((declared: DeclaredProject) =>
         declared === general ? { target: "ci" } : undefined,
       ),
     } as unknown as FusionClientPool;
@@ -119,7 +127,7 @@ describe("registerFusionClientDiagnostics", () => {
     try {
       registerFusionClientDiagnostics(
         { projects: [] } as unknown as ProjectRegistry,
-        { get: jest.fn() } as unknown as FusionClientPool,
+        { get: vi.fn() } as unknown as FusionClientPool,
       );
     } finally {
       delete process.env.FPU_INTEGRATION_COMMANDS;

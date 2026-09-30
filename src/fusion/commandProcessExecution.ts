@@ -12,10 +12,7 @@ function isCommandNotFoundError(error: unknown): boolean {
 function createCommandNotFoundError(command: string): Error {
   return new Error(
     `Command not found: "${command}". ` +
-      `The "${command}" executable is not installed or is not on your system PATH. ` +
-      `Please ensure it is installed and available. ` +
-      `If you installed it in a virtual environment (venv, Poetry, Conda), ` +
-      `make sure that environment is activated or its bin directory is in your PATH.`,
+      `Install dbt Fusion, then put it on PATH or set fusionPowerUser.dbtPath.`,
   );
 }
 
