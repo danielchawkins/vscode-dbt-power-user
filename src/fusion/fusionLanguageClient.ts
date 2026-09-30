@@ -1,5 +1,5 @@
 import { createHash } from "crypto";
-import { existsSync, realpathSync } from "fs";
+import { realpathSync } from "fs";
 import * as path from "path";
 import {
   CancellationToken,
@@ -21,6 +21,10 @@ import { DBT_LSP_USE_TARGET_LSP, toLspArgs, type LspLaunch } from "../core/lsp";
 import { type StaticAnalysisMode } from "../core/project";
 import { DBTTerminal } from "../dbt_integration";
 import { DeclaredProject } from "../projects/projectRegistry";
+import {
+  clearDiagnosticsOnDelete,
+  ProjectDiagnosticsFilter,
+} from "./fusionDiagnostics";
 import { FusionExecutable } from "./fusionExecutable";
 import { spawnProcess, type ChildProcess } from "./process";
 import {
@@ -193,33 +197,6 @@ export function withoutUnregisteredLspLenses<
   return lenses?.filter(
     (lens) => lens.command?.command !== FUSION_LSP_PREVIEW_CTE,
   );
-}
-
-/**
- * Decides which `publishDiagnostics` notifications reach the editor. Fusion publishes diagnostics for its bundled
- * package macros under the project root although those files do not exist there; Cursor's renderer stalls on
- * them. A URI whose file is missing is dropped unless an earlier notification for it was forwarded, so the clear
- * for a file deleted after it had diagnostics still arrives.
- */
-export class ExistingFileDiagnostics {
-  private readonly forwarded = new Set<string>();
-
-  constructor(
-    private readonly exists: (fsPath: string) => boolean = existsSync,
-  ) {}
-
-  shouldForward(uri: Uri): boolean {
-    const key = uri.toString();
-    if (
-      uri.scheme !== "file" ||
-      this.forwarded.has(key) ||
-      this.exists(uri.fsPath)
-    ) {
-      this.forwarded.add(key);
-      return true;
-    }
-    return false;
-  }
 }
 
 /**
@@ -396,15 +373,16 @@ export type FusionLanguageClientDependencies = {
     name: string,
     serverOptions: ServerOptions,
     clientOptions: LanguageClientOptions,
-  ) => Promise<
-    Pick<
-      LanguageClient,
-      "start" | "stop" | "sendRequest" | "onDidChangeState" | "dispose"
-    >
-  >;
+  ) => Promise<ClientHandle>;
   createOutputChannel?: (name: string) => LogOutputChannel;
   sleep?: (ms: number) => Promise<void>;
 };
+
+type ClientHandle = Pick<
+  LanguageClient,
+  "start" | "stop" | "sendRequest" | "onDidChangeState" | "dispose"
+> &
+  Partial<Pick<LanguageClient, "diagnostics">>;
 
 export interface FusionClientFactory {
   create(options: FusionClientOptions): FusionClient;
@@ -426,12 +404,8 @@ class FusionLanguageClientImpl implements FusionClient {
   private _failureReason: string | undefined;
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
   private readonly _logChannel: LogOutputChannel;
-  private languageClient:
-    | Pick<
-        LanguageClient,
-        "start" | "stop" | "sendRequest" | "onDidChangeState" | "dispose"
-      >
-    | undefined;
+  private languageClient: ClientHandle | undefined;
+  private deletionWatcher: Disposable | undefined;
   private reverseSocket: ReverseSocketServer | undefined;
   private childProcess: SpawnedLspProcess | undefined;
   private exitAttempts = 0;
@@ -621,7 +595,11 @@ class FusionLanguageClientImpl implements FusionClient {
     const { launchRoot, uriConverters } = canonicalProjectRoot(
       this.options.project.root.fsPath,
     );
-    const diagnosticsFilter = new ExistingFileDiagnostics();
+    const root = this.options.project.root;
+    const diagnosticsFilter = new ProjectDiagnosticsFilter([
+      root.fsPath,
+      launchRoot,
+    ]);
 
     const server = await listen();
     this.reverseSocket = server;
@@ -705,6 +683,10 @@ class FusionLanguageClientImpl implements FusionClient {
       );
 
       this.languageClient = client;
+      this.deletionWatcher = clearDiagnosticsOnDelete(
+        root,
+        () => client.diagnostics,
+      );
       await client.start();
 
       this.transportGeneration += 1;
@@ -765,20 +747,10 @@ class FusionLanguageClientImpl implements FusionClient {
     }
     this.processExitListener = undefined;
 
-    if (this.languageClient) {
-      const client = this.languageClient;
-      this.languageClient = undefined;
-      try {
-        await client.stop();
-      } catch {
-        // Best-effort shutdown before transport teardown.
-      }
-      try {
-        client.dispose();
-      } catch {
-        // Best-effort disposal after stop.
-      }
-    }
+    this.deletionWatcher?.dispose();
+    this.deletionWatcher = undefined;
+
+    await this.shutdownLanguageClient();
 
     this.reverseSocket?.dispose();
     this.reverseSocket = undefined;
@@ -815,6 +787,24 @@ class FusionLanguageClientImpl implements FusionClient {
           this.terminal.warn("fusionLsp", message);
         }
       }
+    }
+  }
+
+  private async shutdownLanguageClient(): Promise<void> {
+    const client = this.languageClient;
+    if (!client) {
+      return;
+    }
+    this.languageClient = undefined;
+    try {
+      await client.stop();
+    } catch {
+      // Best-effort shutdown before transport teardown.
+    }
+    try {
+      client.dispose();
+    } catch {
+      // Best-effort disposal after stop.
     }
   }
 
