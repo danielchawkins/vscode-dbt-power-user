@@ -8,7 +8,7 @@ Fusion Power User is a local-first editor for dbt Fusion projects. It provides d
 
 **Dependency Project**: A dbt package parsed as part of a Declared Project but not independently served for editing. *Avoid*: Child project, hidden project
 
-**Project Context**: The Declared Project that owns the file or command currently being handled. *Avoid*: Selected project, active workspace
+**Current Project**: The Declared Project that owns the file or command currently being handled. *Avoid*: Selected project, active workspace
 
 **Project Snapshot**: Everything the extension knows about one Declared Project at one revision — root, folder, resource paths from `dbt_project.yml` with dbt's defaults, and how dbt is invoked — resolved from settings, environment overrides, and one read of `dbt_project.yml`. *Avoid*: Project config, invocation context, launch settings
 

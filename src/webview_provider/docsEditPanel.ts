@@ -47,7 +47,7 @@ import {
   isRelationship,
   removeProtocol,
 } from "../utils";
-import { SendMessageProps } from "./altimateWebviewProvider";
+import { SendMessageProps } from "./panelHost";
 
 const DOCS_VIEW_PATH = "/docs-generator";
 

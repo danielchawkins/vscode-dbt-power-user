@@ -2,14 +2,14 @@ import * as path from "path";
 import { Uri, window } from "vscode";
 import { GenerateModelFromSourceParams } from "../code_lens_provider/sourceModelCreationCodeLensProvider";
 import { RunModelType } from "../dbt_integration";
+import { CurrentProject } from "../projects/currentProject";
 import { modelParamsFor } from "../projects/projectCommands";
-import { ProjectContext } from "../projects/projectContext";
 import { Projects } from "../projects/projects";
 import { NodeTreeItem } from "../treeview_provider/modelTreeviewProvider";
 export class RunModel {
   constructor(
     private projects: Projects,
-    private projectContext: ProjectContext,
+    private currentProject: CurrentProject,
   ) {}
 
   runModelOnActiveWindow(type?: RunModelType) {
@@ -175,7 +175,7 @@ export class RunModel {
   }
 
   async executeSQL(uri: Uri, query: string, modelName: string) {
-    const declared = await this.projectContext.requireForCommand(uri);
+    const declared = await this.currentProject.requireForCommand(uri);
     if (!declared) {
       return;
     }

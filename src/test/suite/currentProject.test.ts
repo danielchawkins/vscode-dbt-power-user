@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import * as path from "path";
 import { EventEmitter, Uri, window, workspace, WorkspaceFolder } from "vscode";
-import { ProjectContext } from "../../projects/projectContext";
+import { CurrentProject } from "../../projects/currentProject";
 import {
   DeclaredProject,
   ProjectRegistry,
@@ -22,7 +22,7 @@ const general = project("/workspace/projects/general", "general", folder);
 const sox = project("/workspace/projects/sox", "sox", folder);
 const other = project("/other/project", "other", otherFolder);
 
-describe("ProjectContext", () => {
+describe("CurrentProject", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     (window.activeTextEditor as unknown) = undefined;
@@ -234,7 +234,7 @@ function createHarness(initialProjects: DeclaredProject[]) {
       >(),
   };
   return {
-    context: new ProjectContext(
+    context: new CurrentProject(
       registry,
       picker as unknown as ProjectQuickPick,
     ),

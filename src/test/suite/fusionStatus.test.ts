@@ -27,7 +27,7 @@ import {
   optInLines,
   statusText,
 } from "../../fusion/fusionStatus";
-import { ProjectContext } from "../../projects/projectContext";
+import { CurrentProject } from "../../projects/currentProject";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
@@ -230,7 +230,7 @@ describe("FusionStatus", () => {
   });
 
   function createStatus(): FusionStatus {
-    const projectContext = {
+    const context = {
       get current() {
         return currentProject;
       },
@@ -238,7 +238,7 @@ describe("FusionStatus", () => {
         contextListeners.push(listener);
         return { dispose: () => {} };
       },
-    } as ProjectContext;
+    } as CurrentProject;
 
     const clientPool = {
       get: (project: DeclaredProject) => clients.get(project.root.fsPath),
@@ -248,7 +248,7 @@ describe("FusionStatus", () => {
       },
     } as FusionClientPool;
 
-    return new FusionStatus(projectContext, clientPool);
+    return new FusionStatus(context, clientPool);
   }
 
   it("hides when there is no current project or client", () => {

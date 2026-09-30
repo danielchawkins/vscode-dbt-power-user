@@ -1,9 +1,9 @@
 import { inject } from "inversify";
 import { TextDocument, Uri, window } from "vscode";
 import { DBTTerminal } from "../dbt_integration";
+import { CurrentProject } from "../projects/currentProject";
 import type { Manifest } from "../projects/manifestTypes";
 import { Project } from "../projects/project";
-import { ProjectContext } from "../projects/projectContext";
 import { DeclaredProject } from "../projects/projectRegistry";
 import { Projects } from "../projects/projects";
 
@@ -12,7 +12,7 @@ export class QueryManifestService {
     private projects: Projects,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
-    private projectContext: ProjectContext,
+    private currentProject: CurrentProject,
   ) {}
 
   /** Maps the Declared Project owning `uri` to the Project the discovery path already built. */
@@ -20,12 +20,12 @@ export class QueryManifestService {
     if (!uri) {
       return undefined;
     }
-    const declared = this.projectContext.forResource(uri);
+    const declared = this.currentProject.forResource(uri);
     return declared ? this.mapDeclaredProject(declared) : undefined;
   }
 
   public getProject(): Project | undefined {
-    const current = this.projectContext.current;
+    const current = this.currentProject.current;
     if (current) {
       return this.mapDeclaredProject(current);
     }
@@ -135,7 +135,7 @@ export class QueryManifestService {
 
   public async getOrPickProjectFromWorkspace() {
     const uri = window.activeTextEditor?.document.uri;
-    const declared = await this.projectContext.requireForCommand(uri);
+    const declared = await this.currentProject.requireForCommand(uri);
 
     if (!declared) {
       this.dbtTerminal.debug(

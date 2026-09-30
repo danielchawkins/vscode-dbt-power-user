@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { EventEmitter, Uri } from "vscode";
 import { DocsEditViewPanel } from "../../webview_provider/docsEditPanel";
-import { LineagePanel } from "../../webview_provider/lineagePanel";
+import { LineageViewProvider } from "../../webview_provider/lineageViewProvider";
 
 function projectsDouble() {
   const changed = new EventEmitter<unknown>();
@@ -24,10 +24,10 @@ describe("webview panels on project removal", () => {
     jest.restoreAllMocks();
   });
 
-  it("LineagePanel tells the view the manifest is gone", () => {
+  it("LineageViewProvider tells the view the manifest is gone", () => {
     const { removed, value } = projectsDouble();
     const view = { manifestChanged: jest.fn() } as any;
-    const panel = new LineagePanel(view, value, terminal);
+    const panel = new LineageViewProvider(view, value, terminal);
 
     removed.fire(Uri.file("/a"));
 

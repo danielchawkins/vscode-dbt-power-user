@@ -29,9 +29,9 @@ import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
 import { FusionStatus } from "./fusion/fusionStatus";
 import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
+import { CurrentProject } from "./projects/currentProject";
 import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { Project } from "./projects/project";
-import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { readProjectSnapshot } from "./projects/readProjectSnapshot";
 import { DbtLineageService } from "./services/dbtLineageService";
@@ -80,7 +80,7 @@ import { RunHistoryTreeviewProvider } from "./treeview_provider/runHistoryTreevi
 import { WebviewViewProviders } from "./webview_provider";
 import { DocsEditViewPanel } from "./webview_provider/docsEditPanel";
 import { LineagePanel } from "./webview_provider/lineagePanel";
-import { NewLineagePanel } from "./webview_provider/newLineagePanel";
+import { LineageViewProvider } from "./webview_provider/lineageViewProvider";
 import { QueryResultPanel } from "./webview_provider/queryResultPanel";
 
 export const container = new Container();
@@ -209,7 +209,7 @@ container
   .bind(DbtLineageService)
   .toDynamicValue((context) => {
     return new DbtLineageService(context.get(QueryManifestService), () => {
-      const project = context.get(ProjectContext).current;
+      const project = context.get(CurrentProject).current;
       return project
         ? context.get(FusionClientPoolImpl).get(project)
         : undefined;
@@ -307,9 +307,9 @@ container
   .inSingletonScope();
 
 container
-  .bind(ProjectContext)
+  .bind(CurrentProject)
   .toDynamicValue((context) => {
-    return new ProjectContext(
+    return new CurrentProject(
       context.get(ProjectRegistry),
       context.get(ProjectQuickPick),
     );
@@ -322,7 +322,7 @@ container
     return new QueryManifestService(
       context.get(Projects),
       context.get("DBTTerminal"),
-      context.get(ProjectContext),
+      context.get(CurrentProject),
     );
   })
   .inSingletonScope();
@@ -451,7 +451,7 @@ container
   .bind(FusionStatus)
   .toDynamicValue((context) => {
     return new FusionStatus(
-      context.get(ProjectContext),
+      context.get(CurrentProject),
       context.get(FusionClientPoolImpl),
       (declared) => {
         const project = context.get(Projects).get(declared.root);
@@ -466,7 +466,7 @@ container
 container
   .bind(RunModel)
   .toDynamicValue((context) => {
-    return new RunModel(context.get(Projects), context.get(ProjectContext));
+    return new RunModel(context.get(Projects), context.get(CurrentProject));
   })
   .inSingletonScope();
 
@@ -540,10 +540,10 @@ container
   .inSingletonScope();
 
 container
-  .bind(LineagePanel)
+  .bind(LineageViewProvider)
   .toDynamicValue((context) => {
-    return new LineagePanel(
-      context.get(NewLineagePanel),
+    return new LineageViewProvider(
+      context.get(LineagePanel),
       context.get(Projects),
       context.get("DBTTerminal"),
     );
@@ -551,9 +551,9 @@ container
   .inSingletonScope();
 
 container
-  .bind(NewLineagePanel)
+  .bind(LineagePanel)
   .toDynamicValue((context) => {
-    return new NewLineagePanel(
+    return new LineagePanel(
       context.get(ExtensionContextStore),
       context.get("DBTTerminal"),
       context.get(DbtLineageService),
@@ -570,7 +570,7 @@ container
     return new WebviewViewProviders(
       context.get(QueryResultPanel),
       context.get(DocsEditViewPanel),
-      context.get(LineagePanel),
+      context.get(LineageViewProvider),
     );
   })
   .inSingletonScope();
@@ -640,7 +640,7 @@ container
   .toDynamicValue(
     (context) =>
       new ProjectConfigCommands(
-        context.get(ProjectContext),
+        context.get(CurrentProject),
         context.get("DBTTerminal"),
       ),
   )
@@ -649,7 +649,7 @@ container
   .bind(DbtPowerUserActionsCenter)
   .toDynamicValue((context) => {
     return new DbtPowerUserActionsCenter(
-      context.get(ProjectContext),
+      context.get(CurrentProject),
       context.get(ExtensionContextStore),
     );
   })
@@ -670,13 +670,13 @@ container
       context.get(DbtPowerUserActionsCenter),
       context.get("DBTTerminal"),
       context.get(ProjectRegistry),
-      context.get(ProjectContext),
+      context.get(CurrentProject),
       context.get(FusionClientPoolImpl),
       context.get(FusionStatus),
       context.get(ProjectConfigCommands),
       new DbtTemplateLanguage(
         context.get(ProjectRegistry),
-        context.get(ProjectContext),
+        context.get(CurrentProject),
         context.get("DBTTerminal"),
       ),
       context.get(DbtLineageService),

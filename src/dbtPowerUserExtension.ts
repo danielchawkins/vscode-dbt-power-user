@@ -14,8 +14,8 @@ import { DBTTerminal } from "./dbt_integration";
 import { registerFusionClientDiagnostics } from "./fusion/fusionClientDiagnostics";
 import { FusionClientPool } from "./fusion/fusionClientPool";
 import { FusionStatus } from "./fusion/fusionStatus";
+import { CurrentProject } from "./projects/currentProject";
 import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
-import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { Projects } from "./projects/projects";
 import { DbtPowerUserActionsCenter } from "./quickpick";
@@ -60,7 +60,7 @@ export class DBTPowerUserExtension implements Disposable {
     private puStatusBars: DbtPowerUserActionsCenter,
     private dbtTerminal: DBTTerminal,
     private projectRegistry: ProjectRegistry,
-    private projectContext: ProjectContext,
+    private currentProject: CurrentProject,
     private fusionClientPool: FusionClientPool,
     private fusionStatus: FusionStatus,
     private projectConfigCommands: ProjectConfigCommands,
@@ -77,7 +77,7 @@ export class DBTPowerUserExtension implements Disposable {
       this.statusBars,
       this.puStatusBars,
       this.projectRegistry,
-      this.projectContext,
+      this.currentProject,
       this.fusionClientPool,
       this.fusionStatus,
       this.projectConfigCommands,

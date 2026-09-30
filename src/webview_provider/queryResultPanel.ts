@@ -28,10 +28,7 @@ import {
 } from "../services/sharedStateService";
 import { readSetting, writeSetting } from "../settings";
 import { getFormattedDateTime, getStringSizeInMb } from "../utils";
-import {
-  AltimateWebviewProvider,
-  SendMessageProps,
-} from "./altimateWebviewProvider";
+import { PanelHost, SendMessageProps } from "./panelHost";
 
 interface JsonObj {
   [key: string]: string | number | undefined;
@@ -108,7 +105,7 @@ interface QueryHistory {
   modelName: string;
 }
 
-export class QueryResultPanel extends AltimateWebviewProvider {
+export class QueryResultPanel extends PanelHost {
   public static readonly viewType = "fusionPowerUser.PreviewResults";
   protected viewPath = "/query-panel";
   protected panelDescription = "Query results panel";

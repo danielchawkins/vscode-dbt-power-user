@@ -7,54 +7,54 @@
 title: Webview setup
 ---
 classDiagram
-    AltimateWebviewProvider <|-- QueryResultPanel : extends
-    AltimateWebviewProvider <|-- NewLineagePanel : extends
-    <<Baseclass>> AltimateWebviewProvider
+    PanelHost <|-- QueryResultPanel : extends
+    PanelHost <|-- LineagePanel : extends
+    <<Baseclass>> PanelHost
 
     note for QueryResultPanel "Mandatory overrides: \n viewType\n viewPath\n panelDescription"
     note for QueryResultPanel "Optional overrides: \n handleCommand"
-    AltimateWebviewProvider : +String viewType
-    AltimateWebviewProvider : #String viewPath
-    AltimateWebviewProvider : #String panelDescription
-    AltimateWebviewProvider: #renderWebviewView()
-    AltimateWebviewProvider: #handleCommand()
+    PanelHost : +String viewType
+    PanelHost : #String viewPath
+    PanelHost : #String panelDescription
+    PanelHost: #renderWebviewView()
+    PanelHost: #handleCommand()
     class QueryResultPanel{
       #handleCommand
     }
-    class NewLineagePanel{
+    class LineagePanel{
       #handleCommand
     }
-    class LineagePanel{
+    class LineageViewProvider{
       +resolveWebviewView()
     }
-    LineagePanel --> NewLineagePanel : wraps
+    LineageViewProvider --> LineagePanel : wraps
 
     class DocsEditViewPanel{
       +resolveWebviewView()
     }
-    note for DocsEditViewPanel "Standalone WebviewViewProvider, not an AltimateWebviewProvider subclass.\nReuses the same React bundle by setting window.viewPath in its own HTML."
+    note for DocsEditViewPanel "Standalone WebviewViewProvider, not an PanelHost subclass.\nReuses the same React bundle by setting window.viewPath in its own HTML."
 
     class Webview_panels["webview_panels/src/main.tsx"]
-    Webview_panels <|-- AltimateWebviewProvider : renders
+    Webview_panels <|-- PanelHost : renders
     Webview_panels <|-- DocsEditViewPanel : renders
     <<reactapp>> Webview_panels
     note for Webview_panels "AppConstants.tsx defines routes for each panel \n main.tsx will render route defined in viewPath variable in Provider"
 
 
-    click AltimateWebviewProvider href "../src/webview_provider/altimateWebviewProvider.ts" ""
+    click PanelHost href "../src/webview_provider/panelHost.ts" ""
     click QueryResultPanel href "../src/webview_provider/queryResultPanel.ts" ""
-    click NewLineagePanel href "../src/webview_provider/newLineagePanel.ts" ""
     click LineagePanel href "../src/webview_provider/lineagePanel.ts" ""
+    click LineageViewProvider href "../src/webview_provider/lineageViewProvider.ts" ""
     click DocsEditViewPanel href "../src/webview_provider/docsEditPanel.ts" ""
     click Webview_panels href "./src/main.tsx" ""
 
 ```
 
-`LineagePanel` is the sidebar `WebviewViewProvider` registered in `package.json`; it delegates rendering and message handling to `NewLineagePanel`, which is the `AltimateWebviewProvider` subclass.
+`LineageViewProvider` is the sidebar `WebviewViewProvider` registered in `package.json`; it delegates rendering and message handling to `LineagePanel`, which is the `PanelHost` subclass.
 
 ## Setup notes
 
-### AltimateWebviewProvider
+### PanelHost
 
 - Base class for rendering webview
 - Also handles security practices like CSP and nonce as recommended in the [VS Code webview security guide](https://code.visualstudio.com/api/extension-guides/webview#security)
@@ -67,7 +67,7 @@ classDiagram
 ### webview_panels react app
 
 - Uses react-router-dom for handling different routes for each panel
-- Route will be determined by the `viewPath` value set in `AltimateWebviewProvider`
+- Route will be determined by the `viewPath` value set in `PanelHost`
 - Uses [reduxjstoolkit](https://redux-toolkit.js.org/) with useReducer in [AppProvider](./src/modules/app/AppProvider.tsx)
   - This helps us to setup reducers in more readable and maintainable way
 - [useListeners](./src/modules/app/useListeners.ts) - common place to listen for incoming messages
@@ -79,7 +79,7 @@ classDiagram
 
 - In `package.json`, add an entry in `viewsContainers -> panel` with expected values
   - add corresponding entry under `views.<container id>`, for example `views.dbt_preview_results`
-- Create new provider in [../src/webview_provider](../src/webview_provider) by extending `AltimateWebviewProvider` with `viewType` same as the one added in package.json above
+- Create new provider in [../src/webview_provider](../src/webview_provider) by extending `PanelHost` with `viewType` same as the one added in package.json above
 - Add the new provider in [../src/webview_provider/index.ts](../src/webview_provider/index.ts)
 - Add new route in [./src/AppConstants.tsx](./src/AppConstants.tsx)
 - Use the new view route added in AppConstants in new webview provider created in step 2 and update value for `viewPath` variable

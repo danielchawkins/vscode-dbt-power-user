@@ -42,10 +42,10 @@ export interface SendMessageProps extends Record<string, unknown> {
  * This class is responsible for rendering the webview
  * Each panel needs to have its own provider which extends this class with correct viewPath and description
  */
-export class AltimateWebviewProvider implements WebviewViewProvider {
+export class PanelHost implements WebviewViewProvider {
   public viewType = "fusionPowerUser.Default";
   protected viewPath = "/"; // webview route path from AppConstants.tsx
-  protected panelDescription = "Altimate default webview";
+  protected panelDescription = "Webview panel";
 
   protected _panel: WebviewView | WebviewPanel | undefined = undefined;
   protected _webview: Webview | undefined = undefined;
@@ -225,7 +225,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
       }
     } catch (err) {
       this.dbtTerminal.error(
-        "altimateWebviewProvider:handleCommand",
+        "panelHost:handleCommand",
         "error while handling command",
         err,
       );

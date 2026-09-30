@@ -19,7 +19,7 @@ import {
   associatedLanguage,
   dbtTemplateAssociations,
 } from "../dbt_integration/dbtAssociations";
-import { ProjectContext } from "../projects/projectContext";
+import { CurrentProject } from "../projects/currentProject";
 import { ProjectRegistry } from "../projects/projectRegistry";
 import {
   readFileAssociations,
@@ -38,7 +38,7 @@ export class DbtTemplateLanguage implements Disposable {
 
   constructor(
     private readonly registry: ProjectRegistry,
-    private readonly projectContext: ProjectContext,
+    private readonly currentProject: CurrentProject,
     private readonly terminal: DBTTerminal,
   ) {}
 
@@ -74,7 +74,7 @@ export class DbtTemplateLanguage implements Disposable {
     if (doc.uri.scheme !== "file" || doc.languageId !== "sql") {
       return;
     }
-    const project = this.projectContext.forResource(doc.uri);
+    const project = this.currentProject.forResource(doc.uri);
     if (!project) {
       return;
     }

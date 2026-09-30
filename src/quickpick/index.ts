@@ -1,18 +1,18 @@
 import { commands, Disposable, window } from "vscode";
 import { ExtensionContextStore } from "../extensionContext";
-import { ProjectContext } from "../projects/projectContext";
+import { CurrentProject } from "../projects/currentProject";
 import { ProjectQuickPickItem } from "./projectQuickPick";
 
 export class DbtPowerUserActionsCenter implements Disposable {
   private disposables: Disposable[] = [];
 
   constructor(
-    private projectContext: ProjectContext,
+    private currentProject: CurrentProject,
     private extensionContext: ExtensionContextStore,
   ) {
     this.disposables.push(
       commands.registerCommand("fusionPowerUser.pickProject", async () => {
-        const project = await this.projectContext.pickForCommand();
+        const project = await this.currentProject.pickForCommand();
         if (project) {
           const pickedProject: ProjectQuickPickItem = {
             label: project.name,

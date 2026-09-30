@@ -38,8 +38,7 @@ export class NodeMetaMapImpl implements NodeMetaMap {
     // Bare-name lookups are partitioned by resource_type so that a model and a
     // snapshot (or seed, analysis) sharing a filename — e.g. `models/orders.sql`
     // and `snapshots/orders.sql` — occupy separate slots and are each reachable
-    // via `lookupByBaseName(name, resourceType)`. See
-    // AltimateAI/vscode-dbt-power-user#1706.
+    // via `lookupByBaseName(name, resourceType)`.
     private nameLookupMapsByType: Map<
       NodeResourceType,
       Map<string, string>

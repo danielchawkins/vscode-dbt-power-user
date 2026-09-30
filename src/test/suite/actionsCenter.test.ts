@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { commands, Uri, window } from "vscode";
 import { ExtensionContextStore } from "../../extensionContext";
-import { ProjectContext } from "../../projects/projectContext";
+import { CurrentProject } from "../../projects/currentProject";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "../../quickpick";
 
 describe("DbtPowerUserActionsCenter project picker", () => {
-  let context: jest.Mocked<ProjectContext>;
+  let context: jest.Mocked<CurrentProject>;
   let store: jest.Mocked<ExtensionContextStore>;
   let project: DeclaredProject;
 
@@ -14,7 +14,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
     jest.clearAllMocks();
     context = {
       pickForCommand: jest.fn(),
-    } as unknown as jest.Mocked<ProjectContext>;
+    } as unknown as jest.Mocked<CurrentProject>;
     store = {
       setToWorkspaceState: jest.fn(),
     } as unknown as jest.Mocked<ExtensionContextStore>;
@@ -32,7 +32,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
     new DbtPowerUserActionsCenter(context, store);
   });
 
-  it("stores an explicit Project Context pick for validate and install", async () => {
+  it("stores an explicit Current Project pick for validate and install", async () => {
     context.pickForCommand.mockResolvedValue(project);
 
     await pickProjectCommand()();

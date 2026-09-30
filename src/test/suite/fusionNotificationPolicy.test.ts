@@ -82,7 +82,7 @@ describe("fusionNotificationPolicy", () => {
       projectRegistry: { initialize: jest.fn(() => Promise.resolve()) },
       fusionClientPool: { initialize: fusionClientPoolInitialize },
       fusionStatus: { initialize: jest.fn() },
-      projectContext: {},
+      currentProject: {},
       statusBars: { initialize: jest.fn(() => Promise.resolve()) },
       dbtTerminal: { error: jest.fn() },
     });
