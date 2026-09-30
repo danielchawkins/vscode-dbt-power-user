@@ -139,7 +139,12 @@ describe("disposable ownership", () => {
       globalState: { get: jest.fn(), update: jest.fn() },
     } as unknown as ExtensionContext;
 
-    await activate(context);
+    const { ready } = activate(context);
+
+    for (const command of HARNESS_COMMANDS) {
+      expect(registrations.has(command)).toBe(true);
+    }
+    await ready;
 
     expect(context.subscriptions).toHaveLength(1);
     expect(context.subscriptions[0]).toBeInstanceOf(DBTPowerUserExtension);

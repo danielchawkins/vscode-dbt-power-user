@@ -37,6 +37,7 @@ import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
 import { inspectSettings, readEnvironment } from "../settings";
+import { StartupGate } from "../startupGate";
 import { DeferToProductionStatusBar } from "../statusbar/deferToProductionStatusBar";
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { getFirstWorkspacePath } from "../utils";
@@ -61,12 +62,13 @@ export class VSCodeCommands implements Disposable {
     private cteProfilerDecorationProvider: CteProfilerDecorationProvider,
     private cteCodeLensProvider: CteCodeLensProvider,
     private deferToProductionStatusBar: DeferToProductionStatusBar,
+    private startupGate: Pick<StartupGate, "whenSettled">,
   ) {
     this.disposables.push(
       this.diagnosticsOutputChannel,
       this.cteProfilerService,
       this.cteProfilerDecorationProvider,
-      commands.registerCommand("fusionPowerUser.runCurrentModel", () => {
+      this.register("fusionPowerUser.runCurrentModel", () => {
         // `dbt run` on a singular test file is never meaningful; route it
         // to `dbt test --select <test>` instead.
         if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
@@ -74,13 +76,10 @@ export class VSCodeCommands implements Disposable {
         }
         this.runModel.runModelOnActiveWindow();
       }),
-      commands.registerCommand(
-        "fusionPowerUser.rerunFromHistory",
-        (item: RunTreeItem) => {
-          rerunFromHistory(item.entry, (name) => this.projects.byName(name));
-        },
-      ),
-      commands.registerCommand("fusionPowerUser.clearRunHistory", async () => {
+      this.register("fusionPowerUser.rerunFromHistory", (item: RunTreeItem) => {
+        rerunFromHistory(item.entry, (name) => this.projects.byName(name));
+      }),
+      this.register("fusionPowerUser.clearRunHistory", async () => {
         const confirm = await window.showWarningMessage(
           "Clear all run history entries?",
           { modal: true },
@@ -90,7 +89,7 @@ export class VSCodeCommands implements Disposable {
           this.runHistoryService.clear();
         }
       }),
-      commands.registerCommand(
+      this.register(
         "fusionPowerUser.profileCtes",
         async (uri?: Uri, ctes?: CteInfo[]) => {
           // When called from command palette, args are undefined — use active editor
@@ -198,16 +197,16 @@ export class VSCodeCommands implements Disposable {
           );
         },
       ),
-      commands.registerCommand("fusionPowerUser.cancelCteProfiling", () => {
+      this.register("fusionPowerUser.cancelCteProfiling", () => {
         this.cteProfilerService.cancel();
       }),
-      commands.registerCommand("fusionPowerUser.clearProfileResults", () =>
+      this.register("fusionPowerUser.clearProfileResults", () =>
         this.cteProfilerService.clearResults(),
       ),
-      commands.registerCommand("fusionPowerUser.toggleProfileDecorations", () =>
+      this.register("fusionPowerUser.toggleProfileDecorations", () =>
         this.cteProfilerDecorationProvider.toggle(),
       ),
-      commands.registerCommand("fusionPowerUser.testCurrentModel", () => {
+      this.register("fusionPowerUser.testCurrentModel", () => {
         // Singular data tests must be selected by their own test name, not
         // the surrounding model.
         if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
@@ -215,7 +214,7 @@ export class VSCodeCommands implements Disposable {
         }
         this.runModel.runTestsOnActiveWindow();
       }),
-      commands.registerCommand("fusionPowerUser.compileCurrentModel", () =>
+      this.register("fusionPowerUser.compileCurrentModel", () =>
         this.runModel.compileModelOnActiveWindow(),
       ),
       commands.registerTextEditorCommand(
@@ -223,15 +222,12 @@ export class VSCodeCommands implements Disposable {
         (editor: TextEditor) =>
           this.openCompiledPreview(editor.document.uri, true),
       ),
-      commands.registerCommand(
-        "fusionPowerUser.goToDocumentationEditor",
-        async () => {
-          await commands.executeCommand(
-            "workbench.view.extension.docs_edit_view",
-          );
-        },
-      ),
-      commands.registerCommand("fusionPowerUser.runTest", (model) => {
+      this.register("fusionPowerUser.goToDocumentationEditor", async () => {
+        await commands.executeCommand(
+          "workbench.view.extension.docs_edit_view",
+        );
+      }),
+      this.register("fusionPowerUser.runTest", (model) => {
         // Tree-item invocation (from the test treeview): run the selected
         // test node — never a singular test, always a generic test.
         if (model !== undefined) {
@@ -246,10 +242,10 @@ export class VSCodeCommands implements Disposable {
         }
         this.runModel.runModelOnNodeTreeItem(RunModelType.TEST)(model);
       }),
-      commands.registerCommand("fusionPowerUser.runChildrenModels", (model) =>
+      this.register("fusionPowerUser.runChildrenModels", (model) =>
         this.runModel.runModelOnNodeTreeItem(RunModelType.RUN_CHILDREN)(model),
       ),
-      commands.registerCommand(
+      this.register(
         "fusionPowerUser.yamlRunModel",
         (uri: Uri, modelName: string) => {
           const project = this.projects.get(uri);
@@ -263,7 +259,7 @@ export class VSCodeCommands implements Disposable {
           });
         },
       ),
-      commands.registerCommand(
+      this.register(
         "fusionPowerUser.yamlTestModel",
         (uri: Uri, modelName: string) => {
           const project = this.projects.get(uri);
@@ -273,40 +269,40 @@ export class VSCodeCommands implements Disposable {
           void project.runModelTest(modelName);
         },
       ),
-      commands.registerCommand("fusionPowerUser.runParentModels", (model) =>
+      this.register("fusionPowerUser.runParentModels", (model) =>
         this.runModel.runModelOnNodeTreeItem(RunModelType.RUN_PARENTS)(model),
       ),
-      commands.registerCommand("fusionPowerUser.copyModelName", (model) =>
+      this.register("fusionPowerUser.copyModelName", (model) =>
         env.clipboard.writeText(model.label.toString()),
       ),
-      commands.registerCommand("fusionPowerUser.showRunSQL", () =>
+      this.register("fusionPowerUser.showRunSQL", () =>
         this.runModel.showRunSQLOnActiveWindow(),
       ),
-      commands.registerCommand("fusionPowerUser.showCompiledSQL", () => {
+      this.register("fusionPowerUser.showCompiledSQL", () => {
         const uri = window.activeTextEditor?.document.uri;
         return uri ? this.openCompiledPreview(uri, false) : undefined;
       }),
-      commands.registerCommand("fusionPowerUser.generateSchemaYML", () =>
+      this.register("fusionPowerUser.generateSchemaYML", () =>
         this.runModel.generateSchemaYMLOnActiveWindow(),
       ),
-      commands.registerCommand("fusionPowerUser.executeSQL", () =>
+      this.register("fusionPowerUser.executeSQL", () =>
         this.runModel.executeQueryOnActiveWindow(),
       ),
-      commands.registerCommand(
+      this.register(
         "fusionPowerUser.runCteWithDependencies",
         (uri: Uri, cteIndex: number, ctes: CteInfo[]) =>
           this.runCteWithDependencies(uri, cteIndex, ctes),
       ),
-      commands.registerCommand(
+      this.register(
         "fusionPowerUser.createModelBasedonSourceConfig",
         (params) => {
           this.runModel.createModelBasedonSourceConfig(params);
         },
       ),
-      commands.registerCommand("fusionPowerUser.buildCurrentModel", () =>
+      this.register("fusionPowerUser.buildCurrentModel", () =>
         this.runModel.buildModelOnActiveWindow(),
       ),
-      commands.registerCommand("fusionPowerUser.buildCurrentProject", () => {
+      this.register("fusionPowerUser.buildCurrentProject", () => {
         if (!window.activeTextEditor) {
           return;
         }
@@ -336,7 +332,7 @@ export class VSCodeCommands implements Disposable {
 
         project.buildProject();
       }),
-      commands.registerCommand("fusionPowerUser.cleanCurrentProject", () => {
+      this.register("fusionPowerUser.cleanCurrentProject", () => {
         if (!window.activeTextEditor) {
           return;
         }
@@ -366,20 +362,18 @@ export class VSCodeCommands implements Disposable {
 
         project.clean();
       }),
-      commands.registerCommand("fusionPowerUser.buildChildrenModels", () =>
+      this.register("fusionPowerUser.buildChildrenModels", () =>
         this.runModel.buildModelOnActiveWindow(RunModelType.BUILD_CHILDREN),
       ),
-      commands.registerCommand("fusionPowerUser.buildParentModels", () =>
+      this.register("fusionPowerUser.buildParentModels", () =>
         this.runModel.buildModelOnActiveWindow(RunModelType.BUILD_PARENTS),
       ),
-      commands.registerCommand(
-        "fusionPowerUser.buildChildrenParentModels",
-        () =>
-          this.runModel.buildModelOnActiveWindow(
-            RunModelType.BUILD_CHILDREN_PARENTS,
-          ),
+      this.register("fusionPowerUser.buildChildrenParentModels", () =>
+        this.runModel.buildModelOnActiveWindow(
+          RunModelType.BUILD_CHILDREN_PARENTS,
+        ),
       ),
-      commands.registerCommand("fusionPowerUser.validateProject", async () => {
+      this.register("fusionPowerUser.validateProject", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
           this.extensionContext.getFromWorkspaceState(
             "fusionPowerUser.projectSelected",
@@ -387,17 +381,17 @@ export class VSCodeCommands implements Disposable {
 
         await this.projectSetupCommands.validateProjects(pickedProject);
       }),
-      commands.registerCommand("fusionPowerUser.installDeps", async () => {
+      this.register("fusionPowerUser.installDeps", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
           this.extensionContext.getFromWorkspaceState(
             "fusionPowerUser.projectSelected",
           );
         await this.projectSetupCommands.installDeps(pickedProject);
       }),
-      commands.registerCommand("fusionPowerUser.viewInDocEditor", () =>
+      this.register("fusionPowerUser.viewInDocEditor", () =>
         commands.executeCommand("fusionPowerUser.DocsEdit.focus"),
       ),
-      commands.registerCommand("fusionPowerUser.diagnostics", async () => {
+      this.register("fusionPowerUser.diagnostics", async () => {
         try {
           this.diagnosticsOutputChannel.show();
           this.diagnosticsOutputChannel.logLine("Diagnostics started...");
@@ -489,11 +483,23 @@ export class VSCodeCommands implements Disposable {
         }
       }),
       // Commands read defer settings when they run; this only refreshes the status bar.
-      commands.registerCommand("fusionPowerUser.applyDeferConfig", () => {
+      this.register("fusionPowerUser.applyDeferConfig", () => {
         this.deferToProductionStatusBar.updateStatusBar();
         window.showInformationMessage("Applied defer configuration");
       }),
     );
+  }
+
+  /** Registers a command whose handler runs once extension startup has settled. */
+  private register(
+    command: string,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- mirrors `commands.registerCommand`
+    handler: (...args: any[]) => unknown,
+  ): Disposable {
+    return commands.registerCommand(command, async (...args: unknown[]) => {
+      await this.startupGate.whenSettled();
+      return handler(...args);
+    });
   }
 
   /**

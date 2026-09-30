@@ -169,11 +169,28 @@ Goal: one readable wiring file with plain constructors. The container already ca
 - `src/compositionRoot.ts` builds the graph in dependency order and returns the root disposables. Features receive what they use; no service locator, no string tokens.
 - Remove `inversify`, `reflect-metadata`, `experimentalDecorators` and `emitDecoratorMetadata`. Then drop `ts-loader` and use rsbuild's built-in SWC transform; the bundle is already ESM on `engines.vscode ^1.128`, which the platform supports from 1.100.
 - Each owner holds its own disposable collection; only roots go in `context.subscriptions`.
-- **Activation**: remove the `workspaceContains:**/dbt_project.yml` event, which scans the workspace recursively against ADR 0003. Contributed languages, commands and views activate the extension. `activate` registers contributions synchronously and starts clients and probes without awaiting them.
+- **Activation**: replace the `workspaceContains:**/dbt_project.yml` event, which scans the workspace recursively against ADR 0003, with `workspaceContains:dbt_project.yml`, which VS Code checks at each workspace-folder root without a search. Contributed languages, commands and views activate the extension for nested Declared Projects. `activate` registers contributions synchronously and starts clients and probes without awaiting them.
 - **`src/features/`**: commands, code lenses, tree views and panel hosts move under `src/features/<feature>/`, and the `features/` layer rule is added.
 - **Unit test runner**: the last PR moves host unit tests from Jest + `ts-jest` to Vitest, which the webview already uses.
 
-Verify: cold activation and extension bundle size within 10% of the `v0.4.0-beta.1` baseline or better; `activationEvents` has no `workspaceContains`; `just smoke` on both hosts; `npm ls inversify jest` empty.
+Verify: cold activation and extension bundle size within 10% of the `v0.4.0-beta.1` baseline or better; `activationEvents` has no `**` glob; `just smoke` on both hosts; `npm ls inversify jest` empty.
+
+**R4 progress.**
+
+- **Merged.** Steps 4.1–4.3: the composition root in `src/compositionRoot.ts`; Inversify, `reflect-metadata`, the decorator compiler options and `ts-loader` removed; each owner disposes its own collection.
+- **Activation.** The activation event is `workspaceContains:dbt_project.yml`. `activate` returns synchronously, and commands wait on a startup gate until startup finishes, stops early, fails, or the extension is disposed.
+- **Bundle size.** `dist/extension.js` fell from 2,839,500 to 1,157,164 bytes (−59%).
+- **Cold activation.** Measured in VS Code against the `v0.4.0-beta.1` baseline in [`baseline-v1-september-2026.md`](baseline-v1-september-2026.md), median ms:
+
+  | Phase            | Baseline | Now           |
+  | ---------------- | -------- | ------------- |
+  | Load code        | 15       | 22            |
+  | Call activate    | 3        | 6             |
+  | Finish activate  | 1,034    | 0             |
+  | Startup to ready | 1,034    | 597 (p90 674) |
+
+  The baseline's `activate` awaited startup, so its ready time equals finish activate. Time to ready fell 42%, and the host sees activation complete in about 28 ms instead of about 1,052 ms. Loading code costs 7 ms more and calling `activate` 3 ms more; both are small in absolute terms.
+- **Remaining.** Steps 4.5 and 4.6.
 
 ### R5 — Framework-first editor integration
 

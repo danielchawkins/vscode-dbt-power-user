@@ -105,10 +105,12 @@ const summary = {
   runtime,
   activationMetadata,
   activation: Object.fromEntries(
-    ["loadCode", "callActivate", "finishActivate"].map((phase) => [
-      phase,
-      summarize(samples.map((sample) => sample.activation[phase])),
-    ]),
+    ["loadCode", "callActivate", "finishActivate", "startupReady"].map(
+      (phase) => [
+        phase,
+        summarize(samples.map((sample) => sample.activation[phase])),
+      ],
+    ),
   ),
   webviews: Object.fromEntries(
     viewPaths.map((viewPath) => [

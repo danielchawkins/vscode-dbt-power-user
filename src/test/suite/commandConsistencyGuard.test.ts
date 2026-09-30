@@ -28,10 +28,12 @@ function scanCommandRegistrations() {
 
         if (
           ts.isPropertyAccessExpression(callee) &&
-          ts.isIdentifier(callee.expression) &&
-          callee.expression.text === "commands" &&
-          (callee.name.text === "registerCommand" ||
-            callee.name.text === "registerTextEditorCommand") &&
+          ((ts.isIdentifier(callee.expression) &&
+            callee.expression.text === "commands" &&
+            (callee.name.text === "registerCommand" ||
+              callee.name.text === "registerTextEditorCommand")) ||
+            (callee.expression.kind === ts.SyntaxKind.ThisKeyword &&
+              callee.name.text === "register")) &&
           callExpr.arguments.length > 0
         ) {
           const arg0 = callExpr.arguments[0];
@@ -153,6 +155,8 @@ describe("command contribution consistency", () => {
     };
 
     const nonLiteralAllowlist: Record<string, string> = {
+      "commands/index.ts:command":
+        "`VSCodeCommands.register` forwards a literal from its callers",
       "benchmark/runtimeTimings.ts:RUNTIME_TIMINGS_COMMAND":
         "Constant export; conditional registration",
       "fusion/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":

@@ -33,7 +33,9 @@ suite("Multi-root LSP smoke", function () {
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
-    await ext.activate();
+    await (
+      await ext.activate()
+    ).ready;
     assert.ok(ext.isActive, "packaged extension should activate");
 
     // Checked before the notification assertion: a genuinely missing Fusion binary makes
