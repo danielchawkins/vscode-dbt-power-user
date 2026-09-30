@@ -159,7 +159,7 @@ describe("command contribution consistency", () => {
         "Constant export; conditional registration",
       "services/connectedColumnsCommand.ts:CONNECTED_COLUMNS_COMMAND":
         "Constant export; conditional registration",
-      "services/connectedColumnsCommand.ts:DOWNSTREAM_TABLES_COMMAND":
+      "services/connectedColumnsCommand.ts:PARENT_TABLES_COMMAND":
         "Constant export; conditional registration",
       "services/connectedColumnsCommand.ts:LINEAGE_COLUMNS_COMMAND":
         "Constant export; conditional registration",

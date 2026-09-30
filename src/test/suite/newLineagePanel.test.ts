@@ -232,6 +232,49 @@ describe("NewLineagePanel", () => {
     ]);
   });
 
+  it("answers childTables with children and parentTables with parents", async () => {
+    const getChildTables = jest
+      .fn<(...args: any[]) => any>()
+      .mockReturnValue({ tables: [{ table: "child" }] });
+    const getParentTables = jest
+      .fn<(...args: any[]) => any>()
+      .mockReturnValue({ tables: [{ table: "parent" }] });
+    (panel as any).dbtLineageService = { getChildTables, getParentTables };
+    const params = { table: "model.p.a" };
+
+    await (panel as any).handleCommand({
+      command: "childTables",
+      args: { params },
+      syncRequestId: "up",
+    });
+    await (panel as any).handleCommand({
+      command: "parentTables",
+      args: { params },
+      syncRequestId: "down",
+    });
+
+    expect(getChildTables).toHaveBeenCalledWith(params);
+    expect(getParentTables).toHaveBeenCalledWith(params);
+    expect(mockPostMessage).toHaveBeenCalledWith({
+      command: "response",
+      args: {
+        id: "up",
+        syncRequestId: "up",
+        body: { tables: [{ table: "child" }] },
+        status: true,
+      },
+    });
+    expect(mockPostMessage).toHaveBeenCalledWith({
+      command: "response",
+      args: {
+        id: "down",
+        syncRequestId: "down",
+        body: { tables: [{ table: "parent" }] },
+        status: true,
+      },
+    });
+  });
+
   it("answers getConnectedColumns with the service's lineage", async () => {
     const lineage = [
       {

@@ -233,8 +233,8 @@ export class NewLineagePanel
       commands.executeCommand("workbench.action.problems.focus");
       return;
     }
-    if (command === "upstreamTables") {
-      const body = this.dbtLineageService.getUpstreamTables(params);
+    if (command === "childTables") {
+      const body = this.dbtLineageService.getChildTables(params);
       this._panel?.webview.postMessage({
         command: "response",
         args: { id, syncRequestId, body, status: true },
@@ -242,8 +242,8 @@ export class NewLineagePanel
       return;
     }
 
-    if (command === "downstreamTables") {
-      const body = this.dbtLineageService.getDownstreamTables(params);
+    if (command === "parentTables") {
+      const body = this.dbtLineageService.getParentTables(params);
       this._panel?.webview.postMessage({
         command: "response",
         args: { id, syncRequestId, body, status: true },

@@ -28,8 +28,7 @@ function makeService(graphMetaMap: any): DbtLineageService {
 }
 
 describe("DbtLineageService — foreign-key-only edge hiding", () => {
-  it("getUpstreamTables hides constraint edges and keeps data edges", () => {
-    // upstream reads the `children` map
+  it("getChildTables hides constraint edges and keeps data edges", () => {
     const children = new Map([
       [
         "model.p.fact",
@@ -44,29 +43,24 @@ describe("DbtLineageService — foreign-key-only edge hiding", () => {
     const svc = makeService({ children, parents: new Map() });
 
     const tables = svc
-      .getUpstreamTables({ table: "model.p.fact" })
+      .getChildTables({ table: "model.p.fact" })
       .tables!.map((t) => t.table);
     expect(tables).toContain("model.p.int");
     expect(tables).not.toContain("model.p.dim");
   });
 
-  it("getDownstreamTables hides constraint edges", () => {
-    // downstream reads the `parents` map
+  it("getParentTables hides constraint edges", () => {
     const parents = new Map([
       ["model.p.dim", { nodes: [node("model.p.fact", "constraint")] }],
       ["model.p.int", { nodes: [node("model.p.fact", "data")] }],
     ]);
     const svc = makeService({ parents, children: new Map() });
 
-    // fact is only a constraint-child of dim → dim has no data-flow downstream
-    expect(svc.getDownstreamTables({ table: "model.p.dim" }).tables).toEqual(
-      [],
-    );
-    // but it's a real downstream of int
+    // fact is only a constraint-parent of dim → dim has no data-flow parents
+    expect(svc.getParentTables({ table: "model.p.dim" }).tables).toEqual([]);
+    // but it's a real parent of int
     expect(
-      svc
-        .getDownstreamTables({ table: "model.p.int" })
-        .tables!.map((t) => t.table),
+      svc.getParentTables({ table: "model.p.int" }).tables!.map((t) => t.table),
     ).toEqual(["model.p.fact"]);
   });
 
@@ -76,9 +70,7 @@ describe("DbtLineageService — foreign-key-only edge hiding", () => {
     ]);
     const svc = makeService({ children, parents: new Map() });
     expect(
-      svc
-        .getUpstreamTables({ table: "model.p.fact" })
-        .tables!.map((t) => t.table),
+      svc.getChildTables({ table: "model.p.fact" }).tables!.map((t) => t.table),
     ).toEqual(["model.p.int"]);
   });
 

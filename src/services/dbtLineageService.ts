@@ -208,11 +208,13 @@ export class DbtLineageService {
     }
   }
 
-  getUpstreamTables({ table }: { table: string }) {
+  /** Returns the tables that depend on `table` (its dbt children). */
+  getChildTables({ table }: { table: string }) {
     return { tables: this.getConnectedTables("children", table) };
   }
 
-  getDownstreamTables({ table }: { table: string }) {
+  /** Returns the tables `table` depends on (its dbt parents). */
+  getParentTables({ table }: { table: string }) {
     return { tables: this.getConnectedTables("parents", table) };
   }
 
@@ -263,11 +265,11 @@ export class DbtLineageService {
     const splits = key.split(".");
     const nodeType = splits[0];
     const { graphMetaMap, testMetaMap } = event;
-    const upstreamCount = this.getConnectedNodeCount(
+    const childCount = this.getConnectedNodeCount(
       graphMetaMap["children"],
       key,
     );
-    const downstreamCount = this.getConnectedNodeCount(
+    const parentCount = this.getConnectedNodeCount(
       graphMetaMap["parents"],
       key,
     );
@@ -287,8 +289,8 @@ export class DbtLineageService {
         table: key,
         label: table,
         url: tableUrl,
-        upstreamCount,
-        downstreamCount,
+        childCount,
+        parentCount,
         nodeType,
         isExternalProject: _node.is_external_project,
         tests: (graphMetaMap["tests"].get(key)?.nodes || []).map((n) => {
@@ -305,8 +307,8 @@ export class DbtLineageService {
         table: key,
         label: splits[2],
         url: tableUrl,
-        upstreamCount,
-        downstreamCount,
+        childCount,
+        parentCount,
         nodeType,
         materialization: undefined,
         tests: [],
@@ -322,8 +324,8 @@ export class DbtLineageService {
         table: key,
         label: table,
         url: tableUrl,
-        upstreamCount,
-        downstreamCount,
+        childCount,
+        parentCount,
         nodeType,
         materialization: undefined,
         tests: [],
@@ -340,8 +342,8 @@ export class DbtLineageService {
         table: key,
         label: table,
         url: tableUrl,
-        upstreamCount,
-        downstreamCount,
+        childCount,
+        parentCount,
         nodeType,
         materialization: fnType ? `${fnType} function` : "function",
         tests: [],
@@ -360,8 +362,8 @@ export class DbtLineageService {
       table: key,
       label: node.alias,
       url: tableUrl,
-      upstreamCount,
-      downstreamCount,
+      childCount,
+      parentCount,
       isExternalProject: node.is_external_project,
       nodeType,
       materialization,
