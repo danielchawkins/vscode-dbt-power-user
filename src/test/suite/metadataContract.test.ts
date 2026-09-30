@@ -4,7 +4,6 @@ import * as path from "path";
 import { EventEmitter, Uri } from "vscode";
 import {
   ChildrenParentParser,
-  DBTTerminal,
   DocParser,
   ExposureParser,
   FunctionParser,
@@ -18,7 +17,8 @@ import {
   SourceParser,
   TestParser,
   UnitTestParser,
-} from "../../dbt_integration";
+} from "../../core/manifest";
+import { DBTTerminal } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { Manifest } from "../../projects/manifestTypes";
 import { Project } from "../../projects/project";

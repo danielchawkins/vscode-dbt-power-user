@@ -1,3 +1,5 @@
+import { ManifestLogger } from "./logger";
+import { ManifestProject } from "./manifestProject";
 import {
   FunctionMetaMap,
   GraphMetaMap,
@@ -8,9 +10,7 @@ import {
   RESOURCE_TYPE_TEST,
   SourceMetaMap,
   TestMetaMap,
-} from "../domain";
-import { ManifestProject } from "../manifestProject";
-import { DBTTerminal } from "../terminal";
+} from "./types";
 
 const notEmpty = <T>(value: T | null | undefined): value is T => {
   return value !== null && value !== undefined;
@@ -31,7 +31,7 @@ function withEdgeType(node: NodeData, isConstraintOnly: boolean): NodeData {
 }
 
 export class GraphParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: ManifestLogger) {}
 
   createGraphMetaMap(
     project: ManifestProject,

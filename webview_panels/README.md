@@ -32,7 +32,7 @@ classDiagram
     class DocsEditViewPanel{
       +resolveWebviewView()
     }
-    note for DocsEditViewPanel "Standalone WebviewViewProvider, not an PanelHost subclass.\nReuses the same React bundle by setting window.viewPath in its own HTML."
+    note for DocsEditViewPanel "Standalone WebviewViewProvider, not a PanelHost subclass.\nReuses the same React bundle by setting window.viewPath in its own HTML."
 
     class Webview_panels["webview_panels/src/main.tsx"]
     Webview_panels <|-- PanelHost : renders

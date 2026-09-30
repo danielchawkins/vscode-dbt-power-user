@@ -10,28 +10,30 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
-import { DBT_PROJECT_FILE } from "../../core/project";
-import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import {
   ChildrenParentParser,
-  DBTCommand,
-  DBTDiagnosticData,
-  DBTTerminal,
   DocParser,
   ExposureParser,
   FunctionParser,
   GraphParser,
   MacroParser,
-  MANIFEST_FILE,
   MetricParser,
   ModelDepthParser,
   NodeParser,
-  QueryExecution,
-  RESOURCE_TYPE_MODEL,
   SemanticModelParser,
   SourceParser,
   TestParser,
   UnitTestParser,
+} from "../../core/manifest";
+import { DBT_PROJECT_FILE } from "../../core/project";
+import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
+import {
+  DBTCommand,
+  DBTDiagnosticData,
+  DBTTerminal,
+  MANIFEST_FILE,
+  QueryExecution,
+  RESOURCE_TYPE_MODEL,
 } from "../../dbt_integration";
 import { FusionCli } from "../../fusion/fusionCli";
 import { ManifestParsers } from "../../projects/manifest";

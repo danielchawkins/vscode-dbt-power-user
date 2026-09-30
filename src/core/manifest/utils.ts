@@ -2,14 +2,16 @@ import { existsSync, readFileSync } from "fs";
 import * as path from "path";
 
 import { parse } from "yaml";
-import { readEnvironmentOverride } from "../../settings";
+
+/** Reads the dbt-loom override path at parse time; `undefined` selects the project default. */
+export type DbtLoomConfigPathReader = () => string | undefined;
 
 export const getExternalProjectNamesFromDbtLoomConfig = (
   projectRoot: string,
+  configPath?: string,
 ) => {
   const dbtLoomConfigPath =
-    readEnvironmentOverride("dbtLoomConfigPath") ||
-    path.join(projectRoot, "dbt_loom.config.yml");
+    configPath || path.join(projectRoot, "dbt_loom.config.yml");
 
   try {
     const fileContents = readFileSync(dbtLoomConfigPath, "utf8");

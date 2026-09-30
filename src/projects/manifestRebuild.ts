@@ -1,8 +1,5 @@
-import type {
-  DBTTerminal,
-  ManifestProject,
-  ParsedManifest,
-} from "../dbt_integration";
+import type { ManifestProject } from "../core/manifest";
+import type { DBTTerminal, ParsedManifest } from "../dbt_integration";
 import type { ExecutableLifecycle } from "../fusion/executableLifecycle";
 import type { FusionCli } from "../fusion/fusionCli";
 import { buildManifest, type ManifestParsers } from "./manifest";

@@ -1,9 +1,9 @@
-import { DBTTerminal } from "../terminal";
+import { ManifestLogger } from "./logger";
 
 import { DBTGraphType } from "./graphParser";
 
 export class ModelDepthParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: ManifestLogger) {}
 
   public createModelDepthsMap(
     nodeMap: any[],

@@ -1,11 +1,11 @@
+import { ManifestLogger } from "./logger";
+import { ManifestProject } from "./manifestProject";
 import {
   SemanticEntity,
   SemanticEntityType,
   SemanticModelMetaData,
   SemanticModelMetaMap,
-} from "../domain";
-import { ManifestProject } from "../manifestProject";
-import { DBTTerminal } from "../terminal";
+} from "./types";
 
 const REF_PATTERN =
   /^ref\(\s*['"]([^'"]+)['"]\s*(?:,\s*['"]([^'"]+)['"]\s*)?\)$/;
@@ -21,7 +21,7 @@ const REF_PATTERN =
  * entity data. Adding entities here keeps the change isolated.
  */
 export class SemanticModelParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: ManifestLogger) {}
 
   /**
    * Walks the manifest's `semantic_models` section and produces a map keyed

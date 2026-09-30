@@ -3,7 +3,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { Position, Uri, window, workspace } from "vscode";
-import { getExternalProjectNamesFromDbtLoomConfig } from "../../dbt_integration";
+import { getExternalProjectNamesFromDbtLoomConfig } from "../../core/manifest";
 import {
   arrayEquals,
   debounce,
@@ -115,6 +115,18 @@ describe("utils tests", () => {
     fs.writeFileSync(file, "manifests:\n  - name: proj1\n  - name: proj2\n");
     const result = getExternalProjectNamesFromDbtLoomConfig(dir);
     expect(result).toEqual(["proj1", "proj2"]);
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("getExternalProjectNamesFromDbtLoomConfig prefers the override path", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "loom-"));
+    const file = path.join(dir, "custom-loom.yml");
+    fs.writeFileSync(file, "manifests:\n  - name: other\n");
+    const result = getExternalProjectNamesFromDbtLoomConfig(
+      "/no/such/dir",
+      file,
+    );
+    expect(result).toEqual(["other"]);
     fs.rmSync(dir, { recursive: true, force: true });
   });
 

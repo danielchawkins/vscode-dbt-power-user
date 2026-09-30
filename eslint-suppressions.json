@@ -78,6 +78,123 @@
       "count": 1
     }
   },
+  "src/core/manifest/childrenParentParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 11
+    },
+    "complexity": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    },
+    "sonarjs/no-collapsible-if": {
+      "count": 2
+    }
+  },
+  "src/core/manifest/docParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/exposureParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/functionParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/graphParser.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 3
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/macroParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/metricParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/modelDepthParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/nodeParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
+  "src/core/manifest/relationshipParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "complexity": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 3
+    },
+    "sonarjs/no-collapsible-if": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/semanticModelParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 2
+    }
+  },
+  "src/core/manifest/sourceParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/testParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/types.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
+  "src/core/manifest/unitTestParser.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
   "src/cte_profiler/cteProfilerDecorationProvider.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
@@ -110,118 +227,6 @@
     }
   },
   "src/dbt_integration/domain.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 6
-    }
-  },
-  "src/dbt_integration/parsers/childrenParentParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 11
-    },
-    "complexity": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    },
-    "sonarjs/no-collapsible-if": {
-      "count": 2
-    }
-  },
-  "src/dbt_integration/parsers/docParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/parsers/exposureParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/parsers/functionParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/parsers/graphParser.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 3
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/parsers/macroParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/parsers/metricParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/parsers/modelDepthParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/parsers/nodeParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 2
-    }
-  },
-  "src/dbt_integration/parsers/relationshipParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    },
-    "complexity": {
-      "count": 2
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 3
-    },
-    "sonarjs/no-collapsible-if": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/parsers/semanticModelParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
-  "src/dbt_integration/parsers/sourceParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/parsers/testParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/parsers/unitTestParser.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
     }

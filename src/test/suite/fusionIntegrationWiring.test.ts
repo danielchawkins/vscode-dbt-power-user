@@ -7,6 +7,7 @@ import { ExtensionContextStore } from "../../extensionContext";
 import { FusionStatus } from "../../fusion/fusionStatus";
 import { Project } from "../../projects/project";
 
+import { NodeParser, SourceParser } from "../../core/manifest";
 import { ConfiguredFusionExecutableResolver } from "../../fusion/fusionExecutable";
 import { esmDirname } from "../esmDirname";
 import * as vscodeMock from "../mock/vscode";
@@ -147,5 +148,29 @@ describe("Fusion-only integration wiring", () => {
     expect(project).toBeInstanceOf(Project);
     expect(() => project.getFusionCli()).toThrow(/not initialized/);
     await project.dispose();
+  });
+
+  it("reads DBT_LOOM_CONFIG_PATH on each parse through the bound parsers", () => {
+    const reads: (string | undefined)[] = [];
+    for (const parser of [
+      container.get(NodeParser),
+      container.get(SourceParser),
+    ]) {
+      const read = (
+        parser as unknown as { readDbtLoomConfigPath: () => string | undefined }
+      ).readDbtLoomConfigPath;
+      process.env.DBT_LOOM_CONFIG_PATH = "/first/dbt_loom.config.yml";
+      reads.push(read());
+      process.env.DBT_LOOM_CONFIG_PATH = "/second/dbt_loom.config.yml";
+      reads.push(read());
+    }
+    delete process.env.DBT_LOOM_CONFIG_PATH;
+
+    expect(reads).toEqual([
+      "/first/dbt_loom.config.yml",
+      "/second/dbt_loom.config.yml",
+      "/first/dbt_loom.config.yml",
+      "/second/dbt_loom.config.yml",
+    ]);
   });
 });

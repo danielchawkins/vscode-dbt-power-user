@@ -1,9 +1,9 @@
-import { MetricMetaMap } from "../domain";
-import { ManifestProject } from "../manifestProject";
-import { DBTTerminal } from "../terminal";
+import { ManifestLogger } from "./logger";
+import { ManifestProject } from "./manifestProject";
+import { MetricMetaMap } from "./types";
 
 export class MetricParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: ManifestLogger) {}
 
   createMetricMetaMap(
     metrics: any[],

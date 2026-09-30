@@ -1,11 +1,8 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import * as path from "path";
 import { EventEmitter } from "vscode";
-import {
-  DBTTerminal,
-  ManifestProject,
-  TestParser,
-} from "../../dbt_integration";
+import { ManifestProject, TestParser } from "../../core/manifest";
+import { DBTTerminal } from "../../dbt_integration";
 
 describe("TestParser Test Suite", () => {
   let testParser: TestParser;

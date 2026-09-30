@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import fc from "fast-check";
-import { ChildrenParentParser } from "../../dbt_integration";
+import { ChildrenParentParser } from "../../core/manifest";
 import { NUM_RUNS, nodeDag } from "../arbitraries";
 
 const edges = (graph: Record<string, string[]>, reverse = false) =>

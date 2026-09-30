@@ -1,13 +1,13 @@
 import { readFileSync } from "fs";
 
-import { DocMetaMap } from "../domain";
-import { ManifestProject } from "../manifestProject";
-import { DBTTerminal } from "../terminal";
+import { ManifestLogger } from "./logger";
+import { ManifestProject } from "./manifestProject";
+import { DocMetaMap } from "./types";
 
 import { createFullPathForNode } from "./utils";
 
 export class DocParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: ManifestLogger) {}
 
   createDocMetaMap(docs: any, project: ManifestProject): Promise<DocMetaMap> {
     return new Promise(async (resolve) => {
