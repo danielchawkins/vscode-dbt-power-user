@@ -1,8 +1,8 @@
 import { inject } from "inversify";
 import { TextDocument, Uri, window } from "vscode";
-import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTTerminal } from "../dbt_integration";
 import type { Manifest } from "../projects/manifestTypes";
+import { Project } from "../projects/project";
 import { ProjectContext } from "../projects/projectContext";
 import { DeclaredProject } from "../projects/projectRegistry";
 import { Projects } from "../projects/projects";
@@ -15,8 +15,8 @@ export class QueryManifestService {
     private projectContext: ProjectContext,
   ) {}
 
-  /** Maps the Declared Project owning `uri` to the DBTProject the discovery path already built. */
-  private resolveProject(uri?: Uri): DBTProject | undefined {
+  /** Maps the Declared Project owning `uri` to the Project the discovery path already built. */
+  private resolveProject(uri?: Uri): Project | undefined {
     if (!uri) {
       return undefined;
     }
@@ -24,7 +24,7 @@ export class QueryManifestService {
     return declared ? this.mapDeclaredProject(declared) : undefined;
   }
 
-  public getProject(): DBTProject | undefined {
+  public getProject(): Project | undefined {
     const current = this.projectContext.current;
     if (current) {
       return this.mapDeclaredProject(current);
@@ -32,7 +32,7 @@ export class QueryManifestService {
     return undefined;
   }
 
-  public getProjectByUri(uri?: Uri): DBTProject | undefined {
+  public getProjectByUri(uri?: Uri): Project | undefined {
     return this.resolveProject(uri);
   }
 
@@ -156,9 +156,7 @@ export class QueryManifestService {
     return this.projects.get(root)?.manifest;
   }
 
-  private mapDeclaredProject(
-    declared: DeclaredProject,
-  ): DBTProject | undefined {
+  private mapDeclaredProject(declared: DeclaredProject): Project | undefined {
     return this.projects.get(declared.root);
   }
 }

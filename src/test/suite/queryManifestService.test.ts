@@ -51,7 +51,7 @@ describe("QueryManifestService.rewire", () => {
   });
 
   describe("getProject", () => {
-    it("maps context.current root to DBTProject", () => {
+    it("maps context.current root to Project", () => {
       const result = service.getProject();
       expect(result).toBeDefined();
       expect(projectsDouble.get).toHaveBeenCalledWith(
@@ -59,7 +59,7 @@ describe("QueryManifestService.rewire", () => {
       );
     });
 
-    it("returns undefined when current is undefined or no DBTProject at root", () => {
+    it("returns undefined when current is undefined or no Project at root", () => {
       contextDouble.current = undefined;
       expect(service.getProject()).toBeUndefined();
 
@@ -69,7 +69,7 @@ describe("QueryManifestService.rewire", () => {
   });
 
   describe("getProjectByUri", () => {
-    it("maps forResource(uri) to DBTProject, no fallback", () => {
+    it("maps forResource(uri) to Project, no fallback", () => {
       const uri = Uri.file(
         "/workspace/projects/general/models/general_model.sql",
       );

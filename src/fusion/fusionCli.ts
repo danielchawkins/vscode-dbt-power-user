@@ -80,7 +80,7 @@ function anySignal(
   return controller.signal;
 }
 
-/** The command kinds DBTProject queues. */
+/** The command kinds Project queues. */
 export type QueuedCliCommand = Extract<
   CliCommand,
   { kind: "run" | "build" | "test" | "compile" }

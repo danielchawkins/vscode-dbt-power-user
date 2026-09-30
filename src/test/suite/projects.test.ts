@@ -7,9 +7,9 @@ import {
   jest,
 } from "@jest/globals";
 import { EventEmitter, Uri } from "vscode";
-import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTTerminal } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
+import { Project } from "../../projects/project";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 import { Projects } from "../../projects/projects";
 
@@ -18,13 +18,13 @@ describe("Projects", () => {
   let mockDbtTerminal: jest.Mocked<DBTTerminal>;
   let mockProjectRegistry: any;
   let mockDbtProjectFactory: jest.Mock;
-  let mockProject1: jest.Mocked<DBTProject>;
-  let mockProject2: jest.Mocked<DBTProject>;
+  let mockProject1: jest.Mocked<Project>;
+  let mockProject2: jest.Mocked<Project>;
   let declaredProject1: any;
   let declaredProject2: any;
   let registryOnDidChangeProjects: EventEmitter<void>;
-  let project1Manifest: EventEmitter<DBTProject>;
-  let project2Manifest: EventEmitter<DBTProject>;
+  let project1Manifest: EventEmitter<Project>;
+  let project2Manifest: EventEmitter<Project>;
 
   beforeEach(() => {
     // Mock DBTTerminal
@@ -52,10 +52,10 @@ describe("Projects", () => {
       dispose: jest.fn(),
     };
 
-    project1Manifest = new EventEmitter<DBTProject>();
-    project2Manifest = new EventEmitter<DBTProject>();
+    project1Manifest = new EventEmitter<Project>();
+    project2Manifest = new EventEmitter<Project>();
 
-    // Mock DBTProject instances
+    // Mock Project instances
     mockProject1 = {
       projectRoot: Uri.file("/project1"),
       getProjectName: jest.fn().mockReturnValue("project1"),
@@ -65,7 +65,7 @@ describe("Projects", () => {
       manifest: undefined,
       onDidChangeManifest: project1Manifest.event,
       rebuildManifest: jest.fn(),
-    } as unknown as jest.Mocked<DBTProject>;
+    } as unknown as jest.Mocked<Project>;
 
     mockProject2 = {
       projectRoot: Uri.file("/project2"),
@@ -76,7 +76,7 @@ describe("Projects", () => {
       manifest: undefined,
       onDidChangeManifest: project2Manifest.event,
       rebuildManifest: jest.fn(),
-    } as unknown as jest.Mocked<DBTProject>;
+    } as unknown as jest.Mocked<Project>;
 
     // Mock factory
     mockDbtProjectFactory = jest.fn((uri: Uri) => {
@@ -124,7 +124,7 @@ describe("Projects", () => {
   });
 
   describe("initialization and sync", () => {
-    it("should construct DBTProject instances exactly once across multiple syncs", async () => {
+    it("should construct Project instances exactly once across multiple syncs", async () => {
       await projects.initialize();
 
       expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
@@ -337,7 +337,7 @@ describe("Projects", () => {
     });
 
     it("routes each publication once and drops events after removal", async () => {
-      const changed = jest.fn<(project: DBTProject) => void>();
+      const changed = jest.fn<(project: Project) => void>();
       const removed = jest.fn<(root: Uri) => void>();
       const sourceDispose = jest.spyOn(
         ManifestMetadataSource.prototype,

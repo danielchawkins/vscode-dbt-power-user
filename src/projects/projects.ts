@@ -1,13 +1,13 @@
 import { inject } from "inversify";
 import { Disposable, Event, EventEmitter, Uri } from "vscode";
-import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTTerminal } from "../dbt_integration";
 import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
 import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
+import { Project } from "./project";
 import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 
 interface ProjectEntry {
-  project: DBTProject;
+  project: Project;
   metadataSource: ProjectMetadataSource;
   subscriptions: Disposable[];
 }
@@ -17,9 +17,9 @@ export class Projects implements Disposable {
   private _onDidInitialize = new EventEmitter<void>();
   /** Fires once, after the first synchronization with the registry. */
   readonly onDidInitialize: Event<void> = this._onDidInitialize.event;
-  private _onDidChangeManifest = new EventEmitter<DBTProject>();
+  private _onDidChangeManifest = new EventEmitter<Project>();
   /** Fires after any project publishes a new manifest. */
-  readonly onDidChangeManifest: Event<DBTProject> =
+  readonly onDidChangeManifest: Event<Project> =
     this._onDidChangeManifest.event;
   private _onDidRemoveProject = new EventEmitter<Uri>();
   /** Fires with a project's root after it is dropped. */
@@ -38,8 +38,8 @@ export class Projects implements Disposable {
 
   constructor(
     private projectRegistry: ProjectRegistry,
-    @inject("Factory<DBTProject>")
-    private dbtProjectFactory: (path: Uri) => DBTProject,
+    @inject("Factory<Project>")
+    private projectFactory: (path: Uri) => Project,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
@@ -66,19 +66,19 @@ export class Projects implements Disposable {
     this._onDidInitialize.fire();
   }
 
-  get(uri: Uri): DBTProject | undefined {
+  get(uri: Uri): Project | undefined {
     const declared = this.projectRegistry.findProject(uri);
     return declared && this.projectsByRoot.get(declared.root.fsPath)?.project;
   }
 
-  all(): DBTProject[] {
+  all(): Project[] {
     return this.projectOrder.flatMap((root) => {
       const entry = this.projectsByRoot.get(root);
       return entry ? [entry.project] : [];
     });
   }
 
-  byName(projectName: string): DBTProject | undefined {
+  byName(projectName: string): Project | undefined {
     return this.all().find(
       (project) => project.getProjectName() === projectName,
     );
@@ -131,7 +131,7 @@ export class Projects implements Disposable {
         removed.push(existing);
       }
       if (!this.projectsByRoot.has(rootPath)) {
-        const project = this.dbtProjectFactory(declared.root);
+        const project = this.projectFactory(declared.root);
         const metadataSource = new ManifestMetadataSource(declared, project);
         const subscriptions: Disposable[] = [
           project.onDidChangeManifest((p) => this._onDidChangeManifest.fire(p)),

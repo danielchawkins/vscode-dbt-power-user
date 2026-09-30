@@ -1,11 +1,11 @@
 import { window } from "vscode";
-import type { DBTProject } from "../dbt_client/dbtProject";
 import type { RunModelParams, RunResultsEventData } from "../dbt_integration";
+import type { Project } from "../projects/project";
 import { extractDbtSubcommand } from "../utils";
 
 /** Project operations a run-history replay can dispatch to. */
 export type ReplayProject = Pick<
-  DBTProject,
+  Project,
   "runModel" | "buildModel" | "buildProject" | "runTest" | "compileModel"
 >;
 

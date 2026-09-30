@@ -10,15 +10,15 @@ import {
   WebviewViewResolveContext,
   window,
 } from "vscode";
-import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTTerminal } from "../dbt_integration";
+import { Project } from "../projects/project";
 import { Projects } from "../projects/projects";
 import { NewLineagePanel } from "./newLineagePanel";
 
 export interface LineagePanelView extends WebviewViewProvider {
   init(): void;
   /** Called with the project whose manifest changed, or `undefined` on project removal and panel init. */
-  manifestChanged(project: DBTProject | undefined): void;
+  manifestChanged(project: Project | undefined): void;
   changedActiveTextEditor(event: TextEditor | undefined): void;
   changedTextEditorSelection(editor: TextEditor): void;
   handleCommand(message: { command: string; args: any }): Promise<void> | void;

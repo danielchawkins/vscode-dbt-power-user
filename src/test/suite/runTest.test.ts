@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { Uri, window } from "vscode";
 import { RunTest } from "../../commands/runTest";
-import { DBTProject } from "../../dbt_client/dbtProject";
 import { Manifest } from "../../projects/manifestTypes";
+import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 import { QueryManifestService } from "../../services/queryManifestService";
 
@@ -17,7 +17,7 @@ import { QueryManifestService } from "../../services/queryManifestService";
  * itself — the command-layer dispatch is exercised by integration testing.
  */
 describe("RunTest — singular test classification and dispatch", () => {
-  let mockProject: jest.Mocked<DBTProject>;
+  let mockProject: jest.Mocked<Project>;
   let mockProjects: jest.Mocked<Projects>;
   let mockQueryManifestService: jest.Mocked<QueryManifestService>;
   let runTest: RunTest;
@@ -87,7 +87,7 @@ describe("RunTest — singular test classification and dispatch", () => {
   };
 
   beforeEach(() => {
-    mockProject = { runTest: jest.fn() } as unknown as jest.Mocked<DBTProject>;
+    mockProject = { runTest: jest.fn() } as unknown as jest.Mocked<Project>;
     mockProjects = {
       get: jest.fn().mockReturnValue(mockProject),
     } as unknown as jest.Mocked<Projects>;

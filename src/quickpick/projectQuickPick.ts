@@ -1,5 +1,5 @@
 import { QuickPickItem, Uri, window } from "vscode";
-import { DBTProject } from "../dbt_client/dbtProject";
+import { Project } from "../projects/project";
 import { DeclaredProject } from "../projects/projectRegistry";
 
 export interface ProjectQuickPickItem extends QuickPickItem {
@@ -16,7 +16,7 @@ interface DeclaredProjectPickItem extends QuickPickItem {
 
 export class ProjectQuickPick {
   async projectPicker(
-    projects: DBTProject[],
+    projects: Project[],
   ): Promise<ProjectQuickPickItem | undefined> {
     const options: ProjectQuickPickItem[] = projects.map((item) => {
       return {

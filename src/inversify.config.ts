@@ -1,6 +1,5 @@
 import { Container, Factory, ResolutionContext } from "inversify";
 import { Event, ExtensionContext, Uri } from "vscode";
-import { DBTProject } from "./dbt_client/dbtProject";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
@@ -31,6 +30,7 @@ import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
 import { FusionStatus } from "./fusion/fusionStatus";
 import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
 import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
+import { Project } from "./projects/project";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { readProjectSnapshot } from "./projects/readProjectSnapshot";
@@ -155,14 +155,14 @@ container
   .inSingletonScope();
 
 container
-  .bind<Factory<DBTProject, [Uri]>>("Factory<DBTProject>")
+  .bind<Factory<Project, [Uri]>>("Factory<Project>")
   .toFactory((context: ResolutionContext) => {
     return (projectRoot: Uri) => {
       const terminal = context.get<DBTTerminal>("DBTTerminal");
       const commandProcessExecutionFactory = context.get(
         CommandProcessExecutionFactory,
       );
-      return new DBTProject({
+      return new Project({
         dbtProjectLogFactory: context.get("Factory<DBTProjectLog>"),
         terminal,
         sharedState: context.get(SharedStateService),
@@ -380,7 +380,7 @@ container
   .toDynamicValue((context) => {
     return new Projects(
       context.get(ProjectRegistry),
-      context.get("Factory<DBTProject>"),
+      context.get("Factory<Project>"),
       context.get("DBTTerminal"),
     );
   })

@@ -25,7 +25,6 @@ import { SqlPreviewContentProvider } from "../content_provider/sqlPreviewContent
 import { DBT_PROJECT_FILE, readDbtProjectFile } from "../core/project";
 import { CteProfilerDecorationProvider } from "../cte_profiler/cteProfilerDecorationProvider";
 import { CteProfilerService } from "../cte_profiler/cteProfilerService";
-import { DBTProject } from "../dbt_client/dbtProject";
 import {
   CATALOG_FILE,
   DBTTerminal,
@@ -33,6 +32,7 @@ import {
   RunModelType,
 } from "../dbt_integration";
 import { ExtensionContextStore } from "../extensionContext";
+import { Project } from "../projects/project";
 import { Projects } from "../projects/projects";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
@@ -320,8 +320,8 @@ export class VSCodeCommands implements Disposable {
           return;
         }
 
-        const dbtProject = this.projects.get(activeFileUri);
-        if (!dbtProject) {
+        const project = this.projects.get(activeFileUri);
+        if (!project) {
           this.dbtTerminal.debug(
             "buildCurrentProject",
             `buildCurrentProject unable to find dbtproject by active file: ${activeFileUri.path}`,
@@ -330,12 +330,12 @@ export class VSCodeCommands implements Disposable {
         }
         this.dbtTerminal.debug(
           "buildCurrentProject",
-          `building current project: ${dbtProject.getProjectName()} with active file: ${
+          `building current project: ${project.getProjectName()} with active file: ${
             activeFileUri.path
           }`,
         );
 
-        dbtProject.buildProject();
+        project.buildProject();
       }),
       commands.registerCommand("fusionPowerUser.cleanCurrentProject", () => {
         if (!window.activeTextEditor) {
@@ -350,8 +350,8 @@ export class VSCodeCommands implements Disposable {
           return;
         }
 
-        const dbtProject = this.projects.get(activeFileUri);
-        if (!dbtProject) {
+        const project = this.projects.get(activeFileUri);
+        if (!project) {
           this.dbtTerminal.debug(
             "cleanCurrentProject",
             `cleanCurrentProject unable to find dbtproject by active file: ${activeFileUri.path}`,
@@ -360,12 +360,12 @@ export class VSCodeCommands implements Disposable {
         }
         this.dbtTerminal.debug(
           "cleanCurrentProject",
-          `cleaning current project: ${dbtProject.getProjectName()} with active file: ${
+          `cleaning current project: ${project.getProjectName()} with active file: ${
             activeFileUri.path
           }`,
         );
 
-        dbtProject.clean();
+        project.clean();
       }),
       commands.registerCommand("fusionPowerUser.buildChildrenModels", () =>
         this.runModel.buildModelOnActiveWindow(RunModelType.BUILD_CHILDREN),
@@ -526,7 +526,7 @@ export class VSCodeCommands implements Disposable {
     });
   }
 
-  private async printProjectInfo(project: DBTProject) {
+  private async printProjectInfo(project: Project) {
     this.diagnosticsOutputChannel.logLine(
       `Project Name=${project.getProjectName()}`,
     );

@@ -7,7 +7,7 @@ import {
   jest,
 } from "@jest/globals";
 import { Uri, window, workspace } from "vscode";
-import { DBTProject } from "../../dbt_client/dbtProject";
+import { Project } from "../../projects/project";
 import { DeferToProductionStatusBar } from "../../statusbar/deferToProductionStatusBar";
 
 describe("DeferToProductionStatusBar", () => {
@@ -56,7 +56,7 @@ describe("DeferToProductionStatusBar", () => {
   });
 
   it("reflects a defer settings change without applyDeferConfig", () => {
-    const project = Object.create(DBTProject.prototype) as DBTProject;
+    const project = Object.create(Project.prototype) as Project;
     Object.assign(project, { projectRoot: root });
     const bar = new DeferToProductionStatusBar(
       { all: () => [project] } as never,
