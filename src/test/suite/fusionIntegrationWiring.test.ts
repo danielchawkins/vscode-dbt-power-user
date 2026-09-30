@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
 import { Uri } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
+import { ExtensionContextStore } from "../../extensionContext";
 import { FusionStatus } from "../../fusion/fusionStatus";
 import { Project } from "../../projects/project";
 
@@ -100,6 +101,19 @@ describe("Fusion-only integration wiring", () => {
     expect(container.isBound("Factory<DBTCoreCommandProjectIntegration>")).toBe(
       false,
     );
+  });
+
+  it("rebinds the extension context on a second call", () => {
+    const workspaceState = { get: jest.fn(() => "rebound"), update: jest.fn() };
+    expect(() =>
+      bindExtensionContext({
+        workspaceState,
+        globalState: { get: jest.fn(), update: jest.fn() },
+      } as never),
+    ).not.toThrow();
+
+    const store = container.get(ExtensionContextStore);
+    expect(store.getFromWorkspaceState("key")).toBe("rebound");
   });
 
   it("binds FusionStatus for the Fusion LSP status surface", () => {

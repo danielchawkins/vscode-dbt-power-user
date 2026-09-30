@@ -4,7 +4,6 @@ import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTTerminal } from "../dbt_integration";
 import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
 import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
-import type { RebuildManifestCombinedStatusChange } from "./manifestTypes";
 import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 
 interface ProjectEntry {
@@ -25,15 +24,10 @@ export class Projects implements Disposable {
   private _onDidRemoveProject = new EventEmitter<Uri>();
   /** Fires with a project's root after it is dropped. */
   readonly onDidRemoveProject: Event<Uri> = this._onDidRemoveProject.event;
-  private _onDidChangeRebuildStatus =
-    new EventEmitter<RebuildManifestCombinedStatusChange>();
-  readonly onDidChangeRebuildStatus = this._onDidChangeRebuildStatus.event;
-  private rebuildManifestStatusChangeMap = new Map<string, boolean>();
   private disposables: Disposable[] = [
     this._onDidInitialize,
     this._onDidChangeManifest,
     this._onDidRemoveProject,
-    this._onDidChangeRebuildStatus,
   ];
 
   private readonly projectsByRoot = new Map<string, ProjectEntry>();
@@ -104,11 +98,6 @@ export class Projects implements Disposable {
     for (const [rootPath, entry] of this.projectsByRoot) {
       this.projectsByRoot.delete(rootPath);
       this._onDidRemoveProject.fire(entry.project.projectRoot);
-      const rebuildKey = entry.project.projectRoot.fsPath;
-      if (this.rebuildManifestStatusChangeMap.has(rebuildKey)) {
-        this.rebuildManifestStatusChangeMap.delete(rebuildKey);
-        this.fireRebuildStatus();
-      }
       entry.metadataSource.dispose();
       for (const sub of entry.subscriptions) {
         sub.dispose();
@@ -117,7 +106,6 @@ export class Projects implements Disposable {
     }
     this.projectsByRoot.clear();
     this.projectOrder = [];
-    this.rebuildManifestStatusChangeMap.clear();
     while (this.disposables.length) {
       const x = this.disposables.pop();
       if (x) {
@@ -147,13 +135,6 @@ export class Projects implements Disposable {
         const metadataSource = new ManifestMetadataSource(declared, project);
         const subscriptions: Disposable[] = [
           project.onDidChangeManifest((p) => this._onDidChangeManifest.fire(p)),
-          project.onRebuildManifestStatusChange((e) => {
-            this.rebuildManifestStatusChangeMap.set(
-              e.project.projectRoot.fsPath,
-              e.inProgress,
-            );
-            this.fireRebuildStatus();
-          }),
         ];
         const entry = { project, metadataSource, subscriptions };
         this.projectsByRoot.set(rootPath, entry);
@@ -170,11 +151,6 @@ export class Projects implements Disposable {
 
     for (const entry of removed) {
       this._onDidRemoveProject.fire(entry.project.projectRoot);
-      const rebuildKey = entry.project.projectRoot.fsPath;
-      if (this.rebuildManifestStatusChangeMap.has(rebuildKey)) {
-        this.rebuildManifestStatusChangeMap.delete(rebuildKey);
-        this.fireRebuildStatus();
-      }
       entry.metadataSource.dispose();
       for (const sub of entry.subscriptions) {
         sub.dispose();
@@ -193,18 +169,5 @@ export class Projects implements Disposable {
     );
     this.syncQueue = next.catch(() => undefined);
     return next;
-  }
-
-  private fireRebuildStatus(): void {
-    const projects = Array.from(this.rebuildManifestStatusChangeMap)
-      .filter(([, inProgress]) => inProgress)
-      .flatMap(([root]) => {
-        const project = this.projectsByRoot.get(root)?.project;
-        return project ? [project] : [];
-      });
-    this._onDidChangeRebuildStatus.fire({
-      projects,
-      inProgress: projects.length > 0,
-    });
   }
 }

@@ -273,11 +273,6 @@
       "count": 1
     }
   },
-  "src/projects/projects.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "src/services/dbtLineageService.ts": {
     "complexity": {
       "count": 1

@@ -9,16 +9,6 @@ export class ExtensionContextStore {
     return this.context.extensionUri;
   }
 
-  /** Version from the extension's `package.json`. */
-  get extensionVersion(): string {
-    return this.context.extension.packageJSON.version;
-  }
-
-  /** Publisher-qualified extension identifier. */
-  get extensionId(): string {
-    return this.context.extension.id;
-  }
-
   /** Stores `value` under `key` in workspace state. */
   setToWorkspaceState(key: string, value: unknown): void {
     void this.context.workspaceState.update(key, value);

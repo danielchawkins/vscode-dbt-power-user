@@ -331,13 +331,8 @@ describe("Project Test Suite", () => {
         rebuildManifestDiagnostics: [],
         projectConfigDiagnostics: [],
       });
-      const statuses: boolean[] = [];
-      dbtProject.onRebuildManifestStatusChange((e) =>
-        statuses.push(e.inProgress),
-      );
       await dbtProject.rebuildManifest();
       await flush();
-      expect(statuses).toEqual([true, false]);
       expect(dbtProject.getAllDiagnostic().map((d) => d.code)).toEqual([
         "project-config",
         "fusion-executable",
@@ -461,20 +456,14 @@ describe("Project Test Suite", () => {
       mockFusionCli.rebuildManifest.mockImplementation(
         () => new Promise<void>((resolve) => (release = resolve)),
       );
-      const statuses: boolean[] = [];
-      dbtProject.onRebuildManifestStatusChange((e) =>
-        statuses.push(e.inProgress),
-      );
 
       await dbtProject.rebuildManifest();
       await flush();
-      expect(statuses).toEqual([true]);
       await dbtProject.dispose();
       collection.set.mockClear();
       release();
       await flush();
 
-      expect(statuses).toEqual([true]);
       expect(collection.set).not.toHaveBeenCalled();
     });
   });

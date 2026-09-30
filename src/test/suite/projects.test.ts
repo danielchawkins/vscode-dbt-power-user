@@ -62,9 +62,6 @@ describe("Projects", () => {
       getAdapterType: jest.fn().mockReturnValue("snowflake"),
       initialize: jest.fn(),
       dispose: jest.fn(),
-      onRebuildManifestStatusChange: jest
-        .fn()
-        .mockReturnValue({ dispose: jest.fn() }),
       manifest: undefined,
       onDidChangeManifest: project1Manifest.event,
       rebuildManifest: jest.fn(),
@@ -76,9 +73,6 @@ describe("Projects", () => {
       getAdapterType: jest.fn().mockReturnValue("snowflake"),
       initialize: jest.fn(),
       dispose: jest.fn(),
-      onRebuildManifestStatusChange: jest
-        .fn()
-        .mockReturnValue({ dispose: jest.fn() }),
       manifest: undefined,
       onDidChangeManifest: project2Manifest.event,
       rebuildManifest: jest.fn(),
@@ -235,32 +229,6 @@ describe("Projects", () => {
       project2Manifest.fire(mockProject2);
 
       expect(changedHandler).toHaveBeenCalledTimes(2);
-    });
-
-    it("should update rebuild status map on removal", async () => {
-      const statusHandler = jest.fn();
-      projects.onDidChangeRebuildStatus(statusHandler);
-
-      // Manually trigger rebuild status for project2
-      const rebuildStatusSub = (
-        mockProject2.onRebuildManifestStatusChange as jest.Mock
-      ).mock.calls[0]?.[0] as any;
-      if (rebuildStatusSub && typeof rebuildStatusSub === "function") {
-        rebuildStatusSub({
-          project: mockProject2,
-          inProgress: true,
-        });
-      }
-
-      // Remove project2
-      mockProjectRegistry.projects = [declaredProject1];
-      registryOnDidChangeProjects.fire();
-      await new Promise((resolve) => setImmediate(resolve));
-
-      expect(statusHandler).toHaveBeenLastCalledWith({
-        projects: [],
-        inProgress: false,
-      });
     });
   });
 
