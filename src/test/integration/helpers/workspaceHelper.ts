@@ -1,8 +1,9 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
+import type { FusionPowerUserApi } from "../../../extension";
 
 /**
- * Waits for Fusion Power User to activate.
+ * Waits for Fusion Power User to activate and finish project startup.
  */
 export async function waitForExtensionActivation(
   timeoutMs: number = 10_000,
@@ -25,6 +26,27 @@ export async function waitForExtensionActivation(
       );
     }, timeoutMs);
   });
+  const { ready } =
+    vscode.extensions.getExtension<FusionPowerUserApi>(extensionId)!.exports;
+  let timer: NodeJS.Timeout | undefined;
+  try {
+    await Promise.race([
+      ready,
+      new Promise<never>((_, reject) => {
+        timer = setTimeout(
+          () =>
+            reject(
+              new Error(
+                `${extensionId} did not finish startup within ${timeoutMs}ms`,
+              ),
+            ),
+          timeoutMs,
+        );
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**

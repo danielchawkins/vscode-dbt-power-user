@@ -19,6 +19,7 @@ import {
   ProjectRegistry,
 } from "../../projects/projectRegistry";
 import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
+import { StartupGate } from "../../startupGate";
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
@@ -66,7 +67,7 @@ describe("fusionNotificationPolicy", () => {
 
   it("shows no window messages on enabled extension activation", async () => {
     const fusionClientPoolInitialize = jest.fn();
-    const extension = Object.create(DBTPowerUserExtension.prototype) as any;
+    const extension = new (DBTPowerUserExtension as any)() as any;
     Object.assign(extension, {
       projects: {
         setContext: jest.fn(),
@@ -80,6 +81,7 @@ describe("fusionNotificationPolicy", () => {
       dbtTerminal: { error: jest.fn() },
       runHistoryService: { dispose: jest.fn() },
       sharedState: { dispose: jest.fn() },
+      startupGate: new StartupGate(),
     });
 
     await extension.activate();

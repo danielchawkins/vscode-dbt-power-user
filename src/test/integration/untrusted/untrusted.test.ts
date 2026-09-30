@@ -45,7 +45,9 @@ function assertVsixInstalled(): void {
     assertVsixInstalled();
     const extension = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(extension, "the installed VSIX is listed by the host");
-    await extension.activate();
+    await (
+      await extension.activate()
+    ).ready;
     assert.strictEqual(extension.isActive, true);
     const commands = await vscode.commands.getCommands(true);
     assert.ok(commands.includes(COMMAND));

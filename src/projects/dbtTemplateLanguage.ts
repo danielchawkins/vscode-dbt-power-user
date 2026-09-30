@@ -35,20 +35,25 @@ import {
 export class DbtTemplateLanguage implements Disposable {
   private readonly disposables: Disposable[] = [];
   private readonly pathsByRoot = new Map<string, ProjectPaths>();
+  private started = false;
 
   constructor(
     private readonly registry: ProjectRegistry,
     private readonly currentProject: CurrentProject,
     private readonly terminal: DBTTerminal,
-  ) {}
-
-  /** Starts listening; call after the registry has resolved Declared Projects. */
-  start(): void {
+  ) {
     this.disposables.push(
       commands.registerCommand(
         "fusionPowerUser.configureFileAssociations",
-        () => this.writeFolderAssociations(),
+        () => (this.started ? this.writeFolderAssociations() : 0),
       ),
+    );
+  }
+
+  /** Starts listening; call after the registry has resolved Declared Projects. */
+  start(): void {
+    this.started = true;
+    this.disposables.push(
       workspace.onDidOpenTextDocument((doc) => void this.apply(doc)),
       this.registry.onDidChangeProjects(() => {
         this.pathsByRoot.clear();

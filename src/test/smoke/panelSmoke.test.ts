@@ -64,7 +64,8 @@ suite("Pinned-host VSIX smoke", function () {
 
     const ext = vscode.extensions.getExtension(EXTENSION_ID);
     assert.ok(ext, "packaged extension should be installed");
-    await ext.activate();
+    const api = await ext.activate();
+    await api.ready;
     assert.ok(ext.isActive, "packaged extension should activate");
     await assertNoWorkbenchNotifications(cdpPort, smokeHost);
 
@@ -176,10 +177,14 @@ suite("Pinned-host VSIX smoke", function () {
     if (runtimeEnabled) {
       const hostTimings = await waitForHostRuntimeTimings();
       const activation: ActivationMetric = await readActivationMetric();
+      assert.ok(
+        typeof api.readyMs === "number",
+        "extension API should report readyMs after ready settles",
+      );
       console.log(
         `FPU_RUNTIME_SAMPLE=${JSON.stringify({
           host: smokeHost,
-          activation,
+          activation: { ...activation, startupReady: api.readyMs },
           webviews: webviews.map(
             ({ viewPath, timeOrigin, firstContentfulPaint, openAttempts }) => ({
               viewPath,

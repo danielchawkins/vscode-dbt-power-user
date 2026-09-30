@@ -43,7 +43,7 @@
     "lsp"
   ],
   "activationEvents": [
-    "workspaceContains:**/dbt_project.yml"
+    "workspaceContains:dbt_project.yml"
   ],
   "main": "./dist/extension.js",
   "contributes": {

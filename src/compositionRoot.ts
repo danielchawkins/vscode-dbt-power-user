@@ -57,6 +57,7 @@ import { QueryManifestService } from "./services/queryManifestService";
 import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
 import { readEnvironmentOverride } from "./settings";
+import { StartupGate } from "./startupGate";
 import { StatusBars } from "./statusbar";
 import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
 import { TreeviewProviders } from "./treeview_provider";
@@ -258,7 +259,7 @@ function composeWebviews(
   );
 }
 
-function composeCommands(graph: ProjectsGraph) {
+function composeCommands(graph: ProjectsGraph, startupGate: StartupGate) {
   const { projects, terminal, extensionContextStore } = graph;
   const cteProfilerService = new CteProfilerService(projects, terminal);
   const cteCodeLensProvider = new CteCodeLensProvider(terminal);
@@ -284,6 +285,7 @@ function composeCommands(graph: ProjectsGraph) {
     new CteProfilerDecorationProvider(cteProfilerService, terminal),
     cteCodeLensProvider,
     deferToProductionStatusBar,
+    startupGate,
   );
   return { vscodeCommands, cteCodeLensProvider, deferToProductionStatusBar };
 }
@@ -319,7 +321,8 @@ export function compose(context: ExtensionContext): Composition {
   const graph = composeProjects(context);
   const { terminal, projectRegistry, currentProject } = graph;
   const fusion = composeFusion(graph);
-  const commands = composeCommands(graph);
+  const startupGate = new StartupGate();
+  const commands = composeCommands(graph, startupGate);
   const editor = composeEditorProviders(graph, commands.cteCodeLensProvider);
 
   const extension = new DBTPowerUserExtension(
@@ -336,8 +339,9 @@ export function compose(context: ExtensionContext): Composition {
     currentProject,
     fusion.fusionClientPool,
     fusion.fusionStatus,
-    new ProjectConfigCommands(currentProject, terminal),
+    new ProjectConfigCommands(startupGate, currentProject, terminal),
     new DbtTemplateLanguage(projectRegistry, currentProject, terminal),
+    startupGate,
     fusion.dbtLineageService,
     graph.sharedState,
     graph.runHistoryService,

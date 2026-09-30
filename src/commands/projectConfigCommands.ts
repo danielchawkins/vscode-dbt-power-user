@@ -24,6 +24,7 @@ import {
 import { SCHEMA_ORIGIN_HOOK } from "../fusion/schemaOrigin";
 import { CurrentProject } from "../projects/currentProject";
 import { DeclaredProject } from "../projects/projectRegistry";
+import { StartupGate } from "../startupGate";
 
 const CONFIRM = "Add";
 
@@ -35,6 +36,7 @@ export class ProjectConfigCommands implements Disposable {
   private readonly disposables: Disposable[];
 
   constructor(
+    private readonly startupGate: Pick<StartupGate, "whenSettled">,
     private readonly currentProject: CurrentProject,
     private readonly terminal: DBTTerminal,
   ) {
@@ -63,6 +65,7 @@ export class ProjectConfigCommands implements Disposable {
     uri: Uri | undefined,
     insertion: (projectName: string) => ProjectConfigInsertion,
   ): Promise<boolean> {
+    await this.startupGate.whenSettled();
     const project = await this.currentProject.requireForCommand(uri);
     if (!project) {
       return false;

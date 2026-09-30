@@ -14,9 +14,11 @@ describe("fusionPowerUser.diagnostics", () => {
   let diagnosticsHandler: (() => Promise<void>) | undefined;
   let logLine: jest.Mock;
   let diagnosticsOutputChannel: DiagnosticsOutputChannel;
+  let initialize: () => void;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    const initialized = new Promise<void>((resolve) => (initialize = resolve));
     logLine = jest.fn();
     diagnosticsOutputChannel = {
       show: jest.fn(),
@@ -80,7 +82,9 @@ describe("fusionPowerUser.diagnostics", () => {
     };
 
     new VSCodeCommands(
-      { all: () => [failedProject, healthyProject] } as never,
+      {
+        all: () => [failedProject, healthyProject],
+      } as never,
       {} as never,
       {} as never,
       {} as never,
@@ -92,6 +96,7 @@ describe("fusionPowerUser.diagnostics", () => {
       {} as never,
       {} as never,
       {} as never,
+      { whenSettled: () => initialized },
     );
 
     const registration = (
@@ -105,8 +110,19 @@ describe("fusionPowerUser.diagnostics", () => {
     (workspace as any).workspaceFolders = [];
   });
 
+  it("waits for extension startup to settle before running", async () => {
+    const run = diagnosticsHandler!();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(diagnosticsOutputChannel.show).not.toHaveBeenCalled();
+
+    initialize();
+    await run;
+    expect(diagnosticsOutputChannel.show).toHaveBeenCalled();
+  });
+
   it("enumerates every project without a global installed gate", async () => {
     expect(diagnosticsHandler).toBeDefined();
+    initialize();
     await diagnosticsHandler!();
 
     const lines = logLine.mock.calls.map(([line]) => String(line));

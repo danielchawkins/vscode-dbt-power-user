@@ -18,6 +18,7 @@ import { DbtLineageService } from "./services/dbtLineageService";
 import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
 import { readSetting } from "./settings";
+import { StartupGate } from "./startupGate";
 import { StatusBars } from "./statusbar";
 import { TreeviewProviders } from "./treeview_provider";
 import { WebviewViewProviders } from "./webview_provider";
@@ -44,6 +45,7 @@ export class DBTPowerUserExtension implements Disposable {
   ];
 
   private disposables: Disposable[] = [];
+  private disposed = false;
 
   constructor(
     private projects: Projects,
@@ -61,6 +63,7 @@ export class DBTPowerUserExtension implements Disposable {
     private fusionStatus: FusionStatus,
     private projectConfigCommands: ProjectConfigCommands,
     private dbtTemplateLanguage: DbtTemplateLanguage,
+    private startupGate: StartupGate,
     private dbtLineageService: DbtLineageService,
     /** Disposed after every other collaborator. */
     private sharedState: SharedStateService,
@@ -89,6 +92,8 @@ export class DBTPowerUserExtension implements Disposable {
   }
 
   dispose() {
+    this.disposed = true;
+    this.startupGate.settle();
     while (this.disposables.length) {
       const x = this.disposables.pop();
       if (x) {
@@ -108,8 +113,23 @@ export class DBTPowerUserExtension implements Disposable {
     this.dispose();
   }
 
-  async activate(): Promise<void> {
+  /**
+   * Registers commands synchronously, then starts projects. The returned promise settles once
+   * startup finishes or stops; it never rejects.
+   */
+  activate(): Promise<void> {
     this.own(registerRuntimeTimings());
+    this.own(
+      registerFusionClientDiagnostics(
+        this.projectRegistry,
+        this.fusionClientPool,
+      ),
+    );
+    this.own(registerConnectedColumnsCommand(this.dbtLineageService));
+    return this.start();
+  }
+
+  private async start(): Promise<void> {
     try {
       if (extensions.getExtension(UPSTREAM_EXTENSION_ID)) {
         const action = await window.showErrorMessage(
@@ -117,7 +137,7 @@ export class DBTPowerUserExtension implements Disposable {
           { modal: true },
           UNINSTALL_POWER_USER,
         );
-        if (action === UNINSTALL_POWER_USER) {
+        if (!this.disposed && action === UNINSTALL_POWER_USER) {
           await commands.executeCommand(
             "workbench.extensions.uninstallExtension",
             UPSTREAM_EXTENSION_ID,
@@ -136,17 +156,16 @@ export class DBTPowerUserExtension implements Disposable {
       }
 
       await this.projectRegistry.initialize();
+      if (this.disposed) {
+        return;
+      }
       this.dbtTemplateLanguage.start();
       this.fusionClientPool.initialize();
       this.fusionStatus.initialize();
-      this.own(
-        registerFusionClientDiagnostics(
-          this.projectRegistry,
-          this.fusionClientPool,
-        ),
-      );
-      this.own(registerConnectedColumnsCommand(this.dbtLineageService));
       await this.projects.initialize();
+      if (this.disposed) {
+        return;
+      }
       await this.statusBars.initialize();
     } catch (error) {
       this.dbtTerminal.error(
@@ -154,6 +173,8 @@ export class DBTPowerUserExtension implements Disposable {
         "Unable to activate Fusion Power User",
         error,
       );
+    } finally {
+      this.startupGate.settle();
     }
   }
 }

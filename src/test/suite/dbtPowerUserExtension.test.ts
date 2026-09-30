@@ -1,7 +1,14 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { commands, extensions, Uri, window, workspace } from "vscode";
+import { ProjectConfigCommands } from "../../commands/projectConfigCommands";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
+import { FUSION_CLIENT_STATES_COMMAND } from "../../fusion/fusionClientDiagnostics";
+import {
+  CONNECTED_COLUMNS_COMMAND,
+  PARENT_TABLES_COMMAND,
+} from "../../services/connectedColumnsCommand";
 import { CONFIGURATION_SECTION } from "../../settings";
+import { StartupGate } from "../../startupGate";
 
 const UPSTREAM_EXTENSION = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_ACTION = "Uninstall Power User";
@@ -12,7 +19,7 @@ const activationHarness = (enabled: boolean) => {
   const registryInitialize = jest.fn(() => Promise.resolve());
   const fusionClientPoolInitialize = jest.fn();
   const fusionStatusInitialize = jest.fn();
-  const extension = Object.create(DBTPowerUserExtension.prototype) as any;
+  const extension = new (DBTPowerUserExtension as any)() as any;
   Object.assign(extension, {
     projects: {
       setContext: jest.fn(),
@@ -27,6 +34,7 @@ const activationHarness = (enabled: boolean) => {
     dbtTerminal: { error: jest.fn() },
     runHistoryService: { dispose: jest.fn() },
     sharedState: { dispose: jest.fn() },
+    startupGate: new StartupGate(),
     disposables: [],
   });
 
@@ -49,6 +57,97 @@ const activationHarness = (enabled: boolean) => {
     dbtTerminal: extension.dbtTerminal,
   };
 };
+
+describe("DBTPowerUserExtension startup gate", () => {
+  const gatedCommand = (extension: DBTPowerUserExtension) => {
+    const requireForCommand = jest.fn(() => Promise.resolve(undefined));
+    new ProjectConfigCommands(
+      (extension as any).startupGate,
+      { requireForCommand } as never,
+      { error: jest.fn() } as never,
+    );
+    const registration = (
+      commands.registerCommand as jest.Mock
+    ).mock.calls.find(
+      ([command]) => command === "fusionPowerUser.enableStrictAnalysis",
+    );
+    return {
+      run: registration![1] as () => Promise<boolean>,
+      requireForCommand,
+    };
+  };
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    (extensions.getExtension as jest.Mock).mockReturnValue(undefined);
+    (window.showErrorMessage as jest.Mock).mockReturnValue(Promise.resolve());
+  });
+
+  it("holds gated commands until startup settles", async () => {
+    const harness = activationHarness(true);
+    let finishRegistry: () => void = () => {};
+    harness.registryInitialize.mockImplementation(
+      () => new Promise<void>((resolve) => (finishRegistry = resolve)),
+    );
+    const command = gatedCommand(harness.extension);
+
+    const ready = harness.extension.activate();
+    const run = command.run();
+    await new Promise((resolve) => setImmediate(resolve));
+    expect(command.requireForCommand).not.toHaveBeenCalled();
+
+    finishRegistry();
+    await ready;
+    await expect(run).resolves.toBe(false);
+    expect(command.requireForCommand).toHaveBeenCalled();
+  });
+
+  it("runs gated commands when disabled for every folder", async () => {
+    const harness = activationHarness(false);
+    const command = gatedCommand(harness.extension);
+
+    await harness.extension.activate();
+
+    await expect(command.run()).resolves.toBe(false);
+    expect(harness.registryInitialize).not.toHaveBeenCalled();
+  });
+
+  it("runs gated commands when Power User is installed", async () => {
+    const harness = activationHarness(true);
+    (extensions.getExtension as jest.Mock).mockReturnValue({
+      id: UPSTREAM_EXTENSION,
+    });
+    const command = gatedCommand(harness.extension);
+
+    await harness.extension.activate();
+
+    await expect(command.run()).resolves.toBe(false);
+    expect(harness.registryInitialize).not.toHaveBeenCalled();
+  });
+
+  it("runs gated commands when the project registry fails to initialize", async () => {
+    const harness = activationHarness(true);
+    harness.registryInitialize.mockImplementation(() =>
+      Promise.reject(new Error("boom")),
+    );
+    const command = gatedCommand(harness.extension);
+
+    await harness.extension.activate();
+
+    await expect(command.run()).resolves.toBe(false);
+    expect(harness.dbtTerminal.error).toHaveBeenCalled();
+    expect(harness.initializeProjects).not.toHaveBeenCalled();
+  });
+
+  it("runs gated commands after dispose without activation", async () => {
+    const harness = activationHarness(true);
+    const command = gatedCommand(harness.extension);
+
+    harness.extension.dispose();
+
+    await expect(command.run()).resolves.toBe(false);
+  });
+});
 
 describe("DBTPowerUserExtension.activate", () => {
   beforeEach(() => {
@@ -88,6 +187,77 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
     expect(harness.extension.disposables).toHaveLength(0);
+  });
+
+  it("registers harness commands before the conflict modal is answered", async () => {
+    const harness = activationHarness(true);
+    const previous = process.env.FPU_INTEGRATION_COMMANDS;
+    process.env.FPU_INTEGRATION_COMMANDS = "1";
+    (extensions.getExtension as jest.Mock).mockReturnValue({
+      id: UPSTREAM_EXTENSION,
+    });
+    let answer: (value: undefined) => void = () => {};
+    (window.showErrorMessage as jest.Mock).mockReturnValue(
+      new Promise((resolve) => (answer = resolve)),
+    );
+
+    try {
+      const ready = harness.extension.activate();
+
+      const registered = (commands.registerCommand as jest.Mock).mock.calls.map(
+        ([command]) => command,
+      );
+      expect(registered).toEqual(
+        expect.arrayContaining([
+          FUSION_CLIENT_STATES_COMMAND,
+          CONNECTED_COLUMNS_COMMAND,
+          PARENT_TABLES_COMMAND,
+        ]),
+      );
+      answer(undefined);
+      await ready;
+      expect(harness.registryInitialize).not.toHaveBeenCalled();
+    } finally {
+      if (previous === undefined) {
+        delete process.env.FPU_INTEGRATION_COMMANDS;
+      } else {
+        process.env.FPU_INTEGRATION_COMMANDS = previous;
+      }
+    }
+  });
+
+  it("resolves ready and logs when a startup step throws", async () => {
+    const harness = activationHarness(true);
+    const failure = new Error("boom");
+    harness.initializeProjects.mockImplementation(() =>
+      Promise.reject(failure),
+    );
+
+    await expect(harness.extension.activate()).resolves.toBeUndefined();
+
+    expect(harness.dbtTerminal.error).toHaveBeenCalledWith(
+      "extensionActivationError",
+      expect.any(String),
+      failure,
+    );
+    expect(harness.initializeStatusBars).not.toHaveBeenCalled();
+  });
+
+  it("stops startup after dispose during an await", async () => {
+    const harness = activationHarness(true);
+    let finishRegistry: () => void = () => {};
+    harness.registryInitialize.mockImplementation(
+      () => new Promise<void>((resolve) => (finishRegistry = resolve)),
+    );
+
+    const ready = harness.extension.activate();
+    harness.extension.dispose();
+    finishRegistry();
+    await ready;
+
+    expect(harness.extension.dbtTemplateLanguage.start).not.toHaveBeenCalled();
+    expect(harness.fusionStatusInitialize).not.toHaveBeenCalled();
+    expect(harness.initializeProjects).not.toHaveBeenCalled();
   });
 
   it("stops activation silently when disabled for the workspace folder", async () => {
@@ -142,11 +312,12 @@ describe("DBTPowerUserExtension.activate", () => {
       }),
     };
     const disposable = { dispose: jest.fn(() => order.push("other.dispose")) };
-    const extension = Object.create(
-      DBTPowerUserExtension.prototype,
-    ) as DBTPowerUserExtension;
+    const extension = new (
+      DBTPowerUserExtension as any
+    )() as DBTPowerUserExtension;
     Object.assign(extension, {
       fusionClientPool,
+      startupGate: new StartupGate(),
       disposables: [disposable, fusionClientPool],
     });
 

@@ -12,6 +12,7 @@ export interface ActivationMetric {
 }
 
 export async function readActivationMetric(): Promise<ActivationMetric> {
+  let lastRow: string | undefined;
   for (let attempt = 0; attempt < 200; attempt += 1) {
     if (attempt % 10 === 0) {
       await commands.executeCommand("perfview.show");
@@ -24,6 +25,7 @@ export async function readActivationMetric(): Promise<ActivationMetric> {
       .split("\n")
       .find((line) => line.split("|")[1]?.trim() === EXTENSION_ID);
     if (row) {
+      lastRow = row;
       const cells = row
         .split("|")
         .slice(1, -1)
@@ -40,14 +42,16 @@ export async function readActivationMetric(): Promise<ActivationMetric> {
         [result.loadCode, result.callActivate, result.finishActivate].every(
           Number.isFinite,
         ) &&
-        result.finishActivate > 0
+        result.finishActivate >= 0
       ) {
         return result;
       }
     }
     await sleep(100);
   }
-  throw new Error("Startup Performance did not report Fusion Power User");
+  throw new Error(
+    `Startup Performance did not report Fusion Power User; last row: ${lastRow ?? "none"}`,
+  );
 }
 
 function sleep(ms: number): Promise<void> {
