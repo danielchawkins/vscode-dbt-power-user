@@ -29,6 +29,8 @@ describe("DBTProjectContainer", () => {
   let declaredProject1: any;
   let declaredProject2: any;
   let registryOnDidChangeProjects: EventEmitter<void>;
+  let project1Manifest: EventEmitter<DBTProject>;
+  let project2Manifest: EventEmitter<DBTProject>;
 
   beforeEach(() => {
     // Mock DBTTerminal
@@ -56,6 +58,9 @@ describe("DBTProjectContainer", () => {
       dispose: jest.fn(),
     };
 
+    project1Manifest = new EventEmitter<DBTProject>();
+    project2Manifest = new EventEmitter<DBTProject>();
+
     // Mock DBTProject instances
     mockProject1 = {
       projectRoot: Uri.file("/project1"),
@@ -79,6 +84,7 @@ describe("DBTProjectContainer", () => {
         .mockReturnValue({ dispose: jest.fn() }),
       getMetadataSnapshot: jest.fn().mockReturnValue(undefined),
       onManifestChanged: new EventEmitter().event,
+      onDidChangeManifest: project1Manifest.event,
       rebuildManifest: jest.fn(),
     } as unknown as jest.Mocked<DBTProject>;
 
@@ -94,6 +100,7 @@ describe("DBTProjectContainer", () => {
         .mockReturnValue({ dispose: jest.fn() }),
       getMetadataSnapshot: jest.fn().mockReturnValue(undefined),
       onManifestChanged: new EventEmitter().event,
+      onDidChangeManifest: project2Manifest.event,
       rebuildManifest: jest.fn(),
     } as unknown as jest.Mocked<DBTProject>;
 
@@ -230,6 +237,37 @@ describe("DBTProjectContainer", () => {
       expect(manifestHandler.mock.invocationCallOrder[0]).toBeLessThan(
         (mockProject2.dispose as jest.Mock).mock.invocationCallOrder[0],
       );
+    });
+
+    it("fires the removed project's root on onDidRemoveProject", async () => {
+      const removedHandler = jest.fn();
+      container.onDidRemoveProject(removedHandler);
+
+      mockProjectRegistry.projects = [declaredProject1];
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(removedHandler).toHaveBeenCalledTimes(1);
+      expect(removedHandler).toHaveBeenCalledWith(mockProject2.projectRoot);
+    });
+
+    it("aggregates onDidChangeManifest across projects and stops after removal", async () => {
+      const changedHandler = jest.fn();
+      container.onDidChangeManifest(changedHandler);
+
+      project1Manifest.fire(mockProject1);
+      project2Manifest.fire(mockProject2);
+      expect(changedHandler.mock.calls).toEqual([
+        [mockProject1],
+        [mockProject2],
+      ]);
+
+      mockProjectRegistry.projects = [declaredProject1];
+      registryOnDidChangeProjects.fire();
+      await new Promise((resolve) => setImmediate(resolve));
+      project2Manifest.fire(mockProject2);
+
+      expect(changedHandler).toHaveBeenCalledTimes(2);
     });
 
     it("should update rebuild status map on removal", async () => {

@@ -2,36 +2,18 @@ import { inject } from "inversify";
 import { TextDocument, Uri, window } from "vscode";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import {
-  ManifestCacheChangedEvent,
-  ManifestCacheProjectAddedEvent,
-} from "../dbt_client/event/manifestCacheChangedEvent";
+import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import { DBTTerminal } from "../dbt_integration";
 import { ProjectContext } from "../projects/projectContext";
 import { DeclaredProject } from "../projects/projectRegistry";
 
 export class QueryManifestService {
-  private eventMap: Map<string, ManifestCacheProjectAddedEvent> = new Map();
-
   public constructor(
     private dbtProjectContainer: DBTProjectContainer,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private projectContext: ProjectContext,
-  ) {
-    dbtProjectContainer.onManifestChanged((event) =>
-      this.onManifestCacheChanged(event),
-    );
-  }
-
-  private async onManifestCacheChanged(event: ManifestCacheChangedEvent) {
-    event.added?.forEach((added) => {
-      this.eventMap.set(added.project.projectRoot.fsPath, added);
-    });
-    event.removed?.forEach((removed) => {
-      this.eventMap.delete(removed.projectRoot.fsPath);
-    });
-  }
+  ) {}
 
   /** Maps the Declared Project owning `uri` to the DBTProject the discovery path already built. */
   private resolveProject(uri?: Uri): DBTProject | undefined {
@@ -76,7 +58,7 @@ export class QueryManifestService {
         currentDocument: TextDocument;
       }
     | undefined {
-    if (window.activeTextEditor === undefined || this.eventMap === undefined) {
+    if (window.activeTextEditor === undefined) {
       return;
     }
 
@@ -99,7 +81,7 @@ export class QueryManifestService {
       return;
     }
 
-    const event = this.eventMap.get(projectRootpath.fsPath);
+    const event = this.manifestAt(projectRootpath);
     if (event === undefined) {
       this.dbtTerminal.debug("no event for project: ", projectRootpath.fsPath);
       return;
@@ -117,7 +99,7 @@ export class QueryManifestService {
       return;
     }
 
-    const event = this.eventMap.get(projectRootpath.fsPath);
+    const event = this.manifestAt(projectRootpath);
     if (!event) {
       return;
     }
@@ -144,7 +126,7 @@ export class QueryManifestService {
       return;
     }
 
-    const event = this.eventMap.get(projectRootpath.fsPath);
+    const event = this.manifestAt(projectRootpath);
     if (!event) {
       return;
     }
@@ -170,6 +152,10 @@ export class QueryManifestService {
       `project selected: ${declared.root.fsPath}`,
     );
     return this.mapDeclaredProject(declared);
+  }
+
+  private manifestAt(root: Uri): ManifestCacheProjectAddedEvent | undefined {
+    return this.dbtProjectContainer.findDBTProject(root)?.manifest;
   }
 
   private mapDeclaredProject(
