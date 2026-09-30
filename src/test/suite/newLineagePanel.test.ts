@@ -38,11 +38,9 @@ describe("NewLineagePanel", () => {
     };
   });
 
-  describe("eventMapChanged", () => {
-    it("should re-render the starting node when the event map updates", () => {
-      const eventMap = new Map();
-
-      panel.eventMapChanged(eventMap);
+  describe("manifestChanged", () => {
+    it("should re-render the starting node when a manifest changes", () => {
+      panel.manifestChanged(undefined);
 
       // renderStartingNode posts a "render" command to the webview
       expect(mockPostMessage).toHaveBeenCalledWith(
@@ -52,9 +50,8 @@ describe("NewLineagePanel", () => {
 
     it("should not throw when panel is not visible", () => {
       (panel as any)._panel = undefined;
-      const eventMap = new Map();
 
-      expect(() => panel.eventMapChanged(eventMap)).not.toThrow();
+      expect(() => panel.manifestChanged(undefined)).not.toThrow();
     });
   });
 
@@ -332,30 +329,28 @@ describe("NewLineagePanel — after a save", () => {
     const postMessage = jest.fn();
     (panel as any)._panel = { webview: { postMessage } };
     (panel as any).dbtTerminal = { info: jest.fn(), error: jest.fn() };
+    const current = {
+      projectRoot: { fsPath: "/p" },
+      throwDiagnosticsErrorIfAvailable: jest.fn(),
+      manifest: { publicationEpoch: 1 } as any,
+    };
+    const other = { manifest: { publicationEpoch: 1 } as any } as any;
     (panel as any).queryManifestService = {
-      getProject: () => ({
-        projectRoot: { fsPath: "/p" },
-        throwDiagnosticsErrorIfAvailable: jest.fn(),
-      }),
+      getProject: () => current,
       getEventByCurrentProject: () => undefined,
     };
-    const first = { project: {} } as any;
-    const second = { project: {} } as any;
 
-    panel.eventMapChanged(new Map([["/p", first]]));
+    panel.manifestChanged(current as any);
     expect(postMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({ command: "render" }),
     );
-    panel.eventMapChanged(
-      new Map([
-        ["/p", first],
-        ["/q", second],
-      ]),
-    );
+    other.manifest = { publicationEpoch: 2 };
+    panel.manifestChanged(other);
     expect(postMessage).toHaveBeenLastCalledWith(
       expect.objectContaining({ command: "render" }),
     );
-    panel.eventMapChanged(new Map([["/p", second]]));
+    current.manifest = { publicationEpoch: 2 };
+    panel.manifestChanged(current as any);
     expect(postMessage).toHaveBeenLastCalledWith({ command: "projectSaved" });
   });
 });

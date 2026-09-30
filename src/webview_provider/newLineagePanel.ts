@@ -113,8 +113,8 @@ export class NewLineagePanel
   // active file. Used to avoid redundant re-renders on every cursor move; the
   // panel only re-roots when the cursor moves onto a different source table.
   private lastRenderedSourceKey: string | undefined;
-  // The current project's manifest the panel last saw; a different one means a project file was saved.
-  private seenManifest: ManifestCacheProjectAddedEvent | undefined;
+  // The current project's manifest epoch the panel last saw; a different one means a project file was saved.
+  private seenPublicationEpoch: number | undefined;
 
   public constructor(
     protected dbtProjectContainer: DBTProjectContainer,
@@ -181,13 +181,13 @@ export class NewLineagePanel
     this.renderStartingNode(resolved);
   }
 
-  eventMapChanged(eventMap: Map<string, ManifestCacheProjectAddedEvent>): void {
-    this.eventMap = eventMap;
-    const root = this.queryManifestService.getProject()?.projectRoot.fsPath;
-    const manifest = root === undefined ? undefined : eventMap.get(root);
+  manifestChanged(_project: DBTProject | undefined): void {
+    const epoch =
+      this.queryManifestService.getProject()?.manifest?.publicationEpoch;
     const saved =
-      this.seenManifest !== undefined && manifest !== this.seenManifest;
-    this.seenManifest = manifest;
+      this.seenPublicationEpoch !== undefined &&
+      epoch !== this.seenPublicationEpoch;
+    this.seenPublicationEpoch = epoch;
     if (saved && this._panel) {
       // The webview redraws drawn column lineage, then asks for the starting node through `init`.
       this._panel.webview.postMessage({ command: "projectSaved" });

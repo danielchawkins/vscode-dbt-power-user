@@ -10,17 +10,15 @@ import {
   WebviewViewResolveContext,
   window,
 } from "vscode";
+import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import {
-  ManifestCacheChangedEvent,
-  ManifestCacheProjectAddedEvent,
-} from "../dbt_client/event/manifestCacheChangedEvent";
 import { DBTTerminal } from "../dbt_integration";
 import { NewLineagePanel } from "./newLineagePanel";
 
 export interface LineagePanelView extends WebviewViewProvider {
   init(): void;
-  eventMapChanged(eventMap: Map<string, ManifestCacheProjectAddedEvent>): void;
+  /** Called with the project whose manifest changed, or `undefined` on project removal and panel init. */
+  manifestChanged(project: DBTProject | undefined): void;
   changedActiveTextEditor(event: TextEditor | undefined): void;
   changedTextEditorSelection(editor: TextEditor): void;
   handleCommand(message: { command: string; args: any }): Promise<void> | void;
@@ -32,7 +30,6 @@ export class LineagePanel implements WebviewViewProvider, Disposable {
   private panel: WebviewView | undefined;
   private context: WebviewViewResolveContext<unknown> | undefined;
   private token: CancellationToken | undefined;
-  private eventMap: Map<string, ManifestCacheProjectAddedEvent> = new Map();
   private disposables: Disposable[] = [];
 
   public constructor(
@@ -42,8 +39,11 @@ export class LineagePanel implements WebviewViewProvider, Disposable {
     private dbtTerminal: DBTTerminal,
   ) {
     this.disposables.push(
-      dbtProjectContainer.onManifestChanged((event) =>
-        this.onManifestCacheChanged(event),
+      dbtProjectContainer.onDidChangeManifest((project) =>
+        this.getPanel().manifestChanged(project),
+      ),
+      dbtProjectContainer.onDidRemoveProject(() =>
+        this.getPanel().manifestChanged(undefined),
       ),
     );
     window.onDidChangeActiveTextEditor((event: TextEditor | undefined) => {
@@ -62,16 +62,6 @@ export class LineagePanel implements WebviewViewProvider, Disposable {
     return this.lineagePanel;
   }
 
-  private onManifestCacheChanged(event: ManifestCacheChangedEvent): void {
-    event.added?.forEach((added) => {
-      this.eventMap.set(added.project.projectRoot.fsPath, added);
-    });
-    event.removed?.forEach((removed) => {
-      this.eventMap.delete(removed.projectRoot.fsPath);
-    });
-    this.getPanel().eventMapChanged(this.eventMap);
-  }
-
   dispose() {
     while (this.disposables.length) {
       const x = this.disposables.pop();
@@ -87,7 +77,7 @@ export class LineagePanel implements WebviewViewProvider, Disposable {
       this.context!,
       this.token!,
     );
-    this.getPanel().eventMapChanged(this.eventMap);
+    this.getPanel().manifestChanged(undefined);
   };
 
   resolveWebviewView(
