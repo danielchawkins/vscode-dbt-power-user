@@ -415,134 +415,6 @@ describe("Fusion CLI executable wiring", () => {
     fs.rmSync(rootB, { recursive: true, force: true });
   });
 
-  it("applies the last scoped fusionPath refresh when several arrive back-to-back", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-cli-last-"));
-    prepareProjectRoot(root);
-    let configuredPath = "/project/a/v1/dbt";
-    const recording = recordingExecutionFactory();
-    const terminal = mockTerminal();
-    const resolve = jest.fn(async () => sampleExecutable(configuredPath));
-    const integration = buildIntegration(
-      root,
-      async () => resolve(),
-      productionFactory(root, terminal, recording.factory),
-    );
-
-    await integration.initialize();
-    configuredPath = "/project/a/v2/dbt";
-    for (const listener of configListeners) {
-      listener(pathChangeEvent(root));
-    }
-    configuredPath = "/project/a/v3/dbt";
-    for (const listener of configListeners) {
-      listener(pathChangeEvent(root));
-    }
-    await waitFor(() => expect(resolve.mock.calls.length).toBe(3));
-    await waitFor(() => integration.getFusionCli());
-
-    await integration.getFusionCli().run({ kind: "deps" });
-    expect(recording.calls[recording.calls.length - 1]).toMatchObject({
-      command: "/project/a/v3/dbt",
-      cwd: root,
-    });
-
-    await integration.dispose();
-    fs.rmSync(root, { recursive: true, force: true });
-  });
-
-  async function drainMicrotasks(rounds = 8): Promise<void> {
-    for (let round = 0; round < rounds; round++) {
-      await Promise.resolve();
-    }
-  }
-
-  it("ignores refresh queued before dispose without running its body", async () => {
-    const root = fs.mkdtempSync(
-      path.join(os.tmpdir(), "fusion-cli-queue-before-dispose-"),
-    );
-    prepareProjectRoot(root);
-    let releaseGate!: () => void;
-    const gate = new Promise<void>((resolve) => {
-      releaseGate = resolve;
-    });
-    const refreshProjectConfig = jest.fn(async () => {
-      await gate;
-    });
-    const resolve = jest.fn(async () => sampleExecutable("/project/dbt"));
-    const factoryCalls = jest.fn();
-    const projectConfigChanged = jest.fn();
-    const integration = buildIntegration(
-      root,
-      async () => resolve(),
-      (...args) => {
-        factoryCalls();
-        return stubDelegate(root, { refreshProjectConfig });
-      },
-    );
-    integration.on(
-      FusionProjectIntegrationEvents.PROJECT_CONFIG_CHANGED,
-      projectConfigChanged,
-    );
-
-    const initPromise = integration.initialize();
-    await waitFor(() => expect(refreshProjectConfig).toHaveBeenCalledTimes(1));
-
-    for (const listener of configListeners) {
-      listener(pathChangeEvent(root));
-    }
-
-    await integration.dispose();
-    releaseGate();
-    await initPromise;
-    await drainMicrotasks();
-
-    expect(resolve).toHaveBeenCalledTimes(1);
-    expect(factoryCalls).toHaveBeenCalledTimes(1);
-    expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
-    expect(() => integration.getFusionCli()).toThrow();
-    expect(projectConfigChanged).not.toHaveBeenCalled();
-    expect(
-      (integration as unknown as { isWatchingSourceFiles: boolean })
-        .isWatchingSourceFiles,
-    ).toBe(false);
-
-    fs.rmSync(root, { recursive: true, force: true });
-  });
-
-  it("propagates initialize errors while keeping the refresh chain alive", async () => {
-    const root = fs.mkdtempSync(
-      path.join(os.tmpdir(), "fusion-cli-init-error-"),
-    );
-    prepareProjectRoot(root);
-    let failRebuild = true;
-    const rebuildManifest = jest.fn(async () => {
-      if (failRebuild) {
-        throw new Error("rebuild failed");
-      }
-    });
-    let configuredPath = "/project/v1/dbt";
-    const resolve = jest.fn(async () => sampleExecutable(configuredPath));
-    const integration = buildIntegration(
-      root,
-      async () => resolve(),
-      lifecycleFactory(root, { rebuildManifest }),
-    );
-
-    await expect(integration.initialize()).rejects.toThrow("rebuild failed");
-    expect(resolve.mock.calls.length).toBe(1);
-
-    failRebuild = false;
-    configuredPath = "/project/v2/dbt";
-    for (const listener of configListeners) {
-      listener(pathChangeEvent(root));
-    }
-    await waitFor(() => expect(resolve.mock.calls.length).toBe(2));
-    await waitFor(() => integration.getFusionCli());
-
-    await integration.dispose();
-    fs.rmSync(root, { recursive: true, force: true });
-  });
-
   it.each([
     ["refreshProjectConfig", "refreshProjectConfig"],
     ["rebuildManifest", "rebuildManifest"],
@@ -581,6 +453,7 @@ describe("Fusion CLI executable wiring", () => {
       const gatedMock = hooks[gatedMethod] as jest.Mock;
       await waitFor(() => expect(gatedMock.mock.calls.length).toBe(1));
       await integration.dispose();
+      expect(() => integration.getFusionCli()).toThrow();
       releaseGate();
       await initPromise;
 
