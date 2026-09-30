@@ -8,22 +8,23 @@ import {
 } from "@jest/globals";
 import { EventEmitter, Uri } from "vscode";
 import { DBTProject } from "../../dbt_client/dbtProject";
-import {
-  ManifestCacheChangedEvent,
-  ManifestCacheProjectAddedEvent,
-} from "../../dbt_client/event/manifestCacheChangedEvent";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
+import { Manifest } from "../../projects/manifestTypes";
 import { DeclaredProject } from "../../projects/projectRegistry";
 
 describe("ManifestMetadataSource", () => {
   let source: ManifestMetadataSource;
   let mockDeclaredProject: jest.Mocked<DeclaredProject>;
   let mockDbtProject: jest.Mocked<DBTProject>;
-  let manifestChangedEmitter: EventEmitter<ManifestCacheChangedEvent>;
+  let manifestChangedEmitter: EventEmitter<DBTProject>;
+  let mockManifest: Manifest | undefined;
 
-  const createTestMetadata = (
-    project: DBTProject,
-  ): ManifestCacheProjectAddedEvent => ({
+  const publish = (manifest: Manifest) => {
+    mockManifest = manifest;
+    manifestChangedEmitter.fire(mockDbtProject);
+  };
+
+  const createTestMetadata = (project: DBTProject): Manifest => ({
     project,
     nodeMetaMap: {
       lookupByBaseName: new Map(),
@@ -63,12 +64,15 @@ describe("ManifestMetadataSource", () => {
       dispose: jest.fn(),
     } as unknown as jest.Mocked<DeclaredProject>;
 
-    manifestChangedEmitter = new EventEmitter<ManifestCacheChangedEvent>();
+    mockManifest = undefined;
+    manifestChangedEmitter = new EventEmitter<DBTProject>();
 
     mockDbtProject = {
       projectRoot: Uri.file("/test/project"),
-      getMetadataSnapshot: jest.fn().mockReturnValue(undefined),
-      onManifestChanged: manifestChangedEmitter.event,
+      get manifest() {
+        return mockManifest;
+      },
+      onDidChangeManifest: manifestChangedEmitter.event,
       rebuildManifest: jest.fn().mockImplementation(() => Promise.resolve()),
       dispose: jest.fn(),
     } as unknown as jest.Mocked<DBTProject>;
@@ -87,9 +91,7 @@ describe("ManifestMetadataSource", () => {
 
   it("should capture current snapshot on initialization", () => {
     const testMetadata = createTestMetadata(mockDbtProject);
-    (mockDbtProject.getMetadataSnapshot as jest.Mock).mockReturnValue(
-      testMetadata,
-    );
+    mockManifest = testMetadata;
     const source2 = new ManifestMetadataSource(
       mockDeclaredProject,
       mockDbtProject,
@@ -98,16 +100,10 @@ describe("ManifestMetadataSource", () => {
     source2.dispose();
   });
 
-  it("should forward manifest events unchanged", () => {
-    const eventSpy = jest.fn();
-    source.onDidChangeMetadata(eventSpy);
-
+  it("should read the latest published manifest", () => {
     const newMetadata = createTestMetadata(mockDbtProject);
-    mockDbtProject.getMetadataSnapshot.mockReturnValue(newMetadata);
+    publish(newMetadata);
 
-    manifestChangedEmitter.fire({ added: [newMetadata] });
-
-    expect(eventSpy).toHaveBeenCalledWith(newMetadata);
     expect(source.current()).toBe(newMetadata);
   });
 
@@ -125,30 +121,11 @@ describe("ManifestMetadataSource", () => {
     await expect(source.refresh()).rejects.toThrow("Rebuild failed");
   });
 
-  it("should unsubscribe from events on dispose", () => {
-    const eventSpy = jest.fn();
-    source.onDidChangeMetadata(eventSpy);
-
-    source.dispose();
-
-    const newMetadata = createTestMetadata(mockDbtProject);
-
-    manifestChangedEmitter.fire({ added: [newMetadata] });
-
-    expect(eventSpy).not.toHaveBeenCalled();
-  });
-
-  it("should preserve metadata event structure", () => {
-    const eventSpy = jest.fn();
-    source.onDidChangeMetadata(eventSpy);
-
+  it("should preserve metadata structure", () => {
     const richMetadata = createTestMetadata(mockDbtProject);
     richMetadata.modelDepthMap.set("model1", 2);
-    mockDbtProject.getMetadataSnapshot.mockReturnValue(richMetadata);
+    publish(richMetadata);
 
-    manifestChangedEmitter.fire({ added: [richMetadata] });
-
-    expect(eventSpy).toHaveBeenCalledWith(richMetadata);
     expect(source.current()?.modelDepthMap).toBe(richMetadata.modelDepthMap);
   });
 });

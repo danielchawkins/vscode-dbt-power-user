@@ -1,7 +1,6 @@
 import { jest } from "@jest/globals";
-import { EventEmitter, Uri } from "vscode";
+import { Uri } from "vscode";
 import { DBTProjectLog } from "../dbt_client/dbtProjectLog";
-import { ManifestCacheChangedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import { DBTTerminal } from "../dbt_integration";
 import { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
 import {
@@ -54,7 +53,6 @@ export function buildTestProject(
     cliFactory,
     parsers: {} as ManifestParsers,
     projectRoot: Uri.file(root),
-    onManifestChanged: new EventEmitter<ManifestCacheChangedEvent>(),
     ...overrides,
   });
 }

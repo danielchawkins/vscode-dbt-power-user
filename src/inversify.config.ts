@@ -1,8 +1,7 @@
 import { Container, Factory, ResolutionContext } from "inversify";
-import { Event, EventEmitter, Uri } from "vscode";
+import { Event, Uri } from "vscode";
 import { DBTProject } from "./dbt_client/dbtProject";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
-import { ManifestCacheChangedEvent } from "./dbt_client/event/manifestCacheChangedEvent";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import {
@@ -145,14 +144,9 @@ container
   .inSingletonScope();
 
 container
-  .bind<Factory<DBTProject, [Uri, EventEmitter<ManifestCacheChangedEvent>]>>(
-    "Factory<DBTProject>",
-  )
+  .bind<Factory<DBTProject, [Uri]>>("Factory<DBTProject>")
   .toFactory((context: ResolutionContext) => {
-    return (
-      projectRoot: Uri,
-      onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
-    ) => {
+    return (projectRoot: Uri) => {
       const terminal = context.get<DBTTerminal>("DBTTerminal");
       const commandProcessExecutionFactory = context.get(
         CommandProcessExecutionFactory,
@@ -186,7 +180,6 @@ container
           semanticModelParser: context.get(SemanticModelParser),
         },
         projectRoot,
-        onManifestChanged,
       });
     };
   });
@@ -295,7 +288,7 @@ container
               context.get(DBTProjectContainer).findDBTProject(declared.root),
               fusionVersion,
             ),
-          onDidChange: context.get(DBTProjectContainer).onManifestChanged,
+          onDidChange: context.get(DBTProjectContainer).onDidChangeManifest,
         },
       },
     );
@@ -455,7 +448,7 @@ container
           .findDBTProject(declared.root);
         return project ? project.projectOptIns() : undefined;
       },
-      context.get(DBTProjectContainer).onManifestChanged,
+      context.get(DBTProjectContainer).onDidChangeManifest,
     );
   })
   .inSingletonScope();

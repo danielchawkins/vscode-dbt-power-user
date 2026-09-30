@@ -161,7 +161,7 @@ describe("schemaOriginEnv", () => {
 
 describe("schemaOriginLaunchEnv", () => {
   const project = (snapshot: unknown, kind: "local" | "noHook") => ({
-    getMetadataSnapshot: () => snapshot,
+    manifest: snapshot,
     schemaOriginStatus: () => ({ kind }) as const,
   });
 

@@ -12,7 +12,6 @@ import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { ColumnLineage, panelColumns } from "../core/lineage";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import {
   DBTTerminal,
   ExposureMetaData,
@@ -25,6 +24,7 @@ import {
   SourceTable,
   Table,
 } from "../dbt_integration";
+import type { Manifest } from "../projects/manifestTypes";
 import { registerLineageColumnsCommand } from "../services/connectedColumnsCommand";
 import {
   ConnectedColumnsResult,
@@ -113,8 +113,9 @@ export class NewLineagePanel
   // active file. Used to avoid redundant re-renders on every cursor move; the
   // panel only re-roots when the cursor moves onto a different source table.
   private lastRenderedSourceKey: string | undefined;
-  // The current project's manifest epoch the panel last saw; a different one means a project file was saved.
-  private seenPublicationEpoch: number | undefined;
+  // The current project and manifest epoch the panel last saw; a new epoch for the same root means a save.
+  private seenPublication:
+    { root: string; epoch: number | undefined } | undefined;
 
   public constructor(
     protected dbtProjectContainer: DBTProjectContainer,
@@ -182,12 +183,16 @@ export class NewLineagePanel
   }
 
   manifestChanged(_project: DBTProject | undefined): void {
-    const epoch =
-      this.queryManifestService.getProject()?.manifest?.publicationEpoch;
+    const current = this.queryManifestService.getProject();
+    const seen = this.seenPublication;
+    const root = current?.projectRoot.fsPath;
+    const epoch = current?.manifest?.publicationEpoch;
     const saved =
-      this.seenPublicationEpoch !== undefined &&
-      epoch !== this.seenPublicationEpoch;
-    this.seenPublicationEpoch = epoch;
+      seen !== undefined &&
+      seen.root === root &&
+      seen.epoch !== undefined &&
+      seen.epoch !== epoch;
+    this.seenPublication = root === undefined ? undefined : { root, epoch };
     if (saved && this._panel) {
       // The webview redraws drawn column lineage, then asks for the starting node through `init`.
       this._panel.webview.postMessage({ command: "projectSaved" });
@@ -720,7 +725,7 @@ export class NewLineagePanel
   // matched table. Prefers the table the cursor is on/under; falls back to the
   // file's single table, then to the first declared table for determinism.
   private resolveSourceStartingNode(
-    event: ManifestCacheProjectAddedEvent,
+    event: Manifest,
     editor: TextEditor,
   ): ResolvedSourceTable | undefined {
     const { sourceMetaMap } = event;

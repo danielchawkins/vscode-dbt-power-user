@@ -2,8 +2,8 @@ import { inject } from "inversify";
 import { TextDocument, Uri, window } from "vscode";
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import { DBTTerminal } from "../dbt_integration";
+import type { Manifest } from "../projects/manifestTypes";
 import { ProjectContext } from "../projects/projectContext";
 import { DeclaredProject } from "../projects/projectRegistry";
 
@@ -54,7 +54,7 @@ export class QueryManifestService {
 
   public getEventByCurrentProject():
     | {
-        event: ManifestCacheProjectAddedEvent | undefined;
+        event: Manifest | undefined;
         currentDocument: TextDocument;
       }
     | undefined {
@@ -154,7 +154,7 @@ export class QueryManifestService {
     return this.mapDeclaredProject(declared);
   }
 
-  private manifestAt(root: Uri): ManifestCacheProjectAddedEvent | undefined {
+  private manifestAt(root: Uri): Manifest | undefined {
     return this.dbtProjectContainer.findDBTProject(root)?.manifest;
   }
 

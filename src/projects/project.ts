@@ -12,11 +12,6 @@ import {
   ResolvedDefer,
 } from "../core/project";
 import { DBTProjectLog } from "../dbt_client/dbtProjectLog";
-import {
-  ManifestCacheChangedEvent,
-  ManifestCacheProjectAddedEvent,
-  RebuildManifestStatusChange,
-} from "../dbt_client/event/manifestCacheChangedEvent";
 import { ProjectConfigChangedEvent } from "../dbt_client/event/projectConfigChangedEvent";
 import { RunResultsEvent } from "../dbt_client/event/runResultsEvent";
 import {
@@ -51,6 +46,7 @@ import {
   nextManifestPublication,
 } from "./manifest";
 import { ManifestRebuild } from "./manifestRebuild";
+import type { Manifest, RebuildManifestStatusChange } from "./manifestTypes";
 import {
   findModelInTargetfolder,
   generateModel,
@@ -98,17 +94,15 @@ export interface ProjectOptions {
   cliFactory: FusionCommandIntegrationFactory;
   parsers: ManifestParsers;
   projectRoot: Uri;
-  onManifestChanged: EventEmitter<ManifestCacheChangedEvent>;
 }
 
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
 export class Project implements Disposable, ManifestProject {
-  private _manifestCacheEvent?: ManifestCacheProjectAddedEvent;
+  private _manifest?: Manifest;
   readonly projectRoot: Uri;
   private readonly terminal: DBTTerminal;
   private readonly sharedState: SharedStateService;
   private readonly runHistoryService: RunHistoryService;
-  private readonly _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>;
   private readonly lifecycle: ExecutableLifecycle;
   private readonly manifestRebuild: ManifestRebuild;
   private readonly trigger: ManifestTrigger;
@@ -138,19 +132,9 @@ export class Project implements Disposable, ManifestProject {
     this._onRebuildManifestStatusChange,
   ];
 
-  /** Emits complete manifest metadata publications. */
-  get onManifestChanged(): Event<ManifestCacheChangedEvent> {
-    return this._onManifestChanged.event;
-  }
-
-  /** Returns the latest complete metadata publication. */
-  getMetadataSnapshot(): ManifestCacheProjectAddedEvent | undefined {
-    return this._manifestCacheEvent;
-  }
-
   /** The latest complete metadata publication. */
-  get manifest(): ManifestCacheProjectAddedEvent | undefined {
-    return this._manifestCacheEvent;
+  get manifest(): Manifest | undefined {
+    return this._manifest;
   }
 
   private readonly commandQueue = new CommandQueue();
@@ -169,7 +153,6 @@ export class Project implements Disposable, ManifestProject {
     this.terminal = options.terminal;
     this.sharedState = options.sharedState;
     this.runHistoryService = options.runHistoryService;
-    this._onManifestChanged = options.onManifestChanged;
     const root = this.projectRoot.fsPath;
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
@@ -225,14 +208,6 @@ export class Project implements Disposable, ManifestProject {
       this.commandQueue.onFailed(({ statusMessage, error }) =>
         this.commandDeps.notifyFailed(statusMessage, String(error)),
       ),
-      this._onManifestChanged.event((event) => {
-        const addedEvent = event.added?.find(
-          (e) => e.project.projectRoot === this.projectRoot,
-        );
-        if (addedEvent) {
-          this._manifestCacheEvent = addedEvent;
-        }
-      }),
     );
     this.terminal.debug(
       LOG_SOURCE,
@@ -296,7 +271,7 @@ export class Project implements Disposable, ManifestProject {
     return resolveSchemaOrigin({
       projectConfig: readDbtProjectFile(this.projectRoot.fsPath).config,
       fusionVersion,
-      sources: this._manifestCacheEvent?.sourceMetaMap ?? new Map(),
+      sources: this._manifest?.sourceMetaMap ?? new Map(),
     });
   }
 
@@ -417,9 +392,7 @@ export class Project implements Disposable, ManifestProject {
     if (this.disposed) {
       return;
     }
-    const manifestCacheEvent = nextManifestPublication(this, parsed);
-    this._manifestCacheEvent = manifestCacheEvent;
-    this._onManifestChanged.fire({ added: [manifestCacheEvent] });
+    this._manifest = nextManifestPublication(this, parsed);
     this._onDidChangeManifest.fire(this);
     this.terminal.debug(
       "manifestParsed",

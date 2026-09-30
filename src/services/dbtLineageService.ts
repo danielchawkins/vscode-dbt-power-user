@@ -12,7 +12,6 @@ import {
   toPanelLineage,
 } from "../core/lineage";
 import { StaticAnalysisMode } from "../core/project";
-import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import {
   GraphMetaMap,
   NodeGraphMap,
@@ -29,6 +28,7 @@ import {
 } from "../fusion/fusionLanguageClient";
 import { failureSummary } from "../fusion/fusionStatus";
 import { QueryManifestService } from "../modules";
+import type { Manifest } from "../projects/manifestTypes";
 
 /** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */
 export interface ConnectedColumnsRequest {
@@ -256,7 +256,7 @@ export class DbtLineageService {
   }
 
   createTable(
-    event: ManifestCacheProjectAddedEvent,
+    event: Manifest,
     tableUrl: string | undefined,
     key: string,
   ): Table | undefined {

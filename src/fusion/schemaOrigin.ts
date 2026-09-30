@@ -18,7 +18,7 @@ export function schemaOriginEnv(
 
 /** The parts of a project `schemaOriginLaunchEnv` reads. */
 export interface SchemaOriginProject {
-  getMetadataSnapshot(): unknown;
+  readonly manifest: unknown;
   schemaOriginStatus(fusionVersion: FusionVersion): SchemaOriginStatus;
 }
 
@@ -31,7 +31,7 @@ export function schemaOriginLaunchEnv(
   fusionVersion: FusionVersion,
 ): Record<string, string> {
   return schemaOriginEnv(
-    project?.getMetadataSnapshot()
+    project?.manifest
       ? project.schemaOriginStatus(fusionVersion)
       : { kind: "untypedSources", missing: [] },
   );

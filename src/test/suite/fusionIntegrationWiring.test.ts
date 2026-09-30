@@ -1,8 +1,7 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
-import { EventEmitter, Uri } from "vscode";
-import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
+import { Uri } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FusionStatus } from "../../fusion/fusionStatus";
 import { Project } from "../../projects/project";
@@ -120,14 +119,11 @@ describe("Fusion-only integration wiring", () => {
   });
 
   it("builds a Project from Factory<DBTProject>", async () => {
-    type ProjectFactory = (
-      projectRoot: Uri,
-      onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
-    ) => Project;
+    type ProjectFactory = (projectRoot: Uri) => Project;
 
     expect(container.isBound("Factory<FusionProjectIntegration>")).toBe(false);
     const factory = container.get<ProjectFactory>("Factory<DBTProject>");
-    const project = factory(Uri.file("/tmp/project"), new EventEmitter());
+    const project = factory(Uri.file("/tmp/project"));
 
     expect(project).toBeInstanceOf(Project);
     expect(() => project.getFusionCli()).toThrow(/not initialized/);
