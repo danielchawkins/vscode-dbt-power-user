@@ -1,12 +1,11 @@
-import { Disposable, Event } from "vscode";
-import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
+import { Disposable } from "vscode";
+import type { Manifest } from "../projects/manifestTypes";
 import { DeclaredProject } from "../projects/projectRegistry";
 
-/** Produces exactly the event every panel, tree view, and lens already consumes. */
+/** Reads and rebuilds one declared project's manifest; publication goes through `onDidChangeManifest`. */
 export interface ProjectMetadataSource extends Disposable {
   readonly project: DeclaredProject;
-  readonly onDidChangeMetadata: Event<ManifestCacheProjectAddedEvent>;
   /** Latest snapshot, or undefined before the first successful build. */
-  current(): ManifestCacheProjectAddedEvent | undefined;
+  current(): Manifest | undefined;
   refresh(): Promise<void>;
 }

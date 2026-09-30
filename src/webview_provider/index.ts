@@ -27,6 +27,7 @@ export class WebviewViewProviders implements Disposable {
         this.lineagePanel,
         { webviewOptions: { retainContextWhenHidden: true } },
       ),
+      this.docsEditPanel,
     );
   }
 

@@ -642,7 +642,7 @@ describe("FusionClientPool", () => {
     });
     const dbtProject = {
       snapshot: undefined as unknown,
-      getMetadataSnapshot(): unknown {
+      get manifest(): unknown {
         return this.snapshot;
       },
       schemaOriginStatus: () => ({ kind: "local" }) as const,

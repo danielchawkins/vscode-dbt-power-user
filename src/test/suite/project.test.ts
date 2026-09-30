@@ -13,7 +13,6 @@ import * as vscode from "vscode";
 import { DBT_PROJECT_FILE } from "../../core/project";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
-import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
 import {
   ChildrenParentParser,
   DBTCommand,
@@ -37,6 +36,7 @@ import {
 } from "../../dbt_integration";
 import { FusionCli } from "../../fusion/fusionCli";
 import { ManifestParsers } from "../../projects/manifest";
+import { Manifest } from "../../projects/manifestTypes";
 import { Project } from "../../projects/project";
 import {
   enqueueCommand,
@@ -92,9 +92,6 @@ describe("Project Test Suite", () => {
   let mockRunHistoryService: jest.Mocked<RunHistoryService>;
   let mockFusionCli: any;
   let mockDbtProjectLog: jest.Mocked<DBTProjectLog>;
-  let mockManifestChangedEmitter: jest.Mocked<
-    vscode.EventEmitter<ManifestCacheChangedEvent>
-  >;
   let dbtProject: DBTProject;
 
   function newProject(
@@ -106,7 +103,6 @@ describe("Project Test Suite", () => {
       sharedState: mockSharedStateService,
       runHistoryService: mockRunHistoryService,
       projectRoot: projectUri,
-      onManifestChanged: mockManifestChangedEmitter,
     });
   }
 
@@ -185,11 +181,6 @@ describe("Project Test Suite", () => {
     mockDbtProjectLog = {
       dispose: jest.fn(),
     } as unknown as jest.Mocked<DBTProjectLog>;
-    mockManifestChangedEmitter = {
-      event: jest.fn().mockReturnValue({ dispose: jest.fn() }),
-      fire: jest.fn(),
-      dispose: jest.fn(),
-    } as unknown as jest.Mocked<vscode.EventEmitter<ManifestCacheChangedEvent>>;
   });
 
   afterEach(async () => {
@@ -820,13 +811,11 @@ function stubDelegate(
 async function buildProject(
   projectRoot: string,
   fusionDelegate: FusionCli,
-  onManifestChanged = new vscode.EventEmitter<ManifestCacheChangedEvent>(),
 ): Promise<Project> {
   const terminal = mockTerminal();
   const project = buildTestProject(projectRoot, () => fusionDelegate, {
     terminal,
     parsers: realParsers(terminal),
-    onManifestChanged,
   });
   await project.initialize();
   return project;
@@ -855,19 +844,17 @@ describe("Project manifest", () => {
       path.join(fixtureRoot, "manifest.contract.json"),
       path.join(targetDir, MANIFEST_FILE),
     );
-    const emitter = new vscode.EventEmitter<ManifestCacheChangedEvent>();
-    const fire = jest.spyOn(emitter, "fire");
     const project = await buildProject(
       root,
       stubDelegate(root, {
         getTargetPath: () => targetDir,
         getPackageInstallPath: () => path.join(root, "dbt_packages"),
       }),
-      emitter,
     );
+    const published: (Manifest | undefined)[] = [];
+    project.onDidChangeManifest((p) => published.push(p.manifest));
     const lastPublication = () => {
-      const calls = fire.mock.calls;
-      const publication = calls[calls.length - 1]?.[0].added?.[0];
+      const publication = published[published.length - 1];
       if (!publication) {
         throw new Error("Expected a published manifest event");
       }
@@ -888,7 +875,7 @@ describe("Project manifest", () => {
     );
     expect(second.publicationEpoch).toBe(first.publicationEpoch + 1);
     expect(project.manifest?.publicationEpoch).toBe(second.publicationEpoch);
-    expect(project.getMetadataSnapshot()).toBe(second);
+    expect(project.manifest).toBe(second);
     await project.dispose();
   });
 
@@ -900,15 +887,12 @@ describe("Project manifest", () => {
       path.join(fixtureRoot, "manifest.contract.json"),
       path.join(targetDir, MANIFEST_FILE),
     );
-    const emitter = new vscode.EventEmitter<ManifestCacheChangedEvent>();
-    const legacy = jest.spyOn(emitter, "fire");
     const project = await buildProject(
       root,
       stubDelegate(root, {
         getTargetPath: () => targetDir,
         getPackageInstallPath: () => path.join(root, "dbt_packages"),
       }),
-      emitter,
     );
     const changed = jest.fn((p: Project) => p.manifest);
     project.onDidChangeManifest(changed);
@@ -916,11 +900,8 @@ describe("Project manifest", () => {
     await project.parseManifest();
 
     expect(changed).toHaveBeenCalledWith(project);
-    expect(changed.mock.results[0]?.value).toBe(project.getMetadataSnapshot());
-    expect(project.manifest).toBe(project.getMetadataSnapshot());
-    expect(legacy.mock.invocationCallOrder[0]).toBeLessThan(
-      changed.mock.invocationCallOrder[0],
-    );
+    expect(project.manifest).toBeDefined();
+    expect(changed.mock.results[0]?.value).toBe(project.manifest);
 
     await project.dispose();
     changed.mockClear();

@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { Uri, window } from "vscode";
 import { RunTest } from "../../commands/runTest";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
-import { ManifestCacheProjectAddedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
+import { Manifest } from "../../projects/manifestTypes";
 import { QueryManifestService } from "../../services/queryManifestService";
 
 /**
@@ -24,7 +24,7 @@ describe("RunTest — singular test classification and dispatch", () => {
     "/workspace/jaffle/tests/singular_nonnull_orders.sql";
   const modelPath = "/workspace/jaffle/models/marts/orders.sql";
 
-  const makeEvent = (): ManifestCacheProjectAddedEvent => {
+  const makeEvent = (): Manifest => {
     const testMetaMap = new Map<string, any>();
     // Singular test: no test_metadata, path matches file on disk.
     testMetaMap.set("singular_nonnull_orders", {

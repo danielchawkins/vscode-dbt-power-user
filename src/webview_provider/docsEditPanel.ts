@@ -50,7 +50,7 @@ import { SendMessageProps } from "./altimateWebviewProvider";
 
 const DOCS_VIEW_PATH = "/docs-generator";
 
-export class DocsEditViewPanel implements WebviewViewProvider {
+export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   public static readonly viewType = "fusionPowerUser.DocsEdit";
   protected viewPath = DOCS_VIEW_PATH;
   private _panel: WebviewView | undefined = undefined;
@@ -67,8 +67,10 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     @inject("DBTTerminal")
     private terminal: DBTTerminal,
   ) {
-    dbtProjectContainer.onDidChangeManifest(() => this.onManifestChanged());
-    dbtProjectContainer.onDidRemoveProject(() => this.onManifestChanged());
+    this._disposables.push(
+      dbtProjectContainer.onDidChangeManifest(() => this.onManifestChanged()),
+      dbtProjectContainer.onDidRemoveProject(() => this.onManifestChanged()),
+    );
     window.onDidChangeActiveTextEditor(
       async (event: TextEditor | undefined) => {
         this.documentation = undefined;
@@ -80,6 +82,14 @@ export class DocsEditViewPanel implements WebviewViewProvider {
         }
       },
     );
+  }
+
+  dispose() {
+    this.onMessageDisposable?.dispose();
+    this.onMessageDisposable = undefined;
+    while (this._disposables.length) {
+      this._disposables.pop()?.dispose();
+    }
   }
 
   private getProject(): DBTProject | undefined {

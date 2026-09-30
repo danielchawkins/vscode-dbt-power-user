@@ -16,7 +16,6 @@ import {
   window,
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import {
   GraphMetaMap,
   NodeData,
@@ -24,6 +23,7 @@ import {
   NodeMetaMap,
 } from "../dbt_integration";
 import { extensionRoot } from "../extensionRoot";
+import type { Manifest } from "../projects/manifestTypes";
 import {
   getCurrentlySelectedModelNameInYamlConfig,
   getDepthColor,
@@ -211,10 +211,7 @@ abstract class ModelTreeviewProvider
     return new ModelTreeItem(node);
   }
 
-  private getTreeItems(
-    elementName: string,
-    event: ManifestCacheProjectAddedEvent,
-  ): NodeTreeItem[] {
+  private getTreeItems(elementName: string, event: Manifest): NodeTreeItem[] {
     const { graphMetaMap } = event;
     const parentModels = graphMetaMap[this.treeType].get(elementName);
     if (parentModels === undefined) {

@@ -4,10 +4,6 @@ import * as path from "path";
 import { EventEmitter, Uri } from "vscode";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import {
-  ManifestCacheChangedEvent,
-  ManifestCacheProjectAddedEvent,
-} from "../../dbt_client/event/manifestCacheChangedEvent";
-import {
   ChildrenParentParser,
   DBTTerminal,
   DocParser,
@@ -25,6 +21,7 @@ import {
   UnitTestParser,
 } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
+import { Manifest } from "../../projects/manifestTypes";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { esmDirname } from "../esmDirname";
 
@@ -85,7 +82,7 @@ function projectMacroKeys(
     .sort();
 }
 
-function graphShapes(graph: ManifestCacheProjectAddedEvent["graphMetaMap"]) {
+function graphShapes(graph: Manifest["graphMetaMap"]) {
   const strip = (map: typeof graph.parents) =>
     Object.fromEntries(
       [...map.entries()]
@@ -125,7 +122,7 @@ function macroShapes(macros: Map<string, { unique_id: string; name: string }>) {
     .sort((a, b) => a.key.localeCompare(b.key));
 }
 
-function nodeShapes(event: ManifestCacheProjectAddedEvent) {
+function nodeShapes(event: Manifest) {
   return [...event.nodeMetaMap.nodes()]
     .map((node) => ({
       unique_id: node.unique_id,
@@ -139,7 +136,7 @@ function nodeShapes(event: ManifestCacheProjectAddedEvent) {
     .sort((a, b) => a.unique_id.localeCompare(b.unique_id));
 }
 
-function sourceShapes(event: ManifestCacheProjectAddedEvent) {
+function sourceShapes(event: Manifest) {
   return [...event.sourceMetaMap.values()]
     .map((source) => ({
       unique_id: source.unique_id,
@@ -155,7 +152,7 @@ function sourceShapes(event: ManifestCacheProjectAddedEvent) {
     .sort((a, b) => a.unique_id.localeCompare(b.unique_id));
 }
 
-function testShapes(event: ManifestCacheProjectAddedEvent) {
+function testShapes(event: Manifest) {
   return [...event.testMetaMap.entries()]
     .map(([key, test]) => ({
       key,
@@ -169,7 +166,7 @@ function testShapes(event: ManifestCacheProjectAddedEvent) {
 }
 
 describe("Metadata contract — shape and key set snapshot", () => {
-  it("snapshots parser maps on ManifestCacheProjectAddedEvent", async () => {
+  it("snapshots parser maps on Manifest", async () => {
     // parseManifest() passes records; published parser types incorrectly say arrays.
     const manifest = loadManifestJson() as {
       nodes: any;
@@ -231,15 +228,17 @@ describe("Metadata contract — shape and key set snapshot", () => {
       parentMaps.parentMetaMap,
       parentMaps.childMetaMap,
     );
-    const manifestEvents = new EventEmitter<ManifestCacheChangedEvent>();
+    const manifestEvents = new EventEmitter<DBTProject>();
     const project = {
       projectRoot: Uri.file(fixtureRoot),
       getProjectName: () => "single_project",
-      getMetadataSnapshot: () => event,
-      onManifestChanged: manifestEvents.event,
+      get manifest() {
+        return event;
+      },
+      onDidChangeManifest: manifestEvents.event,
       rebuildManifest: async () => {},
     } as unknown as DBTProject;
-    const event: ManifestCacheProjectAddedEvent = {
+    const event: Manifest = {
       project,
       nodeMetaMap,
       macroMetaMap,
@@ -278,13 +277,9 @@ describe("Metadata contract — shape and key set snapshot", () => {
       dispose: () => {},
     } as DeclaredProject;
     const source = new ManifestMetadataSource(declaredProject, project);
-    let forwarded: ManifestCacheProjectAddedEvent | undefined;
-    source.onDidChangeMetadata((publication) => {
-      forwarded = publication;
-    });
-    manifestEvents.fire({ added: [event] });
+    manifestEvents.fire(project);
+    const forwarded = source.current();
     expect(forwarded).toBe(event);
-    expect(source.current()).toBe(event);
     if (!forwarded) {
       throw new Error("Expected metadata publication");
     }

@@ -353,6 +353,41 @@ describe("NewLineagePanel — after a save", () => {
     panel.manifestChanged(current as any);
     expect(postMessage).toHaveBeenLastCalledWith({ command: "projectSaved" });
   });
+
+  it.each([
+    ["equal", 3, 3],
+    ["different", 3, 7],
+  ])(
+    "re-renders on a project switch with %s epochs",
+    (_label, epochA, epochB) => {
+      const panel = Object.create(NewLineagePanel.prototype);
+      const postMessage = jest.fn();
+      (panel as any)._panel = { webview: { postMessage } };
+      (panel as any).dbtTerminal = { info: jest.fn(), error: jest.fn() };
+      const project = (root: string, publicationEpoch: number) => ({
+        projectRoot: { fsPath: root },
+        throwDiagnosticsErrorIfAvailable: jest.fn(),
+        manifest: { publicationEpoch } as any,
+      });
+      const a = project("/a", epochA);
+      const b = project("/b", epochB);
+      let current: any = a;
+      (panel as any).queryManifestService = {
+        getProject: () => current,
+        getEventByCurrentProject: () => undefined,
+      };
+
+      panel.manifestChanged(a as any);
+      current = b;
+      panel.manifestChanged(b as any);
+      expect(postMessage).toHaveBeenLastCalledWith(
+        expect.objectContaining({ command: "render" }),
+      );
+      b.manifest = { publicationEpoch: epochB + 1 };
+      panel.manifestChanged(b as any);
+      expect(postMessage).toHaveBeenLastCalledWith({ command: "projectSaved" });
+    },
+  );
 });
 
 describe("NewLineagePanel — source YAML rooting", () => {
