@@ -1,11 +1,11 @@
 import * as path from "path";
 
-import { ExposureMetaMap, RESOURCE_TYPE_EXPOSURE } from "../domain";
-import { ManifestProject } from "../manifestProject";
-import { DBTTerminal } from "../terminal";
+import { ManifestLogger } from "./logger";
+import { ManifestProject } from "./manifestProject";
+import { ExposureMetaMap, RESOURCE_TYPE_EXPOSURE } from "./types";
 
 export class ExposureParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: ManifestLogger) {}
 
   createExposureMetaMap(
     exposuresMap: any[],

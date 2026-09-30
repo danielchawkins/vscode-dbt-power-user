@@ -6,6 +6,7 @@ import {
   Uri,
   window,
 } from "vscode";
+import { type ManifestProject } from "../core/manifest";
 import {
   dbtProjectFilePath,
   readDbtProjectFile,
@@ -17,7 +18,6 @@ import { RunResultsEvent } from "../dbt_client/event/runResultsEvent";
 import {
   DBColumn,
   DBTTerminal,
-  type ManifestProject,
   ParsedManifest,
   QueryExecution,
   QueryExecutionResult,

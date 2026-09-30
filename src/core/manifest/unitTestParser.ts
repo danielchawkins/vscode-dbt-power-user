@@ -1,11 +1,11 @@
 import * as path from "path";
 
-import { RESOURCE_TYPE_UNIT_TEST, UnitTestMetaMap } from "../domain";
-import { ManifestProject } from "../manifestProject";
-import { DBTTerminal } from "../terminal";
+import { ManifestLogger } from "./logger";
+import { ManifestProject } from "./manifestProject";
+import { RESOURCE_TYPE_UNIT_TEST, UnitTestMetaMap } from "./types";
 
 export class UnitTestParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: ManifestLogger) {}
 
   createUnitTestMetaMap(
     nodesMap: Record<string, any>,

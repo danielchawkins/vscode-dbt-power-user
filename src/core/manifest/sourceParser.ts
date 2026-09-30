@@ -1,13 +1,19 @@
 import * as path from "path";
 
-import { RESOURCE_TYPE_SOURCE, SourceMetaMap } from "../domain";
-import { ManifestProject } from "../manifestProject";
-import { DBTTerminal } from "../terminal";
+import { ManifestLogger } from "./logger";
+import { ManifestProject } from "./manifestProject";
+import { RESOURCE_TYPE_SOURCE, SourceMetaMap } from "./types";
 
-import { getExternalProjectNamesFromDbtLoomConfig } from "./utils";
+import {
+  DbtLoomConfigPathReader,
+  getExternalProjectNamesFromDbtLoomConfig,
+} from "./utils";
 
 export class SourceParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(
+    private terminal: ManifestLogger,
+    private readDbtLoomConfigPath: DbtLoomConfigPathReader = () => undefined,
+  ) {}
 
   createSourceMetaMap(
     sourcesMap: any[],
@@ -29,8 +35,10 @@ export class SourceParser {
       if (packagePath === undefined) {
         throw new Error("packagePath is not defined in " + projectRoot);
       }
-      const externalProjectNames =
-        getExternalProjectNamesFromDbtLoomConfig(projectRoot);
+      const externalProjectNames = getExternalProjectNamesFromDbtLoomConfig(
+        projectRoot,
+        this.readDbtLoomConfigPath(),
+      );
       Object.values(sourcesMap)
         .filter((source) => source.resource_type === RESOURCE_TYPE_SOURCE)
         .reduce(

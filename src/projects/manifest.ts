@@ -7,26 +7,24 @@ import {
   Uri,
   workspace,
 } from "vscode";
-import { DBT_PROJECT_FILE, dbtProjectFilePath } from "../core/project";
 import {
   ChildrenParentParser,
-  DBTTerminal,
   DocParser,
   ExposureParser,
   FunctionParser,
   GraphParser,
   MacroParser,
-  MANIFEST_FILE,
   type ManifestProject,
   MetricParser,
   ModelDepthParser,
   NodeParser,
-  ParsedManifest,
   SemanticModelParser,
   SourceParser,
   TestParser,
   UnitTestParser,
-} from "../dbt_integration";
+} from "../core/manifest";
+import { DBT_PROJECT_FILE, dbtProjectFilePath } from "../core/project";
+import { DBTTerminal, MANIFEST_FILE, ParsedManifest } from "../dbt_integration";
 
 /** Delay between the last watched file event and the rebuild it triggers. */
 export const MANIFEST_TRIGGER_DEBOUNCE_MS = 500;

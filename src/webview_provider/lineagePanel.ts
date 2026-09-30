@@ -11,12 +11,12 @@ import {
 } from "vscode";
 import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { ColumnLineage, panelColumns } from "../core/lineage";
+import { RelationshipParser } from "../core/manifest";
 import {
   DBTTerminal,
   ExposureMetaData,
   FunctionMetaData,
   Ref,
-  RelationshipParser,
   RESOURCE_TYPE_FUNCTION,
   RESOURCE_TYPE_SOURCE,
   SourceMetaMap,

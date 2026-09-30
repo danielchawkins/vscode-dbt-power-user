@@ -1,3 +1,4 @@
+import { ManifestLogger } from "./logger";
 import {
   Cardinality,
   ColumnLevelConstraint,
@@ -10,8 +11,7 @@ import {
   TestMetaData,
   TestMetaMap,
   TestMetadataRelationships,
-} from "../domain";
-import { DBTTerminal } from "../terminal";
+} from "./types";
 
 const DEFAULT_CARDINALITY: Cardinality = "many-to-one";
 const RELATIONSHIPS_TEST_NAME = "relationships";
@@ -42,7 +42,7 @@ const SOURCE_PATTERN =
  * the parser knowing about UI.
  */
 export class RelationshipParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: ManifestLogger) {}
 
   // ─────────────────────────────────────────────────────────────────────────
   // Phase 1 — relationships data tests
@@ -563,7 +563,7 @@ export class RelationshipParser {
    * skipped — we don't fabricate identifiers.
    */
   fromSemanticEntities(
-    semanticModelMetaMap: import("../domain").SemanticModelMetaMap | undefined,
+    semanticModelMetaMap: import("./types").SemanticModelMetaMap | undefined,
   ): Ref[] {
     if (!semanticModelMetaMap || semanticModelMetaMap.size === 0) {
       return [];

@@ -1,6 +1,9 @@
 import * as path from "path";
 
+import { ManifestLogger } from "./logger";
+import { ManifestProject } from "./manifestProject";
 import {
+  isResourceNode,
   NodeMetaData,
   NodeMetaMap,
   NodeResourceType,
@@ -8,13 +11,11 @@ import {
   RESOURCE_TYPE_MODEL,
   RESOURCE_TYPE_SEED,
   RESOURCE_TYPE_SNAPSHOT,
-  isResourceNode,
-} from "../domain";
-import { ManifestProject } from "../manifestProject";
-import { DBTTerminal } from "../terminal";
+} from "./types";
 
 import {
   createFullPathForNode,
+  DbtLoomConfigPathReader,
   getExternalProjectNamesFromDbtLoomConfig,
 } from "./utils";
 
@@ -91,7 +92,10 @@ export class NodeMetaMapImpl implements NodeMetaMap {
 }
 
 export class NodeParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(
+    private terminal: ManifestLogger,
+    private readDbtLoomConfigPath: DbtLoomConfigPathReader = () => undefined,
+  ) {}
 
   createNodeMetaMap(
     nodesMap: any[],
@@ -120,8 +124,10 @@ export class NodeParser {
       if (packagePath === undefined) {
         throw new Error("packagePath is not defined " + projectRoot);
       }
-      const externalProjectNames =
-        getExternalProjectNamesFromDbtLoomConfig(projectRoot);
+      const externalProjectNames = getExternalProjectNamesFromDbtLoomConfig(
+        projectRoot,
+        this.readDbtLoomConfigPath(),
+      );
       for (const nodesMap of nodesMaps) {
         const {
           name,

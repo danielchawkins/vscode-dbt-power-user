@@ -1,11 +1,11 @@
 import * as path from "path";
 
-import { RESOURCE_TYPE_TEST, TestMetaMap } from "../domain";
-import { ManifestProject } from "../manifestProject";
-import { DBTTerminal } from "../terminal";
+import { ManifestLogger } from "./logger";
+import { ManifestProject } from "./manifestProject";
+import { RESOURCE_TYPE_TEST, TestMetaMap } from "./types";
 
 export class TestParser {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: ManifestLogger) {}
 
   private getColumnNameWithoutQuotes(columnName: string): string | undefined {
     if (!columnName) {

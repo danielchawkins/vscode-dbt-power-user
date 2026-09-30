@@ -1,11 +1,7 @@
 import { Container, Factory, ResolutionContext } from "inversify";
 import { Event, ExtensionContext, Uri } from "vscode";
-import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
-import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
-import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import {
   ChildrenParentParser,
-  DBTTerminal,
   DocParser,
   ExposureParser,
   FunctionParser,
@@ -18,7 +14,11 @@ import {
   SourceParser,
   TestParser,
   UnitTestParser,
-} from "./dbt_integration";
+} from "./core/manifest";
+import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
+import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
+import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
+import { DBTTerminal } from "./dbt_integration";
 import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
 import { FusionCli } from "./fusion/fusionCli";
 import {
@@ -42,6 +42,7 @@ import { FileService } from "./services/fileService";
 import { QueryManifestService } from "./services/queryManifestService";
 import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
+import { readEnvironmentOverride } from "./settings";
 
 // Core extension components
 import { Projects } from "./projects/projects";
@@ -96,12 +97,17 @@ export function bindExtensionContext(context: ExtensionContext): void {
 }
 
 // Bind parser classes
+const readDbtLoomConfigPath = () =>
+  readEnvironmentOverride("dbtLoomConfigPath");
 container
   .bind(ChildrenParentParser)
   .toDynamicValue(() => new ChildrenParentParser());
 container
   .bind(NodeParser)
-  .toDynamicValue((context) => new NodeParser(context.get("DBTTerminal")));
+  .toDynamicValue(
+    (context) =>
+      new NodeParser(context.get("DBTTerminal"), readDbtLoomConfigPath),
+  );
 container
   .bind(MacroParser)
   .toDynamicValue((context) => new MacroParser(context.get("DBTTerminal")));
@@ -118,7 +124,10 @@ container
   .toDynamicValue((context) => new GraphParser(context.get("DBTTerminal")));
 container
   .bind(SourceParser)
-  .toDynamicValue((context) => new SourceParser(context.get("DBTTerminal")));
+  .toDynamicValue(
+    (context) =>
+      new SourceParser(context.get("DBTTerminal"), readDbtLoomConfigPath),
+  );
 container
   .bind(TestParser)
   .toDynamicValue((context) => new TestParser(context.get("DBTTerminal")));
