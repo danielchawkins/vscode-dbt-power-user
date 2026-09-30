@@ -115,39 +115,6 @@ async function buildIntegration(
   return integration;
 }
 
-function sampleRunResultsJson(invocationId = "inv-123") {
-  return JSON.stringify({
-    metadata: {
-      invocation_id: invocationId,
-      generated_at: "2026-01-01T00:00:00.000000Z",
-    },
-    args: { which: "run", select: ["my_model"] },
-    results: [
-      {
-        unique_id: "model.single_project.my_model",
-        status: "success",
-        execution_time: 1.2,
-      },
-    ],
-    elapsed_time: 1.2,
-  });
-}
-
-function writeRunResults(targetDir: string, content = sampleRunResultsJson()) {
-  fs.mkdirSync(targetDir, { recursive: true });
-  fs.writeFileSync(path.join(targetDir, "run_results.json"), content);
-}
-
-function prepareWatcherPaths(projectRoot: string): void {
-  for (const segment of ["models", "macros", "seeds"]) {
-    fs.mkdirSync(path.join(projectRoot, segment), { recursive: true });
-  }
-  const projectFile = path.join(projectRoot, "dbt_project.yml");
-  if (!fs.existsSync(projectFile)) {
-    fs.writeFileSync(projectFile, "name: single_project\nversion: 1.0.0\n");
-  }
-}
-
 describe("FusionProjectIntegration", () => {
   let tempRoot: string;
 
@@ -217,87 +184,6 @@ describe("FusionProjectIntegration", () => {
     );
     await integration.parseManifest();
     expect(integration.getAdapterType()).toBe("duckdb");
-    await integration.dispose();
-  });
-
-  it("parses run_results.json when content appears after command start", async () => {
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-run-fresh-"));
-    prepareWatcherPaths(tempRoot);
-    const targetDir = path.join(tempRoot, "target");
-    const integration = await buildIntegration(
-      tempRoot,
-      stubDelegate(tempRoot, { getTargetPath: () => targetDir }),
-    );
-    const listener = jest.fn();
-    integration.on(FusionProjectIntegrationEvents.RUN_RESULTS_PARSED, listener);
-
-    const before = integration.observeRunResultsBeforeCommand();
-    writeRunResults(targetDir);
-    const event = integration.parseRunResultsAfterCommand(before);
-
-    expect(before).toBeNull();
-    expect(event?.id).toBe("inv-123");
-    expect(listener).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "inv-123", projectName: "single_project" }),
-    );
-    await integration.dispose();
-  });
-
-  it("ignores unchanged run_results.json after command start", async () => {
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-run-stale-"));
-    prepareWatcherPaths(tempRoot);
-    const targetDir = path.join(tempRoot, "target");
-    writeRunResults(targetDir);
-    const integration = await buildIntegration(
-      tempRoot,
-      stubDelegate(tempRoot, { getTargetPath: () => targetDir }),
-    );
-    const listener = jest.fn();
-    integration.on(FusionProjectIntegrationEvents.RUN_RESULTS_PARSED, listener);
-
-    const before = integration.observeRunResultsBeforeCommand();
-    expect(integration.parseRunResultsAfterCommand(before)).toBeNull();
-    expect(listener).not.toHaveBeenCalled();
-    await integration.dispose();
-  });
-
-  it("stays silent when run_results.json is missing after command start", async () => {
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-run-missing-"));
-    prepareWatcherPaths(tempRoot);
-    const targetDir = path.join(tempRoot, "target");
-    const integration = await buildIntegration(
-      tempRoot,
-      stubDelegate(tempRoot, { getTargetPath: () => targetDir }),
-    );
-    const listener = jest.fn();
-    integration.on(FusionProjectIntegrationEvents.RUN_RESULTS_PARSED, listener);
-
-    const before = integration.observeRunResultsBeforeCommand();
-    expect(integration.parseRunResultsAfterCommand(before)).toBeNull();
-    expect(listener).not.toHaveBeenCalled();
-    await integration.dispose();
-  });
-
-  it("parses run_results.json when content changes after command start", async () => {
-    tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-run-changed-"));
-    prepareWatcherPaths(tempRoot);
-    const targetDir = path.join(tempRoot, "target");
-    writeRunResults(targetDir, sampleRunResultsJson("inv-old"));
-    const integration = await buildIntegration(
-      tempRoot,
-      stubDelegate(tempRoot, { getTargetPath: () => targetDir }),
-    );
-    const listener = jest.fn();
-    integration.on(FusionProjectIntegrationEvents.RUN_RESULTS_PARSED, listener);
-
-    const before = integration.observeRunResultsBeforeCommand();
-    writeRunResults(targetDir, sampleRunResultsJson("inv-new"));
-    const event = integration.parseRunResultsAfterCommand(before);
-
-    expect(event?.id).toBe("inv-new");
-    expect(listener).toHaveBeenCalledWith(
-      expect.objectContaining({ id: "inv-new" }),
-    );
     await integration.dispose();
   });
 

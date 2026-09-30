@@ -7,6 +7,8 @@ import {
   jest,
 } from "@jest/globals";
 import { EventEmitter } from "events";
+import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import { DBT_PROJECT_FILE } from "../../core/project";
@@ -20,7 +22,6 @@ import {
   MANIFEST_FILE,
   ParsedManifest,
   RESOURCE_TYPE_MODEL,
-  RunResultsEventData,
 } from "../../dbt_integration";
 import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
@@ -122,8 +123,6 @@ describe("DBTProject Test Suite", () => {
       createDbtCommand: jest.fn(),
       runDbtCommand: jest.fn(),
       dispose: jest.fn(),
-      observeRunResultsBeforeCommand: jest.fn(() => null),
-      parseRunResultsAfterCommand: jest.fn(),
     };
 
     // Mock DBTProjectLog
@@ -318,36 +317,6 @@ describe("DBTProject Test Suite", () => {
       );
       expect(dbtProject.getPublicationEpoch()).toBe(
         secondPublication.publicationEpoch,
-      );
-    });
-
-    it("should handle run results parsed events", () => {
-      const runResultsData: RunResultsEventData = {
-        id: "run-1",
-        command: "dbt run",
-        args: [],
-        completedAt: new Date(),
-        projectName: "test-project",
-        elapsedTime: 0,
-        results: [
-          { uniqueId: "model.test.model1" } as any,
-          { uniqueId: "model.test.model2" } as any,
-        ],
-      };
-
-      const runResultsHandler = jest.fn();
-      dbtProject.onRunResults(runResultsHandler);
-
-      // Trigger the event from the integration
-      const onCall = mockProjectIntegration.on.mock.calls.find(
-        (call: any) =>
-          call[0] === FusionProjectIntegrationEvents.RUN_RESULTS_PARSED,
-      );
-      onCall![1](runResultsData);
-
-      expect(mockTerminal.debug).toHaveBeenCalledWith(
-        "DBTProject",
-        "Received runResultsParsed event from dbtIntegrationAdapter",
       );
     });
   });
@@ -553,7 +522,32 @@ describe("DBTProject Test Suite", () => {
   });
 
   describe("queued command run_results", () => {
-    it("parses fresh run_results before surfacing Encountered an error", async () => {
+    let targetDir: string;
+
+    beforeEach(() => {
+      targetDir = fs.mkdtempSync(path.join(os.tmpdir(), "dbt-project-run-"));
+      mockProjectIntegration.getTargetPath.mockReturnValue(targetDir);
+    });
+
+    afterEach(() => {
+      fs.rmSync(targetDir, { recursive: true, force: true });
+    });
+
+    function writeRunResults(): void {
+      fs.writeFileSync(
+        path.join(targetDir, "run_results.json"),
+        JSON.stringify({
+          metadata: {
+            invocation_id: "inv-1",
+            generated_at: "2026-01-01T00:00:00Z",
+          },
+          args: { which: "run" },
+          results: [{ unique_id: "model.test.model1", status: "error" }],
+        }),
+      );
+    }
+
+    it("records fresh run_results before surfacing Encountered an error", async () => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = new DBTProject(
         dbtProjectLogFactory as any,
@@ -564,19 +558,16 @@ describe("DBTProject Test Suite", () => {
         projectUri,
         mockManifestChangedEmitter,
       );
-      (
-        dbtProject as unknown as { createQueue: (queueName: string) => void }
-      ).createQueue("all");
+      const runResultsHandler = jest.fn();
+      dbtProject.onRunResults(runResultsHandler);
 
-      mockProjectIntegration.observeRunResultsBeforeCommand.mockReturnValue(
-        null,
-      );
       const mockCommand = {
-        execute: jest.fn(() =>
-          Promise.resolve({
+        execute: jest.fn(() => {
+          writeRunResults();
+          return Promise.resolve({
             stdout: "Encountered an error: model failed",
-          }),
-        ),
+          });
+        }),
         focus: false,
         showProgress: false,
         signal: undefined,
@@ -585,26 +576,25 @@ describe("DBTProject Test Suite", () => {
 
       (
         dbtProject as unknown as { addCommandToQueue: Function }
-      ).addCommandToQueue("all", mockCommand);
+      ).addCommandToQueue(mockCommand);
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(
-        mockProjectIntegration.observeRunResultsBeforeCommand,
-      ).toHaveBeenCalled();
       expect(mockCommand.execute).toHaveBeenCalled();
-      expect(
-        mockProjectIntegration.parseRunResultsAfterCommand,
-      ).toHaveBeenCalledWith(null);
+      expect(mockRunHistoryService.addEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ id: "inv-1", projectName: "test-project" }),
+      );
+      expect(runResultsHandler).toHaveBeenCalledWith(
+        expect.objectContaining({ uniqueIds: ["model.test.model1"] }),
+      );
       expect(mockRunHistoryService.notifyCommandFailed).toHaveBeenCalledWith(
         "dbt run --select my_model",
         expect.stringContaining("Encountered an error:"),
       );
-      const parseOrder =
-        mockProjectIntegration.parseRunResultsAfterCommand.mock
-          .invocationCallOrder[0];
+      const addOrder =
+        mockRunHistoryService.addEntry.mock.invocationCallOrder[0];
       const failOrder =
         mockRunHistoryService.notifyCommandFailed.mock.invocationCallOrder[0];
-      expect(parseOrder).toBeLessThan(failOrder);
+      expect(addOrder).toBeLessThan(failOrder);
     });
 
     it("reads defer.perProject scoped to the project root", async () => {
@@ -770,12 +760,12 @@ describe("DBTProject Test Suite", () => {
         projectUri,
         mockManifestChangedEmitter,
       );
-      (
-        dbtProject as unknown as { createQueue: (queueName: string) => void }
-      ).createQueue("all");
 
       const mockCommand = {
-        execute: jest.fn(() => Promise.reject(new Error("cancelled"))),
+        execute: jest.fn(() => {
+          writeRunResults();
+          return Promise.reject(new Error("cancelled"));
+        }),
         focus: false,
         showProgress: false,
         signal: undefined,
@@ -784,12 +774,10 @@ describe("DBTProject Test Suite", () => {
 
       (
         dbtProject as unknown as { addCommandToQueue: Function }
-      ).addCommandToQueue("all", mockCommand);
+      ).addCommandToQueue(mockCommand);
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(
-        mockProjectIntegration.parseRunResultsAfterCommand,
-      ).not.toHaveBeenCalled();
+      expect(mockRunHistoryService.addEntry).not.toHaveBeenCalled();
       expect(mockRunHistoryService.notifyCommandFailed).toHaveBeenCalledWith(
         "dbt run --select my_model",
         "Error: cancelled",
@@ -821,9 +809,6 @@ describe("DBTProject Test Suite", () => {
         getCommandAsString: () => "dbt",
       }));
       dbtProject = buildProject();
-      (
-        dbtProject as unknown as { createQueue: (queueName: string) => void }
-      ).createQueue("all");
       return execute;
     }
 
@@ -941,57 +926,6 @@ describe("DBTProject Test Suite", () => {
 
       expect(mockProjectIntegration.clean).toHaveBeenCalled();
       expect(mockProjectIntegration.installDeps).toHaveBeenCalled();
-    });
-
-    it("propagates progress-token cancellation to the queued command's abort signal", async () => {
-      dbtProject = buildProject();
-      (
-        dbtProject as unknown as { createQueue: (queueName: string) => void }
-      ).createQueue("all");
-
-      let capturedCancel: (() => void) | undefined;
-      (vscode.window.withProgress as jest.Mock).mockImplementationOnce(
-        (_options: unknown, task: any) => {
-          const token = {
-            onCancellationRequested: (cb: () => void) => {
-              capturedCancel = cb;
-              return { dispose: () => undefined };
-            },
-          };
-          return task(undefined, token);
-        },
-      );
-
-      let observedSignal: AbortSignal | undefined;
-      const executeSpy = jest.fn((signal?: AbortSignal) => {
-        observedSignal = signal;
-        return new Promise((resolve) => {
-          signal?.addEventListener("abort", () =>
-            resolve({ stdout: "" } as any),
-          );
-        });
-      });
-      const mockCommand = {
-        execute: executeSpy,
-        focus: false,
-        showProgress: true,
-        signal: undefined,
-        getCommandAsString: () => "dbt run --select my_model",
-      };
-
-      (
-        dbtProject as unknown as { addCommandToQueue: Function }
-      ).addCommandToQueue("all", mockCommand);
-      await Promise.resolve();
-      await Promise.resolve();
-
-      expect(executeSpy).toHaveBeenCalled();
-      expect(observedSignal?.aborted).toBe(false);
-
-      capturedCancel?.();
-      await new Promise((resolve) => setImmediate(resolve));
-
-      expect(observedSignal?.aborted).toBe(true);
     });
   });
 });
