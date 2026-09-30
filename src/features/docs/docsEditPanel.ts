@@ -27,6 +27,7 @@ import {
 } from "../../dbt_integration";
 import { ExtensionContextStore } from "../../extensionContext";
 import { UserInputError } from "../../local/errors";
+import { activeModelUri } from "../../projects/previewUri";
 import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 import { QueryManifestService } from "../../projects/queryManifestService";
@@ -96,7 +97,9 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     if (!window.activeTextEditor) {
       return undefined;
     }
-    const currentFilePath = window.activeTextEditor.document.uri;
+    const currentFilePath = activeModelUri(
+      window.activeTextEditor.document.uri,
+    );
     return this.projects.get(currentFilePath);
   }
 
@@ -531,7 +534,9 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
           });
           return;
         }
-        const currentFilePath = window.activeTextEditor.document.uri;
+        const currentFilePath = activeModelUri(
+          window.activeTextEditor.document.uri,
+        );
         const project = this.getProject();
         if (!project) {
           this.sendResponseToWebview({

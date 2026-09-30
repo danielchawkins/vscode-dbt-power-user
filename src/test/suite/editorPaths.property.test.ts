@@ -2,19 +2,17 @@ import fc from "fast-check";
 import * as path from "path";
 import { describe, expect, it } from "vitest";
 import { toLspArgs } from "../../core/lsp";
-import { isDbtTemplateFile, ProjectPaths } from "../../core/project";
-import {
-  associatedLanguage,
-  dbtTemplateAssociations,
-} from "../../dbt_integration/dbtAssociations";
+import { ProjectPaths } from "../../core/project";
+import { dbtTemplateAssociations } from "../../dbt_integration/dbtAssociations";
 import {
   NUM_RUNS,
   relativeDir,
   segment,
   staticAnalysisMode,
 } from "../arbitraries";
+import { match } from "../vscodeGlob";
 
-const root = path.join("/", "repo", "proj");
+const root = path.join("/", "re[po]", "(x86)}p!*?j");
 const abs = (rel: string) => path.join(root, rel);
 
 const projectPaths = fc
@@ -39,109 +37,49 @@ const projectPaths = fc
     packagesInstallPath: abs("dbt_packages"),
   }));
 
-describe("isDbtTemplateFile properties", () => {
-  it("accepts every .sql file under a declared model path", () => {
-    fc.assert(
-      fc.property(
-        projectPaths,
-        fc.array(segment, { maxLength: 3 }),
-        segment,
-        (paths, sub, name) => {
-          const file = path.join(paths.modelPaths[0], ...sub, `${name}.sql`);
-          expect(isDbtTemplateFile(paths, file)).toBe(true);
-        },
-      ),
-      { numRuns: NUM_RUNS },
-    );
-  });
+const matches = (value: string, pattern: string) => match(pattern, value, true);
 
-  it("rejects every file under the target path", () => {
-    fc.assert(
-      fc.property(
-        projectPaths,
-        fc.array(segment, { maxLength: 4 }),
-        segment,
-        (paths, sub, name) => {
-          expect(
-            isDbtTemplateFile(
-              paths,
-              path.join(paths.targetPath, ...sub, `${name}.sql`),
-            ),
-          ).toBe(false);
-        },
-      ),
-      { numRuns: NUM_RUNS },
-    );
-  });
+/** VS Code's `files.associations` precedence: `/` patterns match the absolute path, longer patterns win. */
+function associatedLanguage(
+  associations: Record<string, string>,
+  fsPath: string,
+): string | undefined {
+  const absolute = fsPath.split(path.sep).join("/");
+  const name = path.basename(fsPath);
+  let best: { pattern: string; language: string } | undefined;
+  for (const [pattern, language] of Object.entries(associations)) {
+    const matched = matches(pattern.includes("/") ? absolute : name, pattern);
+    if (matched && (!best || pattern.length > best.pattern.length)) {
+      best = { pattern, language };
+    }
+  }
+  return best?.language;
+}
 
-  it("rejects non-.sql files anywhere", () => {
-    fc.assert(
-      fc.property(
-        projectPaths,
-        segment,
-        fc.constantFrom(".yml", ".md", ".py", ""),
-        (paths, name, ext) => {
-          expect(
-            isDbtTemplateFile(
-              paths,
-              path.join(paths.modelPaths[0], `${name}${ext}`),
-            ),
-          ).toBe(false);
-        },
-      ),
-      { numRuns: NUM_RUNS },
-    );
-  });
-});
-
-describe("associatedLanguage properties", () => {
-  it("lets the longest matching pattern win", () => {
-    fc.assert(
-      fc.property(relativeDir, segment, (dir, name) => {
-        const file = path.join("/", "repo", dir, `${name}.sql`);
-        const associations = {
-          "*.sql": "sql",
-          [`${dir}/**/*.sql`]: "jinja-sql",
-        };
-        expect(
-          associatedLanguage(associations, path.join("/", "repo"), file),
-        ).toBe("jinja-sql");
-      }),
-      { numRuns: NUM_RUNS },
-    );
-  });
-
-  it("matches a pattern without a slash against the file name only", () => {
-    fc.assert(
-      fc.property(
-        fc.array(segment, { minLength: 1, maxLength: 4 }),
-        segment,
-        (dirs, name) => {
-          const file = path.join("/", "repo", ...dirs, `${name}.sql`);
-          expect(
-            associatedLanguage(
-              { [`${name}.sql`]: "snowflake-sql" },
-              path.join("/", "repo"),
-              file,
-            ),
-          ).toBe("snowflake-sql");
-        },
-      ),
-      { numRuns: NUM_RUNS },
-    );
-  });
-
-  it("the associations written for a project match every template it declares", () => {
+describe("dbtTemplateAssociations properties", () => {
+  it("the associations written for a project match every template it declares and nothing in target", () => {
     fc.assert(
       fc.property(
         projectPaths,
         fc.array(segment, { maxLength: 2 }),
         segment,
         (paths, sub, name) => {
-          const folder = path.dirname(root);
-          const written = dbtTemplateAssociations(folder, paths);
+          const { associations: written } = dbtTemplateAssociations(
+            root,
+            paths,
+          );
           const file = path.join(paths.macroPaths[0], ...sub, `${name}.sql`);
-          expect(associatedLanguage(written, folder, file)).toBe("jinja-sql");
+          expect(associatedLanguage(written, file)).toBe("jinja-sql");
+          const compiled = path.join(paths.targetPath, ...sub, `${name}.sql`);
+          expect(associatedLanguage(written, compiled)).toBeUndefined();
+          const copy = path.join(
+            paths.targetPath,
+            "compiled",
+            "p",
+            path.relative(root, paths.macroPaths[0]),
+            `${name}.sql`,
+          );
+          expect(associatedLanguage(written, copy)).toBeUndefined();
         },
       ),
       { numRuns: NUM_RUNS },

@@ -17,6 +17,7 @@ import {
 } from "../core/project";
 import { DBTTerminal } from "../dbt_integration";
 import { onDidChangeSettings } from "../settings";
+import { activeModelUri } from "./previewUri";
 import {
   PROJECTS_SETTING,
   resolveDeclaredProjectRoots,
@@ -50,12 +51,13 @@ export class ProjectRegistry implements Disposable {
     return this._onDidChangeProjects.event;
   }
 
-  /** Returns the deepest Declared Project containing the resource. */
+  /** Returns the deepest Declared Project containing the resource; a compiled preview resolves through its model. */
   findProject(uri: Uri): DeclaredProject | undefined {
     if (!uri?.fsPath) {
       return undefined;
     }
-    return this.lookupOrder.find((project) => project.contains(uri));
+    const resource = activeModelUri(uri);
+    return this.lookupOrder.find((project) => project.contains(resource));
   }
 
   /** Resolves the initial registry and subscribes to its configuration inputs. */

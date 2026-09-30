@@ -556,7 +556,7 @@
         "key": "Ctrl+Enter",
         "mac": "Cmd+Enter",
         "command": "fusionPowerUser.executeSQL",
-        "when": "editorFocus && resourceLangId =~ /^sql$|^jinja-sql$/"
+        "when": "editorFocus && (resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/)"
       },
       {
         "key": "Ctrl+'",
@@ -568,22 +568,22 @@
       "editor/title": [
         {
           "command": "fusionPowerUser.executeSQL",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@1"
         },
         {
           "command": "fusionPowerUser.runCurrentModel",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@3"
         },
         {
           "command": "fusionPowerUser.testCurrentModel",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@4"
         },
         {
           "command": "fusionPowerUser.sqlPreview",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@5"
         }
       ],
@@ -591,7 +591,7 @@
         {
           "submenu": "fusionPowerUser.editorContext",
           "group": "dbt@1",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/"
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/"
         }
       ],
       "fusionPowerUser.editorContext": [
@@ -623,37 +623,37 @@
       "editor/title/run": [
         {
           "command": "fusionPowerUser.buildCurrentProject",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildCurrentModel",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildChildrenModels",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildParentModels",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildChildrenParentModels",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.runCurrentModel",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.cleanCurrentProject",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         }
       ],
@@ -714,22 +714,22 @@
       "fusionPowerUser.buildModel": [
         {
           "command": "fusionPowerUser.buildCurrentModel",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildChildrenModels",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildParentModels",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildChildrenParentModels",
-          "when": "resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         }
       ],
@@ -843,7 +843,6 @@
     "@types/istanbul-lib-coverage": "^2.0.6",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.13.6",
-    "@types/picomatch": "^4.0.3",
     "@types/vscode": "1.125.0",
     "@types/which": "^3.0.4",
     "@typescript-eslint/eslint-plugin": "^8.70.0",
@@ -868,10 +867,10 @@
     "prettier-plugin-organize-imports": "^4.3.0",
     "ts-mockito": "^2.6.1",
     "typescript": "^6.0.3",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.3",
+    "vscode-uri": "^3.2.0"
   },
   "dependencies": {
-    "picomatch": "^4.0.7",
     "vscode-languageclient": "10.1.1",
     "vscode-languageserver-protocol": "3.18.3",
     "which": "^7.0.0",

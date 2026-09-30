@@ -12,9 +12,15 @@ import { Uri, window } from "vscode";
 import { RunModelType } from "../../dbt_integration";
 import { RunModel } from "../../features/run/runModel";
 import { CurrentProject } from "../../projects/currentProject";
+import { previewUriFor } from "../../projects/previewUri";
 import { Project } from "../../projects/project";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { Projects } from "../../projects/projects";
+
+vi.mock("vscode", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("vscode")>()),
+  Uri: (await import("vscode-uri")).URI,
+}));
 
 const untitledUri = {
   scheme: "untitled",
@@ -102,6 +108,21 @@ describe("RunModel SQL execution", () => {
       "select 1",
       "Untitled-1",
     );
+  });
+
+  it("tests the model an active compiled preview resolves to", () => {
+    const runModelTest = vi.fn();
+    const model = Uri.file("/project/models/orders.sql");
+    const preview = previewUriFor(model);
+    dbtProject.runModelTest = runModelTest;
+    (window.activeTextEditor as unknown) = { document: { uri: preview } };
+
+    runModel.runTestsOnActiveWindow();
+
+    expect(projects.get).toHaveBeenCalledWith(
+      expect.objectContaining({ fsPath: model.fsPath }),
+    );
+    expect(runModelTest).toHaveBeenCalledWith("orders");
   });
 
   it("does nothing when no project owns the resolved root", async () => {

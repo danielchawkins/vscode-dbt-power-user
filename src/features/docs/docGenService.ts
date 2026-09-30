@@ -7,6 +7,7 @@ import {
   NodeMetaData,
   RESOURCE_TYPE_MODEL,
 } from "../../dbt_integration";
+import { activeModelUri } from "../../projects/previewUri";
 import { Projects } from "../../projects/projects";
 import { QueryManifestService } from "../../projects/queryManifestService";
 import { removeProtocol } from "../../utils";
@@ -77,15 +78,11 @@ export class DocGenService {
   }
 
   public async getCompiledDocumentationForCurrentActiveFile() {
-    return this.getCompiledDocumentation(
-      window.activeTextEditor?.document?.uri.fsPath,
-    );
+    return this.getCompiledDocumentation(activeModelPath());
   }
 
   public async getUncompiledDocumentationForCurrentActiveFile() {
-    return this.getUncompiledDocumentation(
-      window.activeTextEditor?.document?.uri.fsPath,
-    );
+    return this.getUncompiledDocumentation(activeModelPath());
   }
 
   private getDocumentationValidationMessage(
@@ -256,4 +253,10 @@ export class DocGenService {
   ): Promise<DBTDocumentationMessage> {
     return this.getDocumentation(filePath, false);
   }
+}
+
+/** The active editor model path; a focused compiled preview resolves to its model. */
+function activeModelPath(): string | undefined {
+  const uri = window.activeTextEditor?.document?.uri;
+  return uri && activeModelUri(uri).fsPath;
 }

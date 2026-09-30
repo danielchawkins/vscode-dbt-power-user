@@ -8,6 +8,7 @@ import { registerConnectedColumnsCommand } from "./features/lineage/connectedCol
 import { DbtLineageService } from "./features/lineage/dbtLineageService";
 import { WebviewViewProviders } from "./features/panels";
 import { DbtPowerUserActionsCenter } from "./features/projectPicker/actionsCenter";
+import { FileAssociationsCommand } from "./features/projectSetup/fileAssociations";
 import { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
 import { StatusBars } from "./features/statusBars";
 import { TreeviewProviders } from "./features/treeViews";
@@ -15,7 +16,6 @@ import { registerFusionClientDiagnostics } from "./fusion/fusionClientDiagnostic
 import { FusionClientPool } from "./fusion/fusionClientPool";
 import { FusionStatus } from "./fusion/fusionStatus";
 import { CurrentProject } from "./projects/currentProject";
-import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { Projects } from "./projects/projects";
 import { RunHistoryService } from "./projects/runHistoryService";
@@ -62,7 +62,7 @@ export class DBTPowerUserExtension implements Disposable {
     private fusionClientPool: FusionClientPool,
     private fusionStatus: FusionStatus,
     private projectConfigCommands: ProjectConfigCommands,
-    private dbtTemplateLanguage: DbtTemplateLanguage,
+    private fileAssociationsCommand: FileAssociationsCommand,
     private startupGate: StartupGate,
     private dbtLineageService: DbtLineageService,
     /** Disposed after every other collaborator. */
@@ -87,7 +87,7 @@ export class DBTPowerUserExtension implements Disposable {
       this.fusionClientPool,
       this.fusionStatus,
       this.projectConfigCommands,
-      this.dbtTemplateLanguage,
+      this.fileAssociationsCommand,
     );
   }
 
@@ -159,7 +159,6 @@ export class DBTPowerUserExtension implements Disposable {
       if (this.disposed) {
         return;
       }
-      this.dbtTemplateLanguage.start();
       this.fusionClientPool.initialize();
       this.fusionStatus.initialize();
       await this.projects.initialize();

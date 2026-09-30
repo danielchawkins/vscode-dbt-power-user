@@ -1,4 +1,5 @@
 import { Uri, window } from "vscode";
+import { activeModelUri } from "../../projects/previewUri";
 import { Projects } from "../../projects/projects";
 import { QueryManifestService } from "../../projects/queryManifestService";
 
@@ -67,7 +68,7 @@ export class RunTest {
     if (!window.activeTextEditor) {
       return false;
     }
-    const uri = window.activeTextEditor.document.uri;
+    const uri = activeModelUri(window.activeTextEditor.document.uri);
     const testName = this.getSingularTestName(uri);
     if (testName === undefined) {
       return false;

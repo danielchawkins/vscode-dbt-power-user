@@ -10,12 +10,13 @@ import {
   window,
   workspace,
 } from "vscode";
+import { modelUriOf, PREVIEW_SCHEME } from "../../projects/previewUri";
 import { Projects } from "../../projects/projects";
 
 export class SqlPreviewContentProvider
   implements TextDocumentContentProvider, Disposable
 {
-  static readonly SCHEME = "query-preview";
+  static readonly SCHEME = PREVIEW_SCHEME;
 
   private _onDidChange = new EventEmitter<Uri>();
   private compilationDocs = new Map<string, Uri>();
@@ -32,8 +33,7 @@ export class SqlPreviewContentProvider
           previewUriString,
           previewUri,
         ] of this.compilationDocs.entries()) {
-          const actualFileUri = previewUri.with({ scheme: "file" });
-          if (actualFileUri.toString() === fileUriString) {
+          if (modelUriOf(previewUri)?.toString() === fileUriString) {
             // Debounce the update
             const existingTimer = this.debounceTimers.get(previewUriString);
             if (existingTimer) {
@@ -110,18 +110,19 @@ export class SqlPreviewContentProvider
 
   private async requestCompilation(uri: Uri) {
     try {
-      const fsPath = decodeURI(uri.fsPath);
-
+      const modelUri = modelUriOf(uri);
+      if (modelUri === undefined) {
+        return `Not a compiled preview: ${uri.toString()}`;
+      }
       // Read from the active document if available, otherwise fall back to file
-      const actualFileUri = uri.with({ scheme: "file" });
       const document = workspace.textDocuments.find(
-        (doc) => doc.uri.toString() === actualFileUri.toString(),
+        (doc) => doc.uri.toString() === modelUri.toString(),
       );
       const query = document
         ? document.getText()
-        : readFileSync(fsPath, "utf8");
+        : readFileSync(modelUri.fsPath, "utf8");
 
-      const project = this.projects.get(Uri.file(fsPath));
+      const project = this.projects.get(modelUri);
       if (project === undefined) {
         return "Still loading dbt project, please try again later...";
       }
