@@ -2,6 +2,7 @@ import { inject } from "inversify";
 import { window } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../dbt_integration";
+import { ExtensionContextStore } from "../extensionContext";
 import {
   ProjectQuickPick,
   ProjectQuickPickItem,
@@ -15,6 +16,7 @@ enum PromptAnswer {
 export class ProjectSetupCommands {
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
+    private extensionContext: ExtensionContextStore,
     private projectQuickPick: ProjectQuickPick,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
@@ -34,7 +36,7 @@ export class ProjectSetupCommands {
       return undefined;
     }
 
-    this.dbtProjectContainer.setToWorkspaceState(
+    this.extensionContext.setToWorkspaceState(
       "fusionPowerUser.projectSelected",
       pickedProject,
     );

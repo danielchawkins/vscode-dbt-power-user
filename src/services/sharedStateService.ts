@@ -1,5 +1,10 @@
 import { EventEmitter } from "vscode";
-import { SharedStateEventEmitterProps } from "../webview_provider/altimateWebviewProvider";
+
+/** A command broadcast between webview providers. */
+export interface SharedStateEventEmitterProps {
+  command: string;
+  payload: Record<string, unknown>;
+}
 
 export class SharedStateService {
   public eventEmitter;

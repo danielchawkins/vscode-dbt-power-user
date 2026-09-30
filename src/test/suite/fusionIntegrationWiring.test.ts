@@ -29,7 +29,12 @@ sharedWindow.createOutputChannel = jest.fn(
     createMockLogOutputChannel(name),
 );
 
-import { container } from "../../inversify.config";
+import { bindExtensionContext, container } from "../../inversify.config";
+
+bindExtensionContext({
+  workspaceState: { get: jest.fn(), update: jest.fn() },
+  globalState: { get: jest.fn(), update: jest.fn() },
+} as never);
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
 const srcRoot = path.join(repositoryRoot, "src");

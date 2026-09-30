@@ -7,7 +7,7 @@ import {
   jest,
 } from "@jest/globals";
 import * as fs from "fs";
-import { EventEmitter, ExtensionContext, Uri, window } from "vscode";
+import { EventEmitter, Uri, window } from "vscode";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { DBTTerminal, RunModelType } from "../../dbt_integration";
@@ -340,20 +340,6 @@ describe("DBTProjectContainer", () => {
       await container.initializeDBTProjects();
     });
 
-    it("exposes context state", async () => {
-      const context = {
-        extensionUri: Uri.file("/extension"),
-        extension: { id: "publisher.extension", packageJSON: { version: "1" } },
-        workspaceState: { get: jest.fn(), update: jest.fn() },
-        globalState: { get: jest.fn(), update: jest.fn() },
-      } as unknown as ExtensionContext;
-      container.setContext(context);
-
-      expect(container.extensionUri).toBe(context.extensionUri);
-      expect(container.extensionVersion).toBe("1");
-      expect(container.extensionId).toBe("publisher.extension");
-    });
-
     it("initializes every project and awaits completion", async () => {
       let finish!: () => void;
       mockProject1.initialize.mockReturnValue(
@@ -517,29 +503,6 @@ describe("DBTProjectContainer", () => {
       });
     });
 
-    it("reads and writes workspace and global state", () => {
-      const workspaceState = {
-        get: jest.fn().mockReturnValue("workspace-value"),
-        update: jest.fn(),
-      };
-      const globalState = {
-        get: jest.fn().mockReturnValue("global-value"),
-        update: jest.fn(),
-      };
-      container.setContext({
-        workspaceState,
-        globalState,
-      } as unknown as ExtensionContext);
-
-      container.setToWorkspaceState("key", "value");
-      container.setToGlobalState("key", "value");
-
-      expect(container.getFromWorkspaceState("key")).toBe("workspace-value");
-      expect(container.getFromGlobalState("key")).toBe("global-value");
-      expect(workspaceState.update).toHaveBeenCalledWith("key", "value");
-      expect(globalState.update).toHaveBeenCalledWith("key", "value");
-    });
-
     it("resolves SQL for files in a project", () => {
       const model = Uri.file("/project1/models/test.sql");
 
@@ -560,10 +523,6 @@ describe("DBTProjectContainer", () => {
 
       expect(mockProject1.executeSQLOnQueryPanel).not.toHaveBeenCalled();
       expect(mockProject2.executeSQLOnQueryPanel).not.toHaveBeenCalled();
-    });
-
-    it("returns an empty extension id before context is set", () => {
-      expect(container.extensionId).toBe("");
     });
   });
 

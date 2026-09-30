@@ -33,6 +33,7 @@ import {
   MANIFEST_FILE,
   RunModelType,
 } from "../dbt_integration";
+import { ExtensionContextStore } from "../extensionContext";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
@@ -49,6 +50,7 @@ export class VSCodeCommands implements Disposable {
 
   constructor(
     private dbtProjectContainer: DBTProjectContainer,
+    private extensionContext: ExtensionContextStore,
     private runModel: RunModel,
     private runTest: RunTest,
     private projectSetupCommands: ProjectSetupCommands,
@@ -369,7 +371,7 @@ export class VSCodeCommands implements Disposable {
       ),
       commands.registerCommand("fusionPowerUser.validateProject", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
-          this.dbtProjectContainer.getFromWorkspaceState(
+          this.extensionContext.getFromWorkspaceState(
             "fusionPowerUser.projectSelected",
           );
 
@@ -377,7 +379,7 @@ export class VSCodeCommands implements Disposable {
       }),
       commands.registerCommand("fusionPowerUser.installDeps", async () => {
         const pickedProject: ProjectQuickPickItem | undefined =
-          this.dbtProjectContainer.getFromWorkspaceState(
+          this.extensionContext.getFromWorkspaceState(
             "fusionPowerUser.projectSelected",
           );
         await this.projectSetupCommands.installDeps(pickedProject);

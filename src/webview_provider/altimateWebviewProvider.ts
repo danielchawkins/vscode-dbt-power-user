@@ -18,19 +18,17 @@ import {
   completeWebviewReady,
   beginWebviewResolve as recordWebviewResolveStart,
 } from "../benchmark/runtimeTimings";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../dbt_integration";
+import { ExtensionContextStore } from "../extensionContext";
 import { UserInputError } from "../local/errors";
 import { QueryManifestService } from "../services/queryManifestService";
-import { SharedStateService } from "../services/sharedStateService";
+import {
+  SharedStateEventEmitterProps,
+  SharedStateService,
+} from "../services/sharedStateService";
 export interface HandleCommandProps extends Record<string, unknown> {
   command: string;
   syncRequestId?: string;
-}
-
-export interface SharedStateEventEmitterProps {
-  command: string;
-  payload: Record<string, unknown>;
 }
 
 export interface SendMessageProps extends Record<string, unknown> {
@@ -56,7 +54,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
   protected isWebviewReady = false;
 
   public constructor(
-    protected dbtProjectContainer: DBTProjectContainer,
+    protected extensionContext: ExtensionContextStore,
     protected emitterService: SharedStateService,
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
@@ -146,7 +144,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
     this._webview = webview;
     this._panel!.webview.onDidReceiveMessage(this.handleCommand, this, []);
 
-    webview.html = this.getHtml(webview, this.dbtProjectContainer.extensionUri);
+    webview.html = this.getHtml(webview, this.extensionContext.extensionUri);
   }
 
   protected onWebviewReady() {
@@ -265,7 +263,7 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
       localResourceRoots: [
         Uri.file(
           path.join(
-            this.dbtProjectContainer.extensionUri.fsPath,
+            this.extensionContext.extensionUri.fsPath,
             "webview_panels",
             "dist",
             "assets",

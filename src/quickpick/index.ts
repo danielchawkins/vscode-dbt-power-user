@@ -1,5 +1,5 @@
 import { commands, Disposable, window } from "vscode";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { ExtensionContextStore } from "../extensionContext";
 import { ProjectContext } from "../projects/projectContext";
 import { ProjectQuickPickItem } from "./projectQuickPick";
 
@@ -8,7 +8,7 @@ export class DbtPowerUserActionsCenter implements Disposable {
 
   constructor(
     private projectContext: ProjectContext,
-    private dbtProjectContainer: DBTProjectContainer,
+    private extensionContext: ExtensionContextStore,
   ) {
     this.disposables.push(
       commands.registerCommand("fusionPowerUser.pickProject", async () => {
@@ -19,7 +19,7 @@ export class DbtPowerUserActionsCenter implements Disposable {
             description: project.root.fsPath,
             uri: project.root,
           };
-          this.dbtProjectContainer.setToWorkspaceState(
+          this.extensionContext.setToWorkspaceState(
             "fusionPowerUser.projectSelected",
             pickedProject,
           );

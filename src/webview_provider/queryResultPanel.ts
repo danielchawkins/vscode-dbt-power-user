@@ -14,21 +14,23 @@ import {
 
 import { inject } from "inversify";
 import * as path from "path";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
   DBTTerminal,
   ExecuteSQLError,
   ExecuteSQLResult,
   QueryExecution,
 } from "../dbt_integration";
+import { ExtensionContextStore } from "../extensionContext";
 import { QueryManifestService } from "../services/queryManifestService";
-import { SharedStateService } from "../services/sharedStateService";
+import {
+  SharedStateEventEmitterProps,
+  SharedStateService,
+} from "../services/sharedStateService";
 import { readSetting, writeSetting } from "../settings";
 import { getFormattedDateTime, getStringSizeInMb } from "../utils";
 import {
   AltimateWebviewProvider,
   SendMessageProps,
-  SharedStateEventEmitterProps,
 } from "./altimateWebviewProvider";
 
 interface JsonObj {
@@ -120,14 +122,14 @@ export class QueryResultPanel extends AltimateWebviewProvider {
   private _queryHistory: QueryHistory[] = [];
 
   public constructor(
-    protected dbtProjectContainer: DBTProjectContainer,
+    protected extensionContext: ExtensionContextStore,
     private eventEmitterService: SharedStateService,
     @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
   ) {
     super(
-      dbtProjectContainer,
+      extensionContext,
       eventEmitterService,
       dbtTerminal,
       queryManifestService,
@@ -432,7 +434,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
   protected renderWebviewView(webview: Webview) {
     this._panel!.webview.html = super.getHtml(
       webview,
-      this.dbtProjectContainer.extensionUri,
+      this.extensionContext.extensionUri,
     );
   }
 

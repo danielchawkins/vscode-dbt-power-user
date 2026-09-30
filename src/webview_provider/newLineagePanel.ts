@@ -11,7 +11,6 @@ import {
 import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { ColumnLineage, panelColumns } from "../core/lineage";
 import { DBTProject } from "../dbt_client/dbtProject";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
   DBTTerminal,
   ExposureMetaData,
@@ -24,6 +23,7 @@ import {
   SourceTable,
   Table,
 } from "../dbt_integration";
+import { ExtensionContextStore } from "../extensionContext";
 import type { Manifest } from "../projects/manifestTypes";
 import { registerLineageColumnsCommand } from "../services/connectedColumnsCommand";
 import {
@@ -118,7 +118,7 @@ export class NewLineagePanel
     { root: string; epoch: number | undefined } | undefined;
 
   public constructor(
-    protected dbtProjectContainer: DBTProjectContainer,
+    protected extensionContext: ExtensionContextStore,
     @inject("DBTTerminal")
     private terminal: DBTTerminal,
     private dbtLineageService: DbtLineageService,
@@ -126,7 +126,7 @@ export class NewLineagePanel
     protected queryManifestService: QueryManifestService,
   ) {
     super(
-      dbtProjectContainer,
+      extensionContext,
       eventEmitterService,
       terminal,
       queryManifestService,
@@ -844,7 +844,7 @@ export class NewLineagePanel
   protected renderWebviewView(webview: Webview) {
     this._panel!.webview.html = super.getHtml(
       webview,
-      this.dbtProjectContainer.extensionUri,
+      this.extensionContext.extensionUri,
     );
   }
 }

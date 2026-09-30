@@ -1,5 +1,5 @@
 import { Container, Factory, ResolutionContext } from "inversify";
-import { Event, Uri } from "vscode";
+import { Event, ExtensionContext, Uri } from "vscode";
 import { DBTProject } from "./dbt_client/dbtProject";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
@@ -65,6 +65,7 @@ import { SqlPreviewContentProvider } from "./content_provider/sqlPreviewContentP
 import { CteProfilerDecorationProvider } from "./cte_profiler/cteProfilerDecorationProvider";
 import { CteProfilerService } from "./cte_profiler/cteProfilerService";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
+import { ExtensionContextStore } from "./extensionContext";
 import { DbtPowerUserActionsCenter } from "./quickpick";
 import { StatusBars } from "./statusbar";
 import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
@@ -83,6 +84,13 @@ import { NewLineagePanel } from "./webview_provider/newLineagePanel";
 import { QueryResultPanel } from "./webview_provider/queryResultPanel";
 
 export const container = new Container();
+
+/** Binds the activation context; call once before resolving the extension. */
+export function bindExtensionContext(context: ExtensionContext): void {
+  container
+    .bind(ExtensionContextStore)
+    .toConstantValue(new ExtensionContextStore(context));
+}
 
 // Bind parser classes
 container
@@ -255,10 +263,10 @@ container
     return new ConfiguredFusionExecutableResolver({
       logWarning: (message) => terminal.warn("FusionVersion", message, false),
       getGlobalState: () => {
-        const projectContainer = context.get(DBTProjectContainer);
+        const store = context.get(ExtensionContextStore);
         return {
-          get: (key) => projectContainer.getFromGlobalState(key),
-          update: (key, value) => projectContainer.setToGlobalState(key, value),
+          get: (key) => store.getFromGlobalState(key),
+          update: (key, value) => store.setToGlobalState(key, value),
         };
       },
     });
@@ -479,6 +487,7 @@ container
   .toDynamicValue((context) => {
     return new ProjectSetupCommands(
       context.get(DBTProjectContainer),
+      context.get(ExtensionContextStore),
       context.get(ProjectQuickPick),
       context.get("DBTTerminal"),
     );
@@ -490,6 +499,7 @@ container
   .toDynamicValue((context) => {
     return new VSCodeCommands(
       context.get(DBTProjectContainer),
+      context.get(ExtensionContextStore),
       context.get(RunModel),
       context.get(RunTest),
       context.get(ProjectSetupCommands),
@@ -509,7 +519,7 @@ container
   .bind(QueryResultPanel)
   .toDynamicValue((context) => {
     return new QueryResultPanel(
-      context.get(DBTProjectContainer),
+      context.get(ExtensionContextStore),
       context.get(SharedStateService),
       context.get("DBTTerminal"),
       context.get(QueryManifestService),
@@ -522,6 +532,7 @@ container
   .toDynamicValue((context) => {
     return new DocsEditViewPanel(
       context.get(DBTProjectContainer),
+      context.get(ExtensionContextStore),
       context.get(DocGenService),
       context.get(DbtTestService),
       context.get(QueryManifestService),
@@ -545,7 +556,7 @@ container
   .bind(NewLineagePanel)
   .toDynamicValue((context) => {
     return new NewLineagePanel(
-      context.get(DBTProjectContainer),
+      context.get(ExtensionContextStore),
       context.get("DBTTerminal"),
       context.get(DbtLineageService),
       context.get(SharedStateService),
@@ -641,7 +652,7 @@ container
   .toDynamicValue((context) => {
     return new DbtPowerUserActionsCenter(
       context.get(ProjectContext),
-      context.get(DBTProjectContainer),
+      context.get(ExtensionContextStore),
     );
   })
   .inSingletonScope();

@@ -47,6 +47,7 @@ describe("webview panels on project removal", () => {
       {} as any,
       {} as any,
       {} as any,
+      {} as any,
       terminal,
     );
     (panel as any)._panel = {};
