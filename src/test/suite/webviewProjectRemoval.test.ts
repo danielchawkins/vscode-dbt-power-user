@@ -3,7 +3,7 @@ import { EventEmitter, Uri } from "vscode";
 import { DocsEditViewPanel } from "../../webview_provider/docsEditPanel";
 import { LineagePanel } from "../../webview_provider/lineagePanel";
 
-function container() {
+function projectsDouble() {
   const changed = new EventEmitter<unknown>();
   const removed = new EventEmitter<Uri>();
   return {
@@ -12,7 +12,7 @@ function container() {
     value: {
       onDidChangeManifest: changed.event,
       onDidRemoveProject: removed.event,
-      findDBTProject: () => undefined,
+      get: () => undefined,
     } as any,
   };
 }
@@ -25,7 +25,7 @@ describe("webview panels on project removal", () => {
   });
 
   it("LineagePanel tells the view the manifest is gone", () => {
-    const { removed, value } = container();
+    const { removed, value } = projectsDouble();
     const view = { manifestChanged: jest.fn() } as any;
     const panel = new LineagePanel(view, value, terminal);
 
@@ -41,7 +41,7 @@ describe("webview panels on project removal", () => {
     const transmit = jest
       .spyOn(DocsEditViewPanel.prototype as any, "transmitData")
       .mockImplementation(() => undefined);
-    const { removed, value } = container();
+    const { removed, value } = projectsDouble();
     const panel = new DocsEditViewPanel(
       value,
       {} as any,

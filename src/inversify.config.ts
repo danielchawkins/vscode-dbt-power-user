@@ -44,7 +44,7 @@ import { RunHistoryService } from "./services/runHistoryService";
 import { SharedStateService } from "./services/sharedStateService";
 
 // Core extension components
-import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
+import { Projects } from "./projects/projects";
 
 // Import providers
 import { CodeLensProviders } from "./code_lens_provider";
@@ -235,7 +235,7 @@ container
   .bind(DocGenService)
   .toDynamicValue((context) => {
     return new DocGenService(
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get(QueryManifestService),
       context.get("DBTTerminal"),
     );
@@ -293,10 +293,10 @@ container
         launchEnv: {
           resolve: (declared, fusionVersion) =>
             schemaOriginLaunchEnv(
-              context.get(DBTProjectContainer).findDBTProject(declared.root),
+              context.get(Projects).get(declared.root),
               fusionVersion,
             ),
-          onDidChange: context.get(DBTProjectContainer).onDidChangeManifest,
+          onDidChange: context.get(Projects).onDidChangeManifest,
         },
       },
     );
@@ -317,7 +317,7 @@ container
   .bind(QueryManifestService)
   .toDynamicValue((context) => {
     return new QueryManifestService(
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get("DBTTerminal"),
       context.get(ProjectContext),
     );
@@ -349,7 +349,7 @@ container
   .bind(CteProfilerService)
   .toDynamicValue((context) => {
     return new CteProfilerService(
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get("DBTTerminal"),
     );
   })
@@ -373,9 +373,9 @@ container
   .inSingletonScope();
 // Bind manifest components
 container
-  .bind(DBTProjectContainer)
+  .bind(Projects)
   .toDynamicValue((context) => {
-    return new DBTProjectContainer(
+    return new Projects(
       context.get(ProjectRegistry),
       context.get("Factory<DBTProject>"),
       context.get("DBTTerminal"),
@@ -388,7 +388,7 @@ container
   .bind(CodeLensProviders)
   .toDynamicValue((context) => {
     return new CodeLensProviders(
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get(SourceModelCreationCodeLensProvider),
       context.get(VirtualSqlCodeLensProvider),
       context.get(CteCodeLensProvider),
@@ -429,7 +429,7 @@ container
 container
   .bind(SqlPreviewContentProvider)
   .toDynamicValue((context) => {
-    return new SqlPreviewContentProvider(context.get(DBTProjectContainer));
+    return new SqlPreviewContentProvider(context.get(Projects));
   })
   .inSingletonScope();
 
@@ -438,7 +438,7 @@ container
   .bind(DeferToProductionStatusBar)
   .toDynamicValue((context) => {
     return new DeferToProductionStatusBar(
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get("DBTTerminal"),
     );
   })
@@ -451,12 +451,10 @@ container
       context.get(ProjectContext),
       context.get(FusionClientPoolImpl),
       (declared) => {
-        const project = context
-          .get(DBTProjectContainer)
-          .findDBTProject(declared.root);
+        const project = context.get(Projects).get(declared.root);
         return project ? project.projectOptIns() : undefined;
       },
-      context.get(DBTProjectContainer).onDidChangeManifest,
+      context.get(Projects).onDidChangeManifest,
     );
   })
   .inSingletonScope();
@@ -465,10 +463,7 @@ container
 container
   .bind(RunModel)
   .toDynamicValue((context) => {
-    return new RunModel(
-      context.get(DBTProjectContainer),
-      context.get(ProjectContext),
-    );
+    return new RunModel(context.get(Projects), context.get(ProjectContext));
   })
   .inSingletonScope();
 
@@ -476,7 +471,7 @@ container
   .bind(RunTest)
   .toDynamicValue((context) => {
     return new RunTest(
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get(QueryManifestService),
     );
   })
@@ -486,7 +481,7 @@ container
   .bind(ProjectSetupCommands)
   .toDynamicValue((context) => {
     return new ProjectSetupCommands(
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get(ExtensionContextStore),
       context.get(ProjectQuickPick),
       context.get("DBTTerminal"),
@@ -498,7 +493,7 @@ container
   .bind(VSCodeCommands)
   .toDynamicValue((context) => {
     return new VSCodeCommands(
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get(ExtensionContextStore),
       context.get(RunModel),
       context.get(RunTest),
@@ -531,7 +526,7 @@ container
   .bind(DocsEditViewPanel)
   .toDynamicValue((context) => {
     return new DocsEditViewPanel(
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get(ExtensionContextStore),
       context.get(DocGenService),
       context.get(DbtTestService),
@@ -546,7 +541,7 @@ container
   .toDynamicValue((context) => {
     return new LineagePanel(
       context.get(NewLineagePanel),
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get("DBTTerminal"),
     );
   })
@@ -581,28 +576,28 @@ container
 container
   .bind(ChildrenModelTreeview)
   .toDynamicValue((context) => {
-    return new ChildrenModelTreeview(context.get(DBTProjectContainer));
+    return new ChildrenModelTreeview(context.get(Projects));
   })
   .inSingletonScope();
 
 container
   .bind(ParentModelTreeview)
   .toDynamicValue((context) => {
-    return new ParentModelTreeview(context.get(DBTProjectContainer));
+    return new ParentModelTreeview(context.get(Projects));
   })
   .inSingletonScope();
 
 container
   .bind(ModelTestTreeview)
   .toDynamicValue((context) => {
-    return new ModelTestTreeview(context.get(DBTProjectContainer));
+    return new ModelTestTreeview(context.get(Projects));
   })
   .inSingletonScope();
 
 container
   .bind(DocumentationTreeview)
   .toDynamicValue((context) => {
-    return new DocumentationTreeview(context.get(DBTProjectContainer));
+    return new DocumentationTreeview(context.get(Projects));
   })
   .inSingletonScope();
 
@@ -662,7 +657,7 @@ container
   .bind(DBTPowerUserExtension)
   .toDynamicValue((context) => {
     return new DBTPowerUserExtension(
-      context.get(DBTProjectContainer),
+      context.get(Projects),
       context.get(WebviewViewProviders),
       context.get(VSCodeCommands),
       context.get(TreeviewProviders),

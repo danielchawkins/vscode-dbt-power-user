@@ -15,7 +15,6 @@ import {
   Uri,
   window,
 } from "vscode";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
   GraphMetaMap,
   NodeData,
@@ -24,6 +23,7 @@ import {
 } from "../dbt_integration";
 import { extensionRoot } from "../extensionRoot";
 import type { Manifest } from "../projects/manifestTypes";
+import { Projects } from "../projects/projects";
 import {
   getCurrentlySelectedModelNameInYamlConfig,
   getDepthColor,
@@ -94,7 +94,7 @@ abstract class ModelTreeviewProvider
   private disposables: Disposable[] = [this._onDidChangeTreeData];
 
   constructor(
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     @unmanaged() private treeType: keyof GraphMetaMap,
   ) {
     this.treeType = treeType;
@@ -102,12 +102,8 @@ abstract class ModelTreeviewProvider
       window.onDidChangeActiveTextEditor(() => {
         this._onDidChangeTreeData.fire();
       }),
-      this.dbtProjectContainer.onDidChangeManifest(() =>
-        this._onDidChangeTreeData.fire(),
-      ),
-      this.dbtProjectContainer.onDidRemoveProject(() =>
-        this._onDidChangeTreeData.fire(),
-      ),
+      this.projects.onDidChangeManifest(() => this._onDidChangeTreeData.fire()),
+      this.projects.onDidRemoveProject(() => this._onDidChangeTreeData.fire()),
       window.onDidChangeTextEditorSelection(() => {
         this._onDidChangeTreeData.fire();
       }),
@@ -133,8 +129,7 @@ abstract class ModelTreeviewProvider
     }
 
     const currentFilePath = window.activeTextEditor.document.uri;
-    const event =
-      this.dbtProjectContainer.findDBTProject(currentFilePath)?.manifest;
+    const event = this.projects.get(currentFilePath)?.manifest;
     if (event === undefined) {
       return Promise.resolve([]);
     }
@@ -252,17 +247,13 @@ class DocumentationTreeviewProvider implements TreeDataProvider<DocTreeItem> {
     this._onDidChangeTreeData.event;
   private disposables: Disposable[] = [this._onDidChangeTreeData];
 
-  constructor(private dbtProjectContainer: DBTProjectContainer) {
+  constructor(private projects: Projects) {
     this.disposables.push(
       window.onDidChangeActiveTextEditor(() => {
         this._onDidChangeTreeData.fire();
       }),
-      this.dbtProjectContainer.onDidChangeManifest(() =>
-        this._onDidChangeTreeData.fire(),
-      ),
-      this.dbtProjectContainer.onDidRemoveProject(() =>
-        this._onDidChangeTreeData.fire(),
-      ),
+      this.projects.onDidChangeManifest(() => this._onDidChangeTreeData.fire()),
+      this.projects.onDidRemoveProject(() => this._onDidChangeTreeData.fire()),
       window.onDidChangeTextEditorSelection(() => {
         this._onDidChangeTreeData.fire();
       }),
@@ -285,7 +276,7 @@ class DocumentationTreeviewProvider implements TreeDataProvider<DocTreeItem> {
       return Promise.resolve([]);
     }
     const currentFilePath = window.activeTextEditor.document.uri;
-    const project = this.dbtProjectContainer.findDBTProject(currentFilePath);
+    const project = this.projects.get(currentFilePath);
     const event = project?.manifest;
     if (project === undefined || event === undefined) {
       return Promise.resolve([]);
@@ -492,26 +483,26 @@ class TestTreeItem extends NodeTreeItem {
 }
 
 export class ModelTestTreeview extends ModelTreeviewProvider {
-  constructor(dbtProjectContainer: DBTProjectContainer) {
-    super(dbtProjectContainer, "tests");
+  constructor(projects: Projects) {
+    super(projects, "tests");
   }
 }
 
 export class ParentModelTreeview extends ModelTreeviewProvider {
-  constructor(dbtProjectContainer: DBTProjectContainer) {
-    super(dbtProjectContainer, "parents");
+  constructor(projects: Projects) {
+    super(projects, "parents");
   }
 }
 
 export class ChildrenModelTreeview extends ModelTreeviewProvider {
-  constructor(dbtProjectContainer: DBTProjectContainer) {
-    super(dbtProjectContainer, "children");
+  constructor(projects: Projects) {
+    super(projects, "children");
   }
 }
 
 export class DocumentationTreeview extends DocumentationTreeviewProvider {
-  constructor(dbtProjectContainer: DBTProjectContainer) {
-    super(dbtProjectContainer);
+  constructor(projects: Projects) {
+    super(projects);
   }
 }
 

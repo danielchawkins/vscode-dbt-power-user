@@ -1,13 +1,11 @@
 import { inject } from "inversify";
 import { Disposable, Event, EventEmitter, Uri } from "vscode";
+import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTTerminal } from "../dbt_integration";
 import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
 import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
-import type { RebuildManifestCombinedStatusChange } from "../projects/manifestTypes";
-import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";
-import { DBTProject } from "./dbtProject";
-
-export interface DBTProjectsInitializationEvent {}
+import type { RebuildManifestCombinedStatusChange } from "./manifestTypes";
+import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 
 interface ProjectEntry {
   project: DBTProject;
@@ -15,28 +13,27 @@ interface ProjectEntry {
   subscriptions: Disposable[];
 }
 
-export class DBTProjectContainer implements Disposable {
-  private _onDBTProjectsInitializationEvent =
-    new EventEmitter<DBTProjectsInitializationEvent>();
-  public readonly onDBTProjectsInitialization =
-    this._onDBTProjectsInitializationEvent.event;
+/** Builds one `Project` per Declared Project and aggregates their events. */
+export class Projects implements Disposable {
+  private _onDidInitialize = new EventEmitter<void>();
+  /** Fires once, after the first synchronization with the registry. */
+  readonly onDidInitialize: Event<void> = this._onDidInitialize.event;
   private _onDidChangeManifest = new EventEmitter<DBTProject>();
   /** Fires after any project publishes a new manifest. */
   readonly onDidChangeManifest: Event<DBTProject> =
     this._onDidChangeManifest.event;
   private _onDidRemoveProject = new EventEmitter<Uri>();
-  /** Fires with a project's root after the container drops it. */
+  /** Fires with a project's root after it is dropped. */
   readonly onDidRemoveProject: Event<Uri> = this._onDidRemoveProject.event;
-  private _onRebuildManifestStatusChange =
+  private _onDidChangeRebuildStatus =
     new EventEmitter<RebuildManifestCombinedStatusChange>();
-  readonly onRebuildManifestStatusChange =
-    this._onRebuildManifestStatusChange.event;
+  readonly onDidChangeRebuildStatus = this._onDidChangeRebuildStatus.event;
   private rebuildManifestStatusChangeMap = new Map<string, boolean>();
   private disposables: Disposable[] = [
-    this._onDBTProjectsInitializationEvent,
+    this._onDidInitialize,
     this._onDidChangeManifest,
     this._onDidRemoveProject,
-    this._onRebuildManifestStatusChange,
+    this._onDidChangeRebuildStatus,
   ];
 
   private readonly projectsByRoot = new Map<string, ProjectEntry>();
@@ -55,7 +52,7 @@ export class DBTProjectContainer implements Disposable {
     this.disposables.push(this.dbtTerminal);
   }
 
-  async initializeDBTProjects(): Promise<void> {
+  async initialize(): Promise<void> {
     if (this.disposed || this.registrySubscription) {
       return;
     }
@@ -66,52 +63,36 @@ export class DBTProjectContainer implements Disposable {
     this.registrySubscription = this.projectRegistry.onDidChangeProjects(() => {
       void this.enqueueSync().catch((error) => {
         this.dbtTerminal.error(
-          "DBTProjectContainer",
+          "Projects",
           "Project synchronization failed",
           error,
         );
       });
     });
-    this._onDBTProjectsInitializationEvent.fire({});
+    this._onDidInitialize.fire();
   }
 
-  getPackageName = (uri: Uri): string | undefined => {
-    return this.findDBTProject(uri)?.findPackageName(uri);
-  };
-
-  getProjectRootpath = (uri: Uri): Uri | undefined => {
-    return this.findDBTProject(uri)?.projectRoot;
-  };
-
-  async initialize(): Promise<void> {
-    await Promise.all(
-      this.getProjects().map((project) => project.initialize()),
-    );
-  }
-
-  findDBTProject(uri: Uri): DBTProject | undefined {
+  get(uri: Uri): DBTProject | undefined {
     const declared = this.projectRegistry.findProject(uri);
     return declared && this.projectsByRoot.get(declared.root.fsPath)?.project;
   }
 
-  getProjects(): DBTProject[] {
+  all(): DBTProject[] {
     return this.projectOrder.flatMap((root) => {
       const entry = this.projectsByRoot.get(root);
       return entry ? [entry.project] : [];
     });
   }
 
-  findProjectByName(projectName: string): DBTProject | undefined {
-    return this.getProjects().find(
+  byName(projectName: string): DBTProject | undefined {
+    return this.all().find(
       (project) => project.getProjectName() === projectName,
     );
   }
 
-  getAdapters(): string[] {
+  adapters(): string[] {
     return Array.from(
-      new Set<string>(
-        this.getProjects().map((project) => project.getAdapterType()),
-      ),
+      new Set<string>(this.all().map((project) => project.getAdapterType())),
     );
   }
 
@@ -221,7 +202,7 @@ export class DBTProjectContainer implements Disposable {
         const project = this.projectsByRoot.get(root)?.project;
         return project ? [project] : [];
       });
-    this._onRebuildManifestStatusChange.fire({
+    this._onDidChangeRebuildStatus.fire({
       projects,
       inProgress: projects.length > 0,
     });

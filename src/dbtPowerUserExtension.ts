@@ -10,7 +10,6 @@ import { CodeLensProviders } from "./code_lens_provider";
 import { VSCodeCommands } from "./commands";
 import { ProjectConfigCommands } from "./commands/projectConfigCommands";
 import { ContentProviders } from "./content_provider";
-import { DBTProjectContainer } from "./dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "./dbt_integration";
 import { registerFusionClientDiagnostics } from "./fusion/fusionClientDiagnostics";
 import { FusionClientPool } from "./fusion/fusionClientPool";
@@ -18,6 +17,7 @@ import { FusionStatus } from "./fusion/fusionStatus";
 import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { ProjectContext } from "./projects/projectContext";
 import { ProjectRegistry } from "./projects/projectRegistry";
+import { Projects } from "./projects/projects";
 import { DbtPowerUserActionsCenter } from "./quickpick";
 import { registerConnectedColumnsCommand } from "./services/connectedColumnsCommand";
 import { DbtLineageService } from "./services/dbtLineageService";
@@ -50,7 +50,7 @@ export class DBTPowerUserExtension implements Disposable {
   private disposables: Disposable[] = [];
 
   constructor(
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     private webviewViewProviders: WebviewViewProviders,
     private vscodeCommands: VSCodeCommands,
     private treeviewProviders: TreeviewProviders,
@@ -68,7 +68,7 @@ export class DBTPowerUserExtension implements Disposable {
     private dbtLineageService: DbtLineageService,
   ) {
     this.disposables.push(
-      this.dbtProjectContainer,
+      this.projects,
       this.webviewViewProviders,
       this.treeviewProviders,
       this.contentProviders,
@@ -135,7 +135,7 @@ export class DBTPowerUserExtension implements Disposable {
         this.fusionClientPool,
       );
       registerConnectedColumnsCommand(context, this.dbtLineageService);
-      await this.dbtProjectContainer.initializeDBTProjects();
+      await this.projects.initialize();
       await this.statusBars.initialize();
     } catch (error) {
       this.dbtTerminal.error(

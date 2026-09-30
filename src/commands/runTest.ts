@@ -1,5 +1,5 @@
 import { Uri, window } from "vscode";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { Projects } from "../projects/projects";
 import { QueryManifestService } from "../services/queryManifestService";
 
 /**
@@ -16,7 +16,7 @@ import { QueryManifestService } from "../services/queryManifestService";
  */
 export class RunTest {
   constructor(
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     private queryManifestService: QueryManifestService,
   ) {}
 
@@ -50,7 +50,7 @@ export class RunTest {
    * `dbt test --select <test_name>`.
    */
   runSingularTest(uri: Uri, testName: string): void {
-    const project = this.dbtProjectContainer.findDBTProject(uri);
+    const project = this.projects.get(uri);
     if (!project) {
       return;
     }

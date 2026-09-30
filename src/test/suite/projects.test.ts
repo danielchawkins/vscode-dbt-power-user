@@ -8,13 +8,13 @@ import {
 } from "@jest/globals";
 import { EventEmitter, Uri } from "vscode";
 import { DBTProject } from "../../dbt_client/dbtProject";
-import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { ProjectRegistry } from "../../projects/projectRegistry";
+import { Projects } from "../../projects/projects";
 
-describe("DBTProjectContainer", () => {
-  let container: DBTProjectContainer;
+describe("Projects", () => {
+  let projects: Projects;
   let mockDbtTerminal: jest.Mocked<DBTTerminal>;
   let mockProjectRegistry: any;
   let mockDbtProjectFactory: jest.Mock;
@@ -60,7 +60,6 @@ describe("DBTProjectContainer", () => {
       projectRoot: Uri.file("/project1"),
       getProjectName: jest.fn().mockReturnValue("project1"),
       getAdapterType: jest.fn().mockReturnValue("snowflake"),
-      findPackageName: jest.fn().mockReturnValue("package1"),
       initialize: jest.fn(),
       dispose: jest.fn(),
       onRebuildManifestStatusChange: jest
@@ -118,7 +117,7 @@ describe("DBTProjectContainer", () => {
       dispose: jest.fn(),
     } as unknown as ProjectRegistry;
 
-    container = new DBTProjectContainer(
+    projects = new Projects(
       mockProjectRegistry,
       mockDbtProjectFactory as any,
       mockDbtTerminal,
@@ -132,7 +131,7 @@ describe("DBTProjectContainer", () => {
 
   describe("initialization and sync", () => {
     it("should construct DBTProject instances exactly once across multiple syncs", async () => {
-      await container.initializeDBTProjects();
+      await projects.initialize();
 
       expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
       expect(mockProject1.initialize).toHaveBeenCalled();
@@ -146,18 +145,18 @@ describe("DBTProjectContainer", () => {
       expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
     });
 
-    it("should initialize event even when no projects exist", async () => {
+    it("fires onDidInitialize even when no projects exist", async () => {
       mockProjectRegistry.projects = [];
-      const container2 = new DBTProjectContainer(
+      const other = new Projects(
         mockProjectRegistry,
         mockDbtProjectFactory as any,
         mockDbtTerminal,
       );
 
       const initHandler = jest.fn();
-      container2.onDBTProjectsInitialization(initHandler);
+      other.onDidInitialize(initHandler);
 
-      await container2.initializeDBTProjects();
+      await other.initialize();
 
       expect(initHandler).toHaveBeenCalled();
     });
@@ -165,37 +164,35 @@ describe("DBTProjectContainer", () => {
 
   describe("project lookup", () => {
     beforeEach(async () => {
-      await container.initializeDBTProjects();
+      await projects.initialize();
     });
 
     it("should resolve projects through registry with deepest-first order", () => {
-      const project = container.findDBTProject(
-        Uri.file("/project1/models/my_model.sql"),
-      );
+      const project = projects.get(Uri.file("/project1/models/my_model.sql"));
       expect(project).toBe(mockProject1);
     });
 
-    it("should return registry order for getProjects", () => {
-      const projects = container.getProjects();
-      expect(projects).toHaveLength(2);
-      expect(projects[0]).toBe(mockProject1);
-      expect(projects[1]).toBe(mockProject2);
+    it("should return registry order for all", () => {
+      const all = projects.all();
+      expect(all).toHaveLength(2);
+      expect(all[0]).toBe(mockProject1);
+      expect(all[1]).toBe(mockProject2);
     });
 
     it("should return undefined for file outside any project", () => {
-      const project = container.findDBTProject(Uri.file("/unknown/path"));
+      const project = projects.get(Uri.file("/unknown/path"));
       expect(project).toBeUndefined();
     });
   });
 
   describe("removal and manifest events", () => {
     beforeEach(async () => {
-      await container.initializeDBTProjects();
+      await projects.initialize();
     });
 
     it("should fire project removed before disposing removed projects", async () => {
       const removedHandler = jest.fn();
-      container.onDidRemoveProject(removedHandler);
+      projects.onDidRemoveProject(removedHandler);
 
       // Reduce registry to one project
       mockProjectRegistry.projects = [declaredProject1];
@@ -211,7 +208,7 @@ describe("DBTProjectContainer", () => {
 
     it("fires the removed project's root on onDidRemoveProject", async () => {
       const removedHandler = jest.fn();
-      container.onDidRemoveProject(removedHandler);
+      projects.onDidRemoveProject(removedHandler);
 
       mockProjectRegistry.projects = [declaredProject1];
       registryOnDidChangeProjects.fire();
@@ -223,7 +220,7 @@ describe("DBTProjectContainer", () => {
 
     it("aggregates onDidChangeManifest across projects and stops after removal", async () => {
       const changedHandler = jest.fn();
-      container.onDidChangeManifest(changedHandler);
+      projects.onDidChangeManifest(changedHandler);
 
       project1Manifest.fire(mockProject1);
       project2Manifest.fire(mockProject2);
@@ -242,7 +239,7 @@ describe("DBTProjectContainer", () => {
 
     it("should update rebuild status map on removal", async () => {
       const statusHandler = jest.fn();
-      container.onRebuildManifestStatusChange(statusHandler);
+      projects.onDidChangeRebuildStatus(statusHandler);
 
       // Manually trigger rebuild status for project2
       const rebuildStatusSub = (
@@ -269,18 +266,18 @@ describe("DBTProjectContainer", () => {
 
   describe("registry reconciliation", () => {
     it("should follow registry order changes", async () => {
-      await container.initializeDBTProjects();
+      await projects.initialize();
       mockProjectRegistry.projects = [declaredProject2, declaredProject1];
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(container.getProjects()).toEqual([mockProject2, mockProject1]);
+      expect(projects.all()).toEqual([mockProject2, mockProject1]);
       expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
     });
 
     it("serializes removal after project initialization", async () => {
       mockProjectRegistry.projects = [];
-      await container.initializeDBTProjects();
+      await projects.initialize();
       let finish!: () => void;
       mockProject1.initialize.mockReturnValue(
         new Promise<void>((resolve) => {
@@ -304,7 +301,7 @@ describe("DBTProjectContainer", () => {
 
     it("reports reconciliation failures", async () => {
       mockProjectRegistry.projects = [];
-      await container.initializeDBTProjects();
+      await projects.initialize();
       mockProject1.initialize.mockRejectedValue(new Error("broken project"));
 
       mockProjectRegistry.projects = [declaredProject1];
@@ -312,69 +309,52 @@ describe("DBTProjectContainer", () => {
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(mockDbtTerminal.error).toHaveBeenCalledWith(
-        "DBTProjectContainer",
+        "Projects",
         "Project synchronization failed",
         expect.any(Error),
       );
     });
   });
 
-  describe("retained container API", () => {
+  describe("lookup API", () => {
     beforeEach(async () => {
-      await container.initializeDBTProjects();
+      await projects.initialize();
     });
 
-    it("initializes every project and awaits completion", async () => {
-      let finish!: () => void;
-      mockProject1.initialize.mockReturnValue(
-        new Promise<void>((resolve) => {
-          finish = resolve;
-        }),
-      );
-      mockProject1.initialize.mockClear();
-      mockProject2.initialize.mockClear();
-
-      const result = container.initialize();
-      expect(mockProject1.initialize).toHaveBeenCalled();
-      expect(mockProject2.initialize).toHaveBeenCalled();
-      finish();
-      await result;
+    it("ignores a second initialize", async () => {
+      mockDbtProjectFactory.mockClear();
+      await projects.initialize();
+      expect(mockDbtProjectFactory).not.toHaveBeenCalled();
     });
 
-    it("resolves package, root, adapter, and project-name accessors", () => {
-      const model = Uri.file("/project1/models/test.sql");
-
-      expect(container.getPackageName(model)).toBe("package1");
-      expect(container.getProjectRootpath(model)).toBe(
-        mockProject1.projectRoot,
-      );
-      expect(container.getAdapters()).toEqual(["snowflake"]);
-      expect(container.findProjectByName("project2")).toBe(mockProject2);
+    it("resolves adapter and project-name accessors", () => {
+      expect(projects.adapters()).toEqual(["snowflake"]);
+      expect(projects.byName("project2")).toBe(mockProject2);
     });
   });
 
   describe("disposal", () => {
     beforeEach(async () => {
-      await container.initializeDBTProjects();
+      await projects.initialize();
     });
 
     it("should dispose projects and subscriptions but not registry", async () => {
-      container.dispose();
+      projects.dispose();
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(mockProject1.dispose).toHaveBeenCalled();
       expect(mockProject2.dispose).toHaveBeenCalled();
       expect(mockProjectRegistry.dispose).not.toHaveBeenCalled();
-      expect(container.getProjects()).toEqual([]);
+      expect(projects.all()).toEqual([]);
       expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
     });
 
     it("should fire project removed on disposal", () => {
       const removedHandler = jest.fn<(root: Uri) => void>();
-      container.onDidRemoveProject(removedHandler);
+      projects.onDidRemoveProject(removedHandler);
 
-      container.dispose();
+      projects.dispose();
 
       expect(removedHandler).toHaveBeenCalledTimes(2);
       const roots = removedHandler.mock.calls.map(([root]) => root.fsPath);
@@ -385,7 +365,7 @@ describe("DBTProjectContainer", () => {
 
   describe("metadata source integration", () => {
     beforeEach(async () => {
-      await container.initializeDBTProjects();
+      await projects.initialize();
     });
 
     it("routes each publication once and drops events after removal", async () => {
@@ -395,8 +375,8 @@ describe("DBTProjectContainer", () => {
         ManifestMetadataSource.prototype,
         "dispose",
       );
-      container.onDidChangeManifest(changed);
-      container.onDidRemoveProject(removed);
+      projects.onDidChangeManifest(changed);
+      projects.onDidRemoveProject(removed);
 
       project1Manifest.fire(mockProject1);
 
@@ -418,7 +398,7 @@ describe("DBTProjectContainer", () => {
       project1Manifest.fire(mockProject1);
       expect(changed).toHaveBeenCalledTimes(1);
 
-      container.dispose();
+      projects.dispose();
       expect(sourceDispose).toHaveBeenCalledTimes(2);
     });
 

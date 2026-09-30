@@ -37,16 +37,16 @@ describe("ProjectSetupCommands project resolution", () => {
       installDeps: jest.fn(() => Promise.resolve()),
     };
     const mockStore = { setToWorkspaceState: jest.fn() };
-    const mockContainer = {
-      getProjects: jest.fn(() => Promise.resolve([mockProject])),
-      findDBTProject: jest.fn(() => mockProject),
+    const mockProjects = {
+      all: jest.fn(() => Promise.resolve([mockProject])),
+      get: jest.fn(() => mockProject),
     };
     const mockPicker = {
       projectPicker: jest.fn(() => Promise.resolve(options.pickerResult)),
     };
 
     const commands = new ProjectSetupCommands(
-      mockContainer as never,
+      mockProjects as never,
       mockStore as never,
       mockPicker as unknown as ProjectQuickPick,
       mockDbtTerminal as never,

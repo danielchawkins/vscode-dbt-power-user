@@ -80,7 +80,7 @@ describe("fusionPowerUser.diagnostics", () => {
     };
 
     new VSCodeCommands(
-      { getProjects: () => [failedProject, healthyProject] } as never,
+      { all: () => [failedProject, healthyProject] } as never,
       {} as never,
       {} as never,
       {} as never,

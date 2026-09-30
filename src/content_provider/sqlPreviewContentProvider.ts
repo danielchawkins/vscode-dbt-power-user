@@ -10,7 +10,7 @@ import {
   window,
   workspace,
 } from "vscode";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { Projects } from "../projects/projects";
 
 export class SqlPreviewContentProvider
   implements TextDocumentContentProvider, Disposable
@@ -22,7 +22,7 @@ export class SqlPreviewContentProvider
   private subscriptions: Disposable[] = [];
   private debounceTimers: Map<string, NodeJS.Timeout> = new Map();
 
-  constructor(private dbtProjectContainer: DBTProjectContainer) {
+  constructor(private projects: Projects) {
     // Register a single global listener for all document changes
     this.subscriptions.push(
       workspace.onDidChangeTextDocument((e: TextDocumentChangeEvent) => {
@@ -121,7 +121,7 @@ export class SqlPreviewContentProvider
         ? document.getText()
         : readFileSync(fsPath, "utf8");
 
-      const project = this.dbtProjectContainer.findDBTProject(Uri.file(fsPath));
+      const project = this.projects.get(Uri.file(fsPath));
       if (project === undefined) {
         return "Still loading dbt project, please try again later...";
       }

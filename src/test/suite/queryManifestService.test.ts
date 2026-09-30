@@ -4,7 +4,7 @@ import { QueryManifestService } from "../../services/queryManifestService";
 
 describe("QueryManifestService.rewire", () => {
   let service: QueryManifestService;
-  let containerDouble: any;
+  let projectsDouble: any;
   let contextDouble: any;
   let mockProject: any;
 
@@ -21,16 +21,13 @@ describe("QueryManifestService.rewire", () => {
         uri.fsPath.startsWith("/workspace/projects/general/"),
     };
 
-    containerDouble = {
-      findDBTProject: jest.fn((uri: any) =>
+    projectsDouble = {
+      get: jest.fn((uri: any) =>
         (uri as any)?.fsPath === "/workspace/projects/general"
           ? mockProject
           : undefined,
       ),
-      getProjects: jest.fn(() => []),
-      getProjectRootpath: jest.fn(() => {
-        throw new Error("legacy root lookup must not run");
-      }),
+      all: jest.fn(() => []),
     };
 
     const forResourceMock = jest.fn((uri: any) =>
@@ -47,7 +44,7 @@ describe("QueryManifestService.rewire", () => {
     };
 
     service = new QueryManifestService(
-      containerDouble as any,
+      projectsDouble as any,
       { debug: jest.fn(), error: jest.fn(), warn: jest.fn() } as any,
       contextDouble as any,
     );
@@ -57,7 +54,7 @@ describe("QueryManifestService.rewire", () => {
     it("maps context.current root to DBTProject", () => {
       const result = service.getProject();
       expect(result).toBeDefined();
-      expect(containerDouble.findDBTProject).toHaveBeenCalledWith(
+      expect(projectsDouble.get).toHaveBeenCalledWith(
         contextDouble.current.root,
       );
     });
@@ -99,13 +96,13 @@ describe("QueryManifestService.rewire", () => {
       const uri = Uri.file(
         "/workspace/projects/general/models/general_model.sql",
       );
-      containerDouble.findDBTProject.mockImplementation((candidate: Uri) =>
+      projectsDouble.get.mockImplementation((candidate: Uri) =>
         candidate === uri ? { projectRoot: Uri.file("/wrong") } : undefined,
       );
 
       expect(service.getProjectByUri(uri)).toBeUndefined();
-      expect(containerDouble.findDBTProject).toHaveBeenCalledTimes(1);
-      expect(containerDouble.findDBTProject).toHaveBeenCalledWith(
+      expect(projectsDouble.get).toHaveBeenCalledTimes(1);
+      expect(projectsDouble.get).toHaveBeenCalledWith(
         contextDouble.current.root,
       );
     });
@@ -145,22 +142,20 @@ describe("QueryManifestService.rewire", () => {
       };
       (window.activeTextEditor as any) = { document: { uri: editorUri } };
       contextDouble.requireForCommand.mockResolvedValue(selected);
-      containerDouble.findDBTProject.mockImplementation((uri: Uri) =>
+      projectsDouble.get.mockImplementation((uri: Uri) =>
         uri === editorUri ? { projectRoot: Uri.file("/wrong") } : undefined,
       );
 
       await expect(
         service.getOrPickProjectFromWorkspace(),
       ).resolves.toBeUndefined();
-      expect(containerDouble.findDBTProject).toHaveBeenCalledTimes(1);
-      expect(containerDouble.findDBTProject).toHaveBeenCalledWith(
-        selected.root,
-      );
+      expect(projectsDouble.get).toHaveBeenCalledTimes(1);
+      expect(projectsDouble.get).toHaveBeenCalledWith(selected.root);
     });
   });
 
   describe("event lookup consistency", () => {
-    it("getEventByDocument uses resolveProject mapper, never direct getProjectRootpath", async () => {
+    it("getEventByDocument uses resolveProject mapper", async () => {
       const mockEvent = {
         project: { projectRoot: Uri.file("/workspace/projects/general") },
       };
@@ -173,7 +168,6 @@ describe("QueryManifestService.rewire", () => {
 
       expect(result).toBe(mockEvent);
       expect(contextDouble.forResource).toHaveBeenCalledWith(file);
-      expect(containerDouble.getProjectRootpath).not.toHaveBeenCalled();
     });
 
     it("getSourcesInProject and getModelsInProject use same mapper", async () => {
@@ -212,9 +206,7 @@ describe("QueryManifestService.rewire", () => {
       const second = { sourceMetaMap: new Map() };
       mockProject.manifest = second;
       expect(service.getEventByDocument(file)).toBe(second);
-      expect(containerDouble.findDBTProject).toHaveBeenCalledWith(
-        mockProject.projectRoot,
-      );
+      expect(projectsDouble.get).toHaveBeenCalledWith(mockProject.projectRoot);
     });
   });
 });

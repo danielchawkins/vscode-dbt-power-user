@@ -2,8 +2,8 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { Uri, window } from "vscode";
 import { RunTest } from "../../commands/runTest";
 import { DBTProject } from "../../dbt_client/dbtProject";
-import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { Manifest } from "../../projects/manifestTypes";
+import { Projects } from "../../projects/projects";
 import { QueryManifestService } from "../../services/queryManifestService";
 
 /**
@@ -18,7 +18,7 @@ import { QueryManifestService } from "../../services/queryManifestService";
  */
 describe("RunTest — singular test classification and dispatch", () => {
   let mockProject: jest.Mocked<DBTProject>;
-  let mockContainer: jest.Mocked<DBTProjectContainer>;
+  let mockProjects: jest.Mocked<Projects>;
   let mockQueryManifestService: jest.Mocked<QueryManifestService>;
   let runTest: RunTest;
 
@@ -88,15 +88,15 @@ describe("RunTest — singular test classification and dispatch", () => {
 
   beforeEach(() => {
     mockProject = { runTest: jest.fn() } as unknown as jest.Mocked<DBTProject>;
-    mockContainer = {
-      findDBTProject: jest.fn().mockReturnValue(mockProject),
-    } as unknown as jest.Mocked<DBTProjectContainer>;
+    mockProjects = {
+      get: jest.fn().mockReturnValue(mockProject),
+    } as unknown as jest.Mocked<Projects>;
 
     mockQueryManifestService = {
       getEventByDocument: jest.fn().mockReturnValue(makeEvent()),
     } as unknown as jest.Mocked<QueryManifestService>;
 
-    runTest = new RunTest(mockContainer, mockQueryManifestService);
+    runTest = new RunTest(mockProjects, mockQueryManifestService);
   });
 
   describe("getSingularTestName", () => {
@@ -138,9 +138,7 @@ describe("RunTest — singular test classification and dispatch", () => {
       const dispatched = runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(true);
-      expect(mockContainer.findDBTProject).toHaveBeenCalledWith(
-        expect.anything(),
-      );
+      expect(mockProjects.get).toHaveBeenCalledWith(expect.anything());
       expect(mockProject.runTest).toHaveBeenCalledWith(
         "singular_nonnull_orders",
       );

@@ -1,15 +1,15 @@
 import { inject } from "inversify";
 import { TextDocument, Uri, window } from "vscode";
 import { DBTProject } from "../dbt_client/dbtProject";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../dbt_integration";
 import type { Manifest } from "../projects/manifestTypes";
 import { ProjectContext } from "../projects/projectContext";
 import { DeclaredProject } from "../projects/projectRegistry";
+import { Projects } from "../projects/projects";
 
 export class QueryManifestService {
   public constructor(
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private projectContext: ProjectContext,
@@ -40,15 +40,13 @@ export class QueryManifestService {
     // remove duplicates
     return [
       ...new Set(
-        this.dbtProjectContainer
-          .getProjects()
-          .map((project) => project.getProjectName()),
+        this.projects.all().map((project) => project.getProjectName()),
       ),
     ];
   }
 
   public getProjectByName(projectName: string) {
-    const projects = this.dbtProjectContainer.getProjects();
+    const projects = this.projects.all();
     return projects.find((project) => project.getProjectName() === projectName);
   }
 
@@ -155,12 +153,12 @@ export class QueryManifestService {
   }
 
   private manifestAt(root: Uri): Manifest | undefined {
-    return this.dbtProjectContainer.findDBTProject(root)?.manifest;
+    return this.projects.get(root)?.manifest;
   }
 
   private mapDeclaredProject(
     declared: DeclaredProject,
   ): DBTProject | undefined {
-    return this.dbtProjectContainer.findDBTProject(declared.root);
+    return this.projects.get(declared.root);
   }
 }

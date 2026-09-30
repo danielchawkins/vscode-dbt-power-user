@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
 import { CteProfilerService } from "../../cte_profiler/cteProfilerService";
-import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../../dbt_integration";
+import { Projects } from "../../projects/projects";
 
 describe("CteProfilerService.extractRowCount", () => {
   let svc: CteProfilerService;
@@ -15,8 +15,8 @@ describe("CteProfilerService.extractRowCount", () => {
       log: jest.fn(),
       trace: jest.fn(),
     } as unknown as DBTTerminal;
-    const dbtProjectContainer = {} as DBTProjectContainer;
-    svc = new CteProfilerService(dbtProjectContainer, dbtTerminal);
+    const projects = {} as Projects;
+    svc = new CteProfilerService(projects, dbtTerminal);
   });
 
   // Use a private-field accessor — extractRowCount is intentionally private,
