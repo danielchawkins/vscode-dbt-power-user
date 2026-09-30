@@ -42,6 +42,7 @@ import { DeferToProductionStatusBar } from "../statusbar/deferToProductionStatus
 import { RunTreeItem } from "../treeview_provider/runHistoryTreeItems";
 import { getFirstWorkspacePath } from "../utils";
 import { ProjectSetupCommands } from "./projectSetupCommands";
+import { rerunFromHistory } from "./rerunFromHistory";
 import { RunModel } from "./runModel";
 import { RunTest } from "./runTest";
 
@@ -77,7 +78,9 @@ export class VSCodeCommands implements Disposable {
       commands.registerCommand(
         "fusionPowerUser.rerunFromHistory",
         (item: RunTreeItem) => {
-          this.dbtProjectContainer.rerunFromHistory(item.entry);
+          rerunFromHistory(item.entry, (name) =>
+            this.dbtProjectContainer.findProjectByName(name),
+          );
         },
       ),
       commands.registerCommand("fusionPowerUser.clearRunHistory", async () => {

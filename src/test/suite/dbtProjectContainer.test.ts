@@ -7,13 +7,12 @@ import {
   jest,
 } from "@jest/globals";
 import * as fs from "fs";
-import { EventEmitter, Uri, window } from "vscode";
+import { EventEmitter, Uri } from "vscode";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { DBTTerminal, RunModelType } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { ProjectRegistry } from "../../projects/projectRegistry";
-import { createEntry } from "../fixtures/runHistory";
 
 describe("DBTProjectContainer", () => {
   let container: DBTProjectContainer;
@@ -523,101 +522,6 @@ describe("DBTProjectContainer", () => {
 
       expect(mockProject1.executeSQLOnQueryPanel).not.toHaveBeenCalled();
       expect(mockProject2.executeSQLOnQueryPanel).not.toHaveBeenCalled();
-    });
-  });
-
-  describe("rerunFromHistory", () => {
-    beforeEach(async () => {
-      await container.initializeDBTProjects();
-    });
-
-    it("reports a project that is not loaded", () => {
-      container.rerunFromHistory(
-        createEntry({ projectName: "missing", command: "dbt run" }),
-      );
-
-      expect(window.showErrorMessage).toHaveBeenCalledWith(
-        expect.stringContaining("missing"),
-      );
-    });
-
-    it.each(["dbt run", "dbt test", "dbt compile"])(
-      "warns for project-wide %s",
-      (command) => {
-        container.rerunFromHistory(
-          createEntry({ projectName: "project1", command, args: [] }),
-        );
-
-        expect(window.showWarningMessage).toHaveBeenCalledWith(
-          expect.stringContaining(command),
-        );
-      },
-    );
-
-    it("reruns selected run, test, compile, and build commands", () => {
-      container.rerunFromHistory(
-        createEntry({
-          projectName: "project1",
-          command: "dbt run",
-          args: ["model"],
-        }),
-      );
-      container.rerunFromHistory(
-        createEntry({
-          projectName: "project1",
-          command: "dbt test",
-          args: ["unique_model"],
-        }),
-      );
-      container.rerunFromHistory(
-        createEntry({
-          projectName: "project1",
-          command: "dbt compile",
-          args: ["+model"],
-        }),
-      );
-      container.rerunFromHistory(
-        createEntry({
-          projectName: "project1",
-          command: "dbt build",
-          args: ["+model+"],
-        }),
-      );
-      container.rerunFromHistory(
-        createEntry({
-          projectName: "project1",
-          command: "dbt build",
-          args: [],
-        }),
-      );
-
-      expect(mockProject1.runModel).toHaveBeenCalledWith(
-        expect.objectContaining({ modelName: "model" }),
-      );
-      expect(mockProject1.runTest).toHaveBeenCalledWith("unique_model");
-      expect(mockProject1.compileModel).toHaveBeenCalledWith(
-        expect.objectContaining({ plusOperatorLeft: "+", modelName: "model" }),
-      );
-      expect(mockProject1.buildModel).toHaveBeenCalledWith({
-        plusOperatorLeft: "+",
-        modelName: "model",
-        plusOperatorRight: "+",
-      });
-      expect(mockProject1.buildProject).toHaveBeenCalled();
-    });
-
-    it("warns for unsupported commands", () => {
-      container.rerunFromHistory(
-        createEntry({
-          projectName: "project1",
-          command: "dbt seed",
-          args: [],
-        }),
-      );
-
-      expect(window.showWarningMessage).toHaveBeenCalledWith(
-        expect.stringContaining("seed"),
-      );
     });
   });
 
