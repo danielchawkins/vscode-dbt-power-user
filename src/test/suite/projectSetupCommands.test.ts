@@ -1,10 +1,10 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { Uri, window } from "vscode";
-import { ProjectSetupCommands } from "../../commands/projectSetupCommands";
+import { ProjectSetupCommands } from "../../features/projectSetup/projectSetupCommands";
 import {
   ProjectQuickPick,
   ProjectQuickPickItem,
-} from "../../quickpick/projectQuickPick";
+} from "../../projects/projectQuickPick";
 
 const projectUri = Uri.file("/path/to/project");
 const pickedProject: ProjectQuickPickItem = {

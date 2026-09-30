@@ -1,6 +1,6 @@
 import { describe, expect, it } from "@jest/globals";
 import { CodeLens } from "vscode";
-import { SqlActionsCodeLensProvider } from "../../code_lens_provider/sqlActionsCodeLensProvider";
+import { SqlActionsCodeLensProvider } from "../../features/sqlActions/sqlActionsCodeLensProvider";
 
 function makeDoc(fsPath: string): any {
   return { fileName: fsPath, uri: { fsPath } };

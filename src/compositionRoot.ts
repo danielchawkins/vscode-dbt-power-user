@@ -1,16 +1,4 @@
 import { Event, ExtensionContext, Uri } from "vscode";
-import { CodeLensProviders } from "./code_lens_provider";
-import { CteCodeLensProvider } from "./code_lens_provider/cteCodeLensProvider";
-import { SourceModelCreationCodeLensProvider } from "./code_lens_provider/sourceModelCreationCodeLensProvider";
-import { SqlActionsCodeLensProvider } from "./code_lens_provider/sqlActionsCodeLensProvider";
-import { VirtualSqlCodeLensProvider } from "./code_lens_provider/virtualSqlCodeLensProvider";
-import { VSCodeCommands } from "./commands";
-import { ProjectConfigCommands } from "./commands/projectConfigCommands";
-import { ProjectSetupCommands } from "./commands/projectSetupCommands";
-import { RunModel } from "./commands/runModel";
-import { RunTest } from "./commands/runTest";
-import { ContentProviders } from "./content_provider";
-import { SqlPreviewContentProvider } from "./content_provider/sqlPreviewContentProvider";
 import {
   ChildrenParentParser,
   DocParser,
@@ -26,14 +14,46 @@ import {
   TestParser,
   UnitTestParser,
 } from "./core/manifest";
-import { CteProfilerDecorationProvider } from "./cte_profiler/cteProfilerDecorationProvider";
-import { CteProfilerService } from "./cte_profiler/cteProfilerService";
 import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
 import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
 import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { DBTTerminal } from "./dbt_integration";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 import { ExtensionContextStore } from "./extensionContext";
+import { SourceModelCreationCodeLensProvider } from "./features/codegen/sourceModelCreationCodeLensProvider";
+import { CodeLensProviders } from "./features/codeLenses";
+import { VSCodeCommands } from "./features/commands";
+import { SqlPreviewContentProvider } from "./features/compiledSql/sqlPreviewContentProvider";
+import { ContentProviders } from "./features/contentProviders";
+import { CteCodeLensProvider } from "./features/cte/cteCodeLensProvider";
+import { CteProfilerDecorationProvider } from "./features/cte/cteProfilerDecorationProvider";
+import { CteProfilerService } from "./features/cte/cteProfilerService";
+import { DeferToProductionStatusBar } from "./features/defer/deferToProductionStatusBar";
+import { DiagnosticsOutputChannel } from "./features/diagnostics/diagnosticsOutputChannel";
+import { DbtTestService } from "./features/docs/dbtTestService";
+import { DocGenService } from "./features/docs/docGenService";
+import { DocsEditViewPanel } from "./features/docs/docsEditPanel";
+import { DbtLineageService } from "./features/lineage/dbtLineageService";
+import { LineagePanel } from "./features/lineage/lineagePanel";
+import { LineageViewProvider } from "./features/lineage/lineageViewProvider";
+import {
+  ChildrenModelTreeview,
+  DocumentationTreeview,
+  ModelTestTreeview,
+  ParentModelTreeview,
+} from "./features/modelTree/modelTreeviewProvider";
+import { WebviewViewProviders } from "./features/panels";
+import { DbtPowerUserActionsCenter } from "./features/projectPicker/actionsCenter";
+import { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
+import { ProjectSetupCommands } from "./features/projectSetup/projectSetupCommands";
+import { QueryResultPanel } from "./features/queryResults/queryResultPanel";
+import { RunModel } from "./features/run/runModel";
+import { RunTest } from "./features/run/runTest";
+import { RunHistoryTreeviewProvider } from "./features/runHistory/runHistoryTreeviewProvider";
+import { SqlActionsCodeLensProvider } from "./features/sqlActions/sqlActionsCodeLensProvider";
+import { VirtualSqlCodeLensProvider } from "./features/sqlActions/virtualSqlCodeLensProvider";
+import { StatusBars } from "./features/statusBars";
+import { TreeviewProviders } from "./features/treeViews";
 import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
 import { FusionCli } from "./fusion/fusionCli";
 import { createFusionClientPool } from "./fusion/fusionClientPool";
@@ -44,35 +64,15 @@ import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
 import { CurrentProject } from "./projects/currentProject";
 import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { Project } from "./projects/project";
+import { ProjectQuickPick } from "./projects/projectQuickPick";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { Projects } from "./projects/projects";
+import { QueryManifestService } from "./projects/queryManifestService";
 import { readProjectSnapshot } from "./projects/readProjectSnapshot";
-import { DbtPowerUserActionsCenter } from "./quickpick";
-import { ProjectQuickPick } from "./quickpick/projectQuickPick";
-import { DbtLineageService } from "./services/dbtLineageService";
-import { DbtTestService } from "./services/dbtTestService";
-import { DiagnosticsOutputChannel } from "./services/diagnosticsOutputChannel";
-import { DocGenService } from "./services/docGenService";
-import { QueryManifestService } from "./services/queryManifestService";
-import { RunHistoryService } from "./services/runHistoryService";
-import { SharedStateService } from "./services/sharedStateService";
+import { RunHistoryService } from "./projects/runHistoryService";
+import { SharedStateService } from "./projects/sharedStateService";
 import { readEnvironmentOverride } from "./settings";
 import { StartupGate } from "./startupGate";
-import { StatusBars } from "./statusbar";
-import { DeferToProductionStatusBar } from "./statusbar/deferToProductionStatusBar";
-import { TreeviewProviders } from "./treeview_provider";
-import {
-  ChildrenModelTreeview,
-  DocumentationTreeview,
-  ModelTestTreeview,
-  ParentModelTreeview,
-} from "./treeview_provider/modelTreeviewProvider";
-import { RunHistoryTreeviewProvider } from "./treeview_provider/runHistoryTreeviewProvider";
-import { WebviewViewProviders } from "./webview_provider";
-import { DocsEditViewPanel } from "./webview_provider/docsEditPanel";
-import { LineagePanel } from "./webview_provider/lineagePanel";
-import { LineageViewProvider } from "./webview_provider/lineageViewProvider";
-import { QueryResultPanel } from "./webview_provider/queryResultPanel";
 
 /** Builds a Project rooted at `projectRoot`. */
 export type ProjectFactory = (projectRoot: Uri) => Project;

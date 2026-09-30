@@ -1,0 +1,527 @@
+import * as path from "path";
+
+import {
+  Command,
+  Disposable,
+  Event,
+  EventEmitter,
+  MarkdownString,
+  ProviderResult,
+  TextDocument,
+  TreeDataProvider,
+  TreeItem,
+  TreeItemCollapsibleState,
+  Uri,
+  window,
+} from "vscode";
+import {
+  GraphMetaMap,
+  NodeData,
+  NodeMetaData,
+  NodeMetaMap,
+} from "../../dbt_integration";
+import { extensionRoot } from "../../extensionRoot";
+import type { Manifest } from "../../projects/manifestTypes";
+import { Projects } from "../../projects/projects";
+import {
+  getCurrentlySelectedModelNameInYamlConfig,
+  getDepthColor,
+  removeProtocol,
+} from "../../utils";
+
+interface IconPath {
+  light: string;
+  dark: string;
+}
+
+abstract class Node {
+  label: string;
+  key: string;
+  url: string | undefined;
+  iconPath: IconPath = {
+    light: path.join(extensionRoot, "../media/images/model_light.svg"),
+    dark: path.join(extensionRoot, "../media/images/model_dark.svg"),
+  };
+  displayInModelTree: boolean = true;
+
+  constructor(label: string, key: string, url?: string) {
+    this.label = label;
+    this.key = key;
+    this.url = url;
+  }
+}
+
+class Model extends Node {}
+
+class Seed extends Node {}
+class Test extends Node {
+  // displayInModelTree = false;
+  iconPath = {
+    light: path.join(extensionRoot, "../media/images/source_light.svg"),
+    dark: path.join(extensionRoot, "../media/images/source_dark.svg"),
+  };
+}
+class Analysis extends Node {
+  displayInModelTree = true;
+}
+class Exposure extends Node {
+  displayInModelTree = true;
+}
+class Function extends Node {
+  displayInModelTree = true;
+}
+class Metric extends Node {
+  displayInModelTree = false;
+}
+
+class Snapshot extends Node {}
+
+class Source extends Node {
+  iconPath = {
+    light: path.join(extensionRoot, "../media/images/source_light.svg"),
+    dark: path.join(extensionRoot, "../media/images/source_dark.svg"),
+  };
+}
+
+abstract class ModelTreeviewProvider
+  implements TreeDataProvider<NodeTreeItem>, Disposable
+{
+  private _onDidChangeTreeData: EventEmitter<ModelTreeItem | undefined | void> =
+    new EventEmitter<ModelTreeItem | undefined | void>();
+  readonly onDidChangeTreeData: Event<ModelTreeItem | undefined | void> =
+    this._onDidChangeTreeData.event;
+  private disposables: Disposable[] = [this._onDidChangeTreeData];
+
+  constructor(
+    private projects: Projects,
+    private treeType: keyof GraphMetaMap,
+  ) {
+    this.treeType = treeType;
+    this.disposables.push(
+      window.onDidChangeActiveTextEditor(() => {
+        this._onDidChangeTreeData.fire();
+      }),
+      this.projects.onDidChangeManifest(() => this._onDidChangeTreeData.fire()),
+      this.projects.onDidRemoveProject(() => this._onDidChangeTreeData.fire()),
+      window.onDidChangeTextEditorSelection(() => {
+        this._onDidChangeTreeData.fire();
+      }),
+    );
+  }
+
+  dispose() {
+    while (this.disposables.length) {
+      const x = this.disposables.pop();
+      if (x) {
+        x.dispose();
+      }
+    }
+  }
+
+  getTreeItem(element: NodeTreeItem): NodeTreeItem | Thenable<ModelTreeItem> {
+    return element;
+  }
+
+  getChildren(element?: NodeTreeItem): Thenable<NodeTreeItem[]> {
+    if (window.activeTextEditor === undefined) {
+      return Promise.resolve([]);
+    }
+
+    const currentFilePath = window.activeTextEditor.document.uri;
+    const event = this.projects.get(currentFilePath)?.manifest;
+    if (event === undefined) {
+      return Promise.resolve([]);
+    }
+
+    if (element?.key.startsWith("test.")) {
+      return Promise.resolve([]);
+    }
+
+    if (element) {
+      return Promise.resolve(this.getTreeItems(element.key, event));
+    }
+
+    const model = lookupModelByEditorContent(
+      event.nodeMetaMap,
+      window.activeTextEditor.document,
+    );
+    if (!model) {
+      return Promise.resolve([]);
+    }
+    return Promise.resolve(this.getTreeItems(model.unique_id, event));
+  }
+
+  private nodeDataToNode(nodeData: NodeData): Node | undefined {
+    const resourceType = nodeData.resourceType;
+    switch (resourceType) {
+      case "snapshot":
+        return new Snapshot(nodeData.label, nodeData.key, nodeData.url);
+      case "exposure":
+        return new Exposure(nodeData.label, nodeData.key, nodeData.url);
+      case "analysis":
+        return new Analysis(nodeData.label, nodeData.key, nodeData.url);
+      case "test":
+        return new Test(nodeData.label, nodeData.key, nodeData.url);
+      case "source":
+        return new Source(nodeData.label, nodeData.key, nodeData.url);
+      case "seed":
+        return new Seed(nodeData.label, nodeData.key, nodeData.url);
+      case "semantic_model":
+        return new Metric(nodeData.label, nodeData.key, nodeData.url);
+      case "function":
+        return new Function(nodeData.label, nodeData.key, nodeData.url);
+      case "model":
+        return new Model(nodeData.label, nodeData.key, nodeData.url);
+      default:
+        console.log(
+          `Resource Type '${resourceType}' not implemented in ModelTreeviewProvider.nodeDataToNode`,
+        );
+        return undefined;
+    }
+  }
+
+  private getNodeTreeItem(node: Node): NodeTreeItem {
+    if (node instanceof Snapshot) {
+      return new SnapshotTreeItem(node);
+    }
+    if (node instanceof Exposure) {
+      return new ExposureTreeItem(node);
+    }
+    if (node instanceof Analysis) {
+      return new AnalysisTreeItem(node);
+    }
+    if (node instanceof Test) {
+      return new TestTreeItem(node);
+    }
+    if (node instanceof Source) {
+      return new SourceTreeItem(node);
+    }
+    if (node instanceof Seed) {
+      return new SeedTreeItem(node);
+    }
+    if (node instanceof Function) {
+      return new FunctionTreeItem(node);
+    }
+    return new ModelTreeItem(node);
+  }
+
+  private getTreeItems(elementName: string, event: Manifest): NodeTreeItem[] {
+    const { graphMetaMap } = event;
+    const parentModels = graphMetaMap[this.treeType].get(elementName);
+    if (parentModels === undefined) {
+      return [];
+    }
+    return parentModels.nodes
+      .flatMap((nodeData) => {
+        const node = this.nodeDataToNode(nodeData);
+        return node && node.displayInModelTree ? [node] : [];
+      })
+      .map((node) => {
+        const childNodes = graphMetaMap[this.treeType]
+          .get(node.key)
+          ?.nodes.map((nodeData) => this.nodeDataToNode(nodeData))
+          .filter((node) => node && node.displayInModelTree);
+
+        const treeItem = this.getNodeTreeItem(node);
+        treeItem.collapsibleState =
+          childNodes?.length !== 0
+            ? TreeItemCollapsibleState.Collapsed
+            : TreeItemCollapsibleState.None;
+
+        // Calculate depth from modelDepthMap
+        const depth = event.modelDepthMap.get(node.key);
+        if (depth !== undefined) {
+          treeItem.setDepth(depth);
+        }
+
+        return treeItem;
+      });
+  }
+}
+
+class DocumentationTreeviewProvider
+  implements TreeDataProvider<DocTreeItem>, Disposable
+{
+  private _onDidChangeTreeData: EventEmitter<DocTreeItem | undefined | void> =
+    new EventEmitter<DocTreeItem | undefined | void>();
+  readonly onDidChangeTreeData: Event<DocTreeItem | undefined | void> =
+    this._onDidChangeTreeData.event;
+  private disposables: Disposable[] = [this._onDidChangeTreeData];
+
+  constructor(private projects: Projects) {
+    this.disposables.push(
+      window.onDidChangeActiveTextEditor(() => {
+        this._onDidChangeTreeData.fire();
+      }),
+      this.projects.onDidChangeManifest(() => this._onDidChangeTreeData.fire()),
+      this.projects.onDidRemoveProject(() => this._onDidChangeTreeData.fire()),
+      window.onDidChangeTextEditorSelection(() => {
+        this._onDidChangeTreeData.fire();
+      }),
+    );
+  }
+
+  getTreeItem(element: DocTreeItem): TreeItem {
+    return {
+      label: element.label,
+      description: element.description,
+      command: element.command,
+      collapsibleState: element.children
+        ? TreeItemCollapsibleState.Expanded
+        : TreeItemCollapsibleState.None,
+    };
+  }
+
+  getChildren(element: DocTreeItem): ProviderResult<DocTreeItem[]> {
+    if (window.activeTextEditor === undefined) {
+      return Promise.resolve([]);
+    }
+    const currentFilePath = window.activeTextEditor.document.uri;
+    const project = this.projects.get(currentFilePath);
+    const event = project?.manifest;
+    if (project === undefined || event === undefined) {
+      return Promise.resolve([]);
+    }
+    const projectRootpath = project.projectRoot;
+    const { nodeMetaMap } = event;
+
+    if (!element) {
+      const currentNode = lookupModelByEditorContent(
+        event.nodeMetaMap,
+        window.activeTextEditor.document,
+      );
+
+      if (currentNode === undefined) {
+        return Promise.resolve([]);
+      }
+      const modelName = currentNode.name;
+
+      const children = [];
+
+      if (Object.keys(currentNode.columns).length !== 0) {
+        for (const columnName in currentNode.columns) {
+          if (currentNode.columns.hasOwnProperty(columnName)) {
+            const column = currentNode.columns[columnName];
+            const { description } = column;
+            const child: any = {
+              label: columnName,
+              description,
+            };
+            children.push(child);
+          }
+        }
+        const url =
+          currentNode.patch_path !== null
+            ? path.join(
+                projectRootpath.fsPath,
+                removeProtocol(currentNode.patch_path),
+              )
+            : " ";
+
+        if (Object.keys(currentNode.columns).length === 0) {
+          window.showWarningMessage(
+            `Documentation View Warning: No columns found in manifest.json for ${modelName}, go edit the documentation in the documentation editor panel and run dbt docs generate`,
+          );
+        }
+        const key = currentNode.unique_id;
+        const label = currentNode.alias;
+        const description = `[ ${currentNode.config.materialized.toUpperCase()} ]  -  schema : ${
+          currentNode.schema
+        }`;
+        const nodeItem = new DocNode(label, key, url, description);
+        const treeItem = new DocTreeItem(nodeItem);
+        treeItem.children = children;
+        return [treeItem];
+      }
+      return [];
+    }
+    return element.children;
+  }
+
+  refresh(): void {
+    this._onDidChangeTreeData.fire();
+  }
+
+  dispose(): void {
+    while (this.disposables.length) {
+      this.disposables.pop()?.dispose();
+    }
+  }
+}
+
+class DocTreeItem extends TreeItem {
+  collapsibleState: TreeItemCollapsibleState =
+    TreeItemCollapsibleState.Collapsed;
+  description: string;
+  children?: DocTreeItem[];
+  command?: Command;
+  constructor(node: DocNode) {
+    super(node.label, TreeItemCollapsibleState.Collapsed);
+    this.description = node.description !== undefined ? node.description : " ";
+    // this. tooltip = "test tooltip" // node.description !== undefined ? node.description : " ";
+    if (node.url) {
+      this.command = {
+        command: "vscode.open",
+        title: "Open YML",
+        arguments: [Uri.file(node.url)],
+      };
+    }
+    if (node.iconPath !== undefined) {
+      this.iconPath = {
+        light: Uri.file(node.iconPath.light),
+        dark: Uri.file(node.iconPath.dark),
+      };
+    }
+  }
+}
+
+export class DocNode extends Node {
+  description: string;
+
+  constructor(label: string, key: string, url: string, description: string) {
+    super(label, key, url);
+    this.description = description;
+  }
+}
+
+export class NodeTreeItem extends TreeItem {
+  collapsibleState = TreeItemCollapsibleState.Collapsed;
+  key: string;
+  url: string | undefined;
+  depth?: number;
+
+  constructor(node: Node) {
+    super(node.label);
+    this.key = node.key;
+    this.url = node.url;
+    if (node.iconPath !== undefined) {
+      this.iconPath = {
+        light: Uri.file(node.iconPath.light),
+        dark: Uri.file(node.iconPath.dark),
+      };
+    }
+    if (node.url) {
+      this.command = {
+        command: "vscode.open",
+        title: "Select Node",
+        arguments: [Uri.file(node.url)],
+      };
+    }
+  }
+
+  setDepth(depth: number) {
+    this.depth = depth;
+    const color = getDepthColor(depth);
+    const depthInfo = `(${depth})`;
+    this.description = this.description
+      ? `${this.description} ${depthInfo}`
+      : depthInfo;
+    this.tooltip = new MarkdownString(
+      `**DAG Depth:** <span style="color:${color}">${depth}</span>\n\n` +
+        `The longest path of models between a source and this model is ${depth} nodes long.`,
+    );
+    this.tooltip.isTrusted = true;
+    this.tooltip.supportHtml = true;
+  }
+}
+
+class ModelTreeItem extends NodeTreeItem {
+  contextValue = "model";
+}
+
+class SourceTreeItem extends NodeTreeItem {
+  iconPath = {
+    light: Uri.file(
+      path.join(extensionRoot, "../media/images/source_light.svg"),
+    ),
+    dark: Uri.file(path.join(extensionRoot, "../media/images/source_dark.svg")),
+  };
+  contextValue = "source";
+}
+
+class SeedTreeItem extends NodeTreeItem {
+  iconPath = {
+    light: Uri.file(path.join(extensionRoot, "../media/images/seed_light.svg")),
+    dark: Uri.file(path.join(extensionRoot, "../media/images/seed_dark.svg")),
+  };
+  contextValue = "seed";
+}
+
+class SnapshotTreeItem extends NodeTreeItem {
+  contextValue = "snapshot";
+  iconPath = {
+    light: Uri.file(
+      path.join(extensionRoot, "../media/images/snapshot_light.svg"),
+    ),
+    dark: Uri.file(
+      path.join(extensionRoot, "../media/images/snapshot_dark.svg"),
+    ),
+  };
+}
+
+class ExposureTreeItem extends NodeTreeItem {
+  contextValue = "exposure";
+  iconPath = {
+    light: Uri.file(
+      path.join(extensionRoot, "../media/images/exposure_light.svg"),
+    ),
+    dark: Uri.file(
+      path.join(extensionRoot, "../media/images/exposure_dark.svg"),
+    ),
+  };
+}
+
+class FunctionTreeItem extends NodeTreeItem {
+  contextValue = "function";
+}
+
+class AnalysisTreeItem extends NodeTreeItem {
+  contextValue = "analysis";
+}
+
+class TestTreeItem extends NodeTreeItem {
+  iconPath = {
+    light: Uri.file(
+      path.join(extensionRoot, "../media/images/tests_light.svg"),
+    ),
+    dark: Uri.file(path.join(extensionRoot, "../media/images/tests_dark.svg")),
+  };
+  contextValue = "test";
+}
+
+export class ModelTestTreeview extends ModelTreeviewProvider {
+  constructor(projects: Projects) {
+    super(projects, "tests");
+  }
+}
+
+export class ParentModelTreeview extends ModelTreeviewProvider {
+  constructor(projects: Projects) {
+    super(projects, "parents");
+  }
+}
+
+export class ChildrenModelTreeview extends ModelTreeviewProvider {
+  constructor(projects: Projects) {
+    super(projects, "children");
+  }
+}
+
+export class DocumentationTreeview extends DocumentationTreeviewProvider {
+  constructor(projects: Projects) {
+    super(projects);
+  }
+}
+
+// Find appropriate a model from file content (if YAML) or from a file name (otherwise)
+export function lookupModelByEditorContent(
+  nodeMetaMap: NodeMetaMap,
+  document: TextDocument,
+): NodeMetaData | undefined {
+  const modelCandidateName =
+    document.languageId === "yaml" &&
+    getCurrentlySelectedModelNameInYamlConfig()
+      ? getCurrentlySelectedModelNameInYamlConfig()
+      : path.parse(document.fileName).name;
+  return nodeMetaMap.lookupByBaseName(modelCandidateName);
+}

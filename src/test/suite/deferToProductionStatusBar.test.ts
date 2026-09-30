@@ -7,8 +7,8 @@ import {
   jest,
 } from "@jest/globals";
 import { Uri, window, workspace } from "vscode";
+import { DeferToProductionStatusBar } from "../../features/defer/deferToProductionStatusBar";
 import { Project } from "../../projects/project";
-import { DeferToProductionStatusBar } from "../../statusbar/deferToProductionStatusBar";
 
 describe("DeferToProductionStatusBar", () => {
   const root = Uri.file("/workspace/proj");

@@ -2,7 +2,7 @@ import * as assert from "assert";
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
-import { PARENT_TABLES_COMMAND } from "../../services/connectedColumnsCommand";
+import { PARENT_TABLES_COMMAND } from "../../features/lineage/connectedColumnsCommand";
 
 /**
  * Pins that the lineage panel's table edges follow manifest rebuilds: a model that adds a `ref` lists its

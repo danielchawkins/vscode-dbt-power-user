@@ -1,11 +1,11 @@
 import { describe, expect, it } from "@jest/globals";
 import fc from "fast-check";
 import { Position, TextDocument } from "vscode";
+import { DBTTerminal } from "../../dbt_integration";
 import {
   CteCodeLensProvider,
   CteInfo,
-} from "../../code_lens_provider/cteCodeLensProvider";
-import { DBTTerminal } from "../../dbt_integration";
+} from "../../features/cte/cteCodeLensProvider";
 import { NUM_RUNS, sqlGap, sqlIdentifier } from "../arbitraries";
 
 const terminal = {

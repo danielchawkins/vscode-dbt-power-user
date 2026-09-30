@@ -41,11 +41,11 @@ classDiagram
     note for Webview_panels "AppConstants.tsx defines routes for each panel \n main.tsx will render route defined in viewPath variable in Provider"
 
 
-    click PanelHost href "../src/webview_provider/panelHost.ts" ""
-    click QueryResultPanel href "../src/webview_provider/queryResultPanel.ts" ""
-    click LineagePanel href "../src/webview_provider/lineagePanel.ts" ""
-    click LineageViewProvider href "../src/webview_provider/lineageViewProvider.ts" ""
-    click DocsEditViewPanel href "../src/webview_provider/docsEditPanel.ts" ""
+    click PanelHost href "../src/webview/panelHost.ts" ""
+    click QueryResultPanel href "../src/features/queryResults/queryResultPanel.ts" ""
+    click LineagePanel href "../src/features/lineage/lineagePanel.ts" ""
+    click LineageViewProvider href "../src/features/lineage/lineageViewProvider.ts" ""
+    click DocsEditViewPanel href "../src/features/docs/docsEditPanel.ts" ""
     click Webview_panels href "./src/main.tsx" ""
 
 ```
@@ -79,8 +79,8 @@ classDiagram
 
 - In `package.json`, add an entry in `viewsContainers -> panel` with expected values
   - add corresponding entry under `views.<container id>`, for example `views.dbt_preview_results`
-- Create new provider in [../src/webview_provider](../src/webview_provider) by extending `PanelHost` with `viewType` same as the one added in package.json above
-- Add the new provider in [../src/webview_provider/index.ts](../src/webview_provider/index.ts)
+- Create new provider in a feature folder under [../src/features](../src/features) by extending `PanelHost` with `viewType` same as the one added in package.json above
+- Add the new provider in [../src/features/panels.ts](../src/features/panels.ts)
 - Add new route in [./src/AppConstants.tsx](./src/AppConstants.tsx)
 - Use the new view route added in AppConstants in new webview provider created in step 2 and update value for `viewPath` variable
 - Update the value for `panelDescription` in provider

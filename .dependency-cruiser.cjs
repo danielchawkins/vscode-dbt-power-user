@@ -8,7 +8,8 @@ module.exports = {
     {
       name: "no-circular",
       severity: "error",
-      comment: "A cycle means two modules are one concept or one of them is in the wrong layer.",
+      comment:
+        "A cycle means two modules are one concept or one of them is in the wrong layer.",
       from: {},
       to: { circular: true },
     },
@@ -17,23 +18,52 @@ module.exports = {
       severity: "error",
       comment: "core/ imports neither vscode nor any other layer.",
       from: { path: "^src/core/" },
-      to: { path: "^vscode$|^node_modules/@types/vscode/|^src/", pathNot: "^src/core/" },
+      to: {
+        path: "^vscode$|^node_modules/@types/vscode/|^src/",
+        pathNot: "^src/core/",
+      },
     },
     {
       name: "pure-modules-stay-pure",
       severity: "error",
-      comment: "These modules hold logic that property tests cover without the vscode module.",
+      comment:
+        "These modules hold logic that property tests cover without the vscode module.",
       from: {
         path: ["^src/dbt_integration/dbtAssociations\\.ts$"],
       },
-      to: { path: "^vscode$|^node_modules/@types/vscode/|^src/", pathNot: "^src/core/" },
+      to: {
+        path: "^vscode$|^node_modules/@types/vscode/|^src/",
+        pathNot: "^src/core/",
+      },
     },
     {
       name: "snapshot-reader-reads-only",
       severity: "error",
-      comment: "readProjectSnapshot gathers inputs through settings/ and resolves them in core/.",
+      comment:
+        "readProjectSnapshot gathers inputs through settings/ and resolves them in core/.",
       from: { path: "^src/projects/readProjectSnapshot\\.ts$" },
-      to: { path: "^src/|^node_modules/", pathNot: "^src/(core|settings)/|^node_modules/@types/vscode/" },
+      to: {
+        path: "^src/|^node_modules/",
+        pathNot: "^src/(core|settings)/|^node_modules/@types/vscode/",
+      },
+    },
+    {
+      name: "nothing-imports-features",
+      severity: "error",
+      comment: "Only the roots import features/.",
+      from: {
+        pathNot:
+          "^src/(features/|extension\\.ts$|compositionRoot\\.ts$|dbtPowerUserExtension\\.ts$)",
+      },
+      to: { path: "^src/features/" },
+    },
+    {
+      name: "features-are-independent",
+      severity: "error",
+      comment:
+        "A feature imports no other feature; the aggregators directly in features/ may.",
+      from: { path: "^src/features/([^/]+)/" },
+      to: { path: "^src/features/", pathNot: "^src/features/$1/" },
     },
   ],
   options: {

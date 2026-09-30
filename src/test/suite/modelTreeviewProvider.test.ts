@@ -3,7 +3,7 @@ import { EventEmitter, Uri, window } from "vscode";
 import {
   DocumentationTreeview,
   ParentModelTreeview,
-} from "../../treeview_provider/modelTreeviewProvider";
+} from "../../features/modelTree/modelTreeviewProvider";
 
 const rootA = Uri.file("/workspace/a");
 const modelPath = "/workspace/a/models/orders.sql";

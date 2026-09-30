@@ -15,9 +15,9 @@ describe("editor intelligence project resolution", () => {
       .sort();
 
     expect(callers).toEqual([
-      "commands/index.ts",
-      "commands/projectSetupCommands.ts",
-      "quickpick/index.ts",
+      "features/commands.ts",
+      "features/projectPicker/actionsCenter.ts",
+      "features/projectSetup/projectSetupCommands.ts",
     ]);
   });
 
@@ -30,8 +30,8 @@ describe("editor intelligence project resolution", () => {
       .sort();
 
     expect(directCallers).toEqual([
-      "commands/runModel.ts",
-      "webview_provider/queryResultPanel.ts",
+      "features/queryResults/queryResultPanel.ts",
+      "features/run/runModel.ts",
     ]);
   });
 });

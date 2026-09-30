@@ -1,17 +1,17 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { Uri, window } from "vscode";
-import { RunTest } from "../../commands/runTest";
+import { RunTest } from "../../features/run/runTest";
 import { Manifest } from "../../projects/manifestTypes";
 import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
-import { QueryManifestService } from "../../services/queryManifestService";
+import { QueryManifestService } from "../../projects/queryManifestService";
 
 /**
  * Regression tests for issue #1720.
  *
  * `RunTest` classifies active files using the parsed manifest and runs
  * singular data tests via `dbt test --select <test_name>`. The command
- * registrations in `src/commands/index.ts` consult `RunTest` first and
+ * registrations in `src/features/commands.ts` consult `RunTest` first and
  * delegate to `RunModel` only when the active file is not a singular test.
  * These tests cover the classification + dispatch logic of `RunTest`
  * itself — the command-layer dispatch is exercised by integration testing.

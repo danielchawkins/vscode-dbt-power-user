@@ -9,8 +9,8 @@ import {
 } from "../fusion/fusionExecutable";
 import { ManifestParsers } from "../projects/manifest";
 import { Project, ProjectOptions } from "../projects/project";
-import { RunHistoryService } from "../services/runHistoryService";
-import { SharedStateService } from "../services/sharedStateService";
+import { RunHistoryService } from "../projects/runHistoryService";
+import { SharedStateService } from "../projects/sharedStateService";
 
 /** A Fusion 2.0.5 executable at `executablePath`. */
 export function sampleExecutable(

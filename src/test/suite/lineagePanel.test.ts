@@ -7,7 +7,7 @@ import {
   jest,
 } from "@jest/globals";
 import { window, workspace } from "vscode";
-import { LineagePanel } from "../../webview_provider/lineagePanel";
+import { LineagePanel } from "../../features/lineage/lineagePanel";
 
 describe("LineagePanel", () => {
   let panel: LineagePanel;

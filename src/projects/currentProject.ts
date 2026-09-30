@@ -6,7 +6,7 @@ import {
   window,
   workspace,
 } from "vscode";
-import { ProjectQuickPick } from "../quickpick/projectQuickPick";
+import { ProjectQuickPick } from "./projectQuickPick";
 import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 
 /** The Declared Project that owns the file or command currently being handled. */

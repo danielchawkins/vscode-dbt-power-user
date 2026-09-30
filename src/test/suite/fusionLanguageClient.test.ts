@@ -11,6 +11,7 @@ import { LanguageClientOptions, State } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
 import { DBT_LSP_USE_TARGET_LSP, LspLaunch } from "../../core/lsp";
 import { parseTraceServerLevel } from "../../core/project";
+import { DbtLineageService } from "../../features/lineage/dbtLineageService";
 import {
   clearDiagnosticsOnDelete,
   ProjectDiagnosticsFilter,
@@ -42,7 +43,6 @@ import {
   ReverseSocketStreams,
 } from "../../fusion/reverseSocketTransport";
 import { DeclaredProject } from "../../projects/projectRegistry";
-import { DbtLineageService } from "../../services/dbtLineageService";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
 const folder: WorkspaceFolder = {

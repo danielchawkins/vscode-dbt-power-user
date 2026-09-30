@@ -14,17 +14,17 @@ import {
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { activate, deactivate } from "../../extension";
 import {
+  CONNECTED_COLUMNS_COMMAND,
+  PARENT_TABLES_COMMAND,
+  registerConnectedColumnsCommand,
+} from "../../features/lineage/connectedColumnsCommand";
+import { DbtLineageService } from "../../features/lineage/dbtLineageService";
+import {
   FUSION_CLIENT_STATES_COMMAND,
   registerFusionClientDiagnostics,
 } from "../../fusion/fusionClientDiagnostics";
 import { FusionClientPool } from "../../fusion/fusionClientPool";
 import { ProjectRegistry } from "../../projects/projectRegistry";
-import {
-  CONNECTED_COLUMNS_COMMAND,
-  PARENT_TABLES_COMMAND,
-  registerConnectedColumnsCommand,
-} from "../../services/connectedColumnsCommand";
-import { DbtLineageService } from "../../services/dbtLineageService";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
 const SWITCHES = ["FPU_RUNTIME_BENCHMARK", "FPU_INTEGRATION_COMMANDS"] as const;

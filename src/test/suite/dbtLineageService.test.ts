@@ -3,7 +3,7 @@ import { workspace } from "vscode";
 import {
   DbtLineageService,
   describeNoLineage,
-} from "../../services/dbtLineageService";
+} from "../../features/lineage/dbtLineageService";
 
 // Minimal NodeData-shaped edge.
 function node(key: string, edgeType?: "data" | "constraint") {

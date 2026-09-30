@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { Uri, window } from "vscode";
-import { QueryManifestService } from "../../services/queryManifestService";
+import { QueryManifestService } from "../../projects/queryManifestService";
 
 describe("QueryManifestService.rewire", () => {
   let service: QueryManifestService;

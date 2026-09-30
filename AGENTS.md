@@ -61,14 +61,12 @@ Load-bearing directories (abridged):
 
 ```text
 src/
-├── projects/                # Project Registry and Project Context (Declared Project scoping)
+├── projects/                # Project Registry, Project Context (Declared Project scoping), QueryManifestService
 ├── fusion/                  # executable resolution, version gate, static-analysis mode, client pool, transport, status
 ├── metadata/                # ProjectMetadataSource port and its manifest implementation
 ├── dbt_client/              # dbt integrations, manifest parsing, command execution
-├── services/                # business logic, incl. queryManifestService
-├── commands/                # VS Code command implementations
-├── treeview_provider/
-├── webview_provider/        # panel hosts
+├── webview/                 # PanelHost, the shared webview panel infrastructure
+├── features/                # commands, trees, panels, lenses; imported only by the roots
 └── test/                    # Jest suites, hand-written VS Code mocks
 ```
 

@@ -1,36 +1,6 @@
 [
   {
     "type": "cycle",
-    "from": "src/code_lens_provider/index.ts",
-    "to": "src/dbtPowerUserExtension.ts",
-    "unresolvedTo": "../dbtPowerUserExtension",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "src/dbtPowerUserExtension.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "src/code_lens_provider/index.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      }
-    ]
-  },
-  {
-    "type": "cycle",
     "from": "src/dbt_client/dbtProjectLog.ts",
     "to": "src/dbt_client/event/projectConfigChangedEvent.ts",
     "unresolvedTo": "./event/projectConfigChangedEvent",
@@ -119,6 +89,36 @@
       },
       {
         "name": "src/dbt_client/event/runResultsEvent.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/dbtPowerUserExtension.ts",
+    "to": "src/features/codeLenses.ts",
+    "unresolvedTo": "./features/codeLenses",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/features/codeLenses.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      },
+      {
+        "name": "src/dbtPowerUserExtension.ts",
         "dependencyTypes": [
           "local",
           "import"

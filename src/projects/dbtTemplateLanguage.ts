@@ -19,13 +19,13 @@ import {
   associatedLanguage,
   dbtTemplateAssociations,
 } from "../dbt_integration/dbtAssociations";
-import { CurrentProject } from "../projects/currentProject";
-import { ProjectRegistry } from "../projects/projectRegistry";
 import {
   readFileAssociations,
   readFolderFileAssociations,
   writeFolderFileAssociations,
 } from "../settings";
+import { CurrentProject } from "./currentProject";
+import { ProjectRegistry } from "./projectRegistry";
 
 /**
  * Language for dbt `.sql` files, in precedence order: the user's `files.associations`; the `filenamePatterns` this

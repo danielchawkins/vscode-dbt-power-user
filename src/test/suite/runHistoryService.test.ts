@@ -6,7 +6,7 @@ import {
   it,
   jest,
 } from "@jest/globals";
-import { RunHistoryService } from "../../services/runHistoryService";
+import { RunHistoryService } from "../../projects/runHistoryService";
 import { createEntry } from "../fixtures/runHistory";
 
 describe("RunHistoryService", () => {

@@ -8,8 +8,8 @@ import {
 } from "@jest/globals";
 import { Uri } from "vscode";
 import { parse } from "yaml";
-import { DbtTestService } from "../../services/dbtTestService";
-import { DocsEditViewPanel } from "../../webview_provider/docsEditPanel";
+import { DbtTestService } from "../../features/docs/dbtTestService";
+import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 
 type TestData = { tests?: unknown[]; data_tests?: unknown[] } | undefined;
 
@@ -102,7 +102,7 @@ describe("docs editor save", () => {
       writeFileSync,
     }));
     const { DocsEditViewPanel: panelClass } =
-      await import("../../webview_provider/docsEditPanel");
+      await import("../../features/docs/docsEditPanel");
     panel = testKeyPanel(panelClass);
   });
 

@@ -70,6 +70,16 @@ export async function generateSchemaYML(
   }
 }
 
+/** A source table a code lens offers to generate a staging model from. */
+export interface GenerateModelFromSourceParams {
+  currentDoc: Uri;
+  sourceName: string;
+  database: string;
+  schema: string;
+  tableName: string;
+  tableIdentifier?: string;
+}
+
 /** Writes and opens a staging model selecting every column of a source table unless it exists. */
 export async function generateModel(
   columns: Pick<ColumnSource, "getColumnsOfSource">,

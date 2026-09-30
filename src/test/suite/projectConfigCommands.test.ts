@@ -3,7 +3,7 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import * as path from "path";
 import { Uri, window, workspace } from "vscode";
-import { applyProjectConfigInsertion } from "../../commands/projectConfigCommands";
+import { applyProjectConfigInsertion } from "../../features/projectSetup/projectConfigCommands";
 import { DeclaredProject } from "../../projects/projectRegistry";
 
 const strict = (name: string) => ({

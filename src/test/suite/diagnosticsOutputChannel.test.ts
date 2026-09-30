@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import * as vscode from "vscode";
-import { DiagnosticsOutputChannel } from "../../services/diagnosticsOutputChannel";
+import { DiagnosticsOutputChannel } from "../../features/diagnostics/diagnosticsOutputChannel";
 
 // Set test environment
 process.env.NODE_ENV = "test";

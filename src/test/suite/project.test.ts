@@ -44,8 +44,8 @@ import {
   ProjectCommandDeps,
 } from "../../projects/projectCommands";
 import { ProjectDiagnostics } from "../../projects/projectDiagnostics";
-import { RunHistoryService } from "../../services/runHistoryService";
-import { SharedStateService } from "../../services/sharedStateService";
+import { RunHistoryService } from "../../projects/runHistoryService";
+import { SharedStateService } from "../../projects/sharedStateService";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 import {

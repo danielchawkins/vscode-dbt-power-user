@@ -7,8 +7,8 @@ import {
   jest,
 } from "@jest/globals";
 import { commands, extensions, Uri, workspace } from "vscode";
-import { VSCodeCommands } from "../../commands";
-import { DiagnosticsOutputChannel } from "../../services/diagnosticsOutputChannel";
+import { VSCodeCommands } from "../../features/commands";
+import { DiagnosticsOutputChannel } from "../../features/diagnostics/diagnosticsOutputChannel";
 
 describe("fusionPowerUser.diagnostics", () => {
   let diagnosticsHandler: (() => Promise<void>) | undefined;

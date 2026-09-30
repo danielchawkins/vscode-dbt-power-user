@@ -1,83 +1,4 @@
 {
-  "src/code_lens_provider/cteCodeLensProvider.ts": {
-    "complexity": {
-      "count": 2
-    },
-    "max-lines": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 5
-    }
-  },
-  "src/code_lens_provider/sourceModelCreationCodeLensProvider.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "complexity": {
-      "count": 1
-    },
-    "max-depth": {
-      "count": 16
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/code_lens_provider/sqlActionsCodeLensProvider.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "max-depth": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/code_lens_provider/virtualSqlCodeLensProvider.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/commands/index.ts": {
-    "@typescript-eslint/no-floating-promises": {
-      "count": 2
-    },
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "max-lines": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 5
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/commands/projectSetupCommands.ts": {
-    "@typescript-eslint/await-thenable": {
-      "count": 1
-    }
-  },
-  "src/commands/runModel.ts": {
-    "@typescript-eslint/no-floating-promises": {
-      "count": 1
-    }
-  },
-  "src/content_provider/sqlPreviewContentProvider.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
   "src/core/manifest/childrenParentParser.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 11
@@ -195,16 +116,6 @@
       "count": 3
     }
   },
-  "src/cte_profiler/cteProfilerDecorationProvider.ts": {
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/cte_profiler/cteProfilerService.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "src/dbtPowerUserExtension.ts": {
     "@typescript-eslint/await-thenable": {
       "count": 1
@@ -229,6 +140,213 @@
   "src/dbt_integration/domain.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
+    }
+  },
+  "src/features/codegen/sourceModelCreationCodeLensProvider.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 16
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/features/commands.ts": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 2
+    },
+    "@typescript-eslint/no-misused-promises": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 5
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/compiledSql/sqlPreviewContentProvider.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/features/cte/cteCodeLensProvider.ts": {
+    "complexity": {
+      "count": 2
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 5
+    }
+  },
+  "src/features/cte/cteProfilerDecorationProvider.ts": {
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/features/cte/cteProfilerService.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/features/docs/dbtTestService.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    }
+  },
+  "src/features/docs/docGenService.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "src/features/docs/docsEditPanel.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 12
+    },
+    "@typescript-eslint/no-floating-promises": {
+      "count": 6
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 5
+    },
+    "complexity": {
+      "count": 2
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 3
+    },
+    "max-params": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/features/lineage/dbtLineageService.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/features/lineage/lineagePanel.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    },
+    "complexity": {
+      "count": 2
+    },
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 2
+    }
+  },
+  "src/features/lineage/lineageViewProvider.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-floating-promises": {
+      "count": 2
+    }
+  },
+  "src/features/modelTree/modelTreeviewProvider.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/features/projectSetup/projectSetupCommands.ts": {
+    "@typescript-eslint/await-thenable": {
+      "count": 1
+    }
+  },
+  "src/features/queryResults/queryResultPanel.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 5
+    },
+    "@typescript-eslint/no-floating-promises": {
+      "count": 9
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    },
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "sonarjs/no-collapsible-if": {
+      "count": 1
+    }
+  },
+  "src/features/run/runModel.ts": {
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    }
+  },
+  "src/features/sqlActions/sqlActionsCodeLensProvider.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 1
+    },
+    "sonarjs/cognitive-complexity": {
+      "count": 1
+    }
+  },
+  "src/features/sqlActions/virtualSqlCodeLensProvider.ts": {
+    "@typescript-eslint/no-unused-vars": {
+      "count": 1
     }
   },
   "src/fusion/commandProcessExecution.ts": {
@@ -270,36 +388,6 @@
       "count": 1
     },
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/services/dbtLineageService.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "src/services/dbtTestService.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/services/docGenService.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "no-restricted-imports": {
       "count": 1
     }
   },
@@ -348,17 +436,6 @@
       "count": 1
     }
   },
-  "src/treeview_provider/modelTreeviewProvider.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "src/utils.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
@@ -376,64 +453,7 @@
       "count": 2
     }
   },
-  "src/webview_provider/docsEditPanel.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 12
-    },
-    "@typescript-eslint/no-floating-promises": {
-      "count": 6
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 5
-    },
-    "complexity": {
-      "count": 2
-    },
-    "max-lines": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 3
-    },
-    "max-params": {
-      "count": 1
-    },
-    "no-restricted-imports": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/webview_provider/lineagePanel.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    },
-    "@typescript-eslint/no-floating-promises": {
-      "count": 1
-    },
-    "complexity": {
-      "count": 2
-    },
-    "max-lines": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 2
-    }
-  },
-  "src/webview_provider/lineageViewProvider.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "@typescript-eslint/no-floating-promises": {
-      "count": 2
-    }
-  },
-  "src/webview_provider/panelHost.ts": {
+  "src/webview/panelHost.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
     },
@@ -442,26 +462,6 @@
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
-    }
-  },
-  "src/webview_provider/queryResultPanel.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 5
-    },
-    "@typescript-eslint/no-floating-promises": {
-      "count": 9
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    },
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "sonarjs/no-collapsible-if": {
-      "count": 1
     }
   }
 }
