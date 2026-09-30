@@ -203,8 +203,8 @@ export function withoutUnregisteredLspLenses<
 
 /**
  * Per-project LSP document filters using protocol RelativePattern bases.
- * Selectors isolate disjoint Declared Project roots; overlapping roots remain
- * an S3 limitation and are not discharged here.
+ * Selectors isolate disjoint Declared Project roots; overlapping roots are not
+ * isolated.
  */
 export function documentSelectorForProject(root: Uri): FusionDocumentFilter[] {
   const baseUri = root.toString();

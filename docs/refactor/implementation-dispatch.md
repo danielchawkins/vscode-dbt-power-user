@@ -6,7 +6,7 @@ This is the execution layer on top of [`rearchitecture-plan.md`](rearchitecture-
 
 `main` is the default branch. `origin/master` is the pre-fork GitHub default and is not trunk.
 
-Every product step is one feature bookmark and pull request against `main`. A bookmark normally contains several ordered jj revisions: documentation in its own revision, configuration and lockfile changes in their own revision, and each production module or concern with its tests in a focused revision. Do not mix unrelated file groups to force the PR into one commit. The bookmark tip is the review and CI unit and must be complete and green. Do not dump revisions onto `fusion-lsp-client`; that bookmark is historical.
+Every product step is one feature bookmark and pull request against `main`. A bookmark normally contains several ordered jj revisions: documentation in its own revision, configuration and lockfile changes in their own revision, and each production module or concern with its tests in a focused revision. Do not mix unrelated file groups to force the PR into one commit. The bookmark tip is the review and CI unit and must be complete and green.
 
 ```bash
 just jj new main
@@ -50,74 +50,28 @@ After the initial implementation for PR N is locally reviewed and pushed, the or
 
 ## Agent contract
 
-1. Read `CONTEXT.md`, the ADRs named by the step, this file, and the matching phase of `rearchitecture-plan.md`. Use the vocabulary: Declared Project, Dependency Project, Project Context, Local Capability, Hosted Capability, Consumer Repository.
+1. Read `CONTEXT.md`, the ADRs named by the step, this file, and the matching phase of `rearchitecture-plan.md`. Use the vocabulary: Declared Project, Dependency Project, Current Project, Project Snapshot, Local Capability, Hosted Capability, Consumer Repository.
 2. This is **product** work. The shipped extension (`src/`, `webview_panels/`, `package.json` contributions) must not invoke `mise` or `just`, read `mise.toml`, or assume a Consumer Repository layout.
 3. TDD at the seam the step names. Split the PR into focused revisions by concern and file group; keep implementation and its focused tests together. Put plan or user documentation in a separate revision. The bookmark tip must pass `just check`, plus `just package` when packaging changes.
 4. No issue or PR numbers in code. Lines under 120 characters. Markdown: one physical line per prose paragraph.
 5. Ponytail: shortest working diff after reading the real call graph. Do not port code the plan says to delete later. Do not add shims the plan forbids (especially a no-op telemetry sink).
 6. Version control is `just jj …` only. Do not `git commit`, `git checkout -b`, or `git push`. The parent session owns revision shaping, rebases, bookmarks, and PR creation. A bookmark rooted directly on `main` may open immediately; a dependent bookmark opens only after its parent PR merges.
-7. Stop at **Confirm** gates. Spikes write their evidence under `docs/refactor/` or `docs/adr/` as the plan names.
+7. Stop at **Confirm** gates. Experiments write their evidence under `docs/research/` or `docs/adr/` as the plan names.
 
 A reviewer reads the full bookmark diff against the step's contract and this checklist, then checks that revision boundaries are coherent. Fix blockers in the appropriate revision with `just jj edit`, `just jj squash`, or a focused follow-up revision before pushing. External PR review and CI may overlap only with implementation of the single next local PR.
 
 ## Current position
 
-Steps 1.2 through 3.15 and Phase 4.1 through 4.5 are complete at this tip. Phase 5 spikes and LSP implementation are next. Continue through [`remaining-implementation.md`](remaining-implementation.md) serially, using the pipelined landing workflow above. The product is still manifest-driven.
-
-**Correction to the Cloud blocker.** The published Fusion integration extends `DBTBaseProjectIntegration`, not `DBTCloudProjectIntegration`, so there is no reparenting task. Cloud is blocked by composition instead: `DBTProjectIntegrationAdapter`'s constructor takes Core, Cloud, Fusion, and Core-command factories as mandatory parameters, and `src/inversify.config.ts` supplies all four. Order is therefore 7.1 retire the adapter, then 8.1 delete Cloud and Core construction. The same retirement removes the adapter's private ambient target watcher, which is why no earlier step should attempt either.
+[`rearchitecture-plan.md`](rearchitecture-plan.md) records a result under each completed phase and marks completed steps as done. Continue with the first step not marked done, serially, using the pipelined landing workflow above. Copy each step's goal, exit and verification from the plan; the plan's Verify line for each phase is the acceptance test.
 
 **Research artifacts precede plan integration.** Stack reviewed research revisions directly beneath the plan revision that consumes them, so every link resolves and evidence changes remain independently reviewable.
 
-**Correction to the plan's file path for 1.2:** `DBTFusionCommandDetection` lives in `@altimateai/dbt-integration`, not `src/dbt_client/dbtFusionCommandIntegration.ts`. Do not patch `node_modules`. Put `parseFusionVersion` / `judgeFusionVersion` in `src/fusion/fusionVersion.ts`. Executable resolution and version judgment are per Declared Project through `ConfiguredFusionExecutableResolver` during `Project.initialize`; there is no global bare-`dbt` activation gate.
-
-**Correction for 1.3:** collaborators are constructed by Inversify before `activate()`. An early return in `activate()` cannot un-construct them. The contract is: decide conflict and `enabled` before `initializeDBTProjects()`, before MCP start, before watchers and status bars initialize, and before any notification other than the conflict error. Do not re-architect the container in this step.
-
-## File-overlap reference
-
-| Work                  | Primary files                                                                         | Ordering and conflict boundary                          |
-| --------------------- | ------------------------------------------------------------------------------------- | ------------------------------------------------------- |
-| Dependency follow-ons | package manifests, lockfiles, host and webview configuration, affected modules        | serial; all land before Phase 4                         |
-| 3.8–3.15 webview      | `webview_panels/**`, `media/images/**`, `src/webview_provider/**`, CI smoke job       | 3.8 → 3.9 → {3.10, 3.11}; 3.12 free; 3.13 → 3.14 → 3.15 |
-| 4.x Declared Project  | `src/projects/**`, `src/dbt_client/dbtProjectContainer.ts`, `queryManifestService.ts` | serial 4.1 → 4.5                                        |
-| 5.x LSP               | `src/fusion/staticAnalysisMode.ts`, `src/lsp/**`, `src/fusion/fusionExecutable.ts`    | 5.0 after D5 and before 5.3; then 5.1 → 5.6             |
-| 6.x metadata          | `src/dbt_client/event/manifestCacheChangedEvent.ts`, `src/metadata/**`                | 6.0 epoch first; no consumer changes                    |
-| 7.1 adapter           | `src/dbt_client/fusionProjectIntegration.ts`, `dbtProject.ts`, `inversify.config.ts`  | gates Phase 8.2 onward                                  |
-| 8–10                  | as the spec                                                                           | sequential; stop at Confirm gates                       |
-| v2                    | plan Section 4                                                                        | after Phase 10 and the 1.0.0 release                    |
-
-## Step briefs (execute from the spec)
-
-Copy the goal, exit and verification from `rearchitecture-plan.md`. The notes below are only the deltas an agent would otherwise get wrong.
-
-### 1.2 — Fusion version gate
-
-- Accept `dbt 2.0.5`. Reject Core's `installed: 1.x` block. Do not require the substring `dbt-fusion`.
-- Verdicts: `ok`, `untestedMajor` (warn once per install per major via `ExtensionContext.globalState`), `tooOld`, `notFusion`, `notFound`.
-- Tests in `src/test/suite/fusionVersion.test.ts` for those five stdout shapes. This closes consumer case 2.
-- Resolving the binary still goes through PATH or a configured path; do not call mise.
-
-### 1.3 — Conflict guard and enabled
-
-- If `extensions.getExtension("innoverio.vscode-dbt-power-user")` is defined: one blocking error, action `workbench.extensions.uninstallExtension`, return. That is the only startup notification this step may add.
-- Resource-scoped `dbt.enabled` (keep the upstream key until Phase 9) false: return equally early, silently.
-- Tests: neither path calls `initializeDBTProjects` / MCP update. Closes consumer case 7.
-
-### Phase 2 — complete
-
-2.1 through 2.4 are merged: the fixtures, the `@vscode/test-electron` harness with `lspFixture.ts`, project-scoping characterization, and the metadata contract snapshot. Phases 4.1 through 4.4 moved the scoping assertions to their final seams and deleted the expected-failure suite. Fixtures are shared vocabulary; do not fork them per suite. `just test-integration` stays out of `just check`.
-
-### Phase 3
-
-3.1 through 3.15 and 4.1 through 4.5 are complete at this tip. Phase 5 steps 5.0 through 5.6 are merged, and `v0.3.0-alpha.0` is tagged. Remaining work is sequenced in [column-lineage-ship-plan.md](column-lineage-ship-plan.md). Keep the Tailwind generation running throughout. The compatibility ceilings are the Extensions API for the host and Chromium 148 for the webview.
-
-### Phases 4–10 and v2
-
-Steps and contracts come from the spec. Hard-to-reverse: 7.1, Phase 8.2 onward, 9.1, and v2.3. Step 8.1 is exempt because it deletes already-unreachable Core and Cloud construction. **D5** is decided: no login. D3 is pass-through, and S10 leaves effective mode unknown; neither blocks implementation. Require each 5.6 replacement flow before deleting its provider, the S2 inventory before Phase 7, consumer soak before 8.2, all seven characterization cases before 10.4, and **D6** with **D7** before v2.3.
+**Hard-to-reverse steps** are the ones the plan names in its Risks section. Each is preceded by a prerelease, and none is batched with another step.
 
 ## Reviewer checklist
 
-- Contract types and tests match the spec, including the two path corrections above.
+- Contract types and tests match the spec.
 - No mise/just leak into the shipped extension.
 - Focused revisions by concern and file group; docs are separate; the bookmark tip has green `just check`.
 - No leftover `as` assertions where shoehorn or real types exist; no speculative files.
-- Bookmark is not `main` or `fusion-lsp-client`.
+- Bookmark is not `main`.
