@@ -46,6 +46,78 @@ function normalizeStringOrArray(
 
 type RunArgs = NonNullable<RawRunResults["args"]> & { which: string };
 
+/** The subcommand, selection lists, and full-refresh flag in a dbt CLI argv. */
+export interface CliSelection {
+  which: string;
+  select: string[];
+  exclude: string[];
+  selector: string[];
+  fullRefresh: boolean;
+}
+
+const SELECTION_FLAGS = {
+  "--select": "select",
+  "-s": "select",
+  "--exclude": "exclude",
+  "--selector": "selector",
+} as const;
+
+type SelectionFlag = keyof typeof SELECTION_FLAGS;
+
+const isSelectionFlag = (flag: string): flag is SelectionFlag =>
+  flag in SELECTION_FLAGS;
+
+/** Reads the subcommand, `--select`/`--exclude`/`--selector` lists, and `--full-refresh` from dbt CLI args. */
+export function selectionFromCliArgs(args: readonly string[]): CliSelection {
+  const selection: CliSelection = {
+    which: args[0] !== undefined && !args[0].startsWith("-") ? args[0] : "",
+    select: [],
+    exclude: [],
+    selector: [],
+    fullRefresh: false,
+  };
+  let list: string[] | undefined;
+  for (const arg of args) {
+    if (!arg.startsWith("-")) {
+      list?.push(arg);
+      continue;
+    }
+    list = undefined;
+    const [flag, inline] = arg.split(/=(.*)/s, 2);
+    if (flag === "--full-refresh") {
+      selection.fullRefresh = true;
+    } else if (isSelectionFlag(flag)) {
+      list = selection[SELECTION_FLAGS[flag]];
+      if (inline !== undefined) {
+        list.push(inline);
+        list = undefined;
+      }
+    }
+  }
+  return selection;
+}
+
+function fillSelection(
+  runArgs: RunArgs,
+  launched: readonly string[] | undefined,
+): RunArgs {
+  const selected = [runArgs.select, runArgs.exclude, runArgs.selector].some(
+    (value) => normalizeStringOrArray(value).length > 0,
+  );
+  if (selected || !launched) {
+    return runArgs;
+  }
+  const cli = selectionFromCliArgs(launched);
+  return {
+    ...runArgs,
+    select: cli.select,
+    exclude: cli.exclude,
+    selector: cli.selector,
+    // Fusion records `full_refresh: false` even for a `--full-refresh` launch.
+    full_refresh: runArgs.full_refresh === true || cli.fullRefresh,
+  };
+}
+
 function formatRunCommand(runArgs: RunArgs): string {
   const parts = [`dbt ${runArgs.which}`];
   const lists = [
@@ -91,10 +163,11 @@ export function resolveRunStatus(
   }
 }
 
-/** Converts parsed run_results.json into a run history entry; throws when required fields are missing. */
+/** Builds a history entry from run_results.json, selection falling back to `launched`; throws on missing fields. */
 export function parseRunResultsJson(
   raw: unknown,
   projectName: string,
+  launched?: readonly string[],
 ): RunResultsEventData {
   const data = raw as RawRunResults;
   if (
@@ -106,7 +179,8 @@ export function parseRunResultsJson(
       "Malformed run_results.json: missing required fields (metadata.invocation_id, metadata.generated_at, or args.which)",
     );
   }
-  const args = normalizeStringOrArray(data.args.select);
+  const runArgs = fillSelection(data.args as RunArgs, launched);
+  const args = normalizeStringOrArray(runArgs.select);
   const results = Array.isArray(data.results)
     ? data.results.map((entry) => ({
         name: entry.unique_id.split(".").pop() ?? entry.unique_id,
@@ -121,7 +195,7 @@ export function parseRunResultsJson(
     : [];
   return {
     id: data.metadata.invocation_id,
-    command: formatRunCommand(data.args as RunArgs),
+    command: formatRunCommand(runArgs),
     args,
     completedAt: new Date(data.metadata.generated_at),
     projectName,
@@ -156,7 +230,10 @@ export class RunResultsReader {
   }
 
   /** The run recorded since `before`; null when the file is absent, unchanged or malformed. */
-  readIfChanged(before: RunResultsObservation): RunResultsEventData | null {
+  readIfChanged(
+    before: RunResultsObservation,
+    launched?: readonly string[],
+  ): RunResultsEventData | null {
     const after = this.observe();
     if (after === null) {
       this.terminal.trace("Run results file does not exist after command");
@@ -167,7 +244,11 @@ export class RunResultsReader {
       return null;
     }
     try {
-      const event = parseRunResultsJson(JSON.parse(after), this.projectName());
+      const event = parseRunResultsJson(
+        JSON.parse(after),
+        this.projectName(),
+        launched,
+      );
       this.terminal.debug(
         "runResultsParsed",
         "Run results successfully parsed",
@@ -185,15 +266,16 @@ export class RunResultsReader {
   }
 }
 
-/** Runs `run`, then records any run_results.json it wrote. A rejected run records nothing. */
+/** Runs `run`, then records any run_results.json it wrote, using `launched` args as the fallback selection. */
 export async function withRunResults<T>(
   reader: RunResultsReader,
   history: RunResultsHistory,
   run: () => Promise<T>,
+  launched?: readonly string[],
 ): Promise<T> {
   const before = reader.observe();
   const result = await run();
-  const entry = reader.readIfChanged(before);
+  const entry = reader.readIfChanged(before, launched);
   if (entry) {
     history.addEntry(entry);
   }
