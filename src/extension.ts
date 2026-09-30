@@ -1,15 +1,14 @@
 import "reflect-metadata";
 import { ExtensionContext } from "vscode";
 import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
+import { compose } from "./compositionRoot";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
-import { bindExtensionContext, container } from "./inversify.config";
 
 let activeExtension: DBTPowerUserExtension | undefined;
 
 export async function activate(context: ExtensionContext) {
   registerRuntimeTimings(context);
-  bindExtensionContext(context);
-  const dbtPowerUserExtension = container.get(DBTPowerUserExtension);
+  const { extension: dbtPowerUserExtension } = compose(context);
 
   context.subscriptions.push(dbtPowerUserExtension);
   activeExtension = dbtPowerUserExtension;

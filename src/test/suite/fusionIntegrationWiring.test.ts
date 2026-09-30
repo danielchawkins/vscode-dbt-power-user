@@ -3,11 +3,9 @@ import { readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
 import { Uri } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
-import { ExtensionContextStore } from "../../extensionContext";
 import { FusionStatus } from "../../fusion/fusionStatus";
 import { Project } from "../../projects/project";
 
-import { NodeParser, SourceParser } from "../../core/manifest";
 import { ConfiguredFusionExecutableResolver } from "../../fusion/fusionExecutable";
 import { esmDirname } from "../esmDirname";
 import * as vscodeMock from "../mock/vscode";
@@ -31,12 +29,15 @@ sharedWindow.createOutputChannel = jest.fn(
     createMockLogOutputChannel(name),
 );
 
-import { bindExtensionContext, container } from "../../inversify.config";
+import { compose, createProjectParsers } from "../../compositionRoot";
+import { VSCodeDBTTerminal } from "../../dbt_client/vscodeTerminal";
 
-bindExtensionContext({
-  workspaceState: { get: jest.fn(), update: jest.fn() },
-  globalState: { get: jest.fn(), update: jest.fn() },
-} as never);
+function stubContext(workspaceValue?: string) {
+  return {
+    workspaceState: { get: jest.fn(() => workspaceValue), update: jest.fn() },
+    globalState: { get: jest.fn(), update: jest.fn() },
+  } as never;
+}
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
 const srcRoot = path.join(repositoryRoot, "src");
@@ -46,6 +47,11 @@ const forbiddenProductionSymbols = [
   "Factory<DBTDetection>",
   "DBTInstallationVerificationEvent",
 ];
+
+const compositionRootSource = readFileSync(
+  path.join(srcRoot, "compositionRoot.ts"),
+  "utf8",
+);
 
 function collectProductionSources(dir: string): string[] {
   const files: string[] = [];
@@ -90,72 +96,67 @@ describe("Fusion-only integration wiring", () => {
     expect(offenders).toEqual([]);
   });
 
-  it("does not bind Factory<DBTProjectDetection>", () => {
-    expect(() => container.get("Factory<DBTProjectDetection>")).toThrow();
+  function composeTracked(workspaceValue?: string) {
+    const composition = compose(stubContext(workspaceValue));
+    disposables.push(composition.extension, composition.fusionStatus);
+    return composition;
+  }
+
+  it("does not compose project detection", () => {
+    expect(compositionRootSource).not.toContain("DBTProjectDetection");
   });
 
-  it("does not bind unsupported integration factories", () => {
-    expect(container.isBound("Factory<DBTCoreProjectIntegration>")).toBe(false);
-    expect(container.isBound("Factory<DBTCloudProjectIntegration>")).toBe(
-      false,
+  it("does not compose unsupported integrations", () => {
+    for (const name of [
+      "DBTCoreProjectIntegration",
+      "DBTCloudProjectIntegration",
+      "DBTCoreCommandProjectIntegration",
+      "FusionProjectIntegration",
+      "RuntimePythonEnvironment",
+    ]) {
+      expect(compositionRootSource).not.toContain(name);
+    }
+    expect(Object.keys(composeTracked()).sort()).toEqual([
+      "extension",
+      "extensionContextStore",
+      "fusionExecutableResolver",
+      "fusionStatus",
+      "projectFactory",
+    ]);
+  });
+
+  it("reads the extension context passed to each composition", () => {
+    composeTracked("first");
+    const { extensionContextStore } = composeTracked("rebound");
+    expect(extensionContextStore.getFromWorkspaceState("key")).toBe("rebound");
+  });
+
+  it("composes FusionStatus for the Fusion LSP status surface", () => {
+    expect(composeTracked().fusionStatus).toBeInstanceOf(FusionStatus);
+  });
+
+  it("composes DBTPowerUserExtension with FusionStatus", () => {
+    expect(composeTracked().extension).toBeInstanceOf(DBTPowerUserExtension);
+  });
+
+  it("composes one shared Fusion executable resolver for LSP and CLI", () => {
+    expect(composeTracked().fusionExecutableResolver).toBeInstanceOf(
+      ConfiguredFusionExecutableResolver,
     );
-    expect(container.isBound("Factory<DBTCoreCommandProjectIntegration>")).toBe(
-      false,
-    );
   });
 
-  it("rebinds the extension context on a second call", () => {
-    const workspaceState = { get: jest.fn(() => "rebound"), update: jest.fn() };
-    expect(() =>
-      bindExtensionContext({
-        workspaceState,
-        globalState: { get: jest.fn(), update: jest.fn() },
-      } as never),
-    ).not.toThrow();
-
-    const store = container.get(ExtensionContextStore);
-    expect(store.getFromWorkspaceState("key")).toBe("rebound");
-  });
-
-  it("binds FusionStatus for the Fusion LSP status surface", () => {
-    expect(container.isBound(FusionStatus)).toBe(true);
-    const fusionStatus = container.get(FusionStatus);
-    disposables.push(fusionStatus);
-    expect(fusionStatus).toBeInstanceOf(FusionStatus);
-  });
-
-  it("resolves DBTPowerUserExtension with FusionStatus on the injection path", () => {
-    expect(container.isBound(DBTPowerUserExtension)).toBe(true);
-    const extension = container.get(DBTPowerUserExtension);
-    disposables.push(extension);
-    expect(extension).toBeInstanceOf(DBTPowerUserExtension);
-  });
-
-  it("binds one shared Fusion executable resolver for LSP and CLI", () => {
-    expect(container.isBound(ConfiguredFusionExecutableResolver)).toBe(true);
-    const resolver = container.get(ConfiguredFusionExecutableResolver);
-    expect(resolver).toBeInstanceOf(ConfiguredFusionExecutableResolver);
-    expect(container.isBound("RuntimePythonEnvironment")).toBe(false);
-  });
-
-  it("builds a Project from Factory<Project>", async () => {
-    type ProjectFactory = (projectRoot: Uri) => Project;
-
-    expect(container.isBound("Factory<FusionProjectIntegration>")).toBe(false);
-    const factory = container.get<ProjectFactory>("Factory<Project>");
-    const project = factory(Uri.file("/tmp/project"));
+  it("builds a Project from the project factory", async () => {
+    const project = composeTracked().projectFactory(Uri.file("/tmp/project"));
 
     expect(project).toBeInstanceOf(Project);
     expect(() => project.getFusionCli()).toThrow(/not initialized/);
     await project.dispose();
   });
 
-  it("reads DBT_LOOM_CONFIG_PATH on each parse through the bound parsers", () => {
+  it("reads DBT_LOOM_CONFIG_PATH on each parse through the project parsers", () => {
     const reads: (string | undefined)[] = [];
-    for (const parser of [
-      container.get(NodeParser),
-      container.get(SourceParser),
-    ]) {
+    const parsers = createProjectParsers(new VSCodeDBTTerminal());
+    for (const parser of [parsers.nodeParser, parsers.sourceParser]) {
       const read = (
         parser as unknown as { readDbtLoomConfigPath: () => string | undefined }
       ).readDbtLoomConfigPath;

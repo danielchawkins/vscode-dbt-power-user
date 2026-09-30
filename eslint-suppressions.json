@@ -257,11 +257,6 @@
       "count": 1
     }
   },
-  "src/inversify.config.ts": {
-    "max-lines": {
-      "count": 1
-    }
-  },
   "src/projects/projectCodegen.ts": {
     "no-restricted-imports": {
       "count": 1
