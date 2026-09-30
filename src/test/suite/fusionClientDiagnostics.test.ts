@@ -93,6 +93,9 @@ describe("registerFusionClientDiagnostics", () => {
           ? { state: "running", failureReason: undefined }
           : undefined,
       ),
+      getLaunch: jest.fn((declared: DeclaredProject) =>
+        declared === general ? { target: "ci" } : undefined,
+      ),
     } as unknown as FusionClientPool;
 
     registerFusionClientDiagnostics(
@@ -102,8 +105,37 @@ describe("registerFusionClientDiagnostics", () => {
     );
 
     expect(commandHandler()()).toEqual([
-      { projectName: "general", state: "running", failureReason: undefined },
-      { projectName: "sox", state: "stopped", failureReason: undefined },
+      {
+        projectName: "general",
+        state: "running",
+        failureReason: undefined,
+        target: "ci",
+      },
+      {
+        projectName: "sox",
+        state: "stopped",
+        failureReason: undefined,
+        target: undefined,
+      },
     ]);
+  });
+
+  it("registers when the integration harness asks for test commands", () => {
+    delete process.env.FPU_SMOKE_HOST;
+    process.env.FPU_INTEGRATION_COMMANDS = "1";
+    try {
+      registerFusionClientDiagnostics(
+        fakeContext(),
+        { projects: [] } as unknown as ProjectRegistry,
+        { get: jest.fn() } as unknown as FusionClientPool,
+      );
+    } finally {
+      delete process.env.FPU_INTEGRATION_COMMANDS;
+    }
+
+    expect(commands.registerCommand).toHaveBeenCalledWith(
+      FUSION_CLIENT_STATES_COMMAND,
+      expect.any(Function),
+    );
   });
 });
