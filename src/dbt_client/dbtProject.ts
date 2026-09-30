@@ -8,7 +8,6 @@ import {
   Uri,
   window,
 } from "vscode";
-import { commandParamsFor } from "../core/cli";
 import {
   dbtProjectFilePath,
   readDbtProjectFile,
@@ -16,7 +15,6 @@ import {
 } from "../core/project";
 import {
   DBColumn,
-  DBTCommand,
   DBTDiagnosticData,
   DBTTerminal,
   ParsedManifest,
@@ -24,14 +22,13 @@ import {
   RunModelParams,
 } from "../dbt_integration";
 import { EXECUTABLE_DIAGNOSTIC_SOURCE } from "../fusion/executableLifecycle";
-import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
 import {
   hasProjectStrictAnalysis,
   resolveSchemaOrigin,
   SchemaOriginStatus,
 } from "../fusion/schemaOrigin";
 import { ModelNode } from "../local/lineageTypes";
-import { CommandQueue, formatCommandStatus } from "../projects/commandQueue";
+import { CommandQueue } from "../projects/commandQueue";
 import {
   createYMLContent,
   findModelInTargetfolder,
@@ -39,6 +36,11 @@ import {
   generateSchemaYML,
   mergeColumnsFromDB,
 } from "../projects/projectCodegen";
+import {
+  ProjectCommandDeps,
+  queueCli,
+  selection,
+} from "../projects/projectCommands";
 import { ProjectDiagnostics } from "../projects/projectDiagnostics";
 import { readProjectSnapshot } from "../projects/readProjectSnapshot";
 import {
@@ -61,21 +63,6 @@ import {
   FusionProjectIntegration,
   FusionProjectIntegrationEvents,
 } from "./fusionProjectIntegration";
-function selection(params: RunModelParams): string {
-  return `${params.plusOperatorLeft}${params.modelName}${params.plusOperatorRight}`;
-}
-
-/** The status line for a command that could not be prepared: its selection and `commandParams`. */
-function formatCliStatus(
-  cli: QueuedCliCommand,
-  params: readonly string[],
-): string {
-  const body =
-    cli.kind === "build" && cli.select === undefined
-      ? "dbt build"
-      : `dbt ${cli.kind} --select ${cli.select}`;
-  return [body, ...params].join(" ");
-}
 
 export class DBTProject implements Disposable {
   private static readonly publicationEpochs = new Map<string, number>();
@@ -112,6 +99,7 @@ export class DBTProject implements Disposable {
   }
 
   private readonly commandQueue = new CommandQueue();
+  private readonly commandDeps: ProjectCommandDeps;
   private readonly runResultsReader: RunResultsReader;
   private readonly runHistory: RunResultsHistory = {
     addEntry: (entry) => {
@@ -136,6 +124,15 @@ export class DBTProject implements Disposable {
     private _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
   ) {
     this.projectRoot = path;
+    this.commandDeps = {
+      commandQueue: this.commandQueue,
+      cli: () => this.dbtProjectIntegration.getFusionCli(),
+      snapshot: () => readProjectSnapshot(this.projectRoot),
+      withRunResults: (run) => this.withRunResults(run),
+      notifyFailed: (statusMessage, error) =>
+        this.runHistoryService.notifyCommandFailed(statusMessage, error),
+      terminal: this.terminal,
+    };
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
     );
@@ -415,27 +412,36 @@ export class DBTProject implements Disposable {
   }
 
   async runModel(params: RunModelParams) {
-    await this.prepareAndQueue({ kind: "run", select: selection(params) });
+    await queueCli(this.commandDeps, {
+      kind: "run",
+      select: selection(params),
+    });
   }
 
   async buildModel(params: RunModelParams) {
-    await this.prepareAndQueue({ kind: "build", select: selection(params) });
+    await queueCli(this.commandDeps, {
+      kind: "build",
+      select: selection(params),
+    });
   }
 
   async buildProject() {
-    await this.prepareAndQueue({ kind: "build" });
+    await queueCli(this.commandDeps, { kind: "build" });
   }
 
   async runTest(testName: string) {
-    await this.prepareAndQueue({ kind: "test", select: testName });
+    await queueCli(this.commandDeps, { kind: "test", select: testName });
   }
 
   async runModelTest(modelName: string) {
-    await this.prepareAndQueue({ kind: "test", select: modelName });
+    await queueCli(this.commandDeps, { kind: "test", select: modelName });
   }
 
   async compileModel(params: RunModelParams) {
-    await this.prepareAndQueue({ kind: "compile", select: selection(params) });
+    await queueCli(this.commandDeps, {
+      kind: "compile",
+      select: selection(params),
+    });
   }
 
   clean() {
@@ -610,46 +616,6 @@ export class DBTProject implements Disposable {
   /** This project's defer settings, read from the same snapshot commands are built from. */
   getDeferConfig(): ResolvedDefer | undefined {
     return readProjectSnapshot(this.projectRoot).invocation.defer;
-  }
-
-  private async prepareAndQueue(cli: QueuedCliCommand): Promise<void> {
-    try {
-      this.addCommandToQueue(this.fusionCli().prepare(cli));
-    } catch (error) {
-      const statusMessage = formatCliStatus(
-        cli,
-        commandParamsFor(readProjectSnapshot(this.projectRoot), cli),
-      );
-      this.runHistoryService.notifyCommandFailed(statusMessage, String(error));
-      this.terminal.error(
-        "commandPreparationError",
-        `Unable to prepare ${statusMessage}`,
-        error,
-      );
-    }
-  }
-
-  private addCommandToQueue(command: DBTCommand): void {
-    this.commandQueue.enqueue(
-      async (signal) => {
-        const result = await this.withRunResults(() => command.execute(signal));
-        // dbt CLI resolves normally even on failure (CommandProcessExecution.complete()
-        // never rejects for non-zero exit). Detect pre-execution failures (compilation
-        // errors, config errors) by checking stdout.
-        if (result?.stdout?.includes("Encountered an error:")) {
-          throw new Error(result.stdout.trim());
-        }
-      },
-      {
-        statusMessage: formatCommandStatus(command),
-        focus: command.focus,
-        showProgress: command.showProgress,
-      },
-    );
-  }
-
-  private fusionCli(): FusionCli {
-    return this.dbtProjectIntegration.getFusionCli();
   }
 
   getPublicationEpoch(): number {

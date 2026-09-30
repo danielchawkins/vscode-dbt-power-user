@@ -17,15 +17,23 @@ import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import { ManifestCacheChangedEvent } from "../../dbt_client/event/manifestCacheChangedEvent";
 import { FusionProjectIntegrationEvents } from "../../dbt_client/fusionProjectIntegration";
 import {
+  DBTCommand,
   DBTDiagnosticData,
   DBTTerminal,
   MANIFEST_FILE,
   ParsedManifest,
   RESOURCE_TYPE_MODEL,
 } from "../../dbt_integration";
+import {
+  enqueueCommand,
+  ProjectCommandDeps,
+} from "../../projects/projectCommands";
 import { RunHistoryService } from "../../services/runHistoryService";
 import { SharedStateService } from "../../services/sharedStateService";
 import { CONFIGURATION_SECTION } from "../../settings";
+
+const commandDeps = (project: DBTProject) =>
+  (project as unknown as { commandDeps: ProjectCommandDeps }).commandDeps;
 describe("DBTProject Test Suite", () => {
   let mockTerminal: jest.Mocked<DBTTerminal>;
   let mockSharedStateService: jest.Mocked<SharedStateService>;
@@ -610,9 +618,10 @@ describe("DBTProject Test Suite", () => {
         getCommandAsString: () => "dbt run --select my_model",
       };
 
-      (
-        dbtProject as unknown as { addCommandToQueue: Function }
-      ).addCommandToQueue(mockCommand);
+      enqueueCommand(
+        commandDeps(dbtProject),
+        mockCommand as unknown as DBTCommand,
+      );
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(mockCommand.execute).toHaveBeenCalled();
@@ -808,9 +817,10 @@ describe("DBTProject Test Suite", () => {
         getCommandAsString: () => "dbt run --select my_model",
       };
 
-      (
-        dbtProject as unknown as { addCommandToQueue: Function }
-      ).addCommandToQueue(mockCommand);
+      enqueueCommand(
+        commandDeps(dbtProject),
+        mockCommand as unknown as DBTCommand,
+      );
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(mockRunHistoryService.addEntry).not.toHaveBeenCalled();
