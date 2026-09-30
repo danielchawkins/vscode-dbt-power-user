@@ -4,9 +4,11 @@ import * as path from "path";
 import {
   CancellationToken,
   Disposable,
+  DocumentFilter,
   Event,
   EventEmitter,
   LogOutputChannel,
+  RelativePattern,
   Uri,
   window,
 } from "vscode";
@@ -206,15 +208,23 @@ export function withoutUnregisteredLspLenses<
  */
 export function documentSelectorForProject(root: Uri): FusionDocumentFilter[] {
   const baseUri = root.toString();
-  const glob = "**/*";
-  const selector: FusionDocumentFilter[] = [
-    { language: "jinja-sql", pattern: { baseUri, pattern: glob } },
-    { language: "sql", pattern: { baseUri, pattern: glob } },
-    { language: "yaml", pattern: { baseUri, pattern: glob } },
-  ];
+  const selector: FusionDocumentFilter[] = FUSION_DOCUMENT_LANGUAGES.map(
+    (language) => ({ language, pattern: { baseUri, pattern: PROJECT_GLOB } }),
+  );
   validateDocumentSelectorPatterns(selector);
   return selector;
 }
+
+/** The VS Code form of {@link documentSelectorForProject}, for editor surfaces scoped to one project. */
+export function vscodeDocumentSelectorForProject(root: Uri): DocumentFilter[] {
+  return FUSION_DOCUMENT_LANGUAGES.map((language) => ({
+    language,
+    pattern: new RelativePattern(root, PROJECT_GLOB),
+  }));
+}
+
+const FUSION_DOCUMENT_LANGUAGES = ["jinja-sql", "sql", "yaml"] as const;
+const PROJECT_GLOB = "**/*";
 
 export function validateDocumentSelectorPatterns(
   selector: readonly FusionDocumentFilter[],
