@@ -887,9 +887,45 @@ describe("Project manifest", () => {
       expect.objectContaining({ project, metadataProducer: "manifest" }),
     );
     expect(second.publicationEpoch).toBe(first.publicationEpoch + 1);
-    expect(project.getPublicationEpoch()).toBe(second.publicationEpoch);
+    expect(project.manifest?.publicationEpoch).toBe(second.publicationEpoch);
     expect(project.getMetadataSnapshot()).toBe(second);
     await project.dispose();
+  });
+
+  it("fires onDidChangeManifest after each publication and exposes it as manifest", async () => {
+    const { root, targetDir } = copyFixture("fusion-changed-");
+    tempRoot = root;
+    fs.mkdirSync(targetDir, { recursive: true });
+    fs.copyFileSync(
+      path.join(fixtureRoot, "manifest.contract.json"),
+      path.join(targetDir, MANIFEST_FILE),
+    );
+    const emitter = new vscode.EventEmitter<ManifestCacheChangedEvent>();
+    const legacy = jest.spyOn(emitter, "fire");
+    const project = await buildProject(
+      root,
+      stubDelegate(root, {
+        getTargetPath: () => targetDir,
+        getPackageInstallPath: () => path.join(root, "dbt_packages"),
+      }),
+      emitter,
+    );
+    const changed = jest.fn((p: Project) => p.manifest);
+    project.onDidChangeManifest(changed);
+
+    await project.parseManifest();
+
+    expect(changed).toHaveBeenCalledWith(project);
+    expect(changed.mock.results[0]?.value).toBe(project.getMetadataSnapshot());
+    expect(project.manifest).toBe(project.getMetadataSnapshot());
+    expect(legacy.mock.invocationCallOrder[0]).toBeLessThan(
+      changed.mock.invocationCallOrder[0],
+    );
+
+    await project.dispose();
+    changed.mockClear();
+    await project.parseManifest().catch(() => undefined);
+    expect(changed).not.toHaveBeenCalled();
   });
 
   it("reads the adapter type from manifest metadata, unknown before a manifest", async () => {
@@ -1062,7 +1098,7 @@ describe("Project manifest trigger", () => {
     expect(rebuildManifest).toHaveBeenCalledTimes(1);
     expect(refreshProjectConfig).not.toHaveBeenCalled();
     expect(sourceFileChanged).toHaveBeenCalledTimes(1);
-    expect(project.getPublicationEpoch()).toBe(0);
+    expect(project.manifest?.publicationEpoch ?? 0).toBe(0);
   });
 
   it("ignores edits outside the model, macro and seed paths", async () => {

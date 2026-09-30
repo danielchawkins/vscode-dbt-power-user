@@ -6,12 +6,13 @@ describe("QueryManifestService.rewire", () => {
   let service: QueryManifestService;
   let containerDouble: any;
   let contextDouble: any;
+  let mockProject: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
     (window.activeTextEditor as any) = undefined;
 
-    const mockProject = {
+    mockProject = {
       projectRoot: Uri.file("/workspace/projects/general"),
     } as any;
     const declaredProject = {
@@ -30,7 +31,6 @@ describe("QueryManifestService.rewire", () => {
       getProjectRootpath: jest.fn(() => {
         throw new Error("legacy root lookup must not run");
       }),
-      onManifestChanged: jest.fn(),
     };
 
     const forResourceMock = jest.fn((uri: any) =>
@@ -164,7 +164,7 @@ describe("QueryManifestService.rewire", () => {
       const mockEvent = {
         project: { projectRoot: Uri.file("/workspace/projects/general") },
       };
-      service["eventMap"].set("/workspace/projects/general", mockEvent as any);
+      mockProject.manifest = mockEvent;
 
       const file = Uri.file(
         "/workspace/projects/general/models/general_model.sql",
@@ -181,7 +181,7 @@ describe("QueryManifestService.rewire", () => {
         sourceMetaMap: new Map([["source", { tables: [{ name: "table1" }] }]]),
         nodeMetaMap: { nodes: () => [{ name: "model1" }] },
       };
-      service["eventMap"].set("/workspace/projects/general", mockEvent as any);
+      mockProject.manifest = mockEvent;
 
       const file = Uri.file(
         "/workspace/projects/general/models/general_model.sql",
@@ -197,6 +197,24 @@ describe("QueryManifestService.rewire", () => {
         "model1",
       ]);
       expect(contextDouble.forResource).toHaveBeenCalledWith(file);
+    });
+
+    it("reads the owning project's current manifest on every lookup", () => {
+      const file = Uri.file(
+        "/workspace/projects/general/models/general_model.sql",
+      );
+      expect(service.getEventByDocument(file)).toBeUndefined();
+
+      const first = { sourceMetaMap: new Map() };
+      mockProject.manifest = first;
+      expect(service.getEventByDocument(file)).toBe(first);
+
+      const second = { sourceMetaMap: new Map() };
+      mockProject.manifest = second;
+      expect(service.getEventByDocument(file)).toBe(second);
+      expect(containerDouble.findDBTProject).toHaveBeenCalledWith(
+        mockProject.projectRoot,
+      );
     });
   });
 });

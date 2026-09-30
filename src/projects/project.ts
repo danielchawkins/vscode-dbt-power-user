@@ -52,7 +52,6 @@ import {
 } from "./manifest";
 import { ManifestRebuild } from "./manifestRebuild";
 import {
-  createYMLContent,
   findModelInTargetfolder,
   generateModel,
   generateSchemaYML,
@@ -111,7 +110,7 @@ export class Project implements Disposable, ManifestProject {
   private readonly runHistoryService: RunHistoryService;
   private readonly _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>;
   private readonly lifecycle: ExecutableLifecycle;
-  private readonly manifest: ManifestRebuild;
+  private readonly manifestRebuild: ManifestRebuild;
   private readonly trigger: ManifestTrigger;
   private readonly diagnostics: ProjectDiagnostics;
   private readonly dbtProjectLog: DBTProjectLog;
@@ -128,7 +127,11 @@ export class Project implements Disposable, ManifestProject {
     new EventEmitter<RebuildManifestStatusChange>();
   readonly onRebuildManifestStatusChange =
     this._onRebuildManifestStatusChange.event;
+  private _onDidChangeManifest = new EventEmitter<Project>();
+  /** Fires after this project publishes a new manifest. */
+  readonly onDidChangeManifest = this._onDidChangeManifest.event;
   private disposables: Disposable[] = [
+    this._onDidChangeManifest,
     this._onProjectConfigChanged,
     this._onSourceFileChanged,
     this._onRunResults,
@@ -142,6 +145,11 @@ export class Project implements Disposable, ManifestProject {
 
   /** Returns the latest complete metadata publication. */
   getMetadataSnapshot(): ManifestCacheProjectAddedEvent | undefined {
+    return this._manifestCacheEvent;
+  }
+
+  /** The latest complete metadata publication. */
+  get manifest(): ManifestCacheProjectAddedEvent | undefined {
     return this._manifestCacheEvent;
   }
 
@@ -192,11 +200,11 @@ export class Project implements Disposable, ManifestProject {
       this.terminal,
       {
         activate: (candidate, generation) =>
-          this.manifest.prepareCandidate(candidate, generation),
+          this.manifestRebuild.prepareCandidate(candidate, generation),
         deactivate: () => this.trigger.stop(),
       },
     );
-    this.manifest = new ManifestRebuild(
+    this.manifestRebuild = new ManifestRebuild(
       this.lifecycle,
       options.parsers,
       this,
@@ -247,7 +255,7 @@ export class Project implements Disposable, ManifestProject {
     if (this.disposed) {
       return undefined;
     }
-    return this.manifest.candidate() ?? this.lifecycle.current();
+    return this.manifestRebuild.candidate() ?? this.lifecycle.current();
   }
 
   /** The CLI of the committed executable; throws until one is committed. */
@@ -361,7 +369,7 @@ export class Project implements Disposable, ManifestProject {
   }
 
   async parseManifest(): Promise<ParsedManifest | undefined> {
-    return this.manifest.parse(this.getFusionCli());
+    return this.manifestRebuild.parse(this.getFusionCli());
   }
 
   private async rebuild(): Promise<void> {
@@ -369,7 +377,7 @@ export class Project implements Disposable, ManifestProject {
       LOG_SOURCE,
       `Going to rebuild the manifest for project at ${this.projectRoot.fsPath}`,
     );
-    await this.manifest.rebuild(this.getFusionCli());
+    await this.manifestRebuild.rebuild(this.getFusionCli());
   }
 
   private async refreshConfigWith(
@@ -412,6 +420,7 @@ export class Project implements Disposable, ManifestProject {
     const manifestCacheEvent = nextManifestPublication(this, parsed);
     this._manifestCacheEvent = manifestCacheEvent;
     this._onManifestChanged.fire({ added: [manifestCacheEvent] });
+    this._onDidChangeManifest.fire(this);
     this.terminal.debug(
       "manifestParsed",
       "manifest succesfully parsed",
@@ -421,7 +430,7 @@ export class Project implements Disposable, ManifestProject {
 
   /** The last `metadata.adapter_type` a manifest carried; `"unknown"` until one has. */
   getAdapterType() {
-    return this.manifest.adapterType || "unknown";
+    return this.manifestRebuild.adapterType || "unknown";
   }
 
   findPackageName(uri: Uri): string | undefined {
@@ -485,13 +494,6 @@ export class Project implements Disposable, ManifestProject {
   showRunSQL(modelPath: Uri) {
     const root = this.projectRoot.fsPath;
     void findModelInTargetfolder(root, this.getTargetPath(), modelPath, "run");
-  }
-
-  createYMLContent(
-    columnsInRelation: { [key: string]: string }[],
-    modelName: string,
-  ): string {
-    return createYMLContent(columnsInRelation, modelName);
   }
 
   async unsafeCompileQuery(query: string) {
@@ -590,9 +592,5 @@ export class Project implements Disposable, ManifestProject {
   /** This project's defer settings, read from the same snapshot commands are built from. */
   getDeferConfig(): ResolvedDefer | undefined {
     return readProjectSnapshot(this.projectRoot).invocation.defer;
-  }
-
-  getPublicationEpoch(): number {
-    return this._manifestCacheEvent?.publicationEpoch ?? 0;
   }
 }

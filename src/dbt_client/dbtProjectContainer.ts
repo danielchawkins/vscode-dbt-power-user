@@ -3,6 +3,7 @@ import { inject } from "inversify";
 import { basename } from "path";
 import {
   Disposable,
+  Event,
   EventEmitter,
   ExtensionContext,
   Uri,
@@ -35,6 +36,13 @@ export class DBTProjectContainer implements Disposable {
     this._onDBTProjectsInitializationEvent.event;
   private _onManifestChanged = new EventEmitter<ManifestCacheChangedEvent>();
   public readonly onManifestChanged = this._onManifestChanged.event;
+  private _onDidChangeManifest = new EventEmitter<DBTProject>();
+  /** Fires after any project publishes a new manifest. */
+  readonly onDidChangeManifest: Event<DBTProject> =
+    this._onDidChangeManifest.event;
+  private _onDidRemoveProject = new EventEmitter<Uri>();
+  /** Fires with a project's root after the container drops it. */
+  readonly onDidRemoveProject: Event<Uri> = this._onDidRemoveProject.event;
   private context?: ExtensionContext;
   private _onRebuildManifestStatusChange =
     new EventEmitter<RebuildManifestCombinedStatusChange>();
@@ -44,6 +52,8 @@ export class DBTProjectContainer implements Disposable {
   private disposables: Disposable[] = [
     this._onDBTProjectsInitializationEvent,
     this._onManifestChanged,
+    this._onDidChangeManifest,
+    this._onDidRemoveProject,
     this._onRebuildManifestStatusChange,
   ];
 
@@ -284,6 +294,7 @@ export class DBTProjectContainer implements Disposable {
       this._onManifestChanged.fire({
         removed: [{ projectRoot: entry.project.projectRoot }],
       });
+      this._onDidRemoveProject.fire(entry.project.projectRoot);
       const rebuildKey = entry.project.projectRoot.fsPath;
       if (this.rebuildManifestStatusChangeMap.has(rebuildKey)) {
         this.rebuildManifestStatusChangeMap.delete(rebuildKey);
@@ -354,6 +365,7 @@ export class DBTProjectContainer implements Disposable {
           metadataSource.onDidChangeMetadata((event) => {
             this._onManifestChanged.fire({ added: [event] });
           }),
+          project.onDidChangeManifest((p) => this._onDidChangeManifest.fire(p)),
           project.onRebuildManifestStatusChange((e) => {
             this.rebuildManifestStatusChangeMap.set(
               e.project.projectRoot.fsPath,
@@ -380,6 +392,7 @@ export class DBTProjectContainer implements Disposable {
       this._onManifestChanged.fire({
         removed: [{ projectRoot: entry.project.projectRoot }],
       });
+      this._onDidRemoveProject.fire(entry.project.projectRoot);
       const rebuildKey = entry.project.projectRoot.fsPath;
       if (this.rebuildManifestStatusChangeMap.has(rebuildKey)) {
         this.rebuildManifestStatusChangeMap.delete(rebuildKey);
