@@ -2,12 +2,9 @@ import { inject } from "inversify";
 import * as path from "path";
 import {
   Diagnostic,
-  DiagnosticSeverity,
   Disposable,
   Event,
   EventEmitter,
-  languages,
-  Range,
   Uri,
   window,
 } from "vscode";
@@ -42,6 +39,7 @@ import {
   generateSchemaYML,
   mergeColumnsFromDB,
 } from "../projects/projectCodegen";
+import { ProjectDiagnostics } from "../projects/projectDiagnostics";
 import { readProjectSnapshot } from "../projects/readProjectSnapshot";
 import {
   RunResultsHistory,
@@ -79,9 +77,6 @@ function formatCliStatus(
   return [body, ...params].join(" ");
 }
 
-type ProjectDiagnosticKind =
-  "rebuild-manifest" | "project-config" | "fusion-executable";
-
 export class DBTProject implements Disposable {
   private static readonly publicationEpochs = new Map<string, number>();
   private _manifestCacheEvent?: ManifestCacheProjectAddedEvent;
@@ -96,17 +91,10 @@ export class DBTProject implements Disposable {
   private _onSourceFileChanged = new EventEmitter<void>();
   public onSourceFileChanged = this._onSourceFileChanged.event;
   private dbtProjectLog?: DBTProjectLog;
-  private readonly diagnostics = languages.createDiagnosticCollection(
-    "fusionPowerUser.project",
-  );
-  private readonly diagnosticsByKind = new Map<
-    ProjectDiagnosticKind,
-    Diagnostic[]
-  >();
+  private readonly diagnostics: ProjectDiagnostics;
   private disposables: Disposable[] = [
     this._onProjectConfigChanged,
     this._onSourceFileChanged,
-    this.diagnostics,
   ];
   private _onRebuildManifestStatusChange =
     new EventEmitter<RebuildManifestStatusChange>();
@@ -148,7 +136,11 @@ export class DBTProject implements Disposable {
     private _onManifestChanged: EventEmitter<ManifestCacheChangedEvent>,
   ) {
     this.projectRoot = path;
+    this.diagnostics = new ProjectDiagnostics(
+      Uri.file(this.getDBTProjectFilePath()),
+    );
     this.disposables.push(
+      this.diagnostics,
       this.commandQueue,
       this.commandQueue.onFailed(({ statusMessage, error }) =>
         this.runHistoryService.notifyCommandFailed(
@@ -337,62 +329,11 @@ export class DBTProject implements Disposable {
   }
 
   getAllDiagnostic(): Diagnostic[] {
-    const diagnostics: Diagnostic[] = [];
-    this.diagnostics.forEach((_, entries) => diagnostics.push(...entries));
-    return diagnostics;
-  }
-
-  private mapSeverityToVSCode(severity: string): DiagnosticSeverity {
-    switch (severity) {
-      case "error":
-        return DiagnosticSeverity.Error;
-      case "warning":
-        return DiagnosticSeverity.Warning;
-      case "info":
-        return DiagnosticSeverity.Information;
-      case "hint":
-        return DiagnosticSeverity.Hint;
-      default:
-        return DiagnosticSeverity.Error;
-    }
-  }
-
-  private convertDiagnosticDataToVSCode(
-    data: DBTDiagnosticData,
-    kind: ProjectDiagnosticKind,
-  ): Diagnostic {
-    const diagnostic = new Diagnostic(
-      new Range(
-        data.range?.startLine || 0,
-        data.range?.startColumn || 0,
-        data.range?.endLine || 999,
-        data.range?.endColumn || 999,
-      ),
-      data.message,
-      this.mapSeverityToVSCode(data.severity),
-    );
-    diagnostic.source = "Fusion Power User";
-    diagnostic.code = kind;
-    return diagnostic;
-  }
-
-  /** Replaces one kind's diagnostics and publishes every kind for `dbt_project.yml`. */
-  private setDiagnostics(
-    kind: ProjectDiagnosticKind,
-    data: readonly DBTDiagnosticData[],
-  ): void {
-    this.diagnosticsByKind.set(
-      kind,
-      data.map((entry) => this.convertDiagnosticDataToVSCode(entry, kind)),
-    );
-    this.diagnostics.set(
-      Uri.file(this.getDBTProjectFilePath()),
-      [...this.diagnosticsByKind.values()].flat(),
-    );
+    return this.diagnostics.all();
   }
 
   private updateRebuildManifestDiagnostics(): void {
-    this.setDiagnostics(
+    this.diagnostics.setKind(
       "rebuild-manifest",
       this.dbtProjectIntegration.getDiagnostics().rebuildManifestDiagnostics,
     );
@@ -404,11 +345,11 @@ export class DBTProject implements Disposable {
     const isExecutable = (data: DBTDiagnosticData) =>
       data.source === EXECUTABLE_DIAGNOSTIC_SOURCE;
     this.updateRebuildManifestDiagnostics();
-    this.setDiagnostics(
+    this.diagnostics.setKind(
       "project-config",
       projectConfigDiagnostics.filter((data) => !isExecutable(data)),
     );
-    this.setDiagnostics(
+    this.diagnostics.setKind(
       "fusion-executable",
       projectConfigDiagnostics.filter(isExecutable),
     );
@@ -660,9 +601,7 @@ export class DBTProject implements Disposable {
   }
 
   throwDiagnosticsErrorIfAvailable() {
-    const error = this.getAllDiagnostic().find(
-      (diagnostic) => diagnostic.severity === DiagnosticSeverity.Error,
-    );
+    const error = this.diagnostics.firstError();
     if (error) {
       throw new Error(error.message);
     }
