@@ -4,6 +4,8 @@ import { DBTCommand, DBTTerminal, RunModelParams } from "../dbt_integration";
 import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
 import { CommandQueue, formatCommandStatus } from "./commandQueue";
 
+const LOG_SOURCE = "Project";
+
 /** The project collaborators that queueing a dbt command reads from and reports to. */
 export interface ProjectCommandDeps {
   commandQueue: CommandQueue;
@@ -29,6 +31,57 @@ export function formatCliStatus(
       ? "dbt build"
       : `dbt ${cli.kind} --select ${cli.select}`;
   return [body, ...params].join(" ");
+}
+
+/** Queues a `kind` command that selects `params`' model and graph operators. */
+export function queueSelected(
+  deps: ProjectCommandDeps,
+  kind: "run" | "build" | "compile",
+  params: RunModelParams,
+): Promise<void> {
+  return queueCli(deps, { kind, select: selection(params) });
+}
+
+/**
+ * Refreshes `cli`'s project config for the project `label` names; returns whether it succeeded.
+ * `sourcePaths`, when given, is read afterwards to report whether the paths resolved.
+ */
+export async function refreshCliConfig(
+  cli: FusionCli,
+  terminal: DBTTerminal,
+  label: string,
+  sourcePaths?: () => string[] | undefined,
+): Promise<boolean> {
+  terminal.debug(
+    LOG_SOURCE,
+    `Going to refresh the project ${label} configuration`,
+  );
+  try {
+    await cli.refreshProjectConfig();
+  } catch (error) {
+    terminal.debug(
+      LOG_SOURCE,
+      `An error occurred while trying to refresh the project ${label} configuration`,
+      error,
+    );
+    return false;
+  }
+  if (!sourcePaths) {
+    return true;
+  }
+  if (sourcePaths()) {
+    terminal.debug(
+      LOG_SOURCE,
+      `Project config refreshed successfully for ${label}`,
+    );
+  } else {
+    terminal.warn(
+      LOG_SOURCE,
+      "Could not complete project config refresh because project is not initialized properly. " +
+        "dbt path settings cannot be determined",
+    );
+  }
+  return true;
 }
 
 /** Prepares a CLI command and queues it, reporting a preparation failure instead of throwing. */

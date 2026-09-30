@@ -532,7 +532,7 @@ export class QueryResultPanel extends AltimateWebviewProvider {
     }
     return await this.transmitData(
       result.table.column_names,
-      // FusionProjectIntegration already reports every column type as unknown.
+      // executeSql already reports every column type as unknown.
       result.table.column_types,
       rows,
       query,
