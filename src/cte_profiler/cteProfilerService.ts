@@ -1,4 +1,3 @@
-import { inject, injectable } from "inversify";
 import {
   CancellationTokenSource,
   Disposable,
@@ -13,7 +12,6 @@ import { DBTTerminal } from "../dbt_integration";
 import { Projects } from "../projects/projects";
 import { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
 
-@injectable()
 export class CteProfilerService implements Disposable {
   private results: Map<string, CteProfileResult> = new Map();
   private cancellationTokenSource: CancellationTokenSource | undefined;
@@ -26,7 +24,6 @@ export class CteProfilerService implements Disposable {
 
   constructor(
     private projects: Projects,
-    @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {}
 

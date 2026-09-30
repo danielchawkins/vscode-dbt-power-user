@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import { ExtensionContext } from "vscode";
 import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
 import { compose } from "./compositionRoot";

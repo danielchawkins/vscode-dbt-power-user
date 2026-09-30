@@ -17,9 +17,7 @@
     "types": ["node", "jest", "mocha", "vscode"],
     "paths": {
       "@extension": ["./src/modules.ts"]
-    },
-    "experimentalDecorators": true,
-    "emitDecoratorMetadata": true
+    }
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", ".vscode-test", "webview_panels", "dist", "out"]

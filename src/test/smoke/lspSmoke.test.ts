@@ -1,7 +1,6 @@
 import * as assert from "assert";
 import * as fs from "fs";
 import * as path from "path";
-import "reflect-metadata";
 import * as vscode from "vscode";
 import {
   FUSION_CLIENT_STATES_COMMAND,

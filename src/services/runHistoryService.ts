@@ -1,4 +1,3 @@
-import { injectable } from "inversify";
 import { Disposable, Event, EventEmitter } from "vscode";
 import type { RunResultsEventData } from "../dbt_integration";
 
@@ -13,7 +12,6 @@ export type {
   RunStatus,
 } from "../dbt_integration";
 
-@injectable()
 export class RunHistoryService implements Disposable {
   private static readonly MAX_ENTRIES = 50;
 

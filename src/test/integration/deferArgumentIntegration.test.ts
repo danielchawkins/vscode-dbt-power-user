@@ -3,7 +3,6 @@ import { execFile as execFileCb } from "child_process";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import "reflect-metadata";
 import { promisify } from "util";
 import { readDbtProjectFile, resolveProjectSnapshot } from "../../core/project";
 import { DBTTerminal } from "../../dbt_integration";

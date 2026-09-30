@@ -1,4 +1,3 @@
-import { inject } from "inversify";
 import {
   Disposable,
   StatusBarAlignment,
@@ -19,7 +18,6 @@ export class DeferToProductionStatusBar implements Disposable {
 
   constructor(
     private projects: Projects,
-    @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
     this.disposables.push(

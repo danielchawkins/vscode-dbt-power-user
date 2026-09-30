@@ -1,4 +1,3 @@
-import { inject } from "inversify";
 import * as path from "path";
 import {
   CancellationToken,
@@ -56,7 +55,6 @@ export class PanelHost implements WebviewViewProvider {
   public constructor(
     protected extensionContext: ExtensionContextStore,
     protected emitterService: SharedStateService,
-    @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
   ) {
