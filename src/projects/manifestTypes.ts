@@ -11,13 +11,3 @@ export interface Manifest extends ParsedManifest {
   /** Producer-supplied revision token, when one exists. */
   readonly producerRevision?: string;
 }
-
-export interface RebuildManifestStatusChange {
-  project: Project;
-  inProgress: boolean;
-}
-
-export interface RebuildManifestCombinedStatusChange {
-  projects: Project[];
-  inProgress: boolean;
-}

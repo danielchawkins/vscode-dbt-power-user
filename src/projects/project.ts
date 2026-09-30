@@ -46,7 +46,7 @@ import {
   nextManifestPublication,
 } from "./manifest";
 import { ManifestRebuild } from "./manifestRebuild";
-import type { Manifest, RebuildManifestStatusChange } from "./manifestTypes";
+import type { Manifest } from "./manifestTypes";
 import {
   findModelInTargetfolder,
   generateModel,
@@ -117,10 +117,6 @@ export class Project implements Disposable, ManifestProject {
   public onRunResults = this._onRunResults.event;
   private _onSourceFileChanged = new EventEmitter<void>();
   public onSourceFileChanged = this._onSourceFileChanged.event;
-  private _onRebuildManifestStatusChange =
-    new EventEmitter<RebuildManifestStatusChange>();
-  readonly onRebuildManifestStatusChange =
-    this._onRebuildManifestStatusChange.event;
   private _onDidChangeManifest = new EventEmitter<Project>();
   /** Fires after this project publishes a new manifest. */
   readonly onDidChangeManifest = this._onDidChangeManifest.event;
@@ -129,7 +125,6 @@ export class Project implements Disposable, ManifestProject {
     this._onProjectConfigChanged,
     this._onSourceFileChanged,
     this._onRunResults,
-    this._onRebuildManifestStatusChange,
   ];
 
   /** The latest complete metadata publication. */
@@ -385,7 +380,6 @@ export class Project implements Disposable, ManifestProject {
     if (!inProgress) {
       this.updateDiagnosticsInProblemsPanel();
     }
-    this._onRebuildManifestStatusChange.fire({ project: this, inProgress });
   }
 
   private publishParsedManifest(parsed: ParsedManifest): void {

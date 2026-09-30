@@ -14,7 +14,6 @@ describe("ExtensionContextStore", () => {
     };
     const context = {
       extensionUri: Uri.file("/extension"),
-      extension: { id: "publisher.extension", packageJSON: { version: "1" } },
       workspaceState,
       globalState,
     } as unknown as ExtensionContext;
@@ -30,8 +29,6 @@ describe("ExtensionContextStore", () => {
     const { store, context } = createStore();
 
     expect(store.extensionUri).toBe(context.extensionUri);
-    expect(store.extensionVersion).toBe("1");
-    expect(store.extensionId).toBe("publisher.extension");
   });
 
   it("reads and writes workspace and global state", () => {

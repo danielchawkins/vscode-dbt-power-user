@@ -85,11 +85,14 @@ import { QueryResultPanel } from "./webview_provider/queryResultPanel";
 
 export const container = new Container();
 
-/** Binds the activation context; call once before resolving the extension. */
+/** Binds the activation context before resolving the extension; a later call replaces it. */
 export function bindExtensionContext(context: ExtensionContext): void {
-  container
-    .bind(ExtensionContextStore)
-    .toConstantValue(new ExtensionContextStore(context));
+  const store = new ExtensionContextStore(context);
+  if (container.isBound(ExtensionContextStore)) {
+    container.rebind(ExtensionContextStore).toConstantValue(store);
+  } else {
+    container.bind(ExtensionContextStore).toConstantValue(store);
+  }
 }
 
 // Bind parser classes
