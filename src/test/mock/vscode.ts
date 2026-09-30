@@ -492,7 +492,11 @@ export const RelativePattern = jest.fn((base: unknown, pattern: string) => ({
   pattern,
 }));
 export const ViewColumn = {};
-export const Disposable = Object.assign(jest.fn(), { from: jest.fn() });
+export const Disposable = Object.assign(jest.fn(), {
+  from: jest.fn((...disposables: { dispose: () => unknown }[]) => ({
+    dispose: () => disposables.forEach((d) => d.dispose()),
+  })),
+});
 export const Event = jest.fn();
 
 export const CancellationTokenSource = jest.fn().mockImplementation(() => {

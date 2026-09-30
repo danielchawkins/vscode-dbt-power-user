@@ -15,37 +15,37 @@ export class CodeLensProviders implements Disposable {
     private cteCodeLensProvider: CteCodeLensProvider,
     private sqlActionsCodeLensProvider: SqlActionsCodeLensProvider,
   ) {
-    // Add code lenses after projects are initialized.
-    this.projects.onDidInitialize(() => {
-      this.disposables.push(
-        languages.registerCodeLensProvider(
-          DBTPowerUserExtension.DBT_YAML_SELECTOR,
-          this.sourceModelCreationCodeLensProvider,
-        ),
-      );
-      this.disposables.push(
-        languages.registerCodeLensProvider(
-          DBTPowerUserExtension.DBT_SQL_SELECTOR,
-          this.virtualSqlCodeLensProvider,
-        ),
-      );
-      this.disposables.push(
-        languages.registerCodeLensProvider(
-          DBTPowerUserExtension.DBT_SQL_SELECTOR,
-          this.cteCodeLensProvider,
-        ),
-      );
-      this.disposables.push(
-        languages.registerCodeLensProvider(
-          DBTPowerUserExtension.DBT_SQL_SELECTOR,
-          this.sqlActionsCodeLensProvider,
-        ),
-        languages.registerCodeLensProvider(
-          DBTPowerUserExtension.DBT_YAML_SELECTOR,
-          this.sqlActionsCodeLensProvider,
-        ),
-      );
-    });
+    this.disposables.push(
+      this.sourceModelCreationCodeLensProvider,
+      this.virtualSqlCodeLensProvider,
+      this.cteCodeLensProvider,
+      this.projects.onDidInitialize(() => this.registerProviders()),
+    );
+  }
+
+  private registerProviders(): void {
+    this.disposables.push(
+      languages.registerCodeLensProvider(
+        DBTPowerUserExtension.DBT_YAML_SELECTOR,
+        this.sourceModelCreationCodeLensProvider,
+      ),
+      languages.registerCodeLensProvider(
+        DBTPowerUserExtension.DBT_SQL_SELECTOR,
+        this.virtualSqlCodeLensProvider,
+      ),
+      languages.registerCodeLensProvider(
+        DBTPowerUserExtension.DBT_SQL_SELECTOR,
+        this.cteCodeLensProvider,
+      ),
+      languages.registerCodeLensProvider(
+        DBTPowerUserExtension.DBT_SQL_SELECTOR,
+        this.sqlActionsCodeLensProvider,
+      ),
+      languages.registerCodeLensProvider(
+        DBTPowerUserExtension.DBT_YAML_SELECTOR,
+        this.sqlActionsCodeLensProvider,
+      ),
+    );
   }
 
   dispose() {

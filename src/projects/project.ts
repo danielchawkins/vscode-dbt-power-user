@@ -198,6 +198,7 @@ export class Project implements Disposable, ManifestProject {
       this.onProjectConfigChanged,
     );
     this.disposables.push(
+      this.dbtProjectLog,
       this.diagnostics,
       this.commandQueue,
       this.commandQueue.onFailed(({ statusMessage, error }) =>
@@ -321,7 +322,6 @@ export class Project implements Disposable, ManifestProject {
         `An unexpected error occured while ${message}`,
       );
     }
-    this.disposables.push(this.dbtProjectLog);
     this.terminal.debug(
       LOG_SOURCE,
       `Initialized dbt project ${this.getProjectName()} at ${this.projectRoot}`,

@@ -1,11 +1,5 @@
-import {
-  commands,
-  Disposable,
-  ExtensionContext,
-  extensions,
-  window,
-  workspace,
-} from "vscode";
+import { commands, Disposable, extensions, window, workspace } from "vscode";
+import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
 import { CodeLensProviders } from "./code_lens_provider";
 import { VSCodeCommands } from "./commands";
 import { ProjectConfigCommands } from "./commands/projectConfigCommands";
@@ -21,6 +15,8 @@ import { Projects } from "./projects/projects";
 import { DbtPowerUserActionsCenter } from "./quickpick";
 import { registerConnectedColumnsCommand } from "./services/connectedColumnsCommand";
 import { DbtLineageService } from "./services/dbtLineageService";
+import { RunHistoryService } from "./services/runHistoryService";
+import { SharedStateService } from "./services/sharedStateService";
 import { readSetting } from "./settings";
 import { StatusBars } from "./statusbar";
 import { TreeviewProviders } from "./treeview_provider";
@@ -66,8 +62,15 @@ export class DBTPowerUserExtension implements Disposable {
     private projectConfigCommands: ProjectConfigCommands,
     private dbtTemplateLanguage: DbtTemplateLanguage,
     private dbtLineageService: DbtLineageService,
+    /** Disposed after every other collaborator. */
+    private sharedState: SharedStateService,
+    /** Disposed after every other collaborator except `sharedState`. */
+    private runHistoryService: RunHistoryService,
   ) {
     this.disposables.push(
+      this.sharedState,
+      this.runHistoryService,
+      this.dbtTerminal,
       this.projects,
       this.webviewViewProviders,
       this.treeviewProviders,
@@ -94,12 +97,19 @@ export class DBTPowerUserExtension implements Disposable {
     }
   }
 
+  private own(disposable: Disposable | undefined): void {
+    if (disposable) {
+      this.disposables.push(disposable);
+    }
+  }
+
   async deactivate(): Promise<void> {
     await this.fusionClientPool.stop();
     this.dispose();
   }
 
-  async activate(context: ExtensionContext): Promise<void> {
+  async activate(): Promise<void> {
+    this.own(registerRuntimeTimings());
     try {
       if (extensions.getExtension(UPSTREAM_EXTENSION_ID)) {
         const action = await window.showErrorMessage(
@@ -129,12 +139,13 @@ export class DBTPowerUserExtension implements Disposable {
       this.dbtTemplateLanguage.start();
       this.fusionClientPool.initialize();
       this.fusionStatus.initialize();
-      registerFusionClientDiagnostics(
-        context,
-        this.projectRegistry,
-        this.fusionClientPool,
+      this.own(
+        registerFusionClientDiagnostics(
+          this.projectRegistry,
+          this.fusionClientPool,
+        ),
       );
-      registerConnectedColumnsCommand(context, this.dbtLineageService);
+      this.own(registerConnectedColumnsCommand(this.dbtLineageService));
       await this.projects.initialize();
       await this.statusBars.initialize();
     } catch (error) {

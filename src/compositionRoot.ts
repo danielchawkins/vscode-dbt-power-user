@@ -339,6 +339,8 @@ export function compose(context: ExtensionContext): Composition {
     new ProjectConfigCommands(currentProject, terminal),
     new DbtTemplateLanguage(projectRegistry, currentProject, terminal),
     fusion.dbtLineageService,
+    graph.sharedState,
+    graph.runHistoryService,
   );
 
   return {

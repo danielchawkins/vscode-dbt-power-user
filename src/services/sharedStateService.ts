@@ -1,4 +1,4 @@
-import { EventEmitter } from "vscode";
+import { Disposable, EventEmitter } from "vscode";
 
 /** A command broadcast between webview providers. */
 export interface SharedStateEventEmitterProps {
@@ -6,7 +6,7 @@ export interface SharedStateEventEmitterProps {
   payload: Record<string, unknown>;
 }
 
-export class SharedStateService {
+export class SharedStateService implements Disposable {
   public eventEmitter;
 
   public constructor() {
@@ -15,5 +15,9 @@ export class SharedStateService {
 
   public fire(data: SharedStateEventEmitterProps) {
     this.eventEmitter.fire(data);
+  }
+
+  dispose(): void {
+    this.eventEmitter.dispose();
   }
 }

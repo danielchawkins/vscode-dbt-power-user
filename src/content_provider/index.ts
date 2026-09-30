@@ -6,6 +6,7 @@ export class ContentProviders implements Disposable {
 
   constructor(private sqlPreviewContentProvider: SqlPreviewContentProvider) {
     this.disposables.push(
+      this.sqlPreviewContentProvider,
       workspace.registerTextDocumentContentProvider(
         SqlPreviewContentProvider.SCHEME,
         this.sqlPreviewContentProvider,

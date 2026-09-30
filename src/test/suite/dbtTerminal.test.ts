@@ -19,6 +19,7 @@ describe("DBTTerminal Test Suite", () => {
       debug: jest.fn(),
       error: jest.fn(),
       warn: jest.fn(),
+      dispose: jest.fn(),
     };
 
     terminal = new VSCodeDBTTerminal();
@@ -84,6 +85,23 @@ describe("DBTTerminal Test Suite", () => {
     );
   });
 
+  it("drops writes after dispose and disposes once", () => {
+    terminal.dispose();
+    terminal.dispose();
+    terminal.log("late");
+    terminal.trace("late");
+    terminal.debug("n", "late");
+    terminal.info("n", "late");
+    terminal.warn("n", "late");
+    terminal.error("n", "late", new Error("e"));
+    expect(mockOutputChannel.dispose).toHaveBeenCalledTimes(1);
+    expect(mockOutputChannel.info).not.toHaveBeenCalled();
+    expect(mockOutputChannel.appendLine).not.toHaveBeenCalled();
+    expect(mockOutputChannel.debug).not.toHaveBeenCalled();
+    expect(mockOutputChannel.warn).not.toHaveBeenCalled();
+    expect(mockOutputChannel.error).not.toHaveBeenCalled();
+  });
+
   it("should properly dispose of all disposables", () => {
     const mockDisposable1 = { dispose: jest.fn() };
     const mockDisposable2 = { dispose: jest.fn() };
@@ -92,6 +110,7 @@ describe("DBTTerminal Test Suite", () => {
     terminal.dispose();
     expect(mockDisposable1.dispose).toHaveBeenCalled();
     expect(mockDisposable2.dispose).toHaveBeenCalled();
+    expect(mockOutputChannel.dispose).toHaveBeenCalled();
     // @ts-ignore - Check private disposables for testing
     expect(terminal.disposables.length).toBe(0);
   });

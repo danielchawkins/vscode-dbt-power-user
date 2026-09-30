@@ -1,4 +1,4 @@
-import { commands, ExtensionContext } from "vscode";
+import { commands, Disposable } from "vscode";
 import { readHarnessSwitch } from "../settings";
 
 export const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
@@ -50,13 +50,12 @@ export function clearWebviewRuntimeTimings(): void {
   records.length = 0;
 }
 
-export function registerRuntimeTimings(context: ExtensionContext): void {
+/** Registers {@link RUNTIME_TIMINGS_COMMAND} when the runtime benchmark asks for it. */
+export function registerRuntimeTimings(): Disposable | undefined {
   if (!enabled()) {
-    return;
+    return undefined;
   }
-  context.subscriptions.push(
-    commands.registerCommand(RUNTIME_TIMINGS_COMMAND, () =>
-      getWebviewRuntimeTimings(),
-    ),
+  return commands.registerCommand(RUNTIME_TIMINGS_COMMAND, () =>
+    getWebviewRuntimeTimings(),
   );
 }

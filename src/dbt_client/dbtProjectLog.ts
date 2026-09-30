@@ -42,8 +42,11 @@ export class DBTProjectLog implements Disposable {
           `${DBTProjectLog.LOG_PATH}/${DBTProjectLog.LOG_FILE}`,
         ),
       );
-      setupWatcherHandler(this.logFileWatcher, () =>
-        this.readLogFileFromLastPosition(event),
+      this.disposables.push(
+        this.logFileWatcher,
+        ...setupWatcherHandler(this.logFileWatcher, () =>
+          this.readLogFileFromLastPosition(event),
+        ),
       );
       this.currentProjectName = projectName;
     }

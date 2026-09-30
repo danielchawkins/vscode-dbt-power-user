@@ -70,17 +70,17 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
       projects.onDidRemoveProject(() => this.onManifestChanged()),
-    );
-    window.onDidChangeActiveTextEditor(
-      async (event: TextEditor | undefined) => {
-        this.documentation = undefined;
-        if (event === undefined) {
-          return;
-        }
-        if (this._panel) {
-          this.transmitData();
-        }
-      },
+      window.onDidChangeActiveTextEditor(
+        async (event: TextEditor | undefined) => {
+          this.documentation = undefined;
+          if (event === undefined) {
+            return;
+          }
+          if (this._panel) {
+            this.transmitData();
+          }
+        },
+      ),
     );
   }
 
