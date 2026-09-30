@@ -7,24 +7,24 @@ import {
   jest,
 } from "@jest/globals";
 import { EventEmitter, Uri } from "vscode";
-import { DBTProject } from "../../dbt_client/dbtProject";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { Manifest } from "../../projects/manifestTypes";
+import { Project } from "../../projects/project";
 import { DeclaredProject } from "../../projects/projectRegistry";
 
 describe("ManifestMetadataSource", () => {
   let source: ManifestMetadataSource;
   let mockDeclaredProject: jest.Mocked<DeclaredProject>;
-  let mockDbtProject: jest.Mocked<DBTProject>;
-  let manifestChangedEmitter: EventEmitter<DBTProject>;
+  let mockProject: jest.Mocked<Project>;
+  let manifestChangedEmitter: EventEmitter<Project>;
   let mockManifest: Manifest | undefined;
 
   const publish = (manifest: Manifest) => {
     mockManifest = manifest;
-    manifestChangedEmitter.fire(mockDbtProject);
+    manifestChangedEmitter.fire(mockProject);
   };
 
-  const createTestMetadata = (project: DBTProject): Manifest => ({
+  const createTestMetadata = (project: Project): Manifest => ({
     project,
     nodeMetaMap: {
       lookupByBaseName: new Map(),
@@ -65,9 +65,9 @@ describe("ManifestMetadataSource", () => {
     } as unknown as jest.Mocked<DeclaredProject>;
 
     mockManifest = undefined;
-    manifestChangedEmitter = new EventEmitter<DBTProject>();
+    manifestChangedEmitter = new EventEmitter<Project>();
 
-    mockDbtProject = {
+    mockProject = {
       projectRoot: Uri.file("/test/project"),
       get manifest() {
         return mockManifest;
@@ -75,9 +75,9 @@ describe("ManifestMetadataSource", () => {
       onDidChangeManifest: manifestChangedEmitter.event,
       rebuildManifest: jest.fn().mockImplementation(() => Promise.resolve()),
       dispose: jest.fn(),
-    } as unknown as jest.Mocked<DBTProject>;
+    } as unknown as jest.Mocked<Project>;
 
-    source = new ManifestMetadataSource(mockDeclaredProject, mockDbtProject);
+    source = new ManifestMetadataSource(mockDeclaredProject, mockProject);
   });
 
   afterEach(() => {
@@ -90,31 +90,31 @@ describe("ManifestMetadataSource", () => {
   });
 
   it("should capture current snapshot on initialization", () => {
-    const testMetadata = createTestMetadata(mockDbtProject);
+    const testMetadata = createTestMetadata(mockProject);
     mockManifest = testMetadata;
     const source2 = new ManifestMetadataSource(
       mockDeclaredProject,
-      mockDbtProject,
+      mockProject,
     );
     expect(source2.current()).toBe(testMetadata);
     source2.dispose();
   });
 
   it("should read the latest published manifest", () => {
-    const newMetadata = createTestMetadata(mockDbtProject);
+    const newMetadata = createTestMetadata(mockProject);
     publish(newMetadata);
 
     expect(source.current()).toBe(newMetadata);
   });
 
-  it("should delegate refresh to dbtProject.rebuildManifest", async () => {
+  it("should delegate refresh to project.rebuildManifest", async () => {
     await source.refresh();
-    expect(mockDbtProject.rebuildManifest).toHaveBeenCalled();
+    expect(mockProject.rebuildManifest).toHaveBeenCalled();
   });
 
   it("should propagate errors from refresh", async () => {
     const error = new Error("Rebuild failed");
-    (mockDbtProject.rebuildManifest as jest.Mock).mockRejectedValueOnce(
+    (mockProject.rebuildManifest as jest.Mock).mockRejectedValueOnce(
       error as never,
     );
 
@@ -122,7 +122,7 @@ describe("ManifestMetadataSource", () => {
   });
 
   it("should preserve metadata structure", () => {
-    const richMetadata = createTestMetadata(mockDbtProject);
+    const richMetadata = createTestMetadata(mockProject);
     richMetadata.modelDepthMap.set("model1", 2);
     publish(richMetadata);
 

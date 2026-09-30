@@ -31,53 +31,9 @@
   },
   {
     "type": "cycle",
-    "from": "src/dbt_client/dbtProject.ts",
-    "to": "src/projects/project.ts",
-    "unresolvedTo": "../projects/project",
-    "dependencyTypes": [
-      "local",
-      "export"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "src/projects/project.ts",
-        "dependencyTypes": [
-          "local",
-          "export"
-        ]
-      },
-      {
-        "name": "src/dbt_client/dbtProjectLog.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "src/dbt_client/event/projectConfigChangedEvent.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "src/dbt_client/dbtProject.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      }
-    ]
-  },
-  {
-    "type": "cycle",
-    "from": "src/dbt_client/event/projectConfigChangedEvent.ts",
-    "to": "src/dbt_client/dbtProject.ts",
-    "unresolvedTo": "../dbtProject",
+    "from": "src/dbt_client/dbtProjectLog.ts",
+    "to": "src/dbt_client/event/projectConfigChangedEvent.ts",
+    "unresolvedTo": "./event/projectConfigChangedEvent",
     "dependencyTypes": [
       "local",
       "import"
@@ -88,7 +44,7 @@
     },
     "cycle": [
       {
-        "name": "src/dbt_client/dbtProject.ts",
+        "name": "src/dbt_client/event/projectConfigChangedEvent.ts",
         "dependencyTypes": [
           "local",
           "import"
@@ -98,7 +54,37 @@
         "name": "src/projects/project.ts",
         "dependencyTypes": [
           "local",
-          "export"
+          "import"
+        ]
+      },
+      {
+        "name": "src/dbt_client/dbtProjectLog.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
+        ]
+      }
+    ]
+  },
+  {
+    "type": "cycle",
+    "from": "src/dbt_client/event/projectConfigChangedEvent.ts",
+    "to": "src/projects/project.ts",
+    "unresolvedTo": "../../projects/project",
+    "dependencyTypes": [
+      "local",
+      "import"
+    ],
+    "rule": {
+      "severity": "error",
+      "name": "no-circular"
+    },
+    "cycle": [
+      {
+        "name": "src/projects/project.ts",
+        "dependencyTypes": [
+          "local",
+          "import"
         ]
       },
       {
@@ -113,8 +99,8 @@
   {
     "type": "cycle",
     "from": "src/dbt_client/event/runResultsEvent.ts",
-    "to": "src/dbt_client/dbtProject.ts",
-    "unresolvedTo": "../dbtProject",
+    "to": "src/projects/project.ts",
+    "unresolvedTo": "../../projects/project",
     "dependencyTypes": [
       "local",
       "import"
@@ -125,17 +111,10 @@
     },
     "cycle": [
       {
-        "name": "src/dbt_client/dbtProject.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
         "name": "src/projects/project.ts",
         "dependencyTypes": [
           "local",
-          "export"
+          "import"
         ]
       },
       {

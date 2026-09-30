@@ -1,4 +1,4 @@
-import { DBTProject } from "../dbtProject";
+import { Project } from "../../projects/project";
 export class ProjectConfigChangedEvent {
-  constructor(public project: DBTProject) {}
+  constructor(public project: Project) {}
 }

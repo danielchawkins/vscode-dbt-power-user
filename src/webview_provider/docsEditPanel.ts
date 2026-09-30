@@ -20,7 +20,6 @@ import {
   beginWebviewResolve,
   completeWebviewReady,
 } from "../benchmark/runtimeTimings";
-import { DBTProject } from "../dbt_client/dbtProject";
 import {
   DBTTerminal,
   TestMetaData,
@@ -29,6 +28,7 @@ import {
 } from "../dbt_integration";
 import { ExtensionContextStore } from "../extensionContext";
 import { UserInputError } from "../local/errors";
+import { Project } from "../projects/project";
 import { Projects } from "../projects/projects";
 import { DbtTestService } from "../services/dbtTestService";
 import {
@@ -94,7 +94,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     }
   }
 
-  private getProject(): DBTProject | undefined {
+  private getProject(): Project | undefined {
     if (!window.activeTextEditor) {
       return undefined;
     }
@@ -403,7 +403,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   private convertColumnNamesByCaseConfig(
     columns: { name: string }[],
     modelName: string,
-    project: DBTProject,
+    project: Project,
   ) {
     if (!columns.length) {
       return [];

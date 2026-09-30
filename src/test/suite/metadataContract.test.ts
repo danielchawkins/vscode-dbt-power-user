@@ -2,7 +2,6 @@ import { describe, expect, it } from "@jest/globals";
 import * as fs from "fs";
 import * as path from "path";
 import { EventEmitter, Uri } from "vscode";
-import { DBTProject } from "../../dbt_client/dbtProject";
 import {
   ChildrenParentParser,
   DBTTerminal,
@@ -22,6 +21,7 @@ import {
 } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { Manifest } from "../../projects/manifestTypes";
+import { Project } from "../../projects/project";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { esmDirname } from "../esmDirname";
 
@@ -228,7 +228,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
       parentMaps.parentMetaMap,
       parentMaps.childMetaMap,
     );
-    const manifestEvents = new EventEmitter<DBTProject>();
+    const manifestEvents = new EventEmitter<Project>();
     const project = {
       projectRoot: Uri.file(fixtureRoot),
       getProjectName: () => "single_project",
@@ -237,7 +237,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
       },
       onDidChangeManifest: manifestEvents.event,
       rebuildManifest: async () => {},
-    } as unknown as DBTProject;
+    } as unknown as Project;
     const event: Manifest = {
       project,
       nodeMetaMap,

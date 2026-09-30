@@ -137,11 +137,11 @@ describe("Fusion-only integration wiring", () => {
     expect(container.isBound("RuntimePythonEnvironment")).toBe(false);
   });
 
-  it("builds a Project from Factory<DBTProject>", async () => {
+  it("builds a Project from Factory<Project>", async () => {
     type ProjectFactory = (projectRoot: Uri) => Project;
 
     expect(container.isBound("Factory<FusionProjectIntegration>")).toBe(false);
-    const factory = container.get<ProjectFactory>("Factory<DBTProject>");
+    const factory = container.get<ProjectFactory>("Factory<Project>");
     const project = factory(Uri.file("/tmp/project"));
 
     expect(project).toBeInstanceOf(Project);

@@ -1,8 +1,8 @@
-import { DBTProject } from "../dbtProject";
+import { Project } from "../../projects/project";
 
 export class RunResultsEvent {
   constructor(
-    public project: DBTProject,
+    public project: Project,
     public uniqueIds?: string[],
   ) {}
 }

@@ -9,8 +9,8 @@ import {
 import * as fs from "fs";
 import { Uri, window } from "vscode";
 import { RunModel } from "../../commands/runModel";
-import { DBTProject } from "../../dbt_client/dbtProject";
 import { RunModelType } from "../../dbt_integration";
+import { Project } from "../../projects/project";
 import { ProjectContext } from "../../projects/projectContext";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { Projects } from "../../projects/projects";
@@ -22,7 +22,7 @@ const untitledUri = {
 } as Uri;
 
 describe("RunModel SQL execution", () => {
-  let dbtProject: jest.Mocked<DBTProject>;
+  let dbtProject: jest.Mocked<Project>;
   let projects: jest.Mocked<Projects>;
   let context: jest.Mocked<ProjectContext>;
   let runModel: RunModel;
@@ -31,7 +31,7 @@ describe("RunModel SQL execution", () => {
   beforeEach(() => {
     dbtProject = {
       executeSQLOnQueryPanel: jest.fn(),
-    } as unknown as jest.Mocked<DBTProject>;
+    } as unknown as jest.Mocked<Project>;
     projects = {
       get: jest.fn().mockReturnValue(dbtProject),
     } as unknown as jest.Mocked<Projects>;
@@ -115,7 +115,7 @@ describe("RunModel SQL execution", () => {
 
 describe("RunModel project commands", () => {
   const model = Uri.file("/project/models/orders.sql");
-  let dbtProject: jest.Mocked<DBTProject>;
+  let project: jest.Mocked<Project>;
   let projects: jest.Mocked<Projects>;
   let runModel: RunModel;
 
@@ -123,7 +123,7 @@ describe("RunModel project commands", () => {
     jest
       .spyOn(fs.realpathSync, "native")
       .mockImplementation((value) => value as string);
-    dbtProject = {
+    project = {
       runModel: jest.fn(),
       buildModel: jest.fn(),
       compileModel: jest.fn(),
@@ -132,9 +132,9 @@ describe("RunModel project commands", () => {
       runModelTest: jest.fn(),
       generateSchemaYML: jest.fn(),
       showRunSQL: jest.fn(),
-    } as unknown as jest.Mocked<DBTProject>;
+    } as unknown as jest.Mocked<Project>;
     projects = {
-      get: jest.fn().mockReturnValue(dbtProject),
+      get: jest.fn().mockReturnValue(project),
     } as unknown as jest.Mocked<Projects>;
     runModel = new RunModel(projects, {} as ProjectContext);
   });
@@ -154,15 +154,15 @@ describe("RunModel project commands", () => {
     runModel.buildDBTModel(model, RunModelType.BUILD_CHILDREN);
     runModel.compileDBTModel(model);
 
-    expect(dbtProject.runModel).toHaveBeenCalledWith({
+    expect(project.runModel).toHaveBeenCalledWith({
       ...orders,
       plusOperatorLeft: "+",
     });
-    expect(dbtProject.buildModel).toHaveBeenCalledWith({
+    expect(project.buildModel).toHaveBeenCalledWith({
       ...orders,
       plusOperatorRight: "+",
     });
-    expect(dbtProject.compileModel).toHaveBeenCalledWith(orders);
+    expect(project.compileModel).toHaveBeenCalledWith(orders);
   });
 
   it("delegates query, test, schema, and run-SQL operations", () => {
@@ -173,11 +173,11 @@ describe("RunModel project commands", () => {
     runModel.showRunSQL(model);
 
     expect(projects.get).toHaveBeenCalledWith(model);
-    expect(dbtProject.compileQuery).toHaveBeenCalledWith("select 1");
-    expect(dbtProject.runTest).toHaveBeenCalledWith("unique_orders");
-    expect(dbtProject.runModelTest).toHaveBeenCalledWith("orders");
-    expect(dbtProject.generateSchemaYML).toHaveBeenCalledWith(model, "orders");
-    expect(dbtProject.showRunSQL).toHaveBeenCalledWith(model);
+    expect(project.compileQuery).toHaveBeenCalledWith("select 1");
+    expect(project.runTest).toHaveBeenCalledWith("unique_orders");
+    expect(project.runModelTest).toHaveBeenCalledWith("orders");
+    expect(project.generateSchemaYML).toHaveBeenCalledWith(model, "orders");
+    expect(project.showRunSQL).toHaveBeenCalledWith(model);
   });
 
   it("does nothing outside any project", () => {
@@ -188,9 +188,9 @@ describe("RunModel project commands", () => {
     runModel.compileDBTModel(model);
     runModel.showRunSQL(model);
 
-    expect(dbtProject.runModel).not.toHaveBeenCalled();
-    expect(dbtProject.buildModel).not.toHaveBeenCalled();
-    expect(dbtProject.compileModel).not.toHaveBeenCalled();
-    expect(dbtProject.showRunSQL).not.toHaveBeenCalled();
+    expect(project.runModel).not.toHaveBeenCalled();
+    expect(project.buildModel).not.toHaveBeenCalled();
+    expect(project.compileModel).not.toHaveBeenCalled();
+    expect(project.showRunSQL).not.toHaveBeenCalled();
   });
 });

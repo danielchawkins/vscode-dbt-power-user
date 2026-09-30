@@ -11,7 +11,6 @@ import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import { DBT_PROJECT_FILE } from "../../core/project";
-import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import {
   ChildrenParentParser,
@@ -92,11 +91,9 @@ describe("Project Test Suite", () => {
   let mockRunHistoryService: jest.Mocked<RunHistoryService>;
   let mockFusionCli: any;
   let mockDbtProjectLog: jest.Mocked<DBTProjectLog>;
-  let dbtProject: DBTProject;
+  let dbtProject: Project;
 
-  function newProject(
-    projectUri = vscode.Uri.file("/test/project"),
-  ): DBTProject {
+  function newProject(projectUri = vscode.Uri.file("/test/project")): Project {
     return buildTestProject(projectUri.fsPath, () => mockFusionCli, {
       dbtProjectLogFactory: () => mockDbtProjectLog,
       terminal: mockTerminal,
@@ -106,7 +103,7 @@ describe("Project Test Suite", () => {
     });
   }
 
-  async function initializedProject(): Promise<DBTProject> {
+  async function initializedProject(): Promise<Project> {
     const project = newProject();
     await project.initialize();
     return project;
@@ -197,7 +194,7 @@ describe("Project Test Suite", () => {
       expect(RESOURCE_TYPE_MODEL).toBe("model");
     });
 
-    it("should create DBTProject instance with correct configuration", () => {
+    it("should create Project instance with correct configuration", () => {
       const projectUri = vscode.Uri.file("/test/project");
       dbtProject = newProject(projectUri);
 

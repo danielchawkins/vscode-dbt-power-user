@@ -10,7 +10,6 @@ import {
 } from "vscode";
 import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { ColumnLineage, panelColumns } from "../core/lineage";
-import { DBTProject } from "../dbt_client/dbtProject";
 import {
   DBTTerminal,
   ExposureMetaData,
@@ -25,6 +24,7 @@ import {
 } from "../dbt_integration";
 import { ExtensionContextStore } from "../extensionContext";
 import type { Manifest } from "../projects/manifestTypes";
+import { Project } from "../projects/project";
 import { registerLineageColumnsCommand } from "../services/connectedColumnsCommand";
 import {
   ConnectedColumnsResult,
@@ -182,7 +182,7 @@ export class NewLineagePanel
     this.renderStartingNode(resolved);
   }
 
-  manifestChanged(_project: DBTProject | undefined): void {
+  manifestChanged(_project: Project | undefined): void {
     const current = this.queryManifestService.getProject();
     const seen = this.seenPublication;
     const root = current?.projectRoot.fsPath;
@@ -347,7 +347,7 @@ export class NewLineagePanel
   }
 
   private async addSourceColumnsFromDB(
-    project: DBTProject,
+    project: Project,
     nodeName: string,
     table: SourceTable,
   ) {
