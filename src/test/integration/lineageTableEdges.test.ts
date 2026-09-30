@@ -2,12 +2,12 @@ import * as assert from "assert";
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
-import { DOWNSTREAM_TABLES_COMMAND } from "../../services/connectedColumnsCommand";
+import { PARENT_TABLES_COMMAND } from "../../services/connectedColumnsCommand";
 
 /**
  * Pins that the lineage panel's table edges follow manifest rebuilds: a model that adds a `ref` lists its
- * parent, and drops it once the `ref` is removed or the file is deleted. `getDownstreamTables` reads the
- * `parents` map, so it answers a table's parents. The service resolves the project from the active editor.
+ * parent, and drops it once the `ref` is removed or the file is deleted. The service resolves the project
+ * from the active editor.
  */
 const MODE = process.env.FPU_NATIVE_EDITOR_MODE;
 const ORDER_TOTALS = "model.lineage_probe.order_totals";
@@ -30,7 +30,7 @@ suite("Lineage table edges follow the rebuilt manifest", function () {
     }
   });
 
-  /** Polls `getDownstreamTables` for `edge_child` until `done` holds, logging each distinct answer. */
+  /** Polls `getParentTables` for `edge_child` until `done` holds, logging each distinct answer. */
   async function until(
     step: string,
     done: (tables: string[]) => boolean,
@@ -42,7 +42,7 @@ suite("Lineage table edges follow the rebuilt manifest", function () {
     while (Date.now() < deadline) {
       const body = await vscode.commands.executeCommand<
         { tables?: { table: string }[] } | undefined
-      >(DOWNSTREAM_TABLES_COMMAND, EDGE_CHILD);
+      >(PARENT_TABLES_COMMAND, EDGE_CHILD);
       last = (body?.tables ?? []).map(({ table }) => table);
       const seen = JSON.stringify(last);
       if (seen !== logged) {

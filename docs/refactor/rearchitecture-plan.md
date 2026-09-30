@@ -198,9 +198,10 @@ Goal: remove `@altimateai/ui-components`, the last Altimate package, which also 
 
 - Benchmark the candidate renderer against graphs from finance-pipelines' Declared Projects with column-level lineage in the harness from the first run (closed plan v2.2, narrowed to D7); publish the result even when the incumbent wins.
 - Build the selected renderer behind `LineageData` from the contract; keep the current component reachable until the replacement passes the benchmark. This is the one hard-to-reverse step and is preceded by a prerelease.
+- The new renderer consumes the host's `childTables`/`parentTables` requests and `childCount`/`parentCount` fields directly; delete `webview_panels/src/modules/lineage/componentAdapter.ts`, the only file that knows the component names dbt children "upstream".
 - Delete Tailwind, PostCSS and the `al-` generation with the last `al-` class.
 
-Verify: benchmark report committed; `npm ls @altimateai/ui-components` empty; visual evidence.
+Verify: benchmark report committed; `npm ls @altimateai/ui-components` empty; `grep -rn "upstreamCount\|downstreamCount\|upstreamTables\|downstreamTables" src webview_panels/src` prints nothing; visual evidence.
 
 ### R9 — finance-pipelines adoption
 

@@ -231,8 +231,10 @@ export type Table = {
   label: string;
   table: string;
   url: string | undefined;
-  downstreamCount: number;
-  upstreamCount: number;
+  /** Number of dbt children. */
+  childCount: number;
+  /** Number of dbt parents. */
+  parentCount: number;
   nodeType: string;
   materialization?: string;
   description?: string;

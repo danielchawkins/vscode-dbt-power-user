@@ -15,6 +15,12 @@ import { useEffect, useState } from "react";
 import ActionWidget from "./ActionWidget";
 import styles from "./lineage.module.scss";
 import "./tailwind-globals.css";
+import {
+  componentTableRequests,
+  HostTable,
+  isComponentTableRequest,
+  toComponentTable,
+} from "./componentAdapter";
 import { MissingLineageMessage, StaticLineageProps } from "./types";
 
 const LineageView = (): JSX.Element | null => {
@@ -39,9 +45,13 @@ const LineageView = (): JSX.Element | null => {
     panelLogger.info("LineageView updating components api helper");
     // @ts-expect-error TODO: add type generic for executeRequestInSync
     ApiHelper.get = async (url: string, data?: Record<string, unknown>) => {
+      if (isComponentTableRequest(url)) {
+        const body = (await executeRequestInSync(componentTableRequests[url], {
+          args: { params: data ?? {} },
+        })) as { tables?: HostTable[] };
+        return { ...body, tables: body.tables?.map(toComponentTable) };
+      }
       switch (url) {
-        case "upstreamTables":
-        case "downstreamTables":
         case "getExposureDetails":
         case "getFunctionDetails":
         case "getColumns":
@@ -69,12 +79,16 @@ const LineageView = (): JSX.Element | null => {
   }, []);
 
   const render = (
-    data: {
-      node?: Table;
+    hostData: {
+      node?: HostTable;
       aiEnabled: boolean;
       missingLineageMessage?: MissingLineageMessage;
     } & StaticLineageProps,
   ) => {
+    const data = {
+      ...hostData,
+      node: hostData.node && toComponentTable(hostData.node),
+    };
     setMissingLineageMessage(data.missingLineageMessage);
     const event = new CustomEvent("renderStartNode", {
       detail: {
