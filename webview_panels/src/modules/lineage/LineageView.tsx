@@ -102,12 +102,9 @@ const LineageView = (): JSX.Element | null => {
         render(args);
       }
       if (command === "projectSaved") {
-        // The component can only redraw column lineage by remounting; keep table exploration otherwise.
-        if (document.querySelector(".react-flow__node-column")) {
-          setGraphKey((key) => key + 1);
-        } else {
-          executeRequestInAsync("init", {});
-        }
+        // The component refetches edges only for a node it has not drawn, so a save remounts it.
+        setGraphKey((key) => key + 1);
+        executeRequestInAsync("init", {});
       }
     };
 
