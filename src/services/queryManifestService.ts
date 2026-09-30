@@ -1,4 +1,3 @@
-import { inject } from "inversify";
 import { TextDocument, Uri, window } from "vscode";
 import { DBTTerminal } from "../dbt_integration";
 import { CurrentProject } from "../projects/currentProject";
@@ -10,7 +9,6 @@ import { Projects } from "../projects/projects";
 export class QueryManifestService {
   public constructor(
     private projects: Projects,
-    @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private currentProject: CurrentProject,
   ) {}

@@ -1,5 +1,4 @@
 import * as assert from "assert";
-import "reflect-metadata";
 import * as vscode from "vscode";
 import { RunHistoryService } from "../../services/runHistoryService";
 import {

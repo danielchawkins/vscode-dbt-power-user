@@ -1,9 +1,7 @@
-import { injectable } from "inversify";
 import { Disposable, EventEmitter, Terminal, window } from "vscode";
 import { DBTTerminal } from "../dbt_integration";
 import { stripANSI } from "../utils";
 
-@injectable()
 export class VSCodeDBTTerminal implements DBTTerminal {
   private disposables: Disposable[] = [];
   private terminal?: Terminal;

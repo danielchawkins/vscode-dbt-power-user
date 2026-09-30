@@ -12,7 +12,6 @@ import {
   workspace,
 } from "vscode";
 
-import { inject } from "inversify";
 import * as path from "path";
 import {
   DBTTerminal,
@@ -121,7 +120,6 @@ export class QueryResultPanel extends PanelHost {
   public constructor(
     protected extensionContext: ExtensionContextStore,
     private eventEmitterService: SharedStateService,
-    @inject("DBTTerminal")
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
   ) {

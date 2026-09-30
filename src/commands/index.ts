@@ -1,5 +1,4 @@
 import { existsSync } from "fs";
-import { inject } from "inversify";
 import { dirname, join } from "path";
 import {
   CancellationTokenSource,
@@ -55,7 +54,6 @@ export class VSCodeCommands implements Disposable {
     private runModel: RunModel,
     private runTest: RunTest,
     private projectSetupCommands: ProjectSetupCommands,
-    @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
     private diagnosticsOutputChannel: DiagnosticsOutputChannel,
     private runHistoryService: RunHistoryService,

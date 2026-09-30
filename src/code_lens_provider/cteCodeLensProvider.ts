@@ -1,4 +1,3 @@
-import { inject } from "inversify";
 import {
   CancellationToken,
   CodeLens,
@@ -33,10 +32,7 @@ export class CteCodeLensProvider implements CodeLensProvider, Disposable {
    * 1000 chars accommodates complex column definitions in most practical scenarios. */
   private static readonly MAX_COLUMN_LIST_LENGTH = 1000;
 
-  constructor(
-    @inject("DBTTerminal")
-    private dbtTerminal: DBTTerminal,
-  ) {}
+  constructor(private dbtTerminal: DBTTerminal) {}
 
   dispose() {
     while (this.disposables.length) {

@@ -1,4 +1,3 @@
-import { inject } from "inversify";
 import * as path from "path";
 import {
   commands,
@@ -125,7 +124,6 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
 
   public constructor(
     protected extensionContext: ExtensionContextStore,
-    @inject("DBTTerminal")
     private terminal: DBTTerminal,
     private dbtLineageService: DbtLineageService,
     eventEmitterService: SharedStateService,

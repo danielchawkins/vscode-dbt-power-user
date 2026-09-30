@@ -1,4 +1,3 @@
-import { inject } from "inversify";
 import { window } from "vscode";
 import { DBTTerminal } from "../dbt_integration";
 import { ExtensionContextStore } from "../extensionContext";
@@ -18,7 +17,6 @@ export class ProjectSetupCommands {
     private projects: Projects,
     private extensionContext: ExtensionContextStore,
     private projectQuickPick: ProjectQuickPick,
-    @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {}
 

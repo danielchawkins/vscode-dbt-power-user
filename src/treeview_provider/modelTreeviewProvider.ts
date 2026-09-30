@@ -1,4 +1,3 @@
-import { unmanaged } from "inversify";
 import * as path from "path";
 
 import {
@@ -95,7 +94,7 @@ abstract class ModelTreeviewProvider
 
   constructor(
     private projects: Projects,
-    @unmanaged() private treeType: keyof GraphMetaMap,
+    private treeType: keyof GraphMetaMap,
   ) {
     this.treeType = treeType;
     this.disposables.push(

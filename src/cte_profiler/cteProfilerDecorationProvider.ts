@@ -1,4 +1,3 @@
-import { inject } from "inversify";
 import {
   DecorationOptions,
   Disposable,
@@ -25,7 +24,6 @@ export class CteProfilerDecorationProvider implements Disposable {
 
   constructor(
     private cteProfilerService: CteProfilerService,
-    @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
     this.hotDecorationType = window.createTextEditorDecorationType({

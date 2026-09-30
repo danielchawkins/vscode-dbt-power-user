@@ -1,5 +1,4 @@
 import { readFileSync } from "fs";
-import { inject } from "inversify";
 import * as path from "path";
 import { parse, stringify } from "yaml";
 import {
@@ -20,7 +19,6 @@ import { QueryManifestService } from "./queryManifestService";
 export class DbtTestService {
   public constructor(
     private queryManifestService: QueryManifestService,
-    @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {}
 

@@ -1,4 +1,3 @@
-import { inject } from "inversify";
 import {
   CancellationToken,
   commands,
@@ -25,7 +24,6 @@ export class LineageViewProvider implements WebviewViewProvider, Disposable {
   public constructor(
     private lineagePanel: LineagePanel,
     private projects: Projects,
-    @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
     this.disposables.push(

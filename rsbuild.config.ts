@@ -71,20 +71,6 @@ export default defineConfig({
         outputModule: true,
       };
 
-      // Use ts-loader so inversify's decorators + emitDecoratorMetadata keep working.
-      config.module = config.module || {};
-      config.module.rules = (config.module.rules || []).filter((rule: any) => {
-        if (rule && typeof rule === "object" && rule.test instanceof RegExp) {
-          return !rule.test.test("file.ts");
-        }
-        return true;
-      });
-      config.module.rules.push({
-        test: /\.ts$/,
-        exclude: /(node_modules|src\/test)/,
-        use: [{ loader: "ts-loader" }],
-      });
-
       return config;
     },
   },

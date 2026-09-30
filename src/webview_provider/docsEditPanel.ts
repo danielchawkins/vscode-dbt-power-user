@@ -1,5 +1,4 @@
 import { existsSync, readFileSync, writeFileSync } from "fs";
-import { inject } from "inversify";
 import * as path from "path";
 import {
   CancellationToken,
@@ -66,7 +65,6 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     private docGenService: DocGenService,
     private dbtTestService: DbtTestService,
     private queryManifestService: QueryManifestService,
-    @inject("DBTTerminal")
     private terminal: DBTTerminal,
   ) {
     this._disposables.push(

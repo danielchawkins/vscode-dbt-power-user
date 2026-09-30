@@ -1,5 +1,4 @@
 import { promises as fs } from "fs";
-import { inject } from "inversify";
 import * as path from "path";
 import { Uri, window } from "vscode";
 import { parse as parseYaml } from "yaml";
@@ -42,7 +41,6 @@ export class DocGenService {
   public constructor(
     protected projects: Projects,
     private queryManifestService: QueryManifestService,
-    @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {}
 

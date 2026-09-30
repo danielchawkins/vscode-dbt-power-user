@@ -1,4 +1,3 @@
-import { inject } from "inversify";
 import { Disposable, Event, EventEmitter, Uri } from "vscode";
 import { DBTTerminal } from "../dbt_integration";
 import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
@@ -38,9 +37,7 @@ export class Projects implements Disposable {
 
   constructor(
     private projectRegistry: ProjectRegistry,
-    @inject("Factory<Project>")
     private projectFactory: (path: Uri) => Project,
-    @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
     this.disposables.push(this.dbtTerminal);
