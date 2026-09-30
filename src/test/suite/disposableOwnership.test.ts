@@ -7,7 +7,13 @@ import {
   type Mock,
   vi,
 } from "vitest";
-import { commands, Disposable, ExtensionContext, window } from "vscode";
+import {
+  commands,
+  Disposable,
+  ExtensionContext,
+  languages,
+  window,
+} from "vscode";
 import {
   registerRuntimeTimings,
   RUNTIME_TIMINGS_COMMAND,
@@ -56,6 +62,9 @@ describe("disposable ownership", () => {
   const createStatusBarItem = vi
     .mocked(window.createStatusBarItem)
     .getMockImplementation();
+  const createLanguageStatusItem = vi
+    .mocked(languages.createLanguageStatusItem)
+    .getMockImplementation();
 
   beforeEach(() => {
     registrations.clear();
@@ -77,6 +86,9 @@ describe("disposable ownership", () => {
     );
     vi.mocked(window.createStatusBarItem).mockImplementation(
       createStatusBarItem!,
+    );
+    vi.mocked(languages.createLanguageStatusItem).mockImplementation(
+      createLanguageStatusItem!,
     );
     SWITCHES.forEach((name, i) => {
       if (original[i] === undefined) {
@@ -131,6 +143,9 @@ describe("disposable ownership", () => {
       track(createMockLogOutputChannel(name))) as never);
     vi.mocked(window.createStatusBarItem).mockImplementation(() =>
       track({ show: vi.fn(), hide: vi.fn() }),
+    );
+    vi.mocked(languages.createLanguageStatusItem).mockImplementation(
+      (id, selector) => track({ id, selector }),
     );
     const context = {
       subscriptions: [] as { dispose(): unknown }[],

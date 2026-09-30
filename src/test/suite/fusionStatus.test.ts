@@ -1,37 +1,30 @@
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  type Mock,
-  vi,
-} from "vitest";
-import {
+  commands,
   EventEmitter,
-  StatusBarAlignment,
+  languages,
+  LanguageStatusItem,
+  LanguageStatusSeverity,
   Uri,
-  window,
   WorkspaceFolder,
 } from "vscode";
+import { LspLaunch } from "../../core/lsp";
 import { StaticAnalysisMode } from "../../core/project";
 import { FusionClientPool } from "../../fusion/fusionClientPool";
 import {
   FusionClient,
   FusionClientState,
-  fusionOutputChannelName,
 } from "../../fusion/fusionLanguageClient";
 import {
-  buildTooltip,
+  clientSeverity,
+  clientText,
   failureSummary,
   FusionStatus,
   optInLines,
-  statusText,
+  ProjectOptIns,
 } from "../../fusion/fusionStatus";
-import { CurrentProject } from "../../projects/currentProject";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
-
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace"),
   name: "workspace",
@@ -55,7 +48,7 @@ class FakeClient implements FusionClient {
   readonly outputChannel = createMockLogOutputChannel(
     "dbt Fusion LSP (general · abc)",
   ) as FusionClient["outputChannel"];
-  readonly failureReason: string | undefined;
+  failureReason: string | undefined;
 
   constructor(
     readonly project: DeclaredProject,
@@ -98,42 +91,20 @@ class FakeClient implements FusionClient {
 }
 
 describe("fusionStatus helpers", () => {
-  it("shows static analysis in status text, never configured", () => {
-    expect(statusText("running", "static: project")).toBe(
-      "$(check) dbt Fusion · static: project",
-    );
-    expect(statusText("failed", "static: unknown")).toContain("$(error)");
-    expect(statusText("starting", "static: unknown")).toContain(
-      "dbt Fusion starting",
-    );
-    expect(statusText("restarting", "static: unknown")).toContain(
-      "dbt Fusion restarting",
-    );
+  it("labels each client state without the static suffix", () => {
+    expect(clientText("running")).toBe("$(check) dbt Fusion");
+    expect(clientText("starting")).toBe("$(sync~spin) dbt Fusion starting");
+    expect(clientText("restarting")).toBe("$(sync~spin) dbt Fusion restarting");
+    expect(clientText("failed")).toBe("$(error) dbt Fusion");
+    expect(clientText("stopped")).toBe("$(debug-disconnect) dbt Fusion");
   });
 
-  it("shows the configured mode in the tooltip", () => {
-    const project = makeProject("general", "/workspace/general");
-    const client = new FakeClient(project, "running", "strict");
-    const tooltip = buildTooltip(project, client).value;
-    expect(tooltip).toContain("Static analysis: strict");
-    expect(tooltip).not.toContain("Effective");
-    expect(tooltip).not.toContain("fallback");
-    expect(tooltip).not.toContain("login");
-  });
-
-  it("caps failed tooltip summaries and points to the output channel", () => {
-    const project = makeProject("general", "/workspace/general");
-    const client = new FakeClient(
-      project,
-      "failed",
-      "baseline",
-      "Fusion executable not found",
-    );
-    const tooltip = buildTooltip(project, client);
-    expect(tooltip.value).toContain("Failure: Fusion executable not found");
-    expect(tooltip.value).toContain("See the output channel for full logs");
-    expect(tooltip.value).toContain(client.outputChannel.name);
-    expect(tooltip.supportHtml).toBe(false);
+  it("maps failed to Error, stopped to Warning, and the rest to Information", () => {
+    expect(clientSeverity("failed")).toBe(LanguageStatusSeverity.Error);
+    expect(clientSeverity("stopped")).toBe(LanguageStatusSeverity.Warning);
+    for (const state of ["starting", "restarting", "running"] as const) {
+      expect(clientSeverity(state)).toBe(LanguageStatusSeverity.Information);
+    }
   });
 
   it("summarizes multiline failures to one capped line", () => {
@@ -150,222 +121,272 @@ describe("fusionStatus helpers", () => {
     expect(optInLines(undefined)).toEqual([]);
   });
 
-  it("links each missing opt-in to its command", () => {
+  it("pairs each missing opt-in with its command", () => {
     const lines = optInLines({
       strict: false,
       schemaOrigin: { kind: "noHook" },
     });
-    expect(lines).toHaveLength(2);
-    expect(lines[0]).toContain("command:fusionPowerUser.enableStrictAnalysis");
-    expect(lines[1]).toContain("command:fusionPowerUser.addSchemaOriginHook");
+    expect(lines.map((line) => line.command?.command)).toEqual([
+      "fusionPowerUser.enableStrictAnalysis",
+      "fusionPowerUser.addSchemaOriginHook",
+    ]);
+    expect(lines[0].text).toContain("Strict analysis is not enabled");
+    expect(lines.every((line) => !line.text.includes("command:"))).toBe(true);
   });
 
-  it("counts untyped sources and names an old Fusion", () => {
-    expect(
-      optInLines({
-        strict: true,
-        schemaOrigin: {
-          kind: "untypedSources",
-          missing: [
-            { source: "raw", table: "a", column: "x" },
-            { source: "raw", table: "b" },
-          ],
-        },
-      }),
-    ).toEqual([expect.stringMatching(/^2 source column/)]);
+  it("counts untyped sources and names an old Fusion, with no command", () => {
+    const [untyped] = optInLines({
+      strict: true,
+      schemaOrigin: {
+        kind: "untypedSources",
+        missing: [
+          { source: "raw", table: "a", column: "x" },
+          { source: "raw", table: "b" },
+        ],
+      },
+    });
+    expect(untyped.text).toMatch(/^2 source column/);
+    expect(untyped.command).toBeUndefined();
     expect(
       optInLines({
         strict: true,
         schemaOrigin: { kind: "unsupportedFusion", version: "2.0.5" },
-      })[0],
+      })[0].text,
     ).toContain("2.0.5");
-  });
-
-  it("trusts only the two opt-in commands", () => {
-    const project = makeProject("general", "/workspace/general");
-    const tooltip = buildTooltip(project, new FakeClient(project), {
-      strict: false,
-      schemaOrigin: { kind: "noHook" },
-    });
-    expect(tooltip.isTrusted).toEqual({
-      enabledCommands: [
-        "fusionPowerUser.enableStrictAnalysis",
-        "fusionPowerUser.addSchemaOriginHook",
-      ],
-    });
-    expect(tooltip.value).toContain("Strict analysis is not enabled");
   });
 });
 
 describe("FusionStatus", () => {
-  let statusBar: {
-    text: string;
-    tooltip: unknown;
-    show: Mock;
-    hide: Mock;
-    dispose: Mock;
-  };
-  let currentProject: DeclaredProject | undefined;
+  let projects: DeclaredProject[];
   let clients: Map<string, FusionClient>;
-  let poolListeners: Array<() => void>;
-  let contextListeners: Array<() => void>;
+  let launches: Map<string, Partial<LspLaunch>>;
+  let poolChanged: EventEmitter<void>;
+  let optIns: ProjectOptIns | undefined;
+  let optInsChanged: EventEmitter<void>;
 
   beforeEach(() => {
-    statusBar = {
-      text: "",
-      tooltip: undefined,
-      show: vi.fn(),
-      hide: vi.fn(),
-      dispose: vi.fn(),
-    };
-    currentProject = undefined;
+    projects = [];
     clients = new Map();
-    poolListeners = [];
-    contextListeners = [];
-
-    vi.spyOn(window, "createStatusBarItem").mockReturnValue(statusBar as any);
+    launches = new Map();
+    poolChanged = new EventEmitter<void>();
+    optIns = undefined;
+    optInsChanged = new EventEmitter<void>();
+    vi.mocked(languages.createLanguageStatusItem).mockClear();
+    vi.mocked(commands.registerCommand).mockClear();
   });
 
   afterEach(() => {
-    vi.mocked(window.createStatusBarItem).mockRestore();
+    poolChanged.dispose();
+    optInsChanged.dispose();
   });
 
   function createStatus(): FusionStatus {
-    const context = {
-      get current() {
-        return currentProject;
-      },
-      onDidChangeCurrent: (listener: () => void) => {
-        contextListeners.push(listener);
-        return { dispose: () => {} };
-      },
-    } as CurrentProject;
-
     const clientPool = {
       get: (project: DeclaredProject) => clients.get(project.root.fsPath),
-      onDidChangeClients: (listener: () => void) => {
-        poolListeners.push(listener);
-        return { dispose: () => {} };
-      },
-    } as FusionClientPool;
-
-    return new FusionStatus(context, clientPool);
+      getLaunch: (project: DeclaredProject) =>
+        launches.get(project.root.fsPath) as LspLaunch | undefined,
+      onDidChangeClients: poolChanged.event,
+    } as unknown as FusionClientPool;
+    return new FusionStatus(
+      { projects },
+      clientPool,
+      () => optIns,
+      optInsChanged.event,
+    );
   }
 
-  it("hides when there is no current project or client", () => {
+  function items(): LanguageStatusItem[] {
+    return vi
+      .mocked(languages.createLanguageStatusItem)
+      .mock.results.map((result) => result.value as LanguageStatusItem);
+  }
+
+  function item(
+    kind: "client" | "static" | "target",
+    project: DeclaredProject,
+  ) {
+    const calls = vi.mocked(languages.createLanguageStatusItem).mock.calls;
+    const all = items();
+    for (let index = calls.length - 1; index >= 0; index--) {
+      const [id, selector] = calls[index];
+      if (
+        id.startsWith(`fusionPowerUser.status.${kind}.`) &&
+        JSON.stringify(selector).includes(project.root.fsPath)
+      ) {
+        return all[index];
+      }
+    }
+    return undefined;
+  }
+
+  function add(project: DeclaredProject, client: FusionClient): void {
+    projects.push(project);
+    clients.set(project.root.fsPath, client);
+  }
+
+  it("creates no items for a project without a client", () => {
+    projects.push(makeProject("general", "/workspace/general"));
     const status = createStatus();
     status.initialize();
-    expect(statusBar.hide).toHaveBeenCalled();
-
-    const project = makeProject("general", "/workspace/general");
-    currentProject = project;
-    contextListeners.forEach((listener) => listener());
-    expect(statusBar.hide).toHaveBeenCalledTimes(2);
-
+    expect(languages.createLanguageStatusItem).not.toHaveBeenCalled();
     status.dispose();
   });
 
-  it("reflects client state and disambiguates duplicate project names", () => {
-    const generalA = makeProject("general", "/workspace/a");
-    const generalB = makeProject("general", "/workspace/b");
-    const clientA = new FakeClient(generalA, "running");
-    Object.defineProperty(clientA.outputChannel, "name", {
-      value: fusionOutputChannelName(generalA),
-    });
-    const clientB = new FakeClient(generalB, "starting");
-    Object.defineProperty(clientB.outputChannel, "name", {
-      value: fusionOutputChannelName(generalB),
-    });
-
-    clients.set(generalA.root.fsPath, clientA);
-    clients.set(generalB.root.fsPath, clientB);
-
-    const status = createStatus();
-    currentProject = generalA;
-    status.initialize();
-    expect(statusBar.text).toBe("$(check) dbt Fusion · static: baseline");
-    expect((statusBar.tooltip as { value: string }).value).toContain(
-      fusionOutputChannelName(generalA),
-    );
-
-    currentProject = generalB;
-    contextListeners.forEach((listener) => listener());
-    expect(statusBar.text).toContain("dbt Fusion starting");
-    expect((statusBar.tooltip as { value: string }).value).toContain(
-      fusionOutputChannelName(generalB),
-    );
-
-    status.dispose();
-  });
-
-  it("rewires listeners when the current project changes and disposes stale subscriptions", () => {
+  it("creates items scoped to each project's documents when its client is added", () => {
     const general = makeProject("general", "/workspace/general");
     const sox = makeProject("sox", "/workspace/sox");
-    const generalClient = new FakeClient(general, "running");
-    const soxClient = new FakeClient(sox, "failed", undefined, "boom");
-    clients.set(general.root.fsPath, generalClient);
-    clients.set(sox.root.fsPath, soxClient);
-
+    add(general, new FakeClient(general));
     const status = createStatus();
-    currentProject = general;
     status.initialize();
+    expect(items()).toHaveLength(2);
 
-    generalClient.setState("restarting");
-    expect(statusBar.text).toContain("dbt Fusion restarting");
+    add(sox, new FakeClient(sox, "starting"));
+    poolChanged.fire();
+    expect(items()).toHaveLength(4);
 
-    currentProject = sox;
-    contextListeners.forEach((listener) => listener());
-    expect(statusBar.text).toContain("$(error)");
-
-    soxClient.setState("running");
-    expect(statusBar.text).toContain("$(check)");
-
+    const selector = vi.mocked(languages.createLanguageStatusItem).mock
+      .calls[0][1] as { language: string; pattern: { base: unknown } }[];
+    expect(selector.map((filter) => filter.language)).toEqual([
+      "jinja-sql",
+      "sql",
+      "yaml",
+    ]);
+    expect(selector[0].pattern.base).toBe(general.root);
+    expect(item("client", sox)?.text).toBe("$(sync~spin) dbt Fusion starting");
     status.dispose();
   });
 
-  it("updates when the pool replaces a client for the current project", () => {
-    const project = makeProject("general", "/workspace/general");
-    const first = new FakeClient(project, "running");
-    clients.set(project.root.fsPath, first);
-
+  it("disposes a project's items when its client is removed", () => {
+    const general = makeProject("general", "/workspace/general");
+    add(general, new FakeClient(general));
+    launches.set(general.root.fsPath, { target: "dev" });
     const status = createStatus();
-    currentProject = project;
     status.initialize();
+    const created = items();
+    expect(created).toHaveLength(3);
 
-    const replacement = new FakeClient(project, "failed", undefined, "stopped");
-    clients.set(project.root.fsPath, replacement);
-    poolListeners.forEach((listener) => listener());
-
-    expect(statusBar.text).toContain("$(error)");
+    clients.delete(general.root.fsPath);
+    poolChanged.fire();
+    for (const created_ of created) {
+      expect(created_.dispose).toHaveBeenCalled();
+    }
     status.dispose();
   });
 
-  it("shows the replacement client's static analysis mode", () => {
-    const project = makeProject("general", "/workspace/general");
-    clients.set(project.root.fsPath, new FakeClient(project, "running"));
-
+  it("maps client state to text, severity, busy, and detail", () => {
+    const general = makeProject("general", "/workspace/general");
+    const client = new FakeClient(general, "starting");
+    add(general, client);
     const status = createStatus();
-    currentProject = project;
     status.initialize();
-    expect(statusBar.text).toBe("$(check) dbt Fusion · static: baseline");
+    const clientItem = item("client", general)!;
+    expect(clientItem.name).toBe("dbt Fusion (general)");
+    expect(item("static", general)!.name).toBe("Static analysis (general)");
+    expect(clientItem.busy).toBe(true);
+    expect(clientItem.detail).toBe("general");
 
-    const replacement = new FakeClient(project, "running", "strict");
-    clients.set(project.root.fsPath, replacement);
-    poolListeners.forEach((listener) => listener());
+    client.setState("running");
+    expect(clientItem.text).toBe("$(check) dbt Fusion");
+    expect(clientItem.busy).toBe(false);
+    expect(clientItem.severity).toBe(LanguageStatusSeverity.Information);
 
-    expect(statusBar.text).toBe("$(check) dbt Fusion · static: strict");
+    client.failureReason = "Fusion executable not found\nmore";
+    client.setState("failed");
+    expect(clientItem.severity).toBe(LanguageStatusSeverity.Error);
+    expect(clientItem.detail).toBe("general: Fusion executable not found");
+
+    client.setState("stopped");
+    expect(clientItem.severity).toBe(LanguageStatusSeverity.Warning);
+    status.dispose();
+  });
+
+  it("opens the project's output channel from the client item", () => {
+    const general = makeProject("general", "/workspace/general");
+    const client = new FakeClient(general);
+    add(general, client);
+    const status = createStatus();
+    status.initialize();
+    const command = item("client", general)!.command!;
+    expect(command.command).toBe("fusionPowerUser.showFusionOutput");
+    expect(command.arguments).toEqual([general.root]);
+
+    const [, handler] = vi
+      .mocked(commands.registerCommand)
+      .mock.calls.find(([id]) => id === command.command)!;
+    handler(general.root.fsPath);
+    expect(client.outputChannel.show).not.toHaveBeenCalled();
+    handler(...(command.arguments ?? []));
+    expect(client.outputChannel.show).toHaveBeenCalledWith(true);
+    status.dispose();
+  });
+
+  it("follows a replacement client's state and static analysis mode", () => {
+    const general = makeProject("general", "/workspace/general");
+    const first = new FakeClient(general);
+    add(general, first);
+    const status = createStatus();
+    status.initialize();
+    expect(item("static", general)!.text).toBe("static: baseline");
+
+    const replacement = new FakeClient(general, "running", "strict");
+    clients.set(general.root.fsPath, replacement);
+    poolChanged.fire();
+    expect(items()).toHaveLength(2);
+    expect(item("static", general)!.text).toBe("static: strict");
+
+    first.setState("failed");
+    expect(item("client", general)!.text).toBe("$(check) dbt Fusion");
     replacement.setState("restarting");
-    expect(statusBar.text).toContain("dbt Fusion restarting");
+    expect(item("client", general)!.busy).toBe(true);
     status.dispose();
   });
 
-  it("creates the status bar on the left", () => {
+  it("offers the first missing opt-in's command on the static item", () => {
+    const general = makeProject("general", "/workspace/general");
+    add(general, new FakeClient(general));
+    optIns = { strict: false, schemaOrigin: { kind: "noHook" } };
     const status = createStatus();
     status.initialize();
-    expect(window.createStatusBarItem).toHaveBeenCalledWith(
-      StatusBarAlignment.Left,
-      10,
+    const staticItem = item("static", general)!;
+    expect(staticItem.command).toEqual({
+      title: "Enable strict analysis",
+      command: "fusionPowerUser.enableStrictAnalysis",
+      arguments: [general.root],
+    });
+    expect(staticItem.detail).toMatch(
+      /^general · Strict analysis is not enabled/,
     );
+
+    optIns = { strict: true, schemaOrigin: { kind: "noHook" } };
+    optInsChanged.fire();
+    expect(staticItem.command?.command).toBe(
+      "fusionPowerUser.addSchemaOriginHook",
+    );
+
+    optIns = { strict: true, schemaOrigin: { kind: "local" } };
+    optInsChanged.fire();
+    expect(staticItem.command).toBeUndefined();
+    expect(staticItem.detail).toBe("general");
+    status.dispose();
+  });
+
+  it("shows the launch target, and no target item when it is unknown", () => {
+    const general = makeProject("general", "/workspace/general");
+    add(general, new FakeClient(general));
+    const status = createStatus();
+    status.initialize();
+    expect(item("target", general)).toBeUndefined();
+
+    launches.set(general.root.fsPath, { target: "prod" });
+    poolChanged.fire();
+    const targetItem = item("target", general)!;
+    expect(targetItem.text).toBe("target: prod");
+    expect(targetItem.name).toBe("Target (general)");
+    expect(targetItem.detail).toBe("general");
+
+    launches.delete(general.root.fsPath);
+    poolChanged.fire();
+    expect(targetItem.dispose).toHaveBeenCalled();
     status.dispose();
   });
 });

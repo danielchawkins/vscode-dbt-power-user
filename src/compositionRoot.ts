@@ -214,7 +214,7 @@ function composeFusion(graph: ProjectsGraph) {
     },
   );
   const fusionStatus = new FusionStatus(
-    currentProject,
+    graph.projectRegistry,
     fusionClientPool,
     (declared) => projects.get(declared.root)?.projectOptIns(),
     projects.onDidChangeManifest,

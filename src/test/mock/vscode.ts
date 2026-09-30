@@ -447,6 +447,23 @@ export const languages = {
   registerDefinitionProvider: mockRegisterProvider,
   registerDocumentFormattingEditProvider: mockRegisterProvider,
   setTextDocumentLanguage: vi.fn(() => Promise.resolve(undefined)),
+  createLanguageStatusItem: vi.fn((id: string, selector: unknown) => ({
+    id,
+    selector,
+    name: undefined,
+    severity: LanguageStatusSeverity.Information,
+    text: "",
+    detail: undefined,
+    busy: false,
+    command: undefined,
+    dispose: vi.fn(),
+  })),
+};
+
+export const LanguageStatusSeverity = {
+  Information: 0,
+  Warning: 1,
+  Error: 2,
 };
 
 export class EventEmitter<T> {

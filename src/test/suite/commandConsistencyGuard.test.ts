@@ -89,6 +89,49 @@ function scanCommandRegistrations() {
 
 type MenuEntry = { command?: string; submenu?: string; when?: string };
 
+/** `command: "..."` literals in source files that create language status items. */
+function scanLanguageStatusCommands(): string[] {
+  const found = new Set<string>();
+  const visitDir = (dir: string): void => {
+    for (const entry of readdirSync(dir)) {
+      const entryPath = path.join(dir, entry);
+      if (statSync(entryPath).isDirectory()) {
+        if (entry !== "test" && !entry.startsWith(".")) {
+          visitDir(entryPath);
+        }
+        continue;
+      }
+      if (!entry.endsWith(".ts") || entry.endsWith(".d.ts")) {
+        continue;
+      }
+      const content = readFileSync(entryPath, "utf8");
+      if (!content.includes("createLanguageStatusItem")) {
+        continue;
+      }
+      const sourceFile = ts.createSourceFile(
+        entryPath,
+        content,
+        ts.ScriptTarget.Latest,
+        true,
+      );
+      const visit = (node: ts.Node): void => {
+        if (
+          ts.isPropertyAssignment(node) &&
+          ts.isIdentifier(node.name) &&
+          node.name.text === "command" &&
+          ts.isStringLiteral(node.initializer)
+        ) {
+          found.add(node.initializer.text);
+        }
+        ts.forEachChild(node, visit);
+      };
+      visit(sourceFile);
+    }
+  };
+  visitDir(srcRoot);
+  return Array.from(found).sort();
+}
+
 type PackageJsonContributes = {
   commands?: Array<{ command: string }>;
   menus?: Record<string, MenuEntry[]>;
@@ -154,6 +197,8 @@ describe("command contribution consistency", () => {
       "fusionPowerUser.yamlTestModel": "CodeLens-only; src/features/sqlActions",
       "fusionPowerUser.pickProject":
         "Declared Project picker; src/features/projectPicker/actionsCenter.ts",
+      "fusionPowerUser.showFusionOutput":
+        "Language status item command; src/fusion/fusionStatus.ts",
     };
 
     const nonLiteralAllowlist: Record<string, string> = {
@@ -250,6 +295,17 @@ describe("command contribution consistency", () => {
       .sort();
 
     expect(orphanReferences).toEqual([]);
+  });
+
+  it("every language status item command is contributed or registered", () => {
+    const contributed = getContributedCommands(contributes);
+    const { literals } = scanCommandRegistrations();
+    const referenced = scanLanguageStatusCommands();
+
+    expect(referenced.length).toBeGreaterThan(0);
+    expect(
+      referenced.filter((cmd) => !contributed.has(cmd) && !literals.has(cmd)),
+    ).toEqual([]);
   });
 
   it("hides tree- and context-only commands from the command palette", () => {
