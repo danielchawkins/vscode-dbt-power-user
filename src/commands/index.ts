@@ -255,13 +255,25 @@ export class VSCodeCommands implements Disposable {
       commands.registerCommand(
         "fusionPowerUser.yamlRunModel",
         (uri: Uri, modelName: string) => {
-          this.dbtProjectContainer.runModelByName(uri, modelName);
+          const project = this.dbtProjectContainer.findDBTProject(uri);
+          if (!project) {
+            return;
+          }
+          void project.runModel({
+            plusOperatorLeft: "",
+            modelName,
+            plusOperatorRight: "",
+          });
         },
       ),
       commands.registerCommand(
         "fusionPowerUser.yamlTestModel",
         (uri: Uri, modelName: string) => {
-          this.dbtProjectContainer.runModelTest(uri, modelName);
+          const project = this.dbtProjectContainer.findDBTProject(uri);
+          if (!project) {
+            return;
+          }
+          void project.runModelTest(modelName);
         },
       ),
       commands.registerCommand("fusionPowerUser.runParentModels", (model) =>

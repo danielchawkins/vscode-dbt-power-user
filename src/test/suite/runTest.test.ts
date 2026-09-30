@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { Uri, window } from "vscode";
 import { RunTest } from "../../commands/runTest";
+import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { Manifest } from "../../projects/manifestTypes";
 import { QueryManifestService } from "../../services/queryManifestService";
@@ -16,6 +17,7 @@ import { QueryManifestService } from "../../services/queryManifestService";
  * itself — the command-layer dispatch is exercised by integration testing.
  */
 describe("RunTest — singular test classification and dispatch", () => {
+  let mockProject: jest.Mocked<DBTProject>;
   let mockContainer: jest.Mocked<DBTProjectContainer>;
   let mockQueryManifestService: jest.Mocked<QueryManifestService>;
   let runTest: RunTest;
@@ -85,8 +87,9 @@ describe("RunTest — singular test classification and dispatch", () => {
   };
 
   beforeEach(() => {
+    mockProject = { runTest: jest.fn() } as unknown as jest.Mocked<DBTProject>;
     mockContainer = {
-      runTest: jest.fn(),
+      findDBTProject: jest.fn().mockReturnValue(mockProject),
     } as unknown as jest.Mocked<DBTProjectContainer>;
 
     mockQueryManifestService = {
@@ -135,8 +138,10 @@ describe("RunTest — singular test classification and dispatch", () => {
       const dispatched = runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(true);
-      expect(mockContainer.runTest).toHaveBeenCalledWith(
+      expect(mockContainer.findDBTProject).toHaveBeenCalledWith(
         expect.anything(),
+      );
+      expect(mockProject.runTest).toHaveBeenCalledWith(
         "singular_nonnull_orders",
       );
     });
@@ -147,7 +152,7 @@ describe("RunTest — singular test classification and dispatch", () => {
       const dispatched = runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(false);
-      expect(mockContainer.runTest).not.toHaveBeenCalled();
+      expect(mockProject.runTest).not.toHaveBeenCalled();
     });
 
     it("returns false when there is no active editor", () => {
@@ -156,7 +161,7 @@ describe("RunTest — singular test classification and dispatch", () => {
       const dispatched = runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(false);
-      expect(mockContainer.runTest).not.toHaveBeenCalled();
+      expect(mockProject.runTest).not.toHaveBeenCalled();
     });
 
     it("returns false when the manifest has no matching test", () => {
@@ -168,7 +173,7 @@ describe("RunTest — singular test classification and dispatch", () => {
       const dispatched = runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(false);
-      expect(mockContainer.runTest).not.toHaveBeenCalled();
+      expect(mockProject.runTest).not.toHaveBeenCalled();
     });
   });
 });

@@ -1,8 +1,6 @@
-import * as fs from "fs";
 import { inject } from "inversify";
-import { basename } from "path";
 import { Disposable, Event, EventEmitter, Uri } from "vscode";
-import { DBTTerminal, RunModelType } from "../dbt_integration";
+import { DBTTerminal } from "../dbt_integration";
 import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
 import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
 import type { RebuildManifestCombinedStatusChange } from "../projects/manifestTypes";
@@ -91,60 +89,6 @@ export class DBTProjectContainer implements Disposable {
     );
   }
 
-  executeSQL(uri: Uri, query: string, modelName: string): void {
-    this.findDBTProject(uri)?.executeSQLOnQueryPanel(query, modelName);
-  }
-
-  runModel(modelPath: Uri, type?: RunModelType) {
-    this.findDBTProject(modelPath)?.runModel(
-      this.createModelParams(modelPath, type),
-    );
-  }
-
-  buildModel(modelPath: Uri, type?: RunModelType) {
-    this.findDBTProject(modelPath)?.buildModel(
-      this.createModelParams(modelPath, type),
-    );
-  }
-
-  buildProject(modelPath: Uri, type?: RunModelType) {
-    this.findDBTProject(modelPath)?.buildProject();
-  }
-
-  runTest(modelPath: Uri, testName: string) {
-    this.findDBTProject(modelPath)?.runTest(testName);
-  }
-
-  runModelTest(modelPath: Uri, modelName: string) {
-    this.findDBTProject(modelPath)?.runModelTest(modelName);
-  }
-
-  runModelByName(projectUri: Uri, modelName: string) {
-    this.findDBTProject(projectUri)?.runModel({
-      plusOperatorLeft: "",
-      modelName,
-      plusOperatorRight: "",
-    });
-  }
-
-  compileModel(modelPath: Uri, type?: RunModelType) {
-    this.findDBTProject(modelPath)?.compileModel(
-      this.createModelParams(modelPath, type),
-    );
-  }
-
-  compileQuery(modelPath: Uri, query: string) {
-    return this.findDBTProject(modelPath)?.compileQuery(query);
-  }
-
-  showRunSQL(modelPath: Uri) {
-    this.findDBTProject(modelPath)?.showRunSQL(modelPath);
-  }
-
-  generateSchemaYML(modelPath: Uri, modelName: string) {
-    this.findDBTProject(modelPath)?.generateSchemaYML(modelPath, modelName);
-  }
-
   findDBTProject(uri: Uri): DBTProject | undefined {
     const declared = this.projectRegistry.findProject(uri);
     return declared && this.projectsByRoot.get(declared.root.fsPath)?.project;
@@ -199,26 +143,6 @@ export class DBTProjectContainer implements Disposable {
         x.dispose();
       }
     }
-  }
-
-  private createModelParams(modelPath: Uri, type?: RunModelType) {
-    const modelName = basename(
-      fs.realpathSync.native(modelPath.fsPath),
-      ".sql",
-    );
-    const plusOperatorLeft =
-      type === RunModelType.RUN_PARENTS ||
-      type === RunModelType.BUILD_PARENTS ||
-      type === RunModelType.BUILD_CHILDREN_PARENTS
-        ? "+"
-        : "";
-    const plusOperatorRight =
-      type === RunModelType.RUN_CHILDREN ||
-      type === RunModelType.BUILD_CHILDREN ||
-      type === RunModelType.BUILD_CHILDREN_PARENTS
-        ? "+"
-        : "";
-    return { plusOperatorLeft, modelName, plusOperatorRight };
   }
 
   private async sync(): Promise<void> {

@@ -3,6 +3,7 @@ import { Uri, window } from "vscode";
 import { GenerateModelFromSourceParams } from "../code_lens_provider/sourceModelCreationCodeLensProvider";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { RunModelType } from "../dbt_integration";
+import { modelParamsFor } from "../projects/projectCommands";
 import { ProjectContext } from "../projects/projectContext";
 import { NodeTreeItem } from "../treeview_provider/modelTreeviewProvider";
 export class RunModel {
@@ -126,28 +127,51 @@ export class RunModel {
   }
 
   runDBTModel(modelPath: Uri, type?: RunModelType) {
-    this.dbtProjectContainer.runModel(modelPath, type);
+    const project = this.dbtProjectContainer.findDBTProject(modelPath);
+    if (!project) {
+      return;
+    }
+    void project.runModel(modelParamsFor(modelPath, type));
   }
 
   buildDBTModel(modelPath: Uri, type?: RunModelType) {
-    this.dbtProjectContainer.buildModel(modelPath, type);
+    const project = this.dbtProjectContainer.findDBTProject(modelPath);
+    if (!project) {
+      return;
+    }
+    void project.buildModel(modelParamsFor(modelPath, type));
   }
 
   compileDBTModel(modelPath: Uri, type?: RunModelType) {
-    this.dbtProjectContainer.compileModel(modelPath, type);
+    const project = this.dbtProjectContainer.findDBTProject(modelPath);
+    if (!project) {
+      return;
+    }
+    void project.compileModel(modelParamsFor(modelPath, type));
   }
 
   compileDBTQuery(modelPath: Uri, query: string) {
-    this.dbtProjectContainer.compileQuery(modelPath, query);
+    const project = this.dbtProjectContainer.findDBTProject(modelPath);
+    if (!project) {
+      return;
+    }
+    void project.compileQuery(query);
   }
 
   runDBTTest(modelPath: Uri, testName: string) {
-    this.dbtProjectContainer.runTest(modelPath, testName);
+    const project = this.dbtProjectContainer.findDBTProject(modelPath);
+    if (!project) {
+      return;
+    }
+    void project.runTest(testName);
   }
 
   runDBTModelTest(modelPath: Uri) {
-    const modelName = path.basename(modelPath.fsPath, ".sql");
-    this.dbtProjectContainer.runModelTest(modelPath, modelName);
+    const project = this.dbtProjectContainer.findDBTProject(modelPath);
+    if (!project) {
+      return;
+    }
+    void project.runModelTest(path.basename(modelPath.fsPath, ".sql"));
   }
 
   async executeSQL(uri: Uri, query: string, modelName: string) {
@@ -155,16 +179,30 @@ export class RunModel {
     if (!declared) {
       return;
     }
-    this.dbtProjectContainer.executeSQL(declared.root, query, modelName);
+    const project = this.dbtProjectContainer.findDBTProject(declared.root);
+    if (!project) {
+      return;
+    }
+    void project.executeSQLOnQueryPanel(query, modelName);
   }
 
   generateSchemaYML(modelPath: Uri) {
-    const modelName = path.basename(modelPath.fsPath, ".sql");
-    this.dbtProjectContainer.generateSchemaYML(modelPath, modelName);
+    const project = this.dbtProjectContainer.findDBTProject(modelPath);
+    if (!project) {
+      return;
+    }
+    void project.generateSchemaYML(
+      modelPath,
+      path.basename(modelPath.fsPath, ".sql"),
+    );
   }
 
   showRunSQL(modelPath: Uri) {
-    this.dbtProjectContainer.showRunSQL(modelPath);
+    const project = this.dbtProjectContainer.findDBTProject(modelPath);
+    if (!project) {
+      return;
+    }
+    void project.showRunSQL(modelPath);
   }
 
   createModelBasedonSourceConfig(params: GenerateModelFromSourceParams) {

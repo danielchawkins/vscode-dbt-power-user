@@ -1,10 +1,20 @@
-import { describe, expect, it, jest } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  jest,
+} from "@jest/globals";
+import * as fs from "fs";
+import { Uri } from "vscode";
 import { ProjectSnapshot } from "../../core/project";
-import { DBTTerminal } from "../../dbt_integration";
+import { DBTTerminal, RunModelType } from "../../dbt_integration";
 import { FusionCli } from "../../fusion/fusionCli";
 import { CommandQueue } from "../../projects/commandQueue";
 import {
   formatCliStatus,
+  modelParamsFor,
   ProjectCommandDeps,
   queueCli,
   selection,
@@ -18,6 +28,44 @@ describe("selection", () => {
       plusOperatorRight: "",
     };
     expect(selection(params)).toBe("+orders");
+  });
+});
+
+describe("modelParamsFor", () => {
+  const model = Uri.file("/project/models/orders.sql");
+
+  beforeEach(() => {
+    jest
+      .spyOn(fs.realpathSync, "native")
+      .mockImplementation((value) => value as string);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it.each([
+    [undefined, "", ""],
+    [RunModelType.RUN_PARENTS, "+", ""],
+    [RunModelType.RUN_CHILDREN, "", "+"],
+    [RunModelType.BUILD_PARENTS, "+", ""],
+    [RunModelType.BUILD_CHILDREN, "", "+"],
+    [RunModelType.BUILD_CHILDREN_PARENTS, "+", "+"],
+    [RunModelType.TEST, "", ""],
+  ])("maps %s to operators '%s' and '%s'", (type, left, right) => {
+    expect(modelParamsFor(model, type)).toEqual({
+      plusOperatorLeft: left,
+      modelName: "orders",
+      plusOperatorRight: right,
+    });
+  });
+
+  it("names the model after the file's real path", () => {
+    jest
+      .spyOn(fs.realpathSync, "native")
+      .mockReturnValue("/elsewhere/customers.sql");
+
+    expect(modelParamsFor(model).modelName).toBe("customers");
   });
 });
 

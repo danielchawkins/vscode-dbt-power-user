@@ -50,7 +50,11 @@ export class RunTest {
    * `dbt test --select <test_name>`.
    */
   runSingularTest(uri: Uri, testName: string): void {
-    this.dbtProjectContainer.runTest(uri, testName);
+    const project = this.dbtProjectContainer.findDBTProject(uri);
+    if (!project) {
+      return;
+    }
+    void project.runTest(testName);
   }
 
   /**
