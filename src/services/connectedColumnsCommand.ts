@@ -12,6 +12,10 @@ export const CONNECTED_COLUMNS_COMMAND =
 /** Test-only: answers the lineage panel's `getColumns` for the integration suites. */
 export const LINEAGE_COLUMNS_COMMAND = "fusionPowerUser.test.getLineageColumns";
 
+/** Test-only: answers the lineage panel's `getDownstreamTables` for the integration suites. */
+export const DOWNSTREAM_TABLES_COMMAND =
+  "fusionPowerUser.test.getDownstreamTables";
+
 export function registerConnectedColumnsCommand(
   context: ExtensionContext,
   service: DbtLineageService,
@@ -24,6 +28,9 @@ export function registerConnectedColumnsCommand(
       CONNECTED_COLUMNS_COMMAND,
       (request: ConnectedColumnsRequest) =>
         service.getConnectedColumns(request),
+    ),
+    commands.registerCommand(DOWNSTREAM_TABLES_COMMAND, (table: string) =>
+      service.getDownstreamTables({ table }),
     ),
   );
 }
