@@ -10,6 +10,7 @@ export interface DBTCommandExecutionStrategy {
   execute(
     command: DBTCommand,
     signal?: AbortSignal,
+    onOutput?: (chunk: string) => void,
   ): Promise<CommandProcessResult>;
 }
 
@@ -32,11 +33,11 @@ export class DBTCommand {
     this.executionStrategy = executionStrategy;
   }
 
-  execute(signal?: AbortSignal) {
+  execute(signal?: AbortSignal, onOutput?: (chunk: string) => void) {
     if (this.executionStrategy === undefined) {
       throw new Error("Execution strategy is required to run dbt commands");
     }
-    return this.executionStrategy.execute(this, signal);
+    return this.executionStrategy.execute(this, signal, onOutput);
   }
 }
 

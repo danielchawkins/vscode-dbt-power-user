@@ -47,6 +47,39 @@
   ],
   "main": "./dist/extension.js",
   "contributes": {
+    "taskDefinitions": [
+      {
+        "type": "dbt",
+        "required": [
+          "command"
+        ],
+        "properties": {
+          "command": {
+            "type": "string",
+            "enum": [
+              "run",
+              "build",
+              "test",
+              "compile",
+              "deps"
+            ],
+            "description": "The dbt subcommand to run."
+          },
+          "select": {
+            "type": "string",
+            "description": "The --select value, including any graph operators."
+          },
+          "project": {
+            "type": "string",
+            "description": "The dbt project root; optional when the workspace has one project."
+          },
+          "fullRefresh": {
+            "type": "boolean",
+            "description": "Pass --full-refresh to run or build."
+          }
+        }
+      }
+    ],
     "snippets": [
       {
         "language": "jinja-sql",

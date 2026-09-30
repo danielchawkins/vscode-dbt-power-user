@@ -80,7 +80,7 @@ export class ProjectSetupCommands {
       window.showErrorMessage(
         "Error running dbt debug for project " +
           projectContextResolved.label +
-          ". Please check the output tab for more details.",
+          '. See the "Log - dbt" output for details.',
       );
       throw err;
     }
@@ -122,7 +122,7 @@ export class ProjectSetupCommands {
       window.showErrorMessage(
         "Error installing dbt dependencies for project " +
           projectContextResolved.label +
-          ". Please check the output tab for more details.",
+          '. See the dbt task terminal or the "Log - dbt" output for details.',
       );
       throw err;
     }

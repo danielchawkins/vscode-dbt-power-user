@@ -539,6 +539,66 @@ export const ThemeColor = vi.fn().mockImplementation(function (
   return { id: args[0] };
 });
 
+export const TaskRevealKind = { Always: 1, Silent: 2, Never: 3 };
+export const TaskScope = { Global: 1, Workspace: 2 };
+
+export class CustomExecution {
+  constructor(
+    readonly callback: (definition: unknown) => Promise<{
+      open(): void;
+      close(): void;
+      onDidClose?: (listener: (code: number) => void) => unknown;
+    }>,
+  ) {}
+}
+
+export class Task {
+  presentationOptions: Record<string, unknown> = {};
+  constructor(
+    readonly definition: { type: string },
+    readonly scope: unknown,
+    readonly name: string,
+    readonly source: string,
+    readonly execution?: CustomExecution,
+  ) {}
+}
+
+type TaskEndListener = (event: { execution: unknown }) => void;
+const taskEndListeners = new Set<TaskEndListener>();
+const activeTasks = new Map<string, { task: Task }>();
+
+/**
+ * Runs a `CustomExecution` task the way VS Code does: opens its Pseudoterminal and ends when it closes. A task whose
+ * definition is already active is not run; the active execution is returned.
+ */
+export const tasks = {
+  registerTaskProvider: vi.fn(() => ({ dispose: vi.fn() })),
+  get taskExecutions() {
+    return [...activeTasks.values()];
+  },
+  onDidEndTask: vi.fn((listener: TaskEndListener) => {
+    taskEndListeners.add(listener);
+    return { dispose: () => taskEndListeners.delete(listener) };
+  }),
+  executeTask: vi.fn(async (task: Task) => {
+    const key = JSON.stringify(task.definition);
+    const active = activeTasks.get(key);
+    if (active) {
+      return active;
+    }
+    const execution = { task };
+    activeTasks.set(key, execution);
+    const terminal = await task.execution!.callback(task.definition);
+    terminal.onDidClose?.(() => {
+      activeTasks.delete(key);
+      [...taskEndListeners].forEach((listener) => listener({ execution }));
+    });
+    terminal.open();
+    return execution;
+  }),
+};
+
 export const resetMocks = () => {
+  activeTasks.clear();
   vi.clearAllMocks();
 };

@@ -38,6 +38,7 @@ import {
   RESOURCE_TYPE_MODEL,
 } from "../../dbt_integration";
 import { FusionCli } from "../../fusion/fusionCli";
+import { DbtTaskTerminal } from "../../projects/dbtTask";
 import { ManifestParsers } from "../../projects/manifest";
 import { Manifest } from "../../projects/manifestTypes";
 import { Project } from "../../projects/project";
@@ -53,6 +54,7 @@ import { esmDirname } from "../esmDirname";
 import {
   createdFileSystemWatchers,
   type MockFileSystemWatcher,
+  resetMocks,
 } from "../mock/vscode";
 import { buildTestProject } from "../projectHarness";
 
@@ -186,6 +188,7 @@ describe("Project Test Suite", () => {
 
   afterEach(async () => {
     vi.clearAllMocks();
+    resetMocks();
     if (dbtProject) {
       await dbtProject.dispose();
     }
@@ -532,7 +535,8 @@ describe("Project Test Suite", () => {
       enqueueCommand(
         commandDeps(dbtProject),
         mockCommand as unknown as DBTCommand,
-      );
+        new DbtTaskTerminal(() => undefined),
+      ).catch(() => undefined);
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(mockCommand.execute).toHaveBeenCalled();
@@ -648,7 +652,8 @@ describe("Project Test Suite", () => {
       enqueueCommand(
         commandDeps(dbtProject),
         mockCommand as unknown as DBTCommand,
-      );
+        new DbtTaskTerminal(() => undefined),
+      ).catch(() => undefined);
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(mockRunHistoryService.addEntry).not.toHaveBeenCalled();
@@ -777,14 +782,189 @@ describe("Project Test Suite", () => {
       );
     });
 
-    it("routes clean and installDeps through the Fusion CLI", async () => {
-      dbtProject = await initializedProject();
+    it("routes clean through the Fusion CLI and queues installDeps", async () => {
+      await queued();
 
       await dbtProject.clean();
       await dbtProject.installDeps();
 
       expect(mockFusionCli.run).toHaveBeenCalledWith({ kind: "clean" });
-      expect(mockFusionCli.run).toHaveBeenCalledWith({ kind: "deps" });
+      expect(mockFusionCli.prepare).toHaveBeenCalledWith({ kind: "deps" });
+    });
+
+    it("queues a manual task's command to run in its terminal", async () => {
+      const execute = await queued();
+      const terminal = new DbtTaskTerminal(() => undefined);
+      const closed = new Promise<number>((resolve) =>
+        terminal.onDidClose(resolve),
+      );
+      execute.mockResolvedValue({ stdout: "", exitCode: 0 } as never);
+
+      await dbtProject.runTask(
+        { type: "dbt", command: "run", select: "a", fullRefresh: true },
+        terminal,
+      );
+
+      expect(mockFusionCli.prepare).toHaveBeenCalledWith({
+        kind: "run",
+        select: "a",
+        fullRefresh: true,
+      });
+      await expect(closed).resolves.toBe(0);
+      expect(execute).toHaveBeenCalledTimes(1);
+    });
+
+    it("closes a manual task with an unknown command as failed", async () => {
+      await queued();
+      const terminal = new DbtTaskTerminal(() => undefined);
+      const closed = new Promise<number>((resolve) =>
+        terminal.onDidClose(resolve),
+      );
+
+      await dbtProject.runTask(
+        { type: "dbt", command: "seed" as never },
+        terminal,
+      );
+
+      await expect(closed).resolves.toBe(1);
+      expect(mockFusionCli.prepare).not.toHaveBeenCalled();
+    });
+
+    it("starts a command's task outside the queue and runs it once in the task terminal", async () => {
+      const execute = await queued();
+      execute.mockResolvedValue({ stdout: "", exitCode: 0 } as never);
+
+      await dbtProject.runModel({
+        plusOperatorLeft: "",
+        modelName: "a",
+        plusOperatorRight: "",
+      });
+      await flush();
+
+      expect(vscode.tasks.executeTask).toHaveBeenCalledWith(
+        expect.objectContaining({
+          definition: expect.objectContaining({ command: "run", select: "a" }),
+        }),
+      );
+      expect(execute).toHaveBeenCalledTimes(1);
+      expect(vscode.window.withProgress).not.toHaveBeenCalled();
+    });
+
+    it("runs a command once more after Run Task's identical task ends, without deadlocking", async () => {
+      const execute = await queued();
+      let release!: () => void;
+      execute.mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            release = () => resolve({ stdout: "", exitCode: 0 } as never);
+          }),
+      );
+      const definition = {
+        type: "dbt",
+        command: "deps",
+        project: dbtProject.projectRoot.fsPath,
+      } as const;
+      await vscode.tasks.executeTask(dbtProject.task(definition, "deps"));
+      await flush();
+
+      const installed = dbtProject.installDeps();
+      await flush();
+      expect(execute).toHaveBeenCalledTimes(1);
+
+      release();
+      await flush();
+      expect(execute).toHaveBeenCalledTimes(2);
+      release();
+      await expect(installed).resolves.toBeUndefined();
+    });
+
+    it("rejects installDeps on a non-zero exit or a reported dbt error", async () => {
+      const execute = await queued();
+      execute.mockResolvedValueOnce({ stdout: "", exitCode: 2 } as never);
+      await expect(dbtProject.installDeps()).rejects.toThrow(
+        "dbt deps exited with code 2",
+      );
+
+      execute.mockResolvedValueOnce({
+        stdout: "Encountered an error: no packages",
+        exitCode: 0,
+      } as never);
+      await expect(dbtProject.installDeps()).rejects.toThrow(
+        "Encountered an error: no packages",
+      );
+    });
+
+    it("queues each terminal of one task, so Rerun runs the command again", async () => {
+      const execute = await queued();
+      execute.mockResolvedValue({ stdout: "", exitCode: 0 } as never);
+      const task = dbtProject.task(
+        {
+          type: "dbt",
+          command: "build",
+          project: dbtProject.projectRoot.fsPath,
+        },
+        "build",
+      );
+
+      await vscode.tasks.executeTask(task);
+      await flush();
+      await vscode.tasks.executeTask(task);
+      await flush();
+
+      expect(execute).toHaveBeenCalledTimes(2);
+    });
+
+    it("runs the command without a terminal when VS Code cannot execute tasks, warning once", async () => {
+      const execute = await queued();
+      execute.mockResolvedValue({ stdout: "", exitCode: 0 } as never);
+      const unsupported = new Error("tasks unsupported");
+      vi.mocked(vscode.tasks.executeTask)
+        .mockRejectedValueOnce(unsupported)
+        .mockRejectedValueOnce(unsupported)
+        .mockRejectedValueOnce(unsupported);
+
+      await dbtProject.installDeps();
+      await dbtProject.buildProject();
+      await flush();
+
+      expect(execute).toHaveBeenCalledTimes(2);
+      expect(mockTerminal.warn).toHaveBeenCalledTimes(1);
+      expect(mockTerminal.warn).toHaveBeenCalledWith(
+        "Project",
+        expect.stringContaining("tasks unsupported"),
+      );
+      execute.mockResolvedValueOnce({ stdout: "", exitCode: 2 } as never);
+      await expect(dbtProject.installDeps()).rejects.toThrow(
+        "dbt deps exited with code 2",
+      );
+    });
+
+    it("does not run a task whose terminal closed while it waited in the queue", async () => {
+      const execute = await queued();
+      let release!: () => void;
+      execute.mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            release = () => resolve({ stdout: "", exitCode: 0 } as never);
+          }),
+      );
+      const first = new DbtTaskTerminal(() => undefined);
+      const waiting = new DbtTaskTerminal(() => undefined);
+      const written: string[] = [];
+      waiting.onDidWrite((text) => written.push(text));
+      void dbtProject.runTask({ type: "dbt", command: "build" }, first);
+      const run = dbtProject.runTask({ type: "dbt", command: "deps" }, waiting);
+      await flush();
+
+      waiting.close();
+      release();
+
+      await expect(run).resolves.toBeUndefined();
+      expect(execute).toHaveBeenCalledTimes(1);
+      expect(written).toEqual([
+        "Waiting for the previous dbt command to finish…\r\n",
+      ]);
+      expect(mockRunHistoryService.addEntry).not.toHaveBeenCalled();
     });
   });
 });

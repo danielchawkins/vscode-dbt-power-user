@@ -61,7 +61,6 @@ function mockTerminal(): DBTTerminal {
     trace: () => undefined,
     info: () => undefined,
     log: () => undefined,
-    show: async () => undefined,
     dispose: () => undefined,
   } as unknown as DBTTerminal;
 }

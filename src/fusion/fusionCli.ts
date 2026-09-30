@@ -39,8 +39,8 @@ export interface FusionCliRunOptions {
   signal?: AbortSignal;
   /** Merged over the executable's environment; wins on conflicts. */
   env?: Record<string, string>;
-  /** Streams output to the terminal, first revealing it when `focus` is set. */
-  terminalOutput?: { focus: boolean };
+  /** Receives each stdout and stderr chunk in arrival order. */
+  onOutput?: (chunk: string) => void;
 }
 
 function diskProbe(target: string): PathKind {
@@ -83,21 +83,27 @@ function anySignal(
 /** The command kinds Project queues. */
 export type QueuedCliCommand = Extract<
   CliCommand,
-  { kind: "run" | "build" | "test" | "compile" }
+  { kind: "run" | "build" | "test" | "compile" | "deps" }
 >;
 
 function queuedStatus(cli: QueuedCliCommand): string {
   switch (cli.kind) {
     case "run":
-      return "Running dbt model...";
+      return cli.select === undefined
+        ? "Running dbt project..."
+        : "Running dbt model...";
     case "build":
       return cli.select === undefined
         ? "Building dbt project..."
         : "Building dbt model...";
     case "test":
-      return "Testing dbt model...";
+      return cli.select === undefined
+        ? "Testing dbt project..."
+        : "Testing dbt model...";
     case "compile":
       return "Compiling dbt models...";
+    case "deps":
+      return "Installing dbt packages...";
   }
 }
 
@@ -159,18 +165,7 @@ export class FusionCli {
       signal: options.signal,
       envVars: { ...toCliEnvironment(snapshot), ...options.env },
     });
-    if (!options.terminalOutput) {
-      return execution.complete();
-    }
-    if (options.terminalOutput.focus) {
-      await this.terminal.show(true);
-    }
-    this.terminal.log(`> Executing task: dbt ${args.join(" ")}\n\r`);
-    const result = await execution.complete({
-      onOutput: (chunk) => this.terminal.log(chunk.replace(/\r?\n/g, "\r\n")),
-    });
-    this.terminal.log("");
-    return result;
+    return execution.complete({ onOutput: options.onOutput });
   }
 
   /**
@@ -362,6 +357,7 @@ export class FusionCli {
 
   /**
    * A command for the project queue, with this project's argv for display and an execution strategy that runs `cli`.
+   * Its output streams to the log channel as well as to the caller's `onOutput`.
    * The argv is computed again when the command runs, so it can differ from the argv shown when it was queued.
    */
   prepare(cli: QueuedCliCommand): DBTCommand {
@@ -373,22 +369,16 @@ export class FusionCli {
       true,
     );
     command.setExecutionStrategy({
-      execute: (c, signal) => this.execute(c, cli, signal),
+      execute: (c, signal, onOutput) =>
+        this.run(cli, {
+          signal: anySignal(signal, c.signal),
+          onOutput: (chunk) => {
+            this.terminal.log(chunk);
+            onOutput?.(chunk);
+          },
+        }),
     });
     return command;
-  }
-
-  private execute(
-    command: DBTCommand,
-    cli: CliCommand,
-    signal: AbortSignal | undefined,
-  ): Promise<CommandProcessResult> {
-    return this.run(cli, {
-      signal: anySignal(signal, command.signal),
-      terminalOutput: command.logToTerminal
-        ? { focus: command.focus }
-        : undefined,
-    });
   }
 
   private warnUnusableDefer(snapshot: ProjectSnapshot): void {

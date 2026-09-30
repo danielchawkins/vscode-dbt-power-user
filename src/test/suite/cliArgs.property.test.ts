@@ -17,13 +17,26 @@ const payload = fc.oneof(
   fc.string().map((s) => `--${s}`),
 );
 
+const selections = fc.option(payload, { nil: undefined });
+const fullRefreshes = fc.option(fc.boolean(), { nil: undefined });
+
 const commands: fc.Arbitrary<CliCommand> = fc.oneof(
-  payload.map((select): CliCommand => ({ kind: "run", select })),
   fc
-    .option(payload, { nil: undefined })
-    .map((select): CliCommand => ({ kind: "build", select })),
-  payload.map((select): CliCommand => ({ kind: "test", select })),
-  payload.map((select): CliCommand => ({ kind: "compile", select })),
+    .tuple(selections, fullRefreshes)
+    .map(([select, fullRefresh]): CliCommand => ({
+      kind: "run",
+      select,
+      fullRefresh,
+    })),
+  fc
+    .tuple(selections, fullRefreshes)
+    .map(([select, fullRefresh]): CliCommand => ({
+      kind: "build",
+      select,
+      fullRefresh,
+    })),
+  selections.map((select): CliCommand => ({ kind: "test", select })),
+  selections.map((select): CliCommand => ({ kind: "compile", select })),
   payload.map((node): CliCommand => ({ kind: "compileNode", node })),
   fc
     .record({ sql: payload, output: fc.constantFrom("json", "quiet") })
@@ -72,7 +85,6 @@ function payloadOf(c: CliCommand): string[] {
     case "run":
     case "test":
     case "compile":
-      return [c.select];
     case "build":
       return c.select === undefined ? [] : [c.select];
     case "compileNode":
@@ -94,6 +106,19 @@ function supplied(s: ProjectSnapshot, c: CliCommand): string[] {
     ...(c.kind === "show" ? [c.sql] : []),
   ];
 }
+
+const FULL_REFRESH = "--full-refresh";
+
+const wantsFullRefresh = (c: CliCommand) =>
+  (c.kind === "run" || c.kind === "build") && c.fullRefresh === true;
+
+/** Whether the implementation should add `--full-refresh` itself. */
+const addsFullRefresh = (s: ProjectSnapshot, c: CliCommand) =>
+  wantsFullRefresh(c) && !paramsFor(s, c).includes(FULL_REFRESH);
+
+/** Where the command params start: after the subcommand, `--select <payload>`, and an added `--full-refresh`. */
+const paramsStart = (s: ProjectSnapshot, c: CliCommand) =>
+  1 + (payloadOf(c).length > 0 ? 2 : 0) + (addsFullRefresh(s, c) ? 1 : 0);
 
 /** Whether a param sets the flag, written without the implementation's helper. */
 const setsFlag = (param: string, name: string, alias?: string) =>
@@ -163,7 +188,25 @@ describe("toCliArgs properties", () => {
       if (params.length === 0) {
         return;
       }
-      expect(args.slice(3, 3 + params.length)).toEqual(params);
+      const start = paramsStart(s, c);
+      expect(args.slice(start, start + params.length)).toEqual(params);
+    });
+  });
+
+  it("has --full-refresh exactly once when asked for or set once in the command params", () => {
+    property((s, c, args) => {
+      const given = count(paramsFor(s, c), FULL_REFRESH);
+      expect(
+        count(args, FULL_REFRESH) - count(supplied(s, c), FULL_REFRESH),
+      ).toBe(addsFullRefresh(s, c) ? 1 : 0);
+      const inPayload = count(payloadOf(c), FULL_REFRESH);
+      if (
+        inPayload === 0 &&
+        given <= 1 &&
+        (wantsFullRefresh(c) || given === 1)
+      ) {
+        expect(count(args, FULL_REFRESH)).toBe(1);
+      }
     });
   });
 
