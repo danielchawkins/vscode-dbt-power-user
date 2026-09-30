@@ -1,11 +1,20 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { EventEmitter } from "events";
 import { PassThrough } from "stream";
-import { type CancellationToken, Uri, WorkspaceFolder } from "vscode";
+import {
+  type CancellationToken,
+  Uri,
+  workspace,
+  WorkspaceFolder,
+} from "vscode";
 import { LanguageClientOptions, State } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
 import { DBT_LSP_USE_TARGET_LSP, LspLaunch } from "../../core/lsp";
 import { parseTraceServerLevel } from "../../core/project";
+import {
+  clearDiagnosticsOnDelete,
+  ProjectDiagnosticsFilter,
+} from "../../fusion/fusionDiagnostics";
 import {
   buildWorkspaceConfigurationResponse,
   canonicalProjectRoot,
@@ -13,7 +22,6 @@ import {
   DefaultFusionClientFactory,
   DISPOSAL_GRACE_MS,
   documentSelectorForProject,
-  ExistingFileDiagnostics,
   FUSION_LSP_COMMANDS,
   FusionClient,
   FusionClientState,
@@ -350,6 +358,40 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
     await flushAsync();
     expect(outputChannel.dispose).toHaveBeenCalledTimes(1);
+  });
+
+  it("disposes the deleted-file watcher when the client stops", async () => {
+    const streams = makeStreams();
+    const watcher = {
+      onDidDelete: jest.fn().mockReturnValue({ dispose: jest.fn() }),
+      dispose: jest.fn(),
+    };
+    (workspace.createFileSystemWatcher as jest.Mock).mockReturnValueOnce(
+      watcher,
+    );
+    const factory = new DefaultFusionClientFactory(terminal as any, {
+      listenForServer: async () => new FakeReverseSocketServer(streams),
+      acceptWithProcessExit: async () => streams,
+      spawnProcess: jest.fn(() => new FakeExitingProcess() as any),
+      createLanguageClient: async () => makeLanguageClient() as any,
+      createOutputChannel: (name) => createMockLogOutputChannel(name),
+      sleep: async () => {},
+    });
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        env: {},
+      },
+      launch: makeLaunch(),
+      commandPrefix: "fusionPowerUser:test:",
+    });
+    await waitForState(client, "running");
+    expect(watcher.dispose).not.toHaveBeenCalled();
+
+    await client.stop();
+    expect(watcher.dispose).toHaveBeenCalledTimes(1);
   });
 
   it("reuses the same output channel across restarts and retains failure logs", async () => {
@@ -1435,9 +1477,15 @@ describe("withoutUnregisteredLspLenses", () => {
   });
 });
 
-describe("ExistingFileDiagnostics", () => {
-  const present = new Set(["/p/models/a.sql"]);
-  const filter = () => new ExistingFileDiagnostics((p) => present.has(p));
+describe("ProjectDiagnosticsFilter", () => {
+  const present = new Set([
+    "/p/models/a.sql",
+    "/pp/models/a.sql",
+    "/private/p/models/b.sql",
+    "/elsewhere/a.sql",
+  ]);
+  const filter = () =>
+    new ProjectDiagnosticsFilter(["/p", "/private/p"], (p) => present.has(p));
 
   it("forwards diagnostics for files that exist", () => {
     expect(filter().shouldForward(Uri.file("/p/models/a.sql"))).toBe(true);
@@ -1446,6 +1494,20 @@ describe("ExistingFileDiagnostics", () => {
   it("drops diagnostics for files that do not exist", () => {
     expect(filter().shouldForward(Uri.file("/p/macros/adapters.sql"))).toBe(
       false,
+    );
+  });
+
+  it("drops diagnostics for files outside the project root", () => {
+    expect(filter().shouldForward(Uri.file("/elsewhere/a.sql"))).toBe(false);
+  });
+
+  it("drops diagnostics for a sibling whose path shares the root as a prefix", () => {
+    expect(filter().shouldForward(Uri.file("/pp/models/a.sql"))).toBe(false);
+  });
+
+  it("accepts files under the canonical project root", () => {
+    expect(filter().shouldForward(Uri.file("/private/p/models/b.sql"))).toBe(
+      true,
     );
   });
 
@@ -1464,5 +1526,81 @@ describe("ExistingFileDiagnostics", () => {
       toString: () => "untitled:Untitled-1",
     };
     expect(filter().shouldForward(untitled as never)).toBe(true);
+  });
+});
+
+describe("clearDiagnosticsOnDelete", () => {
+  function watch(entries: string[]) {
+    const onDelete: Array<(uri: Uri) => void> = [];
+    const watcher = {
+      onDidDelete: jest.fn((listener: (uri: Uri) => void) => {
+        onDelete.push(listener);
+        return { dispose: jest.fn() };
+      }),
+      dispose: jest.fn(),
+    };
+    (workspace.createFileSystemWatcher as jest.Mock).mockReturnValueOnce(
+      watcher,
+    );
+    const uris = entries.map((entry) => Uri.file(entry));
+    const collection = {
+      forEach: jest.fn((cb: (uri: Uri) => void) => uris.forEach((u) => cb(u))),
+      delete: jest.fn(),
+    };
+    const disposable = clearDiagnosticsOnDelete(
+      Uri.file("/p"),
+      () => collection as never,
+    );
+    return {
+      collection,
+      watcher,
+      disposable,
+      remove: (f: string) => onDelete[0](Uri.file(f)),
+    };
+  }
+
+  it("watches only deletions of project files under the root", () => {
+    watch([]);
+    const { calls } = (workspace.createFileSystemWatcher as jest.Mock).mock;
+    expect(calls[calls.length - 1]).toEqual([
+      { base: Uri.file("/p"), pattern: "**/*" },
+      true,
+      true,
+      false,
+    ]);
+  });
+
+  it("removes a deleted file's diagnostics", () => {
+    const { collection, remove } = watch([
+      "/p/models/a.sql",
+      "/p/models/b.sql",
+    ]);
+    remove("/p/models/a.sql");
+    expect(collection.delete).toHaveBeenCalledWith(Uri.file("/p/models/a.sql"));
+    expect(collection.delete).not.toHaveBeenCalledWith(
+      Uri.file("/p/models/b.sql"),
+    );
+  });
+
+  it("removes every entry under a deleted folder", () => {
+    const { collection, remove } = watch([
+      "/p/models/a.sql",
+      "/p/models/sub/b.yml",
+      "/p/modelsx/c.sql",
+    ]);
+    remove("/p/models");
+    const deleted = collection.delete.mock.calls.map(
+      ([uri]) => (uri as Uri).fsPath,
+    );
+    expect(deleted).toEqual(
+      expect.arrayContaining(["/p/models/a.sql", "/p/models/sub/b.yml"]),
+    );
+    expect(deleted).not.toContain("/p/modelsx/c.sql");
+  });
+
+  it("disposes the watcher", () => {
+    const { watcher, disposable } = watch([]);
+    disposable.dispose();
+    expect(watcher.dispose).toHaveBeenCalled();
   });
 });
