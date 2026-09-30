@@ -556,6 +556,34 @@ describe("Project Test Suite", () => {
       expect(addOrder).toBeLessThan(failOrder);
     });
 
+    it("records the launched selection when run_results.json has none", async () => {
+      dbtProject = await initializedProject();
+      mockFusionCli.prepare.mockImplementation(() => ({
+        args: ["run", "--select", "stg_orders", "--profiles-dir", "/p"],
+        execute: jest.fn(() => {
+          writeRunResults();
+          return Promise.resolve({ stdout: "" });
+        }),
+        focus: false,
+        showProgress: false,
+        getCommandAsString: () => "dbt run --select stg_orders",
+      }));
+
+      await dbtProject.runModel({
+        plusOperatorLeft: "",
+        modelName: "stg_orders",
+        plusOperatorRight: "",
+      });
+      await new Promise((resolve) => setImmediate(resolve));
+
+      expect(mockRunHistoryService.addEntry).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: "dbt run --select stg_orders",
+          args: ["stg_orders"],
+        }),
+      );
+    });
+
     it("reads defer.perProject scoped to the project root", async () => {
       mockDeferSettings({
         deferToProduction: true,

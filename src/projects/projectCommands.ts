@@ -19,7 +19,10 @@ export interface ProjectCommandDeps {
   commandQueue: CommandQueue;
   cli(): FusionCli;
   snapshot(): ProjectSnapshot;
-  withRunResults<T>(run: () => Promise<T>): Promise<T>;
+  withRunResults<T>(
+    run: () => Promise<T>,
+    launched?: readonly string[],
+  ): Promise<T>;
   notifyFailed(statusMessage: string, error: string): void;
   terminal: DBTTerminal;
 }
@@ -141,7 +144,10 @@ export function enqueueCommand(
 ): void {
   deps.commandQueue.enqueue(
     async (signal) => {
-      const result = await deps.withRunResults(() => command.execute(signal));
+      const result = await deps.withRunResults(
+        () => command.execute(signal),
+        command.args,
+      );
       // dbt CLI resolves normally even on failure (CommandProcessExecution.complete()
       // never rejects for non-zero exit). Detect pre-execution failures (compilation
       // errors, config errors) by checking stdout.

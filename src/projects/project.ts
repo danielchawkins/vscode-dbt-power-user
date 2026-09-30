@@ -156,7 +156,7 @@ export class Project implements Disposable, ManifestProject {
       commandQueue: this.commandQueue,
       cli: () => this.getFusionCli(),
       snapshot: () => readProjectSnapshot(this.projectRoot),
-      withRunResults: (run) => this.withRunResults(run),
+      withRunResults: (run, launched) => this.withRunResults(run, launched),
       notifyFailed: (statusMessage, error) =>
         this.runHistoryService.notifyCommandFailed(statusMessage, error),
       terminal: this.terminal,
@@ -450,8 +450,16 @@ export class Project implements Disposable, ManifestProject {
     return this.withRunResults(() => this.getFusionCli().run({ kind: "deps" }));
   }
 
-  private withRunResults<T>(run: () => Promise<T>): Promise<T> {
-    return withRunResults(this.runResultsReader, this.runHistory, run);
+  private withRunResults<T>(
+    run: () => Promise<T>,
+    launched?: readonly string[],
+  ): Promise<T> {
+    return withRunResults(
+      this.runResultsReader,
+      this.runHistory,
+      run,
+      launched,
+    );
   }
 
   async compileQuery(query: string): Promise<string | undefined> {

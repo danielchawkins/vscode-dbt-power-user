@@ -15,6 +15,7 @@ import {
   parseRunResultsJson,
   resolveRunStatus,
   RunResultsReader,
+  selectionFromCliArgs,
   withRunResults,
 } from "../../projects/runResults";
 
@@ -83,6 +84,88 @@ describe("parseRunResultsJson", () => {
       /Malformed run_results.json/,
     );
   });
+
+  const fusionRun = (args: Record<string, unknown> = {}) => ({
+    metadata: { invocation_id: "inv", generated_at: "2026-01-01T00:00:00Z" },
+    args: { which: "run", full_refresh: false, ...args },
+  });
+
+  it("fills the selection from launched args when run_results records none", () => {
+    const event = parseRunResultsJson(fusionRun(), "p", [
+      "run",
+      "--select",
+      "stg_orders",
+      "--exclude",
+      "b",
+      "--profiles-dir",
+      "/x",
+    ]);
+    expect(event.command).toBe("dbt run --select stg_orders --exclude b");
+    expect(event.args).toEqual(["stg_orders"]);
+  });
+
+  it("takes --full-refresh from launched args when run_results records false", () => {
+    const event = parseRunResultsJson(fusionRun(), "p", [
+      "run",
+      "-s",
+      "a",
+      "--full-refresh",
+    ]);
+    expect(event.command).toBe("dbt run --select a --full-refresh");
+  });
+
+  it("prefers the run_results selection over launched args", () => {
+    const event = parseRunResultsJson(fusionRun({ selector: "nightly" }), "p", [
+      "run",
+      "--select",
+      "other",
+    ]);
+    expect(event.command).toBe("dbt run --selector nightly");
+    expect(event.args).toEqual([]);
+  });
+
+  it("stays project-wide without launched args", () => {
+    const event = parseRunResultsJson(fusionRun(), "p");
+    expect(event.command).toBe("dbt run");
+    expect(event.args).toEqual([]);
+  });
+});
+
+describe("selectionFromCliArgs", () => {
+  const empty = {
+    which: "run",
+    select: [],
+    exclude: [],
+    selector: [],
+    fullRefresh: false,
+  };
+
+  it.each([
+    [["run", "--select", "a", "b"], { select: ["a", "b"] }],
+    [["run", "-s", "a"], { select: ["a"] }],
+    [["run", "--select=a"], { select: ["a"] }],
+    [
+      ["run", "--exclude", "a", "--select", "b"],
+      { select: ["b"], exclude: ["a"] },
+    ],
+    [["run", "--selector", "nightly"], { selector: ["nightly"] }],
+    [
+      ["run", "--select", "a", "--full-refresh", "b"],
+      { select: ["a"], fullRefresh: true },
+    ],
+    [["run", "--profiles-dir", "/p", "--target", "dev"], {}],
+    [["run", "--select", "a", "--project-dir", "/p"], { select: ["a"] }],
+  ])("reads %j", (args, expected) => {
+    expect(selectionFromCliArgs(args)).toEqual({ ...empty, ...expected });
+  });
+
+  it("has no subcommand when args start with a flag", () => {
+    expect(selectionFromCliArgs(["--select", "a"])).toEqual({
+      ...empty,
+      which: "",
+      select: ["a"],
+    });
+  });
 });
 
 describe("resolveRunStatus", () => {
@@ -149,6 +232,20 @@ describe("RunResultsReader", () => {
     expect(reader.readIfChanged(before)?.id).toBe("inv-new");
   });
 
+  it("fills a missing selection from the launched args", () => {
+    const before = reader.observe();
+    const raw = JSON.parse(sampleRunResultsJson());
+    delete raw.args.select;
+    write(JSON.stringify(raw));
+    const event = reader.readIfChanged(before, [
+      "run",
+      "--select",
+      "stg_orders",
+    ]);
+    expect(event?.args).toEqual(["stg_orders"]);
+    expect(event?.command).toBe("dbt run --select stg_orders");
+  });
+
   it("observes nothing without a target path", () => {
     const noTarget = new RunResultsReader(
       () => undefined,
@@ -196,8 +293,16 @@ describe("withRunResults", () => {
     await expect(
       withRunResults(reader, history, async () => "done"),
     ).resolves.toBe("done");
-    expect(reader.readIfChanged).toHaveBeenCalledWith("before");
+    expect(reader.readIfChanged).toHaveBeenCalledWith("before", undefined);
     expect(history.addEntry).toHaveBeenCalledWith(entry);
+  });
+
+  it("passes the launched args to the reader", async () => {
+    const reader = stubReader(entry);
+    await withRunResults(reader, { addEntry: jest.fn() }, async () => 0, [
+      "run",
+    ]);
+    expect(reader.readIfChanged).toHaveBeenCalledWith("before", ["run"]);
   });
 
   it("records nothing when run_results.json did not change", async () => {

@@ -5,6 +5,7 @@ import {
   ReplayProject,
   rerunFromHistory,
 } from "../../commands/rerunFromHistory";
+import { parseRunResultsJson } from "../../projects/runResults";
 import { createEntry } from "../fixtures/runHistory";
 
 function createProject(): jest.Mocked<ReplayProject> {
@@ -116,6 +117,26 @@ describe("rerunFromHistory", () => {
     for (const method of Object.values(other)) {
       expect(method).not.toHaveBeenCalled();
     }
+  });
+
+  it("dispatches runModel for a run whose selection came from launched args", () => {
+    const entry = parseRunResultsJson(
+      {
+        metadata: { invocation_id: "i", generated_at: "2026-01-01T00:00:00Z" },
+        args: { which: "run", full_refresh: false, static_analysis: "on" },
+      },
+      "project1",
+      ["run", "--select", "stg_orders"],
+    );
+
+    rerunFromHistory(entry, findProjectByName);
+
+    expect(project.runModel).toHaveBeenCalledWith({
+      plusOperatorLeft: "",
+      modelName: "stg_orders",
+      plusOperatorRight: "",
+    });
+    expect(window.showWarningMessage).not.toHaveBeenCalled();
   });
 
   it("warns for unsupported commands", () => {
