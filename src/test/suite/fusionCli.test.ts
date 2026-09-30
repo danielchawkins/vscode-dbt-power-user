@@ -280,6 +280,27 @@ describe("FusionCli", () => {
     });
     expect(calls[0].args).toContain("--limit");
   });
+
+  it("throws Fusion's own error when a show fails without a preview", async () => {
+    const { factory } = fakeProcesses({
+      stdout: [
+        log("debug", "Started running model main.inline"),
+        log(
+          "error",
+          "Catalog Error: Table with name stg_orders does not exist!",
+        ),
+      ].join("\n"),
+    });
+    const cli = new FusionCli(
+      executable,
+      () => snapshot(),
+      factory,
+      fakeTerminal().terminal,
+    );
+    await expect(cli.show("select 1 as id", 5)).rejects.toThrow(
+      /^Catalog Error: Table with name stg_orders does not exist!$/,
+    );
+  });
 });
 
 const log = (level: string, msg: string) =>

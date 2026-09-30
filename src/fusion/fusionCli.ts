@@ -196,6 +196,8 @@ export class FusionCli {
       options,
     );
     throwLogErrors(stderr);
+    // With `--log-format json`, Fusion writes a failed query's error record to stdout.
+    throwLogErrors(stdout);
     return showPreview(stdout);
   }
 
