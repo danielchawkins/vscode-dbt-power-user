@@ -374,9 +374,6 @@
     },
     "sonarjs/cognitive-complexity": {
       "count": 1
-    },
-    "sonarjs/no-identical-functions": {
-      "count": 1
     }
   },
   "src/utils.ts": {

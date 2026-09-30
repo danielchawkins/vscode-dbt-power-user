@@ -16,10 +16,7 @@ import {
   window,
 } from "vscode";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import {
-  ManifestCacheChangedEvent,
-  ManifestCacheProjectAddedEvent,
-} from "../dbt_client/event/manifestCacheChangedEvent";
+import { ManifestCacheProjectAddedEvent } from "../dbt_client/event/manifestCacheChangedEvent";
 import {
   GraphMetaMap,
   NodeData,
@@ -90,7 +87,6 @@ class Source extends Node {
 abstract class ModelTreeviewProvider
   implements TreeDataProvider<NodeTreeItem>, Disposable
 {
-  private eventMap: Map<string, ManifestCacheProjectAddedEvent> = new Map();
   private _onDidChangeTreeData: EventEmitter<ModelTreeItem | undefined | void> =
     new EventEmitter<ModelTreeItem | undefined | void>();
   readonly onDidChangeTreeData: Event<ModelTreeItem | undefined | void> =
@@ -106,8 +102,11 @@ abstract class ModelTreeviewProvider
       window.onDidChangeActiveTextEditor(() => {
         this._onDidChangeTreeData.fire();
       }),
-      this.dbtProjectContainer.onManifestChanged((event) =>
-        this.onManifestCacheChanged(event),
+      this.dbtProjectContainer.onDidChangeManifest(() =>
+        this._onDidChangeTreeData.fire(),
+      ),
+      this.dbtProjectContainer.onDidRemoveProject(() =>
+        this._onDidChangeTreeData.fire(),
       ),
       window.onDidChangeTextEditorSelection(() => {
         this._onDidChangeTreeData.fire();
@@ -124,33 +123,18 @@ abstract class ModelTreeviewProvider
     }
   }
 
-  private onManifestCacheChanged(event: ManifestCacheChangedEvent): void {
-    event.added?.forEach((added) => {
-      this.eventMap.set(added.project.projectRoot.fsPath, added);
-    });
-    event.removed?.forEach((removed) => {
-      this.eventMap.delete(removed.projectRoot.fsPath);
-    });
-    this._onDidChangeTreeData.fire();
-  }
-
   getTreeItem(element: NodeTreeItem): NodeTreeItem | Thenable<ModelTreeItem> {
     return element;
   }
 
   getChildren(element?: NodeTreeItem): Thenable<NodeTreeItem[]> {
-    if (window.activeTextEditor === undefined || this.eventMap === undefined) {
+    if (window.activeTextEditor === undefined) {
       return Promise.resolve([]);
     }
 
     const currentFilePath = window.activeTextEditor.document.uri;
-    const projectRootpath =
-      this.dbtProjectContainer.getProjectRootpath(currentFilePath);
-    if (projectRootpath === undefined) {
-      return Promise.resolve([]);
-    }
-
-    const event = this.eventMap.get(projectRootpath.fsPath);
+    const event =
+      this.dbtProjectContainer.findDBTProject(currentFilePath)?.manifest;
     if (event === undefined) {
       return Promise.resolve([]);
     }
@@ -265,7 +249,6 @@ abstract class ModelTreeviewProvider
 }
 
 class DocumentationTreeviewProvider implements TreeDataProvider<DocTreeItem> {
-  private eventMap: Map<string, ManifestCacheProjectAddedEvent> = new Map();
   private _onDidChangeTreeData: EventEmitter<DocTreeItem | undefined | void> =
     new EventEmitter<DocTreeItem | undefined | void>();
   readonly onDidChangeTreeData: Event<DocTreeItem | undefined | void> =
@@ -277,23 +260,16 @@ class DocumentationTreeviewProvider implements TreeDataProvider<DocTreeItem> {
       window.onDidChangeActiveTextEditor(() => {
         this._onDidChangeTreeData.fire();
       }),
-      this.dbtProjectContainer.onManifestChanged((event) =>
-        this.onManifestCacheChanged(event),
+      this.dbtProjectContainer.onDidChangeManifest(() =>
+        this._onDidChangeTreeData.fire(),
+      ),
+      this.dbtProjectContainer.onDidRemoveProject(() =>
+        this._onDidChangeTreeData.fire(),
       ),
       window.onDidChangeTextEditorSelection(() => {
         this._onDidChangeTreeData.fire();
       }),
     );
-  }
-
-  private onManifestCacheChanged(event: ManifestCacheChangedEvent): void {
-    event.added?.forEach((added) => {
-      this.eventMap.set(added.project.projectRoot.fsPath, added);
-    });
-    event.removed?.forEach((removed) => {
-      this.eventMap.delete(removed.projectRoot.fsPath);
-    });
-    this._onDidChangeTreeData.fire();
   }
 
   getTreeItem(element: DocTreeItem): TreeItem {
@@ -308,20 +284,16 @@ class DocumentationTreeviewProvider implements TreeDataProvider<DocTreeItem> {
   }
 
   getChildren(element: DocTreeItem): ProviderResult<DocTreeItem[]> {
-    if (window.activeTextEditor === undefined || this.eventMap === undefined) {
+    if (window.activeTextEditor === undefined) {
       return Promise.resolve([]);
     }
     const currentFilePath = window.activeTextEditor.document.uri;
-    const projectRootpath =
-      this.dbtProjectContainer.getProjectRootpath(currentFilePath);
-    if (!projectRootpath) {
+    const project = this.dbtProjectContainer.findDBTProject(currentFilePath);
+    const event = project?.manifest;
+    if (project === undefined || event === undefined) {
       return Promise.resolve([]);
     }
-    const event = this.eventMap.get(projectRootpath.fsPath);
-
-    if (event === undefined) {
-      return Promise.resolve([]);
-    }
+    const projectRootpath = project.projectRoot;
     const { nodeMetaMap } = event;
 
     if (!element) {
