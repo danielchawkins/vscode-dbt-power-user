@@ -6,11 +6,10 @@ import {
   it,
   jest,
 } from "@jest/globals";
-import * as fs from "fs";
 import { EventEmitter, Uri } from "vscode";
 import { DBTProject } from "../../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
-import { DBTTerminal, RunModelType } from "../../dbt_integration";
+import { DBTTerminal } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 
@@ -64,16 +63,6 @@ describe("DBTProjectContainer", () => {
       findPackageName: jest.fn().mockReturnValue("package1"),
       initialize: jest.fn(),
       dispose: jest.fn(),
-      executeSQLOnQueryPanel: jest.fn(),
-      runModel: jest.fn(),
-      buildModel: jest.fn(),
-      buildProject: jest.fn(),
-      runTest: jest.fn(),
-      runModelTest: jest.fn(),
-      compileModel: jest.fn(),
-      compileQuery: jest.fn(async () => "compiled query"),
-      showRunSQL: jest.fn(),
-      generateSchemaYML: jest.fn(),
       onRebuildManifestStatusChange: jest
         .fn()
         .mockReturnValue({ dispose: jest.fn() }),
@@ -88,7 +77,6 @@ describe("DBTProjectContainer", () => {
       getAdapterType: jest.fn().mockReturnValue("snowflake"),
       initialize: jest.fn(),
       dispose: jest.fn(),
-      executeSQLOnQueryPanel: jest.fn(),
       onRebuildManifestStatusChange: jest
         .fn()
         .mockReturnValue({ dispose: jest.fn() }),
@@ -135,9 +123,6 @@ describe("DBTProjectContainer", () => {
       mockDbtProjectFactory as any,
       mockDbtTerminal,
     );
-    jest
-      .spyOn(fs.realpathSync, "native")
-      .mockImplementation((value) => value as string);
   });
 
   afterEach(() => {
@@ -365,163 +350,6 @@ describe("DBTProjectContainer", () => {
       );
       expect(container.getAdapters()).toEqual(["snowflake"]);
       expect(container.findProjectByName("project2")).toBe(mockProject2);
-    });
-
-    it("delegates SQL and display operations", async () => {
-      const model = Uri.file("/project1/models/test.sql");
-
-      container.executeSQL(model, "select 1", "test");
-      await expect(container.compileQuery(model, "select 1")).resolves.toBe(
-        "compiled query",
-      );
-      container.showRunSQL(model);
-
-      expect(mockProject1.executeSQLOnQueryPanel).toHaveBeenCalledWith(
-        "select 1",
-        "test",
-      );
-      expect(mockProject1.compileQuery).toHaveBeenCalledWith("select 1");
-      expect(mockProject1.showRunSQL).toHaveBeenCalledWith(model);
-    });
-
-    it.each([
-      {
-        name: "run",
-        invoke: () => container.runModel(Uri.file("/project1/models/test.sql")),
-        method: () => mockProject1.runModel,
-        expected: {
-          plusOperatorLeft: "",
-          modelName: "test",
-          plusOperatorRight: "",
-        },
-      },
-      {
-        name: "run with parents",
-        invoke: () =>
-          container.runModel(
-            Uri.file("/project1/models/test.sql"),
-            RunModelType.RUN_PARENTS,
-          ),
-        method: () => mockProject1.runModel,
-        expected: {
-          plusOperatorLeft: "+",
-          modelName: "test",
-          plusOperatorRight: "",
-        },
-      },
-      {
-        name: "run with children",
-        invoke: () =>
-          container.runModel(
-            Uri.file("/project1/models/test.sql"),
-            RunModelType.RUN_CHILDREN,
-          ),
-        method: () => mockProject1.runModel,
-        expected: {
-          plusOperatorLeft: "",
-          modelName: "test",
-          plusOperatorRight: "+",
-        },
-      },
-      {
-        name: "build with parents",
-        invoke: () =>
-          container.buildModel(
-            Uri.file("/project1/models/test.sql"),
-            RunModelType.BUILD_PARENTS,
-          ),
-        method: () => mockProject1.buildModel,
-        expected: {
-          plusOperatorLeft: "+",
-          modelName: "test",
-          plusOperatorRight: "",
-        },
-      },
-      {
-        name: "build with children",
-        invoke: () =>
-          container.buildModel(
-            Uri.file("/project1/models/test.sql"),
-            RunModelType.BUILD_CHILDREN,
-          ),
-        method: () => mockProject1.buildModel,
-        expected: {
-          plusOperatorLeft: "",
-          modelName: "test",
-          plusOperatorRight: "+",
-        },
-      },
-      {
-        name: "build with parents and children",
-        invoke: () =>
-          container.buildModel(
-            Uri.file("/project1/models/test.sql"),
-            RunModelType.BUILD_CHILDREN_PARENTS,
-          ),
-        method: () => mockProject1.buildModel,
-        expected: {
-          plusOperatorLeft: "+",
-          modelName: "test",
-          plusOperatorRight: "+",
-        },
-      },
-    ])(
-      "derives selector operators for $name",
-      ({ invoke, method, expected }) => {
-        invoke();
-        expect(method()).toHaveBeenCalledWith(expected);
-      },
-    );
-
-    it("delegates model, test, and schema operations", () => {
-      const model = Uri.file("/project1/models/test.sql");
-
-      container.buildProject(model);
-      container.compileModel(model);
-      container.generateSchemaYML(model, "test");
-      container.runTest(model, "unique_test");
-      container.runModelTest(model, "test");
-      container.runModelByName(model, "test");
-
-      expect(mockProject1.buildProject).toHaveBeenCalled();
-      expect(mockProject1.compileModel).toHaveBeenCalledWith({
-        plusOperatorLeft: "",
-        modelName: "test",
-        plusOperatorRight: "",
-      });
-      expect(mockProject1.generateSchemaYML).toHaveBeenCalledWith(
-        model,
-        "test",
-      );
-      expect(mockProject1.runTest).toHaveBeenCalledWith("unique_test");
-      expect(mockProject1.runModelTest).toHaveBeenCalledWith("test");
-      expect(mockProject1.runModel).toHaveBeenCalledWith({
-        plusOperatorLeft: "",
-        modelName: "test",
-        plusOperatorRight: "",
-      });
-    });
-
-    it("resolves SQL for files in a project", () => {
-      const model = Uri.file("/project1/models/test.sql");
-
-      container.executeSQL(model, "select 1", "test");
-
-      expect(mockProject1.executeSQLOnQueryPanel).toHaveBeenCalledWith(
-        "select 1",
-        "test",
-      );
-    });
-
-    it("does not resolve SQL for untitled documents outside any project", () => {
-      container.executeSQL(
-        { scheme: "untitled", fsPath: "Untitled-1" } as Uri,
-        "select 1",
-        "untitled",
-      );
-
-      expect(mockProject1.executeSQLOnQueryPanel).not.toHaveBeenCalled();
-      expect(mockProject2.executeSQLOnQueryPanel).not.toHaveBeenCalled();
     });
   });
 

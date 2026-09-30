@@ -24,12 +24,15 @@ describe("editor intelligence project resolution", () => {
   it("routes SQL commands through Project Context", () => {
     const directCallers = sourceFiles()
       .filter((file) =>
-        readFileSync(file, "utf8").includes("dbtProjectContainer.executeSQL("),
+        readFileSync(file, "utf8").includes(".executeSQLOnQueryPanel("),
       )
       .map((file) => path.relative(srcRoot, file))
       .sort();
 
-    expect(directCallers).toEqual(["commands/runModel.ts"]);
+    expect(directCallers).toEqual([
+      "commands/runModel.ts",
+      "webview_provider/queryResultPanel.ts",
+    ]);
   });
 });
 

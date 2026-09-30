@@ -70,7 +70,7 @@
   },
   "src/commands/runModel.ts": {
     "@typescript-eslint/no-floating-promises": {
-      "count": 2
+      "count": 1
     }
   },
   "src/content_provider/sqlPreviewContentProvider.ts": {
@@ -100,15 +100,6 @@
     }
   },
   "src/dbt_client/dbtProjectContainer.ts": {
-    "@typescript-eslint/no-floating-promises": {
-      "count": 9
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
-    "no-restricted-imports": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
       "count": 1
     }

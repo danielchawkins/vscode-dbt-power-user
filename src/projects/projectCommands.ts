@@ -1,6 +1,14 @@
+import { realpathSync } from "fs";
+import { basename } from "path";
+import { Uri } from "vscode";
 import { commandParamsFor } from "../core/cli";
 import { ProjectSnapshot } from "../core/project";
-import { DBTCommand, DBTTerminal, RunModelParams } from "../dbt_integration";
+import {
+  DBTCommand,
+  DBTTerminal,
+  RunModelParams,
+  RunModelType,
+} from "../dbt_integration";
 import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
 import { CommandQueue, formatCommandStatus } from "./commandQueue";
 
@@ -19,6 +27,27 @@ export interface ProjectCommandDeps {
 /** The `--select` value for a model and its graph operators. */
 export function selection(params: RunModelParams): string {
   return `${params.plusOperatorLeft}${params.modelName}${params.plusOperatorRight}`;
+}
+
+/** The model named by `modelPath`'s real file name, with the graph operators `type` selects. */
+export function modelParamsFor(
+  modelPath: Uri,
+  type?: RunModelType,
+): RunModelParams {
+  const modelName = basename(realpathSync.native(modelPath.fsPath), ".sql");
+  const plusOperatorLeft =
+    type === RunModelType.RUN_PARENTS ||
+    type === RunModelType.BUILD_PARENTS ||
+    type === RunModelType.BUILD_CHILDREN_PARENTS
+      ? "+"
+      : "";
+  const plusOperatorRight =
+    type === RunModelType.RUN_CHILDREN ||
+    type === RunModelType.BUILD_CHILDREN ||
+    type === RunModelType.BUILD_CHILDREN_PARENTS
+      ? "+"
+      : "";
+  return { plusOperatorLeft, modelName, plusOperatorRight };
 }
 
 /** The status line for a command that could not be prepared: its selection and `commandParams`. */
