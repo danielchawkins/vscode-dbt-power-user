@@ -16,6 +16,7 @@ describe("project watcher scope", () => {
 
     expect(callers).toEqual([
       "dbt_client/dbtProjectLog.ts",
+      "projects/manifest.ts",
       "projects/projectRegistry.ts",
     ]);
   });

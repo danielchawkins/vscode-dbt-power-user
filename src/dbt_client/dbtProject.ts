@@ -768,10 +768,6 @@ export class DBTProject implements Disposable {
     }
   }
 
-  getNonEphemeralParents(keys: string[]): string[] {
-    return this.dbtProjectIntegration.getNonEphemeralParents(keys);
-  }
-
   mergeColumnsFromDB(
     node: Pick<ModelNode, "columns">,
     columnsFromDB: DBColumn[],
