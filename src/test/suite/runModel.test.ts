@@ -10,8 +10,8 @@ import * as fs from "fs";
 import { Uri, window } from "vscode";
 import { RunModel } from "../../commands/runModel";
 import { RunModelType } from "../../dbt_integration";
+import { CurrentProject } from "../../projects/currentProject";
 import { Project } from "../../projects/project";
-import { ProjectContext } from "../../projects/projectContext";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { Projects } from "../../projects/projects";
 
@@ -24,7 +24,7 @@ const untitledUri = {
 describe("RunModel SQL execution", () => {
   let dbtProject: jest.Mocked<Project>;
   let projects: jest.Mocked<Projects>;
-  let context: jest.Mocked<ProjectContext>;
+  let context: jest.Mocked<CurrentProject>;
   let runModel: RunModel;
   let project: DeclaredProject;
 
@@ -37,7 +37,7 @@ describe("RunModel SQL execution", () => {
     } as unknown as jest.Mocked<Projects>;
     context = {
       requireForCommand: jest.fn(),
-    } as unknown as jest.Mocked<ProjectContext>;
+    } as unknown as jest.Mocked<CurrentProject>;
     project = {
       root: Uri.file("/project"),
       name: "project",
@@ -54,7 +54,7 @@ describe("RunModel SQL execution", () => {
   });
 
   it.each([Uri.file("/project/models/model.sql"), untitledUri])(
-    "executes against the Project Context result for %s",
+    "executes against the Current Project result for %s",
     async (uri) => {
       context.requireForCommand.mockResolvedValue(project);
 
@@ -136,7 +136,7 @@ describe("RunModel project commands", () => {
     projects = {
       get: jest.fn().mockReturnValue(project),
     } as unknown as jest.Mocked<Projects>;
-    runModel = new RunModel(projects, {} as ProjectContext);
+    runModel = new RunModel(projects, {} as CurrentProject);
   });
 
   afterEach(() => {

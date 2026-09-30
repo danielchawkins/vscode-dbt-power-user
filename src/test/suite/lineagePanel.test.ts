@@ -7,10 +7,10 @@ import {
   jest,
 } from "@jest/globals";
 import { window, workspace } from "vscode";
-import { NewLineagePanel } from "../../webview_provider/newLineagePanel";
+import { LineagePanel } from "../../webview_provider/lineagePanel";
 
-describe("NewLineagePanel", () => {
-  let panel: NewLineagePanel;
+describe("LineagePanel", () => {
+  let panel: LineagePanel;
   let mockPostMessage: jest.Mock;
 
   beforeEach(() => {
@@ -18,7 +18,7 @@ describe("NewLineagePanel", () => {
 
     // Create a minimal instance by bypassing the constructor DI.
     // We only need the methods under test and the _panel webview stub.
-    panel = Object.create(NewLineagePanel.prototype);
+    panel = Object.create(LineagePanel.prototype);
 
     // Stub the internal webview panel so postMessage is captured.
     (panel as any)._panel = {
@@ -30,7 +30,6 @@ describe("NewLineagePanel", () => {
       getEventByCurrentProject: jest.fn().mockReturnValue(undefined),
       getProject: jest.fn().mockReturnValue(undefined),
     };
-    (panel as any).altimate = { enabled: jest.fn().mockReturnValue(false) };
     (panel as any).dbtTerminal = {
       info: jest.fn(),
       debug: jest.fn(),
@@ -366,9 +365,9 @@ describe("NewLineagePanel", () => {
   });
 });
 
-describe("NewLineagePanel — after a save", () => {
+describe("LineagePanel — after a save", () => {
   it("tells the webview when the current project's manifest is replaced", () => {
-    const panel = Object.create(NewLineagePanel.prototype);
+    const panel = Object.create(LineagePanel.prototype);
     const postMessage = jest.fn();
     (panel as any)._panel = { webview: { postMessage } };
     (panel as any).dbtTerminal = { info: jest.fn(), error: jest.fn() };
@@ -403,7 +402,7 @@ describe("NewLineagePanel — after a save", () => {
   ])(
     "re-renders on a project switch with %s epochs",
     (_label, epochA, epochB) => {
-      const panel = Object.create(NewLineagePanel.prototype);
+      const panel = Object.create(LineagePanel.prototype);
       const postMessage = jest.fn();
       (panel as any)._panel = { webview: { postMessage } };
       (panel as any).dbtTerminal = { info: jest.fn(), error: jest.fn() };
@@ -433,8 +432,8 @@ describe("NewLineagePanel — after a save", () => {
   );
 });
 
-describe("NewLineagePanel — source YAML rooting", () => {
-  let panel: NewLineagePanel;
+describe("LineagePanel — source YAML rooting", () => {
+  let panel: LineagePanel;
 
   // Build a fake TextEditor over a source YAML body.
   const makeEditor = (filePath: string, body: string, cursorLine = 0) => {
@@ -468,9 +467,8 @@ describe("NewLineagePanel — source YAML rooting", () => {
   });
 
   beforeEach(() => {
-    panel = Object.create(NewLineagePanel.prototype);
+    panel = Object.create(LineagePanel.prototype);
     (panel as any)._panel = { webview: { postMessage: jest.fn() } };
-    (panel as any).altimate = { enabled: jest.fn().mockReturnValue(false) };
     (panel as any).dbtTerminal = {
       info: jest.fn(),
       debug: jest.fn(),

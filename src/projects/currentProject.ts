@@ -10,7 +10,7 @@ import { ProjectQuickPick } from "../quickpick/projectQuickPick";
 import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 
 /** The Declared Project that owns the file or command currently being handled. */
-export class ProjectContext implements Disposable {
+export class CurrentProject implements Disposable {
   private readonly _onDidChangeCurrent = new EventEmitter<
     DeclaredProject | undefined
   >();

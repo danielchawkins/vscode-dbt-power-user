@@ -158,35 +158,5 @@
         ]
       }
     ]
-  },
-  {
-    "type": "cycle",
-    "from": "src/webview_provider/lineagePanel.ts",
-    "to": "src/webview_provider/newLineagePanel.ts",
-    "unresolvedTo": "./newLineagePanel",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "src/webview_provider/newLineagePanel.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "src/webview_provider/lineagePanel.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      }
-    ]
   }
 ]

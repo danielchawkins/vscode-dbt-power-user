@@ -18,7 +18,7 @@ type PanelViewsType =
   "Unchanged" | "Alias" | "Transformation" | "Non select" | "Not sure";
 
 /**
- * The `ColumnLineage` shape consumed by the `@altimateai/ui-components` lineage component.
+ * The `ColumnLineage` shape consumed by the vendored lineage component.
  * Defined here so the extension host does not import the webview package.
  */
 export interface ColumnLineage {

@@ -376,17 +376,6 @@
       "count": 2
     }
   },
-  "src/webview_provider/altimateWebviewProvider.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    },
-    "@typescript-eslint/no-floating-promises": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    }
-  },
   "src/webview_provider/docsEditPanel.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 12
@@ -418,15 +407,7 @@
   },
   "src/webview_provider/lineagePanel.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "@typescript-eslint/no-floating-promises": {
-      "count": 2
-    }
-  },
-  "src/webview_provider/newLineagePanel.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
+      "count": 3
     },
     "@typescript-eslint/no-floating-promises": {
       "count": 1
@@ -444,6 +425,25 @@
       "count": 2
     }
   },
+  "src/webview_provider/lineageViewProvider.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 1
+    },
+    "@typescript-eslint/no-floating-promises": {
+      "count": 2
+    }
+  },
+  "src/webview_provider/panelHost.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    },
+    "@typescript-eslint/no-floating-promises": {
+      "count": 1
+    },
+    "@typescript-eslint/no-unused-vars": {
+      "count": 2
+    }
+  },
   "src/webview_provider/queryResultPanel.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 5
@@ -455,9 +455,6 @@
       "count": 2
     },
     "complexity": {
-      "count": 1
-    },
-    "max-lines": {
       "count": 1
     },
     "max-lines-per-function": {

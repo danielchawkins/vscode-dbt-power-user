@@ -7,7 +7,7 @@ describe("VirtualSqlCodeLensProvider", () => {
   it.each([
     [undefined, "Project: Select a project"],
     [{ getProjectName: () => "analytics" }, "Project: analytics"],
-  ])("renders the Project Context result", (project, title) => {
+  ])("renders the Current Project result", (project, title) => {
     const queryManifest = {
       getProject: jest.fn().mockReturnValue(project),
     } as unknown as QueryManifestService;

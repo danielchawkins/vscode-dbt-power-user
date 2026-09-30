@@ -35,7 +35,7 @@ const activationHarness = (enabled: boolean) => {
     projectRegistry: { initialize: registryInitialize },
     fusionClientPool: { initialize: fusionClientPoolInitialize },
     fusionStatus: { initialize: fusionStatusInitialize },
-    projectContext: {},
+    currentProject: {},
     dbtTemplateLanguage: { start: jest.fn() },
     statusBars: { initialize: initializeStatusBars },
     dbtTerminal: { error: jest.fn() },

@@ -10,8 +10,8 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { EventEmitter, languages, Uri, workspace } from "vscode";
+import { CurrentProject } from "../../projects/currentProject";
 import { DbtTemplateLanguage } from "../../projects/dbtTemplateLanguage";
-import { ProjectContext } from "../../projects/projectContext";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 
 describe("DbtTemplateLanguage", () => {
@@ -58,7 +58,7 @@ describe("DbtTemplateLanguage", () => {
     const context = {
       forResource: (uri: Uri) =>
         uri.fsPath.startsWith(root) ? project : undefined,
-    } as unknown as ProjectContext;
+    } as unknown as CurrentProject;
     const terminal = { debug: jest.fn() } as never;
     const subject = new DbtTemplateLanguage(registry, context, terminal);
     subject.start();

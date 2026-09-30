@@ -7,7 +7,7 @@ import {
   window,
 } from "vscode";
 import { DBT_PROJECT_FILE } from "../core/project";
-import { ProjectContext } from "../projects/projectContext";
+import { CurrentProject } from "../projects/currentProject";
 import { DeclaredProject } from "../projects/projectRegistry";
 import { FusionClientPool } from "./fusionClientPool";
 import { FusionClient, FusionClientState } from "./fusionLanguageClient";
@@ -28,7 +28,7 @@ export class FusionStatus implements Disposable {
   private clientSubscription: Disposable | undefined;
 
   constructor(
-    private readonly projectContext: ProjectContext,
+    private readonly currentProject: CurrentProject,
     private readonly clientPool: FusionClientPool,
     private readonly optIns: (
       project: DeclaredProject,
@@ -39,7 +39,7 @@ export class FusionStatus implements Disposable {
       this.disposables.push(onDidChangeOptIns(() => this.render()));
     }
     this.disposables.push(
-      this.projectContext.onDidChangeCurrent(() => {
+      this.currentProject.onDidChangeCurrent(() => {
         this.rewireClientListener();
         this.render();
       }),
@@ -74,7 +74,7 @@ export class FusionStatus implements Disposable {
   }
 
   private currentClient(): FusionClient | undefined {
-    const project = this.projectContext.current;
+    const project = this.currentProject.current;
     if (!project) {
       return undefined;
     }
@@ -82,7 +82,7 @@ export class FusionStatus implements Disposable {
   }
 
   private render(): void {
-    const project = this.projectContext.current;
+    const project = this.currentProject.current;
     const client = project ? this.clientPool.get(project) : undefined;
     if (!project || !client) {
       this.statusBar.hide();

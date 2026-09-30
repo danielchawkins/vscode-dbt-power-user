@@ -21,7 +21,7 @@ describe("editor intelligence project resolution", () => {
     ]);
   });
 
-  it("routes SQL commands through Project Context", () => {
+  it("routes SQL commands through Current Project", () => {
     const directCallers = sourceFiles()
       .filter((file) =>
         readFileSync(file, "utf8").includes(".executeSQLOnQueryPanel("),

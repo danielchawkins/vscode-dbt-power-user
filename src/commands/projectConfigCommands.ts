@@ -22,7 +22,7 @@ import {
   ProjectConfigInsertion,
 } from "../fusion/projectConfigEdits";
 import { SCHEMA_ORIGIN_HOOK } from "../fusion/schemaOrigin";
-import { ProjectContext } from "../projects/projectContext";
+import { CurrentProject } from "../projects/currentProject";
 import { DeclaredProject } from "../projects/projectRegistry";
 
 const CONFIRM = "Add";
@@ -35,7 +35,7 @@ export class ProjectConfigCommands implements Disposable {
   private readonly disposables: Disposable[];
 
   constructor(
-    private readonly projectContext: ProjectContext,
+    private readonly currentProject: CurrentProject,
     private readonly terminal: DBTTerminal,
   ) {
     this.disposables = [
@@ -63,7 +63,7 @@ export class ProjectConfigCommands implements Disposable {
     uri: Uri | undefined,
     insertion: (projectName: string) => ProjectConfigInsertion,
   ): Promise<boolean> {
-    const project = await this.projectContext.requireForCommand(uri);
+    const project = await this.currentProject.requireForCommand(uri);
     if (!project) {
       return false;
     }
