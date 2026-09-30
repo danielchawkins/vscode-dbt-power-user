@@ -141,6 +141,27 @@ Serial PRs:
 
 Verify: the host audit's call-path count re-measured and recorded; changing target in settings updates status, restarts the client, and applies to the next CLI command with no reload (integration test); the ESLint baseline shrinks by the deleted files' entries.
 
+**Result (R3 complete).**
+
+- **Call path, re-measured.** The `fusionPowerUser.executeSQL` path from command to process spawn now passes through three modules:
+  - `RunModel.executeSQL` (`src/commands/runModel.ts`)
+  - `Project.executeSQLOnQueryPanel`, through `projectSql.ts`
+  - `FusionCli.show` → `run` (`src/fusion/fusionCli.ts`), which creates the process
+
+  The audit counted about 8 layers with 3 pure forwarders. None of those forwarders remain: `DBTProjectContainer`, `FusionProjectIntegration` and the command-integration stack are all deleted.
+- **Target change.** `src/test/integration/targetChange.test.ts` covers it in both native labels. Setting `fusionPowerUser.target` to `ci` restarts the project's client with `--target ci` in about 0.5 s, and the next compile reads from the `ci` database.
+- **Baselines.**
+  - The dependency-cruiser known-violation baseline fell from 18 to 5.
+  - `eslint-suppressions.json` lost the entries of every deleted file: `dbtProjectContainer.ts`, `fusionProjectIntegration.ts`, `dbtProject.ts` and `dbt_integration/parsers/`.
+- **Exit greps.** Each of these prints nothing in `src`:
+  - `findDBTProject`
+  - `DBTProjectContainer`
+  - the word `DBTProject`
+  - `ManifestCacheChangedEvent`
+  - `eventMap`
+
+  `grep -rli altimate src` lists only `dbt_integration/NOTICE.md`, the licence attribution, and the guard test that keeps the removed packages out.
+
 ### R4 — Composition root instead of Inversify
 
 Goal: one readable wiring file with plain constructors. The container already calls every constructor by hand (66 bindings, 61 `toDynamicValue`, 4 `@injectable` classes), so this is mechanical; it follows R3 because R3 deletes about a third of the graph, and each R3 PR edits `inversify.config.ts` in place rather than adding bindings.
