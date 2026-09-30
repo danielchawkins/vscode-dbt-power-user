@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "@jest/globals";
-import { CteProfilerService } from "../../cte_profiler/cteProfilerService";
 import { DBTTerminal } from "../../dbt_integration";
+import { CteProfilerService } from "../../features/cte/cteProfilerService";
 import { Projects } from "../../projects/projects";
 
 describe("CteProfilerService.extractRowCount", () => {

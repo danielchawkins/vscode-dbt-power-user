@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import { Position, TextDocument } from "vscode";
+import { DBTTerminal } from "../../dbt_integration";
 import {
   CteCodeLensProvider,
   CteInfo,
-} from "../../code_lens_provider/cteCodeLensProvider";
-import { DBTTerminal } from "../../dbt_integration";
+} from "../../features/cte/cteCodeLensProvider";
 
 describe("CteCodeLensProvider", () => {
   let mockDBTTerminal: jest.Mocked<DBTTerminal>;

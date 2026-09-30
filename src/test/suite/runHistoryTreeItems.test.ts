@@ -4,7 +4,7 @@ import {
   getStatusIcon,
   ResultTreeItem,
   RunTreeItem,
-} from "../../treeview_provider/runHistoryTreeItems";
+} from "../../features/runHistory/runHistoryTreeItems";
 import {
   createEntry,
   createResult,

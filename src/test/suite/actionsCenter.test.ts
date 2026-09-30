@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { commands, Uri, window } from "vscode";
 import { ExtensionContextStore } from "../../extensionContext";
+import { DbtPowerUserActionsCenter } from "../../features/projectPicker/actionsCenter";
 import { CurrentProject } from "../../projects/currentProject";
 import { DeclaredProject } from "../../projects/projectRegistry";
-import { DbtPowerUserActionsCenter } from "../../quickpick";
 
 describe("DbtPowerUserActionsCenter project picker", () => {
   let context: jest.Mocked<CurrentProject>;

@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from "@jest/globals";
 import { Uri, window } from "vscode";
+import { ProjectQuickPick } from "../../projects/projectQuickPick";
 import { DeclaredProject } from "../../projects/projectRegistry";
-import { ProjectQuickPick } from "../../quickpick/projectQuickPick";
 
 describe("ProjectQuickPick.declaredProjectPicker", () => {
   const project1: DeclaredProject = {

@@ -1,11 +1,11 @@
 import * as assert from "assert";
 import * as vscode from "vscode";
-import { RunHistoryService } from "../../services/runHistoryService";
 import {
   ResultTreeItem,
   RunTreeItem,
-} from "../../treeview_provider/runHistoryTreeItems";
-import { RunHistoryTreeviewProvider } from "../../treeview_provider/runHistoryTreeviewProvider";
+} from "../../features/runHistory/runHistoryTreeItems";
+import { RunHistoryTreeviewProvider } from "../../features/runHistory/runHistoryTreeviewProvider";
+import { RunHistoryService } from "../../projects/runHistoryService";
 import { createEntry } from "../fixtures/runHistory";
 
 suite("Run History TreeView Integration", function () {

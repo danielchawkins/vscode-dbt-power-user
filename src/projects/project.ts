@@ -36,8 +36,6 @@ import {
   SchemaOriginStatus,
 } from "../fusion/schemaOrigin";
 import { ModelNode } from "../local/lineageTypes";
-import { RunHistoryService } from "../services/runHistoryService";
-import { SharedStateService } from "../services/sharedStateService";
 import { readSetting } from "../settings";
 import { CommandQueue } from "./commandQueue";
 import {
@@ -74,11 +72,13 @@ import {
   SqlDeps,
 } from "./projectSql";
 import { readProjectSnapshot } from "./readProjectSnapshot";
+import { RunHistoryService } from "./runHistoryService";
 import {
   RunResultsHistory,
   RunResultsReader,
   withRunResults,
 } from "./runResults";
+import { SharedStateService } from "./sharedStateService";
 
 const LOG_SOURCE = "Project";
 

@@ -1,10 +1,16 @@
 import { commands, Disposable, extensions, window, workspace } from "vscode";
 import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
-import { CodeLensProviders } from "./code_lens_provider";
-import { VSCodeCommands } from "./commands";
-import { ProjectConfigCommands } from "./commands/projectConfigCommands";
-import { ContentProviders } from "./content_provider";
 import { DBTTerminal } from "./dbt_integration";
+import { CodeLensProviders } from "./features/codeLenses";
+import { VSCodeCommands } from "./features/commands";
+import { ContentProviders } from "./features/contentProviders";
+import { registerConnectedColumnsCommand } from "./features/lineage/connectedColumnsCommand";
+import { DbtLineageService } from "./features/lineage/dbtLineageService";
+import { WebviewViewProviders } from "./features/panels";
+import { DbtPowerUserActionsCenter } from "./features/projectPicker/actionsCenter";
+import { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
+import { StatusBars } from "./features/statusBars";
+import { TreeviewProviders } from "./features/treeViews";
 import { registerFusionClientDiagnostics } from "./fusion/fusionClientDiagnostics";
 import { FusionClientPool } from "./fusion/fusionClientPool";
 import { FusionStatus } from "./fusion/fusionStatus";
@@ -12,16 +18,10 @@ import { CurrentProject } from "./projects/currentProject";
 import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { Projects } from "./projects/projects";
-import { DbtPowerUserActionsCenter } from "./quickpick";
-import { registerConnectedColumnsCommand } from "./services/connectedColumnsCommand";
-import { DbtLineageService } from "./services/dbtLineageService";
-import { RunHistoryService } from "./services/runHistoryService";
-import { SharedStateService } from "./services/sharedStateService";
+import { RunHistoryService } from "./projects/runHistoryService";
+import { SharedStateService } from "./projects/sharedStateService";
 import { readSetting } from "./settings";
 import { StartupGate } from "./startupGate";
-import { StatusBars } from "./statusbar";
-import { TreeviewProviders } from "./treeview_provider";
-import { WebviewViewProviders } from "./webview_provider";
 
 enum PromptAnswer {
   YES = "Yes",

@@ -6,11 +6,11 @@ import type { ColumnLineage } from "../../core/lineage";
 import {
   CONNECTED_COLUMNS_COMMAND,
   LINEAGE_COLUMNS_COMMAND,
-} from "../../services/connectedColumnsCommand";
+} from "../../features/lineage/connectedColumnsCommand";
 import type {
   ConnectedColumnsRequest,
   ConnectedColumnsResult,
-} from "../../services/dbtLineageService";
+} from "../../features/lineage/dbtLineageService";
 
 /**
  * Pins column lineage from the language server against the pinned dbt: the extension's service sends

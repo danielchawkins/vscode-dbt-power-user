@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import * as path from "path";
 import { EventEmitter, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { CurrentProject } from "../../projects/currentProject";
+import { ProjectQuickPick } from "../../projects/projectQuickPick";
 import {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/projectRegistry";
-import { ProjectQuickPick } from "../../quickpick/projectQuickPick";
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace"),

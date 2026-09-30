@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import { EventEmitter, Uri } from "vscode";
-import { DocsEditViewPanel } from "../../webview_provider/docsEditPanel";
-import { LineageViewProvider } from "../../webview_provider/lineageViewProvider";
+import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
+import { LineageViewProvider } from "../../features/lineage/lineageViewProvider";
 
 function projectsDouble() {
   const changed = new EventEmitter<unknown>();

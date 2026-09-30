@@ -146,26 +146,27 @@ describe("command contribution consistency", () => {
 
     const literalUncontributedAllowlist: Record<string, string> = {
       "fusionPowerUser.createModelBasedonSourceConfig":
-        "CodeLens-only; src/code_lens_provider",
+        "CodeLens-only; src/features/codegen",
       "fusionPowerUser.runCteWithDependencies":
-        "CodeLens-only; src/code_lens_provider",
-      "fusionPowerUser.yamlRunModel": "CodeLens-only; src/code_lens_provider",
-      "fusionPowerUser.yamlTestModel": "CodeLens-only; src/code_lens_provider",
-      "fusionPowerUser.pickProject": "Declared Project picker; src/quickpick",
+        "CodeLens-only; src/features/cte",
+      "fusionPowerUser.yamlRunModel": "CodeLens-only; src/features/sqlActions",
+      "fusionPowerUser.yamlTestModel": "CodeLens-only; src/features/sqlActions",
+      "fusionPowerUser.pickProject":
+        "Declared Project picker; src/features/projectPicker/actionsCenter.ts",
     };
 
     const nonLiteralAllowlist: Record<string, string> = {
-      "commands/index.ts:command":
+      "features/commands.ts:command":
         "`VSCodeCommands.register` forwards a literal from its callers",
       "benchmark/runtimeTimings.ts:RUNTIME_TIMINGS_COMMAND":
         "Constant export; conditional registration",
       "fusion/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":
         "Constant export; conditional registration",
-      "services/connectedColumnsCommand.ts:CONNECTED_COLUMNS_COMMAND":
+      "features/lineage/connectedColumnsCommand.ts:CONNECTED_COLUMNS_COMMAND":
         "Constant export; conditional registration",
-      "services/connectedColumnsCommand.ts:PARENT_TABLES_COMMAND":
+      "features/lineage/connectedColumnsCommand.ts:PARENT_TABLES_COMMAND":
         "Constant export; conditional registration",
-      "services/connectedColumnsCommand.ts:LINEAGE_COLUMNS_COMMAND":
+      "features/lineage/connectedColumnsCommand.ts:LINEAGE_COLUMNS_COMMAND":
         "Constant export; conditional registration",
     };
 

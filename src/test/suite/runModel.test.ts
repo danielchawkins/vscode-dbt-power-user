@@ -8,8 +8,8 @@ import {
 } from "@jest/globals";
 import * as fs from "fs";
 import { Uri, window } from "vscode";
-import { RunModel } from "../../commands/runModel";
 import { RunModelType } from "../../dbt_integration";
+import { RunModel } from "../../features/run/runModel";
 import { CurrentProject } from "../../projects/currentProject";
 import { Project } from "../../projects/project";
 import { DeclaredProject } from "../../projects/projectRegistry";

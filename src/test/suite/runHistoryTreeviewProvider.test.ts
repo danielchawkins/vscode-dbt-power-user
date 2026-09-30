@@ -6,12 +6,12 @@ import {
   it,
   jest,
 } from "@jest/globals";
-import { RunHistoryService } from "../../services/runHistoryService";
 import {
   ResultTreeItem,
   RunTreeItem,
-} from "../../treeview_provider/runHistoryTreeItems";
-import { RunHistoryTreeviewProvider } from "../../treeview_provider/runHistoryTreeviewProvider";
+} from "../../features/runHistory/runHistoryTreeItems";
+import { RunHistoryTreeviewProvider } from "../../features/runHistory/runHistoryTreeviewProvider";
+import { RunHistoryService } from "../../projects/runHistoryService";
 import { createEntry, createResult } from "../fixtures/runHistory";
 
 describe("RunHistoryTreeviewProvider", () => {

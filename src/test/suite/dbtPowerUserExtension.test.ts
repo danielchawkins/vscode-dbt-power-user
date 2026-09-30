@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { commands, extensions, Uri, window, workspace } from "vscode";
-import { ProjectConfigCommands } from "../../commands/projectConfigCommands";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
-import { FUSION_CLIENT_STATES_COMMAND } from "../../fusion/fusionClientDiagnostics";
 import {
   CONNECTED_COLUMNS_COMMAND,
   PARENT_TABLES_COMMAND,
-} from "../../services/connectedColumnsCommand";
+} from "../../features/lineage/connectedColumnsCommand";
+import { ProjectConfigCommands } from "../../features/projectSetup/projectConfigCommands";
+import { FUSION_CLIENT_STATES_COMMAND } from "../../fusion/fusionClientDiagnostics";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { StartupGate } from "../../startupGate";
 

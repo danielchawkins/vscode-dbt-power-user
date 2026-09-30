@@ -1,7 +1,7 @@
 import { describe, expect, it, jest } from "@jest/globals";
 import { CancellationToken, CodeLens, TextDocument, Uri } from "vscode";
-import { VirtualSqlCodeLensProvider } from "../../code_lens_provider/virtualSqlCodeLensProvider";
-import { QueryManifestService } from "../../services/queryManifestService";
+import { VirtualSqlCodeLensProvider } from "../../features/sqlActions/virtualSqlCodeLensProvider";
+import { QueryManifestService } from "../../projects/queryManifestService";
 
 describe("VirtualSqlCodeLensProvider", () => {
   it.each([

@@ -4,7 +4,7 @@ import {
   parseHistoryArgs,
   ReplayProject,
   rerunFromHistory,
-} from "../../commands/rerunFromHistory";
+} from "../../features/runHistory/rerunFromHistory";
 import { parseRunResultsJson } from "../../projects/runResults";
 import { createEntry } from "../fixtures/runHistory";
 
