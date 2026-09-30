@@ -34,11 +34,8 @@ import {
 import { FusionCli } from "../fusion/fusionCli";
 import { FusionExecutableResolver } from "../fusion/fusionExecutable";
 import { FusionVersion } from "../fusion/fusionVersion";
-import {
-  buildManifest,
-  ManifestParsers,
-  ManifestTrigger,
-} from "../projects/manifest";
+import { ManifestParsers, ManifestTrigger } from "../projects/manifest";
+import { ManifestRebuild } from "../projects/manifestRebuild";
 import { executeSql, getColumnValues } from "../projects/projectSql";
 
 export type { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
@@ -56,14 +53,10 @@ export class FusionProjectIntegration
   implements ManifestProject
 {
   private readonly lifecycle: ExecutableLifecycle;
-  /** A candidate being parsed before commit; parsers read project paths through it. */
-  private parsingCandidate?: FusionCli;
+  private readonly manifest: ManifestRebuild;
   private disposed = false;
-  private readonly readFailures = { count: 0 };
-  private readonly parsers: ManifestParsers;
   private readonly trigger: ManifestTrigger;
   private projectConfigDiagnostics: DBTDiagnosticData[] = [];
-  private adapterType = "unknown";
 
   constructor(
     resolver: FusionExecutableResolver,
@@ -85,7 +78,7 @@ export class FusionProjectIntegration
     private readonly semanticModelParser: SemanticModelParser,
   ) {
     super();
-    this.parsers = {
+    const parsers: ManifestParsers = {
       childrenParentParser,
       nodeParser,
       macroParser,
@@ -112,8 +105,24 @@ export class FusionProjectIntegration
       terminal,
       {
         activate: (candidate, generation) =>
-          this.prepareCandidate(candidate, generation),
+          this.manifest.prepareCandidate(candidate, generation),
         deactivate: () => this.trigger.stop(),
+      },
+    );
+    this.manifest = new ManifestRebuild(
+      this.lifecycle,
+      parsers,
+      this,
+      terminal,
+      {
+        refreshConfig: (candidate) =>
+          this.refreshIntegrationProjectConfig(candidate, false),
+        onStatus: (inProgress) =>
+          this.emit(
+            FusionProjectIntegrationEvents.REBUILD_MANIFEST_STATUS_CHANGE,
+            { inProgress },
+          ),
+        onParsed: (parsed) => this.publishParsedManifest(parsed),
       },
     );
     this.lifecycle.onDidCommit(() => {
@@ -132,7 +141,7 @@ export class FusionProjectIntegration
     if (this.disposed) {
       return undefined;
     }
-    return this.parsingCandidate ?? this.lifecycle.current();
+    return this.manifest.candidate() ?? this.lifecycle.current();
   }
 
   private requireIntegration(): FusionCli {
@@ -190,7 +199,7 @@ export class FusionProjectIntegration
 
   /** The last `metadata.adapter_type` a manifest carried; `"unknown"` until one has. */
   getAdapterType(): string {
-    return this.adapterType;
+    return this.manifest.adapterType;
   }
 
   /** The CLI of the committed executable; throws until one is committed. */
@@ -240,27 +249,6 @@ export class FusionProjectIntegration
     }
   }
 
-  private isActivationCurrent(generation: number): boolean {
-    return this.lifecycle.isCurrent(generation);
-  }
-
-  /** Refreshes config and builds the manifest for a candidate; the returned step publishes it. */
-  private async prepareCandidate(
-    candidate: FusionCli,
-    generation: number,
-  ): Promise<(() => void) | undefined> {
-    await this.refreshIntegrationProjectConfig(candidate, false);
-    if (!this.isActivationCurrent(generation)) {
-      return undefined;
-    }
-    let parsed: ParsedManifest | undefined;
-    await this.runManifestRebuild(candidate, generation, async () => {
-      parsed = await this.buildParsedManifest(candidate, generation);
-    });
-    const result = parsed;
-    return result ? () => this.publishParsedManifest(result) : undefined;
-  }
-
   async refreshProjectConfig(): Promise<void> {
     await this.refreshIntegrationProjectConfig(this.requireIntegration(), true);
   }
@@ -305,60 +293,11 @@ export class FusionProjectIntegration
       "FusionProjectIntegration",
       `Going to rebuild the manifest for project at ${this.projectRoot}`,
     );
-    const delegate = this.requireIntegration();
-    const generation = this.lifecycle.generation;
-    await this.runManifestRebuild(delegate, generation, async () => {
-      const parsed = await this.buildParsedManifest(delegate, generation);
-      if (parsed) {
-        this.publishParsedManifest(parsed);
-      }
-    });
-  }
-
-  private async runManifestRebuild(
-    delegate: FusionCli,
-    generation: number,
-    afterRebuild: () => Promise<void>,
-  ): Promise<void> {
-    this.emit(FusionProjectIntegrationEvents.REBUILD_MANIFEST_STATUS_CHANGE, {
-      inProgress: true,
-    });
-    try {
-      await delegate.rebuildManifest();
-      if (!this.isActivationCurrent(generation)) {
-        return;
-      }
-      this.terminal.debug(
-        "FusionProjectIntegration",
-        `Finished rebuilding the manifest for project at ${this.projectRoot}`,
-      );
-      await afterRebuild();
-    } catch (error) {
-      if (this.isActivationCurrent(generation)) {
-        this.terminal.error(
-          "FusionProjectIntegration",
-          "Error rebuilding manifest",
-          error,
-        );
-        throw error;
-      }
-    } finally {
-      this.emit(FusionProjectIntegrationEvents.REBUILD_MANIFEST_STATUS_CHANGE, {
-        inProgress: false,
-      });
-    }
+    await this.manifest.rebuild(this.requireIntegration());
   }
 
   async parseManifest(): Promise<ParsedManifest | undefined> {
-    const generation = this.lifecycle.generation;
-    const parsed = await this.buildParsedManifest(
-      this.requireIntegration(),
-      generation,
-    );
-    if (parsed && this.isActivationCurrent(generation)) {
-      this.publishParsedManifest(parsed);
-    }
-    return parsed;
+    return this.manifest.parse(this.requireIntegration());
   }
 
   private publishParsedManifest(parsed: ParsedManifest): void {
@@ -368,44 +307,6 @@ export class FusionProjectIntegration
       "manifest succesfully parsed",
       parsed,
     );
-  }
-
-  private async buildParsedManifest(
-    delegate: FusionCli,
-    generation: number,
-  ): Promise<ParsedManifest | undefined> {
-    const targetPath = delegate.getTargetPath();
-    if (!targetPath) {
-      this.terminal.debug(
-        "FusionProjectIntegration",
-        "targetPath should be defined at this stage for project " +
-          this.projectRoot,
-      );
-      return;
-    }
-    const previous = this.parsingCandidate;
-    const isCandidate = delegate !== this.lifecycle.current();
-    if (isCandidate) {
-      this.parsingCandidate = delegate;
-    }
-    try {
-      const built = await buildManifest(
-        this.parsers,
-        this,
-        targetPath,
-        this.terminal,
-        this.readFailures,
-      );
-      if (!built || !this.isActivationCurrent(generation)) {
-        return;
-      }
-      this.adapterType = built.adapterType ?? this.adapterType;
-      return built.parsed;
-    } finally {
-      if (isCandidate && this.parsingCandidate === delegate) {
-        this.parsingCandidate = previous;
-      }
-    }
   }
 
   private async onProjectFileChanged(): Promise<void> {
