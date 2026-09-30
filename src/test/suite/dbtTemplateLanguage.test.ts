@@ -1,14 +1,15 @@
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import {
   afterEach,
   beforeEach,
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
+  type Mock,
+  vi,
+} from "vitest";
 import { EventEmitter, languages, Uri, workspace } from "vscode";
 import { CurrentProject } from "../../projects/currentProject";
 import { DbtTemplateLanguage } from "../../projects/dbtTemplateLanguage";
@@ -18,7 +19,7 @@ describe("DbtTemplateLanguage", () => {
   let root: string;
   let opened: (doc: unknown) => void;
   let userAssociations: Record<string, string>;
-  const setLanguage = jest.fn(async (doc: unknown, _language: string) => doc);
+  const setLanguage = vi.fn(async (doc: unknown, _language: string) => doc);
 
   beforeEach(() => {
     root = fs.mkdtempSync(path.join(os.tmpdir(), "fpu-lang-"));
@@ -42,7 +43,7 @@ describe("DbtTemplateLanguage", () => {
       dispose: () => undefined,
     });
     userAssociations = {};
-    (workspace.getConfiguration as jest.Mock).mockReturnValue({
+    (workspace.getConfiguration as Mock).mockReturnValue({
       get: (_key: string, fallback: unknown) => userAssociations ?? fallback,
     });
     setLanguage.mockClear();
@@ -59,7 +60,7 @@ describe("DbtTemplateLanguage", () => {
       forResource: (uri: Uri) =>
         uri.fsPath.startsWith(root) ? project : undefined,
     } as unknown as CurrentProject;
-    const terminal = { debug: jest.fn() } as never;
+    const terminal = { debug: vi.fn() } as never;
     const subject = new DbtTemplateLanguage(registry, context, terminal);
     subject.start();
     return subject;

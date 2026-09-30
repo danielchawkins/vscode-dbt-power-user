@@ -1,6 +1,6 @@
-import { afterEach, describe, expect, it } from "@jest/globals";
 import { EventEmitter } from "events";
 import * as net from "net";
+import { afterEach, describe, expect, it } from "vitest";
 import type { StreamInfo } from "vscode-languageclient/node";
 import {
   acceptWithProcessExit,

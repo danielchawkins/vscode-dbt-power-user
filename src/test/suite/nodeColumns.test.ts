@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it } from "vitest";
 import { inferredColumns, panelColumns } from "../../core/lineage";
 
 const T = "model.p.order_totals";

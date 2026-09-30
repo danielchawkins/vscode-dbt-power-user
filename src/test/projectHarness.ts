@@ -1,4 +1,4 @@
-import { jest } from "@jest/globals";
+import { vi } from "vitest";
 import { Uri } from "vscode";
 import { DBTProjectLog } from "../dbt_client/dbtProjectLog";
 import { DBTTerminal } from "../dbt_integration";
@@ -26,7 +26,7 @@ export function sampleExecutable(
 
 /** A resolver that always returns `sampleExecutable()`. */
 export function stubResolver(): FusionExecutableResolver {
-  return { resolve: jest.fn(async () => sampleExecutable()) };
+  return { resolve: vi.fn(async () => sampleExecutable()) };
 }
 
 /** Builds a `Project` with inert collaborators; `overrides` replaces any of them. */
@@ -37,17 +37,17 @@ export function buildTestProject(
 ): Project {
   return new Project({
     dbtProjectLogFactory: () =>
-      ({ dispose: jest.fn() }) as unknown as DBTProjectLog,
+      ({ dispose: vi.fn() }) as unknown as DBTProjectLog,
     terminal: {
-      debug: jest.fn(),
-      info: jest.fn(),
-      warn: jest.fn(),
-      error: jest.fn(),
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
     } as unknown as DBTTerminal,
     sharedState: {} as SharedStateService,
     runHistoryService: {
-      addEntry: jest.fn(),
-      notifyCommandFailed: jest.fn(),
+      addEntry: vi.fn(),
+      notifyCommandFailed: vi.fn(),
     } as unknown as RunHistoryService,
     resolver: stubResolver(),
     cliFactory,

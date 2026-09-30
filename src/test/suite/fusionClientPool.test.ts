@@ -4,8 +4,10 @@ import {
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
+  type Mock,
+  type Mocked,
+  vi,
+} from "vitest";
 import {
   ConfigurationChangeEvent,
   EventEmitter,
@@ -76,9 +78,9 @@ class FakeClient implements FusionClient {
   readonly staticAnalysis: StaticAnalysisMode = "baseline";
   readonly outputChannel = createMockLogOutputChannel("dbt Fusion LSP (test)");
   readonly failureReason = undefined;
-  restart = jest.fn(() => Promise.resolve());
-  stop = jest.fn(() => Promise.resolve());
-  dispose = jest.fn();
+  restart = vi.fn(() => Promise.resolve());
+  stop = vi.fn(() => Promise.resolve());
+  dispose = vi.fn();
   async request<T>(): Promise<T> {
     return undefined as T;
   }
@@ -91,10 +93,10 @@ class FakeClient implements FusionClient {
 }
 
 describe("FusionClientPool", () => {
-  let terminal: { warn: jest.Mock; error: jest.Mock };
+  let terminal: { warn: Mock; error: Mock };
   let registry: FakeRegistry;
-  let resolver: jest.Mocked<FusionExecutableResolver>;
-  let factory: jest.Mocked<FusionClientFactory>;
+  let resolver: Mocked<FusionExecutableResolver>;
+  let factory: Mocked<FusionClientFactory>;
   let configListener: ((event: ConfigurationChangeEvent) => void) | undefined;
   let settings: Record<string, unknown>;
 
@@ -111,33 +113,33 @@ describe("FusionClientPool", () => {
   }
 
   beforeEach(() => {
-    terminal = { warn: jest.fn(), error: jest.fn() };
+    terminal = { warn: vi.fn(), error: vi.fn() };
     registry = new FakeRegistry();
     resolver = {
-      resolve: jest.fn(),
-    } as jest.Mocked<FusionExecutableResolver>;
+      resolve: vi.fn(),
+    } as Mocked<FusionExecutableResolver>;
     factory = {
-      create: jest.fn(
+      create: vi.fn(
         (options: FusionClientOptions) =>
           new FakeClient(options.project, options),
       ),
-    } as jest.Mocked<FusionClientFactory>;
+    } as Mocked<FusionClientFactory>;
     settings = { "lint.enabled": true, staticAnalysis: "baseline" };
 
-    jest
-      .spyOn(workspace, "onDidChangeConfiguration")
-      .mockImplementation((listener) => {
+    vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(
+      (listener) => {
         configListener = listener as (event: ConfigurationChangeEvent) => void;
-        return { dispose: jest.fn() };
-      });
-    jest.spyOn(workspace, "getConfiguration").mockReturnValue({
-      get: jest.fn((key: string) => settings[key]),
+        return { dispose: vi.fn() };
+      },
+    );
+    vi.spyOn(workspace, "getConfiguration").mockReturnValue({
+      get: vi.fn((key: string) => settings[key]),
     } as any);
   });
 
   afterEach(() => {
-    jest.mocked(workspace.onDidChangeConfiguration).mockRestore();
-    jest.mocked(workspace.getConfiguration).mockRestore();
+    vi.mocked(workspace.onDidChangeConfiguration).mockRestore();
+    vi.mocked(workspace.getConfiguration).mockRestore();
   });
 
   function createPool(): FusionClientPoolImpl {
@@ -198,7 +200,7 @@ describe("FusionClientPool", () => {
     });
     factory.create.mockImplementation((options: FusionClientOptions) => {
       const client = new FakeClient(options.project, options);
-      client.stop = jest.fn(
+      client.stop = vi.fn(
         () =>
           new Promise<void>((resolve) => {
             stopGate.then(resolve);
@@ -247,7 +249,7 @@ describe("FusionClientPool", () => {
     });
     factory.create.mockImplementation((options: FusionClientOptions) => {
       const client = new FakeClient(options.project, options);
-      client.stop = jest.fn(
+      client.stop = vi.fn(
         () =>
           new Promise<void>((resolve) => {
             stopGate.then(resolve);
@@ -497,7 +499,7 @@ describe("FusionClientPool", () => {
     registry.setProjects([project]);
     await flushAsync();
     const client = pool.get(project)! as FakeClient;
-    const onChange = jest.fn();
+    const onChange = vi.fn();
     pool.onDidChangeClients(onChange);
 
     changeSetting("target", project.root, " dev ");
@@ -648,7 +650,7 @@ describe("FusionClientPool", () => {
       schemaOriginStatus: () => ({ kind: "local" }) as const,
     };
     const changed = new EventEmitter<unknown>();
-    const resolve = jest.fn((_project: DeclaredProject, version: any) =>
+    const resolve = vi.fn((_project: DeclaredProject, version: any) =>
       schemaOriginLaunchEnv(dbtProject, version),
     );
     const pool = new FusionClientPoolImpl(

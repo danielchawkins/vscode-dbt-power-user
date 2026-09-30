@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
 import * as path from "path";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   Uri,
   workspace,
@@ -17,18 +17,17 @@ const fixturesRoot = path.resolve(esmDirname(import.meta.url), "../fixtures");
 
 describe("resolveDeclaredProjectRoots", () => {
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("reads folder-scoped declarations", () => {
     const folder = fixtureFolder("multi-root");
-    jest
-      .spyOn(workspace, "getConfiguration")
-      .mockImplementation((_section, scope) =>
+    vi.spyOn(workspace, "getConfiguration").mockImplementation(
+      (_section, scope) =>
         configuration(
           scope === folder.uri ? ["projects/general"] : ["projects/sox"],
         ),
-      );
+    );
 
     const result = resolveDeclaredProjectRoots(folder);
 
@@ -65,8 +64,8 @@ describe("resolveDeclaredProjectRoots", () => {
   });
 
   it("never enumerates projects or creates a watcher", () => {
-    const findFiles = jest.spyOn(workspace, "findFiles");
-    const createWatcher = jest.spyOn(workspace, "createFileSystemWatcher");
+    const findFiles = vi.spyOn(workspace, "findFiles");
+    const createWatcher = vi.spyOn(workspace, "createFileSystemWatcher");
     mockProjects([]);
 
     resolveDeclaredProjectRoots(fixtureFolder("single-project"));
@@ -207,9 +206,7 @@ function fixturePath(...parts: string[]): string {
 }
 
 function mockProjects(value: unknown): void {
-  jest
-    .spyOn(workspace, "getConfiguration")
-    .mockReturnValue(configuration(value));
+  vi.spyOn(workspace, "getConfiguration").mockReturnValue(configuration(value));
 }
 
 function configuration(value: unknown): WorkspaceConfiguration {

@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, statSync } from "fs";
 import path from "path";
+import { describe, expect, it } from "vitest";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 

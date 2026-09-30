@@ -1,11 +1,4 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { RunHistoryService } from "../../projects/runHistoryService";
 import { createEntry } from "../fixtures/runHistory";
 
@@ -18,7 +11,7 @@ describe("RunHistoryService", () => {
 
   afterEach(() => {
     service.dispose();
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe("addEntry", () => {
@@ -41,7 +34,7 @@ describe("RunHistoryService", () => {
     });
 
     it("should fire onHistoryChanged event when entry is added", () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       service.onHistoryChanged(listener);
 
       const entry = createEntry({ id: "test-invocation", command: "dbt run" });
@@ -152,7 +145,7 @@ describe("RunHistoryService", () => {
     });
 
     it("should fire event for deduplicated entries", () => {
-      const listener = jest.fn();
+      const listener = vi.fn();
       service.onHistoryChanged(listener);
 
       service.addEntry(
@@ -186,7 +179,7 @@ describe("RunHistoryService", () => {
 
     it("should fire onHistoryChanged with undefined", () => {
       service.addEntry(createEntry({ id: "inv-1", command: "dbt run" }));
-      const listener = jest.fn();
+      const listener = vi.fn();
       service.onHistoryChanged(listener);
 
       service.clear();

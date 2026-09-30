@@ -1,5 +1,5 @@
-import { beforeEach, describe, expect, it } from "@jest/globals";
 import * as path from "path";
+import { beforeEach, describe, expect, it } from "vitest";
 import { EventEmitter } from "vscode";
 import { ManifestProject, TestParser } from "../../core/manifest";
 import { DBTTerminal } from "../../dbt_integration";

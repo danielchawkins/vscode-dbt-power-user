@@ -1,6 +1,6 @@
-import { describe, expect, it } from "@jest/globals";
 import fc from "fast-check";
 import * as path from "path";
+import { describe, expect, it } from "vitest";
 import { toLspArgs } from "../../core/lsp";
 import { isDbtTemplateFile, ProjectPaths } from "../../core/project";
 import {

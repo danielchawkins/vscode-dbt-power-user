@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it } from "vitest";
 import { parseDbtProjectYaml } from "../../core/project";
 import { SourceMetaMap } from "../../dbt_integration/domain";
 import {

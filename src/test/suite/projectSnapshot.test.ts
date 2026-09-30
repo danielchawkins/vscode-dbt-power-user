@@ -1,5 +1,5 @@
-import { describe, expect, it } from "@jest/globals";
 import * as path from "path";
+import { describe, expect, it } from "vitest";
 import {
   ProjectSnapshotInputs,
   ProjectSnapshotSettings,

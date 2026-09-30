@@ -62,7 +62,7 @@ Load-bearing product structure the plan depends on:
 - **Manifest parsing and source watching live in `Project`.** `src/inversify.config.ts` builds `Project` (`src/projects/project.ts`) from the resolver, the per-call `FusionCli` factory, and the parsers. It owns the parsers through `ManifestRebuild`, publishes through `ManifestCacheProjectAddedEvent`, and watches model, macro, seed, and `dbt_project.yml` paths only. Parsers take a `ManifestProject`, which `Project` implements.
 - **The dbt integration layer is vendored.** `src/dbt_integration/` holds the Fusion command integration, parsers, and domain types taken from the MIT-licensed `@altimateai/dbt-integration`, with Core, Cloud, Python, and hosted paths removed; the package is no longer a dependency. Do not patch `node_modules`.
 - The remaining Python coupling across `src` is `PythonEnvironment`; `SharedStateService` is a local event bus. Core and Cloud construction, `AltimateRequest`, and `ValidationProvider` are removed.
-- Tests are Jest with a hand-written VS Code mock (`src/test/mock/vscode.ts`); `@vscode/test-electron` runs `src/test/integration/**` under `just test-integration`, outside `just check`. `webview_panels` has no unit or component tests.
+- Unit tests are Vitest with a hand-written VS Code mock (`src/test/mock/vscode.ts`); `@vscode/test-electron` runs `src/test/integration/**` under `just test-integration`, outside `just check`. `webview_panels` has no unit or component tests.
 
 ### 2.4 Verified facts about the dbt Fusion LSP
 
@@ -811,7 +811,7 @@ Verify from a reset state each time: remove `node_modules`, `out`, `dist`, and `
 
 - `eslint.config.cjs` — extend the `files` glob beyond `src/**/*.ts` to cover `packages/*/src/**/*.ts` and the package's own config files; root `lint` and `lint:fix` scripts widen from `eslint src --ext ts` to include `packages`.
 - `package.json` `format` and `check:format` — Prettier's glob already spans the repository for its file types; confirm it reaches `packages/` and is not excluded by `.prettierignore`.
-- `jest.config.js` — add the package's `src` to `roots` and map the package name to its `src/index.ts` in `moduleNameMapper`, alongside the existing `@extension` entry, so contract tests run in the existing suite with no second runner and no build before `just test`.
+- `vitest.config.ts` — add the package's `src` to `include` and alias the package name to its `src/index.ts` in `resolve.alias`, alongside the existing `@extension` entry, so contract tests run in the existing suite with no second runner and no build before `just test`.
 - Type checking comes free from the project reference once `compile` is `tsc -b`.
 
 *Single-install policy.* The root install becomes authoritative, which forces a real reconciliation rather than a concatenation: the two `allowScripts` policies disagree today — `@parcel/watcher` is denied at the root and allowed in `webview_panels`. Merge them into one root policy, re-reviewing every entry rather than taking the union, and delete the nested policy with the nested lockfile. Then run `just sync`, whose `npm ci --strict-allow-scripts` fails on any package whose script policy is unset, and `npm install-scripts prune` to drop entries no longer in the tree. `just update` and `just lint-lockfiles` each collapse to a single root invocation. CI calls `just sync`, `just check`, and `just package`, so no workflow file changes.
@@ -823,7 +823,7 @@ Verify: one `package-lock.json` at the root and none under `webview_panels`; `np
 *Migration order inside the PR, so there is no flag day.* Five revisions, ordered so that **no revision introduces source that is not compiled and tested by the revision that adds it**. The tooling comes first and the content second, because the reverse order would add package source that nothing builds or runs.
 
 1. **Skeleton and wiring.** `packages/webview-contract/` with its `package.json`, `tsconfig.json`, and a minimal `src/index.ts` exporting nothing yet, plus the whole tooling surface above: workspaces, the merged install policy, the single lockfile, the build and watch factoring, the quality-coverage widening, and the `.vscodeignore` entry. The package is real, built, linted, type-checked, and packaged from this revision on, and no consumer imports it yet — which is exactly the state the clean-install matrix should be run against.
-2. **The contract.** The discriminated unions, the guards, and the package's tests, which the widened Jest configuration already runs.
+2. **The contract.** The discriminated unions, the guards, and the package's tests, which the widened Vitest configuration already runs.
 3. **Host validation.** Guard the host's existing message-handling sites, one panel host at a time, logging and dropping an unrecognized message rather than throwing.
 4. **Panel entries.** Cut each panel's entry over behind `PanelHost` and replace that panel's ad-hoc command strings with the union as its entry lands.
 5. **Cleanup.** The duplicated `openUrl` / `openURL` pair is already removed; confirm both ends speak only the union before the PR closes.

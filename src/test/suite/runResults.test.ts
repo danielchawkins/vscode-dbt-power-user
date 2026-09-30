@@ -1,15 +1,16 @@
+import fc from "fast-check";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import {
   afterEach,
   beforeEach,
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
-import fc from "fast-check";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
+  type Mock,
+  vi,
+} from "vitest";
 import { DBTTerminal, RunResultsEventData } from "../../dbt_integration";
 import {
   parseRunResultsJson,
@@ -280,16 +281,16 @@ describe("withRunResults", () => {
 
   function stubReader(changed: RunResultsEventData | null) {
     return {
-      observe: jest.fn(() => "before"),
-      readIfChanged: jest.fn(() => changed),
+      observe: vi.fn(() => "before"),
+      readIfChanged: vi.fn(() => changed),
     } as unknown as RunResultsReader & {
-      readIfChanged: jest.Mock;
+      readIfChanged: Mock;
     };
   }
 
   it("records the run a command wrote and returns its result", async () => {
     const reader = stubReader(entry);
-    const history = { addEntry: jest.fn() };
+    const history = { addEntry: vi.fn() };
     await expect(
       withRunResults(reader, history, async () => "done"),
     ).resolves.toBe("done");
@@ -299,21 +300,19 @@ describe("withRunResults", () => {
 
   it("passes the launched args to the reader", async () => {
     const reader = stubReader(entry);
-    await withRunResults(reader, { addEntry: jest.fn() }, async () => 0, [
-      "run",
-    ]);
+    await withRunResults(reader, { addEntry: vi.fn() }, async () => 0, ["run"]);
     expect(reader.readIfChanged).toHaveBeenCalledWith("before", ["run"]);
   });
 
   it("records nothing when run_results.json did not change", async () => {
-    const history = { addEntry: jest.fn() };
+    const history = { addEntry: vi.fn() };
     await withRunResults(stubReader(null), history, async () => undefined);
     expect(history.addEntry).not.toHaveBeenCalled();
   });
 
   it("records nothing when the command rejects", async () => {
     const reader = stubReader(entry);
-    const history = { addEntry: jest.fn() };
+    const history = { addEntry: vi.fn() };
     await expect(
       withRunResults(reader, history, () => Promise.reject(new Error("x"))),
     ).rejects.toThrow("x");

@@ -1,14 +1,15 @@
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import {
   afterEach,
   beforeEach,
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
+  type Mock,
+  vi,
+} from "vitest";
 import { Uri, workspace } from "vscode";
 import {
   PROJECT_SNAPSHOT_SETTINGS,
@@ -26,10 +27,10 @@ describe("readProjectSnapshot", () => {
   let root: string;
 
   const mockSettings = (values: Record<string, unknown>) =>
-    (workspace.getConfiguration as jest.Mock).mockReturnValue({
-      get: jest.fn((key: string) => values[key]),
-      has: jest.fn(),
-      update: jest.fn(),
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: vi.fn((key: string) => values[key]),
+      has: vi.fn(),
+      update: vi.fn(),
     });
 
   beforeEach(() => {

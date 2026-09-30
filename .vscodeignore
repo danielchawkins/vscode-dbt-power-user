@@ -43,7 +43,7 @@ rumdl.toml
 .claude
 .claude/**
 docs/**
-jest.config.js
+vitest.config.ts
 AGENTS.md
 CLAUDE.md
 CONTEXT.md

@@ -1,4 +1,12 @@
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mocked,
+  vi,
+} from "vitest";
 import * as vscode from "vscode";
 import { VSCodeDBTTerminal } from "../../dbt_client/vscodeTerminal";
 import { DBTTerminal } from "../../dbt_integration";
@@ -7,19 +15,19 @@ import { DBTTerminal } from "../../dbt_integration";
 process.env.NODE_ENV = "test";
 
 describe("DBTTerminal Test Suite", () => {
-  let mockOutputChannel: jest.Mocked<any>;
+  let mockOutputChannel: Mocked<any>;
   let terminal: DBTTerminal;
 
   beforeEach(() => {
     mockOutputChannel = {
-      appendLine: jest.fn(),
-      show: jest.fn(),
-      clear: jest.fn(),
-      info: jest.fn(),
-      debug: jest.fn(),
-      error: jest.fn(),
-      warn: jest.fn(),
-      dispose: jest.fn(),
+      appendLine: vi.fn(),
+      show: vi.fn(),
+      clear: vi.fn(),
+      info: vi.fn(),
+      debug: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      dispose: vi.fn(),
     };
 
     terminal = new VSCodeDBTTerminal();
@@ -28,7 +36,7 @@ describe("DBTTerminal Test Suite", () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should log messages with proper formatting", () => {
@@ -50,8 +58,8 @@ describe("DBTTerminal Test Suite", () => {
 
   it("should show and hide terminal based on status", async () => {
     const mockTerminal = {
-      show: jest.fn(),
-      dispose: jest.fn(),
+      show: vi.fn(),
+      dispose: vi.fn(),
     };
 
     // @ts-ignore - Mocking terminal
@@ -62,7 +70,7 @@ describe("DBTTerminal Test Suite", () => {
     expect(mockTerminal.show).toHaveBeenCalledWith(false);
 
     // Reset the mock for the next test
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     // Test not showing terminal
     await terminal.show(false);
@@ -103,8 +111,8 @@ describe("DBTTerminal Test Suite", () => {
   });
 
   it("should properly dispose of all disposables", () => {
-    const mockDisposable1 = { dispose: jest.fn() };
-    const mockDisposable2 = { dispose: jest.fn() };
+    const mockDisposable1 = { dispose: vi.fn() };
+    const mockDisposable2 = { dispose: vi.fn() };
     // @ts-ignore - Set private disposables for testing
     terminal.disposables = [mockDisposable1, mockDisposable2];
     terminal.dispose();
@@ -118,11 +126,11 @@ describe("DBTTerminal Test Suite", () => {
   it("should properly initialize and dispose terminal", async () => {
     // Mock vscode.window.createTerminal
     const mockTerminal = {
-      dispose: jest.fn(),
-      show: jest.fn(),
+      dispose: vi.fn(),
+      show: vi.fn(),
     };
 
-    const createTerminalMock = jest
+    const createTerminalMock = vi
       .spyOn(vscode.window, "createTerminal")
       .mockReturnValue(mockTerminal as unknown as vscode.Terminal);
 

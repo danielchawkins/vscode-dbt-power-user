@@ -1,18 +1,26 @@
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mocked,
+  vi,
+} from "vitest";
 import * as vscode from "../mock/vscode";
 
 describe("Extension Test Suite", () => {
-  let mockExtensions: jest.Mocked<any>;
+  let mockExtensions: Mocked<any>;
 
   beforeEach(() => {
     mockExtensions = {
-      getExtension: jest.fn(),
+      getExtension: vi.fn(),
     };
     Object.assign(vscode.extensions as object, mockExtensions);
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it("should handle array index operations", () => {
@@ -92,7 +100,7 @@ describe("Extension Test Suite", () => {
 
     // Mock the commands API to return our commands
     const mockCommands: string[] = ["dbt.run", "dbt.compile", "other.command"];
-    const spy = jest.spyOn(vscode.commands, "getCommands");
+    const spy = vi.spyOn(vscode.commands, "getCommands");
     (spy.mockResolvedValue as any)(mockCommands);
 
     const allCommands = await vscode.commands.getCommands();

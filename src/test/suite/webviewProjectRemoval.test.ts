@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter, Uri } from "vscode";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import { LineageViewProvider } from "../../features/lineage/lineageViewProvider";
@@ -17,16 +17,16 @@ function projectsDouble() {
   };
 }
 
-const terminal = { debug: jest.fn(), info: jest.fn(), error: jest.fn() } as any;
+const terminal = { debug: vi.fn(), info: vi.fn(), error: vi.fn() } as any;
 
 describe("webview panels on project removal", () => {
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("LineageViewProvider tells the view the manifest is gone", () => {
     const { removed, value } = projectsDouble();
-    const view = { manifestChanged: jest.fn(), dispose: jest.fn() } as any;
+    const view = { manifestChanged: vi.fn(), dispose: vi.fn() } as any;
     const panel = new LineageViewProvider(view, value, terminal);
 
     removed.fire(Uri.file("/a"));
@@ -39,7 +39,7 @@ describe("webview panels on project removal", () => {
   });
 
   it("DocsEditViewPanel reloads documentation from the manifest", () => {
-    const transmit = jest
+    const transmit = vi
       .spyOn(DocsEditViewPanel.prototype as any, "transmitData")
       .mockImplementation(() => undefined);
     const { removed, value } = projectsDouble();

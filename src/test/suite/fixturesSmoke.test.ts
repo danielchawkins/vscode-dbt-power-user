@@ -1,6 +1,6 @@
-import { describe, expect, it } from "@jest/globals";
 import { existsSync, readFileSync, readdirSync } from "fs";
 import * as path from "path";
+import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { esmDirname } from "../esmDirname";
 

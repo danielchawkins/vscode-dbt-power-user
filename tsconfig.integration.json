@@ -15,8 +15,6 @@
     "out",
     "src/test/suite/**/*",
     "src/test/mock/**/*",
-    "src/test/esmDirname.ts",
-    "src/test/jest-globals.ts",
-    "src/test/setup.ts"
+    "src/test/esmDirname.ts"
   ]
 }

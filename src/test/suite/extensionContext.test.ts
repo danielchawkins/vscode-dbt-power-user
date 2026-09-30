@@ -1,16 +1,16 @@
-import { describe, expect, it, jest } from "@jest/globals";
+import { describe, expect, it, vi } from "vitest";
 import { ExtensionContext, Uri } from "vscode";
 import { ExtensionContextStore } from "../../extensionContext";
 
 describe("ExtensionContextStore", () => {
   function createStore() {
     const workspaceState = {
-      get: jest.fn().mockReturnValue("workspace-value"),
-      update: jest.fn(),
+      get: vi.fn().mockReturnValue("workspace-value"),
+      update: vi.fn(),
     };
     const globalState = {
-      get: jest.fn().mockReturnValue("global-value"),
-      update: jest.fn(),
+      get: vi.fn().mockReturnValue("global-value"),
+      update: vi.fn(),
     };
     const context = {
       extensionUri: Uri.file("/extension"),

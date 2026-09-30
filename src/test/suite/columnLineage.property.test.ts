@@ -1,7 +1,7 @@
-import { describe, expect, it } from "@jest/globals";
 import fc from "fast-check";
 import { readFileSync } from "fs";
 import * as path from "path";
+import { describe, expect, it } from "vitest";
 import {
   columnEdges,
   columnLineageArgs,

@@ -4,8 +4,9 @@ import {
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
+  type Mock,
+  vi,
+} from "vitest";
 import { ConfigurationChangeEvent, Uri, workspace } from "vscode";
 import { DBTDiagnosticData, DBTTerminal } from "../../dbt_integration";
 import {
@@ -67,7 +68,7 @@ function mockTerminal(): DBTTerminal {
 
 interface StubCli {
   path: string;
-  dispose: jest.Mock;
+  dispose: Mock;
 }
 
 function recordingFactory(): {
@@ -78,7 +79,7 @@ function recordingFactory(): {
   const factory: FusionCommandIntegrationFactory = (executable) => {
     const cli: StubCli = {
       path: executable.path,
-      dispose: jest.fn(async () => undefined),
+      dispose: vi.fn(async () => undefined),
     };
     created.push(cli);
     return cli as unknown as FusionCli;
@@ -100,7 +101,7 @@ function build(
   hooks: Partial<ExecutableLifecycleHooks> = {},
 ): ExecutableLifecycle {
   return new ExecutableLifecycle(
-    { resolve: jest.fn(async () => resolve()) },
+    { resolve: vi.fn(async () => resolve()) },
     factory,
     ROOT,
     mockTerminal(),
@@ -122,24 +123,24 @@ describe("ExecutableLifecycle", () => {
 
   beforeEach(() => {
     configListeners = [];
-    jest
-      .spyOn(workspace, "onDidChangeConfiguration")
-      .mockImplementation((listener) => {
+    vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(
+      (listener) => {
         configListeners.push(
           listener as (event: ConfigurationChangeEvent) => void,
         );
-        return { dispose: jest.fn() };
-      });
+        return { dispose: vi.fn() };
+      },
+    );
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it("commits the resolved executable and reports its version", async () => {
     const { factory, created } = recordingFactory();
     const lifecycle = build(async () => sampleExecutable("/bin/dbt"), factory);
-    const committed = jest.fn();
+    const committed = vi.fn();
     lifecycle.onDidCommit(committed);
 
     await lifecycle.initialize();
@@ -231,7 +232,7 @@ describe("ExecutableLifecycle", () => {
   it("applies the last scoped dbtPath refresh when several arrive back-to-back", async () => {
     let configuredPath = "/project/v1/dbt";
     const { factory } = recordingFactory();
-    const resolve = jest.fn(async () => sampleExecutable(configuredPath));
+    const resolve = vi.fn(async () => sampleExecutable(configuredPath));
     const lifecycle = build(async () => resolve(), factory);
 
     await lifecycle.initialize();
@@ -253,13 +254,13 @@ describe("ExecutableLifecycle", () => {
     const gate = new Promise<void>((resolve) => {
       releaseGate = resolve;
     });
-    const activate = jest.fn(async () => {
+    const activate = vi.fn(async () => {
       await gate;
       return undefined;
     });
-    const resolve = jest.fn(async () => sampleExecutable("/project/dbt"));
+    const resolve = vi.fn(async () => sampleExecutable("/project/dbt"));
     const { factory, created } = recordingFactory();
-    const committed = jest.fn();
+    const committed = vi.fn();
     const lifecycle = build(async () => resolve(), factory, { activate });
     lifecycle.onDidCommit(committed);
 
@@ -281,7 +282,7 @@ describe("ExecutableLifecycle", () => {
   it("propagates initialize errors while keeping the refresh chain alive", async () => {
     let fail = true;
     let configuredPath = "/project/v1/dbt";
-    const resolve = jest.fn(async () => sampleExecutable(configuredPath));
+    const resolve = vi.fn(async () => sampleExecutable(configuredPath));
     const { factory } = recordingFactory();
     const lifecycle = build(async () => resolve(), factory, {
       activate: async () => {
@@ -308,9 +309,9 @@ describe("ExecutableLifecycle", () => {
     const gate = new Promise<void>((resolve) => {
       releaseGate = resolve;
     });
-    const afterCommit = jest.fn();
+    const afterCommit = vi.fn();
     const { factory, created } = recordingFactory();
-    const committed = jest.fn();
+    const committed = vi.fn();
     const lifecycle = build(
       async () => sampleExecutable("/race/dbt"),
       factory,
@@ -336,7 +337,7 @@ describe("ExecutableLifecycle", () => {
   });
 
   it("runs the post-commit step only while its generation is current", async () => {
-    const afterCommit = jest.fn();
+    const afterCommit = vi.fn();
     const { factory } = recordingFactory();
     const lifecycle = build(async () => sampleExecutable("/bin/dbt"), factory, {
       activate: async () => afterCommit,

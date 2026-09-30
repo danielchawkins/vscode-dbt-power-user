@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { workspace, type Uri } from "vscode";
 import { resolveSettingsVariables } from "../../utils";
 

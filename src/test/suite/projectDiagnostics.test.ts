@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from "@jest/globals";
+import { describe, expect, it, vi } from "vitest";
 import {
   DiagnosticCollection,
   DiagnosticSeverity,
@@ -27,7 +27,7 @@ describe("ProjectDiagnostics", () => {
     diagnostics.setKind("rebuild-manifest", [data("parse", "warning")]);
     diagnostics.setKind("project-config", [data("config", "error")]);
 
-    const { results } = jest.mocked(languages.createDiagnosticCollection).mock;
+    const { results } = vi.mocked(languages.createDiagnosticCollection).mock;
     const collection = results[results.length - 1]
       ?.value as DiagnosticCollection;
     expect(collection.set).toHaveBeenLastCalledWith(file, [

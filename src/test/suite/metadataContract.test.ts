@@ -1,6 +1,6 @@
-import { describe, expect, it } from "@jest/globals";
 import * as fs from "fs";
 import * as path from "path";
+import { describe, expect, it } from "vitest";
 import { EventEmitter, Uri } from "vscode";
 import {
   ChildrenParentParser,

@@ -1,5 +1,5 @@
-import { describe, expect, it, jest } from "@jest/globals";
 import * as path from "path";
+import { describe, expect, it, vi } from "vitest";
 import { toCliArgs } from "../../core/cli";
 import {
   ProjectSnapshot,
@@ -69,9 +69,9 @@ function fakeProcesses(
 }
 
 function fakeTerminal() {
-  const warn = jest.fn();
-  const error = jest.fn();
-  const show = jest.fn(async (_status: boolean) => undefined);
+  const warn = vi.fn();
+  const error = vi.fn();
+  const show = vi.fn(async (_status: boolean) => undefined);
   const noop = () => undefined;
   const terminal: DBTTerminal = {
     show,
@@ -343,7 +343,7 @@ describe("FusionCli project state and commands", () => {
 
   it("reads the project file once for the getters until refreshProjectConfig", async () => {
     let targetPath = "target";
-    const read = jest.fn(() =>
+    const read = vi.fn(() =>
       resolveProjectSnapshot({
         root,
         folder: snapshotFolder,

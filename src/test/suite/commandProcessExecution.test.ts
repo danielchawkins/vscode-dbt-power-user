@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, it } from "@jest/globals";
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { anything, instance, mock, verify, when } from "ts-mockito";
+import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { VSCodeDBTTerminal } from "../../dbt_client/vscodeTerminal";
 import { DBTTerminal } from "../../dbt_integration";
 import {
@@ -51,7 +51,9 @@ describe("CommandProcessExecution Tests", () => {
       command: "nonexistentcommand",
     });
 
-    await expect(execution.complete()).rejects.toThrow(/ENOENT/);
+    await expect(execution.complete()).rejects.toThrow(
+      /Command not found: "nonexistentcommand"/,
+    );
   });
 
   it("should handle command with environment variables", async () => {
@@ -81,19 +83,22 @@ describe("CommandProcessExecution Tests", () => {
     );
   });
 
-  it("should handle command with stderr output", async () => {
-    jest.setTimeout(5000); // Increase timeout to 5 seconds
-    const execution = factory.createCommandProcessExecution({
-      command: process.platform === "win32" ? "cmd" : "sh",
-      args:
-        process.platform === "win32"
-          ? ["/c", "echo error 1>&2"]
-          : ["-c", "echo error >&2"],
-    });
+  it(
+    "should handle command with stderr output",
+    { timeout: 5000 },
+    async () => {
+      const execution = factory.createCommandProcessExecution({
+        command: process.platform === "win32" ? "cmd" : "sh",
+        args:
+          process.platform === "win32"
+            ? ["/c", "echo error 1>&2"]
+            : ["-c", "echo error >&2"],
+      });
 
-    const result = await execution.complete();
-    expect(result.stderr.trim()).toBe("error");
-  });
+      const result = await execution.complete();
+      expect(result.stderr.trim()).toBe("error");
+    },
+  );
 
   it("should stream output to terminal", async () => {
     const execution = factory.createCommandProcessExecution({

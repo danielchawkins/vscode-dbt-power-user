@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from "@jest/globals";
+import { describe, expect, it, vi } from "vitest";
 import { executeSql, normalizeQueryLimit } from "../../projects/projectSql";
 
 describe("normalizeQueryLimit", () => {
@@ -32,7 +32,7 @@ describe("normalizeQueryLimit", () => {
 
 describe("executeSql", () => {
   it("throws for a non-positive limit without calling the CLI", async () => {
-    const executeSQL = jest.fn<never>();
+    const executeSQL = vi.fn<never>();
     await expect(
       executeSql({ executeSQL }, "select 1", "model", 0, true),
     ).rejects.toThrow("Limit must be greater than 0");

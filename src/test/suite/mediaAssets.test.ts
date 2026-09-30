@@ -1,6 +1,7 @@
 import { readFileSync, readdirSync } from "fs";
 import { globSync } from "glob";
 import path from "path";
+import { describe, expect, it } from "vitest";
 import { esmDirname } from "../esmDirname";
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");

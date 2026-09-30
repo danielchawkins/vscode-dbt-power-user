@@ -4,8 +4,9 @@ import {
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
+  type Mock,
+  vi,
+} from "vitest";
 import { extensions, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { toLspLaunch } from "../../core/lsp";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
@@ -45,11 +46,11 @@ function expectNoWindowNotifications(): void {
 
 describe("fusionNotificationPolicy", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
-    (extensions.getExtension as jest.Mock).mockReturnValue(undefined);
+    vi.clearAllMocks();
+    (extensions.getExtension as Mock).mockReturnValue(undefined);
     (workspace as any).workspaceFolders = [folder];
-    jest.spyOn(workspace, "getConfiguration").mockReturnValue({
-      get: jest.fn((key: string, fallback?: unknown) => {
+    vi.spyOn(workspace, "getConfiguration").mockReturnValue({
+      get: vi.fn((key: string, fallback?: unknown) => {
         if (key === "staticAnalysis") {
           return "baseline";
         }
@@ -62,25 +63,25 @@ describe("fusionNotificationPolicy", () => {
   });
 
   afterEach(() => {
-    jest.mocked(workspace.getConfiguration).mockRestore();
+    vi.mocked(workspace.getConfiguration).mockRestore();
   });
 
   it("shows no window messages on enabled extension activation", async () => {
-    const fusionClientPoolInitialize = jest.fn();
+    const fusionClientPoolInitialize = vi.fn();
     const extension = new (DBTPowerUserExtension as any)() as any;
     Object.assign(extension, {
       projects: {
-        setContext: jest.fn(),
-        initialize: jest.fn(() => Promise.resolve()),
+        setContext: vi.fn(),
+        initialize: vi.fn(() => Promise.resolve()),
       },
-      projectRegistry: { initialize: jest.fn(() => Promise.resolve()) },
+      projectRegistry: { initialize: vi.fn(() => Promise.resolve()) },
       fusionClientPool: { initialize: fusionClientPoolInitialize },
-      fusionStatus: { initialize: jest.fn() },
+      fusionStatus: { initialize: vi.fn() },
       currentProject: {},
-      statusBars: { initialize: jest.fn(() => Promise.resolve()) },
-      dbtTerminal: { error: jest.fn() },
-      runHistoryService: { dispose: jest.fn() },
-      sharedState: { dispose: jest.fn() },
+      statusBars: { initialize: vi.fn(() => Promise.resolve()) },
+      dbtTerminal: { error: vi.fn() },
+      runHistoryService: { dispose: vi.fn() },
+      sharedState: { dispose: vi.fn() },
       startupGate: new StartupGate(),
     });
 
@@ -90,7 +91,7 @@ describe("fusionNotificationPolicy", () => {
   });
 
   it("shows no window messages when Fusion LSP start fails", async () => {
-    const terminal = { warn: jest.fn(), error: jest.fn(), info: jest.fn() };
+    const terminal = { warn: vi.fn(), error: vi.fn(), info: vi.fn() };
     const factory = new DefaultFusionClientFactory(terminal as any, {
       listenForServer: async () => {
         throw new Error("listen failed");
@@ -119,17 +120,17 @@ describe("fusionNotificationPolicy", () => {
   });
 
   it("shows no window messages for FailedFusionClient from the pool", async () => {
-    const terminal = { warn: jest.fn(), error: jest.fn() };
+    const terminal = { warn: vi.fn(), error: vi.fn() };
     const registry = {
       projects: [makeProject()],
-      onDidChangeProjects: jest.fn(() => ({ dispose: jest.fn() })),
+      onDidChangeProjects: vi.fn(() => ({ dispose: vi.fn() })),
     } as unknown as ProjectRegistry;
     const resolver = {
-      resolve: jest.fn(() =>
+      resolve: vi.fn(() =>
         Promise.resolve({ kind: "notFound", path: "/missing/dbt" }),
       ),
     };
-    const factory = { create: jest.fn() };
+    const factory = { create: vi.fn() };
 
     const pool = new FusionClientPoolImpl(
       registry,

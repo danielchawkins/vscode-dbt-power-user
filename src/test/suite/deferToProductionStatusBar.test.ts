@@ -4,8 +4,9 @@ import {
   describe,
   expect,
   it,
-  jest,
-} from "@jest/globals";
+  type Mock,
+  vi,
+} from "vitest";
 import { Uri, window, workspace } from "vscode";
 import { DeferToProductionStatusBar } from "../../features/defer/deferToProductionStatusBar";
 import { Project } from "../../projects/project";
@@ -16,42 +17,40 @@ describe("DeferToProductionStatusBar", () => {
   let settingsListener: ((event: unknown) => void) | undefined;
   let statusBar: {
     text: string;
-    show: jest.Mock;
-    hide: jest.Mock;
-    dispose: jest.Mock;
+    show: Mock;
+    hide: Mock;
+    dispose: Mock;
   };
 
   beforeEach(() => {
     deferPerProject = {};
     statusBar = {
       text: "",
-      show: jest.fn(),
-      hide: jest.fn(),
-      dispose: jest.fn(),
+      show: vi.fn(),
+      hide: vi.fn(),
+      dispose: vi.fn(),
     };
-    jest
-      .spyOn(window, "createStatusBarItem")
-      .mockReturnValue(statusBar as never);
+    vi.spyOn(window, "createStatusBarItem").mockReturnValue(statusBar as never);
     (workspace as any).workspaceFolders = [
       { uri: Uri.file("/workspace"), name: "workspace", index: 0 },
     ];
-    (workspace.getConfiguration as jest.Mock).mockReturnValue({
-      get: jest.fn((key: string) =>
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: vi.fn((key: string) =>
         key === "defer.perProject" ? deferPerProject : undefined,
       ),
-      has: jest.fn(),
-      update: jest.fn(),
+      has: vi.fn(),
+      update: vi.fn(),
     });
-    jest.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(((
+    vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(((
       listener: (event: unknown) => void,
     ) => {
       settingsListener = listener;
-      return { dispose: jest.fn() };
+      return { dispose: vi.fn() };
     }) as never);
   });
 
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     (workspace as any).workspaceFolders = [];
   });
 
@@ -60,7 +59,7 @@ describe("DeferToProductionStatusBar", () => {
     Object.assign(project, { projectRoot: root });
     const bar = new DeferToProductionStatusBar(
       { all: () => [project] } as never,
-      { debug: jest.fn() } as never,
+      { debug: vi.fn() } as never,
     );
 
     bar.updateStatusBar();

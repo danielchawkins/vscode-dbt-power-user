@@ -1,4 +1,4 @@
-import { describe, expect, it } from "@jest/globals";
+import { describe, expect, it } from "vitest";
 import { CodeLens } from "vscode";
 import { SqlActionsCodeLensProvider } from "../../features/sqlActions/sqlActionsCodeLensProvider";
 

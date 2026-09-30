@@ -1,4 +1,5 @@
 import { EventEmitter } from "events";
+import { vi } from "vitest";
 
 export enum State {
   Stopped = 1,
@@ -15,10 +16,10 @@ export class LanguageClient {
     readonly name: string,
   ) {}
 
-  start = jest.fn(() => Promise.resolve());
-  stop = jest.fn(() => Promise.resolve());
-  dispose = jest.fn();
-  sendRequest = jest.fn(() => Promise.resolve(undefined));
+  start = vi.fn(() => Promise.resolve());
+  stop = vi.fn(() => Promise.resolve());
+  dispose = vi.fn();
+  sendRequest = vi.fn(() => Promise.resolve(undefined));
 
   onDidChangeState(listener: (event: { newState: State }) => void) {
     this.stateEmitter.on("state", listener);

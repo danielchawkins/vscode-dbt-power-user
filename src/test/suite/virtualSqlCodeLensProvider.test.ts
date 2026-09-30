@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from "@jest/globals";
+import { describe, expect, it, vi } from "vitest";
 import { CancellationToken, CodeLens, TextDocument, Uri } from "vscode";
 import { VirtualSqlCodeLensProvider } from "../../features/sqlActions/virtualSqlCodeLensProvider";
 import { QueryManifestService } from "../../projects/queryManifestService";
@@ -9,7 +9,7 @@ describe("VirtualSqlCodeLensProvider", () => {
     [{ getProjectName: () => "analytics" }, "Project: analytics"],
   ])("renders the Current Project result", (project, title) => {
     const queryManifest = {
-      getProject: jest.fn().mockReturnValue(project),
+      getProject: vi.fn().mockReturnValue(project),
     } as unknown as QueryManifestService;
     const provider = new VirtualSqlCodeLensProvider(queryManifest);
 

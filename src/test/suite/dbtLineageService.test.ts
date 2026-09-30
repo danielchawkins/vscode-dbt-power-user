@@ -1,4 +1,4 @@
-import { describe, expect, it, jest } from "@jest/globals";
+import { describe, expect, it, type Mock, vi } from "vitest";
 import { workspace } from "vscode";
 import {
   DbtLineageService,
@@ -104,7 +104,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
   });
 
   function fakeClient(
-    request: jest.Mock<(...args: any[]) => Promise<any>>,
+    request: Mock<(...args: any[]) => Promise<any>>,
     overrides: Partial<{
       state: string;
       staticAnalysis: string;
@@ -130,7 +130,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
   );
 
   it("asks listNodes for each target column and keeps its parents when expanding left", async () => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue(lineage);
     const result = await service(fakeClient(request)).getConnectedColumns({
@@ -156,7 +156,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
   });
 
   it("keeps the target's children when expanding right, one request per distinct column, spelled as requested", async () => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue(lineage);
     const result = await service(fakeClient(request)).getConnectedColumns({
@@ -182,7 +182,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
   });
 
   it("keeps the lineage that answered and reports the target that failed", async () => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockImplementation(async (_command: string, args: string[]) => {
         if (args[0] === "@model.p.x") {
@@ -214,7 +214,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
     ],
     ["an Operation cancelled message", new Error("Operation cancelled")],
   ])("retries a request cancelled with %s once", async (_name, cancelled) => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockRejectedValueOnce(cancelled)
       .mockResolvedValueOnce(lineage);
@@ -228,7 +228,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
   });
 
   it("reports a request cancelled twice as failed", async () => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockRejectedValue(new Error("Operation cancelled"));
     const result = await service(fakeClient(request)).getConnectedColumns({
@@ -244,7 +244,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
   });
 
   it("does not retry other failures", async () => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockRejectedValue(new Error("timeout"));
     await service(fakeClient(request)).getConnectedColumns({
@@ -257,7 +257,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
 
   it.each([
     [undefined, "stopped"],
-    [fakeClient(jest.fn(), { state: "starting" }), "starting"],
+    [fakeClient(vi.fn(), { state: "starting" }), "starting"],
   ])(
     "reports the client's state when it is not running",
     async (client, state) => {
@@ -274,7 +274,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
 
   it("names the failure of a failed client", async () => {
     const result = await service(
-      fakeClient(jest.fn(), { state: "failed", failureReason: "boom\nmore" }),
+      fakeClient(vi.fn(), { state: "failed", failureReason: "boom\nmore" }),
     ).getConnectedColumns({
       targets: [["model.p.a", "x"]],
       upstreamExpansion: true,
@@ -288,7 +288,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
   it.each(["baseline", "off"])(
     "names the static-analysis mode when %s returns no nodes",
     async (mode) => {
-      const request = jest
+      const request = vi
         .fn<(...args: any[]) => Promise<any>>()
         .mockResolvedValue({ error: null, nodes: [] });
       const result = await service(
@@ -308,7 +308,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
   );
 
   it("answers empty for no nodes under strict or project", async () => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue({ error: null, nodes: [] });
     const result = await service(
@@ -324,7 +324,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
   });
 
   it("passes the result's error field through", async () => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue({ error: "no such node", nodes: [] });
     const result = await service(fakeClient(request)).getConnectedColumns({
@@ -338,7 +338,7 @@ describe("DbtLineageService.getConnectedColumns", () => {
   });
 
   it("reports a rejected request as failed", async () => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockRejectedValue(new Error("timeout"));
     const result = await service(fakeClient(request)).getConnectedColumns({
@@ -356,14 +356,14 @@ describe("DbtLineageService.getInferredColumns", () => {
   const node = {
     node: { columns: { customer_id: { data_type: "integer" } } },
   };
-  const client = (request: jest.Mock<(...args: any[]) => Promise<any>>) =>
+  const client = (request: Mock<(...args: any[]) => Promise<any>>) =>
     new DbtLineageService(
       {} as any,
       () => ({ state: "running", request }) as any,
     );
 
   it("asks getCurrentNode with the project-relative path", async () => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue(node);
     const columns = await client(request).getInferredColumns(
@@ -377,7 +377,7 @@ describe("DbtLineageService.getInferredColumns", () => {
   });
 
   it("opens the document and asks once more after a null answer", async () => {
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(node);
@@ -397,7 +397,7 @@ describe("DbtLineageService.getInferredColumns", () => {
         () => undefined,
       ).getInferredColumns("/p", "/p/a.sql"),
     ).toBeUndefined();
-    const request = jest
+    const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockRejectedValue(new Error("boom"));
     expect(

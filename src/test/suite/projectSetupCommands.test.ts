@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it, jest } from "@jest/globals";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { Uri, window } from "vscode";
 import { ProjectSetupCommands } from "../../features/projectSetup/projectSetupCommands";
 import {
@@ -15,12 +15,12 @@ const pickedProject: ProjectQuickPickItem = {
 
 describe("ProjectSetupCommands project resolution", () => {
   const mockDbtTerminal = {
-    error: jest.fn(),
-    debug: jest.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
   };
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   function createCommands(options: {
@@ -29,20 +29,20 @@ describe("ProjectSetupCommands project resolution", () => {
     debugOutput?: string;
   }) {
     const mockProject = {
-      debug: jest.fn(() =>
+      debug: vi.fn(() =>
         Promise.resolve({
           fullOutput: options.debugOutput ?? "All checks passed",
         }),
       ),
-      installDeps: jest.fn(() => Promise.resolve()),
+      installDeps: vi.fn(() => Promise.resolve()),
     };
-    const mockStore = { setToWorkspaceState: jest.fn() };
+    const mockStore = { setToWorkspaceState: vi.fn() };
     const mockProjects = {
-      all: jest.fn(() => Promise.resolve([mockProject])),
-      get: jest.fn(() => mockProject),
+      all: vi.fn(() => Promise.resolve([mockProject])),
+      get: vi.fn(() => mockProject),
     };
     const mockPicker = {
-      projectPicker: jest.fn(() => Promise.resolve(options.pickerResult)),
+      projectPicker: vi.fn(() => Promise.resolve(options.pickerResult)),
     };
 
     const commands = new ProjectSetupCommands(
@@ -66,7 +66,7 @@ describe("ProjectSetupCommands project resolution", () => {
   });
 
   it("validateProjects cancels silently when the picker is dismissed", async () => {
-    jest.mocked(window.showErrorMessage).mockResolvedValue(undefined as never);
+    vi.mocked(window.showErrorMessage).mockResolvedValue(undefined as never);
     const { commands, mockPicker, mockProject } = createCommands({
       pickerResult: undefined,
     });
@@ -94,7 +94,7 @@ describe("ProjectSetupCommands project resolution", () => {
   });
 
   it("installDeps cancels silently when the picker is dismissed", async () => {
-    jest.mocked(window.showErrorMessage).mockResolvedValue(undefined as never);
+    vi.mocked(window.showErrorMessage).mockResolvedValue(undefined as never);
     const { commands, mockPicker, mockProject } = createCommands({
       pickerResult: undefined,
     });
