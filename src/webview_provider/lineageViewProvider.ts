@@ -27,16 +27,17 @@ export class LineageViewProvider implements WebviewViewProvider, Disposable {
     private dbtTerminal: DBTTerminal,
   ) {
     this.disposables.push(
+      lineagePanel,
       projects.onDidChangeManifest((project) =>
         this.getPanel().manifestChanged(project),
       ),
       projects.onDidRemoveProject(() =>
         this.getPanel().manifestChanged(undefined),
       ),
+      window.onDidChangeActiveTextEditor((event: TextEditor | undefined) => {
+        this.getPanel().changedActiveTextEditor(event);
+      }),
     );
-    window.onDidChangeActiveTextEditor((event: TextEditor | undefined) => {
-      this.getPanel().changedActiveTextEditor(event);
-    });
     window.onDidChangeTextEditorSelection(
       (event) => {
         this.getPanel().changedTextEditorSelection(event.textEditor);

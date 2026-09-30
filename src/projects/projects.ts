@@ -39,9 +39,7 @@ export class Projects implements Disposable {
     private projectRegistry: ProjectRegistry,
     private projectFactory: (path: Uri) => Project,
     private dbtTerminal: DBTTerminal,
-  ) {
-    this.disposables.push(this.dbtTerminal);
-  }
+  ) {}
 
   async initialize(): Promise<void> {
     if (this.disposed || this.registrySubscription) {

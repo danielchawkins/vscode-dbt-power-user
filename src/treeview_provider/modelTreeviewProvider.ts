@@ -239,7 +239,9 @@ abstract class ModelTreeviewProvider
   }
 }
 
-class DocumentationTreeviewProvider implements TreeDataProvider<DocTreeItem> {
+class DocumentationTreeviewProvider
+  implements TreeDataProvider<DocTreeItem>, Disposable
+{
   private _onDidChangeTreeData: EventEmitter<DocTreeItem | undefined | void> =
     new EventEmitter<DocTreeItem | undefined | void>();
   readonly onDidChangeTreeData: Event<DocTreeItem | undefined | void> =
@@ -338,6 +340,12 @@ class DocumentationTreeviewProvider implements TreeDataProvider<DocTreeItem> {
 
   refresh(): void {
     this._onDidChangeTreeData.fire();
+  }
+
+  dispose(): void {
+    while (this.disposables.length) {
+      this.disposables.pop()?.dispose();
+    }
   }
 }
 

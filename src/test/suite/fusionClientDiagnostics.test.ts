@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
-import { commands, ExtensionContext, Uri } from "vscode";
+import { commands, Uri } from "vscode";
 import {
   FUSION_CLIENT_STATES_COMMAND,
   registerFusionClientDiagnostics,
@@ -18,10 +18,6 @@ function project(name: string): DeclaredProject {
     contains: () => true,
     dispose: jest.fn(),
   };
-}
-
-function fakeContext(): jest.Mocked<ExtensionContext> {
-  return { subscriptions: [] } as unknown as jest.Mocked<ExtensionContext>;
 }
 
 function commandHandler(): () => unknown {
@@ -56,7 +52,6 @@ describe("registerFusionClientDiagnostics", () => {
       }
 
       registerFusionClientDiagnostics(
-        fakeContext(),
         { projects: [] } as unknown as ProjectRegistry,
         { get: jest.fn() } as unknown as FusionClientPool,
       );
@@ -71,7 +66,6 @@ describe("registerFusionClientDiagnostics", () => {
       process.env.FPU_SMOKE_HOST = host;
 
       registerFusionClientDiagnostics(
-        fakeContext(),
         { projects: [] } as unknown as ProjectRegistry,
         { get: jest.fn() } as unknown as FusionClientPool,
       );
@@ -99,7 +93,6 @@ describe("registerFusionClientDiagnostics", () => {
     } as unknown as FusionClientPool;
 
     registerFusionClientDiagnostics(
-      fakeContext(),
       { projects: [general, sox] } as unknown as ProjectRegistry,
       pool,
     );
@@ -125,7 +118,6 @@ describe("registerFusionClientDiagnostics", () => {
     process.env.FPU_INTEGRATION_COMMANDS = "1";
     try {
       registerFusionClientDiagnostics(
-        fakeContext(),
         { projects: [] } as unknown as ProjectRegistry,
         { get: jest.fn() } as unknown as FusionClientPool,
       );

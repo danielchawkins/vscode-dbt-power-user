@@ -63,6 +63,7 @@ export class VSCodeCommands implements Disposable {
     private deferToProductionStatusBar: DeferToProductionStatusBar,
   ) {
     this.disposables.push(
+      this.diagnosticsOutputChannel,
       this.cteProfilerService,
       this.cteProfilerDecorationProvider,
       commands.registerCommand("fusionPowerUser.runCurrentModel", () => {

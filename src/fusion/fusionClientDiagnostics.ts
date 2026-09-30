@@ -1,4 +1,4 @@
-import { commands, ExtensionContext } from "vscode";
+import { commands, Disposable } from "vscode";
 import { ProjectRegistry } from "../projects/projectRegistry";
 import { readHarnessSwitch } from "../settings";
 import { FusionClientPool } from "./fusionClientPool";
@@ -25,25 +25,23 @@ function enabled(): boolean {
   );
 }
 
+/** Registers {@link FUSION_CLIENT_STATES_COMMAND} when a test harness asks for it. */
 export function registerFusionClientDiagnostics(
-  context: ExtensionContext,
   registry: ProjectRegistry,
   pool: FusionClientPool,
-): void {
+): Disposable | undefined {
   if (!enabled()) {
-    return;
+    return undefined;
   }
-  context.subscriptions.push(
-    commands.registerCommand(FUSION_CLIENT_STATES_COMMAND, () =>
-      registry.projects.map((project): FusionClientStateReport => {
-        const client = pool.get(project);
-        return {
-          projectName: project.name,
-          state: client?.state ?? "stopped",
-          failureReason: client?.failureReason,
-          target: pool.getLaunch(project)?.target,
-        };
-      }),
-    ),
+  return commands.registerCommand(FUSION_CLIENT_STATES_COMMAND, () =>
+    registry.projects.map((project): FusionClientStateReport => {
+      const client = pool.get(project);
+      return {
+        projectName: project.name,
+        state: client?.state ?? "stopped",
+        failureReason: client?.failureReason,
+        target: pool.getLaunch(project)?.target,
+      };
+    }),
   );
 }

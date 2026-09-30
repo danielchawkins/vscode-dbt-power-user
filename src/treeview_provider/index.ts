@@ -18,6 +18,11 @@ export class TreeviewProviders implements Disposable {
     private runHistoryTreeviewProvider: RunHistoryTreeviewProvider,
   ) {
     this.disposables.push(
+      this.testModelTreeview,
+      this.parentModelTreeview,
+      this.childrenModelTreeview,
+      this.documentationTreeView,
+      this.runHistoryTreeviewProvider,
       window.registerTreeDataProvider(
         "model_test_treeview",
         this.testModelTreeview,

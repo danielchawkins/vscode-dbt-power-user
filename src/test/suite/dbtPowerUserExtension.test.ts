@@ -1,19 +1,5 @@
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  jest,
-} from "@jest/globals";
-import {
-  commands,
-  ExtensionContext,
-  extensions,
-  Uri,
-  window,
-  workspace,
-} from "vscode";
+import { beforeEach, describe, expect, it, jest } from "@jest/globals";
+import { commands, extensions, Uri, window, workspace } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { CONFIGURATION_SECTION } from "../../settings";
 
@@ -39,6 +25,9 @@ const activationHarness = (enabled: boolean) => {
     dbtTemplateLanguage: { start: jest.fn() },
     statusBars: { initialize: initializeStatusBars },
     dbtTerminal: { error: jest.fn() },
+    runHistoryService: { dispose: jest.fn() },
+    sharedState: { dispose: jest.fn() },
+    disposables: [],
   });
 
   const folder = { uri: Uri.file("/workspace"), name: "workspace", index: 0 };
@@ -49,9 +38,7 @@ const activationHarness = (enabled: boolean) => {
     ),
   });
 
-  const context = { subscriptions: [] } as unknown as ExtensionContext;
   return {
-    context,
     extension,
     folder,
     initializeProjects,
@@ -64,22 +51,14 @@ const activationHarness = (enabled: boolean) => {
 };
 
 describe("DBTPowerUserExtension.activate", () => {
-  let context: ExtensionContext | undefined;
-
   beforeEach(() => {
     jest.clearAllMocks();
     (extensions.getExtension as jest.Mock).mockReturnValue(undefined);
     (window.showErrorMessage as jest.Mock).mockReturnValue(Promise.resolve());
   });
 
-  afterEach(() => {
-    context?.subscriptions.forEach((disposable) => disposable.dispose());
-    context = undefined;
-  });
-
   it("offers to uninstall Power User and stops activation on conflict", async () => {
     const harness = activationHarness(true);
-    context = harness.context;
     (extensions.getExtension as jest.Mock).mockReturnValue({
       id: UPSTREAM_EXTENSION,
     });
@@ -87,7 +66,7 @@ describe("DBTPowerUserExtension.activate", () => {
       Promise.resolve(UNINSTALL_ACTION),
     );
 
-    await harness.extension.activate(context);
+    await harness.extension.activate();
 
     expect(window.showErrorMessage).toHaveBeenCalledTimes(1);
     expect(window.showErrorMessage).toHaveBeenCalledWith(
@@ -108,14 +87,13 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(harness.initializeProjects).not.toHaveBeenCalled();
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
-    expect(context.subscriptions).toHaveLength(0);
+    expect(harness.extension.disposables).toHaveLength(0);
   });
 
   it("stops activation silently when disabled for the workspace folder", async () => {
     const harness = activationHarness(false);
-    context = harness.context;
 
-    await harness.extension.activate(context);
+    await harness.extension.activate();
 
     expect(workspace.getConfiguration).toHaveBeenCalledWith(
       CONFIGURATION_SECTION,
@@ -128,12 +106,11 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(harness.initializeProjects).not.toHaveBeenCalled();
     expect(harness.initializeStatusBars).not.toHaveBeenCalled();
     expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
-    expect(context.subscriptions).toHaveLength(0);
+    expect(harness.extension.disposables).toHaveLength(0);
   });
 
   it("activates when any workspace folder remains enabled", async () => {
     const harness = activationHarness(false);
-    context = harness.context;
     const enabledFolder = {
       uri: Uri.file("/enabled"),
       name: "enabled",
@@ -146,7 +123,7 @@ describe("DBTPowerUserExtension.activate", () => {
       }),
     );
 
-    await harness.extension.activate(context);
+    await harness.extension.activate();
 
     expect(harness.registryInitialize).toHaveBeenCalledTimes(1);
     expect(harness.initializeProjects).toHaveBeenCalledTimes(1);
@@ -183,9 +160,8 @@ describe("DBTPowerUserExtension.activate", () => {
 
   it("activates startup steps without global executable detection", async () => {
     const harness = activationHarness(true);
-    context = harness.context;
 
-    await harness.extension.activate(context);
+    await harness.extension.activate();
 
     expect(harness.registryInitialize).toHaveBeenCalled();
     expect(harness.fusionClientPoolInitialize).toHaveBeenCalled();

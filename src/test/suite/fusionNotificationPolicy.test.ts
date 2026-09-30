@@ -6,14 +6,7 @@ import {
   it,
   jest,
 } from "@jest/globals";
-import {
-  ExtensionContext,
-  extensions,
-  Uri,
-  window,
-  workspace,
-  WorkspaceFolder,
-} from "vscode";
+import { extensions, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { toLspLaunch } from "../../core/lsp";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FusionClientPoolImpl } from "../../fusion/fusionClientPool";
@@ -85,10 +78,11 @@ describe("fusionNotificationPolicy", () => {
       currentProject: {},
       statusBars: { initialize: jest.fn(() => Promise.resolve()) },
       dbtTerminal: { error: jest.fn() },
+      runHistoryService: { dispose: jest.fn() },
+      sharedState: { dispose: jest.fn() },
     });
 
-    const context = { subscriptions: [] } as unknown as ExtensionContext;
-    await extension.activate(context);
+    await extension.activate();
 
     expectNoWindowNotifications();
   });

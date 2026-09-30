@@ -26,13 +26,14 @@ describe("webview panels on project removal", () => {
 
   it("LineageViewProvider tells the view the manifest is gone", () => {
     const { removed, value } = projectsDouble();
-    const view = { manifestChanged: jest.fn() } as any;
+    const view = { manifestChanged: jest.fn(), dispose: jest.fn() } as any;
     const panel = new LineageViewProvider(view, value, terminal);
 
     removed.fire(Uri.file("/a"));
 
     expect(view.manifestChanged).toHaveBeenCalledWith(undefined);
     panel.dispose();
+    expect(view.dispose).toHaveBeenCalledTimes(1);
     removed.fire(Uri.file("/a"));
     expect(view.manifestChanged).toHaveBeenCalledTimes(1);
   });

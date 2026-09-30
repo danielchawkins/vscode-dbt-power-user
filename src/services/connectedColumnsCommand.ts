@@ -1,4 +1,4 @@
-import { commands, Disposable, ExtensionContext } from "vscode";
+import { commands, Disposable } from "vscode";
 import { readHarnessSwitch } from "../settings";
 import {
   ConnectedColumnsRequest,
@@ -15,14 +15,14 @@ export const LINEAGE_COLUMNS_COMMAND = "fusionPowerUser.test.getLineageColumns";
 /** Test-only: answers the lineage service's `getParentTables` for the integration suites. */
 export const PARENT_TABLES_COMMAND = "fusionPowerUser.test.getParentTables";
 
+/** Registers the connected-columns and parent-tables commands when the integration harness asks for them. */
 export function registerConnectedColumnsCommand(
-  context: ExtensionContext,
   service: DbtLineageService,
-): void {
+): Disposable | undefined {
   if (readHarnessSwitch("integrationCommands") !== "1") {
-    return;
+    return undefined;
   }
-  context.subscriptions.push(
+  return Disposable.from(
     commands.registerCommand(
       CONNECTED_COLUMNS_COMMAND,
       (request: ConnectedColumnsRequest) =>

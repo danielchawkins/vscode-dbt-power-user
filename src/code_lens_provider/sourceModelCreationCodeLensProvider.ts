@@ -2,6 +2,7 @@ import {
   CancellationToken,
   CodeLens,
   CodeLensProvider,
+  Disposable,
   Event,
   EventEmitter,
   Range,
@@ -23,11 +24,17 @@ export interface GenerateModelFromSourceParams {
   tableIdentifier?: string;
 }
 
-export class SourceModelCreationCodeLensProvider implements CodeLensProvider {
+export class SourceModelCreationCodeLensProvider
+  implements CodeLensProvider, Disposable
+{
   private codeLenses: CodeLens[] = [];
   private _onDidChangeCodeLenses: EventEmitter<void> = new EventEmitter<void>();
   public readonly onDidChangeCodeLenses: Event<void> =
     this._onDidChangeCodeLenses.event;
+
+  dispose(): void {
+    this._onDidChangeCodeLenses.dispose();
+  }
 
   public provideCodeLenses(
     document: TextDocument,
