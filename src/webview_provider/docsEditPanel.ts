@@ -28,6 +28,7 @@ import {
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
 } from "../dbt_integration";
+import { ExtensionContextStore } from "../extensionContext";
 import { UserInputError } from "../local/errors";
 import { DbtTestService } from "../services/dbtTestService";
 import {
@@ -61,6 +62,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
 
   public constructor(
     private dbtProjectContainer: DBTProjectContainer,
+    private extensionContext: ExtensionContextStore,
     private docGenService: DocGenService,
     private dbtTestService: DbtTestService,
     private queryManifestService: QueryManifestService,
@@ -184,7 +186,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
 
   private renderWebviewView(context: WebviewViewResolveContext) {
     const webview = this._panel!.webview!;
-    webview.html = getHtml(webview, this.dbtProjectContainer.extensionUri);
+    webview.html = getHtml(webview, this.extensionContext.extensionUri);
   }
 
   private setupWebviewOptions(context: WebviewViewResolveContext) {
@@ -194,7 +196,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       enableScripts: true,
       localResourceRoots: [
         Uri.joinPath(
-          this.dbtProjectContainer.extensionUri,
+          this.extensionContext.extensionUri,
           "webview_panels",
           "dist",
           "assets",

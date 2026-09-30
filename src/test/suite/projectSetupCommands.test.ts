@@ -36,9 +36,8 @@ describe("ProjectSetupCommands project resolution", () => {
       ),
       installDeps: jest.fn(() => Promise.resolve()),
     };
+    const mockStore = { setToWorkspaceState: jest.fn() };
     const mockContainer = {
-      getFromWorkspaceState: jest.fn(),
-      setToWorkspaceState: jest.fn(),
       getProjects: jest.fn(() => Promise.resolve([mockProject])),
       findDBTProject: jest.fn(() => mockProject),
     };
@@ -48,11 +47,12 @@ describe("ProjectSetupCommands project resolution", () => {
 
     const commands = new ProjectSetupCommands(
       mockContainer as never,
+      mockStore as never,
       mockPicker as unknown as ProjectQuickPick,
       mockDbtTerminal as never,
     );
 
-    return { commands, mockContainer, mockPicker, mockProject };
+    return { commands, mockStore, mockPicker, mockProject };
   }
 
   it("validateProjects uses a provided project without opening the picker", async () => {
@@ -79,16 +79,14 @@ describe("ProjectSetupCommands project resolution", () => {
   });
 
   it("validateProjects falls back to the picker and persists the selection", async () => {
-    const { commands, mockContainer, mockPicker, mockProject } = createCommands(
-      {
-        pickerResult: pickedProject,
-      },
-    );
+    const { commands, mockStore, mockPicker, mockProject } = createCommands({
+      pickerResult: pickedProject,
+    });
 
     await commands.validateProjects(undefined, true);
 
     expect(mockPicker.projectPicker).toHaveBeenCalledTimes(1);
-    expect(mockContainer.setToWorkspaceState).toHaveBeenCalledWith(
+    expect(mockStore.setToWorkspaceState).toHaveBeenCalledWith(
       "fusionPowerUser.projectSelected",
       pickedProject,
     );

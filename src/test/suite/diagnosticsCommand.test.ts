@@ -84,6 +84,7 @@ describe("fusionPowerUser.diagnostics", () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
       { error: jest.fn(), debug: jest.fn() } as never,
       diagnosticsOutputChannel,
       {} as never,

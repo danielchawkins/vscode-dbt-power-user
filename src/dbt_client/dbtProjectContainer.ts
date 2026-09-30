@@ -1,14 +1,7 @@
 import * as fs from "fs";
 import { inject } from "inversify";
 import { basename } from "path";
-import {
-  Disposable,
-  Event,
-  EventEmitter,
-  ExtensionContext,
-  Uri,
-  window,
-} from "vscode";
+import { Disposable, Event, EventEmitter, Uri, window } from "vscode";
 import type { RunResultsEventData } from "../dbt_integration";
 import { DBTTerminal, RunModelParams, RunModelType } from "../dbt_integration";
 import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
@@ -38,7 +31,6 @@ export class DBTProjectContainer implements Disposable {
   private _onDidRemoveProject = new EventEmitter<Uri>();
   /** Fires with a project's root after the container drops it. */
   readonly onDidRemoveProject: Event<Uri> = this._onDidRemoveProject.event;
-  private context?: ExtensionContext;
   private _onRebuildManifestStatusChange =
     new EventEmitter<RebuildManifestCombinedStatusChange>();
   readonly onRebuildManifestStatusChange =
@@ -67,10 +59,6 @@ export class DBTProjectContainer implements Disposable {
     this.disposables.push(this.dbtTerminal);
   }
 
-  setContext(context: ExtensionContext) {
-    this.context = context;
-  }
-
   async initializeDBTProjects(): Promise<void> {
     if (this.disposed || this.registrySubscription) {
       return;
@@ -89,32 +77,6 @@ export class DBTProjectContainer implements Disposable {
       });
     });
     this._onDBTProjectsInitializationEvent.fire({});
-  }
-
-  get extensionUri() {
-    return this.context!.extensionUri;
-  }
-
-  get extensionVersion() {
-    return this.context!.extension.packageJSON.version;
-  }
-
-  setToWorkspaceState(key: string, value: any) {
-    this.context!.workspaceState.update(key, value);
-  }
-  getFromWorkspaceState(key: string): any {
-    return this.context!.workspaceState.get(key);
-  }
-  setToGlobalState(key: string, value: any) {
-    this.context!.globalState.update(key, value);
-  }
-
-  getFromGlobalState(key: string): any {
-    return this.context!.globalState.get(key);
-  }
-
-  get extensionId(): string {
-    return this.context?.extension.id.toString() || "";
   }
 
   getPackageName = (uri: Uri): string | undefined => {

@@ -125,7 +125,6 @@ export class DBTPowerUserExtension implements Disposable {
         return;
       }
 
-      this.dbtProjectContainer.setContext(context);
       await this.projectRegistry.initialize();
       this.dbtTemplateLanguage.start();
       this.fusionClientPool.initialize();

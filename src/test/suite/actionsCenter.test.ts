@@ -1,13 +1,13 @@
 import { beforeEach, describe, expect, it, jest } from "@jest/globals";
 import { commands, Uri, window } from "vscode";
-import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
+import { ExtensionContextStore } from "../../extensionContext";
 import { ProjectContext } from "../../projects/projectContext";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { DbtPowerUserActionsCenter } from "../../quickpick";
 
 describe("DbtPowerUserActionsCenter project picker", () => {
   let context: jest.Mocked<ProjectContext>;
-  let container: jest.Mocked<DBTProjectContainer>;
+  let store: jest.Mocked<ExtensionContextStore>;
   let project: DeclaredProject;
 
   beforeEach(() => {
@@ -15,9 +15,9 @@ describe("DbtPowerUserActionsCenter project picker", () => {
     context = {
       pickForCommand: jest.fn(),
     } as unknown as jest.Mocked<ProjectContext>;
-    container = {
+    store = {
       setToWorkspaceState: jest.fn(),
-    } as unknown as jest.Mocked<DBTProjectContainer>;
+    } as unknown as jest.Mocked<ExtensionContextStore>;
     project = {
       root: Uri.file("/project"),
       name: "project",
@@ -29,7 +29,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
       contains: () => true,
       dispose: jest.fn(),
     };
-    new DbtPowerUserActionsCenter(context, container);
+    new DbtPowerUserActionsCenter(context, store);
   });
 
   it("stores an explicit Project Context pick for validate and install", async () => {
@@ -37,7 +37,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
 
     await pickProjectCommand()();
 
-    expect(container.setToWorkspaceState).toHaveBeenCalledWith(
+    expect(store.setToWorkspaceState).toHaveBeenCalledWith(
       "fusionPowerUser.projectSelected",
       {
         label: "project",
@@ -55,7 +55,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
 
     await pickProjectCommand()();
 
-    expect(container.setToWorkspaceState).not.toHaveBeenCalled();
+    expect(store.setToWorkspaceState).not.toHaveBeenCalled();
   });
 });
 
