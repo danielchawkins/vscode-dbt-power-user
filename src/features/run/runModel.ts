@@ -2,12 +2,14 @@ import * as path from "path";
 import { TreeItem, Uri, window } from "vscode";
 import { RunModelType } from "../../dbt_integration";
 import { CurrentProject } from "../../projects/currentProject";
+import { activeModelUri } from "../../projects/previewUri";
 import { GenerateModelFromSourceParams } from "../../projects/projectCodegen";
 import { modelParamsFor } from "../../projects/projectCommands";
 import { Projects } from "../../projects/projects";
 
 /** The model tree item fields a run reads. */
 type NodeTreeItem = Pick<TreeItem, "label"> & { url: string | undefined };
+
 export class RunModel {
   constructor(
     private projects: Projects,
@@ -18,7 +20,7 @@ export class RunModel {
     if (!window.activeTextEditor) {
       return;
     }
-    const fullPath = window.activeTextEditor.document.uri;
+    const fullPath = activeModelUri(window.activeTextEditor.document.uri);
     this.runDBTModel(fullPath, type);
   }
 
@@ -26,7 +28,7 @@ export class RunModel {
     if (!window.activeTextEditor) {
       return;
     }
-    const fullPath = window.activeTextEditor.document.uri;
+    const fullPath = activeModelUri(window.activeTextEditor.document.uri);
     this.buildDBTModel(fullPath, type);
   }
 
@@ -34,7 +36,7 @@ export class RunModel {
     if (!window.activeTextEditor) {
       return;
     }
-    const fullPath = window.activeTextEditor.document.uri;
+    const fullPath = activeModelUri(window.activeTextEditor.document.uri);
     this.runDBTModelTest(fullPath);
   }
 
@@ -42,7 +44,7 @@ export class RunModel {
     if (!window.activeTextEditor) {
       return;
     }
-    const fullPath = window.activeTextEditor.document.uri;
+    const fullPath = activeModelUri(window.activeTextEditor.document.uri);
     this.compileDBTModel(fullPath);
   }
 
@@ -50,7 +52,7 @@ export class RunModel {
     if (!window.activeTextEditor) {
       return;
     }
-    const fullPath = window.activeTextEditor.document.uri;
+    const fullPath = activeModelUri(window.activeTextEditor.document.uri);
     const query = window.activeTextEditor.document.getText();
     if (query !== undefined) {
       this.compileDBTQuery(fullPath, query);
@@ -72,8 +74,9 @@ export class RunModel {
     if (query === undefined) {
       return;
     }
-    const modelPath = window.activeTextEditor?.document.uri;
-    if (modelPath) {
+    const activeUri = window.activeTextEditor?.document.uri;
+    if (activeUri) {
+      const modelPath = activeModelUri(activeUri);
       const modelName = path.basename(modelPath.fsPath, ".sql");
       await this.executeSQL(modelPath, query, modelName);
     }
@@ -116,14 +119,16 @@ export class RunModel {
   }
 
   generateSchemaYMLOnActiveWindow() {
-    const fullPath = window.activeTextEditor?.document.uri;
-    if (fullPath !== undefined) {
+    const activeUri = window.activeTextEditor?.document.uri;
+    if (activeUri !== undefined) {
+      const fullPath = activeModelUri(activeUri);
       this.generateSchemaYML(fullPath);
     }
   }
   showRunSQLOnActiveWindow() {
-    const fullPath = window.activeTextEditor?.document.uri;
-    if (fullPath !== undefined) {
+    const activeUri = window.activeTextEditor?.document.uri;
+    if (activeUri !== undefined) {
+      const fullPath = activeModelUri(activeUri);
       this.showRunSQL(fullPath);
     }
   }

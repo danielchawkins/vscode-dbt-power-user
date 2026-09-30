@@ -1,4 +1,3 @@
-import { realpathSync } from "fs";
 import * as path from "path";
 import { DbtProjectConfig } from "./dbtProjectFile";
 
@@ -59,55 +58,4 @@ export function resolveProjectPaths(
     );
   }
   return result;
-}
-
-/** True when `file` is `dir` or inside it, comparing real paths so symlinked and `/private` aliases agree. */
-function isWithin(dir: string, file: string): boolean {
-  const relative = path.relative(canonical(dir), canonical(file));
-  return (
-    relative === "" ||
-    (!relative.startsWith("..") && !path.isAbsolute(relative))
-  );
-}
-
-/** Real path of `p`, or of its nearest existing ancestor joined with the rest, so unsaved paths still compare. */
-function canonical(p: string): string {
-  const missing: string[] = [];
-  let current = path.resolve(p);
-  for (;;) {
-    try {
-      return path.join(realpathSync.native(current), ...missing.reverse());
-    } catch {
-      const parent = path.dirname(current);
-      if (parent === current) {
-        return path.resolve(p);
-      }
-      missing.push(path.basename(current));
-      current = parent;
-    }
-  }
-}
-
-/**
- * True for a Jinja-templated dbt source file: a `.sql` file under a model, macro, snapshot, analysis or test
- * path, or under the packages install path. Anything under the target path is compiled output and is excluded.
- */
-export function isDbtTemplateFile(
-  paths: ProjectPaths,
-  fsPath: string,
-): boolean {
-  if (
-    !fsPath.toLowerCase().endsWith(".sql") ||
-    isWithin(paths.targetPath, fsPath)
-  ) {
-    return false;
-  }
-  return [
-    ...paths.modelPaths,
-    ...paths.macroPaths,
-    ...paths.snapshotPaths,
-    ...paths.analysisPaths,
-    ...paths.testPaths,
-    paths.packagesInstallPath,
-  ].some((dir) => isWithin(dir, fsPath));
 }

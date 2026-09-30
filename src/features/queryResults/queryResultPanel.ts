@@ -20,6 +20,7 @@ import {
   QueryExecution,
 } from "../../dbt_integration";
 import { ExtensionContextStore } from "../../extensionContext";
+import { activeModelUri } from "../../projects/previewUri";
 import { QueryManifestService } from "../../projects/queryManifestService";
 import {
   SharedStateEventEmitterProps,
@@ -140,14 +141,15 @@ export class QueryResultPanel extends PanelHost {
   private async sendUpdatedContextToWebview() {
     const perspectiveTheme = readSetting("queryResults.theme");
     const limit = readSetting("query.limit");
+    const editor = window.activeTextEditor;
     if (this._panel) {
       await this._panel.webview.postMessage({
         command: OutboundCommand.GetContext,
         limit,
         perspectiveTheme,
         activeEditor: {
-          query: window.activeTextEditor?.document.getText(),
-          filepath: window.activeTextEditor?.document.uri.fsPath,
+          query: editor?.document.getText(),
+          filepath: editor && activeModelUri(editor.document.uri).fsPath,
         },
       });
     }

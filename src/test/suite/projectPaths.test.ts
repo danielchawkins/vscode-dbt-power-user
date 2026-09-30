@@ -2,11 +2,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  isDbtTemplateFile,
-  readDbtProjectFile,
-  resolveProjectPaths,
-} from "../../core/project";
+import { readDbtProjectFile, resolveProjectPaths } from "../../core/project";
 
 const pathsOnDisk = (root: string) =>
   resolveProjectPaths(root, readDbtProjectFile(root).config);
@@ -64,59 +60,5 @@ describe("resolveProjectPaths", () => {
     const paths = pathsOnDisk(root);
     expect(paths.modelPaths).toEqual([path.join(root, "models")]);
     expect(paths.targetPath).toEqual(path.join(root, "target"));
-  });
-});
-
-describe("isDbtTemplateFile", () => {
-  const root = "/p";
-  const paths = {
-    modelPaths: ["/p/models"],
-    seedPaths: ["/p/seeds"],
-    macroPaths: ["/p/macros"],
-    snapshotPaths: ["/p/snapshots"],
-    analysisPaths: ["/p/analyses"],
-    testPaths: ["/p/tests"],
-    targetPath: "/p/target",
-    packagesInstallPath: "/p/dbt_packages",
-  };
-
-  it.each([
-    ["/p/models/stg/a.sql", true],
-    ["/p/macros/m.sql", true],
-    ["/p/snapshots/s.sql", true],
-    ["/p/tests/t.sql", true],
-    ["/p/dbt_packages/pkg/models/x.sql", true],
-    ["/p/target/compiled/p/models/a.sql", false],
-    ["/p/scripts/adhoc.sql", false],
-    ["/p/models/a.yml", false],
-    ["/p/models_old/a.sql", false],
-  ])("%s → %s", (file, expected) => {
-    expect(isDbtTemplateFile(paths, path.join(file))).toBe(expected);
-    expect(root).toBe("/p");
-  });
-});
-
-describe("isDbtTemplateFile across path aliases", () => {
-  it("matches a file reached through a symlinked project root", () => {
-    const real = fs.mkdtempSync(path.join(os.tmpdir(), "fpu-real-"));
-    const link = `${real}-link`;
-    fs.mkdirSync(path.join(real, "models"));
-    fs.writeFileSync(path.join(real, "models", "a.sql"), "select 1");
-    fs.symlinkSync(real, link);
-    try {
-      const paths = pathsOnDisk(fs.realpathSync(real));
-      expect(isDbtTemplateFile(paths, path.join(link, "models", "a.sql"))).toBe(
-        true,
-      );
-      expect(
-        isDbtTemplateFile(
-          pathsOnDisk(link),
-          path.join(real, "models", "a.sql"),
-        ),
-      ).toBe(true);
-    } finally {
-      fs.rmSync(link);
-      fs.rmSync(real, { recursive: true, force: true });
-    }
   });
 });

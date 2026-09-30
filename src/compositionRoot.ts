@@ -44,6 +44,7 @@ import {
 } from "./features/modelTree/modelTreeviewProvider";
 import { WebviewViewProviders } from "./features/panels";
 import { DbtPowerUserActionsCenter } from "./features/projectPicker/actionsCenter";
+import { FileAssociationsCommand } from "./features/projectSetup/fileAssociations";
 import { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
 import { ProjectSetupCommands } from "./features/projectSetup/projectSetupCommands";
 import { QueryResultPanel } from "./features/queryResults/queryResultPanel";
@@ -62,7 +63,6 @@ import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
 import { FusionStatus } from "./fusion/fusionStatus";
 import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
 import { CurrentProject } from "./projects/currentProject";
-import { DbtTemplateLanguage } from "./projects/dbtTemplateLanguage";
 import { Project } from "./projects/project";
 import { ProjectQuickPick } from "./projects/projectQuickPick";
 import { ProjectRegistry } from "./projects/projectRegistry";
@@ -340,7 +340,7 @@ export function compose(context: ExtensionContext): Composition {
     fusion.fusionClientPool,
     fusion.fusionStatus,
     new ProjectConfigCommands(startupGate, currentProject, terminal),
-    new DbtTemplateLanguage(projectRegistry, currentProject, terminal),
+    new FileAssociationsCommand(startupGate, projectRegistry),
     startupGate,
     fusion.dbtLineageService,
     graph.sharedState,

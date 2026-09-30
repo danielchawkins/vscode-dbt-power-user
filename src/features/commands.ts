@@ -7,7 +7,6 @@ import {
   Disposable,
   env,
   extensions,
-  languages,
   ProgressLocation,
   TextEditor,
   Uri,
@@ -24,6 +23,7 @@ import {
   RunModelType,
 } from "../dbt_integration";
 import { ExtensionContextStore } from "../extensionContext";
+import { activeModelUri, previewUriFor } from "../projects/previewUri";
 import { Project } from "../projects/project";
 import { ProjectQuickPickItem } from "../projects/projectQuickPick";
 import { Projects } from "../projects/projects";
@@ -31,7 +31,6 @@ import { RunHistoryService } from "../projects/runHistoryService";
 import { inspectSettings, readEnvironment } from "../settings";
 import { StartupGate } from "../startupGate";
 import { getFirstWorkspacePath } from "../utils";
-import { SqlPreviewContentProvider } from "./compiledSql/sqlPreviewContentProvider";
 import { CteCodeLensProvider, CteInfo } from "./cte/cteCodeLensProvider";
 import { CteProfilerDecorationProvider } from "./cte/cteProfilerDecorationProvider";
 import { CteProfilerService } from "./cte/cteProfilerService";
@@ -504,7 +503,7 @@ export class VSCodeCommands implements Disposable {
    * keeping focus on the model. With `toggle`, a visible preview closes instead.
    */
   async openCompiledPreview(modelUri: Uri, toggle: boolean): Promise<void> {
-    const uri = modelUri.with({ scheme: SqlPreviewContentProvider.SCHEME });
+    const uri = previewUriFor(activeModelUri(modelUri));
     const visible = window.visibleTextEditors.find(
       (e) => e.document.uri.toString() === uri.toString(),
     );
@@ -517,10 +516,7 @@ export class VSCodeCommands implements Disposable {
       await commands.executeCommand("workbench.action.closeActiveEditor");
       return;
     }
-    const doc = await languages.setTextDocumentLanguage(
-      await workspace.openTextDocument(uri),
-      "sql",
-    );
+    const doc = await workspace.openTextDocument(uri);
     await window.showTextDocument(doc, {
       viewColumn: visible?.viewColumn ?? ViewColumn.Beside,
       preserveFocus: true,

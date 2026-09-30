@@ -6,6 +6,7 @@ import {
   window,
   workspace,
 } from "vscode";
+import { activeModelUri } from "./previewUri";
 import { ProjectQuickPick } from "./projectQuickPick";
 import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 
@@ -30,7 +31,8 @@ export class CurrentProject implements Disposable {
 
   /** Active editor/folder project, retained non-file pick, then the sole project. */
   get current(): DeclaredProject | undefined {
-    const activeUri = window.activeTextEditor?.document.uri;
+    const editorUri = window.activeTextEditor?.document.uri;
+    const activeUri = editorUri && activeModelUri(editorUri);
     if (activeUri) {
       const project = this.registry.findProject(activeUri);
       if (project) {
@@ -67,7 +69,10 @@ export class CurrentProject implements Disposable {
   }
 
   /** Prompts only when a user-invoked command needs a project and cannot infer one. */
-  async requireForCommand(uri?: Uri): Promise<DeclaredProject | undefined> {
+  async requireForCommand(
+    commandUri?: Uri,
+  ): Promise<DeclaredProject | undefined> {
+    const uri = commandUri && activeModelUri(commandUri);
     if (uri?.scheme === "file") {
       const project = this.forResource(uri);
       if (project) {

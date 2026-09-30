@@ -12,13 +12,12 @@ import {
   CONFIGURATION_SECTION,
   inspectSettings,
   onDidChangeSettings,
-  readFileAssociations,
-  readFolderFileAssociations,
   readSetting,
+  readUserFileAssociations,
   SETTING_SCOPES,
   SettingsChange,
-  writeFolderFileAssociations,
   writeSetting,
+  writeUserFileAssociations,
 } from "../../settings";
 import { esmDirname } from "../esmDirname";
 
@@ -128,8 +127,7 @@ describe("settings", () => {
     ]);
   });
 
-  it("reads and writes files.associations for a folder", async () => {
-    const folder = Uri.file("/workspace/general");
+  it("reads and writes user files.associations", async () => {
     const update = vi.fn((..._args: unknown[]) => Promise.resolve());
     const getConfiguration = vi
       .spyOn(workspace, "getConfiguration")
@@ -137,22 +135,23 @@ describe("settings", () => {
         get: (_key: string, fallback: unknown) => fallback,
         inspect: () => ({
           key: "associations",
-          workspaceFolderValue: { "*.sql": "jinja-sql" },
+          globalValue: { "*.sql": "jinja-sql" },
+          workspaceValue: { "w/*.sql": "sql" },
+          workspaceFolderValue: { "b/*.sql": "sql" },
         }),
         update,
       } as unknown as WorkspaceConfiguration);
 
-    expect(readFileAssociations(folder)).toEqual({});
-    expect(readFolderFileAssociations(folder)).toEqual({
+    expect(readUserFileAssociations()).toEqual({
       "*.sql": "jinja-sql",
     });
-    await writeFolderFileAssociations(folder, { "a/*.sql": "jinja-sql" });
+    await writeUserFileAssociations({ "a/*.sql": "jinja-sql" });
 
-    expect(getConfiguration).toHaveBeenCalledWith("files", folder);
+    expect(getConfiguration).toHaveBeenCalledWith("files");
     expect(update).toHaveBeenCalledWith(
       "associations",
       { "a/*.sql": "jinja-sql" },
-      ConfigurationTarget.WorkspaceFolder,
+      ConfigurationTarget.Global,
     );
   });
 

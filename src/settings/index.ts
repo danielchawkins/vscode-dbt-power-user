@@ -152,30 +152,22 @@ const deepEqual = (a: unknown, b: unknown): boolean => {
 /** VS Code's `files.associations` glob-to-language map. */
 export type FileAssociations = Readonly<Record<string, string>>;
 
-/** Effective `files.associations` for `resource`. */
-export function readFileAssociations(resource: Uri): FileAssociations {
-  return workspace
-    .getConfiguration("files", resource)
-    .get<FileAssociations>("associations", {});
-}
-
-/** `files.associations` set in `folder`'s own settings, excluding inherited values. */
-export function readFolderFileAssociations(folder: Uri): FileAssociations {
+/** `files.associations` set in user settings, excluding workspace and folder values. */
+export function readUserFileAssociations(): FileAssociations {
   return (
     workspace
-      .getConfiguration("files", folder)
-      .inspect<FileAssociations>("associations")?.workspaceFolderValue ?? {}
+      .getConfiguration("files")
+      .inspect<FileAssociations>("associations")?.globalValue ?? {}
   );
 }
 
-/** Replaces `files.associations` in `folder`'s own settings. */
-export function writeFolderFileAssociations(
-  folder: Uri,
+/** Replaces `files.associations` in user settings. */
+export function writeUserFileAssociations(
   associations: FileAssociations,
 ): Thenable<void> {
   return workspace
-    .getConfiguration("files", folder)
-    .update("associations", associations, ConfigurationTarget.WorkspaceFolder);
+    .getConfiguration("files")
+    .update("associations", associations, ConfigurationTarget.Global);
 }
 
 /** A configuration change, queried for the keys it was subscribed with. */

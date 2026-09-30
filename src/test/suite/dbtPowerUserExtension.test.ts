@@ -29,7 +29,6 @@ const activationHarness = (enabled: boolean) => {
     fusionClientPool: { initialize: fusionClientPoolInitialize },
     fusionStatus: { initialize: fusionStatusInitialize },
     currentProject: {},
-    dbtTemplateLanguage: { start: vi.fn() },
     statusBars: { initialize: initializeStatusBars },
     dbtTerminal: { error: vi.fn() },
     runHistoryService: { dispose: vi.fn() },
@@ -253,7 +252,6 @@ describe("DBTPowerUserExtension.activate", () => {
     finishRegistry();
     await ready;
 
-    expect(harness.extension.dbtTemplateLanguage.start).not.toHaveBeenCalled();
     expect(harness.fusionStatusInitialize).not.toHaveBeenCalled();
     expect(harness.initializeProjects).not.toHaveBeenCalled();
   });
