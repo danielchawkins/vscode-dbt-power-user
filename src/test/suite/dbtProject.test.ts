@@ -354,35 +354,75 @@ describe("DBTProject Test Suite", () => {
         rebuildManifestDiagnostics: [mockDiagnosticData],
         projectConfigDiagnostics: [],
       });
+      dbtProject.updateDiagnosticsInProblemsPanel();
 
       const diagnostics = dbtProject.getAllDiagnostic();
 
       expect(diagnostics).toHaveLength(1);
-      // Check the diagnostic properties instead of checking if constructor was called
       expect(diagnostics[0]).toMatchObject({
         message: mockDiagnosticData.message,
         severity: vscode.DiagnosticSeverity.Error,
+        source: "Fusion Power User",
+        code: "rebuild-manifest",
       });
+      expect(() => dbtProject.throwDiagnosticsErrorIfAvailable()).toThrow(
+        "Test diagnostic",
+      );
     });
 
-    it("should update diagnostics in problems panel", () => {
-      const mockDiagnosticData: DBTDiagnosticData = {
-        message: "Test diagnostic",
+    it("publishes every kind in one collection under dbt_project.yml", () => {
+      const data = (message: string, source: string): DBTDiagnosticData => ({
+        message,
         severity: "warning",
         filePath: "/test/file.sql",
-        source: "dbt",
+        source,
         category: "warning",
-      };
-
-      (mockProjectIntegration.getDiagnostics as jest.Mock).mockReturnValue({
-        rebuildManifestDiagnostics: [mockDiagnosticData],
-        projectConfigDiagnostics: [mockDiagnosticData],
+      });
+      const getDiagnostics = mockProjectIntegration.getDiagnostics as jest.Mock;
+      getDiagnostics.mockReturnValue({
+        rebuildManifestDiagnostics: [data("rebuild", "dbt-fusion")],
+        projectConfigDiagnostics: [
+          data("config", "dbt"),
+          data("executable", "fusion-executable"),
+        ],
       });
 
       dbtProject.updateDiagnosticsInProblemsPanel();
 
-      expect(dbtProject.rebuildManifestDiagnostics.set).toHaveBeenCalled();
-      expect(dbtProject.projectConfigDiagnostics.set).toHaveBeenCalled();
+      const collections = (
+        vscode.languages.createDiagnosticCollection as jest.Mock
+      ).mock.results.map((result) => result.value as any);
+      expect(
+        (vscode.languages.createDiagnosticCollection as jest.Mock).mock.calls,
+      ).toEqual([["fusionPowerUser.project"]]);
+      const [collection] = collections;
+      const published = collection.get(
+        vscode.Uri.file(dbtProject.getDBTProjectFilePath()),
+      );
+      expect(
+        published.map((d: vscode.Diagnostic) => [d.message, d.code, d.source]),
+      ).toEqual([
+        ["rebuild", "rebuild-manifest", "Fusion Power User"],
+        ["config", "project-config", "Fusion Power User"],
+        ["executable", "fusion-executable", "Fusion Power User"],
+      ]);
+
+      // A rebuild that clears its own diagnostics keeps the other kinds.
+      getDiagnostics.mockReturnValue({
+        rebuildManifestDiagnostics: [],
+        projectConfigDiagnostics: [
+          data("config", "dbt"),
+          data("executable", "fusion-executable"),
+        ],
+      });
+      mockProjectIntegration.emit(
+        FusionProjectIntegrationEvents.REBUILD_MANIFEST_STATUS_CHANGE,
+        { inProgress: false },
+      );
+      expect(dbtProject.getAllDiagnostic().map((d) => d.code)).toEqual([
+        "project-config",
+        "fusion-executable",
+      ]);
     });
   });
 
@@ -502,19 +542,15 @@ describe("DBTProject Test Suite", () => {
       // Initialize to ensure dbtProjectLog is added to disposables
       await dbtProject.initialize();
 
-      const rebuildManifestDiagnosticsDispose = jest.spyOn(
-        dbtProject.rebuildManifestDiagnostics,
-        "dispose",
-      );
-      const projectConfigDiagnosticsDispose = jest.spyOn(
-        dbtProject.projectConfigDiagnostics,
-        "dispose",
-      );
+      const { results } = (
+        vscode.languages.createDiagnosticCollection as jest.Mock
+      ).mock;
+      const collection = results[results.length - 1]
+        .value as vscode.DiagnosticCollection;
 
       await dbtProject.dispose();
 
-      expect(rebuildManifestDiagnosticsDispose).toHaveBeenCalled();
-      expect(projectConfigDiagnosticsDispose).toHaveBeenCalled();
+      expect(collection.dispose).toHaveBeenCalled();
       expect(mockProjectIntegration.dispose).toHaveBeenCalled();
       // dbtProjectLog is created in constructor and added to disposables in initialize
       expect(mockDbtProjectLog.dispose).toHaveBeenCalled();

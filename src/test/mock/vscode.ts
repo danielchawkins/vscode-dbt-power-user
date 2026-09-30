@@ -435,23 +435,21 @@ export const workspace = {
 } as any;
 
 export const languages = {
-  createDiagnosticCollection: jest.fn().mockReturnValue({
-    set: jest.fn(),
-    get: jest.fn(),
-    delete: jest.fn(),
-    clear: jest.fn(),
-    dispose: jest.fn(),
-    [Symbol.iterator]: function* () {
-      yield* new Map();
-    },
-    entries: function* () {
-      yield* new Map();
-    },
-    forEach: function (
-      callback: (uri: typeof Uri, diagnostics: any[]) => void,
-    ) {
-      // Mock implementation that does nothing by default
-    },
+  createDiagnosticCollection: jest.fn((name?: string) => {
+    const entries = new Map<any, any[]>();
+    return {
+      name,
+      set: jest.fn((uri: any, diagnostics: any[]) =>
+        entries.set(uri, diagnostics),
+      ),
+      get: jest.fn((uri: any) => entries.get(uri)),
+      delete: jest.fn((uri: any) => entries.delete(uri)),
+      clear: jest.fn(() => entries.clear()),
+      dispose: jest.fn(),
+      [Symbol.iterator]: () => entries.entries(),
+      forEach: (callback: (uri: any, diagnostics: any[]) => void) =>
+        entries.forEach((diagnostics, uri) => callback(uri, diagnostics)),
+    };
   }),
   registerCodeLensProvider: mockRegisterProvider,
   registerCompletionItemProvider: mockRegisterProvider,
