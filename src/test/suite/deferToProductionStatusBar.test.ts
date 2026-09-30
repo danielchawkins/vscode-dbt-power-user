@@ -59,7 +59,7 @@ describe("DeferToProductionStatusBar", () => {
     const project = Object.create(DBTProject.prototype) as DBTProject;
     Object.assign(project, { projectRoot: root });
     const bar = new DeferToProductionStatusBar(
-      { getProjects: () => [project] } as never,
+      { all: () => [project] } as never,
       { debug: jest.fn() } as never,
     );
 

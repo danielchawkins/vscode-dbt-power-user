@@ -3,12 +3,12 @@ import { inject } from "inversify";
 import * as path from "path";
 import { Uri, window } from "vscode";
 import { parse as parseYaml } from "yaml";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
   DBTTerminal,
   NodeMetaData,
   RESOURCE_TYPE_MODEL,
 } from "../dbt_integration";
+import { Projects } from "../projects/projects";
 import { removeProtocol } from "../utils";
 import { DBTDocumentation, Source } from "./docGenTypes";
 import { QueryManifestService } from "./queryManifestService";
@@ -40,7 +40,7 @@ export interface DocumentationSchema {
 
 export class DocGenService {
   public constructor(
-    protected dbtProjectContainer: DBTProjectContainer,
+    protected projects: Projects,
     private queryManifestService: QueryManifestService,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
@@ -148,7 +148,7 @@ export class DocGenService {
     }
 
     const modelName = path.basename(filePath, ".sql");
-    const project = this.dbtProjectContainer.findDBTProject(Uri.file(filePath));
+    const project = this.projects.get(Uri.file(filePath));
     if (!project?.projectRoot) {
       return {
         documentation: undefined,

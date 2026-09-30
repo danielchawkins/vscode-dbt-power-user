@@ -9,8 +9,8 @@ import {
   window,
 } from "vscode";
 import { CteInfo } from "../code_lens_provider/cteCodeLensProvider";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../dbt_integration";
+import { Projects } from "../projects/projects";
 import { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
 
 @injectable()
@@ -25,7 +25,7 @@ export class CteProfilerService implements Disposable {
   private disposables: Disposable[] = [this._onResultChanged];
 
   constructor(
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {}
@@ -65,7 +65,7 @@ export class CteProfilerService implements Disposable {
       return;
     }
 
-    const project = this.dbtProjectContainer.findDBTProject(uri);
+    const project = this.projects.get(uri);
     if (!project) {
       window.showErrorMessage("Could not find dbt project for this file.");
       return;

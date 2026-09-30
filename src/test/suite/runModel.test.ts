@@ -10,10 +10,10 @@ import * as fs from "fs";
 import { Uri, window } from "vscode";
 import { RunModel } from "../../commands/runModel";
 import { DBTProject } from "../../dbt_client/dbtProject";
-import { DBTProjectContainer } from "../../dbt_client/dbtProjectContainer";
 import { RunModelType } from "../../dbt_integration";
 import { ProjectContext } from "../../projects/projectContext";
 import { DeclaredProject } from "../../projects/projectRegistry";
+import { Projects } from "../../projects/projects";
 
 const untitledUri = {
   scheme: "untitled",
@@ -23,7 +23,7 @@ const untitledUri = {
 
 describe("RunModel SQL execution", () => {
   let dbtProject: jest.Mocked<DBTProject>;
-  let container: jest.Mocked<DBTProjectContainer>;
+  let projects: jest.Mocked<Projects>;
   let context: jest.Mocked<ProjectContext>;
   let runModel: RunModel;
   let project: DeclaredProject;
@@ -32,9 +32,9 @@ describe("RunModel SQL execution", () => {
     dbtProject = {
       executeSQLOnQueryPanel: jest.fn(),
     } as unknown as jest.Mocked<DBTProject>;
-    container = {
-      findDBTProject: jest.fn().mockReturnValue(dbtProject),
-    } as unknown as jest.Mocked<DBTProjectContainer>;
+    projects = {
+      get: jest.fn().mockReturnValue(dbtProject),
+    } as unknown as jest.Mocked<Projects>;
     context = {
       requireForCommand: jest.fn(),
     } as unknown as jest.Mocked<ProjectContext>;
@@ -45,7 +45,7 @@ describe("RunModel SQL execution", () => {
       contains: () => true,
       dispose: jest.fn(),
     };
-    runModel = new RunModel(container, context);
+    runModel = new RunModel(projects, context);
   });
 
   afterEach(() => {
@@ -61,7 +61,7 @@ describe("RunModel SQL execution", () => {
       await runModel.executeSQL(uri, "select 1", "model");
 
       expect(context.requireForCommand).toHaveBeenCalledWith(uri);
-      expect(container.findDBTProject).toHaveBeenCalledWith(project.root);
+      expect(projects.get).toHaveBeenCalledWith(project.root);
       expect(dbtProject.executeSQLOnQueryPanel).toHaveBeenCalledWith(
         "select 1",
         "model",
@@ -105,7 +105,7 @@ describe("RunModel SQL execution", () => {
 
   it("does nothing when no project owns the resolved root", async () => {
     context.requireForCommand.mockResolvedValue(project);
-    container.findDBTProject.mockReturnValue(undefined);
+    projects.get.mockReturnValue(undefined);
 
     await runModel.executeSQL(untitledUri, "select 1", "model");
 
@@ -116,7 +116,7 @@ describe("RunModel SQL execution", () => {
 describe("RunModel project commands", () => {
   const model = Uri.file("/project/models/orders.sql");
   let dbtProject: jest.Mocked<DBTProject>;
-  let container: jest.Mocked<DBTProjectContainer>;
+  let projects: jest.Mocked<Projects>;
   let runModel: RunModel;
 
   beforeEach(() => {
@@ -133,10 +133,10 @@ describe("RunModel project commands", () => {
       generateSchemaYML: jest.fn(),
       showRunSQL: jest.fn(),
     } as unknown as jest.Mocked<DBTProject>;
-    container = {
-      findDBTProject: jest.fn().mockReturnValue(dbtProject),
-    } as unknown as jest.Mocked<DBTProjectContainer>;
-    runModel = new RunModel(container, {} as ProjectContext);
+    projects = {
+      get: jest.fn().mockReturnValue(dbtProject),
+    } as unknown as jest.Mocked<Projects>;
+    runModel = new RunModel(projects, {} as ProjectContext);
   });
 
   afterEach(() => {
@@ -172,7 +172,7 @@ describe("RunModel project commands", () => {
     runModel.generateSchemaYML(model);
     runModel.showRunSQL(model);
 
-    expect(container.findDBTProject).toHaveBeenCalledWith(model);
+    expect(projects.get).toHaveBeenCalledWith(model);
     expect(dbtProject.compileQuery).toHaveBeenCalledWith("select 1");
     expect(dbtProject.runTest).toHaveBeenCalledWith("unique_orders");
     expect(dbtProject.runModelTest).toHaveBeenCalledWith("orders");
@@ -181,7 +181,7 @@ describe("RunModel project commands", () => {
   });
 
   it("does nothing outside any project", () => {
-    container.findDBTProject.mockReturnValue(undefined);
+    projects.get.mockReturnValue(undefined);
 
     runModel.runDBTModel(model);
     runModel.buildDBTModel(model);

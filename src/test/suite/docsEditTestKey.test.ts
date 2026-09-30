@@ -43,7 +43,7 @@ function testKeyPanel(panelClass: typeof DocsEditViewPanel): TestKeyPanel {
   const instance = Object.create(panelClass.prototype);
   instance.dbtTestService = Object.create(DbtTestService.prototype);
   instance.terminal = { debug: jest.fn(), error: jest.fn() };
-  instance.dbtProjectContainer = { findDBTProject: () => project };
+  instance.projects = { get: () => project };
   instance.getProject = () => project;
   return instance as TestKeyPanel;
 }

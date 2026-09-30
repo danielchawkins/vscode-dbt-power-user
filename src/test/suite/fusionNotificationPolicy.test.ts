@@ -75,9 +75,9 @@ describe("fusionNotificationPolicy", () => {
     const fusionClientPoolInitialize = jest.fn();
     const extension = Object.create(DBTPowerUserExtension.prototype) as any;
     Object.assign(extension, {
-      dbtProjectContainer: {
+      projects: {
         setContext: jest.fn(),
-        initializeDBTProjects: jest.fn(() => Promise.resolve()),
+        initialize: jest.fn(() => Promise.resolve()),
       },
       projectRegistry: { initialize: jest.fn(() => Promise.resolve()) },
       fusionClientPool: { initialize: fusionClientPoolInitialize },

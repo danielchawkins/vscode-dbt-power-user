@@ -1,8 +1,8 @@
 import { inject } from "inversify";
 import { window } from "vscode";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../dbt_integration";
 import { ExtensionContextStore } from "../extensionContext";
+import { Projects } from "../projects/projects";
 import {
   ProjectQuickPick,
   ProjectQuickPickItem,
@@ -15,7 +15,7 @@ enum PromptAnswer {
 
 export class ProjectSetupCommands {
   constructor(
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     private extensionContext: ExtensionContextStore,
     private projectQuickPick: ProjectQuickPick,
     @inject("DBTTerminal")
@@ -30,7 +30,7 @@ export class ProjectSetupCommands {
     }
 
     const pickedProject = await this.projectQuickPick.projectPicker(
-      await this.dbtProjectContainer.getProjects(),
+      await this.projects.all(),
     );
     if (!pickedProject) {
       return undefined;
@@ -63,9 +63,7 @@ export class ProjectSetupCommands {
       }
     }
     try {
-      const project = this.dbtProjectContainer.findDBTProject(
-        projectContextResolved.uri,
-      );
+      const project = this.projects.get(projectContextResolved.uri);
       if (project === undefined) {
         throw new Error(
           `Project ${projectContextResolved.label} was not found`,
@@ -109,9 +107,7 @@ export class ProjectSetupCommands {
       }
     }
     try {
-      const project = this.dbtProjectContainer.findDBTProject(
-        projectContextResolved.uri,
-      );
+      const project = this.projects.get(projectContextResolved.uri);
       if (project === undefined) {
         throw new Error(
           `Project ${projectContextResolved.label} was not found`,

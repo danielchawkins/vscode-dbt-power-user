@@ -21,7 +21,6 @@ import {
   completeWebviewReady,
 } from "../benchmark/runtimeTimings";
 import { DBTProject } from "../dbt_client/dbtProject";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
   DBTTerminal,
   TestMetaData,
@@ -30,6 +29,7 @@ import {
 } from "../dbt_integration";
 import { ExtensionContextStore } from "../extensionContext";
 import { UserInputError } from "../local/errors";
+import { Projects } from "../projects/projects";
 import { DbtTestService } from "../services/dbtTestService";
 import {
   DocGenService,
@@ -61,7 +61,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   private onMessageDisposable: Disposable | undefined;
 
   public constructor(
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     private extensionContext: ExtensionContextStore,
     private docGenService: DocGenService,
     private dbtTestService: DbtTestService,
@@ -70,8 +70,8 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     private terminal: DBTTerminal,
   ) {
     this._disposables.push(
-      dbtProjectContainer.onDidChangeManifest(() => this.onManifestChanged()),
-      dbtProjectContainer.onDidRemoveProject(() => this.onManifestChanged()),
+      projects.onDidChangeManifest(() => this.onManifestChanged()),
+      projects.onDidRemoveProject(() => this.onManifestChanged()),
     );
     window.onDidChangeActiveTextEditor(
       async (event: TextEditor | undefined) => {
@@ -99,7 +99,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       return undefined;
     }
     const currentFilePath = window.activeTextEditor.document.uri;
-    return this.dbtProjectContainer.findDBTProject(currentFilePath);
+    return this.projects.get(currentFilePath);
   }
 
   private getDbtTestCode(test: TestMetaData, modelName: string) {
@@ -772,9 +772,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   private async saveDocumentation(message: any, syncRequestId: string) {
     let patchPath = message.patchPath;
     try {
-      const projectByFilePath = this.dbtProjectContainer.findDBTProject(
-        Uri.file(message.filePath),
-      );
+      const projectByFilePath = this.projects.get(Uri.file(message.filePath));
       if (!projectByFilePath) {
         throw new Error("Unable to find project for saving documentation");
       }

@@ -1,6 +1,6 @@
 import { Disposable, languages } from "vscode";
 import { DBTPowerUserExtension } from "../dbtPowerUserExtension";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
+import { Projects } from "../projects/projects";
 import { CteCodeLensProvider } from "./cteCodeLensProvider";
 import { SourceModelCreationCodeLensProvider } from "./sourceModelCreationCodeLensProvider";
 import { SqlActionsCodeLensProvider } from "./sqlActionsCodeLensProvider";
@@ -9,14 +9,14 @@ import { VirtualSqlCodeLensProvider } from "./virtualSqlCodeLensProvider";
 export class CodeLensProviders implements Disposable {
   private disposables: Disposable[] = [];
   constructor(
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     private sourceModelCreationCodeLensProvider: SourceModelCreationCodeLensProvider,
     private virtualSqlCodeLensProvider: VirtualSqlCodeLensProvider,
     private cteCodeLensProvider: CteCodeLensProvider,
     private sqlActionsCodeLensProvider: SqlActionsCodeLensProvider,
   ) {
     // Add code lenses after projects are initialized.
-    this.dbtProjectContainer.onDBTProjectsInitialization(() => {
+    this.projects.onDidInitialize(() => {
       this.disposables.push(
         languages.registerCodeLensProvider(
           DBTPowerUserExtension.DBT_YAML_SELECTOR,

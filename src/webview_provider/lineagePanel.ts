@@ -11,8 +11,8 @@ import {
   window,
 } from "vscode";
 import { DBTProject } from "../dbt_client/dbtProject";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../dbt_integration";
+import { Projects } from "../projects/projects";
 import { NewLineagePanel } from "./newLineagePanel";
 
 export interface LineagePanelView extends WebviewViewProvider {
@@ -34,15 +34,15 @@ export class LineagePanel implements WebviewViewProvider, Disposable {
 
   public constructor(
     private lineagePanel: NewLineagePanel,
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
     this.disposables.push(
-      dbtProjectContainer.onDidChangeManifest((project) =>
+      projects.onDidChangeManifest((project) =>
         this.getPanel().manifestChanged(project),
       ),
-      dbtProjectContainer.onDidRemoveProject(() =>
+      projects.onDidRemoveProject(() =>
         this.getPanel().manifestChanged(undefined),
       ),
     );

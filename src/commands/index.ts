@@ -26,7 +26,6 @@ import { DBT_PROJECT_FILE, readDbtProjectFile } from "../core/project";
 import { CteProfilerDecorationProvider } from "../cte_profiler/cteProfilerDecorationProvider";
 import { CteProfilerService } from "../cte_profiler/cteProfilerService";
 import { DBTProject } from "../dbt_client/dbtProject";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
   CATALOG_FILE,
   DBTTerminal,
@@ -34,6 +33,7 @@ import {
   RunModelType,
 } from "../dbt_integration";
 import { ExtensionContextStore } from "../extensionContext";
+import { Projects } from "../projects/projects";
 import { ProjectQuickPickItem } from "../quickpick/projectQuickPick";
 import { DiagnosticsOutputChannel } from "../services/diagnosticsOutputChannel";
 import { RunHistoryService } from "../services/runHistoryService";
@@ -50,7 +50,7 @@ export class VSCodeCommands implements Disposable {
   private disposables: Disposable[] = [];
 
   constructor(
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     private extensionContext: ExtensionContextStore,
     private runModel: RunModel,
     private runTest: RunTest,
@@ -78,9 +78,7 @@ export class VSCodeCommands implements Disposable {
       commands.registerCommand(
         "fusionPowerUser.rerunFromHistory",
         (item: RunTreeItem) => {
-          rerunFromHistory(item.entry, (name) =>
-            this.dbtProjectContainer.findProjectByName(name),
-          );
+          rerunFromHistory(item.entry, (name) => this.projects.byName(name));
         },
       ),
       commands.registerCommand("fusionPowerUser.clearRunHistory", async () => {
@@ -255,7 +253,7 @@ export class VSCodeCommands implements Disposable {
       commands.registerCommand(
         "fusionPowerUser.yamlRunModel",
         (uri: Uri, modelName: string) => {
-          const project = this.dbtProjectContainer.findDBTProject(uri);
+          const project = this.projects.get(uri);
           if (!project) {
             return;
           }
@@ -269,7 +267,7 @@ export class VSCodeCommands implements Disposable {
       commands.registerCommand(
         "fusionPowerUser.yamlTestModel",
         (uri: Uri, modelName: string) => {
-          const project = this.dbtProjectContainer.findDBTProject(uri);
+          const project = this.projects.get(uri);
           if (!project) {
             return;
           }
@@ -322,8 +320,7 @@ export class VSCodeCommands implements Disposable {
           return;
         }
 
-        const dbtProject =
-          this.dbtProjectContainer.findDBTProject(activeFileUri);
+        const dbtProject = this.projects.get(activeFileUri);
         if (!dbtProject) {
           this.dbtTerminal.debug(
             "buildCurrentProject",
@@ -353,8 +350,7 @@ export class VSCodeCommands implements Disposable {
           return;
         }
 
-        const dbtProject =
-          this.dbtProjectContainer.findDBTProject(activeFileUri);
+        const dbtProject = this.projects.get(activeFileUri);
         if (!dbtProject) {
           this.dbtTerminal.debug(
             "cleanCurrentProject",
@@ -450,7 +446,7 @@ export class VSCodeCommands implements Disposable {
           ]);
           this.diagnosticsOutputChannel.logNewLine();
 
-          const projects = this.dbtProjectContainer.getProjects();
+          const projects = this.projects.all();
           this.diagnosticsOutputChannel.logLine(
             `Number of projects=${projects.length}`,
           );

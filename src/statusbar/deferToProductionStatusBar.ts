@@ -6,8 +6,8 @@ import {
   TextEditor,
   window,
 } from "vscode";
-import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import { DBTTerminal } from "../dbt_integration";
+import { Projects } from "../projects/projects";
 import { onDidChangeSettings } from "../settings";
 
 export class DeferToProductionStatusBar implements Disposable {
@@ -18,7 +18,7 @@ export class DeferToProductionStatusBar implements Disposable {
   private disposables: Disposable[] = [];
 
   constructor(
-    private dbtProjectContainer: DBTProjectContainer,
+    private projects: Projects,
     @inject("DBTTerminal")
     private dbtTerminal: DBTTerminal,
   ) {
@@ -80,7 +80,7 @@ export class DeferToProductionStatusBar implements Disposable {
   }
 
   private getCurrentProject() {
-    const projects = this.dbtProjectContainer.getProjects();
+    const projects = this.projects.all();
     if (projects.length === 1) {
       return projects[0];
     }
@@ -88,8 +88,7 @@ export class DeferToProductionStatusBar implements Disposable {
     if (!currentFilePath) {
       throw new Error("No file selected in the editor");
     }
-    const currentProject =
-      this.dbtProjectContainer.findDBTProject(currentFilePath);
+    const currentProject = this.projects.get(currentFilePath);
 
     if (!currentProject) {
       throw new Error("no Project found for selected document");
