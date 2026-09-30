@@ -25,6 +25,8 @@ import { FusionVersion } from "./fusionVersion";
 export interface FusionClientPool extends Disposable {
   /** One client per Declared Project, created and torn down with the registry. */
   get(project: DeclaredProject): FusionClient | undefined;
+  /** The launch the project's current client was started with. */
+  getLaunch(project: DeclaredProject): LspLaunch | undefined;
   readonly onDidChangeClients: Event<void>;
   /** Starts client lifecycle after activation gates and registry initialization. */
   initialize(): void;
@@ -101,6 +103,10 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
   get(project: DeclaredProject): FusionClient | undefined {
     return this.clients.get(projectKey(project))?.client;
+  }
+
+  getLaunch(project: DeclaredProject): LspLaunch | undefined {
+    return this.clients.get(projectKey(project))?.launch;
   }
 
   initialize(): void {

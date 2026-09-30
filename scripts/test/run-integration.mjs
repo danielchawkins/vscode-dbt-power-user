@@ -289,6 +289,11 @@ function prepareNativeEditor(dir, mode) {
       "models:\n  lineage_probe:\n    +static_analysis: strict\n",
     );
   }
+  // A second output for the target-change suite; its database is never set up.
+  appendFileSync(
+    path.join(dir, "profiles.yml"),
+    "    ci:\n      type: duckdb\n      path: probe_ci.duckdb\n",
+  );
   const dbt = fusionPath ?? "dbt";
   const setupArgs = ["run-operation", "setup_raw", "--profiles-dir", dir];
   const setup = spawnSync(dbt, setupArgs, {

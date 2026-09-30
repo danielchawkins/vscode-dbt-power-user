@@ -4,7 +4,7 @@ import { readHarnessSwitch } from "../settings";
 import { FusionClientPool } from "./fusionClientPool";
 import { FusionClientState } from "./fusionLanguageClient";
 
-/** Test-only: reports LSP client state per Declared Project for the VSIX smoke suite. */
+/** Test-only: reports LSP client state per Declared Project for the smoke and integration suites. */
 export const FUSION_CLIENT_STATES_COMMAND =
   "fusionPowerUser.test.getFusionClientStates";
 
@@ -12,11 +12,17 @@ export interface FusionClientStateReport {
   projectName: string;
   state: FusionClientState;
   failureReason: string | undefined;
+  /** The `--target` the current client was launched with. */
+  target: string | undefined;
 }
 
 function enabled(): boolean {
   const host = readHarnessSwitch("smokeHost");
-  return host === "vscode" || host === "cursor";
+  return (
+    host === "vscode" ||
+    host === "cursor" ||
+    readHarnessSwitch("integrationCommands") === "1"
+  );
 }
 
 export function registerFusionClientDiagnostics(
@@ -35,6 +41,7 @@ export function registerFusionClientDiagnostics(
           projectName: project.name,
           state: client?.state ?? "stopped",
           failureReason: client?.failureReason,
+          target: pool.getLaunch(project)?.target,
         };
       }),
     ),
