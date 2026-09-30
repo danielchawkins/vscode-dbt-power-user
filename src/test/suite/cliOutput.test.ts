@@ -126,4 +126,26 @@ describe("showPreview", () => {
       /Could not find previewLine/,
     );
   });
+
+  it("exposes a failed query's stdout error record to parseLogEntries", () => {
+    const stdout = [
+      JSON.stringify({
+        data: {},
+        info: { level: "debug", msg: "Started running model main.inline" },
+      }),
+      JSON.stringify({
+        data: {},
+        info: {
+          level: "error",
+          msg: "Catalog Error: Table with name stg_orders does not exist!",
+        },
+      }),
+    ].join("\n");
+    expect(parseLogEntries(stdout)).toEqual([
+      {
+        level: "error",
+        message: "Catalog Error: Table with name stg_orders does not exist!",
+      },
+    ]);
+  });
 });
