@@ -11,7 +11,7 @@ const suites = "out/test/integration";
 
 /** Suites and extra environment per label; every other suite assumes a different workspace. */
 const selection = {
-  trusted: { files: `${suites}/!(columnLineage).test.js` },
+  trusted: { files: `${suites}/!(columnLineage|lineageTableEdges).test.js` },
   symlinked: { files: `${suites}/symlinkedWorkspace.test.js`, env: { FPU_SYMLINKED_WORKSPACE: "1" } },
 };
 
@@ -21,7 +21,11 @@ export default defineConfig(
     const mode = nativeMode(label);
     const { files, env } = mode
       ? {
-          files: [`${suites}/nativeEditorFeatures.test.js`, `${suites}/columnLineage.test.js`],
+          files: [
+            `${suites}/nativeEditorFeatures.test.js`,
+            `${suites}/columnLineage.test.js`,
+            `${suites}/lineageTableEdges.test.js`,
+          ],
           env: {
             FPU_NATIVE_EDITOR_MODE: mode,
             FPU_INTEGRATION_COMMANDS: "1",
