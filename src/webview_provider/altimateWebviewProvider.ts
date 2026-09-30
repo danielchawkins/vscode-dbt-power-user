@@ -19,10 +19,6 @@ import {
   beginWebviewResolve as recordWebviewResolveStart,
 } from "../benchmark/runtimeTimings";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
-import {
-  ManifestCacheChangedEvent,
-  ManifestCacheProjectAddedEvent,
-} from "../dbt_client/event/manifestCacheChangedEvent";
 import { DBTTerminal } from "../dbt_integration";
 import { UserInputError } from "../local/errors";
 import { QueryManifestService } from "../services/queryManifestService";
@@ -56,7 +52,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
   protected _panel: WebviewView | WebviewPanel | undefined = undefined;
   protected _webview: Webview | undefined = undefined;
   protected _disposables: Disposable[] = [];
-  protected eventMap: Map<string, ManifestCacheProjectAddedEvent> = new Map();
   // Flag to know if panel's webview is rendered and ready to receive message
   protected isWebviewReady = false;
 
@@ -67,12 +62,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
   ) {
-    this._disposables.push(
-      dbtProjectContainer.onManifestChanged((event) =>
-        this.onManifestCacheChanged(event),
-      ),
-    );
-
     const t = this;
     this._disposables.push(
       emitterService.eventEmitter.event((d) =>
@@ -144,15 +133,6 @@ export class AltimateWebviewProvider implements WebviewViewProvider {
         status: false,
       });
     }
-  }
-
-  protected onManifestCacheChanged(event: ManifestCacheChangedEvent): void {
-    event.added?.forEach((added) => {
-      this.eventMap.set(added.project.projectRoot.fsPath, added);
-    });
-    event.removed?.forEach((removed) => {
-      this.eventMap.delete(removed.projectRoot.fsPath);
-    });
   }
 
   protected async onEvent({ command, payload }: SharedStateEventEmitterProps) {

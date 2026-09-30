@@ -23,10 +23,6 @@ import {
 import { DBTProject } from "../dbt_client/dbtProject";
 import { DBTProjectContainer } from "../dbt_client/dbtProjectContainer";
 import {
-  ManifestCacheChangedEvent,
-  ManifestCacheProjectAddedEvent,
-} from "../dbt_client/event/manifestCacheChangedEvent";
-import {
   DBTTerminal,
   TestMetaData,
   TestMetadataAcceptedValues,
@@ -60,7 +56,6 @@ export class DocsEditViewPanel implements WebviewViewProvider {
   private _panel: WebviewView | undefined = undefined;
   private documentation?: DBTDocumentation;
   private loadedFromManifest = false;
-  private eventMap: Map<string, ManifestCacheProjectAddedEvent> = new Map();
   private _disposables: Disposable[] = [];
   private onMessageDisposable: Disposable | undefined;
 
@@ -72,9 +67,8 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     @inject("DBTTerminal")
     private terminal: DBTTerminal,
   ) {
-    dbtProjectContainer.onManifestChanged((event) =>
-      this.onManifestCacheChanged(event),
-    );
+    dbtProjectContainer.onDidChangeManifest(() => this.onManifestChanged());
+    dbtProjectContainer.onDidRemoveProject(() => this.onManifestChanged());
     window.onDidChangeActiveTextEditor(
       async (event: TextEditor | undefined) => {
         this.documentation = undefined;
@@ -143,7 +137,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
       return [];
     }
 
-    const manifestEvent = this.eventMap.get(project.projectRoot.fsPath);
+    const manifestEvent = project.manifest;
     if (!manifestEvent?.docMetaMap) {
       return [];
     }
@@ -1032,13 +1026,7 @@ export class DocsEditViewPanel implements WebviewViewProvider {
     });
   }
 
-  private async onManifestCacheChanged(event: ManifestCacheChangedEvent) {
-    event.added?.forEach((added) => {
-      this.eventMap.set(added.project.projectRoot.fsPath, added);
-    });
-    event.removed?.forEach((removed) => {
-      this.eventMap.delete(removed.projectRoot.fsPath);
-    });
+  private async onManifestChanged() {
     if (this.documentation !== undefined && this.loadedFromManifest) {
       // don't reload doc panel if documentation is already set, otherwise the
       //  documentation will be overwritten by the one coming from the manifest
