@@ -49,20 +49,23 @@ function fakeProcesses(
   const factory = {
     createCommandProcessExecution: (call: Call) => {
       calls.push(call);
-      const complete = async () => ({
-        stdout: "",
-        stderr: "",
-        fullOutput: "",
-        exitCode: 0,
-        ...(typeof result === "function" ? result(call) : result),
-      });
-      return {
-        complete,
-        completeWithTerminalOutput: () => {
+      const complete = async ({
+        onOutput,
+      }: { onOutput?: (chunk: string) => void } = {}) => {
+        const value = {
+          stdout: "",
+          stderr: "",
+          fullOutput: "",
+          exitCode: 0,
+          ...(typeof result === "function" ? result(call) : result),
+        };
+        if (onOutput) {
           call.streamed = true;
-          return complete();
-        },
+          onOutput(value.fullOutput);
+        }
+        return value;
       };
+      return { complete };
     },
   } as unknown as CommandProcessExecutionFactory;
   return { calls, factory };
@@ -72,10 +75,11 @@ function fakeTerminal() {
   const warn = vi.fn();
   const error = vi.fn();
   const show = vi.fn(async (_status: boolean) => undefined);
+  const log = vi.fn((_message: string) => undefined);
   const noop = () => undefined;
   const terminal: DBTTerminal = {
     show,
-    log: noop,
+    log,
     trace: noop,
     debug: noop,
     info: noop,
@@ -83,7 +87,7 @@ function fakeTerminal() {
     error,
     dispose: noop,
   };
-  return { terminal, warn, error, show };
+  return { terminal, warn, error, show, log };
 }
 
 const executable = { path: "/bin/dbt", env: { A: "1", B: "exe" } };
@@ -466,6 +470,21 @@ describe("FusionCli project state and commands", () => {
     expect(argsAfterExecutable(calls[0])).toEqual(expected);
     expect(calls[0].streamed).toBe(true);
     expect(show).toHaveBeenCalledWith(true);
+  });
+
+  it("streams terminal output with CRLF line endings and returns the raw result", async () => {
+    const raw = { stdout: "a\nb\r\n\nc", fullOutput: "a\nb\r\n\nc" };
+    const { cli, log } = cliWith(raw);
+    const result = await cli.run(
+      { kind: "run", select: "a" },
+      { terminalOutput: { focus: false } },
+    );
+    expect(log.mock.calls.map(([m]) => m)).toEqual([
+      expect.stringMatching(/^> Executing task: dbt /),
+      "a\r\nb\r\n\r\nc",
+      "",
+    ]);
+    expect(result).toMatchObject(raw);
   });
 
   it("prepares each queued kind with its argv and status", () => {

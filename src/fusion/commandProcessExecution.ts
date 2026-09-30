@@ -92,7 +92,15 @@ export class CommandProcessExecution {
     return proc;
   }
 
-  async complete(): Promise<CommandProcessResult> {
+  /**
+   * Runs the command to exit. `onOutput` receives each stdout and stderr chunk in arrival order; the result is the
+   * same with or without it.
+   */
+  async complete({
+    onOutput,
+  }: {
+    onOutput?: (chunk: string) => void;
+  } = {}): Promise<CommandProcessResult> {
     return new Promise<CommandProcessResult>((resolve, reject) => {
       this.terminal.debug(
         "CommandProcessExecution",
@@ -107,11 +115,13 @@ export class CommandProcessExecution {
         chunk = chunk.toString();
         stdoutBuffer += chunk;
         fullOutput += chunk;
+        onOutput?.(chunk);
       });
       commandProcess.stderr?.on("data", (chunk) => {
         chunk = chunk.toString();
         stderrBuffer += chunk;
         fullOutput += chunk;
+        onOutput?.(chunk);
       });
 
       commandProcess.once("close", (exitCode: number | null) => {
@@ -155,55 +165,5 @@ export class CommandProcessExecution {
         }
       }
     });
-  }
-
-  async completeWithTerminalOutput(): Promise<CommandProcessResult> {
-    return new Promise((resolve, reject) => {
-      const commandProcess = this.spawn();
-      let stdoutBuffer = "";
-      let stderrBuffer = "";
-      let fullOutput = "";
-      commandProcess.stdout?.on("data", (chunk) => {
-        const line = `${this.formatText(chunk.toString())}`;
-        stdoutBuffer += line;
-        this.terminal.log(line);
-        fullOutput += line;
-      });
-      commandProcess.stderr?.on("data", (chunk) => {
-        const line = `${this.formatText(chunk.toString())}`;
-        stderrBuffer += line;
-        this.terminal.log(line);
-        fullOutput += line;
-      });
-      commandProcess.once("close", (exitCode: number | null) => {
-        resolve({
-          stdout: stdoutBuffer,
-          stderr: stderrBuffer,
-          fullOutput,
-          exitCode,
-        });
-        this.terminal.log("");
-      });
-      commandProcess.once("error", (error) => {
-        if (isCommandNotFoundError(error)) {
-          reject(createCommandNotFoundError(this.command));
-          return;
-        }
-        reject(new Error(`Error occurred during process execution: ${error}`));
-      });
-
-      if (this.stdin && commandProcess.stdin) {
-        try {
-          commandProcess.stdin.write(this.stdin);
-          commandProcess.stdin.end();
-        } catch (_) {
-          // stdin may not be writable if spawn failed (e.g. EBADF)
-        }
-      }
-    });
-  }
-
-  public formatText(text: string) {
-    return `${text.split(/(\r?\n)+/g).join("\r")}`;
   }
 }
