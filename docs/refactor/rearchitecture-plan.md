@@ -203,6 +203,23 @@ Goal: replace hand-rolled mechanisms with VS Code ones.
 
 Verify: `commandConsistencyGuard` extended to `languages` and language status; `grep -c createTerminal src` and `grep -c setTextDocumentLanguage src` are 0; `createOutputChannel` appears in one module; visual evidence for status items, explorer icons and the output channel.
 
+**Result (R5 complete).**
+
+- **Guard.** `src/test/suite/commandConsistencyGuard.test.ts` checks that every language status item command is contributed or registered, that `jinja-sql` is contributed and every contributed language has filename patterns, and that every language named in a `when` clause, a document selector or `FUSION_DOCUMENT_LANGUAGES` (the language status selector) is contributed or built in.
+- **Exit greps.**
+  - `rg -c createTerminal src` and `rg -c setTextDocumentLanguage src` each print only `src/test/mock/vscode.ts:1`, the mock's stub; production code has none.
+  - `window.createOutputChannel` appears in one production module, `src/projects/outputChannels.ts`.
+- **Output channels.** `vscodeTerminal.ts`, `dbtProjectLog.ts` and its `logs/dbt.log` watcher are deleted. Each Declared Project's channel carries its Fusion Client, CLI and feature messages; see [Output channels](../architecture.md#output-channels). A unit test shows a client restarted after a launch-setting change receives the same channel, and a wiring test shows `projectFactory` and the client pool share one channel per Declared Project.
+- **Gates.** `just check`: 1,096 host and 25 script tests pass. `just smoke` passes on VS Code and Cursor (`sha256=6ef10c641dc4eaed23babad65f1843ec588e7b528e8986d28197047f16672fcb`). `just test-integration` against Fusion 2.0.6: 66 passing, 17 pending, 0 failing.
+- **Visual evidence.** `just smoke-visual` now records three more checkpoints for the single-project fixture: language status, explorer icons and the project output channel. The reviewed run is `FPU_SMOKE_VSIX=fusion-power-user-0.4.0-beta.1.vsix sha256=99e2a82bc28f70fa71aca2261ce3fbe9d7f142416e05214db8dce01e350d9429`; on both hosts, every PNG agrees with its record:
+  - `01-model-editor`: `models/child.sql` as `jinja-sql`, with the status bar showing `{} jinja-sql`.
+  - `02-language-status`: the `{}` hover lists `dbt Fusion · single_project` with "Show output", and `static: project · single_project` with "Enable strict analysis".
+  - `03-explorer-icons`: `child.sql` and `broken_ref.sql` show `media/images/dbt_file_icon.svg`; `dbt_project.yml` keeps the theme icon.
+  - `04-project-output-channel`: the Output view shows `Fusion Power User: single_project` with Fusion compile lines (`'Incremental' compiling …`, `Node breakdown: 2 models`). In VS Code, "Show output" selects it. In Cursor, the view stays on `Cursor Auth Debug` until the channel is picked from the dropdown; the record's `openedBy` names that path.
+  - `05`–`07`: the docs editor, query results and lineage panels, each matching its `bodyText`.
+
+  No notification appears at any checkpoint. Screenshots stay out of the repository, as for R3 and R4.
+
 ### R6 — Webview contract and one panel host
 
 Goal: one typed protocol, one HTML and CSP generator, one entry per panel.
