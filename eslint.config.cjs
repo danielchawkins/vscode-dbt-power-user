@@ -72,12 +72,12 @@ const fsRequireSyntax = [
 ];
 
 module.exports = [
-  { ignores: ["out/**", "dist/**", "webview_panels/**", "src/test/fixtures/**", "**/*.d.ts"] },
+  { ignores: ["out/**", "dist/**", "packages/*/dist/**", "webview_panels/**", "src/test/fixtures/**", "**/*.d.ts"] },
   typescriptEslint.configs["flat/base"],
   typescriptEslint.configs["flat/eslint-recommended"],
   prettier,
   {
-    files: ["src/**/*.ts"],
+    files: ["src/**/*.ts", "packages/*/src/**/*.ts"],
     languageOptions: {
       parser: tsParser,
       parserOptions: { projectService: true, tsconfigRootDir: __dirname },
@@ -132,7 +132,7 @@ module.exports = [
   },
   {
     // Tests trade size budgets for readable, table-driven cases.
-    files: ["src/test/**/*.ts"],
+    files: ["src/test/**/*.ts", "packages/*/src/**/*.test.ts"],
     rules: {
       "max-lines": "off",
       "max-lines-per-function": "off",

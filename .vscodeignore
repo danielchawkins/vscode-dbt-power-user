@@ -16,6 +16,7 @@ eslint.config.cjs
 **/*.py
 **/*.node
 .github
+packages/**
 webview_panels
 !webview_panels/dist
 

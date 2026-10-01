@@ -9,9 +9,13 @@
   },
   "packageManager": "npm@11.19.0",
   "scripts": {
-    "dev": "vite",
-    "watch": "rm -rf dist && tsc && vite build --watch",
-    "build": "rm -rf dist && NODE_OPTIONS=--max-old-space-size=8192 tsc && NODE_OPTIONS=--max-old-space-size=8192 vite build --emptyOutDir=false && bash ../scripts/workspace/check-webview-tailwind-css.sh dist/assets/main.css",
+    "build:contract": "npm run build --prefix ../packages/webview-contract",
+    "dev": "npm run build:contract && concurrently --names contract,webview \"npm run watch --prefix ../packages/webview-contract\" \"npm run dev:app\"",
+    "dev:app": "vite",
+    "watch": "npm run build:contract && concurrently --names contract,webview \"npm run watch --prefix ../packages/webview-contract\" \"npm run watch:app\"",
+    "watch:app": "rm -rf dist && tsc && vite build --watch",
+    "build": "npm run build:contract && npm run build:app",
+    "build:app": "rm -rf dist && NODE_OPTIONS=--max-old-space-size=8192 tsc && NODE_OPTIONS=--max-old-space-size=8192 vite build --emptyOutDir=false && bash ../scripts/workspace/check-webview-tailwind-css.sh dist/assets/main.css",
     "preview": "vite preview",
     "storybook": "storybook dev -p 6006",
     "storybook:build": "storybook build",
@@ -23,6 +27,7 @@
     "lint:prune": "eslint . --prune-suppressions"
   },
   "dependencies": {
+    "@fusion-power-user/webview-contract": "*",
     "@altimateai/ui-components": "^0.0.88",
     "@finos/perspective": "^3.8.0",
     "@finos/perspective-viewer": "^3.8.0",
@@ -85,19 +90,5 @@
     "typescript": "^6.0.3",
     "vite": "^8.3.0",
     "vitest": "^5.0.0"
-  },
-  "overrides": {
-    "uuid": "^14.0.0",
-    "@babel/runtime": "^7.26.10",
-    "serialize-javascript": "^7.0.0",
-    "brace-expansion": "^2.0.2",
-    "minimatch": "^9.0.7",
-    "maplibre-gl": "^6.11.2"
-  },
-  "allowScripts": {
-    "@parcel/watcher@2.6.0": true,
-    "esbuild@0.28.2": true,
-    "fsevents@2.3.3": true,
-    "es5-ext": false
   }
 }

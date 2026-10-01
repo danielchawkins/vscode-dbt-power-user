@@ -849,29 +849,38 @@
     ]
   },
   "scripts": {
-    "vscode:prepublish": "npm run build --prefix webview_panels && npm run build",
-    "build": "rsbuild build",
-    "build:dev": "rsbuild build --mode development",
-    "watch:extension": "rsbuild build --mode development --watch",
-    "compile": "tsc -p ./ --noEmit",
-    "compile:integration": "tsc -p tsconfig.integration.json",
+    "vscode:prepublish": "npm run build:contract && npm run build:app --workspace webview_panels && npm run build:app",
+    "build:contract": "npm run build --workspace @fusion-power-user/webview-contract",
+    "watch:contract": "npm run watch --workspace @fusion-power-user/webview-contract",
+    "build": "npm run build:contract && npm run build:app",
+    "build:app": "rsbuild build",
+    "build:dev": "npm run build:contract && npm run build:dev:app",
+    "build:dev:app": "rsbuild build --mode development",
+    "watch:extension": "npm run build:contract && concurrently --names contract,extension \"npm run watch:contract\" \"npm run watch:extension:app\"",
+    "watch:extension:app": "rsbuild build --mode development --watch",
+    "compile": "tsc -b",
+    "compile:integration": "npm run build:contract && tsc -p tsconfig.integration.json",
     "clean": "node -e \"for (const d of ['out','coverage','dist']) require('fs').rmSync(d,{recursive:true,force:true})\"",
     "format": "prettier --write \"**/*.{js,css,html,json}\" \"scripts/**/*.mjs\"",
-    "lint": "eslint src scripts",
-    "lint:fix": "eslint src scripts --fix",
+    "lint": "eslint src scripts packages",
+    "lint:fix": "eslint src scripts packages --fix",
     "check:format": "prettier --check \"**/*.{js,css,html,json}\" \"scripts/**/*.mjs\"",
     "check:lockfile": "lockfile-lint --path package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity",
-    "check:lockfile:webviews": "lockfile-lint --path webview_panels/package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:integration": "node scripts/test/run-integration.mjs",
     "package:vsix": "vsce package",
-    "lint:prune": "eslint src scripts --prune-suppressions",
+    "lint:prune": "eslint src scripts packages --prune-suppressions",
     "lint:unused": "knip",
     "lint:imports": "depcruise src --config .dependency-cruiser.cjs --ignore-known .dependency-cruiser-known-violations.json --output-type err",
     "lint:imports:baseline": "depcruise src --config .dependency-cruiser.cjs --output-type baseline --output-to .dependency-cruiser-known-violations.json"
   },
+  "workspaces": [
+    "packages/*",
+    "webview_panels"
+  ],
   "devDependencies": {
+    "@fusion-power-user/webview-contract": "*",
     "@rsbuild/core": "^2.2.8",
     "@types/istanbul-lib-coverage": "^2.0.6",
     "@types/mocha": "^10.0.10",
@@ -884,6 +893,7 @@
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
     "@vscode/vsce": "^4.0.0",
+    "concurrently": "^10.0.5",
     "dependency-cruiser": "^18.4.0",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
@@ -913,13 +923,17 @@
     "uuid": "^14.0.0",
     "serialize-javascript": "^7.0.0",
     "diff": "^8.0.3",
-    "brace-expansion@<2.0.2": "^2.0.2"
+    "brace-expansion@<2.0.2": "^2.0.2",
+    "minimatch@<9.0.7": "^9.0.7",
+    "@babel/runtime": "^7.26.10",
+    "maplibre-gl": "^6.11.2"
   },
   "packageManager": "npm@11.19.0",
   "allowScripts": {
     "@parcel/watcher@2.6.0": false,
     "@vscode/vsce-sign@2.1.0": true,
-    "fsevents@2.3.3": false,
-    "unrs-resolver@1.12.2": false
+    "es5-ext@0.10.64": false,
+    "esbuild@0.28.2": false,
+    "fsevents@2.3.3": false
   }
 }

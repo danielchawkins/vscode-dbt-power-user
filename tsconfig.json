@@ -3,9 +3,11 @@
     "module": "ESNext",
     "target": "ES2020",
     "outDir": "out",
+    "noEmit": true,
+    "tsBuildInfoFile": "out/tsconfig.tsbuildinfo",
     "lib": ["ES2020"],
     "sourceMap": true,
-    "rootDir": "src",
+    "rootDir": ".",
     // "rootDirs": ["src", "../altimate-dbt-integration/src"],
     "strict": true,
     "skipLibCheck": true,
@@ -19,6 +21,7 @@
       "@extension": ["./src/modules.ts"]
     }
   },
-  "include": ["src/**/*"],
-  "exclude": ["node_modules", ".vscode-test", "webview_panels", "dist", "out"]
+  "include": ["src/**/*", "packages/webview-contract/src/**/*.test.ts"],
+  "exclude": ["node_modules", ".vscode-test", "webview_panels", "dist", "out"],
+  "references": [{ "path": "./packages/webview-contract" }]
 }

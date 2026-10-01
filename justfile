@@ -30,14 +30,11 @@ setup *args:
 [group("setup")]
 sync:
     npm ci --strict-allow-scripts
-    npm ci --prefix webview_panels --strict-allow-scripts
 
 [group("setup")]
 update:
     npm update --strict-allow-scripts
-    npm update --prefix webview_panels --strict-allow-scripts
     npm install-scripts prune
-    npm --prefix webview_panels install-scripts prune
 
 [group("setup")]
 install-mise-tools *args:
@@ -65,18 +62,25 @@ verify-setup:
 ####################
 
 [group("development")]
+build-contract:
+    npm run build:contract
+
+[group("development")]
 build:
-    just webviews::build
-    npm run build
+    just build-contract
+    npm run build:app --workspace webview_panels
+    npm run build:app
 
 [group("development")]
 build-dev:
-    just webviews::build
-    npm run build:dev
+    just build-contract
+    npm run build:app --workspace webview_panels
+    npm run build:dev:app
 
 [group("development")]
 watch:
-    npm exec --no -- concurrently "just webviews::watch" "npm run watch:extension"
+    just build-contract
+    npm exec --no -- concurrently --names contract,webview,extension "npm run watch:contract" "npm run watch:app --workspace webview_panels" "npm run watch:extension:app"
 
 [group("development")]
 compile:
@@ -160,7 +164,6 @@ lint-format:
 [group("quality")]
 lint-lockfiles:
     npm run check:lockfile
-    npm run check:lockfile:webviews
 
 [group("quality")]
 fmt-markdown:
