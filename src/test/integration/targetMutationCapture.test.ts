@@ -10,8 +10,8 @@ const SNAPSHOT_INTERVAL_MS = 250;
 const IDLE_AFTER_OPEN_MS = 8_000;
 const WATCHER_DEBOUNCE_MS = 300;
 const PLAIN_MODEL = "models/plain.sql";
-const SENTINEL_REL = path.join("target", ".fpu_s7_sentinel");
-const SENTINEL_BYTES = Buffer.from("fpu-s7-sentinel-v1", "utf-8");
+const SENTINEL_REL = path.join("target", ".fpu_target_mutation_sentinel");
+const SENTINEL_BYTES = Buffer.from("fpu-target-mutation-sentinel-v1", "utf-8");
 const CLEAR_TARGET_TRIALS = 2;
 const SERVER_PHASES = [
   "idle-after-didOpen",
@@ -82,7 +82,7 @@ interface ArtifactMutations {
   changedPaths: string[];
 }
 
-interface S7CaptureSummary {
+interface TargetMutationCaptureSummary {
   fusionVersion: string;
   launchExtras: string[];
   textDocumentSync: unknown;
@@ -580,7 +580,7 @@ function summarizeCapture(input: {
   fixture: LspFixture;
   phaseProgress: Map<string, PhaseProgressCounts>;
   editSession: { didChangeSent: boolean; didSaveSent: boolean };
-}): S7CaptureSummary {
+}): TargetMutationCaptureSummary {
   const baseline = input.collector.snapshotsForPhase("baseline")[0];
   assert.ok(baseline, "baseline snapshot required");
 
@@ -623,7 +623,7 @@ function summarizeCapture(input: {
     "one read attempt per settled burst",
   );
 
-  const summary: S7CaptureSummary = {
+  const summary: TargetMutationCaptureSummary = {
     fusionVersion: input.fusionVersion,
     launchExtras: ["--lint-enabled", "true", "--static-analysis", "baseline"],
     textDocumentSync: input.textDocumentSync,
@@ -681,14 +681,16 @@ function summarizeCapture(input: {
   return summary;
 }
 
-suite("S7 target mutation capture", function () {
+suite("Target mutation capture", function () {
   this.timeout(180_000);
 
   const fusionVerdict = checkFusionVersion();
 
   suiteSetup(function () {
     if (fusionVerdict.kind !== "ok") {
-      console.warn("Skipping S7 capture: dbt Fusion 2.0.5+ required on PATH.");
+      console.warn(
+        "Skipping target mutation capture: dbt Fusion 2.0.5+ required on PATH.",
+      );
       this.skip();
     }
   });
@@ -933,7 +935,7 @@ suite("S7 target mutation capture", function () {
         editSession,
       });
 
-      console.log(`FPU_S7_CAPTURE=${JSON.stringify(summary)}`);
+      console.log(`FPU_TARGET_MUTATION_CAPTURE=${JSON.stringify(summary)}`);
 
       assert.ok(summary.compileWritesMeasured);
       assert.ok(summary.clearTargetDestructiveMeasured);
