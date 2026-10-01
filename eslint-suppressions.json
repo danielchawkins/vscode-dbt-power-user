@@ -127,11 +127,6 @@
       "count": 1
     }
   },
-  "src/dbt_client/vscodeTerminal.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 5
-    }
-  },
   "src/dbt_integration/dbtIntegration.ts": {
     "max-params": {
       "count": 1

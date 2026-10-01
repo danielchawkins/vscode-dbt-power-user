@@ -30,7 +30,7 @@ sharedWindow.createOutputChannel = vi.fn(
 );
 
 import { compose, createProjectParsers } from "../../compositionRoot";
-import { VSCodeDBTTerminal } from "../../dbt_client/vscodeTerminal";
+import { OutputChannels } from "../../projects/outputChannels";
 
 function stubContext(workspaceValue?: string) {
   return {
@@ -120,9 +120,41 @@ describe("Fusion-only integration wiring", () => {
       "extension",
       "extensionContextStore",
       "fusionExecutableResolver",
+      "fusionOutputChannel",
       "fusionStatus",
       "projectFactory",
     ]);
+  });
+
+  it("gives a Project and its Fusion Clients one channel of the Declared Project", async () => {
+    const createChannel = vi.mocked(
+      sharedWindow.createOutputChannel as (name: string) => unknown,
+    );
+    const { projectFactory, fusionOutputChannel } = composeTracked();
+    const declared = {
+      root: Uri.file("/tmp/shared"),
+      name: "shared",
+      folder: { uri: Uri.file("/tmp"), name: "tmp", index: 0 },
+      contains: () => false,
+      dispose: () => {},
+    };
+    createChannel.mockClear();
+
+    const project = projectFactory(declared);
+    const first = fusionOutputChannel(declared);
+    const second = fusionOutputChannel(declared);
+    first.info("from the client");
+
+    const named = createChannel.mock.results
+      .map(
+        (result) =>
+          result.value as ReturnType<typeof createMockLogOutputChannel>,
+      )
+      .filter((channel) => channel.name === "Fusion Power User: shared");
+    expect(named).toHaveLength(1);
+    expect(second).toBe(first);
+    expect(named[0].info).toHaveBeenCalledWith("from the client");
+    await project.dispose();
   });
 
   it("reads the extension context passed to each composition", () => {
@@ -146,7 +178,13 @@ describe("Fusion-only integration wiring", () => {
   });
 
   it("builds a Project from the project factory", async () => {
-    const project = composeTracked().projectFactory(Uri.file("/tmp/project"));
+    const project = composeTracked().projectFactory({
+      root: Uri.file("/tmp/project"),
+      name: "project",
+      folder: { uri: Uri.file("/tmp"), name: "tmp", index: 0 },
+      contains: () => false,
+      dispose: () => {},
+    });
 
     expect(project).toBeInstanceOf(Project);
     expect(() => project.getFusionCli()).toThrow(/not initialized/);
@@ -155,7 +193,7 @@ describe("Fusion-only integration wiring", () => {
 
   it("reads DBT_LOOM_CONFIG_PATH on each parse through the project parsers", () => {
     const reads: (string | undefined)[] = [];
-    const parsers = createProjectParsers(new VSCodeDBTTerminal());
+    const parsers = createProjectParsers(new OutputChannels());
     for (const parser of [parsers.nodeParser, parsers.sourceParser]) {
       const read = (
         parser as unknown as { readDbtLoomConfigPath: () => string | undefined }

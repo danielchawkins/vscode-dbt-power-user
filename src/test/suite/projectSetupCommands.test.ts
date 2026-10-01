@@ -14,10 +14,11 @@ const pickedProject: ProjectQuickPickItem = {
 };
 
 describe("ProjectSetupCommands project resolution", () => {
-  const mockDbtTerminal = {
+  const projectLog = {
+    name: "Fusion Power User: test_project",
     error: vi.fn(),
-    debug: vi.fn(),
   };
+  const outputChannels = { logFor: vi.fn(() => projectLog) };
 
   afterEach(() => {
     vi.clearAllMocks();
@@ -27,6 +28,7 @@ describe("ProjectSetupCommands project resolution", () => {
     storedProject?: ProjectQuickPickItem;
     pickerResult?: ProjectQuickPickItem;
     debugOutput?: string;
+    installError?: Error;
   }) {
     const mockProject = {
       debug: vi.fn(() =>
@@ -34,7 +36,11 @@ describe("ProjectSetupCommands project resolution", () => {
           fullOutput: options.debugOutput ?? "All checks passed",
         }),
       ),
-      installDeps: vi.fn(() => Promise.resolve()),
+      installDeps: vi.fn(() =>
+        options.installError
+          ? Promise.reject(options.installError)
+          : Promise.resolve(),
+      ),
     };
     const mockStore = { setToWorkspaceState: vi.fn() };
     const mockProjects = {
@@ -49,7 +55,7 @@ describe("ProjectSetupCommands project resolution", () => {
       mockProjects as never,
       mockStore as never,
       mockPicker as unknown as ProjectQuickPick,
-      mockDbtTerminal as never,
+      outputChannels as never,
     );
 
     return { commands, mockStore, mockPicker, mockProject };
@@ -115,5 +121,40 @@ describe("ProjectSetupCommands project resolution", () => {
 
     expect(mockPicker.projectPicker).toHaveBeenCalledTimes(1);
     expect(mockProject.installDeps).toHaveBeenCalledTimes(1);
+  });
+
+  it("validateProjects names the project's channel when dbt debug fails", async () => {
+    const { commands } = createCommands({ debugOutput: "ERROR: no profile" });
+
+    await expect(
+      commands.validateProjects(pickedProject, true),
+    ).rejects.toThrow("no profile");
+
+    expect(outputChannels.logFor).toHaveBeenCalledWith(projectUri);
+    expect(projectLog.error).toHaveBeenCalledWith(
+      "validateProjectError",
+      "Error when validating test_project",
+      expect.any(Error),
+    );
+    expect(window.showErrorMessage).toHaveBeenCalledWith(
+      'Error running dbt debug for project test_project. See the "Fusion Power User: test_project" ' +
+        "output for details.",
+    );
+  });
+
+  it("installDeps names the project's channel when dbt deps fails", async () => {
+    const { commands } = createCommands({
+      installError: new Error("dbt deps exited with code 1"),
+    });
+
+    await expect(commands.installDeps(pickedProject, true)).rejects.toThrow(
+      "code 1",
+    );
+
+    expect(projectLog.error).toHaveBeenCalled();
+    expect(window.showErrorMessage).toHaveBeenCalledWith(
+      "Error installing dbt dependencies for project test_project. See the dbt task terminal or the " +
+        '"Fusion Power User: test_project" output for details.',
+    );
   });
 });

@@ -1,4 +1,4 @@
-import { Event, ExtensionContext, Uri } from "vscode";
+import { ExtensionContext, Uri } from "vscode";
 import {
   ChildrenParentParser,
   DocParser,
@@ -14,9 +14,6 @@ import {
   TestParser,
   UnitTestParser,
 } from "./core/manifest";
-import { DBTProjectLog } from "./dbt_client/dbtProjectLog";
-import { ProjectConfigChangedEvent } from "./dbt_client/event/projectConfigChangedEvent";
-import { VSCodeDBTTerminal } from "./dbt_client/vscodeTerminal";
 import { DBTTerminal } from "./dbt_integration";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 import { ExtensionContextStore } from "./extensionContext";
@@ -58,15 +55,19 @@ import { registerDbtTaskProvider } from "./features/tasks/dbtTaskProvider";
 import { TreeviewProviders } from "./features/treeViews";
 import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
 import { FusionCli } from "./fusion/fusionCli";
-import { createFusionClientPool } from "./fusion/fusionClientPool";
+import {
+  createFusionClientPool,
+  FusionLaunchSources,
+} from "./fusion/fusionClientPool";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
 import { FusionStatus } from "./fusion/fusionStatus";
 import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
 import { CurrentProject } from "./projects/currentProject";
+import { OutputChannels } from "./projects/outputChannels";
 import { Project } from "./projects/project";
 import { ProjectQuickPick } from "./projects/projectQuickPick";
-import { ProjectRegistry } from "./projects/projectRegistry";
+import { DeclaredProject, ProjectRegistry } from "./projects/projectRegistry";
 import { Projects } from "./projects/projects";
 import { QueryManifestService } from "./projects/queryManifestService";
 import { readProjectSnapshot } from "./projects/readProjectSnapshot";
@@ -75,13 +76,8 @@ import { SharedStateService } from "./projects/sharedStateService";
 import { readEnvironmentOverride } from "./settings";
 import { StartupGate } from "./startupGate";
 
-/** Builds a Project rooted at `projectRoot`. */
-export type ProjectFactory = (projectRoot: Uri) => Project;
-
-/** Builds the log that follows a project's configuration changes. */
-export type DBTProjectLogFactory = (
-  onProjectConfigChanged: Event<ProjectConfigChangedEvent>,
-) => DBTProjectLog;
+/** Builds the Project of a Declared Project. */
+export type ProjectFactory = (project: DeclaredProject) => Project;
 
 /** The manifest parsers one Project owns. */
 export type ProjectParsers = ReturnType<typeof createProjectParsers>;
@@ -93,6 +89,8 @@ export interface Composition {
   fusionStatus: FusionStatus;
   fusionExecutableResolver: ConfiguredFusionExecutableResolver;
   projectFactory: ProjectFactory;
+  /** The channel the client pool gives each Fusion Client of a Declared Project. */
+  fusionOutputChannel: FusionLaunchSources["outputChannel"];
 }
 
 const readDbtLoomConfigPath = () =>
@@ -119,6 +117,7 @@ export function createProjectParsers(terminal: DBTTerminal) {
 
 interface ProjectsGraph {
   extensionContextStore: ExtensionContextStore;
+  outputChannels: OutputChannels;
   terminal: DBTTerminal;
   sharedState: SharedStateService;
   runHistoryService: RunHistoryService;
@@ -133,10 +132,8 @@ interface ProjectsGraph {
 
 function composeProjects(context: ExtensionContext): ProjectsGraph {
   const extensionContextStore = new ExtensionContextStore(context);
-  const terminal: DBTTerminal = new VSCodeDBTTerminal();
-  const commandProcessExecutionFactory = new CommandProcessExecutionFactory(
-    terminal,
-  );
+  const outputChannels = new OutputChannels();
+  const terminal: DBTTerminal = outputChannels;
   const sharedState = new SharedStateService();
   const runHistoryService = new RunHistoryService();
   const fusionExecutableResolver = new ConfiguredFusionExecutableResolver({
@@ -147,12 +144,11 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
         extensionContextStore.setToGlobalState(key, value),
     }),
   });
-  const dbtProjectLogFactory: DBTProjectLogFactory = (onProjectConfigChanged) =>
-    new DBTProjectLog(onProjectConfigChanged);
-  const projectFactory: ProjectFactory = (projectRoot) =>
-    new Project({
-      dbtProjectLogFactory,
-      terminal,
+  const projectFactory: ProjectFactory = (declared) => {
+    const log = outputChannels.projectLog(declared);
+    const processes = new CommandProcessExecutionFactory(log);
+    return new Project({
+      terminal: log,
       sharedState,
       runHistoryService,
       resolver: fusionExecutableResolver,
@@ -160,15 +156,17 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
         new FusionCli(
           executable,
           () => readProjectSnapshot(Uri.file(root)),
-          commandProcessExecutionFactory,
-          terminal,
+          processes,
+          log,
         ),
-      parsers: createProjectParsers(terminal),
-      projectRoot,
+      parsers: createProjectParsers(log),
+      projectRoot: declared.root,
       projectCount: () => projects.all().length,
     });
+  };
 
   const projectRegistry = new ProjectRegistry(terminal);
+  outputChannels.follow(projectRegistry);
   const projects = new Projects(projectRegistry, projectFactory, terminal);
   const projectQuickPick = new ProjectQuickPick();
   const currentProject = new CurrentProject(projectRegistry, projectQuickPick);
@@ -179,6 +177,7 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
   );
   return {
     extensionContextStore,
+    outputChannels,
     terminal,
     sharedState,
     runHistoryService,
@@ -194,13 +193,17 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
 
 function composeFusion(graph: ProjectsGraph) {
   const { projects, currentProject } = graph;
+  const fusionOutputChannel: FusionLaunchSources["outputChannel"] = (
+    declared,
+  ) => graph.outputChannels.projectLog(declared).channel;
   const fusionClientPool = createFusionClientPool(
     graph.projectRegistry,
     graph.terminal,
     {
       resolver: graph.fusionExecutableResolver,
-      factory: new DefaultFusionClientFactory(graph.terminal),
+      factory: new DefaultFusionClientFactory(),
       readSnapshot: readProjectSnapshot,
+      outputChannel: fusionOutputChannel,
       launchEnv: {
         resolve: (declared, fusionVersion) =>
           schemaOriginLaunchEnv(projects.get(declared.root), fusionVersion),
@@ -221,7 +224,12 @@ function composeFusion(graph: ProjectsGraph) {
     (declared) => projects.get(declared.root)?.projectOptIns(),
     projects.onDidChangeManifest,
   );
-  return { fusionClientPool, dbtLineageService, fusionStatus };
+  return {
+    fusionClientPool,
+    fusionOutputChannel,
+    dbtLineageService,
+    fusionStatus,
+  };
 }
 
 function composeWebviews(
@@ -252,8 +260,8 @@ function composeWebviews(
     new DocsEditViewPanel(
       projects,
       extensionContextStore,
-      new DocGenService(projects, queryManifestService, terminal),
-      new DbtTestService(queryManifestService, terminal),
+      new DocGenService(projects, queryManifestService),
+      new DbtTestService(queryManifestService),
       queryManifestService,
       terminal,
     ),
@@ -263,7 +271,7 @@ function composeWebviews(
 
 function composeCommands(graph: ProjectsGraph, startupGate: StartupGate) {
   const { projects, terminal, extensionContextStore } = graph;
-  const cteProfilerService = new CteProfilerService(projects, terminal);
+  const cteProfilerService = new CteProfilerService(projects);
   const cteCodeLensProvider = new CteCodeLensProvider(terminal);
   const deferToProductionStatusBar = new DeferToProductionStatusBar(
     projects,
@@ -278,10 +286,12 @@ function composeCommands(graph: ProjectsGraph, startupGate: StartupGate) {
       projects,
       extensionContextStore,
       graph.projectQuickPick,
-      terminal,
+      graph.outputChannels,
     ),
     terminal,
-    new DiagnosticsOutputChannel(),
+    new DiagnosticsOutputChannel(
+      graph.outputChannels.createDiagnosticsChannel(),
+    ),
     graph.runHistoryService,
     cteProfilerService,
     new CteProfilerDecorationProvider(cteProfilerService, terminal),
@@ -341,7 +351,9 @@ export function compose(context: ExtensionContext): Composition {
     currentProject,
     fusion.fusionClientPool,
     fusion.fusionStatus,
-    new ProjectConfigCommands(startupGate, currentProject, terminal),
+    new ProjectConfigCommands(startupGate, currentProject, (root) =>
+      graph.outputChannels.logFor(root),
+    ),
     new FileAssociationsCommand(startupGate, projectRegistry),
     startupGate,
     fusion.dbtLineageService,
@@ -356,5 +368,6 @@ export function compose(context: ExtensionContext): Composition {
     fusionStatus: fusion.fusionStatus,
     fusionExecutableResolver: graph.fusionExecutableResolver,
     projectFactory: graph.projectFactory,
+    fusionOutputChannel: fusion.fusionOutputChannel,
   };
 }

@@ -1,43 +1,6 @@
 [
   {
     "type": "cycle",
-    "from": "src/dbt_client/dbtProjectLog.ts",
-    "to": "src/dbt_client/event/projectConfigChangedEvent.ts",
-    "unresolvedTo": "./event/projectConfigChangedEvent",
-    "dependencyTypes": [
-      "local",
-      "import"
-    ],
-    "rule": {
-      "severity": "error",
-      "name": "no-circular"
-    },
-    "cycle": [
-      {
-        "name": "src/dbt_client/event/projectConfigChangedEvent.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "src/projects/project.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      },
-      {
-        "name": "src/dbt_client/dbtProjectLog.ts",
-        "dependencyTypes": [
-          "local",
-          "import"
-        ]
-      }
-    ]
-  },
-  {
-    "type": "cycle",
     "from": "src/dbt_client/event/projectConfigChangedEvent.ts",
     "to": "src/projects/project.ts",
     "unresolvedTo": "../../projects/project",

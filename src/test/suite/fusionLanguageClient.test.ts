@@ -1,6 +1,6 @@
 import { EventEmitter } from "events";
 import { PassThrough } from "stream";
-import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+import { describe, expect, it, type Mock, vi } from "vitest";
 import {
   type CancellationToken,
   Uri,
@@ -26,7 +26,6 @@ import {
   FUSION_LSP_COMMANDS,
   FusionClient,
   FusionClientState,
-  fusionOutputChannelName,
   languageClientIdForProject,
   MAX_UNEXPECTED_EXIT_RETRIES,
   PARTIAL_LINE_LIMIT,
@@ -44,6 +43,10 @@ import {
 } from "../../fusion/reverseSocketTransport";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
+
+function channel() {
+  return createMockLogOutputChannel("Fusion Power User: general");
+}
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
@@ -132,17 +135,6 @@ describe("fusionLanguageClient helpers", () => {
   it("parses traceServer launch setting values", () => {
     expect(parseTraceServerLevel("verbose")).toBe("verbose");
     expect(parseTraceServerLevel("unexpected")).toBe("off");
-  });
-
-  it("names output channels with project name and root digest", () => {
-    const general = makeProject("/workspace/general", "general");
-    const duplicateName = makeProject("/workspace/sox", "general");
-
-    expect(fusionOutputChannelName(general)).toContain("general");
-    expect(fusionOutputChannelName(duplicateName)).toContain("general");
-    expect(fusionOutputChannelName(general)).not.toBe(
-      fusionOutputChannelName(duplicateName),
-    );
   });
 
   it("applies the same prefix for advertised commands and requests", () => {
@@ -292,27 +284,10 @@ describe("SpawnedLspProcess streams", () => {
 });
 
 describe("FusionLanguageClient lifecycle", () => {
-  let terminal: { warn: Mock; error: Mock; info: Mock };
-
-  beforeEach(() => {
-    terminal = {
-      warn: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-    };
-  });
-
-  it("creates one output channel and passes it to LanguageClient", async () => {
+  it("passes the project's channel to LanguageClient and never disposes it", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
-    const outputChannel = createMockLogOutputChannel(
-      fusionOutputChannelName(makeProject()),
-    );
-    const createOutputChannel = vi.fn(
-      (_name: string) => outputChannel,
-    ) as NonNullable<
-      ConstructorParameters<typeof DefaultFusionClientFactory>[1]
-    >["createOutputChannel"];
+    const outputChannel = channel();
     const createLanguageClient = vi.fn(
       async (
         _id: string,
@@ -321,17 +296,17 @@ describe("FusionLanguageClient lifecycle", () => {
         clientOptions: LanguageClientOptions,
       ) => {
         expect(clientOptions.outputChannel).toBe(outputChannel);
+        expect(clientOptions.traceOutputChannel).toBe(outputChannel);
         expect(clientOptions).not.toHaveProperty("outputChannelName");
         return makeLanguageClient() as any;
       },
     );
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
       createLanguageClient,
-      createOutputChannel,
       sleep: async () => {},
     });
 
@@ -344,20 +319,17 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel,
     });
 
     await flushAsync();
-    expect(createOutputChannel).toHaveBeenCalledTimes(1);
-    expect(createOutputChannel).toHaveBeenCalledWith(
-      fusionOutputChannelName(makeProject()),
-    );
+    expect(createLanguageClient).toHaveBeenCalledTimes(1);
     expect(client.outputChannel).toBe(outputChannel);
 
     await client.stop();
-    expect(outputChannel.dispose).not.toHaveBeenCalled();
     client.dispose();
     await flushAsync();
-    expect(outputChannel.dispose).toHaveBeenCalledTimes(1);
+    expect(outputChannel.dispose).not.toHaveBeenCalled();
   });
 
   it("disposes the deleted-file watcher when the client stops", async () => {
@@ -367,12 +339,11 @@ describe("FusionLanguageClient lifecycle", () => {
       dispose: vi.fn(),
     };
     (workspace.createFileSystemWatcher as Mock).mockReturnValueOnce(watcher);
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => new FakeReverseSocketServer(streams),
       acceptWithProcessExit: async () => streams,
       spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
       createLanguageClient: async () => makeLanguageClient() as any,
-      createOutputChannel: (name) => createMockLogOutputChannel(name),
       sleep: async () => {},
     });
     const client = factory.create({
@@ -384,6 +355,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
     await waitForState(client, "running");
     expect(watcher.dispose).not.toHaveBeenCalled();
@@ -395,9 +367,7 @@ describe("FusionLanguageClient lifecycle", () => {
   it("reuses the same output channel across restarts and retains failure logs", async () => {
     let listenAttempts = 0;
     const streams = makeStreams();
-    const outputChannel = createMockLogOutputChannel(
-      fusionOutputChannelName(makeProject()),
-    );
+    const outputChannel = channel();
     const channels: unknown[] = [];
     const createLanguageClient = vi.fn(
       async (
@@ -411,7 +381,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
     );
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => {
         listenAttempts += 1;
         if (listenAttempts === 1) {
@@ -422,11 +392,6 @@ describe("FusionLanguageClient lifecycle", () => {
       acceptWithProcessExit: async () => streams,
       spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
       createLanguageClient,
-      createOutputChannel: vi.fn(
-        (_name: string) => outputChannel,
-      ) as NonNullable<
-        ConstructorParameters<typeof DefaultFusionClientFactory>[1]
-      >["createOutputChannel"],
       sleep: async () => {},
     });
 
@@ -439,10 +404,11 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel,
     });
 
     await waitForState(client, "failed");
-    expect(outputChannel.appendLine).toHaveBeenCalledWith(
+    expect(outputChannel.warn).toHaveBeenCalledWith(
       expect.stringContaining("listen failed"),
     );
 
@@ -450,7 +416,7 @@ describe("FusionLanguageClient lifecycle", () => {
     await waitForState(client, "running");
     expect(channels).toHaveLength(1);
     expect(channels[0]).toBe(outputChannel);
-    expect(outputChannel.appendLine).toHaveBeenCalledWith(
+    expect(outputChannel.warn).toHaveBeenCalledWith(
       expect.stringContaining("listen failed"),
     );
 
@@ -461,7 +427,7 @@ describe("FusionLanguageClient lifecycle", () => {
   it("reports the launch's static analysis mode at the client seam", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
@@ -478,6 +444,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await waitForState(client, "running");
@@ -501,7 +468,7 @@ describe("FusionLanguageClient lifecycle", () => {
     );
     const createLanguageClient = vi.fn(async () => makeLanguageClient() as any);
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -524,6 +491,7 @@ describe("FusionLanguageClient lifecycle", () => {
         },
       }),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -562,7 +530,7 @@ describe("FusionLanguageClient lifecycle", () => {
         _cwd?: string,
       ) => new FakeExitingProcess() as any,
     );
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -585,6 +553,7 @@ describe("FusionLanguageClient lifecycle", () => {
         },
       }),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
       env: { ORIGIN: "b", DBT_LSP_USE_TARGET_LSP: "0" },
     });
 
@@ -605,7 +574,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const server = new FakeReverseSocketServer(streams);
     const spawnProcess = vi.fn(() => new FakeExitingProcess() as any);
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -622,6 +591,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch({ lintEnabled: false }),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -644,7 +614,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const server = new FakeReverseSocketServer(streams);
     let capturedClientOptions: LanguageClientOptions | undefined;
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess: () => new FakeExitingProcess() as any,
@@ -669,6 +639,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -701,7 +672,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const server = new FakeReverseSocketServer(streams);
     let capturedClientOptions: LanguageClientOptions | undefined;
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess: () => new FakeExitingProcess() as any,
@@ -726,6 +697,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch({ lintEnabled: false }),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -758,7 +730,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const languageClient = makeLanguageClient();
     const states: string[] = [];
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -778,6 +750,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
     client.onDidChangeState((state) => states.push(state));
 
@@ -814,7 +787,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const sleeps: number[] = [];
     const languageClient = makeLanguageClient();
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -835,6 +808,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await waitForState(client, "running");
@@ -858,7 +832,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const sleeps: number[] = [];
     const languageClient = makeLanguageClient();
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -879,6 +853,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await waitForState(client, "running");
@@ -901,7 +876,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const spawnProcess = vi.fn(() => processAdapter as any);
     const languageClient = makeLanguageClient();
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -918,6 +893,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await waitForState(client, "running");
@@ -941,7 +917,7 @@ describe("FusionLanguageClient lifecycle", () => {
       releaseBackoff = resolve;
     });
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -962,6 +938,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await waitForState(client, "running");
@@ -982,7 +959,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const spawnProcess = vi.fn(() => processAdapter as any);
     const languageClient = makeLanguageClient();
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -999,6 +976,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await waitForState(client, "running");
@@ -1023,7 +1001,7 @@ describe("FusionLanguageClient lifecycle", () => {
       (_executable: string, _args: string[], _env: Record<string, string>) =>
         new FakeExitingProcess() as any,
     );
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => {
         throw new Error("listen failed");
       },
@@ -1040,6 +1018,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -1057,7 +1036,7 @@ describe("FusionLanguageClient lifecycle", () => {
       throw new Error("spawn failed");
     });
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       spawnProcess,
       sleep: async () => {},
@@ -1072,6 +1051,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -1090,7 +1070,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const languageClient = makeLanguageClient();
     languageClient.start.mockRejectedValue(new Error("start failed"));
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -1107,6 +1087,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await waitForState(client, "failed");
@@ -1125,7 +1106,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const spawnProcess = vi.fn(() => processAdapter as any);
     const languageClient = makeLanguageClient();
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -1142,6 +1123,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -1160,17 +1142,12 @@ describe("FusionLanguageClient lifecycle", () => {
 
   it("preserves the root failureReason when a later failure is logged", async () => {
     let listenAttempts = 0;
-    const outputChannel = createMockLogOutputChannel(
-      fusionOutputChannelName(makeProject()),
-    );
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const outputChannel = channel();
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => {
         listenAttempts += 1;
         throw new Error(`listen failed ${listenAttempts}`);
       },
-      createOutputChannel: (() => outputChannel) as NonNullable<
-        ConstructorParameters<typeof DefaultFusionClientFactory>[1]
-      >["createOutputChannel"],
       sleep: async () => {},
     });
 
@@ -1183,6 +1160,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel,
     });
 
     await waitForState(client, "failed");
@@ -1191,7 +1169,7 @@ describe("FusionLanguageClient lifecycle", () => {
     await client.restart();
     await waitForState(client, "failed");
     expect(client.failureReason).toContain("listen failed 1");
-    expect(outputChannel.appendLine).toHaveBeenCalledWith(
+    expect(outputChannel.warn).toHaveBeenCalledWith(
       expect.stringContaining("listen failed 2"),
     );
 
@@ -1205,7 +1183,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const processAdapter = new FakeExitingProcess();
     const spawnProcess = vi.fn(() => processAdapter as any);
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess,
@@ -1222,6 +1200,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -1238,7 +1217,7 @@ describe("FusionLanguageClient lifecycle", () => {
     const languageClient = makeLanguageClient();
     languageClient.sendRequest.mockResolvedValue({ ok: true } as never);
 
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => server,
       acceptWithProcessExit: async () => streams,
       spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
@@ -1256,6 +1235,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: prefix,
+      outputChannel: channel(),
     });
 
     await flushAsync();
@@ -1299,7 +1279,7 @@ describe("FusionLanguageClient lifecycle", () => {
       }
       return { error: null, nodes: [] };
     }) as never);
-    const client = new DefaultFusionClientFactory(terminal as any, {
+    const client = new DefaultFusionClientFactory({
       listenForServer: async () => new FakeReverseSocketServer(streams),
       acceptWithProcessExit: async () => streams,
       spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
@@ -1314,6 +1294,7 @@ describe("FusionLanguageClient lifecycle", () => {
       },
       launch: makeLaunch(),
       commandPrefix: "fusionPowerUser:q:",
+      outputChannel: channel(),
     });
     await waitForState(client, "running");
     const service = new DbtLineageService({} as any, () => client);

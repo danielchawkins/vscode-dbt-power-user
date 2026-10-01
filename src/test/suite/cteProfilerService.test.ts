@@ -1,5 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import { DBTTerminal } from "../../dbt_integration";
+import { beforeEach, describe, expect, it } from "vitest";
 import { CteProfilerService } from "../../features/cte/cteProfilerService";
 import { Projects } from "../../projects/projects";
 
@@ -7,16 +6,8 @@ describe("CteProfilerService.extractRowCount", () => {
   let svc: CteProfilerService;
 
   beforeEach(() => {
-    const dbtTerminal = {
-      debug: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-      info: vi.fn(),
-      log: vi.fn(),
-      trace: vi.fn(),
-    } as unknown as DBTTerminal;
     const projects = {} as Projects;
-    svc = new CteProfilerService(projects, dbtTerminal);
+    svc = new CteProfilerService(projects);
   });
 
   // Use a private-field accessor — extractRowCount is intentionally private,

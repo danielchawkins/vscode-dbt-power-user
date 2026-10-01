@@ -1,6 +1,6 @@
 import { window } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
 import { ExtensionContextStore } from "../../extensionContext";
+import { OutputChannels } from "../../projects/outputChannels";
 import {
   ProjectQuickPick,
   ProjectQuickPickItem,
@@ -17,7 +17,7 @@ export class ProjectSetupCommands {
     private projects: Projects,
     private extensionContext: ExtensionContextStore,
     private projectQuickPick: ProjectQuickPick,
-    private dbtTerminal: DBTTerminal,
+    private outputChannels: Pick<OutputChannels, "logFor">,
   ) {}
 
   private async resolveProject(
@@ -72,7 +72,8 @@ export class ProjectSetupCommands {
         throw new Error(runModelOutput.fullOutput);
       }
     } catch (err) {
-      this.dbtTerminal.error(
+      const log = this.outputChannels.logFor(projectContextResolved.uri);
+      log.error(
         "validateProjectError",
         `Error when validating ${projectContextResolved.label}`,
         err,
@@ -80,7 +81,7 @@ export class ProjectSetupCommands {
       window.showErrorMessage(
         "Error running dbt debug for project " +
           projectContextResolved.label +
-          '. See the "Log - dbt" output for details.',
+          `. See the "${log.name}" output for details.`,
       );
       throw err;
     }
@@ -114,7 +115,8 @@ export class ProjectSetupCommands {
 
       await project.installDeps();
     } catch (err) {
-      this.dbtTerminal.debug(
+      const log = this.outputChannels.logFor(projectContextResolved.uri);
+      log.error(
         "ProjectSetupCommands.installDeps",
         "Could not install deps",
         err,
@@ -122,7 +124,7 @@ export class ProjectSetupCommands {
       window.showErrorMessage(
         "Error installing dbt dependencies for project " +
           projectContextResolved.label +
-          '. See the dbt task terminal or the "Log - dbt" output for details.',
+          `. See the dbt task terminal or the "${log.name}" output for details.`,
       );
       throw err;
     }

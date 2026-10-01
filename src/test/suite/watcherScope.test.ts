@@ -15,7 +15,6 @@ describe("project watcher scope", () => {
       .sort();
 
     expect(callers).toEqual([
-      "dbt_client/dbtProjectLog.ts",
       "fusion/fusionDiagnostics.ts",
       "projects/manifest.ts",
       "projects/projectRegistry.ts",

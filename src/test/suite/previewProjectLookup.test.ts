@@ -42,7 +42,7 @@ describe("compiled preview project lookup", () => {
   let projects: Projects;
   let currentProject: CurrentProject;
 
-  const stubProject = (root: Uri) =>
+  const stubProject = ({ root }: { root: Uri }) =>
     ({
       projectRoot: root,
       initialize: vi.fn(),

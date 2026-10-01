@@ -11,6 +11,7 @@ import {
 import {
   ConfigurationChangeEvent,
   EventEmitter,
+  LogOutputChannel,
   Uri,
   workspace,
   WorkspaceFolder,
@@ -76,7 +77,9 @@ class FakeClient implements FusionClient {
     _listener: (state: FusionClient["state"]) => void,
   ) => ({ dispose: () => {} });
   readonly staticAnalysis: StaticAnalysisMode = "baseline";
-  readonly outputChannel = createMockLogOutputChannel("dbt Fusion LSP (test)");
+  readonly outputChannel = createMockLogOutputChannel(
+    "Fusion Power User: test",
+  );
   readonly failureReason = undefined;
   restart = vi.fn(() => Promise.resolve());
   stop = vi.fn(() => Promise.resolve());
@@ -99,6 +102,19 @@ describe("FusionClientPool", () => {
   let factory: Mocked<FusionClientFactory>;
   let configListener: ((event: ConfigurationChangeEvent) => void) | undefined;
   let settings: Record<string, unknown>;
+  let channels: Map<string, LogOutputChannel>;
+
+  /** One channel per Declared Project root, as `OutputChannels.projectLog` keeps one per Declared Project. */
+  function channelFor(project: DeclaredProject): LogOutputChannel {
+    const key = project.root.fsPath;
+    if (!channels.has(key)) {
+      channels.set(
+        key,
+        createMockLogOutputChannel(`Fusion Power User: ${project.name}`),
+      );
+    }
+    return channels.get(key)!;
+  }
 
   /** Fires a change of `key` for `root`, first storing the value when one is given. */
   function changeSetting(key: string, root: Uri, ...update: [unknown?]): void {
@@ -114,6 +130,7 @@ describe("FusionClientPool", () => {
 
   beforeEach(() => {
     terminal = { warn: vi.fn(), error: vi.fn() };
+    channels = new Map();
     registry = new FakeRegistry();
     resolver = {
       resolve: vi.fn(),
@@ -148,7 +165,7 @@ describe("FusionClientPool", () => {
       terminal as any,
       resolver,
       factory,
-      { readSnapshot: readProjectSnapshot },
+      { readSnapshot: readProjectSnapshot, outputChannel: channelFor },
     );
   }
 
@@ -319,7 +336,9 @@ describe("FusionClientPool", () => {
     expect(
       pool.get(makeProject("general", "/workspace/general")),
     ).toBeInstanceOf(FailedFusionClient);
-    expect(terminal.warn).toHaveBeenCalled();
+    expect(channels.get("/workspace/general")?.warn).toHaveBeenCalledWith(
+      expect.stringContaining("/missing/dbt"),
+    );
     await pool.stop();
   });
 
@@ -430,6 +449,34 @@ describe("FusionClientPool", () => {
     const latestGeneral =
       factory.create.mock.calls[factory.create.mock.calls.length - 1]?.[0];
     expect(latestGeneral?.launch.lintEnabled).toBe(false);
+    await pool.stop();
+  });
+
+  it("gives a replacement client its project's channel after a launch change", async () => {
+    const pool = createPool();
+    resolver.resolve.mockResolvedValue({
+      path: "/opt/dbt",
+      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      env: {},
+    });
+    const general = makeProject("general", "/workspace/general");
+    const sox = makeProject("sox", "/workspace/sox");
+    pool.initialize();
+    registry.setProjects([general, sox]);
+    await flushAsync();
+
+    changeSetting("target", general.root, "prod");
+    await flushAsync();
+
+    const calls = factory.create.mock.calls.map(([options]) => options);
+    const generalCalls = calls.filter((o) => o.project === general);
+    const soxCall = calls.find((o) => o.project === sox);
+    expect(generalCalls).toHaveLength(2);
+    expect(generalCalls[1].launch.target).toBe("prod");
+    expect(generalCalls[1].outputChannel).toBe(generalCalls[0].outputChannel);
+    expect(generalCalls[0].outputChannel).toBe(channelFor(general));
+    expect(soxCall?.outputChannel).toBe(channelFor(sox));
+    expect(soxCall?.outputChannel).not.toBe(generalCalls[0].outputChannel);
     await pool.stop();
   });
 
@@ -660,6 +707,7 @@ describe("FusionClientPool", () => {
       factory,
       {
         readSnapshot: readProjectSnapshot,
+        outputChannel: channelFor,
         launchEnv: { resolve, onDidChange: changed.event },
       },
     );

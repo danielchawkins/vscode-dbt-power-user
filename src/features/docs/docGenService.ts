@@ -2,11 +2,7 @@ import { promises as fs } from "fs";
 import * as path from "path";
 import { Uri, window } from "vscode";
 import { parse as parseYaml } from "yaml";
-import {
-  DBTTerminal,
-  NodeMetaData,
-  RESOURCE_TYPE_MODEL,
-} from "../../dbt_integration";
+import { NodeMetaData, RESOURCE_TYPE_MODEL } from "../../dbt_integration";
 import { activeModelUri } from "../../projects/previewUri";
 import { Projects } from "../../projects/projects";
 import { QueryManifestService } from "../../projects/queryManifestService";
@@ -42,7 +38,6 @@ export class DocGenService {
   public constructor(
     protected projects: Projects,
     private queryManifestService: QueryManifestService,
-    private dbtTerminal: DBTTerminal,
   ) {}
 
   private getCompiledDocumentationFromNode(
@@ -233,7 +228,7 @@ export class DocGenService {
         },
       };
     } catch (error) {
-      this.dbtTerminal.error(
+      project.log.error(
         "docGenService:getDocumentationYamlError",
         `Error reading YAML documentation: ${error}`,
         error,

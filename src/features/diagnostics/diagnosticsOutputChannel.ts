@@ -1,15 +1,9 @@
-import { OutputChannel, window } from "vscode";
+import { OutputChannel } from "vscode";
 import { stripANSI } from "../../utils";
 
+/** Writes the diagnostics report to `outputChannel`, which it disposes. */
 export class DiagnosticsOutputChannel {
-  private outputChannel: OutputChannel;
-
-  constructor() {
-    this.outputChannel = window.createOutputChannel(
-      "Fusion Power User - Diagnostics",
-      "log",
-    );
-  }
+  constructor(private readonly outputChannel: OutputChannel) {}
 
   show(): void {
     this.outputChannel.show(true);

@@ -37,7 +37,7 @@ export class Projects implements Disposable {
 
   constructor(
     private projectRegistry: ProjectRegistry,
-    private projectFactory: (path: Uri) => Project,
+    private projectFactory: (project: DeclaredProject) => Project,
     private dbtTerminal: DBTTerminal,
   ) {}
 
@@ -126,7 +126,7 @@ export class Projects implements Disposable {
         removed.push(existing);
       }
       if (!this.projectsByRoot.has(rootPath)) {
-        const project = this.projectFactory(declared.root);
+        const project = this.projectFactory(declared);
         const metadataSource = new ManifestMetadataSource(declared, project);
         const subscriptions: Disposable[] = [
           project.onDidChangeManifest((p) => this._onDidChangeManifest.fire(p)),

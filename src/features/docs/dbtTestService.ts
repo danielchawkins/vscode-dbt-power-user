@@ -17,10 +17,7 @@ import {
 } from "../../utils";
 
 export class DbtTestService {
-  public constructor(
-    private queryManifestService: QueryManifestService,
-    private dbtTerminal: DBTTerminal,
-  ) {}
+  public constructor(private queryManifestService: QueryManifestService) {}
 
   // Remove duplicate tests from tests array
   public removeDuplicateTests(
@@ -58,6 +55,7 @@ export class DbtTestService {
   private filterAndStringifyTest = (
     testsPerColumnOrModelFromYml: Record<string, Record<string, unknown>>[],
     test: TestMetaData,
+    log: DBTTerminal,
   ) => {
     if (!testsPerColumnOrModelFromYml?.length) {
       return this.returnTestMetadataFromKwargs(test);
@@ -79,11 +77,11 @@ export class DbtTestService {
     );
 
     if (!existingConfig) {
-      this.dbtTerminal.debug("getDbtTestCode", "no test available in yml");
+      log.debug("getDbtTestCode", "no test available in yml");
       return this.returnTestMetadataFromKwargs(test);
     }
 
-    this.dbtTerminal.debug(
+    log.debug(
       "getDbtTestCode",
       "sending selected config from yml",
       existingConfig,
@@ -133,24 +131,17 @@ export class DbtTestService {
     if (!project) {
       return;
     }
+    const { log } = project;
 
     const patchPath = node?.patch_path?.includes("://")
       ? path.join(project.projectRoot.fsPath, removeProtocol(node.patch_path))
       : node.patch_path;
 
     if (!patchPath) {
-      this.dbtTerminal.debug(
-        "getDbtTestCode",
-        "unable to find patch path",
-        patchPath,
-      );
+      log.debug("getDbtTestCode", "unable to find patch path", patchPath);
       return null;
     }
-    this.dbtTerminal.debug(
-      "getDbtTestCode",
-      "finding test from yaml",
-      patchPath,
-    );
+    log.debug("getDbtTestCode", "finding test from yaml", patchPath);
     const parsedDocFile = parse(
       readFileSync(patchPath, { encoding: "utf-8" }),
       {
@@ -161,7 +152,7 @@ export class DbtTestService {
     );
 
     if (!parsedDocFile) {
-      this.dbtTerminal.debug(
+      log.debug(
         "getDbtTestCode",
         "yml file does not have any content",
         patchPath,
@@ -173,13 +164,13 @@ export class DbtTestService {
 
     // model test
     if (!columnNameFromTestMetadata) {
-      this.dbtTerminal.debug(
+      log.debug(
         "getDbtTestCode",
         "finding model test from yml",
         parsedDocFile,
         model,
       );
-      return this.filterAndStringifyTest(model?.tests, test);
+      return this.filterAndStringifyTest(model?.tests, test, log);
     }
 
     const column =
@@ -187,7 +178,7 @@ export class DbtTestService {
       model.columns.find((yamlColumn: any) =>
         isColumnNameEqual(yamlColumn.name, columnNameFromTestMetadata),
       );
-    this.dbtTerminal.debug(
+    log.debug(
       "getDbtTestCode",
       "finding column test from yml",
       parsedDocFile,
@@ -195,7 +186,7 @@ export class DbtTestService {
       column,
     );
 
-    return this.filterAndStringifyTest(column?.tests, test);
+    return this.filterAndStringifyTest(column?.tests, test, log);
   }
 
   // Find the file path of test macro
@@ -253,7 +244,7 @@ export class DbtTestService {
       event: { nodeMetaMap, graphMetaMap, testMetaMap, macroMetaMap },
     } = eventResult;
 
-    this.dbtTerminal.debug(
+    project.log.debug(
       "dbtTests",
       "getting tests by modelName:",
       false,
@@ -261,7 +252,7 @@ export class DbtTestService {
     );
     const _node = nodeMetaMap.lookupByBaseName(modelName);
     if (!_node) {
-      this.dbtTerminal.debug("no node for tableName:", modelName);
+      project.log.debug("no node for tableName:", modelName);
       return;
     }
     const key = _node.unique_id;

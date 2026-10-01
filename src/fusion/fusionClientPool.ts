@@ -1,4 +1,4 @@
-import { Disposable, Event, EventEmitter, Uri } from "vscode";
+import { Disposable, Event, EventEmitter, LogOutputChannel, Uri } from "vscode";
 import { LspLaunch, sameLspLaunch, toLspLaunch } from "../core/lsp";
 import { ProjectSnapshot } from "../core/project";
 import { DBTTerminal } from "../dbt_integration";
@@ -57,6 +57,8 @@ export interface FusionLaunchEnvironment {
 /** Per-project launch inputs the pool reads before each client start. */
 export interface FusionLaunchSources {
   readSnapshot: (root: Uri) => ProjectSnapshot;
+  /** The Declared Project's log channel, shared by every client the pool starts for it. */
+  outputChannel: (project: DeclaredProject) => LogOutputChannel;
   launchEnv?: FusionLaunchEnvironment;
 }
 
@@ -69,6 +71,9 @@ export class FusionClientPoolImpl implements FusionClientPool {
   private initialized = false;
   private disposed = false;
   private readonly readSnapshot: (root: Uri) => ProjectSnapshot;
+  private readonly outputChannel: (
+    project: DeclaredProject,
+  ) => LogOutputChannel;
   private readonly launchEnv: FusionLaunchEnvironment | undefined;
 
   constructor(
@@ -79,6 +84,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
     sources: FusionLaunchSources,
   ) {
     this.readSnapshot = sources.readSnapshot;
+    this.outputChannel = sources.outputChannel;
     this.launchEnv = sources.launchEnv;
     this.subscriptions.push(
       this.registry.onDidChangeProjects(() => {
@@ -303,12 +309,13 @@ export class FusionClientPoolImpl implements FusionClientPool {
           launch,
           commandPrefix: commandPrefixForProject(project),
           env,
+          outputChannel: this.outputChannel(project),
         } satisfies FusionClientOptions)
       : new FailedFusionClient(
           project,
           formatFusionExecutableResolutionFailure(project.name, verdict),
-          this.terminal,
           launch.staticAnalysis,
+          this.outputChannel(project),
         );
 
     if (this.disposed || this.findDesiredProject(key) !== project) {
@@ -353,9 +360,10 @@ export function createFusionClientPool(
   deps: FusionClientPoolDependencies,
 ): FusionClientPoolImpl {
   const resolver = deps.resolver ?? new ConfiguredFusionExecutableResolver();
-  const factory = deps.factory ?? new DefaultFusionClientFactory(terminal);
+  const factory = deps.factory ?? new DefaultFusionClientFactory();
   return new FusionClientPoolImpl(registry, terminal, resolver, factory, {
     readSnapshot: deps.readSnapshot,
+    outputChannel: deps.outputChannel,
     launchEnv: deps.launchEnv,
   });
 }

@@ -9,6 +9,7 @@ import {
 } from "vitest";
 import * as vscode from "vscode";
 import { DiagnosticsOutputChannel } from "../../features/diagnostics/diagnosticsOutputChannel";
+import { OutputChannels } from "../../projects/outputChannels";
 
 // Set test environment
 process.env.NODE_ENV = "test";
@@ -30,7 +31,9 @@ describe("DiagnosticsOutputChannel Test Suite", () => {
       mockOutputChannel,
     );
 
-    diagnosticsChannel = new DiagnosticsOutputChannel();
+    diagnosticsChannel = new DiagnosticsOutputChannel(
+      new OutputChannels().createDiagnosticsChannel(),
+    );
   });
 
   afterEach(() => {

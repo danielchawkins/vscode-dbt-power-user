@@ -2,8 +2,11 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import * as path from "path";
 import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
-import { Uri, window, workspace } from "vscode";
-import { applyProjectConfigInsertion } from "../../features/projectSetup/projectConfigCommands";
+import { commands, Uri, window, workspace } from "vscode";
+import {
+  applyProjectConfigInsertion,
+  ProjectConfigCommands,
+} from "../../features/projectSetup/projectConfigCommands";
 import { DeclaredProject } from "../../projects/projectRegistry";
 
 const strict = (name: string) => ({
@@ -106,5 +109,28 @@ describe("applyProjectConfigInsertion", () => {
     await applyProjectConfigInsertion(declared, strict, terminal);
 
     expect((modal.mock.calls[0][1] as any).detail).toContain("real_name:");
+  });
+
+  it("logs a parse failure to the resolved project's log", async () => {
+    const declared = project("name: [unclosed\n");
+    const projectLog = { warn: vi.fn() };
+    const logFor = vi.fn(() => projectLog as never);
+    const commandsDisposable = new ProjectConfigCommands(
+      { whenSettled: () => Promise.resolve() },
+      { requireForCommand: () => Promise.resolve(declared) } as never,
+      logFor,
+    );
+    const registration = (commands.registerCommand as Mock).mock.calls.find(
+      ([command]) => command === "fusionPowerUser.enableStrictAnalysis",
+    );
+
+    expect(await registration![1]()).toBe(false);
+    expect(logFor).toHaveBeenCalledWith(declared.root);
+    expect(projectLog.warn).toHaveBeenCalledWith(
+      "projectConfigEdit",
+      expect.any(String),
+      false,
+    );
+    commandsDisposable.dispose();
   });
 });
