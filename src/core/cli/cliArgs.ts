@@ -3,13 +3,13 @@ import { ProjectSnapshot, ResolvedDefer } from "../project";
 
 /** One dbt invocation. Selections and SQL are single argv elements, never split. */
 export type CliCommand =
-  /** `select` already carries any `+` graph operators. */
-  | { kind: "run"; select: string }
+  /** `select` already carries any `+` graph operators; without it, the whole project. */
+  | { kind: "run"; select?: string; fullRefresh?: boolean }
   /** Without `select`, the whole project and none of the build params. */
-  | { kind: "build"; select?: string }
-  | { kind: "test"; select: string }
+  | { kind: "build"; select?: string; fullRefresh?: boolean }
+  | { kind: "test"; select?: string }
   /** The queued model compile. */
-  | { kind: "compile"; select: string }
+  | { kind: "compile"; select?: string }
   /** JSON output from which the compiled SQL is read back. */
   | { kind: "compileNode"; node: string }
   | { kind: "compileInline"; sql: string; output: "json" | "quiet" }
@@ -50,6 +50,9 @@ export function commandParamsFor(
 
 type ShowCommand = Extract<CliCommand, { kind: "show" }>;
 
+const selectArgs = (select: string | undefined) =>
+  select === undefined ? [] : ["--select", select];
+
 function showBody({ sql, limit }: ShowCommand): string[] {
   return [
     "show",
@@ -63,17 +66,30 @@ function showBody({ sql, limit }: ShowCommand): string[] {
   ];
 }
 
-/** Subcommand, selection or payload, and the kind's fixed flags. */
-function body(command: CliCommand): string[] {
+/** `--full-refresh` when `command` asks for it and `params` do not already carry it. */
+export function fullRefreshArgs(
+  command: CliCommand,
+  params: readonly string[],
+): string[] {
+  const wanted =
+    (command.kind === "run" || command.kind === "build") &&
+    command.fullRefresh === true;
+  return wanted && !params.includes("--full-refresh") ? ["--full-refresh"] : [];
+}
+
+/** Subcommand, selection or payload, and the kind's fixed flags; `params` are the command's `commandParams`. */
+function body(command: CliCommand, params: readonly string[]): string[] {
   switch (command.kind) {
     case "run":
+    case "build":
+      return [
+        command.kind,
+        ...selectArgs(command.select),
+        ...fullRefreshArgs(command, params),
+      ];
     case "test":
     case "compile":
-      return [command.kind, "--select", command.select];
-    case "build":
-      return command.select === undefined
-        ? ["build"]
-        : ["build", "--select", command.select];
+      return [command.kind, ...selectArgs(command.select)];
     case "compileNode":
       return ["compile", "--select", command.node, ...DEBUG_JSON_LOGS];
     case "compileInline":
@@ -189,7 +205,7 @@ export function toCliArgs(
       ? []
       : [name, value];
   return [
-    ...body(command),
+    ...body(command, params),
     ...params,
     ...flag("--profiles-dir", invocation.profilesDir),
     ...flag("--project-dir", snapshot.root),

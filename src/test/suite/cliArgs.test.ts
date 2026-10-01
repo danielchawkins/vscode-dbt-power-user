@@ -82,6 +82,29 @@ describe("toCliArgs builds each kind's body, then command params, then snapshot 
       ["build", "--select", "a+", "--fail-fast", ...projectDir, "--no-defer"],
     ],
     [{ kind: "build" }, ["build", ...projectDir, "--no-defer"]],
+    [{ kind: "run" }, ["run", "--threads", "4", ...projectDir, "--no-defer"]],
+    [
+      { kind: "run", select: "a", fullRefresh: true },
+      [
+        "run",
+        "--select",
+        "a",
+        "--full-refresh",
+        "--threads",
+        "4",
+        ...projectDir,
+        "--no-defer",
+      ],
+    ],
+    [
+      { kind: "build", fullRefresh: true },
+      ["build", "--full-refresh", ...projectDir, "--no-defer"],
+    ],
+    [
+      { kind: "test" },
+      ["test", "--indirect-selection", "cautious", ...projectDir, "--no-defer"],
+    ],
+    [{ kind: "compile" }, ["compile", ...projectDir, "--no-defer"]],
     [
       { kind: "test", select: "a" },
       [

@@ -30,7 +30,7 @@ describe("CommandQueue", () => {
     const queue = new CommandQueue();
     const events: string[] = [];
     let releaseFirst!: () => void;
-    queue.enqueue(
+    void queue.enqueue(
       () =>
         new Promise<void>((resolve) => {
           events.push("first:start");
@@ -41,7 +41,7 @@ describe("CommandQueue", () => {
         }),
       { statusMessage: "first" },
     );
-    queue.enqueue(
+    void queue.enqueue(
       async () => {
         events.push("second");
       },
@@ -49,23 +49,27 @@ describe("CommandQueue", () => {
     );
     await settle();
     expect(events).toEqual(["first:start"]);
+    expect(queue.busy).toBe(true);
 
     releaseFirst();
     await settle();
     expect(events).toEqual(["first:start", "first:end", "second"]);
+    expect(queue.busy).toBe(false);
   });
 
   it("fires onFailed for a rejection and keeps running later commands", async () => {
     const queue = new CommandQueue();
     const failures: QueuedCommandFailure[] = [];
     queue.onFailed((failure) => failures.push(failure));
-    const later = vi.fn(async () => undefined);
+    const rejected = queue.enqueue(
+      () => Promise.reject(new Error("cancelled")),
+      { statusMessage: "dbt run --select my_model" },
+    );
+    const later = vi.fn(async () => "later");
+    const settled = queue.enqueue(later, { statusMessage: "later" });
 
-    queue.enqueue(() => Promise.reject(new Error("cancelled")), {
-      statusMessage: "dbt run --select my_model",
-    });
-    queue.enqueue(later, { statusMessage: "later" });
-    await settle();
+    await expect(rejected).rejects.toThrow("cancelled");
+    await expect(settled).resolves.toBe("later");
 
     expect(failures).toHaveLength(1);
     expect(failures[0].statusMessage).toBe("dbt run --select my_model");
@@ -96,7 +100,7 @@ describe("CommandQueue", () => {
       });
     });
 
-    queue.enqueue(command, {
+    void queue.enqueue(command, {
       statusMessage: "dbt run --select my_model",
       showProgress: true,
     });

@@ -74,11 +74,9 @@ function fakeProcesses(
 function fakeTerminal() {
   const warn = vi.fn();
   const error = vi.fn();
-  const show = vi.fn(async (_status: boolean) => undefined);
   const log = vi.fn((_message: string) => undefined);
   const noop = () => undefined;
   const terminal: DBTTerminal = {
-    show,
     log,
     trace: noop,
     debug: noop,
@@ -87,7 +85,7 @@ function fakeTerminal() {
     error,
     dispose: noop,
   };
-  return { terminal, warn, error, show, log };
+  return { terminal, warn, error, log };
 }
 
 const executable = { path: "/bin/dbt", env: { A: "1", B: "exe" } };
@@ -451,8 +449,8 @@ describe("FusionCli project state and commands", () => {
     expect(calls[0].signal?.aborted).toBe(true);
   });
 
-  it("prepares a queued command with this project's argv and runs it with terminal output", async () => {
-    const { cli, calls, show } = cliWith();
+  it("prepares a queued command with this project's argv that streams to its caller and the log", async () => {
+    const { cli, calls, log } = cliWith({ fullOutput: "out\r\n" });
     const prepared = cli.prepare({ kind: "run", select: "+a" });
     const expected = toCliArgs(
       snapshot(),
@@ -466,25 +464,17 @@ describe("FusionCli project state and commands", () => {
       prepared.showProgress,
       prepared.logToTerminal,
     ]).toEqual([true, true, true]);
-    await prepared.execute();
+    const chunks: string[] = [];
+    await prepared.execute(undefined, (chunk) => chunks.push(chunk));
     expect(argsAfterExecutable(calls[0])).toEqual(expected);
-    expect(calls[0].streamed).toBe(true);
-    expect(show).toHaveBeenCalledWith(true);
+    expect(chunks).toEqual(["out\r\n"]);
+    expect(log).toHaveBeenCalledWith("out\r\n");
   });
 
-  it("streams terminal output with CRLF line endings and returns the raw result", async () => {
-    const raw = { stdout: "a\nb\r\n\nc", fullOutput: "a\nb\r\n\nc" };
-    const { cli, log } = cliWith(raw);
-    const result = await cli.run(
-      { kind: "run", select: "a" },
-      { terminalOutput: { focus: false } },
-    );
-    expect(log.mock.calls.map(([m]) => m)).toEqual([
-      expect.stringMatching(/^> Executing task: dbt /),
-      "a\r\nb\r\n\r\nc",
-      "",
-    ]);
-    expect(result).toMatchObject(raw);
+  it("logs a prepared command's output when executed without onOutput", async () => {
+    const { cli, log } = cliWith({ fullOutput: "deps done" });
+    await cli.prepare({ kind: "deps" }).execute();
+    expect(log).toHaveBeenCalledWith("deps done");
   });
 
   it("prepares each queued kind with its argv and status", () => {
@@ -496,6 +486,9 @@ describe("FusionCli project state and commands", () => {
       { kind: "build" },
       { kind: "test", select: "a" },
       { kind: "compile", select: "a+" },
+      { kind: "run" },
+      { kind: "test" },
+      { kind: "deps" },
     ] as const;
     expect(
       kinds.map((k) => {
@@ -518,6 +511,18 @@ describe("FusionCli project state and commands", () => {
       {
         args: toCliArgs(s, kinds[3], probe),
         statusMessage: "Compiling dbt models...",
+      },
+      {
+        args: toCliArgs(s, kinds[4], probe),
+        statusMessage: "Running dbt project...",
+      },
+      {
+        args: toCliArgs(s, kinds[5], probe),
+        statusMessage: "Testing dbt project...",
+      },
+      {
+        args: toCliArgs(s, kinds[6], probe),
+        statusMessage: "Installing dbt packages...",
       },
     ]);
   });

@@ -1,8 +1,10 @@
 import {
+  CustomExecution,
   Diagnostic,
   Disposable,
   Event,
   EventEmitter,
+  Task,
   Uri,
   window,
 } from "vscode";
@@ -23,11 +25,12 @@ import {
   QueryExecutionResult,
   RunModelParams,
 } from "../dbt_integration";
+import { CommandProcessResult } from "../fusion/commandProcessExecution";
 import {
   ExecutableLifecycle,
   FusionCommandIntegrationFactory,
 } from "../fusion/executableLifecycle";
-import { FusionCli } from "../fusion/fusionCli";
+import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
 import { FusionExecutableResolver } from "../fusion/fusionExecutable";
 import { FusionVersion } from "../fusion/fusionVersion";
 import {
@@ -38,6 +41,15 @@ import {
 import { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
 import { CommandQueue } from "./commandQueue";
+import {
+  cliCommandOf,
+  dbtTask,
+  DbtTaskDefinition,
+  DbtTaskTerminal,
+  definitionOf,
+  executeTask,
+  taskName,
+} from "./dbtTask";
 import {
   ManifestParsers,
   ManifestTrigger,
@@ -54,8 +66,8 @@ import {
 import {
   ProjectCommandDeps,
   queueCli,
-  queueSelected,
   refreshCliConfig,
+  selection,
 } from "./projectCommands";
 import { ProjectDiagnostics } from "./projectDiagnostics";
 import {
@@ -94,6 +106,8 @@ export interface ProjectOptions {
   cliFactory: FusionCommandIntegrationFactory;
   parsers: ManifestParsers;
   projectRoot: Uri;
+  /** The number of Declared Projects, which decides whether task names carry the project name. */
+  projectCount?: () => number;
 }
 
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
@@ -108,6 +122,8 @@ export class Project implements Disposable, ManifestProject {
   private readonly trigger: ManifestTrigger;
   private readonly diagnostics: ProjectDiagnostics;
   private readonly dbtProjectLog: DBTProjectLog;
+  private readonly projectCount: () => number;
+  private warnedTasksUnavailable = false;
   private disposed = false;
 
   private _onProjectConfigChanged =
@@ -148,6 +164,7 @@ export class Project implements Disposable, ManifestProject {
     this.terminal = options.terminal;
     this.sharedState = options.sharedState;
     this.runHistoryService = options.runHistoryService;
+    this.projectCount = options.projectCount ?? (() => 1);
     const root = this.projectRoot.fsPath;
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
@@ -413,27 +430,27 @@ export class Project implements Disposable, ManifestProject {
   }
 
   async runModel(params: RunModelParams) {
-    await queueSelected(this.commandDeps, "run", params);
+    await this.startTask({ kind: "run", select: selection(params) });
   }
 
   async buildModel(params: RunModelParams) {
-    await queueSelected(this.commandDeps, "build", params);
+    await this.startTask({ kind: "build", select: selection(params) });
   }
 
   async buildProject() {
-    await queueCli(this.commandDeps, { kind: "build" });
+    await this.startTask({ kind: "build" });
   }
 
   async runTest(testName: string) {
-    await queueCli(this.commandDeps, { kind: "test", select: testName });
+    await this.startTask({ kind: "test", select: testName });
   }
 
   async runModelTest(modelName: string) {
-    await queueCli(this.commandDeps, { kind: "test", select: modelName });
+    await this.startTask({ kind: "test", select: modelName });
   }
 
   async compileModel(params: RunModelParams) {
-    await queueSelected(this.commandDeps, "compile", params);
+    await this.startTask({ kind: "compile", select: selection(params) });
   }
 
   clean() {
@@ -446,8 +463,113 @@ export class Project implements Disposable, ManifestProject {
     return this.getFusionCli().run({ kind: "debug" });
   }
 
+  /** Runs `dbt deps` as a task; rejects when it fails or exits non-zero. */
   async installDeps() {
-    return this.withRunResults(() => this.getFusionCli().run({ kind: "deps" }));
+    const { started, ended } = await this.startTask({ kind: "deps" });
+    const run = await Promise.race([started, ended.then(() => undefined)]);
+    const result = await run?.();
+    if (result && result.exitCode !== undefined && result.exitCode !== 0) {
+      throw new Error(`dbt deps exited with code ${result.exitCode}`);
+    }
+  }
+
+  /**
+   * Executes the dbt task for `cli` outside the command queue, after any active task with the same definition ends.
+   * `started` resolves with its queued run once its terminal opens; `ended` resolves when its execution ends. When
+   * VS Code cannot execute tasks, the command is queued without a terminal and `ended` resolves once it has run.
+   */
+  private async startTask(cli: QueuedCliCommand): Promise<{
+    started: Promise<() => Promise<CommandProcessResult | undefined>>;
+    ended: Promise<void>;
+  }> {
+    const root = this.projectRoot.fsPath;
+    const definition = definitionOf(cli, root);
+    let onStart!: (run: Promise<CommandProcessResult | undefined>) => void;
+    const started = new Promise<
+      () => Promise<CommandProcessResult | undefined>
+    >((resolve) => (onStart = (run) => resolve(() => run)));
+    const task = dbtTask(
+      definition,
+      root,
+      this.taskName(cli),
+      this.taskExecution(onStart),
+    );
+    try {
+      const { ended } = await executeTask(task);
+      return { started, ended };
+    } catch (error) {
+      this.warnTasksUnavailable(error);
+      const run = this.runTask(
+        definition,
+        new DbtTaskTerminal(() => undefined),
+      );
+      return {
+        started: Promise.resolve(() => run),
+        ended: run.then(
+          () => undefined,
+          () => undefined,
+        ),
+      };
+    }
+  }
+
+  /** The name of the task that runs `cli` in this project. */
+  taskName(cli: QueuedCliCommand): string {
+    return taskName(cli, this.getProjectName(), this.projectCount());
+  }
+
+  private warnTasksUnavailable(error: unknown): void {
+    if (this.warnedTasksUnavailable) {
+      return;
+    }
+    this.warnedTasksUnavailable = true;
+    this.terminal.warn(
+      LOG_SOURCE,
+      `Running dbt commands without a task terminal: VS Code could not execute the dbt task: ${error}`,
+    );
+  }
+
+  /** A task named `name` that runs `definition` in this project. */
+  task(definition: DbtTaskDefinition, name: string): Task {
+    return dbtTask(
+      definition,
+      this.projectRoot.fsPath,
+      name,
+      this.taskExecution(),
+    );
+  }
+
+  /**
+   * Queues the command `definition` names to run in `terminal`, settling with that run; an unknown command closes
+   * it as failed.
+   */
+  async runTask(
+    definition: DbtTaskDefinition,
+    terminal: DbtTaskTerminal,
+  ): Promise<CommandProcessResult | undefined> {
+    const cli = cliCommandOf(definition);
+    if (!cli) {
+      terminal.fail(`Unknown dbt task command: ${definition.command}`);
+      return undefined;
+    }
+    return queueCli(this.commandDeps, cli, terminal);
+  }
+
+  /**
+   * Every terminal it creates, including one for each Rerun, queues its task definition through `runTask` and passes
+   * the run to `onStart`.
+   */
+  private taskExecution(
+    onStart?: (run: Promise<CommandProcessResult | undefined>) => void,
+  ): CustomExecution {
+    return new CustomExecution(
+      async (definition) =>
+        new DbtTaskTerminal((terminal) => {
+          const run = this.runTask(definition as DbtTaskDefinition, terminal);
+          run.catch(() => undefined);
+          onStart?.(run);
+        }),
+    );
   }
 
   private withRunResults<T>(

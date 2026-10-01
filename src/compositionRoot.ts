@@ -54,6 +54,7 @@ import { RunHistoryTreeviewProvider } from "./features/runHistory/runHistoryTree
 import { SqlActionsCodeLensProvider } from "./features/sqlActions/sqlActionsCodeLensProvider";
 import { VirtualSqlCodeLensProvider } from "./features/sqlActions/virtualSqlCodeLensProvider";
 import { StatusBars } from "./features/statusBars";
+import { registerDbtTaskProvider } from "./features/tasks/dbtTaskProvider";
 import { TreeviewProviders } from "./features/treeViews";
 import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
 import { FusionCli } from "./fusion/fusionCli";
@@ -164,6 +165,7 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
         ),
       parsers: createProjectParsers(terminal),
       projectRoot,
+      projectCount: () => projects.all().length,
     });
 
   const projectRegistry = new ProjectRegistry(terminal);
@@ -345,6 +347,7 @@ export function compose(context: ExtensionContext): Composition {
     fusion.dbtLineageService,
     graph.sharedState,
     graph.runHistoryService,
+    registerDbtTaskProvider(graph.projects),
   );
 
   return {

@@ -1,7 +1,7 @@
 import { realpathSync } from "fs";
 import { basename } from "path";
 import { Uri } from "vscode";
-import { commandParamsFor } from "../core/cli";
+import { commandParamsFor, fullRefreshArgs } from "../core/cli";
 import { ProjectSnapshot } from "../core/project";
 import {
   DBTCommand,
@@ -9,8 +9,10 @@ import {
   RunModelParams,
   RunModelType,
 } from "../dbt_integration";
+import { CommandProcessResult } from "../fusion/commandProcessExecution";
 import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
 import { CommandQueue, formatCommandStatus } from "./commandQueue";
+import { DbtTaskTerminal } from "./dbtTask";
 
 const LOG_SOURCE = "Project";
 
@@ -58,20 +60,11 @@ export function formatCliStatus(
   cli: QueuedCliCommand,
   params: readonly string[],
 ): string {
-  const body =
-    cli.kind === "build" && cli.select === undefined
-      ? "dbt build"
-      : `dbt ${cli.kind} --select ${cli.select}`;
-  return [body, ...params].join(" ");
-}
-
-/** Queues a `kind` command that selects `params`' model and graph operators. */
-export function queueSelected(
-  deps: ProjectCommandDeps,
-  kind: "run" | "build" | "compile",
-  params: RunModelParams,
-): Promise<void> {
-  return queueCli(deps, { kind, select: selection(params) });
+  const body = ["dbt", cli.kind];
+  if (cli.kind !== "deps" && cli.select !== undefined) {
+    body.push("--select", cli.select);
+  }
+  return [...body, ...fullRefreshArgs(cli, params), ...params].join(" ");
 }
 
 /**
@@ -116,13 +109,18 @@ export async function refreshCliConfig(
   return true;
 }
 
-/** Prepares a CLI command and queues it, reporting a preparation failure instead of throwing. */
+/**
+ * Prepares a CLI command and queues it to run in the task `terminal`, settling with the queued run. A preparation
+ * failure is reported, closes `terminal`, and rejects.
+ */
 export async function queueCli(
   deps: ProjectCommandDeps,
   cli: QueuedCliCommand,
-): Promise<void> {
+  terminal: DbtTaskTerminal,
+): Promise<CommandProcessResult | undefined> {
+  let command: DBTCommand;
   try {
-    enqueueCommand(deps, deps.cli().prepare(cli));
+    command = deps.cli().prepare(cli);
   } catch (error) {
     const statusMessage = formatCliStatus(
       cli,
@@ -134,18 +132,31 @@ export async function queueCli(
       `Unable to prepare ${statusMessage}`,
       error,
     );
+    terminal.fail(`Unable to prepare ${statusMessage}: ${error}`);
+    throw error;
   }
+  return enqueueCommand(deps, command, terminal);
 }
 
-/** Queues a prepared command, recording its run results and failing on a reported dbt error. */
+/**
+ * Queues a prepared command to run in the task `terminal`, recording its run results and failing on a reported dbt
+ * error; settles once it has run. It is skipped when the terminal closed while it waited.
+ */
 export function enqueueCommand(
   deps: ProjectCommandDeps,
   command: DBTCommand,
-): void {
-  deps.commandQueue.enqueue(
+  terminal: DbtTaskTerminal,
+): Promise<CommandProcessResult | undefined> {
+  if (deps.commandQueue.busy) {
+    terminal.writeLine("Waiting for the previous dbt command to finish…");
+  }
+  return deps.commandQueue.enqueue(
     async (signal) => {
+      if (terminal.closed) {
+        return undefined;
+      }
       const result = await deps.withRunResults(
-        () => command.execute(signal),
+        () => terminal.run(command, signal),
         command.args,
       );
       // dbt CLI resolves normally even on failure (CommandProcessExecution.complete()
@@ -154,11 +165,8 @@ export function enqueueCommand(
       if (result?.stdout?.includes("Encountered an error:")) {
         throw new Error(result.stdout.trim());
       }
+      return result;
     },
-    {
-      statusMessage: formatCommandStatus(command),
-      focus: command.focus,
-      showProgress: command.showProgress,
-    },
+    { statusMessage: formatCommandStatus(command) },
   );
 }

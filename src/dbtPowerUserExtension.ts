@@ -69,12 +69,14 @@ export class DBTPowerUserExtension implements Disposable {
     private sharedState: SharedStateService,
     /** Disposed after every other collaborator except `sharedState`. */
     private runHistoryService: RunHistoryService,
+    private dbtTaskProvider: Disposable,
   ) {
     this.disposables.push(
       this.sharedState,
       this.runHistoryService,
       this.dbtTerminal,
       this.projects,
+      this.dbtTaskProvider,
       this.webviewViewProviders,
       this.treeviewProviders,
       this.contentProviders,

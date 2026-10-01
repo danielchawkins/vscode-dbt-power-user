@@ -179,6 +179,7 @@ const knownContributionPoints = new Set([
   "languages",
   "grammars",
   "semanticTokenScopes",
+  "taskDefinitions",
 ]);
 
 describe("command contribution consistency", () => {

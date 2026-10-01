@@ -1,24 +1,12 @@
-import { Disposable, EventEmitter, Terminal, window } from "vscode";
+import { window } from "vscode";
 import { DBTTerminal } from "../dbt_integration";
 import { stripANSI } from "../utils";
 
 export class VSCodeDBTTerminal implements DBTTerminal {
-  private disposables: Disposable[] = [];
   private disposed = false;
-  private terminal?: Terminal;
-  private readonly writeEmitter = new EventEmitter<string>();
   private outputChannel = window.createOutputChannel(`Log - dbt`, {
     log: true,
   });
-
-  constructor() {}
-
-  async show(status: boolean) {
-    if (status) {
-      await this.requireTerminal();
-      this.terminal!.show(!status);
-    }
-  }
 
   log(message: string, ...args: any[]) {
     if (this.disposed) {
@@ -26,9 +14,6 @@ export class VSCodeDBTTerminal implements DBTTerminal {
     }
     this.outputChannel.info(stripANSI(message), args);
     console.log(stripANSI(message), args);
-    if (this.terminal !== undefined) {
-      this.writeEmitter.fire(message);
-    }
   }
 
   trace(message: string) {
@@ -89,29 +74,6 @@ export class VSCodeDBTTerminal implements DBTTerminal {
       return;
     }
     this.disposed = true;
-    while (this.disposables.length) {
-      const x = this.disposables.pop();
-      x?.dispose();
-    }
-    this.writeEmitter.dispose();
     this.outputChannel.dispose();
-  }
-
-  private async requireTerminal() {
-    if (this.terminal === undefined) {
-      this.terminal = window.createTerminal({
-        name: "Tasks - dbt",
-        pty: {
-          onDidWrite: this.writeEmitter.event,
-          open: () => this.writeEmitter.fire(""),
-          close: () => {
-            this.terminal?.dispose();
-            this.terminal = undefined;
-          },
-        },
-      });
-      this.disposables.push(this.terminal);
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
   }
 }

@@ -46,7 +46,6 @@ function silentTerminal(): DBTTerminal {
     warn: () => undefined,
     info: () => undefined,
     trace: () => undefined,
-    show: () => Promise.resolve(),
   } as unknown as DBTTerminal;
 }
 

@@ -2,10 +2,12 @@ import * as fs from "fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { ProjectSnapshot } from "../../core/project";
-import { DBTTerminal, RunModelType } from "../../dbt_integration";
+import { DBTCommand, DBTTerminal, RunModelType } from "../../dbt_integration";
 import { FusionCli } from "../../fusion/fusionCli";
 import { CommandQueue } from "../../projects/commandQueue";
+import { DbtTaskTerminal } from "../../projects/dbtTask";
 import {
+  enqueueCommand,
   formatCliStatus,
   modelParamsFor,
   ProjectCommandDeps,
@@ -97,7 +99,13 @@ describe("queueCli", () => {
       terminal: { error } as unknown as DBTTerminal,
     };
 
-    await queueCli(deps, { kind: "run", select: "orders" });
+    await expect(
+      queueCli(
+        deps,
+        { kind: "run", select: "orders" },
+        new DbtTaskTerminal(() => undefined),
+      ),
+    ).rejects.toThrow("no dbt");
 
     expect(enqueue).not.toHaveBeenCalled();
     expect(notifyFailed).toHaveBeenCalledWith(
@@ -105,5 +113,143 @@ describe("queueCli", () => {
       "Error: no dbt",
     );
     expect(error).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("enqueueCommand", () => {
+  function depsWith() {
+    const deps: ProjectCommandDeps = {
+      commandQueue: new CommandQueue(),
+      cli: () => ({}) as FusionCli,
+      snapshot: () => ({}) as ProjectSnapshot,
+      withRunResults: vi.fn((run) => run()),
+      notifyFailed: vi.fn(),
+      terminal: {} as DBTTerminal,
+    };
+    return deps;
+  }
+
+  function command(stdout = "", exitCode = 0) {
+    const command = new DBTCommand("Running", ["run", "--select", "a"]);
+    const execute = vi.fn(
+      async (
+        _c: DBTCommand,
+        _signal?: AbortSignal,
+        onOutput?: (chunk: string) => void,
+      ) => {
+        onOutput?.("done\n");
+        return { stdout, stderr: "", fullOutput: stdout, exitCode };
+      },
+    );
+    command.setExecutionStrategy({ execute });
+    return { command, execute };
+  }
+
+  function recorded(terminal: DbtTaskTerminal) {
+    const written: string[] = [];
+    terminal.onDidWrite((text) => written.push(text));
+    const closed = new Promise((resolve) => terminal.onDidClose(resolve));
+    return { written, closed };
+  }
+
+  it("runs in the terminal inside the run-results read and settles with the result", async () => {
+    const deps = depsWith();
+    const { command: c, execute } = command("", 2);
+    const terminal = new DbtTaskTerminal(() => undefined);
+    const { closed } = recorded(terminal);
+
+    await expect(enqueueCommand(deps, c, terminal)).resolves.toMatchObject({
+      exitCode: 2,
+    });
+
+    expect(deps.withRunResults).toHaveBeenCalledWith(expect.any(Function), [
+      "run",
+      "--select",
+      "a",
+    ]);
+    expect(execute.mock.calls[0][2]).toEqual(expect.any(Function));
+    await expect(closed).resolves.toBe(2);
+  });
+
+  it("rejects on a reported dbt error and fires onFailed", async () => {
+    const deps = depsWith();
+    const failed = vi.fn();
+    deps.commandQueue.onFailed(failed);
+    const terminal = new DbtTaskTerminal(() => undefined);
+
+    await expect(
+      enqueueCommand(
+        deps,
+        command("Encountered an error: x").command,
+        terminal,
+      ),
+    ).rejects.toThrow("Encountered an error: x");
+    expect(failed).toHaveBeenCalledTimes(1);
+  });
+
+  it("writes a waiting line while an earlier command runs", async () => {
+    const deps = depsWith();
+    let release!: () => void;
+    void deps.commandQueue.enqueue(
+      () => new Promise<void>((resolve) => (release = resolve)),
+      { statusMessage: "first" },
+    );
+    const terminal = new DbtTaskTerminal(() => undefined);
+    const { written } = recorded(terminal);
+
+    const run = enqueueCommand(deps, command().command, terminal);
+
+    expect(written).toEqual([
+      "Waiting for the previous dbt command to finish…\r\n",
+    ]);
+    release();
+    await run;
+    expect(written[1]).toBe("> dbt run --select a\r\n");
+  });
+
+  it("skips a command whose terminal closed while it waited", async () => {
+    const deps = depsWith();
+    let release!: () => void;
+    void deps.commandQueue.enqueue(
+      () => new Promise<void>((resolve) => (release = resolve)),
+      { statusMessage: "first" },
+    );
+    const { command: c, execute } = command();
+    const terminal = new DbtTaskTerminal(() => undefined);
+
+    const run = enqueueCommand(deps, c, terminal);
+    terminal.close();
+    release();
+
+    await expect(run).resolves.toBeUndefined();
+    expect(execute).not.toHaveBeenCalled();
+    expect(deps.withRunResults).not.toHaveBeenCalled();
+  });
+});
+
+describe("queueCli with a task terminal", () => {
+  it("closes the terminal as failed when prepare throws", async () => {
+    const terminal = new DbtTaskTerminal(() => undefined);
+    const closed = new Promise((resolve) => terminal.onDidClose(resolve));
+    const deps = {
+      commandQueue: { enqueue: vi.fn() } as unknown as CommandQueue,
+      cli: () =>
+        ({
+          prepare: () => {
+            throw new Error("no dbt");
+          },
+        }) as unknown as FusionCli,
+      snapshot: () =>
+        ({
+          invocation: { commandParams: { run: [] } },
+        }) as unknown as ProjectSnapshot,
+      withRunResults: (run: () => Promise<unknown>) => run(),
+      notifyFailed: vi.fn(),
+      terminal: { error: vi.fn() } as unknown as DBTTerminal,
+    } as unknown as ProjectCommandDeps;
+
+    await expect(queueCli(deps, { kind: "deps" }, terminal)).rejects.toThrow();
+
+    await expect(closed).resolves.toBe(1);
   });
 });
