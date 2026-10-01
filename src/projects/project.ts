@@ -2,7 +2,6 @@ import {
   CustomExecution,
   Diagnostic,
   Disposable,
-  Event,
   EventEmitter,
   Task,
   Uri,
@@ -14,7 +13,6 @@ import {
   readDbtProjectFile,
   ResolvedDefer,
 } from "../core/project";
-import { DBTProjectLog } from "../dbt_client/dbtProjectLog";
 import { ProjectConfigChangedEvent } from "../dbt_client/event/projectConfigChangedEvent";
 import { RunResultsEvent } from "../dbt_client/event/runResultsEvent";
 import {
@@ -96,9 +94,7 @@ const LOG_SOURCE = "Project";
 
 /** The collaborators a `Project` is built from. */
 export interface ProjectOptions {
-  dbtProjectLogFactory: (
-    onProjectConfigChanged: Event<ProjectConfigChangedEvent>,
-  ) => DBTProjectLog;
+  /** The Declared Project's log; the Project does not dispose it. */
   terminal: DBTTerminal;
   sharedState: SharedStateService;
   runHistoryService: RunHistoryService;
@@ -121,7 +117,6 @@ export class Project implements Disposable, ManifestProject {
   private readonly manifestRebuild: ManifestRebuild;
   private readonly trigger: ManifestTrigger;
   private readonly diagnostics: ProjectDiagnostics;
-  private readonly dbtProjectLog: DBTProjectLog;
   private readonly projectCount: () => number;
   private warnedTasksUnavailable = false;
   private disposed = false;
@@ -211,11 +206,7 @@ export class Project implements Disposable, ManifestProject {
       },
     );
     this.subscribeLifecycle();
-    this.dbtProjectLog = options.dbtProjectLogFactory(
-      this.onProjectConfigChanged,
-    );
     this.disposables.push(
-      this.dbtProjectLog,
       this.diagnostics,
       this.commandQueue,
       this.commandQueue.onFailed(({ statusMessage, error }) =>
@@ -226,6 +217,11 @@ export class Project implements Disposable, ManifestProject {
       LOG_SOURCE,
       `Created fusion dbt project ${this.getProjectName()} at ${this.projectRoot}`,
     );
+  }
+
+  /** The Declared Project's log, for features that act on this Project. */
+  get log(): DBTTerminal {
+    return this.terminal;
   }
 
   private subscribeLifecycle(): void {

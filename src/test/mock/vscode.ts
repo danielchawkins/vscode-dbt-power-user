@@ -280,7 +280,7 @@ const mockRegisterProvider = vi.fn(() => mockDisposable);
 
 export function createMockLogOutputChannel(name?: string): LogOutputChannel {
   const channelName =
-    name ?? `Log - mock-${(mockLogOutputChannelCounter += 1)}`;
+    name ?? `mock-channel-${(mockLogOutputChannelCounter += 1)}`;
   return {
     name: channelName,
     append: vi.fn(),

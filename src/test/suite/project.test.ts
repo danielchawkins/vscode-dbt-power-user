@@ -28,7 +28,6 @@ import {
   UnitTestParser,
 } from "../../core/manifest";
 import { DBT_PROJECT_FILE } from "../../core/project";
-import { DBTProjectLog } from "../../dbt_client/dbtProjectLog";
 import {
   DBTCommand,
   DBTDiagnosticData,
@@ -96,12 +95,10 @@ describe("Project Test Suite", () => {
   let mockSharedStateService: Mocked<SharedStateService>;
   let mockRunHistoryService: Mocked<RunHistoryService>;
   let mockFusionCli: any;
-  let mockDbtProjectLog: Mocked<DBTProjectLog>;
   let dbtProject: Project;
 
   function newProject(projectUri = vscode.Uri.file("/test/project")): Project {
     return buildTestProject(projectUri.fsPath, () => mockFusionCli, {
-      dbtProjectLogFactory: () => mockDbtProjectLog,
       terminal: mockTerminal,
       sharedState: mockSharedStateService,
       runHistoryService: mockRunHistoryService,
@@ -181,9 +178,6 @@ describe("Project Test Suite", () => {
         projectConfigDiagnostics: [],
       }),
     };
-    mockDbtProjectLog = {
-      dispose: vi.fn(),
-    } as unknown as Mocked<DBTProjectLog>;
   });
 
   afterEach(async () => {
@@ -445,7 +439,7 @@ describe("Project Test Suite", () => {
 
       expect(collection.dispose).toHaveBeenCalled();
       expect(mockFusionCli.dispose).toHaveBeenCalled();
-      expect(mockDbtProjectLog.dispose).toHaveBeenCalled();
+      expect(mockTerminal.dispose).not.toHaveBeenCalled();
       expect(() => dbtProject.getFusionCli()).toThrow();
     });
 

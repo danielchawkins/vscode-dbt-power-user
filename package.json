@@ -182,7 +182,7 @@
             ],
             "default": "off",
             "scope": "resource",
-            "description": "Fusion server process log verbosity for this Declared Project. Server stdout and stderr appear in that project's Fusion LSP output channel; debug and verbose also increase Fusion's own project log file verbosity (for example logs/dbt.log)."
+            "description": "Fusion server process log verbosity for this Declared Project. Server stdout and stderr appear in that project's \"Fusion Power User: <project>\" output channel; debug and verbose also increase Fusion's own project log file verbosity (for example logs/dbt.log)."
           },
           "fusionPowerUser.unquotedCaseInsensitiveIdentifierRegex": {
             "type": "string",

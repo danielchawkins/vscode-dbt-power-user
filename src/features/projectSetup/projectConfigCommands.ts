@@ -38,7 +38,7 @@ export class ProjectConfigCommands implements Disposable {
   constructor(
     private readonly startupGate: Pick<StartupGate, "whenSettled">,
     private readonly currentProject: CurrentProject,
-    private readonly terminal: DBTTerminal,
+    private readonly logFor: (root: Uri) => DBTTerminal,
   ) {
     this.disposables = [
       commands.registerCommand(
@@ -70,7 +70,11 @@ export class ProjectConfigCommands implements Disposable {
     if (!project) {
       return false;
     }
-    return applyProjectConfigInsertion(project, insertion, this.terminal);
+    return applyProjectConfigInsertion(
+      project,
+      insertion,
+      this.logFor(project.root),
+    );
   }
 
   dispose(): void {

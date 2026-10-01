@@ -1,4 +1,3 @@
-import { createHash } from "crypto";
 import { realpathSync } from "fs";
 import * as path from "path";
 import {
@@ -10,7 +9,6 @@ import {
   LogOutputChannel,
   RelativePattern,
   Uri,
-  window,
 } from "vscode";
 import {
   State,
@@ -20,8 +18,7 @@ import {
 } from "vscode-languageclient/node";
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
 import { DBT_LSP_USE_TARGET_LSP, toLspArgs, type LspLaunch } from "../core/lsp";
-import { type StaticAnalysisMode } from "../core/project";
-import { DBTTerminal } from "../dbt_integration";
+import { projectRootDigest, type StaticAnalysisMode } from "../core/project";
 import { DeclaredProject } from "../projects/projectRegistry";
 import {
   clearDiagnosticsOnDelete,
@@ -66,6 +63,8 @@ export interface FusionClientOptions {
   commandPrefix: string;
   /** Layered over `launch.environment`; the launch's `DBT_LSP_USE_TARGET_LSP` choice still wins. */
   env?: Record<string, string>;
+  /** The Declared Project's log channel; receives client, trace and server output. The client never disposes it. */
+  outputChannel: LogOutputChannel;
 }
 
 export interface FusionClient extends Disposable {
@@ -106,25 +105,12 @@ export const BACKOFF_CAP_MS = 8_000;
 const STDERR_BUFFER_LIMIT = 16_384;
 export const PARTIAL_LINE_LIMIT = 4_096;
 
-export function projectRootDigest(rootFsPath: string): string {
-  return createHash("sha256")
-    .update(rootFsPath)
-    .digest("base64url")
-    .slice(0, 12);
-}
-
 export function commandPrefixForProject(project: DeclaredProject): string {
   return `${EXTENSION_PREFIX_NAMESPACE}:${projectRootDigest(project.root.fsPath)}:`;
 }
 
 export function languageClientIdForProject(project: DeclaredProject): string {
   return `fusion-lsp-${projectRootDigest(project.root.fsPath)}`;
-}
-
-/** Deterministic per Declared Project; disambiguates duplicate project names. */
-export function fusionOutputChannelName(project: DeclaredProject): string {
-  const digest = projectRootDigest(project.root.fsPath);
-  return `dbt Fusion LSP (${project.name} · ${digest})`;
 }
 
 export function prefixedCommand(
@@ -384,7 +370,6 @@ export type FusionLanguageClientDependencies = {
     serverOptions: ServerOptions,
     clientOptions: LanguageClientOptions,
   ) => Promise<ClientHandle>;
-  createOutputChannel?: (name: string) => LogOutputChannel;
   sleep?: (ms: number) => Promise<void>;
 };
 
@@ -399,13 +384,10 @@ export interface FusionClientFactory {
 }
 
 export class DefaultFusionClientFactory implements FusionClientFactory {
-  constructor(
-    private readonly terminal: DBTTerminal,
-    private readonly deps: FusionLanguageClientDependencies = {},
-  ) {}
+  constructor(private readonly deps: FusionLanguageClientDependencies = {}) {}
 
   create(options: FusionClientOptions): FusionClient {
-    return new FusionLanguageClientImpl(options, this.terminal, this.deps);
+    return new FusionLanguageClientImpl(options, this.deps);
   }
 }
 
@@ -413,7 +395,6 @@ class FusionLanguageClientImpl implements FusionClient {
   private _state: FusionClientState = "stopped";
   private _failureReason: string | undefined;
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
-  private readonly _logChannel: LogOutputChannel;
   private languageClient: ClientHandle | undefined;
   private deletionWatcher: Disposable | undefined;
   private reverseSocket: ReverseSocketServer | undefined;
@@ -430,15 +411,8 @@ class FusionLanguageClientImpl implements FusionClient {
 
   constructor(
     private readonly options: FusionClientOptions,
-    private readonly terminal: DBTTerminal,
     private readonly deps: FusionLanguageClientDependencies,
   ) {
-    const createOutputChannel =
-      this.deps.createOutputChannel ??
-      ((name: string) => window.createOutputChannel(name, { log: true }));
-    this._logChannel = createOutputChannel(
-      fusionOutputChannelName(this.options.project),
-    );
     void this.begin();
   }
 
@@ -463,10 +437,7 @@ class FusionLanguageClientImpl implements FusionClient {
   }
 
   get outputChannel(): LogOutputChannel {
-    if (this.disposed) {
-      throw new Error("Fusion LSP output channel is disposed");
-    }
-    return this._logChannel;
+    return this.options.outputChannel;
   }
 
   request<T>(
@@ -517,7 +488,6 @@ class FusionLanguageClientImpl implements FusionClient {
     }
     this.disposed = true;
     void this.stop().finally(() => {
-      this._logChannel.dispose();
       this._onDidChangeState.dispose();
     });
   }
@@ -631,7 +601,7 @@ class FusionLanguageClientImpl implements FusionClient {
         launchRoot,
       );
       const processAdapter = new SpawnedLspProcess(child, (line) => {
-        this._logChannel.appendLine(line);
+        this.outputChannel.appendLine(line);
       });
       this.childProcess = processAdapter;
 
@@ -660,7 +630,8 @@ class FusionLanguageClientImpl implements FusionClient {
           documentSelector: selector,
           uriConverters,
           connectionOptions: { maxRestartCount: 0 },
-          outputChannel: this._logChannel,
+          outputChannel: this.outputChannel,
+          traceOutputChannel: this.outputChannel,
           workspaceFolder: {
             uri: this.options.project.folder.uri,
             name: this.options.project.folder.name,
@@ -792,9 +763,9 @@ class FusionLanguageClientImpl implements FusionClient {
         processAdapter.kill("SIGKILL");
         const killed = await killExitPromise;
         if (!killed) {
-          const message = `Fusion LSP process for ${this.options.project.name} did not exit after SIGKILL`;
-          this._logChannel.appendLine(message);
-          this.terminal.warn("fusionLsp", message);
+          this.outputChannel.warn(
+            `Fusion LSP process for ${this.options.project.name} did not exit after SIGKILL`,
+          );
         }
       }
     }
@@ -857,8 +828,7 @@ class FusionLanguageClientImpl implements FusionClient {
     if (!this._failureReason) {
       this._failureReason = message;
     }
-    this._logChannel.appendLine(message);
-    this.terminal.warn("fusionLsp", message);
+    this.outputChannel.warn(message);
   }
 
   private setState(next: FusionClientState): void {
@@ -880,22 +850,18 @@ export class FailedFusionClient implements FusionClient {
   private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
   readonly state: FusionClientState = "failed";
   readonly staticAnalysis: StaticAnalysisMode;
-  readonly outputChannel: LogOutputChannel;
   readonly failureReason: string;
 
+  /** Writes `message` to `outputChannel`, which it never disposes. */
   constructor(
     readonly project: DeclaredProject,
     private readonly message: string,
-    private readonly terminal: DBTTerminal,
     staticAnalysis: StaticAnalysisMode,
-    createOutputChannel: (name: string) => LogOutputChannel = (name) =>
-      window.createOutputChannel(name, { log: true }),
+    readonly outputChannel: LogOutputChannel,
   ) {
     this.failureReason = message;
     this.staticAnalysis = staticAnalysis;
-    this.outputChannel = createOutputChannel(fusionOutputChannelName(project));
-    this.outputChannel.appendLine(message);
-    this.terminal.warn("fusionLsp", message);
+    this.outputChannel.warn(message);
   }
 
   get onDidChangeState(): Event<FusionClientState> {
@@ -915,7 +881,6 @@ export class FailedFusionClient implements FusionClient {
   }
 
   dispose(): void {
-    this.outputChannel.dispose();
     this._onDidChangeState.dispose();
   }
 }

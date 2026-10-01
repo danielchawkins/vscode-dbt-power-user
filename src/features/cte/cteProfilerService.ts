@@ -22,10 +22,10 @@ export class CteProfilerService implements Disposable {
 
   private disposables: Disposable[] = [this._onResultChanged];
 
-  constructor(
-    private projects: Projects,
-    private dbtTerminal: DBTTerminal,
-  ) {}
+  /** The log of the Project being profiled. */
+  private runningLog: DBTTerminal | undefined;
+
+  constructor(private projects: Projects) {}
 
   dispose() {
     this.cancellationTokenSource?.dispose();
@@ -68,6 +68,8 @@ export class CteProfilerService implements Disposable {
       return;
     }
 
+    const { log } = project;
+    this.runningLog = log;
     const modelName = this.extractModelName(uri);
     this.cancellationTokenSource = new CancellationTokenSource();
     const token = this.cancellationTokenSource.token;
@@ -86,7 +88,7 @@ export class CteProfilerService implements Disposable {
     this.results.set(uri.toString(), result);
     this._onResultChanged.fire(result);
 
-    this.dbtTerminal.debug(
+    log.debug(
       "CteProfiler",
       `Starting profiling for ${modelName} with ${ctes.length} CTEs`,
     );
@@ -103,7 +105,7 @@ export class CteProfilerService implements Disposable {
         // a `CancellationToken`. Mid-query abort is tracked as a follow-up
         // once that helper grows cancellation support across Fusion CLI paths.
         if (token.isCancellationRequested) {
-          this.dbtTerminal.debug(
+          log.debug(
             "CteProfiler",
             `Profiling cancelled at CTE ${i}/${ctes.length}`,
           );
@@ -116,14 +118,14 @@ export class CteProfilerService implements Disposable {
         const query = this.buildCountQuery(text, ctes, targetCte, document);
 
         if (!query) {
-          this.dbtTerminal.warn(
+          log.warn(
             "CteProfiler",
             `Failed to build query for CTE: ${targetCte.name}`,
           );
           continue;
         }
 
-        this.dbtTerminal.debug(
+        log.debug(
           "CteProfiler",
           `Profiling CTE ${i + 1}/${ctes.length}: ${targetCte.name}`,
         );
@@ -149,7 +151,7 @@ export class CteProfilerService implements Disposable {
           tier: "cool", // classified after all CTEs complete
         });
 
-        this.dbtTerminal.debug(
+        log.debug(
           "CteProfiler",
           `CTE ${targetCte.name}: ${elapsed}ms cumulative, ${marginalTime}ms marginal, ${rowCount} rows`,
         );
@@ -176,12 +178,12 @@ export class CteProfilerService implements Disposable {
       this.results.set(uri.toString(), result);
       this._onResultChanged.fire(result);
 
-      this.dbtTerminal.debug(
+      log.debug(
         "CteProfiler",
         `Profiling ${result.status}: ${result.totalTimeMs}ms total, ${result.ctes.length} CTEs`,
       );
     } catch (error) {
-      this.dbtTerminal.error("CteProfiler", "Profiling failed", error);
+      log.error("CteProfiler", "Profiling failed", error);
       result.status = "error";
       result.error = error instanceof Error ? error.message : "Unknown error";
       this.results.set(uri.toString(), result);
@@ -190,13 +192,14 @@ export class CteProfilerService implements Disposable {
     } finally {
       this.cancellationTokenSource?.dispose();
       this.cancellationTokenSource = undefined;
+      this.runningLog = undefined;
     }
   }
 
   cancel(): void {
     if (this.cancellationTokenSource) {
       this.cancellationTokenSource.cancel();
-      this.dbtTerminal.debug("CteProfiler", "Cancellation requested");
+      this.runningLog?.debug("CteProfiler", "Cancellation requested");
     }
   }
 

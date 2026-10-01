@@ -3,12 +3,12 @@ import * as os from "os";
 import * as path from "path";
 import { anything, instance, mock, verify, when } from "ts-mockito";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { VSCodeDBTTerminal } from "../../dbt_client/vscodeTerminal";
 import { DBTTerminal } from "../../dbt_integration";
 import {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
 } from "../../fusion/commandProcessExecution";
+import { ChannelLog } from "../../projects/outputChannels";
 
 describe("CommandProcessExecution Tests", () => {
   let mockTerminal: DBTTerminal;
@@ -16,7 +16,7 @@ describe("CommandProcessExecution Tests", () => {
   let testDir: string;
 
   beforeEach(() => {
-    mockTerminal = mock(VSCodeDBTTerminal);
+    mockTerminal = mock(ChannelLog);
     when(mockTerminal.debug(anything(), anything(), anything())).thenReturn();
     factory = new CommandProcessExecutionFactory(instance(mockTerminal));
     testDir = path.join(

@@ -8,13 +8,12 @@ import {
   LanguageStatusSeverity,
   Uri,
 } from "vscode";
-import { DBT_PROJECT_FILE } from "../core/project";
+import { DBT_PROJECT_FILE, projectRootDigest } from "../core/project";
 import { DeclaredProject } from "../projects/projectRegistry";
 import { FusionClientPool } from "./fusionClientPool";
 import {
   FusionClient,
   FusionClientState,
-  projectRootDigest,
   vscodeDocumentSelectorForProject,
 } from "./fusionLanguageClient";
 import { SchemaOriginStatus } from "./schemaOrigin";

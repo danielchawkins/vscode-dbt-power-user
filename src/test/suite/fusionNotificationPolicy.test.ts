@@ -21,6 +21,7 @@ import {
 } from "../../projects/projectRegistry";
 import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { StartupGate } from "../../startupGate";
+import { createMockLogOutputChannel } from "../mock/vscode";
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
@@ -91,8 +92,7 @@ describe("fusionNotificationPolicy", () => {
   });
 
   it("shows no window messages when Fusion LSP start fails", async () => {
-    const terminal = { warn: vi.fn(), error: vi.fn(), info: vi.fn() };
-    const factory = new DefaultFusionClientFactory(terminal as any, {
+    const factory = new DefaultFusionClientFactory({
       listenForServer: async () => {
         throw new Error("listen failed");
       },
@@ -108,6 +108,7 @@ describe("fusionNotificationPolicy", () => {
       },
       launch: toLspLaunch(readProjectSnapshot(makeProject().root)),
       commandPrefix: "fusionPowerUser:test:",
+      outputChannel: createMockLogOutputChannel("project"),
     });
 
     await flushAsync();
@@ -137,7 +138,10 @@ describe("fusionNotificationPolicy", () => {
       terminal as any,
       resolver as any,
       factory as any,
-      { readSnapshot: readProjectSnapshot },
+      {
+        readSnapshot: readProjectSnapshot,
+        outputChannel: () => createMockLogOutputChannel("project"),
+      },
     );
     pool.initialize();
     await flushAsync();

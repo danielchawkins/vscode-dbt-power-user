@@ -323,6 +323,77 @@ describe("command contribution consistency", () => {
   });
 });
 
+describe("language contribution consistency", () => {
+  const contributes = readContributes() as PackageJsonContributes & {
+    languages?: Array<{ id: string; filenamePatterns?: string[] }>;
+  };
+  // Languages VS Code ships; the extension only adds filename patterns to `sql`.
+  const builtInLanguages = new Set(["sql", "yaml"]);
+  const contributedLanguages = new Set(
+    (contributes.languages ?? []).map(({ id }) => id),
+  );
+  const known = (id: string) =>
+    contributedLanguages.has(id) || builtInLanguages.has(id);
+
+  it("contributes jinja-sql and every language with filename patterns", () => {
+    expect(contributedLanguages.has("jinja-sql")).toBe(true);
+    for (const language of contributes.languages ?? []) {
+      expect(language.filenamePatterns?.length, language.id).toBeGreaterThan(0);
+    }
+  });
+
+  it("names only known languages in when clauses", () => {
+    const text = readFileSync(packageJsonPath, "utf8");
+    const ids = new Set<string>();
+    for (const match of text.matchAll(
+      /(?:editorLangId|resourceLangId)\s*(?:==|!=)\s*([\w-]+)/g,
+    )) {
+      ids.add(match[1]);
+    }
+    for (const match of text.matchAll(
+      /(?:editorLangId|resourceLangId)\s*=~\s*\/([^/]+)\//g,
+    )) {
+      for (const alternative of match[1].split("|")) {
+        ids.add(alternative.replace(/^\^|\$$/g, ""));
+      }
+    }
+
+    expect(ids.size).toBeGreaterThan(0);
+    expect([...ids].filter((id) => !known(id))).toEqual([]);
+  });
+
+  it("scopes language status items and selectors to known languages", () => {
+    const languageLiterals = new Set<string>();
+    const visitDir = (dir: string): void => {
+      for (const entry of readdirSync(dir)) {
+        const entryPath = path.join(dir, entry);
+        if (statSync(entryPath).isDirectory()) {
+          if (entry !== "test" && !entry.startsWith(".")) {
+            visitDir(entryPath);
+          }
+          continue;
+        }
+        if (!entry.endsWith(".ts") || entry.endsWith(".d.ts")) {
+          continue;
+        }
+        const content = readFileSync(entryPath, "utf8");
+        for (const match of content.matchAll(
+          /\blanguage:\s*"([\w-]+)"|FUSION_DOCUMENT_LANGUAGES = \[([^\]]+)\]/g,
+        )) {
+          const literals = match[1]
+            ? [match[1]]
+            : [...match[2].matchAll(/"([\w-]+)"/g)].map((m) => m[1]);
+          literals.forEach((id) => languageLiterals.add(id));
+        }
+      }
+    };
+    visitDir(srcRoot);
+
+    expect(languageLiterals.has("jinja-sql")).toBe(true);
+    expect([...languageLiterals].filter((id) => !known(id))).toEqual([]);
+  });
+});
+
 describe("semantic token scopes", () => {
   // Fusion 2.0.6 initialize legend; recorded by scripts/evidence/steps/editor-features.json.
   const fusionTokenTypes = new Set([

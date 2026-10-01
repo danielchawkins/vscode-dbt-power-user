@@ -46,7 +46,7 @@ class FakeClient implements FusionClient {
   private _state: FusionClientState;
 
   readonly outputChannel = createMockLogOutputChannel(
-    "dbt Fusion LSP (general · abc)",
+    "Fusion Power User: general",
   ) as FusionClient["outputChannel"];
   failureReason: string | undefined;
 

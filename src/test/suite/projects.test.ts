@@ -81,7 +81,7 @@ describe("Projects", () => {
     } as unknown as Mocked<Project>;
 
     // Mock factory
-    mockDbtProjectFactory = vi.fn((uri: Uri) => {
+    mockDbtProjectFactory = vi.fn(({ root: uri }: { root: Uri }) => {
       const project =
         uri.fsPath === "/project1"
           ? mockProject1

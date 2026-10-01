@@ -63,7 +63,7 @@ describe("DBTPowerUserExtension startup gate", () => {
     new ProjectConfigCommands(
       (extension as any).startupGate,
       { requireForCommand } as never,
-      { error: vi.fn() } as never,
+      () => ({ warn: vi.fn() }) as never,
     );
     const registration = (commands.registerCommand as Mock).mock.calls.find(
       ([command]) => command === "fusionPowerUser.enableStrictAnalysis",

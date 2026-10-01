@@ -1,6 +1,5 @@
 import { vi } from "vitest";
 import { Uri } from "vscode";
-import { DBTProjectLog } from "../dbt_client/dbtProjectLog";
 import { DBTTerminal } from "../dbt_integration";
 import { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
 import {
@@ -36,8 +35,6 @@ export function buildTestProject(
   overrides: Partial<ProjectOptions> = {},
 ): Project {
   return new Project({
-    dbtProjectLogFactory: () =>
-      ({ dispose: vi.fn() }) as unknown as DBTProjectLog,
     terminal: {
       debug: vi.fn(),
       info: vi.fn(),
