@@ -27,7 +27,7 @@ describe("webview panels on project removal", () => {
   it("LineageViewProvider tells the view the manifest is gone", () => {
     const { removed, value } = projectsDouble();
     const view = { manifestChanged: vi.fn(), dispose: vi.fn() } as any;
-    const panel = new LineageViewProvider(view, value, terminal);
+    const panel = new LineageViewProvider(view, value);
 
     removed.fire(Uri.file("/a"));
 

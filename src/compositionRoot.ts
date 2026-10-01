@@ -265,7 +265,7 @@ function composeWebviews(
       queryManifestService,
       terminal,
     ),
-    new LineageViewProvider(lineagePanel, projects, terminal),
+    new LineageViewProvider(lineagePanel, projects),
   );
 }
 

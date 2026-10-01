@@ -1,20 +1,17 @@
 import {
   CancellationToken,
-  commands,
   Disposable,
   TextEditor,
-  Uri,
   WebviewView,
   WebviewViewProvider,
   WebviewViewResolveContext,
   window,
 } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
 import { Projects } from "../../projects/projects";
-import { LineagePanel } from "./lineagePanel";
+import { LINEAGE_VIEW_TYPE, LineagePanel } from "./lineagePanel";
 
 export class LineageViewProvider implements WebviewViewProvider, Disposable {
-  public static readonly viewType = "fusionPowerUser.Lineage";
+  public static readonly viewType = LINEAGE_VIEW_TYPE;
 
   private panel: WebviewView | undefined;
   private context: WebviewViewResolveContext<unknown> | undefined;
@@ -24,7 +21,6 @@ export class LineageViewProvider implements WebviewViewProvider, Disposable {
   public constructor(
     private lineagePanel: LineagePanel,
     private projects: Projects,
-    private dbtTerminal: DBTTerminal,
   ) {
     this.disposables.push(
       lineagePanel,
@@ -79,37 +75,10 @@ export class LineageViewProvider implements WebviewViewProvider, Disposable {
     this.token = token;
 
     this.init();
-    panel.webview.onDidReceiveMessage(this.handleWebviewMessage, null, []);
-  }
-
-  private handleWebviewMessage = async (message: {
-    command: string;
-    args: any;
-  }) => {
-    this.dbtTerminal.debug(
-      "lineageViewProvider:handleWebviewMessage",
-      "message",
-      message,
+    panel.webview.onDidReceiveMessage(
+      (message: unknown) => this.getPanel().handleCommand(message),
+      null,
+      this.disposables,
     );
-    const { command, args } = message;
-    // common commands
-    if (command === "openFile") {
-      const url = args.params?.url;
-      if (!url) {
-        return;
-      }
-      await commands.executeCommand("vscode.open", Uri.file(url), {
-        preview: false,
-        preserveFocus: true,
-      });
-      return;
-    }
-
-    if (command === "init") {
-      this.getPanel()?.init();
-      return;
-    }
-
-    this.getPanel().handleCommand(message);
-  };
+  }
 }

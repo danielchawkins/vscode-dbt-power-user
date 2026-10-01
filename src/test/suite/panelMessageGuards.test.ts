@@ -1,11 +1,13 @@
 import {
   documentationEditor,
+  lineage,
   queryResults,
 } from "@fusion-power-user/webview-contract";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { Uri, window } from "vscode";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
+import { LineagePanel } from "../../features/lineage/lineagePanel";
 import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
 import { NUM_RUNS } from "../arbitraries";
 
@@ -127,20 +129,58 @@ const panels: Panel[] = [
         "terminal",
       ),
   },
+  {
+    name: "lineage",
+    guard: lineage.isPanelMessage,
+    commands: lineage.panelCommands,
+    keys: ["table", "name", "url", "message", "refresh", "targets"],
+    malformed: [
+      { command: "openFile" },
+      { command: "openFile", args: { params: {} } },
+      { command: "childTables", args: { params: { table: 1 } } },
+      { command: "getColumns", args: { params: { table: "t", refresh: 1 } } },
+      {
+        command: "getConnectedColumns",
+        args: { params: { targets: [["model.a"]], upstreamExpansion: true } },
+      },
+      {
+        command: "getConnectedColumns",
+        args: {
+          params: {
+            targets: [],
+            upstreamExpansion: true,
+            currAnd1HopTables: [1],
+          },
+        },
+      },
+      {
+        command: "persistLineageSettings",
+        args: { params: { showSelectEdges: "yes" } },
+      },
+      { command: "init", args: { params: 1 } },
+    ],
+    withSpies: () =>
+      spiedPanel(LineagePanel, lineage.panelCommands, "dbtTerminal"),
+  },
 ];
 
-const messages = (panel: Panel) =>
-  fc.oneof(
+const messages = (panel: Panel) => {
+  const fields = fc.dictionary(fc.constantFrom(...panel.keys), fc.jsonValue(), {
+    maxKeys: 4,
+  });
+  const command = fc.constantFrom(...panel.commands);
+  return fc.oneof(
     fc.jsonValue(),
+    fc.tuple(command, fields).map(([c, rest]) => ({ ...rest, command: c })),
     fc
-      .tuple(
-        fc.constantFrom(...panel.commands),
-        fc.dictionary(fc.constantFrom(...panel.keys), fc.jsonValue(), {
-          maxKeys: 4,
-        }),
-      )
-      .map(([command, rest]) => ({ ...rest, command })),
+      .tuple(command, fields, fc.option(fc.string(), { nil: undefined }))
+      .map(([c, params, syncRequestId]) => ({
+        command: c,
+        args: { params },
+        ...(syncRequestId === undefined ? {} : { syncRequestId }),
+      })),
   );
+};
 
 describe.each(panels)("$name host messages", (panel) => {
   it("drops and logs a malformed message without calling any handler", async () => {
@@ -162,6 +202,7 @@ describe.each(panels)("$name host messages", (panel) => {
   });
 
   it("hands arbitrary JSON to a handler only when it passes the guard", async () => {
+    let accepted = 0;
     await fc.assert(
       fc.asyncProperty(messages(panel), async (message) => {
         const { send, spies, log } = panel.withSpies();
@@ -170,6 +211,7 @@ describe.each(panels)("$name host messages", (panel) => {
           ([, spy]) => spy.mock.calls.length > 0,
         );
         if (panel.guard(message)) {
+          accepted++;
           const { command } = message as { command: string };
           expect(called.map(([c]) => c)).toEqual([command]);
           expect(spies[command]).toHaveBeenCalledWith(message);
@@ -181,6 +223,9 @@ describe.each(panels)("$name host messages", (panel) => {
       }),
       { numRuns: NUM_RUNS * 5 },
     );
+    // Both branches must be exercised for the property to mean anything.
+    expect(accepted).toBeGreaterThan(0);
+    expect(accepted).toBeLessThan(NUM_RUNS * 5);
   });
 });
 

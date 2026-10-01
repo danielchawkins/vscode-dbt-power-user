@@ -22,22 +22,10 @@ import {
   SharedStateEventEmitterProps,
   SharedStateService,
 } from "../projects/sharedStateService";
-import { dispatchMessage, Handlers } from "./messageRouter";
+import { Handlers } from "./messageRouter";
 
 /** The commands every panel on `PanelHost` sends. */
 export type CommonPanelMessage = WebviewReady;
-
-const isCommonPanelMessage = (value: unknown): value is CommonPanelMessage =>
-  typeof value === "object" &&
-  value !== null &&
-  (value as { command?: unknown }).command === "webview:ready";
-
-export interface SendMessageProps extends Record<string, unknown> {
-  command: string;
-  syncRequestId?: string;
-  error?: string;
-  data?: unknown;
-}
 
 /**
  * This class is responsible for rendering the webview
@@ -74,25 +62,6 @@ export class PanelHost implements WebviewViewProvider {
     return (<WebviewView>panel).show !== undefined;
   }
 
-  protected sendResponseToWebview({
-    command,
-    data,
-    error,
-    syncRequestId,
-    ...rest
-  }: SendMessageProps) {
-    this._panel?.webview?.postMessage({
-      command,
-      args: {
-        syncRequestId,
-        body: data,
-        status: !error,
-        error,
-      },
-      ...rest,
-    });
-  }
-
   protected async onEvent({ command, payload }: SharedStateEventEmitterProps) {
     switch (command) {
       default:
@@ -100,10 +69,9 @@ export class PanelHost implements WebviewViewProvider {
     }
   }
 
+  /** Renders the panel's HTML; each panel subscribes to the webview's messages with its own guard and handlers. */
   protected renderWebviewView(webview: Webview) {
     this._webview = webview;
-    this._panel!.webview.onDidReceiveMessage(this.handleCommand, this, []);
-
     webview.html = this.getHtml(webview, this.extensionContext.extensionUri);
   }
 
@@ -121,20 +89,6 @@ export class PanelHost implements WebviewViewProvider {
     return {
       "webview:ready": () => this.onWebviewReady(),
     };
-  }
-
-  /** Routes an inbound message; a panel overrides this with its own guard and handler map. */
-  protected async handleCommand(message: unknown): Promise<void> {
-    await dispatchMessage(
-      this.viewType,
-      message,
-      isCommonPanelMessage,
-      this.commonHandlers(),
-      {
-        log: this.dbtTerminal,
-        reply: (response) => this._panel?.webview.postMessage(response),
-      },
-    );
   }
 
   protected async checkIfWebviewReady() {
