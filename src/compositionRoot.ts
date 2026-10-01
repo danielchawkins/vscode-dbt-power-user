@@ -132,7 +132,7 @@ interface ProjectsGraph {
 
 function composeProjects(context: ExtensionContext): ProjectsGraph {
   const extensionContextStore = new ExtensionContextStore(context);
-  const outputChannels = new OutputChannels();
+  const outputChannels = new OutputChannels(context.extension.id);
   const terminal: DBTTerminal = outputChannels;
   const sharedState = new SharedStateService();
   const runHistoryService = new RunHistoryService();

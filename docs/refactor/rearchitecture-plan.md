@@ -215,7 +215,7 @@ Verify: `commandConsistencyGuard` extended to `languages` and language status; `
   - `01-model-editor`: `models/child.sql` as `jinja-sql`, with the status bar showing `{} jinja-sql`.
   - `02-language-status`: the `{}` hover lists `dbt Fusion · single_project` with "Show output", and `static: project · single_project` with "Enable strict analysis".
   - `03-explorer-icons`: `child.sql` and `broken_ref.sql` show `media/images/dbt_file_icon.svg`; `dbt_project.yml` keeps the theme icon.
-  - `04-project-output-channel`: the Output view shows `Fusion Power User: single_project` with Fusion compile lines (`'Incremental' compiling …`, `Node breakdown: 2 models`). In VS Code, "Show output" selects it. In Cursor, the view stays on `Cursor Auth Debug` until the channel is picked from the dropdown; the record's `openedBy` names that path.
+  - `04-project-output-channel`: the Output view shows `Fusion Power User: single_project` with Fusion compile lines (`'Incremental' compiling …`, `Node breakdown: 2 models`). "Show output" is the only action that opens it, and the smoke asserts the view selects the project channel in VS Code and Cursor.
   - `05`–`07`: the docs editor, query results and lineage panels, each matching its `bodyText`.
 
   No notification appears at any checkpoint. Screenshots stay out of the repository, as for R3 and R4.
