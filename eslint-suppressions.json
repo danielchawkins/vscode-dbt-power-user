@@ -449,12 +449,6 @@
     }
   },
   "src/webview/panelHost.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    },
-    "@typescript-eslint/no-floating-promises": {
-      "count": 1
-    },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
     }

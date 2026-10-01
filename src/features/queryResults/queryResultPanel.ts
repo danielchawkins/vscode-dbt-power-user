@@ -188,19 +188,15 @@ export class QueryResultPanel extends PanelHost {
           payload.projectName as string,
         );
         break;
-      case "queryResultTab:render":
-        this.dbtTerminal.debug(
-          "queryResultTab:render",
-          "rendering query result tab",
-          payload,
-        );
-        this._queryTabData = payload.queryTabData;
-        this.createQueryResultsPanelVirtualDocument("Query results");
-        this.updateViewTypeToWebview(QueryPanelViewType.OPEN_RESULTS_IN_TAB);
-        break;
       default:
         super.onEvent({ command, payload });
     }
+  }
+
+  private openResultsInTab(queryTabData: unknown) {
+    this._queryTabData = queryTabData;
+    this.createQueryResultsPanelVirtualDocument("Query results");
+    this.updateViewTypeToWebview(QueryPanelViewType.OPEN_RESULTS_IN_TAB);
   }
 
   public async resolveWebviewView(
@@ -385,6 +381,9 @@ export class QueryResultPanel extends PanelHost {
                 configMessage.perspectiveTheme,
               );
             }
+            break;
+          case "queryResultTab:render":
+            this.openResultsInTab(message.queryTabData);
             break;
           default:
             super.handleCommand(message);
