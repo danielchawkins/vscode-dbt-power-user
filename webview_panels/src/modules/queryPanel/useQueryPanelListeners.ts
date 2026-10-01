@@ -1,8 +1,15 @@
+import {
+  executeRequestInAsync,
+  executeRequestInSync,
+} from "@modules/app/requestExecutor";
 import { IncomingMessageProps } from "@modules/app/types";
+import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useRef } from "react";
 import { useQueryPanelDispatch } from "./QueryPanelProvider";
+import { HINTS } from "./constants";
 import {
   resetData,
+  setActiveEditor,
   setCompiledCodeMarkup,
   setHintIndex,
   setLimit,
@@ -13,17 +20,13 @@ import {
   setQueryResults,
   setQueryResultsError,
   setViewType,
-  setActiveEditor,
 } from "./context/queryPanelSlice";
-import useQueryPanelState from "./useQueryPanelState";
-import { panelLogger } from "@modules/logger";
-import { executeRequestInSync } from "@modules/app/requestExecutor";
-import { HINTS } from "./constants";
 import {
   QueryHistory,
   QueryPanelStateProps,
   QueryPanelViewType,
 } from "./context/types";
+import useQueryPanelState from "./useQueryPanelState";
 
 const useQueryPanelListeners = (): { loading: boolean } => {
   const dispatch = useQueryPanelDispatch();
@@ -133,10 +136,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
           break;
         case "updateViewType":
           dispatch(
-            setViewType(
-              (args.args.body as { type: QueryPanelViewType })
-                .type,
-            ),
+            setViewType((args.args.body as { type: QueryPanelViewType }).type),
           );
           break;
         case "getContext":
@@ -159,7 +159,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
   );
 
   useEffect(() => {
-    void executeRequestInSync("getQueryPanelContext", {});
+    executeRequestInAsync("getQueryPanelContext", {});
   }, []);
 
   useEffect(() => {

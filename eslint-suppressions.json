@@ -305,22 +305,13 @@
   },
   "src/features/queryResults/queryResultPanel.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 5
+      "count": 2
     },
     "@typescript-eslint/no-floating-promises": {
-      "count": 9
+      "count": 7
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
-    },
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "sonarjs/no-collapsible-if": {
-      "count": 1
     }
   },
   "src/features/run/runModel.ts": {

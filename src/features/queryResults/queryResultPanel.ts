@@ -1,6 +1,6 @@
+import { queryResults } from "@fusion-power-user/webview-contract";
 import {
   CancellationToken,
-  ColorThemeKind,
   commands,
   Range,
   ViewColumn,
@@ -28,81 +28,22 @@ import {
 } from "../../projects/sharedStateService";
 import { readSetting, writeSetting } from "../../settings";
 import { getFormattedDateTime, getStringSizeInMb } from "../../utils";
-import { PanelHost, SendMessageProps } from "../../webview/panelHost";
+import {
+  dispatchMessage,
+  Handlers,
+  MessageOf,
+} from "../../webview/messageRouter";
+import { PanelHost } from "../../webview/panelHost";
 
-interface JsonObj {
-  [key: string]: string | number | undefined;
-}
+type HostMessage = queryResults.HostMessage;
+type PanelMessage = queryResults.PanelMessage;
+type QueryHistory = queryResults.QueryHistoryEntry;
+type JsonObj = Record<string, unknown>;
 
 enum QueryPanelViewType {
   DEFAULT,
   OPEN_RESULTS_IN_TAB,
   OPEN_RESULTS_FROM_HISTORY_BOOKMARKS,
-}
-
-enum OutboundCommand {
-  RenderQuery = "renderQuery",
-  RenderLoading = "renderLoading",
-  RenderError = "renderError",
-  InjectConfig = "injectConfig",
-  ResetState = "resetState",
-  GetContext = "getContext",
-}
-
-interface RenderQuery {
-  columnNames: string[];
-  columnTypes: (string | null)[];
-  rows: JsonObj[];
-  raw_sql: string;
-  compiled_sql: string;
-}
-
-interface RenderError {
-  error: any;
-  raw_sql: string;
-  compiled_sql: string;
-}
-
-interface InjectConfig {
-  limit?: number;
-  darkMode: boolean;
-}
-
-enum InboundCommand {
-  Error = "error",
-  UpdateConfig = "updateConfig",
-  CancelQuery = "cancelQuery",
-  GetQueryPanelContext = "getQueryPanelContext",
-  GetQueryHistory = "getQueryHistory",
-  ExecuteQuery = "executeQuery",
-  ExecuteQueryFromActiveWindow = "executeQueryFromActiveWindow",
-  GetQueryTabData = "getQueryTabData",
-  RunAdhocQuery = "runAdhocQuery",
-  ViewResultSet = "viewResultSet",
-  OpenCodeInEditor = "openCodeInEditor",
-  ClearQueryHistory = "clearQueryHistory",
-}
-
-interface RecError {
-  text: string;
-}
-
-interface RecConfig {
-  limit?: number;
-  perspectiveTheme?: string;
-}
-
-interface QueryHistory {
-  rawSql: string;
-  compiledSql: string;
-  timestamp: number;
-  duration: number;
-  adapter: string;
-  projectName: string;
-  data?: JsonObj[];
-  columnNames: string[];
-  columnTypes: (string | null)[];
-  modelName: string;
 }
 
 export class QueryResultPanel extends PanelHost {
@@ -113,7 +54,7 @@ export class QueryResultPanel extends PanelHost {
   private _bottomPanel: WebviewView | undefined;
 
   private queryExecution?: QueryExecution;
-  private incomingMessages: SendMessageProps[] = [];
+  private pendingMessages: HostMessage[] = [];
 
   // stored only for current session, if user reloads or opens new workspace, this will be reset
   private _queryHistory: QueryHistory[] = [];
@@ -138,21 +79,24 @@ export class QueryResultPanel extends PanelHost {
     );
   }
 
+  /** Posts to the panel the host currently targets: the bottom view or an opened results tab. */
+  private post(message: HostMessage): Thenable<boolean> | undefined {
+    return this._panel?.webview.postMessage(message);
+  }
+
   private async sendUpdatedContextToWebview() {
     const perspectiveTheme = readSetting("queryResults.theme");
     const limit = readSetting("query.limit");
     const editor = window.activeTextEditor;
-    if (this._panel) {
-      await this._panel.webview.postMessage({
-        command: OutboundCommand.GetContext,
-        limit,
-        perspectiveTheme,
-        activeEditor: {
-          query: editor?.document.getText(),
-          filepath: editor && activeModelUri(editor.document.uri).fsPath,
-        },
-      });
-    }
+    await this.post({
+      command: "getContext",
+      limit,
+      perspectiveTheme,
+      activeEditor: {
+        query: editor?.document.getText(),
+        filepath: editor && activeModelUri(editor.document.uri).fsPath,
+      },
+    });
   }
 
   private async createQueryResultsPanelVirtualDocument(editorName: string) {
@@ -173,9 +117,9 @@ export class QueryResultPanel extends PanelHost {
   }
 
   private updateViewTypeToWebview(viewType: QueryPanelViewType) {
-    this.sendResponseToWebview({
+    void this.post({
       command: "updateViewType",
-      data: { type: viewType },
+      args: { body: { type: viewType as queryResults.ViewType } },
     });
   }
 
@@ -212,7 +156,6 @@ export class QueryResultPanel extends PanelHost {
     this.bindWebviewOptions(context);
     this.renderWebviewView(panel.webview);
     this.setupWebviewHooks();
-    this.transmitConfig();
     _token.onCancellationRequested(async () => {
       await this.transmitReset();
     });
@@ -242,12 +185,9 @@ export class QueryResultPanel extends PanelHost {
     return project;
   }
 
-  private async executeIncomingQuery(message: {
-    query: string;
-    projectName: string;
-    editorName: string;
-    limit: number;
-  }) {
+  private async executeIncomingQuery(
+    message: MessageOf<PanelMessage, "executeQuery">,
+  ) {
     try {
       const isHistoryTab = Boolean(message.projectName);
       const project = await this.getProject(message.projectName);
@@ -280,121 +220,117 @@ export class QueryResultPanel extends PanelHost {
     }
   }
 
-  private async handleOpenCodeInEditor(message: { code: string }) {
+  private async handleOpenCodeInEditor(code = "") {
     const document = await workspace.openTextDocument({
       language: "jinja-sql",
-      content: message.code,
+      content: code,
     });
     await window.showTextDocument(document);
+  }
+
+  private viewResultSet({
+    queryHistory,
+    editorName,
+  }: MessageOf<PanelMessage, "viewResultSet">) {
+    this._queryTabData = {
+      queryResults: {
+        data: queryHistory.data,
+        columnNames: queryHistory.columnNames,
+        columnTypes: queryHistory.columnTypes,
+      },
+      compiledCodeMarkup: queryHistory.compiledSql,
+      rawSql: queryHistory.rawSql,
+      elapsedTime: {
+        queryExecutionInfo: { elapsedTime: queryHistory.duration },
+      },
+    };
+    this.createQueryResultsPanelVirtualDocument(editorName || "Custom query");
+    this.updateViewTypeToWebview(QueryPanelViewType.OPEN_RESULTS_IN_TAB);
+  }
+
+  private sendQueryTabData(syncRequestId: string | undefined) {
+    void this.post({
+      command: "response",
+      args: { syncRequestId, body: this._queryTabData, status: true },
+    });
+    // A tab opened through "Open in Tab" reads its data once; later messages target the bottom panel.
+    if (this._queryTabData) {
+      this._panel = this._bottomPanel;
+      this._queryTabData = undefined;
+    }
+  }
+
+  private updateConfig({
+    limit,
+    perspectiveTheme,
+  }: MessageOf<PanelMessage, "updateConfig">) {
+    if (limit !== undefined) {
+      void writeSetting("query.limit", limit);
+    }
+    if (perspectiveTheme !== undefined) {
+      void writeSetting("queryResults.theme", perspectiveTheme);
+    }
+  }
+
+  /** One handler per query-results panel command. */
+  private handlers(): Handlers<PanelMessage> {
+    return {
+      ...this.commonHandlers(),
+      // The panel clears its history after a rendering error, then retries.
+      clearQueryHistory: ({ syncRequestId }) => {
+        this._queryHistory = [];
+        return this.post({
+          command: "response",
+          args: { syncRequestId, body: {}, status: true },
+        });
+      },
+      openCodeInEditor: ({ code }) => this.handleOpenCodeInEditor(code),
+      viewResultSet: (message) => this.viewResultSet(message),
+      runAdhocQuery: () => this.handleOpenCodeInEditor(),
+      executeQueryFromActiveWindow: (message) =>
+        this.executeQueryFromActiveWindow(message),
+      executeQuery: (message) => this.executeIncomingQuery(message),
+      getQueryHistory: () =>
+        this.post({
+          command: "queryHistory",
+          args: { body: this._queryHistory },
+        }),
+      getQueryTabData: ({ syncRequestId }) =>
+        this.sendQueryTabData(syncRequestId),
+      getQueryPanelContext: () => this.sendUpdatedContextToWebview(),
+      cancelQuery: async () => {
+        this.queryExecution?.cancel();
+        await this.transmitReset();
+      },
+      error: ({ text }) => window.showErrorMessage(text),
+      updateConfig: (message) => this.updateConfig(message),
+      "queryResultTab:render": ({ queryTabData }) =>
+        this.openResultsInTab(queryTabData),
+    };
+  }
+
+  protected async handleCommand(message: unknown): Promise<void> {
+    await dispatchMessage(
+      QueryResultPanel.viewType,
+      message,
+      queryResults.isPanelMessage,
+      this.handlers(),
+      { log: this.dbtTerminal, reply: (response) => this.post(response) },
+    );
   }
 
   /** Primary interface for WebviewView inbound communication */
   private setupWebviewHooks() {
     this._panel!.webview.onDidReceiveMessage(
-      async (message) => {
-        switch (message.command) {
-          // Incase of error in rendering perspective viewer query results, user can click button
-          // to disable query history and retry
-          case InboundCommand.ClearQueryHistory:
-            this._queryHistory = [];
-            this.sendResponseToWebview({
-              command: "response",
-              data: {},
-              syncRequestId: message.syncRequestId,
-            });
-            break;
-          case InboundCommand.OpenCodeInEditor:
-            this.handleOpenCodeInEditor(message);
-            break;
-          case InboundCommand.ViewResultSet:
-            const queryHistoryData = message.queryHistory;
-            this._queryTabData = {
-              queryResults: {
-                data: queryHistoryData.data,
-                columnNames: queryHistoryData.columnNames,
-                columnTypes: queryHistoryData.columnTypes,
-              },
-              compiledCodeMarkup: queryHistoryData.compiledSql,
-              rawSql: queryHistoryData.rawSql,
-              elapsedTime: {
-                queryExecutionInfo: { elapsedTime: queryHistoryData.duration },
-              },
-            };
-            this.createQueryResultsPanelVirtualDocument(
-              message.editorName || "Custom query",
-            );
-            this.updateViewTypeToWebview(
-              QueryPanelViewType.OPEN_RESULTS_IN_TAB,
-            );
-            break;
-          case InboundCommand.RunAdhocQuery:
-            await this.handleOpenCodeInEditor({ code: "" });
-            break;
-          case InboundCommand.ExecuteQueryFromActiveWindow:
-            await this.executeQueryFromActiveWindow(message);
-            break;
-          case InboundCommand.ExecuteQuery:
-            await this.executeIncomingQuery(message);
-            break;
-          case InboundCommand.GetQueryHistory:
-            this.sendResponseToWebview({
-              command: "queryHistory",
-              data: this._queryHistory,
-            });
-            break;
-          case InboundCommand.GetQueryTabData:
-            this.sendResponseToWebview({
-              command: "response",
-              data: this._queryTabData,
-              syncRequestId: message.syncRequestId,
-            });
-            // Reset only if opening query results in a tab using "Open in Tab" button
-            if (this._queryTabData) {
-              // reset to bottom panel
-              this._panel = this._bottomPanel;
-              this._queryTabData = undefined;
-            }
-            break;
-          case InboundCommand.GetQueryPanelContext:
-            {
-              await this.sendUpdatedContextToWebview();
-            }
-            break;
-          case InboundCommand.CancelQuery:
-            if (this.queryExecution) {
-              this.queryExecution.cancel();
-            }
-            await this.transmitReset();
-            break;
-          case InboundCommand.Error:
-            const error = message as RecError;
-            window.showErrorMessage(error.text);
-            break;
-          case InboundCommand.UpdateConfig:
-            const configMessage = message as RecConfig;
-            if (configMessage.limit !== undefined) {
-              void writeSetting("query.limit", configMessage.limit);
-            }
-            if ("perspectiveTheme" in configMessage) {
-              void writeSetting(
-                "queryResults.theme",
-                configMessage.perspectiveTheme,
-              );
-            }
-            break;
-          case "queryResultTab:render":
-            this.openResultsInTab(message.queryTabData);
-            break;
-          default:
-            super.handleCommand(message);
-        }
-      },
+      (message: unknown) => this.handleCommand(message),
       this,
       this._disposables,
     );
   }
 
-  private async executeQueryFromActiveWindow(message: { limit: number }) {
+  private async executeQueryFromActiveWindow({
+    limit,
+  }: MessageOf<PanelMessage, "executeQueryFromActiveWindow">) {
     const activeEditor = window.activeTextEditor;
     if (!activeEditor) {
       window.showErrorMessage("No active editor found");
@@ -419,11 +355,7 @@ export class QueryResultPanel extends PanelHost {
       );
       query = activeEditor.document.getText(selectionRange);
     }
-    await project.executeSQLWithLimitOnQueryPanel(
-      query,
-      modelName,
-      message.limit,
-    );
+    await project.executeSQLWithLimitOnQueryPanel(query, modelName, limit);
   }
 
   /** Renders webview content */
@@ -449,70 +381,31 @@ export class QueryResultPanel extends PanelHost {
       raw_sql,
       compiled_sql,
     };
-    if (this._panel) {
-      await this._panel.webview.postMessage({
-        command: OutboundCommand.RenderQuery,
-        ...(<RenderQuery>result),
-      });
-    }
-
+    await this.post({ command: "renderQuery", ...result });
     return result;
   }
 
   /** Sends error result data to webview */
   private async transmitError(
-    error: any,
+    error: MessageOf<HostMessage, "renderError">["error"],
     raw_sql: string,
     compiled_sql: string,
   ) {
-    if (this._panel) {
-      await this._panel.webview.postMessage({
-        command: OutboundCommand.RenderError,
-        ...(<RenderError>{ ...error, raw_sql, compiled_sql }),
-      });
-    }
-  }
-
-  /** Sends VSCode config data to webview */
-  private transmitConfig() {
-    const limit = readSetting("query.limit");
-    if (this._panel) {
-      this._panel.webview.postMessage({
-        command: OutboundCommand.InjectConfig,
-        ...(<InjectConfig>{
-          limit,
-          darkMode: ![
-            ColorThemeKind.Light,
-            ColorThemeKind.HighContrastLight,
-          ].includes(window.activeColorTheme.kind),
-        }),
-      });
-    }
+    await this.post({ command: "renderError", error, raw_sql, compiled_sql });
   }
 
   /** Sends VSCode render loading command to webview */
   private async transmitLoading() {
-    if (this._panel) {
-      if (this.isWebviewReady) {
-        await this._panel.webview.postMessage({
-          command: OutboundCommand.RenderLoading,
-        });
-        return;
-      }
+    if (this._panel && this.isWebviewReady) {
+      await this.post({ command: "renderLoading" });
+      return;
     }
-
-    this.incomingMessages.push({
-      command: OutboundCommand.RenderLoading,
-    });
+    this.pendingMessages.push({ command: "renderLoading" });
   }
 
   /** Sends VSCode clear state command */
   private async transmitReset() {
-    if (this._panel) {
-      await this._panel.webview.postMessage({
-        command: OutboundCommand.ResetState,
-      });
-    }
+    await this.post({ command: "resetState" });
   }
 
   /** A wrapper for {@link transmitData} which converts server
@@ -524,7 +417,7 @@ export class QueryResultPanel extends PanelHost {
       const row: JsonObj = {};
       const currentRow = result.table.rows[i];
       for (let j = 0; j < currentRow.length; j++) {
-        row[result.table.column_names[j]] = currentRow[j] as any;
+        row[result.table.column_names[j]] = currentRow[j];
       }
       rows[i] = row;
     }
@@ -620,11 +513,9 @@ export class QueryResultPanel extends PanelHost {
         );
         await this.transmitError(
           {
-            error: {
-              code: -1,
-              message: exc.message,
-              data: JSON.stringify(exc.stack, null, 2),
-            },
+            code: -1,
+            message: exc.message,
+            data: JSON.stringify(exc.stack, null, 2),
           },
           query,
           exc.compiled_sql,
@@ -632,9 +523,7 @@ export class QueryResultPanel extends PanelHost {
         return;
       }
       await this.transmitError(
-        {
-          error: { code: -1, message: `${exc}`, data: {} },
-        },
+        { code: -1, message: `${exc}`, data: {} },
         query,
         query,
       );
@@ -651,10 +540,10 @@ export class QueryResultPanel extends PanelHost {
       return;
     }
 
-    while (this.incomingMessages.length) {
-      const message = this.incomingMessages.pop();
+    while (this.pendingMessages.length) {
+      const message = this.pendingMessages.pop();
       if (message) {
-        this.sendResponseToWebview(message);
+        void this.post(message);
       }
     }
   }
