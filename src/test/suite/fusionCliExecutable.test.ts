@@ -90,11 +90,6 @@ function recordingExecutionFactory(): {
   const calls: Array<Record<string, unknown>> = [];
   const execution = {
     complete: vi.fn(async () => ({ stdout: "", stderr: "", exitCode: 0 })),
-    completeWithTerminalOutput: vi.fn(async () => ({
-      stdout: "",
-      stderr: "",
-      exitCode: 0,
-    })),
     dispose: vi.fn(),
   } as unknown as CommandProcessExecution;
   const factory = {

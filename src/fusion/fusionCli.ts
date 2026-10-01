@@ -166,7 +166,11 @@ export class FusionCli {
       await this.terminal.show(true);
     }
     this.terminal.log(`> Executing task: dbt ${args.join(" ")}\n\r`);
-    return execution.completeWithTerminalOutput();
+    const result = await execution.complete({
+      onOutput: (chunk) => this.terminal.log(chunk.replace(/\r?\n/g, "\r\n")),
+    });
+    this.terminal.log("");
+    return result;
   }
 
   /**

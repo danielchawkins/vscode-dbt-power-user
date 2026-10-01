@@ -100,23 +100,47 @@ describe("CommandProcessExecution Tests", () => {
     },
   );
 
-  it("should stream output to terminal", async () => {
-    const execution = factory.createCommandProcessExecution({
-      command: process.platform === "win32" ? "cmd" : "echo",
-      args: process.platform === "win32" ? ["/c", "echo stream"] : ["stream"],
-    });
-    when(mockTerminal.log(anything())).thenReturn();
-    const result = await execution.completeWithTerminalOutput();
-    expect(result.stdout.trim()).toBe("stream");
-    verify(mockTerminal.log(anything())).atLeast(1);
-  });
+  it.skipIf(process.platform === "win32")(
+    "streams stdout and stderr chunks in arrival order",
+    async () => {
+      const execution = factory.createCommandProcessExecution({
+        command: "sh",
+        args: [
+          "-c",
+          "echo one; sleep 0.1; echo two >&2; sleep 0.1; echo three",
+        ],
+      });
+      const chunks: string[] = [];
+      const result = await execution.complete({
+        onOutput: (chunk) => chunks.push(chunk),
+      });
+      expect(chunks.join("")).toBe("one\ntwo\nthree\n");
+      expect(chunks.join("")).toBe(result.fullOutput);
+    },
+  );
 
-  it("should format text by replacing newlines", () => {
-    const execution = new CommandProcessExecution(
-      instance(mockTerminal),
-      "",
-      [],
-    );
-    expect(execution.formatText("a\n\nb")).toBe("a\r\n\rb");
+  it.skipIf(process.platform === "win32")(
+    "returns the same result with or without onOutput",
+    async () => {
+      const run = (onOutput?: (chunk: string) => void) =>
+        new CommandProcessExecution(instance(mockTerminal), "sh", [
+          "-c",
+          "printf 'a\\n\\nb'; printf 'err\\n' >&2; exit 3",
+        ]).complete({ onOutput });
+      const plain = await run();
+      const streamed = await run(() => undefined);
+      expect(streamed).toEqual(plain);
+      expect(plain.exitCode).toBe(3);
+      expect(plain.stdout).toBe("a\n\nb");
+    },
+  );
+
+  it("rejects a missing command the same way when streaming", async () => {
+    const execution = factory.createCommandProcessExecution({
+      command: "nonexistentcommand",
+    });
+    await expect(
+      execution.complete({ onOutput: () => undefined }),
+    ).rejects.toThrow(/Command not found: "nonexistentcommand"/);
   });
 });
