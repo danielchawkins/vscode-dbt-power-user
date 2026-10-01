@@ -7,6 +7,7 @@ import { ActivationMetric, readActivationMetric } from "./activationReport";
 import {
   assertNoWorkbenchNotifications,
   captureWorkbenchScreenshot,
+  evaluateWorkbench,
   readWorkbenchNotificationTexts,
   validateSmokeHost,
   waitForWebviewPaint,
@@ -114,6 +115,10 @@ suite("Pinned-host VSIX smoke", function () {
         "models/child.sql open with jinja-sql highlighting and the Execute Query | Document code lens on line 1",
       measured: { languageId: modelLanguage, lineCount: doc.lineCount },
     });
+    if (evidence) {
+      await captureEditorSurfaces(evidence, cdpPort, smokeHost, folder.uri);
+      await vscode.window.showTextDocument(doc);
+    }
 
     const contributedCommand = "fusionPowerUser.viewInDocEditor";
     const registeredCommands = await vscode.commands.getCommands(true);
@@ -257,6 +262,177 @@ async function waitForActiveLanguage(
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+type Evidence = NonNullable<ReturnType<typeof visualEvidence>>;
+
+const LANGUAGE_STATUS_HOVER = `(() => {
+  const hover = document.querySelector(".workbench-hover, .monaco-hover:not(.hidden)");
+  if (!hover || !hover.innerText.trim()) {
+    const entry = document.getElementById("status.languageStatus");
+    (entry?.querySelector("a") ?? entry)?.click();
+    return null;
+  }
+  return hover.innerText.trim();
+})()`;
+
+const CLOSE_HOVER = `(() => {
+  const target = document.activeElement ?? document.body;
+  for (const type of ["keydown", "keyup"]) {
+    target.dispatchEvent(new KeyboardEvent(type, { key: "Escape", code: "Escape", keyCode: 27, bubbles: true }));
+  }
+  return true;
+})()`;
+
+const EXPLORER_ROWS = `[...document.querySelectorAll(".explorer-folders-view .monaco-list-row")].map((row) => {
+  const label = row.querySelector(".monaco-icon-label");
+  const icon = label && getComputedStyle(label, "::before");
+  return {
+    name: row.getAttribute("aria-label"),
+    classes: label ? [...label.classList].filter((c) => /lang-file-icon|ext-file-icon|name-file-icon/.test(c)) : [],
+    iconBackground: icon ? icon.backgroundImage : null,
+  };
+})`;
+
+const OUTPUT_VIEW = `(() => {
+  const view = document.querySelector(".output-view, [id='workbench.panel.output']");
+  if (!view) return null;
+  const container = view.closest(".part") ?? document;
+  const labels = [...container.querySelectorAll("select, .monaco-select-box, [aria-label], [title]")]
+    .flatMap((e) => [
+      e.tagName === "SELECT" ? e.options[e.selectedIndex]?.text : undefined,
+      e.getAttribute("title"),
+      e.getAttribute("aria-label"),
+      e.textContent,
+    ])
+    .filter((t) => t && t.startsWith("Fusion Power User: "));
+  const lines = view.querySelector(".view-lines")?.innerText ?? "";
+  const shown = [...container.querySelectorAll("select")].map((s) => s.options[s.selectedIndex]?.text).find(Boolean)
+    ?? container.querySelector(".monaco-select-box")?.getAttribute("title") ?? null;
+  const listed = [...container.querySelectorAll("select option")].map((o) => o.text)
+    .filter((t) => t.startsWith("Fusion Power User"));
+  return { channel: labels[0] ?? null, shown, listed, text: labels.length ? lines.trim().slice(0, 600) : "" };
+})()`;
+
+const SELECT_PROJECT_CHANNEL = `(() => {
+  const select = [...document.querySelectorAll(".part select")].find((s) =>
+    [...s.options].some((o) => o.text.startsWith("Fusion Power User: ")));
+  if (!select) return false;
+  select.selectedIndex = [...select.options].findIndex((o) => o.text.startsWith("Fusion Power User: "));
+  select.dispatchEvent(new Event("change", { bubbles: true }));
+  return true;
+})()`;
+
+/** Checkpoints for the language status items, the explorer's dbt file icons and the project output channel. */
+async function captureEditorSurfaces(
+  evidence: Evidence,
+  cdpPort: string,
+  host: string,
+  root: vscode.Uri,
+): Promise<void> {
+  let hoverText: string | undefined;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    hoverText =
+      (await evaluateWorkbench<string>(cdpPort, host, LANGUAGE_STATUS_HOVER)) ??
+      undefined;
+    if (hoverText?.includes("dbt Fusion") && !hoverText.includes("starting")) {
+      break;
+    }
+    await sleep(500);
+  }
+  await evidence.capture({
+    name: "language status",
+    expect:
+      "The {} language status hover lists dbt Fusion (single_project) with a check, static analysis mode, and Show output",
+    measured: { hoverText: hoverText ?? null },
+  });
+
+  await evaluateWorkbench(cdpPort, host, CLOSE_HOVER);
+  await sleep(300);
+
+  await vscode.commands.executeCommand(
+    "revealInExplorer",
+    vscode.Uri.joinPath(root, "dbt_project.yml"),
+  );
+  await vscode.commands.executeCommand(
+    "revealInExplorer",
+    vscode.Uri.joinPath(root, "models/child.sql"),
+  );
+  await sleep(1_000);
+  await evidence.capture({
+    name: "explorer icons",
+    expect:
+      "The explorer shows models/*.sql with the dbt file icon and dbt_project.yml with its theme icon",
+    measured: {
+      rows: (await evaluateWorkbench(cdpPort, host, EXPLORER_ROWS)) ?? null,
+    },
+  });
+
+  const output = await showProjectOutput(cdpPort, host, root);
+  await evidence.capture({
+    name: "project output channel",
+    expect:
+      "The Output panel shows the Fusion Power User: single_project channel with Fusion client and dbt log lines",
+    measured: output,
+  });
+  await vscode.commands.executeCommand("workbench.action.closePanel");
+}
+
+/**
+ * Runs the language status item's "Show output" command and reads the Output view. When the view does not show the
+ * project channel, focuses it and runs the command again, then picks the channel in the view's dropdown; `openedBy`
+ * records which path showed it.
+ */
+async function showProjectOutput(
+  cdpPort: string,
+  host: string,
+  root: vscode.Uri,
+): Promise<{
+  channel: string | null;
+  shown: string | null;
+  listed: string[];
+  text: string | null;
+  openedBy: string;
+}> {
+  const steps = [
+    ["fusionPowerUser.showFusionOutput"],
+    ["workbench.panel.output.focus", "fusionPowerUser.showFusionOutput"],
+    ["select in Output dropdown"],
+  ];
+  const opened: string[] = [];
+  let shown: string | null = null;
+  let listed: string[] = [];
+  for (const step of steps) {
+    for (const command of step) {
+      opened.push(command);
+      if (command.startsWith("select ")) {
+        await evaluateWorkbench(cdpPort, host, SELECT_PROJECT_CHANNEL);
+      } else {
+        await vscode.commands.executeCommand(command, root);
+      }
+    }
+    for (let attempt = 0; attempt < 20; attempt += 1) {
+      const output = await evaluateWorkbench<{
+        channel: string | null;
+        shown: string | null;
+        listed: string[];
+        text: string;
+      }>(cdpPort, host, OUTPUT_VIEW);
+      shown = output?.shown ?? shown;
+      listed = output?.listed ?? listed;
+      if (output?.text) {
+        return { ...output, openedBy: opened.join(" + ") };
+      }
+      await sleep(250);
+    }
+  }
+  return {
+    channel: null,
+    shown,
+    listed,
+    text: null,
+    openedBy: opened.join(" + "),
+  };
 }
 
 /**

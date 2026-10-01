@@ -374,6 +374,21 @@ function evaluateContexts(
   });
 }
 
+/** Evaluates `expression` in the workbench page and returns the first context's non-null value. */
+export async function evaluateWorkbench<T>(
+  port: string,
+  host: string,
+  expression: string,
+): Promise<T | undefined> {
+  const target = await findWorkbenchPageTarget(port, validateSmokeHost(host));
+  const values = await evaluateContexts(
+    target.webSocketDebuggerUrl!,
+    expression,
+  );
+  return values.find((value) => value !== undefined && value !== null) as
+    T | undefined;
+}
+
 /** PNG of the whole workbench window as the user sees it, webviews included. */
 export async function captureWorkbenchScreenshot(
   port: string,
