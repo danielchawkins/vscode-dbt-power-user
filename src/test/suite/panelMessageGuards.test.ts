@@ -1,6 +1,11 @@
-import { queryResults } from "@fusion-power-user/webview-contract";
+import {
+  documentationEditor,
+  queryResults,
+} from "@fusion-power-user/webview-contract";
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
+import { Uri, window } from "vscode";
+import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
 import { NUM_RUNS } from "../arbitraries";
 
@@ -74,6 +79,53 @@ const panels: Panel[] = [
     ],
     withSpies: () =>
       spiedPanel(QueryResultPanel, queryResults.panelCommands, "dbtTerminal"),
+  },
+  {
+    name: "documentation editor",
+    guard: documentationEditor.isPanelMessage,
+    commands: documentationEditor.panelCommands,
+    keys: [
+      "infoMessage",
+      "items",
+      "test",
+      "model",
+      "path",
+      "name",
+      "column",
+      "source",
+      "table",
+      "columns",
+      "filePath",
+      "dialogType",
+      "syncRequestId",
+    ],
+    malformed: [
+      { command: "showWarningMessage" },
+      { command: "showInformationMessage", infoMessage: "?", items: [1] },
+      { command: "getTestCode", model: "orders" },
+      { command: "getColumnsOfSources", source: "raw" },
+      { command: "getColumnsOfModel", model: "orders", syncRequestId: 7 },
+      { command: "saveDocumentation", name: "orders", columns: [] },
+      {
+        command: "saveDocumentation",
+        name: "orders",
+        columns: [{ name: "id", source: "FILE" }],
+        filePath: "/m.sql",
+      },
+      {
+        command: "saveDocumentation",
+        name: "orders",
+        columns: [],
+        filePath: "/m.sql",
+        dialogType: "Other file",
+      },
+    ],
+    withSpies: () =>
+      spiedPanel(
+        DocsEditViewPanel,
+        documentationEditor.panelCommands,
+        "terminal",
+      ),
   },
 ];
 
@@ -180,5 +232,130 @@ describe("query results handlers", () => {
       })),
     );
     expect(queryResults.isHostMessage(postMessage.mock.calls[0][0])).toBe(true);
+  });
+});
+
+describe("documentation editor handlers", () => {
+  it("answers a project request without an active editor with an error response", async () => {
+    const panel = Object.create(DocsEditViewPanel.prototype);
+    const postMessage = vi.fn();
+    panel._panel = { webview: { postMessage } };
+    panel.terminal = terminal();
+
+    await panel.handleCommand({
+      command: "getColumnsOfModel",
+      model: "orders",
+      syncRequestId: "r",
+    });
+
+    expect(postMessage).toHaveBeenCalledWith({
+      command: "response",
+      args: {
+        syncRequestId: "r",
+        body: undefined,
+        status: false,
+        error: "No active editor",
+      },
+    });
+    expect(
+      documentationEditor.isHostMessage(postMessage.mock.calls[0][0]),
+    ).toBe(true);
+  });
+
+  /** A panel with an active model editor and a project; `post` captures replies. */
+  const docsPanel = () => {
+    const panel = Object.create(DocsEditViewPanel.prototype);
+    const postMessage = vi.fn();
+    const project = { projectRoot: { fsPath: "/p" }, getColumnValues: vi.fn() };
+    panel._panel = { webview: { postMessage } };
+    panel.terminal = terminal();
+    panel.projects = { get: () => project };
+    panel.dbtTestService = {
+      getTestsForCurrentModel: vi.fn(),
+      getUnitTestsForCurrentModel: vi.fn(),
+    };
+    panel.reloadDocumentationFromManifest = vi.fn();
+    return { panel, postMessage, project };
+  };
+
+  const withEditor = async (run: () => Promise<void>) => {
+    const editor = { document: { uri: Uri.file("/p/models/orders.sql") } };
+    const mockWindow = window as unknown as Record<string, unknown>;
+    const previous = mockWindow.activeTextEditor;
+    mockWindow.activeTextEditor = editor;
+    mockWindow.showSaveDialog = vi.fn().mockResolvedValue(undefined);
+    try {
+      await run();
+    } finally {
+      mockWindow.activeTextEditor = previous;
+      delete mockWindow.showSaveDialog;
+    }
+  };
+
+  it("answers saved: false when the save dialog is cancelled, so the panel stays dirty", async () => {
+    const { panel, postMessage } = docsPanel();
+    await withEditor(() =>
+      panel.handleCommand({
+        command: "saveDocumentation",
+        name: "orders",
+        columns: [],
+        filePath: "/p/models/orders.sql",
+        patchPath: null,
+        dialogType: "New file",
+        syncRequestId: "s",
+      }),
+    );
+
+    expect(panel.reloadDocumentationFromManifest).not.toHaveBeenCalled();
+    expect(postMessage.mock.calls.map(([m]) => m)).toEqual([
+      {
+        command: "response",
+        args: { syncRequestId: "s", body: { saved: false }, status: true },
+      },
+    ]);
+  });
+
+  it("answers getDistinctColumnValues without a model with an error", async () => {
+    const { panel, postMessage, project } = docsPanel();
+    await withEditor(() =>
+      panel.handleCommand({
+        command: "getDistinctColumnValues",
+        model: null,
+        column: "id",
+        syncRequestId: "d",
+      }),
+    );
+
+    expect(project.getColumnValues).not.toHaveBeenCalled();
+    expect(postMessage).toHaveBeenCalledWith(
+      expect.objectContaining({
+        args: expect.objectContaining({ syncRequestId: "d", status: false }),
+      }),
+    );
+  });
+
+  it("answers a request whose handler throws with the error", async () => {
+    const { panel, postMessage } = docsPanel();
+    panel.projects = {
+      get: () => {
+        throw new Error("registry gone");
+      },
+    };
+    await withEditor(() =>
+      panel.handleCommand({
+        command: "getModelsInProject",
+        syncRequestId: "m",
+      }),
+    );
+
+    expect(postMessage).toHaveBeenCalledWith({
+      command: "response",
+      args: {
+        syncRequestId: "m",
+        body: undefined,
+        status: false,
+        error: "registry gone",
+      },
+    });
   });
 });

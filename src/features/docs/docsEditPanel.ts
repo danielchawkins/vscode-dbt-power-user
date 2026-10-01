@@ -1,3 +1,7 @@
+import {
+  documentationEditor,
+  ShowNotification,
+} from "@fusion-power-user/webview-contract";
 import { existsSync, readFileSync, writeFileSync } from "fs";
 import * as path from "path";
 import {
@@ -40,7 +44,11 @@ import {
   isRelationship,
   removeProtocol,
 } from "../../utils";
-import { SendMessageProps } from "../../webview/panelHost";
+import {
+  dispatchMessage,
+  Handlers,
+  MessageOf,
+} from "../../webview/messageRouter";
 import { DbtTestService } from "./dbtTestService";
 import {
   DocGenService,
@@ -48,6 +56,10 @@ import {
   DocumentationSchemaColumn,
 } from "./docGenService";
 import { DBTDocumentation, MetadataColumn } from "./docGenTypes";
+
+type HostMessage = documentationEditor.HostMessage;
+type PanelMessage = documentationEditor.PanelMessage;
+type SaveMessage = MessageOf<PanelMessage, "saveDocumentation">;
 
 const DOCS_VIEW_PATH = "/docs-generator";
 
@@ -117,11 +129,11 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   }
 
   private async transmitError() {
-    if (this._panel) {
-      await this._panel.webview.postMessage({
-        command: "renderError",
-      });
-    }
+    await this.post({ command: "renderError" });
+  }
+
+  private post(message: HostMessage): Thenable<boolean> | undefined {
+    return this._panel?.webview.postMessage(message);
   }
 
   private async transmitData() {
@@ -129,7 +141,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       await this.docGenService.getUncompiledDocumentationForCurrentActiveFile();
     this.documentation = documentation;
     if (this._panel) {
-      await this._panel.webview.postMessage({
+      await this.post({
         command: "renderDocumentation",
         docs: this.documentation,
         missingDocumentationMessage: message,
@@ -164,12 +176,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   }
 
   private async transmitColumns(columns: MetadataColumn[]) {
-    if (this._panel) {
-      await this._panel.webview.postMessage({
-        command: "renderColumnsFromMetadataFetch",
-        columns,
-      });
-    }
+    await this.post({ command: "renderColumnsFromMetadataFetch", columns });
   }
 
   public async resolveWebviewView(
@@ -181,7 +188,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     this._panel = panel;
     this.setupWebviewOptions(context);
     this.renderWebviewView(context);
-    this.setupWebviewHooks(context);
+    this.setupWebviewHooks();
     this.transmitData();
   }
 
@@ -480,287 +487,270 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     return null;
   }
 
-  private setupWebviewHooks(context: WebviewViewResolveContext) {
-    // Clear this listener before subscribing again
-    if (this.onMessageDisposable) {
-      this.onMessageDisposable.dispose();
-      this.onMessageDisposable = undefined;
-    }
+  private setupWebviewHooks() {
+    this.onMessageDisposable?.dispose();
     this.onMessageDisposable = this._panel!.webview.onDidReceiveMessage(
-      async (message) => {
-        this.terminal.debug(
-          "docsEditPanel:setupWebviewHooks",
-          "onDidReceiveMessage",
-          message,
-        );
-        const { command, syncRequestId, ...params } = message;
-        if (command === "webview:ready") {
-          completeWebviewReady(this.viewPath);
-          return;
-        }
-        if (command === "getCurrentModelDocumentation") {
-          await this.transmitData();
-          return;
-        }
-        if (
-          command === "showWarningMessage" ||
-          command === "showInformationMessage"
-        ) {
-          await this.handleSyncRequestFromWebview(
-            syncRequestId,
-            () => {
-              const showMessage =
-                command === "showWarningMessage"
-                  ? window.showWarningMessage
-                  : window.showInformationMessage;
-              return showMessage(
-                params.infoMessage as string,
-                ...((params.items as string[] | undefined) ?? []),
-              );
-            },
-            command,
-          );
-          return;
-        }
-        if (command === "openProblemsTab") {
-          await commands.executeCommand("workbench.action.problems.focus");
-          return;
-        }
-        if (!window.activeTextEditor) {
-          this.sendResponseToWebview({
-            command: "response",
-            syncRequestId,
-            error: "No active editor",
-          });
-          return;
-        }
-        const currentFilePath = activeModelUri(
-          window.activeTextEditor.document.uri,
-        );
-        const project = this.getProject();
-        if (!project) {
-          this.sendResponseToWebview({
-            command: "response",
-            syncRequestId,
-            error: "No dbt project found for the active editor",
-          });
-          return;
-        }
-
-        switch (command) {
-          case "getTestCode":
-            await this.handleSyncRequestFromWebview(
-              syncRequestId,
-              () =>
-                this.getDbtTestCode(
-                  params.test as TestMetaData,
-                  params.model as string,
-                ),
-              command,
-            );
-            break;
-          case "getUnitTestCode":
-            await this.handleSyncRequestFromWebview(
-              syncRequestId,
-              () => {
-                const filePath = params.path as string | undefined;
-                const testName = params.name as string | undefined;
-                if (!filePath || !existsSync(filePath)) {
-                  return { error: "Unit test file not found" };
-                }
-                const raw = readFileSync(filePath, { encoding: "utf-8" });
-                if (!testName) {
-                  return { yaml: raw };
-                }
-                try {
-                  const parsed = parse(raw) as Record<string, any>;
-                  const unitTests: any[] = parsed?.unit_tests ?? [];
-                  const test = unitTests.find((item) => item.name === testName);
-                  return { yaml: test ? stringify(test) : raw };
-                } catch {
-                  return { yaml: raw };
-                }
-              },
-              command,
-            );
-            break;
-          case "getDistinctColumnValues":
-            await this.handleSyncRequestFromWebview(
-              syncRequestId,
-              () =>
-                project.getColumnValues(
-                  params.model as string,
-                  params.column as string,
-                ),
-              command,
-              true,
-            );
-            break;
-          case "getColumnsOfSources":
-            await this.handleSyncRequestFromWebview(
-              syncRequestId,
-              async () => {
-                const columns = await project.getColumnsOfSource(
-                  params.source as string,
-                  params.table as string,
-                );
-                return {
-                  columns: columns?.map((column) => column.column) ?? [],
-                };
-              },
-              command,
-              true,
-            );
-            break;
-          case "getColumnsOfModel":
-            await this.handleSyncRequestFromWebview(
-              syncRequestId,
-              async () => {
-                const columns = await project.getColumnsOfModel(
-                  params.model as string,
-                );
-                return {
-                  columns: columns?.map((column) => column.column) ?? [],
-                };
-              },
-              command,
-              true,
-            );
-            break;
-          case "getSourcesInProject":
-            await this.handleSyncRequestFromWebview(
-              syncRequestId,
-              () => ({
-                sources: this.queryManifestService.getSourcesInProject(
-                  window.activeTextEditor?.document.uri,
-                ),
-              }),
-              command,
-              true,
-            );
-            break;
-          case "getModelsInProject":
-            await this.handleSyncRequestFromWebview(
-              syncRequestId,
-              () => ({
-                models: this.queryManifestService.getModelsInProject(
-                  window.activeTextEditor?.document.uri,
-                ),
-              }),
-              command,
-            );
-            break;
-          case "fetchMetadataFromDatabase":
-            window.withProgress(
-              {
-                title: "Syncing columns with metadata from database",
-                location: ProgressLocation.Notification,
-                cancellable: false,
-              },
-              async () => {
-                const modelName = path.basename(currentFilePath.fsPath, ".sql");
-                try {
-                  const columnsInRelation =
-                    await project.getColumnsOfModel(modelName);
-                  const columns = this.convertColumnNamesByCaseConfig(
-                    columnsInRelation.map((column) => {
-                      return {
-                        name: column.column,
-                        type: column.dtype.toLowerCase(),
-                      };
-                    }),
-                    modelName,
-                    project,
-                  );
-                  this.transmitColumns(columns);
-                  if (syncRequestId) {
-                    this._panel!.webview.postMessage({
-                      command: "response",
-                      args: {
-                        syncRequestId,
-                        body: {
-                          columns,
-                        },
-                        status: true,
-                      },
-                    });
-                  }
-                } catch (exc) {
-                  this.transmitError();
-                  window.showErrorMessage(
-                    `An error occured while fetching metadata for ${modelName} from the database: ` +
-                      (exc instanceof Error ? exc.message : String(exc)),
-                  );
-                  this.terminal.error(
-                    "docsEditPanelLoadError",
-                    `An error occured while fetching metadata for ${modelName} from the database`,
-                    exc,
-                    false,
-                  );
-                  if (syncRequestId) {
-                    this._panel!.webview.postMessage({
-                      command: "response",
-                      args: {
-                        syncRequestId,
-                        body: {},
-                        status: false,
-                      },
-                    });
-                  }
-                }
-              },
-            );
-
-            break;
-          case "saveDocumentation":
-            window.withProgress(
-              {
-                title: "Saving documentation",
-                location: ProgressLocation.Notification,
-                cancellable: false,
-              },
-              async () => {
-                await this.saveDocumentation(message, syncRequestId);
-                await this.reloadDocumentationFromManifest();
-                const tests =
-                  await this.dbtTestService.getTestsForCurrentModel();
-                const unitTests =
-                  await this.dbtTestService.getUnitTestsForCurrentModel();
-                if (syncRequestId) {
-                  this._panel!.webview.postMessage({
-                    command: "response",
-                    args: {
-                      syncRequestId,
-                      body: {
-                        saved: true,
-                        tests,
-                        unitTests,
-                        documentation: this.documentation,
-                      },
-                      status: true,
-                    },
-                  });
-                }
-              },
-            );
-            break;
-          default:
-            this.terminal.debug(
-              "docsEditPanel:unhandledCommand",
-              `Unhandled command: ${command}`,
-            );
-            if (syncRequestId) {
-              this.sendResponseToWebview({
-                command: "response",
-                syncRequestId,
-                error: `Unsupported command: ${command}`,
-              });
-            }
-            break;
-        }
-      },
+      (message: unknown) => this.handleCommand(message),
       null,
       this._disposables,
+    );
+  }
+
+  /** Routes an inbound message through the documentation-editor guard and handler map. */
+  private async handleCommand(message: unknown): Promise<void> {
+    this.terminal.debug(
+      "docsEditPanel:handleCommand",
+      "onDidReceiveMessage",
+      message,
+    );
+    await dispatchMessage(
+      DocsEditViewPanel.viewType,
+      message,
+      documentationEditor.isPanelMessage,
+      this.handlers(),
+      { log: this.terminal, reply: (response) => this.post(response) },
+    );
+  }
+
+  /** Runs `handler` with the active editor's project, or answers the request with why there is none. */
+  private withProject<M extends { syncRequestId?: string }>(
+    handler: (message: M, project: Project, modelPath: Uri) => unknown,
+  ): (message: M) => unknown {
+    return (message) => {
+      if (!window.activeTextEditor) {
+        return this.sendResponseToWebview({
+          syncRequestId: message.syncRequestId,
+          error: "No active editor",
+        });
+      }
+      const modelPath = activeModelUri(window.activeTextEditor.document.uri);
+      const project = this.getProject();
+      if (!project) {
+        return this.sendResponseToWebview({
+          syncRequestId: message.syncRequestId,
+          error: "No dbt project found for the active editor",
+        });
+      }
+      return handler(message, project, modelPath);
+    };
+  }
+
+  private showNotification({
+    command,
+    infoMessage,
+    items,
+    syncRequestId,
+  }: ShowNotification) {
+    const show =
+      command === "showWarningMessage"
+        ? window.showWarningMessage
+        : window.showInformationMessage;
+    return this.handleSyncRequestFromWebview(
+      syncRequestId,
+      () => show(infoMessage, ...(items ?? [])),
+      command,
+    );
+  }
+
+  private getUnitTestCode(filePath?: string, testName?: string) {
+    if (!filePath || !existsSync(filePath)) {
+      return { error: "Unit test file not found" };
+    }
+    const raw = readFileSync(filePath, { encoding: "utf-8" });
+    if (!testName) {
+      return { yaml: raw };
+    }
+    try {
+      const parsed = parse(raw) as Record<string, any>;
+      const unitTests: any[] = parsed?.unit_tests ?? [];
+      const test = unitTests.find((item) => item.name === testName);
+      return { yaml: test ? stringify(test) : raw };
+    } catch {
+      return { yaml: raw };
+    }
+  }
+
+  /** One handler per documentation-editor panel command. */
+  private handlers(): Handlers<PanelMessage> {
+    return {
+      "webview:ready": () => completeWebviewReady(this.viewPath),
+      getCurrentModelDocumentation: () => this.transmitData(),
+      showWarningMessage: (message) => this.showNotification(message),
+      showInformationMessage: (message) => this.showNotification(message),
+      openProblemsTab: () =>
+        commands.executeCommand("workbench.action.problems.focus"),
+      getTestCode: this.withProject(({ syncRequestId, test, model }) =>
+        this.handleSyncRequestFromWebview(
+          syncRequestId,
+          () => this.getDbtTestCode(test as unknown as TestMetaData, model),
+          "getTestCode",
+        ),
+      ),
+      getUnitTestCode: this.withProject(({ syncRequestId, path, name }) =>
+        this.handleSyncRequestFromWebview(
+          syncRequestId,
+          () => this.getUnitTestCode(path, name),
+          "getUnitTestCode",
+        ),
+      ),
+      getDistinctColumnValues: this.withProject(
+        ({ syncRequestId, model, column }, project) =>
+          this.handleSyncRequestFromWebview(
+            syncRequestId,
+            () => {
+              if (!model) {
+                throw new UserInputError("No model is loaded");
+              }
+              return project.getColumnValues(model, column);
+            },
+            "getDistinctColumnValues",
+            true,
+          ),
+      ),
+      getColumnsOfSources: this.withProject(
+        ({ syncRequestId, source, table }, project) =>
+          this.handleSyncRequestFromWebview(
+            syncRequestId,
+            async () => {
+              const columns = await project.getColumnsOfSource(source, table);
+              return { columns: columns?.map((c) => c.column) ?? [] };
+            },
+            "getColumnsOfSources",
+            true,
+          ),
+      ),
+      getColumnsOfModel: this.withProject(({ syncRequestId, model }, project) =>
+        this.handleSyncRequestFromWebview(
+          syncRequestId,
+          async () => {
+            const columns = await project.getColumnsOfModel(model);
+            return { columns: columns?.map((c) => c.column) ?? [] };
+          },
+          "getColumnsOfModel",
+          true,
+        ),
+      ),
+      getSourcesInProject: this.withProject(({ syncRequestId }) =>
+        this.handleSyncRequestFromWebview(
+          syncRequestId,
+          () => ({
+            sources: this.queryManifestService.getSourcesInProject(
+              window.activeTextEditor?.document.uri,
+            ),
+          }),
+          "getSourcesInProject",
+          true,
+        ),
+      ),
+      getModelsInProject: this.withProject(({ syncRequestId }) =>
+        this.handleSyncRequestFromWebview(
+          syncRequestId,
+          () => ({
+            models: this.queryManifestService.getModelsInProject(
+              window.activeTextEditor?.document.uri,
+            ),
+          }),
+          "getModelsInProject",
+        ),
+      ),
+      fetchMetadataFromDatabase: this.withProject(
+        ({ syncRequestId }, project, modelPath) =>
+          this.fetchMetadataFromDatabase(project, modelPath, syncRequestId),
+      ),
+      saveDocumentation: this.withProject((message) =>
+        window.withProgress(
+          {
+            title: "Saving documentation",
+            location: ProgressLocation.Notification,
+            cancellable: false,
+          },
+          async () => {
+            const { syncRequestId } = message;
+            if (!(await this.saveDocumentation(message))) {
+              // The panel keeps its edits dirty until a save is confirmed.
+              if (syncRequestId) {
+                await this.post({
+                  command: "response",
+                  args: { syncRequestId, body: { saved: false }, status: true },
+                });
+              }
+              return;
+            }
+            await this.reloadDocumentationFromManifest();
+            const tests = await this.dbtTestService.getTestsForCurrentModel();
+            const unitTests =
+              await this.dbtTestService.getUnitTestsForCurrentModel();
+            if (syncRequestId) {
+              await this.post({
+                command: "response",
+                args: {
+                  syncRequestId,
+                  body: {
+                    saved: true,
+                    tests,
+                    unitTests,
+                    documentation: this.documentation,
+                  },
+                  status: true,
+                },
+              });
+            }
+          },
+        ),
+      ),
+    };
+  }
+
+  private fetchMetadataFromDatabase(
+    project: Project,
+    modelPath: Uri,
+    syncRequestId: string | undefined,
+  ) {
+    return window.withProgress(
+      {
+        title: "Syncing columns with metadata from database",
+        location: ProgressLocation.Notification,
+        cancellable: false,
+      },
+      async () => {
+        const modelName = path.basename(modelPath.fsPath, ".sql");
+        try {
+          const columnsInRelation = await project.getColumnsOfModel(modelName);
+          const columns = this.convertColumnNamesByCaseConfig(
+            columnsInRelation.map((column) => ({
+              name: column.column,
+              type: column.dtype.toLowerCase(),
+            })),
+            modelName,
+            project,
+          );
+          await this.transmitColumns(columns);
+          if (syncRequestId) {
+            await this.post({
+              command: "response",
+              args: { syncRequestId, body: { columns }, status: true },
+            });
+          }
+        } catch (exc) {
+          await this.transmitError();
+          window.showErrorMessage(
+            `An error occured while fetching metadata for ${modelName} from the database: ` +
+              (exc instanceof Error ? exc.message : String(exc)),
+          );
+          this.terminal.error(
+            "docsEditPanelLoadError",
+            `An error occured while fetching metadata for ${modelName} from the database`,
+            exc,
+            false,
+          );
+          if (syncRequestId) {
+            await this.post({
+              command: "response",
+              args: { syncRequestId, body: {}, status: false },
+            });
+          }
+        }
+      },
     );
   }
 
@@ -772,7 +762,8 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     ).documentation;
   }
 
-  private async saveDocumentation(message: any, syncRequestId: string) {
+  /** Writes `message` to its schema YAML; false when the user cancels the file dialog or the write fails. */
+  private async saveDocumentation(message: SaveMessage): Promise<boolean> {
     let patchPath = message.patchPath;
     try {
       const projectByFilePath = this.projects.get(Uri.file(message.filePath));
@@ -781,7 +772,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       }
       const project = this.getProject();
       if (project === undefined) {
-        return undefined;
+        return false;
       }
 
       if (!patchPath) {
@@ -792,7 +783,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
               canSelectMany: false,
             });
             if (openDialog === undefined || openDialog.length === 0) {
-              return;
+              return false;
             }
             patchPath = openDialog[0].fsPath;
             break;
@@ -801,10 +792,12 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
               filters: { Yaml: ["yml"] },
             });
             if (!saveDialog) {
-              return;
+              return false;
             }
             patchPath = saveDialog.fsPath;
             break;
+          case undefined:
+            throw new Error("No schema file chosen for the documentation");
         }
       } else {
         // the location comes from the manifest, parse it
@@ -962,6 +955,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       }
 
       writeFileSync(patchPath, stringify(parsedDocFile, { lineWidth: 0 }));
+      return true;
     } catch (error) {
       this.transmitError();
       window.showErrorMessage(
@@ -973,18 +967,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
         error,
         false,
       );
-      if (syncRequestId) {
-        this._panel!.webview.postMessage({
-          command: "response",
-          args: {
-            syncRequestId,
-            body: {
-              saved: false,
-            },
-            status: true,
-          },
-        });
-      }
+      return false;
     }
   }
 
@@ -997,11 +980,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     try {
       const response = await callback();
 
-      this.sendResponseToWebview({
-        command: "response",
-        syncRequestId,
-        data: response,
-      });
+      this.sendResponseToWebview({ syncRequestId, data: response });
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       if (error instanceof UserInputError) {
@@ -1012,30 +991,22 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       if (showErrorNotification) {
         window.showErrorMessage(message);
       }
-      this.sendResponseToWebview({
-        command: "response",
-        syncRequestId,
-        error: message,
-      });
+      this.sendResponseToWebview({ syncRequestId, error: message });
     }
   }
 
   private sendResponseToWebview({
-    command,
     data,
     error,
     syncRequestId,
-    ...rest
-  }: SendMessageProps) {
-    this._panel?.webview?.postMessage({
-      command,
-      args: {
-        syncRequestId,
-        body: data,
-        status: !error,
-        error,
-      },
-      ...rest,
+  }: {
+    syncRequestId?: string;
+    data?: unknown;
+    error?: string;
+  }) {
+    void this.post({
+      command: "response",
+      args: { syncRequestId, body: data, status: !error, error },
     });
   }
 
