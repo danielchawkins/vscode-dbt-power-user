@@ -29,17 +29,17 @@ Fusion Power User should make those workarounds removable, but the consumer must
 
 ## Installation contract
 
-Add one self-contained setup installer under `scripts/workspace/setup/`. It receives the pinned release version and checksum from committed configuration.
+Add one self-contained POSIX `sh` installer, `scripts/workspace/setup/install-fusion-power-user.sh`, modeled on `install-sigma.sh`. It reads the pinned release version and SHA-256 from constants at its top.
 
 The installer:
 
-1. checks whether Cursor and VS Code CLIs exist;
+1. checks whether the `code` and `cursor` CLIs are on `PATH`, and exits 0 with a message when neither exists;
 2. checks the installed `danielchawkins.fusion-power-user` version in each editor;
-3. exits without network access when both present editors already have the pinned version;
-4. downloads the VSIX from the fork's GitHub Release;
-5. verifies its checksum before installation;
+3. exits without network access when every present editor already has the pinned version and `--force` was not passed;
+4. downloads the VSIX from the fork's GitHub Release to a `mktemp` path with a cleanup `trap`;
+5. verifies its checksum and exits non-zero on mismatch before installing;
 6. uninstalls `innoverio.vscode-dbt-power-user` from each present editor;
-7. installs the VSIX into each present editor; and
+7. installs the VSIX into each present editor and prints the installed version; and
 8. supports the setup system's existing `--force` behavior.
 
 Use the editor CLIs for installation. Do not copy the VSIX into the repository.
@@ -88,6 +88,20 @@ Remove:
 Mark the upstream Power User extension as unwanted if the editor recommendation format supports it.
 
 ## Parity gate before deleting workarounds
+
+### Consumer cases
+
+The patch script's seven edits define what the fork fixes natively. Each must pass through the fork before the script is deleted:
+
+1. hover on a dotted `package.macro` resolves;
+2. Fusion is detected from `dbt 2.0.5` in `--version` stdout;
+3. a folder-scoped value wins over the window value (upstream read `allowListFolders` with no folder URI);
+4. a file outside any project still resolves a project for lineage and hover;
+5. no `.local_defs_state` project copy is registered;
+6. no discovery runs in Dagster-only folders; and
+7. `enabled` works from a `.code-workspace`.
+
+### Broader parity
 
 Exercise both projects in Cursor and VS Code:
 

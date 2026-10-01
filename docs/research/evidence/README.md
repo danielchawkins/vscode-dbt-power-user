@@ -94,7 +94,7 @@ Each session starts on an empty `target/` and runs `steps/editor-features.json`.
 
 **What this establishes:** on this machine, with `dbt login status` reporting unauthenticated, strict analysis took effect in every run. That held with the real HOME and with an empty one, with remote licence fetch skipped, and with a backdated install date.
 
-**What it does not establish:** whether this is intended (a trial or grace window), a gap in 2.0.6, or behaviour that a later release or a network call will change. The `DBT_CLIENT_INSTALL_DATE` values may not be in the format the binary expects. For the extension this is a product risk: the shipped plan depends on strict. It should detect a fall-back to baseline at run time rather than assume strict is available. See the open questions in [column-lineage-ship-plan.md](../../refactor/column-lineage-ship-plan.md).
+**What it does not establish:** whether this is intended (a trial or grace window), a gap in 2.0.6, or behaviour that a later release or a network call will change. The `DBT_CLIENT_INSTALL_DATE` values may not be in the format the binary expects. For the extension this is a product risk: the shipped plan depends on strict. It should detect a fall-back to baseline at run time rather than assume strict is available. The open question is tracked under Risks in [`rearchitecture-plan.md`](../../refactor/rearchitecture-plan.md#risks).
 
 ## 3. Writing column lineage
 

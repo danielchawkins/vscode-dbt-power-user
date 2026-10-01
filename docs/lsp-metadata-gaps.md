@@ -4,7 +4,7 @@ Step 6.2's result: the Fusion LSP payload cannot populate the `ManifestCacheProj
 
 ## What the contract needs versus what three commands return
 
-The three commands closest to project metadata are `dbt.getProjectInfo`, `dbt.listNodes`, and `dbt.getCurrentNode`, captured against Fusion 2.0.5 in [`docs/refactor/lsp-commands.md`](refactor/lsp-commands.md). None returns the eleven metadata maps and `modelDepthMap` the event carries.
+The three commands closest to project metadata are `dbt.getProjectInfo`, `dbt.listNodes`, and `dbt.getCurrentNode`, captured against Fusion 2.0.5 in [`research/lsp-commands-fusion-2.0.5.md`](research/lsp-commands-fusion-2.0.5.md). None returns the eleven metadata maps and `modelDepthMap` the event carries.
 
 | Contract need                                       | LSP command tried    | Captured result                                                                                                                                                                                                                                                                                                                                      |
 | --------------------------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -28,4 +28,4 @@ A `ProjectMetadataSource` that can never publish a complete event is dead code �
 
 ## Revisiting this gap
 
-Re-run the capture in `docs/refactor/lsp-commands.md` against a newer Fusion release before writing an LSP `ProjectMetadataSource`. A contract-complete source needs, at minimum, a command that returns full node metadata (not just counts) on a clean project, plus commands or an equivalent for macros, docs, exposures, tests, metrics, and semantic models. Until then, splitting the event into partially-LSP-backed and partially-manifest-backed fields is out of scope — `QueryManifestService` has one producer per project, not a merge of two.
+Re-run the capture in `docs/research/lsp-commands-fusion-2.0.5.md` against a newer Fusion release before writing an LSP `ProjectMetadataSource`. A contract-complete source needs, at minimum, a command that returns full node metadata (not just counts) on a clean project, plus commands or an equivalent for macros, docs, exposures, tests, metrics, and semantic models. Until then, splitting the event into partially-LSP-backed and partially-manifest-backed fields is out of scope — `QueryManifestService` has one producer per project, not a merge of two.

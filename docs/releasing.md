@@ -12,7 +12,7 @@ Fusion Power User is distributed as a VSIX attached to a GitHub Release, checksu
 
 ## Consumer pinning
 
-Consumer repositories, per Phase 10, pin an exact version and its SHA-256 checksum rather than tracking a moving tag. The installer downloads the VSIX for the pinned version and refuses to install it if the checksum does not match the release asset.
+Consumer repositories pin an exact version and its SHA-256 checksum rather than tracking a moving tag. The installer downloads the VSIX for the pinned version and refuses to install it if the checksum does not match the release asset.
 
 ## Rollback
 

@@ -1,6 +1,6 @@
 # Rearchitecture plan
 
-This plan replaces [`fusion-lsp-plan.md`](fusion-lsp-plan.md), [`remaining-implementation.md`](remaining-implementation.md) and [`column-lineage-ship-plan.md`](column-lineage-ship-plan.md) as the authoritative plan. Those documents are closed and kept as history; their outcome is recorded in [Closing the v1 refactor](#closing-the-v1-refactor). Vocabulary is [`CONTEXT.md`](../../CONTEXT.md); decisions are in [`../adr/`](../adr/); landing rules are in [`implementation-dispatch.md`](implementation-dispatch.md).
+This is the authoritative plan. It replaced the v1 plans (the Fusion LSP plan, its step index and the column-lineage ship plan), which are in git history before commit `fa939daf`; their outcome is recorded in [Closing the v1 refactor](#closing-the-v1-refactor). Vocabulary is [`CONTEXT.md`](../../CONTEXT.md); decisions are in [`../adr/`](../adr/); landing rules are in [`implementation-dispatch.md`](implementation-dispatch.md).
 
 Evidence:
 
@@ -8,7 +8,6 @@ Evidence:
 - [`../research/codebase-audit-webview-september-2026.md`](../research/codebase-audit-webview-september-2026.md) — dependencies, advisories, styling stacks, messaging, CSP, dead webview code.
 - [`../research/vscode-extension-practice-september-2026.md`](../research/vscode-extension-practice-september-2026.md) — platform practice with citations.
 - [`../research/fusion-lint.md`](../research/fusion-lint.md) — Fusion's linter and SQL front end.
-- [`rearchitecture-critiques.md`](rearchitecture-critiques.md) — the review rounds this plan went through and what each changed.
 - GitHub issues #110 (invocation context), #118 (query-result column types), #120 (highlighting roles).
 
 ## Principle
@@ -178,7 +177,7 @@ Verify: cold activation and extension bundle size within 10% of the `v0.4.0-beta
 - **Merged.** Steps 4.1–4.3: the composition root in `src/compositionRoot.ts`; Inversify, `reflect-metadata`, the decorator compiler options and `ts-loader` removed; each owner disposes its own collection.
 - **Activation.** The activation event is `workspaceContains:dbt_project.yml`. `activate` returns synchronously, and commands wait on a startup gate until startup finishes, stops early, fails, or the extension is disposed.
 - **Bundle size.** `dist/extension.js` fell from 2,839,500 to 1,157,164 bytes (−59%).
-- **Cold activation.** Measured in VS Code against the `v0.4.0-beta.1` baseline in [`baseline-v1-september-2026.md`](baseline-v1-september-2026.md), median ms:
+- **Cold activation.** Measured in VS Code against the `v0.4.0-beta.1` baseline in [`baseline-v1-september-2026.md`](../research/baseline-v1-september-2026.md), median ms:
 
   | Phase            | Baseline | Now           |
   | ---------------- | -------- | ------------- |
@@ -206,16 +205,33 @@ Verify: `commandConsistencyGuard` extended to `languages` and language status; `
 
 ### R6 — Webview contract and one panel host
 
-Goal: one typed protocol, one HTML and CSP generator, one entry per panel (closed plan v2.1, carried forward).
+Goal: one typed protocol, one HTML and CSP generator, one entry per panel.
 
-- `packages/webview-contract/` with the npm workspace, single lockfile and build-order matrix specified in the closed plan's v2.1. One discriminated union per direction per panel, replacing 29 inbound and 8 outbound command strings; the host dispatches through an exhaustive map.
+- **Contract package.** `packages/webview-contract/`, package name `@fusion-power-user/webview-contract`, private and ESM, with `exports` pointing at built `dist` and its `.d.ts`. It has zero runtime dependencies (TypeScript is its only devDependency) and imports neither `vscode` nor DOM types, because both bundles consume it. One discriminated union per direction per panel (`HostMessage`, `PanelMessage`), replacing 29 inbound and 8 outbound command strings, with hand-written guards `isHostMessage` and `isPanelMessage` over the discriminant; a validator library needs evidence that the guards have become unmaintainable. The host dispatches through an exhaustive map and logs and drops an unrecognized message rather than throwing.
+- **Workspace and single lockfile.** The root `package.json` declares `"workspaces": ["packages/*", "webview_panels"]` and depends on the contract, as does `webview_panels/package.json`. Delete `webview_panels/package-lock.json` and the `check:lockfile:webviews` script. Merge the two `allowScripts` policies into one root policy, reviewing every entry rather than taking the union (today `@parcel/watcher` is denied at the root and allowed in `webview_panels`), then run `just sync` and `npm install-scripts prune`. `just update` and `just lint-lockfiles` become one root invocation. The package is `composite` with `declaration`; the root `tsconfig.json` references it and `compile` becomes `tsc -b`. Rsbuild bundles it (do not add it to `config.externals`); Vite gets it in `optimizeDeps.include` for the dev server. ESLint's `files` glob and the root `lint` scripts widen to `packages/`; `vitest.config.ts` includes the package's `src` and aliases the package name to `src/index.ts`, so contract tests need no build. `.vscodeignore` gains `packages/**`.
+- **Build order.** Every consumer path needs the contract's `dist` first, so each public npm script is self-sufficient and composites call internal `:app` variants, so one command never starts two contract watchers. `concurrently` is a root devDependency.
+
+  | Entrypoint                       | Factoring                                                                                                       |
+  | -------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+  | root `build:contract`            | `npm run build --workspace @fusion-power-user/webview-contract`; `watch:contract` runs its `tsc -b --watch`     |
+  | root `build`, `build:dev`        | `build:contract`, then `build:app` / `build:dev:app`                                                            |
+  | root `watch:extension`           | `build:contract`, then `concurrently` over `watch:contract` and `watch:extension:app`                           |
+  | root `vscode:prepublish`         | `build:contract`, then the webview and host `:app` scripts                                                      |
+  | webview `build`                  | `npm run build --prefix ../packages/webview-contract`, then `build:app`; `--workspace` fails when nested        |
+  | webview `watch`, `dev`           | the same prebuild, then `concurrently` over the contract's watch and `watch:app` / `dev:app`                    |
+  | `just webviews::build/watch/dev` | delegate to those public scripts                                                                                |
+  | `just build`, `build-dev`        | `just build-contract`, then the webview and host `:app` scripts                                                 |
+  | `just watch`                     | `just build-contract`, then one `concurrently` over the contract, webview `watch:app` and `watch:extension:app` |
+  | `just compile`                   | unchanged once `compile` is `tsc -b`                                                                            |
+
+- **Revision order inside the PR:** (1) skeleton package plus all wiring above, exporting nothing; (2) the unions, guards and their tests; (3) host guards, one panel host at a time; (4) per-panel entries behind `PanelHost`, each replacing that panel's command strings; (5) confirm both ends speak only the union.
 - `PanelHost` replaces `AltimateWebviewProvider` and the documentation editor's duplicate `getHtml`: one CSP starting from `default-src 'none'`, adding per panel only what evidence requires. Test `wasm-unsafe-eval` in place of `unsafe-eval` for Perspective.
 - One Vite entry per panel replaces `MemoryRouter` and `window.viewPath`; delete `react-router-dom`.
 - The documentation editor writes schema YAML through `WorkspaceEdit` instead of `writeFileSync`. Exit: the fs-write rule's baseline is empty.
 - Redux Toolkit is used only to generate reducers for `useReducer`; replace each slice with a plain typed reducer and delete the dependency.
-- Persist UI-only state through `getState`/`setState` and remove `retainContextWhenHidden` from every panel. Keep it on query results only if heap after ten hide/show cycles with a 10,000-row result grows by more than 25% without it.
+- Persist UI-only state through `getState`/`setState` and remove `retainContextWhenHidden` from every panel. Keep it on query results only if heap after ten hide/show cycles with a 10,000-row result grows by more than 25% without it. Each panel's persisted schema holds view state only: scroll and selection, expanded nodes, active tab, sort and filter choices, layout, and the manifest publication epoch it rendered, so a restore revalidates. It never holds result rows, SQL text, credentials, query ids, warehouse metadata or compiler payloads, because webview state is unencrypted host storage.
 
-Verify: property test that arbitrary JSON never reaches a handler without passing a guard; exactly one CSP string in the tree; memory recorded before and after.
+Verify: property test that arbitrary JSON never reaches a handler without passing a guard; exactly one CSP string in the tree; memory recorded before and after. From a reset state (remove `node_modules`, `out`, `dist` and `packages/webview-contract/dist`, then `just sync`), each of `just compile`, `just build`, `just build-dev`, `just package`, `npm run build`, `npm run build:dev`, `npm run build --prefix webview_panels` and `just webviews::build` succeeds on its own; each watch and dev entrypoint rebuilds after `packages/webview-contract/src/index.ts` is touched with one contract watcher running. One `package-lock.json`, at the root; `npm ls @fusion-power-user/webview-contract` resolves from the root and `webview_panels`; `vsce ls` shows no `packages/` entry; per-entry bytes recorded against the single-entry baseline in [`baseline-v1-september-2026.md`](../research/baseline-v1-september-2026.md).
 
 ### R7 — One styling system and dependency reduction
 
@@ -225,7 +241,7 @@ Goal: five styling systems become one (webview audit §2).
 - **Serial PRs**: convert SCSS modules to CSS Modules; replace `reactstrap` components in `uiCore` with native ones; remove Bootstrap and `theme.scss`; remove `sass`.
 - **Forms**: `react-hook-form` + `yup` are used in four files; replace them with native constraint validation unless a form needs cross-field rules, in which case keep `react-hook-form` without `yup`. Replace `react-copy-to-clipboard` with `navigator.clipboard`.
 - **Dead code** (webview audit §6), confirmed by knip configured for `webview_panels/`: unused components and `uiCore` exports, Storybook and its dependencies, `react-markdown` and `remark-gfm`, and `faker`/`factory.ts` if only stories use them.
-- **Perspective**: migrate `@finos/perspective*` to `@perspective-dev/*` and drop the d3fc plugin, clearing the `d3-color` advisory; the closed plan's v2.5 spike runs first. Query-result column types follow issue #118, never inferred from values.
+- **Perspective**: migrate `@finos/perspective*` to `@perspective-dev/*` and drop the d3fc plugin, clearing the `d3-color` advisory, which reaches the tree only through `@finos/perspective-viewer-d3fc`. A spike runs first in a throwaway Vite app under the real CSP: load a table from the current query-result payload, render `viewer-datagrid` and one `viewer-charts` chart, `restore()` a saved configuration, and port `PerspectivePlugins.ts` or show its feature another way; remove `script-src 'unsafe-eval'` and `worker-src blob:` one at a time to record which the WASM runtime still needs. Query-result column types follow issue #118, never inferred from values.
 - **Upgrades**: `jsdom` 30, `@testing-library/jest-dom` 7, `globals` 17; root `@types/node` to the current LTS line, `@types/vscode` kept at the `engines.vscode` API.
 
 Verify: `npm audit` shows zero high or critical; VSIX size and per-entry eager bytes recorded; visual evidence in light, dark and high-contrast themes.
@@ -234,21 +250,24 @@ Verify: `npm audit` shows zero high or critical; VSIX size and per-entry eager b
 
 Goal: remove `@altimateai/ui-components`, the last Altimate package, which also carries the critical `plotly.js`/`maplibre-gl` advisory lineage never uses.
 
-- Benchmark the candidate renderer against graphs from finance-pipelines' Declared Projects with column-level lineage in the harness from the first run (closed plan v2.2, narrowed to D7); publish the result even when the incumbent wins.
+- Benchmark each candidate (`@xyflow/react` with `elkjs` or `dagre`, `cytoscape`, and `sigma` with `graphology`) against the incumbent `@altimateai/ui-components` lineage component: take node, edge and per-node column counts from finance-pipelines' Declared Projects, render the p50 and p95 graphs behind the same `LineageData`, and measure layout time, in-webview first-contentful-paint (`PerformanceObserver` in the webview's own clock) and frame time while panning the p95 graph. Column-level lineage is in the harness from the first run. Publish the result even when the incumbent wins.
 - Build the selected renderer behind `LineageData` from the contract; keep the current component reachable until the replacement passes the benchmark. This is the one hard-to-reverse step and is preceded by a prerelease.
 - The new renderer consumes the host's `childTables`/`parentTables` requests and `childCount`/`parentCount` fields directly; delete `webview_panels/src/modules/lineage/componentAdapter.ts`, the only file that knows the component names dbt children "upstream".
-- Delete Tailwind, PostCSS and the `al-` generation with the last `al-` class.
+- Delete Tailwind, PostCSS and the `al-` generation with the last `al-` class, together with `scripts/workspace/check-webview-tailwind-css.sh`, which guards the generated `.al-*` utilities the component's published `dist` needs. The component bakes Tailwind 3 `al-` class strings into its JavaScript, which Tailwind 4's `prefix(al)` variant syntax cannot generate, so Tailwind is never upgraded in place. Then remove `cssMinify: "esbuild"` from `webview_panels/vite.config.ts`: it is there because a TextMate grammar inside the component yields invalid CSS that Lightning CSS, Vite's default minifier, rejects.
 
 Verify: benchmark report committed; `npm ls @altimateai/ui-components` empty; `grep -rn "upstreamCount\|downstreamCount\|upstreamTables\|downstreamTables" src webview_panels/src` prints nothing; visual evidence.
 
 ### R9 — finance-pipelines adoption
 
-The closed plan's Phase 10 steps with their contracts, plus the ship plan's step 9 additions. Exit criteria, restated so this plan stands alone:
+Work in `/Users/daniel/projects/finance-pipelines` with its conventions (POSIX `sh`, `usage:` on `--help`, `--force`, idempotent) and its `gh stack` skill, not this repository's PR loop. [`finance-pipelines-integration.md`](finance-pipelines-integration.md) describes the consumer.
 
-- 10.1 installer script: downloads the pinned VSIX, verifies its SHA-256 before installing, exits non-zero on mismatch, installs into each of `code` and `cursor` on `PATH` after removing `innoverio.vscode-dbt-power-user`, and is idempotent without `--force`.
-- 10.2 wiring: `just setup` in finance-pipelines calls it; its test list includes it; a test asserts the checksum-mismatch failure.
-- 10.3 settings: the workspace and folder settings use `fusionPowerUser.*` only; opening the multi-root workspace starts exactly two `dbt lsp` processes; completion, hover on a dotted macro, go-to-definition, lineage and compile work in both dbt folders; opening a file outside them raises no notification.
-- 10.4 patch machinery: `scripts/patch_dbt_power_user_macro_hover.py` and the `power-user-patch` tasks are deleted only after all seven consumer cases pass through the fork.
+- 10.1 installer script `scripts/workspace/setup/install-fusion-power-user.sh`, implementing the [installation contract](finance-pipelines-integration.md#installation-contract).
+- 10.2 wiring: the `setup` recipe in `scripts/workspace/setup/justfile` calls it, passing `--force` through; `tests/test_setup_scripts.py` lists it; a test asserts the checksum-mismatch failure.
+- 10.3 settings in `finance-pipelines.code-workspace`, `.vscode/settings.json` and both dbt folders' `.vscode/settings.json`:
+  - Settings mapping: `dbt.enabled` becomes `fusionPowerUser.enabled` (true in the multi-root window, false in the git-root folder); `dbt.allowListFolders` becomes `fusionPowerUser.projects` with the same relative paths, minus `local_packages`, which is not a dbt project (confirm its macros still resolve; if not, that is a Declared Project finding, not a reason for a third project); `dbt.dbtIntegration`, `dbt.dbtPythonPathOverride`, every `altimate.*` key and the collaboration, notebook, query-history and changelog keys are deleted; `[jinja-sql]` keeps sqlfluff as formatter with `formatOnSave: false`.
+  - `fusionPowerUser.staticAnalysis` is `project` or unset. Before adding `+static_analysis: strict` or the schema-origin hook, record the typed-source check's count of untyped source columns. The CLI compile wall time and refresh-on-save gate were dropped when ADR 0006 moved column lineage to the language server.
+  - Verify: exactly two `dbt lsp` processes; completion, hover on a dotted `temporalize.reconcile`-style macro, go-to-definition, lineage and compile work in both dbt folders; opening a file in `finance_pipelines` or `repo` raises no notification; `cursor .` at the git root starts nothing.
+- 10.4 patch machinery: delete `scripts/patch_dbt_power_user_macro_hover.py` and the `power-user-patch` tasks in both dbt folders only after all [seven consumer cases](finance-pipelines-integration.md#consumer-cases) pass through the fork; remove `innoverio.vscode-dbt-power-user` from `extensions.recommendations` and document the installer in `docs/setup.md`, since a private VSIX cannot be recommended by identifier. Verify: a fresh `just setup` on a clean checkout gives a working editor with no patching step.
 
 The project-side compile fixes are tracked in Kikoff/finance-pipelines#106. The `sysdate()` and `union_relations` fixes are ready locally; the remaining UNION ALL errors appear only in incremental compiles against stored tables.
 
@@ -297,4 +316,5 @@ These extend `AGENTS.md`; the ESLint config enforces what it can.
 - **Workspace trust** changes first-run behaviour in untrusted folders: the extension is disabled until the folder is trusted, and VS Code's Restricted Mode UI explains why. The change ships in a prerelease with release notes.
 - **Perspective migration** may change query-panel behaviour. The spike runs first; issue #118 lands on the new package.
 - **The lineage renderer** is the only hard-to-reverse step: benchmark gate, old component reachable, prerelease.
+- **Strict analysis without authentication** took effect in every run although the docs say it falls back to baseline ([evidence §2](../research/evidence/README.md#2-strict-analysis-without-dbt-login)). Open question: rerun the experiment on a fresh machine and after any trial window. Column lineage needs strict, so the extension should detect a fall-back to baseline at run time.
 - **Fusion releases** can change evidence. The evidence harness reruns on each Fusion bump, and the experiments named in steps are the check.

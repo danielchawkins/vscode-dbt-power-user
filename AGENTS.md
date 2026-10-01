@@ -8,8 +8,9 @@ Read before planning or changing code:
 
 - [`CONTEXT.md`](CONTEXT.md) — canonical product language. The vocabulary is fixed; extend it rather than inventing synonyms.
 - [`docs/adr/`](docs/adr/) — the product boundary, the LSP decision, and project scoping.
-- [`docs/refactor/rearchitecture-plan.md`](docs/refactor/rearchitecture-plan.md) — the plan: phases R1–R10, the target model, naming conventions, and dependency targets. Work the steps in order; each PR bookmark contains focused revisions and ends with green tests. The v1 plans it replaces are closed and kept as history.
+- [`docs/refactor/rearchitecture-plan.md`](docs/refactor/rearchitecture-plan.md) — the plan: phases R1–R10, the target model, naming conventions, and dependency targets. Work the steps in order; each PR bookmark contains focused revisions and ends with green tests.
 - [`docs/refactor/implementation-dispatch.md`](docs/refactor/implementation-dispatch.md) — land each step as a feature PR against `main`.
+- [`docs/architecture.md`](docs/architecture.md) — how the extension is built today, including the Fusion client launch contract.
 
 The parent session orchestrates implementation. Use a fast coding agent for implementation and accepted fixes, a different higher-reasoning read-only agent for detailed review, then perform a quick evidence check before resuming the same coding agent. Both roles inspect revisions through `just jj`; implementers create focused revisions but never push, and reviewers never mutate the workspace.
 
