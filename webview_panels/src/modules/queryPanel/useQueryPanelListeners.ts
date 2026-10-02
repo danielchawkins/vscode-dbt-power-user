@@ -21,7 +21,7 @@ import {
   setQueryResults,
   setQueryResultsError,
   setViewType,
-} from "./context/queryPanelSlice";
+} from "./context/queryPanelReducer";
 import { QueryPanelStateProps, TableData } from "./context/types";
 import useQueryPanelState from "./useQueryPanelState";
 

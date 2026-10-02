@@ -1,11 +1,11 @@
-import { UnknownAction } from "@reduxjs/toolkit";
 import { Dispatch, useContext } from "react";
 import { DocumentationContext } from "../DocumentationProvider";
+import type { DocumentationAction } from "./documentationReducer";
 import { DocumentationStateProps } from "./types";
 
 const useDocumentationContext = (): {
   state: DocumentationStateProps;
-  dispatch: Dispatch<UnknownAction>;
+  dispatch: Dispatch<DocumentationAction>;
 } => {
   const { state, dispatch } = useContext(DocumentationContext);
   return { state, dispatch };

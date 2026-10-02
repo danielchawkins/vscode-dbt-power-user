@@ -1,24 +1,24 @@
 import { createContext, useContext, useMemo, useReducer } from "react";
 import QueryPanel from "./QueryPanel";
+import {
+  initialState,
+  QueryPanelAction,
+  queryPanelReducer,
+} from "./context/queryPanelReducer";
 import { QueryPanelStateProps } from "./context/types";
-import { UnknownAction } from "@reduxjs/toolkit";
-import queryPanelSlice from "./context/queryPanelSlice";
 
 interface ContextProps {
   state: QueryPanelStateProps;
-  dispatch: React.Dispatch<UnknownAction>;
+  dispatch: React.Dispatch<QueryPanelAction>;
 }
 
 export const QueryPanelContext = createContext<ContextProps>({
-  state: queryPanelSlice.getInitialState(),
+  state: initialState,
   dispatch: () => null,
 });
 
 const QueryPanelProvider = (): JSX.Element => {
-  const [state, dispatch] = useReducer(
-    queryPanelSlice.reducer,
-    queryPanelSlice.getInitialState(),
-  );
+  const [state, dispatch] = useReducer(queryPanelReducer, initialState);
 
   const values = useMemo(
     () => ({
@@ -37,7 +37,7 @@ const QueryPanelProvider = (): JSX.Element => {
 
 export default QueryPanelProvider;
 
-export const useQueryPanelDispatch = (): React.Dispatch<UnknownAction> => {
+export const useQueryPanelDispatch = (): React.Dispatch<QueryPanelAction> => {
   const { dispatch } = useContext(QueryPanelContext);
   return dispatch;
 };

@@ -17,7 +17,7 @@ import "@finos/perspective-viewer/dist/css/vaporwave.css";
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
-import { setPerspectiveTheme } from "@modules/queryPanel/context/queryPanelSlice";
+import { setPerspectiveTheme } from "@modules/queryPanel/context/queryPanelReducer";
 import { TableData } from "@modules/queryPanel/context/types";
 import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";

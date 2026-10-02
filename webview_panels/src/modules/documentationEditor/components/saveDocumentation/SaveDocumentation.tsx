@@ -8,7 +8,7 @@ import {
   PopoverWithButtonRef,
 } from "@uicore";
 import { MouseEvent, useEffect, useRef, useState } from "react";
-import { setIncomingDocsData } from "@modules/documentationEditor/state/documentationSlice";
+import { setIncomingDocsData } from "@modules/documentationEditor/state/documentationReducer";
 import classes from "../../styles.module.scss";
 import {
   DBTDocumentation,

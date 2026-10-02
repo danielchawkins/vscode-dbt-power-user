@@ -14,7 +14,8 @@ import {
   useRef,
 } from "react";
 import DocumentationEditor from "./DocumentationEditor";
-import documentationSlice, {
+import {
+  documentationReducer,
   initialState,
   setDocBlocks,
   setIncomingDocsData,
@@ -24,12 +25,8 @@ import documentationSlice, {
   updateCurrentDocsData,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
-} from "./state/documentationSlice";
-import {
-  DBTDocumentation,
-  DBTModelTest,
-  DBTUnitTest,
-} from "./state/types";
+} from "./state/documentationReducer";
+import { DBTDocumentation, DBTModelTest, DBTUnitTest } from "./state/types";
 import { ContextProps } from "./types";
 import {
   fromFetchedColumns,
@@ -59,10 +56,7 @@ enum ActionState {
 }
 
 const DocumentationProvider = (): JSX.Element => {
-  const [state, dispatch] = useReducer(
-    documentationSlice.reducer,
-    documentationSlice.getInitialState(),
-  );
+  const [state, dispatch] = useReducer(documentationReducer, initialState);
   const stateRef = useRef(state);
 
   const renderDocumentation = (message: RenderMessage) => {
@@ -74,7 +68,9 @@ const DocumentationProvider = (): JSX.Element => {
       }),
     );
     dispatch(setProject(message.project));
-    dispatch(setMissingDocumentationMessage(message.missingDocumentationMessage));
+    dispatch(
+      setMissingDocumentationMessage(message.missingDocumentationMessage),
+    );
     dispatch(setDocBlocks(message.docBlocks));
   };
 

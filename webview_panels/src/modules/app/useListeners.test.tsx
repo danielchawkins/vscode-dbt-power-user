@@ -1,26 +1,30 @@
 import { render, waitFor } from "@testing-library/react";
-import { UnknownAction } from "@reduxjs/toolkit";
 import { Dispatch } from "react";
-import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+  type Mock,
+} from "vitest";
 import { getVsCodeApiMock } from "../../test/setup";
+import type { AppAction } from "./appReducer";
 import * as requestExecutor from "./requestExecutor";
 import useListeners from "./useListeners";
 
-const Harness = ({
-  dispatch,
-}: {
-  dispatch: Dispatch<UnknownAction>;
-}): null => {
+const Harness = ({ dispatch }: { dispatch: Dispatch<AppAction> }): null => {
   useListeners(dispatch);
   return null;
 };
 
 describe("useListeners", () => {
-  let dispatchMock: Mock<(action: UnknownAction) => void>;
-  let dispatch: Dispatch<UnknownAction>;
+  let dispatchMock: Mock<(action: AppAction) => void>;
+  let dispatch: Dispatch<AppAction>;
 
   beforeEach(() => {
-    dispatchMock = vi.fn<(action: UnknownAction) => void>();
+    dispatchMock = vi.fn<(action: AppAction) => void>();
     dispatch = dispatchMock;
   });
 
@@ -82,12 +86,10 @@ describe("useListeners", () => {
     document.body.classList.add("vscode-light");
 
     await waitFor(() => {
-      expect(dispatchMock).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: "appState/updateTheme",
-          payload: "light",
-        }),
-      );
+      expect(dispatchMock).toHaveBeenCalledWith({
+        type: "updateTheme",
+        payload: "light",
+      });
     });
   });
 });

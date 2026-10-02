@@ -8,7 +8,7 @@ import ClearResultsButton from "./components/clearResultsButton/ClearResultsButt
 import ShowInTabButton from "./components/openInTabButton/OpenInTabButton";
 import QueryLimit from "./components/queryLimit/QueryLimit";
 import RunAdhocQueryButton from "./components/runAdhocQueryButton/RunAdhocQueryButton";
-import { setTabState } from "./context/queryPanelSlice";
+import { setTabState } from "./context/queryPanelReducer";
 import { QueryPanelViewType } from "./context/types";
 import classes from "./querypanel.module.scss";
 import useQueryPanelListeners from "./useQueryPanelListeners";

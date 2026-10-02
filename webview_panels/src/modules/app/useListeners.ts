@@ -3,16 +3,15 @@ import type {
   WebviewReady,
 } from "@fusion-power-user/webview-contract";
 import { panelLogger } from "@modules/logger";
-import { UnknownAction } from "@reduxjs/toolkit";
 import { Dispatch, useCallback, useEffect } from "react";
-import { updateTheme } from "./appSlice";
+import { AppAction, updateTheme } from "./appReducer";
 import { handleIncomingResponse, panelRequests } from "./requestExecutor";
 import { Themes } from "./types";
 
 // Every panel's union includes `webview:ready`.
 const { executeRequestInAsync } = panelRequests<WebviewReady>();
 
-const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
+const useListeners = (dispatch: Dispatch<AppAction>): void => {
   const onMesssage = useCallback(
     (event: MessageEvent<Response | { command?: undefined }>) => {
       if (event.data.command === "response") {
