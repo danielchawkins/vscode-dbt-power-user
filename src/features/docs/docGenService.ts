@@ -1,5 +1,5 @@
 import type { PanelNotice } from "@fusion-power-user/webview-contract";
-import { promises as fs } from "fs";
+import { readFile } from "fs/promises";
 import * as path from "path";
 import { Uri, window } from "vscode";
 import { parse as parseYaml } from "yaml";
@@ -206,7 +206,7 @@ export class DocGenService {
         project.projectRoot.fsPath,
         removeProtocol(currentNode.patch_path),
       );
-      const content = await fs.readFile(yamlPath, "utf8");
+      const content = await readFile(yamlPath, "utf8");
       const parsedDoc = parseYaml(content) as DocumentationSchema;
       const modelDef = parsedDoc.models?.find(
         (model) => model.name === modelName,

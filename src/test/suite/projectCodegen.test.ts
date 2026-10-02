@@ -1,10 +1,42 @@
-import { describe, expect, it } from "vitest";
+import { existsSync, mkdtempSync, rmSync } from "fs";
+import { tmpdir } from "os";
+import * as path from "path";
+import { describe, expect, it, vi } from "vitest";
+import { Uri, workspace } from "vscode";
 import {
   createYMLContent,
+  generateSchemaYML,
   mergeColumnsFromDB,
 } from "../../projects/projectCodegen";
+import type { WorkspaceEdit } from "../mock/vscode";
 
 describe("projectCodegen", () => {
+  it("creates the schema YAML through a WorkspaceEdit", async () => {
+    const root = mkdtempSync(path.join(tmpdir(), "codegen-"));
+    try {
+      vi.mocked(workspace.applyEdit).mockClear();
+      vi.mocked(workspace.applyEdit).mockResolvedValue(true);
+      const columns = { getColumnsOfModel: async () => [{ column: "id" }] };
+
+      await generateSchemaYML(
+        columns as never,
+        Uri.file(path.join(root, "orders.sql")) as never,
+        "orders",
+      );
+
+      const edit = vi.mocked(workspace.applyEdit).mock
+        .calls[0][0] as unknown as WorkspaceEdit;
+      const [created] = edit.createdFiles;
+      expect(created.uri).toBe(Uri.file(path.join(root, "orders_schema.yml")));
+      expect(new TextDecoder().decode(created.options?.contents)).toBe(
+        createYMLContent([{ column: "id" }], "orders"),
+      );
+      expect(existsSync(path.join(root, "orders_schema.yml"))).toBe(false);
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("renders a schema YAML document with one entry per column", () => {
     expect(
       createYMLContent([{ column: "id" }, { column: "name" }], "orders"),

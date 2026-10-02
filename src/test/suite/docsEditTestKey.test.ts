@@ -1,8 +1,18 @@
+import {
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
+import { tmpdir } from "os";
+import * as path from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Uri } from "vscode";
+import { Uri, window, workspace } from "vscode";
 import { parse } from "yaml";
 import { DbtTestService } from "../../features/docs/dbtTestService";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
+import { createMockTextDocument, type WorkspaceEdit } from "../mock/vscode";
 
 type TestData = { tests?: unknown[]; data_tests?: unknown[] } | undefined;
 
@@ -83,44 +93,104 @@ describe("docs editor test key", () => {
 describe("docs editor save", () => {
   const schemaYaml =
     "models:\n  - name: orders\n    columns:\n      - name: amount\n";
-  const writeFileSync = vi.fn();
-  let panel: TestKeyPanel;
+  let root: string;
+  let panel: SavePanel;
 
-  beforeEach(async () => {
-    vi.resetModules();
-    vi.doMock("fs", async () => ({
-      ...(await vi.importActual<typeof import("fs")>("fs")),
-      existsSync: () => true,
-      readFileSync: () => Buffer.from(schemaYaml),
-      writeFileSync,
-    }));
-    const { DocsEditViewPanel: panelClass } =
-      await import("../../features/docs/docsEditPanel");
-    panel = testKeyPanel(panelClass);
+  beforeEach(() => {
+    root = mkdtempSync(path.join(tmpdir(), "docs-save-"));
+    mkdirSync(path.join(root, "models"));
+    writeFileSync(path.join(root, "models", "schema.yml"), schemaYaml);
+    vi.mocked(workspace.openTextDocument).mockResolvedValue(
+      createMockTextDocument(schemaYaml) as never,
+    );
+    vi.mocked(workspace.applyEdit).mockClear();
+    const instance = testKeyPanel(DocsEditViewPanel) as unknown as {
+      projects: unknown;
+      getProject: unknown;
+    };
+    const project = {
+      projectRoot: Uri.file(root),
+      getAdapterType: () => "duckdb",
+    };
+    instance.projects = { get: () => project };
+    instance.getProject = () => project;
+    panel = instance as unknown as SavePanel;
   });
 
-  afterEach(async () => {
-    writeFileSync.mockReset();
-    vi.resetModules();
-    vi.doUnmock("fs");
-  });
+  afterEach(() => rmSync(root, { recursive: true, force: true }));
+
+  const save = (patchPath?: string, dialogType?: string) =>
+    panel.saveDocumentation({
+      name: "orders",
+      filePath: path.join(root, "models", "orders.sql"),
+      patchPath,
+      dialogType,
+      columns: [{ name: "id" }],
+      updatedTests: [columnTest],
+    });
 
   it("writes data_tests for a column added to a model that already has YAML", async () => {
-    await panel.saveDocumentation(
-      {
-        name: "orders",
-        filePath: "/project/models/orders.sql",
-        patchPath: "project://models/schema.yml",
-        columns: [{ name: "id" }],
-        updatedTests: [columnTest],
-      },
-      "",
-    );
+    expect(await save("project://models/schema.yml")).toBe(true);
 
-    const written = parse(String(writeFileSync.mock.calls[0][1]));
+    const edit = vi.mocked(workspace.applyEdit).mock
+      .calls[0][0] as unknown as WorkspaceEdit;
+    expect(edit.replacements).toHaveLength(1);
+    const written = parse(edit.replacements[0].newText);
     expect(written.models[0].columns[1]).toEqual({
       name: "id",
       data_tests: ["not_null"],
     });
+    expect(readFileSync(path.join(root, "models", "schema.yml"), "utf8")).toBe(
+      schemaYaml,
+    );
+  });
+
+  it("applies to a schema file with unsaved changes, leaves it unsaved and says so", async () => {
+    const unsaved = `${schemaYaml}      - name: draft\n`;
+    const document = createMockTextDocument(unsaved, true);
+    vi.mocked(workspace.openTextDocument).mockResolvedValue(document as never);
+    vi.mocked(window.showWarningMessage).mockClear();
+
+    expect(await save("project://models/schema.yml")).toBe(true);
+
+    const edit = vi.mocked(workspace.applyEdit).mock
+      .calls[0][0] as unknown as WorkspaceEdit;
+    const columns = parse(edit.replacements[0].newText).models[0].columns;
+    expect(columns.map((c: { name: string }) => c.name)).toEqual([
+      "amount",
+      "draft",
+      "id",
+    ]);
+    expect(document.save).not.toHaveBeenCalled();
+    expect(window.showWarningMessage).toHaveBeenCalledWith(
+      "schema.yml has unsaved changes; your documentation was applied but not saved",
+    );
+  });
+
+  it("creates a new schema file chosen in the save dialog", async () => {
+    vi.mocked(window.showSaveDialog).mockResolvedValue(
+      Uri.file(path.join(root, "models", "new.yml")) as never,
+    );
+
+    expect(await save(undefined, "New file")).toBe(true);
+
+    const edit = vi.mocked(workspace.applyEdit).mock
+      .calls[0][0] as unknown as WorkspaceEdit;
+    expect(edit.replacements).toHaveLength(0);
+    const contents = edit.createdFiles[0].options?.contents;
+    expect(parse(new TextDecoder().decode(contents)).models[0].name).toBe(
+      "orders",
+    );
+  });
+
+  it("reports not saved and edits nothing when the dialog is cancelled", async () => {
+    vi.mocked(window.showSaveDialog).mockResolvedValue(undefined);
+
+    expect(await save(undefined, "New file")).toBe(false);
+    expect(workspace.applyEdit).not.toHaveBeenCalled();
   });
 });
+
+interface SavePanel {
+  saveDocumentation(message: unknown): Promise<boolean>;
+}
