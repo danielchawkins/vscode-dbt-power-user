@@ -21,8 +21,8 @@ describe("runtime timings", () => {
   it("does nothing unless the benchmark is enabled", () => {
     delete process.env.FPU_RUNTIME_BENCHMARK;
 
-    beginWebviewResolve("/query-panel");
-    completeWebviewReady("/query-panel");
+    beginWebviewResolve("queryResults");
+    completeWebviewReady("queryResults");
 
     expect(getWebviewRuntimeTimings()).toEqual([]);
   });
@@ -30,12 +30,12 @@ describe("runtime timings", () => {
   it("records resolve-to-ready on the host clock", () => {
     process.env.FPU_RUNTIME_BENCHMARK = "1";
 
-    beginWebviewResolve("/query-panel");
-    completeWebviewReady("/query-panel");
+    beginWebviewResolve("queryResults");
+    completeWebviewReady("queryResults");
 
     expect(getWebviewRuntimeTimings()).toEqual([
       expect.objectContaining({
-        viewPath: "/query-panel",
+        entry: "queryResults",
         duration: expect.any(Number),
       }),
     ]);

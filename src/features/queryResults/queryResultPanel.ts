@@ -47,7 +47,9 @@ enum QueryPanelViewType {
 
 export class QueryResultPanel extends PanelHost {
   public static readonly viewType = "fusionPowerUser.PreviewResults";
-  protected viewPath = "/query-panel";
+  protected readonly entry = "queryResults";
+  // Perspective fetches and compiles its .wasm and runs its engine in a worker started from a Blob.
+  protected readonly csp = { wasm: true, connect: true, blobWorkers: true };
   protected panelDescription = "Query results panel";
   private _queryTabData: any;
   private _bottomPanel: WebviewView | undefined;

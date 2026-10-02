@@ -33,7 +33,7 @@ export function validateSmokeHost(host: string): SmokeHost {
 }
 
 export interface WebviewPaintMetric {
-  viewPath: string;
+  entry: string;
   timeOrigin: number;
   firstContentfulPaint: number;
   bodyText: string;
@@ -138,7 +138,7 @@ export async function assertNoWorkbenchNotifications(
 
 export async function waitForWebviewPaint(
   port: string,
-  viewPath: string,
+  entry: string,
   attempts = 100,
 ): Promise<WebviewPaintMetric> {
   let lastValue: WebviewPaintMetric | undefined;
@@ -157,7 +157,7 @@ export async function waitForWebviewPaint(
             `(async () => {
               await document.fonts.load("12px codicon");
               return {
-                viewPath: globalThis.viewPath,
+                entry: document.body.dataset.entry,
                 timeOrigin: performance.timeOrigin,
                 firstContentfulPaint: performance.getEntriesByName("first-contentful-paint")[0]?.startTime,
                 bodyText: document.body?.innerText.trim().slice(0, 100),
@@ -171,13 +171,13 @@ export async function waitForWebviewPaint(
         }
         const value = values.find(
           (candidate): candidate is WebviewPaintMetric =>
-            isWebviewPaintMetric(candidate) && candidate.viewPath === viewPath,
+            isWebviewPaintMetric(candidate) && candidate.entry === entry,
         );
         lastValue = value ?? lastValue;
         if (
           value &&
           value.bodyText &&
-          value.stylesheets.some((href) => href.endsWith("/main.css")) &&
+          value.stylesheets.some((href) => href.endsWith(`/${entry}.css`)) &&
           value.stylesheets.some((href) => href.endsWith("/codicon.css")) &&
           value.codiconFont
         ) {
@@ -192,7 +192,7 @@ export async function waitForWebviewPaint(
     }
   }
   throw new Error(
-    `Webview did not render with required assets: ${viewPath} ${JSON.stringify({
+    `Webview did not render with required assets: ${entry} ${JSON.stringify({
       lastValue,
       targets: lastTargets.map(({ type, title, url }) => ({
         type,
@@ -204,12 +204,12 @@ export async function waitForWebviewPaint(
 }
 
 /**
- * Evaluates `expression` in every webview frame and returns the first value that names `viewPath` as its
- * `viewPath`, so the expression must return `{ viewPath: globalThis.viewPath, ... }` or a value without it.
+ * Evaluates `expression` in every webview frame and returns the first value whose `entry` is `entry`, so the
+ * expression must return `{ entry: document.body.dataset.entry, ... }` or a value without it.
  */
-export async function evaluatePanel<T extends { viewPath: string }>(
+export async function evaluatePanel<T extends { entry: string }>(
   port: string,
-  viewPath: string,
+  entry: string,
   expression: string,
 ): Promise<{ value: T; target: string } | undefined> {
   for (const frame of await panelFrames(port)) {
@@ -223,7 +223,7 @@ export async function evaluatePanel<T extends { viewPath: string }>(
       (candidate): candidate is T =>
         typeof candidate === "object" &&
         candidate !== null &&
-        (candidate as { viewPath?: unknown }).viewPath === viewPath,
+        (candidate as { entry?: unknown }).entry === entry,
     );
     if (value) {
       return { value, target: frame };
@@ -233,20 +233,20 @@ export async function evaluatePanel<T extends { viewPath: string }>(
 }
 
 /**
- * Messages the frame at `viewPath` logged about its Content Security Policy, including a blocked WebAssembly
+ * Messages the frame at `entry` logged about its Content Security Policy, including a blocked WebAssembly
  * compile, which reaches the console as a `CompileError` naming `'unsafe-eval'`.
  */
 export async function readCspViolations(
   port: string,
-  viewPath: string,
+  entry: string,
 ): Promise<string[]> {
   const panel = await evaluatePanel(
     port,
-    viewPath,
-    "({ viewPath: globalThis.viewPath })",
+    entry,
+    "({ entry: document.body.dataset.entry })",
   );
   if (!panel) {
-    throw new Error(`No webview frame shows ${viewPath}`);
+    throw new Error(`No webview frame shows ${entry}`);
   }
   const entries = await logEntries(panel.target);
   return entries.filter((text) =>
@@ -533,7 +533,7 @@ function isWebviewPaintMetric(value: unknown): value is WebviewPaintMetric {
   }
   const candidate = value as Partial<WebviewPaintMetric>;
   return (
-    typeof candidate.viewPath === "string" &&
+    typeof candidate.entry === "string" &&
     typeof candidate.timeOrigin === "number" &&
     typeof candidate.firstContentfulPaint === "number" &&
     typeof candidate.bodyText === "string" &&

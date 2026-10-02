@@ -47,11 +47,7 @@ import {
   Handlers,
   MessageOf,
 } from "../../webview/messageRouter";
-import {
-  panelHtml,
-  panelWebviewOptions,
-  SHARED_BUNDLE_CSP,
-} from "../../webview/panelHtml";
+import { panelHtml, panelWebviewOptions } from "../../webview/panelHtml";
 import { DbtTestService } from "./dbtTestService";
 import {
   DocGenService,
@@ -64,11 +60,9 @@ type HostMessage = documentationEditor.HostMessage;
 type PanelMessage = documentationEditor.PanelMessage;
 type SaveMessage = MessageOf<PanelMessage, "saveDocumentation">;
 
-const DOCS_VIEW_PATH = "/docs-generator";
-
 export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   public static readonly viewType = "fusionPowerUser.DocsEdit";
-  protected viewPath = DOCS_VIEW_PATH;
+  private readonly entry = "documentationEditor";
   private _panel: WebviewView | undefined = undefined;
   private documentation?: DBTDocumentation;
   private loadedFromManifest = false;
@@ -187,7 +181,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     context: WebviewViewResolveContext,
     _token: CancellationToken,
   ) {
-    beginWebviewResolve(this.viewPath);
+    beginWebviewResolve(this.entry);
     this._panel = panel;
     this.setupWebviewOptions(context);
     this.renderWebviewView(context);
@@ -198,8 +192,8 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   private renderWebviewView(context: WebviewViewResolveContext) {
     const webview = this._panel!.webview!;
     webview.html = panelHtml(webview, this.extensionContext.extensionUri, {
-      viewPath: this.viewPath,
-      csp: SHARED_BUNDLE_CSP,
+      entry: this.entry,
+      csp: {},
     });
   }
 
@@ -571,7 +565,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   /** One handler per documentation-editor panel command. */
   private handlers(): Handlers<PanelMessage> {
     return {
-      "webview:ready": () => completeWebviewReady(this.viewPath),
+      "webview:ready": () => completeWebviewReady(this.entry),
       getCurrentModelDocumentation: () => this.transmitData(),
       showWarningMessage: (message) => this.showNotification(message),
       showInformationMessage: (message) => this.showNotification(message),

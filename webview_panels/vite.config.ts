@@ -1,8 +1,17 @@
 import react from "@vitejs/plugin-react";
-import { copyFileSync, existsSync, mkdirSync } from "fs";
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from "fs";
 import path from "path";
 import { defineConfig, type Plugin } from "vite";
 import svgr from "vite-plugin-svgr";
+
+const entriesDir = path.resolve(import.meta.dirname, "src/entries");
+
+/** One input per panel, named for its file in `src/entries`; the host loads `assets/<name>.js`. */
+const panelEntries = Object.fromEntries(
+  readdirSync(entriesDir)
+    .filter((file) => file.endsWith(".tsx"))
+    .map((file) => [path.basename(file, ".tsx"), path.join(entriesDir, file)]),
+);
 
 function copyCodicons(): Plugin {
   const srcDir = path.resolve(
@@ -38,22 +47,20 @@ function copyCodicons(): Plugin {
 
 // https://vitejs.dev/config/
 export const viteConfig = defineConfig({
-  // Webviews load main.js from a vscode-resource URL, so emitted asset URLs must resolve relative to it.
+  // Webviews load each entry from a vscode-resource URL, so emitted asset URLs must resolve relative to it.
   base: "./",
   plugins: [svgr(), react(), copyCodicons()],
   build: {
     target: "chrome148",
     cssMinify: "esbuild",
-    cssCodeSplit: false,
+    // The host reads each entry's script and transitive stylesheets from here.
+    manifest: "assets/manifest.json",
     rolldownOptions: {
-      input: "./src/main.tsx",
+      input: panelEntries,
       output: {
         entryFileNames: `assets/[name].js`,
         chunkFileNames: `assets/chunk-[name].js`,
-        assetFileNames: (assetInfo) =>
-          assetInfo.name === "style.css"
-            ? "assets/main.css"
-            : "assets/[name].[ext]",
+        assetFileNames: "assets/[name].[ext]",
       },
     },
   },

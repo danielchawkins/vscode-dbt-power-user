@@ -22,7 +22,6 @@ describe("useListeners", () => {
   beforeEach(() => {
     dispatchMock = vi.fn<(action: UnknownAction) => void>();
     dispatch = dispatchMock;
-    window.viewPath = "/";
   });
 
   afterEach(() => {
@@ -30,15 +29,6 @@ describe("useListeners", () => {
   });
 
   it("posts webview:ready on mount", () => {
-    render(<Harness dispatch={dispatch} />);
-
-    expect(getVsCodeApiMock().postMessage).toHaveBeenCalledWith({
-      command: "webview:ready",
-    });
-  });
-
-  it("posts webview:ready for the docs-generator route", () => {
-    window.viewPath = "/docs-generator";
     render(<Harness dispatch={dispatch} />);
 
     expect(getVsCodeApiMock().postMessage).toHaveBeenCalledWith({

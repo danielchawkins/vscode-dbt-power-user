@@ -26,7 +26,7 @@ const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 
 interface HostRuntimeTiming {
-  viewPath: string;
+  entry: string;
   resolveStart: number;
   ready: number;
   duration: number;
@@ -74,8 +74,11 @@ suite("Pinned-host VSIX smoke", function () {
 
     const extRoot = ext.extensionUri.fsPath;
     for (const asset of [
-      "webview_panels/dist/assets/main.js",
-      "webview_panels/dist/assets/main.css",
+      "webview_panels/dist/assets/manifest.json",
+      ...["documentationEditor", "queryResults", "lineage"].flatMap((entry) => [
+        `webview_panels/dist/assets/${entry}.js`,
+        `webview_panels/dist/assets/${entry}.css`,
+      ]),
       "webview_panels/dist/assets/codicons/codicon.css",
       "webview_panels/dist/assets/codicons/codicon.ttf",
     ]) {
@@ -134,17 +137,17 @@ suite("Pinned-host VSIX smoke", function () {
       {
         container: "workbench.view.extension.docs_edit_view",
         command: "fusionPowerUser.DocsEdit.focus",
-        viewPath: "/docs-generator",
+        entry: "documentationEditor",
       },
       {
         container: "workbench.view.extension.dbt_preview_results",
         command: "fusionPowerUser.PreviewResults.focus",
-        viewPath: "/query-panel",
+        entry: "queryResults",
       },
       {
         container: "workbench.view.extension.lineage_view",
         command: "fusionPowerUser.Lineage.focus",
-        viewPath: "/lineage",
+        entry: "lineage",
       },
     ];
     const webviews: MeasuredWebview[] = [];
@@ -161,18 +164,18 @@ suite("Pinned-host VSIX smoke", function () {
         await sleep(2_000);
       }
       if (evidence) {
-        const paint = await waitForWebviewPaint(cdpPort, panel.viewPath, 50);
+        const paint = await waitForWebviewPaint(cdpPort, panel.entry, 50);
         await evidence.capture({
-          name: `panel ${panel.viewPath}`,
-          expect: `The ${panel.viewPath} panel is visible and its text matches measured.bodyText`,
+          name: `panel ${panel.entry}`,
+          expect: `The ${panel.entry} panel is visible and its text matches measured.bodyText`,
           measured: {
             bodyText: paint.bodyText,
             stylesheets: paint.stylesheets,
-            cspViolations: await readCspViolations(cdpPort, panel.viewPath),
+            cspViolations: await readCspViolations(cdpPort, panel.entry),
           },
         });
       }
-      if (panel.viewPath === "/query-panel") {
+      if (panel.entry === "queryResults") {
         const grid = await renderPerspectiveResult(cdpPort);
         await evidence?.capture({
           name: "query results grid",
@@ -184,15 +187,15 @@ suite("Pinned-host VSIX smoke", function () {
           grid.text.includes("one") && grid.text.includes("two"),
           `Perspective must render the result rows: ${JSON.stringify({
             ...grid,
-            cspViolations: await readCspViolations(cdpPort, panel.viewPath),
+            cspViolations: await readCspViolations(cdpPort, panel.entry),
           })}`,
         );
       }
-      const violations = await readCspViolations(cdpPort, panel.viewPath);
+      const violations = await readCspViolations(cdpPort, panel.entry);
       assert.deepStrictEqual(
         violations,
         [],
-        `${panel.viewPath} must load without CSP violations`,
+        `${panel.entry} must load without CSP violations`,
       );
     }
 
@@ -216,8 +219,8 @@ suite("Pinned-host VSIX smoke", function () {
           host: smokeHost,
           activation: { ...activation, startupReady: api.readyMs },
           webviews: webviews.map(
-            ({ viewPath, timeOrigin, firstContentfulPaint, openAttempts }) => ({
-              viewPath,
+            ({ entry, timeOrigin, firstContentfulPaint, openAttempts }) => ({
+              entry,
               timeOrigin,
               firstContentfulPaint,
               openAttempts,
@@ -245,14 +248,14 @@ async function waitForHostRuntimeTimings(): Promise<HostRuntimeTiming[]> {
 
 async function openMeasuredPanel(
   cdpPort: string,
-  panel: { container?: string; command: string; viewPath: string },
+  panel: { container?: string; command: string; entry: string },
 ): Promise<MeasuredWebview> {
   let error: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await openPanel(panel);
     try {
       return {
-        ...(await waitForWebviewPaint(cdpPort, panel.viewPath, 50)),
+        ...(await waitForWebviewPaint(cdpPort, panel.entry, 50)),
         openAttempts: attempt + 1,
       };
     } catch (cause) {
@@ -293,7 +296,7 @@ type Evidence = NonNullable<ReturnType<typeof visualEvidence>>;
 
 /** Posts a two-row result into the query results page as the host would, then reads the grid Perspective draws. */
 const RENDER_RESULT = `(async () => {
-  if (globalThis.viewPath !== "/query-panel") return null;
+  if (document.body.dataset.entry !== "queryResults") return null;
   if (!globalThis.__fpuResultPosted) {
     globalThis.__fpuResultPosted = true;
     window.dispatchEvent(new MessageEvent("message", { data: {
@@ -320,7 +323,7 @@ const RENDER_RESULT = `(async () => {
   const wasmCompile = await WebAssembly.compile(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]))
     .then(() => "ok", (error) => String(error));
   return {
-    viewPath: globalThis.viewPath,
+    entry: document.body.dataset.entry,
     viewer: Boolean(viewer),
     text: viewer ? textOf(viewer).slice(0, 300) : "",
     wasmCompile,
@@ -336,13 +339,13 @@ async function renderPerspectiveResult(
   };
   for (let attempt = 0; attempt < 60; attempt += 1) {
     const panel = await evaluatePanel<{
-      viewPath: string;
+      entry: string;
       viewer: boolean;
       text: string;
       wasmCompile: string;
-    }>(cdpPort, "/query-panel", RENDER_RESULT);
+    }>(cdpPort, "queryResults", RENDER_RESULT);
     if (panel) {
-      const { viewPath: _viewPath, ...value } = panel.value;
+      const { entry: _entry, ...value } = panel.value;
       last = value;
       if (last.text.includes("one") && last.text.includes("two")) {
         break;

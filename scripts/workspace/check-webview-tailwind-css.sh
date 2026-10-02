@@ -4,7 +4,7 @@ set -euo pipefail
 
 css_file="${1:-}"
 if [[ -z "$css_file" || ! -f "$css_file" ]]; then
-  echo "usage: $0 <path-to-main.css>" >&2
+  echo "usage: $0 <path-to-lineage.css>" >&2
   exit 1
 fi
 

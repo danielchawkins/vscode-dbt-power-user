@@ -22,24 +22,22 @@ import {
 import { Handlers } from "./messageRouter";
 import {
   PanelCsp,
+  PanelEntry,
   panelHtml,
   panelWebviewOptions,
-  SHARED_BUNDLE_CSP,
 } from "./panelHtml";
 
 /** The commands every panel on `PanelHost` sends. */
 export type CommonPanelMessage = WebviewReady;
 
-/**
- * This class is responsible for rendering the webview
- * Each panel needs to have its own provider which extends this class with correct viewPath and description
- */
-export class PanelHost implements WebviewViewProvider {
+/** Renders a panel's Vite entry and routes the commands every panel sends; each panel subclasses it. */
+export abstract class PanelHost implements WebviewViewProvider {
   public viewType = "fusionPowerUser.Default";
-  protected viewPath = "/"; // webview route path from AppConstants.tsx
+  /** The panel's file in `webview_panels/src/entries`. */
+  protected abstract readonly entry: PanelEntry;
+  /** What the entry's page needs beyond the shared policy in `contentSecurityPolicy`. */
+  protected abstract readonly csp: PanelCsp;
   protected panelDescription = "Webview panel";
-  /** What the panel's page needs beyond the shared policy in `contentSecurityPolicy`. */
-  protected csp: PanelCsp = SHARED_BUNDLE_CSP;
 
   protected _panel: WebviewView | WebviewPanel | undefined = undefined;
   protected _webview: Webview | undefined = undefined;
@@ -78,18 +76,18 @@ export class PanelHost implements WebviewViewProvider {
   protected renderWebviewView(webview: Webview) {
     this._webview = webview;
     webview.html = panelHtml(webview, this.extensionContext.extensionUri, {
-      viewPath: this.viewPath,
+      entry: this.entry,
       csp: this.csp,
     });
   }
 
   protected onWebviewReady() {
-    completeWebviewReady(this.viewPath);
+    completeWebviewReady(this.entry);
     this.isWebviewReady = true;
   }
 
   protected beginWebviewResolve() {
-    recordWebviewResolveStart(this.viewPath);
+    recordWebviewResolveStart(this.entry);
   }
 
   /** Handlers for the commands every panel on `PanelHost` sends; each panel spreads them into its own map. */

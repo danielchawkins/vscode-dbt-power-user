@@ -9,21 +9,12 @@ title: Webview setup
 classDiagram
     PanelHost <|-- QueryResultPanel : extends
     PanelHost <|-- LineagePanel : extends
-    <<Baseclass>> PanelHost
+    <<Abstract>> PanelHost
 
-    note for QueryResultPanel "Mandatory overrides: \n viewType\n viewPath\n panelDescription"
-    note for QueryResultPanel "Optional overrides: \n handleCommand"
     PanelHost : +String viewType
-    PanelHost : #String viewPath
-    PanelHost : #String panelDescription
+    PanelHost : #PanelEntry entry
+    PanelHost : #PanelCsp csp
     PanelHost: #renderWebviewView()
-    PanelHost: #handleCommand()
-    class QueryResultPanel{
-      #handleCommand
-    }
-    class LineagePanel{
-      #handleCommand
-    }
     class LineageViewProvider{
       +resolveWebviewView()
     }
@@ -32,59 +23,50 @@ classDiagram
     class DocsEditViewPanel{
       +resolveWebviewView()
     }
-    note for DocsEditViewPanel "Standalone WebviewViewProvider, not a PanelHost subclass.\nReuses the same React bundle by setting window.viewPath in its own HTML."
 
-    class Webview_panels["webview_panels/src/main.tsx"]
-    Webview_panels <|-- PanelHost : renders
-    Webview_panels <|-- DocsEditViewPanel : renders
-    <<reactapp>> Webview_panels
-    note for Webview_panels "AppConstants.tsx defines routes for each panel \n main.tsx will render route defined in viewPath variable in Provider"
+    class panelHtml["src/webview/panelHtml.ts"]
+    PanelHost --> panelHtml : renders with
+    DocsEditViewPanel --> panelHtml : renders with
 
+    class Entries["webview_panels/src/entries/*.tsx"]
+    panelHtml --> Entries : loads one
 
     click PanelHost href "../src/webview/panelHost.ts" ""
     click QueryResultPanel href "../src/features/queryResults/queryResultPanel.ts" ""
     click LineagePanel href "../src/features/lineage/lineagePanel.ts" ""
     click LineageViewProvider href "../src/features/lineage/lineageViewProvider.ts" ""
     click DocsEditViewPanel href "../src/features/docs/docsEditPanel.ts" ""
-    click Webview_panels href "./src/main.tsx" ""
-
+    click panelHtml href "../src/webview/panelHtml.ts" ""
 ```
 
-`LineageViewProvider` is the sidebar `WebviewViewProvider` registered in `package.json`; it delegates rendering and message handling to `LineagePanel`, which is the `PanelHost` subclass.
+`LineageViewProvider` is the sidebar `WebviewViewProvider` registered in `package.json`; it delegates rendering and message handling to `LineagePanel`, which is the `PanelHost` subclass. `DocsEditViewPanel` is a standalone provider that renders through the same `panelHtml`.
 
 ## Setup notes
 
-### PanelHost
+### Panel pages
 
-- Base class for rendering webview
-- Also handles security practices like CSP and nonce as recommended in the [VS Code webview security guide](https://code.visualstudio.com/api/extension-guides/webview#security)
-- Each new panel needs to have its own provider which extends this class and should override
-  - `viewPath`
-  - `panelDescription`
-  - `viewType`
-  - each panel can also override `handleCommand` function to handle incoming messages from webview
+- `panelHtml` in [`../src/webview/panelHtml.ts`](../src/webview/panelHtml.ts) is the only HTML and Content Security Policy generator. It reads the Vite manifest and loads the panel's entry script with a nonce, plus that entry's stylesheets and the codicons.
+- Each panel names its `entry` and the `PanelCsp` allowances its page needs; the policy otherwise starts from `default-src 'none'`. The evidence for each directive is in [`../docs/research/webview-csp-october-2026.md`](../docs/research/webview-csp-october-2026.md).
 
 ### webview_panels react app
 
-- Uses react-router-dom for handling different routes for each panel
-- Route will be determined by the `viewPath` value set in `PanelHost`
+- One Vite entry per panel in [`./src/entries`](./src/entries); each calls [`renderPanel`](./src/renderPanel.tsx) with its root component. The file name is the entry name the host loads.
 - Uses [reduxjstoolkit](https://redux-toolkit.js.org/) with useReducer in [AppProvider](./src/modules/app/AppProvider.tsx)
   - This helps us to setup reducers in more readable and maintainable way
 - [useListeners](./src/modules/app/useListeners.ts) - common place to listen for incoming messages
   - Component specific message can be listened within component/respective hook
 - Assets are stored here [./src/assets](./src/assets)
   - can be accessed via `index.tsx` in the same directory
+- `npm run dev` serves `index.html`; `?entry=<name>` selects the panel.
 
 ## How to add new panel?
 
 - In `package.json`, add an entry in `viewsContainers -> panel` with expected values
   - add corresponding entry under `views.<container id>`, for example `views.dbt_preview_results`
-- Create new provider in a feature folder under [../src/features](../src/features) by extending `PanelHost` with `viewType` same as the one added in package.json above
+- Add `src/entries/<name>.tsx` that calls `renderPanel` with the panel's root component, and add `<name>` to `PanelEntry` in `panelHtml.ts`
+- Create a provider in a feature folder under [../src/features](../src/features) by extending `PanelHost` with `viewType` same as the one added in package.json above, `entry` set to `<name>`, and the `csp` allowances the page needs
 - Add the new provider in [../src/features/panels.ts](../src/features/panels.ts)
-- Add new route in [./src/AppConstants.tsx](./src/AppConstants.tsx)
-- Use the new view route added in AppConstants in new webview provider created in step 2 and update value for `viewPath` variable
-- Update the value for `panelDescription` in provider
-- Launch the extension and test the new panel
+- Add the panel to the smoke in `../src/test/smoke/panelSmoke.test.ts`, which fails on any CSP violation
 
 ## Guidelines
 

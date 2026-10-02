@@ -98,7 +98,7 @@ for (let index = 0; index < 10; index += 1) {
   );
 }
 
-const viewPaths = ["/docs-generator", "/query-panel", "/lineage"];
+const entries = ["documentationEditor", "queryResults", "lineage"];
 const summary = {
   host,
   hostMetadata,
@@ -113,20 +113,20 @@ const summary = {
     ),
   ),
   webviews: Object.fromEntries(
-    viewPaths.map((viewPath) => [
-      viewPath,
+    entries.map((entry) => [
+      entry,
       {
         firstContentfulPaint: summarize(
           samples.map(
             (sample) =>
-              sample.webviews.find((webview) => webview.viewPath === viewPath)
+              sample.webviews.find((webview) => webview.entry === entry)
                 .firstContentfulPaint,
           ),
         ),
         resolveToReady: summarize(
           samples.map(
             (sample) =>
-              sample.hostTimings.find((timing) => timing.viewPath === viewPath)
+              sample.hostTimings.find((timing) => timing.entry === entry)
                 .duration,
           ),
         ),
