@@ -1,5 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  commands,
+  env,
   EventEmitter,
   LogOutputChannel,
   Uri,
@@ -13,6 +15,10 @@ import {
   OutputChannels,
 } from "../../projects/outputChannels";
 import { DeclaredProject } from "../../projects/projectRegistry";
+
+const EXTENSION_ID = "danielchawkins.fusion-power-user";
+
+const settle = () => new Promise((resolve) => setTimeout(resolve, 0));
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace"),
@@ -59,7 +65,8 @@ describe("ChannelLog", () => {
 
   beforeEach(() => {
     vi.mocked(window.createOutputChannel).mockClear();
-    log = new ChannelLog("Fusion Power User: general");
+    vi.mocked(commands.executeCommand).mockClear();
+    log = new ChannelLog("Fusion Power User: general", EXTENSION_ID);
     channel = createdNamed("Fusion Power User: general");
   });
 
@@ -90,31 +97,142 @@ describe("ChannelLog", () => {
     expect(channel.error).toHaveBeenCalledWith("src: failed");
   });
 
-  it("drops writes through the log or its channel after dispose", () => {
+  it("drops writes through the log or its channel after dispose", async () => {
     log.dispose();
     log.dispose();
     log.info("n", "late");
     log.error("n", "late", new Error("e"));
     log.channel.appendLine("late");
     log.channel.show(true);
+    await settle();
 
     expect(channel.dispose).toHaveBeenCalledTimes(1);
     expect(channel.info).not.toHaveBeenCalled();
     expect(channel.error).not.toHaveBeenCalled();
     expect(channel.appendLine).not.toHaveBeenCalled();
     expect(channel.show).not.toHaveBeenCalled();
+    expect(commands.executeCommand).not.toHaveBeenCalled();
   });
 
-  it("forwards show's column and preserveFocus", () => {
-    log.channel.show(true);
-    log.channel.show(undefined, true);
-    log.channel.show(2, false);
+  describe("show in VS Code", () => {
+    it("calls the channel's show without looking up a command", async () => {
+      vi.mocked(commands.getCommands).mockClear();
+      log.channel.show(true);
+      log.channel.show(2, false);
+      await settle();
 
-    expect(vi.mocked(channel.show).mock.calls).toEqual([
-      [true],
-      [undefined, true],
-      [2, false],
-    ]);
+      expect(vi.mocked(channel.show).mock.calls).toEqual([[true], [false]]);
+      expect(commands.getCommands).not.toHaveBeenCalled();
+      expect(commands.executeCommand).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("show in Cursor", () => {
+    const prefix = `workbench.action.output.show.${EXTENSION_ID}`;
+    const showGeneral = `${prefix}.Fusion Power User general.workspaceId-abc123`;
+
+    beforeEach(() => {
+      Object.assign(env, { uriScheme: "cursor" });
+      vi.mocked(commands.executeCommand).mockClear();
+      vi.mocked(commands.getCommands).mockClear();
+      vi.mocked(commands.getCommands).mockResolvedValue([
+        `${prefix}.Fusion Power User.workspaceId-abc123`,
+        `${prefix}.Fusion Power User generalist.workspaceId-abc123`,
+        `${prefix}.Fusion Power User general.b.workspaceId-abc123`,
+        `${prefix}.Fusion Power User general.log`,
+        showGeneral,
+      ]);
+    });
+
+    afterEach(() => {
+      Object.assign(env, { uriScheme: "vscode" });
+      vi.mocked(commands.getCommands).mockResolvedValue([]);
+      vi.mocked(commands.executeCommand).mockResolvedValue(undefined);
+    });
+
+    it("runs the Output view's command for this channel, keeping focus", async () => {
+      log.channel.show(true);
+      await settle();
+
+      expect(vi.mocked(commands.executeCommand).mock.calls).toEqual([
+        [showGeneral],
+      ]);
+      expect(channel.show).not.toHaveBeenCalled();
+    });
+
+    it("matches only the channel's own id, not a name that extends it", async () => {
+      vi.mocked(commands.getCommands).mockResolvedValue([
+        `${prefix}.Fusion Power User general.b.workspaceId-abc123`,
+        `${prefix}.Fusion Power User general.log`,
+      ]);
+      log.channel.show(true);
+      await settle();
+
+      expect(commands.executeCommand).not.toHaveBeenCalled();
+      expect(vi.mocked(channel.show).mock.calls).toEqual([[true]]);
+    });
+
+    it("focuses the Output view after the command unless preserveFocus", async () => {
+      log.channel.show();
+      await settle();
+
+      expect(vi.mocked(commands.executeCommand).mock.calls).toEqual([
+        [showGeneral],
+        ["workbench.panel.output.focus"],
+      ]);
+    });
+
+    it("looks the command up once and reuses it", async () => {
+      log.channel.show(true);
+      await settle();
+      log.channel.show(true);
+      await settle();
+
+      expect(commands.getCommands).toHaveBeenCalledTimes(1);
+      expect(vi.mocked(commands.executeCommand).mock.calls).toEqual([
+        [showGeneral],
+        [showGeneral],
+      ]);
+    });
+
+    it("falls back to the channel's show and looks the command up again when it fails", async () => {
+      vi.mocked(commands.executeCommand).mockRejectedValueOnce(
+        new Error("command not found"),
+      );
+      log.channel.show(true);
+      await settle();
+      await settle();
+
+      expect(vi.mocked(channel.show).mock.calls).toEqual([[true]]);
+
+      log.channel.show(true);
+      await settle();
+
+      expect(commands.getCommands).toHaveBeenCalledTimes(2);
+      expect(vi.mocked(commands.executeCommand).mock.calls).toEqual([
+        [showGeneral],
+        [showGeneral],
+      ]);
+    });
+
+    it("falls back to the channel's show when the host has no command for it", async () => {
+      vi.mocked(commands.getCommands).mockResolvedValue([]);
+      log.channel.show(true);
+      log.channel.show(2, false);
+      await settle();
+
+      expect(vi.mocked(channel.show).mock.calls).toEqual([[true], [false]]);
+      expect(commands.executeCommand).not.toHaveBeenCalled();
+    });
+
+    it("does nothing when disposed before the command is found", async () => {
+      log.channel.show(true);
+      log.dispose();
+      await settle();
+
+      expect(commands.executeCommand).not.toHaveBeenCalled();
+      expect(channel.show).not.toHaveBeenCalled();
+    });
   });
 
   it("forwards the channel's log level for LanguageClient tracing", () => {
@@ -132,7 +250,7 @@ describe("OutputChannels", () => {
   beforeEach(() => {
     vi.mocked(window.createOutputChannel).mockClear();
     registry = new FakeRegistry();
-    outputs = new OutputChannels();
+    outputs = new OutputChannels(EXTENSION_ID);
     outputs.follow(registry);
   });
 

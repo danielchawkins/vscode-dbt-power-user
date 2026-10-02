@@ -49,6 +49,10 @@ The extension no longer tails `logs/dbt.log`. Every dbt process the extension st
 
 A channel wrapper drops writes after disposal, because VS Code throws on writes to a closed channel and an in-flight command or client teardown can still log after its project is removed. The language status item's "Show output" (`fusionPowerUser.showFusionOutput`) opens the client's channel, which is the project's channel. Error notifications from project setup commands name that channel.
 
+In Cursor, showing a channel runs the Output view's own command for it, `workbench.action.output.show.<channel id>`, rather than `LogOutputChannel.show`. A log channel's id is the extension id, a dot and the channel name without the characters a file name cannot hold, followed by `.log` in VS Code and by `.workspaceId-<workspace id>` in Cursor. Cursor's `LogOutputChannel.show` looks the channel up by the id without that suffix, finds nothing, and leaves the Output view closed or on another channel. The wrapper detects Cursor from `env.uriScheme` or `env.appName`; VS Code keeps `LogOutputChannel.show`, which also reveals a hidden panel through the workbench's own handling. The wrapper caches the command id per channel and forgets it when the command fails.
+
+When no command matches or it fails, the wrapper falls back to `LogOutputChannel.show`; this includes the first show in Cursor before the workbench has registered the channel's command.
+
 ## Artifacts, caches and persisted state
 
 The extension reads a Fusion artifact only after a command it launched and awaited, or where the protocol cannot supply the data; it never republishes project state on a write under `target/`, and never writes into it. `ManifestTrigger`'s source globs also match files under `target/` and filter them by path. It does not persist derived compiler state or query results, and keeps no second diagnostic store beside the language client's collections. Query rows live in memory until their tab closes. Submitted SQL for a given logical query stays byte-identical, because Snowflake's result cache requires an exact text match; a comment carrying a timestamp or run id would defeat it.

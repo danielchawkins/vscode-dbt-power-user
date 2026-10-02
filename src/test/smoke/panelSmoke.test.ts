@@ -314,15 +314,6 @@ const OUTPUT_VIEW = `(() => {
   return { channel: labels[0] ?? null, shown, listed, text: labels.length ? lines.trim().slice(0, 600) : "" };
 })()`;
 
-const SELECT_PROJECT_CHANNEL = `(() => {
-  const select = [...document.querySelectorAll(".part select")].find((s) =>
-    [...s.options].some((o) => o.text.startsWith("Fusion Power User: ")));
-  if (!select) return false;
-  select.selectedIndex = [...select.options].findIndex((o) => o.text.startsWith("Fusion Power User: "));
-  select.dispatchEvent(new Event("change", { bubbles: true }));
-  return true;
-})()`;
-
 /** Checkpoints for the language status items, the explorer's dbt file icons and the project output channel. */
 async function captureEditorSurfaces(
   evidence: Evidence,
@@ -375,14 +366,18 @@ async function captureEditorSurfaces(
       "The Output panel shows the Fusion Power User: single_project channel with Fusion client and dbt log lines",
     measured: output,
   });
+  assert.strictEqual(
+    output.shown,
+    PROJECT_CHANNEL,
+    `Show output must select ${PROJECT_CHANNEL} in the Output view`,
+  );
+  assert.ok(output.text, "the project channel must show Fusion log lines");
   await vscode.commands.executeCommand("workbench.action.closePanel");
 }
 
-/**
- * Runs the language status item's "Show output" command and reads the Output view. When the view does not show the
- * project channel, focuses it and runs the command again, then picks the channel in the view's dropdown; `openedBy`
- * records which path showed it.
- */
+const PROJECT_CHANNEL = "Fusion Power User: single_project";
+
+/** Runs the language status item's "Show output" command, then reads the Output view until it shows the project channel. */
 async function showProjectOutput(
   cdpPort: string,
   host: string,
@@ -394,44 +389,33 @@ async function showProjectOutput(
   text: string | null;
   openedBy: string;
 }> {
-  const steps = [
-    ["fusionPowerUser.showFusionOutput"],
-    ["workbench.panel.output.focus", "fusionPowerUser.showFusionOutput"],
-    ["select in Output dropdown"],
-  ];
-  const opened: string[] = [];
-  let shown: string | null = null;
-  let listed: string[] = [];
-  for (const step of steps) {
-    for (const command of step) {
-      opened.push(command);
-      if (command.startsWith("select ")) {
-        await evaluateWorkbench(cdpPort, host, SELECT_PROJECT_CHANNEL);
-      } else {
-        await vscode.commands.executeCommand(command, root);
-      }
-    }
-    for (let attempt = 0; attempt < 20; attempt += 1) {
-      const output = await evaluateWorkbench<{
+  const openedBy = "fusionPowerUser.showFusionOutput";
+  await vscode.commands.executeCommand(openedBy, root);
+  let last: {
+    channel: string | null;
+    shown: string | null;
+    listed: string[];
+    text: string;
+  } | null = null;
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    last =
+      (await evaluateWorkbench<{
         channel: string | null;
         shown: string | null;
         listed: string[];
         text: string;
-      }>(cdpPort, host, OUTPUT_VIEW);
-      shown = output?.shown ?? shown;
-      listed = output?.listed ?? listed;
-      if (output?.text) {
-        return { ...output, openedBy: opened.join(" + ") };
-      }
-      await sleep(250);
+      }>(cdpPort, host, OUTPUT_VIEW)) ?? last;
+    if (last?.shown === PROJECT_CHANNEL && last.text) {
+      break;
     }
+    await sleep(250);
   }
   return {
-    channel: null,
-    shown,
-    listed,
-    text: null,
-    openedBy: opened.join(" + "),
+    channel: last?.channel ?? null,
+    shown: last?.shown ?? null,
+    listed: last?.listed ?? [],
+    text: last?.text || null,
+    openedBy,
   };
 }
 

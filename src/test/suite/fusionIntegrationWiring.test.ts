@@ -34,6 +34,7 @@ import { OutputChannels } from "../../projects/outputChannels";
 
 function stubContext(workspaceValue?: string) {
   return {
+    extension: { id: "danielchawkins.fusion-power-user" },
     workspaceState: { get: vi.fn(() => workspaceValue), update: vi.fn() },
     globalState: { get: vi.fn(), update: vi.fn() },
   } as never;
@@ -193,7 +194,9 @@ describe("Fusion-only integration wiring", () => {
 
   it("reads DBT_LOOM_CONFIG_PATH on each parse through the project parsers", () => {
     const reads: (string | undefined)[] = [];
-    const parsers = createProjectParsers(new OutputChannels());
+    const parsers = createProjectParsers(
+      new OutputChannels("danielchawkins.fusion-power-user"),
+    );
     for (const parser of [parsers.nodeParser, parsers.sourceParser]) {
       const read = (
         parser as unknown as { readDbtLoomConfigPath: () => string | undefined }

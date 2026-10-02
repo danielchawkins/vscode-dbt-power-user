@@ -1,5 +1,7 @@
 import {
+  commands,
   Disposable,
+  env,
   Event,
   LogLevel,
   LogOutputChannel,
@@ -17,11 +19,26 @@ import { DeclaredProject } from "./projectRegistry";
 export const EXTENSION_CHANNEL_NAME = "Fusion Power User";
 export const DIAGNOSTICS_CHANNEL_NAME = "Fusion Power User - Diagnostics";
 
-/** Forwards to a log channel until disposed, then drops every call instead of throwing. */
+const SHOW_CHANNEL_COMMAND = "workbench.action.output.show.";
+const OUTPUT_VIEW_FOCUS_COMMAND = "workbench.panel.output.focus";
+
+/** Whether the host is Cursor, whose `LogOutputChannel.show` does nothing for an extension's log channel. */
+function isCursor(): boolean {
+  return env.uriScheme === "cursor" || /cursor/i.test(env.appName);
+}
+
+/**
+ * Forwards to a log channel until disposed, then drops every call instead of throwing. In Cursor, `show` runs the
+ * Output view's command for the channel and falls back to the channel's `show` when the command is missing or fails.
+ */
 class ClosableLogChannel implements LogOutputChannel {
   private closed = false;
+  private showCommand: string | undefined;
 
-  constructor(private readonly inner: LogOutputChannel) {}
+  constructor(
+    private readonly inner: LogOutputChannel,
+    private readonly extensionId: string,
+  ) {}
 
   get name(): string {
     return this.inner.name;
@@ -77,11 +94,21 @@ class ClosableLogChannel implements LogOutputChannel {
     columnOrPreserveFocus?: ViewColumn | boolean,
     preserveFocus?: boolean,
   ): void {
-    this.write(() =>
+    const keepFocus =
       typeof columnOrPreserveFocus === "boolean"
-        ? this.inner.show(columnOrPreserveFocus)
-        : this.inner.show(columnOrPreserveFocus, preserveFocus),
-    );
+        ? columnOrPreserveFocus
+        : preserveFocus;
+    const keep = keepFocus === true;
+    this.write(() => {
+      if (!isCursor()) {
+        this.inner.show(keep);
+        return;
+      }
+      this.reveal(keep).catch(() => {
+        this.showCommand = undefined;
+        this.write(() => this.inner.show(keep));
+      });
+    });
   }
 
   hide(): void {
@@ -100,6 +127,36 @@ class ClosableLogChannel implements LogOutputChannel {
       action();
     }
   }
+
+  /** The command preserves focus; focusing the Output view afterwards keeps the channel it selected. */
+  private async reveal(preserveFocus: boolean): Promise<void> {
+    const command = this.showCommand ?? (await this.findShowCommand());
+    if (this.closed) {
+      return;
+    }
+    if (!command) {
+      this.inner.show(preserveFocus);
+      return;
+    }
+    this.showCommand = command;
+    await commands.executeCommand(command);
+    if (!preserveFocus) {
+      await commands.executeCommand(OUTPUT_VIEW_FOCUS_COMMAND);
+    }
+  }
+
+  /** Cursor's id for the channel is `<extension id>.<file name>.workspaceId-<workspace id>`. */
+  private async findShowCommand(): Promise<string | undefined> {
+    const prefix = `${SHOW_CHANNEL_COMMAND}${this.extensionId}.${channelFileName(this.name)}.workspaceId-`;
+    return (await commands.getCommands(true)).find((id) =>
+      id.startsWith(prefix),
+    );
+  }
+}
+
+/** The host's log file name for a channel name, which its Output channel id embeds. */
+function channelFileName(name: string): string {
+  return name.replace(/[\\/:*?"<>|]/g, "");
 }
 
 /** A `DBTTerminal` over one log output channel; calls after `dispose` are dropped. */
@@ -107,9 +164,11 @@ export class ChannelLog implements DBTTerminal {
   /** The underlying channel, for a Fusion Client to log to; only this log's `dispose` closes it. */
   readonly channel: LogOutputChannel;
 
-  constructor(name: string) {
+  /** `extensionId` is the id of the extension that creates the channel, which the host puts in its id. */
+  constructor(name: string, extensionId: string) {
     this.channel = new ClosableLogChannel(
       window.createOutputChannel(name, { log: true }),
+      extensionId,
     );
   }
 
@@ -185,8 +244,8 @@ export class OutputChannels extends ChannelLog implements Disposable {
   private subscription: Disposable | undefined;
   private disposed = false;
 
-  constructor() {
-    super(EXTENSION_CHANNEL_NAME);
+  constructor(private readonly extensionId: string) {
+    super(EXTENSION_CHANNEL_NAME, extensionId);
   }
 
   /** Disposes each project log when its Declared Project leaves `registry`. */
@@ -210,7 +269,10 @@ export class OutputChannels extends ChannelLog implements Disposable {
       return existing.log;
     }
     existing?.log.dispose();
-    const log = new ChannelLog(this.projectChannelName(project));
+    const log = new ChannelLog(
+      this.projectChannelName(project),
+      this.extensionId,
+    );
     this.projectLogs.set(key, { project, log });
     return log;
   }

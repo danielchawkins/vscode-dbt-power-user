@@ -32,7 +32,9 @@ describe("DiagnosticsOutputChannel Test Suite", () => {
     );
 
     diagnosticsChannel = new DiagnosticsOutputChannel(
-      new OutputChannels().createDiagnosticsChannel(),
+      new OutputChannels(
+        "danielchawkins.fusion-power-user",
+      ).createDiagnosticsChannel(),
     );
   });
 

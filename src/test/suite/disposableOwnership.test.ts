@@ -148,6 +148,7 @@ describe("disposable ownership", () => {
       (id, selector) => track({ id, selector }),
     );
     const context = {
+      extension: { id: "danielchawkins.fusion-power-user" },
       subscriptions: [] as { dispose(): unknown }[],
       workspaceState: { get: vi.fn(), update: vi.fn() },
       globalState: { get: vi.fn(), update: vi.fn() },
