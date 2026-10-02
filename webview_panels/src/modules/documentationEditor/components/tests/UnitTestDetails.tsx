@@ -1,4 +1,4 @@
-import { executeRequestInSync } from "@modules/app/requestExecutor";
+import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { DBTUnitTest } from "@modules/documentationEditor/state/types";
 import { panelLogger } from "@modules/logger";
 import { CodeBlock, Stack } from "@uicore";

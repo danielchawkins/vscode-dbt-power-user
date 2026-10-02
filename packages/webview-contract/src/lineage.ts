@@ -17,6 +17,7 @@ import {
   isString,
   messageGuard,
   optional,
+  requestCommandsOf,
   shape,
   syncRequestId,
   tuple,
@@ -174,3 +175,5 @@ export const hostCommands = Object.keys(hostFields) as HostMessage["command"][];
 export const panelCommands = Object.keys(
   panelFields,
 ) as PanelMessage["command"][];
+/** The panel commands the host answers with a `response`. */
+export const requestCommands = requestCommandsOf(panelFields);

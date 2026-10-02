@@ -45,17 +45,47 @@ export interface Documentation {
   resource_type?: string;
 }
 
+/** A generic test's `test_metadata.kwargs`; which keys appear depends on the test. */
+export interface TestKwargs {
+  column_name?: string;
+  model?: string;
+  /** `accepted_values`. */
+  values?: unknown[];
+  /** `relationships`: the parent column and the parent `ref`. */
+  field?: string;
+  to?: string;
+}
+
+/** A data test attached to the model or one of its columns; `key` is the test's manifest name, and manifest-derived
+ * fields may be `null`. */
+export interface ModelTest {
+  key: string;
+  column_name?: string | null;
+  path?: string;
+  test_metadata?: {
+    name: string;
+    namespace?: string | null;
+    kwargs: TestKwargs;
+  };
+}
+
+/** A unit test of the model. */
+export interface UnitTest {
+  name: string;
+  path?: string;
+}
+
 /** Documentation-editor messages from the extension host to the panel. */
 export type HostMessage =
   | Response
   | { command: "renderError" }
-  /** `docs` is absent when the active editor has no documented model; tests are the host's test metadata. */
+  /** `docs` is absent when the active editor has no documented model. */
   | {
       command: "renderDocumentation";
       docs?: Documentation;
       missingDocumentationMessage?: PanelNotice;
-      tests?: unknown[];
-      unitTests?: unknown[];
+      tests?: ModelTest[];
+      unitTests?: UnitTest[];
       project?: string;
       docBlocks: { name: string; path: string }[];
     }
@@ -130,14 +160,38 @@ const documentationFields: Fields<Documentation> = {
   resource_type: optional(isString),
 };
 
+const isModelTest = shape<ModelTest>({
+  key: isString,
+  column_name: nullish(isString),
+  path: optional(isString),
+  test_metadata: optional(
+    shape<NonNullable<ModelTest["test_metadata"]>>({
+      name: isString,
+      namespace: nullish(isString),
+      kwargs: shape<TestKwargs>({
+        column_name: optional(isString),
+        model: optional(isString),
+        values: optional(arrayOf(isAnything)),
+        field: optional(isString),
+        to: optional(isString),
+      }),
+    }),
+  ),
+});
+
+const isUnitTest = shape<UnitTest>({
+  name: isString,
+  path: optional(isString),
+});
+
 const hostFields: CommandFields<HostMessage> = {
   response: responseFields,
   renderError: {},
   renderDocumentation: {
     docs: optional(shape<Documentation>(documentationFields)),
     missingDocumentationMessage: optional(isPanelNotice),
-    tests: optional(arrayOf(isAnything)),
-    unitTests: optional(arrayOf(isAnything)),
+    tests: optional(arrayOf(isModelTest)),
+    unitTests: optional(arrayOf(isUnitTest)),
     project: optional(isString),
     docBlocks: arrayOf(shape({ name: isString, path: isString })),
   },

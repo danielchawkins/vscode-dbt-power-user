@@ -78,10 +78,10 @@ classDiagram
 ## Making API calls
 
 - Webview panel does not make api calls directly. Instead the request will be sent to webview providers and in turn call backend apis
-- For achieving this, helper methods are available
-  - [requestExecutor](./src/modules/app/requestExecutor.ts) - handles sending messages to providers
-    - `executeRequestInSync` can be used for getting response back from provider for an action
-    - `executeRequestInAsync` can be used for just sending message to provider without need for response
+- Each panel imports `executeRequestInSync` and `executeRequestInAsync` from its own `requests.ts`, bound to that panel's `PanelMessage` union in `@fusion-power-user/webview-contract` by [`panelRequests`](./src/modules/app/requestExecutor.ts)
+  - `executeRequestInSync` posts a command whose message carries `syncRequestId` and resolves with the host's `response` body
+  - `executeRequestInAsync` posts a command without waiting
+  - a command outside the union, or a payload that does not match it, is a compile error; ESLint forbids `postMessage` elsewhere
 
 ## Storybook
 

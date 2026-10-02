@@ -1,4 +1,4 @@
-import { executeRequestInSync } from "@modules/app/requestExecutor";
+import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { panelLogger } from "@modules/logger";
 import { LoadingButton, OptionType, Select, Stack } from "@uicore";

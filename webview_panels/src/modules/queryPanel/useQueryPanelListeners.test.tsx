@@ -2,7 +2,7 @@ import { render, waitFor } from "@testing-library/react";
 import { useReducer } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-vi.mock("@modules/app/requestExecutor", () => ({
+vi.mock("@modules/queryPanel/requests", () => ({
   executeRequestInAsync: vi.fn(),
   executeRequestInSync: vi.fn().mockResolvedValue(undefined),
 }));

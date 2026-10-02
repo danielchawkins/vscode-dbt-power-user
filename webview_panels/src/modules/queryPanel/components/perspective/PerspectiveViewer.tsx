@@ -14,7 +14,7 @@ import "@finos/perspective-viewer/dist/css/pro.css";
 import "@finos/perspective-viewer/dist/css/solarized-dark.css";
 import "@finos/perspective-viewer/dist/css/solarized.css";
 import "@finos/perspective-viewer/dist/css/vaporwave.css";
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
+import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
 import { setPerspectiveTheme } from "@modules/queryPanel/context/queryPanelSlice";

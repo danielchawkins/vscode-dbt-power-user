@@ -13,7 +13,7 @@ import { useEffect, useMemo, useState } from "react";
 import { QueryHistory } from "@modules/queryPanel/context/types";
 import Filters, { QueryFilters } from "../filters/Filters";
 import { ChevronRightIcon, NoHistoryIcon, OpenNewIcon } from "@assets/icons";
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
+import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import AutoCollapsingNotification from "@modules/AutoCollapsingNotification/AutoCollapsingNotification";
 
 const QueryPanelHistory = (): JSX.Element => {
@@ -23,7 +23,7 @@ const QueryPanelHistory = (): JSX.Element => {
   const { queryHistory } = useQueryPanelState();
 
   useEffect(() => {
-    void executeRequestInAsync("getQueryHistory", {});
+    void executeRequestInAsync("getQueryHistory");
   }, []);
 
   const onFiltersChange = (data: { tags?: string[]; searchQuery?: string }) => {
@@ -50,6 +50,9 @@ const QueryPanelHistory = (): JSX.Element => {
   };
 
   const handleViewResultSet = () => {
+    if (!activeHistory) {
+      return;
+    }
     executeRequestInAsync("viewResultSet", {
       queryHistory: activeHistory,
     });
@@ -87,7 +90,7 @@ const QueryPanelHistory = (): JSX.Element => {
               <h6>Execute your queries to view in history</h6>
               <p>
                 <Button
-                  onClick={() => executeRequestInAsync("runAdhocQuery", {})}
+                  onClick={() => executeRequestInAsync("runAdhocQuery")}
                 >
                   + New query
                 </Button>

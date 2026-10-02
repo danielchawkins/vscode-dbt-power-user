@@ -1,17 +1,9 @@
+import type { queryResults } from "@fusion-power-user/webview-contract";
 import { QueryPanelTitleTabState } from "../components/QueryPanelContents/types";
 
 export type TableData = Record<string, unknown>[];
 
-export interface QueryHistory {
-  rawSql: string;
-  compiledSql: string;
-  timestamp: number;
-  duration: number;
-  adapter: string;
-  projectName: string;
-  modelName: string;
-  data?: TableData;
-}
+export type QueryHistory = queryResults.QueryHistoryEntry;
 
 export enum QueryPanelViewType {
   DEFAULT,

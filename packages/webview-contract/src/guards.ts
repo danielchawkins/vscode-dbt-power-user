@@ -96,6 +96,17 @@ export const shape = <T>(fields: Fields<NoInfer<T>>): Check<T> =>
 /** The optional `syncRequestId` a panel request carries when it awaits a `response`. */
 export const syncRequestId = optional(isString);
 
+/** The commands whose fields declare `syncRequestId`, so the host answers them with a `response`. */
+export const requestCommandsOf = <M extends { command: string }>(
+  fields: CommandFields<M>,
+): Extract<M, { syncRequestId?: string }>["command"][] =>
+  Object.entries(fields)
+    .filter(([, f]) => hasOwn(f as object, "syncRequestId"))
+    .map(
+      ([command]) =>
+        command as Extract<M, { syncRequestId?: string }>["command"],
+    );
+
 /** A guard that dispatches on `command` and checks every field that command declares. */
 export const messageGuard = <M extends { command: string }>(
   fields: CommandFields<M>,

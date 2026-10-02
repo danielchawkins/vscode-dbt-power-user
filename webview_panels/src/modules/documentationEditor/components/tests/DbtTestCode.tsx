@@ -1,4 +1,4 @@
-import { executeRequestInSync } from "@modules/app/requestExecutor";
+import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { panelLogger } from "@modules/logger";
@@ -24,7 +24,7 @@ const DbtTestCode = ({ test }: { test: DBTModelTest }): JSX.Element | null => {
     }
     try {
       const result = (await executeRequestInSync("getTestCode", {
-        test,
+        test: { ...test },
         model: currentDocsData.name,
       })) as GetTestCodeResponse;
       setTestCode(result);

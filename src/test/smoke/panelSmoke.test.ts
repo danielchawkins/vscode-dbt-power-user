@@ -184,7 +184,7 @@ suite("Pinned-host VSIX smoke", function () {
           measured: grid,
         });
         assert.ok(
-          grid.text.includes("one") && grid.text.includes("two"),
+          perspectiveRendered(grid),
           `Perspective must render the result rows: ${JSON.stringify({
             ...grid,
             cspViolations: await readCspViolations(cdpPort, panel.entry),
@@ -322,32 +322,53 @@ const RENDER_RESULT = `(async () => {
   // The smallest valid module; the page's CSP alone decides whether it compiles.
   const wasmCompile = await WebAssembly.compile(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]))
     .then(() => "ok", (error) => String(error));
+  // The datagrid paints only rows that fit the viewport; the table holds every row.
+  let labels = [];
+  try {
+    const table = await viewer?.getTable();
+    const view = await table?.view({ columns: ["label"] });
+    labels = (await view?.to_columns())?.label ?? [];
+    await view?.delete();
+  } catch {}
   return {
     entry: document.body.dataset.entry,
     viewer: Boolean(viewer),
     text: viewer ? textOf(viewer).slice(0, 300) : "",
+    labels,
     wasmCompile,
   };
 })()`;
 
+type PerspectiveResult = {
+  viewer: boolean;
+  text: string;
+  labels: string[];
+  wasmCompile?: string;
+};
+
+/** True when the table holds both rows and the grid painted at least the first. */
+function perspectiveRendered(result: PerspectiveResult): boolean {
+  return (
+    result.labels.includes("one") &&
+    result.labels.includes("two") &&
+    result.text.includes("one")
+  );
+}
+
 async function renderPerspectiveResult(
   cdpPort: string,
-): Promise<{ viewer: boolean; text: string; wasmCompile?: string }> {
-  let last: { viewer: boolean; text: string; wasmCompile?: string } = {
-    viewer: false,
-    text: "",
-  };
+): Promise<PerspectiveResult> {
+  let last: PerspectiveResult = { viewer: false, text: "", labels: [] };
   for (let attempt = 0; attempt < 60; attempt += 1) {
-    const panel = await evaluatePanel<{
-      entry: string;
-      viewer: boolean;
-      text: string;
-      wasmCompile: string;
-    }>(cdpPort, "queryResults", RENDER_RESULT);
+    const panel = await evaluatePanel<PerspectiveResult & { entry: string }>(
+      cdpPort,
+      "queryResults",
+      RENDER_RESULT,
+    );
     if (panel) {
       const { entry: _entry, ...value } = panel.value;
       last = value;
-      if (last.text.includes("one") && last.text.includes("two")) {
+      if (perspectiveRendered(last)) {
         break;
       }
     }

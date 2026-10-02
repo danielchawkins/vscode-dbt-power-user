@@ -1,27 +1,22 @@
+import type {
+  Response,
+  WebviewReady,
+} from "@fusion-power-user/webview-contract";
 import { panelLogger } from "@modules/logger";
 import { UnknownAction } from "@reduxjs/toolkit";
 import { Dispatch, useCallback, useEffect } from "react";
 import { updateTheme } from "./appSlice";
-import {
-  executeRequestInAsync,
-  handleIncomingResponse,
-} from "./requestExecutor";
-import {
-  IncomingMessageProps,
-  IncomingSyncResponse,
-  Themes,
-} from "./types";
+import { handleIncomingResponse, panelRequests } from "./requestExecutor";
+import { Themes } from "./types";
+
+// Every panel's union includes `webview:ready`.
+const { executeRequestInAsync } = panelRequests<WebviewReady>();
 
 const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
   const onMesssage = useCallback(
-    (event: MessageEvent<IncomingMessageProps>) => {
-      const { command, args } = event.data;
-      switch (command) {
-        case "response":
-          handleIncomingResponse(args as unknown as IncomingSyncResponse);
-          break;
-        default:
-          break;
+    (event: MessageEvent<Response | { command?: undefined }>) => {
+      if (event.data.command === "response") {
+        handleIncomingResponse(event.data.args);
       }
     },
     [],
@@ -49,7 +44,7 @@ const useListeners = (dispatch: Dispatch<UnknownAction>): void => {
 
   useEffect(() => {
     window.addEventListener("message", onMesssage);
-    executeRequestInAsync("webview:ready", {});
+    executeRequestInAsync("webview:ready");
 
     const themeObserver = new MutationObserver((mutations) => {
       mutations.forEach((mu) => {

@@ -1,4 +1,4 @@
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
+import { executeRequestInAsync } from "@modules/documentationEditor/requests";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { Alert, Button, Stack } from "@uicore";
 
@@ -12,7 +12,7 @@ const DocumentationHelpContent = ({
   } = useDocumentationContext();
 
   const openProblemsTab = () => {
-    executeRequestInAsync("openProblemsTab", {});
+    executeRequestInAsync("openProblemsTab");
   };
   return (
     <Stack direction="column">

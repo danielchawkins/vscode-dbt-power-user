@@ -3,13 +3,13 @@ import { HINTS } from "@modules/queryPanel/constants";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Button, Stack } from "@uicore";
 import classes from "../../querypanel.module.scss";
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
+import { executeRequestInAsync } from "@modules/queryPanel/requests";
 
 const QueryPanelLoader = (): JSX.Element => {
   const { hintIndex } = useQueryPanelState();
   const hint = HINTS[hintIndex];
   const handleCancelQuery = () => {
-    executeRequestInAsync("cancelQuery", {});
+    executeRequestInAsync("cancelQuery");
   };
 
   return (

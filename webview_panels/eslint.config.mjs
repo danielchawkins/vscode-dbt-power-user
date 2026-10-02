@@ -20,6 +20,16 @@ const testFiles = ["src/**/*.test.{ts,tsx}", "src/test/**/*.{ts,tsx}"];
 const storybookConfigFiles = [".storybook/**/*.{ts,tsx}"];
 const storyFiles = ["src/**/*.stories.{ts,tsx}"];
 
+// Only the request executor posts to the host; every other file sends through its panel's requests module.
+const vscodeApiMessage = "Send through the panel's requests module.";
+const vscodeApiPaths = [{ name: "@vscodeApi", message: vscodeApiMessage }];
+const vscodeApiPatterns = [
+  {
+    regex: "^(\\.{1,2}/(.*/)?|@modules/)vscode(/index(\\.ts)?)?$",
+    message: vscodeApiMessage,
+  },
+];
+
 // Violations present when a rule was introduced live in eslint-suppressions.json; new ones fail `just lint`.
 // Fixing one requires `npm run lint:prune` so the baseline only ever shrinks.
 
@@ -114,6 +124,21 @@ export default defineConfig(
     },
   },
   {
+    // A panel sends only through its typed request functions, which accept that panel's `PanelMessage` union.
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/modules/app/requestExecutor.ts", ...testFiles],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.property.name='postMessage']:not([callee.object.name='window'])",
+          message: "Send through the panel's requests module.",
+        },
+      ],
+    },
+  },
+  {
     files: testFiles,
     extends: [
       js.configs.recommended,
@@ -164,7 +189,7 @@ export default defineConfig(
   ...storybook.configs["flat/recommended"],
   {
     files: ["src/modules/**"],
-    ignores: testFiles,
+    ignores: ["src/modules/app/requestExecutor.ts", ...testFiles],
     rules: {
       "no-restricted-imports": [
         "error",
@@ -174,9 +199,20 @@ export default defineConfig(
               name: "reactstrap",
               message: "Use `@uicore`",
             },
+            ...vscodeApiPaths,
           ],
-          patterns: [],
+          patterns: vscodeApiPatterns,
         },
+      ],
+    },
+  },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/modules/**", ...testFiles],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        { paths: vscodeApiPaths, patterns: vscodeApiPatterns },
       ],
     },
   },

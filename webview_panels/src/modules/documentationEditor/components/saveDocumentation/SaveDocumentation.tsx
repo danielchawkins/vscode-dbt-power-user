@@ -1,4 +1,4 @@
-import { executeRequestInSync } from "@modules/app/requestExecutor";
+import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import {
   Button,
@@ -35,6 +35,9 @@ const SaveDocumentation = (): JSX.Element | null => {
   const saveDocumentation = async (
     dialogType?: "New file" | "Existing file",
   ) => {
+    if (!currentDocsData) {
+      return;
+    }
     const result = (await executeRequestInSync("saveDocumentation", {
       ...currentDocsData,
       updatedTests: currentDocsTests,

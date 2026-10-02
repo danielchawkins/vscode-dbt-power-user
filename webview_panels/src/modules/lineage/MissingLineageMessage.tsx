@@ -1,4 +1,4 @@
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
+import { executeRequestInAsync } from "./requests";
 import { Alert, Button } from "@uicore";
 import { MissingLineageMessage } from "./types";
 
@@ -8,7 +8,7 @@ const MissingLineageMessageComponent = ({
   missingLineageMessage?: MissingLineageMessage;
 }): JSX.Element | null => {
   const openProblemsTab = () => {
-    return executeRequestInAsync("openProblemsTab", {});
+    return executeRequestInAsync("openProblemsTab");
   };
 
   if (!missingLineageMessage) {
