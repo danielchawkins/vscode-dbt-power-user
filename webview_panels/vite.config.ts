@@ -66,6 +66,10 @@ export const viteConfig = defineConfig({
       "@vscodeApi": path.resolve(import.meta.dirname, "./src/modules/vscode"),
     },
   },
+  // The dev server only pre-bundles linked workspace packages that are listed here.
+  optimizeDeps: {
+    include: ["@fusion-power-user/webview-contract"],
+  },
   css: {
     modules: {
       localsConvention: "dashes",

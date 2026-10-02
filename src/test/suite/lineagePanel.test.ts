@@ -34,7 +34,14 @@ describe("LineagePanel", () => {
     (panel as any).dbtTerminal = {
       info: vi.fn(),
       debug: vi.fn(),
+      warn: vi.fn(),
       error: vi.fn(),
+    };
+    const globalState = new Map<string, unknown>();
+    (panel as any).extensionContext = {
+      getFromGlobalState: (key: string) => globalState.get(key),
+      setToGlobalState: (key: string, value: unknown) =>
+        globalState.set(key, value),
     };
   });
 
@@ -232,6 +239,92 @@ describe("LineagePanel", () => {
     ]);
   });
 
+  it("persists the component's edge settings and returns them", async () => {
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: () => 3,
+      update: vi.fn(),
+    });
+
+    await (panel as any).handleCommand({
+      command: "persistLineageSettings",
+      args: { params: { showSelectEdges: false, showNonSelectEdges: true } },
+      syncRequestId: "p",
+    });
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      args: {},
+      syncRequestId: "g",
+    });
+
+    expect(mockPostMessage).toHaveBeenLastCalledWith({
+      command: "response",
+      args: {
+        id: "g",
+        syncRequestId: "g",
+        body: {
+          showSelectEdges: false,
+          showNonSelectEdges: true,
+          defaultExpansion: 3,
+        },
+        status: true,
+      },
+    });
+  });
+
+  it("persists only known settings and clamps the confidence threshold", async () => {
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: () => 3,
+      update: vi.fn(),
+    });
+
+    for (const [syncRequestId, threshold] of [
+      ["hi", 7],
+      ["lo", -2],
+    ] as const) {
+      await (panel as any).handleCommand({
+        command: "persistLineageSettings",
+        args: {
+          params: {
+            showRefs: false,
+            inferenceConfidenceThreshold: threshold,
+            sqlText: "select secret",
+          },
+        },
+        syncRequestId,
+      });
+      await (panel as any).handleCommand({
+        command: "getLineageSettings",
+        syncRequestId: "g",
+      });
+      expect(mockPostMessage.mock.lastCall![0].args.body).toEqual({
+        showSelectEdges: true,
+        showNonSelectEdges: false,
+        showRefs: false,
+        inferenceConfidenceThreshold: threshold > 1 ? 1 : 0,
+        defaultExpansion: 3,
+      });
+    }
+  });
+
+  it("answers a malformed request with a failed response the component matches by id", async () => {
+    await (panel as any).handleCommand({
+      command: "childTables",
+      args: { params: { table: 1 } },
+      syncRequestId: "bad",
+    });
+
+    expect(mockPostMessage).toHaveBeenCalledWith({
+      command: "response",
+      args: {
+        id: "bad",
+        syncRequestId: "bad",
+        body: undefined,
+        status: false,
+        error: "Malformed request",
+      },
+    });
+  });
+
   it("answers childTables with children and parentTables with parents", async () => {
     const getChildTables = vi
       .fn<(...args: any[]) => any>()
@@ -332,7 +425,9 @@ describe("LineagePanel", () => {
 
     await (panel as any).handleCommand({
       command: "getConnectedColumns",
-      args: { params: { targets: [["model.p.a", "id"]] } },
+      args: {
+        params: { targets: [["model.p.a", "id"]], upstreamExpansion: true },
+      },
       syncRequestId: "cll-2",
     });
 
@@ -355,7 +450,9 @@ describe("LineagePanel", () => {
 
     await (panel as any).handleCommand({
       command: "getConnectedColumns",
-      args: { params: { targets: [["model.p.x", "y"]] } },
+      args: {
+        params: { targets: [["model.p.x", "y"]], upstreamExpansion: false },
+      },
       syncRequestId: "cll-3",
     });
 

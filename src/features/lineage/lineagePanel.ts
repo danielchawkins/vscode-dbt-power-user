@@ -1,9 +1,11 @@
+import { lineage, PanelNotice } from "@fusion-power-user/webview-contract";
 import * as path from "path";
 import {
   commands,
   ProgressLocation,
   TextDocument,
   TextEditor,
+  Uri,
   Webview,
   WebviewViewProvider,
   window,
@@ -20,7 +22,6 @@ import {
   RESOURCE_TYPE_SOURCE,
   SourceMetaMap,
   SourceTable,
-  Table,
 } from "../../dbt_integration";
 import { ExtensionContextStore } from "../../extensionContext";
 import type { Manifest } from "../../projects/manifestTypes";
@@ -28,6 +29,7 @@ import { Project } from "../../projects/project";
 import { QueryManifestService } from "../../projects/queryManifestService";
 import { SharedStateService } from "../../projects/sharedStateService";
 import { readSetting, writeSetting } from "../../settings";
+import { dispatchMessage, Handlers } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { registerLineageColumnsCommand } from "./connectedColumnsCommand";
 import {
@@ -38,13 +40,60 @@ import {
   TargetFailure,
 } from "./dbtLineageService";
 
+type HostMessage = lineage.HostMessage;
+type PanelMessage = lineage.PanelMessage;
+
+/** The global-state key of the lineage view settings other than `defaultExpansion`, which is a user setting. */
+const LINEAGE_SETTINGS_KEY = "lineage.viewSettings";
+
+/** The view id contributed in `package.json`. */
+export const LINEAGE_VIEW_TYPE = "fusionPowerUser.Lineage";
+
+type StoredLineageSettings = Omit<
+  Partial<lineage.LineageSettings>,
+  "defaultExpansion"
+>;
+
+/** Every key `storedLineageSettings` keeps; the record type makes a new `LineageSettings` key a compile error here. */
+const STORED_KEYS: Record<keyof StoredLineageSettings, true> = {
+  showSelectEdges: true,
+  showNonSelectEdges: true,
+  showRefs: true,
+  enabledRefSources: true,
+  inferenceConfidenceThreshold: true,
+  includeSourcesInInference: true,
+};
+
+/** The known view settings in `params`, with the confidence threshold clamped to 0..1; other keys are dropped. */
+export function storedLineageSettings(
+  params: Partial<lineage.LineageSettings>,
+): StoredLineageSettings {
+  const stored: Record<string, unknown> = {};
+  for (const key of Object.keys(
+    STORED_KEYS,
+  ) as (keyof StoredLineageSettings)[]) {
+    if (params[key] !== undefined) {
+      stored[key] = params[key];
+    }
+  }
+  const threshold = params.inferenceConfidenceThreshold;
+  if (threshold !== undefined) {
+    if (Number.isFinite(threshold)) {
+      stored.inferenceConfidenceThreshold = Math.min(1, Math.max(0, threshold));
+    } else {
+      delete stored.inferenceConfidenceThreshold;
+    }
+  }
+  return stored as StoredLineageSettings;
+}
+
 export interface LineagePanelView extends WebviewViewProvider {
   init(): void;
   /** Called with the project whose manifest changed, or `undefined` on project removal and panel init. */
   manifestChanged(project: Project | undefined): void;
   changedActiveTextEditor(event: TextEditor | undefined): void;
   changedTextEditorSelection(editor: TextEditor): void;
-  handleCommand(message: { command: string; args: any }): Promise<void> | void;
+  handleCommand(message: unknown): Promise<void>;
 }
 
 // A source table resolved to the dbt unique_id key the lineage should root at
@@ -199,10 +248,14 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
     this.seenPublication = root === undefined ? undefined : { root, epoch };
     if (saved && this._panel) {
       // The webview redraws drawn column lineage, then asks for the starting node through `init`.
-      this._panel.webview.postMessage({ command: "projectSaved" });
+      this.post({ command: "projectSaved" });
       return;
     }
     this.renderStartingNode();
+  }
+
+  private post(message: HostMessage): void {
+    void this._panel?.webview.postMessage(message);
   }
 
   protected onWebviewReady() {
@@ -219,135 +272,124 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
     if (!this._panel) {
       return;
     }
-    this._panel.webview.postMessage({
+    this.post({
       command: "render",
       args: this.getStartingNode(resolvedSource),
     });
   }
 
-  async handleCommand(message: {
-    command: string;
-    args: any;
-    syncRequestId?: string;
-  }): Promise<void> {
-    const { command, args = {}, syncRequestId } = message;
-    const { id = syncRequestId, params } = args;
+  /** Answers a component request; the component matches replies by `id`. */
+  private respond(syncRequestId: string | undefined, body: unknown): void {
+    this.post({
+      command: "response",
+      args: { id: syncRequestId, syncRequestId, body, status: true },
+    });
+  }
 
-    if (command === "openProblemsTab") {
-      commands.executeCommand("workbench.action.problems.focus");
-      return;
+  private getLineageSettings(): lineage.LineageSettings {
+    const stored =
+      this.extensionContext.getFromGlobalState<
+        Partial<lineage.LineageSettings>
+      >(LINEAGE_SETTINGS_KEY) ?? {};
+    return {
+      showSelectEdges: true,
+      showNonSelectEdges: false,
+      ...stored,
+      defaultExpansion: Math.min(readSetting("lineage.defaultExpansion"), 5),
+    };
+  }
+
+  private async persistLineageSettings({
+    defaultExpansion,
+    ...params
+  }: Partial<lineage.LineageSettings>): Promise<void> {
+    if (defaultExpansion !== undefined) {
+      await writeSetting("lineage.defaultExpansion", defaultExpansion);
     }
-    if (command === "childTables") {
-      const body = this.dbtLineageService.getChildTables(params);
-      this._panel?.webview.postMessage({
-        command: "response",
-        args: { id, syncRequestId, body, status: true },
+    const view = storedLineageSettings(params);
+    if (Object.keys(view).length > 0) {
+      const stored =
+        this.extensionContext.getFromGlobalState<StoredLineageSettings>(
+          LINEAGE_SETTINGS_KEY,
+        ) ?? {};
+      this.extensionContext.setToGlobalState(LINEAGE_SETTINGS_KEY, {
+        ...stored,
+        ...view,
       });
-      return;
     }
+  }
 
-    if (command === "parentTables") {
-      const body = this.dbtLineageService.getParentTables(params);
-      this._panel?.webview.postMessage({
-        command: "response",
-        args: { id, syncRequestId, body, status: true },
-      });
-      return;
-    }
-
-    if (command === "getColumns") {
-      const body = await this.getColumns(params);
-      this._panel?.webview.postMessage({
-        command: "response",
-        args: { id, syncRequestId, body, status: true },
-      });
-      return;
-    }
-
-    if (command === "getExposureDetails") {
-      const body = await this.getExposureDetails(params);
-      this._panel?.webview.postMessage({
-        command: "response",
-        args: { id, syncRequestId, body, status: true },
-      });
-      return;
-    }
-
-    if (command === "getRelationships") {
-      const body = this.getRelationships(params);
-      this._panel?.webview.postMessage({
-        command: "response",
-        args: { id, syncRequestId, body, status: true },
-      });
-      return;
-    }
-
-    if (command === "getFunctionDetails") {
-      const body = await this.getFunctionDetails(params);
-      this._panel?.webview.postMessage({
-        command: "response",
-        args: { id, syncRequestId, body, status: true },
-      });
-      return;
-    }
-
-    if (command === "getConnectedColumns") {
-      const result = await this.dbtLineageService.getConnectedColumns(params);
-      const body = connectedColumnsBody(result, params.targets ?? []);
-      this._panel?.webview.postMessage({
-        command: "response",
-        args: { id, syncRequestId, body, status: true },
-      });
-      return;
-    }
-
-    if (command === "showInfoNotification") {
-      window.showInformationMessage(params.message);
-      return;
-    }
-
-    if (command === "getLineageSettings") {
-      this._panel?.webview.postMessage({
-        command: "response",
-        args: {
-          id,
+  /** One handler per lineage panel command. */
+  private handlers(): Handlers<PanelMessage> {
+    return {
+      ...this.commonHandlers(),
+      init: () => this.init(),
+      openProblemsTab: () =>
+        commands.executeCommand("workbench.action.problems.focus"),
+      openFile: ({ args }) =>
+        commands.executeCommand("vscode.open", Uri.file(args.params.url), {
+          preview: false,
+          preserveFocus: true,
+        }),
+      childTables: ({ args, syncRequestId }) =>
+        this.respond(
           syncRequestId,
-          status: true,
-          body: {
-            showSelectEdges: true,
-            showNonSelectEdges: false,
-            defaultExpansion: Math.min(
-              readSetting("lineage.defaultExpansion"),
-              5,
-            ),
-          },
-        },
-      });
-      return;
-    }
-
-    if (command === "persistLineageSettings") {
-      if (params.defaultExpansion !== undefined) {
-        await writeSetting("lineage.defaultExpansion", params.defaultExpansion);
-      }
-      this._panel?.webview.postMessage({
-        command: "response",
-        args: {
-          id,
+          this.dbtLineageService.getChildTables(args.params),
+        ),
+      parentTables: ({ args, syncRequestId }) =>
+        this.respond(
           syncRequestId,
-          status: true,
-          body: { ok: true },
-        },
-      });
-      return;
-    }
+          this.dbtLineageService.getParentTables(args.params),
+        ),
+      getColumns: async ({ args, syncRequestId }) =>
+        this.respond(
+          syncRequestId,
+          await this.getColumns({
+            table: args.params.table,
+            refresh: args.params.refresh ?? false,
+          }),
+        ),
+      getExposureDetails: async ({ args, syncRequestId }) =>
+        this.respond(syncRequestId, await this.getExposureDetails(args.params)),
+      getRelationships: ({ args, syncRequestId }) =>
+        this.respond(syncRequestId, this.getRelationships(args?.params)),
+      getFunctionDetails: async ({ args, syncRequestId }) =>
+        this.respond(syncRequestId, await this.getFunctionDetails(args.params)),
+      getConnectedColumns: async ({ args, syncRequestId }) => {
+        const { targets, upstreamExpansion } = args.params;
+        const result = await this.dbtLineageService.getConnectedColumns({
+          targets,
+          upstreamExpansion,
+        });
+        this.respond(syncRequestId, connectedColumnsBody(result, targets));
+      },
+      showInfoNotification: ({ args }) =>
+        window.showInformationMessage(args.params.message),
+      getLineageSettings: ({ syncRequestId }) =>
+        this.respond(syncRequestId, this.getLineageSettings()),
+      persistLineageSettings: async ({ args, syncRequestId }) => {
+        await this.persistLineageSettings(args.params);
+        this.respond(syncRequestId, { ok: true });
+      },
+    };
+  }
 
-    this.terminal.debug(
-      "lineagePanel:handleCommand",
-      "Unsupported command",
+  async handleCommand(message: unknown): Promise<void> {
+    await dispatchMessage(
+      LINEAGE_VIEW_TYPE,
       message,
+      lineage.isPanelMessage,
+      this.handlers(),
+      {
+        log: this.dbtTerminal,
+        // The lineage component matches replies by `id`.
+        reply: ({ args }) =>
+          this.post({
+            command: "response",
+            args: { ...args, id: args.syncRequestId },
+          }),
+      },
     );
-    super.handleCommand(message);
   }
 
   private async addSourceColumnsFromDB(
@@ -613,7 +655,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
     return path.basename(fileName);
   }
 
-  private getMissingLineageMessage() {
+  private getMissingLineageMessage(): PanelNotice {
     const message =
       "A valid dbt file (model, seed etc.) needs to be open and active in the editor area above to view lineage";
     try {
@@ -632,13 +674,9 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
     return { message, type: "warning" };
   }
 
-  private getStartingNode(resolvedSource?: ResolvedSourceTable):
-    | {
-        node?: Table;
-        aiEnabled: boolean;
-        missingLineageMessage?: { message: string; type: string };
-      }
-    | undefined {
+  private getStartingNode(
+    resolvedSource?: ResolvedSourceTable,
+  ): lineage.RenderArgs {
     const aiEnabled = true;
     const event = this.queryManifestService.getEventByCurrentProject();
     if (!event?.event) {

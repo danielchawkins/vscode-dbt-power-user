@@ -1,7 +1,7 @@
+import type { WebviewReady } from "@fusion-power-user/webview-contract";
 import * as path from "path";
 import {
   CancellationToken,
-  commands,
   Disposable,
   Uri,
   Webview,
@@ -10,8 +10,6 @@ import {
   WebviewView,
   WebviewViewProvider,
   WebviewViewResolveContext,
-  window,
-  workspace,
 } from "vscode";
 import {
   completeWebviewReady,
@@ -19,23 +17,15 @@ import {
 } from "../benchmark/runtimeTimings";
 import { DBTTerminal } from "../dbt_integration";
 import { ExtensionContextStore } from "../extensionContext";
-import { UserInputError } from "../local/errors";
 import { QueryManifestService } from "../projects/queryManifestService";
 import {
   SharedStateEventEmitterProps,
   SharedStateService,
 } from "../projects/sharedStateService";
-export interface HandleCommandProps extends Record<string, unknown> {
-  command: string;
-  syncRequestId?: string;
-}
+import { Handlers } from "./messageRouter";
 
-export interface SendMessageProps extends Record<string, unknown> {
-  command: string;
-  syncRequestId?: string;
-  error?: string;
-  data?: unknown;
-}
+/** The commands every panel on `PanelHost` sends. */
+export type CommonPanelMessage = WebviewReady;
 
 /**
  * This class is responsible for rendering the webview
@@ -72,65 +62,6 @@ export class PanelHost implements WebviewViewProvider {
     return (<WebviewView>panel).show !== undefined;
   }
 
-  protected sendResponseToWebview({
-    command,
-    data,
-    error,
-    syncRequestId,
-    ...rest
-  }: SendMessageProps) {
-    this._panel?.webview?.postMessage({
-      command,
-      args: {
-        syncRequestId,
-        body: data,
-        status: !error,
-        error,
-      },
-      ...rest,
-    });
-  }
-
-  /**
-   * common method to trigger the command and handle errors and send response to webview
-   * @param syncRequestId
-   * @param callback
-   * @param command
-   */
-  protected async handleSyncRequestFromWebview(
-    syncRequestId: string | undefined,
-    callback: () => any,
-    command: string,
-    showErrorNotification?: boolean,
-  ) {
-    try {
-      const response = await callback();
-
-      this.sendResponseToWebview({
-        command: "response",
-        syncRequestId,
-        status: true,
-        data: response,
-      });
-    } catch (error) {
-      const message = (error as Error).message;
-      if (error instanceof UserInputError) {
-        this.dbtTerminal.debug(command, message, error);
-      } else {
-        this.dbtTerminal.error(command, message, error);
-      }
-      if (showErrorNotification) {
-        window.showErrorMessage(message);
-      }
-      this.sendResponseToWebview({
-        command: "response",
-        syncRequestId,
-        error: message,
-        status: false,
-      });
-    }
-  }
-
   protected async onEvent({ command, payload }: SharedStateEventEmitterProps) {
     switch (command) {
       default:
@@ -138,10 +69,9 @@ export class PanelHost implements WebviewViewProvider {
     }
   }
 
+  /** Renders the panel's HTML; each panel subscribes to the webview's messages with its own guard and handlers. */
   protected renderWebviewView(webview: Webview) {
     this._webview = webview;
-    this._panel!.webview.onDidReceiveMessage(this.handleCommand, this, []);
-
     webview.html = this.getHtml(webview, this.extensionContext.extensionUri);
   }
 
@@ -154,80 +84,11 @@ export class PanelHost implements WebviewViewProvider {
     recordWebviewResolveStart(this.viewPath);
   }
 
-  private async handleWarningMessage(
-    params: {
-      infoMessage: string;
-      items: any[];
-    },
-    syncRequestId?: string,
-  ) {
-    const { infoMessage, items } = params;
-    const result = await window.showWarningMessage(infoMessage, ...items);
-    if (syncRequestId) {
-      this.sendResponseToWebview({
-        command: "response",
-        data: result,
-        syncRequestId,
-      });
-    }
-  }
-
-  protected async handleCommand(message: HandleCommandProps): Promise<void> {
-    const { command, syncRequestId, ...params } = message;
-
-    try {
-      switch (command) {
-        case "openProblemsTab":
-          commands.executeCommand("workbench.action.problems.focus");
-
-          break;
-        case "openFile":
-          workspace.openTextDocument(params.path as string).then((doc) => {
-            window.showTextDocument(doc);
-          });
-          break;
-        case "webview:ready":
-          this.onWebviewReady();
-          break;
-        case "showInformationMessage":
-          const { infoMessage, items } = params as {
-            infoMessage: string;
-            items: any[];
-          };
-          const result = await window.showInformationMessage(
-            infoMessage,
-            ...items,
-          );
-          if (syncRequestId) {
-            this.sendResponseToWebview({
-              command: "response",
-              data: result,
-              syncRequestId,
-            });
-          }
-          break;
-        case "showWarningMessage":
-          this.handleWarningMessage(
-            params as Parameters<typeof this.handleWarningMessage>["0"],
-            syncRequestId,
-          );
-          break;
-        case "queryResultTab:render":
-          this.emitterService.fire({
-            command: "queryResultTab:render",
-            payload: params,
-          });
-          break;
-        default:
-          break;
-      }
-    } catch (err) {
-      this.dbtTerminal.error(
-        "panelHost:handleCommand",
-        "error while handling command",
-        err,
-      );
-    }
+  /** Handlers for the commands every panel on `PanelHost` sends; each panel spreads them into its own map. */
+  protected commonHandlers(): Handlers<CommonPanelMessage> {
+    return {
+      "webview:ready": () => this.onWebviewReady(),
+    };
   }
 
   protected async checkIfWebviewReady() {

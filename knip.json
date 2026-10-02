@@ -13,6 +13,10 @@
       "ignore": ["src/test/fixtures/**", "src/test/mock/**"],
       "ignoreDependencies": ["@types/vscode", "ts-loader"],
       "ignoreBinaries": ["sample", "dbt"]
+    },
+    "packages/webview-contract": {
+      "entry": ["src/**/*.test.ts"],
+      "project": ["src/**/*.ts"]
     }
   },
   "ignoreWorkspaces": ["webview_panels"]

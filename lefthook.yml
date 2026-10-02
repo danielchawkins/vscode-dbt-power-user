@@ -2,7 +2,7 @@ pre-commit:
   parallel: true
   commands:
     typescript:
-      glob: "src/**/*.{ts,tsx}"
+      glob: "{src,packages}/**/*.{ts,tsx}"
       run: mise exec -- just lint-code
     webview:
       glob: "webview_panels/src/**/*.{ts,tsx}"

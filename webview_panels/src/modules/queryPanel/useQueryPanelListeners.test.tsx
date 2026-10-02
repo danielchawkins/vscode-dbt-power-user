@@ -3,6 +3,7 @@ import { useReducer } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@modules/app/requestExecutor", () => ({
+  executeRequestInAsync: vi.fn(),
   executeRequestInSync: vi.fn().mockResolvedValue(undefined),
 }));
 

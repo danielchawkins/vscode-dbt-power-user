@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "target": "ES2020",
+    "lib": ["ES2020"],
+    "types": [],
+    "strict": true,
+    "skipLibCheck": true,
+    "rootDir": "src",
+    "outDir": "dist",
+    "tsBuildInfoFile": "dist/tsconfig.tsbuildinfo"
+  },
+  "include": ["src"],
+  "exclude": ["src/**/*.test.ts"]
+}

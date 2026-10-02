@@ -1,3 +1,4 @@
+import type { PanelNotice } from "@fusion-power-user/webview-contract";
 import { promises as fs } from "fs";
 import * as path from "path";
 import { Uri, window } from "vscode";
@@ -11,7 +12,7 @@ import { DBTDocumentation, Source } from "./docGenTypes";
 
 interface DBTDocumentationMessage {
   documentation: DBTDocumentation | undefined;
-  message?: { message: string; type: string };
+  message?: PanelNotice;
 }
 
 export interface DocumentationSchemaColumn {
@@ -83,7 +84,7 @@ export class DocGenService {
   private getDocumentationValidationMessage(
     filePath?: string,
     context?: "project" | "node" | "resource_type" | "model_path",
-  ) {
+  ): PanelNotice {
     if (!filePath?.endsWith(".sql")) {
       return {
         message:
