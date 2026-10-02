@@ -6,7 +6,6 @@ import {
   TextDocument,
   TextEditor,
   Uri,
-  Webview,
   WebviewViewProvider,
   window,
 } from "vscode";
@@ -881,12 +880,5 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
       }
     }
     return declLines;
-  }
-
-  protected renderWebviewView(webview: Webview) {
-    this._panel!.webview.html = super.getHtml(
-      webview,
-      this.extensionContext.extensionUri,
-    );
   }
 }

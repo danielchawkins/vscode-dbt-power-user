@@ -84,11 +84,7 @@ export const CloseIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
 );
 
 export const LoadingSpinner = (): JSX.Element => (
-  <img
-    // @ts-expect-error added in altimateWebViewProvider
-    src={(window.spinnerUrl as string) ?? LoadingSpinnerUrl}
-    alt="Altimate loader"
-  />
+  <img src={LoadingSpinnerUrl} alt="Altimate loader" />
 );
 
 export const PlayCircleIcon = (

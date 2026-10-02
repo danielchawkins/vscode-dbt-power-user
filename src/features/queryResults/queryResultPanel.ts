@@ -4,8 +4,6 @@ import {
   commands,
   Range,
   ViewColumn,
-  Webview,
-  WebviewOptions,
   WebviewView,
   WebviewViewResolveContext,
   window,
@@ -34,6 +32,7 @@ import {
   MessageOf,
 } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
+import { panelWebviewOptions } from "../../webview/panelHtml";
 
 type HostMessage = queryResults.HostMessage;
 type PanelMessage = queryResults.PanelMessage;
@@ -107,7 +106,10 @@ export class QueryResultPanel extends PanelHost {
       {
         viewColumn: ViewColumn.Active,
       },
-      { enableScripts: true, retainContextWhenHidden: true },
+      {
+        ...panelWebviewOptions(this.extensionContext.extensionUri),
+        retainContextWhenHidden: true,
+      },
     );
     this._panel = webviewPanel;
     this._webview = webviewPanel.webview;
@@ -170,7 +172,9 @@ export class QueryResultPanel extends PanelHost {
     if (this.isWebviewView(this._panel)) {
       this._panel.description = "Preview dbt SQL Results";
     }
-    this._panel.webview.options = <WebviewOptions>{ enableScripts: true };
+    this._panel.webview.options = panelWebviewOptions(
+      this.extensionContext.extensionUri,
+    );
   }
 
   private async getProject(projectName?: string) {
@@ -356,14 +360,6 @@ export class QueryResultPanel extends PanelHost {
       query = activeEditor.document.getText(selectionRange);
     }
     await project.executeSQLWithLimitOnQueryPanel(query, modelName, limit);
-  }
-
-  /** Renders webview content */
-  protected renderWebviewView(webview: Webview) {
-    this._panel!.webview.html = super.getHtml(
-      webview,
-      this.extensionContext.extensionUri,
-    );
   }
 
   /** Sends query result data to webview */

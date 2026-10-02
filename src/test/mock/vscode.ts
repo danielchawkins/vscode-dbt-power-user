@@ -29,6 +29,9 @@ export const Uri = {
     return uri;
   }),
   parse: vi.fn(),
+  joinPath: vi.fn((base: { path: string }, ...segments: string[]) =>
+    createUri([base.path, ...segments].join("/")),
+  ),
 };
 
 export class Position {

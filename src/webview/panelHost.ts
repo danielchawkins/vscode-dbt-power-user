@@ -1,11 +1,8 @@
 import type { WebviewReady } from "@fusion-power-user/webview-contract";
-import * as path from "path";
 import {
   CancellationToken,
   Disposable,
-  Uri,
   Webview,
-  WebviewOptions,
   WebviewPanel,
   WebviewView,
   WebviewViewProvider,
@@ -23,6 +20,12 @@ import {
   SharedStateService,
 } from "../projects/sharedStateService";
 import { Handlers } from "./messageRouter";
+import {
+  PanelCsp,
+  panelHtml,
+  panelWebviewOptions,
+  SHARED_BUNDLE_CSP,
+} from "./panelHtml";
 
 /** The commands every panel on `PanelHost` sends. */
 export type CommonPanelMessage = WebviewReady;
@@ -35,6 +38,8 @@ export class PanelHost implements WebviewViewProvider {
   public viewType = "fusionPowerUser.Default";
   protected viewPath = "/"; // webview route path from AppConstants.tsx
   protected panelDescription = "Webview panel";
+  /** What the panel's page needs beyond the shared policy in `contentSecurityPolicy`. */
+  protected csp: PanelCsp = SHARED_BUNDLE_CSP;
 
   protected _panel: WebviewView | WebviewPanel | undefined = undefined;
   protected _webview: Webview | undefined = undefined;
@@ -72,7 +77,10 @@ export class PanelHost implements WebviewViewProvider {
   /** Renders the panel's HTML; each panel subscribes to the webview's messages with its own guard and handlers. */
   protected renderWebviewView(webview: Webview) {
     this._webview = webview;
-    webview.html = this.getHtml(webview, this.extensionContext.extensionUri);
+    webview.html = panelHtml(webview, this.extensionContext.extensionUri, {
+      viewPath: this.viewPath,
+      csp: this.csp,
+    });
   }
 
   protected onWebviewReady() {
@@ -117,104 +125,9 @@ export class PanelHost implements WebviewViewProvider {
     if (this._panel && "description" in this._panel) {
       this._panel.description = this.panelDescription;
     }
-    this._panel!.webview.options = <WebviewOptions>{
-      enableScripts: true,
-      localResourceRoots: [
-        Uri.file(
-          path.join(
-            this.extensionContext.extensionUri.fsPath,
-            "webview_panels",
-            "dist",
-            "assets",
-          ),
-        ),
-      ],
-    };
-  }
-
-  protected getHtml(webview: Webview, extensionUri: Uri) {
-    const indexJs = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "main.js",
-        ),
-      ),
+    this._panel!.webview.options = panelWebviewOptions(
+      this.extensionContext.extensionUri,
     );
-    const indexCss = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "main.css",
-        ),
-      ),
-    );
-    const SpinnerUrl = webview.asWebviewUri(
-      Uri.file(
-        path.join(
-          extensionUri.fsPath,
-          "webview_panels",
-          "dist",
-          "assets",
-          "spinner.gif",
-        ),
-      ),
-    );
-    const codiconsUri = webview.asWebviewUri(
-      Uri.joinPath(
-        extensionUri,
-        "webview_panels",
-        "dist",
-        "assets",
-        "codicons",
-        "codicon.css",
-      ),
-    );
-
-    const nonce = getNonce();
-    return `
-        <!DOCTYPE html>
-          <html lang="en">
-          <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <!--
-              Use a content security policy to only allow loading images from https or from our extension directory,
-              and only allow scripts that have a specific nonce.
-              Added unsafe-inline for css due to csp issue: https://github.com/JedWatson/react-select/issues/4631
-
-              font-src allows data: so panels can inline webfonts as base64.
-              Emitted font files don't reliably resolve through the
-              vscode-resource protocol, and the CDN is unreachable from a
-              webview, so a data URI is the only path that works offline.
-
-              connect-src lets the query panel fetch Perspective's .wasm assets.
-              -->
-            <meta http-equiv="Content-Security-Policy" content="default-src 'none'; worker-src blob:; connect-src ${webview.cspSource}; font-src ${webview.cspSource} data:; style-src 'unsafe-inline' ${webview.cspSource}; img-src ${webview.cspSource} https: data:; script-src 'unsafe-eval' 'nonce-${nonce}' https://*.vscode-resource.vscode-cdn.net">
-            <title>VSCode DBT Power user extension</title>
-            <link rel="stylesheet" type="text/css" href="${indexCss}">
-            <link rel="stylesheet" type="text/css" href="${codiconsUri}">
-          </head>
-      
-          <body class="${this.viewPath.replace(/\//g, "")}">
-            <div id="root"></div>
-            <div id="sidebar"></div>
-            <div id="modal"></div>
-            <script nonce="${nonce}" >
-              window.viewPath = "${this.viewPath}";
-              var spinnerUrl = "${SpinnerUrl}"
-            </script>
-            
-            <script nonce="${nonce}" type="module" src="${indexJs}"></script>
-          </body>
-        </html>
-      `;
   }
 
   dispose() {
@@ -225,14 +138,4 @@ export class PanelHost implements WebviewViewProvider {
       }
     }
   }
-}
-
-function getNonce() {
-  let text = "";
-  const possible =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
 }

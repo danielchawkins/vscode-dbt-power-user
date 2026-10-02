@@ -203,6 +203,101 @@ export async function waitForWebviewPaint(
   );
 }
 
+/**
+ * Evaluates `expression` in every webview frame and returns the first value that names `viewPath` as its
+ * `viewPath`, so the expression must return `{ viewPath: globalThis.viewPath, ... }` or a value without it.
+ */
+export async function evaluatePanel<T extends { viewPath: string }>(
+  port: string,
+  viewPath: string,
+  expression: string,
+): Promise<{ value: T; target: string } | undefined> {
+  for (const frame of await panelFrames(port)) {
+    let values: unknown[];
+    try {
+      values = await evaluateContexts(frame, expression);
+    } catch {
+      continue;
+    }
+    const value = values.find(
+      (candidate): candidate is T =>
+        typeof candidate === "object" &&
+        candidate !== null &&
+        (candidate as { viewPath?: unknown }).viewPath === viewPath,
+    );
+    if (value) {
+      return { value, target: frame };
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Messages the frame at `viewPath` logged about its Content Security Policy, including a blocked WebAssembly
+ * compile, which reaches the console as a `CompileError` naming `'unsafe-eval'`.
+ */
+export async function readCspViolations(
+  port: string,
+  viewPath: string,
+): Promise<string[]> {
+  const panel = await evaluatePanel(
+    port,
+    viewPath,
+    "({ viewPath: globalThis.viewPath })",
+  );
+  if (!panel) {
+    throw new Error(`No webview frame shows ${viewPath}`);
+  }
+  const entries = await logEntries(panel.target);
+  return entries.filter((text) =>
+    /Content Security Policy|unsafe-eval/i.test(text),
+  );
+}
+
+async function panelFrames(port: string): Promise<string[]> {
+  return (await listTargets(port))
+    .filter((target) => target.type === "iframe" && target.webSocketDebuggerUrl)
+    .map((target) => target.webSocketDebuggerUrl!);
+}
+
+/** Every log and console entry the target has buffered; both `enable` calls replay them before they answer. */
+function logEntries(webSocketUrl: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(webSocketUrl);
+    const texts: string[] = [];
+    const timeout = setTimeout(() => {
+      socket.close();
+      reject(new Error(`CDP Log.enable timed out: ${webSocketUrl}`));
+    }, 5_000);
+    socket.addEventListener("open", () => {
+      socket.send(JSON.stringify({ id: 1, method: "Log.enable" }));
+      socket.send(JSON.stringify({ id: 2, method: "Console.enable" }));
+    });
+    socket.addEventListener("message", (event) => {
+      const message = JSON.parse(String(event.data));
+      if (message.method === "Log.entryAdded") {
+        texts.push(String(message.params.entry.text));
+        return;
+      }
+      if (message.method === "Console.messageAdded") {
+        texts.push(String(message.params.message.text));
+        return;
+      }
+      if (message.id === 2) {
+        clearTimeout(timeout);
+        setTimeout(() => {
+          socket.close();
+          resolve(texts);
+        }, 300);
+      }
+    });
+    socket.addEventListener("error", () => {
+      clearTimeout(timeout);
+      reject(new Error(`CDP socket failed: ${webSocketUrl}`));
+    });
+  });
+}
+
 async function findWorkbenchPageTarget(
   port: string,
   host: string,

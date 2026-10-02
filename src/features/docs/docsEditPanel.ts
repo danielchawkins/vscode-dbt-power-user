@@ -11,8 +11,6 @@ import {
   ProgressLocation,
   TextEditor,
   Uri,
-  Webview,
-  WebviewOptions,
   WebviewView,
   WebviewViewProvider,
   WebviewViewResolveContext,
@@ -49,6 +47,11 @@ import {
   Handlers,
   MessageOf,
 } from "../../webview/messageRouter";
+import {
+  panelHtml,
+  panelWebviewOptions,
+  SHARED_BUNDLE_CSP,
+} from "../../webview/panelHtml";
 import { DbtTestService } from "./dbtTestService";
 import {
   DocGenService,
@@ -194,23 +197,18 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
 
   private renderWebviewView(context: WebviewViewResolveContext) {
     const webview = this._panel!.webview!;
-    webview.html = getHtml(webview, this.extensionContext.extensionUri);
+    webview.html = panelHtml(webview, this.extensionContext.extensionUri, {
+      viewPath: this.viewPath,
+      csp: SHARED_BUNDLE_CSP,
+    });
   }
 
   private setupWebviewOptions(context: WebviewViewResolveContext) {
     this._panel!.title = "";
     this._panel!.description = "Edit model documentation";
-    this._panel!.webview.options = <WebviewOptions>{
-      enableScripts: true,
-      localResourceRoots: [
-        Uri.joinPath(
-          this.extensionContext.extensionUri,
-          "webview_panels",
-          "dist",
-          "assets",
-        ),
-      ],
-    };
+    this._panel!.webview.options = panelWebviewOptions(
+      this.extensionContext.extensionUri,
+    );
   }
 
   private getTestDataByModel(
@@ -1021,45 +1019,4 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       this.transmitData();
     }
   }
-}
-
-function getHtml(webview: Webview, extensionUri: Uri) {
-  const assets = Uri.joinPath(extensionUri, "webview_panels", "dist", "assets");
-  const script = webview.asWebviewUri(Uri.joinPath(assets, "main.js"));
-  const styles = webview.asWebviewUri(Uri.joinPath(assets, "main.css"));
-  const codicons = webview.asWebviewUri(
-    Uri.joinPath(assets, "codicons", "codicon.css"),
-  );
-  const nonce = getNonce();
-  return `<!DOCTYPE html>
-    <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${
-          webview.cspSource
-        } data:; style-src 'unsafe-inline' ${
-          webview.cspSource
-        }; img-src ${webview.cspSource} https: data:; script-src 'unsafe-eval' 'nonce-${nonce}';">
-        <link rel="stylesheet" href="${styles}">
-        <link rel="stylesheet" href="${codicons}">
-      </head>
-      <body class="docs-generator">
-        <div id="root"></div>
-        <div id="sidebar"></div>
-        <div id="modal"></div>
-        <script nonce="${nonce}">window.viewPath = "${DOCS_VIEW_PATH}";</script>
-        <script nonce="${nonce}" type="module" src="${script}"></script>
-      </body>
-    </html>`;
-}
-
-function getNonce() {
-  let text = "";
-  const possible =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-  for (let i = 0; i < 32; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-  return text;
 }

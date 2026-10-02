@@ -7,7 +7,9 @@ import { ActivationMetric, readActivationMetric } from "./activationReport";
 import {
   assertNoWorkbenchNotifications,
   captureWorkbenchScreenshot,
+  evaluatePanel,
   evaluateWorkbench,
+  readCspViolations,
   readWorkbenchNotificationTexts,
   validateSmokeHost,
   waitForWebviewPaint,
@@ -166,9 +168,32 @@ suite("Pinned-host VSIX smoke", function () {
           measured: {
             bodyText: paint.bodyText,
             stylesheets: paint.stylesheets,
+            cspViolations: await readCspViolations(cdpPort, panel.viewPath),
           },
         });
       }
+      if (panel.viewPath === "/query-panel") {
+        const grid = await renderPerspectiveResult(cdpPort);
+        await evidence?.capture({
+          name: "query results grid",
+          expect:
+            "The query results panel shows a Perspective datagrid with columns n and label and rows 1 one, 2 two",
+          measured: grid,
+        });
+        assert.ok(
+          grid.text.includes("one") && grid.text.includes("two"),
+          `Perspective must render the result rows: ${JSON.stringify({
+            ...grid,
+            cspViolations: await readCspViolations(cdpPort, panel.viewPath),
+          })}`,
+        );
+      }
+      const violations = await readCspViolations(cdpPort, panel.viewPath);
+      assert.deepStrictEqual(
+        violations,
+        [],
+        `${panel.viewPath} must load without CSP violations`,
+      );
     }
 
     console.log(
@@ -265,6 +290,68 @@ function sleep(ms: number): Promise<void> {
 }
 
 type Evidence = NonNullable<ReturnType<typeof visualEvidence>>;
+
+/** Posts a two-row result into the query results page as the host would, then reads the grid Perspective draws. */
+const RENDER_RESULT = `(async () => {
+  if (globalThis.viewPath !== "/query-panel") return null;
+  if (!globalThis.__fpuResultPosted) {
+    globalThis.__fpuResultPosted = true;
+    window.dispatchEvent(new MessageEvent("message", { data: {
+      command: "renderQuery",
+      columnNames: ["n", "label"],
+      columnTypes: ["Integer", "Text"],
+      rows: [{ n: 1, label: "one" }, { n: 2, label: "two" }],
+      raw_sql: "select 1",
+      compiled_sql: "select 1",
+    } }));
+  }
+  const textOf = (node) => {
+    const parts = [];
+    const walk = (n) => {
+      if (n.nodeName === "TD" || n.nodeName === "TH") parts.push(n.textContent);
+      if (n.shadowRoot) walk(n.shadowRoot);
+      n.childNodes.forEach(walk);
+    };
+    walk(node);
+    return parts.join(" ").replace(/\\s+/g, " ").trim();
+  };
+  const viewer = document.querySelector("perspective-viewer");
+  // The smallest valid module; the page's CSP alone decides whether it compiles.
+  const wasmCompile = await WebAssembly.compile(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]))
+    .then(() => "ok", (error) => String(error));
+  return {
+    viewPath: globalThis.viewPath,
+    viewer: Boolean(viewer),
+    text: viewer ? textOf(viewer).slice(0, 300) : "",
+    wasmCompile,
+  };
+})()`;
+
+async function renderPerspectiveResult(
+  cdpPort: string,
+): Promise<{ viewer: boolean; text: string; wasmCompile?: string }> {
+  let last: { viewer: boolean; text: string; wasmCompile?: string } = {
+    viewer: false,
+    text: "",
+  };
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const panel = await evaluatePanel<{
+      viewPath: string;
+      viewer: boolean;
+      text: string;
+      wasmCompile: string;
+    }>(cdpPort, "/query-panel", RENDER_RESULT);
+    if (panel) {
+      const { viewPath: _viewPath, ...value } = panel.value;
+      last = value;
+      if (last.text.includes("one") && last.text.includes("two")) {
+        break;
+      }
+    }
+    await sleep(250);
+  }
+  return last;
+}
 
 const LANGUAGE_STATUS_HOVER = `(() => {
   const hover = document.querySelector(".workbench-hover, .monaco-hover:not(.hidden)");
