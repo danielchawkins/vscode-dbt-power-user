@@ -256,6 +256,7 @@ function composeWebviews(
       sharedState,
       terminal,
       queryManifestService,
+      projects.onDidRemoveProject,
     ),
     new DocsEditViewPanel(
       projects,

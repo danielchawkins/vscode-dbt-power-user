@@ -1,6 +1,6 @@
 import { commands, Disposable } from "vscode";
 import { ProjectRegistry } from "../projects/projectRegistry";
-import { readHarnessSwitch } from "../settings";
+import { testCommandsEnabled } from "../settings";
 import { FusionClientPool } from "./fusionClientPool";
 import { FusionClientState } from "./fusionLanguageClient";
 
@@ -16,21 +16,12 @@ export interface FusionClientStateReport {
   target: string | undefined;
 }
 
-function enabled(): boolean {
-  const host = readHarnessSwitch("smokeHost");
-  return (
-    host === "vscode" ||
-    host === "cursor" ||
-    readHarnessSwitch("integrationCommands") === "1"
-  );
-}
-
 /** Registers {@link FUSION_CLIENT_STATES_COMMAND} when a test harness asks for it. */
 export function registerFusionClientDiagnostics(
   registry: ProjectRegistry,
   pool: FusionClientPool,
 ): Disposable | undefined {
-  if (!enabled()) {
+  if (!testCommandsEnabled()) {
     return undefined;
   }
   return commands.registerCommand(FUSION_CLIENT_STATES_COMMAND, () =>

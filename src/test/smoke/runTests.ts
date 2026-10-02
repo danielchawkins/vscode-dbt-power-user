@@ -10,7 +10,7 @@ export async function run(): Promise<void> {
   });
 
   const testsRoot = path.resolve(__dirname);
-  const files = await glob("**/*.test.js", { cwd: testsRoot });
+  const files = (await glob("**/*.test.js", { cwd: testsRoot })).sort();
   for (const file of files) {
     mocha.addFile(path.resolve(testsRoot, file));
   }

@@ -76,6 +76,8 @@ export interface DocumentationStateProps {
   missingDocumentationMessage?: { message: string; type: "warning" | "error" };
   searchQuery: string;
   docBlocks: DocBlock[];
+  /** The manifest publication the host read the current documentation from. */
+  publication?: string;
 }
 
 export type DBTModelTest = documentationEditor.ModelTest;

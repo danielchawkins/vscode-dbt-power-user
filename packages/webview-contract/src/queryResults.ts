@@ -38,6 +38,8 @@ export interface QueryContext {
   limit: number;
   perspectiveTheme: string;
   activeEditor: { query?: string; filepath?: string };
+  /** The Current Project's manifest publication; the panel's saved view state names it. */
+  publication?: string;
 }
 
 /** `type` is the panel's view type: 0 the bottom panel, 1 a results tab, 2 a history or bookmark run. */
@@ -138,6 +140,7 @@ const hostFields: CommandFields<HostMessage> = {
       query: optional(isString),
       filepath: optional(isString),
     }),
+    publication: optional(isString),
   },
   queryHistory: { args: shape({ body: arrayOf(isHistoryEntry) }) },
   updateViewType: {

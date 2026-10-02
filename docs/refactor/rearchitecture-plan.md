@@ -250,6 +250,14 @@ Goal: one typed protocol, one HTML and CSP generator, one entry per panel.
 
 Verify: property test that arbitrary JSON never reaches a handler without passing a guard; exactly one CSP string in the tree; memory recorded before and after. From a reset state (remove `node_modules`, `out`, `dist` and `packages/webview-contract/dist`, then `just sync`), each of `just compile`, `just build`, `just build-dev`, `just package`, `npm run build`, `npm run build:dev`, `npm run build --prefix webview_panels` and `just webviews::build` succeeds on its own; each watch and dev entrypoint rebuilds after `packages/webview-contract/src/index.ts` is touched with one contract watcher running. One `package-lock.json`, at the root; `npm ls @fusion-power-user/webview-contract` resolves from the root and `webview_panels`; `vsce ls` shows no `packages/` entry; per-entry bytes recorded against the single-entry baseline in [`baseline-v1-september-2026.md`](../research/baseline-v1-september-2026.md).
 
+**Result (R6 user files, reducers and view state).**
+
+- **User files.** The documentation editor and the schema and model generators write through `WorkspaceEdit` (`src/projects/userFiles.ts`): `replace` and `save` for an existing file, `createFile` with contents for a new one. A file already open with unsaved changes gets the edit but is not saved, and the documentation editor says so. The fs-write baseline in `eslint-suppressions.json` fell from 3 entries (`docsEditPanel.ts`, `docGenService.ts`, `projectCodegen.ts`) to 0.
+- **Reducers.** Each Redux Toolkit slice is a typed reducer built with `typedReducer` (`webview_panels/src/modules/app/typedReducer.ts`), with unit tests for the app, query results and documentation reducers. `@reduxjs/toolkit` stays in `webview_panels/package.json`: `@altimateai/ui-components` imports it at runtime as an optional peer, and the Vite build fails with `"createSlice" is not exported` without it. It goes with that component in R8.
+- **View state.** Query results and the documentation editor register without `retainContextWhenHidden`. Each panel's `vscode.setState` schema and its allowlist test are in [`webview-state-october-2026.md`](../research/webview-state-october-2026.md); each saves a publication id that includes a per-session id, so state from an earlier session never matches. Hosts keep what webview state must not hold: the query results host its last result per page, the documentation editor host its unsaved draft per model, both in memory and cleared when a project is removed. The smoke rebuilds both pages and asserts the SQL tab and replayed result, and the draft with the editor still dirty.
+- **Exception: lineage keeps `retainContextWhenHidden` until R8.** Its component keeps expansion and selection internally and exposes neither, so a rebuilt page would lose both on every tab switch. R8 replaces the component and removes the exception.
+- **Memory.** Three runs per build, VS Code 1.128.0, 10,000-row result, used heap after ten hide/show cycles against the first reading: query results frame −3.3% without retain and −0.1% with it; Perspective worker −50.0% without and 0.0% with; extension host +7.0% (range −5.3% to +10.8%) without and +2.8% with. No reading reaches the 25% threshold, so query results does not keep retain. Readings, ranges and the method's limits are in the research note.
+
 ### R7 — One styling system and dependency reduction
 
 Goal: five styling systems become one (webview audit §2).
@@ -312,7 +320,8 @@ These extend `AGENTS.md`; the ESLint config enforces what it can.
 | `@vscode/test-electron` launch script                            | custom          | `@vscode/test-cli`                   | root    | R1       |
 | `typescript`                                                     | 6               | 6 until typescript-eslint supports 7 | both    | —        |
 | `inversify`, `reflect-metadata`, `ts-loader`                     | 8, 0.2, 9       | removed                              | root    | R4       |
-| `react-router-dom`, `@reduxjs/toolkit`                           | 7, 2            | removed                              | webview | R6       |
+| `react-router-dom`                                               | 7               | removed                              | webview | R6       |
+| `@reduxjs/toolkit`                                               | 2               | removed with the lineage component   | webview | R8       |
 | `reactstrap`, `bootstrap`, `sass`                                | 9, 5, 1         | removed                              | webview | R7       |
 | `react-hook-form`, `yup`, `react-copy-to-clipboard`              | 7, 1, 5         | native, or `react-hook-form` only    | webview | R7       |
 | Storybook, `faker`, `factory.ts`, `react-markdown`, `remark-gfm` | —               | removed                              | webview | R7       |

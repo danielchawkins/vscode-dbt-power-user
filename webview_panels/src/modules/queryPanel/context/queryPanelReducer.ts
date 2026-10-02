@@ -40,6 +40,7 @@ const queryPanel = typedReducer<
     setQueryExecutionInfo: S["queryExecutionInfo"];
     setQueryResults: S["queryResults"];
     setLoading: S["loading"];
+    setPublication: S["publication"];
   }
 >({
   setActiveEditor: set("activeEditor"),
@@ -69,6 +70,7 @@ const queryPanel = typedReducer<
   setQueryExecutionInfo: set("queryExecutionInfo"),
   setQueryResults: set("queryResults"),
   setLoading: set("loading"),
+  setPublication: set("publication"),
 });
 
 export const queryPanelReducer = queryPanel.reducer;
@@ -89,4 +91,5 @@ export const {
   setQueryHistory,
   setTabState,
   setActiveEditor,
+  setPublication,
 } = setters;

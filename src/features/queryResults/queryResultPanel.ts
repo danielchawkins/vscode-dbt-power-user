@@ -2,8 +2,11 @@ import { queryResults } from "@fusion-power-user/webview-contract";
 import {
   CancellationToken,
   commands,
+  Event,
   Range,
+  Uri,
   ViewColumn,
+  WebviewPanel,
   WebviewView,
   WebviewViewResolveContext,
   window,
@@ -18,6 +21,7 @@ import {
   QueryExecution,
 } from "../../dbt_integration";
 import { ExtensionContextStore } from "../../extensionContext";
+import { publicationId } from "../../projects/manifest";
 import { activeModelUri } from "../../projects/previewUri";
 import { QueryManifestService } from "../../projects/queryManifestService";
 import {
@@ -33,11 +37,14 @@ import {
 } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { panelWebviewOptions } from "../../webview/panelHtml";
+import { PanelReplay } from "./panelReplay";
 
 type HostMessage = queryResults.HostMessage;
 type PanelMessage = queryResults.PanelMessage;
 type QueryHistory = queryResults.QueryHistoryEntry;
 type JsonObj = Record<string, unknown>;
+/** A query results page: the bottom view, whichever `WebviewView` VS Code resolved last, or one results tab. */
+type Page = "bottom" | WebviewPanel;
 
 enum QueryPanelViewType {
   DEFAULT,
@@ -56,6 +63,11 @@ export class QueryResultPanel extends PanelHost {
 
   private queryExecution?: QueryExecution;
   private pendingMessages: HostMessage[] = [];
+  private _replay?: PanelReplay<Page>;
+
+  private get replay(): PanelReplay<Page> {
+    return (this._replay ??= new PanelReplay<Page>());
+  }
 
   // stored only for current session, if user reloads or opens new workspace, this will be reset
   private _queryHistory: QueryHistory[] = [];
@@ -65,6 +77,7 @@ export class QueryResultPanel extends PanelHost {
     private eventEmitterService: SharedStateService,
     protected dbtTerminal: DBTTerminal,
     protected queryManifestService: QueryManifestService,
+    onDidRemoveProject: Event<Uri>,
   ) {
     super(
       extensionContext,
@@ -73,6 +86,7 @@ export class QueryResultPanel extends PanelHost {
       queryManifestService,
     );
     this._disposables.push(
+      onDidRemoveProject(() => this.replay.clear()),
       window.onDidChangeActiveTextEditor(() => {
         // to reset the limit on editor change
         this.sendUpdatedContextToWebview();
@@ -82,7 +96,19 @@ export class QueryResultPanel extends PanelHost {
 
   /** Posts to the panel the host currently targets: the bottom view or an opened results tab. */
   private post(message: HostMessage): Thenable<boolean> | undefined {
-    return this._panel?.webview.postMessage(message);
+    return this._panel && this.postTo(this._panel, message);
+  }
+
+  private pageOf(panel: WebviewView | WebviewPanel): Page {
+    return this.isWebviewView(panel) ? "bottom" : panel;
+  }
+
+  private postTo(
+    panel: WebviewView | WebviewPanel,
+    message: HostMessage,
+  ): Thenable<boolean> {
+    this.replay.record(this.pageOf(panel), message);
+    return panel.webview.postMessage(message);
   }
 
   private async sendUpdatedContextToWebview() {
@@ -97,6 +123,9 @@ export class QueryResultPanel extends PanelHost {
         query: editor?.document.getText(),
         filepath: editor && activeModelUri(editor.document.uri).fsPath,
       },
+      publication: publicationId(
+        this.queryManifestService.getProject()?.manifest,
+      ),
     });
   }
 
@@ -110,11 +139,14 @@ export class QueryResultPanel extends PanelHost {
       },
       {
         ...panelWebviewOptions(this.extensionContext.extensionUri),
-        retainContextWhenHidden: true,
       },
     );
     this._panel = webviewPanel;
     this._webview = webviewPanel.webview;
+    const subscription = webviewPanel.onDidDispose(() => {
+      subscription.dispose();
+      this.replay.delete(webviewPanel);
+    });
     this.renderWebviewView(webviewPanel.webview);
     this.setupWebviewHooks();
     await this.checkIfWebviewReady();
@@ -165,7 +197,7 @@ export class QueryResultPanel extends PanelHost {
     });
   }
 
-  /** Sets options, note that retainContextWhen hidden is set on registration */
+  /** Sets the page's title, description and webview options. */
   private bindWebviewOptions(context: WebviewViewResolveContext) {
     if (!this._panel) {
       return;
@@ -254,10 +286,19 @@ export class QueryResultPanel extends PanelHost {
     this.updateViewTypeToWebview(QueryPanelViewType.OPEN_RESULTS_IN_TAB);
   }
 
-  private sendQueryTabData(syncRequestId: string | undefined) {
-    void this.post({
+  /** Answers a page's request for its tab data; a rebuilt results tab asks again and gets the same data. */
+  private sendQueryTabData(
+    panel: WebviewView | WebviewPanel,
+    syncRequestId: string | undefined,
+  ) {
+    const page = this.pageOf(panel);
+    if (this._queryTabData && page !== "bottom") {
+      this.replay.setTabData(page, this._queryTabData);
+    }
+    const body = this._queryTabData ?? this.replay.tabDataFor(page);
+    void this.postTo(panel, {
       command: "response",
-      args: { syncRequestId, body: this._queryTabData, status: true },
+      args: { syncRequestId, body, status: true },
     });
     // A tab opened through "Open in Tab" reads its data once; later messages target the bottom panel.
     if (this._queryTabData) {
@@ -278,10 +319,11 @@ export class QueryResultPanel extends PanelHost {
     }
   }
 
-  /** One handler per query-results panel command. */
-  private handlers(): Handlers<PanelMessage> {
+  /** One handler per query-results panel command sent by the page in `panel`. */
+  private handlers(panel: WebviewView | WebviewPanel): Handlers<PanelMessage> {
     return {
       ...this.commonHandlers(),
+      "webview:ready": () => this.onPageReady(panel),
       // The panel clears its history after a rendering error, then retries.
       clearQueryHistory: ({ syncRequestId }) => {
         this._queryHistory = [];
@@ -302,7 +344,7 @@ export class QueryResultPanel extends PanelHost {
           args: { body: this._queryHistory },
         }),
       getQueryTabData: ({ syncRequestId }) =>
-        this.sendQueryTabData(syncRequestId),
+        this.sendQueryTabData(panel, syncRequestId),
       getQueryPanelContext: () => this.sendUpdatedContextToWebview(),
       cancelQuery: async () => {
         this.queryExecution?.cancel();
@@ -315,23 +357,33 @@ export class QueryResultPanel extends PanelHost {
     };
   }
 
-  protected async handleCommand(message: unknown): Promise<void> {
+  protected async handleCommand(
+    message: unknown,
+    panel: WebviewView | WebviewPanel = this._panel!,
+  ): Promise<void> {
     await dispatchMessage(
       QueryResultPanel.viewType,
       message,
       queryResults.isPanelMessage,
-      this.handlers(),
-      { log: this.dbtTerminal, reply: (response) => this.post(response) },
+      this.handlers(panel),
+      {
+        log: this.dbtTerminal,
+        reply: (response) => this.postTo(panel, response),
+      },
     );
   }
 
-  /** Primary interface for WebviewView inbound communication */
+  /** Primary interface for WebviewView inbound communication; a results tab's subscription ends with the tab. */
   private setupWebviewHooks() {
-    this._panel!.webview.onDidReceiveMessage(
-      (message: unknown) => this.handleCommand(message),
-      this,
-      this._disposables,
+    const panel = this._panel!;
+    const subscription = panel.webview.onDidReceiveMessage((message: unknown) =>
+      this.handleCommand(message, panel),
     );
+    if (this.isWebviewView(panel)) {
+      this._disposables.push(subscription);
+    } else {
+      panel.onDidDispose(() => subscription.dispose());
+    }
   }
 
   private async executeQueryFromActiveWindow({
@@ -528,6 +580,15 @@ export class QueryResultPanel extends PanelHost {
     } finally {
       this.queryExecution = undefined;
       this._panel = this._bottomPanel;
+    }
+  }
+
+  /** A page reports ready on first load and after VS Code rebuilds it; it gets back its last result. */
+  private onPageReady(panel: WebviewView | WebviewPanel) {
+    const replay = this.replay.messagesFor(this.pageOf(panel));
+    this.onWebviewReady();
+    for (const message of replay) {
+      void panel.webview.postMessage(message);
     }
   }
 

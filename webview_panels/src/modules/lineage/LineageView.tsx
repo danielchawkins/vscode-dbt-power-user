@@ -4,25 +4,25 @@ import {
   Lineage,
   TooltipProvider,
 } from "@altimateai/ui-components/lineage";
-import type { lineage } from "@fusion-power-user/webview-contract";
 import "@altimateai/ui-components/styles.css";
-import {
-  executeRequestInAsync,
-  isLineageRequest,
-  requestFromComponent,
-} from "./requests";
+import type { lineage } from "@fusion-power-user/webview-contract";
 import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
 import { useEffect, useState } from "react";
 import ActionWidget from "./ActionWidget";
-import styles from "./lineage.module.scss";
-import "./tailwind-globals.css";
 import {
   componentTableRequests,
   HostTable,
   isComponentTableRequest,
   toComponentTable,
 } from "./componentAdapter";
+import styles from "./lineage.module.scss";
+import {
+  executeRequestInAsync,
+  isLineageRequest,
+  requestFromComponent,
+} from "./requests";
+import "./tailwind-globals.css";
 import { MissingLineageMessage, StaticLineageProps } from "./types";
 
 const LineageView = (): JSX.Element | null => {

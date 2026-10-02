@@ -180,6 +180,8 @@ const PerspectiveViewer = ({
       data,
     );
     try {
+      // `perspective.worker()` takes the client WebAssembly from the defined `perspective-viewer` element.
+      await customElements.whenDefined("perspective-viewer");
       const worker = await perspective.worker();
       // Perspective accepts a schema object; its generated type only declares the row-data overload.
       // @ts-expect-error schema initialization is supported at runtime

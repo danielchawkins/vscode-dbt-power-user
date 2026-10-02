@@ -98,6 +98,7 @@ const documentation = typedReducer<
     setMissingDocumentationMessage: S["missingDocumentationMessage"];
     setProject: S["project"];
     setDocBlocks: S["docBlocks"];
+    setPublication: S["publication"];
     updateCurrentDocsTests: S["currentDocsTests"];
     updateCurrentUnitTests: S["currentUnitTests"];
     setIncomingDocsData: Parameters<typeof takeIncomingDocs>[1];
@@ -112,6 +113,7 @@ const documentation = typedReducer<
   setMissingDocumentationMessage: set("missingDocumentationMessage"),
   setProject: (state, project) => ({ ...state, project, docBlocks: [] }),
   setDocBlocks: set("docBlocks"),
+  setPublication: set("publication"),
   updateCurrentDocsTests: set("currentDocsTests"),
   updateCurrentUnitTests: set("currentUnitTests"),
   setIncomingDocsData: takeIncomingDocs,
@@ -138,6 +140,7 @@ export const {
   updateColumnsAfterSync,
   setProject,
   setDocBlocks,
+  setPublication,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
   setMissingDocumentationMessage,

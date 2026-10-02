@@ -173,6 +173,9 @@ export async function revealWorkbench(
   return false;
 }
 
+/** How long each paint check waits for the workbench to become visible before checking the frames anyway. */
+const REVEAL_BUDGET_MS = 2_000;
+
 export async function waitForWebviewPaint(
   port: string,
   host: string,
@@ -184,7 +187,11 @@ export async function waitForWebviewPaint(
   let lastTargets: CdpTarget[] = [];
   let visible = false;
   for (;;) {
-    visible = await revealWorkbench(port, host, deadline - Date.now());
+    visible = await revealWorkbench(
+      port,
+      host,
+      Math.min(REVEAL_BUDGET_MS, Math.max(0, deadline - Date.now())),
+    );
     try {
       lastTargets = await listTargets(port);
       const frames = lastTargets.filter(
@@ -301,6 +308,140 @@ async function panelFrames(port: string): Promise<string[]> {
   return (await listTargets(port))
     .filter((target) => target.type === "iframe" && target.webSocketDebuggerUrl)
     .map((target) => target.webSocketDebuggerUrl!);
+}
+
+/** JavaScript heap of the frame showing `entry`, after a forced garbage collection, from `Runtime.getHeapUsage`. */
+export async function readWebviewHeap(
+  port: string,
+  entry: string,
+): Promise<{ usedSize: number; totalSize: number }> {
+  const panel = await evaluatePanel(
+    port,
+    entry,
+    "({ entry: document.body.dataset.entry })",
+  );
+  if (!panel) {
+    throw new Error(`No webview frame shows ${entry}`);
+  }
+  await sendCommand(panel.target, "HeapProfiler.collectGarbage", {}, 10_000);
+  const usage = await sendCommand(panel.target, "Runtime.getHeapUsage");
+  return {
+    usedSize: Number(usage.usedSize),
+    totalSize: Number(usage.totalSize),
+  };
+}
+
+/**
+ * Used heap of each dedicated worker the frame showing `entry` started, after a forced garbage collection in each,
+ * read through sessions `Target.setAutoAttach` opens on the frame's target.
+ */
+export async function readWorkerHeaps(
+  port: string,
+  entry: string,
+): Promise<{ url: string; usedSize: number }[]> {
+  const panel = await evaluatePanel(
+    port,
+    entry,
+    "({ entry: document.body.dataset.entry })",
+  );
+  if (!panel) {
+    throw new Error(`No webview frame shows ${entry}`);
+  }
+  return withSession(panel.target, async (send, attached) => {
+    await send("Target.setAutoAttach", {
+      autoAttach: true,
+      waitForDebuggerOnStart: false,
+      flatten: true,
+    });
+    await sleep(500);
+    const heaps = [];
+    for (const worker of attached().filter(({ type }) => type === "worker")) {
+      await send("HeapProfiler.collectGarbage", {}, worker.sessionId);
+      const usage = await send("Runtime.getHeapUsage", {}, worker.sessionId);
+      heaps.push({ url: worker.url, usedSize: Number(usage.usedSize) });
+    }
+    return heaps;
+  });
+}
+
+interface AttachedTarget {
+  sessionId: string;
+  type: string;
+  url: string;
+}
+
+type SessionSend = (
+  method: string,
+  params?: Record<string, unknown>,
+  sessionId?: string,
+) => Promise<Record<string, unknown>>;
+
+/** Runs `use` over one CDP socket, with each command optionally routed to an attached target's session. */
+function withSession<T>(
+  webSocketUrl: string,
+  use: (send: SessionSend, attached: () => AttachedTarget[]) => Promise<T>,
+  timeoutMs = 30_000,
+): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(webSocketUrl);
+    const pending = new Map<
+      number,
+      {
+        resolve: (r: Record<string, unknown>) => void;
+        reject: (e: Error) => void;
+      }
+    >();
+    const targets: AttachedTarget[] = [];
+    let nextId = 1;
+    const timeout = setTimeout(() => {
+      socket.close();
+      reject(new Error(`CDP session timed out: ${webSocketUrl}`));
+    }, timeoutMs);
+    const send: SessionSend = (method, params = {}, sessionId) =>
+      new Promise((resolveCommand, rejectCommand) => {
+        const id = nextId++;
+        pending.set(id, { resolve: resolveCommand, reject: rejectCommand });
+        socket.send(JSON.stringify({ id, method, params, sessionId }));
+      });
+    socket.addEventListener("message", (event) => {
+      const message = JSON.parse(String(event.data));
+      if (message.method === "Target.attachedToTarget") {
+        const { sessionId, targetInfo } = message.params;
+        targets.push({ sessionId, type: targetInfo.type, url: targetInfo.url });
+        return;
+      }
+      const waiting = pending.get(message.id);
+      if (!waiting) {
+        return;
+      }
+      pending.delete(message.id);
+      if (message.error) {
+        waiting.reject(
+          new Error(`CDP failed: ${JSON.stringify(message.error)}`),
+        );
+      } else {
+        waiting.resolve(message.result ?? {});
+      }
+    });
+    socket.addEventListener("open", () => {
+      use(send, () => [...targets]).then(
+        (value) => {
+          clearTimeout(timeout);
+          socket.close();
+          resolve(value);
+        },
+        (error) => {
+          clearTimeout(timeout);
+          socket.close();
+          reject(error);
+        },
+      );
+    });
+    socket.addEventListener("error", () => {
+      clearTimeout(timeout);
+      reject(new Error(`CDP socket failed: ${webSocketUrl}`));
+    });
+  });
 }
 
 /** Every log and console entry the target has buffered; both `enable` calls replay them before they answer. */

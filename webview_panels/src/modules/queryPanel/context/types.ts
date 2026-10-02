@@ -37,4 +37,6 @@ export interface QueryPanelStateProps {
     filepath: string;
     query: string;
   };
+  /** The Current Project's manifest publication, from the host's context. */
+  publication?: string;
 }

@@ -1,10 +1,10 @@
 import type { queryResults } from "@fusion-power-user/webview-contract";
+import type { MessageOf } from "@modules/app/requestExecutor";
+import { panelLogger } from "@modules/logger";
 import {
   executeRequestInAsync,
   executeRequestInSync,
 } from "@modules/queryPanel/requests";
-import type { MessageOf } from "@modules/app/requestExecutor";
-import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useRef } from "react";
 import { useQueryPanelDispatch } from "./QueryPanelProvider";
 import { HINTS } from "./constants";
@@ -16,6 +16,7 @@ import {
   setLimit,
   setLoading,
   setPerspectiveTheme,
+  setPublication,
   setQueryExecutionInfo,
   setQueryHistory,
   setQueryResults,
@@ -141,6 +142,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
         case "getContext":
           dispatch(setLimit(message.limit));
           dispatch(setPerspectiveTheme(message.perspectiveTheme));
+          dispatch(setPublication(message.publication));
           dispatch(
             setActiveEditor(
               message.activeEditor as QueryPanelStateProps["activeEditor"],

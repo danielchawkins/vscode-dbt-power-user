@@ -29,6 +29,7 @@ import {
 } from "../../dbt_integration";
 import { ExtensionContextStore } from "../../extensionContext";
 import { UserInputError } from "../../local/errors";
+import { publicationId } from "../../projects/manifest";
 import { activeModelUri } from "../../projects/previewUri";
 import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
@@ -66,6 +67,11 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   private readonly entry = "documentationEditor";
   private _panel: WebviewView | undefined = undefined;
   private documentation?: DBTDocumentation;
+  /** Unsaved drafts by model file path; host memory only, never webview state. */
+  private readonly drafts = new Map<
+    string,
+    documentationEditor.DocumentationDraft
+  >();
   private loadedFromManifest = false;
   private _disposables: Disposable[] = [];
   private onMessageDisposable: Disposable | undefined;
@@ -80,7 +86,10 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   ) {
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
-      projects.onDidRemoveProject(() => this.onManifestChanged()),
+      projects.onDidRemoveProject((root) => {
+        this.forgetDrafts(root);
+        void this.onManifestChanged();
+      }),
       window.onDidChangeActiveTextEditor(
         async (event: TextEditor | undefined) => {
           this.documentation = undefined;
@@ -134,6 +143,25 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     return this._panel?.webview.postMessage(message);
   }
 
+  private forgetDrafts(root: Uri) {
+    const prefix = root.fsPath.endsWith(path.sep)
+      ? root.fsPath
+      : root.fsPath + path.sep;
+    for (const model of this.drafts.keys()) {
+      if (model.startsWith(prefix)) {
+        this.drafts.delete(model);
+      }
+    }
+  }
+
+  private saveDraft({ model, draft }: MessageOf<PanelMessage, "saveDraft">) {
+    if (draft) {
+      this.drafts.set(model, draft);
+    } else {
+      this.drafts.delete(model);
+    }
+  }
+
   private async transmitData() {
     const { documentation, message } =
       await this.docGenService.getUncompiledDocumentationForCurrentActiveFile();
@@ -147,6 +175,10 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
         unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
         project: this.getProject()?.getProjectName(),
         docBlocks: this.getDocBlocksForCurrentProject(),
+        publication: publicationId(this.getProject()?.manifest),
+        draft: this.documentation
+          ? this.drafts.get(this.documentation.filePath)
+          : undefined,
       });
     }
   }
@@ -568,6 +600,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     return {
       "webview:ready": () => completeWebviewReady(this.entry),
       getCurrentModelDocumentation: () => this.transmitData(),
+      saveDraft: (message) => this.saveDraft(message),
       showWarningMessage: (message) => this.showNotification(message),
       showInformationMessage: (message) => this.showNotification(message),
       openProblemsTab: () =>
@@ -669,6 +702,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
               }
               return;
             }
+            this.drafts.delete(message.filePath);
             await this.reloadDocumentationFromManifest();
             const tests = await this.dbtTestService.getTestsForCurrentModel();
             const unitTests =
