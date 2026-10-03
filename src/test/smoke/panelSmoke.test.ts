@@ -22,6 +22,7 @@ import {
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import {
+  checkpointCount,
   screenshotDirectory,
   VisualCheckpoint,
   writeCheckpoint,
@@ -138,23 +139,7 @@ suite("Pinned-host VSIX smoke", function () {
     );
     await vscode.commands.executeCommand(contributedCommand);
 
-    const panels = [
-      {
-        container: "workbench.view.extension.docs_edit_view",
-        command: "fusionPowerUser.DocsEdit.focus",
-        entry: "documentationEditor",
-      },
-      {
-        container: "workbench.view.extension.dbt_preview_results",
-        command: "fusionPowerUser.PreviewResults.focus",
-        entry: "queryResults",
-      },
-      {
-        container: "workbench.view.extension.lineage_view",
-        command: "fusionPowerUser.Lineage.focus",
-        entry: "lineage",
-      },
-    ];
+    const panels = PANELS;
     const webviews: MeasuredWebview[] = [];
 
     for (const panel of panels) {
@@ -174,15 +159,21 @@ suite("Pinned-host VSIX smoke", function () {
           smokeHost,
           panel.entry,
         );
-        await evidence.capture({
-          name: `panel ${panel.entry}`,
-          expect: `The ${panel.entry} panel is visible and its text matches measured.bodyText`,
-          measured: {
-            bodyText: paint.bodyText,
-            stylesheets: paint.stylesheets,
-            cspViolations: await readCspViolations(cdpPort, panel.entry),
+        await evidence.capture(
+          {
+            name: `panel ${panel.entry}`,
+            expect: `The ${panel.entry} panel is visible and its text matches measured.bodyText`,
+            measured: {
+              bodyText: paint.bodyText,
+              stylesheets: paint.stylesheets,
+              cspViolations: await readCspViolations(cdpPort, panel.entry),
+            },
           },
-        });
+          async () => {
+            const now = await waitForPanelTheme(cdpPort, panel.entry);
+            return now ? { bodyText: now.bodyText, ready: now.ready } : {};
+          },
+        );
       }
       if (panel.entry === "queryResults") {
         const grid = await renderPerspectiveResult(cdpPort);
@@ -240,7 +231,203 @@ suite("Pinned-host VSIX smoke", function () {
       );
     }
   });
+
+  test("renders each panel in the light, dark and high-contrast themes", async function () {
+    const cdpPort = process.env.FPU_CDP_PORT;
+    if (currentFixtureName() !== "single-project" || !cdpPort) {
+      this.skip();
+      return;
+    }
+    const smokeHost = validateSmokeHost(
+      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
+    );
+    const evidence = visualEvidence(cdpPort, smokeHost);
+    // The documentation editor follows the active editor; an earlier test may have moved focus off the model.
+    const folder = vscode.workspace.workspaceFolders?.[0];
+    assert.ok(folder, "fixture workspace should be open");
+    await vscode.window.showTextDocument(
+      await vscode.workspace.openTextDocument(
+        vscode.Uri.joinPath(folder.uri, "models/child.sql"),
+      ),
+    );
+    await waitForActiveLanguage("jinja-sql");
+    const workbench = vscode.workspace.getConfiguration("workbench");
+    const windowConfig = vscode.workspace.getConfiguration("window");
+    const original = workbench.inspect<string>("colorTheme")?.globalValue;
+    const originalDetect = windowConfig.inspect<boolean>(
+      "autoDetectColorScheme",
+    )?.globalValue;
+    // Cursor follows the OS color scheme by default, which overrides `workbench.colorTheme`.
+    await windowConfig.update(
+      "autoDetectColorScheme",
+      false,
+      vscode.ConfigurationTarget.Global,
+    );
+    try {
+      for (const theme of THEMES) {
+        await workbench.update(
+          "colorTheme",
+          theme.name,
+          vscode.ConfigurationTarget.Global,
+        );
+        const activeKind = await waitForColorThemeKind(theme.kind);
+        for (const panel of PANELS) {
+          await openPanel(panel);
+          const read = (): Promise<PanelTheme | undefined> =>
+            waitForPanelTheme(cdpPort, panel.entry, theme.bodyClass);
+          const measure = async () => ({
+            theme: theme.name,
+            activeKind: vscode.ColorThemeKind[activeKind],
+            ...(await read()),
+          });
+          const styles = await read();
+          await evidence?.capture(
+            {
+              name: `${theme.label} ${panel.entry}`,
+              expect: `The ${panel.entry} panel follows ${theme.name}: its text and controls use the theme's colors`,
+              measured: {},
+            },
+            measure,
+          );
+          assert.strictEqual(
+            styles?.bodyClass,
+            theme.bodyClass,
+            `${panel.entry} must render under ${theme.name}`,
+          );
+          assert.ok(
+            styles?.ready,
+            `${panel.entry} content must render under ${theme.name}: ${styles?.bodyText}`,
+          );
+          assert.notStrictEqual(
+            styles?.color,
+            styles?.background,
+            `${panel.entry} text must differ from its background under ${theme.name}`,
+          );
+          assert.deepStrictEqual(
+            await readCspViolations(cdpPort, panel.entry),
+            [],
+            `${panel.entry} must load without CSP violations under ${theme.name}`,
+          );
+        }
+      }
+    } finally {
+      await workbench.update(
+        "colorTheme",
+        original,
+        vscode.ConfigurationTarget.Global,
+      );
+      await windowConfig.update(
+        "autoDetectColorScheme",
+        originalDetect,
+        vscode.ConfigurationTarget.Global,
+      );
+    }
+  });
 });
+
+const PANELS = [
+  {
+    container: "workbench.view.extension.docs_edit_view",
+    command: "fusionPowerUser.DocsEdit.focus",
+    entry: "documentationEditor",
+  },
+  {
+    container: "workbench.view.extension.dbt_preview_results",
+    command: "fusionPowerUser.PreviewResults.focus",
+    entry: "queryResults",
+  },
+  {
+    container: "workbench.view.extension.lineage_view",
+    command: "fusionPowerUser.Lineage.focus",
+    entry: "lineage",
+  },
+];
+
+const THEMES = [
+  {
+    label: "light",
+    name: "Default Light Modern",
+    bodyClass: "vscode-light",
+    kind: vscode.ColorThemeKind.Light,
+  },
+  {
+    label: "dark",
+    name: "Default Dark Modern",
+    bodyClass: "vscode-dark",
+    kind: vscode.ColorThemeKind.Dark,
+  },
+  {
+    label: "high contrast",
+    name: "Default High Contrast",
+    bodyClass: "vscode-high-contrast",
+    kind: vscode.ColorThemeKind.HighContrast,
+  },
+];
+
+/** The workbench's color theme kind once it is `kind`, or the last kind seen after the wait. */
+async function waitForColorThemeKind(
+  kind: vscode.ColorThemeKind,
+): Promise<vscode.ColorThemeKind> {
+  for (let attempt = 0; attempt < 40; attempt += 1) {
+    if (vscode.window.activeColorTheme.kind === kind) {
+      break;
+    }
+    await sleep(250);
+  }
+  return vscode.window.activeColorTheme.kind;
+}
+
+interface PanelTheme {
+  entry: string;
+  bodyClass: string;
+  color: string;
+  background: string;
+  buttonBackground: string | null;
+  bodyText: string;
+  ready: boolean;
+}
+
+/** The page's theme class, the computed colors of its body and first button, and whether its content has loaded. */
+const READ_PANEL_THEME = `(() => {
+  const body = document.body;
+  const kind = ["vscode-high-contrast", "vscode-dark", "vscode-light"].find((c) => body.classList.contains(c)) ?? "";
+  const style = getComputedStyle(body);
+  const button = document.querySelector("button");
+  const text = body.innerText.trim();
+  const ready = {
+    documentationEditor: () => text.includes("Model:"),
+    queryResults: () => !!document.querySelector("perspective-viewer") || /welcome/i.test(text),
+    lineage: () => !!document.querySelector(".react-flow__node"),
+  }[body.dataset.entry]?.() ?? false;
+  return {
+    entry: body.dataset.entry,
+    bodyClass: kind,
+    color: style.color,
+    background: style.backgroundColor,
+    buttonBackground: button ? getComputedStyle(button).backgroundColor : null,
+    bodyText: text.slice(0, 100),
+    ready,
+  };
+})()`;
+
+/** Waits until the panel's panel-specific content has rendered and, when given, its body carries `bodyClass`. */
+async function waitForPanelTheme(
+  cdpPort: string,
+  entry: string,
+  bodyClass?: string,
+): Promise<PanelTheme | undefined> {
+  let last: PanelTheme | undefined;
+  for (let attempt = 0; attempt < 80; attempt += 1) {
+    last =
+      (await evaluatePanel<PanelTheme>(cdpPort, entry, READ_PANEL_THEME))
+        ?.value ?? last;
+    if ((!bodyClass || last?.bodyClass === bodyClass) && last?.ready) {
+      break;
+    }
+    await sleep(250);
+  }
+  return last;
+}
 
 async function waitForHostRuntimeTimings(): Promise<HostRuntimeTiming[]> {
   for (let attempt = 0; attempt < 100; attempt += 1) {
@@ -583,24 +770,37 @@ async function waitForClientRunning(
 /**
  * Screenshot checkpoints when `FPU_SMOKE_SCREENSHOTS` names a directory; undefined otherwise. Each checkpoint also
  * records the workbench notification texts at capture time so the image and the text measurements can be compared.
+ * `remeasure` runs immediately before the screenshot and its result is merged over `checkpoint.measured`.
  */
 function visualEvidence(cdpPort: string, host: string) {
   const dir = screenshotDirectory();
   if (!dir) {
     return undefined;
   }
-  let sequence = 0;
+  const fixtureDir = path.join(
+    dir,
+    host,
+    currentFixtureName() ?? "unknown-fixture",
+  );
+  let sequence = checkpointCount(fixtureDir);
   return {
-    async capture(checkpoint: VisualCheckpoint): Promise<void> {
+    async capture(
+      checkpoint: VisualCheckpoint,
+      remeasure?: () => Promise<Record<string, unknown>>,
+    ): Promise<void> {
       await sleep(500);
       await revealWorkbench(cdpPort, host);
+      const measured = {
+        ...checkpoint.measured,
+        ...(await remeasure?.()),
+      };
       const png = await captureWorkbenchScreenshot(cdpPort, host);
       const notifications = await readWorkbenchNotificationTexts(cdpPort, host);
       sequence += 1;
       const file = writeCheckpoint(
-        path.join(dir, host, currentFixtureName() ?? "unknown-fixture"),
+        fixtureDir,
         sequence,
-        { ...checkpoint, measured: { ...checkpoint.measured, notifications } },
+        { ...checkpoint, measured: { ...measured, notifications } },
         png,
         {
           host,

@@ -30,6 +30,14 @@ export function checkpointStem(sequence: number, name: string): string {
   return `${String(sequence).padStart(2, "0")}-${slug || "checkpoint"}`;
 }
 
+/** How many checkpoints `dir` already records, so a later test continues the sequence. */
+export function checkpointCount(dir: string): number {
+  const indexPath = path.join(dir, "index.json");
+  return fs.existsSync(indexPath)
+    ? (JSON.parse(fs.readFileSync(indexPath, "utf-8")) as unknown[]).length
+    : 0;
+}
+
 /** Writes `<stem>.png` and `<stem>.json` and appends the checkpoint to `index.json`. */
 export function writeCheckpoint(
   dir: string,
