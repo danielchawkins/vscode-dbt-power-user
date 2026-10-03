@@ -1,0 +1,4 @@
+@import "@webview-lineage/tailwind-globals.css";
+
+.incumbent-host { position: absolute; inset: 0; }
+.incumbent-host .lineage-component { width: 100%; height: 100%; }

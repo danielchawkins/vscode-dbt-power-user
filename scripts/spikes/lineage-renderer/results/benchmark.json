@@ -1,0 +1,2877 @@
+{
+  "browser": {
+    "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.0.0 Safari/537.36",
+    "webgl": "ANGLE (Apple, ANGLE Metal Renderer: Apple M5 Pro, Unspecified Version)",
+    "version": "153.0.8010.12"
+  },
+  "summary": {
+    "incumbent/p50": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": {
+        "median": 10.2,
+        "range": [
+          9.9,
+          10.6
+        ]
+      },
+      "fcpMs": {
+        "median": 480,
+        "range": [
+          480,
+          492
+        ]
+      },
+      "drawnMs": {
+        "median": 544.7,
+        "range": [
+          542.9,
+          551.2
+        ]
+      },
+      "panP50": {
+        "median": 16.7,
+        "range": [
+          16.7,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.4,
+        "range": [
+          16.8,
+          17.5
+        ]
+      },
+      "workP50": {
+        "median": 0.7,
+        "range": [
+          0.7,
+          0.8
+        ]
+      },
+      "workP95": {
+        "median": 0.9,
+        "range": [
+          0.9,
+          1.1
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "dom": 1350,
+      "violations": [],
+      "errors": []
+    },
+    "xyflow-elk/p50": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": {
+        "median": 26.8,
+        "range": [
+          26,
+          26.8
+        ]
+      },
+      "fcpMs": {
+        "median": 128,
+        "range": [
+          128,
+          132
+        ]
+      },
+      "drawnMs": {
+        "median": 131.4,
+        "range": [
+          130,
+          137.3
+        ]
+      },
+      "panP50": {
+        "median": 16.6,
+        "range": [
+          16.6,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.4,
+        "range": [
+          17.2,
+          17.5
+        ]
+      },
+      "workP50": {
+        "median": 0.7,
+        "range": [
+          0.7,
+          0.8
+        ]
+      },
+      "workP95": {
+        "median": 1.1,
+        "range": [
+          1,
+          1.1
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "dom": 1019,
+      "violations": [],
+      "errors": []
+    },
+    "xyflow-dagre/p50": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": {
+        "median": 3.3,
+        "range": [
+          3.3,
+          3.7
+        ]
+      },
+      "fcpMs": {
+        "median": 60,
+        "range": [
+          60,
+          64
+        ]
+      },
+      "drawnMs": {
+        "median": 62.8,
+        "range": [
+          53.6,
+          68.1
+        ]
+      },
+      "panP50": {
+        "median": 16.7,
+        "range": [
+          16.7,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.5,
+        "range": [
+          17.1,
+          17.5
+        ]
+      },
+      "workP50": {
+        "median": 0.7,
+        "range": [
+          0.7,
+          0.8
+        ]
+      },
+      "workP95": {
+        "median": 1,
+        "range": [
+          0.9,
+          1.1
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "dom": 1019,
+      "violations": [],
+      "errors": []
+    },
+    "cytoscape/p50": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": {
+        "median": 37.1,
+        "range": [
+          35.3,
+          42.4
+        ]
+      },
+      "fcpMs": {
+        "median": 88,
+        "range": [
+          84,
+          104
+        ]
+      },
+      "drawnMs": {
+        "median": 88.4,
+        "range": [
+          79.7,
+          103.9
+        ]
+      },
+      "panP50": {
+        "median": 16.6,
+        "range": [
+          16.6,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.6,
+        "range": [
+          17.5,
+          17.6
+        ]
+      },
+      "workP50": {
+        "median": 0.2,
+        "range": [
+          0.2,
+          0.2
+        ]
+      },
+      "workP95": {
+        "median": 0.4,
+        "range": [
+          0.3,
+          0.4
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "dom": 4,
+      "violations": [],
+      "errors": []
+    },
+    "sigma/p50": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": {
+        "median": 43.2,
+        "range": [
+          42.7,
+          52.4
+        ]
+      },
+      "fcpMs": {
+        "median": 72,
+        "range": [
+          68,
+          80
+        ]
+      },
+      "drawnMs": {
+        "median": 67.2,
+        "range": [
+          65.8,
+          76.3
+        ]
+      },
+      "panP50": {
+        "median": 16.7,
+        "range": [
+          16.6,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.4,
+        "range": [
+          17.3,
+          17.5
+        ]
+      },
+      "workP50": {
+        "median": 1.9,
+        "range": [
+          1.6,
+          1.9
+        ]
+      },
+      "workP95": {
+        "median": 2.5,
+        "range": [
+          2.1,
+          2.8
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "dom": 7,
+      "violations": [],
+      "errors": []
+    },
+    "incumbent/p95": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": {
+        "median": 27.6,
+        "range": [
+          27.3,
+          30
+        ]
+      },
+      "fcpMs": {
+        "median": 492,
+        "range": [
+          484,
+          604
+        ]
+      },
+      "drawnMs": {
+        "median": 623.2,
+        "range": [
+          595.5,
+          632.7
+        ]
+      },
+      "panP50": {
+        "median": 16.7,
+        "range": [
+          16.7,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.5,
+        "range": [
+          17.3,
+          17.6
+        ]
+      },
+      "workP50": {
+        "median": 2.4,
+        "range": [
+          2,
+          2.5
+        ]
+      },
+      "workP95": {
+        "median": 2.8,
+        "range": [
+          2.6,
+          3
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "dom": 6531,
+      "violations": [],
+      "errors": []
+    },
+    "xyflow-elk/p95": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": {
+        "median": 27,
+        "range": [
+          26.5,
+          27.4
+        ]
+      },
+      "fcpMs": {
+        "median": 196,
+        "range": [
+          196,
+          200
+        ]
+      },
+      "drawnMs": {
+        "median": 174.2,
+        "range": [
+          170.3,
+          177.1
+        ]
+      },
+      "panP50": {
+        "median": 16.7,
+        "range": [
+          16.7,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.2,
+        "range": [
+          16.8,
+          17.5
+        ]
+      },
+      "workP50": {
+        "median": 2.3,
+        "range": [
+          2.2,
+          2.3
+        ]
+      },
+      "workP95": {
+        "median": 2.6,
+        "range": [
+          2.6,
+          2.8
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "dom": 5562,
+      "violations": [],
+      "errors": []
+    },
+    "xyflow-dagre/p95": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": {
+        "median": 3.1,
+        "range": [
+          3,
+          3.4
+        ]
+      },
+      "fcpMs": {
+        "median": 116,
+        "range": [
+          112,
+          124
+        ]
+      },
+      "drawnMs": {
+        "median": 107.6,
+        "range": [
+          98.4,
+          115
+        ]
+      },
+      "panP50": {
+        "median": 16.7,
+        "range": [
+          16.6,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.4,
+        "range": [
+          17.1,
+          17.5
+        ]
+      },
+      "workP50": {
+        "median": 2.1,
+        "range": [
+          2.1,
+          2.3
+        ]
+      },
+      "workP95": {
+        "median": 2.4,
+        "range": [
+          2.3,
+          2.5
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "dom": 5562,
+      "violations": [],
+      "errors": []
+    },
+    "cytoscape/p95": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": {
+        "median": 78.1,
+        "range": [
+          75.3,
+          78.5
+        ]
+      },
+      "fcpMs": {
+        "median": 172,
+        "range": [
+          168,
+          172
+        ]
+      },
+      "drawnMs": {
+        "median": 148.5,
+        "range": [
+          147.5,
+          156
+        ]
+      },
+      "panP50": {
+        "median": 16.6,
+        "range": [
+          16.6,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 18,
+        "range": [
+          17.9,
+          18.1
+        ]
+      },
+      "workP50": {
+        "median": 0.4,
+        "range": [
+          0.4,
+          0.4
+        ]
+      },
+      "workP95": {
+        "median": 0.6,
+        "range": [
+          0.6,
+          0.6
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "dom": 4,
+      "violations": [],
+      "errors": []
+    },
+    "sigma/p95": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": {
+        "median": 46,
+        "range": [
+          36.1,
+          49.8
+        ]
+      },
+      "fcpMs": {
+        "median": 80,
+        "range": [
+          68,
+          88
+        ]
+      },
+      "drawnMs": {
+        "median": 73.7,
+        "range": [
+          63,
+          84.8
+        ]
+      },
+      "panP50": {
+        "median": 16.7,
+        "range": [
+          16.6,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.4,
+        "range": [
+          16.8,
+          17.4
+        ]
+      },
+      "workP50": {
+        "median": 1.6,
+        "range": [
+          1.5,
+          1.7
+        ]
+      },
+      "workP95": {
+        "median": 2.4,
+        "range": [
+          2.1,
+          2.6
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "dom": 7,
+      "violations": [],
+      "errors": []
+    },
+    "incumbent/max": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": {
+        "median": 31.6,
+        "range": [
+          31.1,
+          33.3
+        ]
+      },
+      "fcpMs": {
+        "median": 492,
+        "range": [
+          484,
+          500
+        ]
+      },
+      "drawnMs": {
+        "median": 652,
+        "range": [
+          639,
+          665
+        ]
+      },
+      "panP50": {
+        "median": 21.5,
+        "range": [
+          21.3,
+          21.7
+        ]
+      },
+      "panP95": {
+        "median": 22.5,
+        "range": [
+          22.4,
+          22.7
+        ]
+      },
+      "workP50": {
+        "median": 3.1,
+        "range": [
+          2.9,
+          3.3
+        ]
+      },
+      "workP95": {
+        "median": 3.6,
+        "range": [
+          3.4,
+          3.9
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "dom": 7861,
+      "violations": [],
+      "errors": []
+    },
+    "xyflow-elk/max": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": {
+        "median": 28.2,
+        "range": [
+          27.4,
+          28.3
+        ]
+      },
+      "fcpMs": {
+        "median": 204,
+        "range": [
+          196,
+          208
+        ]
+      },
+      "drawnMs": {
+        "median": 191.7,
+        "range": [
+          175.5,
+          195.8
+        ]
+      },
+      "panP50": {
+        "median": 16.7,
+        "range": [
+          16.7,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.6,
+        "range": [
+          17.4,
+          17.6
+        ]
+      },
+      "workP50": {
+        "median": 2.5,
+        "range": [
+          2.5,
+          2.7
+        ]
+      },
+      "workP95": {
+        "median": 2.9,
+        "range": [
+          2.8,
+          3.1
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "dom": 6663,
+      "violations": [],
+      "errors": []
+    },
+    "xyflow-dagre/max": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": {
+        "median": 3.3,
+        "range": [
+          3.2,
+          3.4
+        ]
+      },
+      "fcpMs": {
+        "median": 132,
+        "range": [
+          128,
+          132
+        ]
+      },
+      "drawnMs": {
+        "median": 110.6,
+        "range": [
+          107.1,
+          115.5
+        ]
+      },
+      "panP50": {
+        "median": 16.7,
+        "range": [
+          16.7,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.4,
+        "range": [
+          17.2,
+          17.4
+        ]
+      },
+      "workP50": {
+        "median": 2.5,
+        "range": [
+          2.3,
+          2.5
+        ]
+      },
+      "workP95": {
+        "median": 2.9,
+        "range": [
+          2.6,
+          3
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "dom": 6663,
+      "violations": [],
+      "errors": []
+    },
+    "cytoscape/max": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": {
+        "median": 84.9,
+        "range": [
+          84,
+          85.3
+        ]
+      },
+      "fcpMs": {
+        "median": 192,
+        "range": [
+          192,
+          200
+        ]
+      },
+      "drawnMs": {
+        "median": 161.5,
+        "range": [
+          161,
+          173.9
+        ]
+      },
+      "panP50": {
+        "median": 16.6,
+        "range": [
+          16.6,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 18.5,
+        "range": [
+          18,
+          19.2
+        ]
+      },
+      "workP50": {
+        "median": 0.5,
+        "range": [
+          0.5,
+          0.6
+        ]
+      },
+      "workP95": {
+        "median": 0.7,
+        "range": [
+          0.7,
+          0.7
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "dom": 4,
+      "violations": [],
+      "errors": []
+    },
+    "sigma/max": {
+      "ready": 3,
+      "runs": 3,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": {
+        "median": 42.2,
+        "range": [
+          24.3,
+          43.6
+        ]
+      },
+      "fcpMs": {
+        "median": 72,
+        "range": [
+          56,
+          72
+        ]
+      },
+      "drawnMs": {
+        "median": 69.2,
+        "range": [
+          52.9,
+          69.5
+        ]
+      },
+      "panP50": {
+        "median": 16.7,
+        "range": [
+          16.7,
+          16.7
+        ]
+      },
+      "panP95": {
+        "median": 17.4,
+        "range": [
+          17.3,
+          17.4
+        ]
+      },
+      "workP50": {
+        "median": 1.6,
+        "range": [
+          1.3,
+          1.7
+        ]
+      },
+      "workP95": {
+        "median": 2.3,
+        "range": [
+          1.8,
+          2.4
+        ]
+      },
+      "panned": true,
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "dom": 7,
+      "violations": [],
+      "errors": []
+    }
+  },
+  "bundles": {
+    "incumbent": {
+      "js": 8140875,
+      "jsGzip": 2408380,
+      "css": 354926
+    },
+    "xyflow-elk": {
+      "js": 1758433,
+      "jsGzip": 542956,
+      "css": 17037
+    },
+    "xyflow-dagre": {
+      "js": 373653,
+      "jsGzip": 121139,
+      "css": 17037
+    },
+    "cytoscape": {
+      "js": 442937,
+      "jsGzip": 140161,
+      "css": 66
+    },
+    "sigma": {
+      "js": 164704,
+      "jsGzip": 40351,
+      "css": 66
+    }
+  },
+  "results": [
+    {
+      "candidate": "incumbent",
+      "graph": "p50",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 9.9,
+      "fcpMs": 492,
+      "drawnMs": 551.2,
+      "pan": {
+        "start": "translate(-21.5193px, -29.9875px) scale(0.797011)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.5,
+        "max": 17.8,
+        "workP50": 0.7,
+        "workP95": 0.9,
+        "moved": true,
+        "drawnShare": 45.7
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [
+        {
+          "start": 123,
+          "ms": 339
+        }
+      ],
+      "dom": 1350,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-elk",
+      "graph": "p50",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 26,
+      "fcpMs": 128,
+      "drawnMs": 130,
+      "pan": {
+        "start": "translate(51.573px, 27.4837px) scale(0.793028)",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 17.5,
+        "max": 17.7,
+        "workP50": 0.7,
+        "workP95": 1,
+        "moved": true,
+        "drawnShare": 42.2
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 1019,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-dagre",
+      "graph": "p50",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 3.7,
+      "fcpMs": 64,
+      "drawnMs": 62.8,
+      "pan": {
+        "start": "translate(102.105px, 36px) scale(0.736842)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.1,
+        "max": 17.4,
+        "workP50": 0.7,
+        "workP95": 0.9,
+        "moved": true,
+        "drawnShare": 36.8
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 1019,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "cytoscape",
+      "graph": "p50",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 42.4,
+      "fcpMs": 104,
+      "drawnMs": 103.9,
+      "pan": {
+        "start": "22.1,69.5 zoom 0.822",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.6,
+        "max": 19.4,
+        "workP50": 0.2,
+        "workP95": 0.3,
+        "moved": true,
+        "drawnShare": 50
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 4,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "sigma",
+      "graph": "p50",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 52.4,
+      "fcpMs": 80,
+      "drawnMs": 76.3,
+      "pan": {
+        "start": "0.5000,0.5000 ratio 1.000",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.3,
+        "max": 17.7,
+        "workP50": 1.6,
+        "workP95": 2.1,
+        "moved": true,
+        "drawnShare": 16.5
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [
+        {
+          "start": 17,
+          "ms": 53
+        }
+      ],
+      "dom": 7,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "incumbent",
+      "graph": "p95",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 27.6,
+      "fcpMs": 492,
+      "drawnMs": 632.7,
+      "pan": {
+        "start": "translate(503.276px, 19.8909px) scale(0.164728)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.6,
+        "max": 17.7,
+        "workP50": 2.5,
+        "workP95": 3,
+        "moved": true,
+        "drawnShare": 27.8
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [
+        {
+          "start": 118,
+          "ms": 342
+        },
+        {
+          "start": 500,
+          "ms": 104
+        }
+      ],
+      "dom": 6531,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-elk",
+      "graph": "p95",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 27,
+      "fcpMs": 196,
+      "drawnMs": 170.3,
+      "pan": {
+        "start": "translate(527.479px, 35.1803px) scale(0.151646)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 16.8,
+        "max": 19.4,
+        "workP50": 2.3,
+        "workP95": 2.6,
+        "moved": true,
+        "drawnShare": 9.2
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [],
+      "dom": 5562,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-dagre",
+      "graph": "p95",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 3.1,
+      "fcpMs": 112,
+      "drawnMs": 107.6,
+      "pan": {
+        "start": "translate(536.768px, 36px) scale(0.141414)",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 17.4,
+        "max": 17.7,
+        "workP50": 2.3,
+        "workP95": 2.5,
+        "moved": true,
+        "drawnShare": 8
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [],
+      "dom": 5562,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "cytoscape",
+      "graph": "p95",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 78.5,
+      "fcpMs": 172,
+      "drawnMs": 156,
+      "pan": {
+        "start": "494.0,24.0 zoom 0.182",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 18,
+        "max": 30.4,
+        "workP50": 0.4,
+        "workP95": 0.6,
+        "moved": true,
+        "drawnShare": 17
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [
+        {
+          "start": 22,
+          "ms": 79
+        }
+      ],
+      "dom": 4,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "sigma",
+      "graph": "p95",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 49.8,
+      "fcpMs": 88,
+      "drawnMs": 84.8,
+      "pan": {
+        "start": "0.5000,0.5000 ratio 1.000",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 16.8,
+        "max": 17.5,
+        "workP50": 1.7,
+        "workP95": 2.4,
+        "moved": true,
+        "drawnShare": 12.1
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [
+        {
+          "start": 28,
+          "ms": 52
+        }
+      ],
+      "dom": 7,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "incumbent",
+      "graph": "max",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 31.6,
+      "fcpMs": 484,
+      "drawnMs": 639,
+      "pan": {
+        "start": "translate(606.159px, 30.0967px) scale(0.0626689)",
+        "frames": 120,
+        "p50": 21.7,
+        "p95": 22.7,
+        "max": 22.9,
+        "workP50": 3.1,
+        "workP95": 3.6,
+        "moved": true,
+        "drawnShare": 60.8
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 112,
+          "ms": 337
+        },
+        {
+          "start": 489,
+          "ms": 123
+        }
+      ],
+      "dom": 7861,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-elk",
+      "graph": "max",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 28.3,
+      "fcpMs": 204,
+      "drawnMs": 191.7,
+      "pan": {
+        "start": "translate(572.688px, 35.9114px) scale(0.0907165)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.6,
+        "max": 20.4,
+        "workP50": 2.5,
+        "workP95": 2.9,
+        "moved": true,
+        "drawnShare": 3.7
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 124,
+          "ms": 54
+        }
+      ],
+      "dom": 6663,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-dagre",
+      "graph": "max",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 3.4,
+      "fcpMs": 132,
+      "drawnMs": 107.1,
+      "pan": {
+        "start": "translate(574.26px, 36px) scale(0.0900544)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.4,
+        "max": 19.5,
+        "workP50": 2.5,
+        "workP95": 3,
+        "moved": true,
+        "drawnShare": 3.7
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 53,
+          "ms": 53
+        }
+      ],
+      "dom": 6663,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "cytoscape",
+      "graph": "max",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 84.9,
+      "fcpMs": 192,
+      "drawnMs": 161,
+      "pan": {
+        "start": "599.6,22.0 zoom 0.092",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 18,
+        "max": 32.9,
+        "workP50": 0.6,
+        "workP95": 0.7,
+        "moved": true,
+        "drawnShare": 3.9
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 24,
+          "ms": 85
+        }
+      ],
+      "dom": 4,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "sigma",
+      "graph": "max",
+      "run": 0,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 43.6,
+      "fcpMs": 72,
+      "drawnMs": 69.2,
+      "pan": {
+        "start": "0.5000,0.5000 ratio 1.000",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.4,
+        "max": 17.5,
+        "workP50": 1.6,
+        "workP95": 2.4,
+        "moved": true,
+        "drawnShare": 3.4
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [],
+      "dom": 7,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "incumbent",
+      "graph": "p50",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 10.2,
+      "fcpMs": 480,
+      "drawnMs": 542.9,
+      "pan": {
+        "start": "translate(-21.5193px, -29.9875px) scale(0.797011)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 16.8,
+        "max": 17,
+        "workP50": 0.7,
+        "workP95": 0.9,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [
+        {
+          "start": 116,
+          "ms": 338
+        }
+      ],
+      "dom": 1350,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-elk",
+      "graph": "p50",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 26.8,
+      "fcpMs": 128,
+      "drawnMs": 131.4,
+      "pan": {
+        "start": "translate(51.573px, 27.4837px) scale(0.793028)",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 17.2,
+        "max": 17.6,
+        "workP50": 0.8,
+        "workP95": 1.1,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 1019,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-dagre",
+      "graph": "p50",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 3.3,
+      "fcpMs": 60,
+      "drawnMs": 53.6,
+      "pan": {
+        "start": "translate(102.105px, 36px) scale(0.736842)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.5,
+        "max": 17.7,
+        "workP50": 0.8,
+        "workP95": 1.1,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 1019,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "cytoscape",
+      "graph": "p50",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 35.3,
+      "fcpMs": 84,
+      "drawnMs": 79.7,
+      "pan": {
+        "start": "22.1,69.5 zoom 0.822",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 17.6,
+        "max": 20.5,
+        "workP50": 0.2,
+        "workP95": 0.4,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 4,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "sigma",
+      "graph": "p50",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 42.7,
+      "fcpMs": 68,
+      "drawnMs": 65.8,
+      "pan": {
+        "start": "0.5000,0.5000 ratio 1.000",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 17.5,
+        "max": 17.7,
+        "workP50": 1.9,
+        "workP95": 2.8,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 7,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "incumbent",
+      "graph": "p95",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 27.3,
+      "fcpMs": 484,
+      "drawnMs": 623.2,
+      "pan": {
+        "start": "translate(503.276px, 19.8909px) scale(0.164728)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.3,
+        "max": 17.7,
+        "workP50": 2.4,
+        "workP95": 2.8,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [
+        {
+          "start": 115,
+          "ms": 335
+        },
+        {
+          "start": 489,
+          "ms": 102
+        }
+      ],
+      "dom": 6531,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-elk",
+      "graph": "p95",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 26.5,
+      "fcpMs": 196,
+      "drawnMs": 174.2,
+      "pan": {
+        "start": "translate(527.479px, 35.1803px) scale(0.151646)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.5,
+        "max": 20.6,
+        "workP50": 2.3,
+        "workP95": 2.8,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [],
+      "dom": 5562,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-dagre",
+      "graph": "p95",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 3.4,
+      "fcpMs": 116,
+      "drawnMs": 98.4,
+      "pan": {
+        "start": "translate(536.768px, 36px) scale(0.141414)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.1,
+        "max": 17.4,
+        "workP50": 2.1,
+        "workP95": 2.3,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [],
+      "dom": 5562,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "cytoscape",
+      "graph": "p95",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 75.3,
+      "fcpMs": 168,
+      "drawnMs": 147.5,
+      "pan": {
+        "start": "494.0,24.0 zoom 0.182",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 17.9,
+        "max": 30.9,
+        "workP50": 0.4,
+        "workP95": 0.6,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [
+        {
+          "start": 22,
+          "ms": 76
+        }
+      ],
+      "dom": 4,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "sigma",
+      "graph": "p95",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 36.1,
+      "fcpMs": 68,
+      "drawnMs": 63,
+      "pan": {
+        "start": "0.5000,0.5000 ratio 1.000",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.4,
+        "max": 17.8,
+        "workP50": 1.5,
+        "workP95": 2.1,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [],
+      "dom": 7,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "incumbent",
+      "graph": "max",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 31.1,
+      "fcpMs": 500,
+      "drawnMs": 665,
+      "pan": {
+        "start": "translate(606.159px, 30.0967px) scale(0.0626689)",
+        "frames": 120,
+        "p50": 21.5,
+        "p95": 22.4,
+        "max": 22.7,
+        "workP50": 3.3,
+        "workP95": 3.9,
+        "moved": true
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 123,
+          "ms": 340
+        },
+        {
+          "start": 515,
+          "ms": 122
+        }
+      ],
+      "dom": 7861,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-elk",
+      "graph": "max",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 27.4,
+      "fcpMs": 196,
+      "drawnMs": 175.5,
+      "pan": {
+        "start": "translate(572.688px, 35.9114px) scale(0.0907165)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.4,
+        "max": 21.5,
+        "workP50": 2.5,
+        "workP95": 2.8,
+        "moved": true
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 117,
+          "ms": 52
+        }
+      ],
+      "dom": 6663,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-dagre",
+      "graph": "max",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 3.2,
+      "fcpMs": 128,
+      "drawnMs": 115.5,
+      "pan": {
+        "start": "translate(574.26px, 36px) scale(0.0900544)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.4,
+        "max": 18.7,
+        "workP50": 2.5,
+        "workP95": 2.9,
+        "moved": true
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 51,
+          "ms": 53
+        }
+      ],
+      "dom": 6663,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "cytoscape",
+      "graph": "max",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 85.3,
+      "fcpMs": 200,
+      "drawnMs": 173.9,
+      "pan": {
+        "start": "599.6,22.0 zoom 0.092",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 19.2,
+        "max": 31.5,
+        "workP50": 0.5,
+        "workP95": 0.7,
+        "moved": true
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 25,
+          "ms": 85
+        }
+      ],
+      "dom": 4,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "sigma",
+      "graph": "max",
+      "run": 1,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 24.3,
+      "fcpMs": 56,
+      "drawnMs": 52.9,
+      "pan": {
+        "start": "0.5000,0.5000 ratio 1.000",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.4,
+        "max": 17.7,
+        "workP50": 1.3,
+        "workP95": 1.8,
+        "moved": true
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [],
+      "dom": 7,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "incumbent",
+      "graph": "p50",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 10.6,
+      "fcpMs": 480,
+      "drawnMs": 544.7,
+      "pan": {
+        "start": "translate(-21.5193px, -29.9875px) scale(0.797011)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.4,
+        "max": 17.7,
+        "workP50": 0.8,
+        "workP95": 1.1,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [
+        {
+          "start": 112,
+          "ms": 340
+        }
+      ],
+      "dom": 1350,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-elk",
+      "graph": "p50",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 26.8,
+      "fcpMs": 132,
+      "drawnMs": 137.3,
+      "pan": {
+        "start": "translate(51.573px, 27.4837px) scale(0.793028)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.4,
+        "max": 17.7,
+        "workP50": 0.7,
+        "workP95": 1.1,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 1019,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-dagre",
+      "graph": "p50",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 3.3,
+      "fcpMs": 60,
+      "drawnMs": 68.1,
+      "pan": {
+        "start": "translate(102.105px, 36px) scale(0.736842)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.5,
+        "max": 17.6,
+        "workP50": 0.7,
+        "workP95": 1,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 1019,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "cytoscape",
+      "graph": "p50",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 37.1,
+      "fcpMs": 88,
+      "drawnMs": 88.4,
+      "pan": {
+        "start": "22.1,69.5 zoom 0.822",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 17.5,
+        "max": 20,
+        "workP50": 0.2,
+        "workP95": 0.4,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 4,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "sigma",
+      "graph": "p50",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 52,
+        "columnEdges": 175
+      },
+      "layoutMs": 43.2,
+      "fcpMs": 72,
+      "drawnMs": 67.2,
+      "pan": {
+        "start": "0.5000,0.5000 ratio 1.000",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.4,
+        "max": 17.8,
+        "workP50": 1.9,
+        "workP95": 2.5,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 52,
+        "edges": 179
+      },
+      "longTasks": [],
+      "dom": 7,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "incumbent",
+      "graph": "p95",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 30,
+      "fcpMs": 604,
+      "drawnMs": 595.5,
+      "pan": {
+        "start": "translate(503.276px, 19.8909px) scale(0.164728)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.5,
+        "max": 17.6,
+        "workP50": 2,
+        "workP95": 2.6,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [
+        {
+          "start": 108,
+          "ms": 333
+        },
+        {
+          "start": 462,
+          "ms": 108
+        }
+      ],
+      "dom": 6531,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-elk",
+      "graph": "p95",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 27.4,
+      "fcpMs": 200,
+      "drawnMs": 177.1,
+      "pan": {
+        "start": "translate(527.479px, 35.1803px) scale(0.151646)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.2,
+        "max": 20.1,
+        "workP50": 2.2,
+        "workP95": 2.6,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [],
+      "dom": 5562,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-dagre",
+      "graph": "p95",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 3,
+      "fcpMs": 124,
+      "drawnMs": 115,
+      "pan": {
+        "start": "translate(536.768px, 36px) scale(0.141414)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.5,
+        "max": 17.7,
+        "workP50": 2.1,
+        "workP95": 2.4,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [],
+      "dom": 5562,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "cytoscape",
+      "graph": "p95",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 78.1,
+      "fcpMs": 172,
+      "drawnMs": 148.5,
+      "pan": {
+        "start": "494.0,24.0 zoom 0.182",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 18.1,
+        "max": 30.5,
+        "workP50": 0.4,
+        "workP95": 0.6,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [
+        {
+          "start": 22,
+          "ms": 78
+        }
+      ],
+      "dom": 4,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "sigma",
+      "graph": "p95",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 4,
+        "edges": 4,
+        "columns": 267,
+        "columnEdges": 1042
+      },
+      "layoutMs": 46,
+      "fcpMs": 80,
+      "drawnMs": 73.7,
+      "pan": {
+        "start": "0.5000,0.5000 ratio 1.000",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 17.4,
+        "max": 17.6,
+        "workP50": 1.6,
+        "workP95": 2.6,
+        "moved": true
+      },
+      "counts": {
+        "tables": 4,
+        "columns": 267,
+        "edges": 1046
+      },
+      "longTasks": [],
+      "dom": 7,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "incumbent",
+      "graph": "max",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 33.3,
+      "fcpMs": 492,
+      "drawnMs": 652,
+      "pan": {
+        "start": "translate(606.159px, 30.0967px) scale(0.0626689)",
+        "frames": 120,
+        "p50": 21.3,
+        "p95": 22.5,
+        "max": 23.3,
+        "workP50": 2.9,
+        "workP95": 3.4,
+        "moved": true
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 111,
+          "ms": 347
+        },
+        {
+          "start": 501,
+          "ms": 127
+        }
+      ],
+      "dom": 7861,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-elk",
+      "graph": "max",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 28.2,
+      "fcpMs": 208,
+      "drawnMs": 195.8,
+      "pan": {
+        "start": "translate(572.688px, 35.9114px) scale(0.0907165)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.6,
+        "max": 21.9,
+        "workP50": 2.7,
+        "workP95": 3.1,
+        "moved": true
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 128,
+          "ms": 51
+        }
+      ],
+      "dom": 6663,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "xyflow-dagre",
+      "graph": "max",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 3.3,
+      "fcpMs": 132,
+      "drawnMs": 110.6,
+      "pan": {
+        "start": "translate(574.26px, 36px) scale(0.0900544)",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.2,
+        "max": 17.2,
+        "workP50": 2.3,
+        "workP95": 2.6,
+        "moved": true
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 57,
+          "ms": 51
+        }
+      ],
+      "dom": 6663,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "cytoscape",
+      "graph": "max",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 84,
+      "fcpMs": 192,
+      "drawnMs": 161.5,
+      "pan": {
+        "start": "599.6,22.0 zoom 0.092",
+        "frames": 120,
+        "p50": 16.6,
+        "p95": 18.5,
+        "max": 32,
+        "workP50": 0.5,
+        "workP95": 0.7,
+        "moved": true
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [
+        {
+          "start": 23,
+          "ms": 84
+        }
+      ],
+      "dom": 4,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    },
+    {
+      "candidate": "sigma",
+      "graph": "max",
+      "run": 2,
+      "ready": true,
+      "size": {
+        "tables": 5,
+        "edges": 7,
+        "columns": 324,
+        "columnEdges": 1241
+      },
+      "layoutMs": 42.2,
+      "fcpMs": 72,
+      "drawnMs": 69.5,
+      "pan": {
+        "start": "0.5000,0.5000 ratio 1.000",
+        "frames": 120,
+        "p50": 16.7,
+        "p95": 17.3,
+        "max": 17.6,
+        "workP50": 1.7,
+        "workP95": 2.3,
+        "moved": true
+      },
+      "counts": {
+        "tables": 5,
+        "columns": 324,
+        "edges": 1248
+      },
+      "longTasks": [],
+      "dom": 7,
+      "violations": [],
+      "errors": [],
+      "console": [
+        "error: Failed to load resource: the server responded with a status of 404 (Not Found)"
+      ]
+    }
+  ]
+}
