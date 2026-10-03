@@ -1,11 +1,11 @@
 import { executeRequestInAsync } from "./requests";
 import { Alert, Button } from "@uicore";
-import { MissingLineageMessage } from "./types";
+import type { PanelNotice } from "@fusion-power-user/webview-contract";
 
 const MissingLineageMessageComponent = ({
   missingLineageMessage,
 }: {
-  missingLineageMessage?: MissingLineageMessage;
+  missingLineageMessage?: PanelNotice;
 }): JSX.Element | null => {
   const openProblemsTab = () => {
     return executeRequestInAsync("openProblemsTab");

@@ -369,8 +369,6 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
         });
         this.respond(syncRequestId, connectedColumnsBody(result, targets));
       },
-      showInfoNotification: ({ args }) =>
-        window.showInformationMessage(args.params.message),
       getLineageSettings: ({ syncRequestId }) =>
         this.respond(syncRequestId, this.getLineageSettings()),
       persistLineageSettings: async ({ args, syncRequestId }) => {

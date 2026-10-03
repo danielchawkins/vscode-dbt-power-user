@@ -15,7 +15,7 @@
     "watch": "npm run build:contract && concurrently --names contract,webview \"npm run watch --prefix ../packages/webview-contract\" \"npm run watch:app\"",
     "watch:app": "rm -rf dist && tsc && vite build --watch",
     "build": "npm run build:contract && npm run build:app",
-    "build:app": "rm -rf dist && NODE_OPTIONS=--max-old-space-size=8192 tsc && NODE_OPTIONS=--max-old-space-size=8192 vite build --emptyOutDir=false && { [ \"$FPU_LINEAGE_RENDERER\" != incumbent ] || bash ../scripts/workspace/check-webview-tailwind-css.sh dist/assets/lineage.css; }",
+    "build:app": "rm -rf dist && NODE_OPTIONS=--max-old-space-size=8192 tsc && NODE_OPTIONS=--max-old-space-size=8192 vite build --emptyOutDir=false",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0",
@@ -25,7 +25,6 @@
     "lint:prune": "eslint . --prune-suppressions"
   },
   "dependencies": {
-    "@altimateai/ui-components": "^0.0.88",
     "@dagrejs/dagre": "^3.1.1",
     "@fusion-power-user/webview-contract": "*",
     "@perspective-dev/client": "5.5.1",
@@ -33,7 +32,6 @@
     "@perspective-dev/viewer": "5.5.1",
     "@perspective-dev/viewer-charts": "5.5.1",
     "@perspective-dev/viewer-datagrid": "5.5.1",
-    "@reduxjs/toolkit": "^2.12.0",
     "@vscode/codicons": "^0.0.45",
     "@xyflow/react": "^12.12.0",
     "react": "^18.3.1",
@@ -57,8 +55,6 @@
     "@typescript-eslint/eslint-plugin": "^8.70.0",
     "@typescript-eslint/parser": "^8.70.0",
     "@vitejs/plugin-react": "^6.1.1",
-    "autoprefixer": "^10.6.1",
-    "esbuild": "^0.28.2",
     "eslint": "^10.11.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-jsx-a11y-x": "^0.2.0",
@@ -68,8 +64,6 @@
     "fast-check": "^4.10.2",
     "globals": "^17.13.0",
     "jsdom": "^30.1.1",
-    "postcss": "^8.5.28",
-    "tailwindcss": "^3.4.19",
     "typescript": "^6.0.3",
     "vite": "^8.3.0",
     "vitest": "^5.0.3"

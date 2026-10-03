@@ -168,7 +168,6 @@ export type PanelMessage =
       { includeSources?: boolean; allowSelfReference?: boolean }
     >
   | Request<"getConnectedColumns", ConnectedColumnsParams>
-  | Request<"showInfoNotification", { message: string }>
   | OptionalRequest<"getLineageSettings">
   | Request<"persistLineageSettings", Partial<LineageSettings>>;
 
@@ -226,7 +225,6 @@ const panelFields: CommandFields<PanelMessage> = {
     selectedColumn: optional(shape({ name: isString, table: isString })),
     showIndirectEdges: optionalBoolean,
   }),
-  showInfoNotification: request({ message: isString }),
   getLineageSettings: optionalRequest({}),
   persistLineageSettings: request<Partial<LineageSettings>>({
     showSelectEdges: optionalBoolean,

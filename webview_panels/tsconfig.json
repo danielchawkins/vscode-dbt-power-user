@@ -22,7 +22,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "paths": {
-      "@lineageRenderer": ["./src/modules/lineage/LineageGraph.tsx"],
       "@uicore": ["./src/uiCore/index.ts"],
       "@assets/*": ["./src/assets/*"],
       "@modules/*": ["./src/modules/*"],

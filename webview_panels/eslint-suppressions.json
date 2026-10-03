@@ -98,14 +98,6 @@
       "count": 1
     }
   },
-  "src/modules/lineage/LineageView.tsx": {
-    "@eslint-react/set-state-in-effect": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "src/modules/queryPanel/QueryPanel.tsx": {
     "@eslint-react/exhaustive-deps": {
       "count": 1

@@ -30,8 +30,14 @@ const sentCommands = (files: string[]) =>
       ...readFileSync(file, "utf8").matchAll(
         /executeRequestIn(?:Sync|Async)\(\s*"([^"]+)"/g,
       ),
-    ].map((match) => ({ file: path.relative(modules, file), command: match[1] })),
+    ].map((match) => ({
+      file: path.relative(modules, file),
+      command: match[1],
+    })),
   );
+
+/** Commands every panel sends through a shared module rather than its own source. */
+const SHARED_COMMANDS: readonly string[] = ["webview:ready"];
 
 const panels = [
   {
@@ -50,6 +56,23 @@ describe("panel senders", () => {
       expect(sent.length).toBeGreaterThan(0);
       expect(
         sent.filter(({ command }) => !(commands as string[]).includes(command)),
+      ).toEqual([]);
+    },
+  );
+
+  it.each(panels)(
+    "$dir sends every command in its PanelMessage union",
+    ({ dir, commands }) => {
+      // A command passed through a variable or ternary still appears as a string literal in the panel's source.
+      const text = sources(path.join(modules, dir))
+        .map((file) => readFileSync(file, "utf8"))
+        .join("\n");
+      expect(
+        commands.filter(
+          (command) =>
+            !SHARED_COMMANDS.includes(command) &&
+            !text.includes(JSON.stringify(command)),
+        ),
       ).toEqual([]);
     },
   );
@@ -129,21 +152,5 @@ describe("panelRequests", () => {
       executeRequestInAsync(either);
     };
     expect(typeChecks).toBeTypeOf("function");
-  });
-});
-
-describe("lineage component requests", () => {
-  it("maps the component's table requests and accepts only lineage request commands", async () => {
-    const { isLineageRequest } = await import("@modules/lineage/requests");
-    const { componentTableRequests } = await import(
-      "@modules/lineage/componentAdapter"
-    );
-    for (const command of Object.values(componentTableRequests)) {
-      expect(isLineageRequest(command)).toBe(true);
-    }
-    expect(isLineageRequest("getColumns")).toBe(true);
-    expect(isLineageRequest("webview:ready")).toBe(false);
-    expect(isLineageRequest("upstreamTables")).toBe(false);
-    expect(isLineageRequest("getQueryHistory")).toBe(false);
   });
 });

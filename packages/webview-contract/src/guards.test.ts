@@ -478,10 +478,6 @@ const lineagePanel: Fixture[] = [
       "args.params.currAnd1HopTables": ["string"],
     },
   },
-  {
-    message: { command: "showInfoNotification", ...params({ message: "m" }) },
-    required: ["args.params.message"],
-  },
   { message: { command: "getLineageSettings", ...params({}) }, required: [] },
   {
     message: {
