@@ -1,7 +1,10 @@
 import { TableData } from "@modules/queryPanel/context/types";
+import type { ColumnType } from "@perspective-dev/client";
 
 /** Maps a known legacy agate type to a Perspective schema type. */
-export const mapColumnType = (agateType: string | null | undefined): string => {
+export const mapColumnType = (
+  agateType: string | null | undefined,
+): ColumnType => {
   switch (agateType) {
     case "Text":
       return "string";
@@ -43,13 +46,13 @@ export function buildPerspectiveTableInit(
   columnTypes: (string | null | undefined)[],
   data: TableData,
 ): {
-  schema: Record<string, string>;
+  schema: Record<string, ColumnType>;
   rows: Record<string, unknown>[];
   /** Result column order; an object's key order moves integer-like names first, so the schema cannot carry it. */
   columns: string[];
 } {
   const rows = Array.isArray(data) ? data : [];
-  const schema: Record<string, string> = {};
+  const schema: Record<string, ColumnType> = {};
   columnNames.forEach((name, i) => {
     schema[name] = mapColumnType(columnTypes[i]);
   });

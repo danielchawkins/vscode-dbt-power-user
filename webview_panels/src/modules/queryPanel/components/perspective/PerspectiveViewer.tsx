@@ -1,34 +1,36 @@
-import "./initPerspective";
-import perspective from "@finos/perspective";
-import "@finos/perspective-viewer";
-import type { ColumnConfigValues } from "@finos/perspective-viewer";
-import {
-  HTMLPerspectiveViewerElement,
-  ViewerConfigUpdate,
-} from "@finos/perspective-viewer";
-import "@finos/perspective-viewer-d3fc";
-import "@finos/perspective-viewer-datagrid";
-import "@finos/perspective-viewer/dist/css/monokai.css";
-import "@finos/perspective-viewer/dist/css/pro-dark.css";
-import "@finos/perspective-viewer/dist/css/pro.css";
-import "@finos/perspective-viewer/dist/css/solarized-dark.css";
-import "@finos/perspective-viewer/dist/css/solarized.css";
-import "@finos/perspective-viewer/dist/css/vaporwave.css";
-import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
 import { setPerspectiveTheme } from "@modules/queryPanel/context/queryPanelReducer";
 import { TableData } from "@modules/queryPanel/context/types";
 import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
+import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
+import perspective from "@perspective-dev/client";
+import "@perspective-dev/viewer";
+import type {
+  HTMLPerspectiveViewerElement,
+  ViewerConfigUpdate,
+} from "@perspective-dev/viewer";
+import "@perspective-dev/viewer-charts";
+import "@perspective-dev/viewer-datagrid";
+import "@perspective-dev/viewer/themes/monokai.css";
+import "@perspective-dev/viewer/themes/pro-dark.css";
+import "@perspective-dev/viewer/themes/pro.css";
+import "@perspective-dev/viewer/themes/solarized-dark.css";
+import "@perspective-dev/viewer/themes/solarized.css";
+import "@perspective-dev/viewer/themes/vaporwave.css";
 import { Drawer, DrawerRef } from "@uicore";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useErrorBoundary } from "react-error-boundary";
+import { attachCellViewer, CellViewerDetail } from "./cellViewer";
 import { buildPerspectiveTableInit } from "./columnTypeMapping";
-import classes from "./perspective.module.css";
+import "./initPerspective";
 import perspectiveStyles from "./perspective.css?inline";
-import "./PerspectivePlugins";
+import classes from "./perspective.module.css";
 import "./themes.css";
+
+/** Name of the query result table on the shared Perspective client. */
+const TABLE_NAME = "query_result";
 
 interface Props {
   data: TableData;
@@ -83,9 +85,10 @@ const PerspectiveViewer = ({
         ],
       ];
     }),
-  ) as Record<string, ColumnConfigValues>;
+  );
 
   const config: ViewerConfigUpdate = {
+    table: TABLE_NAME,
     theme: perspectiveTheme,
     title: "query result",
     columns: [...columnNames],
@@ -113,7 +116,7 @@ const PerspectiveViewer = ({
           .map((fieldName) => {
             const fieldData = row[fieldName];
             if (fieldData && typeof fieldData === "string") {
-              return `"${(fieldData).replace(/"/g, '""')}"`; // escape double quotes and Wrap in double quotes
+              return `"${fieldData.replace(/"/g, '""')}"`; // escape double quotes and Wrap in double quotes
             }
             return JSON.stringify(fieldData, replacer);
           })
@@ -151,7 +154,7 @@ const PerspectiveViewer = ({
 
   const updateCustomStyles = (currentTheme: string) => {
     const shadowRoot = perspectiveViewerRef.current?.querySelector(
-      "perspective-datagrid-json-viewer-plugin",
+      "perspective-viewer-datagrid",
     )?.shadowRoot;
     if (!shadowRoot) {
       return;
@@ -183,12 +186,10 @@ const PerspectiveViewer = ({
       // `perspective.worker()` takes the client WebAssembly from the defined `perspective-viewer` element.
       await customElements.whenDefined("perspective-viewer");
       const worker = await perspective.worker();
-      // Perspective accepts a schema object; its generated type only declares the row-data overload.
-      // @ts-expect-error schema initialization is supported at runtime
-      const table = await worker.table(schema);
+      const table = await worker.table(schema, { name: TABLE_NAME });
       await table.replace(rows);
 
-      await perspectiveViewerRef.current.load(table);
+      await perspectiveViewerRef.current.load(worker);
       await perspectiveViewerRef.current.resetThemes([
         "Vintage",
         "Pro Light",
@@ -199,27 +200,23 @@ const PerspectiveViewer = ({
         "Monokai",
       ]);
       await perspectiveViewerRef.current.restore(config);
-      const datagridShadowRoot = perspectiveViewerRef.current?.shadowRoot;
-      if (datagridShadowRoot) {
-        const exportButton = datagridShadowRoot.getElementById("export");
-        if (!exportButton) {
-          return;
-        }
-        exportButton.removeEventListener("click", downloadAsCSV);
-        exportButton.addEventListener("click", downloadAsCSV);
-      }
+      await attachCellViewer(perspectiveViewerRef.current);
+      const exportButton =
+        perspectiveViewerRef.current.shadowRoot?.getElementById("export");
+      exportButton?.removeEventListener("click", downloadAsCSV);
+      exportButton?.addEventListener("click", downloadAsCSV);
       updateCustomStyles(perspectiveTheme);
       perspectiveViewerRef.current.addEventListener(
         "perspective-config-update",
         (event) => {
-          const ev = event as CustomEvent<ViewerConfigUpdate>;
-          panelLogger.log("perspective-config-update", ev.detail);
-          if (ev.detail.theme) {
-            updateCustomStyles(ev.detail.theme);
+          const { theme: nextTheme } = event.detail.getConfig();
+          panelLogger.log("perspective-config-update", nextTheme);
+          if (nextTheme) {
+            updateCustomStyles(nextTheme);
             executeRequestInAsync("updateConfig", {
-              perspectiveTheme: ev.detail.theme,
+              perspectiveTheme: nextTheme,
             });
-            dispatch(setPerspectiveTheme(ev.detail.theme));
+            dispatch(setPerspectiveTheme(nextTheme));
           }
         },
       );
@@ -240,13 +237,9 @@ const PerspectiveViewer = ({
     loadPerspectiveData().catch((err) => panelLogger.error(err));
 
     // Handle the event when a string or JSON is clicked in the perspective viewer datagrid
-    const handleOpenDrawer = (event: CustomEvent) => {
+    const handleOpenDrawer = (event: CustomEvent<CellViewerDetail>) => {
       drawerRef.current?.open();
-      const detail = event.detail as {
-        type: string;
-        message: string;
-        columnName: string;
-      };
+      const detail = event.detail;
       setDrawerTitle(detail?.columnName);
       if (detail?.type === "string") {
         // adding \n after every 45 characters to make it readable
