@@ -21,7 +21,11 @@
     "packages/webview-contract": {
       "entry": ["src/**/*.test.ts"],
       "project": ["src/**/*.ts"]
+    },
+    "webview_panels": {
+      "entry": ["src/entries/*.tsx", "src/**/*.test.{ts,tsx}"],
+      "project": ["src/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["@vscode/codicons"]
     }
-  },
-  "ignoreWorkspaces": ["webview_panels"]
+  }
 }

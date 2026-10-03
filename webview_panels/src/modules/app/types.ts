@@ -13,9 +13,3 @@ export interface ContextProps {
   dispatch: React.Dispatch<AppAction>;
 }
 
-export interface User {
-  display_name: string;
-  first_name: string;
-  last_name: string;
-  id: number;
-}

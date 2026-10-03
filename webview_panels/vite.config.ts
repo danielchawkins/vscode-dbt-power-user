@@ -69,7 +69,6 @@ export const viteConfig = defineConfig({
       "@uicore": path.resolve(import.meta.dirname, "./src/uiCore"),
       "@assets": path.resolve(import.meta.dirname, "./src/assets"),
       "@modules": path.resolve(import.meta.dirname, "./src/modules"),
-      "@testUtils": path.resolve(import.meta.dirname, "./src/testUtils"),
       "@vscodeApi": path.resolve(import.meta.dirname, "./src/modules/vscode"),
     },
   },

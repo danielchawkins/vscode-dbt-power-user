@@ -7,7 +7,6 @@ import tsparser from "@typescript-eslint/parser";
 import reactRefresh from "eslint-plugin-react-refresh";
 import jsxA11yX from "eslint-plugin-jsx-a11y-x";
 import prettier from "eslint-config-prettier";
-import storybook from "eslint-plugin-storybook";
 import lodashUnderscore from "eslint-plugin-you-dont-need-lodash-underscore";
 import sonarjs from "eslint-plugin-sonarjs";
 import globals from "globals";
@@ -17,8 +16,6 @@ const typescriptRules = require("./eslint/typescript.cjs");
 
 const tsFiles = ["**/*.{ts,tsx}"];
 const testFiles = ["src/**/*.test.{ts,tsx}", "src/test/**/*.{ts,tsx}"];
-const storybookConfigFiles = [".storybook/**/*.{ts,tsx}"];
-const storyFiles = ["src/**/*.stories.{ts,tsx}"];
 
 // Only the request executor posts to the host; every other file sends through its panel's requests module.
 const vscodeApiMessage = "Send through the panel's requests module.";
@@ -37,7 +34,6 @@ export default defineConfig(
   {
     ignores: [
       "dist/**",
-      "storybook-static/**",
       "eslint/**",
       "eslint.config.mjs",
       "src/lib/altimate/**",
@@ -46,7 +42,7 @@ export default defineConfig(
   },
   {
     files: tsFiles,
-    ignores: [".storybook/**", ...testFiles],
+    ignores: testFiles,
     extends: [
       js.configs.recommended,
       ...typescriptEslint.configs["flat/recommended-type-checked"],
@@ -169,25 +165,6 @@ export default defineConfig(
     },
   },
   {
-    files: storybookConfigFiles,
-    extends: [
-      ...typescriptEslint.configs["flat/recommended"],
-      typescriptEslint.configs["flat/disable-type-checked"],
-      eslintReact.configs["disable-type-checked"],
-      eslintReact.configs["disable-experimental"],
-      ...storybook.configs["flat/recommended"],
-    ],
-    languageOptions: {
-      parser: tsparser,
-      parserOptions: {
-        ecmaVersion: "latest",
-        sourceType: "module",
-        ecmaFeatures: { jsx: true },
-      },
-    },
-  },
-  ...storybook.configs["flat/recommended"],
-  {
     files: ["src/modules/**"],
     ignores: [
       "src/modules/app/requestExecutor.ts",
@@ -235,7 +212,7 @@ export default defineConfig(
   },
   {
     files: ["src/**/*.{ts,tsx}"],
-    ignores: [...testFiles, ...storyFiles],
+    ignores: testFiles,
     plugins: { sonarjs },
     rules: {
       complexity: ["error", 15],

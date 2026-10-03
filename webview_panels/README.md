@@ -72,7 +72,6 @@ classDiagram
 
 - UI components are built in [./src/uiCore](./src/uiCore/index.ts) package. Any new UI component should be imported only from this package. This will enable us to apply consistent styling, create ui toolkit and ability to switch to new UI library easily if needed
 - `reactstrap` (which is the current ui library) import is restricted in components in `src/modules`, to avoid importing the ui components directly from reactstrap. Instead export the necessary component from [./src/uiCore](./src/uiCore/index.ts) and use it in components
-- [Storybook](https://storybook.js.org/) is integrated and [ui tool kit](./src/uiCore/uiToolkitStories) is built in storybook to check the available UI components, typography, colors. If you add any new component to uiCore, add that component to above storybook.
 - use `panelLogger` for logging from webview panels. We can make this to use console or any logger in future
 
 ## Making API calls
@@ -82,22 +81,3 @@ classDiagram
   - `executeRequestInSync` posts a command whose message carries `syncRequestId` and resolves with the host's `response` body
   - `executeRequestInAsync` posts a command without waiting
   - a command outside the union, or a payload that does not match it, is a compile error; ESLint forbids `postMessage` elsewhere
-
-## Storybook
-
-- vscode api integration is added using manual mock in [.storybook/__mocks__/vscode.ts](./.storybook/__mocks__/vscode.ts).
-- Sample code (use `vscode` field in `parameters` to pass your mock data):
-
-  ```tsx
-  export const QueryPanelDefaultView = {
-    render: (): JSX.Element => {
-      return <QueryPanelProvider />;
-    },
-    parameters: {
-      vscode: {
-        data: { key: "value" },
-        timer: 3000,
-      },
-    },
-  };
-  ```
