@@ -134,7 +134,7 @@ describe("fusionStatus helpers", () => {
     expect(lines.every((line) => !line.text.includes("command:"))).toBe(true);
   });
 
-  it("counts untyped sources and names an old Fusion, with no command", () => {
+  it("counts untyped sources, with no command", () => {
     const [untyped] = optInLines({
       strict: true,
       schemaOrigin: {
@@ -147,12 +147,6 @@ describe("fusionStatus helpers", () => {
     });
     expect(untyped.text).toMatch(/^2 source column/);
     expect(untyped.command).toBeUndefined();
-    expect(
-      optInLines({
-        strict: true,
-        schemaOrigin: { kind: "unsupportedFusion", version: "2.0.5" },
-      })[0].text,
-    ).toContain("2.0.5");
   });
 });
 

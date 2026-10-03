@@ -287,12 +287,9 @@ export class Project implements Disposable, ManifestProject {
   }
 
   /** Whether strict analysis of this project can run without the warehouse; see `resolveSchemaOrigin`. */
-  schemaOriginStatus(
-    fusionVersion = this.getFusionVersion(),
-  ): SchemaOriginStatus {
+  schemaOriginStatus(): SchemaOriginStatus {
     return resolveSchemaOrigin({
       projectConfig: readDbtProjectFile(this.projectRoot.fsPath).config,
-      fusionVersion,
       sources: this._manifest?.sourceMetaMap ?? new Map(),
     });
   }

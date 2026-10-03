@@ -33,7 +33,7 @@ export function fixturePath(fixtureName: string): string {
 }
 
 /**
- * Checks whether dbt on PATH is Fusion 2.0.5 or later.
+ * Checks whether dbt on PATH is Fusion 2.0.6 or later.
  * Returns the verdict (ok/untestedMajor/tooOld/notFusion).
  */
 export function checkFusionVersion() {

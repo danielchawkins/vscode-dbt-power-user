@@ -237,11 +237,6 @@ export function optInLines(optIns: ProjectOptIns | undefined): OptInLine[] {
         },
       });
       break;
-    case "unsupportedFusion":
-      lines.push({
-        text: `Local source schemas need dbt Fusion 2.0.6 or later (found ${origin.version}).`,
-      });
-      break;
     case "untypedSources":
       lines.push({
         text:

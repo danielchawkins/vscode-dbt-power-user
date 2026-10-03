@@ -182,7 +182,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
 
@@ -207,7 +207,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
 
@@ -255,7 +255,7 @@ describe("FusionClientPool", () => {
       }
       return {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       };
     });
@@ -295,7 +295,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
 
@@ -352,7 +352,7 @@ describe("FusionClientPool", () => {
       await resolveBlocked;
       return {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       };
     });
@@ -378,7 +378,7 @@ describe("FusionClientPool", () => {
       await resolveBlocked;
       return {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       };
     });
@@ -399,7 +399,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
 
@@ -425,7 +425,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
 
@@ -456,7 +456,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
     const general = makeProject("general", "/workspace/general");
@@ -485,12 +485,12 @@ describe("FusionClientPool", () => {
     resolver.resolve
       .mockResolvedValueOnce({
         path: "/opt/dbt-old",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       })
       .mockResolvedValueOnce({
         path: "/opt/dbt-new",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       });
 
@@ -515,7 +515,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
 
@@ -538,7 +538,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
     const project = makeProject("general", "/workspace/general");
@@ -564,7 +564,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
     const project = makeProject("general", "/workspace/general");
@@ -588,7 +588,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
     const general = makeProject("general", "/workspace/general");
@@ -610,7 +610,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
 
@@ -649,7 +649,7 @@ describe("FusionClientPool", () => {
 
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
     registry.setProjects([project]);
@@ -663,7 +663,7 @@ describe("FusionClientPool", () => {
     const pool = createPool();
     resolver.resolve.mockResolvedValue({
       path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
 
@@ -697,8 +697,8 @@ describe("FusionClientPool", () => {
       schemaOriginStatus: () => ({ kind: "local" }) as const,
     };
     const changed = new EventEmitter<unknown>();
-    const resolve = vi.fn((_project: DeclaredProject, version: any) =>
-      schemaOriginLaunchEnv(dbtProject, version),
+    const resolve = vi.fn((_project: DeclaredProject) =>
+      schemaOriginLaunchEnv(dbtProject),
     );
     const pool = new FusionClientPoolImpl(
       registry as unknown as ProjectRegistry,

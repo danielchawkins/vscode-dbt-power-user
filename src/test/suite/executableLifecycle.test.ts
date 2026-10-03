@@ -48,7 +48,7 @@ async function drainMicrotasks(rounds = 8): Promise<void> {
 function sampleExecutable(executablePath: string): FusionExecutable {
   return {
     path: executablePath,
-    version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5\n" },
+    version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6\n" },
     env: {},
   };
 }
@@ -145,7 +145,7 @@ describe("ExecutableLifecycle", () => {
     await lifecycle.initialize();
 
     expect(lifecycle.current()).toBe(created[0]);
-    expect(lifecycle.version?.raw).toBe("dbt 2.0.5\n");
+    expect(lifecycle.version?.raw).toBe("dbt 2.0.6\n");
     expect(committed).toHaveBeenCalledTimes(1);
     await lifecycle.dispose();
     expect(created[0].dispose).toHaveBeenCalled();

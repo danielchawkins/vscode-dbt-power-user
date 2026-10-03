@@ -61,7 +61,7 @@ function fusionSkipReason(
     case "notFusion":
       return "dbt Fusion was not found on PATH";
     case "tooOld":
-      return "dbt Fusion on PATH is older than 2.0.5";
+      return "dbt Fusion on PATH is older than 2.0.6";
     case "untestedMajor":
       return "dbt Fusion major version is untested";
     default:

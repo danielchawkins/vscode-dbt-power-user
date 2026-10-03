@@ -6,11 +6,28 @@ import {
 
 describe("Fusion version", () => {
   it("accepts the minimum supported Fusion version", () => {
-    const raw = "dbt 2.0.5\n";
+    const raw = "dbt 2.0.6\n";
 
     expect(judgeFusionVersion(parseFusionVersion(raw), raw)).toEqual({
       kind: "ok",
-      version: { major: 2, minor: 0, patch: 5, raw },
+      version: { major: 2, minor: 0, patch: 6, raw },
+    });
+  });
+
+  it.each(["dbt 2.0.7\n", "dbt 2.1.0\n", "dbt 2.1.3\n"])(
+    "accepts later 2.x version %j",
+    (raw) => {
+      expect(judgeFusionVersion(parseFusionVersion(raw), raw).kind).toBe("ok");
+    },
+  );
+
+  it.each([
+    ["dbt 2.0.5\n", 5],
+    ["dbt 2.0.4\n", 4],
+  ])("rejects %j below the minimum", (raw, patch) => {
+    expect(judgeFusionVersion(parseFusionVersion(raw), raw)).toEqual({
+      kind: "tooOld",
+      version: { major: 2, minor: 0, patch, raw },
     });
   });
 
@@ -20,15 +37,6 @@ describe("Fusion version", () => {
     expect(judgeFusionVersion(parseFusionVersion(raw), raw)).toEqual({
       kind: "untestedMajor",
       version: { major: 3, minor: 0, patch: 0, raw },
-    });
-  });
-
-  it("rejects a Fusion version below the minimum", () => {
-    const raw = "dbt 2.0.4\n";
-
-    expect(judgeFusionVersion(parseFusionVersion(raw), raw)).toEqual({
-      kind: "tooOld",
-      version: { major: 2, minor: 0, patch: 4, raw },
     });
   });
 

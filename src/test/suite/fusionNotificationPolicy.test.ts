@@ -103,7 +103,7 @@ describe("fusionNotificationPolicy", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: toLspLaunch(readProjectSnapshot(makeProject().root)),

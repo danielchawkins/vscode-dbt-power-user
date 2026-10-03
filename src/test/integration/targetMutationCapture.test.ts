@@ -689,7 +689,7 @@ suite("Target mutation capture", function () {
   suiteSetup(function () {
     if (fusionVerdict.kind !== "ok") {
       console.warn(
-        "Skipping target mutation capture: dbt Fusion 2.0.5+ required on PATH.",
+        "Skipping target mutation capture: dbt Fusion 2.0.6+ required on PATH.",
       );
       this.skip();
     }

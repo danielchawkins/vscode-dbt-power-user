@@ -253,7 +253,7 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
     };
   }
 
-  /** Decision: minimum 2.0.5, no upper bound; warn once per major, never a toast. */
+  /** Decision: minimum 2.0.6, no upper bound; warn once per major, never a toast. */
   private warnUntestedMajorOnce(major: number): void {
     if (this.warnedMajorsThisSession.has(major)) {
       return;
