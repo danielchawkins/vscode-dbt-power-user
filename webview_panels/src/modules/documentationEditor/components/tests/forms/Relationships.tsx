@@ -1,56 +1,39 @@
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { panelLogger } from "@modules/logger";
-import { OptionType, Label, Select } from "@uicore";
+import { Label, OptionType, Select } from "@uicore";
 import { useEffect, useMemo, useState } from "react";
-import { Control, Controller } from "react-hook-form";
-import { SaveRequest } from "../types";
+import { SetTestFormValue } from "../hooks/useTestFormValues";
 
 interface Props {
-  control: Control<SaveRequest, unknown>;
   toValue?: string;
   fieldValue?: string;
+  setValue: SetTestFormValue;
 }
-const Relationships = ({
-  control,
-  toValue,
-  fieldValue,
-}: Props): JSX.Element => {
+
+const option = (value?: string) => (value ? { label: value, value } : null);
+
+const Relationships = ({ toValue, fieldValue, setValue }: Props): JSX.Element => {
   const [toFieldOptions, setToFieldOptions] = useState<OptionType[]>([]);
   const [toModelOptions, setModels] = useState<OptionType[]>([]);
   const [toSourceOptions, setSources] = useState<OptionType[]>([]);
 
   const getColumnsOfModel = async (model: string) => {
-    const iterator = model.matchAll(/['"]([^'"]*)['"]/g);
-    const matches = [];
-    for (const match of iterator) {
-      matches.push(match.map((m) => m.toString()));
-    }
+    const matches = [...model.matchAll(/['"]([^'"]*)['"]/g)].map((m) => m[1]);
     if (!matches.length) {
       panelLogger.info("No model name parsed", matches);
       return;
     }
-
-    // Refs
-    if (matches.length === 1) {
-      const columnsResult = (await executeRequestInSync("getColumnsOfModel", {
-        model: matches[0][1],
-      })) as { columns: string[] };
-      setToFieldOptions(
-        columnsResult.columns.map((m) => ({ label: m, value: m })),
-      );
-      return;
-    }
-    // sources
-    if (matches.length > 1) {
-      const columnsResult = (await executeRequestInSync("getColumnsOfSources", {
-        source: matches[0][1],
-        table: matches[1][1],
-      })) as { columns: string[] };
-      setToFieldOptions(
-        columnsResult.columns.map((m) => ({ label: m, value: m })),
-      );
-      return;
-    }
+    const columnsResult = (
+      matches.length === 1
+        ? await executeRequestInSync("getColumnsOfModel", { model: matches[0] })
+        : await executeRequestInSync("getColumnsOfSources", {
+            source: matches[0],
+            table: matches[1],
+          })
+    ) as { columns: string[] };
+    setToFieldOptions(
+      columnsResult.columns.map((m) => ({ label: m, value: m })),
+    );
   };
 
   useEffect(() => {
@@ -68,19 +51,14 @@ const Relationships = ({
         setSources(
           (
             sourcesResponse as {
-              sources: {
-                name: string;
-                tables: string[];
-              }[];
+              sources: { name: string; tables: string[] }[];
             }
-          ).sources
-            .map(({ name, tables }) => {
-              return tables.map((t) => ({
-                label: `source('${name}', '${t}')`,
-                value: `source('${name}', '${t}')`,
-              }));
-            })
-            .flat(),
+          ).sources.flatMap(({ name, tables }) =>
+            tables.map((t) => ({
+              label: `source('${name}', '${t}')`,
+              value: `source('${name}', '${t}')`,
+            })),
+          ),
         );
       })
       .catch((err) => panelLogger.error("error while getting models", err));
@@ -89,68 +67,43 @@ const Relationships = ({
   useEffect(() => {
     if (toValue) {
       getColumnsOfModel(toValue).catch((err) =>
-        panelLogger.info("error while getting columns", err),
+        panelLogger.error(`error while fetching columns of ${toValue}`, err),
       );
     }
   }, [toValue]);
 
-  const toOptions = useMemo(() => {
-    return [...toModelOptions, ...toSourceOptions];
-  }, [toModelOptions, toSourceOptions]);
+  const toOptions = useMemo(
+    () => [...toModelOptions, ...toSourceOptions],
+    [toModelOptions, toSourceOptions],
+  );
   return (
     <div>
       <div style={{ marginBottom: "var(--spacing-xl)" }}>
         <Label htmlFor="relationship-to">To</Label>
-        <Controller
-          control={control}
+        <Select
+          inputId="relationship-to"
           name="to"
-          render={({ field: { onChange, ref, value } }) => (
-            <Select
-              inputId="relationship-to"
-              ref={ref}
-              openMenuOnFocus
-              options={toOptions}
-              value={toOptions.find((c) => c.value === value)}
-              defaultValue={
-                toValue ? { label: toValue, value: toValue } : undefined
-              }
-              onChange={(val: unknown) => {
-                const selectedModel = (val as OptionType).value;
-                getColumnsOfModel(selectedModel).catch((err) =>
-                  panelLogger.error(
-                    `error while fetching colums of model: ${selectedModel}`,
-                    err,
-                  ),
-                );
-                return onChange(selectedModel);
-              }}
-            />
-          )}
+          required
+          openMenuOnFocus
+          options={toOptions}
+          value={option(toValue)}
+          onChange={(val: unknown) =>
+            setValue("to", (val as OptionType).value)
+          }
         />
       </div>
       <div>
         <Label htmlFor="relationship-field">Field</Label>
-        <Controller
-          control={control}
+        <Select
+          inputId="relationship-field"
           name="field"
-          render={({ field: { onChange, ref, value } }) => (
-            <Select
-              inputId="relationship-field"
-              ref={ref}
-              openMenuOnFocus
-              options={toFieldOptions}
-              defaultValue={
-                fieldValue
-                  ? { label: fieldValue, value: fieldValue }
-                  : undefined
-              }
-              value={toFieldOptions.find((c) => c.value === value)}
-              onChange={(val: unknown) => {
-
-                return onChange((val as OptionType).value);
-              }}
-            />
-          )}
+          required
+          openMenuOnFocus
+          options={toFieldOptions}
+          value={option(fieldValue)}
+          onChange={(val: unknown) =>
+            setValue("field", (val as OptionType).value)
+          }
         />
       </div>
     </div>

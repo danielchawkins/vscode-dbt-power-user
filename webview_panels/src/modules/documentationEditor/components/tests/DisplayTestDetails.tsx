@@ -1,5 +1,4 @@
 import { DeleteIcon, EditIcon } from "@assets/icons";
-import { yupResolver } from "@hookform/resolvers/yup";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import {
   DbtGenericTests,
@@ -19,22 +18,15 @@ import {
   Stack,
   Tag,
 } from "@uicore";
-import { useMemo, useState } from "react";
-import { useForm } from "react-hook-form";
-import * as Yup from "yup";
+import { FormEvent, useState } from "react";
 import classes from "../../styles.module.css";
 import AcceptedValues from "./forms/AcceptedValues";
 import Relationships from "./forms/Relationships";
+import { isTestFormComplete } from "./forms/isTestFormComplete";
 import useTestFormSave, { TestOperation } from "./hooks/useTestFormSave";
+import useTestFormValues from "./hooks/useTestFormValues";
 import TestDetails from "./TestDetails";
-import { SaveRequest } from "./types";
 import { findDbtTestType } from "./utils";
-
-const schema = Yup.object({
-  to: Yup.string().optional(),
-  field: Yup.string().optional(),
-  accepted_values: Yup.array().of(Yup.string().required()).optional(),
-}).required();
 
 interface Props {
   onClose: () => void;
@@ -49,9 +41,8 @@ const DisplayTestDetails = ({
   column,
   type,
 }: Props): JSX.Element => {
-  const { control, handleSubmit, setValue, watch } = useForm<SaveRequest>({
-    resolver: yupResolver(schema),
-  });
+  const { values, setValue } = useTestFormValues();
+  const complete = isTestFormComplete(test.test_metadata?.name, values);
 
   const { isSaving, handleSave } = useTestFormSave();
 
@@ -103,26 +94,11 @@ const DisplayTestDetails = ({
     setIsInEditMode(false);
   };
 
-  const acceptedValues = watch("accepted_values");
-  const fieldValue = watch("field");
-  const toValue = watch("to");
-  const formType = test.test_metadata?.name;
-
-  const disableFormSubmit = useMemo(() => {
-    if (formType === DbtGenericTests.ACCEPTED_VALUES) {
-      return !acceptedValues?.length;
-    }
-    if (formType === DbtGenericTests.RELATIONSHIPS) {
-      return !fieldValue || !toValue;
-    }
-    return false;
-  }, [formType, fieldValue, toValue, acceptedValues]);
-
   const getFooter = () => {
     return (
       <CardFooter>
         <Stack className="mt-3">
-          <Button type="submit" disabled={isSaving || disableFormSubmit}>
+          <Button type="submit" disabled={isSaving || !complete}>
             Update
           </Button>
           <Button outline onClick={handleCancel} disabled={isSaving}>
@@ -133,18 +109,20 @@ const DisplayTestDetails = ({
     );
   };
 
-  const onSubmit = (data: SaveRequest) => {
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     const testName = test.test_metadata?.name;
     // Dont submit for non generic test
-    if (!testName) {
-      return;
-    }
-
-    if (!isInEditMode) {
+    if (
+      !testName ||
+      !isInEditMode ||
+      !complete ||
+      !event.currentTarget.checkValidity()
+    ) {
       return;
     }
     handleSave(
-      { ...data, test: testName as DbtGenericTests },
+      { ...values, test: testName as DbtGenericTests },
       column,
       TestOperation.UPDATE,
     );
@@ -162,8 +140,7 @@ const DisplayTestDetails = ({
             <CardBody>
               <div>
                 <AcceptedValues
-                  control={control}
-                  values={acceptedValues}
+                  values={values.accepted_values}
                   column={column}
                   setValue={setValue}
                 />
@@ -178,19 +155,9 @@ const DisplayTestDetails = ({
             <CardBody>
               <div>
                 <Relationships
-                  control={control}
-                  toValue={
-                    (
-                      test.test_metadata
-                        .kwargs as TestMetadataRelationshipsKwArgs
-                    ).to
-                  }
-                  fieldValue={
-                    (
-                      test.test_metadata
-                        .kwargs as TestMetadataRelationshipsKwArgs
-                    ).field
-                  }
+                  setValue={setValue}
+                  toValue={values.to}
+                  fieldValue={values.field}
                 />
                 {getFooter()}
               </div>
@@ -235,7 +202,7 @@ const DisplayTestDetails = ({
         </CardBody>
       </Card>
 
-      <form onSubmit={handleSubmit(onSubmit)}>
+      <form onSubmit={onSubmit}>
         {isInEditMode ? (
           getEditableContent()
         ) : (

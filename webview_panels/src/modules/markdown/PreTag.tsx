@@ -1,8 +1,8 @@
 import { DetailedHTMLProps, HTMLAttributes, useState } from "react";
-import { CopyToClipboard } from "react-copy-to-clipboard";
 import classes from "./markdown.module.css";
 import { IconButton } from "@uicore";
 import { CheckedIcon, FilesIcon } from "@assets/icons";
+import { panelLogger } from "@modules/logger";
 
 const PreTag = ({
   children,
@@ -13,7 +13,13 @@ const PreTag = ({
 }): JSX.Element => {
   const [isCopied, setIsCopied] = useState(false);
 
-  const setCopied = () => {
+  const copy = async (value: string) => {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch (error) {
+      panelLogger.error("Unable to copy to clipboard", error);
+      return;
+    }
     setIsCopied(true);
     setTimeout(() => {
       setIsCopied(false);
@@ -24,16 +30,12 @@ const PreTag = ({
     <div className={classes.pre}>
       {text ? (
         <div className="code__icons">
-          <CopyToClipboard text={text}>
-            <IconButton
-              title={`${
-                !isCopied ? "Copy to clipboard" : "Copied to clipboard"
-              }`}
-              onClick={() => setCopied()}
-            >
-              {!isCopied ? <FilesIcon /> : <CheckedIcon />}
-            </IconButton>
-          </CopyToClipboard>
+          <IconButton
+            title={!isCopied ? "Copy to clipboard" : "Copied to clipboard"}
+            onClick={() => void copy(text)}
+          >
+            {!isCopied ? <FilesIcon /> : <CheckedIcon />}
+          </IconButton>
         </div>
       ) : null}
       <pre {...rest}>{children}</pre>
