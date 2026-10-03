@@ -714,6 +714,20 @@ describe.each(directions)("$name guard", ({ guard, commands, fixtures }) => {
   });
 });
 
+describe("lineage requestCommands", () => {
+  it("lists exactly the panel commands whose fixture accepts a syncRequestId", () => {
+    const answered = lineagePanel
+      .filter((f) => lineage.isPanelMessage({ ...f.message, ...sync }))
+      .filter(
+        (f) => !lineage.isPanelMessage({ ...f.message, syncRequestId: 7 }),
+      )
+      .map((f) => f.message.command);
+    expect([...lineage.requestCommands].sort()).toEqual(answered.sort());
+    expect(lineage.requestCommands).not.toContain("webview:ready");
+    expect(lineage.requestCommands).not.toContain("openProblemsTab");
+  });
+});
+
 describe("Fields", () => {
   interface Nullable {
     a?: string | null;

@@ -39,7 +39,20 @@ Measured after `just webviews::build` (build step runs before payload in `just b
 | `main.js`  |   864,209 |    257,443 |
 | `main.css` | 1,001,187 |    196,783 |
 
-Per-panel payload is deferred to v2.1 when entries split.
+Per-panel payload is in the next section.
+
+## Webview payload — one entry per panel
+
+`scripts/benchmark/measure-payload.sh` reads `webview_panels/dist/assets/manifest.json` and reports each entry's eager bytes: the entry script, every chunk it imports statically, and their stylesheets. Chunks loaded with `import()` are excluded. The single-entry row applies the same measurement to a build of change `wsupvyzl`, whose `main.js` statically imports the 8,179,834-byte lineage component chunk; the table above counts `main.js` alone, which is why its JS figure is lower. The rows were measured October 2026 with Vite 8.3.1, the per-entry ones at change `xtszwzxp`.
+
+| Entry                         | JS raw bytes | JS gzip bytes | CSS raw bytes | CSS gzip bytes |
+| ----------------------------- | -----------: | ------------: | ------------: | -------------: |
+| single entry (`main`), before |    8,997,406 |     2,668,225 |     1,000,928 |        196,955 |
+| `documentationEditor`         |      569,599 |       182,942 |       243,327 |         34,580 |
+| `queryResults`                |      979,646 |       307,438 |       866,728 |        173,648 |
+| `lineage`                     |    8,389,481 |     2,487,158 |       361,977 |         55,203 |
+
+Lineage's JS includes the 7,854,496-byte lineage component chunk. Each entry's CSS includes the 235,531-byte `renderPanel.css` (Bootstrap, the theme and `main.scss`) that all three share.
 
 ## VS Code runtime — ten fresh processes
 

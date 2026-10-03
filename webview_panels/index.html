@@ -10,6 +10,12 @@
   </head>
   <body>
     <div id="root"></div>
-    <script nonce="__NONCE__" type="module" src="/src/main.tsx"></script>
+    <!-- The dev server renders the panel named by ?entry=, a file in src/entries. -->
+    <script type="module">
+      const entry =
+        new URLSearchParams(location.search).get("entry") ?? "queryResults";
+      document.body.dataset.entry = entry;
+      import(`/src/entries/${entry}.tsx`);
+    </script>
   </body>
 </html>

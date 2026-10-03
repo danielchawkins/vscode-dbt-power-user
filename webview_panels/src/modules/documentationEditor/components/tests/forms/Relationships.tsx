@@ -1,4 +1,4 @@
-import { executeRequestInSync } from "@modules/app/requestExecutor";
+import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { panelLogger } from "@modules/logger";
 import { OptionType, Label, Select } from "@uicore";
 import { useEffect, useMemo, useState } from "react";
@@ -55,8 +55,8 @@ const Relationships = ({
 
   useEffect(() => {
     Promise.all([
-      executeRequestInSync("getModelsInProject", {}),
-      executeRequestInSync("getSourcesInProject", {}),
+      executeRequestInSync("getModelsInProject"),
+      executeRequestInSync("getSourcesInProject"),
     ])
       .then(([modelsResponse, sourcesResponse]) => {
         setModels(

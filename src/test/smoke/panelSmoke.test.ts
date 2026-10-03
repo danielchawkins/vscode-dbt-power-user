@@ -7,7 +7,9 @@ import { ActivationMetric, readActivationMetric } from "./activationReport";
 import {
   assertNoWorkbenchNotifications,
   captureWorkbenchScreenshot,
+  evaluatePanel,
   evaluateWorkbench,
+  readCspViolations,
   readWorkbenchNotificationTexts,
   validateSmokeHost,
   waitForWebviewPaint,
@@ -24,7 +26,7 @@ const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 
 interface HostRuntimeTiming {
-  viewPath: string;
+  entry: string;
   resolveStart: number;
   ready: number;
   duration: number;
@@ -72,8 +74,11 @@ suite("Pinned-host VSIX smoke", function () {
 
     const extRoot = ext.extensionUri.fsPath;
     for (const asset of [
-      "webview_panels/dist/assets/main.js",
-      "webview_panels/dist/assets/main.css",
+      "webview_panels/dist/assets/manifest.json",
+      ...["documentationEditor", "queryResults", "lineage"].flatMap((entry) => [
+        `webview_panels/dist/assets/${entry}.js`,
+        `webview_panels/dist/assets/${entry}.css`,
+      ]),
       "webview_panels/dist/assets/codicons/codicon.css",
       "webview_panels/dist/assets/codicons/codicon.ttf",
     ]) {
@@ -132,17 +137,17 @@ suite("Pinned-host VSIX smoke", function () {
       {
         container: "workbench.view.extension.docs_edit_view",
         command: "fusionPowerUser.DocsEdit.focus",
-        viewPath: "/docs-generator",
+        entry: "documentationEditor",
       },
       {
         container: "workbench.view.extension.dbt_preview_results",
         command: "fusionPowerUser.PreviewResults.focus",
-        viewPath: "/query-panel",
+        entry: "queryResults",
       },
       {
         container: "workbench.view.extension.lineage_view",
         command: "fusionPowerUser.Lineage.focus",
-        viewPath: "/lineage",
+        entry: "lineage",
       },
     ];
     const webviews: MeasuredWebview[] = [];
@@ -159,16 +164,39 @@ suite("Pinned-host VSIX smoke", function () {
         await sleep(2_000);
       }
       if (evidence) {
-        const paint = await waitForWebviewPaint(cdpPort, panel.viewPath, 50);
+        const paint = await waitForWebviewPaint(cdpPort, panel.entry, 50);
         await evidence.capture({
-          name: `panel ${panel.viewPath}`,
-          expect: `The ${panel.viewPath} panel is visible and its text matches measured.bodyText`,
+          name: `panel ${panel.entry}`,
+          expect: `The ${panel.entry} panel is visible and its text matches measured.bodyText`,
           measured: {
             bodyText: paint.bodyText,
             stylesheets: paint.stylesheets,
+            cspViolations: await readCspViolations(cdpPort, panel.entry),
           },
         });
       }
+      if (panel.entry === "queryResults") {
+        const grid = await renderPerspectiveResult(cdpPort);
+        await evidence?.capture({
+          name: "query results grid",
+          expect:
+            "The query results panel shows a Perspective datagrid with columns n and label and rows 1 one, 2 two",
+          measured: grid,
+        });
+        assert.ok(
+          perspectiveRendered(grid),
+          `Perspective must render the result rows: ${JSON.stringify({
+            ...grid,
+            cspViolations: await readCspViolations(cdpPort, panel.entry),
+          })}`,
+        );
+      }
+      const violations = await readCspViolations(cdpPort, panel.entry);
+      assert.deepStrictEqual(
+        violations,
+        [],
+        `${panel.entry} must load without CSP violations`,
+      );
     }
 
     console.log(
@@ -191,8 +219,8 @@ suite("Pinned-host VSIX smoke", function () {
           host: smokeHost,
           activation: { ...activation, startupReady: api.readyMs },
           webviews: webviews.map(
-            ({ viewPath, timeOrigin, firstContentfulPaint, openAttempts }) => ({
-              viewPath,
+            ({ entry, timeOrigin, firstContentfulPaint, openAttempts }) => ({
+              entry,
               timeOrigin,
               firstContentfulPaint,
               openAttempts,
@@ -220,14 +248,14 @@ async function waitForHostRuntimeTimings(): Promise<HostRuntimeTiming[]> {
 
 async function openMeasuredPanel(
   cdpPort: string,
-  panel: { container?: string; command: string; viewPath: string },
+  panel: { container?: string; command: string; entry: string },
 ): Promise<MeasuredWebview> {
   let error: unknown;
   for (let attempt = 0; attempt < 3; attempt += 1) {
     await openPanel(panel);
     try {
       return {
-        ...(await waitForWebviewPaint(cdpPort, panel.viewPath, 50)),
+        ...(await waitForWebviewPaint(cdpPort, panel.entry, 50)),
         openAttempts: attempt + 1,
       };
     } catch (cause) {
@@ -265,6 +293,89 @@ function sleep(ms: number): Promise<void> {
 }
 
 type Evidence = NonNullable<ReturnType<typeof visualEvidence>>;
+
+/** Posts a two-row result into the query results page as the host would, then reads the grid Perspective draws. */
+const RENDER_RESULT = `(async () => {
+  if (document.body.dataset.entry !== "queryResults") return null;
+  if (!globalThis.__fpuResultPosted) {
+    globalThis.__fpuResultPosted = true;
+    window.dispatchEvent(new MessageEvent("message", { data: {
+      command: "renderQuery",
+      columnNames: ["n", "label"],
+      columnTypes: ["Integer", "Text"],
+      rows: [{ n: 1, label: "one" }, { n: 2, label: "two" }],
+      raw_sql: "select 1",
+      compiled_sql: "select 1",
+    } }));
+  }
+  const textOf = (node) => {
+    const parts = [];
+    const walk = (n) => {
+      if (n.nodeName === "TD" || n.nodeName === "TH") parts.push(n.textContent);
+      if (n.shadowRoot) walk(n.shadowRoot);
+      n.childNodes.forEach(walk);
+    };
+    walk(node);
+    return parts.join(" ").replace(/\\s+/g, " ").trim();
+  };
+  const viewer = document.querySelector("perspective-viewer");
+  // The smallest valid module; the page's CSP alone decides whether it compiles.
+  const wasmCompile = await WebAssembly.compile(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]))
+    .then(() => "ok", (error) => String(error));
+  // The datagrid paints only rows that fit the viewport; the table holds every row.
+  let labels = [];
+  try {
+    const table = await viewer?.getTable();
+    const view = await table?.view({ columns: ["label"] });
+    labels = (await view?.to_columns())?.label ?? [];
+    await view?.delete();
+  } catch {}
+  return {
+    entry: document.body.dataset.entry,
+    viewer: Boolean(viewer),
+    text: viewer ? textOf(viewer).slice(0, 300) : "",
+    labels,
+    wasmCompile,
+  };
+})()`;
+
+type PerspectiveResult = {
+  viewer: boolean;
+  text: string;
+  labels: string[];
+  wasmCompile?: string;
+};
+
+/** True when the table holds both rows and the grid painted at least the first. */
+function perspectiveRendered(result: PerspectiveResult): boolean {
+  return (
+    result.labels.includes("one") &&
+    result.labels.includes("two") &&
+    result.text.includes("one")
+  );
+}
+
+async function renderPerspectiveResult(
+  cdpPort: string,
+): Promise<PerspectiveResult> {
+  let last: PerspectiveResult = { viewer: false, text: "", labels: [] };
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    const panel = await evaluatePanel<PerspectiveResult & { entry: string }>(
+      cdpPort,
+      "queryResults",
+      RENDER_RESULT,
+    );
+    if (panel) {
+      const { entry: _entry, ...value } = panel.value;
+      last = value;
+      if (perspectiveRendered(last)) {
+        break;
+      }
+    }
+    await sleep(250);
+  }
+  return last;
+}
 
 const LANGUAGE_STATUS_HOVER = `(() => {
   const hover = document.querySelector(".workbench-hover, .monaco-hover:not(.hidden)");

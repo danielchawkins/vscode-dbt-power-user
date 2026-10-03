@@ -1,8 +1,9 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
+import type { MessageOf } from "@modules/app/requestExecutor";
 import {
   executeRequestInAsync,
   executeRequestInSync,
-} from "@modules/app/requestExecutor";
-import { IncomingMessageProps } from "@modules/app/types";
+} from "@modules/documentationEditor/requests";
 import { panelLogger } from "@modules/logger";
 import {
   createContext,
@@ -28,33 +29,29 @@ import {
   DBTDocumentation,
   DBTModelTest,
   DBTUnitTest,
-  DocBlock,
 } from "./state/types";
 import { ContextProps } from "./types";
-import { isStateDirty } from "./utils";
+import {
+  fromFetchedColumns,
+  fromHostDocumentation,
+  isStateDirty,
+} from "./utils";
 
 export const DocumentationContext = createContext<ContextProps>({
   state: initialState,
   dispatch: () => null,
 });
 
-type IncomingMessageEvent = MessageEvent<
-  IncomingMessageProps & {
-    docs?: DBTDocumentation;
-    tests?: DBTModelTest[];
-    unitTests?: DBTUnitTest[];
-    project?: string;
-    columns?: DBTDocumentation["columns"];
-    model?: string;
-    docBlocks?: DocBlock[];
-    name?: string;
-    description?: string;
-    missingDocumentationMessage?: {
-      message: string;
-      type: "error" | "warning";
-    };
-  }
->;
+type HostMessage = documentationEditor.HostMessage;
+/** `renderDocumentation` with `docs` mapped by `fromHostDocumentation`; the test types are the contract's own. */
+type RenderMessage = Omit<
+  MessageOf<HostMessage, "renderDocumentation">,
+  "docs" | "tests" | "unitTests"
+> & {
+  docs?: DBTDocumentation;
+  tests?: DBTModelTest[];
+  unitTests?: DBTUnitTest[];
+};
 
 enum ActionState {
   CANCEL_STAY = "Stay",
@@ -68,28 +65,29 @@ const DocumentationProvider = (): JSX.Element => {
   );
   const stateRef = useRef(state);
 
-  const renderDocumentation = (event: IncomingMessageEvent) => {
+  const renderDocumentation = (message: RenderMessage) => {
     dispatch(
       setIncomingDocsData({
-        docs: event.data.docs,
-        tests: event.data.tests,
-        unitTests: event.data.unitTests,
+        docs: message.docs,
+        tests: message.tests,
+        unitTests: message.unitTests,
       }),
     );
-    dispatch(setProject(event.data.project));
-    dispatch(
-      setMissingDocumentationMessage(event.data.missingDocumentationMessage),
-    );
-    dispatch(setDocBlocks(event.data.docBlocks ?? []));
+    dispatch(setProject(message.project));
+    dispatch(setMissingDocumentationMessage(message.missingDocumentationMessage));
+    dispatch(setDocBlocks(message.docBlocks));
   };
 
-  const onMessage = useCallback((event: IncomingMessageEvent) => {
-    const { command } = event.data;
-    switch (command) {
+  const onMessage = useCallback((event: MessageEvent<HostMessage>) => {
+    switch (event.data.command) {
       case "renderDocumentation": {
+        const message: RenderMessage = {
+          ...event.data,
+          docs: fromHostDocumentation(event.data.docs),
+        };
         const { currentDocsData } = stateRef.current;
         if (!isStateDirty(stateRef.current)) {
-          renderDocumentation(event);
+          renderDocumentation(message);
           break;
         }
         executeRequestInSync("showWarningMessage", {
@@ -100,10 +98,10 @@ const DocumentationProvider = (): JSX.Element => {
           .then((action) => {
             switch (action) {
               case ActionState.DISCARD_PROCEED: {
-                dispatch(updateCurrentDocsData(event.data.docs));
-                dispatch(updateCurrentDocsTests(event.data.tests));
-                dispatch(updateCurrentUnitTests(event.data.unitTests));
-                renderDocumentation(event);
+                dispatch(updateCurrentDocsData(message.docs));
+                dispatch(updateCurrentDocsTests(message.tests));
+                dispatch(updateCurrentUnitTests(message.unitTests));
+                renderDocumentation(message);
                 break;
               }
               case ActionState.CANCEL_STAY: {
@@ -125,7 +123,7 @@ const DocumentationProvider = (): JSX.Element => {
         if (event.data.columns) {
           dispatch(
             updateColumnsAfterSync({
-              columns: event.data.columns,
+              columns: fromFetchedColumns(event.data.columns),
             }),
           );
         }
@@ -138,7 +136,7 @@ const DocumentationProvider = (): JSX.Element => {
   useEffect(() => {
     window.addEventListener("message", onMessage);
     // Load current editor documentation
-    executeRequestInAsync("getCurrentModelDocumentation", {});
+    executeRequestInAsync("getCurrentModelDocumentation");
 
     return () => {
       window.removeEventListener("message", onMessage);

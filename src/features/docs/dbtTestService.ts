@@ -294,7 +294,7 @@ export class DbtTestService {
           key: testKey,
         };
       })
-      .filter((t) => Boolean(t));
+      .filter((t) => t !== null);
   }
 
   public async getUnitTestsForCurrentModel(): Promise<

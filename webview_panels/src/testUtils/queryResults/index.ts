@@ -29,4 +29,6 @@ export const QueryHistoryFactory = Sync.makeFactory<QueryHistory>({
   projectName: faker.lorem.word(),
   timestamp: Sync.each(() => faker.date.past().getTime()),
   modelName: faker.lorem.word(),
+  columnNames: [],
+  columnTypes: [],
 });

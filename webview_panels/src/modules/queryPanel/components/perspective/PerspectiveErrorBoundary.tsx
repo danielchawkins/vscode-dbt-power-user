@@ -1,5 +1,5 @@
 import { ErrorIcon } from "@assets/icons";
-import { executeRequestInSync } from "@modules/app/requestExecutor";
+import { executeRequestInSync } from "@modules/queryPanel/requests";
 import { setLoading } from "@modules/queryPanel/context/queryPanelSlice";
 import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
 import { Stack, Button } from "@uicore";

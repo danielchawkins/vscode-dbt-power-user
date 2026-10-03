@@ -33,7 +33,7 @@ export function validateSmokeHost(host: string): SmokeHost {
 }
 
 export interface WebviewPaintMetric {
-  viewPath: string;
+  entry: string;
   timeOrigin: number;
   firstContentfulPaint: number;
   bodyText: string;
@@ -138,7 +138,7 @@ export async function assertNoWorkbenchNotifications(
 
 export async function waitForWebviewPaint(
   port: string,
-  viewPath: string,
+  entry: string,
   attempts = 100,
 ): Promise<WebviewPaintMetric> {
   let lastValue: WebviewPaintMetric | undefined;
@@ -157,7 +157,7 @@ export async function waitForWebviewPaint(
             `(async () => {
               await document.fonts.load("12px codicon");
               return {
-                viewPath: globalThis.viewPath,
+                entry: document.body.dataset.entry,
                 timeOrigin: performance.timeOrigin,
                 firstContentfulPaint: performance.getEntriesByName("first-contentful-paint")[0]?.startTime,
                 bodyText: document.body?.innerText.trim().slice(0, 100),
@@ -171,13 +171,13 @@ export async function waitForWebviewPaint(
         }
         const value = values.find(
           (candidate): candidate is WebviewPaintMetric =>
-            isWebviewPaintMetric(candidate) && candidate.viewPath === viewPath,
+            isWebviewPaintMetric(candidate) && candidate.entry === entry,
         );
         lastValue = value ?? lastValue;
         if (
           value &&
           value.bodyText &&
-          value.stylesheets.some((href) => href.endsWith("/main.css")) &&
+          value.stylesheets.some((href) => href.endsWith(`/${entry}.css`)) &&
           value.stylesheets.some((href) => href.endsWith("/codicon.css")) &&
           value.codiconFont
         ) {
@@ -192,7 +192,7 @@ export async function waitForWebviewPaint(
     }
   }
   throw new Error(
-    `Webview did not render with required assets: ${viewPath} ${JSON.stringify({
+    `Webview did not render with required assets: ${entry} ${JSON.stringify({
       lastValue,
       targets: lastTargets.map(({ type, title, url }) => ({
         type,
@@ -201,6 +201,101 @@ export async function waitForWebviewPaint(
       })),
     })}`,
   );
+}
+
+/**
+ * Evaluates `expression` in every webview frame and returns the first value whose `entry` is `entry`, so the
+ * expression must return `{ entry: document.body.dataset.entry, ... }` or a value without it.
+ */
+export async function evaluatePanel<T extends { entry: string }>(
+  port: string,
+  entry: string,
+  expression: string,
+): Promise<{ value: T; target: string } | undefined> {
+  for (const frame of await panelFrames(port)) {
+    let values: unknown[];
+    try {
+      values = await evaluateContexts(frame, expression);
+    } catch {
+      continue;
+    }
+    const value = values.find(
+      (candidate): candidate is T =>
+        typeof candidate === "object" &&
+        candidate !== null &&
+        (candidate as { entry?: unknown }).entry === entry,
+    );
+    if (value) {
+      return { value, target: frame };
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Messages the frame at `entry` logged about its Content Security Policy, including a blocked WebAssembly
+ * compile, which reaches the console as a `CompileError` naming `'unsafe-eval'`.
+ */
+export async function readCspViolations(
+  port: string,
+  entry: string,
+): Promise<string[]> {
+  const panel = await evaluatePanel(
+    port,
+    entry,
+    "({ entry: document.body.dataset.entry })",
+  );
+  if (!panel) {
+    throw new Error(`No webview frame shows ${entry}`);
+  }
+  const entries = await logEntries(panel.target);
+  return entries.filter((text) =>
+    /Content Security Policy|unsafe-eval/i.test(text),
+  );
+}
+
+async function panelFrames(port: string): Promise<string[]> {
+  return (await listTargets(port))
+    .filter((target) => target.type === "iframe" && target.webSocketDebuggerUrl)
+    .map((target) => target.webSocketDebuggerUrl!);
+}
+
+/** Every log and console entry the target has buffered; both `enable` calls replay them before they answer. */
+function logEntries(webSocketUrl: string): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const socket = new WebSocket(webSocketUrl);
+    const texts: string[] = [];
+    const timeout = setTimeout(() => {
+      socket.close();
+      reject(new Error(`CDP Log.enable timed out: ${webSocketUrl}`));
+    }, 5_000);
+    socket.addEventListener("open", () => {
+      socket.send(JSON.stringify({ id: 1, method: "Log.enable" }));
+      socket.send(JSON.stringify({ id: 2, method: "Console.enable" }));
+    });
+    socket.addEventListener("message", (event) => {
+      const message = JSON.parse(String(event.data));
+      if (message.method === "Log.entryAdded") {
+        texts.push(String(message.params.entry.text));
+        return;
+      }
+      if (message.method === "Console.messageAdded") {
+        texts.push(String(message.params.message.text));
+        return;
+      }
+      if (message.id === 2) {
+        clearTimeout(timeout);
+        setTimeout(() => {
+          socket.close();
+          resolve(texts);
+        }, 300);
+      }
+    });
+    socket.addEventListener("error", () => {
+      clearTimeout(timeout);
+      reject(new Error(`CDP socket failed: ${webSocketUrl}`));
+    });
+  });
 }
 
 async function findWorkbenchPageTarget(
@@ -438,7 +533,7 @@ function isWebviewPaintMetric(value: unknown): value is WebviewPaintMetric {
   }
   const candidate = value as Partial<WebviewPaintMetric>;
   return (
-    typeof candidate.viewPath === "string" &&
+    typeof candidate.entry === "string" &&
     typeof candidate.timeOrigin === "number" &&
     typeof candidate.firstContentfulPaint === "number" &&
     typeof candidate.bodyText === "string" &&

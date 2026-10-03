@@ -1,3 +1,5 @@
+import type { documentationEditor } from "@fusion-power-user/webview-contract";
+
 export enum Source {
   DATABASE = "DATABASE",
   YAML = "YAML",
@@ -14,13 +16,16 @@ export interface DBTDocumentationColumn extends MetadataColumn {
   source: Source;
 }
 
+/** The editor's copy of the host's `Documentation`, with absent and `null` fields filled in. */
 export interface DBTDocumentation {
   name: string;
   description: string;
   columns: DBTDocumentationColumn[];
   generated: boolean;
+  /** The model's SQL file; the host sends it and `saveDocumentation` returns it. */
+  filePath: string;
   patchPath?: string;
-  uniqueId: string;
+  uniqueId?: string;
   resource_type?: string;
 }
 
@@ -60,10 +65,7 @@ export interface DocBlock {
   path: string;
 }
 
-export interface DBTUnitTest {
-  name: string;
-  path?: string;
-}
+export type DBTUnitTest = documentationEditor.UnitTest;
 
 export interface DocumentationStateProps {
   incomingDocsData?: { docs?: DBTDocumentation; tests?: DBTModelTest[] };
@@ -76,13 +78,4 @@ export interface DocumentationStateProps {
   docBlocks: DocBlock[];
 }
 
-export interface DBTModelTest {
-  column_name?: string;
-  key: string;
-  path?: string;
-  test_metadata?: {
-    kwargs: TestMetadataAcceptedValuesKwArgs | TestMetadataRelationshipsKwArgs;
-    name: string;
-    namespace?: string;
-  };
-}
+export type DBTModelTest = documentationEditor.ModelTest;

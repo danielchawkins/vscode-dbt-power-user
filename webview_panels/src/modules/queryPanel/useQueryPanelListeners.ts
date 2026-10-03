@@ -1,8 +1,9 @@
+import type { queryResults } from "@fusion-power-user/webview-contract";
 import {
   executeRequestInAsync,
   executeRequestInSync,
-} from "@modules/app/requestExecutor";
-import { IncomingMessageProps } from "@modules/app/types";
+} from "@modules/queryPanel/requests";
+import type { MessageOf } from "@modules/app/requestExecutor";
 import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useRef } from "react";
 import { useQueryPanelDispatch } from "./QueryPanelProvider";
@@ -21,12 +22,10 @@ import {
   setQueryResultsError,
   setViewType,
 } from "./context/queryPanelSlice";
-import {
-  QueryHistory,
-  QueryPanelStateProps,
-  QueryPanelViewType,
-} from "./context/types";
+import { QueryPanelStateProps, TableData } from "./context/types";
 import useQueryPanelState from "./useQueryPanelState";
+
+type HostMessage = queryResults.HostMessage;
 
 const useQueryPanelListeners = (): { loading: boolean } => {
   const dispatch = useQueryPanelDispatch();
@@ -78,28 +77,34 @@ const useQueryPanelListeners = (): { loading: boolean } => {
     hintInterval.current = undefined;
   };
 
-  const handleError = (args: Record<string, unknown>) => {
+  const handleError = (message: MessageOf<HostMessage, "renderError">) => {
     dispatch(
       setQueryResultsError(
-        args.error as QueryPanelStateProps["queryResultsError"],
+        message.error as QueryPanelStateProps["queryResultsError"],
       ),
     );
-    dispatch(setCompiledCodeMarkup(args.compiled_sql as string));
+    dispatch(setCompiledCodeMarkup(message.compiled_sql));
     clearHintInterval();
     endQueryExecutionTimer();
   };
 
-  const handleQueryResults = (args: Record<string, unknown>) => {
+  const handleQueryResults = (result: {
+    rows?: TableData;
+    columnNames?: string[];
+    columnTypes?: (string | null)[];
+    raw_sql?: string;
+    compiled_sql?: string;
+  }) => {
     dispatch(setLoading(false));
     dispatch(
       setQueryResults({
-        data: args.rows,
-        columnNames: args.columnNames,
-        columnTypes: args.columnTypes,
-        raw_sql: args.raw_sql,
+        data: result.rows,
+        columnNames: result.columnNames,
+        columnTypes: result.columnTypes,
+        raw_sql: result.raw_sql,
       } as QueryPanelStateProps["queryResults"]),
     );
-    dispatch(setCompiledCodeMarkup(args.compiled_sql as string));
+    dispatch(setCompiledCodeMarkup(result.compiled_sql));
     clearHintInterval();
     endQueryExecutionTimer();
   };
@@ -110,44 +115,35 @@ const useQueryPanelListeners = (): { loading: boolean } => {
     endQueryExecutionTimer();
   };
 
-  const handleIncomingQueryHistory = (args: QueryHistory[]) => {
-    dispatch(setQueryHistory(args));
-  };
-
   const onMesssage = useCallback(
-    (event: MessageEvent<IncomingMessageProps>) => {
+    (event: MessageEvent<HostMessage>) => {
       panelLogger.info("query panel onMesssage", event.data);
-      const { command, ...args } = event.data;
-      switch (command) {
+      const message = event.data;
+      switch (message.command) {
         case "renderError":
-          handleError(args);
+          handleError(message);
           break;
         case "resetState":
           handleResetState();
           break;
         case "renderQuery":
-          handleQueryResults(args);
+          handleQueryResults(message);
           break;
         case "renderLoading":
           handleLoading();
           break;
         case "queryHistory":
-          handleIncomingQueryHistory(args.args.body as QueryHistory[]);
+          dispatch(setQueryHistory(message.args.body));
           break;
         case "updateViewType":
-          dispatch(
-            setViewType((args.args.body as { type: QueryPanelViewType }).type),
-          );
+          dispatch(setViewType(message.args.body.type));
           break;
         case "getContext":
-          // @ts-expect-error valid type
-          dispatch(setLimit(args.limit as number));
-          // @ts-expect-error valid type
-          dispatch(setPerspectiveTheme(args.perspectiveTheme as string));
+          dispatch(setLimit(message.limit));
+          dispatch(setPerspectiveTheme(message.perspectiveTheme));
           dispatch(
             setActiveEditor(
-              // @ts-expect-error valid type
-              args.activeEditor as QueryPanelStateProps["activeEditor"],
+              message.activeEditor as QueryPanelStateProps["activeEditor"],
             ),
           );
           break;
@@ -159,7 +155,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
   );
 
   useEffect(() => {
-    executeRequestInAsync("getQueryPanelContext", {});
+    executeRequestInAsync("getQueryPanelContext");
   }, []);
 
   useEffect(() => {
@@ -171,7 +167,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
   }, [onMesssage]);
 
   useEffect(() => {
-    void executeRequestInSync("getQueryTabData", {}).then((data) => {
+    void executeRequestInSync("getQueryTabData").then((data) => {
       if (data) {
         const typedData = data as QueryPanelStateProps;
         handleQueryResults({

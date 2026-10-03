@@ -1,4 +1,4 @@
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
+import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import { panelLogger } from "@modules/logger";
 import OpenIcon from "./openIcon.svg?raw";
 

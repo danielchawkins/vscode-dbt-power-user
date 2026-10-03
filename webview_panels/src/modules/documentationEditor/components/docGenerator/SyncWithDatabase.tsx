@@ -1,12 +1,12 @@
 import { Button } from "@uicore";
 import { RefreshIcon } from "@assets/icons";
 import classes from "../../styles.module.scss";
-import { executeRequestInSync } from "@modules/app/requestExecutor";
+import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { panelLogger } from "@modules/logger";
 
 const SyncWithDatabase = (): JSX.Element => {
   const onSyncBtnClick = () => {
-    executeRequestInSync("fetchMetadataFromDatabase", {}).catch((err) =>
+    executeRequestInSync("fetchMetadataFromDatabase").catch((err) =>
       panelLogger.error("error while syncing with db", err),
     );
   };

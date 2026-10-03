@@ -13,18 +13,6 @@ export interface ContextProps {
   dispatch: React.Dispatch<UnknownAction>;
 }
 
-export interface IncomingMessageProps {
-  command: string;
-  args: Record<string, unknown>;
-}
-
-export interface IncomingSyncResponse {
-  syncRequestId: string;
-  body: unknown;
-  status: boolean;
-  error: string;
-}
-
 export interface User {
   display_name: string;
   first_name: string;

@@ -1,5 +1,5 @@
 import { PlayCircleIcon } from "@assets/icons";
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
+import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import { IconButton } from "@uicore";
 
 interface Props {

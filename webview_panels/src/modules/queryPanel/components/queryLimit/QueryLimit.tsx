@@ -1,4 +1,4 @@
-import { executeRequestInAsync } from "@modules/app/requestExecutor";
+import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
 import { setLimit } from "@modules/queryPanel/context/queryPanelSlice";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";

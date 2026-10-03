@@ -6,7 +6,6 @@ import {
   TextDocument,
   TextEditor,
   Uri,
-  Webview,
   WebviewViewProvider,
   window,
 } from "vscode";
@@ -161,7 +160,8 @@ function lineAtOffset(text: string, offset: number): number {
 }
 
 export class LineagePanel extends PanelHost implements LineagePanelView {
-  protected viewPath = "/lineage";
+  protected readonly entry = "lineage";
+  protected readonly csp = {};
   protected panelDescription = "Lineage panel";
   // The source unique_id the panel last rooted at when a source YAML is the
   // active file. Used to avoid redundant re-renders on every cursor move; the
@@ -881,12 +881,5 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
       }
     }
     return declLines;
-  }
-
-  protected renderWebviewView(webview: Webview) {
-    this._panel!.webview.html = super.getHtml(
-      webview,
-      this.extensionContext.extensionUri,
-    );
   }
 }
