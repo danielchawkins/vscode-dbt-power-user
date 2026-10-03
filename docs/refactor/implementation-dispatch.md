@@ -42,7 +42,21 @@ The parent session is the orchestrator. Dispatch initial implementation and acce
 
 Implementers work only in their assigned workspace and use `just jj status`, `just jj diff`, `just jj log`, and `just jj commit` to create the focused revisions in that PR. They run the named gates but do not create bookmarks, push, open PRs, or mutate another workspace.
 
-Reviewers are read-only. They use `just jj diff`, `just jj show`, and `just jj log` to review the complete bookmark range and its revision boundaries. They return detailed, severity-ranked findings with file and line evidence; they do not edit, rewrite revisions, or push.
+Reviewers are read-only. They use `just jj diff`, `just jj show`, and `just jj log` to review the complete bookmark range and its revision boundaries. They return blockers and should-fix findings with file and line evidence; they do not edit, rewrite revisions, or push.
+
+Reviewers send only blockers and should-fix findings back to the implementer. A blocker breaks behaviour, security, data, or the step's exit; a should-fix is a correctness or contract gap a user or the next step would hit. Every other finding is a nitpick: the reviewer appends it as one comment per review (file:line, finding, suggested fix) to the open issue labelled `nitpick` with `gh issue comment`, creating the issue if none is open, and does not return it for fixing. A sweep PR clears the nitpick issue as its own step.
+
+## Gate cadence
+
+Gates cost minutes each and slow every agent sharing the machine, so run each one when it can change a decision, not after every edit.
+
+- **While iterating:** the narrowest check that covers the edit, such as one Vitest file, `tsc -b`, or ESLint on the touched files.
+- **Before an implementer reports done:** `just check` once on the final tip, then `just smoke` once (`just smoke-visual` instead for a visible change). Both are required to claim done, and once each is enough when they pass.
+- **Integration suite:** once before done when the change touches `src/fusion/`, `src/projects/`, `src/dbt_integration/`, or the integration tests.
+- **Per-revision gates:** only `tsc -b` and unit tests, and only when the revision lands on its own. A stack's revisions are checked at the tip.
+- **One smoke at a time.** Smoke launches VS Code and Cursor and fails when the machine is loaded, so two workspaces never run smoke or the integration suite concurrently. The orchestrator does not rerun gates an implementer reported green unless the tree changed; CI is the next check.
+- **Measurements and stress runs** (memory, load) are separate tasks and run once, not inside a fix loop.
+- Run long gates detached from terminal input (`nohup sh -c '…' > log 2>&1 </dev/null`) so a stray interrupt does not abort them.
 
 Every dispatch names the workspace, parent revision, plan step, required reads (`AGENTS.md`, `CONTEXT.md`, the step, and its ADR/research), in-scope and excluded concerns, intended revision boundaries, and exact gates. If a coding agent cannot preserve the jj stack after one focused correction, it stops and returns a checkpoint; the orchestrator performs revision surgery directly instead of repeatedly delegating it.
 
@@ -52,7 +66,7 @@ After the initial implementation for PR N is locally reviewed and pushed, the or
 
 1. Read `CONTEXT.md`, the ADRs named by the step, this file, and the matching phase of `rearchitecture-plan.md`. Use the vocabulary: Declared Project, Dependency Project, Current Project, Project Snapshot, Local Capability, Hosted Capability, Consumer Repository.
 2. This is **product** work. The shipped extension (`src/`, `webview_panels/`, `package.json` contributions) must not invoke `mise` or `just`, read `mise.toml`, or assume a Consumer Repository layout.
-3. TDD at the seam the step names. Split the PR into focused revisions by concern and file group; keep implementation and its focused tests together. Put plan or user documentation in a separate revision. The bookmark tip must pass `just check`, plus `just package` when packaging changes.
+3. TDD at the seam the step names. Split the PR into focused revisions by concern and file group; keep implementation and its focused tests together. Put plan or user documentation in a separate revision. The bookmark tip must pass the gates in [Gate cadence](#gate-cadence) before the implementer reports done.
 4. No issue or PR numbers in code. Lines under 120 characters. Markdown: one physical line per prose paragraph.
 5. Ponytail: shortest working diff after reading the real call graph. Do not port code the plan says to delete later. Do not add shims the plan forbids (especially a no-op telemetry sink).
 6. Version control is `just jj …` only. Do not `git commit`, `git checkout -b`, or `git push`. The parent session owns revision shaping, rebases, bookmarks, and PR creation. A bookmark rooted directly on `main` may open immediately; a dependent bookmark opens only after its parent PR merges.
