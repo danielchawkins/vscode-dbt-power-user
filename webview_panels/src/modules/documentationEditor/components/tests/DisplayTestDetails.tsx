@@ -223,7 +223,7 @@ const DisplayTestDetails = ({
               ) : null}
               {canDeleteTest ? (
                 <IconButton
-                  style={{ color: "var(--action-red)" }}
+                  style={{ color: "var(--vscode-errorForeground)" }}
                   title="Delete test"
                   onClick={handleDelete}
                 >

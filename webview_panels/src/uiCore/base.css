@@ -1,10 +1,67 @@
 /* The shared look of uiCore's native elements, on the workbench theme's tokens. */
 
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 html {
   --spacing-3xl: 1.846rem;
   --spacing-2xl: 1.538rem;
   --spacing-xl: 1.231rem;
   --spacing-lg: 0.857rem;
+}
+
+body {
+  margin: 0;
+  font-family: var(--vscode-font-family);
+  font-weight: var(--vscode-font-weight, normal);
+  color: var(--vscode-foreground);
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+p,
+ul,
+ol {
+  margin-top: 0;
+  margin-bottom: 1rem;
+}
+
+a {
+  color: var(--vscode-textLink-foreground);
+}
+
+a:hover {
+  color: var(--vscode-textLink-activeForeground);
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+
+pre,
+code {
+  font-family: var(--vscode-editor-font-family);
+}
+
+:focus-visible {
+  outline: 1px solid var(--vscode-focusBorder);
 }
 
 .btn {
@@ -13,7 +70,8 @@ html {
   justify-content: center;
   gap: 4px;
   padding: 4px 12px;
-  border: 1px solid transparent;
+  border: 1px solid
+    var(--vscode-button-border, var(--vscode-contrastBorder, transparent));
   border-radius: 2px;
   background: var(--vscode-button-secondaryBackground);
   color: var(--vscode-button-secondaryForeground);
@@ -95,7 +153,8 @@ html {
   display: flex;
   flex-direction: column;
   padding: 16px;
-  border: 1px solid var(--vscode-widget-border, transparent);
+  border: 1px solid
+    var(--vscode-widget-border, var(--vscode-contrastBorder, transparent));
   border-radius: 8px;
   background: var(--vscode-editorWidget-background);
 }
@@ -118,7 +177,8 @@ html {
   width: 100%;
   box-sizing: border-box;
   padding: 2px 8px;
-  border: 1px solid var(--vscode-input-border, transparent);
+  border: 1px solid
+    var(--vscode-input-border, var(--vscode-contrastBorder, transparent));
   border-radius: 2px;
   background: var(--vscode-input-background);
   color: var(--vscode-input-foreground);
@@ -127,7 +187,8 @@ html {
 }
 .form-control:focus {
   border-color: var(--vscode-focusBorder);
-  outline: none;
+  outline: 1px solid var(--vscode-focusBorder);
+  outline-offset: -1px;
 }
 .form-control::placeholder {
   color: var(--vscode-input-placeholderForeground);
@@ -162,8 +223,10 @@ html {
 .nav-link.active {
   border-bottom-color: var(
     --vscode-panelTitle-activeBorder,
-    var(--vscode-focusBorder)
+    var(--vscode-contrastActiveBorder, var(--vscode-focusBorder))
   );
+  outline: 1px dashed var(--vscode-contrastActiveBorder, transparent);
+  outline-offset: -1px;
   color: var(--vscode-panelTitle-activeForeground, var(--vscode-foreground));
 }
 
@@ -176,7 +239,8 @@ html {
 }
 .list-group-item {
   padding: 8px 12px;
-  border: 1px solid var(--vscode-widget-border, transparent);
+  border: 1px solid
+    var(--vscode-widget-border, var(--vscode-contrastBorder, transparent));
 }
 
 .alert {

@@ -7,7 +7,7 @@ const QueryPanelError = (): JSX.Element => {
 
   return (
     <div>
-      <h3 style={{ color: "var(--action-red" }}>
+      <h3 style={{ color: "var(--vscode-errorForeground)" }}>
         {queryResultsError?.message?.split(/\r?\n/)[0] ?? "Error"}
       </h3>
       <h4>

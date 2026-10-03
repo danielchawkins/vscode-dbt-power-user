@@ -40,7 +40,7 @@ const PerspectiveErrorBoundary = ({
         className="justify-content-center align-items-center h-100"
       >
         <ErrorIcon style={{ minHeight: 75 }} />
-        <h2 style={{ color: "var(--stroke--orange)" }}>
+        <h2 style={{ color: "var(--vscode-editorWarning-foreground)" }}>
           Something went wrong while rendering the query results.
         </h2>
         <p>To clear query history and re render the results</p>

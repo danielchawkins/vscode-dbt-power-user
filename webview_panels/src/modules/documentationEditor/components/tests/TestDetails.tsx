@@ -60,7 +60,7 @@ const TestDetails = ({ testType, test }: Props): JSX.Element => {
                       <Label>To:</Label>
                       <div
                         className="p-2 px-3 rounded"
-                        style={{ background: "var(--background--02)" }}
+                        style={{ background: "var(--vscode-textCodeBlock-background)" }}
                       >
                         {
                           (
@@ -74,7 +74,7 @@ const TestDetails = ({ testType, test }: Props): JSX.Element => {
                       <Label>Field:</Label>
                       <div
                         className="p-2 px-3 rounded"
-                        style={{ background: "var(--background--02)" }}
+                        style={{ background: "var(--vscode-textCodeBlock-background)" }}
                       >
                         {
                           (

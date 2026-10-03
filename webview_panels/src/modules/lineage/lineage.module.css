@@ -1,17 +1,35 @@
 html.lineageBody {
   font-size: initial;
 }
+/* The lineage component's published stylesheet reads these tokens; they go with the component. */
 html.lineageBody body {
   padding: 0 !important;
   font-size: var(--vscode-font-size) !important;
+  --bs-body-line-height: 1.5;
   line-height: var(--bs-body-line-height);
+  --primary-color: #247efe;
+  --text-color--paragraph: #4a4d51;
+  --text-color--caption: #808080;
+  --background--01: #f6f5f8;
+  --background--02: #f5f6f7;
+  --background--04: #d3e5ff;
+  --stroke--disable: #c4cad2;
   --text-color: #000000;
   --modal-bg: #ffffff;
   --popover-bg: #ffffff;
   --divider-color: #e8e8e8;
   --primary-accent: #247efe;
+  --gray--gray-01: #484e55;
+  --action-yellow: #ffce73;
 }
-html.lineageBody body:global.vscode-dark {
+html.lineageBody body:global(.vscode-dark),
+html.lineageBody
+  body:global(.vscode-high-contrast:not(.vscode-high-contrast-light)) {
+  --text-color--paragraph: #c4cad2;
+  --background--01: #171717;
+  --background--02: #28292c;
+  --background--04: #4a4d51;
+  --stroke--disable: #424750;
   --text-color: #ffffff;
   --modal-bg: #484e55;
   --popover-bg: #28292c;

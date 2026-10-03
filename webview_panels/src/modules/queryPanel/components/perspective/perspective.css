@@ -10,7 +10,7 @@ regular-table th {
 regular-table td .open-icon,
 regular-table th .open-icon {
   margin-left: 5px;
-  color: var(--text-active);
+  color: var(--vscode-textLink-foreground);
   position: absolute;
   right: 5px;
 }
