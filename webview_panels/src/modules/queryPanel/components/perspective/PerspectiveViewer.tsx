@@ -309,12 +309,7 @@ const PerspectiveViewer = ({
         ref={perspectiveViewerRef}
         style={styles}
       ></perspective-viewer>
-      <Drawer
-        buttonProps={{ color: "primary", title: "Json Viewer" }}
-        ref={drawerRef}
-        title={drawerTitle}
-        backdrop={false}
-      >
+      <Drawer ref={drawerRef} title={drawerTitle} backdrop={false}>
         <pre>{drawerData}</pre>
       </Drawer>
     </>

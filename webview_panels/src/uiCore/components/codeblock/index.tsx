@@ -7,9 +7,9 @@ import json from "react-syntax-highlighter/dist/esm/languages/prism/json";
 import markdown from "react-syntax-highlighter/dist/esm/languages/prism/markdown";
 import sql from "react-syntax-highlighter/dist/esm/languages/prism/sql";
 import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
-import tomorrow from "react-syntax-highlighter/dist/esm/styles/prism/tomorrow";
+import vs from "react-syntax-highlighter/dist/esm/styles/prism/vs";
 import vscDarkPlus from "react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus";
-import { Card, CardBody, CardTitle } from "reactstrap";
+import { Card, CardBody, CardTitle } from "../primitives";
 import classes from "./codeblock.module.css";
 
 type CodeBlockLanguage = "sql" | "yaml" | "markdown" | "json" | "javascript";
@@ -46,7 +46,7 @@ const CodeBlockComponent = ({
     <div className={classes.wrapper}>
       <Card className={`${classes.codeblock} ${classname ?? ""}`}>
         {fileName ? (
-          <CardTitle className="d-flex justify-content-between">
+          <CardTitle className={classes.title}>
             {fileName} {titleActions}
           </CardTitle>
         ) : null}
@@ -54,7 +54,7 @@ const CodeBlockComponent = ({
           <SyntaxHighlighter
             showLineNumbers={showLineNumbers}
             language={language}
-            style={isDark ? vscDarkPlus : tomorrow}
+            style={isDark ? vscDarkPlus : vs}
           >
             {code}
           </SyntaxHighlighter>

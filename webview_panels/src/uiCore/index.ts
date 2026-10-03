@@ -1,22 +1,22 @@
 export {
   Alert,
   ButtonGroup,
-  Input,
-  InputGroup,
   Card,
-  CardTitle,
   CardBody,
   CardFooter,
+  CardTitle,
+  InputGroup,
   Label,
+  ListGroup,
+  ListGroupItem,
   Nav,
   NavItem,
   NavLink,
-  ListGroup,
-  ListGroupItem,
-  Fade,
-} from "reactstrap";
-
+} from "./components/primitives";
+export { default as Input } from "./components/input/Input";
+export { default as TextArea } from "./components/input/TextArea";
 export { Button } from "./components/button/Button";
+export type { ButtonProps } from "./components/button/Button";
 export { default as Tag } from "./components/tag/Tag";
 export { default as Stack } from "./components/stack/Stack";
 export { default as Select } from "./components/select";

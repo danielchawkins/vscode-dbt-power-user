@@ -1,21 +1,17 @@
-import { ButtonHTMLAttributes } from "react";
-import { Button, Spinner } from "reactstrap";
-import classes from "./loadingButton.module.css";
+import { Button, ButtonProps } from "../button/Button";
 
-interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
+interface Props extends ButtonProps {
   loading: boolean;
 }
 
-const LoadingButton = ({ loading, ...rest }: Props): JSX.Element => {
-  return (
-    <Button
-      {...rest}
-      disabled={loading || rest.disabled}
-      className={`${rest.className ?? ""} ${classes.loadingBtn}`}
-    >
-      {loading ? <Spinner /> : rest.children}
-    </Button>
-  );
-};
+const LoadingButton = ({ loading, children, ...rest }: Props): JSX.Element => (
+  <Button {...rest} disabled={loading || rest.disabled} aria-busy={loading}>
+    {loading ? (
+      <i className="codicon codicon-loading codicon-modifier-spin" />
+    ) : (
+      children
+    )}
+  </Button>
+);
 
 export default LoadingButton;

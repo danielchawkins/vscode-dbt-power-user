@@ -1,39 +1,38 @@
-import { useState, useEffect } from "react";
-import { Button as ReactStrapButton, ButtonProps } from "reactstrap";
-import Tooltip from "../tooltip/Tooltip";
+import { ButtonHTMLAttributes, ReactNode, useState } from "react";
+import { ButtonColor, buttonClassName } from "../../classNames";
 
-interface CustomButtonProps extends ButtonProps {
-  icon?: React.ReactNode;
+export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+  color?: ButtonColor;
+  /** A border in the color instead of a fill. */
+  outline?: boolean;
+  /** With an icon, the label shows only on hover unless `showTextAlways` is set. */
+  icon?: ReactNode;
   showTextAlways?: boolean;
 }
 
 export const Button = ({
+  color = "secondary",
+  outline,
   icon,
   showTextAlways,
+  className,
   children,
-  ...restProps
-}: CustomButtonProps): JSX.Element => {
-  const [showButtonText, setShowButtonText] = useState(true);
-
-  useEffect(() => {
-    setShowButtonText(!icon);
-  }, [icon]);
-
-  const mouseHoverAction = (showBtnText: boolean) => {
-    if (icon) {
-      setShowButtonText(showBtnText);
-    }
-  };
-
+  type = "button",
+  ...rest
+}: ButtonProps): JSX.Element => {
+  const [hovered, setHovered] = useState(false);
+  const showText = showTextAlways ?? (!icon || hovered);
   return (
-    <Tooltip title={restProps.title}>
-      <ReactStrapButton
-        {...restProps}
-        onMouseEnter={() => mouseHoverAction(true)}
-        onMouseLeave={() => mouseHoverAction(false)}
-      >
-        {icon && icon} {(showTextAlways ?? showButtonText) ? children : null}
-      </ReactStrapButton>
-    </Tooltip>
+    <button
+      {...rest}
+      type={type}
+      className={buttonClassName(color, outline, className)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      {icon}
+      {icon && showText ? " " : null}
+      {showText ? children : null}
+    </button>
   );
 };

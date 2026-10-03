@@ -93,10 +93,6 @@ const SaveDocumentation = (): JSX.Element | null => {
           Save
         </DropdownButton>
       }
-      popoverProps={{
-        placement: "bottom",
-        hideArrow: true,
-      }}
     >
       {() => (
         <Stack direction="column" className={classes.saveDocumentation}>

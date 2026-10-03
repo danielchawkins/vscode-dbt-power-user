@@ -11,7 +11,7 @@ import {
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { isArrayEqual } from "@modules/documentationEditor/utils";
 import { panelLogger } from "@modules/logger";
-import { Input, InputGroup, Stack, Tag } from "@uicore";
+import { InputGroup, Stack, Tag, TextArea } from "@uicore";
 import {
   ChangeEvent,
   useEffect,
@@ -41,7 +41,7 @@ const DocGeneratorInput = ({
     dispatch,
   } = useDocumentationContext();
   const [description, setDescription] = useState("");
-  const inputRef = useRef<HTMLInputElement | HTMLTextAreaElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const [inputRows, setInputRows] = useState(1);
 
   useEffect(() => {
@@ -69,7 +69,7 @@ const DocGeneratorInput = ({
     setDescription(entity.description ?? "");
   }, [entity.description]);
 
-  const onChange = (e: ChangeEvent<HTMLInputElement>) => {
+  const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setDescription(e.target.value);
     if (type === EntityType.COLUMN) {
       dispatch(
@@ -94,7 +94,7 @@ const DocGeneratorInput = ({
       return;
     }
 
-    const input = inputRef.current as HTMLTextAreaElement;
+    const input = inputRef.current;
     const start = input.selectionStart;
     const end = input.selectionEnd;
     const currentValue = description;
@@ -176,11 +176,10 @@ const DocGeneratorInput = ({
       </Stack>
       <Stack ref={stackRef}>
         <InputGroup className={classes.inputGroup}>
-          <Input
-            innerRef={inputRef}
+          <TextArea
+            ref={inputRef}
             value={description}
             onChange={onChange}
-            type="textarea"
             rows={inputRows}
             placeholder={placeholder}
             className={isDescriptionDirty ? "border-orange" : ""}

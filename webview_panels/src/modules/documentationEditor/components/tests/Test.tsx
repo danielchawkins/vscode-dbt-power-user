@@ -19,10 +19,7 @@ const Test = ({
   };
 
   return (
-    <Tooltip
-      title={"Click to view details"}
-      id={`tooltip-${test.column_name ?? ""}-${test.test_metadata?.name ?? ""}`}
-    >
+    <Tooltip title={"Click to view details"}>
       <Tag
         color={selectedTest?.key === test.key ? "primary" : "default"}
         key={test.key}

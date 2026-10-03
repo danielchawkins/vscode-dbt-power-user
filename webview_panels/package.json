@@ -42,7 +42,6 @@
     "react-hook-form": "^7.88.0",
     "react-select": "^5.10.2",
     "react-syntax-highlighter": "^16.1.1",
-    "reactstrap": "^9.2.3",
     "use-debounce": "^10.1.1",
     "vite-plugin-svgr": "^5.2.0",
     "yup": "^1.7.1"

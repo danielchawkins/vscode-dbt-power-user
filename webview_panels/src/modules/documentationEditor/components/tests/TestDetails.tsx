@@ -40,7 +40,7 @@ const TestDetails = ({ testType, test }: Props): JSX.Element => {
                       test.test_metadata
                         .kwargs as TestMetadataAcceptedValuesKwArgs
                     ).values?.map((value) => (
-                      <ListGroupItem key={value} tag="div">
+                      <ListGroupItem key={value}>
                         {value}
                       </ListGroupItem>
                     ))}

@@ -71,7 +71,7 @@ classDiagram
 ## Guidelines
 
 - UI components are built in [./src/uiCore](./src/uiCore/index.ts) package. Any new UI component should be imported only from this package. This will enable us to apply consistent styling, create ui toolkit and ability to switch to new UI library easily if needed
-- `reactstrap` (which is the current ui library) import is restricted in components in `src/modules`, to avoid importing the ui components directly from reactstrap. Instead export the necessary component from [./src/uiCore](./src/uiCore/index.ts) and use it in components
+- uiCore components are thin native elements styled by [`base.css`](./src/uiCore/base.css) on the workbench's `--vscode-*` tokens. Panel styles are CSS Modules on the same tokens; icons are codicons.
 - use `panelLogger` for logging from webview panels. We can make this to use console or any logger in future
 
 ## Making API calls

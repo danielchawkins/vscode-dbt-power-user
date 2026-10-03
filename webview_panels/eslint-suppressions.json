@@ -25,14 +25,6 @@
       "count": 1
     }
   },
-  "src/modules/documentationEditor/components/docGenerator/DocGenSelectedColumns.tsx": {
-    "@eslint-react/use-state": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "src/modules/documentationEditor/components/docGenerator/DocGeneratorInput.tsx": {
     "@eslint-react/set-state-in-effect": {
       "count": 2
@@ -186,11 +178,6 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "src/uiCore/components/button/Button.tsx": {
-    "@eslint-react/set-state-in-effect": {
       "count": 1
     }
   }

@@ -175,13 +175,7 @@ export default defineConfig(
       "no-restricted-imports": [
         "error",
         {
-          paths: [
-            {
-              name: "reactstrap",
-              message: "Use `@uicore`",
-            },
-            ...vscodeApiPaths,
-          ],
+          paths: vscodeApiPaths,
           patterns: vscodeApiPatterns,
         },
       ],

@@ -1,0 +1,26 @@
+.anchor {
+  position: relative;
+  display: inline-block;
+}
+
+.bubble {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1070;
+  width: max-content;
+  max-width: 300px;
+  padding: 4px 8px;
+  border: 1px solid var(--vscode-editorHoverWidget-border);
+  border-radius: 3px;
+  background: var(--vscode-editorHoverWidget-background);
+  color: var(--vscode-editorHoverWidget-foreground);
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.bubble a {
+  color: var(--vscode-textLink-foreground);
+}

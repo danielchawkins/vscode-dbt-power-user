@@ -1,13 +1,15 @@
-.wrapper :global(.card-title) {
-  border-bottom: 1px solid #ccc;
+.wrapper .title {
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--vscode-widget-border, transparent);
   font-weight: 500;
-  padding-bottom: 1.231rem;
-  margin-bottom: 1.231rem;
+  padding: 0.5rem;
+  margin: 0;
 }
 
 .codeblock {
   padding: 0;
-  --code-bg: #082247;
+  --code-bg: var(--vscode-textCodeBlock-background);
 }
 .codeblock :global(.card-body) {
   padding: 0;
@@ -20,6 +22,7 @@
 .codeblock :global(code) {
   background: var(--code-bg) !important;
   white-space: pre-wrap !important;
-  font-size: 13px !important;
+  font-family: var(--vscode-editor-font-family) !important;
+  font-size: var(--vscode-editor-font-size, 13px) !important;
   line-height: 1.5 !important;
 }

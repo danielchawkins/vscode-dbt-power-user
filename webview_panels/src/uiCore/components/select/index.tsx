@@ -5,7 +5,6 @@ import Select, {
   GroupBase,
 } from "react-select";
 import CreatableSelect from "react-select/creatable";
-import { Label } from "../../index";
 import {
   CheckBlueIcon,
   SelectCheckedIcon,
@@ -39,8 +38,7 @@ const IconOption = (
   return (
     <Option {...props}>
       <div className="flex items-center gap-2">
-        <Label check={isMulti}>
-          <span style={{ marginRight: 10 }}>
+        <span style={{ marginRight: 10 }}>
             {hideOptionIcon ? null : isSelected ? (
               isMulti ? (
                 <SelectCheckedIcon />
@@ -54,7 +52,6 @@ const IconOption = (
             )}
           </span>
           {label}
-        </Label>
       </div>
     </Option>
   );

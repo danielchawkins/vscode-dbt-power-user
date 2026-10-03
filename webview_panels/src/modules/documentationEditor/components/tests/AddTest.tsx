@@ -8,7 +8,6 @@ import {
   CardTitle,
   Drawer,
   DrawerRef,
-  Fade,
   IconButton,
   Stack,
   Tooltip,
@@ -60,7 +59,7 @@ const AddTest = ({ title, currentTests, type }: Props): JSX.Element => {
         {showButtons ? <RemoveIcon /> : <AddIcon />}
       </IconButton>
       {showButtons ? (
-        <Fade tag="span" className="d-inline">
+        <span>
           {type === EntityType.MODEL
             ? null
             : Object.values(DbtGenericTests)
@@ -76,7 +75,7 @@ const AddTest = ({ title, currentTests, type }: Props): JSX.Element => {
                     </Button>
                   </Tooltip>
                 ))}
-        </Fade>
+        </span>
       ) : null}
       <Drawer ref={drawerRef}>
         <Stack direction="column" className={classes.addTest}>
