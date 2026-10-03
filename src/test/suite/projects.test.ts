@@ -8,7 +8,7 @@ import {
   type Mocked,
   vi,
 } from "vitest";
-import { EventEmitter, Uri } from "vscode";
+import { EventEmitter, Uri, workspace } from "vscode";
 import { DBTTerminal } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { Project } from "../../projects/project";
@@ -139,6 +139,19 @@ describe("Projects", () => {
 
       // Factory should not be called again
       expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
+    });
+
+    it("re-parses only the projects whose target or profilesDir changed", async () => {
+      await projects.initialize();
+      const calls = vi.mocked(workspace.onDidChangeConfiguration).mock.calls;
+      const listener = calls[calls.length - 1]?.[0];
+      listener?.({
+        affectsConfiguration: (key: string, scope?: Uri) =>
+          key === "fusionPowerUser.target" && scope?.fsPath === "/project1",
+      } as never);
+
+      expect(mockProject1.rebuildManifest).toHaveBeenCalledTimes(1);
+      expect(mockProject2.rebuildManifest).not.toHaveBeenCalled();
     });
 
     it("fires onDidInitialize even when no projects exist", async () => {

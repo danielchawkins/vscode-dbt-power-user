@@ -65,6 +65,8 @@ export interface FusionClientOptions {
   env?: Record<string, string>;
   /** The Declared Project's log channel; receives client, trace and server output. The client never disposes it. */
   outputChannel: LogOutputChannel;
+  /** Receives the error messages of each compile the server reports; empty after a clean compile. */
+  onCompileErrors?: (messages: string[]) => void;
 }
 
 export interface FusionClient extends Disposable {
@@ -377,7 +379,26 @@ type ClientHandle = Pick<
   LanguageClient,
   "start" | "stop" | "sendRequest" | "onDidChangeState" | "dispose"
 > &
-  Partial<Pick<LanguageClient, "diagnostics">>;
+  Partial<Pick<LanguageClient, "diagnostics" | "onNotification">>;
+
+/** Fusion's notifications that end a compile; `errors` lists what it found. */
+export const FUSION_COMPILE_COMPLETE = [
+  "dbt/lspCompileComplete",
+  "dbt/lspBackgroundCompileComplete",
+] as const;
+
+/** The `Error`-severity messages of a compile-complete notification's `errors`. */
+export function compileErrorMessages(params: unknown): string[] {
+  const errors = (params as { errors?: unknown } | null)?.errors;
+  if (!Array.isArray(errors)) {
+    return [];
+  }
+  return errors.flatMap((error: { message?: unknown; severity?: unknown }) =>
+    error?.severity === "Error" && typeof error.message === "string"
+      ? [error.message]
+      : [],
+  );
+}
 
 export interface FusionClientFactory {
   create(options: FusionClientOptions): FusionClient;
@@ -668,6 +689,14 @@ class FusionLanguageClientImpl implements FusionClient {
         root,
         () => client.diagnostics,
       );
+      const onCompileErrors = this.options.onCompileErrors;
+      if (onCompileErrors) {
+        for (const method of FUSION_COMPILE_COMPLETE) {
+          client.onNotification?.(method, (params: unknown) =>
+            onCompileErrors(compileErrorMessages(params)),
+          );
+        }
+      }
       await client.start();
 
       this.transportGeneration += 1;

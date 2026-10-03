@@ -126,8 +126,9 @@ const Toolbar = ({
     <PopoverWithButton
       width={260}
       button={
-        <button type="button">
-          <span className="codicon codicon-settings-gear" /> Settings
+        <button type="button" title="Settings">
+          <span className="codicon codicon-settings-gear" />
+          <span className={styles.buttonLabel}>Settings</span>
         </button>
       }
     >
@@ -136,8 +137,13 @@ const Toolbar = ({
     <PopoverWithButton
       width={260}
       button={
-        <button type="button" aria-pressed={settings.showRefs}>
-          <span className="codicon codicon-references" /> Relationships
+        <button
+          type="button"
+          aria-pressed={settings.showRefs}
+          title="Relationships"
+        >
+          <span className="codicon codicon-references" />
+          <span className={styles.buttonLabel}>Relationships</span>
         </button>
       }
     >
@@ -149,7 +155,8 @@ const Toolbar = ({
       onClick={reset}
       title="Redraw at the default expansion"
     >
-      <span className="codicon codicon-discard" /> Reset
+      <span className="codicon codicon-discard" />
+      <span className={styles.buttonLabel}>Reset</span>
     </button>
   </div>
 );

@@ -1,25 +1,52 @@
+/* The shared page stylesheet pads `body`; the graph fills the webview edge to edge instead. */
+:global(body:has(.lineage-view)) {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
 .view {
-  position: relative;
+  position: fixed;
+  inset: 0;
   display: flex;
   flex-direction: column;
-  width: 100vw;
-  height: 100vh;
   color: var(--vscode-foreground);
   background: var(--vscode-editor-background);
   font-size: var(--vscode-font-size);
 }
 
+.topBar {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: flex-start;
+  padding: 8px;
+  container: lineage-top / inline-size;
+}
+
+/* A narrow panel keeps the toolbar on one row: labels give way to icons, each button keeps its title. */
+@container lineage-top (max-width: 520px) {
+  .buttonLabel {
+    display: none;
+  }
+}
+
+.topBar > [role="alert"] {
+  flex: 1 1 320px;
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
 .toolbar {
-  position: absolute;
-  top: 8px;
-  right: 8px;
+  position: relative;
   z-index: 5;
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
   align-items: flex-start;
   justify-content: flex-end;
-  max-width: calc(100% - 16px);
+  margin-left: auto;
 }
 
 .toolbar button,
@@ -106,8 +133,10 @@
 }
 
 .canvas {
+  position: relative;
   flex: 1;
   min-height: 0;
+  container: lineage-canvas / size;
 }
 
 /* React Flow reads these tokens; mapping them to the workbench theme covers light, dark and high contrast. */
@@ -323,12 +352,22 @@
   left: 56px;
   z-index: 5;
   display: flex;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  max-width: calc(100% - 64px);
   padding: 4px 8px;
   border-radius: 2px;
   background: var(--vscode-editorWidget-background);
   color: var(--vscode-descriptionForeground);
   font-size: 11px;
+  pointer-events: none;
+}
+
+/* Below this height the legend would sit on the graph; the minimap toggle and edge colours remain. */
+@container lineage-canvas (max-height: 220px) {
+  .legend {
+    display: none;
+  }
 }
 
 .swatch {

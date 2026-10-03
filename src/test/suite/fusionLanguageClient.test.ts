@@ -332,6 +332,58 @@ describe("FusionLanguageClient lifecycle", () => {
     expect(outputChannel.dispose).not.toHaveBeenCalled();
   });
 
+  it("forwards each compile-complete notification's error messages", async () => {
+    const streams = makeStreams();
+    const server = new FakeReverseSocketServer(streams);
+    const handlers = new Map<string, (params: unknown) => void>();
+    const languageClient = {
+      ...makeLanguageClient(),
+      onNotification: vi.fn(
+        (method: string, handler: (params: unknown) => void) => {
+          handlers.set(method, handler);
+          return { dispose: vi.fn() };
+        },
+      ),
+    };
+    const onCompileErrors = vi.fn();
+    const factory = new DefaultFusionClientFactory({
+      listenForServer: async () => server,
+      acceptWithProcessExit: async () => streams,
+      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
+      createLanguageClient: async () => languageClient as any,
+      sleep: async () => {},
+    });
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        env: {},
+      },
+      launch: makeLaunch(),
+      commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
+      onCompileErrors,
+    });
+    await flushAsync();
+
+    expect([...handlers.keys()]).toEqual([
+      "dbt/lspCompileComplete",
+      "dbt/lspBackgroundCompileComplete",
+    ]);
+    handlers.get("dbt/lspCompileComplete")?.({
+      errors: [
+        { code: "1005", message: "bad env", severity: "Error" },
+        { code: "9", message: "just a warning", severity: "Warning" },
+      ],
+    });
+    handlers.get("dbt/lspBackgroundCompileComplete")?.({ errors: [] });
+    expect(onCompileErrors.mock.calls).toEqual([[["bad env"]], [[]]]);
+
+    await client.stop();
+    client.dispose();
+  });
+
   it("disposes the deleted-file watcher when the client stops", async () => {
     const streams = makeStreams();
     const watcher = {

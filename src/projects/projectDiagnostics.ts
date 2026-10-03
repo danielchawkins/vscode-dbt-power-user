@@ -1,3 +1,4 @@
+import * as path from "path";
 import {
   Diagnostic,
   DiagnosticSeverity,
@@ -8,6 +9,7 @@ import {
 } from "vscode";
 import { DBTDiagnosticData } from "../dbt_integration";
 import { EXECUTABLE_DIAGNOSTIC_SOURCE } from "../fusion/executableLifecycle";
+import { isWithinRoot } from "../fusion/fusionDiagnostics";
 
 /** The origin of a group of project diagnostics; each kind is replaced independently. */
 export type ProjectDiagnosticKind =
@@ -38,10 +40,10 @@ function toDiagnostic(
 ): Diagnostic {
   const diagnostic = new Diagnostic(
     new Range(
-      data.range?.startLine || 0,
-      data.range?.startColumn || 0,
-      data.range?.endLine || 999,
-      data.range?.endColumn || 999,
+      data.range?.startLine ?? 0,
+      data.range?.startColumn ?? 0,
+      data.range?.endLine ?? 999,
+      data.range?.endColumn ?? 999,
     ),
     data.message,
     toSeverity(data.severity),
@@ -51,12 +53,18 @@ function toDiagnostic(
   return diagnostic;
 }
 
-/** A project's Problems-panel diagnostics, published on its `dbt_project.yml`. */
+/**
+ * A project's Problems-panel diagnostics, each published on the file its data names, or on `dbt_project.yml` when
+ * that file lies outside the project.
+ */
 export class ProjectDiagnostics implements Disposable {
   private readonly collection = languages.createDiagnosticCollection(
     "fusionPowerUser.project",
   );
-  private readonly byKind = new Map<ProjectDiagnosticKind, Diagnostic[]>([
+  private readonly byKind = new Map<
+    ProjectDiagnosticKind,
+    [string, Diagnostic][]
+  >([
     ["rebuild-manifest", []],
     ["project-config", []],
     ["fusion-executable", []],
@@ -105,9 +113,29 @@ export class ProjectDiagnostics implements Disposable {
     }
     this.byKind.set(
       kind,
-      data.map((entry) => toDiagnostic(entry, kind)),
+      data.map((entry) => [this.fileOf(entry), toDiagnostic(entry, kind)]),
     );
-    this.collection.set(this.file, [...this.byKind.values()].flat());
+    const byFile = new Map<string, Diagnostic[]>();
+    for (const [file, diagnostic] of [...this.byKind.values()].flat()) {
+      byFile.set(file, [...(byFile.get(file) ?? []), diagnostic]);
+    }
+    this.collection.clear();
+    if (byFile.size === 0) {
+      this.collection.set(this.file, []);
+    }
+    for (const [file, diagnostics] of byFile) {
+      this.collection.set(
+        file === this.file.fsPath ? this.file : Uri.file(file),
+        diagnostics,
+      );
+    }
+  }
+
+  private fileOf(data: DBTDiagnosticData): string {
+    const root = path.dirname(this.file.fsPath);
+    return data.filePath && isWithinRoot(data.filePath, root)
+      ? data.filePath
+      : this.file.fsPath;
   }
 
   /** Every published diagnostic. */

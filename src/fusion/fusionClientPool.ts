@@ -60,6 +60,8 @@ export interface FusionLaunchSources {
   /** The Declared Project's log channel, shared by every client the pool starts for it. */
   outputChannel: (project: DeclaredProject) => LogOutputChannel;
   launchEnv?: FusionLaunchEnvironment;
+  /** Receives each compile's error messages from the project's client. */
+  reportCompileErrors?: (project: DeclaredProject, messages: string[]) => void;
 }
 
 export class FusionClientPoolImpl implements FusionClientPool {
@@ -75,6 +77,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
     project: DeclaredProject,
   ) => LogOutputChannel;
   private readonly launchEnv: FusionLaunchEnvironment | undefined;
+  private readonly reportCompileErrors: FusionLaunchSources["reportCompileErrors"];
 
   constructor(
     private readonly registry: ProjectRegistry,
@@ -86,6 +89,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
     this.readSnapshot = sources.readSnapshot;
     this.outputChannel = sources.outputChannel;
     this.launchEnv = sources.launchEnv;
+    this.reportCompileErrors = sources.reportCompileErrors;
     this.subscriptions.push(
       this.registry.onDidChangeProjects(() => {
         void this.enqueue(() => this.reconcile());
@@ -310,6 +314,8 @@ export class FusionClientPoolImpl implements FusionClientPool {
           commandPrefix: commandPrefixForProject(project),
           env,
           outputChannel: this.outputChannel(project),
+          onCompileErrors: (messages) =>
+            this.reportCompileErrors?.(project, messages),
         } satisfies FusionClientOptions)
       : new FailedFusionClient(
           project,
@@ -365,5 +371,6 @@ export function createFusionClientPool(
     readSnapshot: deps.readSnapshot,
     outputChannel: deps.outputChannel,
     launchEnv: deps.launchEnv,
+    reportCompileErrors: deps.reportCompileErrors,
   });
 }

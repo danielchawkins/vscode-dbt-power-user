@@ -1,4 +1,4 @@
-import { ExtensionContext, Uri } from "vscode";
+import { Disposable, ExtensionContext, Uri } from "vscode";
 import {
   ChildrenParentParser,
   DocParser,
@@ -209,6 +209,8 @@ function composeFusion(graph: ProjectsGraph) {
           schemaOriginLaunchEnv(projects.get(declared.root), fusionVersion),
         onDidChange: projects.onDidChangeManifest,
       },
+      reportCompileErrors: (declared, messages) =>
+        projects.get(declared.root)?.errors.reportCompile(messages),
     },
   );
   const dbtLineageService = new DbtLineageService(
@@ -217,12 +219,21 @@ function composeFusion(graph: ProjectsGraph) {
       const project = currentProject.current;
       return project ? fusionClientPool.get(project) : undefined;
     },
+    () => {
+      const project = currentProject.current;
+      return project ? projects.get(project.root)?.errors.current : undefined;
+    },
   );
   const fusionStatus = new FusionStatus(
     graph.projectRegistry,
     fusionClientPool,
     (declared) => projects.get(declared.root)?.projectOptIns(),
-    projects.onDidChangeManifest,
+    (listener) =>
+      Disposable.from(
+        projects.onDidChangeManifest(listener),
+        projects.onDidChangeErrors(listener),
+      ),
+    (declared) => projects.get(declared.root)?.errors.current,
   );
   return {
     fusionClientPool,

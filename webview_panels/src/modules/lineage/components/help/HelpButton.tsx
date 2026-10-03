@@ -1,6 +1,7 @@
 import { HelpIcon } from "@assets/icons";
 import { Drawer, DrawerRef } from "@uicore";
 import { useRef } from "react";
+import styles from "../../lineageGraph.module.css";
 import HelpContent from "./HelpContent";
 
 const HelpButton = (): JSX.Element => {
@@ -8,8 +9,13 @@ const HelpButton = (): JSX.Element => {
 
   return (
     <>
-      <button type="button" onClick={() => drawerRef.current?.open()}>
-        <HelpIcon /> Help
+      <button
+        type="button"
+        title="Help"
+        onClick={() => drawerRef.current?.open()}
+      >
+        <HelpIcon />
+        <span className={styles.buttonLabel}>Help</span>
       </button>
       <Drawer ref={drawerRef} title="Help">
         <HelpContent />

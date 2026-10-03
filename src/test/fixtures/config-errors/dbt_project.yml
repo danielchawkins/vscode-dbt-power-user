@@ -1,0 +1,6 @@
+name: config_errors
+version: 1.0.0
+config-version: 2
+profile: config_errors
+model-paths:
+  - models

@@ -1,0 +1,9 @@
+config_errors:
+  target: test
+  outputs:
+    test:
+      type: duckdb
+      # No default: an editor started without FPU_MISSING_VAR cannot load this profile.
+      path: "{{ env_var('FPU_MISSING_VAR') }}"
+      schema: main
+      threads: 1

@@ -1,6 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { Edge, Node } from "@xyflow/react";
-import { columnHandle, layout, tableHeight } from "./graph";
+import { columnHandle, geometry, layout, tableHeight } from "./graph";
 
 /** What a table node draws; `columns` is undefined while the list is hidden. */
 export interface TableNodeData extends Record<string, unknown> {
@@ -106,6 +106,9 @@ export function toFlow(input: FlowInput): {
     id: t.table,
     type: "table",
     position: positions.get(t.table) ?? { x: 0, y: 0 },
+    // The laid-out size; the minimap draws only nodes with a known size, and controlled nodes are never measured.
+    width: geometry.tableWidth,
+    height: tableHeight(listed(t.table)),
     selected: t.table === input.selectedTable,
     data: {
       table: t,

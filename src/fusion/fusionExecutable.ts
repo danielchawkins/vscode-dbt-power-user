@@ -128,16 +128,24 @@ export function formatFusionExecutableResolutionFailure(
   label: string,
   verdict: FusionVersionVerdict,
 ): string {
+  const minimum = `${MINIMUM_FUSION.major}.${MINIMUM_FUSION.minor}.${MINIMUM_FUSION.patch}`;
+  const requirement = `Fusion Power User needs dbt Fusion ${minimum} or later.`;
   if (verdict.kind === "notFound") {
-    return `Fusion executable not found for ${label} at ${verdict.path ?? "unknown path"}`;
+    return verdict.source === "configured"
+      ? `fusionPowerUser.dbtPath for ${label} is ${verdict.path}, which is not an executable file. ${requirement}`
+      : `No dbt executable on PATH for ${label}; set fusionPowerUser.dbtPath. ${requirement}`;
   }
   if (verdict.kind === "tooOld") {
-    return `Fusion version too old for ${label}`;
+    return `dbt Fusion ${verdict.version.major}.${verdict.version.minor}.${verdict.version.patch} for ${label} is too old. ${requirement}`;
   }
   if (verdict.kind === "untestedMajor") {
     return `Untested Fusion major version for ${label}`;
   }
-  return `Fusion executable invalid for ${label}`;
+  return `The dbt executable for ${label} is not dbt Fusion (dbt --version printed "${firstLine(verdict.kind === "notFusion" ? verdict.raw : "")}"). ${requirement}`;
+}
+
+function firstLine(text: string): string {
+  return text.trim().split(/\r?\n/)[0] ?? "";
 }
 
 export class ConfiguredFusionExecutableResolver implements FusionExecutableResolver {
