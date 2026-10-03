@@ -76,6 +76,18 @@ The query results entry before and after `@finos/perspective*` 3.8 with d3fc bec
 
 The WebAssembly is fetched when the panel opens and is not in the eager bytes: the engine grew from 2,277,909 to 2,459,148 bytes and the viewer from 920,705 to 1,552,105, 4,011,253 in total. The memory64 engine is not emitted. The packaged VSIX is 9,573,733 bytes.
 
+## Webview payload — lineage renderer
+
+The lineage entry before and after R8 replaced `@altimateai/ui-components` with `@xyflow/react` 12.12 and `@dagrejs/dagre` 3.1, measured October 2026 with `scripts/benchmark/measure-payload.sh` and Vite 8.3.0: before at change `qsztvpvw`, after at `zprtopyq`. Bytes are raw / gzip.
+
+| Entry                 | JS before             | JS after          | CSS before       | CSS after        |
+| --------------------- | --------------------- | ----------------- | ---------------- | ---------------- |
+| `documentationEditor` | 377,413 / 125,891     | 360,054 / 119,498 | 17,803 / 4,249   | 17,608 / 4,214   |
+| `queryResults`        | 925,686 / 288,799     | 908,104 / 282,136 | 516,306 / 99,965 | 125,967 / 25,716 |
+| `lineage`             | 8,275,419 / 2,454,158 | 576,245 / 189,608 | 136,769 / 24,963 | 32,815 / 6,573   |
+
+Removing `cssMinify: "esbuild"` hands CSS minification back to Lightning CSS, Vite's default, which accounts for most of query results' CSS drop; the other entries' JS fell because the shared chunk no longer carries the component's imports. The packaged VSIX fell from 9,573,733 to 4,877,083 bytes.
+
 ## VS Code runtime — ten fresh processes
 
 `just benchmark-runtime-vscode fusion-power-user-0.1.0-alpha.0.vsix` installs the packaged VSIX into a new profile and extension directory for each sample, opens all three retained webviews in VS Code 1.128.0, and records:

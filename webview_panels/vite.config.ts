@@ -52,7 +52,6 @@ export const viteConfig = defineConfig({
   plugins: [svgr(), react(), copyCodicons()],
   build: {
     target: "chrome148",
-    cssMinify: "esbuild",
     // The host reads each entry's script and transitive stylesheets from here.
     manifest: "assets/manifest.json",
     rolldownOptions: {

@@ -259,7 +259,6 @@ describe("LineagePanel", () => {
     expect(mockPostMessage).toHaveBeenLastCalledWith({
       command: "response",
       args: {
-        id: "g",
         syncRequestId: "g",
         body: {
           showSelectEdges: false,
@@ -316,7 +315,6 @@ describe("LineagePanel", () => {
     expect(mockPostMessage).toHaveBeenCalledWith({
       command: "response",
       args: {
-        id: "bad",
         syncRequestId: "bad",
         body: undefined,
         status: false,
@@ -351,7 +349,6 @@ describe("LineagePanel", () => {
     expect(mockPostMessage).toHaveBeenCalledWith({
       command: "response",
       args: {
-        id: "up",
         syncRequestId: "up",
         body: { tables: [{ table: "child" }] },
         status: true,
@@ -360,7 +357,6 @@ describe("LineagePanel", () => {
     expect(mockPostMessage).toHaveBeenCalledWith({
       command: "response",
       args: {
-        id: "down",
         syncRequestId: "down",
         body: { tables: [{ table: "parent" }] },
         status: true,
@@ -397,7 +393,6 @@ describe("LineagePanel", () => {
     expect(mockPostMessage).toHaveBeenCalledWith({
       command: "response",
       args: {
-        id: "cll-1",
         syncRequestId: "cll-1",
         body: { column_lineage: lineage },
         status: true,
@@ -947,16 +942,5 @@ describe("LineagePanel — source YAML rooting", () => {
       expect.objectContaining({ type: "warning" }),
     );
     expect((panel as any).dbtLineageService.createTable).not.toHaveBeenCalled();
-  });
-
-  it("getStartingNode keeps the lineage component's relationship features enabled", () => {
-    (panel as any).queryManifestService = {
-      getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
-      getProject: vi.fn().mockReturnValue(undefined),
-    };
-
-    const result = (panel as any).getStartingNode();
-
-    expect(result.aiEnabled).toBe(true);
   });
 });

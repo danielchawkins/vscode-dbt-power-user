@@ -23,6 +23,50 @@ const DOCS = {
   entry: "documentationEditor",
 };
 const OTHER_PANEL = "workbench.view.extension.lineage_view";
+const LINEAGE = {
+  container: OTHER_PANEL,
+  command: "fusionPowerUser.Lineage.focus",
+  entry: "lineage",
+};
+
+/** The drawn tables, the tables with an open column list, the traced column edges and the page's load time. */
+const READ_LINEAGE = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const tables = [...document.querySelectorAll("[data-table]")];
+  return {
+    entry: "lineage",
+    tables: tables.map((n) => n.dataset.table).sort(),
+    columnTables: tables
+      .filter((n) => n.querySelector("[data-testid=lineage-columns]"))
+      .map((n) => n.dataset.table)
+      .sort(),
+    columns: [...document.querySelectorAll("[data-column]")].map((c) => c.dataset.column),
+    traced: [...document.querySelectorAll(".react-flow__edge.lineage-column-edge")]
+      .map((e) => e.getAttribute("data-id"))
+      .sort(),
+    timeOrigin: performance.timeOrigin,
+  };
+})()`;
+
+/** Clicks the button labelled `label` (text or aria-label) on the `child` table node. */
+const clickOnChild = (label: string) => `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const node = document.querySelector("[data-table$='.child']");
+  const want = ${JSON.stringify(label)};
+  const button = [...(node?.querySelectorAll("button") ?? [])].find(
+    (b) => b.textContent.trim() === want || b.getAttribute("aria-label") === want,
+  );
+  button?.click();
+  return { entry: "lineage", clicked: Boolean(button) };
+})()`;
+
+/** Clicks the first column row of the `child` table node. */
+const CLICK_FIRST_COLUMN = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const column = document.querySelector("[data-table$='.child'] [data-column]");
+  column?.click();
+  return { entry: "lineage", clicked: Boolean(column) };
+})()`;
 
 /** The model description, whether the editor marks it modified and offers Save, and the page's load time. */
 const READ_DOCS = `(() => {
@@ -113,6 +157,15 @@ interface Tabs {
   timeOrigin: number;
 }
 
+interface LineageState {
+  entry: string;
+  tables: string[];
+  columnTables: string[];
+  columns: string[];
+  traced: string[];
+  timeOrigin: number;
+}
+
 suite("Panel view state", function () {
   this.timeout(300_000);
 
@@ -197,6 +250,7 @@ suite("Panel view state", function () {
       (docs) =>
         docs.timeOrigin !== edited.timeOrigin && docs.description === edit,
     );
+
     console.log(
       `FPU_SMOKE_DOCS_DRAFT=${JSON.stringify({ host, loaded, edited, after })}`,
     );
@@ -205,6 +259,65 @@ suite("Panel view state", function () {
 
     await evaluatePanel(port, DOCS.entry, typeDescription(loaded.description!));
     await waitForDocs(port, (docs) => !docs.modified);
+  });
+
+  test("restores the lineage graph after the panel is hidden and shown", async function () {
+    if (currentFixtureName() !== "single-project") {
+      this.skip();
+      return;
+    }
+    const port = process.env.FPU_CDP_PORT!;
+    const host = validateSmokeHost(
+      process.env[HARNESS_SWITCHES.smokeHost] ?? "",
+    );
+    const folder = vscode.workspace.workspaceFolders![0];
+    await vscode.window.showTextDocument(
+      vscode.Uri.joinPath(folder.uri, "models/child.sql"),
+    );
+    await showPanel(port, host, LINEAGE);
+    const drawn = await waitForLineage(port, (g) => g.tables.length === 2);
+    await evaluatePanel(port, LINEAGE.entry, clickOnChild("Hide 1 parents"));
+    await waitForLineage(port, (g) => g.tables.length === 1);
+    await evaluatePanel(port, LINEAGE.entry, clickOnChild("Show 1 parents"));
+    const shown = await waitForLineage(port, (g) => g.tables.length === 2);
+    // An earlier suite may leave the column list open, and the view state restores it.
+    if (shown.columnTables.length === 0) {
+      await evaluatePanel(port, LINEAGE.entry, clickOnChild("Columns"));
+    }
+    let before = await waitForLineage(port, (g) => g.columnTables.length === 1);
+    if (before.columns.length > 0 && before.traced.length === 0) {
+      await evaluatePanel(port, LINEAGE.entry, CLICK_FIRST_COLUMN);
+      before = await waitForLineage(port, (g) => g.traced.length > 0);
+    }
+
+    await showPanel(port, host, RESULTS);
+    await sleep(1_000);
+    await showPanel(port, host, LINEAGE);
+    const after = await waitForLineage(
+      port,
+      (g) =>
+        g.timeOrigin !== before.timeOrigin &&
+        g.columnTables.length === before.columnTables.length &&
+        g.traced.length === before.traced.length,
+    );
+    console.log(
+      `FPU_SMOKE_LINEAGE_STATE=${JSON.stringify({ host, drawn, before, after })}`,
+    );
+    assert.notStrictEqual(
+      after.timeOrigin,
+      before.timeOrigin,
+      "hiding the panel should rebuild its page without retainContextWhenHidden",
+    );
+    assert.deepStrictEqual(after.tables, before.tables, "same tables drawn");
+    assert.deepStrictEqual(
+      after.columnTables,
+      before.columnTables,
+      "same column lists open",
+    );
+    assert.deepStrictEqual(after.traced, before.traced, "same traced edges");
+
+    await evaluatePanel(port, LINEAGE.entry, clickOnChild("Columns"));
+    await waitForLineage(port, (g) => g.columnTables.length === 0);
   });
 
   test("records webview heap across hide/show cycles with a large result", async function () {
@@ -242,6 +355,19 @@ suite("Panel view state", function () {
     );
   });
 });
+
+async function waitForLineage(
+  port: string,
+  done: (graph: LineageState) => boolean,
+): Promise<LineageState> {
+  return waitFor(
+    async () =>
+      (await evaluatePanel<LineageState>(port, LINEAGE.entry, READ_LINEAGE))
+        ?.value,
+    (graph): graph is LineageState => graph !== undefined && done(graph),
+    "the lineage graph never matched",
+  ) as Promise<LineageState>;
+}
 
 async function showResults(port: string, host: string): Promise<void> {
   await showPanel(port, host, RESULTS);

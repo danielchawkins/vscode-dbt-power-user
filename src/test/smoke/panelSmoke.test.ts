@@ -281,14 +281,19 @@ suite("Pinned-host VSIX smoke", function () {
             ...(await read()),
           });
           const styles = await read();
+          const graph = await openLineageColumns(cdpPort, panel.entry);
           await evidence?.capture(
             {
               name: `${theme.label} ${panel.entry}`,
-              expect: `The ${panel.entry} panel follows ${theme.name}: its text and controls use the theme's colors`,
+              expect: themeExpectation(panel.entry, theme.name),
               measured: {},
             },
-            measure,
+            async () => ({
+              ...(await measure()),
+              ...(graph ? { graph: await readLineageGraph(cdpPort) } : {}),
+            }),
           );
+          assertLineageDrawn(graph, theme.name);
           assert.strictEqual(
             styles?.bodyClass,
             theme.bodyClass,
@@ -409,6 +414,83 @@ const READ_PANEL_THEME = `(() => {
     ready,
   };
 })()`;
+
+interface LineageGraph {
+  entry: string;
+  nodes: number;
+  edges: number;
+  columnLists: number;
+  columns: string;
+  tables: string[];
+}
+
+/** The drawn tables, table and column edges, and open column lists of the lineage graph. */
+const READ_LINEAGE_GRAPH = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const lists = [...document.querySelectorAll("[data-testid=lineage-columns]")];
+  return {
+    entry: "lineage",
+    nodes: document.querySelectorAll(".react-flow__node").length,
+    edges: document.querySelectorAll(".react-flow__edge").length,
+    columnLists: lists.length,
+    columns: lists.map((l) => l.innerText.replace(/\\s+/g, " ").trim()).join(" | ").slice(0, 200),
+    tables: [...document.querySelectorAll("[data-table]")].map((n) => n.dataset.table),
+  };
+})()`;
+
+/** Opens the start table's column list unless one is open, the way a click on its Columns button does. */
+const OPEN_LINEAGE_COLUMNS = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  if (!document.querySelector("[data-testid=lineage-columns]")) {
+    const start = document.querySelector("[data-table$='.child']") ?? document.querySelector("[data-table]");
+    const button = [...(start?.querySelectorAll("button") ?? [])].find((b) => b.textContent.trim() === "Columns");
+    button?.click();
+  }
+  return { entry: "lineage" };
+})()`;
+
+async function readLineageGraph(
+  cdpPort: string,
+): Promise<LineageGraph | undefined> {
+  return (
+    await evaluatePanel<LineageGraph>(cdpPort, "lineage", READ_LINEAGE_GRAPH)
+  )?.value;
+}
+
+/** Opens a column list in the lineage graph and waits until it and an edge are drawn; undefined for other panels. */
+async function openLineageColumns(
+  cdpPort: string,
+  entry: string,
+): Promise<LineageGraph | undefined> {
+  if (entry !== "lineage") {
+    return undefined;
+  }
+  let last: LineageGraph | undefined;
+  for (let attempt = 0; attempt < 60; attempt += 1) {
+    await evaluatePanel(cdpPort, "lineage", OPEN_LINEAGE_COLUMNS);
+    last = (await readLineageGraph(cdpPort)) ?? last;
+    if (last && last.columnLists > 0 && last.edges > 0) {
+      break;
+    }
+    await sleep(250);
+  }
+  return last;
+}
+
+function themeExpectation(entry: string, theme: string): string {
+  return entry === "lineage"
+    ? `The lineage graph follows ${theme}: table nodes child and broken_ref joined by an edge, with child's column list open`
+    : `The ${entry} panel follows ${theme}: its text and controls use the theme's colors`;
+}
+
+function assertLineageDrawn(graph: LineageGraph | undefined, theme: string) {
+  if (graph) {
+    assert.ok(
+      graph.nodes >= 2 && graph.edges >= 1 && graph.columnLists >= 1,
+      `lineage must draw nodes, an edge and a column list under ${theme}: ${JSON.stringify(graph)}`,
+    );
+  }
+}
 
 /** Waits until the panel's panel-specific content has rendered and, when given, its body carries `bodyClass`. */
 async function waitForPanelTheme(

@@ -1,152 +1,173 @@
-import type { Table } from "@altimateai/ui-components/lineage";
-import {
-  ApiHelper,
-  Lineage,
-  TooltipProvider,
-} from "@altimateai/ui-components/lineage";
-import "@altimateai/ui-components/styles.css";
 import type { lineage } from "@fusion-power-user/webview-contract";
-import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
-import { useEffect, useState } from "react";
-import ActionWidget from "./ActionWidget";
+import { Drawer, DrawerRef } from "@uicore";
 import {
-  componentTableRequests,
-  HostTable,
-  isComponentTableRequest,
-  toComponentTable,
-} from "./componentAdapter";
-import styles from "./lineage.module.css";
+  Background,
+  Controls,
+  MiniMap,
+  ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { toFlow } from "./flow";
+import { lineageData } from "./graph";
+import styles from "./lineageGraph.module.css";
+import MissingLineageMessage from "./MissingLineageMessage";
+import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
+import TableDetails from "./TableDetails";
+import { TableNode } from "./TableNode";
+import Toolbar from "./Toolbar";
+import { useLineageGraph } from "./useLineageGraph";
 import {
-  executeRequestInAsync,
-  isLineageRequest,
-  requestFromComponent,
-} from "./requests";
-import "./tailwind-globals.css";
-import { MissingLineageMessage, StaticLineageProps } from "./types";
+  ResolvedSettings,
+  resolveSettings,
+  tableActions,
+  visibleRefs,
+} from "./viewModel";
 
-const LineageView = (): JSX.Element | null => {
-  const {
-    state: { theme },
-  } = useAppContext();
+const nodeTypes = { table: TableNode };
 
-  const [isApiHelperInitialized, setIsApiHelperInitialized] = useState(false);
-  const [renderNode, setRenderNode] = useState<
-    {
-      node?: Table;
-      aiEnabled: boolean;
-    } & Partial<StaticLineageProps>
-  >({ aiEnabled: true });
-  const [missingLineageMessage, setMissingLineageMessage] = useState<
-    MissingLineageMessage | undefined
-  >();
-  // Bumped when a save arrives while column lineage is drawn; a new key remounts the graph, which requests `init`.
-  const [graphKey, setGraphKey] = useState(0);
-
+/** The host's view settings; a change is applied at once and persisted through `persistLineageSettings`. */
+const useSettings = () => {
+  const [settings, setSettings] = useState<ResolvedSettings>(() =>
+    resolveSettings(undefined),
+  );
+  const settingsRef = useRef(settings);
+  settingsRef.current = settings;
   useEffect(() => {
-    panelLogger.info("LineageView updating components api helper");
-    ApiHelper.get = async <T,>(url: string, data?: Record<string, unknown>) => {
-      const params = data ?? {};
-      if (isComponentTableRequest(url)) {
-        const body = (await requestFromComponent(
-          componentTableRequests[url],
-          params,
-        )) as { tables?: HostTable[] };
-        return { ...body, tables: body.tables?.map(toComponentTable) } as T;
-      }
-      if (isLineageRequest(url)) {
-        return (await requestFromComponent(url, params)) as T;
-      }
-      panelLogger.warn("lineage component requested an unknown command", url);
-      return undefined as T;
-    };
-    ApiHelper.post = <T,>(url: string) => {
-      panelLogger.warn("lineage component posted an unknown command", url);
-      return Promise.resolve(undefined as T);
-    };
-    setIsApiHelperInitialized(true);
+    fetchSettings()
+      .then((s) => setSettings(resolveSettings(s)))
+      .catch((error) => panelLogger.error("lineage settings", error));
   }, []);
-
-  const render = (
-    hostData: {
-      node?: HostTable;
-      aiEnabled: boolean;
-      missingLineageMessage?: MissingLineageMessage;
-    } & StaticLineageProps,
-  ) => {
-    const data = {
-      ...hostData,
-      node: hostData.node && toComponentTable(hostData.node),
-    };
-    setMissingLineageMessage(data.missingLineageMessage);
-    const event = new CustomEvent("renderStartNode", {
-      detail: {
-        ...data,
-        lightdashEnabled: true,
-        showCodeModal: true,
-        config: { exportFinalLineage: false },
-      },
-    });
-    document.dispatchEvent(event);
-    setRenderNode(data);
+  const change = (part: Partial<lineage.LineageSettings>) => {
+    setSettings((s) => resolveSettings({ ...s, ...part }));
+    persistSettings(part).catch((error) =>
+      panelLogger.error("lineage settings", error),
+    );
   };
+  return { settings, settingsRef, change };
+};
+
+/** The relationships of the Current Project, fetched while the overlay is on and again after each redraw. */
+const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
+  const [refs, setRefs] = useState<lineage.LineageRef[]>([]);
+  useEffect(() => {
+    if (!settings.showRefs) {
+      return;
+    }
+    let live = true;
+    fetchRelationships(settings.includeSourcesInInference)
+      .then((r) => live && setRefs(r))
+      .catch((error) => panelLogger.error("lineage relationships", error));
+    return () => {
+      live = false;
+    };
+  }, [settings.showRefs, settings.includeSourcesInInference, drawnKey]);
+  return refs;
+};
+
+const Legend = () => (
+  <div className={styles.legend}>
+    <span>
+      <span className={styles.swatch} />
+      Select
+    </span>
+    <span>
+      <span className={`${styles.swatch} ${styles.indirect}`} />
+      Non-select
+    </span>
+    <span>
+      <span className={`${styles.swatch} ${styles.ref}`} />
+      Relationship
+    </span>
+  </div>
+);
+
+const Graph = (): JSX.Element => {
+  const drawerRef = useRef<DrawerRef>(null);
+  const [detailsTable, setDetailsTable] = useState<string>();
+  const { settings, settingsRef, change } = useSettings();
+  const openDetails = useCallback((table: string) => {
+    setDetailsTable(table);
+    drawerRef.current?.open();
+  }, []);
+  const defaultExpansion = useCallback(
+    () => settingsRef.current.defaultExpansion,
+    [settingsRef],
+  );
+  const { graph, notice, drawnKey, actions, select, reset } = useLineageGraph(
+    defaultExpansion,
+    openDetails,
+  );
+  const refs = useRefs(settings, drawnKey);
+  const flow = useReactFlow();
+
+  tableActions.current = actions;
 
   useEffect(() => {
-    const onMessage = (event: MessageEvent<lineage.HostMessage>) => {
-      panelLogger.log("lineage:message -> ", JSON.stringify(event.data));
-      const message = event.data;
+    if (drawnKey > 0) {
+      requestAnimationFrame(() => void flow.fitView({ maxZoom: 1 }));
+    }
+  }, [drawnKey, flow]);
 
-      if (message.command === "render") {
-        // `node` arrives as the host's table; the contract types it `unknown`.
-        render(message.args as Parameters<typeof render>[0]);
-      }
-      if (message.command === "projectSaved") {
-        // The component refetches edges only for a node it has not drawn, so a save remounts it.
-        setGraphKey((key) => key + 1);
-        executeRequestInAsync("init");
-      }
-    };
-
-    window.addEventListener("message", onMessage);
-
-    panelLogger.info("lineage:onload");
-    document.documentElement.classList.add(styles.lineageBody);
-    executeRequestInAsync("init");
-
-    return () => {
-      window.removeEventListener("message", onMessage);
-    };
-  }, []);
-
-  if (!isApiHelperInitialized || !renderNode) {
-    return null;
-  }
-
-  const lineageType = renderNode.details ? "sql" : "dynamic";
+  const { nodes, edges } = useMemo(() => {
+    const data = lineageData(graph, {
+      direct: settings.showSelectEdges,
+      indirect: settings.showNonSelectEdges,
+    });
+    const drawn = new Set(data.tables.map((t) => t.table));
+    return toFlow({
+      data,
+      columns: graph.columns,
+      columnTables: graph.columnTables,
+      expansions: graph.expansions,
+      errors: graph.errors,
+      selectedTable: graph.selectedTable,
+      selectedColumn: graph.selectedColumn,
+      refs: visibleRefs(refs, settings, drawn),
+    });
+  }, [graph, settings, refs]);
+  const details = detailsTable ? graph.known[detailsTable] : undefined;
 
   return (
-    <TooltipProvider>
-      <div className={styles.lineageView}>
-        {lineageType === "dynamic" ? (
-          <ActionWidget missingLineageMessage={missingLineageMessage} />
-        ) : null}
-        <div className={`${styles.lineageWrap} al-tw-scope`}>
-          <Lineage
-            key={graphKey}
-            theme={theme}
-            dynamicLineage={renderNode}
-            lineageType={lineageType}
-            sqlLineage={
-              lineageType === "sql"
-                ? (renderNode as StaticLineageProps)
-                : undefined
-            }
-            allowSyncColumnsWithDB
-          />
-        </div>
+    <div className={styles.view}>
+      <MissingLineageMessage missingLineageMessage={notice} />
+      <Toolbar settings={settings} change={change} reset={reset} />
+      <div className={styles.canvas}>
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          nodeTypes={nodeTypes}
+          nodesConnectable={false}
+          nodesDraggable={false}
+          minZoom={0.05}
+          fitView
+          proOptions={{ hideAttribution: true }}
+          onNodeClick={(_event: unknown, node: { id: string }) =>
+            select(node.id)
+          }
+          onPaneClick={() => select(undefined)}
+        >
+          <Background />
+          <Controls showInteractive={false} />
+          <MiniMap pannable zoomable />
+        </ReactFlow>
       </div>
-    </TooltipProvider>
+      <Legend />
+      <Drawer ref={drawerRef} title="Details">
+        {details ? <TableDetails table={details} /> : null}
+      </Drawer>
+    </div>
   );
 };
+
+/** The lineage panel: tables, their columns and column lineage drawn with React Flow and laid out by dagre. */
+const LineageView = (): JSX.Element => (
+  <ReactFlowProvider>
+    <Graph />
+  </ReactFlowProvider>
+);
 
 export default LineageView;

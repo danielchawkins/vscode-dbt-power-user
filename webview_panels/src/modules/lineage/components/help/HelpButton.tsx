@@ -1,4 +1,3 @@
-import { Button } from "@altimateai/ui-components/lineage";
 import { HelpIcon } from "@assets/icons";
 import { Drawer, DrawerRef } from "@uicore";
 import { useRef } from "react";
@@ -8,18 +7,14 @@ const HelpButton = (): JSX.Element => {
   const drawerRef = useRef<DrawerRef>(null);
 
   return (
-    <div className="al-tw-scope">
-      <Button
-        variant="default"
-        size="xs"
-        onClick={() => drawerRef.current?.open()}
-      >
+    <>
+      <button type="button" onClick={() => drawerRef.current?.open()}>
         <HelpIcon /> Help
-      </Button>
+      </button>
       <Drawer ref={drawerRef} title="Help">
         <HelpContent />
       </Drawer>
-    </div>
+    </>
   );
 };
 

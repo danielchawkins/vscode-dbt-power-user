@@ -27,7 +27,6 @@ export class WebviewViewProviders implements Disposable {
       window.registerWebviewViewProvider(
         LineageViewProvider.viewType,
         this.lineageViewProvider,
-        { webviewOptions: { retainContextWhenHidden: true } },
       ),
     );
     const testCommand = registerQueryResultTestCommand(this.queryResultPanel);

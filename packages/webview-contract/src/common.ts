@@ -13,8 +13,6 @@ import {
 /** The `args` of a host reply to a request that carried `syncRequestId`. */
 export interface ResponseArgs<B = unknown> {
   syncRequestId?: string;
-  /** Lineage replies echo the component's request id. */
-  id?: string;
   body?: B;
   status: boolean;
   error?: string;
@@ -52,7 +50,6 @@ export interface PanelNotice {
 export const responseFields: Fields<Omit<Response, "command">> = {
   args: shape<ResponseArgs>({
     syncRequestId,
-    id: optional(isString),
     body: isAnything,
     status: isBoolean,
     error: optional(isString),

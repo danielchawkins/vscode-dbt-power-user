@@ -1,15 +1,18 @@
 # Webview view state — evidence, October 2026
 
-Query results and the documentation editor register without `retainContextWhenHidden`. When either is hidden, VS Code discards its page and rebuilds it when the panel is shown again. Each page restores its own view state through `vscode.getState`, and its host sends back what the page cannot keep: the query results host its last result, the documentation editor host its unsaved draft. Lineage keeps `retainContextWhenHidden` until R8 (see [Exceptions](#exceptions)).
+Query results and the documentation editor register without `retainContextWhenHidden`. When either is hidden, VS Code discards its page and rebuilds it when the panel is shown again. Each page restores its own view state through `vscode.getState`, and its host sends back what the page cannot keep: the query results host its last result, the documentation editor host its unsaved draft. Lineage keeps `retainContextWhenHidden` until R8 (see [Exceptions](#exceptions)); R8 removes it.
 
 ## Persisted schema
 
 `webview_panels/src/modules/app/viewState.ts` defines one type per panel and a runtime allowlist, `VIEW_STATE_FIELDS`. `writeViewState` refuses any key outside the panel's allowlist, a value of the wrong kind, and any string longer than 200 characters, which fits a search filter but not a query or payload. `viewState.test.ts` checks that writes carrying result rows, SQL, query history, credentials, documentation or lineage nodes are refused. Webview state is unencrypted host storage, so it holds view state only.
 
-| Panel                | Fields                                                         |
-| -------------------- | -------------------------------------------------------------- |
-| documentation editor | `publication`, `model` (unique id), `scrollTop`, `searchQuery` |
-| query results        | `publication`, `tabState`                                      |
+| Panel                | Fields                                                                                  |
+| -------------------- | --------------------------------------------------------------------------------------- |
+| documentation editor | `publication`, `model` (unique id), `scrollTop`, `searchQuery`                          |
+| query results        | `publication`, `tabState`                                                               |
+| lineage              | `publication`, `start`, `expansions`, `columnTables`, `selectedTable`, `selectedColumn` |
+
+Lineage's lists are a `strings` kind: at most 200 entries of at most 200 characters. `expansions` are `c:<unique id>` or `p:<unique id>` in the order applied; the page replays them through `childTables` and `parentTables`, lists `columnTables` through `getColumns`, and retraces `selectedColumn` through `getConnectedColumns`, so no table, column or edge payload is stored. `render` carries `publication`; a saved state replays only for the same start table and publication.
 
 `viewState.ts` is the only module under `src/modules/` that imports `@modules/vscode` directly, for `getState` and `setState`; messages still go through each panel's requests module. `webview_panels/eslint.config.mjs` lists it next to `requestExecutor.ts` in the `no-restricted-imports` ignores.
 
@@ -25,7 +28,7 @@ The documentation editor host (`src/features/docs/docsEditPanel.ts`) keeps one d
 
 ## Exceptions
 
-**Lineage keeps `retainContextWhenHidden` until R8.** `@altimateai/ui-components` keeps the graph's expansion and selection inside the component and exposes neither, so a rebuilt page would lose them on every tab switch. R8 replaces the component; lineage drops retain then and persists its own view state. Lineage writes no webview state until then.
+**Lineage kept `retainContextWhenHidden` until R8.** `@altimateai/ui-components` kept the graph's expansion and selection inside the component and exposed neither, so a rebuilt page would have lost them on every tab switch. The R8 renderer persists them in the schema above and registers without retain.
 
 ## Restore checks
 

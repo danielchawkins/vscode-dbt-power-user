@@ -37,11 +37,71 @@ interface OptionalRequest<C extends string, P = Record<never, never>> {
   syncRequestId?: string;
 }
 
+/** A table as `render`, `childTables` and `parentTables` carry it. */
+export interface LineageTable {
+  /** The node's unique ID. */
+  table: string;
+  label: string;
+  url?: string;
+  nodeType: string;
+  materialization?: string;
+  description?: string;
+  /** Number of dbt children. */
+  childCount: number;
+  /** Number of dbt parents. */
+  parentCount: number;
+  isExternalProject: boolean;
+  packageName?: string;
+  /** The node's data tests; `raw_sql` is the test's SQL. */
+  tests: { key: string; raw_sql?: string; column_name?: string }[];
+  meta?: Record<string, unknown>;
+}
+
+/** A column in the `getColumns` body. */
+export interface LineageColumn {
+  table: string;
+  name: string;
+  datatype?: string;
+  description?: string;
+}
+
+/** The `getColumns` body. */
+export interface TableColumns {
+  id: string;
+  purpose?: string;
+  columns: LineageColumn[];
+  returns?: { datatype: string; description: string };
+  meta?: Record<string, unknown>;
+}
+
+/** One column-level edge: `target` is computed from `source`; `indirect` when the source only filters or joins. */
+export interface ColumnLineage {
+  source: [table: string, column: string];
+  target: [table: string, column: string];
+  type: "direct" | "indirect";
+  viewsType?: string;
+}
+
+/** The `getConnectedColumns` body; `errors` holds tooltip lines per table. */
+export interface ConnectedColumns {
+  column_lineage: ColumnLineage[];
+  errors?: Record<string, string[]>;
+}
+
+/** What the lineage renderer draws: tables, table edges as `[parent, child]`, and column edges among them. */
+export interface LineageData {
+  start?: string;
+  tables: LineageTable[];
+  edges: [parent: string, child: string][];
+  columnEdges: ColumnLineage[];
+}
+
 /** What the lineage panel draws first; absent when no starting node resolves. */
 export interface RenderArgs {
   node?: unknown;
-  aiEnabled: boolean;
   missingLineageMessage?: PanelNotice;
+  /** The Current Project's manifest publication; a restored view state applies only to the same one. */
+  publication?: string;
 }
 
 /** Lineage messages from the extension host to the panel. */
@@ -53,6 +113,17 @@ export type HostMessage =
 
 /** The relationship sources the ERD overlay can show. */
 export type RefSource = "test" | "contract" | "semantic" | "inferred";
+
+/** A primary/foreign key relationship from `getRelationships`; `confidence` is set for inferred ones. */
+export interface LineageRef {
+  id: string;
+  from: { table: string; columns: string[] };
+  to: { table: string; columns: string[] };
+  cardinality: string;
+  source: RefSource;
+  label?: string;
+  confidence?: number;
+}
 
 /** The lineage component's view settings; `getLineageSettings` answers with them. */
 export interface LineageSettings {
@@ -97,7 +168,6 @@ export type PanelMessage =
       { includeSources?: boolean; allowSelfReference?: boolean }
     >
   | Request<"getConnectedColumns", ConnectedColumnsParams>
-  | Request<"showInfoNotification", { message: string }>
   | OptionalRequest<"getLineageSettings">
   | Request<"persistLineageSettings", Partial<LineageSettings>>;
 
@@ -126,8 +196,8 @@ const hostFields: CommandFields<HostMessage> = {
     args: optional(
       shape<RenderArgs>({
         node: isAnything,
-        aiEnabled: isBoolean,
         missingLineageMessage: optional(isPanelNotice),
+        publication: optional(isString),
       }),
     ),
   },
@@ -155,7 +225,6 @@ const panelFields: CommandFields<PanelMessage> = {
     selectedColumn: optional(shape({ name: isString, table: isString })),
     showIndirectEdges: optionalBoolean,
   }),
-  showInfoNotification: request({ message: isString }),
   getLineageSettings: optionalRequest({}),
   persistLineageSettings: request<Partial<LineageSettings>>({
     showSelectEdges: optionalBoolean,
