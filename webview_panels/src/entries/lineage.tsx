@@ -1,5 +1,5 @@
 import "../baseStyles";
-import LineageView from "@modules/lineage/LineageView";
+import LineageView from "@lineageRenderer";
 import { renderPanel } from "../renderPanel";
 
 renderPanel(<LineageView />);

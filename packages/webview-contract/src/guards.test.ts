@@ -397,7 +397,7 @@ const lineageHost: Fixture[] = [
   {
     message: {
       command: "response",
-      args: { id: "1", syncRequestId: "1", body: {}, status: true },
+      args: { syncRequestId: "1", body: {}, status: true },
     },
     required: ["args", "args.status"],
   },
@@ -406,11 +406,11 @@ const lineageHost: Fixture[] = [
       command: "render",
       args: {
         node: { table: "model.a" },
-        aiEnabled: true,
         missingLineageMessage: { message: "m", type: "warning" },
+        publication: "s:1",
       },
     },
-    required: ["args.aiEnabled", "args.missingLineageMessage.type"],
+    required: ["args.missingLineageMessage.type"],
     literals: { "args.missingLineageMessage.type": ["warning", "error"] },
   },
   { message: { command: "projectSaved" }, required: [] },

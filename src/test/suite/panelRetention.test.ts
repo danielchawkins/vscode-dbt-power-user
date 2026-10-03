@@ -15,20 +15,10 @@ function productionSources(dir: string): string[] {
 }
 
 describe("panel view state", () => {
-  it("only the lineage panel keeps its page alive while hidden", () => {
-    const panels = fs.readFileSync(
-      path.join(SRC, "features/panels.ts"),
-      "utf8",
-    );
+  it("no panel keeps its page alive while hidden", () => {
     const retaining = productionSources(SRC).filter((file) =>
-      /retainContextWhenHidden\s*:/.test(fs.readFileSync(file, "utf8")),
+      /retainContextWhenHidden/.test(fs.readFileSync(file, "utf8")),
     );
-    expect(retaining.map((file) => path.relative(SRC, file))).toEqual([
-      path.join("features", "panels.ts"),
-    ]);
-    expect(panels.match(/retainContextWhenHidden\s*:/g)).toHaveLength(1);
-    expect(panels).toMatch(
-      /LineageViewProvider\.viewType,\s*this\.lineageViewProvider,\s*\{\s*webviewOptions:\s*\{\s*retainContextWhenHidden:\s*true/,
-    );
+    expect(retaining.map((file) => path.relative(SRC, file))).toEqual([]);
   });
 });

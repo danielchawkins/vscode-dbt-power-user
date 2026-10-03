@@ -23,6 +23,7 @@ import {
   SourceTable,
 } from "../../dbt_integration";
 import { ExtensionContextStore } from "../../extensionContext";
+import { publicationId } from "../../projects/manifest";
 import type { Manifest } from "../../projects/manifestTypes";
 import { Project } from "../../projects/project";
 import { QueryManifestService } from "../../projects/queryManifestService";
@@ -274,15 +275,20 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
     }
     this.post({
       command: "render",
-      args: this.getStartingNode(resolvedSource),
+      args: {
+        ...this.getStartingNode(resolvedSource),
+        publication: publicationId(
+          this.queryManifestService.getProject()?.manifest,
+        ),
+      },
     });
   }
 
-  /** Answers a component request; the component matches replies by `id`. */
+  /** Answers a panel request. */
   private respond(syncRequestId: string | undefined, body: unknown): void {
     this.post({
       command: "response",
-      args: { id: syncRequestId, syncRequestId, body, status: true },
+      args: { syncRequestId, body, status: true },
     });
   }
 
@@ -380,15 +386,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
       message,
       lineage.isPanelMessage,
       this.handlers(),
-      {
-        log: this.dbtTerminal,
-        // The lineage component matches replies by `id`.
-        reply: ({ args }) =>
-          this.post({
-            command: "response",
-            args: { ...args, id: args.syncRequestId },
-          }),
-      },
+      { log: this.dbtTerminal, reply: (response) => this.post(response) },
     );
   }
 
@@ -677,12 +675,10 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
   private getStartingNode(
     resolvedSource?: ResolvedSourceTable,
   ): lineage.RenderArgs {
-    const aiEnabled = true;
     const event = this.queryManifestService.getEventByCurrentProject();
     if (!event?.event) {
       this.dbtTerminal.info("Lineage:getStartingNode", "No event found");
       return {
-        aiEnabled,
         missingLineageMessage: this.getMissingLineageMessage(),
       };
     }
@@ -691,7 +687,6 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
     const tableName = this.getFilename();
     if (!editor || !tableName) {
       return {
-        aiEnabled,
         missingLineageMessage: this.getMissingLineageMessage(),
       };
     }
@@ -708,7 +703,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
           url,
           fn.unique_id,
         );
-        return { node, aiEnabled };
+        return { node };
       }
     }
 
@@ -716,7 +711,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
     if (_node) {
       const key = _node.unique_id;
       const node = this.dbtLineageService.createTable(event.event, url, key);
-      return { node, aiEnabled };
+      return { node };
     }
 
     // Non-.py fallback: check if the active file is a dbt function.
@@ -727,7 +722,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
         url,
         fn.unique_id,
       );
-      return { node, aiEnabled };
+      return { node };
     }
 
     // Source YAML: a model/seed/function basename never matches, so by here the
@@ -747,7 +742,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
           resolved.key,
         );
         if (node) {
-          return { node, aiEnabled };
+          return { node };
         }
       }
     }
@@ -757,7 +752,6 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
       `No node found for ${tableName}`,
     );
     return {
-      aiEnabled,
       missingLineageMessage: this.getMissingLineageMessage(),
     };
   }

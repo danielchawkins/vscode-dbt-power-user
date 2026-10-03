@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { getVsCodeApiMock } from "../../test/setup";
 import {
   isViewState,
+  MAX_VIEW_STATE_LIST,
   MAX_VIEW_STATE_STRING,
   PanelViewState,
   readViewState,
@@ -42,6 +43,15 @@ const samples: PanelViewState[] = [
     searchQuery: "id",
   },
   { panel: "queryResults", publication: "s:3", tabState: 1 },
+  {
+    panel: "lineage",
+    publication: "s:3",
+    start: "model.p.orders",
+    expansions: ["c:model.p.orders", "p:model.p.orders"],
+    columnTables: ["model.p.orders"],
+    selectedTable: "model.p.orders",
+    selectedColumn: ["model.p.orders", "id"],
+  },
 ];
 
 describe("panel view state", () => {
@@ -76,6 +86,20 @@ describe("panel view state", () => {
         searchQuery: "x".repeat(MAX_VIEW_STATE_STRING + 1),
       }),
     ).toBe(false);
+  });
+
+  it("refuses a list that is too long or holds a non-string", () => {
+    const lineage = samples[2];
+    expect(
+      isViewState("lineage", {
+        ...lineage,
+        expansions: Array(MAX_VIEW_STATE_LIST + 1).fill("c:t"),
+      }),
+    ).toBe(false);
+    expect(
+      isViewState("lineage", { ...lineage, columnTables: [{ rows: [] }] }),
+    ).toBe(false);
+    expect(isViewState("lineage", { ...lineage, start: ["t"] })).toBe(false);
   });
 
   it("refuses a field of the wrong kind or another panel's state", () => {

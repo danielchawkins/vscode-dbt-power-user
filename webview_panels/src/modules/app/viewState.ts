@@ -20,16 +20,34 @@ export interface QueryResultsViewState {
   tabState: number;
 }
 
+/**
+ * View state the lineage panel restores for the same starting table at the same publication. `expansions` replays
+ * in order, each `c:<table>` (children) or `p:<table>` (parents); `columnTables` lists tables showing their columns;
+ * `selectedColumn` is `[table, column]`.
+ */
+export interface LineageViewState {
+  panel: "lineage";
+  publication?: string;
+  start?: string;
+  expansions: string[];
+  columnTables: string[];
+  selectedTable?: string;
+  selectedColumn?: string[];
+}
+
 /** What a panel may write through `vscode.setState`: view state only. */
 export type PanelViewState =
-  DocumentationEditorViewState | QueryResultsViewState;
+  DocumentationEditorViewState | QueryResultsViewState | LineageViewState;
 
 export type PanelName = PanelViewState["panel"];
 type ViewStateOf<P extends PanelName> = Extract<PanelViewState, { panel: P }>;
-type FieldKind = "number" | "string";
+type FieldKind = "number" | "string" | "strings";
 
 /** Longest string a view state field may hold. */
 export const MAX_VIEW_STATE_STRING = 200;
+
+/** Most entries a `strings` field may hold. */
+export const MAX_VIEW_STATE_LIST = 200;
 
 /** Every key each panel may persist and its kind; `panel` is checked separately. */
 export const VIEW_STATE_FIELDS: {
@@ -42,12 +60,33 @@ export const VIEW_STATE_FIELDS: {
     searchQuery: "string",
   },
   queryResults: { publication: "string", tabState: "number" },
+  lineage: {
+    publication: "string",
+    start: "string",
+    expansions: "strings",
+    columnTables: "strings",
+    selectedTable: "string",
+    selectedColumn: "strings",
+  },
 };
 
-const fitsKind = (kind: FieldKind, value: unknown): boolean =>
-  kind === "number"
-    ? typeof value === "number" && Number.isFinite(value)
-    : typeof value === "string" && value.length <= MAX_VIEW_STATE_STRING;
+const fitsString = (value: unknown): boolean =>
+  typeof value === "string" && value.length <= MAX_VIEW_STATE_STRING;
+
+const fitsKind = (kind: FieldKind, value: unknown): boolean => {
+  switch (kind) {
+    case "number":
+      return typeof value === "number" && Number.isFinite(value);
+    case "string":
+      return fitsString(value);
+    case "strings":
+      return (
+        Array.isArray(value) &&
+        value.length <= MAX_VIEW_STATE_LIST &&
+        value.every(fitsString)
+      );
+  }
+};
 
 /** True when `value` is a view state of `panel` holding only that panel's allowlisted fields. */
 export const isViewState = <P extends PanelName>(

@@ -66,6 +66,13 @@ export const viteConfig = defineConfig({
   },
   resolve: {
     alias: {
+      // `FPU_LINEAGE_RENDERER=incumbent` builds the previous lineage component until the new renderer passes the smoke.
+      "@lineageRenderer": path.resolve(
+        import.meta.dirname,
+        process.env.FPU_LINEAGE_RENDERER === "incumbent"
+          ? "./src/modules/lineage/LineageView.tsx"
+          : "./src/modules/lineage/LineageGraph.tsx",
+      ),
       "@uicore": path.resolve(import.meta.dirname, "./src/uiCore"),
       "@assets": path.resolve(import.meta.dirname, "./src/assets"),
       "@modules": path.resolve(import.meta.dirname, "./src/modules"),
