@@ -4,7 +4,7 @@ Contracts and decisions live in [`docs/adr/`](adr/); this document links to them
 
 ## Activation
 
-`src/extension.ts` calls `DBTPowerUserExtension.activate` in `src/dbtPowerUserExtension.ts`, the single activation path. Every collaborator is constructed beforehand by `compose` in `src/compositionRoot.ts`. Activation first checks for the conflicting upstream `innoverio.vscode-dbt-power-user` extension and blocks with one actionable error if present, then checks the resource-scoped `fusionPowerUser.enabled` setting. It then initializes the Project Registry, the Fusion client pool, and Fusion status reporting, registers Fusion client diagnostics, and builds the initial `Project` set. Startup is silent — only user-invoked actions and blocking configuration failures may show a notification (`src/fusion/fusionStatus.ts`).
+`src/extension.ts` calls `DBTPowerUserExtension.activate` in `src/dbtPowerUserExtension.ts`, the single activation path. Every collaborator is constructed beforehand by `compose` in `src/compositionRoot.ts`. Activation first checks for the conflicting upstream `innoverio.vscode-dbt-power-user` extension and blocks with one actionable error if present, then checks the resource-scoped `fusionPowerUser.enabled` setting. It then initializes the Project Registry, the Fusion client pool, and Fusion status reporting, registers Fusion client diagnostics, and builds the initial `Project` set. Startup is silent — only user-invoked actions and blocking configuration failures may show a notification; see [Configuration errors](#configuration-errors).
 
 ## Declared Projects: Project Registry and Current Project
 
@@ -12,7 +12,7 @@ A Declared Project is a dbt project that receives independent editor services, s
 
 ## Executable resolution
 
-`src/fusion/fusionExecutable.ts` resolves the `dbt` executable independently per Declared Project — the resource-scoped `fusionPowerUser.dbtPath` setting first, then `PATH` — never invoking or special-casing a tool manager; see the README for what that means for `mise-vscode` and similar shims. A resolution failure records a diagnostic for that project only and does not block sibling projects or activation. `--version` is checked against a minimum of 2.0.5; an untested newer major logs one terminal warning per major per installation, recorded in `globalState` and never a toast, then continues.
+`src/fusion/fusionExecutable.ts` resolves the `dbt` executable independently per Declared Project — the resource-scoped `fusionPowerUser.dbtPath` setting first, then `PATH` — never invoking or special-casing a tool manager; see the README for what that means for `mise-vscode` and similar shims. A resolution failure records a diagnostic and an error notification for that project only, naming `fusionPowerUser.dbtPath` (or `PATH`) and the 2.0.5 minimum, and does not block sibling projects or activation. `--version` is checked against a minimum of 2.0.5; an untested newer major logs one terminal warning per major per installation, recorded in `globalState` and never a toast, then continues.
 
 ## dbt file associations
 
@@ -52,6 +52,14 @@ A channel wrapper drops writes after disposal, because VS Code throws on writes 
 In Cursor, showing a channel runs the Output view's own command for it, `workbench.action.output.show.<channel id>`, rather than `LogOutputChannel.show`. A log channel's id is the extension id, a dot and the channel name without the characters a file name cannot hold, followed by `.log` in VS Code and by `.workspaceId-<workspace id>` in Cursor. Cursor's `LogOutputChannel.show` looks the channel up by the id without that suffix, finds nothing, and leaves the Output view closed or on another channel. The wrapper detects Cursor from `env.uriScheme` or `env.appName`; VS Code keeps `LogOutputChannel.show`, which also reveals a hidden panel through the workbench's own handling. The wrapper caches the command id per channel and forgets it when the command fails.
 
 When no command matches or it fails, the wrapper falls back to `LogOutputChannel.show`; this includes the first show in Cursor before the workbench has registered the channel's command.
+
+## Configuration errors
+
+`ProjectErrors` (`src/projects/projectErrors.ts`) is the one module that tells the user a Declared Project cannot load. It receives errors from three sources, each replaced independently: `dbt parse` (`FusionCli.rebuildManifest`), the language server's `dbt/lspCompileComplete` and `dbt/lspBackgroundCompileComplete` notifications (their `errors` field, forwarded by the Fusion Client), and executable resolution; a queued CLI command's text output also replaces the compile errors. Only configuration errors count — Fusion's `InvalidConfig` code, or an error located in `dbt_project.yml`, `profiles.yml`, `packages.yml`, `dependencies.yml` or `selectors.yml`. Node errors such as a missing `ref` stay with the language server's own diagnostics.
+
+For each new error, `ProjectErrors` writes the full message to the project's channel and shows one non-modal error notification with the first line, a hint when it recognizes the cause (a missing environment variable, a `fusionPowerUser.profilesDir` without `profiles.yml`, an unknown target), and **Show output**, which opens the project's channel. The same first line is not notified again until a different error replaces it or the source reports success. The language status item keeps its short text, switches to the error icon, and carries the full first line in its detail; the lineage panel shows it when column lineage comes back empty.
+
+`dbt parse` writes its `--log-format json` records to stdout. `FusionCli` turns the configuration errors among them into `rebuild-manifest` diagnostics in the project's `DiagnosticCollection` (`ProjectDiagnostics`), at the file and line Fusion names, or line 1 of `dbt_project.yml` when it names none — a missing environment variable in a profile reports `(in :1:1)`, so it lands there. A clean parse clears them.
 
 ## Artifacts, caches and persisted state
 
