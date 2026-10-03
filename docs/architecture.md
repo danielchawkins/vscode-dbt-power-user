@@ -12,7 +12,7 @@ A Declared Project is a dbt project that receives independent editor services, s
 
 ## Executable resolution
 
-`src/fusion/fusionExecutable.ts` resolves the `dbt` executable independently per Declared Project — the resource-scoped `fusionPowerUser.dbtPath` setting first, then `PATH` — never invoking or special-casing a tool manager; see the README for what that means for `mise-vscode` and similar shims. A resolution failure records a diagnostic and an error notification for that project only, naming `fusionPowerUser.dbtPath` (or `PATH`) and the 2.0.5 minimum, and does not block sibling projects or activation. `--version` is checked against a minimum of 2.0.5; an untested newer major logs one terminal warning per major per installation, recorded in `globalState` and never a toast, then continues.
+`src/fusion/fusionExecutable.ts` resolves the `dbt` executable independently per Declared Project — the resource-scoped `fusionPowerUser.dbtPath` setting first, then `PATH` — never invoking or special-casing a tool manager; see the README for what that means for `mise-vscode` and similar shims. A resolution failure records a diagnostic and an error notification for that project only, naming `fusionPowerUser.dbtPath` (or `PATH`) and the 2.0.6 minimum, and does not block sibling projects or activation. `--version` is checked against a minimum of 2.0.6; an untested newer major logs one terminal warning per major per installation, recorded in `globalState` and never a toast, then continues.
 
 ## dbt file associations
 
