@@ -2,6 +2,10 @@ import * as assert from "assert";
 import * as fs from "fs";
 import * as path from "path";
 import * as vscode from "vscode";
+import {
+  FUSION_CLIENT_STATES_COMMAND,
+  FusionClientStateReport,
+} from "../../fusion/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import { ActivationMetric, readActivationMetric } from "./activationReport";
 import {
@@ -11,6 +15,7 @@ import {
   evaluateWorkbench,
   readCspViolations,
   readWorkbenchNotificationTexts,
+  revealWorkbench,
   validateSmokeHost,
   waitForWebviewPaint,
   WebviewPaintMetric,
@@ -158,13 +163,17 @@ suite("Pinned-host VSIX smoke", function () {
         `${panel.command} should be registered`,
       );
       if (runtimeEnabled) {
-        webviews.push(await openMeasuredPanel(cdpPort, panel));
+        webviews.push(await openMeasuredPanel(cdpPort, smokeHost, panel));
       } else {
         await openPanel(panel);
         await sleep(2_000);
       }
       if (evidence) {
-        const paint = await waitForWebviewPaint(cdpPort, panel.entry, 50);
+        const paint = await waitForWebviewPaint(
+          cdpPort,
+          smokeHost,
+          panel.entry,
+        );
         await evidence.capture({
           name: `panel ${panel.entry}`,
           expect: `The ${panel.entry} panel is visible and its text matches measured.bodyText`,
@@ -248,6 +257,7 @@ async function waitForHostRuntimeTimings(): Promise<HostRuntimeTiming[]> {
 
 async function openMeasuredPanel(
   cdpPort: string,
+  host: string,
   panel: { container?: string; command: string; entry: string },
 ): Promise<MeasuredWebview> {
   let error: unknown;
@@ -255,7 +265,7 @@ async function openMeasuredPanel(
     await openPanel(panel);
     try {
       return {
-        ...(await waitForWebviewPaint(cdpPort, panel.entry, 50)),
+        ...(await waitForWebviewPaint(cdpPort, host, panel.entry, 20_000)),
         openAttempts: attempt + 1,
       };
     } catch (cause) {
@@ -478,6 +488,11 @@ async function captureEditorSurfaces(
     measured: output,
   });
   assert.strictEqual(
+    output.clientState,
+    "running",
+    `the ${PROJECT_NAME} Fusion client must be running before its channel is read`,
+  );
+  assert.strictEqual(
     output.shown,
     PROJECT_CHANNEL,
     `Show output must select ${PROJECT_CHANNEL} in the Output view`,
@@ -486,9 +501,14 @@ async function captureEditorSurfaces(
   await vscode.commands.executeCommand("workbench.action.closePanel");
 }
 
-const PROJECT_CHANNEL = "Fusion Power User: single_project";
+const PROJECT_NAME = "single_project";
+const PROJECT_CHANNEL = `Fusion Power User: ${PROJECT_NAME}`;
+const OUTPUT_TIMEOUT_MS = 30_000;
 
-/** Runs the language status item's "Show output" command, then reads the Output view until it shows the project channel. */
+/**
+ * Waits for the project's Fusion client to run, so its channel has log lines, then runs the language status item's
+ * "Show output" command and reads the Output view until it renders that channel's lines.
+ */
 async function showProjectOutput(
   cdpPort: string,
   host: string,
@@ -499,7 +519,9 @@ async function showProjectOutput(
   listed: string[];
   text: string | null;
   openedBy: string;
+  clientState: string | null;
 }> {
+  const clientState = await waitForClientRunning(PROJECT_NAME);
   const openedBy = "fusionPowerUser.showFusionOutput";
   await vscode.commands.executeCommand(openedBy, root);
   let last: {
@@ -508,26 +530,54 @@ async function showProjectOutput(
     listed: string[];
     text: string;
   } | null = null;
-  for (let attempt = 0; attempt < 40; attempt += 1) {
-    last =
-      (await evaluateWorkbench<{
-        channel: string | null;
-        shown: string | null;
-        listed: string[];
-        text: string;
-      }>(cdpPort, host, OUTPUT_VIEW)) ?? last;
+  const deadline = Date.now() + OUTPUT_TIMEOUT_MS;
+  do {
+    await revealWorkbench(cdpPort, host, deadline - Date.now());
+    try {
+      last =
+        (await evaluateWorkbench<{
+          channel: string | null;
+          shown: string | null;
+          listed: string[];
+          text: string;
+        }>(cdpPort, host, OUTPUT_VIEW)) ?? last;
+    } catch {
+      // A starved renderer can miss the evaluation timeout; retry until the deadline.
+    }
     if (last?.shown === PROJECT_CHANNEL && last.text) {
       break;
     }
     await sleep(250);
-  }
+  } while (Date.now() < deadline);
   return {
     channel: last?.channel ?? null,
     shown: last?.shown ?? null,
     listed: last?.listed ?? [],
     text: last?.text || null,
     openedBy,
+    clientState,
   };
+}
+
+/** The Fusion client state of `projectName` once it is running or failed, or the last state seen at the timeout. */
+async function waitForClientRunning(
+  projectName: string,
+): Promise<string | null> {
+  const deadline = Date.now() + OUTPUT_TIMEOUT_MS;
+  let state: string | null = null;
+  do {
+    const reports = await vscode.commands.executeCommand<
+      FusionClientStateReport[]
+    >(FUSION_CLIENT_STATES_COMMAND);
+    state =
+      reports?.find((report) => report.projectName === projectName)?.state ??
+      null;
+    if (state === "running" || state === "failed") {
+      return state;
+    }
+    await sleep(250);
+  } while (Date.now() < deadline);
+  return state;
 }
 
 /**
@@ -543,6 +593,7 @@ function visualEvidence(cdpPort: string, host: string) {
   return {
     async capture(checkpoint: VisualCheckpoint): Promise<void> {
       await sleep(500);
+      await revealWorkbench(cdpPort, host);
       const png = await captureWorkbenchScreenshot(cdpPort, host);
       const notifications = await readWorkbenchNotificationTexts(cdpPort, host);
       sequence += 1;

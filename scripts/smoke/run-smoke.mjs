@@ -179,6 +179,9 @@ try {
       `--user-data-dir=${userDataDir}`,
       `--extensions-dir=${extensionsDir}`,
       `--remote-debugging-port=${cdpPort}`,
+      // A covered or unfocused window otherwise reports hidden and paints nothing until it is raised.
+      "--disable-backgrounding-occluded-windows",
+      "--disable-renderer-backgrounding",
       ...(host === "cursor"
         ? ["--skip-onboarding", "--suppress-popups-on-startup"]
         : []),

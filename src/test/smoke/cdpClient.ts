@@ -136,14 +136,55 @@ export async function assertNoWorkbenchNotifications(
   }
 }
 
+const VISIBLE_FRAME = `document.visibilityState !== "visible" ? false : Promise.race([
+  new Promise((resolve) => requestAnimationFrame(() => resolve(true))),
+  new Promise((resolve) => setTimeout(() => resolve(false), 1000)),
+])`;
+
+/**
+ * Raises the workbench window and waits until its page is visible and producing frames, since a hidden window
+ * renders neither editor lines nor webview paints. Returns whether it became visible before `timeoutMs`.
+ */
+export async function revealWorkbench(
+  port: string,
+  host: string,
+  timeoutMs = 30_000,
+): Promise<boolean> {
+  const deadline = Date.now() + timeoutMs;
+  do {
+    try {
+      const target = await findWorkbenchPageTarget(
+        port,
+        validateSmokeHost(host),
+      );
+      await sendCommand(target.webSocketDebuggerUrl!, "Page.bringToFront");
+      const values = await evaluateContexts(
+        target.webSocketDebuggerUrl!,
+        VISIBLE_FRAME,
+      );
+      if (values.includes(true)) {
+        return true;
+      }
+    } catch {
+      // A starved renderer can miss the evaluation timeout; retry until the deadline.
+    }
+    await sleep(250);
+  } while (Date.now() < deadline);
+  return false;
+}
+
 export async function waitForWebviewPaint(
   port: string,
+  host: string,
   entry: string,
-  attempts = 100,
+  timeoutMs = 60_000,
 ): Promise<WebviewPaintMetric> {
+  const deadline = Date.now() + timeoutMs;
   let lastValue: WebviewPaintMetric | undefined;
   let lastTargets: CdpTarget[] = [];
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
+  let visible = false;
+  for (;;) {
+    visible = await revealWorkbench(port, host, deadline - Date.now());
     try {
       lastTargets = await listTargets(port);
       const frames = lastTargets.filter(
@@ -187,12 +228,14 @@ export async function waitForWebviewPaint(
     } catch {
       // The CDP endpoint can be briefly unavailable while a view is attaching.
     }
-    if (attempt < attempts - 1) {
-      await sleep(100);
+    if (Date.now() >= deadline) {
+      break;
     }
+    await sleep(100);
   }
   throw new Error(
     `Webview did not render with required assets: ${entry} ${JSON.stringify({
+      workbenchVisible: visible,
       lastValue,
       targets: lastTargets.map(({ type, title, url }) => ({
         type,
@@ -490,20 +533,33 @@ export async function captureWorkbenchScreenshot(
   host: string,
 ): Promise<Buffer> {
   const target = await findWorkbenchPageTarget(port, validateSmokeHost(host));
+  const result = await sendCommand(
+    target.webSocketDebuggerUrl!,
+    "Page.captureScreenshot",
+    { format: "png", fromSurface: true },
+    10_000,
+  );
+  if (typeof result.data !== "string") {
+    throw new Error("CDP screenshot returned no data");
+  }
+  return Buffer.from(result.data, "base64");
+}
+
+/** Sends one CDP command to `webSocketUrl` and resolves with its result. */
+function sendCommand(
+  webSocketUrl: string,
+  method: string,
+  params: Record<string, unknown> = {},
+  timeoutMs = 5_000,
+): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
-    const socket = new WebSocket(target.webSocketDebuggerUrl!);
+    const socket = new WebSocket(webSocketUrl);
     const timeout = setTimeout(() => {
       socket.close();
-      reject(new Error("CDP screenshot timed out"));
-    }, 10_000);
+      reject(new Error(`CDP ${method} timed out`));
+    }, timeoutMs);
     socket.addEventListener("open", () => {
-      socket.send(
-        JSON.stringify({
-          id: 1,
-          method: "Page.captureScreenshot",
-          params: { format: "png", fromSurface: true },
-        }),
-      );
+      socket.send(JSON.stringify({ id: 1, method, params }));
     });
     socket.addEventListener("message", (event) => {
       const message = JSON.parse(String(event.data));
@@ -512,17 +568,17 @@ export async function captureWorkbenchScreenshot(
       }
       clearTimeout(timeout);
       socket.close();
-      if (message.error || typeof message.result?.data !== "string") {
+      if (message.error) {
         reject(
-          new Error(`CDP screenshot failed: ${JSON.stringify(message.error)}`),
+          new Error(`CDP ${method} failed: ${JSON.stringify(message.error)}`),
         );
         return;
       }
-      resolve(Buffer.from(message.result.data as string, "base64"));
+      resolve(message.result ?? {});
     });
     socket.addEventListener("error", () => {
       clearTimeout(timeout);
-      reject(new Error("CDP screenshot socket failed"));
+      reject(new Error(`CDP ${method} socket failed`));
     });
   });
 }
