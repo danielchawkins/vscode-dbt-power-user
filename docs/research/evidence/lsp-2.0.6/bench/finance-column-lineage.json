@@ -1,0 +1,620 @@
+[
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__topup",
+      "+column:model.finance_general.base__stripe_grant__topup.AMOUNT+"
+    ],
+    "ms": 1545,
+    "nodes": 2,
+    "error": null,
+    "sample": [
+      {
+        "unique_id": "model.finance_general.base__stripe_grant__topup.AMOUNT",
+        "op": "mod",
+        "parents": ["source.finance_general.stripe_grant.topup.AMOUNT"]
+      },
+      {
+        "unique_id": "source.finance_general.stripe_grant.topup.AMOUNT",
+        "op": "unknown",
+        "parents": []
+      }
+    ]
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": ["+column:model.finance_general.base__stripe_grant__topup.AMOUNT+"],
+    "ms": 709,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__topup",
+      "+column:model.finance_general.base__stripe_grant__topup.amount+"
+    ],
+    "ms": 644,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": ["+column:model.finance_general.base__stripe_grant__topup.amount+"],
+    "ms": 699,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__topup",
+      "+column:model.finance_general.base__stripe_grant__topup.BALANCE_TRANSACTION_ID+"
+    ],
+    "ms": 641,
+    "nodes": 2,
+    "error": null,
+    "sample": [
+      {
+        "unique_id": "model.finance_general.base__stripe_grant__topup.BALANCE_TRANSACTION_ID",
+        "op": "mod",
+        "parents": [
+          "source.finance_general.stripe_grant.topup.BALANCE_TRANSACTION_ID"
+        ]
+      },
+      {
+        "unique_id": "source.finance_general.stripe_grant.topup.BALANCE_TRANSACTION_ID",
+        "op": "unknown",
+        "parents": []
+      }
+    ]
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.base__stripe_grant__topup.BALANCE_TRANSACTION_ID+"
+    ],
+    "ms": 683,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__topup",
+      "+column:model.finance_general.base__stripe_grant__topup.balance_transaction_id+"
+    ],
+    "ms": 617,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.base__stripe_grant__topup.balance_transaction_id+"
+    ],
+    "ms": 660,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__topup",
+      "+column:model.finance_general.base__stripe_grant__topup.CREATED_AT+"
+    ],
+    "ms": 699,
+    "nodes": 2,
+    "error": null,
+    "sample": [
+      {
+        "unique_id": "model.finance_general.base__stripe_grant__topup.CREATED_AT",
+        "op": "mod",
+        "parents": ["source.finance_general.stripe_grant.topup.CREATED"]
+      },
+      {
+        "unique_id": "source.finance_general.stripe_grant.topup.CREATED",
+        "op": "unknown",
+        "parents": []
+      }
+    ]
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.base__stripe_grant__topup.CREATED_AT+"
+    ],
+    "ms": 724,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__topup",
+      "+column:model.finance_general.base__stripe_grant__topup.created_at+"
+    ],
+    "ms": 784,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.base__stripe_grant__topup.created_at+"
+    ],
+    "ms": 804,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__stripe__transfer_reversal",
+      "+column:model.finance_general.stg__stripe__transfer_reversal.AMOUNT+"
+    ],
+    "ms": 632,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.stg__stripe__transfer_reversal.AMOUNT+"
+    ],
+    "ms": 703,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__stripe__transfer_reversal",
+      "+column:model.finance_general.stg__stripe__transfer_reversal.amount+"
+    ],
+    "ms": 584,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.stg__stripe__transfer_reversal.amount+"
+    ],
+    "ms": 651,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__stripe__transfer_reversal",
+      "+column:model.finance_general.stg__stripe__transfer_reversal.BALANCE_TRANSACTION_ID+"
+    ],
+    "ms": 709,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.stg__stripe__transfer_reversal.BALANCE_TRANSACTION_ID+"
+    ],
+    "ms": 651,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__stripe__transfer_reversal",
+      "+column:model.finance_general.stg__stripe__transfer_reversal.balance_transaction_id+"
+    ],
+    "ms": 613,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.stg__stripe__transfer_reversal.balance_transaction_id+"
+    ],
+    "ms": 772,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__stripe__transfer_reversal",
+      "+column:model.finance_general.stg__stripe__transfer_reversal.CREATED_AT+"
+    ],
+    "ms": 631,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.stg__stripe__transfer_reversal.CREATED_AT+"
+    ],
+    "ms": 613,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__stripe__transfer_reversal",
+      "+column:model.finance_general.stg__stripe__transfer_reversal.created_at+"
+    ],
+    "ms": 667,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.stg__stripe__transfer_reversal.created_at+"
+    ],
+    "ms": 654,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__marqeta__declines",
+      "+column:model.finance_general.stg__marqeta__declines.CLEAN_MERCHANT+"
+    ],
+    "ms": 662,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.stg__marqeta__declines.CLEAN_MERCHANT+"
+    ],
+    "ms": 617,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__marqeta__declines",
+      "+column:model.finance_general.stg__marqeta__declines.clean_merchant+"
+    ],
+    "ms": 622,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.stg__marqeta__declines.clean_merchant+"
+    ],
+    "ms": 691,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__marqeta__declines",
+      "+column:model.finance_general.stg__marqeta__declines.CURRENCY+"
+    ],
+    "ms": 652,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": ["+column:model.finance_general.stg__marqeta__declines.CURRENCY+"],
+    "ms": 626,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__marqeta__declines",
+      "+column:model.finance_general.stg__marqeta__declines.currency+"
+    ],
+    "ms": 692,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": ["+column:model.finance_general.stg__marqeta__declines.currency+"],
+    "ms": 700,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__marqeta__declines",
+      "+column:model.finance_general.stg__marqeta__declines.DECLINE_HK+"
+    ],
+    "ms": 734,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.stg__marqeta__declines.DECLINE_HK+"
+    ],
+    "ms": 611,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.stg__marqeta__declines",
+      "+column:model.finance_general.stg__marqeta__declines.decline_hk+"
+    ],
+    "ms": 627,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.stg__marqeta__declines.decline_hk+"
+    ],
+    "ms": 696,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__transfer_reversal",
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.AMOUNT+"
+    ],
+    "ms": 620,
+    "nodes": 2,
+    "error": null,
+    "sample": [
+      {
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal.AMOUNT",
+        "op": "mod",
+        "parents": [
+          "source.finance_general.stripe_grant.transfer_reversal.AMOUNT"
+        ]
+      },
+      {
+        "unique_id": "source.finance_general.stripe_grant.transfer_reversal.AMOUNT",
+        "op": "unknown",
+        "parents": []
+      }
+    ]
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.AMOUNT+"
+    ],
+    "ms": 661,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__transfer_reversal",
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.amount+"
+    ],
+    "ms": 649,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.amount+"
+    ],
+    "ms": 682,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__transfer_reversal",
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.BALANCE_TRANSACTION_ID+"
+    ],
+    "ms": 723,
+    "nodes": 2,
+    "error": null,
+    "sample": [
+      {
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal.BALANCE_TRANSACTION_ID",
+        "op": "mod",
+        "parents": [
+          "source.finance_general.stripe_grant.transfer_reversal.BALANCE_TRANSACTION_ID"
+        ]
+      },
+      {
+        "unique_id": "source.finance_general.stripe_grant.transfer_reversal.BALANCE_TRANSACTION_ID",
+        "op": "unknown",
+        "parents": []
+      }
+    ]
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.BALANCE_TRANSACTION_ID+"
+    ],
+    "ms": 617,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__transfer_reversal",
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.balance_transaction_id+"
+    ],
+    "ms": 661,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.balance_transaction_id+"
+    ],
+    "ms": 677,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__transfer_reversal",
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.CREATED_AT+"
+    ],
+    "ms": 663,
+    "nodes": 2,
+    "error": null,
+    "sample": [
+      {
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal.CREATED_AT",
+        "op": "mod",
+        "parents": [
+          "source.finance_general.stripe_grant.transfer_reversal.CREATED"
+        ]
+      },
+      {
+        "unique_id": "source.finance_general.stripe_grant.transfer_reversal.CREATED",
+        "op": "unknown",
+        "parents": []
+      }
+    ]
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.CREATED_AT+"
+    ],
+    "ms": 751,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "@model.finance_general.base__stripe_grant__transfer_reversal",
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.created_at+"
+    ],
+    "ms": 617,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  },
+  {
+    "rel": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+    "static_analysis": "strict",
+    "args": [
+      "+column:model.finance_general.base__stripe_grant__transfer_reversal.created_at+"
+    ],
+    "ms": 734,
+    "nodes": 0,
+    "error": null,
+    "sample": []
+  }
+]

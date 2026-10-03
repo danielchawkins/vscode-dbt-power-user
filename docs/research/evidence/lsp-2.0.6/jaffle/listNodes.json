@@ -1,0 +1,2261 @@
+{
+  "bare relpath": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "name": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "unique_id": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "+name+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "seeds/raw_orders.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_payments",
+        "original_file_path": "seeds/raw_payments.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "name+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "+name": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "seeds/raw_orders.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_payments",
+        "original_file_path": "seeds/raw_payments.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "1+name+1": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "2+name+2": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "seeds/raw_orders.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_payments",
+        "original_file_path": "seeds/raw_payments.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "+unique_id+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "seeds/raw_orders.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_payments",
+        "original_file_path": "seeds/raw_payments.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "@unique_id": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_customers",
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "customers",
+        "original_file_path": "models/customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_customers"]
+        },
+        "name": "stg_customers",
+        "original_file_path": "models/staging/stg_customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_customers",
+        "original_file_path": "seeds/raw_customers.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_customers"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "seeds/raw_orders.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_payments",
+        "original_file_path": "seeds/raw_payments.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "unit"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers"]
+        },
+        "name": "test_customer_order_aggregation",
+        "original_file_path": "models/schema.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "unit_test",
+        "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "+relpath+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "seeds/raw_orders.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_payments",
+        "original_file_path": "seeds/raw_payments.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "path:dir": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_customers",
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "customers",
+        "original_file_path": "models/customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.stg_payments"]
+        },
+        "name": "payments_dollars",
+        "original_file_path": "models/payments_dollars.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.payments_dollars"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": ["source.jaffle_shop.raw.raw_orders"]
+        },
+        "name": "src_orders",
+        "original_file_path": "models/src_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.src_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_customers"]
+        },
+        "name": "stg_customers",
+        "original_file_path": "models/staging/stg_customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "source",
+        "unique_id": "source.jaffle_shop.raw.raw_orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "unit"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers"]
+        },
+        "name": "test_customer_order_aggregation",
+        "original_file_path": "models/schema.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "unit_test",
+        "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "dir": {
+    "error": "No nodes found",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "resource_type:source": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "source",
+        "unique_id": "source.jaffle_shop.raw.raw_orders"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "source:*": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "source",
+        "unique_id": "source.jaffle_shop.raw.raw_orders"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "*": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_customers",
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "customers",
+        "original_file_path": "models/customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.stg_payments"]
+        },
+        "name": "payments_dollars",
+        "original_file_path": "models/payments_dollars.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.payments_dollars"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": ["source.jaffle_shop.raw.raw_orders"]
+        },
+        "name": "src_orders",
+        "original_file_path": "models/src_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.src_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_customers"]
+        },
+        "name": "stg_customers",
+        "original_file_path": "models/staging/stg_customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_customers",
+        "original_file_path": "seeds/raw_customers.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_customers"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "seeds/raw_orders.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_payments",
+        "original_file_path": "seeds/raw_payments.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "unit"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers"]
+        },
+        "name": "test_customer_order_aggregation",
+        "original_file_path": "models/schema.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "unit_test",
+        "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "seed": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "seeds/raw_orders.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_orders"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "+column:uid.col+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "column:uid.col+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "+column:uid.col": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "1+column:uid.col+1": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "intersection a,b": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "union 'a b'": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_customers",
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "customers",
+        "original_file_path": "models/customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "unit"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers"]
+        },
+        "name": "test_customer_order_aggregation",
+        "original_file_path": "models/schema.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "unit_test",
+        "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "exposure": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "test_type:unit": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "unit"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers"]
+        },
+        "name": "test_customer_order_aggregation",
+        "original_file_path": "models/schema.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "unit_test",
+        "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "test_type:generic": {
+    "error": "No nodes found",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "resource_type:test": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "resource_type:macro": {
+    "error": "No nodes found",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "resource_type:doc": {
+    "error": "No nodes found",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "resource_type:model": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_customers",
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "customers",
+        "original_file_path": "models/customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.stg_payments"]
+        },
+        "name": "payments_dollars",
+        "original_file_path": "models/payments_dollars.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.payments_dollars"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": ["source.jaffle_shop.raw.raw_orders"]
+        },
+        "name": "src_orders",
+        "original_file_path": "models/src_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.src_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_customers"]
+        },
+        "name": "stg_customers",
+        "original_file_path": "models/staging/stg_customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "unit"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers"]
+        },
+        "name": "test_customer_order_aggregation",
+        "original_file_path": "models/schema.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "unit_test",
+        "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "state:modified": {
+    "error": "Got a state selector method, but no comparison manifest",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "package:root": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "snapshot"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+        },
+        "name": "weekly_report",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "exposure",
+        "unique_id": "exposure.jaffle_shop.weekly_report"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_customers",
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "customers",
+        "original_file_path": "models/customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.jaffle_shop.stg_orders",
+            "model.jaffle_shop.stg_payments"
+          ]
+        },
+        "name": "orders",
+        "original_file_path": "models/orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.stg_payments"]
+        },
+        "name": "payments_dollars",
+        "original_file_path": "models/payments_dollars.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.payments_dollars"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": ["source.jaffle_shop.raw.raw_orders"]
+        },
+        "name": "src_orders",
+        "original_file_path": "models/src_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.src_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_customers"]
+        },
+        "name": "stg_customers",
+        "original_file_path": "models/staging/stg_customers.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_customers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_orders"]
+        },
+        "name": "stg_orders",
+        "original_file_path": "models/staging/stg_orders.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": ["seed.jaffle_shop.raw_payments"]
+        },
+        "name": "stg_payments",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "model",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_customers",
+        "original_file_path": "seeds/raw_customers.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_customers"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "seeds/raw_orders.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "table"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_payments",
+        "original_file_path": "seeds/raw_payments.csv",
+        "package_name": "jaffle_shop",
+        "resource_type": "seed",
+        "unique_id": "seed.jaffle_shop.raw_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "raw_orders",
+        "original_file_path": "models/sources.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "source",
+        "unique_id": "source.jaffle_shop.raw.raw_orders"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "test"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.orders"]
+        },
+        "name": "assert_positive_amount",
+        "original_file_path": "tests/assert_positive_amount.sql",
+        "package_name": "jaffle_shop",
+        "resource_type": "test",
+        "unique_id": "test.jaffle_shop.assert_positive_amount"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "unit"
+        },
+        "depends_on": {
+          "nodes": ["model.jaffle_shop.customers"]
+        },
+        "name": "test_customer_order_aggregation",
+        "original_file_path": "models/schema.yml",
+        "package_name": "jaffle_shop",
+        "resource_type": "unit_test",
+        "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "[\"+column:model.jaffle_shop.customers.customer_id+\"]": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "[\"@model.jaffle_shop.customers\",\"+column:model.jaffle_shop.customers.customer_id+\"]": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [
+      {
+        "is_primary_key": false,
+        "materialized": "table",
+        "name": "customer_id",
+        "node_name": "customers",
+        "op": "copy",
+        "original_file_path": "models/customers.sql",
+        "parents": ["model.jaffle_shop.stg_customers.customer_id"],
+        "resource_type": "model",
+        "transformation_type": "passthrough",
+        "unique_id": "model.jaffle_shop.customers.customer_id"
+      },
+      {
+        "is_primary_key": false,
+        "materialized": "view",
+        "name": "customer_id",
+        "node_name": "stg_customers",
+        "op": "copy",
+        "original_file_path": "models/staging/stg_customers.sql",
+        "parents": ["seed.jaffle_shop.raw_customers.id"],
+        "resource_type": "model",
+        "transformation_type": "rename",
+        "unique_id": "model.jaffle_shop.stg_customers.customer_id"
+      },
+      {
+        "is_primary_key": false,
+        "materialized": "table",
+        "name": "id",
+        "node_name": "raw_customers",
+        "op": "unknown",
+        "original_file_path": "seeds/raw_customers.csv",
+        "parents": [],
+        "resource_type": "seed",
+        "transformation_type": "raw",
+        "unique_id": "seed.jaffle_shop.raw_customers.id"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "[\"+column:model.jaffle_shop.stg_orders.order_id+\"]": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "[\"+column:model.jaffle_shop.orders.order_id+\"]": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "[\"@model.jaffle_shop.orders\",\"+column:model.jaffle_shop.orders.amount+\"]": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [
+      {
+        "is_primary_key": false,
+        "materialized": "table",
+        "name": "amount",
+        "node_name": "orders",
+        "op": "mod",
+        "original_file_path": "models/orders.sql",
+        "parents": ["model.jaffle_shop.stg_payments.amount"],
+        "resource_type": "model",
+        "transformation_type": "transformation",
+        "unique_id": "model.jaffle_shop.orders.amount"
+      },
+      {
+        "is_primary_key": false,
+        "materialized": "view",
+        "name": "amount",
+        "node_name": "stg_payments",
+        "op": "mod",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "parents": ["seed.jaffle_shop.raw_payments.amount"],
+        "resource_type": "model",
+        "transformation_type": "transformation",
+        "unique_id": "model.jaffle_shop.stg_payments.amount"
+      },
+      {
+        "is_primary_key": false,
+        "materialized": "table",
+        "name": "amount",
+        "node_name": "raw_payments",
+        "op": "unknown",
+        "original_file_path": "seeds/raw_payments.csv",
+        "parents": [],
+        "resource_type": "seed",
+        "transformation_type": "raw",
+        "unique_id": "seed.jaffle_shop.raw_payments.amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "[\"@model.jaffle_shop.orders\",\"2+column:model.jaffle_shop.orders.amount\"]": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [
+      {
+        "is_primary_key": false,
+        "materialized": "table",
+        "name": "amount",
+        "node_name": "orders",
+        "op": "mod",
+        "original_file_path": "models/orders.sql",
+        "parents": ["model.jaffle_shop.stg_payments.amount"],
+        "resource_type": "model",
+        "transformation_type": "transformation",
+        "unique_id": "model.jaffle_shop.orders.amount"
+      },
+      {
+        "is_primary_key": false,
+        "materialized": "view",
+        "name": "amount",
+        "node_name": "stg_payments",
+        "op": "mod",
+        "original_file_path": "models/staging/stg_payments.sql",
+        "parents": ["seed.jaffle_shop.raw_payments.amount"],
+        "resource_type": "model",
+        "transformation_type": "transformation",
+        "unique_id": "model.jaffle_shop.stg_payments.amount"
+      },
+      {
+        "is_primary_key": false,
+        "materialized": "table",
+        "name": "amount",
+        "node_name": "raw_payments",
+        "op": "unknown",
+        "original_file_path": "seeds/raw_payments.csv",
+        "parents": [],
+        "resource_type": "seed",
+        "transformation_type": "raw",
+        "unique_id": "seed.jaffle_shop.raw_payments.amount"
+      }
+    ],
+    "root_project": "jaffle_shop"
+  },
+  "[\"+column:model.jaffle_shop.payments_dollars.amount_dollars+\"]": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  },
+  "[\"+column:source.jaffle_shop.raw.raw_orders.id+\"]": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "jaffle_shop"
+  }
+}

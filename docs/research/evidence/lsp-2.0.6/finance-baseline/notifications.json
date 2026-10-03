@@ -1,0 +1,174 @@
+{
+  "clientNotification initialized": {
+    "count": 1,
+    "first": {}
+  },
+  "clientNotification textDocument/didOpen": {
+    "count": 3,
+    "first": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "<document text, 1002 chars>"
+      }
+    }
+  },
+  "serverRequest client/registerCapability": {
+    "count": 1,
+    "first": {
+      "registrations": [
+        {
+          "id": "default-dbt-file-system-watcher",
+          "method": "workspace/didChangeWatchedFiles",
+          "registerOptions": {
+            "watchers": [
+              {
+                "globPattern": "**/*"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "notification window/logMessage": {
+    "count": 1353,
+    "first": {
+      "message": "Did open: file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+      "type": 3
+    }
+  },
+  "notification dbt/lspCompileStart": {
+    "count": 214,
+    "first": {
+      "adapter_type": null,
+      "adapter_unique_id": null,
+      "cause": "didSave",
+      "compile_type": "incremental",
+      "dbt_version": "2.0.6",
+      "project_id": null
+    }
+  },
+  "serverRequest workspace/configuration": {
+    "count": 220,
+    "first": {
+      "items": [
+        {
+          "section": "dbt"
+        }
+      ]
+    }
+  },
+  "serverRequest window/workDoneProgress/create": {
+    "count": 463,
+    "first": {
+      "token": "a18bd72f-5702-42a9-ad11-da179e248cf0"
+    }
+  },
+  "notification textDocument/publishDiagnostics": {
+    "count": 2321,
+    "first": {
+      "diagnostics": [],
+      "uri": "file://<P>/macros/adapters/apply_grants.sql"
+    }
+  },
+  "serverRequest workspace/codeLens/refresh": {
+    "count": 217
+  },
+  "serverRequest workspace/semanticTokens/refresh": {
+    "count": 217
+  },
+  "notification dbt/lspCompileComplete": {
+    "count": 214,
+    "first": {
+      "adapter_type": "snowflake",
+      "adapter_unique_id": "25f211f316e85a3e07b71a9bdec15b17",
+      "cause": "didSave",
+      "compile_type": "incremental",
+      "dbt_version": "2.0.6",
+      "duration_ms": 3758,
+      "errors": [],
+      "models_count": 330,
+      "project_id": "66541267bb6e97337548f546c2b3f930"
+    }
+  },
+  "notification dbt/lspBackgroundCompileStart": {
+    "count": 6,
+    "first": {
+      "adapter_type": "snowflake",
+      "adapter_unique_id": "25f211f316e85a3e07b71a9bdec15b17",
+      "cause": "didSave",
+      "compile_type": "full",
+      "dbt_version": "2.0.6",
+      "project_id": "66541267bb6e97337548f546c2b3f930"
+    }
+  },
+  "notification dbt/lspBackgroundCompileComplete": {
+    "count": 6,
+    "first": {
+      "adapter_type": "snowflake",
+      "adapter_unique_id": "25f211f316e85a3e07b71a9bdec15b17",
+      "cause": "didSave",
+      "compile_type": "full",
+      "dbt_version": "2.0.6",
+      "duration_ms": 3192,
+      "errors": [
+        {
+          "code": "1501",
+          "message": "[JinjaError (dbt1501)]: Failed to render SQL invalid operation: Compilation Error for model.finance_general.stg__stripe__balance_transaction from models/13_staging/money_movement/stripe/stg__stripe__balance_transaction.sql: union_relations: source 'grant' is missing column(s) [PAYOUT_ID]. Add them, or pass fill_missing_columns=true.\n(in models/13_staging/money_movement/stripe/stg__stripe__balance_transaction.sql:17:5)\n(in dbt_packages/kikoff/macros/union_relations.sql:24:31)\n(in dbt_packages/kikoff/macros/union_relations.sql:111:21)\n  --> models/13_staging/money_movement/stripe/stg__stripe__balance_transaction.sql:17:5",
+          "severity": "Error"
+        },
+        {
+          "code": "1501",
+          "message": "[JinjaError (dbt1501)]: Failed to render SQL invalid operation: Compilation Error for model.finance_general.stg__stripe__payment_intent from models/13_staging/money_movement/stripe/stg__stripe__payment_intent.sql: union_relations: source 'grant' is missing column(s) [METADATA_TYPEFORM_FORM_ID, METADATA_TYPEFORM_RESPONSE_ID]. Add them, or pass fill_missing_columns=true.\n(in models/13_staging/money_movement/stripe/stg__stripe__payment_intent.sql:17:5)\n(in dbt_packages/kikoff/macros/union_relations.sql:24:31)\n(in dbt_packages/kikoff/macros/union_relations.sql:111:21)\n  --> models/13_staging/money_movement/stripe/stg__stripe__payment_intent.sql:17:5",
+          "severity": "Error"
+        },
+        {
+          "code": "1501",
+          "message": "[JinjaError (dbt1501)]: Failed to render SQL invalid operation: Compilation Error for model.finance_general.stg__stripe__charge from models/13_staging/money_movement/stripe/stg__stripe__charge.sql: union_relations: source 'grant' is missing column(s) [METADATA_TYPEFORM_FORM_ID, METADATA_TYPEFORM_RESPONSE_ID]. Add them, or pass fill_missing_columns=true.\n(in models/13_staging/money_movement/stripe/stg__stripe__charge.sql:17:5)\n(in dbt_packages/kikoff/macros/union_relations.sql:24:31)\n(in dbt_packages/kikoff/macros/union_relations.sql:111:21)\n  --> models/13_staging/money_movement/stripe/stg__stripe__charge.sql:17:5",
+          "severity": "Error"
+        }
+      ],
+      "models_count": 330,
+      "project_id": "66541267bb6e97337548f546c2b3f930"
+    }
+  },
+  "clientNotification textDocument/didChange": {
+    "count": 14,
+    "first": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "version": 4
+      },
+      "contentChanges": [
+        {
+          "text": "<document text, 1003 chars>"
+        }
+      ]
+    }
+  },
+  "clientNotification textDocument/didSave": {
+    "count": 7,
+    "first": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    }
+  },
+  "notification dbt/renameModel": {
+    "count": 5,
+    "first": {}
+  },
+  "clientNotification workspace/didChangeWatchedFiles": {
+    "count": 4,
+    "first": {
+      "changes": [
+        {
+          "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__topup.sql",
+          "type": 2
+        }
+      ]
+    }
+  }
+}

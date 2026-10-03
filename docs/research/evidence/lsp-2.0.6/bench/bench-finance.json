@@ -1,0 +1,170 @@
+{
+  "models": {
+    "p50": {
+      "unique_id": "model.finance_general.base__stripe_grant__topup",
+      "path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+      "lineageSize": 6
+    },
+    "p95": {
+      "unique_id": "model.finance_general.stg__marqeta__declines",
+      "path": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+      "lineageSize": 6
+    }
+  },
+  "cli parse + manifest read (lineage source)": {
+    "p50": 1500,
+    "p95": 1525,
+    "samples": [1500, 1476, 1498, 1508, 1525],
+    "check": {
+      "ok": true,
+      "bytes": 3156,
+      "readMs": 22,
+      "nodes": 476
+    }
+  },
+  "manifest read only (in-memory lineage after parse)": {
+    "p50": 20,
+    "p95": 21,
+    "samples": [20, 21, 20, 20, 20],
+    "check": {
+      "parents": 5
+    }
+  },
+  "cli compile --inline p50 model": {
+    "p50": 1737,
+    "p95": 1745,
+    "samples": [1737, 1745, 1709, 1724, 1739],
+    "check": {
+      "ok": true,
+      "bytes": 22415
+    }
+  },
+  "cli show --inline p50 model limit 10": {
+    "p50": 3345,
+    "p95": 3666,
+    "samples": [3345, 3599, 3289, 3666, 2867],
+    "check": {
+      "ok": true,
+      "bytes": 31972
+    }
+  },
+  "cli compile --inline p95 model": {
+    "p50": 3636,
+    "p95": 4542,
+    "samples": [4542, 3661, 3412, 3324, 3636],
+    "check": {
+      "ok": true,
+      "bytes": 25781
+    }
+  },
+  "cli show --inline p95 model limit 10": {
+    "p50": 7690,
+    "p95": 8616,
+    "samples": [8616, 7769, 7690, 6886, 7177],
+    "check": {
+      "ok": true,
+      "bytes": 76175
+    }
+  },
+  "lsp didOpen -> background compile complete": {
+    "ms": 12162
+  },
+  "lsp listNodes +p50+ (table lineage, all hops)": {
+    "p50": 59,
+    "p95": 60,
+    "samples": [49, 58, 59, 60, 59],
+    "check": {
+      "nodes": 6
+    }
+  },
+  "lsp listNodes 1+p50+1 (one hop)": {
+    "p50": 59,
+    "p95": 60,
+    "samples": [59, 59, 59, 60, 58],
+    "check": {
+      "nodes": 4
+    }
+  },
+  "lsp listNodes column lineage p50 (AMOUNT)": {
+    "p50": 662,
+    "p95": 1356,
+    "samples": [1356, 662, 623, 672, 630],
+    "check": {
+      "nodes": 2
+    }
+  },
+  "lsp getCurrentNode p50": {
+    "p50": 0,
+    "p95": 1,
+    "samples": [1, 0, 0, 1, 0],
+    "check": {
+      "columns": 26
+    }
+  },
+  "lsp compileFile p50 (+ read compiled file)": {
+    "p50": 1,
+    "p95": 1,
+    "samples": [1, 0, 1, 0, 1],
+    "check": {
+      "bytes": 3055
+    }
+  },
+  "lsp show {uri} p50 limit 10": {
+    "p50": 1265,
+    "p95": 2030,
+    "samples": [1201, 1265, 1569, 1092, 2030],
+    "check": {
+      "columns": 26,
+      "rows": 7
+    }
+  },
+  "lsp listNodes +p95+ (table lineage, all hops)": {
+    "p50": 62,
+    "p95": 63,
+    "samples": [62, 63, 62, 62, 61],
+    "check": {
+      "nodes": 6
+    }
+  },
+  "lsp listNodes 1+p95+1 (one hop)": {
+    "p50": 60,
+    "p95": 61,
+    "samples": [60, 61, 60, 61, 60],
+    "check": {
+      "nodes": 3
+    }
+  },
+  "lsp listNodes column lineage p95 (CLEAN_MERCHANT)": {
+    "p50": 707,
+    "p95": 717,
+    "samples": [707, 609, 717, 611, 711],
+    "check": {
+      "nodes": 0
+    }
+  },
+  "lsp getCurrentNode p95": {
+    "p50": 1,
+    "p95": 1,
+    "samples": [1, 0, 1, 0, 1],
+    "check": {
+      "columns": 36
+    }
+  },
+  "lsp compileFile p95 (+ read compiled file)": {
+    "p50": 0,
+    "p95": 1,
+    "samples": [0, 1, 0, 0, 1],
+    "check": {
+      "bytes": 3656
+    }
+  },
+  "lsp show {uri} p95 limit 10": {
+    "p50": 6822,
+    "p95": 8106,
+    "samples": [8106, 7077, 6822, 6504, 6040],
+    "check": {
+      "columns": 36,
+      "rows": 0
+    }
+  }
+}

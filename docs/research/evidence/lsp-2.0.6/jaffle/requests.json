@@ -1,0 +1,5520 @@
+[
+  {
+    "label": "initialize",
+    "method": "initialize",
+    "params": {
+      "processId": 40366,
+      "rootUri": "file://<P>",
+      "workspaceFolders": [
+        {
+          "uri": "file://<P>",
+          "name": "lsp-jaffle"
+        }
+      ],
+      "capabilities": {
+        "workspace": {
+          "applyEdit": true,
+          "workspaceEdit": {
+            "documentChanges": true
+          },
+          "didChangeConfiguration": {
+            "dynamicRegistration": true
+          },
+          "didChangeWatchedFiles": {
+            "dynamicRegistration": true,
+            "relativePatternSupport": true
+          },
+          "executeCommand": {
+            "dynamicRegistration": true
+          },
+          "configuration": true,
+          "workspaceFolders": true,
+          "semanticTokens": {
+            "refreshSupport": true
+          },
+          "codeLens": {
+            "refreshSupport": true
+          },
+          "inlayHint": {
+            "refreshSupport": true
+          },
+          "diagnostics": {
+            "refreshSupport": true
+          },
+          "fileOperations": {
+            "willRename": true,
+            "didRename": true
+          }
+        },
+        "textDocument": {
+          "synchronization": {
+            "didSave": true,
+            "willSave": true
+          },
+          "completion": {
+            "completionItem": {
+              "snippetSupport": true,
+              "labelDetailsSupport": true,
+              "documentationFormat": ["markdown", "plaintext"]
+            },
+            "contextSupport": true
+          },
+          "hover": {
+            "contentFormat": ["markdown", "plaintext"]
+          },
+          "signatureHelp": {
+            "signatureInformation": {
+              "documentationFormat": ["markdown", "plaintext"]
+            }
+          },
+          "definition": {
+            "linkSupport": true
+          },
+          "references": {},
+          "documentSymbol": {
+            "hierarchicalDocumentSymbolSupport": true
+          },
+          "codeAction": {
+            "codeActionLiteralSupport": {
+              "codeActionKind": {
+                "valueSet": [
+                  "",
+                  "quickfix",
+                  "refactor",
+                  "source",
+                  "source.fixAll"
+                ]
+              }
+            }
+          },
+          "codeLens": {},
+          "formatting": {},
+          "rangeFormatting": {},
+          "rename": {
+            "prepareSupport": true
+          },
+          "publishDiagnostics": {
+            "relatedInformation": true,
+            "versionSupport": true
+          },
+          "foldingRange": {},
+          "documentLink": {},
+          "semanticTokens": {
+            "requests": {
+              "full": {
+                "delta": true
+              },
+              "range": true
+            },
+            "tokenTypes": [
+              "namespace",
+              "type",
+              "class",
+              "function",
+              "macro",
+              "keyword",
+              "variable",
+              "property",
+              "parameter",
+              "string",
+              "number",
+              "operator",
+              "comment"
+            ],
+            "tokenModifiers": [],
+            "formats": ["relative"]
+          },
+          "inlayHint": {},
+          "diagnostic": {
+            "relatedDocumentSupport": true
+          }
+        },
+        "window": {
+          "workDoneProgress": true,
+          "showMessage": {},
+          "showDocument": {
+            "support": true
+          }
+        },
+        "general": {
+          "positionEncodings": ["utf-16"]
+        }
+      },
+      "clientInfo": {
+        "name": "fpu-lsp-capabilities-spike",
+        "version": "0"
+      }
+    },
+    "t": 5,
+    "result": {
+      "capabilities": {
+        "codeActionProvider": {
+          "codeActionKinds": ["source.fixAll", "source.fixAll.dbtLintFix"]
+        },
+        "codeLensProvider": {
+          "resolveProvider": false
+        },
+        "completionProvider": {
+          "completionItem": {
+            "labelDetailsSupport": true
+          },
+          "resolveProvider": false,
+          "triggerCharacters": ["{", "'", "."]
+        },
+        "definitionProvider": true,
+        "documentFormattingProvider": true,
+        "documentSymbolProvider": false,
+        "executeCommandProvider": {
+          "commands": [
+            "dbt.listNodes",
+            "dbt.getCurrentNode",
+            "dbt.compileFile",
+            "dbt.compileLsp",
+            "dbt.clearTarget",
+            "dbt.getProjectInfo",
+            "dbt.show"
+          ]
+        },
+        "hoverProvider": true,
+        "inlayHintProvider": true,
+        "referencesProvider": true,
+        "renameProvider": true,
+        "semanticTokensProvider": {
+          "full": true,
+          "legend": {
+            "tokenModifiers": [],
+            "tokenTypes": [
+              "property",
+              "function",
+              "macro",
+              "type",
+              "variable",
+              "keyword"
+            ]
+          },
+          "range": true
+        },
+        "signatureHelpProvider": {
+          "retriggerCharacters": [","],
+          "triggerCharacters": ["("]
+        },
+        "textDocumentSync": {
+          "change": 2,
+          "openClose": true,
+          "save": {}
+        },
+        "workspace": {
+          "fileOperations": {
+            "willRename": {
+              "filters": [
+                {
+                  "pattern": {
+                    "glob": "**/*.{sql,csv}",
+                    "matches": "file"
+                  },
+                  "scheme": "file"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "serverInfo": {
+        "name": "dbt-lsp",
+        "version": "2.0.6"
+      }
+    },
+    "ms": 46
+  },
+  {
+    "label": "dbt.getProjectInfo []",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": []
+    },
+    "t": 1524,
+    "result": {
+      "adapter_type": "duckdb",
+      "models_count": 7,
+      "models_count_is_estimate": false,
+      "project_name": "jaffle_shop"
+    },
+    "ms": 0
+  },
+  {
+    "label": "textDocument/codeLens",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "t": 3028,
+    "result": [
+      {
+        "command": {
+          "arguments": [
+            "<P>/models/orders.sql",
+            {
+              "compiled_path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+              "compiled_start": 2,
+              "compiled_stop": 1121,
+              "name": "final",
+              "start": 85,
+              "start_location": {
+                "col": 1,
+                "index": 542,
+                "line": 32
+              },
+              "stop": 947
+            }
+          ],
+          "command": "dbt.previewCte",
+          "title": "Preview CTE"
+        },
+        "range": {
+          "end": {
+            "character": 1,
+            "line": 31
+          },
+          "start": {
+            "character": 1,
+            "line": 31
+          }
+        }
+      },
+      {
+        "command": {
+          "arguments": [
+            "<P>/models/orders.sql",
+            {
+              "compiled_path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+              "compiled_start": 2,
+              "compiled_stop": 671,
+              "name": "order_payments",
+              "start": 85,
+              "start_location": {
+                "col": 1,
+                "index": 214,
+                "line": 15
+              },
+              "stop": 538
+            }
+          ],
+          "command": "dbt.previewCte",
+          "title": "Preview CTE"
+        },
+        "range": {
+          "end": {
+            "character": 1,
+            "line": 14
+          },
+          "start": {
+            "character": 1,
+            "line": 14
+          }
+        }
+      },
+      {
+        "command": {
+          "arguments": [
+            "<P>/models/orders.sql",
+            {
+              "compiled_path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+              "compiled_start": 2,
+              "compiled_stop": 73,
+              "name": "orders",
+              "start": 85,
+              "start_location": {
+                "col": 6,
+                "index": 90,
+                "line": 3
+              },
+              "stop": 146
+            }
+          ],
+          "command": "dbt.previewCte",
+          "title": "Preview CTE"
+        },
+        "range": {
+          "end": {
+            "character": 6,
+            "line": 2
+          },
+          "start": {
+            "character": 6,
+            "line": 2
+          }
+        }
+      },
+      {
+        "command": {
+          "arguments": [
+            "<P>/models/orders.sql",
+            {
+              "compiled_path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+              "compiled_start": 2,
+              "compiled_stop": 147,
+              "name": "payments",
+              "start": 85,
+              "start_location": {
+                "col": 1,
+                "index": 150,
+                "line": 9
+              },
+              "stop": 210
+            }
+          ],
+          "command": "dbt.previewCte",
+          "title": "Preview CTE"
+        },
+        "range": {
+          "end": {
+            "character": 1,
+            "line": 8
+          },
+          "start": {
+            "character": 1,
+            "line": 8
+          }
+        }
+      }
+    ],
+    "ms": 0
+  },
+  {
+    "label": "textDocument/semanticTokens/full",
+    "method": "textDocument/semanticTokens/full",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "t": 3031,
+    "result": {
+      "data": [
+        0,
+        7,
+        15,
+        4,
+        0,
+        4,
+        11,
+        1,
+        0,
+        0,
+        0,
+        10,
+        3,
+        5,
+        0,
+        6,
+        11,
+        1,
+        0,
+        0,
+        0,
+        10,
+        3,
+        5,
+        0,
+        {
+          "_truncated": 70
+        }
+      ]
+    },
+    "ms": 1
+  },
+  {
+    "label": "textDocument/inlayHint",
+    "method": "textDocument/inlayHint",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 200,
+          "character": 0
+        }
+      }
+    },
+    "t": 3033,
+    "result": [],
+    "ms": 0
+  },
+  {
+    "label": "textDocument/hover",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 4,
+        "character": 28
+      }
+    },
+    "t": 6043,
+    "result": {
+      "contents": {
+        "kind": "markdown",
+        "value": "**Parent Models**\n\n- raw_orders\n\n**Children Models**\n\n- customers\n- orders\n\n| Column | Description |\n| :--- | :--- |\n| order_id |  |\n| customer_id |  |\n| order_date |  |\n| status |  |\n"
+      }
+    },
+    "ms": 1
+  },
+  {
+    "label": "textDocument/definition",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 4,
+        "character": 28
+      }
+    },
+    "t": 6044,
+    "result": {
+      "range": {
+        "end": {
+          "character": 0,
+          "line": 0
+        },
+        "start": {
+          "character": 0,
+          "line": 0
+        }
+      },
+      "uri": "file://<P>/models/staging/stg_orders.sql"
+    },
+    "ms": 0
+  },
+  {
+    "label": "textDocument/references",
+    "method": "textDocument/references",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 4,
+        "character": 28
+      },
+      "context": {
+        "includeDeclaration": true
+      }
+    },
+    "t": 6045,
+    "result": [
+      {
+        "range": {
+          "end": {
+            "character": 37,
+            "line": 4
+          },
+          "start": {
+            "character": 25,
+            "line": 4
+          }
+        },
+        "uri": "file://<P>/models/orders.sql"
+      }
+    ],
+    "ms": 0
+  },
+  {
+    "label": "textDocument/signatureHelp",
+    "method": "textDocument/signatureHelp",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/payments_dollars.sql"
+      },
+      "position": {
+        "line": 2,
+        "character": 10
+      }
+    },
+    "t": 6049,
+    "result": null,
+    "ms": 42
+  },
+  {
+    "label": "textDocument/prepareRename",
+    "method": "textDocument/prepareRename",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 23,
+        "character": 25
+      }
+    },
+    "t": 6101,
+    "error": {
+      "code": -32601,
+      "message": "No such method textDocument/prepareRename",
+      "data": null
+    },
+    "ms": 0
+  },
+  {
+    "label": "textDocument/rename",
+    "method": "textDocument/rename",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 23,
+        "character": 25
+      },
+      "newName": "total_amount_renamed"
+    },
+    "t": 6102,
+    "result": {
+      "changes": {
+        "file://<P>/models/orders.sql": [
+          {
+            "newText": "total_amount_renamed",
+            "range": {
+              "end": {
+                "character": 35,
+                "line": 23
+              },
+              "start": {
+                "character": 23,
+                "line": 23
+              }
+            }
+          },
+          {
+            "newText": "total_amount_renamed",
+            "range": {
+              "end": {
+                "character": 35,
+                "line": 45
+              },
+              "start": {
+                "character": 23,
+                "line": 45
+              }
+            }
+          }
+        ]
+      }
+    },
+    "ms": 0
+  },
+  {
+    "label": "textDocument/completion",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 57,
+        "character": 22
+      },
+      "context": {
+        "triggerKind": 2,
+        "triggerCharacter": "'"
+      }
+    },
+    "t": 6410,
+    "result": {
+      "isIncomplete": false,
+      "items": [
+        {
+          "detail": "model",
+          "insertText": "customers",
+          "insertTextFormat": 1,
+          "kind": 18,
+          "label": "customers"
+        },
+        {
+          "detail": "model",
+          "insertText": "orders",
+          "insertTextFormat": 1,
+          "kind": 18,
+          "label": "orders"
+        },
+        {
+          "detail": "model",
+          "insertText": "payments_dollars",
+          "insertTextFormat": 1,
+          "kind": 18,
+          "label": "payments_dollars"
+        },
+        {
+          "detail": "model",
+          "insertText": "src_orders",
+          "insertTextFormat": 1,
+          "kind": 18,
+          "label": "src_orders"
+        },
+        {
+          "detail": "model",
+          "insertText": "stg_customers",
+          "insertTextFormat": 1,
+          "kind": 18,
+          "label": "stg_customers"
+        },
+        {
+          "detail": "model",
+          "insertText": "stg_orders",
+          "insertTextFormat": 1,
+          "kind": 18,
+          "label": "stg_orders"
+        },
+        {
+          "detail": "model",
+          "insertText": "stg_payments",
+          "insertTextFormat": 1,
+          "kind": 18,
+          "label": "stg_payments"
+        },
+        {
+          "detail": "seed",
+          "insertText": "raw_customers",
+          "insertTextFormat": 1,
+          "kind": 18,
+          "label": "raw_customers"
+        },
+        {
+          "detail": "seed",
+          "insertText": "raw_orders",
+          "insertTextFormat": 1,
+          "kind": 18,
+          "label": "raw_orders"
+        },
+        {
+          "detail": "seed",
+          "insertText": "raw_payments",
+          "insertTextFormat": 1,
+          "kind": 18,
+          "label": "raw_payments"
+        }
+      ]
+    },
+    "ms": 1
+  },
+  {
+    "label": "textDocument/documentSymbol",
+    "method": "textDocument/documentSymbol",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "t": 10383,
+    "result": null,
+    "ms": 0
+  },
+  {
+    "label": "workspace/symbol",
+    "method": "workspace/symbol",
+    "params": {
+      "query": "orders"
+    },
+    "t": 10384,
+    "error": {
+      "code": -32601,
+      "message": "No such method workspace/symbol",
+      "data": null
+    },
+    "ms": 1
+  },
+  {
+    "label": "textDocument/codeAction",
+    "method": "textDocument/codeAction",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 3,
+          "character": 0
+        }
+      },
+      "context": {
+        "diagnostics": [],
+        "only": ["source.fixAll"]
+      }
+    },
+    "t": 10390,
+    "result": [
+      {
+        "edit": {
+          "changes": {
+            "file://<P>/models/orders.sql": [
+              {
+                "newText": "{% set payment_methods = ['credit_card', 'coupon', 'bank_transfer', 'gift_card'] %}\n\nwith orders as (\n\n    select * from {{ ref('stg_orders') }}\n\n),\n\npayments as (\n\n    select * from {{ ref('stg_payments') }}\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        {% for payment_method in payment_methods -%}\n            sum(\n                case\n                    when\n                        payment_method = '{{ payment_method }}'\n                        then amount else\n                        0\n                end\n            )\n                as {{ payment_method }}_amount,\n        {% endfor -%}\n\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        {% for payment_method in payment_methods -%}\n\n            order_payments.{{ payment_method }}_amount,\n\n        {% endfor -%}\n\n        order_payments.total_amount as amount\n\n    from orders\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n)\n\nselect * from final\n",
+                "range": {
+                  "end": {
+                    "character": 0,
+                    "line": 56
+                  },
+                  "start": {
+                    "character": 0,
+                    "line": 0
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "kind": "source.fixAll",
+        "title": "Fix all auto-fixable lint issues and format document"
+      }
+    ],
+    "ms": 147
+  },
+  {
+    "label": "textDocument/formatting",
+    "method": "textDocument/formatting",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "options": {
+        "tabSize": 4,
+        "insertSpaces": true
+      }
+    },
+    "t": 11031,
+    "result": [
+      {
+        "newText": "            ",
+        "range": {
+          "end": {
+            "character": 8,
+            "line": 20
+          },
+          "start": {
+            "character": 0,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "\n                ",
+        "range": {
+          "end": {
+            "character": 12,
+            "line": 20
+          },
+          "start": {
+            "character": 12,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "\n",
+        "range": {
+          "end": {
+            "character": 17,
+            "line": 20
+          },
+          "start": {
+            "character": 16,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "                    ",
+        "range": {
+          "end": {
+            "character": 17,
+            "line": 20
+          },
+          "start": {
+            "character": 17,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "\n",
+        "range": {
+          "end": {
+            "character": 22,
+            "line": 20
+          },
+          "start": {
+            "character": 21,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "                        ",
+        "range": {
+          "end": {
+            "character": 22,
+            "line": 20
+          },
+          "start": {
+            "character": 22,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "\n",
+        "range": {
+          "end": {
+            "character": 62,
+            "line": 20
+          },
+          "start": {
+            "character": 61,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "                        ",
+        "range": {
+          "end": {
+            "character": 62,
+            "line": 20
+          },
+          "start": {
+            "character": 62,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "else\n                        0",
+        "range": {
+          "end": {
+            "character": 80,
+            "line": 20
+          },
+          "start": {
+            "character": 74,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "\n",
+        "range": {
+          "end": {
+            "character": 81,
+            "line": 20
+          },
+          "start": {
+            "character": 80,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "                ",
+        "range": {
+          "end": {
+            "character": 81,
+            "line": 20
+          },
+          "start": {
+            "character": 81,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "\n            ",
+        "range": {
+          "end": {
+            "character": 84,
+            "line": 20
+          },
+          "start": {
+            "character": 84,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "\n",
+        "range": {
+          "end": {
+            "character": 86,
+            "line": 20
+          },
+          "start": {
+            "character": 85,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "                ",
+        "range": {
+          "end": {
+            "character": 86,
+            "line": 20
+          },
+          "start": {
+            "character": 86,
+            "line": 20
+          }
+        }
+      },
+      {
+        "newText": "            ",
+        "range": {
+          "end": {
+            "character": 8,
+            "line": 41
+          },
+          "start": {
+            "character": 0,
+            "line": 41
+          }
+        }
+      },
+      {
+        "newText": "from orders\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id",
+        "range": {
+          "end": {
+            "character": 52,
+            "line": 51
+          },
+          "start": {
+            "character": 4,
+            "line": 47
+          }
+        }
+      }
+    ],
+    "ms": 119
+  },
+  {
+    "label": "textDocument/rangeFormatting",
+    "method": "textDocument/rangeFormatting",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 5,
+          "character": 0
+        }
+      },
+      "options": {
+        "tabSize": 4,
+        "insertSpaces": true
+      }
+    },
+    "t": 11657,
+    "error": {
+      "code": -32601,
+      "message": "No such method textDocument/rangeFormatting",
+      "data": null
+    },
+    "ms": 0
+  },
+  {
+    "label": "textDocument/semanticTokens/range",
+    "method": "textDocument/semanticTokens/range",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 10,
+          "character": 0
+        }
+      }
+    },
+    "t": 11658,
+    "result": null,
+    "ms": 1
+  },
+  {
+    "label": "textDocument/semanticTokens/full/delta",
+    "method": "textDocument/semanticTokens/full/delta",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "previousResultId": "0"
+    },
+    "t": 11659,
+    "error": {
+      "code": -32601,
+      "message": "No such method textDocument/semanticTokens/full/delta",
+      "data": null
+    },
+    "ms": 0
+  },
+  {
+    "label": "textDocument/foldingRange",
+    "method": "textDocument/foldingRange",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "t": 11660,
+    "error": {
+      "code": -32601,
+      "message": "No such method textDocument/foldingRange",
+      "data": null
+    },
+    "ms": 0
+  },
+  {
+    "label": "textDocument/documentLink",
+    "method": "textDocument/documentLink",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "t": 11661,
+    "error": {
+      "code": -32601,
+      "message": "No such method textDocument/documentLink",
+      "data": null
+    },
+    "ms": 0
+  },
+  {
+    "label": "textDocument/documentHighlight",
+    "method": "textDocument/documentHighlight",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 4,
+        "character": 26
+      }
+    },
+    "t": 11661,
+    "error": {
+      "code": -32601,
+      "message": "No such method textDocument/documentHighlight",
+      "data": null
+    },
+    "ms": 0
+  },
+  {
+    "label": "textDocument/diagnostic",
+    "method": "textDocument/diagnostic",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "t": 11662,
+    "result": {
+      "items": [],
+      "kind": "full"
+    },
+    "ms": 0
+  },
+  {
+    "label": "workspace/diagnostic",
+    "method": "workspace/diagnostic",
+    "params": {
+      "previousResultIds": []
+    },
+    "t": 11664,
+    "error": {
+      "code": -32601,
+      "message": "No such method workspace/diagnostic",
+      "data": null
+    },
+    "ms": 0
+  },
+  {
+    "label": "workspace/willRenameFiles",
+    "method": "workspace/willRenameFiles",
+    "params": {
+      "files": [
+        {
+          "oldUri": "file://<P>/models/orders.sql",
+          "newUri": "file://<P>/models/orders_moved.sql"
+        }
+      ]
+    },
+    "t": 11664,
+    "result": {
+      "changes": {
+        "file://<P>/models/schema.yml": [
+          {
+            "newText": "orders_moved",
+            "range": {
+              "end": {
+                "character": 16,
+                "line": 31
+              },
+              "start": {
+                "character": 10,
+                "line": 31
+              }
+            }
+          }
+        ],
+        "file://<P>/models/sources.yml": [
+          {
+            "newText": "orders_moved",
+            "range": {
+              "end": {
+                "character": 19,
+                "line": 13
+              },
+              "start": {
+                "character": 13,
+                "line": 13
+              }
+            }
+          }
+        ],
+        "file://<P>/tests/assert_positive_amount.sql": [
+          {
+            "newText": "orders_moved",
+            "range": {
+              "end": {
+                "character": 28,
+                "line": 0
+              },
+              "start": {
+                "character": 22,
+                "line": 0
+              }
+            }
+          }
+        ]
+      }
+    },
+    "ms": 1
+  },
+  {
+    "label": "dbt.listNodes [\"models/orders.sql\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["models/orders.sql"]
+    },
+    "t": 11666,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 11
+  },
+  {
+    "label": "dbt.listNodes [\"orders\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["orders"]
+    },
+    "t": 11774,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 22
+  },
+  {
+    "label": "dbt.listNodes [\"model.jaffle_shop.orders\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["model.jaffle_shop.orders"]
+    },
+    "t": 11890,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"+orders+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+orders+"]
+    },
+    "t": 12010,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_payments",
+          "original_file_path": "seeds/raw_payments.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 24
+  },
+  {
+    "label": "dbt.listNodes [\"orders+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["orders+"]
+    },
+    "t": 12132,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 21
+  },
+  {
+    "label": "dbt.listNodes [\"+orders\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+orders"]
+    },
+    "t": 12244,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_payments",
+          "original_file_path": "seeds/raw_payments.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 24
+  },
+  {
+    "label": "dbt.listNodes [\"1+orders+1\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["1+orders+1"]
+    },
+    "t": 12360,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 22
+  },
+  {
+    "label": "dbt.listNodes [\"2+orders+2\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["2+orders+2"]
+    },
+    "t": 12473,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_payments",
+          "original_file_path": "seeds/raw_payments.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 24
+  },
+  {
+    "label": "dbt.listNodes [\"+model.jaffle_shop.orders+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+model.jaffle_shop.orders+"]
+    },
+    "t": 12587,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_payments",
+          "original_file_path": "seeds/raw_payments.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 21
+  },
+  {
+    "label": "dbt.listNodes [\"@model.jaffle_shop.orders\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["@model.jaffle_shop.orders"]
+    },
+    "t": 12698,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_customers",
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "customers",
+          "original_file_path": "models/customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_customers"]
+          },
+          "name": "stg_customers",
+          "original_file_path": "models/staging/stg_customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_customers",
+          "original_file_path": "seeds/raw_customers.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_customers"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_payments",
+          "original_file_path": "seeds/raw_payments.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "unit"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers"]
+          },
+          "name": "test_customer_order_aggregation",
+          "original_file_path": "models/schema.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "unit_test",
+          "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"+models/orders.sql+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+models/orders.sql+"]
+    },
+    "t": 12811,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_payments",
+          "original_file_path": "seeds/raw_payments.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 22
+  },
+  {
+    "label": "dbt.listNodes [\"path:models\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["path:models"]
+    },
+    "t": 12924,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_customers",
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "customers",
+          "original_file_path": "models/customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.stg_payments"]
+          },
+          "name": "payments_dollars",
+          "original_file_path": "models/payments_dollars.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.payments_dollars"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": ["source.jaffle_shop.raw.raw_orders"]
+          },
+          "name": "src_orders",
+          "original_file_path": "models/src_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.src_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_customers"]
+          },
+          "name": "stg_customers",
+          "original_file_path": "models/staging/stg_customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "external"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "source",
+          "unique_id": "source.jaffle_shop.raw.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "unit"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers"]
+          },
+          "name": "test_customer_order_aggregation",
+          "original_file_path": "models/schema.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "unit_test",
+          "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"models\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["models"]
+    },
+    "t": 13039,
+    "result": {
+      "error": "No nodes found",
+      "error_kind": "lineage_query_failed",
+      "grain": "unknown",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 22
+  },
+  {
+    "label": "dbt.listNodes [\"resource_type:source\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:source"]
+    },
+    "t": 13154,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "external"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "source",
+          "unique_id": "source.jaffle_shop.raw.raw_orders"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 21
+  },
+  {
+    "label": "dbt.listNodes [\"source:*\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["source:*"]
+    },
+    "t": 13267,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "external"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "source",
+          "unique_id": "source.jaffle_shop.raw.raw_orders"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"*\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["*"]
+    },
+    "t": 13379,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_customers",
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "customers",
+          "original_file_path": "models/customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.stg_payments"]
+          },
+          "name": "payments_dollars",
+          "original_file_path": "models/payments_dollars.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.payments_dollars"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": ["source.jaffle_shop.raw.raw_orders"]
+          },
+          "name": "src_orders",
+          "original_file_path": "models/src_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.src_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_customers"]
+          },
+          "name": "stg_customers",
+          "original_file_path": "models/staging/stg_customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_customers",
+          "original_file_path": "seeds/raw_customers.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_customers"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_payments",
+          "original_file_path": "seeds/raw_payments.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "unit"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers"]
+          },
+          "name": "test_customer_order_aggregation",
+          "original_file_path": "models/schema.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "unit_test",
+          "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 22
+  },
+  {
+    "label": "dbt.listNodes [\"raw_orders\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["raw_orders"]
+    },
+    "t": 13493,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"+column:model.jaffle_shop.orders.amount+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:model.jaffle_shop.orders.amount+"]
+    },
+    "t": 13606,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 37
+  },
+  {
+    "label": "dbt.listNodes [\"column:model.jaffle_shop.orders.amount+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["column:model.jaffle_shop.orders.amount+"]
+    },
+    "t": 13792,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 37
+  },
+  {
+    "label": "dbt.listNodes [\"+column:model.jaffle_shop.orders.amount\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:model.jaffle_shop.orders.amount"]
+    },
+    "t": 13981,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 35
+  },
+  {
+    "label": "dbt.listNodes [\"1+column:model.jaffle_shop.orders.amount+1\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["1+column:model.jaffle_shop.orders.amount+1"]
+    },
+    "t": 14170,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 37
+  },
+  {
+    "label": "dbt.listNodes [\"orders,+orders\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["orders,+orders"]
+    },
+    "t": 14354,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 22
+  },
+  {
+    "label": "dbt.listNodes [\"orders customers\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["orders customers"]
+    },
+    "t": 14467,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_customers",
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "customers",
+          "original_file_path": "models/customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "unit"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers"]
+          },
+          "name": "test_customer_order_aggregation",
+          "original_file_path": "models/schema.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "unit_test",
+          "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"exposure:weekly_report\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["exposure:weekly_report"]
+    },
+    "t": 14583,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"test_type:unit\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["test_type:unit"]
+    },
+    "t": 14696,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "unit"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers"]
+          },
+          "name": "test_customer_order_aggregation",
+          "original_file_path": "models/schema.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "unit_test",
+          "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 22
+  },
+  {
+    "label": "dbt.listNodes [\"test_type:generic\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["test_type:generic"]
+    },
+    "t": 14806,
+    "result": {
+      "error": "No nodes found",
+      "error_kind": "lineage_query_failed",
+      "grain": "unknown",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"resource_type:test\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:test"]
+    },
+    "t": 14920,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"resource_type:macro\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:macro"]
+    },
+    "t": 15041,
+    "result": {
+      "error": "No nodes found",
+      "error_kind": "lineage_query_failed",
+      "grain": "unknown",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 32
+  },
+  {
+    "label": "dbt.listNodes [\"resource_type:doc\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:doc"]
+    },
+    "t": 15165,
+    "result": {
+      "error": "No nodes found",
+      "error_kind": "lineage_query_failed",
+      "grain": "unknown",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"resource_type:model\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:model"]
+    },
+    "t": 15276,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_customers",
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "customers",
+          "original_file_path": "models/customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.stg_payments"]
+          },
+          "name": "payments_dollars",
+          "original_file_path": "models/payments_dollars.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.payments_dollars"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": ["source.jaffle_shop.raw.raw_orders"]
+          },
+          "name": "src_orders",
+          "original_file_path": "models/src_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.src_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_customers"]
+          },
+          "name": "stg_customers",
+          "original_file_path": "models/staging/stg_customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "unit"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers"]
+          },
+          "name": "test_customer_order_aggregation",
+          "original_file_path": "models/schema.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "unit_test",
+          "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 22
+  },
+  {
+    "label": "dbt.listNodes [\"state:modified\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["state:modified"]
+    },
+    "t": 15391,
+    "result": {
+      "error": "Got a state selector method, but no comparison manifest",
+      "error_kind": "lineage_query_failed",
+      "grain": "unknown",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"package:jaffle_shop\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["package:jaffle_shop"]
+    },
+    "t": 15507,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_customers",
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "customers",
+          "original_file_path": "models/customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.stg_payments"]
+          },
+          "name": "payments_dollars",
+          "original_file_path": "models/payments_dollars.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.payments_dollars"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": ["source.jaffle_shop.raw.raw_orders"]
+          },
+          "name": "src_orders",
+          "original_file_path": "models/src_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.src_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_customers"]
+          },
+          "name": "stg_customers",
+          "original_file_path": "models/staging/stg_customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_customers",
+          "original_file_path": "seeds/raw_customers.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_customers"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_payments",
+          "original_file_path": "seeds/raw_payments.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "external"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "source",
+          "unique_id": "source.jaffle_shop.raw.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "unit"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers"]
+          },
+          "name": "test_customer_order_aggregation",
+          "original_file_path": "models/schema.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "unit_test",
+          "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 24
+  },
+  {
+    "label": "dbt.listNodes [\"@model.jaffle_shop.orders\",\"+column:model.jaffle_shop.orders.amount+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.jaffle_shop.orders",
+        "+column:model.jaffle_shop.orders.amount+"
+      ]
+    },
+    "t": 15621,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [
+        {
+          "is_primary_key": false,
+          "materialized": "table",
+          "name": "amount",
+          "node_name": "orders",
+          "op": "mod",
+          "original_file_path": "models/orders.sql",
+          "parents": ["model.jaffle_shop.stg_payments.amount"],
+          "resource_type": "model",
+          "transformation_type": "transformation",
+          "unique_id": "model.jaffle_shop.orders.amount"
+        },
+        {
+          "is_primary_key": false,
+          "materialized": "view",
+          "name": "amount",
+          "node_name": "stg_payments",
+          "op": "mod",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "parents": ["seed.jaffle_shop.raw_payments.amount"],
+          "resource_type": "model",
+          "transformation_type": "transformation",
+          "unique_id": "model.jaffle_shop.stg_payments.amount"
+        },
+        {
+          "is_primary_key": false,
+          "materialized": "table",
+          "name": "amount",
+          "node_name": "raw_payments",
+          "op": "unknown",
+          "original_file_path": "seeds/raw_payments.csv",
+          "parents": [],
+          "resource_type": "seed",
+          "transformation_type": "raw",
+          "unique_id": "seed.jaffle_shop.raw_payments.amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 38
+  },
+  {
+    "label": "dbt.listNodes [\"+column:model.jaffle_shop.customers.customer_id+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:model.jaffle_shop.customers.customer_id+"]
+    },
+    "t": 15812,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 37
+  },
+  {
+    "label": "dbt.listNodes [\"@model.jaffle_shop.customers\",\"+column:model.jaffle_shop.customers.customer_id+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.jaffle_shop.customers",
+        "+column:model.jaffle_shop.customers.customer_id+"
+      ]
+    },
+    "t": 15996,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [
+        {
+          "is_primary_key": false,
+          "materialized": "table",
+          "name": "customer_id",
+          "node_name": "customers",
+          "op": "copy",
+          "original_file_path": "models/customers.sql",
+          "parents": ["model.jaffle_shop.stg_customers.customer_id"],
+          "resource_type": "model",
+          "transformation_type": "passthrough",
+          "unique_id": "model.jaffle_shop.customers.customer_id"
+        },
+        {
+          "is_primary_key": false,
+          "materialized": "view",
+          "name": "customer_id",
+          "node_name": "stg_customers",
+          "op": "copy",
+          "original_file_path": "models/staging/stg_customers.sql",
+          "parents": ["seed.jaffle_shop.raw_customers.id"],
+          "resource_type": "model",
+          "transformation_type": "rename",
+          "unique_id": "model.jaffle_shop.stg_customers.customer_id"
+        },
+        {
+          "is_primary_key": false,
+          "materialized": "table",
+          "name": "id",
+          "node_name": "raw_customers",
+          "op": "unknown",
+          "original_file_path": "seeds/raw_customers.csv",
+          "parents": [],
+          "resource_type": "seed",
+          "transformation_type": "raw",
+          "unique_id": "seed.jaffle_shop.raw_customers.id"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 40
+  },
+  {
+    "label": "dbt.listNodes [\"+column:model.jaffle_shop.stg_orders.order_id+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:model.jaffle_shop.stg_orders.order_id+"]
+    },
+    "t": 16188,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 37
+  },
+  {
+    "label": "dbt.listNodes [\"+column:model.jaffle_shop.orders.order_id+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:model.jaffle_shop.orders.order_id+"]
+    },
+    "t": 16373,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 37
+  },
+  {
+    "label": "dbt.listNodes [\"@model.jaffle_shop.orders\",\"2+column:model.jaffle_shop.orders.amount\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.jaffle_shop.orders",
+        "2+column:model.jaffle_shop.orders.amount"
+      ]
+    },
+    "t": 16750,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [
+        {
+          "is_primary_key": false,
+          "materialized": "table",
+          "name": "amount",
+          "node_name": "orders",
+          "op": "mod",
+          "original_file_path": "models/orders.sql",
+          "parents": ["model.jaffle_shop.stg_payments.amount"],
+          "resource_type": "model",
+          "transformation_type": "transformation",
+          "unique_id": "model.jaffle_shop.orders.amount"
+        },
+        {
+          "is_primary_key": false,
+          "materialized": "view",
+          "name": "amount",
+          "node_name": "stg_payments",
+          "op": "mod",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "parents": ["seed.jaffle_shop.raw_payments.amount"],
+          "resource_type": "model",
+          "transformation_type": "transformation",
+          "unique_id": "model.jaffle_shop.stg_payments.amount"
+        },
+        {
+          "is_primary_key": false,
+          "materialized": "table",
+          "name": "amount",
+          "node_name": "raw_payments",
+          "op": "unknown",
+          "original_file_path": "seeds/raw_payments.csv",
+          "parents": [],
+          "resource_type": "seed",
+          "transformation_type": "raw",
+          "unique_id": "seed.jaffle_shop.raw_payments.amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 37
+  },
+  {
+    "label": "dbt.listNodes [\"+column:model.jaffle_shop.payments_dollars.amount_dollars+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "+column:model.jaffle_shop.payments_dollars.amount_dollars+"
+      ]
+    },
+    "t": 16940,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 37
+  },
+  {
+    "label": "dbt.listNodes [\"+column:source.jaffle_shop.raw.raw_orders.id+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:source.jaffle_shop.raw.raw_orders.id+"]
+    },
+    "t": 17127,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 35
+  },
+  {
+    "label": "dbt.listNodes [{\"selector\":\"+orders+\",\"depth\":1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        {
+          "selector": "+orders+",
+          "depth": 1
+        }
+      ]
+    },
+    "t": 17315,
+    "result": {
+      "error": "empty selector list passed to --select/--exclude",
+      "error_kind": "invalid_selector",
+      "grain": "unknown",
+      "nodes": []
+    },
+    "ms": 0
+  },
+  {
+    "label": "dbt.listNodes [\"+orders+\",{\"depth\":1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "+orders+",
+        {
+          "depth": 1
+        }
+      ]
+    },
+    "t": 17315,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "orders",
+          "original_file_path": "models/orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_payments",
+          "original_file_path": "seeds/raw_payments.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "test"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.orders"]
+          },
+          "name": "assert_positive_amount",
+          "original_file_path": "tests/assert_positive_amount.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "test",
+          "unique_id": "test.jaffle_shop.assert_positive_amount"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 22
+  },
+  {
+    "label": "dbt.getCurrentNode [\"models/orders.sql\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/orders.sql"]
+    },
+    "t": 17339,
+    "result": {
+      "error": null,
+      "node": {
+        "columns": {
+          "amount": {
+            "data_type": "bigint"
+          },
+          "bank_transfer_amount": {
+            "data_type": "bigint"
+          },
+          "coupon_amount": {
+            "data_type": "bigint"
+          },
+          "credit_card_amount": {
+            "data_type": "bigint"
+          },
+          "customer_id": {
+            "data_type": "bigint"
+          },
+          "gift_card_amount": {
+            "data_type": "bigint"
+          },
+          "order_date": {
+            "data_type": "date"
+          },
+          "order_id": {
+            "data_type": "bigint"
+          },
+          "status": {
+            "data_type": "character varying(256)"
+          }
+        },
+        "database": "jaffle_shop",
+        "schema": "main",
+        "static_analysis": "strict",
+        "unique_id": "model.jaffle_shop.orders"
+      }
+    },
+    "ms": 0
+  },
+  {
+    "label": "dbt.getCurrentNode [\"models/staging/stg_orders.sql\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/staging/stg_orders.sql"]
+    },
+    "t": 17340,
+    "result": {
+      "error": null,
+      "node": {
+        "columns": {
+          "customer_id": {
+            "data_type": "bigint"
+          },
+          "order_date": {
+            "data_type": "date"
+          },
+          "order_id": {
+            "data_type": "bigint"
+          },
+          "status": {
+            "data_type": "character varying(256)"
+          }
+        },
+        "database": "jaffle_shop",
+        "schema": "main",
+        "static_analysis": "strict",
+        "unique_id": "model.jaffle_shop.stg_orders"
+      }
+    },
+    "ms": 0
+  },
+  {
+    "label": "dbt.getCurrentNode [\"seeds/raw_orders.csv\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["seeds/raw_orders.csv"]
+    },
+    "t": 17340,
+    "result": {
+      "error": null,
+      "node": {
+        "columns": {
+          "id": {
+            "data_type": "bigint"
+          },
+          "order_date": {
+            "data_type": "date"
+          },
+          "status": {
+            "data_type": "character varying(256)"
+          },
+          "user_id": {
+            "data_type": "bigint"
+          }
+        },
+        "database": "jaffle_shop",
+        "schema": "main",
+        "static_analysis": "strict",
+        "unique_id": "seed.jaffle_shop.raw_orders"
+      }
+    },
+    "ms": 0
+  },
+  {
+    "label": "dbt.getCurrentNode [\"models/schema.yml\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/schema.yml"]
+    },
+    "t": 17340,
+    "result": {
+      "error": null,
+      "node": {
+        "columns": {},
+        "database": "jaffle_shop",
+        "schema": "main",
+        "static_analysis": "strict",
+        "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      }
+    },
+    "ms": 1
+  },
+  {
+    "label": "dbt.getCurrentNode [\"file://<P>/models/orders.sql\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["file://<P>/models/orders.sql"]
+    },
+    "t": 17341,
+    "result": null,
+    "ms": 0
+  },
+  {
+    "label": "dbt.getCurrentNode [\"model.jaffle_shop.orders\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["model.jaffle_shop.orders"]
+    },
+    "t": 17341,
+    "result": null,
+    "ms": 0
+  },
+  {
+    "label": "dbt.compileFile [\"file://<P>/models/orders.sql\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["file://<P>/models/orders.sql"]
+    },
+    "t": 17341,
+    "result": {
+      "error": null,
+      "file_uri": "file://<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql"
+    },
+    "ms": 0
+  },
+  {
+    "label": "dbt.compileFile [\"models/orders.sql\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["models/orders.sql"]
+    },
+    "t": 17342,
+    "result": {
+      "error": "relative URL without a base",
+      "file_uri": null
+    },
+    "ms": 0
+  },
+  {
+    "label": "dbt.compileFile [{\"uri\":\"file://<P>/models/orders.sql\"}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql"
+        }
+      ]
+    },
+    "t": 17342,
+    "result": {
+      "error": "File path invalid",
+      "file_uri": null
+    },
+    "ms": 0
+  },
+  {
+    "label": "dbt.compileLsp []",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": []
+    },
+    "t": 17342,
+    "result": null,
+    "ms": 0
+  },
+  {
+    "label": "dbt.compileLsp [\"file://<P>/models/orders.sql\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": ["file://<P>/models/orders.sql"]
+    },
+    "t": 17342,
+    "result": null,
+    "ms": 1
+  },
+  {
+    "label": "dbt.show [{\"uri\":\"file://<P>/models/orders.sql\"}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql"
+        }
+      ]
+    },
+    "t": 17343,
+    "result": {
+      "columns": [
+        "order_id",
+        "customer_id",
+        "order_date",
+        "status",
+        "credit_card_amount",
+        "coupon_amount",
+        "bank_transfer_amount",
+        "gift_card_amount",
+        "amount"
+      ],
+      "data": [
+        {
+          "amount": "10.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "10.0",
+          "customer_id": "1",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-01",
+          "order_id": "1",
+          "status": "returned"
+        },
+        {
+          "amount": "20.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "20.0",
+          "customer_id": "3",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-02",
+          "order_id": "2",
+          "status": "completed"
+        },
+        {
+          "amount": "1.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "1.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "94",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-04",
+          "order_id": "3",
+          "status": "completed"
+        },
+        {
+          "amount": "25.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "25.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "50",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-05",
+          "order_id": "4",
+          "status": "completed"
+        },
+        {
+          "amount": "17.0",
+          "bank_transfer_amount": "17.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "64",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-05",
+          "order_id": "5",
+          "status": "completed"
+        },
+        {
+          "amount": "6.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "6.0",
+          "customer_id": "54",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-07",
+          "order_id": "6",
+          "status": "completed"
+        },
+        {
+          "amount": "16.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "16.0",
+          "customer_id": "88",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-09",
+          "order_id": "7",
+          "status": "completed"
+        },
+        {
+          "amount": "23.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "23.0",
+          "customer_id": "2",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-11",
+          "order_id": "8",
+          "status": "returned"
+        },
+        {
+          "amount": "23.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "53",
+          "gift_card_amount": "23.0",
+          "order_date": "2018-01-12",
+          "order_id": "9",
+          "status": "completed"
+        },
+        {
+          "amount": "26.0",
+          "bank_transfer_amount": "26.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "7",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-14",
+          "order_id": "10",
+          "status": "completed"
+        },
+        {
+          "amount": "27.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "27.0",
+          "customer_id": "99",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-14",
+          "order_id": "11",
+          "status": "completed"
+        },
+        {
+          "amount": "1.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "1.0",
+          "customer_id": "59",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-15",
+          "order_id": "12",
+          "status": "completed"
+        },
+        {
+          "amount": "19.0",
+          "bank_transfer_amount": "14.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "5.0",
+          "customer_id": "84",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-17",
+          "order_id": "13",
+          "status": "completed"
+        },
+        {
+          "amount": "3.0",
+          "bank_transfer_amount": "3.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "40",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-17",
+          "order_id": "14",
+          "status": "returned"
+        },
+        {
+          "amount": "22.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "22.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "25",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-17",
+          "order_id": "15",
+          "status": "completed"
+        },
+        {
+          "amount": "10.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "10.0",
+          "customer_id": "39",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-18",
+          "order_id": "16",
+          "status": "completed"
+        },
+        {
+          "amount": "2.0",
+          "bank_transfer_amount": "2.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "71",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-18",
+          "order_id": "17",
+          "status": "completed"
+        },
+        {
+          "amount": "13.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "13.0",
+          "customer_id": "64",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-20",
+          "order_id": "18",
+          "status": "returned"
+        },
+        {
+          "amount": "6.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "54",
+          "gift_card_amount": "6.0",
+          "order_date": "2018-01-22",
+          "order_id": "19",
+          "status": "completed"
+        },
+        {
+          "amount": "15.0",
+          "bank_transfer_amount": "15.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "20",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-23",
+          "order_id": "20",
+          "status": "completed"
+        },
+        {
+          "amount": "12.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "12.0",
+          "customer_id": "71",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-23",
+          "order_id": "21",
+          "status": "completed"
+        },
+        {
+          "amount": "8.0",
+          "bank_transfer_amount": "8.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "86",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-24",
+          "order_id": "22",
+          "status": "completed"
+        },
+        {
+          "amount": "23.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "22",
+          "gift_card_amount": "23.0",
+          "order_date": "2018-01-26",
+          "order_id": "23",
+          "status": "return_pending"
+        },
+        {
+          "amount": "26.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "26.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "3",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-27",
+          "order_id": "24",
+          "status": "completed"
+        },
+        {
+          "amount": "58.0",
+          "bank_transfer_amount": "20.0",
+          "coupon_amount": "16.0",
+          "credit_card_amount": "22.0",
+          "customer_id": "51",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-28",
+          "order_id": "25",
+          "status": "completed"
+        },
+        {
+          "_truncated": 74
+        }
+      ],
+      "error": null
+    },
+    "ms": 54
+  },
+  {
+    "label": "dbt.show [{\"uri\":\"file://<P>/models/orders.sql\",\"limit\":10}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql",
+          "limit": 10
+        }
+      ]
+    },
+    "t": 17561,
+    "result": {
+      "columns": [
+        "order_id",
+        "customer_id",
+        "order_date",
+        "status",
+        "credit_card_amount",
+        "coupon_amount",
+        "bank_transfer_amount",
+        "gift_card_amount",
+        "amount"
+      ],
+      "data": [
+        {
+          "amount": "10.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "10.0",
+          "customer_id": "1",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-01",
+          "order_id": "1",
+          "status": "returned"
+        },
+        {
+          "amount": "20.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "20.0",
+          "customer_id": "3",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-02",
+          "order_id": "2",
+          "status": "completed"
+        },
+        {
+          "amount": "1.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "1.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "94",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-04",
+          "order_id": "3",
+          "status": "completed"
+        },
+        {
+          "amount": "25.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "25.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "50",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-05",
+          "order_id": "4",
+          "status": "completed"
+        },
+        {
+          "amount": "17.0",
+          "bank_transfer_amount": "17.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "64",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-05",
+          "order_id": "5",
+          "status": "completed"
+        },
+        {
+          "amount": "6.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "6.0",
+          "customer_id": "54",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-07",
+          "order_id": "6",
+          "status": "completed"
+        },
+        {
+          "amount": "16.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "16.0",
+          "customer_id": "88",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-09",
+          "order_id": "7",
+          "status": "completed"
+        },
+        {
+          "amount": "23.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "23.0",
+          "customer_id": "2",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-11",
+          "order_id": "8",
+          "status": "returned"
+        },
+        {
+          "amount": "23.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "53",
+          "gift_card_amount": "23.0",
+          "order_date": "2018-01-12",
+          "order_id": "9",
+          "status": "completed"
+        },
+        {
+          "amount": "26.0",
+          "bank_transfer_amount": "26.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "7",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-14",
+          "order_id": "10",
+          "status": "completed"
+        }
+      ],
+      "error": null
+    },
+    "ms": 45
+  },
+  {
+    "label": "dbt.show [{\"inline\":\"select * from {{ ref('orders') }}\",\"limit\":10}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ ref('orders') }}",
+          "limit": 10
+        }
+      ]
+    },
+    "t": 17776,
+    "result": {
+      "columns": [
+        "order_id",
+        "customer_id",
+        "order_date",
+        "status",
+        "credit_card_amount",
+        "coupon_amount",
+        "bank_transfer_amount",
+        "gift_card_amount",
+        "amount"
+      ],
+      "data": [
+        {
+          "amount": "10.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "10.0",
+          "customer_id": "1",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-01",
+          "order_id": "1",
+          "status": "returned"
+        },
+        {
+          "amount": "20.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "20.0",
+          "customer_id": "3",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-02",
+          "order_id": "2",
+          "status": "completed"
+        },
+        {
+          "amount": "1.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "1.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "94",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-04",
+          "order_id": "3",
+          "status": "completed"
+        },
+        {
+          "amount": "25.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "25.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "50",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-05",
+          "order_id": "4",
+          "status": "completed"
+        },
+        {
+          "amount": "17.0",
+          "bank_transfer_amount": "17.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "64",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-05",
+          "order_id": "5",
+          "status": "completed"
+        },
+        {
+          "amount": "6.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "6.0",
+          "customer_id": "54",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-07",
+          "order_id": "6",
+          "status": "completed"
+        },
+        {
+          "amount": "16.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "16.0",
+          "customer_id": "88",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-09",
+          "order_id": "7",
+          "status": "completed"
+        },
+        {
+          "amount": "23.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "23.0",
+          "customer_id": "2",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-11",
+          "order_id": "8",
+          "status": "returned"
+        },
+        {
+          "amount": "23.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "53",
+          "gift_card_amount": "23.0",
+          "order_date": "2018-01-12",
+          "order_id": "9",
+          "status": "completed"
+        },
+        {
+          "amount": "26.0",
+          "bank_transfer_amount": "26.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "7",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-14",
+          "order_id": "10",
+          "status": "completed"
+        }
+      ],
+      "error": null
+    },
+    "ms": 36
+  },
+  {
+    "label": "dbt.show [{\"inline\":\"select 1 as i, 1.5 as d, 'x' as s, true as b, current_date as dt, null as n\",\"limit\":1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select 1 as i, 1.5 as d, 'x' as s, true as b, current_date as dt, null as n",
+          "limit": 1
+        }
+      ]
+    },
+    "t": 17953,
+    "result": {
+      "columns": ["i", "d", "s", "b", "dt", "n"],
+      "data": [
+        {
+          "b": true,
+          "d": "1.5",
+          "dt": "2026-10-03",
+          "i": "1",
+          "n": null,
+          "s": "x"
+        }
+      ],
+      "error": null
+    },
+    "ms": 37
+  },
+  {
+    "label": "dbt.show [{\"uri\":\"file://<P>/models/orders.sql\",\"inline\":\"select * from {{ ref('orders') }}\",\"limit\":3}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql",
+          "inline": "select * from {{ ref('orders') }}",
+          "limit": 3
+        }
+      ]
+    },
+    "t": 17990,
+    "result": {
+      "columns": [
+        "order_id",
+        "customer_id",
+        "order_date",
+        "status",
+        "credit_card_amount",
+        "coupon_amount",
+        "bank_transfer_amount",
+        "gift_card_amount",
+        "amount"
+      ],
+      "data": [
+        {
+          "amount": "10.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "10.0",
+          "customer_id": "1",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-01",
+          "order_id": "1",
+          "status": "returned"
+        },
+        {
+          "amount": "20.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "20.0",
+          "customer_id": "3",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-02",
+          "order_id": "2",
+          "status": "completed"
+        },
+        {
+          "amount": "1.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "1.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "94",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-04",
+          "order_id": "3",
+          "status": "completed"
+        }
+      ],
+      "error": null
+    },
+    "ms": 35
+  },
+  {
+    "label": "dbt.show [{\"uri\":\"file://<P>/models/orders.sql\",\"limit\":-1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql",
+          "limit": -1
+        }
+      ]
+    },
+    "t": 18025,
+    "result": null,
+    "ms": 1
+  },
+  {
+    "label": "dbt.show [{\"inline\":\"select from where\",\"limit\":1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select from where",
+          "limit": 1
+        }
+      ]
+    },
+    "t": 18026,
+    "result": {
+      "columns": null,
+      "data": null,
+      "error": "Internal: Parser Error: syntax error at or near \"where\"\n\nLINE 2: select from where\n                    ^ (sqlstate: [0, 0, 0, 0, 0], vendor_code: -2147483648)"
+    },
+    "ms": 34
+  },
+  {
+    "label": "dbt.show [{\"inline\":\"select * from {{ ref('no_such_model') }}\",\"limit\":1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ ref('no_such_model') }}",
+          "limit": 1
+        }
+      ]
+    },
+    "t": 18060,
+    "result": {
+      "columns": null,
+      "data": null,
+      "error": "Failed to render SQL not a key type: ref not found for package: jaffle_shop, model: no_such_model, version: None\n(in :1:15)"
+    },
+    "ms": 29
+  },
+  {
+    "label": "dbt.previewCte [\"<P>/models/orders.sql\",{\"compiled_path\":\"<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql\",\"compiled_start\":2,\"compiled_stop\":1121,\"name\":\"final\",\"start\":85,\"start_location\":{\"col\":1,\"index\":542,\"line\":32},\"stop\":947}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.previewCte",
+      "arguments": [
+        "<P>/models/orders.sql",
+        {
+          "compiled_path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+          "compiled_start": 2,
+          "compiled_stop": 1121,
+          "name": "final",
+          "start": 85,
+          "start_location": {
+            "col": 1,
+            "index": 542,
+            "line": 32
+          },
+          "stop": 947
+        }
+      ]
+    },
+    "t": 18090,
+    "result": null,
+    "ms": 0
+  },
+  {
+    "label": "dbt.show [{\"inline\":\"with orders as (\\n\\n    select * from \\\"jaffle_shop\\\".\\\"main\\\".\\\"stg_orders\\\"\\n\\n),\\n\\npayments as (\\n\\n    select * from \\\"jaffle_shop\\\".\\\"main\\\".\\\"stg_payments\\\"\\n\\n),\\n\\norder_payments as (\\n\\n    select\\n        order_id,\\n\\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\\n        sum(amount) as total_amount\\n\\n    from payments\\n\\n    group by order_id\\n\\n),\\n\\nfinal as (\\n\\n    select\\n        orders.order_id,\\n        orders.customer_id,\\n        orders.order_date,\\n        orders.status,\\n\\n        order_payments.credit_card_amount,\\n\\n        order_payments.coupon_amount,\\n\\n        order_payments.bank_transfer_amount,\\n\\n        order_payments.gift_card_amount,\\n\\n        order_payments.total_amount as amount\\n\\n    from orders\\n\\n\\n    left join order_payments\\n        on orders.order_id = order_payments.order_id\\n\\n\\n)\\nselect * from final\",\"limit\":10}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "with orders as (\n\n    select * from \"jaffle_shop\".\"main\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"jaffle_shop\".\"main\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n\n)\nselect * from final",
+          "limit": 10
+        }
+      ]
+    },
+    "t": 18090,
+    "result": {
+      "columns": [
+        "order_id",
+        "customer_id",
+        "order_date",
+        "status",
+        "credit_card_amount",
+        "coupon_amount",
+        "bank_transfer_amount",
+        "gift_card_amount",
+        "amount"
+      ],
+      "data": [
+        {
+          "amount": "10.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "10.0",
+          "customer_id": "1",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-01",
+          "order_id": "1",
+          "status": "returned"
+        },
+        {
+          "amount": "20.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "20.0",
+          "customer_id": "3",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-02",
+          "order_id": "2",
+          "status": "completed"
+        },
+        {
+          "amount": "1.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "1.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "94",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-04",
+          "order_id": "3",
+          "status": "completed"
+        },
+        {
+          "amount": "25.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "25.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "50",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-05",
+          "order_id": "4",
+          "status": "completed"
+        },
+        {
+          "amount": "17.0",
+          "bank_transfer_amount": "17.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "64",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-05",
+          "order_id": "5",
+          "status": "completed"
+        },
+        {
+          "amount": "6.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "6.0",
+          "customer_id": "54",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-07",
+          "order_id": "6",
+          "status": "completed"
+        },
+        {
+          "amount": "16.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "16.0",
+          "customer_id": "88",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-09",
+          "order_id": "7",
+          "status": "completed"
+        },
+        {
+          "amount": "23.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "23.0",
+          "customer_id": "2",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-11",
+          "order_id": "8",
+          "status": "returned"
+        },
+        {
+          "amount": "23.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "53",
+          "gift_card_amount": "23.0",
+          "order_date": "2018-01-12",
+          "order_id": "9",
+          "status": "completed"
+        },
+        {
+          "amount": "26.0",
+          "bank_transfer_amount": "26.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "0.0",
+          "customer_id": "7",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-14",
+          "order_id": "10",
+          "status": "completed"
+        }
+      ],
+      "error": null
+    },
+    "ms": 34
+  },
+  {
+    "label": "dbt.previewCte [{\"uri\":\"file://<P>/models/orders.sql\",\"cte_name\":\"order_payments\"}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.previewCte",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql",
+          "cte_name": "order_payments"
+        }
+      ]
+    },
+    "t": 18265,
+    "result": null,
+    "ms": 0
+  },
+  {
+    "label": "dbt.goToDefinition [{\"uri\":\"file://<P>/models/orders.sql\",\"line\":0,\"character\":0}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.goToDefinition",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql",
+          "line": 0,
+          "character": 0
+        }
+      ]
+    },
+    "t": 18265,
+    "result": null,
+    "ms": 0
+  },
+  {
+    "label": "dbt.doesNotExist []",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.doesNotExist",
+      "arguments": []
+    },
+    "t": 18265,
+    "result": null,
+    "ms": 0
+  },
+  {
+    "label": "dbt.getCurrentNode [\"models/staging/stg_payments.sql\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/staging/stg_payments.sql"]
+    },
+    "t": 18265,
+    "result": {
+      "error": null,
+      "node": {
+        "columns": {
+          "amount": {
+            "data_type": "bigint"
+          },
+          "order_id": {
+            "data_type": "bigint"
+          },
+          "payment_id": {
+            "data_type": "bigint"
+          },
+          "payment_method": {
+            "data_type": "character varying(256)"
+          }
+        },
+        "database": "jaffle_shop",
+        "schema": "main",
+        "static_analysis": "strict",
+        "unique_id": "model.jaffle_shop.stg_payments"
+      }
+    },
+    "ms": 1
+  },
+  {
+    "label": "dbt.listNodes [\"@model.jaffle_shop.orders\",\"+column:model.jaffle_shop.orders.probe_fresh_col+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.jaffle_shop.orders",
+        "+column:model.jaffle_shop.orders.probe_fresh_col+"
+      ]
+    },
+    "t": 30389,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "column",
+      "nodes": [
+        {
+          "is_primary_key": false,
+          "materialized": "table",
+          "name": "probe_fresh_col",
+          "node_name": "orders",
+          "op": "unknown",
+          "original_file_path": "models/orders.sql",
+          "parents": [],
+          "resource_type": "model",
+          "transformation_type": "unknown",
+          "unique_id": "model.jaffle_shop.orders.probe_fresh_col"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 38
+  },
+  {
+    "label": "dbt.listNodes [\"zz_probe_new\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["zz_probe_new"]
+    },
+    "t": 30605,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "zz_probe_new",
+          "original_file_path": "models/zz_probe_new.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.zz_probe_new"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.listNodes [\"+customers+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+customers+"]
+    },
+    "t": 40455,
+    "result": {
+      "error": null,
+      "error_kind": null,
+      "grain": "project",
+      "nodes": [
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "snapshot"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers", "model.jaffle_shop.orders"]
+          },
+          "name": "weekly_report",
+          "original_file_path": "models/sources.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "exposure",
+          "unique_id": "exposure.jaffle_shop.weekly_report"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": [
+              "model.jaffle_shop.stg_customers",
+              "model.jaffle_shop.stg_orders",
+              "model.jaffle_shop.stg_payments"
+            ]
+          },
+          "name": "customers",
+          "original_file_path": "models/customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_customers"]
+          },
+          "name": "stg_customers",
+          "original_file_path": "models/staging/stg_customers.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_customers"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_orders"]
+          },
+          "name": "stg_orders",
+          "original_file_path": "models/staging/stg_orders.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_orders"
+        },
+        {
+          "config": {
+            "access": "protected",
+            "group": null,
+            "materialized": "view"
+          },
+          "depends_on": {
+            "nodes": ["seed.jaffle_shop.raw_payments"]
+          },
+          "name": "stg_payments",
+          "original_file_path": "models/staging/stg_payments.sql",
+          "package_name": "jaffle_shop",
+          "resource_type": "model",
+          "unique_id": "model.jaffle_shop.stg_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_customers",
+          "original_file_path": "seeds/raw_customers.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_customers"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_orders",
+          "original_file_path": "seeds/raw_orders.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_orders"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "table"
+          },
+          "depends_on": {
+            "nodes": []
+          },
+          "name": "raw_payments",
+          "original_file_path": "seeds/raw_payments.csv",
+          "package_name": "jaffle_shop",
+          "resource_type": "seed",
+          "unique_id": "seed.jaffle_shop.raw_payments"
+        },
+        {
+          "config": {
+            "access": null,
+            "group": null,
+            "materialized": "unit"
+          },
+          "depends_on": {
+            "nodes": ["model.jaffle_shop.customers"]
+          },
+          "name": "test_customer_order_aggregation",
+          "original_file_path": "models/schema.yml",
+          "package_name": "jaffle_shop",
+          "resource_type": "unit_test",
+          "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+        }
+      ],
+      "root_project": "jaffle_shop"
+    },
+    "ms": 23
+  },
+  {
+    "label": "dbt.show [{\"inline\":\"select * from {{ ref('orders') }}\",\"limit\":1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ ref('orders') }}",
+          "limit": 1
+        }
+      ]
+    },
+    "t": 40479,
+    "result": {
+      "columns": [
+        "order_id",
+        "customer_id",
+        "order_date",
+        "status",
+        "credit_card_amount",
+        "coupon_amount",
+        "bank_transfer_amount",
+        "gift_card_amount",
+        "amount"
+      ],
+      "data": [
+        {
+          "amount": "10.0",
+          "bank_transfer_amount": "0.0",
+          "coupon_amount": "0.0",
+          "credit_card_amount": "10.0",
+          "customer_id": "1",
+          "gift_card_amount": "0.0",
+          "order_date": "2018-01-01",
+          "order_id": "1",
+          "status": "returned"
+        }
+      ],
+      "error": null
+    },
+    "ms": 36
+  }
+]

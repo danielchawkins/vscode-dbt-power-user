@@ -1,0 +1,2917 @@
+[
+  {
+    "group": "load",
+    "name": "getProjectInfo after background compile",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": []
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{adapter_type:duckdb, models_count:7, models_count_is_estimate:false, project_name:jaffle_shop}"
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens (clean document, after load)",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "array(4)",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0],
+    "detail": [
+      {
+        "title": "Preview CTE",
+        "command": "dbt.previewCte",
+        "name": "final",
+        "line": 31
+      },
+      {
+        "title": "Preview CTE",
+        "command": "dbt.previewCte",
+        "name": "order_payments",
+        "line": 14
+      },
+      {
+        "title": "Preview CTE",
+        "command": "dbt.previewCte",
+        "name": "orders",
+        "line": 2
+      },
+      {
+        "title": "Preview CTE",
+        "command": "dbt.previewCte",
+        "name": "payments",
+        "line": 8
+      }
+    ]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/full (clean document)",
+    "method": "textDocument/semanticTokens/full",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{data[95]}",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 1],
+    "detail": {
+      "legend": {
+        "tokenModifiers": [],
+        "tokenTypes": [
+          "property",
+          "function",
+          "macro",
+          "type",
+          "variable",
+          "keyword"
+        ]
+      },
+      "count": 19,
+      "byType": {
+        "variable": ["payment_methods", "payment_method"],
+        "property": [
+          "*",
+          "order_id",
+          "amount",
+          "total_amount",
+          "customer_id",
+          "order_date",
+          "status"
+        ],
+        "keyword": ["ref"]
+      }
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "inlayHint (clean document)",
+    "method": "textDocument/inlayHint",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 200,
+          "character": 0
+        }
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "array(0)",
+    "p50": 0,
+    "samples": [0, 1, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens (after unsaved didChange)",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 1, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/full (after unsaved didChange)",
+    "method": "textDocument/semanticTokens/full",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens (after didSave of original text)",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "array(4)",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/full (after didSave of original text)",
+    "method": "textDocument/semanticTokens/full",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{data[95]}",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover ref('stg_orders')",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 4,
+        "character": 28
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{contents{2}}",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition ref('stg_orders')",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 4,
+        "character": 28
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{range{2}, uri:file://<P>/models/staging/stg_orders.sql}",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "references ref('stg_orders')",
+    "method": "textDocument/references",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 4,
+        "character": 28
+      },
+      "context": {
+        "includeDeclaration": true
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "array(1)",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover macro cents_to_dollars(",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/payments_dollars.sql"
+      },
+      "position": {
+        "line": 2,
+        "character": 10
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition macro cents_to_dollars(",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/payments_dollars.sql"
+      },
+      "position": {
+        "line": 2,
+        "character": 10
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{range{2}, uri:file://<P>/macros/cents_to_dollars.sql}",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "references macro cents_to_dollars(",
+    "method": "textDocument/references",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/payments_dollars.sql"
+      },
+      "position": {
+        "line": 2,
+        "character": 10
+      },
+      "context": {
+        "includeDeclaration": true
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "array(3)",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "signatureHelp macro cents_to_dollars(",
+    "method": "textDocument/signatureHelp",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/payments_dollars.sql"
+      },
+      "position": {
+        "line": 2,
+        "character": 10
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [42, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover dotted jaffle_shop.cents_to_dollars",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/payments_dollars.sql"
+      },
+      "position": {
+        "line": 3,
+        "character": 22
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition dotted jaffle_shop.cents_to_dollars",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/payments_dollars.sql"
+      },
+      "position": {
+        "line": 3,
+        "character": 22
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{range{2}, uri:file://<P>/macros/cents_to_dollars.sql}",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "signatureHelp dotted jaffle_shop.cents_to_dollars",
+    "method": "textDocument/signatureHelp",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/payments_dollars.sql"
+      },
+      "position": {
+        "line": 3,
+        "character": 22
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover source('raw','raw_orders')",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/src_orders.sql"
+      },
+      "position": {
+        "line": 0,
+        "character": 52
+      }
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 1]
+  },
+  {
+    "group": "lsp",
+    "name": "definition source('raw','raw_orders')",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/src_orders.sql"
+      },
+      "position": {
+        "line": 0,
+        "character": 52
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{range{2}, uri:file://<P>/models/sources.yml}",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover column customer_orders.first_order",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/customers.sql"
+      },
+      "position": {
+        "line": 53,
+        "character": 26
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{contents{2}}",
+    "p50": 0,
+    "samples": [1, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition column customer_orders.first_order",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/customers.sql"
+      },
+      "position": {
+        "line": 53,
+        "character": 26
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{range{2}, uri:file://<P>/models/customers.sql}",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "references column customer_orders.first_order",
+    "method": "textDocument/references",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/customers.sql"
+      },
+      "position": {
+        "line": 53,
+        "character": 26
+      },
+      "context": {
+        "includeDeclaration": true
+      }
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "array(2)",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 1]
+  },
+  {
+    "group": "lsp",
+    "name": "hover alias total_amount",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 23,
+        "character": 25
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{contents{2}}",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition alias total_amount",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 23,
+        "character": 25
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{range{2}, uri:file://<P>/models/orders.sql}",
+    "p50": 0,
+    "samples": [0, 1, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "references alias total_amount",
+    "method": "textDocument/references",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 23,
+        "character": 25
+      },
+      "context": {
+        "includeDeclaration": true
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "array(2)",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "prepareRename alias total_amount",
+    "method": "textDocument/prepareRename",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 23,
+        "character": 25
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method textDocument/prepareRename",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "rename alias total_amount",
+    "method": "textDocument/rename",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 23,
+        "character": 25
+      },
+      "newName": "total_amount_renamed"
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{changes{1}}",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 1]
+  },
+  {
+    "group": "lsp",
+    "name": "hover select *",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 55,
+        "character": 7
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{contents{2}}",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition select *",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 55,
+        "character": 7
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 1, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover yaml model name",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/schema.yml"
+      },
+      "position": {
+        "line": 31,
+        "character": 11
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition yaml model name",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/schema.yml"
+      },
+      "position": {
+        "line": 31,
+        "character": 11
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "references yaml model name",
+    "method": "textDocument/references",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/schema.yml"
+      },
+      "position": {
+        "line": 31,
+        "character": 11
+      },
+      "context": {
+        "includeDeclaration": true
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 1, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover doc() in yaml",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/schema.yml"
+      },
+      "position": {
+        "line": 54,
+        "character": 32
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition doc() in yaml",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/schema.yml"
+      },
+      "position": {
+        "line": 54,
+        "character": 32
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "completion ref('",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 57,
+        "character": 22
+      },
+      "context": {
+        "triggerKind": 2,
+        "triggerCharacter": "'"
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{isIncomplete:false, items[10]}",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 0],
+    "detail": {
+      "count": 10,
+      "kinds": {
+        "18": 10
+      },
+      "sample": [
+        {
+          "label": "customers",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "customers"
+        },
+        {
+          "label": "orders",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "orders"
+        },
+        {
+          "label": "payments_dollars",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "payments_dollars"
+        },
+        {
+          "label": "src_orders",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "src_orders"
+        },
+        {
+          "label": "stg_customers",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "stg_customers"
+        },
+        {
+          "label": "stg_orders",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "stg_orders"
+        },
+        {
+          "label": "stg_payments",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "stg_payments"
+        },
+        {
+          "label": "raw_customers",
+          "kind": 18,
+          "detail": "seed",
+          "insertText": "raw_customers"
+        }
+      ]
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "completion source('",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 57,
+        "character": 25
+      },
+      "context": {
+        "triggerKind": 2,
+        "triggerCharacter": "'"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "{isIncomplete:false, items[0]}",
+    "p50": 0,
+    "samples": [1, 0, 0, 1, 0],
+    "detail": {
+      "count": 0,
+      "kinds": {},
+      "sample": []
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "completion source('raw', '",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 57,
+        "character": 32
+      },
+      "context": {
+        "triggerKind": 2,
+        "triggerCharacter": "'"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "{isIncomplete:false, items[0]}",
+    "p50": 0,
+    "samples": [0, 1, 0, 0, 0],
+    "detail": {
+      "count": 0,
+      "kinds": {},
+      "sample": []
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "completion {{ (macro)",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 57,
+        "character": 10
+      },
+      "context": {
+        "triggerKind": 2,
+        "triggerCharacter": "{"
+      }
+    },
+    "ok": true,
+    "ms": 2,
+    "shape": "{isIncomplete:false, items[642]}",
+    "p50": 2,
+    "samples": [2, 3, 1, 2, 2],
+    "detail": {
+      "count": 642,
+      "kinds": {
+        "3": 642
+      },
+      "sample": [
+        {
+          "label": "list_transform(array($1), function($1, $11))",
+          "kind": 3,
+          "insertText": "list_transform(${1})"
+        },
+        {
+          "label": "list_filter(array($1), function($1, boolean))",
+          "kind": 3,
+          "insertText": "list_filter(${1})"
+        },
+        {
+          "label": "list_reduce(array($1), function($1, $1, $1))",
+          "kind": 3,
+          "insertText": "list_reduce(${1})"
+        },
+        {
+          "label": "abs(double)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(decimal(p, s))",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(bigint)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(integer)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "acos(double)",
+          "kind": 3,
+          "insertText": "acos(${1})"
+        }
+      ]
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "completion jaffle_shop.",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 57,
+        "character": 22
+      },
+      "context": {
+        "triggerKind": 2,
+        "triggerCharacter": "."
+      }
+    },
+    "ok": true,
+    "ms": 2,
+    "shape": "{isIncomplete:false, items[642]}",
+    "p50": 2,
+    "samples": [1, 1, 2, 2, 2],
+    "detail": {
+      "count": 642,
+      "kinds": {
+        "3": 642
+      },
+      "sample": [
+        {
+          "label": "list_transform(array($1), function($1, $11))",
+          "kind": 3,
+          "insertText": "list_transform(${1})"
+        },
+        {
+          "label": "list_filter(array($1), function($1, boolean))",
+          "kind": 3,
+          "insertText": "list_filter(${1})"
+        },
+        {
+          "label": "list_reduce(array($1), function($1, $1, $1))",
+          "kind": 3,
+          "insertText": "list_reduce(${1})"
+        },
+        {
+          "label": "abs(double)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(decimal(p, s))",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(bigint)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(integer)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "acos(double)",
+          "kind": 3,
+          "insertText": "acos(${1})"
+        }
+      ]
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "completion column after alias.",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/customers.sql"
+      },
+      "position": {
+        "line": 70,
+        "character": 23
+      },
+      "context": {
+        "triggerKind": 2,
+        "triggerCharacter": "."
+      }
+    },
+    "ok": true,
+    "ms": 2,
+    "shape": "{isIncomplete:false, items[642]}",
+    "p50": 2,
+    "samples": [4, 2, 3, 2, 2],
+    "detail": {
+      "count": 642,
+      "kinds": {
+        "3": 642
+      },
+      "sample": [
+        {
+          "label": "list_transform(array($1), function($1, $11))",
+          "kind": 3,
+          "insertText": "list_transform(${1})"
+        },
+        {
+          "label": "list_filter(array($1), function($1, boolean))",
+          "kind": 3,
+          "insertText": "list_filter(${1})"
+        },
+        {
+          "label": "list_reduce(array($1), function($1, $1, $1))",
+          "kind": 3,
+          "insertText": "list_reduce(${1})"
+        },
+        {
+          "label": "abs(double)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(decimal(p, s))",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(bigint)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(integer)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "acos(double)",
+          "kind": 3,
+          "insertText": "acos(${1})"
+        }
+      ]
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "completion select-list (no trigger)",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 57,
+        "character": 10
+      },
+      "context": {
+        "triggerKind": 1
+      }
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{isIncomplete:false, items[642]}",
+    "p50": 2,
+    "samples": [2, 2, 1, 2, 1],
+    "detail": {
+      "count": 642,
+      "kinds": {
+        "3": 642
+      },
+      "sample": [
+        {
+          "label": "list_transform(array($1), function($1, $11))",
+          "kind": 3,
+          "insertText": "list_transform(${1})"
+        },
+        {
+          "label": "list_filter(array($1), function($1, boolean))",
+          "kind": 3,
+          "insertText": "list_filter(${1})"
+        },
+        {
+          "label": "list_reduce(array($1), function($1, $1, $1))",
+          "kind": 3,
+          "insertText": "list_reduce(${1})"
+        },
+        {
+          "label": "abs(double)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(decimal(p, s))",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(bigint)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "abs(integer)",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        },
+        {
+          "label": "acos(double)",
+          "kind": 3,
+          "insertText": "acos(${1})"
+        }
+      ]
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "documentSymbol",
+    "method": "textDocument/documentSymbol",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 1, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "workspaceSymbol",
+    "method": "workspace/symbol",
+    "params": {
+      "query": "orders"
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "error -32601: No such method workspace/symbol",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 1]
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0],
+    "detail": []
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens models/schema.yml",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/schema.yml"
+      }
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 1],
+    "detail": []
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens models/sources.yml",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/sources.yml"
+      }
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 1],
+    "detail": []
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens models/src_orders.sql",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/src_orders.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 1, 0, 0, 0],
+    "detail": []
+  },
+  {
+    "group": "lsp",
+    "name": "codeAction",
+    "method": "textDocument/codeAction",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 3,
+          "character": 0
+        }
+      },
+      "context": {
+        "diagnostics": [],
+        "only": ["source.fixAll"]
+      }
+    },
+    "ok": true,
+    "ms": 118,
+    "shape": "array(1)",
+    "p50": 125,
+    "samples": [147, 122, 128, 125, 118]
+  },
+  {
+    "group": "lsp",
+    "name": "codeAction (no filter)",
+    "method": "textDocument/codeAction",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 3,
+          "character": 0
+        }
+      },
+      "context": {
+        "diagnostics": []
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "formatting",
+    "method": "textDocument/formatting",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "options": {
+        "tabSize": 4,
+        "insertSpaces": true
+      }
+    },
+    "ok": true,
+    "ms": 126,
+    "shape": "array(16)",
+    "p50": 126,
+    "samples": [119, 118, 132, 131, 126]
+  },
+  {
+    "group": "lsp",
+    "name": "rangeFormatting",
+    "method": "textDocument/rangeFormatting",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 5,
+          "character": 0
+        }
+      },
+      "options": {
+        "tabSize": 4,
+        "insertSpaces": true
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method textDocument/rangeFormatting",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/full",
+    "method": "textDocument/semanticTokens/full",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/range",
+    "method": "textDocument/semanticTokens/range",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 10,
+          "character": 0
+        }
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/full/delta",
+    "method": "textDocument/semanticTokens/full/delta",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "previousResultId": "0"
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method textDocument/semanticTokens/full/delta",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "inlayHint",
+    "method": "textDocument/inlayHint",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 200,
+          "character": 0
+        }
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "foldingRange",
+    "method": "textDocument/foldingRange",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "error -32601: No such method textDocument/foldingRange",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 1]
+  },
+  {
+    "group": "lsp",
+    "name": "documentLink",
+    "method": "textDocument/documentLink",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method textDocument/documentLink",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "documentHighlight",
+    "method": "textDocument/documentHighlight",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      },
+      "position": {
+        "line": 4,
+        "character": 26
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method textDocument/documentHighlight",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "diagnostic (pull)",
+    "method": "textDocument/diagnostic",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "{items[0], kind:full}",
+    "p50": 0,
+    "samples": [0, 1, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "workspace/diagnostic (pull)",
+    "method": "workspace/diagnostic",
+    "params": {
+      "previousResultIds": []
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method workspace/diagnostic",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "willRenameFiles",
+    "method": "workspace/willRenameFiles",
+    "params": {
+      "files": [
+        {
+          "oldUri": "file://<P>/models/orders.sql",
+          "newUri": "file://<P>/models/orders_moved.sql"
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{changes{3}}",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 1]
+  },
+  {
+    "group": "dbt",
+    "name": "getProjectInfo []",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": []
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{adapter_type:duckdb, models_count:7, models_count_is_estimate:false, project_name:jaffle_shop}",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [bare relpath]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["models/orders.sql"]
+    },
+    "ok": true,
+    "ms": 24,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[2], root_project:jaffle_shop}",
+    "p50": 24,
+    "samples": [11, 24, 24, 25, 24],
+    "detail": {
+      "nodes": 2,
+      "grain": "project",
+      "ids": [
+        "model.jaffle_shop.orders",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [name]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["orders"]
+    },
+    "ok": true,
+    "ms": 24,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[2], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [22, 25, 22, 23, 24],
+    "detail": {
+      "nodes": 2,
+      "grain": "project",
+      "ids": [
+        "model.jaffle_shop.orders",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [unique_id]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["model.jaffle_shop.orders"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[2], root_project:jaffle_shop}",
+    "p50": 24,
+    "samples": [23, 25, 24, 25, 23],
+    "detail": {
+      "nodes": 2,
+      "grain": "project",
+      "ids": [
+        "model.jaffle_shop.orders",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+name+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+orders+"]
+    },
+    "ok": true,
+    "ms": 24,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[7], root_project:jaffle_shop}",
+    "p50": 24,
+    "samples": [24, 24, 27, 23, 24],
+    "detail": {
+      "nodes": 7,
+      "grain": "project",
+      "ids": [
+        "exposure.jaffle_shop.weekly_report",
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "seed.jaffle_shop.raw_orders",
+        "seed.jaffle_shop.raw_payments",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [name+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["orders+"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[3], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [21, 23, 23, 22, 23],
+    "detail": {
+      "nodes": 3,
+      "grain": "project",
+      "ids": [
+        "exposure.jaffle_shop.weekly_report",
+        "model.jaffle_shop.orders",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+name]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+orders"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[6], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [24, 23, 23, 23, 23],
+    "detail": {
+      "nodes": 6,
+      "grain": "project",
+      "ids": [
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "seed.jaffle_shop.raw_orders",
+        "seed.jaffle_shop.raw_payments",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [1+name+1]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["1+orders+1"]
+    },
+    "ok": true,
+    "ms": 22,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[5], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [22, 23, 23, 23, 22],
+    "detail": {
+      "nodes": 5,
+      "grain": "project",
+      "ids": [
+        "exposure.jaffle_shop.weekly_report",
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [2+name+2]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["2+orders+2"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[7], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [24, 20, 24, 23, 23],
+    "detail": {
+      "nodes": 7,
+      "grain": "project",
+      "ids": [
+        "exposure.jaffle_shop.weekly_report",
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "seed.jaffle_shop.raw_orders",
+        "seed.jaffle_shop.raw_payments",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+unique_id+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+model.jaffle_shop.orders+"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[7], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [21, 21, 23, 23, 23],
+    "detail": {
+      "nodes": 7,
+      "grain": "project",
+      "ids": [
+        "exposure.jaffle_shop.weekly_report",
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "seed.jaffle_shop.raw_orders",
+        "seed.jaffle_shop.raw_payments",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [@unique_id]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["@model.jaffle_shop.orders"]
+    },
+    "ok": true,
+    "ms": 22,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[11], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [23, 21, 23, 23, 22],
+    "detail": {
+      "nodes": 11,
+      "grain": "project",
+      "ids": [
+        "exposure.jaffle_shop.weekly_report",
+        "model.jaffle_shop.customers",
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.stg_customers",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "seed.jaffle_shop.raw_customers",
+        "seed.jaffle_shop.raw_orders",
+        "seed.jaffle_shop.raw_payments",
+        "test.jaffle_shop.assert_positive_amount",
+        "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+relpath+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+models/orders.sql+"]
+    },
+    "ok": true,
+    "ms": 22,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[7], root_project:jaffle_shop}",
+    "p50": 22,
+    "samples": [22, 24, 23, 22, 22],
+    "detail": {
+      "nodes": 7,
+      "grain": "project",
+      "ids": [
+        "exposure.jaffle_shop.weekly_report",
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "seed.jaffle_shop.raw_orders",
+        "seed.jaffle_shop.raw_payments",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [path:dir]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["path:models"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[11], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [23, 24, 22, 22, 23],
+    "detail": {
+      "nodes": 11,
+      "grain": "project",
+      "ids": [
+        "exposure.jaffle_shop.weekly_report",
+        "model.jaffle_shop.customers",
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.payments_dollars",
+        "model.jaffle_shop.src_orders",
+        "model.jaffle_shop.stg_customers",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "source.jaffle_shop.raw.raw_orders",
+        "test.jaffle_shop.assert_positive_amount",
+        "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [dir]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["models"]
+    },
+    "ok": false,
+    "ms": 23,
+    "shape": "{error:No nodes found, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [22, 23, 23, 24, 23],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [resource_type:source]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:source"]
+    },
+    "ok": true,
+    "ms": 22,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [21, 24, 23, 23, 22],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["source.jaffle_shop.raw.raw_orders"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [source:*]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["source:*"]
+    },
+    "ok": true,
+    "ms": 22,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [23, 21, 23, 23, 22],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["source.jaffle_shop.raw.raw_orders"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [*]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["*"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[13], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [22, 23, 23, 23, 23],
+    "detail": {
+      "nodes": 13,
+      "grain": "project",
+      "ids": [
+        "exposure.jaffle_shop.weekly_report",
+        "model.jaffle_shop.customers",
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.payments_dollars",
+        "model.jaffle_shop.src_orders",
+        "model.jaffle_shop.stg_customers",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "seed.jaffle_shop.raw_customers",
+        "seed.jaffle_shop.raw_orders",
+        "seed.jaffle_shop.raw_payments",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [seed]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["raw_orders"]
+    },
+    "ok": true,
+    "ms": 21,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [23, 23, 23, 23, 21],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["seed.jaffle_shop.raw_orders"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+column:uid.col+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:model.jaffle_shop.orders.amount+"]
+    },
+    "ok": false,
+    "ms": 37,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:jaffle_shop}",
+    "p50": 37,
+    "samples": [37, 36, 38, 38, 37],
+    "detail": {
+      "nodes": 0,
+      "grain": "column",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [column:uid.col+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["column:model.jaffle_shop.orders.amount+"]
+    },
+    "ok": false,
+    "ms": 37,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:jaffle_shop}",
+    "p50": 37,
+    "samples": [37, 40, 36, 38, 37],
+    "detail": {
+      "nodes": 0,
+      "grain": "column",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+column:uid.col]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:model.jaffle_shop.orders.amount"]
+    },
+    "ok": false,
+    "ms": 41,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:jaffle_shop}",
+    "p50": 38,
+    "samples": [35, 38, 38, 37, 41],
+    "detail": {
+      "nodes": 0,
+      "grain": "column",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [1+column:uid.col+1]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["1+column:model.jaffle_shop.orders.amount+1"]
+    },
+    "ok": false,
+    "ms": 36,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:jaffle_shop}",
+    "p50": 37,
+    "samples": [37, 38, 36, 37, 36],
+    "detail": {
+      "nodes": 0,
+      "grain": "column",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [intersection a,b]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["orders,+orders"]
+    },
+    "ok": true,
+    "ms": 22,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[2], root_project:jaffle_shop}",
+    "p50": 22,
+    "samples": [22, 22, 23, 23, 22],
+    "detail": {
+      "nodes": 2,
+      "grain": "project",
+      "ids": [
+        "model.jaffle_shop.orders",
+        "test.jaffle_shop.assert_positive_amount"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [union 'a b']",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["orders customers"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[4], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [23, 24, 23, 23, 23],
+    "detail": {
+      "nodes": 4,
+      "grain": "project",
+      "ids": [
+        "model.jaffle_shop.customers",
+        "model.jaffle_shop.orders",
+        "test.jaffle_shop.assert_positive_amount",
+        "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [exposure]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["exposure:weekly_report"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [23, 22, 22, 23, 23],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["exposure.jaffle_shop.weekly_report"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [test_type:unit]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["test_type:unit"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:jaffle_shop}",
+    "p50": 22,
+    "samples": [22, 22, 21, 22, 23],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["unit_test.jaffle_shop.customers.test_customer_order_aggregation"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [test_type:generic]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["test_type:generic"]
+    },
+    "ok": false,
+    "ms": 22,
+    "shape": "{error:No nodes found, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [23, 22, 23, 24, 22],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [resource_type:test]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:test"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [23, 23, 24, 28, 23],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["test.jaffle_shop.assert_positive_amount"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [resource_type:macro]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:macro"]
+    },
+    "ok": false,
+    "ms": 22,
+    "shape": "{error:No nodes found, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [32, 23, 24, 23, 22],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [resource_type:doc]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:doc"]
+    },
+    "ok": false,
+    "ms": 23,
+    "shape": "{error:No nodes found, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [23, 20, 22, 23, 23],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [resource_type:model]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:model"]
+    },
+    "ok": true,
+    "ms": 24,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[9], root_project:jaffle_shop}",
+    "p50": 24,
+    "samples": [22, 24, 24, 21, 24],
+    "detail": {
+      "nodes": 9,
+      "grain": "project",
+      "ids": [
+        "model.jaffle_shop.customers",
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.payments_dollars",
+        "model.jaffle_shop.src_orders",
+        "model.jaffle_shop.stg_customers",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "test.jaffle_shop.assert_positive_amount",
+        "unit_test.jaffle_shop.customers.test_customer_order_aggregation"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [state:modified]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["state:modified"]
+    },
+    "ok": false,
+    "ms": 23,
+    "shape": "{error:Got a state selector method, but no comparison manifest, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [23, 25, 23, 22, 23],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [package:root]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["package:jaffle_shop"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[14], root_project:jaffle_shop}",
+    "p50": 23,
+    "samples": [24, 21, 23, 23, 23],
+    "detail": {
+      "nodes": 14,
+      "grain": "project",
+      "ids": [
+        "exposure.jaffle_shop.weekly_report",
+        "model.jaffle_shop.customers",
+        "model.jaffle_shop.orders",
+        "model.jaffle_shop.payments_dollars",
+        "model.jaffle_shop.src_orders",
+        "model.jaffle_shop.stg_customers",
+        "model.jaffle_shop.stg_orders",
+        "model.jaffle_shop.stg_payments",
+        "seed.jaffle_shop.raw_customers",
+        "seed.jaffle_shop.raw_orders",
+        "seed.jaffle_shop.raw_payments",
+        "source.jaffle_shop.raw.raw_orders"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [@uid, +column:uid.col+] (official)",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.jaffle_shop.orders",
+        "+column:model.jaffle_shop.orders.amount+"
+      ]
+    },
+    "ok": true,
+    "ms": 37,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[3], root_project:jaffle_shop}",
+    "p50": 38,
+    "samples": [38, 38, 39, 39, 37]
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [\"+column:model.jaffle_shop.customers.customer_id+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:model.jaffle_shop.customers.customer_id+"]
+    },
+    "ok": false,
+    "ms": 37,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:jaffle_shop}",
+    "p50": 37,
+    "samples": [37, 36, 36, 38, 37],
+    "detail": {
+      "nodes": 0,
+      "grain": "column"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [\"@model.jaffle_shop.customers\",\"+column:model.jaffle_shop.customers.customer_id+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.jaffle_shop.customers",
+        "+column:model.jaffle_shop.customers.customer_id+"
+      ]
+    },
+    "ok": true,
+    "ms": 39,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[3], root_project:jaffle_shop}",
+    "p50": 38,
+    "samples": [40, 37, 38, 38, 39],
+    "detail": {
+      "nodes": 3,
+      "grain": "column"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [\"+column:model.jaffle_shop.stg_orders.order_id+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:model.jaffle_shop.stg_orders.order_id+"]
+    },
+    "ok": false,
+    "ms": 37,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:jaffle_shop}",
+    "p50": 37,
+    "samples": [37, 36, 37, 38, 37],
+    "detail": {
+      "nodes": 0,
+      "grain": "column"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [\"+column:model.jaffle_shop.orders.order_id+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:model.jaffle_shop.orders.order_id+"]
+    },
+    "ok": false,
+    "ms": 37,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:jaffle_shop}",
+    "p50": 37,
+    "samples": [37, 38, 37, 38, 37],
+    "detail": {
+      "nodes": 0,
+      "grain": "column"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [\"@model.jaffle_shop.orders\",\"+column:model.jaffle_shop.orders.amount+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.jaffle_shop.orders",
+        "+column:model.jaffle_shop.orders.amount+"
+      ]
+    },
+    "ok": true,
+    "ms": 40,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[3], root_project:jaffle_shop}",
+    "p50": 38,
+    "samples": [35, 39, 38, 37, 40],
+    "detail": {
+      "nodes": 3,
+      "grain": "column"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [\"@model.jaffle_shop.orders\",\"2+column:model.jaffle_shop.orders.amount\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.jaffle_shop.orders",
+        "2+column:model.jaffle_shop.orders.amount"
+      ]
+    },
+    "ok": true,
+    "ms": 41,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[3], root_project:jaffle_shop}",
+    "p50": 37,
+    "samples": [37, 38, 37, 37, 41],
+    "detail": {
+      "nodes": 3,
+      "grain": "column"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [\"+column:model.jaffle_shop.payments_dollars.amount_dollars+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "+column:model.jaffle_shop.payments_dollars.amount_dollars+"
+      ]
+    },
+    "ok": false,
+    "ms": 38,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:jaffle_shop}",
+    "p50": 37,
+    "samples": [37, 37, 37, 38, 38],
+    "detail": {
+      "nodes": 0,
+      "grain": "column"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [\"+column:source.jaffle_shop.raw.raw_orders.id+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+column:source.jaffle_shop.raw.raw_orders.id+"]
+    },
+    "ok": false,
+    "ms": 36,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:jaffle_shop}",
+    "p50": 38,
+    "samples": [35, 38, 40, 38, 36],
+    "detail": {
+      "nodes": 0,
+      "grain": "column"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [{selector,depth}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        {
+          "selector": "+orders+",
+          "depth": 1
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "{error:empty selector list passed to --select/--exclude, error_kind:invalid_selector, grain:unknown, nodes[0]}"
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [selector, {depth:1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "+orders+",
+        {
+          "depth": 1
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 22,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[7], root_project:jaffle_shop}"
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [relpath]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/orders.sql"]
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{error:null, node{5}}",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [models/staging/stg_orders.sql]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/staging/stg_orders.sql"]
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{error:null, node{5}}"
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [seeds/raw_orders.csv]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["seeds/raw_orders.csv"]
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{error:null, node{5}}"
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [models/schema.yml]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/schema.yml"]
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{error:null, node{5}}"
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [uri]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["file://<P>/models/orders.sql"]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [unique_id]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["model.jaffle_shop.orders"]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "compileFile [uri]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["file://<P>/models/orders.sql"]
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{error:null, file_uri:file://<P>/target/.lsp/compiled/jaffle_shop/models/orders.sq}",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0],
+    "detail": {
+      "compiledBytes": 1143,
+      "head": "\n\nwith orders as (\n\n    select * from \"jaffle_shop\".\"main\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"jaffle_shop\".\"main\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "compileFile [relpath]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["models/orders.sql"]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "{error:relative URL without a base, file_uri:null}"
+  },
+  {
+    "group": "dbt",
+    "name": "compileFile [{uri}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql"
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "{error:File path invalid, file_uri:null}"
+  },
+  {
+    "group": "dbt",
+    "name": "compileLsp []",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": []
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "compileLsp [uri]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": ["file://<P>/models/orders.sql"]
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{uri}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql"
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 41,
+    "shape": "{columns[9], data[99], error:null}",
+    "p50": 41,
+    "samples": [54, 41, 42, 40, 41]
+  },
+  {
+    "group": "dbt",
+    "name": "show [{uri,limit:10}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql",
+          "limit": 10
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 42,
+    "shape": "{columns[9], data[10], error:null}",
+    "p50": 43,
+    "samples": [45, 43, 44, 41, 42]
+  },
+  {
+    "group": "dbt",
+    "name": "show [{inline,limit:10}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ ref('orders') }}",
+          "limit": 10
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 36,
+    "shape": "{columns[9], data[10], error:null}",
+    "p50": 36,
+    "samples": [36, 36, 35, 34, 36]
+  },
+  {
+    "group": "dbt",
+    "name": "show [{inline: typed literals}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select 1 as i, 1.5 as d, 'x' as s, true as b, current_date as dt, null as n",
+          "limit": 1
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 37,
+    "shape": "{columns[6], data[1], error:null}"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{uri,inline,limit:3}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql",
+          "inline": "select * from {{ ref('orders') }}",
+          "limit": 3
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 35,
+    "shape": "{columns[9], data[3], error:null}"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{uri, limit:-1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql",
+          "limit": -1
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{inline: bad sql}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select from where",
+          "limit": 1
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 34,
+    "shape": "{columns:null, data:null, error:Internal: Parser Error: syntax error at or near \"where\"\n\nLINE 2: select from whe}"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{inline: unknown ref}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ ref('no_such_model') }}",
+          "limit": 1
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 29,
+    "shape": "{columns:null, data:null, error:Failed to render SQL not a key type: ref not found for package: jaffle_shop, mod}"
+  },
+  {
+    "group": "dbt",
+    "name": "previewCte [lens arguments] as executeCommand",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.previewCte",
+      "arguments": [
+        "<P>/models/orders.sql",
+        {
+          "compiled_path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+          "compiled_start": 2,
+          "compiled_stop": 1121,
+          "name": "final",
+          "start": 85,
+          "start_location": {
+            "col": 1,
+            "index": 542,
+            "line": 32
+          },
+          "stop": 947
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{inline: compiled[start..stop] + ) select * from final}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "with orders as (\n\n    select * from \"jaffle_shop\".\"main\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"jaffle_shop\".\"main\".\"stg_payments\"\n\n),\n\norder_payments as (\n\n    select\n        order_id,\n\n        sum(case when payment_method = 'credit_card' then amount else 0 end) as credit_card_amount,\n        sum(case when payment_method = 'coupon' then amount else 0 end) as coupon_amount,\n        sum(case when payment_method = 'bank_transfer' then amount else 0 end) as bank_transfer_amount,\n        sum(case when payment_method = 'gift_card' then amount else 0 end) as gift_card_amount,\n        sum(amount) as total_amount\n\n    from payments\n\n    group by order_id\n\n),\n\nfinal as (\n\n    select\n        orders.order_id,\n        orders.customer_id,\n        orders.order_date,\n        orders.status,\n\n        order_payments.credit_card_amount,\n\n        order_payments.coupon_amount,\n\n        order_payments.bank_transfer_amount,\n\n        order_payments.gift_card_amount,\n\n        order_payments.total_amount as amount\n\n    from orders\n\n\n    left join order_payments\n        on orders.order_id = order_payments.order_id\n\n\n)\nselect * from final",
+          "limit": 10
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 36,
+    "shape": "{columns[9], data[10], error:null}",
+    "p50": 35,
+    "samples": [34, 36, 35, 34, 36],
+    "detail": {
+      "prefixHead": "with orders as (\n\n    select * from \"jaffle_shop\".\"main\".\"stg_orders\"\n\n),\n\npayments as (\n\n    select * from \"jaffle_shop",
+      "prefixTail": " left join order_payments\n        on orders.order_id = order_payments.order_id\n\n",
+      "columns": [
+        "order_id",
+        "customer_id",
+        "order_date",
+        "status",
+        "credit_card_amount",
+        "coupon_amount",
+        "bank_transfer_amount",
+        "gift_card_amount",
+        "amount"
+      ],
+      "rows": 10,
+      "error": null
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "previewCte [{uri, cte}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.previewCte",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql",
+          "cte_name": "order_payments"
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "goToDefinition [{uri,line,character}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.goToDefinition",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/orders.sql",
+          "line": 0,
+          "character": 0
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "doesNotExist []",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.doesNotExist",
+      "arguments": []
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes concurrent #1",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+orders+"]
+    },
+    "ok": false,
+    "ms": 13,
+    "shape": "{error:Operation cancelled, grain:unknown, nodes[0]}"
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes concurrent #2",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+customers+"]
+    },
+    "ok": true,
+    "ms": 23,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[9], root_project:jaffle_shop}"
+  },
+  {
+    "group": "dbt",
+    "name": "mixed concurrent #1 dbt.getCurrentNode",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["models/orders.sql"]
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{error:null, node{5}}"
+  },
+  {
+    "group": "dbt",
+    "name": "mixed concurrent #2 dbt.show",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ ref('orders') }}",
+          "limit": 1
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 36,
+    "shape": "{columns[9], data[1], error:null}"
+  },
+  {
+    "group": "dbt",
+    "name": "mixed concurrent #3 dbt.compileFile",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": ["file://<P>/models/orders.sql"]
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{error:null, file_uri:file://<P>/target/.lsp/compiled/jaffle_shop/models/orders.sq}"
+  }
+]

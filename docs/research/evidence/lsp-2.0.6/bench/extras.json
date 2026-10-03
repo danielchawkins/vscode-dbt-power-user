@@ -1,0 +1,96 @@
+{
+  "compileFileReflectsUnsavedEdit": false,
+  "compileFileUnsavedResult": {
+    "error": null,
+    "file_uri": "file://<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql"
+  },
+  "getCurrentNode models/schema.yml": {
+    "unique_id": "unit_test.jaffle_shop.customers.test_customer_order_aggregation",
+    "columns": 0,
+    "error": null
+  },
+  "getCurrentNode models/sources.yml": {
+    "unique_id": null,
+    "columns": 0,
+    "error": null
+  },
+  "getCurrentNode seeds/raw_orders.csv": {
+    "unique_id": "seed.jaffle_shop.raw_orders",
+    "columns": 4,
+    "error": null
+  },
+  "getCurrentNode macros/cents_to_dollars.sql": {
+    "unique_id": null,
+    "columns": 0,
+    "error": null
+  },
+  "getCurrentNode tests/assert_positive_amount.sql": {
+    "unique_id": "test.jaffle_shop.assert_positive_amount",
+    "columns": 0,
+    "error": null
+  },
+  "getCurrentNode models/staging/schema.yml": {
+    "unique_id": null,
+    "columns": 0,
+    "error": null
+  },
+  "showAdapterIntrospection": {
+    "ms": 88,
+    "result": {
+      "columns": ["cols"],
+      "data": [
+        {
+          "cols": "[\"id\", \"user_id\", \"order_date\", \"status\"]"
+        }
+      ],
+      "error": null
+    }
+  },
+  "showAdapterIntrospectionTypes": {
+    "ms": 35,
+    "result": {
+      "columns": ["c1", "c2", "c3", "c4"],
+      "data": [
+        {
+          "c1": "id:bigint",
+          "c2": "user_id:bigint",
+          "c3": "order_date:date",
+          "c4": "status:varchar"
+        }
+      ],
+      "error": null
+    }
+  },
+  "showLimit0": {
+    "ms": 35,
+    "result": {
+      "columns": ["id", "user_id", "order_date", "status"],
+      "data": [],
+      "error": null
+    }
+  },
+  "wholeGraph": {
+    "ms": 23,
+    "nodes": 14,
+    "byType": {
+      "exposure": 1,
+      "model": 7,
+      "seed": 3,
+      "source": 1,
+      "test": 1,
+      "unit_test": 1
+    },
+    "childCountOrders": 2,
+    "nodeKeys": [
+      "config",
+      "depends_on",
+      "name",
+      "original_file_path",
+      "package_name",
+      "resource_type",
+      "unique_id"
+    ]
+  },
+  "clearTarget": null,
+  "targetLspAfterClearTarget": []
+}

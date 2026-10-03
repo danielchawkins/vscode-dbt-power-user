@@ -1,0 +1,4298 @@
+{
+  "bare relpath": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "name": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "unique_id": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "+name+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_core",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_core.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_core"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_epoch_divisor",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_epoch_divisor.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_epoch_divisor"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": [
+            "function.kikoff._normalize_timestamp_core",
+            "function.kikoff._normalize_timestamp_epoch_divisor"
+          ]
+        },
+        "name": "normalize_timestamp",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/normalize_timestamp.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff.normalize_timestamp"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_cbl.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_cbl__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_cbl/base__stripe_cbl__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_cbl__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_kikoff.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_kikoff__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_kikoff/base__stripe_kikoff__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_kikoff__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_cbl/src__stripe_cbl__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_cbl.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_grant/src__stripe_grant__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_grant.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_kikoff/src__stripe_kikoff__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_kikoff.transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "name+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "+name": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_core",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_core.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_core"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_epoch_divisor",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_epoch_divisor.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_epoch_divisor"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": [
+            "function.kikoff._normalize_timestamp_core",
+            "function.kikoff._normalize_timestamp_epoch_divisor"
+          ]
+        },
+        "name": "normalize_timestamp",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/normalize_timestamp.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff.normalize_timestamp"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_cbl.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_cbl__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_cbl/base__stripe_cbl__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_cbl__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_kikoff.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_kikoff__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_kikoff/base__stripe_kikoff__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_kikoff__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_cbl/src__stripe_cbl__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_cbl.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_grant/src__stripe_grant__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_grant.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_kikoff/src__stripe_kikoff__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_kikoff.transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "1+name+1": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": [
+            "function.kikoff._normalize_timestamp_core",
+            "function.kikoff._normalize_timestamp_epoch_divisor"
+          ]
+        },
+        "name": "normalize_timestamp",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/normalize_timestamp.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff.normalize_timestamp"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_cbl.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_cbl__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_cbl/base__stripe_cbl__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_cbl__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_kikoff.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_kikoff__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_kikoff/base__stripe_kikoff__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_kikoff__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "2+name+2": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_core",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_core.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_core"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_epoch_divisor",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_epoch_divisor.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_epoch_divisor"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": [
+            "function.kikoff._normalize_timestamp_core",
+            "function.kikoff._normalize_timestamp_epoch_divisor"
+          ]
+        },
+        "name": "normalize_timestamp",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/normalize_timestamp.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff.normalize_timestamp"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_cbl.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_cbl__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_cbl/base__stripe_cbl__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_cbl__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_kikoff.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_kikoff__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_kikoff/base__stripe_kikoff__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_kikoff__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_cbl/src__stripe_cbl__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_cbl.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_grant/src__stripe_grant__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_grant.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_kikoff/src__stripe_kikoff__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_kikoff.transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "+unique_id+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_core",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_core.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_core"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_epoch_divisor",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_epoch_divisor.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_epoch_divisor"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": [
+            "function.kikoff._normalize_timestamp_core",
+            "function.kikoff._normalize_timestamp_epoch_divisor"
+          ]
+        },
+        "name": "normalize_timestamp",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/normalize_timestamp.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff.normalize_timestamp"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_cbl.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_cbl__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_cbl/base__stripe_cbl__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_cbl__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_kikoff.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_kikoff__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_kikoff/base__stripe_kikoff__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_kikoff__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_cbl/src__stripe_cbl__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_cbl.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_grant/src__stripe_grant__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_grant.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_kikoff/src__stripe_kikoff__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_kikoff.transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "@unique_id": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_core",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_core.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_core"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_epoch_divisor",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_epoch_divisor.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_epoch_divisor"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": [
+            "function.kikoff._normalize_timestamp_core",
+            "function.kikoff._normalize_timestamp_epoch_divisor"
+          ]
+        },
+        "name": "normalize_timestamp",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/normalize_timestamp.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff.normalize_timestamp"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_cbl.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_cbl__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_cbl/base__stripe_cbl__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_cbl__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_kikoff.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_kikoff__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_kikoff/base__stripe_kikoff__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_kikoff__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_cbl/src__stripe_cbl__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_cbl.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_grant/src__stripe_grant__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_grant.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_kikoff/src__stripe_kikoff__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_kikoff.transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "+relpath+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_core",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_core.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_core"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_epoch_divisor",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_epoch_divisor.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_epoch_divisor"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": [
+            "function.kikoff._normalize_timestamp_core",
+            "function.kikoff._normalize_timestamp_epoch_divisor"
+          ]
+        },
+        "name": "normalize_timestamp",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/normalize_timestamp.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff.normalize_timestamp"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_cbl.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_cbl__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_cbl/base__stripe_cbl__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_cbl__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_kikoff.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_kikoff__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_kikoff/base__stripe_kikoff__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_kikoff__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_cbl/src__stripe_cbl__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_cbl.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_grant/src__stripe_grant__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_grant.transfer_reversal"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "transfer_reversal",
+        "original_file_path": "models/11_sources/money_movement/stripe_kikoff/src__stripe_kikoff__transfer_reversal.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.stripe_kikoff.transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "path:dir": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__balance_transaction",
+            "model.finance_general.base__stripe_grant__balance_transaction",
+            "model.finance_general.base__stripe_cbl__balance_transaction",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__balance_transaction",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__balance_transaction.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__balance_transaction"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__charge",
+            "model.finance_general.base__stripe_grant__charge",
+            "model.finance_general.base__stripe_cbl__charge",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__charge",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__charge.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__charge"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__dispute",
+            "model.finance_general.base__stripe_grant__dispute",
+            "model.finance_general.base__stripe_cbl__dispute",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__dispute",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__dispute.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__dispute"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__dispute_balance_transaction",
+            "model.finance_general.base__stripe_grant__dispute_balance_transaction",
+            "model.finance_general.base__stripe_cbl__dispute_balance_transaction",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__dispute_balance_transaction",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__dispute_balance_transaction.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__dispute_balance_transaction"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__fee",
+            "model.finance_general.base__stripe_grant__fee",
+            "model.finance_general.base__stripe_cbl__fee",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__fee",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__fee.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__fee"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__payment_intent",
+            "model.finance_general.base__stripe_grant__payment_intent",
+            "model.finance_general.base__stripe_cbl__payment_intent",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__payment_intent",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__payment_intent.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__payment_intent"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__payout",
+            "model.finance_general.base__stripe_grant__payout",
+            "model.finance_general.base__stripe_cbl__payout",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__payout",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__payout.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__payout"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__payout_balance_transaction",
+            "model.finance_general.base__stripe_grant__payout_balance_transaction",
+            "model.finance_general.base__stripe_cbl__payout_balance_transaction",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__payout_balance_transaction",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__payout_balance_transaction.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__payout_balance_transaction"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__refund",
+            "model.finance_general.base__stripe_grant__refund",
+            "model.finance_general.base__stripe_cbl__refund",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__refund",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__refund.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__refund"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__topup",
+            "model.finance_general.base__stripe_grant__topup",
+            "model.finance_general.base__stripe_cbl__topup",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__topup",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__topup.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__topup"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer",
+            "model.finance_general.base__stripe_grant__transfer",
+            "model.finance_general.base__stripe_cbl__transfer",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "dir": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__balance_transaction",
+            "model.finance_general.base__stripe_grant__balance_transaction",
+            "model.finance_general.base__stripe_cbl__balance_transaction",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__balance_transaction",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__balance_transaction.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__balance_transaction"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__charge",
+            "model.finance_general.base__stripe_grant__charge",
+            "model.finance_general.base__stripe_cbl__charge",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__charge",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__charge.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__charge"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__dispute",
+            "model.finance_general.base__stripe_grant__dispute",
+            "model.finance_general.base__stripe_cbl__dispute",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__dispute",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__dispute.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__dispute"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__dispute_balance_transaction",
+            "model.finance_general.base__stripe_grant__dispute_balance_transaction",
+            "model.finance_general.base__stripe_cbl__dispute_balance_transaction",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__dispute_balance_transaction",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__dispute_balance_transaction.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__dispute_balance_transaction"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__fee",
+            "model.finance_general.base__stripe_grant__fee",
+            "model.finance_general.base__stripe_cbl__fee",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__fee",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__fee.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__fee"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__payment_intent",
+            "model.finance_general.base__stripe_grant__payment_intent",
+            "model.finance_general.base__stripe_cbl__payment_intent",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__payment_intent",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__payment_intent.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__payment_intent"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__payout",
+            "model.finance_general.base__stripe_grant__payout",
+            "model.finance_general.base__stripe_cbl__payout",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__payout",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__payout.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__payout"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__payout_balance_transaction",
+            "model.finance_general.base__stripe_grant__payout_balance_transaction",
+            "model.finance_general.base__stripe_cbl__payout_balance_transaction",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__payout_balance_transaction",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__payout_balance_transaction.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__payout_balance_transaction"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__refund",
+            "model.finance_general.base__stripe_grant__refund",
+            "model.finance_general.base__stripe_cbl__refund",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__refund",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__refund.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__refund"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__topup",
+            "model.finance_general.base__stripe_grant__topup",
+            "model.finance_general.base__stripe_cbl__topup",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__topup",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__topup.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__topup"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer",
+            "model.finance_general.base__stripe_grant__transfer",
+            "model.finance_general.base__stripe_cbl__transfer",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "tag": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.balance_transaction",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__balance_transaction",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__balance_transaction.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__balance_transaction"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.charge",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__charge",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__charge.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__charge"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.dispute",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__dispute",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__dispute.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__dispute"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.dispute_balance_transaction",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__dispute_balance_transaction",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__dispute_balance_transaction.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__dispute_balance_transaction"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.fee",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__fee",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__fee.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__fee"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.payment_intent",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__payment_intent",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__payment_intent.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__payment_intent"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.payout",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__payout",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__payout.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__payout"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.payout_balance_transaction",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__payout_balance_transaction",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__payout_balance_transaction.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__payout_balance_transaction"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.refund",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__refund",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__refund.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__refund"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.topup",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__topup",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__topup"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.transfer",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__transfer",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__transfer"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.stripe_grant.transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__stripe_grant__transfer_reversal",
+        "original_file_path": "models/12_base/money_movement/stripe_grant/base__stripe_grant__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__stripe_grant__transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "resource_type:source": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "acceptances",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__acceptances.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.acceptances"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "access_tokens",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__access_tokens.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.access_tokens"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "ach_credits",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__ach_credits.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.ach_credits"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "ach_payments",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__ach_payments.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.ach_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "admin_sessions",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__admin_sessions.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.admin_sessions"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "admins",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__admins.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.admins"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "agreements",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__agreements.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.agreements"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "ar_internal_metadata",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__ar_internal_metadata.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.ar_internal_metadata"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "audits1984_audits",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__audits1984_audits.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.audits1984_audits"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "auth_password_resets",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__auth_password_resets.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.auth_password_resets"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "auth_tokens",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__auth_tokens.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.auth_tokens"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "balance_infos",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__balance_infos.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.balance_infos"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "balance_refreshes",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__balance_refreshes.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.balance_refreshes"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "bill_reporting_bills_discovered_events",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__bill_reporting_bills_discovered_events.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.bill_reporting_bills_discovered_events"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "bill_reporting_discovered_bills",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__bill_reporting_discovered_bills.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.bill_reporting_discovered_bills"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "bill_reporting_utilities",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__bill_reporting_utilities.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.bill_reporting_utilities"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "bill_reporting_utility_transactions",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__bill_reporting_utility_transactions.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.bill_reporting_utility_transactions"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "bin_details",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__bin_details.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.bin_details"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "biometric_credentials",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__biometric_credentials.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.biometric_credentials"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "card_bins",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__card_bins.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.card_bins"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "card_institution_verifications",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__card_institution_verifications.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.card_institution_verifications"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "card_payments",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__card_payments.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.card_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "card_push_verifications",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__card_push_verifications.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.card_push_verifications"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "card_verifications",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__card_verifications.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.card_verifications"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "cash_advance_acceptances",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__cash_advance_acceptances.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.cash_advance_acceptances"
+      },
+      {
+        "_truncated": 1245
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "source:*": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "acceptances",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__acceptances.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.acceptances"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "access_tokens",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__access_tokens.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.access_tokens"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "ach_credits",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__ach_credits.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.ach_credits"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "ach_payments",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__ach_payments.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.ach_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "admin_sessions",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__admin_sessions.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.admin_sessions"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "admins",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__admins.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.admins"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "agreements",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__agreements.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.agreements"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "ar_internal_metadata",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__ar_internal_metadata.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.ar_internal_metadata"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "audits1984_audits",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__audits1984_audits.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.audits1984_audits"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "auth_password_resets",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__auth_password_resets.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.auth_password_resets"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "auth_tokens",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__auth_tokens.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.auth_tokens"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "balance_infos",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__balance_infos.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.balance_infos"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "balance_refreshes",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__balance_refreshes.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.balance_refreshes"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "bill_reporting_bills_discovered_events",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__bill_reporting_bills_discovered_events.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.bill_reporting_bills_discovered_events"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "bill_reporting_discovered_bills",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__bill_reporting_discovered_bills.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.bill_reporting_discovered_bills"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "bill_reporting_utilities",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__bill_reporting_utilities.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.bill_reporting_utilities"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "bill_reporting_utility_transactions",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__bill_reporting_utility_transactions.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.bill_reporting_utility_transactions"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "bin_details",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__bin_details.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.bin_details"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "biometric_credentials",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__biometric_credentials.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.biometric_credentials"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "card_bins",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__card_bins.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.card_bins"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "card_institution_verifications",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__card_institution_verifications.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.card_institution_verifications"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "card_payments",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__card_payments.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.card_payments"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "card_push_verifications",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__card_push_verifications.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.card_push_verifications"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "card_verifications",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__card_verifications.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.card_verifications"
+      },
+      {
+        "config": {
+          "access": null,
+          "group": null,
+          "materialized": "external"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "cash_advance_acceptances",
+        "original_file_path": "models/11_sources/backend/backend_grant/src__backend_grant__cash_advance_acceptances.yml",
+        "package_name": "finance_general",
+        "resource_type": "source",
+        "unique_id": "source.finance_general.backend_grant.cash_advance_acceptances"
+      },
+      {
+        "_truncated": 1245
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "*": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_core",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_core.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_core"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": []
+        },
+        "name": "_normalize_timestamp_epoch_divisor",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/_normalize_timestamp_epoch_divisor.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff._normalize_timestamp_epoch_divisor"
+      },
+      {
+        "config": {
+          "access": "private",
+          "group": null,
+          "materialized": "function"
+        },
+        "depends_on": {
+          "nodes": [
+            "function.kikoff._normalize_timestamp_core",
+            "function.kikoff._normalize_timestamp_epoch_divisor"
+          ]
+        },
+        "name": "normalize_timestamp",
+        "original_file_path": "dbt_packages/kikoff/functions/normalize_timestamp/normalize_timestamp.sql",
+        "package_name": "kikoff",
+        "resource_type": "function",
+        "unique_id": "function.kikoff.normalize_timestamp"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.ach_credits",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__ach_credits",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__ach_credits.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__ach_credits"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.ach_payments",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__ach_payments",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__ach_payments.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__ach_payments"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.card_payments",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__card_payments",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__card_payments.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__card_payments"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_boost_credits",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_boost_credits",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_boost_credits.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_boost_credits"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_collections",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_collections",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_collections.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_collections"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_disbursements",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_disbursements",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_disbursements.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_disbursements"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_offer_extensions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_offer_extensions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_offer_extensions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_offer_extensions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_offers",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_offers",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_offers.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_offers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_repayments",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_repayments",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_repayments.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_repayments"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.column_accounts",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__column_accounts",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__column_accounts.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__column_accounts"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.column_institutions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__column_institutions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__column_institutions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__column_institutions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.column_webhook_messages",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__column_webhook_messages",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__column_webhook_messages.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__column_webhook_messages"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.consumer_identities",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__consumer_identities",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__consumer_identities.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__consumer_identities"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_codes",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_codes",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_codes.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_codes"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_deliveries",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_deliveries",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_deliveries.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_deliveries"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_programs",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_programs",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_programs.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_programs"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_redemptions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_redemptions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_redemptions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_redemptions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupons",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupons",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupons.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupons"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.external_items",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__external_items",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__external_items.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__external_items"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_accounts",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_accounts",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_accounts.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_accounts"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_column_loans",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_column_loans",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_column_loans.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_column_loans"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_counterparties",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_counterparties",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_counterparties.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_counterparties"
+      },
+      {
+        "_truncated": 308
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "seed": {
+    "error": "No nodes found",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "+column:uid.col+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "column:uid.col+": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "+column:uid.col": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "1+column:uid.col+1": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "intersection a,b": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "union 'a b'": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__marqeta__declines",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__marqeta__declines",
+        "original_file_path": "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__marqeta__declines"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "incremental"
+        },
+        "depends_on": {
+          "nodes": [
+            "model.finance_general.base__stripe_kikoff__transfer_reversal",
+            "model.finance_general.base__stripe_grant__transfer_reversal",
+            "model.finance_general.base__stripe_cbl__transfer_reversal",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "stg__stripe__transfer_reversal",
+        "original_file_path": "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "test_type:unit": {
+    "error": "No nodes found",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "test_type:generic": {
+    "error": "No nodes found",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "resource_type:test": {
+    "error": "No nodes found",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "resource_type:macro": {
+    "error": "No nodes found",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "resource_type:doc": {
+    "error": "No nodes found",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "resource_type:model": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.ach_credits",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__ach_credits",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__ach_credits.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__ach_credits"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.ach_payments",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__ach_payments",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__ach_payments.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__ach_payments"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.card_payments",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__card_payments",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__card_payments.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__card_payments"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_boost_credits",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_boost_credits",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_boost_credits.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_boost_credits"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_collections",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_collections",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_collections.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_collections"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_disbursements",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_disbursements",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_disbursements.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_disbursements"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_offer_extensions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_offer_extensions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_offer_extensions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_offer_extensions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_offers",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_offers",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_offers.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_offers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_repayments",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_repayments",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_repayments.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_repayments"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.column_accounts",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__column_accounts",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__column_accounts.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__column_accounts"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.column_institutions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__column_institutions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__column_institutions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__column_institutions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.column_webhook_messages",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__column_webhook_messages",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__column_webhook_messages.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__column_webhook_messages"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.consumer_identities",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__consumer_identities",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__consumer_identities.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__consumer_identities"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_codes",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_codes",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_codes.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_codes"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_deliveries",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_deliveries",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_deliveries.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_deliveries"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_programs",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_programs",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_programs.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_programs"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_redemptions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_redemptions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_redemptions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_redemptions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupons",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupons",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupons.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupons"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.external_items",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__external_items",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__external_items.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__external_items"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_accounts",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_accounts",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_accounts.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_accounts"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_column_loans",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_column_loans",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_column_loans.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_column_loans"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_counterparties",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_counterparties",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_counterparties.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_counterparties"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_daily_balance_snapshots",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_daily_balance_snapshots",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_daily_balance_snapshots.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_daily_balance_snapshots"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_decisions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_decisions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_decisions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_decisions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_disbursements",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_disbursements",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_disbursements.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_disbursements"
+      },
+      {
+        "_truncated": 305
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "state:modified": {
+    "error": "Got a state selector method, but no comparison manifest",
+    "error_kind": "lineage_query_failed",
+    "grain": "unknown",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "package:root": {
+    "error": null,
+    "error_kind": null,
+    "grain": "project",
+    "nodes": [
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.ach_credits",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__ach_credits",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__ach_credits.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__ach_credits"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.ach_payments",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__ach_payments",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__ach_payments.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__ach_payments"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.card_payments",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__card_payments",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__card_payments.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__card_payments"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_boost_credits",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_boost_credits",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_boost_credits.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_boost_credits"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_collections",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_collections",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_collections.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_collections"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_disbursements",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_disbursements",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_disbursements.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_disbursements"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_offer_extensions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_offer_extensions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_offer_extensions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_offer_extensions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_offers",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_offers",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_offers.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_offers"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.cash_advance_repayments",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__cash_advance_repayments",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__cash_advance_repayments.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__cash_advance_repayments"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.column_accounts",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__column_accounts",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__column_accounts.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__column_accounts"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.column_institutions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__column_institutions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__column_institutions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__column_institutions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.column_webhook_messages",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__column_webhook_messages",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__column_webhook_messages.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__column_webhook_messages"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.consumer_identities",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__consumer_identities",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__consumer_identities.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__consumer_identities"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_codes",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_codes",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_codes.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_codes"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_deliveries",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_deliveries",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_deliveries.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_deliveries"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_programs",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_programs",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_programs.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_programs"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupon_redemptions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupon_redemptions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupon_redemptions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupon_redemptions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.coupons",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__coupons",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__coupons.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__coupons"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.external_items",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__external_items",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__external_items.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__external_items"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_accounts",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_accounts",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_accounts.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_accounts"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_column_loans",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_column_loans",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_column_loans.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_column_loans"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_counterparties",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_counterparties",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_counterparties.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_counterparties"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_daily_balance_snapshots",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_daily_balance_snapshots",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_daily_balance_snapshots.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_daily_balance_snapshots"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_decisions",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_decisions",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_decisions.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_decisions"
+      },
+      {
+        "config": {
+          "access": "protected",
+          "group": null,
+          "materialized": "view"
+        },
+        "depends_on": {
+          "nodes": [
+            "source.finance_general.backend_grant.loc_disbursements",
+            "function.kikoff.normalize_timestamp"
+          ]
+        },
+        "name": "base__backend_grant__loc_disbursements",
+        "original_file_path": "models/12_base/backend/backend_grant/base__backend_grant__loc_disbursements.sql",
+        "package_name": "finance_general",
+        "resource_type": "model",
+        "unique_id": "model.finance_general.base__backend_grant__loc_disbursements"
+      },
+      {
+        "_truncated": 1575
+      }
+    ],
+    "root_project": "finance_general"
+  },
+  "[\"+column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk+\"]": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "finance_general"
+  },
+  "[\"@model.finance_general.stg__stripe__transfer_reversal\",\"+column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk+\"]": {
+    "error": null,
+    "error_kind": null,
+    "grain": "column",
+    "nodes": [],
+    "root_project": "finance_general"
+  }
+}

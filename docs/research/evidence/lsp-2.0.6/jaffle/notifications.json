@@ -1,0 +1,162 @@
+{
+  "clientNotification initialized": {
+    "count": 1,
+    "first": {}
+  },
+  "clientNotification textDocument/didOpen": {
+    "count": 5,
+    "first": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql",
+        "languageId": "jinja-sql",
+        "version": 1,
+        "text": "<document text, 970 chars>"
+      }
+    }
+  },
+  "serverRequest client/registerCapability": {
+    "count": 1,
+    "first": {
+      "registrations": [
+        {
+          "id": "default-dbt-file-system-watcher",
+          "method": "workspace/didChangeWatchedFiles",
+          "registerOptions": {
+            "watchers": [
+              {
+                "globPattern": "**/*"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "notification window/logMessage": {
+    "count": 1586,
+    "first": {
+      "message": "Did open: file://<P>/models/orders.sql",
+      "type": 3
+    }
+  },
+  "notification dbt/lspCompileStart": {
+    "count": 248,
+    "first": {
+      "adapter_type": null,
+      "adapter_unique_id": null,
+      "cause": "didSave",
+      "compile_type": "incremental",
+      "dbt_version": "2.0.6",
+      "project_id": null
+    }
+  },
+  "serverRequest workspace/configuration": {
+    "count": 256,
+    "first": {
+      "items": [
+        {
+          "section": "dbt"
+        }
+      ]
+    }
+  },
+  "serverRequest window/workDoneProgress/create": {
+    "count": 551,
+    "first": {
+      "token": "cf10f7bf-0f75-40a7-90a7-80ce76998e19"
+    }
+  },
+  "notification textDocument/publishDiagnostics": {
+    "count": 169,
+    "first": {
+      "diagnostics": [],
+      "uri": "file://<P>/macros/adapters.sql"
+    }
+  },
+  "serverRequest workspace/codeLens/refresh": {
+    "count": 256
+  },
+  "serverRequest workspace/semanticTokens/refresh": {
+    "count": 256
+  },
+  "notification dbt/lspCompileComplete": {
+    "count": 248,
+    "first": {
+      "adapter_type": "duckdb",
+      "adapter_unique_id": "507e553e3364d1ac01317229cac629e4",
+      "cause": "didSave",
+      "compile_type": "incremental",
+      "dbt_version": "2.0.6",
+      "duration_ms": 200,
+      "errors": [],
+      "models_count": 7,
+      "project_id": "06e5b98c2db46f8a72cc4f66410e9b3b"
+    }
+  },
+  "notification dbt/lspBackgroundCompileStart": {
+    "count": 8,
+    "first": {
+      "adapter_type": "duckdb",
+      "adapter_unique_id": "507e553e3364d1ac01317229cac629e4",
+      "cause": "didSave",
+      "compile_type": "full",
+      "dbt_version": "2.0.6",
+      "project_id": "06e5b98c2db46f8a72cc4f66410e9b3b"
+    }
+  },
+  "notification dbt/lspBackgroundCompileComplete": {
+    "count": 8,
+    "first": {
+      "adapter_type": "duckdb",
+      "adapter_unique_id": "507e553e3364d1ac01317229cac629e4",
+      "cause": "didSave",
+      "compile_type": "full",
+      "dbt_version": "2.0.6",
+      "duration_ms": 18,
+      "errors": [],
+      "models_count": 7,
+      "project_id": "06e5b98c2db46f8a72cc4f66410e9b3b"
+    }
+  },
+  "clientNotification textDocument/didChange": {
+    "count": 26,
+    "first": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql",
+        "version": 6
+      },
+      "contentChanges": [
+        {
+          "text": "<document text, 971 chars>"
+        }
+      ]
+    }
+  },
+  "clientNotification textDocument/didSave": {
+    "count": 11,
+    "first": {
+      "textDocument": {
+        "uri": "file://<P>/models/orders.sql"
+      }
+    }
+  },
+  "notification dbt/renameColumn": {
+    "count": 5,
+    "first": {}
+  },
+  "notification dbt/renameModel": {
+    "count": 5,
+    "first": {}
+  },
+  "clientNotification workspace/didChangeWatchedFiles": {
+    "count": 4,
+    "first": {
+      "changes": [
+        {
+          "uri": "file://<P>/models/staging/stg_payments.sql",
+          "type": 2
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,130 @@
+[
+  {
+    "command": {
+      "arguments": [
+        "<P>/models/orders.sql",
+        {
+          "compiled_path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+          "compiled_start": 2,
+          "compiled_stop": 1121,
+          "name": "final",
+          "start": 85,
+          "start_location": {
+            "col": 1,
+            "index": 542,
+            "line": 32
+          },
+          "stop": 947
+        }
+      ],
+      "command": "dbt.previewCte",
+      "title": "Preview CTE"
+    },
+    "range": {
+      "end": {
+        "character": 1,
+        "line": 31
+      },
+      "start": {
+        "character": 1,
+        "line": 31
+      }
+    }
+  },
+  {
+    "command": {
+      "arguments": [
+        "<P>/models/orders.sql",
+        {
+          "compiled_path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+          "compiled_start": 2,
+          "compiled_stop": 671,
+          "name": "order_payments",
+          "start": 85,
+          "start_location": {
+            "col": 1,
+            "index": 214,
+            "line": 15
+          },
+          "stop": 538
+        }
+      ],
+      "command": "dbt.previewCte",
+      "title": "Preview CTE"
+    },
+    "range": {
+      "end": {
+        "character": 1,
+        "line": 14
+      },
+      "start": {
+        "character": 1,
+        "line": 14
+      }
+    }
+  },
+  {
+    "command": {
+      "arguments": [
+        "<P>/models/orders.sql",
+        {
+          "compiled_path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+          "compiled_start": 2,
+          "compiled_stop": 73,
+          "name": "orders",
+          "start": 85,
+          "start_location": {
+            "col": 6,
+            "index": 90,
+            "line": 3
+          },
+          "stop": 146
+        }
+      ],
+      "command": "dbt.previewCte",
+      "title": "Preview CTE"
+    },
+    "range": {
+      "end": {
+        "character": 6,
+        "line": 2
+      },
+      "start": {
+        "character": 6,
+        "line": 2
+      }
+    }
+  },
+  {
+    "command": {
+      "arguments": [
+        "<P>/models/orders.sql",
+        {
+          "compiled_path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+          "compiled_start": 2,
+          "compiled_stop": 147,
+          "name": "payments",
+          "start": 85,
+          "start_location": {
+            "col": 1,
+            "index": 150,
+            "line": 9
+          },
+          "stop": 210
+        }
+      ],
+      "command": "dbt.previewCte",
+      "title": "Preview CTE"
+    },
+    "range": {
+      "end": {
+        "character": 1,
+        "line": 8
+      },
+      "start": {
+        "character": 1,
+        "line": 8
+      }
+    }
+  }
+]

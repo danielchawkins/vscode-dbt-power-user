@@ -1,0 +1,43 @@
+{
+  "spawnToInitializeMs": 23,
+  "didOpenToCompileCompleteMs": 3764,
+  "didOpenToBackgroundCompleteMs": 8209,
+  "compileComplete": {
+    "adapter_type": "snowflake",
+    "adapter_unique_id": "25f211f316e85a3e07b71a9bdec15b17",
+    "cause": "didSave",
+    "compile_type": "incremental",
+    "dbt_version": "2.0.6",
+    "duration_ms": 3758,
+    "errors": [],
+    "models_count": 330,
+    "project_id": "66541267bb6e97337548f546c2b3f930"
+  },
+  "backgroundComplete": {
+    "adapter_type": "snowflake",
+    "adapter_unique_id": "25f211f316e85a3e07b71a9bdec15b17",
+    "cause": "didSave",
+    "compile_type": "full",
+    "dbt_version": "2.0.6",
+    "duration_ms": 3192,
+    "errors": [
+      {
+        "code": "1501",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL invalid operation: Compilation Error for model.finance_general.stg__stripe__balance_transaction from models/13_staging/money_movement/stripe/stg__stripe__balance_transaction.sql: union_relations: source 'grant' is missing column(s) [PAYOUT_ID]. Add them, or pass fill_missing_columns=true.\n(in models/13_staging/money_movement/stripe/stg__stripe__balance_transaction.sql:17:5)\n(in dbt_packages/kikoff/macros/union_relations.sql:24:31)\n(in dbt_packages/kikoff/macros/union_relations.sql:111:21)\n  --> models/13_staging/money_movement/stripe/stg__stripe__balance_transaction.sql:17:5",
+        "severity": "Error"
+      },
+      {
+        "code": "1501",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL invalid operation: Compilation Error for model.finance_general.stg__stripe__payment_intent from models/13_staging/money_movement/stripe/stg__stripe__payment_intent.sql: union_relations: source 'grant' is missing column(s) [METADATA_TYPEFORM_FORM_ID, METADATA_TYPEFORM_RESPONSE_ID]. Add them, or pass fill_missing_columns=true.\n(in models/13_staging/money_movement/stripe/stg__stripe__payment_intent.sql:17:5)\n(in dbt_packages/kikoff/macros/union_relations.sql:24:31)\n(in dbt_packages/kikoff/macros/union_relations.sql:111:21)\n  --> models/13_staging/money_movement/stripe/stg__stripe__payment_intent.sql:17:5",
+        "severity": "Error"
+      },
+      {
+        "code": "1501",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL invalid operation: Compilation Error for model.finance_general.stg__stripe__charge from models/13_staging/money_movement/stripe/stg__stripe__charge.sql: union_relations: source 'grant' is missing column(s) [METADATA_TYPEFORM_FORM_ID, METADATA_TYPEFORM_RESPONSE_ID]. Add them, or pass fill_missing_columns=true.\n(in models/13_staging/money_movement/stripe/stg__stripe__charge.sql:17:5)\n(in dbt_packages/kikoff/macros/union_relations.sql:24:31)\n(in dbt_packages/kikoff/macros/union_relations.sql:111:21)\n  --> models/13_staging/money_movement/stripe/stg__stripe__charge.sql:17:5",
+        "severity": "Error"
+      }
+    ],
+    "models_count": 330,
+    "project_id": "66541267bb6e97337548f546c2b3f930"
+  }
+}

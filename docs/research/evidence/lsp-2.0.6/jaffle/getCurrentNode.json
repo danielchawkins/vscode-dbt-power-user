@@ -1,0 +1,38 @@
+{
+  "error": null,
+  "node": {
+    "columns": {
+      "amount": {
+        "data_type": "bigint"
+      },
+      "bank_transfer_amount": {
+        "data_type": "bigint"
+      },
+      "coupon_amount": {
+        "data_type": "bigint"
+      },
+      "credit_card_amount": {
+        "data_type": "bigint"
+      },
+      "customer_id": {
+        "data_type": "bigint"
+      },
+      "gift_card_amount": {
+        "data_type": "bigint"
+      },
+      "order_date": {
+        "data_type": "date"
+      },
+      "order_id": {
+        "data_type": "bigint"
+      },
+      "status": {
+        "data_type": "character varying(256)"
+      }
+    },
+    "database": "jaffle_shop",
+    "schema": "main",
+    "static_analysis": "strict",
+    "unique_id": "model.jaffle_shop.orders"
+  }
+}

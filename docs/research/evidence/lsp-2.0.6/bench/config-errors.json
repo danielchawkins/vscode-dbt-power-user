@@ -1,0 +1,46 @@
+{
+  "unknown --target": {
+    "events": [
+      {
+        "kind": "serverRequest",
+        "method": "client/registerCapability",
+        "params": "{\"registrations\":[{\"id\":\"default-dbt-file-system-watcher\",\"method\":\"workspace/didChangeWatchedFiles\",\"registerOptions\":{\"watchers\":[{\"globPattern\":\"**/*\"}]}}]}"
+      },
+      {
+        "kind": "notification",
+        "method": "window/logMessage",
+        "params": "{\"message\":\"Did open: file://<P>/models/orders.sql\",\"type\":3}"
+      },
+      {
+        "kind": "serverRequest",
+        "method": "window/workDoneProgress/create",
+        "params": "{\"token\":\"a8670c6b-c181-42f8-9ffa-739bff15a7a9:dbt/progress/getCurrentNode\"}"
+      }
+    ],
+    "getProjectInfo": {},
+    "stderr": "",
+    "exitCode": null
+  },
+  "profiles.yml env_var unset": {
+    "events": [
+      {
+        "kind": "serverRequest",
+        "method": "client/registerCapability",
+        "params": "{\"registrations\":[{\"id\":\"default-dbt-file-system-watcher\",\"method\":\"workspace/didChangeWatchedFiles\",\"registerOptions\":{\"watchers\":[{\"globPattern\":\"**/*\"}]}}]}"
+      },
+      {
+        "kind": "notification",
+        "method": "window/logMessage",
+        "params": "{\"message\":\"Did open: file://<P>/models/orders.sql\",\"type\":3}"
+      },
+      {
+        "kind": "serverRequest",
+        "method": "window/workDoneProgress/create",
+        "params": "{\"token\":\"623d0e58-d24f-4635-afd0-b36c46bc0bfd:dbt/progress/getCurrentNode\"}"
+      }
+    ],
+    "getProjectInfo": {},
+    "stderr": "",
+    "exitCode": null
+  }
+}
