@@ -2,6 +2,7 @@ import { Disposable, Event, EventEmitter, Uri } from "vscode";
 import { DBTTerminal } from "../dbt_integration";
 import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
 import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
+import { onDidChangeSettings } from "../settings";
 import { Project } from "./project";
 import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 
@@ -31,6 +32,13 @@ export class Projects implements Disposable {
     this._onDidChangeManifest,
     this._onDidRemoveProject,
     this._onDidChangeErrors,
+    onDidChangeSettings(["target", "profilesDir"], (change) => {
+      for (const { project } of this.projectsByRoot.values()) {
+        if (change.affects(project.projectRoot)) {
+          void project.rebuildManifest();
+        }
+      }
+    }),
   ];
 
   private readonly projectsByRoot = new Map<string, ProjectEntry>();

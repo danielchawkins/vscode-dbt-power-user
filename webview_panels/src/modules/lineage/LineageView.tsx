@@ -3,6 +3,7 @@ import { panelLogger } from "@modules/logger";
 import { Drawer, DrawerRef } from "@uicore";
 import {
   Background,
+  ControlButton,
   Controls,
   MiniMap,
   ReactFlow,
@@ -85,6 +86,107 @@ const Legend = () => (
   </div>
 );
 
+/** Below this canvas size the minimap starts hidden; it would cover most of the graph. */
+const MINIMAP_MIN = { width: 720, height: 360 };
+
+/** The canvas size, tracked with a `ResizeObserver`. */
+const useSize = () => {
+  const ref = useRef<HTMLDivElement>(null);
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) {
+      return;
+    }
+    const observer = new ResizeObserver(([entry]) =>
+      setSize({
+        width: entry.contentRect.width,
+        height: entry.contentRect.height,
+      }),
+    );
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
+  return { ref, size };
+};
+
+/** The minimap's visibility: the user's choice once made, otherwise whether the canvas has room for it. */
+const useMinimap = (size: { width: number; height: number }) => {
+  const [choice, setChoice] = useState<boolean>();
+  const roomy =
+    size.width >= MINIMAP_MIN.width && size.height >= MINIMAP_MIN.height;
+  const shown = (choice ?? roomy) && size.width > 0;
+  return { shown, toggle: () => setChoice(!shown) };
+};
+
+/** Minimap dimensions: a fifth of the canvas, kept between 120x80 and 200x150. */
+const minimapStyle = (size: { width: number; height: number }) => ({
+  width: Math.round(Math.min(200, Math.max(120, size.width / 5))),
+  height: Math.round(Math.min(150, Math.max(80, size.height / 5))),
+});
+
+type FlowGraph = ReturnType<typeof toFlow>;
+
+/** The graph canvas with its zoom controls, a minimap that fits the canvas, and the edge legend. */
+const Canvas = ({
+  nodes,
+  edges,
+  select,
+}: FlowGraph & { select: (table: string | undefined) => void }) => {
+  const canvas = useSize();
+  const minimap = useMinimap(canvas.size);
+  const flow = useReactFlow();
+  const { width, height } = canvas.size;
+  // Re-fit after the panel is resized, so a shrunk panel still shows the whole graph.
+  useEffect(() => {
+    if (width > 0 && height > 0) {
+      void flow.fitView({ maxZoom: 1 });
+    }
+  }, [width, height, flow]);
+  const label = minimap.shown ? "Hide minimap" : "Show minimap";
+  return (
+    <div className={styles.canvas} ref={canvas.ref}>
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        nodeTypes={nodeTypes}
+        nodesConnectable={false}
+        nodesDraggable={false}
+        minZoom={0.05}
+        fitView
+        proOptions={{ hideAttribution: true }}
+        onNodeClick={(_event: unknown, node: { id: string }) => select(node.id)}
+        onPaneClick={() => select(undefined)}
+      >
+        <Background />
+        <Controls showInteractive={false}>
+          <ControlButton
+            onClick={minimap.toggle}
+            title={label}
+            aria-label={label}
+            aria-pressed={minimap.shown}
+          >
+            <span className="codicon codicon-map" />
+          </ControlButton>
+        </Controls>
+        {minimap.shown ? (
+          <MiniMap
+            pannable
+            zoomable
+            position="bottom-right"
+            style={minimapStyle(canvas.size)}
+            nodeColor="var(--vscode-editorWidget-border, var(--vscode-disabledForeground))"
+            nodeStrokeColor="var(--vscode-focusBorder)"
+            nodeStrokeWidth={2}
+            nodeBorderRadius={4}
+          />
+        ) : null}
+      </ReactFlow>
+      <Legend />
+    </div>
+  );
+};
+
 const Graph = (): JSX.Element => {
   const drawerRef = useRef<DrawerRef>(null);
   const [detailsTable, setDetailsTable] = useState<string>();
@@ -132,30 +234,12 @@ const Graph = (): JSX.Element => {
   const details = detailsTable ? graph.known[detailsTable] : undefined;
 
   return (
-    <div className={styles.view}>
-      <MissingLineageMessage missingLineageMessage={notice} />
-      <Toolbar settings={settings} change={change} reset={reset} />
-      <div className={styles.canvas}>
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={nodeTypes}
-          nodesConnectable={false}
-          nodesDraggable={false}
-          minZoom={0.05}
-          fitView
-          proOptions={{ hideAttribution: true }}
-          onNodeClick={(_event: unknown, node: { id: string }) =>
-            select(node.id)
-          }
-          onPaneClick={() => select(undefined)}
-        >
-          <Background />
-          <Controls showInteractive={false} />
-          <MiniMap pannable zoomable />
-        </ReactFlow>
+    <div className={`${styles.view} lineage-view`}>
+      <div className={styles.topBar}>
+        <MissingLineageMessage missingLineageMessage={notice} />
+        <Toolbar settings={settings} change={change} reset={reset} />
       </div>
-      <Legend />
+      <Canvas nodes={nodes} edges={edges} select={select} />
       <Drawer ref={drawerRef} title="Details">
         {details ? <TableDetails table={details} /> : null}
       </Drawer>

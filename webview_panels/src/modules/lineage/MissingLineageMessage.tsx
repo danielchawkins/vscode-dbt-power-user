@@ -1,6 +1,6 @@
-import { executeRequestInAsync } from "./requests";
-import { Alert, Button } from "@uicore";
 import type { PanelNotice } from "@fusion-power-user/webview-contract";
+import { Alert, Button } from "@uicore";
+import { executeRequestInAsync } from "./requests";
 
 const MissingLineageMessageComponent = ({
   missingLineageMessage,
