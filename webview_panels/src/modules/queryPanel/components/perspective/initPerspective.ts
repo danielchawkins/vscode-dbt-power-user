@@ -1,29 +1,17 @@
-import perspective from "@finos/perspective";
-import perspectiveViewer from "@finos/perspective-viewer";
 import { panelLogger } from "@modules/logger";
+import perspective from "@perspective-dev/client";
+import serverWasm from "@perspective-dev/server/dist/wasm/perspective-server.wasm?url";
+import perspectiveViewer from "@perspective-dev/viewer";
+import viewerWasm from "@perspective-dev/viewer/dist/wasm/perspective-viewer.wasm?url";
 
 /**
- * Perspective 3 does not load its WebAssembly on import: the engine and the viewer each need their `.wasm`
- * before first use. `new URL(<relative path>, import.meta.url)` makes Vite emit both files and, with
- * `base: "./"`, resolve them next to the loaded bundle, which is the only origin a webview can fetch from.
+ * Perspective does not load its WebAssembly on import: the engine and the viewer each need their `.wasm` before
+ * first use. The `?url` imports make Vite emit both files and, with `base: "./"`, resolve them next to the loaded
+ * bundle, which is the only origin a webview can fetch from. Only the wasm32 engine is registered.
  */
-perspective.init_server(
-  fetch(
-    new URL(
-      "../../../../../node_modules/@finos/perspective/dist/wasm/perspective-server.wasm",
-      import.meta.url,
-    ),
-  ),
-);
+perspective.init_server(fetch(serverWasm));
 perspectiveViewer
-  .init_client(
-    fetch(
-      new URL(
-        "../../../../../node_modules/@finos/perspective-viewer/dist/wasm/perspective-viewer.wasm",
-        import.meta.url,
-      ),
-    ),
-  )
+  .init_client(fetch(viewerWasm))
   .catch((error: unknown) =>
     panelLogger.error("perspective viewer wasm failed to load", error),
   );

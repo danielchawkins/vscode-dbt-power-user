@@ -7,8 +7,8 @@
 .altimatePerspectiveViewer[theme="Vintage"] {
   font-family: var(--vscode-font-family) !important;
   width: auto;
-  --plugin--background: var(--vscode-editor-background);
-  --icon--color: var(--vscode-foreground) !important;
+  --psp--background-color: var(--vscode-editor-background);
+  --psp--color: var(--vscode-foreground) !important;
   color: var(--vscode-foreground) !important;
 }
 

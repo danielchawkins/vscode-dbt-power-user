@@ -66,6 +66,16 @@ The same measurement before and after R7 removed Bootstrap, reactstrap, `theme.s
 
 The shared stylesheet is now uiCore's `base.css` and `utilities.css` plus `main.css`. Query results' remaining CSS is mostly Perspective's theme stylesheets, which the Perspective migration revisits; lineage's is the component's own stylesheet and the scoped Tailwind output, both removed in R8. The packaged VSIX fell from 8,875,065 to 8,790,026 bytes; the lineage component chunk dominates both.
 
+## Webview payload — Perspective migration
+
+The query results entry before and after `@finos/perspective*` 3.8 with d3fc became `@perspective-dev/*` 5.5.1 with `viewer-charts`, measured October 2026 with `scripts/benchmark/measure-payload.sh`: before at change `yqsqtmwr`, after at `pzvwowxm`. Bytes are raw / gzip; the other entries do not import Perspective.
+
+| Entry          | JS before         | JS after          | CSS before        | CSS after        |
+| -------------- | ----------------- | ----------------- | ----------------- | ---------------- |
+| `queryResults` | 865,374 / 276,408 | 925,686 / 288,799 | 640,893 / 143,272 | 516,342 / 99,970 |
+
+The WebAssembly is fetched when the panel opens and is not in the eager bytes: the engine grew from 2,277,909 to 2,459,148 bytes and the viewer from 920,705 to 1,552,105, 4,011,253 in total. The memory64 engine is not emitted. The packaged VSIX is 9,573,733 bytes.
+
 ## VS Code runtime — ten fresh processes
 
 `just benchmark-runtime-vscode fusion-power-user-0.1.0-alpha.0.vsix` installs the packaged VSIX into a new profile and extension directory for each sample, opens all three retained webviews in VS Code 1.128.0, and records:
