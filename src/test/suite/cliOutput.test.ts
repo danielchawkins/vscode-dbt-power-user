@@ -1,8 +1,64 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { compiledOutput, parseLogEntries, showPreview } from "../../core/cli";
+import {
+  compiledOutput,
+  firstLogLine,
+  isConfigError,
+  logLocation,
+  parseLogEntries,
+  showPreview,
+  textLogErrors,
+} from "../../core/cli";
 import { esmDirname } from "../esmDirname";
+
+describe("Fusion error messages", () => {
+  it("reads the first location, ignoring a location without a file", () => {
+    expect(logLocation("x\n(in :1:1)")).toBeUndefined();
+    expect(logLocation("x\n  --> models/a.sql:3:15")).toEqual({
+      file: "models/a.sql",
+      line: 3,
+      column: 15,
+    });
+    expect(logLocation("x\n(in profiles.yml:2:4)\n  --> y.sql:1:1")).toEqual({
+      file: "profiles.yml",
+      line: 2,
+      column: 4,
+    });
+  });
+
+  it("treats InvalidConfig and project-file errors as configuration errors", () => {
+    expect(isConfigError("[error] [InvalidConfig (dbt1005)]: env")).toBe(true);
+    expect(
+      isConfigError("[SerializationError]: x\n  --> dbt_project.yml:6:1"),
+    ).toBe(true);
+    expect(
+      isConfigError("[DependencyNotFound]: x\n  --> models/a.sql:1:1"),
+    ).toBe(false);
+    expect(isConfigError("[JinjaError]: x")).toBe(false);
+  });
+
+  it("drops the level prefix and keeps the first line", () => {
+    expect(firstLogLine("\n[error] [InvalidConfig]: a\n(in :1:1)")).toBe(
+      "[InvalidConfig]: a",
+    );
+  });
+
+  it("splits Fusion's text output into error blocks", () => {
+    const output = [
+      "=================== Errors and Warnings ====================",
+      "[error] [InvalidConfig (dbt1005)]: env missing",
+      "(in :1:1)",
+      "",
+      "[error] second",
+      "==================== Execution Summary =====================",
+    ].join("\n");
+    expect(textLogErrors(output)).toEqual([
+      "[error] [InvalidConfig (dbt1005)]: env missing\n(in :1:1)",
+      "[error] second",
+    ]);
+  });
+});
 
 /** stderr of a `compile` with an SQL error, Fusion 2.0.6, text log format. */
 const TEXT_STDERR = readFileSync(

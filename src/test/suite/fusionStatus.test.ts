@@ -163,6 +163,7 @@ describe("FusionStatus", () => {
   let poolChanged: EventEmitter<void>;
   let optIns: ProjectOptIns | undefined;
   let optInsChanged: EventEmitter<void>;
+  let projectError: string | undefined;
 
   beforeEach(() => {
     projects = [];
@@ -170,6 +171,7 @@ describe("FusionStatus", () => {
     launches = new Map();
     poolChanged = new EventEmitter<void>();
     optIns = undefined;
+    projectError = undefined;
     optInsChanged = new EventEmitter<void>();
     vi.mocked(languages.createLanguageStatusItem).mockClear();
     vi.mocked(commands.registerCommand).mockClear();
@@ -192,6 +194,7 @@ describe("FusionStatus", () => {
       clientPool,
       () => optIns,
       optInsChanged.event,
+      () => projectError,
     );
   }
 
@@ -223,6 +226,28 @@ describe("FusionStatus", () => {
     projects.push(project);
     clients.set(project.root.fsPath, client);
   }
+
+  it("keeps the text short and carries a running project's configuration error in the detail", () => {
+    const general = makeProject("general", "/workspace/general");
+    add(general, new FakeClient(general));
+    const status = createStatus();
+    status.initialize();
+    const clientItem = item("client", general)!;
+    expect(clientItem.text).toBe("$(check) dbt Fusion");
+
+    const message = `[InvalidConfig (dbt1005)]: ${"x".repeat(400)}`;
+    projectError = message;
+    optInsChanged.fire();
+    expect(clientItem.text).toBe("$(error) dbt Fusion");
+    expect(clientItem.severity).toBe(LanguageStatusSeverity.Error);
+    expect(clientItem.detail).toBe(`general: ${message}`);
+
+    projectError = undefined;
+    optInsChanged.fire();
+    expect(clientItem.text).toBe("$(check) dbt Fusion");
+    expect(clientItem.detail).toBe("general");
+    status.dispose();
+  });
 
   it("creates no items for a project without a client", () => {
     projects.push(makeProject("general", "/workspace/general"));

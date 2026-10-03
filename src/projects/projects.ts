@@ -23,10 +23,14 @@ export class Projects implements Disposable {
   private _onDidRemoveProject = new EventEmitter<Uri>();
   /** Fires with a project's root after it is dropped. */
   readonly onDidRemoveProject: Event<Uri> = this._onDidRemoveProject.event;
+  private _onDidChangeErrors = new EventEmitter<Project>();
+  /** Fires when a project's current configuration error changes. */
+  readonly onDidChangeErrors: Event<Project> = this._onDidChangeErrors.event;
   private disposables: Disposable[] = [
     this._onDidInitialize,
     this._onDidChangeManifest,
     this._onDidRemoveProject,
+    this._onDidChangeErrors,
   ];
 
   private readonly projectsByRoot = new Map<string, ProjectEntry>();
@@ -130,6 +134,9 @@ export class Projects implements Disposable {
         const metadataSource = new ManifestMetadataSource(declared, project);
         const subscriptions: Disposable[] = [
           project.onDidChangeManifest((p) => this._onDidChangeManifest.fire(p)),
+          project.errors?.onDidChange(() =>
+            this._onDidChangeErrors.fire(project),
+          ) ?? Disposable.from(),
         ];
         const entry = { project, metadataSource, subscriptions };
         this.projectsByRoot.set(rootPath, entry);

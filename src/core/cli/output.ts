@@ -36,7 +36,78 @@ function dataWith(line: unknown, key: string): JsonRecord | undefined {
   return data && hasOwn(data, key) ? data : undefined;
 }
 
-/** Errors (`error`, `fatal`), then warnings (`warn`), from `--log-format json` stderr; other lines are skipped. */
+/** A file position Fusion names in an error message, relative to the project root, 1-based. */
+export interface LogLocation {
+  file: string;
+  line: number;
+  column: number;
+}
+
+const LOCATION = /(?:-->\s+|\(in\s+)([^\s:()]+):(\d+):(\d+)/;
+
+/** The first `--> file:line:col` or `(in file:line:col)` in `message`; `(in :1:1)` names no file. */
+export function logLocation(message: string): LogLocation | undefined {
+  const match = LOCATION.exec(message);
+  return match
+    ? { file: match[1], line: Number(match[2]), column: Number(match[3]) }
+    : undefined;
+}
+
+/** Files whose errors stop the whole project from loading, as opposed to one node. */
+const PROJECT_FILES = new Set([
+  "dbt_project.yml",
+  "profiles.yml",
+  "packages.yml",
+  "dependencies.yml",
+  "selectors.yml",
+]);
+
+/**
+ * Whether `message` is a failure of the project's configuration rather than of one node: Fusion's `InvalidConfig`
+ * code, or any error located in a project-level file.
+ */
+export function isConfigError(message: string): boolean {
+  if (message.includes("[InvalidConfig ")) {
+    return true;
+  }
+  const location = logLocation(message);
+  return (
+    location !== undefined &&
+    PROJECT_FILES.has(location.file.split("/").pop() ?? "")
+  );
+}
+
+/** Each `[error] …` block of Fusion's text output, with the indented lines that follow it. */
+export function textLogErrors(output: string): string[] {
+  const blocks: string[] = [];
+  let current: string[] | undefined;
+  for (const raw of output.split(/\r?\n/)) {
+    const line = raw.trimEnd();
+    if (/^\[error\]/.test(line)) {
+      current = [line];
+      blocks.push("");
+    } else if (current && line && !/^[[=]/.test(line)) {
+      current.push(line);
+    } else {
+      current = undefined;
+      continue;
+    }
+    blocks[blocks.length - 1] = current.join("\n");
+  }
+  return blocks;
+}
+
+/** The first non-empty line of `message` without Fusion's `[error] ` or `[warning] ` prefix. */
+export function firstLogLine(message: string): string {
+  const line =
+    message
+      .split(/\r?\n/)
+      .map((part) => part.trim())
+      .find((part) => part.length > 0) ?? "";
+  return line.replace(/^\[(?:error|warning|warn)\]\s*/, "");
+}
+
+/** Errors (`error`, `fatal`), then warnings (`warn`), from `--log-format json` output; other lines are skipped. */
 export function parseLogEntries(stderr: string): LogEntry[] {
   const errors: LogEntry[] = [];
   const warnings: LogEntry[] = [];

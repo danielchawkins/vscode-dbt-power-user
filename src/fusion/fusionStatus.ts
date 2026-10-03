@@ -53,6 +53,10 @@ export class FusionStatus implements Disposable {
       project: DeclaredProject,
     ) => ProjectOptIns | undefined = () => undefined,
     onDidChangeOptIns?: Event<unknown>,
+    /** The project's current configuration error, in full; fires `onDidChangeOptIns` when it changes. */
+    private readonly projectError: (
+      project: DeclaredProject,
+    ) => string | undefined = () => undefined,
   ) {
     if (onDidChangeOptIns) {
       this.disposables.push(onDidChangeOptIns(() => this.renderAll()));
@@ -159,15 +163,19 @@ export class FusionStatus implements Disposable {
 
   private render(status: ProjectStatus): void {
     const { project, client, clientItem, staticItem } = status;
-    clientItem.text = clientText(client.state);
-    clientItem.severity = clientSeverity(client.state);
-    clientItem.busy =
-      client.state === "starting" || client.state === "restarting";
     const failure =
       client.state === "failed"
         ? failureSummary(client.failureReason)
         : undefined;
-    clientItem.detail = failure ? `${project.name}: ${failure}` : project.name;
+    const error = failure ? undefined : this.projectError(project);
+    clientItem.text = error ? clientText("failed") : clientText(client.state);
+    clientItem.severity = error
+      ? LanguageStatusSeverity.Error
+      : clientSeverity(client.state);
+    clientItem.busy =
+      client.state === "starting" || client.state === "restarting";
+    const problem = failure ?? error;
+    clientItem.detail = problem ? `${project.name}: ${problem}` : project.name;
     clientItem.command = {
       title: "Show output",
       command: "fusionPowerUser.showFusionOutput",

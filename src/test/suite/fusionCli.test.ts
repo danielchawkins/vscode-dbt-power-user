@@ -373,31 +373,69 @@ describe("FusionCli project state and commands", () => {
     expect(cli.getTargetPath()).toBe(path.join(root, "out"));
   });
 
-  it("turns parse stderr into errors then warnings on the project file", async () => {
+  it("turns parse config errors then warnings into diagnostics on the project file", async () => {
     const { cli } = cliWith({
-      stderr: [
-        log("warn", "w1"),
-        log("error", "e1"),
+      stdout: [
+        log("warn", "[InvalidConfig (dbt1005)]: w1"),
+        log("error", "[error] [InvalidConfig (dbt1005)]: e1"),
         "not json",
         log("info", "i"),
       ].join("\n"),
+      exitCode: 1,
     });
     await cli.rebuildManifest();
     const diagnostics = cli.getDiagnostics().rebuildManifestDiagnostics;
     expect(diagnostics.map((d) => [d.severity, d.message, d.category])).toEqual(
       [
-        ["error", "e1", "manifest-rebuild"],
-        ["warning", "w1", "manifest-rebuild"],
+        ["error", "[error] [InvalidConfig (dbt1005)]: e1", "manifest-rebuild"],
+        ["warning", "[InvalidConfig (dbt1005)]: w1", "manifest-rebuild"],
       ],
     );
     expect(diagnostics[0].filePath).toBe(path.join(root, "dbt_project.yml"));
+    expect(diagnostics[0].range).toEqual({
+      startLine: 0,
+      startColumn: 0,
+      endLine: 0,
+      endColumn: 999,
+    });
+  });
+
+  it("places a config error at the file and line Fusion names, and leaves node errors to the server", async () => {
+    const { cli } = cliWith({
+      stdout: [
+        log(
+          "error",
+          "[error] [SerializationError (dbt1013)]: YAML error\n  --> dbt_project.yml:6:3",
+        ),
+        log(
+          "error",
+          "[error] [DependencyNotFound (dbt1048)]: Ref 'x' not found\n  --> models/a.sql:1:15",
+        ),
+      ].join("\n"),
+      exitCode: 1,
+    });
+    await cli.rebuildManifest();
+    const [diagnostic, ...rest] =
+      cli.getDiagnostics().rebuildManifestDiagnostics;
+    expect(rest).toEqual([]);
+    expect(diagnostic.filePath).toBe(path.join(root, "dbt_project.yml"));
+    expect(diagnostic.range).toMatchObject({ startLine: 5, startColumn: 2 });
+  });
+
+  it("reports a failed parse that logged no error as one diagnostic", async () => {
+    const { cli } = cliWith({ stderr: "segfault", exitCode: 101 });
+    await cli.rebuildManifest();
+    expect(
+      cli.getDiagnostics().rebuildManifestDiagnostics.map((d) => d.message),
+    ).toEqual(["segfault"]);
   });
 
   it("clears parse diagnostics after a clean parse", async () => {
-    let stderr = log("error", "e1");
-    const { cli } = cliWith(() => ({ stderr }));
+    let stdout = log("error", "[InvalidConfig (dbt1005)]: e1");
+    const { cli } = cliWith(() => ({ stdout }));
     await cli.rebuildManifest();
-    stderr = "";
+    expect(cli.getDiagnostics().rebuildManifestDiagnostics).toHaveLength(1);
+    stdout = "";
     await cli.rebuildManifest();
     expect(cli.getDiagnostics().rebuildManifestDiagnostics).toEqual([]);
   });

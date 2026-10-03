@@ -84,6 +84,8 @@ export class DbtLineageService {
     private queryManifestService: QueryManifestService,
     /** The Fusion Client of the Current Project. */
     private currentClient: () => FusionClient | undefined = () => undefined,
+    /** The Current Project's configuration error, which explains a lineage request that found no nodes. */
+    private currentError: () => string | undefined = () => undefined,
   ) {}
 
   /**
@@ -150,14 +152,7 @@ export class DbtLineageService {
       };
     }
     if (failures.length === 0 && results.every((r) => !r.nodes?.length)) {
-      const mode = client.staticAnalysis;
-      return {
-        kind: "noLineage",
-        reason:
-          mode === "baseline" || mode === "off"
-            ? { kind: "staticAnalysis", mode }
-            : { kind: "empty" },
-      };
+      return { kind: "noLineage", reason: this.whyEmpty(client) };
     }
     return {
       kind: "lineage",
@@ -170,6 +165,18 @@ export class DbtLineageService {
       ),
       ...(failures.length > 0 ? { failures } : {}),
     };
+  }
+
+  /** Why every target answered with no nodes: a configuration error, a static-analysis mode, or no lineage. */
+  private whyEmpty(client: FusionClient): NoLineage {
+    const error = this.currentError();
+    if (error) {
+      return { kind: "failed", message: error };
+    }
+    const mode = client.staticAnalysis;
+    return mode === "baseline" || mode === "off"
+      ? { kind: "staticAnalysis", mode }
+      : { kind: "empty" };
   }
 
   /**

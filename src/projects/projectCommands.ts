@@ -26,6 +26,8 @@ export interface ProjectCommandDeps {
     launched?: readonly string[],
   ): Promise<T>;
   notifyFailed(statusMessage: string, error: string): void;
+  /** Receives every queued command's result once it has run. */
+  onCommandOutput?(result: CommandProcessResult | undefined): void;
   terminal: DBTTerminal;
 }
 
@@ -159,6 +161,7 @@ export function enqueueCommand(
         () => terminal.run(command, signal),
         command.args,
       );
+      deps.onCommandOutput?.(result);
       // dbt CLI resolves normally even on failure (CommandProcessExecution.complete()
       // never rejects for non-zero exit). Detect pre-execution failures (compilation
       // errors, config errors) by checking stdout.

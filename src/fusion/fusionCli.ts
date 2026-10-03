@@ -5,6 +5,9 @@ import {
   compiledOutput,
   DEFERRABLE_KINDS,
   deferState,
+  firstLogLine,
+  isConfigError,
+  logLocation,
   parseLogEntries,
   PathKind,
   ShowPreview,
@@ -110,7 +113,7 @@ function queuedStatus(cli: QueuedCliCommand): string {
 const REBUILD_RANGE = {
   startLine: 0,
   startColumn: 0,
-  endLine: 999,
+  endLine: 0,
   endColumn: 999,
 };
 
@@ -251,38 +254,42 @@ export class FusionCli {
   // -------- parse --------
 
   /**
-   * Parses the project, aborting a parse still in flight. The `error`/`fatal` then `warn` stderr records become
-   * diagnostics on the project file; a failure to run becomes one `command-execution` diagnostic.
+   * Parses the project, aborting a parse still in flight. The `error`/`fatal` then `warn` log records that concern
+   * the project as a whole (see `isConfigError`) become diagnostics, at the file Fusion names or on line 1 of the
+   * project file; node errors are left to the language server. A non-zero exit with no such record, or a failure to
+   * run, becomes one diagnostic on the project file.
    */
   async rebuildManifest(): Promise<void> {
     this.rebuildAbort?.abort();
     const controller = new AbortController();
     this.rebuildAbort = controller;
-    const filePath = path.join(this.snapshot().root, DBT_PROJECT_FILE);
+    const root = this.snapshot().root;
+    const filePath = path.join(root, DBT_PROJECT_FILE);
     try {
-      const { stderr } = await this.run(
+      const { stdout, stderr, exitCode } = await this.run(
         { kind: "parse" },
         { signal: controller.signal },
       );
-      if (stderr) {
-        this.terminal.error(
-          "dbtFusionParseProjectUserError",
-          "Could not parse project user error",
-          new Error(stderr),
-          true,
-          { error: stderr },
-        );
+      if (controller.signal.aborted) {
+        return;
       }
-      this.rebuildManifestDiagnostics = parseLogEntries(stderr).map(
-        ({ level, message }) => ({
-          filePath,
-          message,
-          severity: level,
-          range: REBUILD_RANGE,
-          source: "dbt-fusion",
-          category: "manifest-rebuild",
-        }),
-      );
+      // With `--log-format json`, Fusion writes its log records, errors included, to stdout.
+      const all = parseLogEntries(`${stdout}\n${stderr}`);
+      const entries = all.filter((entry) => isConfigError(entry.message));
+      if (exitCode && !all.some((entry) => entry.level === "error")) {
+        entries.unshift({
+          level: "error",
+          message:
+            firstLogLine(stderr) || `dbt parse exited with code ${exitCode}`,
+        });
+      }
+      this.rebuildManifestDiagnostics = entries.map(({ level, message }) => ({
+        ...locate(root, filePath, message),
+        message,
+        severity: level,
+        source: "dbt-fusion",
+        category: "manifest-rebuild",
+      }));
     } catch (error) {
       this.terminal.error(
         "dbtFusionCannotParseProjectCommandExecuteError",
@@ -406,6 +413,28 @@ export class FusionCli {
       `Defer state path ${state.manifestPath} is neither a directory nor a manifest.json file; running without --state`,
     );
   }
+}
+
+/** The file and line Fusion names in `message`, resolved under `root`; line 1 of `fallback` when it names none. */
+function locate(
+  root: string,
+  fallback: string,
+  message: string,
+): Pick<DBTDiagnosticData, "filePath" | "range"> {
+  const location = logLocation(message);
+  if (!location) {
+    return { filePath: fallback, range: REBUILD_RANGE };
+  }
+  const line = Math.max(location.line - 1, 0);
+  return {
+    filePath: path.resolve(root, location.file),
+    range: {
+      startLine: line,
+      startColumn: Math.max(location.column - 1, 0),
+      endLine: line,
+      endColumn: 999,
+    },
+  };
 }
 
 /** Throws the `error`/`fatal` messages of JSON stderr records; lines that are not JSON are ignored. */

@@ -291,7 +291,7 @@ describe("Fusion CLI executable wiring", () => {
     fs.rmSync(root, { recursive: true, force: true });
   });
 
-  it("keeps a healthy sibling initializing when one project's resolver fails, without notifying the user", async () => {
+  it("keeps a healthy sibling initializing when one project's resolver fails, notifying only for the failed one", async () => {
     const failedRoot = fs.mkdtempSync(
       path.join(os.tmpdir(), "fusion-cli-sibling-failed-"),
     );
@@ -326,7 +326,10 @@ describe("Fusion CLI executable wiring", () => {
     expect(() => failedIntegration.getFusionCli()).toThrow(/not initialized/);
     expect(healthyIntegration.getFusionCli()).toBeDefined();
     expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
-    expect(window.showErrorMessage).not.toHaveBeenCalled();
+    expect(window.showErrorMessage).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(window.showErrorMessage).mock.calls[0][0]).toContain(
+      "/missing/dbt",
+    );
     expect(window.showWarningMessage).not.toHaveBeenCalled();
     expect(window.showInformationMessage).not.toHaveBeenCalled();
 

@@ -68,6 +68,7 @@ import {
   selection,
 } from "./projectCommands";
 import { ProjectDiagnostics } from "./projectDiagnostics";
+import { ProjectErrors } from "./projectErrors";
 import {
   isWithinRoot,
   packageNameOf,
@@ -117,6 +118,8 @@ export class Project implements Disposable, ManifestProject {
   private readonly manifestRebuild: ManifestRebuild;
   private readonly trigger: ManifestTrigger;
   private readonly diagnostics: ProjectDiagnostics;
+  /** This project's configuration failures, as notified and logged. */
+  readonly errors: ProjectErrors;
   private readonly projectCount: () => number;
   private warnedTasksUnavailable = false;
   private disposed = false;
@@ -164,6 +167,12 @@ export class Project implements Disposable, ManifestProject {
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
     );
+    this.errors = new ProjectErrors(
+      this.projectRoot,
+      () => this.getProjectName(),
+      () => readProjectSnapshot(this.projectRoot),
+      this.terminal,
+    );
     this.commandDeps = {
       commandQueue: this.commandQueue,
       cli: () => this.getFusionCli(),
@@ -171,6 +180,7 @@ export class Project implements Disposable, ManifestProject {
       withRunResults: (run, launched) => this.withRunResults(run, launched),
       notifyFailed: (statusMessage, error) =>
         this.runHistoryService.notifyCommandFailed(statusMessage, error),
+      onCommandOutput: (result) => this.errors.reportCommand(result),
       terminal: this.terminal,
     };
     this.runResultsReader = new RunResultsReader(
@@ -208,6 +218,7 @@ export class Project implements Disposable, ManifestProject {
     this.subscribeLifecycle();
     this.disposables.push(
       this.diagnostics,
+      this.errors,
       this.commandQueue,
       this.commandQueue.onFailed(({ statusMessage, error }) =>
         this.commandDeps.notifyFailed(statusMessage, String(error)),
@@ -226,11 +237,13 @@ export class Project implements Disposable, ManifestProject {
 
   private subscribeLifecycle(): void {
     this.lifecycle.onDidCommit(() => {
+      this.updateDiagnosticsInProblemsPanel();
       this._onProjectConfigChanged.fire(new ProjectConfigChangedEvent(this));
       this.trigger.start();
     });
     this.lifecycle.onDidFailResolution((diagnostic) => {
       this.diagnostics.replaceExecutable(diagnostic);
+      this.errors.report("executable", diagnostic ? [diagnostic.message] : []);
       this.updateDiagnosticsInProblemsPanel();
     });
   }
@@ -317,13 +330,13 @@ export class Project implements Disposable, ManifestProject {
     return this.diagnostics.all();
   }
 
-  /** Republishes the rebuild diagnostics the active CLI reports. */
+  /** Republishes the rebuild diagnostics the active CLI reports, and reports its configuration errors. */
   updateDiagnosticsInProblemsPanel(): void {
-    this.diagnostics.setKind(
-      "rebuild-manifest",
+    const rebuild =
       this.currentIntegration?.getDiagnostics().rebuildManifestDiagnostics ??
-        [],
-    );
+      [];
+    this.diagnostics.setKind("rebuild-manifest", rebuild);
+    this.errors.reportParse(rebuild);
   }
 
   async initialize(): Promise<void> {
