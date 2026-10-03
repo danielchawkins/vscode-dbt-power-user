@@ -31,6 +31,16 @@ export function readHarnessSwitch(name: HarnessSwitch): string | undefined {
   return process.env[HARNESS_SWITCHES[name]];
 }
 
+/** True when the smoke harness (on VS Code or Cursor) or the integration suites run, which call test-only commands. */
+export function testCommandsEnabled(): boolean {
+  const host = readHarnessSwitch("smokeHost");
+  return (
+    host === "vscode" ||
+    host === "cursor" ||
+    readHarnessSwitch("integrationCommands") === "1"
+  );
+}
+
 /** Reads a user-named variable, as referenced by `${env:NAME}` in a setting. */
 export function readEnvironmentVariable(name: string): string | undefined {
   return process.env[name];

@@ -1,6 +1,6 @@
 import { CloseIcon } from "@assets/icons";
 import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
-import { resetData } from "@modules/queryPanel/context/queryPanelSlice";
+import { resetData } from "@modules/queryPanel/context/queryPanelReducer";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Button } from "@uicore";
 

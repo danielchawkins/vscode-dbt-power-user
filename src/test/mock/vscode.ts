@@ -80,10 +80,28 @@ export class Range {
 
 export class WorkspaceEdit {
   readonly replacements: { uri: unknown; range: Range; newText: string }[] = [];
+  readonly createdFiles: {
+    uri: unknown;
+    options?: { contents?: Uint8Array };
+  }[] = [];
 
   replace(uri: unknown, range: Range, newText: string): void {
     this.replacements.push({ uri, range, newText });
   }
+
+  createFile(uri: unknown, options?: { contents?: Uint8Array }): void {
+    this.createdFiles.push({ uri, options });
+  }
+}
+
+/** A one-line `TextDocument` holding `text`, for `workspace.openTextDocument` to resolve. */
+export function createMockTextDocument(text: string, isDirty = false) {
+  return {
+    isDirty,
+    getText: vi.fn(() => text),
+    positionAt: (offset: number) => new Position(0, offset),
+    save: vi.fn(() => Promise.resolve(true)),
+  };
 }
 
 export class Location {
@@ -310,6 +328,8 @@ export const window = {
   showWarningMessage: vi.fn().mockReturnValue(Promise.resolve()),
   showErrorMessage: vi.fn().mockReturnValue(Promise.resolve()),
   showQuickPick: vi.fn().mockReturnValue(Promise.resolve(undefined)),
+  showSaveDialog: vi.fn(() => Promise.resolve(undefined)),
+  showOpenDialog: vi.fn(() => Promise.resolve(undefined)),
   onDidChangeActiveTextEditor: vi.fn().mockReturnValue({ dispose: vi.fn() }),
   onDidChangeActiveColorTheme: vi.fn().mockReturnValue({ dispose: vi.fn() }),
   onDidChangeTextEditorSelection: vi.fn().mockReturnValue({ dispose: vi.fn() }),

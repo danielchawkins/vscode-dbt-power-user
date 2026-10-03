@@ -75,6 +75,12 @@ export interface UnitTest {
   path?: string;
 }
 
+/** The editor's unsaved documentation and tests of one model. */
+export interface DocumentationDraft {
+  docs: Documentation;
+  tests?: ModelTest[];
+}
+
 /** Documentation-editor messages from the extension host to the panel. */
 export type HostMessage =
   | Response
@@ -88,6 +94,10 @@ export type HostMessage =
       unitTests?: UnitTest[];
       project?: string;
       docBlocks: { name: string; path: string }[];
+      /** The manifest publication the documentation was read from; the panel's saved view state names it. */
+      publication?: string;
+      /** The unsaved draft the host holds for this model; the editor shows it over `docs` and `tests`. */
+      draft?: DocumentationDraft;
     }
   | {
       command: "renderColumnsFromMetadataFetch";
@@ -103,6 +113,8 @@ export type PanelMessage =
   | OpenProblemsTab
   | ShowNotification
   | { command: "getCurrentModelDocumentation" }
+  /** The editor's unsaved draft of the model at file path `model`, kept in host memory; absent clears it. */
+  | { command: "saveDraft"; model: string; draft?: DocumentationDraft }
   | {
       command: "getTestCode";
       test: Record<string, unknown>;
@@ -184,16 +196,25 @@ const isUnitTest = shape<UnitTest>({
   path: optional(isString),
 });
 
+const isDocumentation = shape<Documentation>(documentationFields);
+
+const isDraft = shape<DocumentationDraft>({
+  docs: isDocumentation,
+  tests: optional(arrayOf(isModelTest)),
+});
+
 const hostFields: CommandFields<HostMessage> = {
   response: responseFields,
   renderError: {},
   renderDocumentation: {
-    docs: optional(shape<Documentation>(documentationFields)),
+    docs: optional(isDocumentation),
     missingDocumentationMessage: optional(isPanelNotice),
     tests: optional(arrayOf(isModelTest)),
     unitTests: optional(arrayOf(isUnitTest)),
     project: optional(isString),
     docBlocks: arrayOf(shape({ name: isString, path: isString })),
+    publication: optional(isString),
+    draft: optional(isDraft),
   },
   renderColumnsFromMetadataFetch: {
     columns: arrayOf(shape({ name: isString, type: optional(isString) })),
@@ -206,6 +227,7 @@ const panelFields: CommandFields<PanelMessage> = {
   showInformationMessage: showNotificationFields,
   showWarningMessage: showNotificationFields,
   getCurrentModelDocumentation: {},
+  saveDraft: { model: isString, draft: optional(isDraft) },
   getTestCode: { test: isRecord, model: isString, syncRequestId },
   getUnitTestCode: {
     path: optional(isString),

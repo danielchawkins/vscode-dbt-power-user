@@ -1,6 +1,6 @@
 import { SettingsIcon } from "@assets/icons";
 import { AppContext } from "@modules/app/AppProvider";
-import { initialState } from "@modules/app/appSlice";
+import { initialState } from "@modules/app/appReducer";
 import { Themes } from "@modules/app/types";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ReactNode, useEffect } from "react";

@@ -270,6 +270,7 @@ const documentationHost: Fixture[] = [
       unitTests: [],
       project: "jaffle",
       docBlocks: [{ name: "d", path: "/d.md" }],
+      draft: { docs, tests: [] },
     },
     required: [
       "docBlocks",
@@ -280,6 +281,8 @@ const documentationHost: Fixture[] = [
       "docs.filePath",
       "missingDocumentationMessage.message",
       "missingDocumentationMessage.type",
+      "draft.docs",
+      "draft.docs.name",
     ],
     literals: {
       "missingDocumentationMessage.type": ["warning", "error"],
@@ -320,6 +323,10 @@ const documentationPanel: Fixture[] = [
     required: ["infoMessage"],
   },
   { message: { command: "getCurrentModelDocumentation" }, required: [] },
+  {
+    message: { command: "saveDraft", model: "/m.sql", draft: { docs } },
+    required: ["model", "draft.docs", "draft.docs.filePath"],
+  },
   {
     message: {
       command: "getTestCode",

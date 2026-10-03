@@ -1,5 +1,6 @@
+import { readViewState, writeViewState } from "@modules/app/viewState";
 import { Stack } from "@uicore";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryPanelDispatch } from "./QueryPanelProvider";
 import QueryPanelContent from "./components/QueryPanelContents/QueryPanelContent";
 import QueryPanelTitle from "./components/QueryPanelContents/QueryPanelTitle";
@@ -8,16 +9,32 @@ import ClearResultsButton from "./components/clearResultsButton/ClearResultsButt
 import ShowInTabButton from "./components/openInTabButton/OpenInTabButton";
 import QueryLimit from "./components/queryLimit/QueryLimit";
 import RunAdhocQueryButton from "./components/runAdhocQueryButton/RunAdhocQueryButton";
-import { setTabState } from "./context/queryPanelSlice";
+import { setTabState } from "./context/queryPanelReducer";
 import { QueryPanelViewType } from "./context/types";
 import classes from "./querypanel.module.scss";
 import useQueryPanelListeners from "./useQueryPanelListeners";
 import useQueryPanelState from "./useQueryPanelState";
 
 const QueryPanel = (): JSX.Element => {
-  const { tabState, viewType } = useQueryPanelState();
+  const { tabState, viewType, publication } = useQueryPanelState();
   const dispatch = useQueryPanelDispatch();
   const { loading } = useQueryPanelListeners();
+  const restoredRef = useRef(false);
+
+  useEffect(() => {
+    if (restoredRef.current) {
+      return;
+    }
+    restoredRef.current = true;
+    const saved = readViewState("queryResults");
+    if (saved && saved.tabState in QueryPanelTitleTabState) {
+      dispatch(setTabState(saved.tabState));
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    writeViewState({ panel: "queryResults", publication, tabState });
+  }, [tabState, publication]);
 
   useEffect(() => {
     if (loading) {

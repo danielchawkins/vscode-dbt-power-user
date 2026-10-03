@@ -14,22 +14,21 @@ import {
   useRef,
 } from "react";
 import DocumentationEditor from "./DocumentationEditor";
-import documentationSlice, {
+import {
+  documentationReducer,
   initialState,
   setDocBlocks,
   setIncomingDocsData,
   setMissingDocumentationMessage,
   setProject,
+  setPublication,
   updateColumnsAfterSync,
   updateCurrentDocsData,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
-} from "./state/documentationSlice";
-import {
-  DBTDocumentation,
-  DBTModelTest,
-  DBTUnitTest,
-} from "./state/types";
+} from "./state/documentationReducer";
+import { DBTDocumentation, DBTModelTest, DBTUnitTest } from "./state/types";
+import useDraftSync from "./state/useDraftSync";
 import { ContextProps } from "./types";
 import {
   fromFetchedColumns,
@@ -46,11 +45,12 @@ type HostMessage = documentationEditor.HostMessage;
 /** `renderDocumentation` with `docs` mapped by `fromHostDocumentation`; the test types are the contract's own. */
 type RenderMessage = Omit<
   MessageOf<HostMessage, "renderDocumentation">,
-  "docs" | "tests" | "unitTests"
+  "docs" | "tests" | "unitTests" | "draft"
 > & {
   docs?: DBTDocumentation;
   tests?: DBTModelTest[];
   unitTests?: DBTUnitTest[];
+  draft?: { docs: DBTDocumentation; tests?: DBTModelTest[] };
 };
 
 enum ActionState {
@@ -59,10 +59,7 @@ enum ActionState {
 }
 
 const DocumentationProvider = (): JSX.Element => {
-  const [state, dispatch] = useReducer(
-    documentationSlice.reducer,
-    documentationSlice.getInitialState(),
-  );
+  const [state, dispatch] = useReducer(documentationReducer, initialState);
   const stateRef = useRef(state);
 
   const renderDocumentation = (message: RenderMessage) => {
@@ -74,8 +71,15 @@ const DocumentationProvider = (): JSX.Element => {
       }),
     );
     dispatch(setProject(message.project));
-    dispatch(setMissingDocumentationMessage(message.missingDocumentationMessage));
+    dispatch(
+      setMissingDocumentationMessage(message.missingDocumentationMessage),
+    );
     dispatch(setDocBlocks(message.docBlocks));
+    dispatch(setPublication(message.publication));
+    if (message.draft) {
+      dispatch(updateCurrentDocsData(message.draft.docs));
+      dispatch(updateCurrentDocsTests(message.draft.tests));
+    }
   };
 
   const onMessage = useCallback((event: MessageEvent<HostMessage>) => {
@@ -84,10 +88,19 @@ const DocumentationProvider = (): JSX.Element => {
         const message: RenderMessage = {
           ...event.data,
           docs: fromHostDocumentation(event.data.docs),
+          draft: event.data.draft && {
+            docs: fromHostDocumentation(event.data.draft.docs)!,
+            tests: event.data.draft.tests,
+          },
         };
         const { currentDocsData } = stateRef.current;
         if (!isStateDirty(stateRef.current)) {
           renderDocumentation(message);
+          break;
+        }
+        // The page's own edits are newer than the draft the host holds for the same model.
+        if (currentDocsData?.filePath === message.draft?.docs.filePath) {
+          renderDocumentation({ ...message, draft: undefined });
           break;
         }
         executeRequestInSync("showWarningMessage", {
@@ -155,6 +168,8 @@ const DocumentationProvider = (): JSX.Element => {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  useDraftSync(state);
 
   return (
     <DocumentationContext.Provider value={values}>

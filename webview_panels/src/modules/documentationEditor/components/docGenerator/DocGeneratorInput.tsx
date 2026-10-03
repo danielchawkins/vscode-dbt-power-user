@@ -1,7 +1,7 @@
 import {
   updateColumnsInCurrentDocsData,
   updateCurrentDocsData,
-} from "@modules/documentationEditor/state/documentationSlice";
+} from "@modules/documentationEditor/state/documentationReducer";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import {
   DBTDocumentation,

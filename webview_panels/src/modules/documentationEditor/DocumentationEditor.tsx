@@ -1,7 +1,7 @@
 import CommonActionButtons from "@modules/commonActionButtons/CommonActionButtons";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import { Stack } from "@uicore";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import DocGeneratorColumnsList from "./components/docGenerator/DocGeneratorColumnsList";
 import DocGeneratorInput from "./components/docGenerator/DocGeneratorInput";
 import DocumentationHelpContent from "./components/help/DocumentationHelpContent";
@@ -9,12 +9,15 @@ import SaveDocumentation from "./components/saveDocumentation/SaveDocumentation"
 import EntityWithTests from "./components/tests/EntityWithTests";
 import EntityWithUnitTests from "./components/tests/EntityWithUnitTests";
 import useDocumentationContext from "./state/useDocumentationContext";
+import useDocumentationViewState from "./state/useDocumentationViewState";
 import classes from "./styles.module.scss";
 
 const DocumentationEditor = (): JSX.Element => {
   const {
     state: { currentDocsData, currentDocsTests, currentUnitTests },
   } = useDocumentationContext();
+  const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
+  useDocumentationViewState(scroller);
 
   const modelTests = useMemo(() => {
     return currentDocsTests?.filter((test) => !test.column_name);
@@ -40,7 +43,7 @@ const DocumentationEditor = (): JSX.Element => {
       </Stack>
       <div className={classes.docGenerator}>
         <Stack className={classes.bodyWrap}>
-          <Stack direction="column" className={classes.body}>
+          <Stack direction="column" className={classes.body} ref={setScroller}>
             <Stack direction="column">
               <Stack direction="column" style={{ margin: "1rem 0 10px 0" }}>
                 <DocGeneratorInput

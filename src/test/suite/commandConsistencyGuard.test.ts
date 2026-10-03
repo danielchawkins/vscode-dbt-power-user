@@ -215,6 +215,8 @@ describe("command contribution consistency", () => {
         "Constant export; conditional registration",
       "features/lineage/connectedColumnsCommand.ts:LINEAGE_COLUMNS_COMMAND":
         "Constant export; conditional registration",
+      "features/queryResults/queryResultTestCommand.ts:RENDER_TEST_RESULT_COMMAND":
+        "Constant export; conditional registration",
     };
 
     const orphans = Array.from(contributed).filter((cmd) => !literals.has(cmd));

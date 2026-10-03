@@ -1,4 +1,4 @@
-import { UnknownAction } from "@reduxjs/toolkit";
+import type { AppAction } from "./appReducer";
 
 export enum Themes {
   Dark = "dark",
@@ -10,7 +10,7 @@ export interface AppStateProps {
 
 export interface ContextProps {
   state: AppStateProps;
-  dispatch: React.Dispatch<UnknownAction>;
+  dispatch: React.Dispatch<AppAction>;
 }
 
 export interface User {

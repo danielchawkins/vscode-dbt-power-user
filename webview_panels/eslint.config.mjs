@@ -189,7 +189,11 @@ export default defineConfig(
   ...storybook.configs["flat/recommended"],
   {
     files: ["src/modules/**"],
-    ignores: ["src/modules/app/requestExecutor.ts", ...testFiles],
+    ignores: [
+      "src/modules/app/requestExecutor.ts",
+      "src/modules/app/viewState.ts",
+      ...testFiles,
+    ],
     rules: {
       "no-restricted-imports": [
         "error",

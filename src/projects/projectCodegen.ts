@@ -1,4 +1,4 @@
-import { existsSync, writeFileSync } from "fs";
+import { existsSync } from "fs";
 import * as path from "path";
 import {
   commands,
@@ -13,6 +13,13 @@ import { ColumnMetaData, DBColumn, DBTTerminal } from "../dbt_integration";
 import { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
 import { getColumnNameByCase } from "../utils";
+import { writeUserFile } from "./userFiles";
+
+async function createUserFile(location: string, text: string): Promise<void> {
+  if ((await writeUserFile(Uri.file(location), text)) === "rejected") {
+    throw new Error(`the editor rejected creating ${location}`);
+  }
+}
 
 /** Warehouse column lookups that file generation reads from. */
 export interface ColumnSource {
@@ -54,7 +61,7 @@ export async function generateSchemaYML(
       const columnsInRelation = await columns.getColumnsOfModel(modelName);
       // Generate yml file content
       const fileContents = createYMLContent(columnsInRelation, modelName);
-      writeFileSync(location, fileContents);
+      await createUserFile(location, fileContents);
       const doc = await workspace.openTextDocument(Uri.file(location));
       window.showTextDocument(doc);
     } else {
@@ -141,7 +148,7 @@ export async function generateModel(
   )
   select * from renamed
     `;
-          writeFileSync(location, fileContents);
+          await createUserFile(location, fileContents);
           const doc = await workspace.openTextDocument(Uri.file(location));
           window.showTextDocument(doc);
         } else {

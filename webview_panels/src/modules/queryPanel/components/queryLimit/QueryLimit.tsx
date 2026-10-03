@@ -1,6 +1,6 @@
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
-import { setLimit } from "@modules/queryPanel/context/queryPanelSlice";
+import { setLimit } from "@modules/queryPanel/context/queryPanelReducer";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { activateClickOnKeyDown, Input, Stack } from "@uicore";
 import { useEffect, useState } from "react";

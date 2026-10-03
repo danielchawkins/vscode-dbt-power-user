@@ -2,6 +2,7 @@ import { Disposable, window } from "vscode";
 import { DocsEditViewPanel } from "./docs/docsEditPanel";
 import { LineageViewProvider } from "./lineage/lineageViewProvider";
 import { QueryResultPanel } from "./queryResults/queryResultPanel";
+import { registerQueryResultTestCommand } from "./queryResults/queryResultTestCommand";
 
 export class WebviewViewProviders implements Disposable {
   private disposables: Disposable[] = [];
@@ -18,12 +19,10 @@ export class WebviewViewProviders implements Disposable {
       window.registerWebviewViewProvider(
         QueryResultPanel.viewType,
         this.queryResultPanel,
-        { webviewOptions: { retainContextWhenHidden: true } },
       ),
       window.registerWebviewViewProvider(
         DocsEditViewPanel.viewType,
         this.docsEditPanel,
-        { webviewOptions: { retainContextWhenHidden: true } },
       ),
       window.registerWebviewViewProvider(
         LineageViewProvider.viewType,
@@ -31,6 +30,10 @@ export class WebviewViewProviders implements Disposable {
         { webviewOptions: { retainContextWhenHidden: true } },
       ),
     );
+    const testCommand = registerQueryResultTestCommand(this.queryResultPanel);
+    if (testCommand) {
+      this.disposables.push(testCommand);
+    }
   }
 
   dispose() {

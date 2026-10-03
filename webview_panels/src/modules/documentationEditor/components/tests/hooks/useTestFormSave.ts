@@ -1,7 +1,7 @@
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { useState } from "react";
 import { SaveRequest } from "../types";
-import { updateCurrentDocsTests } from "@modules/documentationEditor/state/documentationSlice";
+import { updateCurrentDocsTests } from "@modules/documentationEditor/state/documentationReducer";
 import { panelLogger } from "@modules/logger";
 import {
   DBTModelTest,

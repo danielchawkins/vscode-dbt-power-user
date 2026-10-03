@@ -1,6 +1,6 @@
 import { ErrorIcon } from "@assets/icons";
 import { executeRequestInSync } from "@modules/queryPanel/requests";
-import { setLoading } from "@modules/queryPanel/context/queryPanelSlice";
+import { setLoading } from "@modules/queryPanel/context/queryPanelReducer";
 import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
 import { Stack, Button } from "@uicore";
 import { ReactNode, useState } from "react";

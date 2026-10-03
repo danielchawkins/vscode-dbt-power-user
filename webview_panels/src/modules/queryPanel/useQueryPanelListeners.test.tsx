@@ -11,7 +11,7 @@ vi.mock("./QueryPanel", () => ({
   default: (): null => null,
 }));
 
-import queryPanelSlice, { initialState } from "./context/queryPanelSlice";
+import { initialState, queryPanelReducer } from "./context/queryPanelReducer";
 import { QueryPanelContext } from "./QueryPanelProvider";
 import useQueryPanelListeners from "./useQueryPanelListeners";
 import useQueryPanelState from "./useQueryPanelState";
@@ -32,7 +32,7 @@ const ProbeHarness = ({
 }: {
   onHistory: (history: unknown) => void;
 }): JSX.Element => {
-  const [state, dispatch] = useReducer(queryPanelSlice.reducer, initialState);
+  const [state, dispatch] = useReducer(queryPanelReducer, initialState);
 
   return (
     <QueryPanelContext.Provider value={{ state, dispatch }}>

@@ -1,5 +1,5 @@
 import { AppContext } from "@modules/app/AppProvider";
-import { initialState } from "@modules/app/appSlice";
+import { initialState } from "@modules/app/appReducer";
 import { Themes } from "@modules/app/types";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";

@@ -2,7 +2,7 @@ import {
   documentationEditor,
   ShowNotification,
 } from "@fusion-power-user/webview-contract";
-import { existsSync, readFileSync, writeFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import * as path from "path";
 import {
   CancellationToken,
@@ -29,10 +29,12 @@ import {
 } from "../../dbt_integration";
 import { ExtensionContextStore } from "../../extensionContext";
 import { UserInputError } from "../../local/errors";
+import { publicationId } from "../../projects/manifest";
 import { activeModelUri } from "../../projects/previewUri";
 import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 import { QueryManifestService } from "../../projects/queryManifestService";
+import { writeUserFile } from "../../projects/userFiles";
 import {
   getColumnNameByCase,
   getColumnTestConfigFromYml,
@@ -65,6 +67,11 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   private readonly entry = "documentationEditor";
   private _panel: WebviewView | undefined = undefined;
   private documentation?: DBTDocumentation;
+  /** Unsaved drafts by model file path; host memory only, never webview state. */
+  private readonly drafts = new Map<
+    string,
+    documentationEditor.DocumentationDraft
+  >();
   private loadedFromManifest = false;
   private _disposables: Disposable[] = [];
   private onMessageDisposable: Disposable | undefined;
@@ -79,7 +86,10 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   ) {
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
-      projects.onDidRemoveProject(() => this.onManifestChanged()),
+      projects.onDidRemoveProject((root) => {
+        this.forgetDrafts(root);
+        void this.onManifestChanged();
+      }),
       window.onDidChangeActiveTextEditor(
         async (event: TextEditor | undefined) => {
           this.documentation = undefined;
@@ -133,6 +143,25 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     return this._panel?.webview.postMessage(message);
   }
 
+  private forgetDrafts(root: Uri) {
+    const prefix = root.fsPath.endsWith(path.sep)
+      ? root.fsPath
+      : root.fsPath + path.sep;
+    for (const model of this.drafts.keys()) {
+      if (model.startsWith(prefix)) {
+        this.drafts.delete(model);
+      }
+    }
+  }
+
+  private saveDraft({ model, draft }: MessageOf<PanelMessage, "saveDraft">) {
+    if (draft) {
+      this.drafts.set(model, draft);
+    } else {
+      this.drafts.delete(model);
+    }
+  }
+
   private async transmitData() {
     const { documentation, message } =
       await this.docGenService.getUncompiledDocumentationForCurrentActiveFile();
@@ -146,6 +175,10 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
         unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
         project: this.getProject()?.getProjectName(),
         docBlocks: this.getDocBlocksForCurrentProject(),
+        publication: publicationId(this.getProject()?.manifest),
+        draft: this.documentation
+          ? this.drafts.get(this.documentation.filePath)
+          : undefined,
       });
     }
   }
@@ -567,6 +600,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     return {
       "webview:ready": () => completeWebviewReady(this.entry),
       getCurrentModelDocumentation: () => this.transmitData(),
+      saveDraft: (message) => this.saveDraft(message),
       showWarningMessage: (message) => this.showNotification(message),
       showInformationMessage: (message) => this.showNotification(message),
       openProblemsTab: () =>
@@ -668,6 +702,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
               }
               return;
             }
+            this.drafts.delete(message.filePath);
             await this.reloadDocumentationFromManifest();
             const tests = await this.dbtTestService.getTestsForCurrentModel();
             const unitTests =
@@ -798,155 +833,17 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
           removeProtocol(patchPath),
         );
       }
-      // check if file exists, if not create an empty file
-      if (!existsSync(patchPath)) {
-        writeFileSync(patchPath, "");
-      }
-
-      const docFile: string = readFileSync(patchPath).toString("utf8");
-      const parsedDocFile = parseDocument<YAMLSeq<DocumentationSchema>>(
-        docFile,
-        {
-          strict: false,
-          uniqueKeys: false,
-        },
+      const written = await writeUserFile(Uri.file(patchPath), (docFile) =>
+        this.withDocumentation(docFile, message, projectByFilePath),
       );
-      const existingModels = parsedDocFile.get("models") as
-        YAMLSeq<DocumentationSchema["models"]["0"]> | undefined;
-
-      const model = this.findEntityInParsedDoc(
-        existingModels,
-        (name: string) => name === message.name,
-      );
-
-      if (!model) {
-        // there is a models section but the model does not exist yet.
-        const newModelData = {
-          name: message.name,
-          description: message.description?.trim() || undefined,
-          columns: message.columns.length
-            ? message.columns.map((column: any) => {
-                const name = getColumnNameByCase(
-                  column.name,
-                  projectByFilePath.getAdapterType(),
-                );
-                return {
-                  name,
-                  description: column.description?.trim() || undefined,
-                  data_type: column.type?.toLowerCase(),
-                  ...this.getTestDataByColumn(
-                    message,
-                    column.name,
-                    // A column without a `tests` key gets `data_tests`.
-                    { name: column.name },
-                  ),
-                  ...(isQuotedIdentifier(
-                    column.name,
-                    projectByFilePath.getAdapterType(),
-                  )
-                    ? { quote: true }
-                    : undefined),
-                };
-              })
-            : undefined,
-        };
-        // Models does not exist
-        if (existingModels?.items.length) {
-          parsedDocFile.addIn(["models"], newModelData);
-        } else {
-          // Models  exist, but current one is new model
-          parsedDocFile.set("models", [newModelData]);
-        }
-      } else {
-        // The model already exists
-        this.setOrDeleteInParsedDocument(
-          model,
-          "description",
-          message.description?.trim(),
-        );
-        const modelTests = this.getTestDataByModel(
-          message,
-          model.get("name") as string,
-          model.toJSON(),
-        );
-        this.setOrDeleteInParsedDocument(model, "tests", modelTests?.tests);
-        this.setOrDeleteInParsedDocument(
-          model,
-          "data_tests",
-          modelTests?.data_tests,
-        );
-        if (!model.get("columns")) {
-          model.set("columns", new YAMLSeq<DocumentationSchemaColumn>());
-        }
-        message.columns.forEach((column: any) => {
-          const existingColumn = this.findEntityInParsedDoc(
-            model.get("columns") as
-              YAMLSeq<DocumentationSchemaColumn> | undefined,
-            (name: string) => isColumnNameEqual(name, column.name),
-          );
-
-          if (existingColumn) {
-            // ignore tests, data_tests from existing column, as it will be recreated in `getTestDataByColumn`
-            const { tests, data_tests, ...rest } = existingColumn.toJSON();
-            this.setOrDeleteInParsedDocument(
-              existingColumn,
-              "description",
-              column.description?.trim(),
-            );
-            this.setOrDeleteInParsedDocument(
-              existingColumn,
-              "data_type",
-              (rest.data_type || column.type)?.toLowerCase(),
-            );
-            const allTests = this.getTestDataByColumn(
-              message,
-              column.name,
-              existingColumn.toJSON(),
-            );
-            this.setOrDeleteInParsedDocument(
-              existingColumn,
-              "tests",
-              allTests?.tests,
-            );
-            this.setOrDeleteInParsedDocument(
-              existingColumn,
-              "data_tests",
-              allTests?.data_tests,
-            );
-          } else {
-            const name = getColumnNameByCase(
-              column.name,
-              projectByFilePath.getAdapterType(),
-            );
-            model.addIn(["columns"], {
-              name,
-              description: column.description?.trim() || undefined,
-              data_type: column.type?.toLowerCase(),
-              ...this.getTestDataByColumn(message, column.name, {
-                name: column.name,
-              }),
-              ...(isQuotedIdentifier(
-                column.name,
-                projectByFilePath.getAdapterType(),
-              )
-                ? { quote: true }
-                : undefined),
-            });
-          }
-        });
-
-        // delete columns if they are empty to avoid [] in the yaml file
-        if (
-          (
-            model.get("columns") as
-              YAMLSeq<DocumentationSchemaColumn> | undefined
-          )?.items.length === 0
-        ) {
-          model.delete("columns");
-        }
+      if (written === "rejected") {
+        throw new Error("the editor rejected the change");
       }
-
-      writeFileSync(patchPath, stringify(parsedDocFile, { lineWidth: 0 }));
+      if (written === "applied-unsaved") {
+        window.showWarningMessage(
+          `${path.basename(patchPath)} has unsaved changes; your documentation was applied but not saved`,
+        );
+      }
       return true;
     } catch (error) {
       this.transmitError();
@@ -961,6 +858,152 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       );
       return false;
     }
+  }
+
+  /** `docFile` with `message`'s model documentation and tests merged in. */
+  private withDocumentation(
+    docFile: string,
+    message: SaveMessage,
+    projectByFilePath: Project,
+  ): string {
+    const parsedDocFile = parseDocument<YAMLSeq<DocumentationSchema>>(docFile, {
+      strict: false,
+      uniqueKeys: false,
+    });
+    const existingModels = parsedDocFile.get("models") as
+      YAMLSeq<DocumentationSchema["models"]["0"]> | undefined;
+
+    const model = this.findEntityInParsedDoc(
+      existingModels,
+      (name: string) => name === message.name,
+    );
+
+    if (!model) {
+      // there is a models section but the model does not exist yet.
+      const newModelData = {
+        name: message.name,
+        description: message.description?.trim() || undefined,
+        columns: message.columns.length
+          ? message.columns.map((column: any) => {
+              const name = getColumnNameByCase(
+                column.name,
+                projectByFilePath.getAdapterType(),
+              );
+              return {
+                name,
+                description: column.description?.trim() || undefined,
+                data_type: column.type?.toLowerCase(),
+                ...this.getTestDataByColumn(
+                  message,
+                  column.name,
+                  // A column without a `tests` key gets `data_tests`.
+                  { name: column.name },
+                ),
+                ...(isQuotedIdentifier(
+                  column.name,
+                  projectByFilePath.getAdapterType(),
+                )
+                  ? { quote: true }
+                  : undefined),
+              };
+            })
+          : undefined,
+      };
+      // Models does not exist
+      if (existingModels?.items.length) {
+        parsedDocFile.addIn(["models"], newModelData);
+      } else {
+        // Models  exist, but current one is new model
+        parsedDocFile.set("models", [newModelData]);
+      }
+    } else {
+      // The model already exists
+      this.setOrDeleteInParsedDocument(
+        model,
+        "description",
+        message.description?.trim(),
+      );
+      const modelTests = this.getTestDataByModel(
+        message,
+        model.get("name") as string,
+        model.toJSON(),
+      );
+      this.setOrDeleteInParsedDocument(model, "tests", modelTests?.tests);
+      this.setOrDeleteInParsedDocument(
+        model,
+        "data_tests",
+        modelTests?.data_tests,
+      );
+      if (!model.get("columns")) {
+        model.set("columns", new YAMLSeq<DocumentationSchemaColumn>());
+      }
+      message.columns.forEach((column: any) => {
+        const existingColumn = this.findEntityInParsedDoc(
+          model.get("columns") as
+            YAMLSeq<DocumentationSchemaColumn> | undefined,
+          (name: string) => isColumnNameEqual(name, column.name),
+        );
+
+        if (existingColumn) {
+          // ignore tests, data_tests from existing column, as it will be recreated in `getTestDataByColumn`
+          const { tests, data_tests, ...rest } = existingColumn.toJSON();
+          this.setOrDeleteInParsedDocument(
+            existingColumn,
+            "description",
+            column.description?.trim(),
+          );
+          this.setOrDeleteInParsedDocument(
+            existingColumn,
+            "data_type",
+            (rest.data_type || column.type)?.toLowerCase(),
+          );
+          const allTests = this.getTestDataByColumn(
+            message,
+            column.name,
+            existingColumn.toJSON(),
+          );
+          this.setOrDeleteInParsedDocument(
+            existingColumn,
+            "tests",
+            allTests?.tests,
+          );
+          this.setOrDeleteInParsedDocument(
+            existingColumn,
+            "data_tests",
+            allTests?.data_tests,
+          );
+        } else {
+          const name = getColumnNameByCase(
+            column.name,
+            projectByFilePath.getAdapterType(),
+          );
+          model.addIn(["columns"], {
+            name,
+            description: column.description?.trim() || undefined,
+            data_type: column.type?.toLowerCase(),
+            ...this.getTestDataByColumn(message, column.name, {
+              name: column.name,
+            }),
+            ...(isQuotedIdentifier(
+              column.name,
+              projectByFilePath.getAdapterType(),
+            )
+              ? { quote: true }
+              : undefined),
+          });
+        }
+      });
+
+      // delete columns if they are empty to avoid [] in the yaml file
+      if (
+        (model.get("columns") as YAMLSeq<DocumentationSchemaColumn> | undefined)
+          ?.items.length === 0
+      ) {
+        model.delete("columns");
+      }
+    }
+
+    return stringify(parsedDocFile, { lineWidth: 0 });
   }
 
   private async handleSyncRequestFromWebview(

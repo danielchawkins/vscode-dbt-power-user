@@ -1,3 +1,4 @@
+import { randomUUID } from "crypto";
 import { readFileSync } from "fs";
 import { isAbsolute, join, relative, resolve, sep } from "path";
 import {
@@ -61,6 +62,18 @@ export interface BuiltManifest {
 }
 
 const publicationEpochs = new Map<string, number>();
+/** Distinguishes this extension-host session's epochs, which restart at 1, from an earlier session's. */
+const SESSION = randomUUID();
+
+/**
+ * An id for `manifest`'s publication that no other publication, in this or any earlier extension-host session,
+ * shares; a panel saves it with its view state and restores only on a match.
+ */
+export function publicationId(
+  manifest: { publicationEpoch: number } | undefined,
+): string | undefined {
+  return manifest && `${SESSION}:${manifest.publicationEpoch}`;
+}
 
 /** Stamps `parsed` as the next manifest publication for `project`'s root, advancing that root's epoch. */
 export function nextManifestPublication<
