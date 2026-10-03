@@ -10,8 +10,8 @@ import useDocumentationContext from "@modules/documentationEditor/state/useDocum
 import { DocBlock } from "@modules/documentationEditor/state/types";
 import { HTMLAttributes } from "react";
 import { SearchIcon } from "@assets/icons";
-import documentationStyles from "../../styles.module.scss";
-import styles from "./DocBlockInserter.module.scss";
+import documentationStyles from "../../styles.module.css";
+import styles from "./DocBlockInserter.module.css";
 
 const DocBlockIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
   <i className={`codicon codicon-book`} {...props} />

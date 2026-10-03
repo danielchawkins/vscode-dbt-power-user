@@ -1,6 +1,6 @@
 import { ButtonHTMLAttributes } from "react";
 import { Button, Spinner } from "reactstrap";
-import classes from "./loadingButton.module.scss";
+import classes from "./loadingButton.module.css";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading: boolean;

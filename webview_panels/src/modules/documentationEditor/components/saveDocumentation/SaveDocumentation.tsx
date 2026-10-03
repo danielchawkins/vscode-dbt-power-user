@@ -9,7 +9,7 @@ import {
 } from "@uicore";
 import { MouseEvent, useEffect, useRef, useState } from "react";
 import { setIncomingDocsData } from "@modules/documentationEditor/state/documentationReducer";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import {
   DBTDocumentation,
   DBTModelTest,

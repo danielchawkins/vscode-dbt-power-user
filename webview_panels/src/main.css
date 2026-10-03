@@ -1,15 +1,14 @@
-@use "variables";
-
 :root {
   --bs-body-font-family: "Lexend", var(--bs-font-sans-serif);
 }
+
 html {
   font-size: var(--vscode-font-size, 13px);
 }
 
 body,
 body.vscode-high-contrast-light {
-  --primary-color: #{variables.$primaryColor};
+  --primary-color: #247efe;
   --text-color--title: #171717;
   --text-color--paragraph: #4a4d51;
   --text-color--caption: #808080;
@@ -142,25 +141,31 @@ code {
   gap: 0;
 }
 
-@mixin lines($n) {
+.lines-1 {
   display: -webkit-box;
   text-overflow: ellipsis;
   overflow: hidden;
   -webkit-box-orient: vertical;
   word-break: break-all;
-  -webkit-line-clamp: $n;
-}
-
-.lines-1 {
-  @include lines(1);
+  -webkit-line-clamp: 1;
 }
 
 .lines-2 {
-  @include lines(2);
+  display: -webkit-box;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  word-break: break-all;
+  -webkit-line-clamp: 2;
 }
 
 .lines-3 {
-  @include lines(3);
+  display: -webkit-box;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  word-break: break-all;
+  -webkit-line-clamp: 3;
 }
 
 .text-overflow {
@@ -169,7 +174,7 @@ code {
   white-space: nowrap;
 }
 
-.new-feature{
+.new-feature {
   background: rgb(255, 105, 74);
   width: 12px;
   height: 12px;

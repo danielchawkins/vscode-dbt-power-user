@@ -1,5 +1,5 @@
 import { ForwardedRef, forwardRef, HTMLAttributes, ReactNode } from "react";
-import classes from "./stack.module.scss";
+import classes from "./stack.module.css";
 
 const Stack = forwardRef(function stack(
   {

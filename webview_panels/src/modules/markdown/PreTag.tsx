@@ -1,6 +1,6 @@
 import { DetailedHTMLProps, HTMLAttributes, useState } from "react";
 import { CopyToClipboard } from "react-copy-to-clipboard";
-import classes from "./markdown.module.scss";
+import classes from "./markdown.module.css";
 import { IconButton } from "@uicore";
 import { CheckedIcon, FilesIcon } from "@assets/icons";
 

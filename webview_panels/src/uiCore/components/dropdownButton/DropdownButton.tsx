@@ -1,7 +1,7 @@
 import { ChevronDownIcon } from "@assets/icons";
 import { Button, ButtonProps } from "reactstrap";
 import { IconButton, Stack } from "../../";
-import classes from "./styles.module.scss";
+import classes from "./styles.module.css";
 
 interface Props extends ButtonProps {
   onToggleClick: () => void;

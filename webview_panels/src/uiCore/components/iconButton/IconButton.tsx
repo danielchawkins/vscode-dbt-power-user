@@ -1,6 +1,6 @@
 import { ButtonHTMLAttributes } from "react";
 import { Tooltip } from "../../";
-import classes from "./styles.module.scss";
+import classes from "./styles.module.css";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   color?: string;

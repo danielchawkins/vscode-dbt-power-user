@@ -16,7 +16,7 @@ import {
   isComponentTableRequest,
   toComponentTable,
 } from "./componentAdapter";
-import styles from "./lineage.module.scss";
+import styles from "./lineage.module.css";
 import {
   executeRequestInAsync,
   isLineageRequest,

@@ -1,5 +1,5 @@
 import HelpButton from "./components/help/HelpButton";
-import styles from "./lineage.module.scss";
+import styles from "./lineage.module.css";
 import MissingLineageMessageComponent from "./MissingLineageMessage";
 import { MissingLineageMessage } from "./types";
 

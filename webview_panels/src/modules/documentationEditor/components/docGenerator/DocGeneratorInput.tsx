@@ -19,7 +19,7 @@ import {
   useState,
 } from "react";
 import DocBlockInserter from "./DocBlockInserter";
-import classes from "./docGenInput.module.scss";
+import classes from "./docGenInput.module.css";
 
 interface Props {
   entity: DBTDocumentationColumn | DBTDocumentation;

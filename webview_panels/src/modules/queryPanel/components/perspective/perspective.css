@@ -1,0 +1,85 @@
+regular-table td,
+regular-table th {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-right: 20px !important;
+  user-select: text;
+  cursor: text;
+}
+regular-table td .open-icon,
+regular-table th .open-icon {
+  margin-left: 5px;
+  color: var(--text-active);
+  position: absolute;
+  right: 5px;
+}
+regular-table td .open-icon svg,
+regular-table th .open-icon svg {
+  margin-bottom: -2.5px;
+}
+
+regular-table[perspective-theme="Vintage"] th {
+  font-weight: 800 !important;
+  background-color: #222;
+  color: #fff;
+  padding-bottom: 6px !important;
+  border-bottom: 3px solid #3fb449 !important;
+  padding-top: 4px !important;
+}
+regular-table[perspective-theme="Vintage"][theme="dark"] th {
+  background-color: #fff;
+  color: #222;
+}
+regular-table[perspective-theme="Vintage"] th,
+regular-table[perspective-theme="Vintage"] td {
+  font-size: 13px !important;
+}
+regular-table[perspective-theme="Vintage"] tbody tr::after,
+regular-table[perspective-theme="Vintage"] thead tr:last-child::after {
+  width: 0px !important;
+}
+regular-table[perspective-theme="Vintage"] tbody td {
+  padding-top: 3px !important;
+  padding-bottom: 3px !important;
+}
+regular-table[perspective-theme="Vintage"] tbody tr:nth-child(even) {
+  background-color: rgb(239, 239, 239);
+}
+regular-table[perspective-theme="Vintage"] tbody tr:last-child td {
+  border-bottom: 1px solid var(--inactive--border-color);
+}
+regular-table[perspective-theme="Vintage"] tbody tr:hover {
+  background-color: rgb(187, 187, 187);
+  cursor: pointer;
+}
+regular-table[perspective-theme="Vintage"] tbody td:first-child {
+  border-left-color: var(--inactive--border-color) !important;
+}
+regular-table[perspective-theme="Vintage"] tbody td:last-child {
+  border-right-color: var(--inactive--border-color) !important;
+  border-right-width: 1px !important;
+}
+regular-table[perspective-theme="Vintage"] perspective-export-menu {
+  display: none;
+}
+regular-table[perspective-theme="Vintage"] .psp-align-left {
+  border-left: solid 1px
+    var(--inactive--border-color, rgba(139, 134, 128, 0.2705882353));
+}
+regular-table[perspective-theme="Vintage"] .psp-align-right {
+  border-left: solid 1px
+    var(--inactive--border-color, rgba(139, 134, 128, 0.2705882353));
+}
+regular-table[perspective-theme="Vintage"] .psp-header-leaf:first-child {
+  border-left-color: transparent;
+}
+
+regular-table[theme="dark"][perspective-theme="Vintage"]
+  tbody
+  tr:nth-child(even) {
+  background-color: var(--vscode-list-hoverBackground);
+}
+regular-table[theme="dark"][perspective-theme="Vintage"] tbody tr:hover {
+  background-color: var(--vscode-sideBar-background);
+}

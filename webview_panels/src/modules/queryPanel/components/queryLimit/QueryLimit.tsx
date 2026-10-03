@@ -4,7 +4,7 @@ import { setLimit } from "@modules/queryPanel/context/queryPanelReducer";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { activateClickOnKeyDown, Input, Stack } from "@uicore";
 import { useEffect, useState } from "react";
-import styles from "./styles.module.scss";
+import styles from "./styles.module.css";
 import { PlayIcon } from "@assets/icons";
 
 enum LimitSaveState {

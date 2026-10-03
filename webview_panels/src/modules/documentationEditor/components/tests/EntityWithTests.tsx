@@ -4,7 +4,7 @@ import { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { Button, Drawer, DrawerRef, Stack, Tooltip } from "@uicore";
 import { useMemo, useRef, useState } from "react";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import AddTest from "./AddTest";
 import DisplayTestDetails from "./DisplayTestDetails";
 import Test from "./Test";

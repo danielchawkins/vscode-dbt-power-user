@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from "@uicore";
 import { useRef, useState } from "react";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import TestForm from "./forms/TestForm";
 import useTestFormSave, { TestOperation } from "./hooks/useTestFormSave";
 

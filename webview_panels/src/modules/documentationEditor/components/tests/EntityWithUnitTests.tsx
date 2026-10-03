@@ -4,7 +4,7 @@ import { DBTUnitTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { Button, Drawer, DrawerRef, Stack, Tag, Tooltip } from "@uicore";
 import { useRef, useState } from "react";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import UnitTestDetails from "./UnitTestDetails";
 
 interface Props {

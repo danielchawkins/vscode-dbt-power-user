@@ -4,7 +4,7 @@ import { Themes } from "@modules/app/types";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import CodeBlock from "./index";
-import classes from "./codeblock.module.scss";
+import classes from "./codeblock.module.css";
 
 const sampleSql = "select 1 as id";
 const sampleYaml = "version: 2";

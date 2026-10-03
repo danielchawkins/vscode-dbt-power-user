@@ -1,0 +1,316 @@
+.documentation-wrapper :global .btn-group {
+  margin-bottom: 1.846rem;
+}
+.documentation-wrapper .newTestTag {
+  padding: 3px 10px;
+  border-radius: 4px;
+}
+.documentation-wrapper .newTestTag:hover {
+  border-color: var(--vscode-button-background);
+  background-color: transparent;
+  color: var(--vscode-foreground);
+}
+.documentation-wrapper .custom-test {
+  display: inline-flex;
+  width: auto;
+  justify-content: space-between;
+  align-items: center;
+  color: currentColor;
+  gap: 4px;
+}
+.documentation-wrapper .custom-test :global .btn {
+  padding: 0 3px;
+}
+.documentation-wrapper .custom-test svg path {
+  fill: var(--vscode-button-background);
+}
+.documentation-wrapper .custom-test span {
+  height: 18px;
+  line-height: 0.9;
+  background: var(--vscode-editorWarning-foreground);
+}
+.documentation-wrapper .custom-test span:hover {
+  background: var(--vscode-editorWarning-foreground);
+  border-color: transparent;
+}
+.documentation-wrapper .entity-tests .tests-row > *,
+.documentation-wrapper .entity-tests .tests-row > span > span {
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+.documentation-wrapper .entity-tests {
+  margin-top: 0.857rem;
+}
+.documentation-wrapper .entity-tests p {
+  margin-bottom: 0;
+  line-height: 1.8;
+}
+.documentation-wrapper .entity-tests :global .model {
+  gap: 5px;
+}
+.documentation-wrapper .entity-tests :global .model h5 {
+  font-weight: 400;
+  font-size: 1rem;
+  margin-bottom: 0;
+  line-height: 1.6;
+}
+.documentation-wrapper .entity-tests :global .model {
+  flex-direction: row;
+  margin-bottom: 0.857rem;
+}
+.documentation-wrapper .entity-tests :global .column {
+  flex-direction: column;
+  gap: 0;
+}
+.documentation-wrapper .entity-tests .btn-add-test {
+  padding: 4px 6px;
+  border-radius: 50%;
+  width: 26px;
+  height: 26px;
+  background: var(--vscode-editorWidget-background);
+}
+.documentation-wrapper .entity-tests .btn-add-test :global .codicon {
+  font-size: 14px;
+  color: var(--vscode-icon-foreground);
+}
+.documentation-wrapper .entity-tests .btn-add-test:hover {
+  background: var(--vscode-list-hoverBackground);
+}
+.documentation-wrapper .entity-tests .btn-add-test:global.btn-primary {
+  background: var(--vscode-button-background);
+}
+.documentation-wrapper
+  .entity-tests
+  .btn-add-test:global.btn-primary:hover
+  :global
+  .codicon,
+.documentation-wrapper
+  .entity-tests
+  .btn-add-test:global.btn-primary
+  :global
+  .codicon {
+  font-size: 14px;
+  color: #fff;
+}
+.documentation-wrapper .entity-tests .btn-add-test:hover :global .codicon {
+  color: var(--vscode-button-background);
+}
+
+.doc-generator {
+  max-height: calc(100vh - 100px);
+  display: flex;
+  flex-direction: column;
+}
+.doc-generator .head {
+  justify-content: space-between;
+}
+.doc-generator .head > div {
+  align-items: center;
+}
+.doc-generator .head p {
+  text-decoration: underline;
+}
+.doc-generator .body-wrap {
+  overflow: hidden;
+}
+.doc-generator .body-wrap .body {
+  width: 100%;
+  min-width: 768px;
+  overflow: overlay;
+  padding-right: 1rem;
+}
+.doc-generator .body-wrap .body :global .alert {
+  margin-top: 12px;
+}
+.doc-generator .body-wrap .body .column-header {
+  justify-content: space-between;
+}
+.doc-generator .body-wrap .body .column-header .sync-btn svg {
+  width: 14px;
+  vertical-align: bottom;
+}
+.doc-generator .body-wrap .body .columns {
+  gap: 16px;
+}
+.doc-generator .body-wrap .body .columns h4 {
+  margin-bottom: 16px;
+}
+.doc-generator .body-wrap .result-body {
+  width: 40%;
+  overflow: overlay;
+}
+.doc-generator .body-wrap .show-all-tests {
+  border-radius: 4px;
+  padding: 3px 9px;
+}
+.doc-generator .body-wrap .show-all-tests:hover {
+  background-color: transparent;
+  border-color: var(--vscode-button-background);
+}
+.doc-generator.docTests .column-header {
+  margin-top: 1.846rem;
+  margin-bottom: 1.231rem;
+}
+.doc-generator.docTests .test-tag {
+  cursor: pointer;
+}
+
+.add-test {
+  gap: 1.538rem;
+}
+.add-test :global .card {
+  background-color: var(--vscode-editor-background);
+  border-color: transparent;
+}
+.add-test .title {
+  border-radius: 8px;
+  padding: 1rem;
+  background-color: var(--vscode-list-hoverBackground);
+  justify-content: space-between;
+}
+.add-test .title :global .primary {
+  max-width: 100%;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  vertical-align: middle;
+  margin-left: 3px;
+}
+.add-test :global .spinner-border {
+  width: 1rem;
+  height: 1rem;
+  margin-top: 0.15rem;
+  border-width: 2px;
+}
+.add-test .test-list-group {
+  gap: 10px;
+}
+.add-test .test-list-group div,
+.add-test .test-list-group button {
+  border-color: var(--vscode-widget-border);
+  background-color: var(--vscode-editorWidget-background);
+  color: var(--vscode-foreground);
+  border-radius: 8px;
+  border-top-width: 1px;
+  cursor: default;
+}
+.add-test .test-list-group div caption,
+.add-test .test-list-group button caption {
+  color: var(--vscode-descriptionForeground);
+  font-size: 1rem;
+  display: inline-block;
+}
+.add-test .test-list-group div:global.disabled,
+.add-test .test-list-group button:global.disabled {
+  opacity: 0.3;
+}
+.add-test .test-list-group :global .btn-primary {
+  background-color: var(--vscode-button-background);
+}
+.add-test :global .card-title {
+  border: none;
+  margin: 0;
+  font-weight: 400;
+  margin-bottom: 1rem;
+  padding-bottom: 0;
+}
+.add-test :global .card-footer {
+  border: none;
+}
+.add-test :global .card-title {
+  border: none;
+  margin: 0;
+  font-weight: 400;
+  margin-bottom: 1rem;
+  padding-bottom: 0;
+}
+.add-test :global .card-footer {
+  border: none;
+}
+
+.bulkGenPopover :global .popover-body {
+  padding: 0 1rem !important;
+}
+.bulkGenPopover .popover {
+  margin-top: -1rem;
+}
+.bulkGenPopover .popover ul {
+  padding: 0.5rem 0;
+  margin: 0;
+  list-style: none;
+}
+.bulkGenPopover .popover ul .sectionTitle {
+  background-color: var(--vscode-editor-background);
+  padding: 0.5rem;
+  border-radius: 6px;
+}
+.bulkGenPopover .popover ul li :global .btn {
+  text-decoration: none;
+  width: 100%;
+  text-align: left;
+  background-color: transparent;
+  color: var(--vscode-foreground);
+}
+
+.limitWidth {
+  max-width: 100%;
+  min-width: 0;
+  flex: 1;
+}
+
+@media (min-width: 1400px) {
+  .limitWidth {
+    max-width: 1440px;
+  }
+}
+.docsIcon {
+  width: 13px;
+  height: 13px;
+  margin-left: -5px;
+}
+.docsIcon path {
+  fill: #198754;
+}
+
+.docsIconInBtn {
+  height: 17px;
+  width: 13px;
+  vertical-align: text-bottom;
+}
+.docsIconInBtn path {
+  fill: #fff;
+}
+
+.search {
+  position: relative;
+}
+.search :global .codicon {
+  position: absolute;
+  top: 8px;
+  left: 5px;
+}
+.search input {
+  padding-left: 25px;
+  min-width: 200px;
+}
+
+.saveDocumentation {
+  min-width: 200px;
+}
+.saveDocumentation li {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.saveDocumentation :global #file_path {
+  border-radius: 2px;
+  border: 1px solid var(--vscode-widget-border);
+  background: var(--vscode-editorWidget-background);
+  margin-bottom: 0;
+  flex: 1;
+  font-size: 1rem;
+  padding: 8px 12px;
+  background: var(--vscode-editorWidget-background);
+  color: var(--vscode-foreground);
+}

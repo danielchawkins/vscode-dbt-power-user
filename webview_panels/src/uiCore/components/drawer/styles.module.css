@@ -1,0 +1,10 @@
+.offcanvas :global .offcanvas-body {
+  background: var(--vscode-editorWidget-background);
+}
+.offcanvas .close-btn {
+  width: 40px;
+  height: 40px;
+  position: absolute;
+  top: 0;
+  left: -40px;
+}

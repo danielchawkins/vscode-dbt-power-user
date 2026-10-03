@@ -10,7 +10,7 @@ import EntityWithTests from "./components/tests/EntityWithTests";
 import EntityWithUnitTests from "./components/tests/EntityWithUnitTests";
 import useDocumentationContext from "./state/useDocumentationContext";
 import useDocumentationViewState from "./state/useDocumentationViewState";
-import classes from "./styles.module.scss";
+import classes from "./styles.module.css";
 
 const DocumentationEditor = (): JSX.Element => {
   const {

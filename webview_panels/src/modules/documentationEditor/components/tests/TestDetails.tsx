@@ -15,7 +15,7 @@ import {
   Stack,
 } from "@uicore";
 import { useMemo } from "react";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import DbtTestCode from "./DbtTestCode";
 
 interface Props {

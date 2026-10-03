@@ -11,7 +11,7 @@ import QueryLimit from "./components/queryLimit/QueryLimit";
 import RunAdhocQueryButton from "./components/runAdhocQueryButton/RunAdhocQueryButton";
 import { setTabState } from "./context/queryPanelReducer";
 import { QueryPanelViewType } from "./context/types";
-import classes from "./querypanel.module.scss";
+import classes from "./querypanel.module.css";
 import useQueryPanelListeners from "./useQueryPanelListeners";
 import useQueryPanelState from "./useQueryPanelState";
 

@@ -8,7 +8,7 @@ import {
   useState,
 } from "react";
 import { Popover, PopoverBody, PopoverProps } from "reactstrap";
-import styles from "./styles.module.scss";
+import styles from "./styles.module.css";
 
 interface Props {
   button: ReactNode;

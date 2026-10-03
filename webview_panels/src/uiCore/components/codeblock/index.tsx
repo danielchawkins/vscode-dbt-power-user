@@ -10,7 +10,7 @@ import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
 import tomorrow from "react-syntax-highlighter/dist/esm/styles/prism/tomorrow";
 import vscDarkPlus from "react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus";
 import { Card, CardBody, CardTitle } from "reactstrap";
-import classes from "./codeblock.module.scss";
+import classes from "./codeblock.module.css";
 
 type CodeBlockLanguage = "sql" | "yaml" | "markdown" | "json" | "javascript";
 

@@ -2,7 +2,7 @@ import { SearchIcon } from "@assets/icons";
 import { setSearchQuery } from "@modules/documentationEditor/state/documentationReducer";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { Input, Stack } from "@uicore";
-import styles from "../../styles.module.scss";
+import styles from "../../styles.module.css";
 
 const SearchColumnsInput = (): JSX.Element => {
   const {

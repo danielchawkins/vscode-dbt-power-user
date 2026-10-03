@@ -22,7 +22,7 @@ import {
 import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import * as Yup from "yup";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import AcceptedValues from "./forms/AcceptedValues";
 import Relationships from "./forms/Relationships";
 import useTestFormSave, { TestOperation } from "./hooks/useTestFormSave";

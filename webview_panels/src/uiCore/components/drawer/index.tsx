@@ -8,7 +8,7 @@ import {
 import { ReactNode, useState } from "react";
 import { Offcanvas, OffcanvasBody, OffcanvasHeader } from "reactstrap";
 import IconButton from "../iconButton/IconButton";
-import classes from "./styles.module.scss";
+import classes from "./styles.module.css";
 import { Button } from "../..";
 
 interface Props {

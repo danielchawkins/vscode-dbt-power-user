@@ -12,7 +12,7 @@ import {
   SelectUncheckedIcon,
   UncheckIcon,
 } from "@assets/icons";
-import "./select.module.scss";
+import "./select.module.css";
 
 const { Option } = components;
 
