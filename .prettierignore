@@ -10,6 +10,7 @@ src/lib
 webview_panels/dist
 webview_panels/storybook-static
 webview_panels/src/lib
+scripts/spikes
 # Captured dbt stdout; byte-exact
 src/test/suite/fixtures
 eslint-suppressions.json

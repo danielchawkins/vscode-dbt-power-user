@@ -72,7 +72,7 @@ const fsRequireSyntax = [
 ];
 
 module.exports = [
-  { ignores: ["out/**", "dist/**", "packages/*/dist/**", "webview_panels/**", "src/test/fixtures/**", "**/*.d.ts"] },
+  { ignores: ["out/**", "dist/**", "packages/*/dist/**", "webview_panels/**", "src/test/fixtures/**", "**/*.d.ts", "scripts/spikes/**"] },
   typescriptEslint.configs["flat/base"],
   typescriptEslint.configs["flat/eslint-recommended"],
   prettier,

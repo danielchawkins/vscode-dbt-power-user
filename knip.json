@@ -10,7 +10,11 @@
         "vitest.config.ts"
       ],
       "project": ["src/**/*.ts", "scripts/**/*.{mjs,ts}"],
-      "ignore": ["src/test/fixtures/**", "src/test/mock/**"],
+      "ignore": [
+        "src/test/fixtures/**",
+        "src/test/mock/**",
+        "scripts/spikes/**"
+      ],
       "ignoreDependencies": ["@types/vscode", "ts-loader"],
       "ignoreBinaries": ["sample", "dbt"]
     },
