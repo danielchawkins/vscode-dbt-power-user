@@ -884,7 +884,7 @@
     "@rsbuild/core": "^2.2.8",
     "@types/istanbul-lib-coverage": "^2.0.6",
     "@types/mocha": "^10.0.10",
-    "@types/node": "^24.13.6",
+    "@types/node": "^24.19.1",
     "@types/vscode": "1.125.0",
     "@types/which": "^3.0.4",
     "@typescript-eslint/eslint-plugin": "^8.70.0",

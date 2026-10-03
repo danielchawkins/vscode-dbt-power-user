@@ -25,7 +25,6 @@
       "@uicore": ["./src/uiCore/index.ts"],
       "@assets/*": ["./src/assets/*"],
       "@modules/*": ["./src/modules/*"],
-      "@testUtils": ["./src/testUtils/index.ts"],
       "@vscodeApi": ["./src/modules/vscode/index.ts"]
     },
     "typeRoots": ["src/modules/queryPanel/components/perspective"]

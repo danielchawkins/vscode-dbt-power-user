@@ -1,0 +1,8 @@
+.iconButton {
+  padding: 6px 7px;
+  color: var(--vscode-foreground);
+}
+.iconButton:global.outline {
+  border-radius: 5px;
+  border: 1px solid var(--vscode-widget-border);
+}

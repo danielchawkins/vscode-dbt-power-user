@@ -2,25 +2,22 @@ import { ChevronRightIcon } from "@assets/icons";
 import {
   forwardRef,
   ForwardRefRenderFunction,
-  SyntheticEvent,
+  ReactNode,
+  useCallback,
+  useEffect,
   useImperativeHandle,
+  useState,
 } from "react";
-import { ReactNode, useState } from "react";
-import { Offcanvas, OffcanvasBody, OffcanvasHeader } from "reactstrap";
 import IconButton from "../iconButton/IconButton";
-import classes from "./styles.module.scss";
-import { Button } from "../..";
+import classes from "./styles.module.css";
 
 interface Props {
-  title?: string | ReactNode;
-  buttonProps?: Parameters<typeof Button>[0];
-  buttonText?: ReactNode | string;
-  icon?: ReactNode;
+  title?: string;
+  /** Called when the user closes the drawer; `DrawerRef.close` does not call it. */
   onClose?: () => void;
-  onOpen?: () => void;
   children: ReactNode;
+  /** A backdrop that closes the drawer on click; without it the page stays usable. */
   backdrop?: boolean;
-  disableBackdropClick?: boolean;
 }
 
 export interface DrawerRef {
@@ -28,39 +25,17 @@ export interface DrawerRef {
   open: () => void;
 }
 
+/** A panel on the right edge; its children mount only while it is open. Escape closes it. */
 const Drawer: ForwardRefRenderFunction<DrawerRef, Props> = (
-  {
-    buttonProps,
-    buttonText,
-    icon,
-    title,
-    onClose,
-    children,
-    onOpen,
-    backdrop = true,
-    disableBackdropClick = false,
-  },
+  { title, onClose, children, backdrop = true },
   ref,
 ) => {
   const [show, setShow] = useState(false);
 
-  const handleClose = (e?: SyntheticEvent) => {
-    if (
-      disableBackdropClick &&
-      e &&
-      (e.target as HTMLElement | undefined)?.classList?.contains(
-        "offcanvas-backdrop",
-      )
-    ) {
-      return;
-    }
+  const handleClose = useCallback(() => {
     setShow(false);
     onClose?.();
-  };
-  const handleShow = () => {
-    setShow(true);
-    onOpen?.();
-  };
+  }, [onClose]);
 
   useImperativeHandle(ref, () => ({
     close() {
@@ -71,37 +46,45 @@ const Drawer: ForwardRefRenderFunction<DrawerRef, Props> = (
     },
   }));
 
+  useEffect(() => {
+    if (!show) {
+      return;
+    }
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        handleClose();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [show, handleClose]);
+
+  if (!show) {
+    return null;
+  }
   return (
     <>
-      {buttonText ? (
-        <Button {...buttonProps} onClick={handleShow} icon={icon}>
-          {buttonText}
-        </Button>
+      {backdrop ? (
+        <button
+          type="button"
+          aria-label="Close"
+          tabIndex={-1}
+          className={classes.backdrop}
+          onClick={handleClose}
+        />
       ) : null}
-
-      <Offcanvas
-        isOpen={show}
-        onClosed={handleClose}
-        toggle={handleClose}
-        direction="end"
-        className={classes.offcanvas}
-        backdrop={backdrop}
-        unmountOnClose
-      >
-        {title ? (
-          <OffcanvasHeader>
-            <h2>{title}</h2>
-          </OffcanvasHeader>
-        ) : null}
+      <aside aria-label={title} className={classes.drawer}>
         <IconButton
           color="primary"
+          title="Close"
           onClick={handleClose}
           className={classes.closeBtn}
         >
           <ChevronRightIcon />
         </IconButton>
-        <OffcanvasBody>{children}</OffcanvasBody>
-      </Offcanvas>
+        {title ? <h2 className={classes.title}>{title}</h2> : null}
+        <div className={classes.body}>{children}</div>
+      </aside>
     </>
   );
 };

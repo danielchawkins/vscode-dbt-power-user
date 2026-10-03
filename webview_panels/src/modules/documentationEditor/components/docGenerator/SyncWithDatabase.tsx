@@ -1,6 +1,6 @@
 import { Button } from "@uicore";
 import { RefreshIcon } from "@assets/icons";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { panelLogger } from "@modules/logger";
 

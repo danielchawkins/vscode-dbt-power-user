@@ -1,20 +1,18 @@
 import {
   forwardRef,
   ForwardRefRenderFunction,
-  MouseEvent as ReactMouseEvent,
   ReactNode,
+  useEffect,
   useImperativeHandle,
   useRef,
   useState,
 } from "react";
-import { Popover, PopoverBody, PopoverProps } from "reactstrap";
-import styles from "./styles.module.scss";
+import styles from "./styles.module.css";
 
 interface Props {
   button: ReactNode;
   title?: string | ReactNode;
   width?: number | string;
-  popoverProps?: Omit<PopoverProps, "target">;
   children: (args: {
     styles: CSSModuleClasses;
     close: () => void;
@@ -26,62 +24,47 @@ export interface PopoverWithButtonRef {
   open: () => void;
 }
 
+/** A panel below `button`, opened by clicking it and closed by a click anywhere outside. */
 const PopoverWithButton: ForwardRefRenderFunction<
   PopoverWithButtonRef,
   Props
-> = ({ title, button, children, popoverProps = {}, width = 350 }, ref) => {
-  const { className, ...rest } = popoverProps;
-  const [showPopover, setShowPopover] = useState(false);
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-  const popoverRef = useRef<HTMLDivElement | null>(null);
-  const onBodyClick = (e: MouseEvent) => {
-    if (popoverRef.current?.contains(e.target as Node)) {
-      return;
-    }
-    onClose();
-  };
-
-  const onOpen = (e?: ReactMouseEvent) => {
-    e?.stopPropagation();
-    setShowPopover(true);
-    document.body.addEventListener("mouseup", onBodyClick);
-  };
-
-  const onClose = () => {
-    setShowPopover(false);
-    document.body.removeEventListener("mouseup", onBodyClick);
-  };
+> = ({ title, button, children, width = 350 }, ref) => {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLSpanElement | null>(null);
 
   useImperativeHandle(ref, () => ({
     close() {
-      onClose();
+      setOpen(false);
     },
     open() {
-      onOpen();
+      setOpen(true);
     },
   }));
 
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const onMouseUp = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mouseup", onMouseUp);
+    return () => document.removeEventListener("mouseup", onMouseUp);
+  }, [open]);
+
   return (
-    <>
+    <span ref={rootRef} className={styles.anchor}>
       {/* eslint-disable-next-line jsx-a11y-x/no-static-element-interactions, jsx-a11y-x/click-events-have-key-events -- child is always an interactive control; wrapper only forwards clicks */}
-      <span ref={buttonRef} onClick={onOpen}>
-        {button}
-      </span>
-      <Popover
-        isOpen={showPopover}
-        target={buttonRef}
-        {...rest}
-        className={`${className ?? ""} ${styles.popover}`}
-        style={{ width }}
-      >
-        <div ref={popoverRef}>
-          <PopoverBody>
-            {title ? <h4>{title}</h4> : null}
-            {children({ styles, close: onClose })}
-          </PopoverBody>
+      <span onClick={() => setOpen(true)}>{button}</span>
+      {open ? (
+        <div role="dialog" className={styles.popover} style={{ width }}>
+          {title ? <h4>{title}</h4> : null}
+          {children({ styles, close: () => setOpen(false) })}
         </div>
-      </Popover>
-    </>
+      ) : null}
+    </span>
   );
 };
 

@@ -54,6 +54,18 @@ Per-panel payload is in the next section.
 
 Lineage's JS includes the 7,854,496-byte lineage component chunk. Each entry's CSS includes the 235,531-byte `renderPanel.css` (Bootstrap, the theme and `main.scss`) that all three share.
 
+## Webview payload — one styling system
+
+The same measurement before and after R7 removed Bootstrap, reactstrap, `theme.scss`, `sass`, Storybook and the form libraries, measured October 2026 with Vite 8.3.1: before at change `ssrzxzxk`, after at `xrsxnpsr`. Bytes are raw / gzip.
+
+| Entry                 | JS before             | JS after              | CSS before        | CSS after         |
+| --------------------- | --------------------- | --------------------- | ----------------- | ----------------- |
+| `documentationEditor` | 556,512 / 178,167     | 376,696 / 126,103     | 243,327 / 34,580  | 17,480 / 4,214    |
+| `queryResults`        | 965,771 / 302,371     | 865,374 / 276,408     | 866,728 / 173,648 | 640,893 / 143,272 |
+| `lineage`             | 8,390,067 / 2,488,642 | 8,274,129 / 2,455,985 | 361,977 / 55,203  | 136,396 / 24,912  |
+
+The shared stylesheet is now uiCore's `base.css` and `utilities.css` plus `main.css`. Query results' remaining CSS is mostly Perspective's theme stylesheets, which the Perspective migration revisits; lineage's is the component's own stylesheet and the scoped Tailwind output, both removed in R8. The packaged VSIX fell from 8,875,065 to 8,790,026 bytes; the lineage component chunk dominates both.
+
 ## VS Code runtime — ten fresh processes
 
 `just benchmark-runtime-vscode fusion-power-user-0.1.0-alpha.0.vsix` installs the packaged VSIX into a new profile and extension directory for each sample, opens all three retained webviews in VS Code 1.128.0, and records:

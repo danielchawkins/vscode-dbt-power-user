@@ -3,7 +3,7 @@ import { IconButton, Input, OptionType, Select, Stack } from "@uicore";
 import { ChangeEvent, MouseEvent, useEffect, useState } from "react";
 import { ActionMeta } from "react-select";
 import { useDebounce } from "use-debounce";
-import styles from "../../querypanel.module.scss";
+import styles from "../../querypanel.module.css";
 
 export interface QueryFilters {
   tags: string[];

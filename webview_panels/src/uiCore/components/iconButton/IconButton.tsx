@@ -1,24 +1,26 @@
 import { ButtonHTMLAttributes } from "react";
-import { Tooltip } from "../../";
-import classes from "./styles.module.scss";
+import { ButtonColor, buttonClassName } from "../../classNames";
+import classes from "./styles.module.css";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
-  color?: string;
+  color?: ButtonColor;
 }
-const IconButton = (props: Props): JSX.Element => {
-  return (
-    <Tooltip title={props.title}>
-      <button
-        {...props}
-        className={`btn ${props.color ? `btn-${props.color}` : ""} ${
-          props.className ?? ""
-        } ${classes.iconButton}`}
-        type={props.type ?? "button"}
-      >
-        {props.children}
-      </button>
-    </Tooltip>
-  );
-};
+
+const IconButton = ({
+  color,
+  className,
+  type = "button",
+  ...rest
+}: Props): JSX.Element => (
+  <button
+    {...rest}
+    type={type}
+    className={buttonClassName(
+      color,
+      false,
+      `${className ?? ""} ${classes.iconButton}`,
+    )}
+  />
+);
 
 export default IconButton;

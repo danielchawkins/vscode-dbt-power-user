@@ -25,8 +25,8 @@ import { Drawer, DrawerRef } from "@uicore";
 import { CSSProperties, useEffect, useRef, useState } from "react";
 import { useErrorBoundary } from "react-error-boundary";
 import { buildPerspectiveTableInit } from "./columnTypeMapping";
-import classes from "./perspective.module.scss";
-import perspectiveStyles from "./perspective.scss?inline";
+import classes from "./perspective.module.css";
+import perspectiveStyles from "./perspective.css?inline";
 import "./PerspectivePlugins";
 import "./themes.css";
 
@@ -309,12 +309,7 @@ const PerspectiveViewer = ({
         ref={perspectiveViewerRef}
         style={styles}
       ></perspective-viewer>
-      <Drawer
-        buttonProps={{ color: "primary", title: "Json Viewer" }}
-        ref={drawerRef}
-        title={drawerTitle}
-        backdrop={false}
-      >
+      <Drawer ref={drawerRef} title={drawerTitle} backdrop={false}>
         <pre>{drawerData}</pre>
       </Drawer>
     </>

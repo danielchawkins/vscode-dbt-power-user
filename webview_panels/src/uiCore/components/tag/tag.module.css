@@ -1,0 +1,28 @@
+.tag {
+  font: inherit;
+  display: inline-block;
+  background: var(--vscode-editorWidget-background);
+  padding: 3px 10px;
+  border-radius: 4px;
+  color: var(--vscode-foreground);
+  font-size: 10px;
+  font-weight: 300;
+  height: 26px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  line-height: 1.8;
+}
+.tag.rounded {
+  border-radius: 2.4rem;
+}
+.tag:hover {
+  border-color: var(--vscode-button-background);
+}
+.tag:global.primary {
+  background-color: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+.tag:global.orange {
+  background-color: var(--vscode-inputValidation-warningBackground);
+  color: var(--vscode-editorWarning-foreground);
+}

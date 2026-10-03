@@ -1,0 +1,8 @@
+.stack {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+}
+.stack:global.stack-column {
+  flex-direction: column;
+}

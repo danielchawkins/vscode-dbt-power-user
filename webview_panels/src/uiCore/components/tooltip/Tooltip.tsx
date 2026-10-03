@@ -1,41 +1,33 @@
-import { ErrorBoundary } from "react-error-boundary";
-import { ReactNode, useId, useState } from "react";
-import { Tooltip as ReactStrapTooltip, TooltipProps } from "reactstrap";
+import { ReactNode, useState } from "react";
+import classes from "./tooltip.module.css";
 
 interface Props {
   children: ReactNode;
+  /** Shown while the pointer or focus is on the children; hovering it keeps it open, so it may hold links. */
   title?: ReactNode;
-  id?: string;
   className?: string;
-  placement?: TooltipProps["placement"];
-  /** Set to false when tooltip content is interactive (e.g. contains links). Keeps tooltip open while hovering over it. */
-  autohide?: boolean;
 }
-const Tooltip = (props: Props): JSX.Element => {
-  const [tooltipOpen, setTooltipOpen] = useState(false);
-  const toggle = () => setTooltipOpen(!tooltipOpen);
-  const generatedId = useId();
-  const tooltipId = (props.id ?? `tooltip-${generatedId}`).replace(
-    /[^\w-]/g,
-    "-",
-  );
 
+const Tooltip = ({ children, title, className }: Props): JSX.Element => {
+  const [open, setOpen] = useState(false);
+  if (!title) {
+    return <>{children}</>;
+  }
   return (
-    <ErrorBoundary fallback={<span id={tooltipId}>{props.children}</span>}>
-      <span id={tooltipId}>{props.children}</span>
-      {props.title ? (
-        <ReactStrapTooltip
-          isOpen={tooltipOpen}
-          target={tooltipId}
-          toggle={toggle}
-          className={props.className}
-          placement={props.placement ?? "auto"}
-          autohide={props.autohide ?? true}
-        >
-          {props.title}
-        </ReactStrapTooltip>
+    <span
+      className={classes.anchor}
+      onMouseEnter={() => setOpen(true)}
+      onMouseLeave={() => setOpen(false)}
+      onFocus={() => setOpen(true)}
+      onBlur={() => setOpen(false)}
+    >
+      {children}
+      {open ? (
+        <span role="tooltip" className={`${classes.bubble} ${className ?? ""}`}>
+          {title}
+        </span>
       ) : null}
-    </ErrorBoundary>
+    </span>
   );
 };
 

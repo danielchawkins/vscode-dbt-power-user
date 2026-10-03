@@ -4,8 +4,9 @@ import { panelRequests, RequestCommand } from "@modules/app/requestExecutor";
 type PanelMessage = lineage.PanelMessage;
 type LineageRequest = RequestCommand<PanelMessage>;
 
-export const { executeRequestInSync, executeRequestInAsync } =
-  panelRequests<PanelMessage>();
+const requests = panelRequests<PanelMessage>();
+const { executeRequestInSync } = requests;
+export const { executeRequestInAsync } = requests;
 
 const requestCommands: readonly string[] = lineage.requestCommands;
 

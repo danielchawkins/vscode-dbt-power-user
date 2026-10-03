@@ -4,7 +4,7 @@ import { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { Button, Drawer, DrawerRef, Stack, Tooltip } from "@uicore";
 import { useMemo, useRef, useState } from "react";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import AddTest from "./AddTest";
 import DisplayTestDetails from "./DisplayTestDetails";
 import Test from "./Test";
@@ -57,7 +57,6 @@ const EntityWithTests = ({ title, tests, type }: Props): JSX.Element | null => {
           <p className="mb-0 d-inline">
             <TestsIcon /> Data Tests:
             <Tooltip
-              autohide={false}
               title={
                 <>
                   Schema and data quality checks that validate your model&apos;s

@@ -1,0 +1,36 @@
+html {
+  font-size: var(--vscode-font-size, 13px);
+}
+
+body {
+  color: var(--vscode-foreground);
+  background: var(--vscode-panel-background);
+  padding: var(--spacing-3xl) var(--spacing-2xl) !important;
+  line-height: 160%;
+}
+
+b,
+strong {
+  font-weight: 600;
+}
+
+.gap-sm {
+  gap: 0.5rem;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.codicon {
+  vertical-align: sub;
+  color: inherit;
+}
+
+code {
+  color: inherit;
+}
+
+.spacer {
+  flex-grow: 1;
+}

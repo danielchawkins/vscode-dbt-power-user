@@ -8,7 +8,7 @@ import {
   Stack,
   Button,
 } from "@uicore";
-import styles from "../../querypanel.module.scss";
+import styles from "../../querypanel.module.css";
 import { useEffect, useMemo, useState } from "react";
 import { QueryHistory } from "@modules/queryPanel/context/types";
 import Filters, { QueryFilters } from "../filters/Filters";

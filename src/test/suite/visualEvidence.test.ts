@@ -3,6 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
+  checkpointCount,
   checkpointStem,
   screenshotDirectory,
   writeCheckpoint,
@@ -65,5 +66,7 @@ describe("visual evidence", () => {
       "01-model-editor.png",
       "02-panel.png",
     ]);
+    expect(checkpointCount(dir)).toBe(2);
+    expect(checkpointCount(path.join(dir, "absent"))).toBe(0);
   });
 });

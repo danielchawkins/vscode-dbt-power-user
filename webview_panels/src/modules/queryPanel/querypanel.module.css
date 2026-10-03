@@ -1,0 +1,240 @@
+.queryPanel {
+  position: absolute;
+  width: 100vw;
+  height: 100vh;
+  box-sizing: border-box;
+  top: 0;
+  left: 0;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  overflow-y: overlay;
+}
+.queryPanel :global .nav-link {
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  color: var(--vscode-foreground);
+}
+.queryPanel :global .nav-link:global.active {
+  border-bottom: 2px solid var(--vscode-foreground);
+}
+.queryPanel .loader {
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  margin-top: -1rem;
+}
+.queryPanel .loader img {
+  width: 10rem;
+}
+.queryPanel .noBookmark {
+  min-height: 200px;
+  justify-content: center;
+  align-items: center;
+  flex-direction: column;
+  text-align: center;
+  padding: 2rem;
+}
+.queryPanel .noBookmark :global .no-results {
+  background-color: var(--vscode-editor-background);
+  border-radius: 50%;
+  height: 100px;
+  width: 100px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.queryPanel .queryTwoCol {
+  display: flex;
+  align-items: flex-start;
+  gap: 2rem;
+  max-height: 100%;
+}
+.queryPanel .queryTwoCol .historyDetails {
+  position: relative;
+  width: 400px;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--vscode-editorWidget-background);
+  padding: 1rem;
+  border-radius: 10px;
+  border-top-left-radius: 0;
+  max-height: 100%;
+}
+.queryPanel .queryTwoCol .historyDetails .closeBtn {
+  position: absolute;
+  top: 0;
+  left: -22px;
+  padding: 2px 3px;
+  border-radius: 0;
+}
+.queryPanel .queryTwoCol .historyDetails :global .card {
+  margin-top: 1rem !important;
+}
+.queryPanel .queryTwoCol .historyDetails :global .card-title {
+  padding-bottom: 0.5rem;
+  margin-bottom: 0;
+  padding-left: 0.5rem;
+  padding-top: 0.5rem;
+}
+.queryPanel .queryTwoCol .historyDetails pre {
+  border: none !important;
+}
+.queryPanel .queryTwoCol .historyDetails :global .stack-row {
+  justify-content: space-between;
+}
+.queryPanel .queryTwoCol .limitWidth {
+  max-width: 100%;
+  min-width: 0;
+  flex: 1;
+}
+@media (min-width: 1400px) {
+  .queryPanel .queryTwoCol .limitWidth {
+    max-width: 1440px;
+  }
+}
+.queryPanel .queryTwoCol .queryHistoryList {
+  background-color: var(--vscode-sideBar-background);
+  border-radius: 5px;
+}
+.queryPanel .queryTwoCol .queryHistoryList [class*="_accordion_"] {
+  max-height: 300px;
+  overflow-y: overlay;
+  scrollbar-width: thin;
+}
+.queryPanel .queryTwoCol .queryHistoryList header {
+  padding: 0.5rem 1rem 0 1rem;
+  border-bottom: 1px solid var(--vscode-panel-border);
+}
+.queryPanel .queryTwoCol .queryHistoryList :global .list-group {
+  border-radius: 0;
+  padding: 1rem;
+}
+.queryPanel
+  .queryTwoCol
+  .queryHistoryList
+  :global
+  .list-group
+  :global
+  .list-group-item {
+  background-color: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  margin-bottom: 1rem;
+  border-radius: 4px;
+  border: 1px solid transparent;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  padding: 4px 0.5rem;
+  min-height: 2.5rem;
+}
+.queryPanel
+  .queryTwoCol
+  .queryHistoryList
+  :global
+  .list-group
+  :global
+  .list-group-item:hover {
+  border-color: var(--vscode-button-background);
+}
+.queryPanel
+  .queryTwoCol
+  .queryHistoryList
+  :global
+  .list-group
+  :global
+  .list-group-item
+  > :first-child {
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+  flex: 1;
+  max-width: 60%;
+}
+.queryPanel
+  .queryTwoCol
+  .queryHistoryList
+  :global
+  .list-group
+  :global
+  .list-group-item
+  > :first-child
+  .codicon {
+  color: #89d185;
+  margin-right: 0.5rem;
+}
+.queryPanel
+  .queryTwoCol
+  .queryHistoryList
+  :global
+  .list-group
+  :global
+  .list-group-item
+  > :last-child {
+  gap: 2px;
+}
+.queryPanel
+  .queryTwoCol
+  .queryHistoryList
+  :global
+  .list-group
+  :global
+  .list-group-item
+  > :last-child
+  span {
+  vertical-align: bottom;
+}
+.queryPanel
+  .queryTwoCol
+  .queryHistoryList
+  :global
+  .list-group
+  :global
+  .list-group-item
+  > :last-child
+  button {
+  display: none;
+  padding: 1px 4px;
+}
+.queryPanel
+  .queryTwoCol
+  .queryHistoryList
+  :global
+  .list-group
+  :global
+  .list-group-item:hover
+  > :last-child
+  button {
+  display: inline-block;
+  color: var(--vscode-foreground);
+}
+
+.selectControl {
+  border: 1px solid var(--vscode-widget-border);
+  border-radius: 5px;
+}
+.selectControl [class*="-control"] {
+  min-height: 28px;
+  align-items: start;
+}
+.selectControl [class*="-control"] [class*="-indicatorContainer"] {
+  padding: 4px;
+}
+
+.searchInput::-webkit-search-cancel-button {
+  display: none;
+}
+
+.toolbar {
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  row-gap: 0.5rem;
+}
+.toolbar :global(.btn) {
+  white-space: nowrap;
+}
+.toolbar :global(.btn-primary),
+.toolbar :global(.btn-success) {
+  border: 1px solid transparent;
+}

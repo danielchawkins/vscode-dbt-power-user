@@ -1,0 +1,29 @@
+.anchor {
+  position: relative;
+  display: inline-block;
+}
+
+.popover {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  z-index: 1060;
+  max-width: calc(100vw - 2rem);
+  padding: 1rem;
+  border: 1px solid var(--vscode-widget-border, transparent);
+  border-radius: 4px;
+  background: var(--vscode-editorWidget-background);
+  color: var(--vscode-foreground);
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow);
+}
+
+.popover h4 {
+  margin-bottom: 1rem;
+}
+
+.popoverActions {
+  display: flex;
+  justify-content: start;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}

@@ -24,14 +24,6 @@ build:
 preview:
     npm run preview
 
-[group("development")]
-storybook:
-    npm run storybook
-
-[group("development")]
-storybook-build:
-    npm run storybook:build
-
 ####################
 # Code quality
 ####################

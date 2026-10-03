@@ -271,6 +271,21 @@ Goal: five styling systems become one (webview audit §2).
 
 Verify: `npm audit` shows zero high or critical; VSIX size and per-entry eager bytes recorded; visual evidence in light, dark and high-contrast themes.
 
+**Result (R7 styling and dependencies; Perspective pending its spike).**
+
+- **Order.** Dead code went first, so nothing slated for deletion was converted: knip now covers `webview_panels/` (entries `src/entries/*.tsx` and the tests) and found three unimported modules, four unused uiCore components, eleven unused reactstrap re-exports, nine unused icons and every Storybook file. All are deleted, with `@storybook/*`, `eslint-plugin-storybook`, `@faker-js/faker`, `factory.ts` and `testUtils/`, which only stories imported. `react-markdown` and `remark-gfm` were already gone from `webview_panels/package.json`; they stay in the tree only through `@altimateai/ui-components`.
+- **CSS Modules.** Every `.module.scss` and `main.scss` was compiled once to plain CSS and renamed `.css`; native nesting is not used, so the files are flat. Legacy tokens map to `--vscode-*` (`--primary-color` to `--vscode-button-background`, `--background--02` to `--vscode-editorWidget-background`, and so on), except in `lineage.module.css`, which defines the values the lineage component's published stylesheet reads until R8.
+- **uiCore.** `reactstrap` is replaced by thin native elements in `uiCore/components/primitives.tsx` and `input/`, and by native rewrites of `Button`, `IconButton`, `LoadingButton` (a spinning codicon), `Tooltip` (hover and focus, no Popper), `Drawer` (a fixed `aside`, Escape closes it) and `PopoverWithButton`. They keep Bootstrap's class names (`btn-primary`, `nav-link active`, `card-title`), so panel CSS and the smoke's `.nav-link` selector are unchanged; `uiCore/base.css` styles those names on `--vscode-*` tokens and `uiCore/utilities.css` keeps the 29 layout utilities panels use. No form control needed `@vscode-elements/elements`: `react-select` still covers the multi-select and creatable inputs.
+- **Bootstrap, `theme.scss`, `sass`.** Removed. A new `esbuild` devDependency replaces the copy Storybook brought, because `cssMinify: "esbuild"` stays until R8.
+- **Forms.** The test forms need no cross-field rule beyond "both fields set", so `react-hook-form`, `@hookform/resolvers` and `yup` are removed: the form holds its values in `useTestFormValues`, each `Select` is `required`, submit checks `checkValidity()`, and `isTestFormComplete` (unit-tested) enables the button. `PreTag` copies with `navigator.clipboard.writeText` and logs a refusal; `react-copy-to-clipboard` is removed.
+- **Upgrades.** `jsdom` 30.1, `@testing-library/jest-dom` 7.0, `globals` 17.13, `@types/node` 24.19 at the root and in `webview_panels` (Node 24 is the current LTS line and the `engines.node` range); `@types/vscode` stays at 1.125.0 for `engines.vscode` `^1.128.0`'s API floor. The webview's `vitest` range rose to `^5.0.3`: a second, older copy kept jest-dom's matchers off the runner's `expect`.
+- **Audit.** `npm audit --omit=dev`: 1 high before and after, `d3-color`, which reaches the tree only through `@finos/perspective-viewer-d3fc` and clears with the Perspective migration. `npm audit`: 6 high before and after: `d3-color`, and `tailwindcss` 3 with `braces`, `chokidar`, `fast-glob` and `micromatch` beneath it, which go with Tailwind in R8. No critical before or after. Removing Storybook took no advisory with it.
+- **Payload.** Per-entry eager bytes are in [`baseline-v1-september-2026.md`](../research/baseline-v1-september-2026.md#webview-payload--one-styling-system). Documentation editor CSS fell from 243,327 to 17,480 bytes and its JS from 556,512 to 376,696; query results CSS from 866,728 to 640,893; lineage CSS from 361,977 to 136,396. The VSIX fell from 8,875,065 to 8,790,026 bytes.
+- **Gates.** `just check`: 1,283 host and 88 webview tests pass. `just smoke-visual` passes on VS Code and Cursor (`FPU_SMOKE_VSIX=fusion-power-user-0.4.0-beta.1.vsix sha256=3374d831022a4f32e4f1c3a6ab20f55d44f07b7232c6500676b7a147263e7206`).
+- **Visual evidence.** `just smoke-visual` adds a theme test: it turns off `window.autoDetectColorScheme`, which Cursor enables and which overrides `workbench.colorTheme`, sets the theme to Default Light Modern, Default Dark Modern and Default High Contrast in turn, reopens each panel, and records the page's theme class and the computed colors of its body and first button next to the PNG (checkpoints `09`–`17`). On both hosts every record has the expected class, `rgb(59, 59, 59)` on `rgb(248, 248, 248)` in light, `rgb(204, 204, 204)` on `rgb(24, 24, 24)` in dark and white on black in high contrast, with no notification. Findings:
+  - A first run captured Cursor's light documentation editor on its "Documentation Help" page because the theme wait accepted any body text while the page rebuilt; this was capture timing, not lost view state. The wait now requires panel-specific content (`Model:` for the documentation editor, the grid or welcome tab for query results, graph nodes for lineage) and re-reads the measured text immediately before each screenshot.
+  - The lineage panel's first button stays `rgb(255, 255, 255)` in every theme: it is the lineage component's own Tailwind button, which R8 replaces.
+
 ### R8 — Lineage renderer
 
 Goal: remove `@altimateai/ui-components`, the last Altimate package, which also carries the critical `plotly.js`/`maplibre-gl` advisory lineage never uses.
@@ -322,12 +337,12 @@ These extend `AGENTS.md`; the ESLint config enforces what it can.
 | `inversify`, `reflect-metadata`, `ts-loader`                     | 8, 0.2, 9       | removed                              | root    | R4       |
 | `react-router-dom`                                               | 7               | removed                              | webview | R6       |
 | `@reduxjs/toolkit`                                               | 2               | removed with the lineage component   | webview | R8       |
-| `reactstrap`, `bootstrap`, `sass`                                | 9, 5, 1         | removed                              | webview | R7       |
-| `react-hook-form`, `yup`, `react-copy-to-clipboard`              | 7, 1, 5         | native, or `react-hook-form` only    | webview | R7       |
+| `reactstrap`, `bootstrap`, `sass`                                | —               | removed                              | webview | R7       |
+| `react-hook-form`, `yup`, `react-copy-to-clipboard`              | —               | native                               | webview | R7       |
 | Storybook, `faker`, `factory.ts`, `react-markdown`, `remark-gfm` | —               | removed                              | webview | R7       |
 | `@finos/perspective*`                                            | 3.8, deprecated | `@perspective-dev/*`                 | webview | R7       |
 | `react`, `react-dom`                                             | 18              | 19, after 1.0.0                      | webview | post-1.0 |
-| `@types/node`                                                    | 24              | current LTS                          | root    | R7       |
+| `@types/node`                                                    | 24.19           | current LTS                          | root    | R7       |
 | `@altimateai/ui-components`, `tailwindcss`, `postcss`            | 0.0.88, 3       | removed                              | webview | R8       |
 
 ## Considered and not planned

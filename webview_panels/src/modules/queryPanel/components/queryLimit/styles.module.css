@@ -1,0 +1,73 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  border-radius: 0.5rem;
+}
+
+.input {
+  background-color: var(--vscode-editorWidget-background);
+  border: none;
+  outline: none;
+  max-width: 80px;
+  width: auto;
+  caret-color: var(--vscode-button-background);
+  border-radius: 0;
+  height: 100%;
+  padding: calc(0.5rem - 1px) 0.25rem !important;
+}
+.input:focus {
+  border: none;
+  outline: none;
+  background-color: var(--vscode-editorWidget-background);
+}
+
+.saveButton {
+  color: var(--vscode-button-background);
+  cursor: pointer;
+}
+
+.playButton {
+  padding: calc(0.5rem - 1px);
+  color: #ffffff;
+  border-top-right-radius: 0.15rem;
+  display: flex;
+}
+.playButton.active {
+  background-color: var(--vscode-button-background);
+  cursor: pointer;
+}
+.playButton.inactive {
+  background-color: var(--vscode-badge-background);
+}
+
+.limitContainer {
+  gap: 0;
+  align-items: center;
+}
+.limitContainer .label {
+  padding: 0.3rem 0.75rem;
+  border: 1px solid var(--vscode-widget-border);
+  border-right: none;
+  border-top-left-radius: 0.25rem;
+}
+.limitContainer .content {
+  display: flex;
+  align-items: center;
+  border-top-right-radius: 0.25rem;
+}
+.limitContainer .content.inactive {
+  border: 1px solid var(--vscode-widget-border);
+}
+.limitContainer .content.active {
+  border: 1px solid var(--vscode-button-background);
+}
+
+.saveContainer {
+  background-color: var(--vscode-widget-border);
+  padding: 0.25rem 0.75rem;
+  justify-content: space-between;
+  font-size: 0.8em;
+  border-bottom-right-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
+  line-height: 120%;
+}

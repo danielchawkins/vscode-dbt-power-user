@@ -15,7 +15,7 @@ import {
   Stack,
 } from "@uicore";
 import { useMemo } from "react";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import DbtTestCode from "./DbtTestCode";
 
 interface Props {
@@ -40,7 +40,7 @@ const TestDetails = ({ testType, test }: Props): JSX.Element => {
                       test.test_metadata
                         .kwargs as TestMetadataAcceptedValuesKwArgs
                     ).values?.map((value) => (
-                      <ListGroupItem key={value} tag="div">
+                      <ListGroupItem key={value}>
                         {value}
                       </ListGroupItem>
                     ))}
@@ -60,7 +60,7 @@ const TestDetails = ({ testType, test }: Props): JSX.Element => {
                       <Label>To:</Label>
                       <div
                         className="p-2 px-3 rounded"
-                        style={{ background: "var(--background--02)" }}
+                        style={{ background: "var(--vscode-textCodeBlock-background)" }}
                       >
                         {
                           (
@@ -74,7 +74,7 @@ const TestDetails = ({ testType, test }: Props): JSX.Element => {
                       <Label>Field:</Label>
                       <div
                         className="p-2 px-3 rounded"
-                        style={{ background: "var(--background--02)" }}
+                        style={{ background: "var(--vscode-textCodeBlock-background)" }}
                       >
                         {
                           (

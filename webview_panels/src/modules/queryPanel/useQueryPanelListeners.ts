@@ -31,9 +31,9 @@ type HostMessage = queryResults.HostMessage;
 const useQueryPanelListeners = (): { loading: boolean } => {
   const dispatch = useQueryPanelDispatch();
   const { loading, hintIndex } = useQueryPanelState();
-  const hintInterval = useRef<NodeJS.Timeout | undefined>(undefined);
+  const hintInterval = useRef<number | undefined>(undefined);
   const hintIndexRef = useRef<number>(hintIndex);
-  const queryExecutionTimer = useRef<NodeJS.Timeout | undefined>(undefined);
+  const queryExecutionTimer = useRef<number | undefined>(undefined);
   const queryStart = useRef(Date.now());
 
   useEffect(() => {
@@ -45,7 +45,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
     HINTS.sort(() => Math.random() - 0.5);
     dispatch(setHintIndex((hintIndexRef.current + 1) % HINTS.length));
 
-    hintInterval.current = setInterval(() => {
+    hintInterval.current = window.setInterval(() => {
       dispatch(setHintIndex((hintIndexRef.current + 1) % HINTS.length));
     }, 3500);
   }, [dispatch, hintIndex]);
@@ -56,7 +56,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
   };
 
   const endQueryExecutionTimer = () =>
-    clearTimeout(queryExecutionTimer.current);
+    window.clearInterval(queryExecutionTimer.current);
 
   const handleLoading = useCallback(() => {
     if (loading) {
@@ -64,7 +64,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
     }
     clearData();
     dispatch(setLoading(true));
-    queryExecutionTimer.current = setInterval(() => {
+    queryExecutionTimer.current = window.setInterval(() => {
       const now = Date.now();
       const elapsedTime = Math.round((now - queryStart.current) / 100) / 10;
       const time = isNaN(elapsedTime) ? 0 : elapsedTime;
@@ -74,7 +74,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
   }, [loading, dispatch, handleHintMessage]);
 
   const clearHintInterval = () => {
-    clearInterval(hintInterval.current);
+    window.clearInterval(hintInterval.current);
     hintInterval.current = undefined;
   };
 

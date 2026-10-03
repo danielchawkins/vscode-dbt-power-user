@@ -1,0 +1,39 @@
+.pre {
+  position: relative;
+}
+.pre pre {
+  transition: 0.3s ease all;
+}
+.pre pre :global .card {
+  background: var(--vscode-list-hoverBackground) !important;
+}
+.pre pre :global .card :global .card-body code {
+  max-height: none;
+}
+.pre :global .code__icons {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 1;
+}
+.pre :global .code__icons button {
+  background-color: transparent;
+  border: none;
+  border-radius: 50%;
+  background-color: var(--vscode-icon-foreground);
+  padding: 6px;
+  cursor: pointer;
+}
+
+.markdown ul,
+.markdown ol {
+  padding: 0;
+}
+.markdown table {
+  border-collapse: collapse;
+}
+.markdown th,
+.markdown td {
+  padding: 6px 13px;
+  border: 1px solid black;
+}

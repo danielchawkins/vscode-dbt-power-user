@@ -2,26 +2,18 @@ import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { panelLogger } from "@modules/logger";
 import { LoadingButton, OptionType, Select, Stack } from "@uicore";
-import { useEffect, useState } from "react";
-import { Control, Controller, UseFormSetValue } from "react-hook-form";
-import { SaveRequest } from "../types";
+import { useState } from "react";
+import { SetTestFormValue } from "../hooks/useTestFormValues";
 
 interface Props {
-  control: Control<SaveRequest, unknown>;
   column: string;
   values?: string[];
-  setValue: UseFormSetValue<SaveRequest>;
+  setValue: SetTestFormValue;
 }
-const AcceptedValues = ({
-  control,
-  column,
-  setValue,
-  values,
-}: Props): JSX.Element => {
+const AcceptedValues = ({ column, setValue, values }: Props): JSX.Element => {
   const {
     state: { currentDocsData },
   } = useDocumentationContext();
-  const [, setRefresh] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const getDistinctColumnValues = async () => {
     setIsLoading(true);
@@ -49,39 +41,28 @@ const AcceptedValues = ({
     }
   };
 
-  useEffect(() => {
-    setRefresh(Date.now());
-  }, [values]);
   return (
     <div>
-      <Controller
-        control={control}
+      <Select
+        components={{
+          DropdownIndicator: null,
+          Menu: () => null,
+        }}
+        inputId="accepted_values"
         name="accepted_values"
-        render={({ field: { onChange, ref } }) => (
-          <Select
-            components={{
-              DropdownIndicator: null,
-              Menu: () => null,
-            }}
-            ref={ref}
-            inputId="accepted_values"
-            hideOptionIcon
-            isCreatable
-            isClearable
-            value={values?.map((v) => ({ label: v, value: v })) ?? []}
-            defaultValue={values?.map((v) => ({ label: v, value: v })) ?? []}
-            isMulti
-            onChange={(updates: unknown) => {
-              const newValues = ((updates ?? []) as OptionType[])?.map(
-                (val) => val.value,
-              );
-              setValue("accepted_values", newValues);
-
-              return onChange(newValues);
-            }}
-            placeholder="Type a value and press enter to add"
-          />
-        )}
+        required
+        hideOptionIcon
+        isCreatable
+        isClearable
+        value={values?.map((v) => ({ label: v, value: v })) ?? []}
+        isMulti
+        onChange={(updates: unknown) =>
+          setValue(
+            "accepted_values",
+            ((updates ?? []) as OptionType[]).map((val) => val.value),
+          )
+        }
+        placeholder="Type a value and press enter to add"
       />
       <Stack className="mt-2 justify-content-between align-items-baseline">
         <p className="p4">Hit enter to add value</p>

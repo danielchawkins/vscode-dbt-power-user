@@ -4,7 +4,7 @@ import { DBTUnitTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { Button, Drawer, DrawerRef, Stack, Tag, Tooltip } from "@uicore";
 import { useRef, useState } from "react";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import UnitTestDetails from "./UnitTestDetails";
 
 interface Props {
@@ -45,7 +45,6 @@ const EntityWithUnitTests = ({ title, unitTests }: Props): JSX.Element => {
             <p className="mb-0 d-inline">
               Unit Tests:
               <Tooltip
-                autohide={false}
                 title={
                   <>
                     Business logic tests that validate your model&apos;s
@@ -67,11 +66,7 @@ const EntityWithUnitTests = ({ title, unitTests }: Props): JSX.Element => {
               </Tooltip>
             </p>
             {visibleTests?.map((test) => (
-              <Tooltip
-                key={test.name}
-                title={"Click to view details"}
-                id={`tooltip-${test.name}`}
-              >
+              <Tooltip key={test.name} title={"Click to view details"}>
                 <Tag
                   color={
                     selectedTest?.name === test.name ? "primary" : "default"

@@ -1,0 +1,40 @@
+.docBlockItem {
+  padding: 8px 12px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin-bottom: 4px;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+.docBlockItem:hover {
+  background-color: var(--vscode-sideBar-background);
+  border-color: var(--vscode-editorWidget-background);
+}
+
+.popoverContent {
+  min-width: 320px;
+  padding: 8px;
+}
+
+.searchContainer {
+  margin-bottom: 12px;
+}
+
+.itemsList {
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.itemContent {
+  gap: 2px;
+}
+
+.itemName {
+  font-size: 14px;
+}
+
+.emptyState {
+  padding: 16px;
+}

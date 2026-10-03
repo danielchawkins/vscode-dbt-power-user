@@ -1,7 +1,7 @@
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { Stack } from "@uicore";
 import DocGeneratorColumn from "./DocGeneratorColumn";
-import classes from "../../styles.module.scss";
+import classes from "../../styles.module.css";
 import SyncWithDatabase from "./SyncWithDatabase";
 import { useMemo } from "react";
 import { DBTModelTest } from "@modules/documentationEditor/state/types";

@@ -1,0 +1,14 @@
+.input-group textarea {
+  padding: 10px;
+  width: 100%;
+  min-height: 48px;
+  font-size: 13px;
+}
+.input-group :global .btn {
+  border-radius: 2px !important;
+}
+.input-group .actionButtons {
+  position: absolute;
+  right: 10px;
+  top: 10px;
+}

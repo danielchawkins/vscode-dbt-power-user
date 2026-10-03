@@ -1,0 +1,14 @@
+.dropdownButton {
+  gap: 0 !important;
+}
+.dropdownButton button:first-child {
+  border-radius: 2px 0 0 2px;
+}
+.dropdownButton button:last-child {
+  border-radius: 0 2px 2px 0;
+  background: var(--vscode-button-hoverBackground);
+}
+.dropdownButton :global .btn-secondary:last-child {
+  border-radius: 0 2px 2px 0;
+  background: var(--vscode-button-secondaryHoverBackground);
+}

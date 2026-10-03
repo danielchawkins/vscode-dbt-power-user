@@ -1,5 +1,5 @@
 import { HTMLAttributes, ReactNode } from "react";
-import classes from "./tag.module.scss";
+import classes from "./tag.module.css";
 
 const Tag = ({
   children,
