@@ -106,9 +106,9 @@ export function toFlow(input: FlowInput): {
     id: t.table,
     type: "table",
     position: positions.get(t.table) ?? { x: 0, y: 0 },
-    // The laid-out size; the minimap draws only nodes with a known size, and controlled nodes are never measured.
-    width: geometry.tableWidth,
-    height: tableHeight(listed(t.table)),
+    // A size before React Flow measures the node, so the minimap draws it at once; measurement still sets handles.
+    initialWidth: geometry.tableWidth,
+    initialHeight: tableHeight(listed(t.table)),
     selected: t.table === input.selectedTable,
     data: {
       table: t,
