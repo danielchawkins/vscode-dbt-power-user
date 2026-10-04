@@ -1,0 +1,14 @@
+{
+  "columns": ["I", "D", "S", "B", "DT", "N"],
+  "data": [
+    {
+      "B": "<boolean>",
+      "D": "<string>",
+      "DT": "<string>",
+      "I": "<string>",
+      "N": "<null>",
+      "S": "<string>"
+    }
+  ],
+  "error": null
+}

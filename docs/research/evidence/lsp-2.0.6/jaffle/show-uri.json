@@ -1,0 +1,294 @@
+{
+  "columns": [
+    "order_id",
+    "customer_id",
+    "order_date",
+    "status",
+    "credit_card_amount",
+    "coupon_amount",
+    "bank_transfer_amount",
+    "gift_card_amount",
+    "amount"
+  ],
+  "data": [
+    {
+      "amount": "10.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "10.0",
+      "customer_id": "1",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-01",
+      "order_id": "1",
+      "status": "returned"
+    },
+    {
+      "amount": "20.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "20.0",
+      "customer_id": "3",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-02",
+      "order_id": "2",
+      "status": "completed"
+    },
+    {
+      "amount": "1.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "1.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "94",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-04",
+      "order_id": "3",
+      "status": "completed"
+    },
+    {
+      "amount": "25.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "25.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "50",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-05",
+      "order_id": "4",
+      "status": "completed"
+    },
+    {
+      "amount": "17.0",
+      "bank_transfer_amount": "17.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "64",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-05",
+      "order_id": "5",
+      "status": "completed"
+    },
+    {
+      "amount": "6.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "6.0",
+      "customer_id": "54",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-07",
+      "order_id": "6",
+      "status": "completed"
+    },
+    {
+      "amount": "16.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "16.0",
+      "customer_id": "88",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-09",
+      "order_id": "7",
+      "status": "completed"
+    },
+    {
+      "amount": "23.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "23.0",
+      "customer_id": "2",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-11",
+      "order_id": "8",
+      "status": "returned"
+    },
+    {
+      "amount": "23.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "53",
+      "gift_card_amount": "23.0",
+      "order_date": "2018-01-12",
+      "order_id": "9",
+      "status": "completed"
+    },
+    {
+      "amount": "26.0",
+      "bank_transfer_amount": "26.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "7",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-14",
+      "order_id": "10",
+      "status": "completed"
+    },
+    {
+      "amount": "27.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "27.0",
+      "customer_id": "99",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-14",
+      "order_id": "11",
+      "status": "completed"
+    },
+    {
+      "amount": "1.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "1.0",
+      "customer_id": "59",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-15",
+      "order_id": "12",
+      "status": "completed"
+    },
+    {
+      "amount": "19.0",
+      "bank_transfer_amount": "14.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "5.0",
+      "customer_id": "84",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-17",
+      "order_id": "13",
+      "status": "completed"
+    },
+    {
+      "amount": "3.0",
+      "bank_transfer_amount": "3.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "40",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-17",
+      "order_id": "14",
+      "status": "returned"
+    },
+    {
+      "amount": "22.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "22.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "25",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-17",
+      "order_id": "15",
+      "status": "completed"
+    },
+    {
+      "amount": "10.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "10.0",
+      "customer_id": "39",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-18",
+      "order_id": "16",
+      "status": "completed"
+    },
+    {
+      "amount": "2.0",
+      "bank_transfer_amount": "2.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "71",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-18",
+      "order_id": "17",
+      "status": "completed"
+    },
+    {
+      "amount": "13.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "13.0",
+      "customer_id": "64",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-20",
+      "order_id": "18",
+      "status": "returned"
+    },
+    {
+      "amount": "6.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "54",
+      "gift_card_amount": "6.0",
+      "order_date": "2018-01-22",
+      "order_id": "19",
+      "status": "completed"
+    },
+    {
+      "amount": "15.0",
+      "bank_transfer_amount": "15.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "20",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-23",
+      "order_id": "20",
+      "status": "completed"
+    },
+    {
+      "amount": "12.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "12.0",
+      "customer_id": "71",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-23",
+      "order_id": "21",
+      "status": "completed"
+    },
+    {
+      "amount": "8.0",
+      "bank_transfer_amount": "8.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "86",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-24",
+      "order_id": "22",
+      "status": "completed"
+    },
+    {
+      "amount": "23.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "0.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "22",
+      "gift_card_amount": "23.0",
+      "order_date": "2018-01-26",
+      "order_id": "23",
+      "status": "return_pending"
+    },
+    {
+      "amount": "26.0",
+      "bank_transfer_amount": "0.0",
+      "coupon_amount": "26.0",
+      "credit_card_amount": "0.0",
+      "customer_id": "3",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-27",
+      "order_id": "24",
+      "status": "completed"
+    },
+    {
+      "amount": "58.0",
+      "bank_transfer_amount": "20.0",
+      "coupon_amount": "16.0",
+      "credit_card_amount": "22.0",
+      "customer_id": "51",
+      "gift_card_amount": "0.0",
+      "order_date": "2018-01-28",
+      "order_id": "25",
+      "status": "completed"
+    },
+    {
+      "_truncated": 74
+    }
+  ],
+  "error": null
+}

@@ -1,0 +1,120 @@
+{
+  "missing ref": {
+    "pushed": [
+      {
+        "severity": 1,
+        "code": "1501",
+        "source": "dbt",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL not a key type: ref not found for package: jaffle_shop, model: no_such_model, version: None\n(in models/customers.sql:3:19)\n  --> models/customers.sql:3:19",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 3
+          },
+          "start": {
+            "character": 0,
+            "line": 2
+          }
+        }
+      }
+    ],
+    "compileCompleteErrors": [
+      {
+        "code": "1048",
+        "message": "[DependencyNotFound (dbt1048)]: Ref 'no_such_model' not found in project. Searched for 'jaffle_shop.no_such_model, no_such_model'\n  --> models/customers.sql:3:19",
+        "severity": "Error"
+      },
+      {
+        "code": "1501",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL not a key type: ref not found for package: jaffle_shop, model: no_such_model, version: None\n(in models/customers.sql:3:19)\n  --> models/customers.sql:3:19",
+        "severity": "Error"
+      }
+    ]
+  },
+  "jinja syntax": {
+    "pushed": [
+      {
+        "severity": 1,
+        "code": "1502",
+        "source": "dbt",
+        "message": "[MacroSyntaxInvalid (dbt1502)]: Failed to render SQL syntax error: unexpected `}`, expected end of variable block\n(in models/customers.sql:3:43)\n  --> models/customers.sql:3:43",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 3
+          },
+          "start": {
+            "character": 0,
+            "line": 2
+          }
+        }
+      }
+    ],
+    "compileCompleteErrors": [
+      {
+        "code": "1502",
+        "message": "[MacroSyntaxInvalid (dbt1502)]: Failed to render SQL syntax error: unexpected `}`, expected end of variable block\n(in models/customers.sql:3:43)\n  --> models/customers.sql:3:43",
+        "severity": "Error"
+      },
+      {
+        "code": "1048",
+        "message": "[DependencyNotFound (dbt1048)]: Dependency model.jaffle_shop.customers not found for node exposure.jaffle_shop.weekly_report\n  --> models/sources.yml:13:9",
+        "severity": "Error"
+      }
+    ]
+  },
+  "unknown column (strict)": {
+    "pushed": [
+      {
+        "severity": 1,
+        "code": "0227",
+        "source": "dbt",
+        "message": "[UnresolvedIdentifier (dbt0227)]: No column customers.no_such_column found. Available are customers.first_name, customer_orders.first_order, customers.last_name, customer_payments.total_amount, customer_orders.customer_id, customer_payments.customer_id, customers.customer_id ..(and 2 more)\n  --> mod",
+        "range": {
+          "end": {
+            "character": 8,
+            "line": 51
+          },
+          "start": {
+            "character": 8,
+            "line": 51
+          }
+        }
+      }
+    ],
+    "compileCompleteErrors": [
+      {
+        "code": "0227",
+        "message": "[UnresolvedIdentifier (dbt0227)]: No column customers.no_such_column found. Available are customers.first_name, customer_orders.first_order, customers.last_name, customer_payments.total_amount, customer_orders.customer_id, customer_payments.customer_id, customers.customer_id ..(and 2 more)\n  --> models/customers.sql:52:9",
+        "severity": "Error"
+      }
+    ]
+  },
+  "missing env_var": {
+    "pushed": [
+      {
+        "severity": 1,
+        "code": "1501",
+        "source": "dbt",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL invalid operation: 'env_var': environment variable 'FPU_PROBE_UNSET_VAR' not found\n(in models/customers.sql:1:1)\n  --> models/customers.sql:1:1",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 1
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        }
+      }
+    ],
+    "compileCompleteErrors": [
+      {
+        "code": "1501",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL invalid operation: 'env_var': environment variable 'FPU_PROBE_UNSET_VAR' not found\n(in models/customers.sql:1:1)\n  --> models/customers.sql:1:1",
+        "severity": "Error"
+      }
+    ]
+  }
+}

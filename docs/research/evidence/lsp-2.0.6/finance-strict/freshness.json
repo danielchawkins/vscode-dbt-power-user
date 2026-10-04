@@ -1,0 +1,32 @@
+{
+  "closedBefore": false,
+  "closedDiskEditCompilesSeen": 0,
+  "closedDiskEditReflected": true,
+  "closedDiskEditServerLog": [
+    "Attempting 'BackgroundCompile' compilation",
+    "'Full' compiling '<P>'",
+    "Updating compiler state to 3",
+    "Node breakdown: 330 models, 8 others",
+    "'Full' compilation complete - 1595ms"
+  ],
+  "watchedChangeToCompileMs": 54,
+  "watchedChangeReflected": true,
+  "openBefore": false,
+  "didChangeCompilesSeen": 0,
+  "didChangeReflected": false,
+  "didSaveToCompileCompleteMs": 1281,
+  "didSaveReflected": true,
+  "didSaveCompileErrors": [],
+  "didSaveColumnLineageNodes": 0,
+  "createdToCompileMs": 1433,
+  "createdListed": true,
+  "serverWroteTargetManifest": false,
+  "lspTargetEntries": [
+    "compiled",
+    "db",
+    "generic_tests",
+    "private",
+    "snapshots"
+  ],
+  "lspManifestFiles": []
+}

@@ -1,0 +1,2354 @@
+[
+  {
+    "group": "load",
+    "name": "getProjectInfo after background compile",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": []
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{adapter_type:snowflake, models_count:330, models_count_is_estimate:false, project_name:finance_general}"
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens (clean document, after load)",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "array(4)",
+    "p50": 1,
+    "samples": [1, 1, 1, 0, 1],
+    "detail": [
+      {
+        "title": "Preview CTE",
+        "command": "dbt.previewCte",
+        "name": "FINAL",
+        "line": 38
+      },
+      {
+        "title": "Preview CTE",
+        "command": "dbt.previewCte",
+        "name": "RECONCILED",
+        "line": 30
+      },
+      {
+        "title": "Preview CTE",
+        "command": "dbt.previewCte",
+        "name": "STRIPE_ACCOUNTS",
+        "line": 24
+      },
+      {
+        "title": "Preview CTE",
+        "command": "dbt.previewCte",
+        "name": "UNIONED",
+        "line": 15
+      }
+    ]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/full (clean document)",
+    "method": "textDocument/semanticTokens/full",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{data[40]}",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 1],
+    "detail": {
+      "legend": {
+        "tokenModifiers": [],
+        "tokenTypes": [
+          "property",
+          "function",
+          "macro",
+          "type",
+          "variable",
+          "keyword"
+        ]
+      },
+      "count": 8,
+      "byType": {
+        "variable": ["stripe_kikoff", "stripe_grant", "stripe_cbl"],
+        "keyword": ["ref"],
+        "function": ["kikoff.union_relations", "temporalize.reconcile"]
+      }
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "inlayHint (clean document)",
+    "method": "textDocument/inlayHint",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 200,
+          "character": 0
+        }
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "array(0)",
+    "p50": 1,
+    "samples": [1, 1, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens (after unsaved didChange)",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/full (after unsaved didChange)",
+    "method": "textDocument/semanticTokens/full",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens (after didSave of original text)",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "array(4)",
+    "p50": 0,
+    "samples": [1, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/full (after didSave of original text)",
+    "method": "textDocument/semanticTokens/full",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{data[40]}",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover ref('base__stripe_grant__transfer_reversal')",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 12,
+        "character": 29
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{contents{2}}",
+    "p50": 0,
+    "samples": [1, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition ref('base__stripe_grant__transfer_reversal')",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 12,
+        "character": 29
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{range{2}, uri:file://<P>/models/12_base/money_movement/stripe}",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "references ref('base__stripe_grant__transfer_reversal')",
+    "method": "textDocument/references",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 12,
+        "character": 29
+      },
+      "context": {
+        "includeDeclaration": true
+      }
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "array(1)",
+    "p50": 1,
+    "samples": [1, 1, 0, 0, 1]
+  },
+  {
+    "group": "lsp",
+    "name": "hover dotted kikoff.union_relations",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 16,
+        "character": 15
+      }
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "null",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 1]
+  },
+  {
+    "group": "lsp",
+    "name": "definition dotted kikoff.union_relations",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 16,
+        "character": 15
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{range{2}, uri:file://<P>/dbt_packages/kikoff/macros/union_rel}",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "signatureHelp dotted kikoff.union_relations",
+    "method": "textDocument/signatureHelp",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 16,
+        "character": 15
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [47, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover dotted temporalize.reconcile",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 31,
+        "character": 20
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition dotted temporalize.reconcile",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 31,
+        "character": 20
+      }
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{range{2}, uri:file://<P>/dbt_packages/temporalize/macros/temp}",
+    "p50": 0,
+    "samples": [0, 1, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "references dotted temporalize.reconcile",
+    "method": "textDocument/references",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 31,
+        "character": 20
+      },
+      "context": {
+        "includeDeclaration": true
+      }
+    },
+    "ok": true,
+    "ms": 2,
+    "shape": "array(147)",
+    "p50": 1,
+    "samples": [1, 0, 1, 0, 2]
+  },
+  {
+    "group": "lsp",
+    "name": "signatureHelp dotted temporalize.reconcile",
+    "method": "textDocument/signatureHelp",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 31,
+        "character": 20
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover source('stripe_grant','topup')",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql"
+      },
+      "position": {
+        "line": 12,
+        "character": 23
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition source('stripe_grant','topup')",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql"
+      },
+      "position": {
+        "line": 12,
+        "character": 23
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "hover select *",
+    "method": "textDocument/hover",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 42,
+        "character": 7
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "definition select *",
+    "method": "textDocument/definition",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 42,
+        "character": 7
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "completion ref('",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 44,
+        "character": 22
+      },
+      "context": {
+        "triggerKind": 2,
+        "triggerCharacter": "'"
+      }
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{isIncomplete:false, items[330]}",
+    "p50": 1,
+    "samples": [1, 1, 0, 1, 1],
+    "detail": {
+      "count": 330,
+      "kinds": {
+        "18": 330
+      },
+      "sample": [
+        {
+          "label": "base__backend_grant__ach_credits",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "base__backend_grant__ach_credits"
+        },
+        {
+          "label": "base__backend_grant__ach_payments",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "base__backend_grant__ach_payments"
+        },
+        {
+          "label": "base__backend_grant__card_payments",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "base__backend_grant__card_payments"
+        },
+        {
+          "label": "base__backend_grant__cash_advance_boost_credits",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "base__backend_grant__cash_advance_boost_credits"
+        },
+        {
+          "label": "base__backend_grant__cash_advance_collections",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "base__backend_grant__cash_advance_collections"
+        },
+        {
+          "label": "base__backend_grant__cash_advance_disbursements",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "base__backend_grant__cash_advance_disbursements"
+        },
+        {
+          "label": "base__backend_grant__cash_advance_offer_extensions",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "base__backend_grant__cash_advance_offer_extensions"
+        },
+        {
+          "label": "base__backend_grant__cash_advance_offers",
+          "kind": 18,
+          "detail": "model",
+          "insertText": "base__backend_grant__cash_advance_offers"
+        }
+      ]
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "completion source('",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 44,
+        "character": 25
+      },
+      "context": {
+        "triggerKind": 2,
+        "triggerCharacter": "'"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "{isIncomplete:false, items[0]}",
+    "p50": 0,
+    "samples": [1, 0, 0, 1, 0],
+    "detail": {
+      "count": 0,
+      "kinds": {},
+      "sample": []
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "completion temporalize.",
+    "method": "textDocument/completion",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 44,
+        "character": 15
+      },
+      "context": {
+        "triggerKind": 2,
+        "triggerCharacter": "."
+      }
+    },
+    "ok": true,
+    "ms": 4,
+    "shape": "{isIncomplete:false, items[1406]}",
+    "p50": 5,
+    "samples": [7, 5, 6, 4, 4],
+    "detail": {
+      "count": 1406,
+      "kinds": {
+        "3": 1406
+      },
+      "sample": [
+        {
+          "label": "__get(variant, varchar)",
+          "kind": 3,
+          "insertText": "__get(${1})"
+        },
+        {
+          "label": "__get(array, decimal(38, 0))",
+          "kind": 3,
+          "insertText": "__get(${1})"
+        },
+        {
+          "label": "__get(array($1), decimal(38, 0))",
+          "kind": 3,
+          "insertText": "__get(${1})"
+        },
+        {
+          "label": "__get(variant, decimal(38, 0))",
+          "kind": 3,
+          "insertText": "__get(${1})"
+        },
+        {
+          "label": "_sdf_internal_ilike_any(varchar, varchar, array)",
+          "kind": 3,
+          "insertText": "_sdf_internal_ilike_any(${1})"
+        },
+        {
+          "label": "_sdf_internal_like_all(varchar, varchar, array)",
+          "kind": 3,
+          "insertText": "_sdf_internal_like_all(${1})"
+        },
+        {
+          "label": "_sdf_internal_like_any(varchar, varchar, array)",
+          "kind": 3,
+          "insertText": "_sdf_internal_like_any(${1})"
+        },
+        {
+          "label": "abs(decimal(p, s))",
+          "kind": 3,
+          "insertText": "abs(${1})"
+        }
+      ]
+    }
+  },
+  {
+    "group": "lsp",
+    "name": "documentSymbol",
+    "method": "textDocument/documentSymbol",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [1, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "workspaceSymbol",
+    "method": "workspace/symbol",
+    "params": {
+      "query": "stripe"
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method workspace/symbol",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0],
+    "detail": []
+  },
+  {
+    "group": "lsp",
+    "name": "codeLens models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.yml",
+    "method": "textDocument/codeLens",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.yml"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [1, 0, 0, 1, 0],
+    "detail": []
+  },
+  {
+    "group": "lsp",
+    "name": "codeAction",
+    "method": "textDocument/codeAction",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 3,
+          "character": 0
+        }
+      },
+      "context": {
+        "diagnostics": [],
+        "only": ["source.fixAll"]
+      }
+    },
+    "ok": false,
+    "ms": 15,
+    "shape": "error -32603: exit code 1",
+    "p50": 17,
+    "samples": [25, 18, 17, 15, 15]
+  },
+  {
+    "group": "lsp",
+    "name": "codeAction (no filter)",
+    "method": "textDocument/codeAction",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 3,
+          "character": 0
+        }
+      },
+      "context": {
+        "diagnostics": []
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [1, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "formatting",
+    "method": "textDocument/formatting",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "options": {
+        "tabSize": 4,
+        "insertSpaces": true
+      }
+    },
+    "ok": false,
+    "ms": 15,
+    "shape": "error -32603: exit code 1",
+    "p50": 15,
+    "samples": [15, 15, 15, 15, 15]
+  },
+  {
+    "group": "lsp",
+    "name": "rangeFormatting",
+    "method": "textDocument/rangeFormatting",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 5,
+          "character": 0
+        }
+      },
+      "options": {
+        "tabSize": 4,
+        "insertSpaces": true
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method textDocument/rangeFormatting",
+    "p50": 0,
+    "samples": [0, 0, 0, 1, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/full",
+    "method": "textDocument/semanticTokens/full",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/range",
+    "method": "textDocument/semanticTokens/range",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 10,
+          "character": 0
+        }
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "semanticTokens/full/delta",
+    "method": "textDocument/semanticTokens/full/delta",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "previousResultId": "0"
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method textDocument/semanticTokens/full/delta",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "inlayHint",
+    "method": "textDocument/inlayHint",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "range": {
+        "start": {
+          "line": 0,
+          "character": 0
+        },
+        "end": {
+          "line": 200,
+          "character": 0
+        }
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "foldingRange",
+    "method": "textDocument/foldingRange",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method textDocument/foldingRange",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "documentLink",
+    "method": "textDocument/documentLink",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "error -32601: No such method textDocument/documentLink",
+    "p50": 0,
+    "samples": [2, 0, 0, 0, 1]
+  },
+  {
+    "group": "lsp",
+    "name": "documentHighlight",
+    "method": "textDocument/documentHighlight",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      },
+      "position": {
+        "line": 12,
+        "character": 27
+      }
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "error -32601: No such method textDocument/documentHighlight",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 1]
+  },
+  {
+    "group": "lsp",
+    "name": "diagnostic (pull)",
+    "method": "textDocument/diagnostic",
+    "params": {
+      "textDocument": {
+        "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      }
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "{items[0], kind:full}",
+    "p50": 0,
+    "samples": [0, 0, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "workspace/diagnostic (pull)",
+    "method": "workspace/diagnostic",
+    "params": {
+      "previousResultIds": []
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "error -32601: No such method workspace/diagnostic",
+    "p50": 0,
+    "samples": [0, 1, 0, 0, 0]
+  },
+  {
+    "group": "lsp",
+    "name": "willRenameFiles",
+    "method": "workspace/willRenameFiles",
+    "params": {
+      "files": [
+        {
+          "oldUri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+          "newUri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal_moved.sql"
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{changes{1}}",
+    "p50": 0,
+    "samples": [0, 0, 1, 0, 0]
+  },
+  {
+    "group": "dbt",
+    "name": "getProjectInfo []",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getProjectInfo",
+      "arguments": []
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{adapter_type:snowflake, models_count:330, models_count_is_estimate:false, project_name:finance_general}",
+    "p50": 0,
+    "samples": [1, 0, 0, 0, 0]
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [bare relpath]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      ]
+    },
+    "ok": true,
+    "ms": 57,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:finance_general}",
+    "p50": 57,
+    "samples": [47, 58, 58, 57, 57],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["model.finance_general.stg__stripe__transfer_reversal"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [name]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["stg__stripe__transfer_reversal"]
+    },
+    "ok": true,
+    "ms": 56,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:finance_general}",
+    "p50": 56,
+    "samples": [57, 57, 56, 56, 56],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["model.finance_general.stg__stripe__transfer_reversal"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [unique_id]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["model.finance_general.stg__stripe__transfer_reversal"]
+    },
+    "ok": true,
+    "ms": 58,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:finance_general}",
+    "p50": 58,
+    "samples": [56, 58, 55, 58, 58],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["model.finance_general.stg__stripe__transfer_reversal"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+name+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+stg__stripe__transfer_reversal+"]
+    },
+    "ok": true,
+    "ms": 61,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[10], root_project:finance_general}",
+    "p50": 59,
+    "samples": [59, 61, 57, 57, 61],
+    "detail": {
+      "nodes": 10,
+      "grain": "project",
+      "ids": [
+        "function.kikoff._normalize_timestamp_core",
+        "function.kikoff._normalize_timestamp_epoch_divisor",
+        "function.kikoff.normalize_timestamp",
+        "model.finance_general.base__stripe_cbl__transfer_reversal",
+        "model.finance_general.base__stripe_grant__transfer_reversal",
+        "model.finance_general.base__stripe_kikoff__transfer_reversal",
+        "model.finance_general.stg__stripe__transfer_reversal",
+        "source.finance_general.stripe_cbl.transfer_reversal",
+        "source.finance_general.stripe_grant.transfer_reversal",
+        "source.finance_general.stripe_kikoff.transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [name+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["stg__stripe__transfer_reversal+"]
+    },
+    "ok": true,
+    "ms": 59,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:finance_general}",
+    "p50": 59,
+    "samples": [60, 60, 57, 59, 59],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["model.finance_general.stg__stripe__transfer_reversal"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+name]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+stg__stripe__transfer_reversal"]
+    },
+    "ok": true,
+    "ms": 58,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[10], root_project:finance_general}",
+    "p50": 57,
+    "samples": [57, 58, 57, 54, 58],
+    "detail": {
+      "nodes": 10,
+      "grain": "project",
+      "ids": [
+        "function.kikoff._normalize_timestamp_core",
+        "function.kikoff._normalize_timestamp_epoch_divisor",
+        "function.kikoff.normalize_timestamp",
+        "model.finance_general.base__stripe_cbl__transfer_reversal",
+        "model.finance_general.base__stripe_grant__transfer_reversal",
+        "model.finance_general.base__stripe_kikoff__transfer_reversal",
+        "model.finance_general.stg__stripe__transfer_reversal",
+        "source.finance_general.stripe_cbl.transfer_reversal",
+        "source.finance_general.stripe_grant.transfer_reversal",
+        "source.finance_general.stripe_kikoff.transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [1+name+1]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["1+stg__stripe__transfer_reversal+1"]
+    },
+    "ok": true,
+    "ms": 56,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[5], root_project:finance_general}",
+    "p50": 59,
+    "samples": [60, 64, 58, 59, 56],
+    "detail": {
+      "nodes": 5,
+      "grain": "project",
+      "ids": [
+        "function.kikoff.normalize_timestamp",
+        "model.finance_general.base__stripe_cbl__transfer_reversal",
+        "model.finance_general.base__stripe_grant__transfer_reversal",
+        "model.finance_general.base__stripe_kikoff__transfer_reversal",
+        "model.finance_general.stg__stripe__transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [2+name+2]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["2+stg__stripe__transfer_reversal+2"]
+    },
+    "ok": true,
+    "ms": 58,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[10], root_project:finance_general}",
+    "p50": 61,
+    "samples": [61, 60, 62, 61, 58],
+    "detail": {
+      "nodes": 10,
+      "grain": "project",
+      "ids": [
+        "function.kikoff._normalize_timestamp_core",
+        "function.kikoff._normalize_timestamp_epoch_divisor",
+        "function.kikoff.normalize_timestamp",
+        "model.finance_general.base__stripe_cbl__transfer_reversal",
+        "model.finance_general.base__stripe_grant__transfer_reversal",
+        "model.finance_general.base__stripe_kikoff__transfer_reversal",
+        "model.finance_general.stg__stripe__transfer_reversal",
+        "source.finance_general.stripe_cbl.transfer_reversal",
+        "source.finance_general.stripe_grant.transfer_reversal",
+        "source.finance_general.stripe_kikoff.transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+unique_id+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+model.finance_general.stg__stripe__transfer_reversal+"]
+    },
+    "ok": true,
+    "ms": 59,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[10], root_project:finance_general}",
+    "p50": 59,
+    "samples": [62, 61, 58, 59, 59],
+    "detail": {
+      "nodes": 10,
+      "grain": "project",
+      "ids": [
+        "function.kikoff._normalize_timestamp_core",
+        "function.kikoff._normalize_timestamp_epoch_divisor",
+        "function.kikoff.normalize_timestamp",
+        "model.finance_general.base__stripe_cbl__transfer_reversal",
+        "model.finance_general.base__stripe_grant__transfer_reversal",
+        "model.finance_general.base__stripe_kikoff__transfer_reversal",
+        "model.finance_general.stg__stripe__transfer_reversal",
+        "source.finance_general.stripe_cbl.transfer_reversal",
+        "source.finance_general.stripe_grant.transfer_reversal",
+        "source.finance_general.stripe_kikoff.transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [@unique_id]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["@model.finance_general.stg__stripe__transfer_reversal"]
+    },
+    "ok": true,
+    "ms": 58,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[10], root_project:finance_general}",
+    "p50": 59,
+    "samples": [59, 61, 61, 59, 58],
+    "detail": {
+      "nodes": 10,
+      "grain": "project",
+      "ids": [
+        "function.kikoff._normalize_timestamp_core",
+        "function.kikoff._normalize_timestamp_epoch_divisor",
+        "function.kikoff.normalize_timestamp",
+        "model.finance_general.base__stripe_cbl__transfer_reversal",
+        "model.finance_general.base__stripe_grant__transfer_reversal",
+        "model.finance_general.base__stripe_kikoff__transfer_reversal",
+        "model.finance_general.stg__stripe__transfer_reversal",
+        "source.finance_general.stripe_cbl.transfer_reversal",
+        "source.finance_general.stripe_grant.transfer_reversal",
+        "source.finance_general.stripe_kikoff.transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+relpath+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "+models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql+"
+      ]
+    },
+    "ok": true,
+    "ms": 61,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[10], root_project:finance_general}",
+    "p50": 58,
+    "samples": [58, 60, 58, 57, 61],
+    "detail": {
+      "nodes": 10,
+      "grain": "project",
+      "ids": [
+        "function.kikoff._normalize_timestamp_core",
+        "function.kikoff._normalize_timestamp_epoch_divisor",
+        "function.kikoff.normalize_timestamp",
+        "model.finance_general.base__stripe_cbl__transfer_reversal",
+        "model.finance_general.base__stripe_grant__transfer_reversal",
+        "model.finance_general.base__stripe_kikoff__transfer_reversal",
+        "model.finance_general.stg__stripe__transfer_reversal",
+        "source.finance_general.stripe_cbl.transfer_reversal",
+        "source.finance_general.stripe_grant.transfer_reversal",
+        "source.finance_general.stripe_kikoff.transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [path:dir]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["path:models/13_staging/money_movement/stripe"]
+    },
+    "ok": true,
+    "ms": 75,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[12], root_project:finance_general}",
+    "p50": 58,
+    "samples": [58, 56, 58, 60, 75],
+    "detail": {
+      "nodes": 12,
+      "grain": "project",
+      "ids": [
+        "model.finance_general.stg__stripe__balance_transaction",
+        "model.finance_general.stg__stripe__charge",
+        "model.finance_general.stg__stripe__dispute",
+        "model.finance_general.stg__stripe__dispute_balance_transaction",
+        "model.finance_general.stg__stripe__fee",
+        "model.finance_general.stg__stripe__payment_intent",
+        "model.finance_general.stg__stripe__payout",
+        "model.finance_general.stg__stripe__payout_balance_transaction",
+        "model.finance_general.stg__stripe__refund",
+        "model.finance_general.stg__stripe__topup",
+        "model.finance_general.stg__stripe__transfer",
+        "model.finance_general.stg__stripe__transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [dir]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["models/13_staging/money_movement/stripe"]
+    },
+    "ok": true,
+    "ms": 56,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[12], root_project:finance_general}",
+    "p50": 57,
+    "samples": [58, 58, 57, 57, 56],
+    "detail": {
+      "nodes": 12,
+      "grain": "project",
+      "ids": [
+        "model.finance_general.stg__stripe__balance_transaction",
+        "model.finance_general.stg__stripe__charge",
+        "model.finance_general.stg__stripe__dispute",
+        "model.finance_general.stg__stripe__dispute_balance_transaction",
+        "model.finance_general.stg__stripe__fee",
+        "model.finance_general.stg__stripe__payment_intent",
+        "model.finance_general.stg__stripe__payout",
+        "model.finance_general.stg__stripe__payout_balance_transaction",
+        "model.finance_general.stg__stripe__refund",
+        "model.finance_general.stg__stripe__topup",
+        "model.finance_general.stg__stripe__transfer",
+        "model.finance_general.stg__stripe__transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [tag]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["tag:source_system/stripe_grant"]
+    },
+    "ok": true,
+    "ms": 53,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[12], root_project:finance_general}",
+    "p50": 56,
+    "samples": [56, 56, 56, 57, 53],
+    "detail": {
+      "nodes": 12,
+      "grain": "project",
+      "ids": [
+        "model.finance_general.base__stripe_grant__balance_transaction",
+        "model.finance_general.base__stripe_grant__charge",
+        "model.finance_general.base__stripe_grant__dispute",
+        "model.finance_general.base__stripe_grant__dispute_balance_transaction",
+        "model.finance_general.base__stripe_grant__fee",
+        "model.finance_general.base__stripe_grant__payment_intent",
+        "model.finance_general.base__stripe_grant__payout",
+        "model.finance_general.base__stripe_grant__payout_balance_transaction",
+        "model.finance_general.base__stripe_grant__refund",
+        "model.finance_general.base__stripe_grant__topup",
+        "model.finance_general.base__stripe_grant__transfer",
+        "model.finance_general.base__stripe_grant__transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [resource_type:source]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:source"]
+    },
+    "ok": true,
+    "ms": 59,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1270], root_project:finance_general}",
+    "p50": 60,
+    "samples": [62, 60, 57, 60, 59],
+    "detail": {
+      "nodes": 1270,
+      "grain": "project",
+      "ids": [
+        "source.finance_general.backend_grant.acceptances",
+        "source.finance_general.backend_grant.access_tokens",
+        "source.finance_general.backend_grant.ach_credits",
+        "source.finance_general.backend_grant.ach_payments",
+        "source.finance_general.backend_grant.admin_sessions",
+        "source.finance_general.backend_grant.admins",
+        "source.finance_general.backend_grant.agreements",
+        "source.finance_general.backend_grant.ar_internal_metadata",
+        "source.finance_general.backend_grant.audits1984_audits",
+        "source.finance_general.backend_grant.auth_password_resets",
+        "source.finance_general.backend_grant.auth_tokens",
+        "source.finance_general.backend_grant.balance_infos"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [source:*]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["source:*"]
+    },
+    "ok": true,
+    "ms": 62,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1270], root_project:finance_general}",
+    "p50": 62,
+    "samples": [60, 62, 65, 62, 62],
+    "detail": {
+      "nodes": 1270,
+      "grain": "project",
+      "ids": [
+        "source.finance_general.backend_grant.acceptances",
+        "source.finance_general.backend_grant.access_tokens",
+        "source.finance_general.backend_grant.ach_credits",
+        "source.finance_general.backend_grant.ach_payments",
+        "source.finance_general.backend_grant.admin_sessions",
+        "source.finance_general.backend_grant.admins",
+        "source.finance_general.backend_grant.agreements",
+        "source.finance_general.backend_grant.ar_internal_metadata",
+        "source.finance_general.backend_grant.audits1984_audits",
+        "source.finance_general.backend_grant.auth_password_resets",
+        "source.finance_general.backend_grant.auth_tokens",
+        "source.finance_general.backend_grant.balance_infos"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [*]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["*"]
+    },
+    "ok": true,
+    "ms": 60,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[333], root_project:finance_general}",
+    "p50": 57,
+    "samples": [57, 57, 55, 57, 60],
+    "detail": {
+      "nodes": 333,
+      "grain": "project",
+      "ids": [
+        "function.kikoff._normalize_timestamp_core",
+        "function.kikoff._normalize_timestamp_epoch_divisor",
+        "function.kikoff.normalize_timestamp",
+        "model.finance_general.base__backend_grant__ach_credits",
+        "model.finance_general.base__backend_grant__ach_payments",
+        "model.finance_general.base__backend_grant__card_payments",
+        "model.finance_general.base__backend_grant__cash_advance_boost_credits",
+        "model.finance_general.base__backend_grant__cash_advance_collections",
+        "model.finance_general.base__backend_grant__cash_advance_disbursements",
+        "model.finance_general.base__backend_grant__cash_advance_offer_extensions",
+        "model.finance_general.base__backend_grant__cash_advance_offers",
+        "model.finance_general.base__backend_grant__cash_advance_repayments"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [seed]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:seed"]
+    },
+    "ok": false,
+    "ms": 58,
+    "shape": "{error:No nodes found, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:finance_general}",
+    "p50": 56,
+    "samples": [54, 56, 56, 56, 58],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+column:uid.col+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "+column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk+"
+      ]
+    },
+    "ok": false,
+    "ms": 1988,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:finance_general}",
+    "p50": 2000,
+    "samples": [3580, 2182, 1902, 2000, 1988],
+    "detail": {
+      "nodes": 0,
+      "grain": "column",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [column:uid.col+]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk+"
+      ]
+    },
+    "ok": false,
+    "ms": 1928,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:finance_general}",
+    "p50": 1961,
+    "samples": [1964, 1980, 1961, 1879, 1928],
+    "detail": {
+      "nodes": 0,
+      "grain": "column",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [+column:uid.col]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "+column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk"
+      ]
+    },
+    "ok": false,
+    "ms": 1842,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:finance_general}",
+    "p50": 1966,
+    "samples": [1966, 2024, 1803, 2167, 1842],
+    "detail": {
+      "nodes": 0,
+      "grain": "column",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [1+column:uid.col+1]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "1+column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk+1"
+      ]
+    },
+    "ok": false,
+    "ms": 1899,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:finance_general}",
+    "p50": 1885,
+    "samples": [1697, 1625, 2015, 1885, 1899],
+    "detail": {
+      "nodes": 0,
+      "grain": "column",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [intersection a,b]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "stg__stripe__transfer_reversal,+stg__stripe__transfer_reversal"
+      ]
+    },
+    "ok": true,
+    "ms": 58,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1], root_project:finance_general}",
+    "p50": 58,
+    "samples": [58, 57, 58, 58, 58],
+    "detail": {
+      "nodes": 1,
+      "grain": "project",
+      "ids": ["model.finance_general.stg__stripe__transfer_reversal"]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [union 'a b']",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["stg__stripe__transfer_reversal stg__marqeta__declines"]
+    },
+    "ok": true,
+    "ms": 58,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[2], root_project:finance_general}",
+    "p50": 58,
+    "samples": [58, 58, 57, 59, 58],
+    "detail": {
+      "nodes": 2,
+      "grain": "project",
+      "ids": [
+        "model.finance_general.stg__marqeta__declines",
+        "model.finance_general.stg__stripe__transfer_reversal"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [test_type:unit]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["test_type:unit"]
+    },
+    "ok": false,
+    "ms": 54,
+    "shape": "{error:No nodes found, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:finance_general}",
+    "p50": 56,
+    "samples": [56, 57, 56, 57, 54],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [test_type:generic]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["test_type:generic"]
+    },
+    "ok": false,
+    "ms": 56,
+    "shape": "{error:No nodes found, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:finance_general}",
+    "p50": 55,
+    "samples": [53, 55, 55, 54, 56],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [resource_type:test]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:test"]
+    },
+    "ok": false,
+    "ms": 55,
+    "shape": "{error:No nodes found, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:finance_general}",
+    "p50": 55,
+    "samples": [54, 57, 54, 55, 55],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [resource_type:macro]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:macro"]
+    },
+    "ok": false,
+    "ms": 54,
+    "shape": "{error:No nodes found, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:finance_general}",
+    "p50": 55,
+    "samples": [55, 56, 54, 55, 54],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [resource_type:doc]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:doc"]
+    },
+    "ok": false,
+    "ms": 55,
+    "shape": "{error:No nodes found, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:finance_general}",
+    "p50": 55,
+    "samples": [55, 56, 55, 54, 55],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [resource_type:model]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["resource_type:model"]
+    },
+    "ok": true,
+    "ms": 57,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[330], root_project:finance_general}",
+    "p50": 57,
+    "samples": [58, 55, 58, 55, 57],
+    "detail": {
+      "nodes": 330,
+      "grain": "project",
+      "ids": [
+        "model.finance_general.base__backend_grant__ach_credits",
+        "model.finance_general.base__backend_grant__ach_payments",
+        "model.finance_general.base__backend_grant__card_payments",
+        "model.finance_general.base__backend_grant__cash_advance_boost_credits",
+        "model.finance_general.base__backend_grant__cash_advance_collections",
+        "model.finance_general.base__backend_grant__cash_advance_disbursements",
+        "model.finance_general.base__backend_grant__cash_advance_offer_extensions",
+        "model.finance_general.base__backend_grant__cash_advance_offers",
+        "model.finance_general.base__backend_grant__cash_advance_repayments",
+        "model.finance_general.base__backend_grant__column_accounts",
+        "model.finance_general.base__backend_grant__column_institutions",
+        "model.finance_general.base__backend_grant__column_webhook_messages"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [state:modified]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["state:modified"]
+    },
+    "ok": false,
+    "ms": 53,
+    "shape": "{error:Got a state selector method, but no comparison manifest, error_kind:lineage_query_failed, grain:unknown, nodes[0], root_project:finance_general}",
+    "p50": 51,
+    "samples": [49, 53, 50, 51, 53],
+    "detail": {
+      "nodes": 0,
+      "grain": "unknown",
+      "ids": []
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [package:root]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["package:finance_general"]
+    },
+    "ok": true,
+    "ms": 59,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[1600], root_project:finance_general}",
+    "p50": 61,
+    "samples": [65, 61, 60, 63, 59],
+    "detail": {
+      "nodes": 1600,
+      "grain": "project",
+      "ids": [
+        "model.finance_general.base__backend_grant__ach_credits",
+        "model.finance_general.base__backend_grant__ach_payments",
+        "model.finance_general.base__backend_grant__card_payments",
+        "model.finance_general.base__backend_grant__cash_advance_boost_credits",
+        "model.finance_general.base__backend_grant__cash_advance_collections",
+        "model.finance_general.base__backend_grant__cash_advance_disbursements",
+        "model.finance_general.base__backend_grant__cash_advance_offer_extensions",
+        "model.finance_general.base__backend_grant__cash_advance_offers",
+        "model.finance_general.base__backend_grant__cash_advance_repayments",
+        "model.finance_general.base__backend_grant__column_accounts",
+        "model.finance_general.base__backend_grant__column_institutions",
+        "model.finance_general.base__backend_grant__column_webhook_messages"
+      ]
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [@uid, +column:uid.col+] (official)",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.finance_general.stg__stripe__transfer_reversal",
+        "+column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk+"
+      ]
+    },
+    "ok": false,
+    "ms": 2291,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:finance_general}",
+    "p50": 1890,
+    "samples": [1718, 2141, 1877, 1890, 2291]
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [\"+column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "+column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk+"
+      ]
+    },
+    "ok": false,
+    "ms": 1971,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:finance_general}",
+    "p50": 2014,
+    "samples": [2014, 1671, 2042, 2599, 1971],
+    "detail": {
+      "nodes": 0,
+      "grain": "column"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [\"@model.finance_general.stg__stripe__transfer_reversal\",\"+column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk+\"]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "@model.finance_general.stg__stripe__transfer_reversal",
+        "+column:model.finance_general.stg__stripe__transfer_reversal.transfer_reversal_nk+"
+      ]
+    },
+    "ok": false,
+    "ms": 1659,
+    "shape": "{error:null, error_kind:null, grain:column, nodes[0], root_project:finance_general}",
+    "p50": 1784,
+    "samples": [1919, 1784, 1746, 1965, 1659],
+    "detail": {
+      "nodes": 0,
+      "grain": "column"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [{selector,depth}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        {
+          "selector": "+stg__stripe__transfer_reversal+",
+          "depth": 1
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "{error:empty selector list passed to --select/--exclude, error_kind:invalid_selector, grain:unknown, nodes[0]}"
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes [selector, {depth:1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": [
+        "+stg__stripe__transfer_reversal+",
+        {
+          "depth": 1
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 59,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[10], root_project:finance_general}"
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [relpath]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [
+        "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      ]
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{error:null, node{5}}",
+    "p50": 1,
+    "samples": [1, 1, 0, 0, 1]
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [
+        "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql"
+      ]
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{error:null, node{5}}"
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [
+        "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql"
+      ]
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{error:null, node{5}}"
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [uri]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [
+        "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "getCurrentNode [unique_id]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": ["model.finance_general.stg__stripe__transfer_reversal"]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "compileFile [uri]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": [
+        "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      ]
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{error:null, file_uri:file://<P>/target/.lsp/compiled/finance_general}",
+    "p50": 0,
+    "samples": [1, 0, 0, 1, 0],
+    "detail": {
+      "compiledBytes": 10203,
+      "head": "\n\n\n\n\n\nwith unioned as (\n    \n        (\n            select\n                cast('kikoff' as TEXT) as _union_branch,\n                \n                \n                    cast(\"TRANSFER_REVERSAL_HK\" as BINARY) as \"TRANSFER_REVERSAL_HK\" ,\n                    cast(\"TRANSFER_REVERSAL_NK_NAMESPACE\" as cha"
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "compileFile [relpath]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": [
+        "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "{error:relative URL without a base, file_uri:null}"
+  },
+  {
+    "group": "dbt",
+    "name": "compileFile [{uri}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 1,
+    "shape": "{error:File path invalid, file_uri:null}"
+  },
+  {
+    "group": "dbt",
+    "name": "compileLsp []",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": []
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "compileLsp [uri]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileLsp",
+      "arguments": [
+        "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{uri}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 4450,
+    "shape": "{columns[24], data[0], error:null}",
+    "p50": 5285,
+    "samples": [6550, 5910, 5285, 4760, 4450]
+  },
+  {
+    "group": "dbt",
+    "name": "show [{uri,limit:10}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+          "limit": 10
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 3965,
+    "shape": "{columns[24], data[0], error:null}",
+    "p50": 3978,
+    "samples": [4672, 4695, 3832, 3978, 3965]
+  },
+  {
+    "group": "dbt",
+    "name": "show [{inline,limit:10}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ ref('base__stripe_grant__topup') }}",
+          "limit": 10
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 1216,
+    "shape": "{columns[26], data[7], error:null}",
+    "p50": 1287,
+    "samples": [1970, 1287, 1054, 1452, 1216]
+  },
+  {
+    "group": "dbt",
+    "name": "show [{inline: typed literals}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select 1 as i, 1.5 as d, 'x' as s, true as b, current_date as dt, null as n",
+          "limit": 1
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 926,
+    "shape": "{columns[6], data[1], error:null}"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{uri,inline,limit:3}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+          "inline": "select * from {{ ref('base__stripe_grant__topup') }}",
+          "limit": 3
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 1365,
+    "shape": "{columns[26], data[3], error:null}"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{uri, limit:-1}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+          "limit": -1
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{inline: bad sql}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select from where",
+          "limit": 1
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 895,
+    "shape": "{columns:null, data:null, error:Internal: [Snowflake] 001003 (42000): SQL compilation error:\nsyntax error line 2}"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{inline: unknown ref}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ ref('no_such_model') }}",
+          "limit": 1
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 75,
+    "shape": "{columns:null, data:null, error:Failed to render SQL not a key type: ref not found for package: finance_general,}"
+  },
+  {
+    "group": "dbt",
+    "name": "previewCte [lens arguments] as executeCommand",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.previewCte",
+      "arguments": [
+        "<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+        {
+          "compiled_path": "<P>/target/.lsp/compiled/finance_general/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+          "compiled_start": 6,
+          "compiled_stop": 10181,
+          "name": "FINAL",
+          "start": 479,
+          "start_location": {
+            "col": 1,
+            "index": 939,
+            "line": 39
+          },
+          "stop": 979
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "show [{inline: compiled[start..stop] + ) select * from FINAL}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "with unioned as (\n    \n        (\n            select\n                cast('kikoff' as TEXT) as _union_branch,\n                \n                \n                    cast(\"TRANSFER_REVERSAL_HK\" as BINARY) as \"TRANSFER_REVERSAL_HK\" ,\n                    cast(\"TRANSFER_REVERSAL_NK_NAMESPACE\" as character varying(6)) as \"TRANSFER_REVERSAL_NK_NAMESPACE\" ,\n                    cast(\"TRANSFER_REVERSAL_NK\" as character varying(16777216)) as \"TRANSFER_REVERSAL_NK\" ,\n                    cast(\"TRANSFER_REVERSAL_ID\" as character varying(16777216)) as \"TRANSFER_REVERSAL_ID\" ,\n                    cast(\"CURRENCY\" as character varying(16777216)) as \"CURRENCY\" ,\n                    cast(\"DESTINATION_PAYMENT_REFUND\" as character varying(16777216)) as \"DESTINATION_PAYMENT_REFUND\" ,\n                    cast(\"BALANCE_TRANSACTION_ID\" as character varying(16777216)) as \"BALANCE_TRANSACTION_ID\" ,\n                    cast(\"SOURCE_REFUND_ID\" as character varying(16777216)) as \"SOURCE_REFUND_ID\" ,\n                    cast(\"TRANSFER_ID\" as character varying(16777216)) as \"TRANSFER_ID\" ,\n                    cast(\"AMOUNT\" as NUMBER(38,5)) as \"AMOUNT\" ,\n                    cast(\"CREATED_AT\" as TIMESTAMP_TZ) as \"CREATED_AT\" ,\n                    cast(\"METADATA\" as VARIANT) as \"METADATA\" ,\n                    cast(\"_ETL__LOADED_AT\" as TIMESTAMP_TZ) as \"_ETL__LOADED_AT\" ,\n                    cast(\"_STATE__VALID_AT\" as TIMESTAMP_TZ) as \"_STATE__VALID_AT\" ,\n                    cast(\"_ORIGIN__VERSION_SEQUENCE\" as NUMBER(38,0)) as \"_ORIGIN__VERSION_SEQUENCE\" ,\n                    cast(\"_ORIGIN__ASSERTED_AT\" as TIMESTAMP_TZ) as \"_ORIGIN__ASSERTED_AT\" ,\n                    cast(\"_STATE__IS_ABSENT\" as BOOLEAN) as \"_STATE__IS_ABSENT\" ,\n                    cast(\"_ORIGIN__SYSTEM\" as character varying(13)) as \"_ORIGIN__SYSTEM\" ,\n                    cast(\"_STATE__HASH\" as BINARY) as \"_STATE__HASH\" ,\n                    cast(\"_SELF__ASSERTED_AT\" as TIMESTAMP_TZ) as \"_SELF__ASSERTED_AT\" \n            from DEV_FINANCE_GENERAL_BASE.stripe_kikoff.transfer_reversal\n            \n        )\n        union all\n        \n        (\n            select\n                cast('grant' as TEXT) as _union_branch,\n                \n                \n                    cast(\"TRANSFER_REVERSAL_HK\" as BINARY) as \"TRANSFER_REVERSAL_HK\" ,\n                    cast(\"TRANSFER_REVERSAL_NK_NAMESPACE\" as character varying(6)) as \"TRANSFER_REVERSAL_NK_NAMESPACE\" ,\n                    cast(\"TRANSFER_REVERSAL_NK\" as character varying(16777216)) as \"TRANSFER_REVERSAL_NK\" ,\n                    cast(\"TRANSFER_REVERSAL_ID\" as character varying(16777216)) as \"TRANSFER_REVERSAL_ID\" ,\n                    cast(\"CURRENCY\" as character varying(16777216)) as \"CURRENCY\" ,\n                    cast(\"DESTINATION_PAYMENT_REFUND\" as character varying(16777216)) as \"DESTINATION_PAYMENT_REFUND\" ,\n                    cast(\"BALANCE_TRANSACTION_ID\" as character varying(16777216)) as \"BALANCE_TRANSACTION_ID\" ,\n                    cast(\"SOURCE_REFUND_ID\" as character varying(16777216)) as \"SOURCE_REFUND_ID\" ,\n                    cast(\"TRANSFER_ID\" as character varying(16777216)) as \"TRANSFER_ID\" ,\n                    cast(\"AMOUNT\" as NUMBER(38,5)) as \"AMOUNT\" ,\n                    cast(\"CREATED_AT\" as TIMESTAMP_TZ) as \"CREATED_AT\" ,\n                    cast(\"METADATA\" as VARIANT) as \"METADATA\" ,\n                    cast(\"_ETL__LOADED_AT\" as TIMESTAMP_TZ) as \"_ETL__LOADED_AT\" ,\n                    cast(\"_STATE__VALID_AT\" as TIMESTAMP_TZ) as \"_STATE__VALID_AT\" ,\n                    cast(\"_ORIGIN__VERSION_SEQUENCE\" as NUMBER(38,0)) as \"_ORIGIN__VERSION_SEQUENCE\" ,\n                    cast(\"_ORIGIN__ASSERTED_AT\" as TIMESTAMP_TZ) as \"_ORIGIN__ASSERTED_AT\" ,\n                    cast(\"_STATE__IS_ABSENT\" as BOOLEAN) as \"_STATE__IS_ABSENT\" ,\n                    cast(\"_ORIGIN__SYSTEM\" as character varying(13)) as \"_ORIGIN__SYSTEM\" ,\n                    cast(\"_STATE__HASH\" as BINARY) as \"_STATE__HASH\" ,\n                    cast(\"_SELF__ASSERTED_AT\" as TIMESTAMP_TZ) as \"_SELF__ASSERTED_AT\" \n            from DEV_FINANCE_GENERAL_BASE.stripe_grant.transfer_reversal\n            \n        )\n        union all\n        \n        (\n            select\n                cast('cbl' as TEXT) as _union_branch,\n                \n                \n                    cast(\"TRANSFER_REVERSAL_HK\" as BINARY) as \"TRANSFER_REVERSAL_HK\" ,\n                    cast(\"TRANSFER_REVERSAL_NK_NAMESPACE\" as character varying(6)) as \"TRANSFER_REVERSAL_NK_NAMESPACE\" ,\n                    cast(\"TRANSFER_REVERSAL_NK\" as character varying(16777216)) as \"TRANSFER_REVERSAL_NK\" ,\n                    cast(\"TRANSFER_REVERSAL_ID\" as character varying(16777216)) as \"TRANSFER_REVERSAL_ID\" ,\n                    cast(\"CURRENCY\" as character varying(16777216)) as \"CURRENCY\" ,\n                    cast(\"DESTINATION_PAYMENT_REFUND\" as character varying(16777216)) as \"DESTINATION_PAYMENT_REFUND\" ,\n                    cast(\"BALANCE_TRANSACTION_ID\" as character varying(16777216)) as \"BALANCE_TRANSACTION_ID\" ,\n                    cast(\"SOURCE_REFUND_ID\" as character varying(16777216)) as \"SOURCE_REFUND_ID\" ,\n                    cast(\"TRANSFER_ID\" as character varying(16777216)) as \"TRANSFER_ID\" ,\n                    cast(\"AMOUNT\" as NUMBER(38,5)) as \"AMOUNT\" ,\n                    cast(\"CREATED_AT\" as TIMESTAMP_TZ) as \"CREATED_AT\" ,\n                    cast(\"METADATA\" as VARIANT) as \"METADATA\" ,\n                    cast(\"_ETL__LOADED_AT\" as TIMESTAMP_TZ) as \"_ETL__LOADED_AT\" ,\n                    cast(\"_STATE__VALID_AT\" as TIMESTAMP_TZ) as \"_STATE__VALID_AT\" ,\n                    cast(\"_ORIGIN__VERSION_SEQUENCE\" as NUMBER(38,0)) as \"_ORIGIN__VERSION_SEQUENCE\" ,\n                    cast(\"_ORIGIN__ASSERTED_AT\" as TIMESTAMP_TZ) as \"_ORIGIN__ASSERTED_AT\" ,\n                    cast(\"_STATE__IS_ABSENT\" as BOOLEAN) as \"_STATE__IS_ABSENT\" ,\n                    cast(\"_ORIGIN__SYSTEM\" as character varying(13)) as \"_ORIGIN__SYSTEM\" ,\n                    cast(\"_STATE__HASH\" as BINARY) as \"_STATE__HASH\" ,\n                    cast(\"_SELF__ASSERTED_AT\" as TIMESTAMP_TZ) as \"_SELF__ASSERTED_AT\" \n            from DEV_FINANCE_GENERAL_BASE.stripe_cbl.transfer_reversal\n            \n        )\n        \n),\nstripe_accounts as (\n    select\n        * rename (_union_branch as stripe_account_code)\n    from unioned\n),\n\nreconciled as (\n    (\nwith incoming_assertions as (\n    select\n        *,\n        DEV_FINANCE_GENERAL_UTILITIES.functions.normalize_timestamp(sysdate()) as _upstream__queried_at\n    from stripe_accounts\n    where true\n      and _self__asserted_at >= dateadd(minute, -60, (select coalesce(max(_upstream__queried_at), '1900-01-01'::timestamp_ntz) from DEV_FINANCE_GENERAL_STAGING.stripe.transfer_reversal))\n),\n\narrivals as (\n    select\n        * exclude (_etl__loaded_at, _self__asserted_at),\n        DEV_FINANCE_GENERAL_UTILITIES.functions.normalize_timestamp(sysdate()) as _self__asserted_at,\n        '8ac5cab9-3117-4124-8cfe-14ccdf69810f' as _etl__process_id,\n        DEV_FINANCE_GENERAL_UTILITIES.functions.normalize_timestamp('2026-10-03 19:51:33.454986+00:00') as _etl__loaded_at,\n        false as _self__is_retracted\n    from incoming_assertions\n),\n\nsubjects as (\n    select transfer_reversal_hk from incoming_assertions\n),\n\nstored_before as (\n    select * from DEV_FINANCE_GENERAL_STAGING.stripe.transfer_reversal\n    where exists (select 1 from subjects where subjects.transfer_reversal_hk = DEV_FINANCE_GENERAL_STAGING.stripe.transfer_reversal.transfer_reversal_hk)\n      and not _self__is_retracted\n),\n\nstored_sequence as (\n    select transfer_reversal_hk, max(_origin__version_sequence) as _origin__version_sequence\n    from stored_before\n    where not _state__is_absent\n    group by 1\n),\n\nrepaired_arrivals as (\n    select arrivals.* replace (\n        case\n            when arrivals._state__is_absent and stored_sequence._origin__version_sequence is not null\n                then left(stored_sequence._origin__version_sequence, length(stored_sequence._origin__version_sequence) - 1) || '1'\n            else arrivals._origin__version_sequence\n        end as _origin__version_sequence\n    )\n    from arrivals\n    left join stored_sequence on stored_sequence.transfer_reversal_hk = arrivals.transfer_reversal_hk\n),\n\ncandidates as (\n    select * from repaired_arrivals\n    union all\n    select * from stored_before\n),\n\nlatest_asserted_timeline_points as (\n    select * from candidates\n    qualify rank() over (\n        partition by transfer_reversal_hk, _state__valid_at\n        order by _origin__version_sequence desc\n    ) = 1\n),\n\ntimeline_points_with_previous_hash as (\n    select\n        *,\n        lag(_state__hash) over (\n            partition by transfer_reversal_hk\n            order by _state__valid_at asc\n        ) as _prev_hash\n    from latest_asserted_timeline_points\n),\n\ntransitions as (\n    select * exclude (_prev_hash)\n    from timeline_points_with_previous_hash\n    where _prev_hash is distinct from _state__hash\n),\n\nheld as (\n    select * from stored_before\n    qualify row_number() over (\n        partition by transfer_reversal_hk, _state__valid_at\n        order by _self__asserted_at desc\n    ) = 1\n),\n\nwithdrawals as (\n    select * replace (\n        true as _self__is_retracted,\n        DEV_FINANCE_GENERAL_UTILITIES.functions.normalize_timestamp(sysdate()) as _self__asserted_at,\n        '8ac5cab9-3117-4124-8cfe-14ccdf69810f' as _etl__process_id,\n        DEV_FINANCE_GENERAL_UTILITIES.functions.normalize_timestamp('2026-10-03 19:51:33.454986+00:00') as _etl__loaded_at\n    )\n    from held\n    where not exists (\n        select 1 from transitions\n        where transitions.transfer_reversal_hk = held.transfer_reversal_hk\n          and transitions._state__valid_at = held._state__valid_at\n    )\n),\n\ntimeline as (\n    select * from transitions\n    where not exists (\n        select 1 from held\n        where held.transfer_reversal_hk = transitions.transfer_reversal_hk\n          and held._state__valid_at = transitions._state__valid_at\n          and held._state__hash = transitions._state__hash\n    )\n    union all\n    select * from withdrawals\n)\n\nselect * from timeline\n)\n),\n\nfinal as (\n    select * from reconciled\n\n)\nselect * from FINAL",
+          "limit": 10
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 2667,
+    "shape": "{columns[24], data[0], error:null}",
+    "p50": 2667,
+    "samples": [3896, 2667, 2738, 2572, 2667],
+    "detail": {
+      "prefixHead": "with unioned as (\n    \n        (\n            select\n                cast('kikoff' as TEXT) as _union_branch,\n           ",
+      "prefixTail": "drawals\n)\n\nselect * from timeline\n)\n),\n\nfinal as (\n    select * from reconciled\n",
+      "columns": [
+        "STRIPE_ACCOUNT_CODE",
+        "TRANSFER_REVERSAL_HK",
+        "TRANSFER_REVERSAL_NK_NAMESPACE",
+        "TRANSFER_REVERSAL_NK",
+        "TRANSFER_REVERSAL_ID",
+        "CURRENCY",
+        "DESTINATION_PAYMENT_REFUND",
+        "BALANCE_TRANSACTION_ID",
+        "SOURCE_REFUND_ID",
+        "TRANSFER_ID",
+        "AMOUNT",
+        "CREATED_AT",
+        "METADATA",
+        "_STATE__VALID_AT",
+        "_ORIGIN__VERSION_SEQUENCE",
+        "_ORIGIN__ASSERTED_AT",
+        "_STATE__IS_ABSENT",
+        "_ORIGIN__SYSTEM",
+        "_STATE__HASH",
+        "_UPSTREAM__QUERIED_AT",
+        "_SELF__ASSERTED_AT",
+        "_ETL__PROCESS_ID",
+        "_ETL__LOADED_AT",
+        "_SELF__IS_RETRACTED"
+      ],
+      "rows": 0,
+      "error": null
+    }
+  },
+  {
+    "group": "dbt",
+    "name": "previewCte [{uri, cte}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.previewCte",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+          "cte_name": "unioned"
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "goToDefinition [{uri,line,character}]",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.goToDefinition",
+      "arguments": [
+        {
+          "uri": "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+          "line": 0,
+          "character": 0
+        }
+      ]
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "doesNotExist []",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.doesNotExist",
+      "arguments": []
+    },
+    "ok": false,
+    "ms": 0,
+    "shape": "null"
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes concurrent #1",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+stg__stripe__transfer_reversal+"]
+    },
+    "ok": false,
+    "ms": 12,
+    "shape": "{error:Operation cancelled, grain:unknown, nodes[0]}"
+  },
+  {
+    "group": "dbt",
+    "name": "listNodes concurrent #2",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.listNodes",
+      "arguments": ["+stg__marqeta__declines+"]
+    },
+    "ok": true,
+    "ms": 62,
+    "shape": "{error:null, error_kind:null, grain:project, nodes[6], root_project:finance_general}"
+  },
+  {
+    "group": "dbt",
+    "name": "mixed concurrent #1 dbt.getCurrentNode",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.getCurrentNode",
+      "arguments": [
+        "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      ]
+    },
+    "ok": true,
+    "ms": 0,
+    "shape": "{error:null, node{5}}"
+  },
+  {
+    "group": "dbt",
+    "name": "mixed concurrent #2 dbt.show",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.show",
+      "arguments": [
+        {
+          "inline": "select * from {{ ref('base__stripe_grant__topup') }}",
+          "limit": 1
+        }
+      ]
+    },
+    "ok": true,
+    "ms": 1245,
+    "shape": "{columns[26], data[1], error:null}"
+  },
+  {
+    "group": "dbt",
+    "name": "mixed concurrent #3 dbt.compileFile",
+    "method": "workspace/executeCommand",
+    "params": {
+      "command": "dbt.compileFile",
+      "arguments": [
+        "file://<P>/models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql"
+      ]
+    },
+    "ok": true,
+    "ms": 1,
+    "shape": "{error:null, file_uri:file://<P>/target/.lsp/compiled/finance_general}"
+  }
+]

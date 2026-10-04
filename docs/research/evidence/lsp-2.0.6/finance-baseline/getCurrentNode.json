@@ -1,0 +1,10 @@
+{
+  "error": null,
+  "node": {
+    "columns": {},
+    "database": "DEV_FINANCE_GENERAL_STAGING",
+    "schema": "stripe",
+    "static_analysis": "baseline",
+    "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+  }
+}

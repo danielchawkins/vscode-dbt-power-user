@@ -1,0 +1,77 @@
+{
+  "missing ref": {
+    "pushed": [
+      {
+        "severity": 1,
+        "code": "1048",
+        "source": "dbt",
+        "message": "[DependencyNotFound (dbt1048)]: Ref 'no_such_model' not found in project. Searched for 'finance_general.no_such_model, no_such_model'\n  --> models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql:13:23",
+        "range": {
+          "end": {
+            "character": 22,
+            "line": 12
+          },
+          "start": {
+            "character": 22,
+            "line": 12
+          }
+        }
+      },
+      {
+        "severity": 1,
+        "code": "1501",
+        "source": "dbt",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL not a key type: ref not found for package: finance_general, model: no_such_model, version: None\n(in models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql:13:23)\n  --> models/13_staging/money_movement/stripe/stg__stripe__transfer_rever",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 13
+          },
+          "start": {
+            "character": 0,
+            "line": 12
+          }
+        }
+      }
+    ],
+    "compileCompleteErrors": [
+      {
+        "code": "1048",
+        "message": "[DependencyNotFound (dbt1048)]: Ref 'no_such_model' not found in project. Searched for 'finance_general.no_such_model, no_such_model'\n  --> models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql:13:23",
+        "severity": "Error"
+      },
+      {
+        "code": "1501",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL not a key type: ref not found for package: finance_general, model: no_such_model, version: None\n(in models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql:13:23)\n  --> models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql:13:23",
+        "severity": "Error"
+      }
+    ]
+  },
+  "missing env_var": {
+    "pushed": [
+      {
+        "severity": 1,
+        "code": "1501",
+        "source": "dbt",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL invalid operation: 'env_var': environment variable 'FPU_PROBE_UNSET_VAR' not found\n(in models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql:1:1)\n  --> models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql:1:1",
+        "range": {
+          "end": {
+            "character": 0,
+            "line": 1
+          },
+          "start": {
+            "character": 0,
+            "line": 0
+          }
+        }
+      }
+    ],
+    "compileCompleteErrors": [
+      {
+        "code": "1501",
+        "message": "[JinjaError (dbt1501)]: Failed to render SQL invalid operation: 'env_var': environment variable 'FPU_PROBE_UNSET_VAR' not found\n(in models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql:1:1)\n  --> models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql:1:1",
+        "severity": "Error"
+      }
+    ]
+  }
+}

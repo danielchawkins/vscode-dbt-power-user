@@ -1,0 +1,27 @@
+{
+  "spawnToInitializeMs": 46,
+  "didOpenToCompileCompleteMs": 203,
+  "didOpenToBackgroundCompleteMs": 1473,
+  "compileComplete": {
+    "adapter_type": "duckdb",
+    "adapter_unique_id": "507e553e3364d1ac01317229cac629e4",
+    "cause": "didSave",
+    "compile_type": "incremental",
+    "dbt_version": "2.0.6",
+    "duration_ms": 200,
+    "errors": [],
+    "models_count": 7,
+    "project_id": "06e5b98c2db46f8a72cc4f66410e9b3b"
+  },
+  "backgroundComplete": {
+    "adapter_type": "duckdb",
+    "adapter_unique_id": "507e553e3364d1ac01317229cac629e4",
+    "cause": "didSave",
+    "compile_type": "full",
+    "dbt_version": "2.0.6",
+    "duration_ms": 18,
+    "errors": [],
+    "models_count": 7,
+    "project_id": "06e5b98c2db46f8a72cc4f66410e9b3b"
+  }
+}

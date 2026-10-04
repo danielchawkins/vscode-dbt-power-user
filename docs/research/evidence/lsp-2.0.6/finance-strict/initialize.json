@@ -1,0 +1,95 @@
+{
+  "argv": [
+    "lsp",
+    "--project-dir",
+    "<P>",
+    "--profiles-dir",
+    "<USER_ZDOTDIR>/.dbt",
+    "--lint-enabled",
+    "false",
+    "--no-version-check",
+    "--command-prefix",
+    "",
+    "--static-analysis",
+    "strict"
+  ],
+  "response": {
+    "capabilities": {
+      "codeActionProvider": {
+        "codeActionKinds": ["source.fixAll", "source.fixAll.dbtLintFix"]
+      },
+      "codeLensProvider": {
+        "resolveProvider": false
+      },
+      "completionProvider": {
+        "completionItem": {
+          "labelDetailsSupport": true
+        },
+        "resolveProvider": false,
+        "triggerCharacters": ["{", "'", "."]
+      },
+      "definitionProvider": true,
+      "documentFormattingProvider": true,
+      "documentSymbolProvider": false,
+      "executeCommandProvider": {
+        "commands": [
+          "dbt.listNodes",
+          "dbt.getCurrentNode",
+          "dbt.compileFile",
+          "dbt.compileLsp",
+          "dbt.clearTarget",
+          "dbt.getProjectInfo",
+          "dbt.show"
+        ]
+      },
+      "hoverProvider": true,
+      "inlayHintProvider": true,
+      "referencesProvider": true,
+      "renameProvider": true,
+      "semanticTokensProvider": {
+        "full": true,
+        "legend": {
+          "tokenModifiers": [],
+          "tokenTypes": [
+            "property",
+            "function",
+            "macro",
+            "type",
+            "variable",
+            "keyword"
+          ]
+        },
+        "range": true
+      },
+      "signatureHelpProvider": {
+        "retriggerCharacters": [","],
+        "triggerCharacters": ["("]
+      },
+      "textDocumentSync": {
+        "change": 2,
+        "openClose": true,
+        "save": {}
+      },
+      "workspace": {
+        "fileOperations": {
+          "willRename": {
+            "filters": [
+              {
+                "pattern": {
+                  "glob": "**/*.{sql,csv}",
+                  "matches": "file"
+                },
+                "scheme": "file"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "serverInfo": {
+      "name": "dbt-lsp",
+      "version": "2.0.6"
+    }
+  },
+  "ms": 272
+}

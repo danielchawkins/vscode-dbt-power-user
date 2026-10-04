@@ -1,0 +1,83 @@
+{
+  "error": null,
+  "node": {
+    "columns": {
+      "AMOUNT": {
+        "data_type": "NUMBER(38,5)"
+      },
+      "BALANCE_TRANSACTION_ID": {
+        "data_type": "character varying(16777216)"
+      },
+      "CREATED_AT": {
+        "data_type": "TIMESTAMP_TZ"
+      },
+      "CURRENCY": {
+        "data_type": "character varying(16777216)"
+      },
+      "DESTINATION_PAYMENT_REFUND": {
+        "data_type": "character varying(16777216)"
+      },
+      "METADATA": {
+        "data_type": "VARIANT"
+      },
+      "SOURCE_REFUND_ID": {
+        "data_type": "character varying(16777216)"
+      },
+      "STRIPE_ACCOUNT_CODE": {
+        "data_type": "character varying(16777216)"
+      },
+      "TRANSFER_ID": {
+        "data_type": "character varying(16777216)"
+      },
+      "TRANSFER_REVERSAL_HK": {
+        "data_type": "BINARY"
+      },
+      "TRANSFER_REVERSAL_ID": {
+        "data_type": "character varying(16777216)"
+      },
+      "TRANSFER_REVERSAL_NK": {
+        "data_type": "character varying(16777216)"
+      },
+      "TRANSFER_REVERSAL_NK_NAMESPACE": {
+        "data_type": "character varying(6)"
+      },
+      "_ETL__LOADED_AT": {
+        "data_type": "TIMESTAMP_TZ"
+      },
+      "_ETL__PROCESS_ID": {
+        "data_type": "character varying(36)"
+      },
+      "_ORIGIN__ASSERTED_AT": {
+        "data_type": "TIMESTAMP_TZ"
+      },
+      "_ORIGIN__SYSTEM": {
+        "data_type": "character varying(13)"
+      },
+      "_ORIGIN__VERSION_SEQUENCE": {
+        "data_type": "NUMBER(38,0)"
+      },
+      "_SELF__ASSERTED_AT": {
+        "data_type": "TIMESTAMP_TZ"
+      },
+      "_SELF__IS_RETRACTED": {
+        "data_type": "BOOLEAN"
+      },
+      "_STATE__HASH": {
+        "data_type": "BINARY"
+      },
+      "_STATE__IS_ABSENT": {
+        "data_type": "BOOLEAN"
+      },
+      "_STATE__VALID_AT": {
+        "data_type": "TIMESTAMP_TZ"
+      },
+      "_UPSTREAM__QUERIED_AT": {
+        "data_type": "TIMESTAMP_TZ"
+      }
+    },
+    "database": "DEV_FINANCE_GENERAL_STAGING",
+    "schema": "stripe",
+    "static_analysis": "strict",
+    "unique_id": "model.finance_general.stg__stripe__transfer_reversal"
+  }
+}
