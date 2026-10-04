@@ -31,3 +31,17 @@ Older step files keep working; everything below the first row was added for the 
 Each lsp step dir also gets `lsp-steps.json`: every step with the server messages that arrived from its start until the next step began. `lsp-results.json` entries carry `id`, `elapsedMs` and the same `serverMessages` for the request's own step; logs that arrive during a following `wait` are under that wait in `lsp-steps.json`.
 
 `steps/protocol/gen-*.mjs` generate the larger protocol step files; rerun them after editing.
+
+## Language server adoption experiments
+
+`experiments/e1-…e9-*.mjs` settle the server behaviours that step 2.2 of [`quality-and-lsp-plan.md`](../../docs/refactor/quality-and-lsp-plan.md) lists. They do not use `run.sh`; they drive `dbt lsp` through the spike harness in [`scripts/spikes/lsp-capabilities/`](../spikes/lsp-capabilities/), with shared setup in `experiments/adoption.mjs`. Each script states its decision rule in its header, writes one redacted JSON file to `--out` (default `/tmp/fpu-adoption`) and prints one `DECISION` line. Results: [`lsp-adoption-experiments-october-2026.md`](../../docs/research/lsp-adoption-experiments-october-2026.md).
+
+```sh
+# --dbt <abs path> or DBT_BIN; jaffle is the default target and is prepared fresh by prep-jaffle.sh.
+node scripts/evidence/experiments/e1-graph-selector.mjs --out docs/research/evidence/lsp-2.0.6/adoption
+node scripts/evidence/experiments/e5-command-prefix.mjs --target multi-root --out docs/research/evidence/lsp-2.0.6/adoption
+# E1, E2, E4, E8 also take --target finance: a copy at /tmp/lsp-fin/finance_general with profiles from ~/.dbt,
+# run from an environment that holds the credentials the profile reads, under the heavy-run lock.
+```
+
+Redaction replaces the project root and HOME, credential-like environment values, the warehouse output's account, user, role, database, warehouse and schema names, `database` and `schema` values, three-part relation names, and every `dbt.show` row value (with its JSON type).

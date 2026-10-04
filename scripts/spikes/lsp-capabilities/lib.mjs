@@ -50,14 +50,14 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
  * Starts `dbt lsp` over stdio on `root`. `extraArgs` follow the base argv; `env` is layered over process.env.
  * The client answers progress creation, configuration (linter off, as the extension does) and registration.
  */
-export async function startServer({ root, profilesDir = root, extraArgs = [], env = {}, capabilities } = {}) {
+export async function startServer({ root, profilesDir = root, extraArgs = [], env = {}, capabilities, commandPrefix = "" } = {}) {
   const args = [
     "lsp",
     "--project-dir", root,
     "--profiles-dir", profilesDir,
     "--lint-enabled", "false",
     "--no-version-check",
-    "--command-prefix", "",
+    "--command-prefix", commandPrefix,
     ...extraArgs,
   ];
   const t0 = Date.now();
