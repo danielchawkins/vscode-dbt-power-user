@@ -8,7 +8,7 @@ Repo: `/Users/daniel/projects/vscode-dbt-power-user/main` (current `main`), 2026
 2. Tooling configs (knip, depcruise, the legacy mocha harness) that hide dead code.
 3. Uneven tests: high mock-call density, an unbalanced CTE lens test, and near-zero coverage on the relationship parser and doc-gen paths.
 
-Raw outputs: `/tmp/knip-default.txt`, `/tmp/knip-prodflag.txt`, `/tmp/knip-prod-noTests.txt`, `/tmp/knip-prod2.txt`, `/tmp/knip-prod2.json`, `/tmp/syms-class.tsv`, `/tmp/dc-err.txt`, `/tmp/dc-metrics.txt`, `/tmp/jscpd/jscpd-report.json`, `/tmp/jscpd-summary.txt`, `/tmp/fpu-vitest.json`, `/tmp/fpu-cov/coverage-summary.json`, `/tmp/eslint-strict.json`, `/tmp/eslint-strict-summary.txt`. Temp configs: `/tmp/knip.prod.json`, `/tmp/knip.prod2.json`, `/tmp/eslint.strict.cjs`.
+Raw outputs (not preserved): `/tmp/knip-default.txt`, `/tmp/knip-prodflag.txt`, `/tmp/knip-prod-noTests.txt`, `/tmp/knip-prod2.txt`, `/tmp/knip-prod2.json`, `/tmp/syms-class.tsv`, `/tmp/dc-err.txt`, `/tmp/dc-metrics.txt`, `/tmp/jscpd/jscpd-report.json`, `/tmp/jscpd-summary.txt`, `/tmp/fpu-vitest.json`, `/tmp/fpu-cov/coverage-summary.json`, `/tmp/eslint-strict.json`, `/tmp/eslint-strict-summary.txt`. Temp configs (not preserved): `/tmp/knip.prod.json`, `/tmp/knip.prod2.json`, `/tmp/eslint.strict.cjs`.
 
 ---
 
@@ -77,10 +77,10 @@ These come from the `strict-type-checked` probe in M5/§6 and are type-confirmed
 I ran knip three ways:
 
 1. **Default config.** 1 unused devDependency, 27 unused exports, 32 unused exported types, 4 unused enum members, 7 configuration hints. This matches your numbers.
-2. **`/tmp/knip.prod.json`.** Test entries removed and test files dropped from `project`. Result: 4 unused devDependencies, 27 exports, 33 types, 4 enum members. The counts barely move because the test files leave the project entirely, so their imports never count.
-3. **`/tmp/knip.prod2.json --production`.** Production entries marked with `!`, and tests kept as non-production entries. This is the correct way to separate the two: 1 unused file, **98** unused exports, **43** types, 4 enum members, and 0 false-positive dependencies.
+2. **`/tmp/knip.prod.json`** (not preserved). Test entries removed and test files dropped from `project`. Result: 4 unused devDependencies, 27 exports, 33 types, 4 enum members. The counts barely move because the test files leave the project entirely, so their imports never count.
+3. **`/tmp/knip.prod2.json --production`** (not preserved). Production entries marked with `!`, and tests kept as non-production entries. This is the correct way to separate the two: 1 unused file, **98** unused exports, **43** types, 4 enum members, and 0 false-positive dependencies.
 
-I then classified each symbol by its references in its own file and in tests; the table is in `/tmp/syms-class.tsv`.
+I then classified each symbol by its references in its own file and in tests; the table was in `/tmp/syms-class.tsv` (not preserved).
 
 ### Why `knip --production` reports 15 used dependencies as unused
 
