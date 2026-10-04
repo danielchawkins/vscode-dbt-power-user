@@ -82,7 +82,7 @@ describe("Fusion executable resolver", () => {
     });
 
     isExecutable.mockResolvedValue(true);
-    runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+    runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
 
     const result = await resolver.resolve(scope);
 
@@ -91,8 +91,8 @@ describe("Fusion executable resolver", () => {
       version: {
         major: 2,
         minor: 0,
-        patch: 5,
-        raw: "dbt 2.0.5\n",
+        patch: 6,
+        raw: "dbt 2.0.6\n",
       },
     });
     assertFusionExecutable(result);
@@ -112,7 +112,7 @@ describe("Fusion executable resolver", () => {
       });
 
       isExecutable.mockResolvedValue(true);
-      runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+      runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
 
       await resolver.resolve(scope);
 
@@ -133,7 +133,7 @@ describe("Fusion executable resolver", () => {
     const expected = path.resolve(folder.uri.fsPath, "bin/dbt");
 
     isExecutable.mockResolvedValue(true);
-    runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+    runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
 
     const result = await resolver.resolve(scope);
 
@@ -186,7 +186,7 @@ describe("Fusion executable resolver", () => {
     });
 
     isExecutable.mockResolvedValue(true);
-    runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+    runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
 
     const result = await resolver.resolve(scope);
 
@@ -239,7 +239,7 @@ describe("Fusion executable resolver", () => {
     });
 
     findOnPath.mockResolvedValue(onPath);
-    runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+    runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
 
     const result = await resolver.resolve(scope);
 
@@ -252,7 +252,7 @@ describe("Fusion executable resolver", () => {
     const { resolver, findOnPath, runVersion } = createResolver();
 
     findOnPath.mockResolvedValue(onPath);
-    runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+    runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
 
     const result = await resolver.resolve(scope);
 
@@ -283,7 +283,7 @@ describe("Fusion executable resolver", () => {
     const expected = path.resolve(folder.uri.fsPath, relativeConfigured);
 
     isExecutable.mockResolvedValue(true);
-    runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+    runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
 
     const result = await resolver.resolve(scope);
 
@@ -298,7 +298,7 @@ describe("Fusion executable resolver", () => {
     });
 
     isExecutable.mockResolvedValue(true);
-    runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+    runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
 
     await resolver.resolve(scope);
 
@@ -320,7 +320,7 @@ describe("Fusion executable resolver", () => {
         getConfiguredPath: () => "/opt/dbt",
       });
       isExecutable.mockResolvedValue(true);
-      runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+      runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
 
       const result = await resolver.resolve(scope);
 
@@ -336,7 +336,7 @@ describe("Fusion executable resolver", () => {
   });
 
   it("returns FusionExecutable for an ok version verdict", async () => {
-    const raw = "dbt 2.0.5\n";
+    const raw = "dbt 2.0.6\n";
     const { resolver, findOnPath, runVersion } = createResolver();
 
     findOnPath.mockResolvedValue("/usr/local/bin/dbt");
@@ -346,14 +346,14 @@ describe("Fusion executable resolver", () => {
 
     expect(result).toMatchObject({
       path: "/usr/local/bin/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw },
+      version: { major: 2, minor: 0, patch: 6, raw },
     });
     assertFusionExecutable(result);
     expectInheritedEnv(result.env);
   });
 
   it("uses stderr when stdout is empty", async () => {
-    const raw = "dbt 2.0.5\n";
+    const raw = "dbt 2.0.6\n";
     const { resolver, findOnPath, runVersion } = createResolver();
 
     findOnPath.mockResolvedValue("/usr/local/bin/dbt");
@@ -362,7 +362,7 @@ describe("Fusion executable resolver", () => {
     const result = await resolver.resolve(scope);
 
     expect(result).toMatchObject({
-      version: { major: 2, minor: 0, patch: 5, raw },
+      version: { major: 2, minor: 0, patch: 6, raw },
     });
   });
 
@@ -474,7 +474,7 @@ describe("Fusion executable resolver", () => {
   });
 
   it("judges version output when runVersion rejects with stderr output", async () => {
-    const raw = "dbt 2.0.5\n";
+    const raw = "dbt 2.0.6\n";
     const { resolver, findOnPath, runVersion } = createResolver();
 
     findOnPath.mockResolvedValue("/usr/local/bin/dbt");
@@ -486,7 +486,7 @@ describe("Fusion executable resolver", () => {
 
     expect(result).toMatchObject({
       path: "/usr/local/bin/dbt",
-      version: { major: 2, minor: 0, patch: 5, raw },
+      version: { major: 2, minor: 0, patch: 6, raw },
     });
   });
 

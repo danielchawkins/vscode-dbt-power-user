@@ -103,7 +103,7 @@ suite("Fusion defer argument integration", function () {
     const verdict = checkFusionVersion();
     if (verdict.kind !== "ok") {
       console.warn(
-        "Skipping Fusion defer integration test: dbt Fusion 2.0.5+ is required on PATH.",
+        "Skipping Fusion defer integration test: dbt Fusion 2.0.6+ is required on PATH.",
       );
       this.skip();
     }

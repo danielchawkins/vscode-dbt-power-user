@@ -5,7 +5,7 @@ export type FusionVersion = {
   raw: string;
 };
 
-export const MINIMUM_FUSION = { major: 2, minor: 0, patch: 5 };
+export const MINIMUM_FUSION = { major: 2, minor: 0, patch: 6 };
 
 export type FusionVersionVerdict =
   | { kind: "ok"; version: FusionVersion }

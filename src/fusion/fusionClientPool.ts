@@ -20,7 +20,6 @@ import {
   FusionClientFactory,
   FusionClientOptions,
 } from "./fusionLanguageClient";
-import { FusionVersion } from "./fusionVersion";
 
 export interface FusionClientPool extends Disposable {
   /** One client per Declared Project, created and torn down with the registry. */
@@ -46,10 +45,7 @@ type ManagedClient = {
 
 /** Environment a project's language server launches with, beyond the extension host's. */
 export interface FusionLaunchEnvironment {
-  resolve(
-    project: DeclaredProject,
-    fusionVersion: FusionVersion,
-  ): Record<string, string>;
+  resolve(project: DeclaredProject): Record<string, string>;
   /** Fires when `resolve` may answer differently; clients whose environment changed are relaunched. */
   readonly onDidChange: Event<unknown>;
 }
@@ -215,10 +211,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
     for (const [key, managed] of [...this.clients]) {
       if (
         managed.executable === undefined ||
-        sameEnv(
-          managed.env,
-          this.resolveEnv(managed.project, managed.executable),
-        )
+        sameEnv(managed.env, this.resolveEnv(managed.project))
       ) {
         continue;
       }
@@ -234,11 +227,8 @@ export class FusionClientPoolImpl implements FusionClientPool {
   }
 
   /** The resolved variables; they override the executable's own environment. */
-  private resolveEnv(
-    project: DeclaredProject,
-    executable: FusionExecutable,
-  ): Record<string, string> {
-    return this.launchEnv?.resolve(project, executable.version) ?? {};
+  private resolveEnv(project: DeclaredProject): Record<string, string> {
+    return this.launchEnv?.resolve(project) ?? {};
   }
 
   private async reconcile(): Promise<void> {
@@ -305,7 +295,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
     const launch = toLspLaunch(this.readSnapshot(project.root));
     const executable = isFusionExecutable(verdict) ? verdict : undefined;
-    const env = executable ? this.resolveEnv(project, executable) : {};
+    const env = executable ? this.resolveEnv(project) : {};
     const client = isFusionExecutable(verdict)
       ? this.factory.create({
           project,

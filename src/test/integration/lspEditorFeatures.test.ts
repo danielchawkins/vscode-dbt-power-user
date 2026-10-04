@@ -90,7 +90,7 @@ suite("Fusion LSP editor features (extension)", function () {
     }
     if (fusionVerdict.kind !== "ok") {
       console.warn(
-        "Skipping LSP editor feature tests: dbt Fusion 2.0.5+ required on PATH.",
+        "Skipping LSP editor feature tests: dbt Fusion 2.0.6+ required on PATH.",
       );
       this.skip();
       return;
@@ -157,7 +157,7 @@ suite("Fusion LSP editor features (extension)", function () {
     assert.ok(hoverText(hovers!).length > 0, "hover must carry content");
   });
 
-  // Fusion 2.0.5 answers hover on any macro call, dotted or not, with null.
+  // Fusion 2.0.6 answers hover on a dotted package.macro call with no content.
   test.skip("hover on a dotted package.macro returns documentation", async function () {
     const document = await openScratch(
       "scratch_hover_macro.sql",
@@ -305,7 +305,7 @@ suite("Fusion LSP editor features (extension)", function () {
     );
   });
 
-  // Fusion 2.0.5 advertises renameProvider but answers prepareRename with MethodNotFound and rename with no edits.
+  // Fusion 2.0.6 advertises renameProvider but answers rename with no edits.
   test.skip('rename on ref("base") returns a workspace edit', async function () {
     const document = await openModel("child.sql");
     const position = document.positionAt(

@@ -1,6 +1,5 @@
 import { DbtProjectConfig, declaredProjectName } from "../core/project";
 import { SourceMetaMap } from "../dbt_integration/domain";
-import { FusionVersion } from "./fusionVersion";
 
 /** The documented hook (ADR 0006): the extension sets this variable in the language server's environment. */
 const SCHEMA_ORIGIN_ENV = "FUSION_POWER_USER_SCHEMA_ORIGIN";
@@ -19,7 +18,7 @@ export function schemaOriginEnv(
 /** The parts of a project `schemaOriginLaunchEnv` reads. */
 export interface SchemaOriginProject {
   readonly manifest: unknown;
-  schemaOriginStatus(fusionVersion: FusionVersion): SchemaOriginStatus;
+  schemaOriginStatus(): SchemaOriginStatus;
 }
 
 /**
@@ -28,11 +27,10 @@ export interface SchemaOriginProject {
  */
 export function schemaOriginLaunchEnv(
   project: SchemaOriginProject | undefined,
-  fusionVersion: FusionVersion,
 ): Record<string, string> {
   return schemaOriginEnv(
     project?.manifest
-      ? project.schemaOriginStatus(fusionVersion)
+      ? project.schemaOriginStatus()
       : { kind: "untypedSources", missing: [] },
   );
 }
@@ -45,11 +43,9 @@ export interface UntypedSource {
 }
 
 export type SchemaOriginStatus =
-  /** Hook present, Fusion >= 2.0.6, and every source column has a `data_type`. */
+  /** Hook present and every source column has a `data_type`. */
   | { kind: "local" }
   | { kind: "noHook" }
-  /** Local origin needs 2.0.6 (ADR 0006). */
-  | { kind: "unsupportedFusion"; version: string }
   | { kind: "untypedSources"; missing: UntypedSource[] };
 
 /**
@@ -60,20 +56,10 @@ export type SchemaOriginStatus =
  */
 export function resolveSchemaOrigin(input: {
   projectConfig: DbtProjectConfig;
-  fusionVersion: FusionVersion | undefined;
   sources: SourceMetaMap;
 }): SchemaOriginStatus {
   if (!hasSchemaOriginHook(input.projectConfig)) {
     return { kind: "noHook" };
-  }
-  const version = input.fusionVersion;
-  if (!version || !atLeast(version, 2, 0, 6)) {
-    return {
-      kind: "unsupportedFusion",
-      version: version
-        ? `${version.major}.${version.minor}.${version.patch}`
-        : "unknown",
-    };
   }
   const missing: UntypedSource[] = [];
   for (const source of input.sources.values()) {
@@ -118,19 +104,4 @@ function child(value: unknown, key: string): unknown {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)[key]
     : undefined;
-}
-
-function atLeast(
-  version: FusionVersion,
-  major: number,
-  minor: number,
-  patch: number,
-): boolean {
-  if (version.major !== major) {
-    return version.major > major;
-  }
-  if (version.minor !== minor) {
-    return version.minor > minor;
-  }
-  return version.patch >= patch;
 }

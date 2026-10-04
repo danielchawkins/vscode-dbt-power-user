@@ -12,12 +12,6 @@ import {
 
 const withHook = `name: p\nsources:\n  +schema_origin: "${SCHEMA_ORIGIN_HOOK}"\n`;
 const config = (yaml: string) => parseDbtProjectYaml(yaml).config;
-const v = (major: number, minor: number, patch: number) => ({
-  major,
-  minor,
-  patch,
-  raw: `dbt ${major}.${minor}.${patch}`,
-});
 
 function sources(
   tables: Record<string, Record<string, string | undefined> | undefined>,
@@ -56,11 +50,10 @@ function sources(
 }
 
 describe("resolveSchemaOrigin", () => {
-  it("is local with the hook, Fusion 2.0.6 and every source column typed", () => {
+  it("is local with the hook and every source column typed", () => {
     expect(
       resolveSchemaOrigin({
         projectConfig: config(withHook),
-        fusionVersion: v(2, 0, 6),
         sources: sources({ orders: { id: "integer", note: "varchar" } }),
       }),
     ).toEqual({ kind: "local" });
@@ -70,40 +63,15 @@ describe("resolveSchemaOrigin", () => {
     expect(
       resolveSchemaOrigin({
         projectConfig: config("name: p\n"),
-        fusionVersion: v(2, 0, 5),
         sources: sources({ orders: {} }),
       }),
     ).toEqual({ kind: "noHook" });
-  });
-
-  it.each([
-    [v(2, 0, 5), "2.0.5"],
-    [undefined, "unknown"],
-  ])("reports unsupportedFusion for %j", (fusionVersion, version) => {
-    expect(
-      resolveSchemaOrigin({
-        projectConfig: config(withHook),
-        fusionVersion,
-        sources: sources({}),
-      }),
-    ).toEqual({ kind: "unsupportedFusion", version });
-  });
-
-  it("accepts later Fusion versions", () => {
-    expect(
-      resolveSchemaOrigin({
-        projectConfig: config(withHook),
-        fusionVersion: v(2, 1, 0),
-        sources: sources({}),
-      }).kind,
-    ).toBe("local");
   });
 
   it("lists untyped columns and tables with no columns", () => {
     expect(
       resolveSchemaOrigin({
         projectConfig: config(withHook),
-        fusionVersion: v(2, 0, 6),
         sources: sources({
           orders: { id: "integer", note: undefined, amount: "  " },
           contacts: undefined,
@@ -166,19 +134,19 @@ describe("schemaOriginLaunchEnv", () => {
   });
 
   it("is remote before the project's first parse", () => {
-    expect(schemaOriginLaunchEnv(undefined, v(2, 0, 6))).toEqual({
+    expect(schemaOriginLaunchEnv(undefined)).toEqual({
       FUSION_POWER_USER_SCHEMA_ORIGIN: "remote",
     });
-    expect(
-      schemaOriginLaunchEnv(project(undefined, "local"), v(2, 0, 6)),
-    ).toEqual({ FUSION_POWER_USER_SCHEMA_ORIGIN: "remote" });
+    expect(schemaOriginLaunchEnv(project(undefined, "local"))).toEqual({
+      FUSION_POWER_USER_SCHEMA_ORIGIN: "remote",
+    });
   });
 
   it("follows the project's status after a parse", () => {
-    expect(schemaOriginLaunchEnv(project({}, "local"), v(2, 0, 6))).toEqual({
+    expect(schemaOriginLaunchEnv(project({}, "local"))).toEqual({
       FUSION_POWER_USER_SCHEMA_ORIGIN: "local",
     });
-    expect(schemaOriginLaunchEnv(project({}, "noHook"), v(2, 0, 6))).toEqual({
+    expect(schemaOriginLaunchEnv(project({}, "noHook"))).toEqual({
       FUSION_POWER_USER_SCHEMA_ORIGIN: "remote",
     });
   });

@@ -28,6 +28,6 @@ The CLI lineage compile, the `column_lineage` info-schema read, refresh on save 
 - Lineage costs one request of about 30 ms per node shown, with no process spawn and no `target/` files (d7).
 - Lineage is only as available as the language server: when the client is stopped or failed, the panel shows the client's state.
 - With local origin and typed sources the server issued no `DESCRIBE` in either origin mode on the fixture (d7, both origins); warehouse behaviour with remote origin on a real warehouse is not established.
-- `dbt.listNodes` with a lineage filter needs Fusion `2.0.0-preview.77` or later, below the extension's 2.0.5 floor, so no fallback path ships.
+- `dbt.listNodes` with a lineage filter needs Fusion `2.0.0-preview.77` or later, below the extension's 2.0.6 floor, so no fallback path ships.
 - The result shape is the server's, not a documented contract. One adapter maps it to the panel's types, and an integration test pins it against the pinned Fusion binary.
 - The analyzer is closed and the open crates are ELv2. The extension sends protocol requests; it does not copy Fusion code.

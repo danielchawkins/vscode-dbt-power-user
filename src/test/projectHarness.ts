@@ -11,14 +11,14 @@ import { Project, ProjectOptions } from "../projects/project";
 import { RunHistoryService } from "../projects/runHistoryService";
 import { SharedStateService } from "../projects/sharedStateService";
 
-/** A Fusion 2.0.5 executable at `executablePath`. */
+/** A Fusion 2.0.6 executable at `executablePath`. */
 export function sampleExecutable(
   executablePath = "/mock/bin/dbt",
   env: Record<string, string> = process.env as Record<string, string>,
 ): FusionExecutable {
   return {
     path: executablePath,
-    version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5\n" },
+    version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6\n" },
     env,
   };
 }

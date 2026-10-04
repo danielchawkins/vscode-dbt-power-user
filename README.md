@@ -4,13 +4,13 @@ Fusion Power User is an independent, local-first VS Code and Cursor extension fo
 
 ## Scope
 
-macOS only. Requires dbt Fusion 2.0.5 or later; an untested newer major logs one warning and continues. The extension does not support dbt Core or dbt Cloud, call hosted APIs, require an account, collect telemetry, or install or update dbt.
+macOS only. Requires dbt Fusion 2.0.6 or later; an untested newer major logs one warning and continues. The extension does not support dbt Core or dbt Cloud, call hosted APIs, require an account, collect telemetry, or install or update dbt.
 
 ## Install
 
 Fusion Power User ships as a VSIX attached to a [GitHub Release](https://github.com/danielchawkins/vscode-dbt-power-user/releases), checksummed with SHA-256. There is no marketplace or OpenVSX publication.
 
-Requirements: VS Code or Cursor on Extensions API 1.128 or later, and dbt Fusion 2.0.5 or later on `PATH` or at `fusionPowerUser.dbtPath`. The upstream dbt Power User (`innoverio.vscode-dbt-power-user`) must not be installed; Fusion Power User refuses to start beside it.
+Requirements: VS Code or Cursor on Extensions API 1.128 or later, and dbt Fusion 2.0.6 or later on `PATH` or at `fusionPowerUser.dbtPath`. The upstream dbt Power User (`innoverio.vscode-dbt-power-user`) must not be installed; Fusion Power User refuses to start beside it.
 
 ```sh
 # 1. Download a release and verify it (replace the tag).

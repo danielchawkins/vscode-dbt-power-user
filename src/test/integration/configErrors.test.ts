@@ -94,7 +94,7 @@ suite("Configuration errors", function () {
       !process.env.FPU_INTEGRATION_DBT_PATH
     ) {
       console.warn(
-        "Skipping configuration errors: dbt Fusion 2.0.5+ is required on PATH.",
+        "Skipping configuration errors: dbt Fusion 2.0.6+ is required on PATH.",
       );
       this.skip();
     }

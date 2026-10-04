@@ -26,7 +26,7 @@ Pinning Fusion in `mise.toml` is therefore correct — it gives *this* repo's te
 
 ## Product boundary
 
-The extension supports dbt Fusion 2.0.5 and later. It does not support dbt Core or dbt Cloud, call hosted APIs, require an account, collect telemetry, install or update dbt, or recursively discover every `dbt_project.yml` in a workspace.
+The extension supports dbt Fusion 2.0.6 and later. It does not support dbt Core or dbt Cloud, call hosted APIs, require an account, collect telemetry, install or update dbt, or recursively discover every `dbt_project.yml` in a workspace.
 
 ## Commands
 

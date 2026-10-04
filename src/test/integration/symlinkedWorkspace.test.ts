@@ -58,7 +58,7 @@ suite("Symlinked workspace (extension)", function () {
     }
     if (fusionVerdict.kind !== "ok") {
       console.warn(
-        "Skipping symlinked workspace tests: dbt Fusion 2.0.5+ required on PATH.",
+        "Skipping symlinked workspace tests: dbt Fusion 2.0.6+ required on PATH.",
       );
       this.skip();
       return;

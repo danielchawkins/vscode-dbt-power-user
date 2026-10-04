@@ -314,7 +314,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -357,7 +357,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -402,7 +402,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -451,7 +451,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -491,7 +491,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -532,7 +532,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: { PROBE_ONLY: "1" },
       },
       launch: makeLaunch({
@@ -638,7 +638,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch({ lintEnabled: false }),
@@ -686,7 +686,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -744,7 +744,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch({ lintEnabled: false }),
@@ -797,7 +797,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -855,7 +855,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -900,7 +900,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -940,7 +940,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -985,7 +985,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -1023,7 +1023,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -1065,7 +1065,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -1098,7 +1098,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -1134,7 +1134,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -1170,7 +1170,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -1207,7 +1207,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -1247,7 +1247,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),
@@ -1282,7 +1282,7 @@ describe("FusionLanguageClient lifecycle", () => {
       project: makeProject(),
       executable: {
         path: "/opt/dbt",
-        version: { major: 2, minor: 0, patch: 5, raw: "dbt 2.0.5" },
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
         env: {},
       },
       launch: makeLaunch(),

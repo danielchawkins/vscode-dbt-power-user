@@ -205,8 +205,8 @@ function composeFusion(graph: ProjectsGraph) {
       readSnapshot: readProjectSnapshot,
       outputChannel: fusionOutputChannel,
       launchEnv: {
-        resolve: (declared, fusionVersion) =>
-          schemaOriginLaunchEnv(projects.get(declared.root), fusionVersion),
+        resolve: (declared) =>
+          schemaOriginLaunchEnv(projects.get(declared.root)),
         onDidChange: projects.onDidChangeManifest,
       },
       reportCompileErrors: (declared, messages) =>

@@ -293,7 +293,7 @@ describe("configuration errors", () => {
       }),
     ).toBe(
       "fusionPowerUser.dbtPath for general is /missing/dbt, which is not an executable file. " +
-        "Fusion Power User needs dbt Fusion 2.0.5 or later.",
+        "Fusion Power User needs dbt Fusion 2.0.6 or later.",
     );
     expect(
       formatFusionExecutableResolutionFailure("general", {
@@ -302,7 +302,7 @@ describe("configuration errors", () => {
       }),
     ).toBe(
       'The dbt executable for general is not dbt Fusion (dbt --version printed "Core:"). ' +
-        "Fusion Power User needs dbt Fusion 2.0.5 or later.",
+        "Fusion Power User needs dbt Fusion 2.0.6 or later.",
     );
     expect(
       formatFusionExecutableResolutionFailure("general", {
