@@ -136,7 +136,7 @@ module.exports = [
       "max-params": ["error", 5],
       "max-lines": [
         "error",
-        { max: 600, skipBlankLines: true, skipComments: true },
+        { max: 400, skipBlankLines: true, skipComments: true },
       ],
       "max-lines-per-function": [
         "error",
