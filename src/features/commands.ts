@@ -177,8 +177,8 @@ export class VSCodeCommands implements Disposable {
               try {
                 await this.cteProfilerService.profileModel(
                   docUri,
-                  document!,
-                  ctes!,
+                  document,
+                  ctes,
                 );
               } catch (error) {
                 this.dbtTerminal.error(
@@ -415,9 +415,7 @@ export class VSCodeCommands implements Disposable {
                 ? `${key} is overridden in ${overriddenIn} settings`
                 : "";
               const valueText =
-                Array.isArray(value) || typeof value === "object"
-                  ? JSON.stringify(value)
-                  : value;
+                typeof value === "string" ? value : JSON.stringify(value);
               return `${key}=${valueText}\t\t${overridenText}`;
             }),
           );

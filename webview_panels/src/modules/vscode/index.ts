@@ -27,7 +27,7 @@ class VSCodeAPIWrapper {
    * Post a message (i.e. send arbitrary data) to the owner of the webview.
    *
    * @remarks When running webview code inside a web browser, postMessage will instead
-   * log the given message to the console.
+   * log the given message through the panel logger.
    *
    * @param message Abitrary data (must be JSON serializable) to send to the extension context.
    */

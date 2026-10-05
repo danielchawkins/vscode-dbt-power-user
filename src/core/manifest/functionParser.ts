@@ -8,7 +8,7 @@ export class FunctionParser {
   constructor(private terminal: ManifestLogger) {}
 
   createFunctionMetaMap(
-    functionsMap: any[],
+    functionsMap: Record<string, any>,
     project: ManifestProject,
   ): Promise<FunctionMetaMap> {
     return new Promise((resolve) => {

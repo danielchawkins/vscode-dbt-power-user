@@ -1,5 +1,4 @@
 import { describe, expect, it, vi } from "vitest";
-import type { Uri } from "vscode";
 import { URI } from "vscode-uri";
 import {
   activeModelUri,
@@ -13,8 +12,8 @@ vi.mock("vscode", async (importOriginal) => ({
   Uri: (await import("vscode-uri")).URI,
 }));
 
-const model = (path: string) => URI.file(path) as unknown as Uri;
-const parse = (value: string) => URI.parse(value) as unknown as Uri;
+const model = (path: string) => URI.file(path);
+const parse = (value: string) => URI.parse(value);
 
 describe("previewUriFor / modelUriOf", () => {
   it.each([

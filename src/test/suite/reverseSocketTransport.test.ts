@@ -121,7 +121,7 @@ describe("reverseSocketTransport", () => {
           expect(chunk.equals(payload)).toBe(true);
           resolve();
         } catch (error) {
-          reject(error);
+          reject(error instanceof Error ? error : new Error(String(error)));
         }
       });
       streams.writer.write(payload);

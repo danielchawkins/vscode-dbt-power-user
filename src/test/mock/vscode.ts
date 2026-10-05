@@ -317,10 +317,8 @@ export function createMockLogOutputChannel(name?: string): LogOutputChannel {
     trace: vi.fn(),
     replace: vi.fn(),
     logLevel: LogLevel.Info,
-    onDidChangeLogLevel: vi
-      .fn()
-      .mockReturnValue({ dispose: vi.fn() } as { dispose: () => void }),
-  } as LogOutputChannel;
+    onDidChangeLogLevel: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+  };
 }
 
 export const window = {

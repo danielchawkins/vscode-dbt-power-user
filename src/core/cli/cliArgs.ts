@@ -41,7 +41,13 @@ export function commandParamsFor(
       return params.test;
     case "build":
       return command.select === undefined ? [] : params.build;
-    default:
+    case "compile":
+    case "compileInline":
+    case "show":
+    case "parse":
+    case "deps":
+    case "clean":
+    case "debug":
       return [];
   }
 }
@@ -99,7 +105,9 @@ function body(command: CliCommand, params: readonly string[]): string[] {
       return showBody(command);
     case "parse":
       return ["parse", "--log-format", "json"];
-    default:
+    case "deps":
+    case "clean":
+    case "debug":
       return [command.kind];
   }
 }
@@ -158,7 +166,8 @@ function deferArgs(state: DeferState): string[] {
         state.stateDirectory,
         ...(state.favorState ? ["--favor-state"] : []),
       ];
-    default:
+    case "unset":
+    case "unusable":
       return [];
   }
 }

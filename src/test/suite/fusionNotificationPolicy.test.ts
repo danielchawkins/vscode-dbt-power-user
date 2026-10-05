@@ -69,7 +69,7 @@ describe("fusionNotificationPolicy", () => {
 
   it("shows no window messages on enabled extension activation", async () => {
     const fusionClientPoolInitialize = vi.fn();
-    const extension = new (DBTPowerUserExtension as any)() as any;
+    const extension = new (DBTPowerUserExtension as any)();
     Object.assign(extension, {
       projects: {
         setContext: vi.fn(),
@@ -137,7 +137,7 @@ describe("fusionNotificationPolicy", () => {
       registry,
       terminal as any,
       resolver as any,
-      factory as any,
+      factory,
       {
         readSnapshot: readProjectSnapshot,
         outputChannel: () => createMockLogOutputChannel("project"),

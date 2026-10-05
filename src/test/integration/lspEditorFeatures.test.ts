@@ -154,7 +154,7 @@ suite("Fusion LSP editor features (extension)", function () {
     );
 
     assert.ok(hovers && hovers.length > 0, 'expected a hover for ref("base")');
-    assert.ok(hoverText(hovers!).length > 0, "hover must carry content");
+    assert.ok(hoverText(hovers).length > 0, "hover must carry content");
   });
 
   // Fusion 2.0.6 answers hover on a dotted package.macro call with no content.
@@ -202,7 +202,7 @@ suite("Fusion LSP editor features (extension)", function () {
       'expected a definition for ref("base")',
     );
     assert.strictEqual(
-      path.basename(locationUri(locations![0]).fsPath),
+      path.basename(locationUri(locations[0]).fsPath),
       "base.sql",
     );
   });
@@ -229,7 +229,7 @@ suite("Fusion LSP editor features (extension)", function () {
       "expected a definition for example()",
     );
     assert.strictEqual(
-      path.basename(locationUri(locations![0]).fsPath),
+      path.basename(locationUri(locations[0]).fsPath),
       "example.sql",
     );
   });
@@ -297,7 +297,7 @@ suite("Fusion LSP editor features (extension)", function () {
 
     const diagnostics = vscode.languages
       .getDiagnostics(document.uri)
-      .map((d) => `${d.source}:${d.code}:${d.message}`);
+      .map((d) => `${d.source}:${JSON.stringify(d.code)}:${d.message}`);
     const kinds = actions?.map((action) => action.kind?.value) ?? [];
     assert.ok(
       kinds.some((kind) => kind?.startsWith("source.fixAll")),

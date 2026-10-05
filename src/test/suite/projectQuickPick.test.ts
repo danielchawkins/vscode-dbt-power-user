@@ -32,8 +32,7 @@ describe("ProjectQuickPick.declaredProjectPicker", () => {
 
     expect(result).toBe(project1);
 
-    const [items, options] = (window.showQuickPick as Mock).mock
-      .calls[0] as any[];
+    const [items, options] = (window.showQuickPick as Mock).mock.calls[0];
     expect(items[0].label).toBe("general_project");
     expect(items[0].description).toBe("/workspace/projects/general");
     expect(options.canPickMany).toBe(false);

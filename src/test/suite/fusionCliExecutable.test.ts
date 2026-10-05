@@ -79,7 +79,7 @@ function mockTerminal(): DBTTerminal {
     info: () => undefined,
     log: () => undefined,
     dispose: () => undefined,
-  } as unknown as DBTTerminal;
+  };
 }
 
 function recordingExecutionFactory(): {
@@ -155,7 +155,7 @@ function pathChangeEvent(root: string): ConfigurationChangeEvent {
     affectsConfiguration: (section: string, scope?: Uri) =>
       section === `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}` &&
       scope?.fsPath === root,
-  } as ConfigurationChangeEvent;
+  };
 }
 
 describe("Fusion CLI executable wiring", () => {
@@ -459,13 +459,13 @@ describe("Fusion CLI executable wiring", () => {
           await gate;
         }),
       };
-      const delegateDispose = vi.fn(async () => undefined);
+      const delegateDispose = vi.fn(() => undefined);
       const integration = buildIntegration(
         root,
         async () => sampleExecutable("/project/race/dbt"),
         lifecycleFactory(root, {
           ...hooks,
-          dispose: delegateDispose as () => void,
+          dispose: delegateDispose,
         }),
       );
 

@@ -139,8 +139,9 @@ describe("disposable ownership", () => {
       created.push(tracked);
       return tracked as never;
     };
-    vi.mocked(window.createOutputChannel).mockImplementation(((name: string) =>
-      track(createMockLogOutputChannel(name))) as never);
+    vi.mocked(window.createOutputChannel).mockImplementation((name: string) =>
+      track(createMockLogOutputChannel(name)),
+    );
     vi.mocked(window.createStatusBarItem).mockImplementation(() =>
       track({ show: vi.fn(), hide: vi.fn() }),
     );

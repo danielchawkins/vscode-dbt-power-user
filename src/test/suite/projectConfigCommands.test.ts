@@ -64,16 +64,14 @@ describe("applyProjectConfigInsertion", () => {
       },
       "Add",
     ]);
-    const edit = (workspace.applyEdit as Mock).mock.calls[0][0] as any;
+    const edit = (workspace.applyEdit as Mock).mock.calls[0][0];
     expect(edit.replacements[0].newText).toContain("+static_analysis: strict");
     expect(document.save).toHaveBeenCalled();
   });
 
   it("writes nothing when the modal is dismissed", async () => {
     const declared = project("name: jaffle\n");
-    vi.spyOn(window, "showInformationMessage").mockResolvedValue(
-      undefined as never,
-    );
+    vi.spyOn(window, "showInformationMessage").mockResolvedValue(undefined);
 
     expect(await applyProjectConfigInsertion(declared, strict, terminal)).toBe(
       false,
@@ -90,7 +88,7 @@ describe("applyProjectConfigInsertion", () => {
     );
     const info = vi
       .spyOn(window, "showInformationMessage")
-      .mockResolvedValue(undefined as never);
+      .mockResolvedValue(undefined);
 
     expect(await applyProjectConfigInsertion(declared, strict, terminal)).toBe(
       false,
@@ -104,7 +102,7 @@ describe("applyProjectConfigInsertion", () => {
     const declared = project("name: real_name\n");
     const modal = vi
       .spyOn(window, "showInformationMessage")
-      .mockResolvedValue(undefined as never);
+      .mockResolvedValue(undefined);
 
     await applyProjectConfigInsertion(declared, strict, terminal);
 

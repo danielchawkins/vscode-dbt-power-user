@@ -89,24 +89,19 @@ export function nextManifestPublication<
   };
 }
 
-type FunctionParserInput = Parameters<
-  FunctionParser["createFunctionMetaMap"]
->[0];
-
-const EMPTY_FUNCTION_MAP = {} as FunctionParserInput;
+/** A `manifest.json` resource section: resources keyed by unique id. */
+type ManifestResources = Record<string, unknown>;
 
 interface ManifestJson {
   metadata?: { adapter_type?: string };
-  nodes: Parameters<NodeParser["createNodeMetaMap"]>[0];
-  sources: Parameters<SourceParser["createSourceMetaMap"]>[0];
-  macros: Parameters<MacroParser["createMacroMetaMap"]>[0];
-  semantic_models: Parameters<
-    SemanticModelParser["createSemanticModelMetaMap"]
-  >[0];
-  docs: Parameters<DocParser["createDocMetaMap"]>[0];
-  exposures: Parameters<ExposureParser["createExposureMetaMap"]>[0];
-  functions?: FunctionParserInput;
-  unit_tests?: Parameters<UnitTestParser["createUnitTestMetaMap"]>[0];
+  nodes: ManifestResources;
+  sources: ManifestResources;
+  macros: ManifestResources;
+  semantic_models: ManifestResources;
+  docs: ManifestResources;
+  exposures: ManifestResources;
+  functions?: ManifestResources;
+  unit_tests?: ManifestResources;
 }
 
 /**
@@ -229,7 +224,7 @@ async function parseResourceMaps(
     parsers.docParser.createDocMetaMap(docs, project),
     parsers.exposureParser.createExposureMetaMap(exposures, project),
     parsers.functionParser.createFunctionMetaMap(
-      functionRecords ?? EMPTY_FUNCTION_MAP,
+      functionRecords ?? {},
       project,
     ),
   ]);

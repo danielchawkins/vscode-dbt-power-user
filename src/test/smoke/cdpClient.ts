@@ -112,7 +112,11 @@ export async function readWorkbenchNotificationTexts(
   }
   throw lastError instanceof Error
     ? lastError
-    : new Error(String(lastError ?? "CDP notification read failed"));
+    : new Error(
+        lastError === undefined
+          ? "CDP notification read failed"
+          : JSON.stringify(lastError),
+      );
 }
 
 /** Fails when the workbench shows any notification, toast or centered. */
@@ -430,10 +434,10 @@ function withSession<T>(
           socket.close();
           resolve(value);
         },
-        (error) => {
+        (error: unknown) => {
           clearTimeout(timeout);
           socket.close();
-          reject(error);
+          reject(error instanceof Error ? error : new Error(String(error)));
         },
       );
     });
@@ -547,7 +551,11 @@ function evaluateContexts(
           reject(
             error instanceof Error
               ? error
-              : new Error(String(error ?? "CDP evaluation assembly failed")),
+              : new Error(
+                  error === undefined || error === null
+                    ? "CDP evaluation assembly failed"
+                    : JSON.stringify(error),
+                ),
           );
         }
       });

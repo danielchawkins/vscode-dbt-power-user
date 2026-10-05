@@ -18,6 +18,8 @@ export const mapColumnType = (
       return "string";
     case "Number":
       return "float";
+    case null:
+    case undefined:
     default:
       return "string";
   }

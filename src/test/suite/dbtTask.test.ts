@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { CustomExecution, Task, TaskRevealKind, tasks } from "vscode";
+import { CustomExecution, TaskRevealKind, tasks } from "vscode";
 import { DBTCommand } from "../../dbt_integration";
 import { CommandProcessResult } from "../../fusion/commandProcessExecution";
 import {
@@ -181,7 +181,7 @@ describe("executeTask", () => {
         return terminal;
       }),
     );
-    return { task: task as Task, terminal: () => terminal! };
+    return { task, terminal: () => terminal! };
   }
 
   it("resolves with an ended promise that settles once the task's terminal closes", async () => {
@@ -215,7 +215,7 @@ describe("executeTask", () => {
         terminals.push(terminal);
         return terminal;
       }),
-    ) as Task;
+    );
     await executeTask(task);
 
     const second = executeTask(task);

@@ -53,7 +53,7 @@ export class CommandQueue implements Disposable {
     return new Promise<T>((resolve, reject) => {
       this.pending.push({
         command,
-        resolve: resolve as (value: unknown) => void,
+        resolve,
         reject,
         ...options,
       });

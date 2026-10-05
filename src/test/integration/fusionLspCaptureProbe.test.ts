@@ -19,7 +19,7 @@ function progressValue(
   if (typeof value !== "object" || value === null) {
     return undefined;
   }
-  return value as { kind?: string; title?: string; message?: string };
+  return value;
 }
 
 function progressToken(params: unknown): string {
@@ -64,7 +64,8 @@ function fusionSkipReason(
       return "dbt Fusion on PATH is older than 2.0.6";
     case "untestedMajor":
       return "dbt Fusion major version is untested";
-    default:
+    case "ok":
+    case "notFound":
       return "dbt Fusion on PATH is not supported for this probe";
   }
 }

@@ -220,7 +220,7 @@ function tierToThemeColor(tier: CteProfileEntry["tier"]): string {
       return "editorError.foreground";
     case "warm":
       return "editorWarning.foreground";
-    default:
+    case "cool":
       return "editorCodeLens.foreground";
   }
 }

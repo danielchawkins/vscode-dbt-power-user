@@ -53,9 +53,7 @@ export abstract class PanelHost implements WebviewViewProvider {
   ) {
     const t = this;
     this._disposables.push(
-      emitterService.eventEmitter.event((d) =>
-        t.onEvent(d as SharedStateEventEmitterProps),
-      ),
+      emitterService.eventEmitter.event((d) => t.onEvent(d)),
     );
   }
 
@@ -116,7 +114,7 @@ export abstract class PanelHost implements WebviewViewProvider {
     this.beginWebviewResolve();
     this._panel = panel;
     this.setupWebviewOptions(context);
-    this.renderWebviewView(this._panel!.webview);
+    this.renderWebviewView(this._panel.webview);
   }
 
   private setupWebviewOptions(context: WebviewViewResolveContext) {

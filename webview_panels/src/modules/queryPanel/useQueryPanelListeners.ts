@@ -149,7 +149,8 @@ const useQueryPanelListeners = (): { loading: boolean } => {
             ),
           );
           break;
-        default:
+        // The app listener settles responses.
+        case "response":
           break;
       }
     },

@@ -101,7 +101,6 @@ export class QueryManifestService {
     }
 
     const sources = event.sourceMetaMap.entries();
-    console.log(event.sourceMetaMap.size, sources);
     const items = Array.from(sources).map(([key, source]) => ({
       name: key,
       tables: source.tables.map((t) => t.name),

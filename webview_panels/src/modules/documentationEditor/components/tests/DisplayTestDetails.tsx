@@ -165,6 +165,7 @@ const DisplayTestDetails = ({
           </Card>
         );
 
+      case undefined:
       default:
         return null;
     }

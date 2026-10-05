@@ -50,10 +50,6 @@ export const isColumnNameEqual = (
 export const isQuotedIdentifier = (columnName: string, adapter: string) => {
   const regexFromConfig = readSetting("unquotedCaseInsensitiveIdentifierRegex");
   if (regexFromConfig) {
-    console.log(
-      "[isQuotedIdentifier] using user provider regex for",
-      regexFromConfig,
-    );
     return !new RegExp(regexFromConfig).test(columnName);
   }
 
@@ -236,12 +232,8 @@ export function getCurrentlySelectedModelNameInYamlConfig(): string {
         return nameNode.value.toString();
       }
     }
-  } catch (error) {
-    console.error("Error parsing YAML document:", {
-      error,
-      document: window.activeTextEditor?.document.fileName,
-      position: window.activeTextEditor?.selection.active,
-    });
+  } catch {
+    // A YAML document mid-edit does not parse; no model is selected.
   }
   return "";
 }

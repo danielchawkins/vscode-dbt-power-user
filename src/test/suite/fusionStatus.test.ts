@@ -47,7 +47,7 @@ class FakeClient implements FusionClient {
 
   readonly outputChannel = createMockLogOutputChannel(
     "Fusion Power User: general",
-  ) as FusionClient["outputChannel"];
+  );
   failureReason: string | undefined;
 
   constructor(

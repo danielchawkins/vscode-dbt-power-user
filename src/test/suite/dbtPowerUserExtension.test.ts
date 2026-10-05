@@ -19,7 +19,7 @@ const activationHarness = (enabled: boolean) => {
   const registryInitialize = vi.fn(() => Promise.resolve());
   const fusionClientPoolInitialize = vi.fn();
   const fusionStatusInitialize = vi.fn();
-  const extension = new (DBTPowerUserExtension as any)() as any;
+  const extension = new (DBTPowerUserExtension as any)();
   Object.assign(extension, {
     projects: {
       setContext: vi.fn(),

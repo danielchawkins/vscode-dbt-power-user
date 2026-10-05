@@ -44,7 +44,7 @@ describe("SqlPreviewContentProvider", () => {
   it("compiles the model file behind the preview URI", async () => {
     const model = URI.file(modelPath);
     const content = await provider.provideTextDocumentContent(
-      URI.parse(previewUriFor(model as never).toString()) as never,
+      URI.parse(previewUriFor(model).toString()),
     );
     expect(content).toBe("compiled: select 1");
     expect(get.mock.calls[0][0]?.toString()).toBe(model.toString());
@@ -56,7 +56,7 @@ describe("SqlPreviewContentProvider", () => {
       { uri: model, getText: () => "select 2" },
     ];
     const content = await provider.provideTextDocumentContent(
-      previewUriFor(model as never),
+      previewUriFor(model),
     );
     expect(content).toBe("compiled: select 2");
   });
@@ -64,7 +64,7 @@ describe("SqlPreviewContentProvider", () => {
   it("refreshes the preview when its model changes", async () => {
     vi.useFakeTimers();
     const model = URI.file(modelPath);
-    const preview = previewUriFor(model as never);
+    const preview = previewUriFor(model);
     await provider.provideTextDocumentContent(preview);
     const fired = vi.fn();
     provider.onDidChange(fired);

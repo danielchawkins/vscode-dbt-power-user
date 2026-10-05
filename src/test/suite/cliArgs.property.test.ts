@@ -89,8 +89,10 @@ function payloadOf(c: CliCommand): string[] {
     case "compileInline":
       return [c.sql];
     case "show":
-      return [];
-    default:
+    case "parse":
+    case "deps":
+    case "clean":
+    case "debug":
       return [];
   }
 }

@@ -223,7 +223,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   }
 
   private renderWebviewView(context: WebviewViewResolveContext) {
-    const webview = this._panel!.webview!;
+    const webview = this._panel!.webview;
     webview.html = panelHtml(webview, this.extensionContext.extensionUri, {
       entry: this.entry,
       csp: {},
@@ -494,7 +494,6 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   ) {
     if (models && models.items) {
       return (
-        // @ts-ignore
         (models.items.find(
           (
             item:

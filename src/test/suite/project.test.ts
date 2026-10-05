@@ -318,7 +318,7 @@ describe("Project Test Suite", () => {
 
       const collections = (
         vscode.languages.createDiagnosticCollection as Mock
-      ).mock.results.map((result) => result.value as any);
+      ).mock.results.map((result) => result.value);
       expect(
         (vscode.languages.createDiagnosticCollection as Mock).mock.calls,
       ).toEqual([["fusionPowerUser.project"]]);
@@ -457,7 +457,7 @@ describe("Project Test Suite", () => {
       dbtProject = await initializedProject();
       const { results } = (vscode.languages.createDiagnosticCollection as Mock)
         .mock;
-      const collection = results[results.length - 1].value as any;
+      const collection = results[results.length - 1].value;
       let release!: () => void;
       mockFusionCli.rebuildManifest.mockImplementation(
         () => new Promise<void>((resolve) => (release = resolve)),

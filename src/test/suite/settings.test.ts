@@ -173,7 +173,7 @@ describe("settings", () => {
       affectsConfiguration: (section: string, resource?: Uri) =>
         section === `${CONFIGURATION_SECTION}.dbtPath` &&
         (resource === undefined || resource.fsPath === scope.fsPath),
-    } as ConfigurationChangeEvent);
+    });
 
     expect(changes).toHaveLength(1);
     expect(changes[0].affects()).toBe(true);
