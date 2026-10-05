@@ -57,7 +57,7 @@ export class QueryResultPanel extends PanelHost {
   protected readonly entry = "queryResults";
   // Perspective fetches and compiles its .wasm and runs its engine in a worker started from a Blob.
   protected readonly csp = { wasm: true, connect: true, blobWorkers: true };
-  protected panelDescription = "Query results panel";
+  protected override panelDescription = "Query results panel";
   private _queryTabData: any;
   private _bottomPanel: WebviewView | undefined;
 
@@ -73,10 +73,10 @@ export class QueryResultPanel extends PanelHost {
   private _queryHistory: QueryHistory[] = [];
 
   public constructor(
-    protected extensionContext: ExtensionContextStore,
+    protected override extensionContext: ExtensionContextStore,
     private eventEmitterService: SharedStateService,
-    protected dbtTerminal: DBTTerminal,
-    protected queryManifestService: QueryManifestService,
+    protected override dbtTerminal: DBTTerminal,
+    protected override queryManifestService: QueryManifestService,
     onDidRemoveProject: Event<Uri>,
   ) {
     super(
@@ -159,7 +159,10 @@ export class QueryResultPanel extends PanelHost {
     });
   }
 
-  protected async onEvent({ command, payload }: SharedStateEventEmitterProps) {
+  protected override async onEvent({
+    command,
+    payload,
+  }: SharedStateEventEmitterProps) {
     switch (command) {
       case "executeQuery":
         this.executeQuery(
@@ -179,7 +182,7 @@ export class QueryResultPanel extends PanelHost {
     this.updateViewTypeToWebview(QueryPanelViewType.OPEN_RESULTS_IN_TAB);
   }
 
-  public async resolveWebviewView(
+  public override async resolveWebviewView(
     panel: WebviewView,
     context: WebviewViewResolveContext,
     _token: CancellationToken,
@@ -592,7 +595,7 @@ export class QueryResultPanel extends PanelHost {
     }
   }
 
-  protected onWebviewReady() {
+  protected override onWebviewReady() {
     super.onWebviewReady();
 
     if (!this._panel) {

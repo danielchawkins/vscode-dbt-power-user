@@ -10,6 +10,7 @@
     "rootDir": ".",
     // "rootDirs": ["src", "../altimate-dbt-integration/src"],
     "strict": true,
+    "noImplicitOverride": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
     "esModuleInterop": true,
