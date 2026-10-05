@@ -1,7 +1,6 @@
 import * as path from "path";
 
 import {
-  Command,
   Disposable,
   Event,
   EventEmitter,
@@ -351,7 +350,6 @@ class DocTreeItem extends TreeItem {
     TreeItemCollapsibleState.Collapsed;
   description: string;
   children?: DocTreeItem[];
-  command?: Command;
   constructor(node: DocNode) {
     super(node.label, TreeItemCollapsibleState.Collapsed);
     this.description = node.description !== undefined ? node.description : " ";

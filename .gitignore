@@ -63,3 +63,4 @@ mcp.json
 
 # Markdown lint cache
 .rumdl_cache/
+*.tsbuildinfo

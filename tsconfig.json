@@ -1,11 +1,11 @@
 {
   "compilerOptions": {
     "module": "ESNext",
-    "target": "ES2020",
+    "target": "ES2024",
     "outDir": "out",
     "noEmit": true,
     "tsBuildInfoFile": "out/tsconfig.tsbuildinfo",
-    "lib": ["ES2020"],
+    "lib": ["ES2024"],
     "sourceMap": true,
     "rootDir": ".",
     // "rootDirs": ["src", "../altimate-dbt-integration/src"],
