@@ -460,22 +460,16 @@ const lineagePanel: Fixture[] = [
       ...params({
         targets: [["model.a", "id"]],
         upstreamExpansion: true,
-        currAnd1HopTables: ["model.a", "model.b"],
-        selectedColumn: { name: "id", table: "model.a" },
-        showIndirectEdges: false,
       }),
     },
     required: [
       "args.params.targets",
       "args.params.targets.0.1",
       "args.params.upstreamExpansion",
-      "args.params.selectedColumn.name",
-      "args.params.selectedColumn.table",
     ],
     arrays: {
       "args.params.targets": ["array"],
       "args.params.targets.0": ["string"],
-      "args.params.currAnd1HopTables": ["string"],
     },
   },
   { message: { command: "getLineageSettings", ...params({}) }, required: [] },
