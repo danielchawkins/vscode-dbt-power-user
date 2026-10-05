@@ -9,10 +9,10 @@ import {
   Uri,
 } from "vscode";
 import { DBT_PROJECT_FILE, projectRootDigest } from "../core/project";
+import { vscodeDocumentSelectorForProject } from "../fusion/documentSelector";
 import {
   FusionClient,
   FusionClientState,
-  vscodeDocumentSelectorForProject,
 } from "../fusion/fusionLanguageClient";
 import { FusionClientPool } from "./fusionClientPool";
 import { DeclaredProject } from "./projectRegistry";

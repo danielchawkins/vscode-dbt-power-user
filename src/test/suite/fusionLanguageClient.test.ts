@@ -16,6 +16,10 @@ import { DBT_LSP_USE_TARGET_LSP, LspLaunch } from "../../core/lsp";
 import { parseTraceServerLevel } from "../../core/project";
 import { DbtLineageService } from "../../features/lineage/dbtLineageService";
 import {
+  documentSelectorForProject,
+  validateDocumentSelectorPatterns,
+} from "../../fusion/documentSelector";
+import {
   clearDiagnosticsOnDelete,
   ProjectDiagnosticsFilter,
 } from "../../fusion/fusionDiagnostics";
@@ -25,19 +29,18 @@ import {
   commandPrefixForProject,
   DefaultFusionClientFactory,
   DISPOSAL_GRACE_MS,
-  documentSelectorForProject,
   FUSION_LSP_COMMANDS,
   FusionClient,
   FusionClientState,
   languageClientIdForProject,
   MAX_UNEXPECTED_EXIT_RETRIES,
-  PARTIAL_LINE_LIMIT,
   prefixedCommand,
-  ProcessStreamBuffer,
-  SpawnedLspProcess,
-  validateDocumentSelectorPatterns,
   withoutUnregisteredLspLenses,
 } from "../../fusion/fusionLanguageClient";
+import {
+  ProcessStreamBuffer,
+  SpawnedLspProcess,
+} from "../../fusion/lspProcess";
 import type { ChildProcess } from "../../fusion/process";
 import {
   ExitingProcess,
@@ -214,12 +217,12 @@ describe("fusionLanguageClient helpers", () => {
       lines.push(line);
     };
 
-    buffer.feed("a".repeat(PARTIAL_LINE_LIMIT + 50), onLine);
+    // PARTIAL_LINE_LIMIT in lspProcess.ts is 4096.
+    buffer.feed("a".repeat(4_096 + 50), onLine);
     expect(lines).toHaveLength(0);
     buffer.flush(onLine);
     expect(lines).toHaveLength(1);
-    expect(lines[0]).toHaveLength(PARTIAL_LINE_LIMIT);
-    expect(lines[0]).toBe("a".repeat(PARTIAL_LINE_LIMIT));
+    expect(lines[0]).toBe("a".repeat(4_096));
   });
 
   it("builds workspace/configuration response for dbt section with linter", () => {
@@ -1294,15 +1297,15 @@ describe("FusionLanguageClient lifecycle", () => {
     });
 
     await flushAsync();
-    await client.request(FUSION_LSP_COMMANDS.show, {
-      uri: "file:///workspace/general/models/plain.sql",
-    });
+    await client.request(FUSION_LSP_COMMANDS.compileFile, [
+      "file:///workspace/general/models/plain.sql",
+    ]);
 
     expect(languageClient.sendRequest).toHaveBeenCalledWith(
       ExecuteCommandRequest.type,
       {
-        command: `${prefix}${FUSION_LSP_COMMANDS.show}`,
-        arguments: [{ uri: "file:///workspace/general/models/plain.sql" }],
+        command: `${prefix}${FUSION_LSP_COMMANDS.compileFile}`,
+        arguments: ["file:///workspace/general/models/plain.sql"],
       },
       undefined,
     );
@@ -1366,7 +1369,6 @@ describe("FusionLanguageClient lifecycle", () => {
         targets: [["model.p.b", "total"]],
         upstreamExpansion: true,
       }),
-      client.request(FUSION_LSP_COMMANDS.show, {}),
     ]);
 
     expect(listNodes).toBe(3);

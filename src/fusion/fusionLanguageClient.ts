@@ -3,11 +3,9 @@ import * as path from "path";
 import {
   CancellationToken,
   Disposable,
-  DocumentFilter,
   Event,
   EventEmitter,
   LogOutputChannel,
-  RelativePattern,
   Uri,
   WorkspaceFolder,
 } from "vscode";
@@ -20,15 +18,21 @@ import {
 } from "vscode-languageclient/node";
 import { DBT_LSP_USE_TARGET_LSP, toLspArgs, type LspLaunch } from "../core/lsp";
 import { projectRootDigest, type StaticAnalysisMode } from "../core/project";
+import { documentSelectorForProject } from "./documentSelector";
 import {
   clearDiagnosticsOnDelete,
   ProjectDiagnosticsFilter,
 } from "./fusionDiagnostics";
 import { FusionExecutable } from "./fusionExecutable";
+import {
+  BACKOFF_BASE_MS,
+  BACKOFF_CAP_MS,
+  CONNECTION_TIMEOUT_MS,
+  SpawnedLspProcess,
+} from "./lspProcess";
 import { spawnProcess, type ChildProcess } from "./process";
 import {
   acceptWithProcessExit,
-  ExitingProcess,
   listenForServer,
   ReverseSocketServer,
 } from "./reverseSocketTransport";
@@ -40,7 +44,6 @@ export const FUSION_LSP_COMMANDS = {
   compileLsp: "dbt.compileLsp",
   clearTarget: "dbt.clearTarget",
   getProjectInfo: "dbt.getProjectInfo",
-  show: "dbt.show",
 } as const;
 
 /** Client command in Fusion's CTE code lenses; not advertised by initialize, and no command here handles it. */
@@ -84,7 +87,7 @@ export interface FusionClient extends Disposable {
   readonly outputChannel: LogOutputChannel;
   readonly failureReason: string | undefined;
   readonly onDidChangeState: Event<FusionClientState>;
-  /** Sends `workspace/executeCommand`; `dbt.listNodes` requests are sent one at a time. */
+  /** Sends `workspace/executeCommand`; {@link FusionCommands} queues and times out the calls. */
   request<T>(
     command: FusionLspCommand,
     payload: unknown,
@@ -95,28 +98,11 @@ export interface FusionClient extends Disposable {
   stop(): Promise<void>;
 }
 
-type LspRelativePattern = {
-  baseUri: string;
-  pattern: string;
-};
-
-type FusionDocumentFilter = {
-  language: string;
-  pattern: LspRelativePattern;
-};
-
 const EXTENSION_PREFIX_NAMESPACE = "fusionPowerUser";
-const CONNECTION_TIMEOUT_MS = 30_000;
 /** @internal */
 export const DISPOSAL_GRACE_MS = 5_000;
 /** @internal */
 export const MAX_UNEXPECTED_EXIT_RETRIES = 3;
-const BACKOFF_BASE_MS = 500;
-const BACKOFF_CAP_MS = 8_000;
-const STDERR_BUFFER_LIMIT = 16_384;
-/** @internal */
-export const PARTIAL_LINE_LIMIT = 4_096;
-
 export function commandPrefixForProject(project: FusionProjectRef): string {
   return `${EXTENSION_PREFIX_NAMESPACE}:${projectRootDigest(project.root.fsPath)}:`;
 }
@@ -204,62 +190,6 @@ export function withoutUnregisteredLspLenses<
 }
 
 /**
- * Per-project LSP document filters using protocol RelativePattern bases.
- * Selectors isolate disjoint Declared Project roots; overlapping roots are not
- * isolated.
- * @internal
- */
-export function documentSelectorForProject(root: Uri): FusionDocumentFilter[] {
-  const baseUri = root.toString();
-  const selector: FusionDocumentFilter[] = FUSION_DOCUMENT_LANGUAGES.map(
-    (language) => ({ language, pattern: { baseUri, pattern: PROJECT_GLOB } }),
-  );
-  validateDocumentSelectorPatterns(selector);
-  return selector;
-}
-
-/** The VS Code form of {@link documentSelectorForProject}, for editor surfaces scoped to one project. */
-export function vscodeDocumentSelectorForProject(root: Uri): DocumentFilter[] {
-  return FUSION_DOCUMENT_LANGUAGES.map((language) => ({
-    language,
-    pattern: new RelativePattern(root, PROJECT_GLOB),
-  }));
-}
-
-const FUSION_DOCUMENT_LANGUAGES = ["jinja-sql", "sql", "yaml"] as const;
-const PROJECT_GLOB = "**/*";
-
-/** @internal */
-export function validateDocumentSelectorPatterns(
-  selector: readonly FusionDocumentFilter[],
-): void {
-  for (const filter of selector) {
-    if (
-      typeof filter !== "object" ||
-      filter === null ||
-      !("pattern" in filter) ||
-      filter.pattern === undefined
-    ) {
-      throw new Error("Fusion LSP document selector filter missing pattern");
-    }
-    const pattern = filter.pattern;
-    if (typeof pattern !== "object" || pattern === null) {
-      throw new Error("Fusion LSP document selector pattern must be an object");
-    }
-    const baseUri = (pattern as { baseUri?: unknown }).baseUri;
-    const glob = (pattern as { pattern?: unknown }).pattern;
-    if (typeof baseUri !== "string" || baseUri.trim() === "") {
-      throw new Error(
-        "Fusion LSP document selector baseUri must be a string URI",
-      );
-    }
-    if (typeof glob !== "string" || glob.trim() === "") {
-      throw new Error("Fusion LSP document selector pattern must be non-empty");
-    }
-  }
-}
-
-/**
  * Returns minimal dbt config: `{lsp:{linter:{enabled:bool}}}`, null for other sections.
  * @internal
  */
@@ -277,109 +207,6 @@ export function buildWorkspaceConfigurationResponse(
     };
   }
   return null;
-}
-
-/**
- * Line buffer for piped Fusion server stdout/stderr.
- * @internal
- */
-export class ProcessStreamBuffer {
-  private partial = "";
-
-  feed(chunk: Buffer | string, onLine: (line: string) => void): void {
-    this.partial += chunk.toString();
-    const parts = this.partial.split(/\r?\n/);
-    this.partial = parts.pop() ?? "";
-    for (const line of parts) {
-      const trimmed = line.trimEnd();
-      if (trimmed) {
-        onLine(trimmed);
-      }
-    }
-    if (this.partial.length > PARTIAL_LINE_LIMIT) {
-      this.partial = this.partial.slice(0, PARTIAL_LINE_LIMIT);
-    }
-  }
-
-  flush(onLine: (line: string) => void): void {
-    const trimmed = this.partial.trim();
-    if (trimmed) {
-      onLine(trimmed);
-    }
-    this.partial = "";
-  }
-}
-
-class StderrAccumulator {
-  private text = "";
-
-  append(line: string): void {
-    this.text += `${line}\n`;
-    if (this.text.length > STDERR_BUFFER_LIMIT) {
-      this.text = this.text.slice(-STDERR_BUFFER_LIMIT);
-    }
-  }
-
-  get(): string {
-    return this.text;
-  }
-}
-
-/**
- * Child process adapter; stderr-only accumulator feeds getStderr().
- * @internal
- */
-export class SpawnedLspProcess implements ExitingProcess {
-  private readonly stderrAccumulator = new StderrAccumulator();
-  private readonly stdoutBuffer = new ProcessStreamBuffer();
-  private readonly stderrStreamBuffer = new ProcessStreamBuffer();
-
-  constructor(
-    private readonly child: ChildProcess,
-    private readonly onChannelLine?: (line: string) => void,
-  ) {
-    const appendChannelLine = (line: string): void => {
-      this.onChannelLine?.(line);
-    };
-    const appendStderrLine = (line: string): void => {
-      this.stderrAccumulator.append(line);
-      appendChannelLine(line);
-    };
-    child.stdout?.on("data", (chunk: Buffer | string) => {
-      this.stdoutBuffer.feed(chunk, appendChannelLine);
-    });
-    child.stderr?.on("data", (chunk: Buffer | string) => {
-      this.stderrStreamBuffer.feed(chunk, appendStderrLine);
-    });
-    child.on("close", () => {
-      this.stdoutBuffer.flush(appendChannelLine);
-      this.stderrStreamBuffer.flush(appendStderrLine);
-    });
-  }
-
-  get exitCode(): number | null {
-    return this.child.exitCode;
-  }
-
-  get signalCode(): NodeJS.Signals | null {
-    return this.child.signalCode;
-  }
-
-  on(event: "exit", listener: () => void): void {
-    this.child.on(event, listener);
-  }
-
-  removeListener(event: "exit", listener: () => void): void {
-    this.child.removeListener(event, listener);
-  }
-
-  getStderr(): string {
-    return this.stderrAccumulator.get();
-  }
-
-  kill(signal: NodeJS.Signals): void {
-    this.child.kill(signal);
-  }
 }
 
 export type FusionLanguageClientDependencies = {
