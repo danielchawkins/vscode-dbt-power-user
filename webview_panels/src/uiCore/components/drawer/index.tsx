@@ -6,6 +6,7 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useRef,
   useState,
 } from "react";
 import IconButton from "../iconButton/IconButton";
@@ -31,6 +32,8 @@ const Drawer: ForwardRefRenderFunction<DrawerRef, Props> = (
   ref,
 ) => {
   const [show, setShow] = useState(false);
+  const drawerRef = useRef<HTMLElement>(null);
+  const returnFocusRef = useRef<Element | null>(null);
 
   const handleClose = useCallback(() => {
     setShow(false);
@@ -51,13 +54,28 @@ const Drawer: ForwardRefRenderFunction<DrawerRef, Props> = (
       return;
     }
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
+      if (event.key === "Escape" && !event.defaultPrevented) {
         handleClose();
       }
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [show, handleClose]);
+
+  useEffect(() => {
+    if (!show) {
+      return;
+    }
+    returnFocusRef.current = document.activeElement;
+    drawerRef.current
+      ?.querySelector<HTMLElement>("button, [href], input, select, textarea")
+      ?.focus();
+    return () => {
+      if (returnFocusRef.current instanceof HTMLElement) {
+        returnFocusRef.current.focus();
+      }
+    };
+  }, [show]);
 
   if (!show) {
     return null;
@@ -73,7 +91,7 @@ const Drawer: ForwardRefRenderFunction<DrawerRef, Props> = (
           onClick={handleClose}
         />
       ) : null}
-      <aside aria-label={title} className={classes.drawer}>
+      <aside ref={drawerRef} aria-label={title} className={classes.drawer}>
         <IconButton
           color="primary"
           title="Close"

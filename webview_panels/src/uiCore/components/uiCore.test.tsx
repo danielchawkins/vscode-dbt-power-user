@@ -13,7 +13,7 @@ import {
 } from "..";
 
 describe("uiCore native components", () => {
-  it("marks the selected tab active, the class the panel smoke reads", () => {
+  it("marks the pressed nav button active, the class the panel smoke reads", () => {
     render(
       <Nav>
         <NavItem>
@@ -24,9 +24,9 @@ describe("uiCore native components", () => {
         </NavItem>
       </Nav>,
     );
-    const [preview, sql] = screen.getAllByRole("tab");
+    const [preview, sql] = screen.getAllByRole("button");
     expect(preview).toHaveClass("nav-link", "active");
-    expect(preview).toHaveAttribute("aria-selected", "true");
+    expect(preview).toHaveAttribute("aria-pressed", "true");
     expect(sql).not.toHaveClass("active");
   });
 

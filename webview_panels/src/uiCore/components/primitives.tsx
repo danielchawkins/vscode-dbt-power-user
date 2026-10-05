@@ -70,14 +70,14 @@ export const Nav = ({
   className,
   ...rest
 }: HTMLAttributes<HTMLUListElement>): JSX.Element => (
-  <ul {...rest} role="tablist" className={cx("nav", className)} />
+  <ul {...rest} className={cx("nav", className)} />
 );
 
 export const NavItem = ({
   className,
   ...rest
 }: LiHTMLAttributes<HTMLLIElement>): JSX.Element => (
-  <li {...rest} role="presentation" className={cx("nav-item", className)} />
+  <li {...rest} className={cx("nav-item", className)} />
 );
 
 export const NavLink = ({
@@ -90,8 +90,7 @@ export const NavLink = ({
   <button
     {...rest}
     type="button"
-    role="tab"
-    aria-selected={active}
+    aria-pressed={active}
     className={cx("nav-link", active && "active", className)}
   />
 );

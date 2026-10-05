@@ -12,12 +12,17 @@ const PreTag = ({
   text?: string;
 }): JSX.Element => {
   const [isCopied, setIsCopied] = useState(false);
+  const [copyFailed, setCopyFailed] = useState(false);
 
   const copy = async (value: string) => {
     try {
       await navigator.clipboard.writeText(value);
     } catch (error) {
       panelLogger.error("Unable to copy to clipboard", error);
+      setCopyFailed(true);
+      setTimeout(() => {
+        setCopyFailed(false);
+      }, 3000);
       return;
     }
     setIsCopied(true);
@@ -31,7 +36,13 @@ const PreTag = ({
       {text ? (
         <div className="code__icons">
           <IconButton
-            title={!isCopied ? "Copy to clipboard" : "Copied to clipboard"}
+            title={
+              copyFailed
+                ? "Copy failed"
+                : isCopied
+                  ? "Copied to clipboard"
+                  : "Copy to clipboard"
+            }
             onClick={() => void copy(text)}
           >
             {!isCopied ? <FilesIcon /> : <CheckedIcon />}
