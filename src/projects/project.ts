@@ -26,7 +26,12 @@ import {
   FusionCommandIntegrationFactory,
 } from "../fusion/executableLifecycle";
 import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
+import {
+  createFusionCommands,
+  type FusionCommands,
+} from "../fusion/fusionCommands";
 import { FusionExecutableResolver } from "../fusion/fusionExecutable";
+import type { FusionClient } from "../fusion/fusionLanguageClient";
 import { FusionVersion } from "../fusion/fusionVersion";
 import { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
@@ -102,6 +107,8 @@ export interface ProjectOptions {
   projectRoot: Uri;
   /** The number of Declared Projects, which decides whether task names carry the project name. */
   projectCount?: () => number;
+  /** The project's current Fusion Client; resolved per call so a restart leaves no stale reference. */
+  fusionClient?: () => FusionClient | undefined;
 }
 
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
@@ -118,6 +125,8 @@ export class Project implements Disposable, ManifestProject {
   /** This project's configuration failures, as notified and logged. */
   readonly errors: ProjectErrors;
   private readonly projectCount: () => number;
+  /** Server commands over the project's current Fusion Client. */
+  readonly lsp: FusionCommands;
   private warnedTasksUnavailable = false;
   private disposed = false;
 
@@ -151,6 +160,7 @@ export class Project implements Disposable, ManifestProject {
     this.sharedState = options.sharedState;
     this.runHistoryService = options.runHistoryService;
     this.projectCount = options.projectCount ?? (() => 1);
+    this.lsp = createFusionCommands(options.fusionClient ?? (() => undefined));
     const root = this.projectRoot.fsPath;
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),

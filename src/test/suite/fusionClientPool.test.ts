@@ -17,12 +17,12 @@ import {
   WorkspaceFolder,
 } from "vscode";
 import { StaticAnalysisMode } from "../../core/project";
+import { FailedFusionClient } from "../../fusion/failedFusionClient";
 import {
   DBT_PATH_SETTING,
   FusionExecutableResolver,
 } from "../../fusion/fusionExecutable";
 import {
-  FailedFusionClient,
   FusionClient,
   FusionClientFactory,
   FusionClientOptions,

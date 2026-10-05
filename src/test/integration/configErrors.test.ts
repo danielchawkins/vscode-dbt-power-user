@@ -12,7 +12,7 @@ import {
 } from "../../core/project";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
-import { compileErrorMessages } from "../../fusion/fusionLanguageClient";
+import { compileErrorMessages } from "../../fusion/lspClientSupport";
 import { errorHint } from "../../projects/projectErrors";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture } from "./lspFixture";

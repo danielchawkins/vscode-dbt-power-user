@@ -251,14 +251,6 @@
       "count": 1
     }
   },
-  "src/fusion/fusionLanguageClient.ts": {
-    "max-lines": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "src/projects/project.ts": {
     "max-lines": {
       "count": 1

@@ -2,6 +2,7 @@ import { Disposable, Event, EventEmitter, LogOutputChannel, Uri } from "vscode";
 import type { Log } from "../core/log";
 import { LspLaunch, sameLspLaunch, toLspLaunch } from "../core/lsp";
 import { ProjectSnapshot } from "../core/project";
+import { FailedFusionClient } from "../fusion/failedFusionClient";
 import {
   ConfiguredFusionExecutableResolver,
   formatFusionExecutableResolutionFailure,
@@ -12,7 +13,6 @@ import {
 import {
   commandPrefixForProject,
   DefaultFusionClientFactory,
-  FailedFusionClient,
   FusionClient,
   FusionClientFactory,
   FusionClientOptions,

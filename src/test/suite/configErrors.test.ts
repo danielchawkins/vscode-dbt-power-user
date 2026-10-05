@@ -15,7 +15,7 @@ import type { Log } from "../../core/log";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { formatFusionExecutableResolutionFailure } from "../../fusion/fusionExecutable";
-import { compileErrorMessages } from "../../fusion/fusionLanguageClient";
+import { compileErrorMessages } from "../../fusion/lspClientSupport";
 import { Project } from "../../projects/project";
 import {
   errorHint,

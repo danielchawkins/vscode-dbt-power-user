@@ -20,23 +20,27 @@ import {
   validateDocumentSelectorPatterns,
 } from "../../fusion/documentSelector";
 import {
+  DISPOSAL_GRACE_MS,
+  languageClientIdForProject,
+  MAX_UNEXPECTED_EXIT_RETRIES,
+  prefixedCommand,
+} from "../../fusion/fusionClient";
+import {
   clearDiagnosticsOnDelete,
   ProjectDiagnosticsFilter,
 } from "../../fusion/fusionDiagnostics";
 import {
-  buildWorkspaceConfigurationResponse,
-  canonicalProjectRoot,
   commandPrefixForProject,
   DefaultFusionClientFactory,
-  DISPOSAL_GRACE_MS,
   FUSION_LSP_COMMANDS,
   FusionClient,
   FusionClientState,
-  languageClientIdForProject,
-  MAX_UNEXPECTED_EXIT_RETRIES,
-  prefixedCommand,
-  withoutUnregisteredLspLenses,
 } from "../../fusion/fusionLanguageClient";
+import {
+  buildWorkspaceConfigurationResponse,
+  canonicalProjectRoot,
+  withoutUnregisteredLspLenses,
+} from "../../fusion/lspClientSupport";
 import {
   ProcessStreamBuffer,
   SpawnedLspProcess,

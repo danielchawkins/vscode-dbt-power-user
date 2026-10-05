@@ -1,259 +1,66 @@
-import { realpathSync } from "fs";
-import * as path from "path";
 import {
   CancellationToken,
   Disposable,
   Event,
   EventEmitter,
   LogOutputChannel,
-  Uri,
-  WorkspaceFolder,
 } from "vscode";
 import {
   ExecuteCommandRequest,
   State,
-  type LanguageClient,
-  type LanguageClientOptions,
   type ServerOptions,
 } from "vscode-languageclient/node";
-import { DBT_LSP_USE_TARGET_LSP, toLspArgs, type LspLaunch } from "../core/lsp";
-import { projectRootDigest, type StaticAnalysisMode } from "../core/project";
+import { DBT_LSP_USE_TARGET_LSP, toLspArgs } from "../core/lsp";
+import { type StaticAnalysisMode } from "../core/project";
 import { documentSelectorForProject } from "./documentSelector";
+import {
+  DISPOSAL_GRACE_MS,
+  FUSION_LSP_COMMANDS,
+  languageClientIdForProject,
+  MAX_UNEXPECTED_EXIT_RETRIES,
+  prefixedCommand,
+  type FusionClient,
+  type FusionClientOptions,
+  type FusionClientState,
+  type FusionLspCommand,
+  type FusionProjectRef,
+} from "./fusionClient";
 import {
   clearDiagnosticsOnDelete,
   ProjectDiagnosticsFilter,
 } from "./fusionDiagnostics";
-import { FusionExecutable } from "./fusionExecutable";
+import {
+  canonicalProjectRoot,
+  compileErrorMessages,
+  defaultCreateLanguageClient,
+  defaultSpawn,
+  FUSION_COMPILE_COMPLETE,
+  languageClientOptions,
+  type ClientHandle,
+  type FusionLanguageClientDependencies,
+} from "./lspClientSupport";
 import {
   BACKOFF_BASE_MS,
   BACKOFF_CAP_MS,
   CONNECTION_TIMEOUT_MS,
   SpawnedLspProcess,
+  terminateProcess,
 } from "./lspProcess";
-import { spawnProcess, type ChildProcess } from "./process";
 import {
   acceptWithProcessExit,
   listenForServer,
   ReverseSocketServer,
 } from "./reverseSocketTransport";
 
-export const FUSION_LSP_COMMANDS = {
-  listNodes: "dbt.listNodes",
-  getCurrentNode: "dbt.getCurrentNode",
-  compileFile: "dbt.compileFile",
-  compileLsp: "dbt.compileLsp",
-  clearTarget: "dbt.clearTarget",
-  getProjectInfo: "dbt.getProjectInfo",
-} as const;
+export { commandPrefixForProject, FUSION_LSP_COMMANDS } from "./fusionClient";
+export type {
+  FusionClient,
+  FusionClientOptions,
+  FusionClientState,
+  FusionProjectRef,
+} from "./fusionClient";
 
-/** Client command in Fusion's CTE code lenses; not advertised by initialize, and no command here handles it. */
-const FUSION_LSP_PREVIEW_CTE = "dbt.previewCte" as const;
-
-type FusionLspCommand =
-  | (typeof FUSION_LSP_COMMANDS)[keyof typeof FUSION_LSP_COMMANDS]
-  | typeof FUSION_LSP_PREVIEW_CTE;
-
-/** The project fields a Fusion client reads; a Declared Project satisfies it. */
-export interface FusionProjectRef {
-  readonly root: Uri;
-  readonly name: string;
-  readonly folder: WorkspaceFolder;
-}
-
-export type FusionClientState =
-  "starting" | "running" | "restarting" | "stopped" | "failed";
-
-export interface FusionClientOptions {
-  project: FusionProjectRef;
-  /** Supplies the spawned path; its environment is not used. */
-  executable: FusionExecutable;
-  /** Reused by `restart()` and unexpected-exit restarts. */
-  launch: LspLaunch;
-  /** Namespaces workspace/executeCommand so two extensions can serve the same window. */
-  commandPrefix: string;
-  /** Layered over `launch.environment`; the launch's `DBT_LSP_USE_TARGET_LSP` choice still wins. */
-  env?: Record<string, string>;
-  /** The Declared Project's log channel; receives client, trace and server output. The client never disposes it. */
-  outputChannel: LogOutputChannel;
-  /** Receives the error messages of each compile the server reports; empty after a clean compile. */
-  onCompileErrors?: (messages: string[]) => void;
-}
-
-export interface FusionClient extends Disposable {
-  readonly project: FusionProjectRef;
-  readonly state: FusionClientState;
-  /** Configured `fusionPowerUser.staticAnalysis` for this Declared Project; fixed for the client's lifetime. */
-  readonly staticAnalysis: StaticAnalysisMode;
-  readonly outputChannel: LogOutputChannel;
-  readonly failureReason: string | undefined;
-  readonly onDidChangeState: Event<FusionClientState>;
-  /** Sends `workspace/executeCommand`; {@link FusionCommands} queues and times out the calls. */
-  request<T>(
-    command: FusionLspCommand,
-    payload: unknown,
-    token?: CancellationToken,
-  ): Promise<T>;
-  restart(): Promise<void>;
-  /** Awaitable stop path for tests; sync dispose starts this without awaiting. */
-  stop(): Promise<void>;
-}
-
-const EXTENSION_PREFIX_NAMESPACE = "fusionPowerUser";
-/** @internal */
-export const DISPOSAL_GRACE_MS = 5_000;
-/** @internal */
-export const MAX_UNEXPECTED_EXIT_RETRIES = 3;
-export function commandPrefixForProject(project: FusionProjectRef): string {
-  return `${EXTENSION_PREFIX_NAMESPACE}:${projectRootDigest(project.root.fsPath)}:`;
-}
-
-/** @internal */
-export function languageClientIdForProject(project: FusionProjectRef): string {
-  return `fusion-lsp-${projectRootDigest(project.root.fsPath)}`;
-}
-
-/** @internal */
-export function prefixedCommand(
-  commandPrefix: string,
-  command: FusionLspCommand,
-): string {
-  return `${commandPrefix}${command}`;
-}
-
-/**
- * Fusion canonicalizes `--project-dir` but matches document URIs literally, so a project opened through a
- * symlink loads no documents. Returns the realpath to launch Fusion on and converters that move URIs between
- * the opened root and that realpath; converters are undefined when the two are the same.
- * @internal
- */
-export function canonicalProjectRoot(
-  root: string,
-  realpath: (fsPath: string) => string = realpathSync.native,
-): {
-  launchRoot: string;
-  uriConverters?: LanguageClientOptions["uriConverters"];
-} {
-  let launchRoot: string;
-  try {
-    launchRoot = realpath(root);
-  } catch {
-    return { launchRoot: root };
-  }
-  if (launchRoot === root) {
-    return { launchRoot };
-  }
-  const remap = (
-    fsPath: string,
-    from: string,
-    to: string,
-  ): string | undefined => {
-    if (fsPath === from) {
-      return to;
-    }
-    return fsPath.startsWith(from + path.sep)
-      ? to + fsPath.slice(from.length)
-      : undefined;
-  };
-  return {
-    launchRoot,
-    uriConverters: {
-      code2Protocol: (uri) => {
-        const mapped =
-          uri.scheme === "file"
-            ? remap(uri.fsPath, root, launchRoot)
-            : undefined;
-        return (mapped ? Uri.file(mapped) : uri).toString();
-      },
-      protocol2Code: (value) => {
-        const uri = Uri.parse(value);
-        const mapped =
-          uri.scheme === "file"
-            ? remap(uri.fsPath, launchRoot, root)
-            : undefined;
-        return mapped ? Uri.file(mapped) : uri;
-      },
-    },
-  };
-}
-
-/**
- * Drops server code lenses whose command no extension here registers. Fusion emits `dbt.previewCte` lenses for
- * the official dbt extension's client command; `CteCodeLensProvider` supplies the CTE actions instead.
- * @internal
- */
-export function withoutUnregisteredLspLenses<
-  T extends { command?: { command: string } },
->(lenses: T[] | null | undefined): T[] | null | undefined {
-  return lenses?.filter(
-    (lens) => lens.command?.command !== FUSION_LSP_PREVIEW_CTE,
-  );
-}
-
-/**
- * Returns minimal dbt config: `{lsp:{linter:{enabled:bool}}}`, null for other sections.
- * @internal
- */
-export function buildWorkspaceConfigurationResponse(
-  section: string,
-  lintEnabled: boolean,
-): unknown {
-  if (section === "dbt") {
-    return {
-      lsp: {
-        linter: {
-          enabled: lintEnabled,
-        },
-      },
-    };
-  }
-  return null;
-}
-
-export type FusionLanguageClientDependencies = {
-  listenForServer?: typeof listenForServer;
-  acceptWithProcessExit?: typeof acceptWithProcessExit;
-  spawnProcess?: (
-    executable: string,
-    args: string[],
-    env: Record<string, string>,
-    cwd?: string,
-  ) => ChildProcess;
-  createLanguageClient?: (
-    id: string,
-    name: string,
-    serverOptions: ServerOptions,
-    clientOptions: LanguageClientOptions,
-  ) => Promise<ClientHandle>;
-  sleep?: (ms: number) => Promise<void>;
-};
-
-type ClientHandle = Pick<
-  LanguageClient,
-  "start" | "stop" | "sendRequest" | "onDidChangeState" | "dispose"
-> &
-  Partial<Pick<LanguageClient, "diagnostics" | "onNotification">>;
-
-/** Fusion's notifications that end a compile; `errors` lists what it found. */
-const FUSION_COMPILE_COMPLETE = [
-  "dbt/lspCompileComplete",
-  "dbt/lspBackgroundCompileComplete",
-] as const;
-
-/**
- * The `Error`-severity messages of a compile-complete notification's `errors`.
- * @internal
- */
-export function compileErrorMessages(params: unknown): string[] {
-  const errors = (params as { errors?: unknown } | null)?.errors;
-  if (!Array.isArray(errors)) {
-    return [];
-  }
-  return errors.flatMap((error: { message?: unknown; severity?: unknown }) =>
-    error?.severity === "Error" && typeof error.message === "string"
-      ? [error.message]
-      : [],
-  );
-}
+export type { FusionLanguageClientDependencies } from "./lspClientSupport";
 
 export interface FusionClientFactory {
   create(options: FusionClientOptions): FusionClient;
@@ -437,14 +244,7 @@ class FusionLanguageClientImpl implements FusionClient {
   private async startTransport(): Promise<void> {
     const listen = this.deps.listenForServer ?? listenForServer;
     const accept = this.deps.acceptWithProcessExit ?? acceptWithProcessExit;
-    const spawnServer =
-      this.deps.spawnProcess ??
-      ((executable, args, env, cwd) =>
-        spawnProcess(executable, args, {
-          env,
-          cwd,
-          stdio: ["ignore", "pipe", "pipe"],
-        }));
+    const spawnServer = this.deps.spawnProcess ?? defaultSpawn;
 
     const { launch } = this.options;
     const selector = documentSelectorForProject(this.options.project.root);
@@ -482,16 +282,7 @@ class FusionLanguageClientImpl implements FusionClient {
       this.childProcess = processAdapter;
 
       const createLanguageClient =
-        this.deps.createLanguageClient ??
-        (async (
-          id: string,
-          name: string,
-          serverOptions: ServerOptions,
-          clientOptions: LanguageClientOptions,
-        ) => {
-          const { LanguageClient } = await import("vscode-languageclient/node");
-          return new LanguageClient(id, name, serverOptions, clientOptions);
-        });
+        this.deps.createLanguageClient ?? defaultCreateLanguageClient;
 
       const serverOptions: ServerOptions = async () => {
         return accept(server, processAdapter, CONNECTION_TIMEOUT_MS);
@@ -502,41 +293,14 @@ class FusionLanguageClientImpl implements FusionClient {
         languageClientIdForProject(this.options.project),
         `dbt Fusion (${this.options.project.name})`,
         serverOptions,
-        {
-          documentSelector: selector,
+        languageClientOptions({
+          project: this.options.project,
+          selector,
           uriConverters,
-          connectionOptions: { maxRestartCount: 0 },
           outputChannel: this.outputChannel,
-          traceOutputChannel: this.outputChannel,
-          workspaceFolder: {
-            uri: this.options.project.folder.uri,
-            name: this.options.project.folder.name,
-            index: this.options.project.folder.index,
-          },
-          middleware: {
-            provideCodeLenses: async (document, token, next) =>
-              withoutUnregisteredLspLenses(await next(document, token)),
-            handleDiagnostics: (uri, diagnostics, next) => {
-              if (diagnosticsFilter.shouldForward(uri)) {
-                next(uri, diagnostics);
-              }
-            },
-            workspace: {
-              configuration: async (params) => {
-                const results: unknown[] = [];
-                for (const item of params.items) {
-                  results.push(
-                    buildWorkspaceConfigurationResponse(
-                      item.section ?? "",
-                      launch.lintEnabled,
-                    ),
-                  );
-                }
-                return results;
-              },
-            },
-          },
-        },
+          diagnosticsFilter,
+          lintEnabled: launch.lintEnabled,
+        }),
       );
 
       this.languageClient = client;
@@ -544,18 +308,10 @@ class FusionLanguageClientImpl implements FusionClient {
         root,
         () => client.diagnostics,
       );
-      const onCompileErrors = this.options.onCompileErrors;
-      if (onCompileErrors) {
-        for (const method of FUSION_COMPILE_COMPLETE) {
-          client.onNotification?.(method, (params: unknown) =>
-            onCompileErrors(compileErrorMessages(params)),
-          );
-        }
-      }
+      this.subscribeToCompileErrors(client);
       await client.start();
 
-      this.transportGeneration += 1;
-      const generation = this.transportGeneration;
+      const generation = (this.transportGeneration += 1);
       this.stateListener?.dispose();
       this.processExitListener = () => {
         this.scheduleUnexpectedStop(generation);
@@ -569,6 +325,17 @@ class FusionLanguageClientImpl implements FusionClient {
     } catch (error) {
       await this.teardownTransport();
       throw error;
+    }
+  }
+
+  private subscribeToCompileErrors(client: ClientHandle): void {
+    const onCompileErrors = this.options.onCompileErrors;
+    if (onCompileErrors) {
+      for (const method of FUSION_COMPILE_COMPLETE) {
+        client.onNotification?.(method, (params: unknown) =>
+          onCompileErrors(compileErrorMessages(params)),
+        );
+      }
     }
   }
 
@@ -625,34 +392,12 @@ class FusionLanguageClientImpl implements FusionClient {
       return;
     }
 
-    if (
-      processAdapter.exitCode === null &&
-      processAdapter.signalCode === null
-    ) {
-      const exitPromise = this.waitForProcessExit(processAdapter);
-      processAdapter.kill("SIGTERM");
-      const exited = await Promise.race([
-        exitPromise.then(() => true),
-        this.sleep(DISPOSAL_GRACE_MS).then(() => false),
-      ]);
-      if (
-        !exited &&
-        processAdapter.exitCode === null &&
-        processAdapter.signalCode === null
-      ) {
-        const killExitPromise = this.waitForProcessExit(
-          processAdapter,
-          DISPOSAL_GRACE_MS,
-        );
-        processAdapter.kill("SIGKILL");
-        const killed = await killExitPromise;
-        if (!killed) {
-          this.outputChannel.warn(
-            `Fusion LSP process for ${this.options.project.name} did not exit after SIGKILL`,
-          );
-        }
-      }
-    }
+    await terminateProcess(processAdapter, {
+      graceMs: DISPOSAL_GRACE_MS,
+      sleep: (ms) => this.sleep(ms),
+      warn: (message) => this.outputChannel.warn(message),
+      name: this.options.project.name,
+    });
   }
 
   private async shutdownLanguageClient(): Promise<void> {
@@ -671,35 +416,6 @@ class FusionLanguageClientImpl implements FusionClient {
     } catch {
       // Best-effort disposal after stop.
     }
-  }
-
-  private waitForProcessExit(
-    processAdapter: SpawnedLspProcess,
-    timeoutMs?: number,
-  ): Promise<boolean> {
-    if (
-      processAdapter.exitCode !== null ||
-      processAdapter.signalCode !== null
-    ) {
-      return Promise.resolve(true);
-    }
-    return new Promise((resolve) => {
-      const onExit = (): void => {
-        if (timeoutMs !== undefined) {
-          clearTimeout(timer);
-        }
-        processAdapter.removeListener("exit", onExit);
-        resolve(true);
-      };
-      processAdapter.on("exit", onExit);
-      const timer =
-        timeoutMs === undefined
-          ? undefined
-          : setTimeout(() => {
-              processAdapter.removeListener("exit", onExit);
-              resolve(false);
-            }, timeoutMs);
-    });
   }
 
   private async doStop(): Promise<void> {
@@ -727,45 +443,6 @@ class FusionLanguageClientImpl implements FusionClient {
     const sleepFn =
       this.deps.sleep ?? ((delay) => new Promise((r) => setTimeout(r, delay)));
     return sleepFn(ms);
-  }
-}
-
-export class FailedFusionClient implements FusionClient {
-  private readonly _onDidChangeState = new EventEmitter<FusionClientState>();
-  readonly state: FusionClientState = "failed";
-  readonly staticAnalysis: StaticAnalysisMode;
-  readonly failureReason: string;
-
-  /** Writes `message` to `outputChannel`, which it never disposes. */
-  constructor(
-    readonly project: FusionProjectRef,
-    private readonly message: string,
-    staticAnalysis: StaticAnalysisMode,
-    readonly outputChannel: LogOutputChannel,
-  ) {
-    this.failureReason = message;
-    this.staticAnalysis = staticAnalysis;
-    this.outputChannel.warn(message);
-  }
-
-  get onDidChangeState(): Event<FusionClientState> {
-    return this._onDidChangeState.event;
-  }
-
-  request<T>(): Promise<T> {
-    return Promise.reject(new Error(this.message));
-  }
-
-  restart(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  stop(): Promise<void> {
-    return Promise.resolve();
-  }
-
-  dispose(): void {
-    this._onDidChangeState.dispose();
   }
 }
 

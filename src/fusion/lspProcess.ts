@@ -53,10 +53,7 @@ class StderrAccumulator {
   }
 }
 
-/**
- * Child process adapter; stderr-only accumulator feeds getStderr().
- * @internal
- */
+/** Child process adapter; stderr-only accumulator feeds getStderr(). */
 export class SpawnedLspProcess implements ExitingProcess {
   private readonly stderrAccumulator = new StderrAccumulator();
   private readonly stdoutBuffer = new ProcessStreamBuffer();
@@ -107,5 +104,65 @@ export class SpawnedLspProcess implements ExitingProcess {
 
   kill(signal: NodeJS.Signals): void {
     this.child.kill(signal);
+  }
+}
+
+function waitForProcessExit(
+  processAdapter: SpawnedLspProcess,
+  timeoutMs?: number,
+): Promise<boolean> {
+  if (processAdapter.exitCode !== null || processAdapter.signalCode !== null) {
+    return Promise.resolve(true);
+  }
+  return new Promise((resolve) => {
+    const onExit = (): void => {
+      if (timeoutMs !== undefined) {
+        clearTimeout(timer);
+      }
+      processAdapter.removeListener("exit", onExit);
+      resolve(true);
+    };
+    processAdapter.on("exit", onExit);
+    const timer =
+      timeoutMs === undefined
+        ? undefined
+        : setTimeout(() => {
+            processAdapter.removeListener("exit", onExit);
+            resolve(false);
+          }, timeoutMs);
+  });
+}
+
+const hasExited = (processAdapter: SpawnedLspProcess): boolean =>
+  processAdapter.exitCode !== null || processAdapter.signalCode !== null;
+
+/** Sends SIGTERM, then SIGKILL after `graceMs`, and resolves once the process is gone or SIGKILL also timed out. */
+export async function terminateProcess(
+  processAdapter: SpawnedLspProcess,
+  options: {
+    graceMs: number;
+    sleep: (ms: number) => Promise<void>;
+    warn: (message: string) => void;
+    name: string;
+  },
+): Promise<void> {
+  if (hasExited(processAdapter)) {
+    return;
+  }
+  const exitPromise = waitForProcessExit(processAdapter);
+  processAdapter.kill("SIGTERM");
+  const exited = await Promise.race([
+    exitPromise.then(() => true),
+    options.sleep(options.graceMs).then(() => false),
+  ]);
+  if (exited || hasExited(processAdapter)) {
+    return;
+  }
+  const killExitPromise = waitForProcessExit(processAdapter, options.graceMs);
+  processAdapter.kill("SIGKILL");
+  if (!(await killExitPromise)) {
+    options.warn(
+      `Fusion LSP process for ${options.name} did not exit after SIGKILL`,
+    );
   }
 }
