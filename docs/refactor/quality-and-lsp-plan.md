@@ -99,6 +99,7 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 - Revisions: (1) `knip.json`; (2) scripts and recipe; (3) the cost probe: run `tsc -p tsconfig.strict.json --noEmit --incremental` (build info under `out/`) and `type-coverage --strict --cache` cold and warm on the host and the webview, and record the four wall times in the step result. If a warm run exceeds 20 s or the total would push `just check` past the 60 s budget, stop and confirm before 0.10 and 0.11.
 - Verify: `just lint` runs knip; adding an unused export makes `just lint` fail; `just lint-unused` takes 15 s or less; the cost probe times are in the step result.
 - Depends: 0.3. Sequential (`package.json`, `justfile`).
+- Result: cost probe, cold / warm: host `tsc` 2.3 s / 0.7 s; webview `tsc` 1.7 s / 0.7 s; host `type-coverage` 1.2 s / 0.7 s; webview `type-coverage` 1.7 s / 0.6 s.
 
 ### 0.5 Remove the dependency cycles
 
@@ -111,12 +112,22 @@ Pre-commit keeps its current scope (ESLint, dependency-cruiser and format on sta
 
 ### 0.6 Add the layer rules
 
-- Goal: the target-model layers are enforced in the host, the contract and the webview, with no baseline.
+- Goal: the target-model layers are enforced in the host and the contract, with no baseline.
 - Files: `.dependency-cruiser.cjs` gains `settings-imports-core`, `fusion-imports-core-and-settings`, `lower-layers-skip-webview` (`core|settings|fusion|projects` must not import `src/webview`), `contract-is-pure` (`packages/webview-contract/src` imports only itself), `no-orphans` (error; entries, `.d.ts` and tests excluded) and `no-deprecated-core`; `lint:imports` also cruises `packages/webview-contract/src`; new `webview_panels/.dependency-cruiser.cjs` (`no-circular`, `webview-imports-contract-only`) run by `just webviews::lint`. Moves: `src/fusion/{fusionClientPool,fusionStatus,fusionClientDiagnostics}.ts` to `src/projects/`, because they are driven by the Project Registry; `src/fusion/schemaOrigin.ts` to `src/projects/`, because it reads `project.manifest` (`schemaOrigin.ts:34`) and `SourceMetaMap`; `fusionLanguageClient.ts` takes a `FusionProjectRef` (`root`, `folder`, `name`, `commandPrefix`; the executor confirms the fields from current use) instead of `DeclaredProject`. `fusion-imports-core-and-settings` allows `src/fusion → src/dbt_integration` until 1.1, as a named exception in the rule (`DBTTerminal`, `EnvironmentVariables`, `DBColumn`, `DBTCommand`, `QueryExecution` are imported today); 1.1 deletes the exception. `docs/architecture.md` paths change.
 - Resolves: Qual §4 (missing layer rules: `contract-is-pure`, `no-orphans`, `no-deprecated-core`, cruise the contract), Qual §6 (dependency-cruiser row).
 - Revisions: (1) moves and the narrow type; (2) rules; (3) webview cruise; (4) docs.
 - Verify: `just lint-code`; `just webviews::lint`; a scratch `import` from `src/projects/` in a `src/fusion/` file fails. If the host rules find more than five edges beyond the listed moves and the `dbt_integration` exception, or the webview cruise finds more than five edges, stop and confirm.
 - Depends: 0.5. Sequential (`compositionRoot.ts`, `fusionLanguageClient.ts`).
+- Note: the webview cruise, revision (3), moved to 0.6b because its first run found 38 `no-circular` edges. 0.6 enforces the host and contract layers only.
+
+### 0.6b Break the webview import cycles, then cruise the webview
+
+- Goal: `webview_panels/.dependency-cruiser.cjs` (`no-circular`, `webview-imports-contract-only`) runs in `just webviews::lint` with no baseline.
+- Files: each React context object, its hooks and its types move into leaf files (`context.ts`, `types.ts`) that import no components; providers and components import the leaves, and components stop importing the provider. `modules/queryPanel` (17 edges: components ↔ `QueryPanelProvider.tsx` and `useQueryPanelState.ts`); `modules/documentationEditor` (19 edges, mostly through `state/useDocumentationContext.ts`, the `tests/*` and `docGenerator/*` components and `useTestFormSave`); `modules/commonActionButtons` (1 edge: `CommonActionButtons.tsx` → `HelpButton.tsx` → documentation help → `CommonActionButtons.tsx`); `modules/app` (1 edge: `appReducer.ts` ↔ `types.ts`). Tests that mock a moved module by path take the new path. New `webview_panels/.dependency-cruiser.cjs`, run by `just webviews::lint`.
+- Resolves: the webview half of 0.6 (Qual §4 cycles, Qual §6 dependency-cruiser row).
+- Revisions: (1) `modules/app`; (2) `documentationEditor`, which also breaks the `commonActionButtons` cycle because it ran through `useDocumentationContext.ts` → `DocumentationProvider.tsx`; (3) `queryPanel`; (4) webview cruise (`lint:imports` in `webview_panels/package.json`, run by `lint`).
+- Verify: `just webviews::lint` passes with no baseline; `just webviews::test`; no behaviour change, checked by `just smoke-visual` on the query results and documentation editor checkpoints.
+- Depends: 0.6. Parallel with the lineage work, which it does not touch.
 
 ### 0.7 Add the bug-class ESLint rules
 

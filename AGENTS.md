@@ -62,8 +62,10 @@ Load-bearing directories (abridged):
 
 ```text
 src/
-├── projects/                # Project Registry, Project Context (Declared Project scoping), QueryManifestService
-├── fusion/                  # executable resolution, version gate, static-analysis mode, client pool, transport, status
+├── core/                    # manifest parsers, CLI args, LSP launch, project snapshot; no VS Code imports
+├── settings/                # typed `fusionPowerUser.*` settings and environment variables
+├── projects/                # Project Registry, Project Context, QueryManifestService, Fusion client pool and status
+├── fusion/                  # executable resolution, version gate, static-analysis mode, language client, transport
 ├── metadata/                # ProjectMetadataSource port and its manifest implementation
 ├── dbt_integration/         # shared domain types, `DBTCommand`, `DBTTerminal`
 ├── webview/                 # PanelHost, the shared webview panel infrastructure
