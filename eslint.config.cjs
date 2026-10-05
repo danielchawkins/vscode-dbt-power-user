@@ -88,6 +88,15 @@ const fsRequireSyntax = [
     message: WRITE_MESSAGE,
   },
 ];
+const REMOVED_MESSAGE =
+  "This integration was removed; the extension is local-only and Fusion-only.";
+const removedSyntax = [
+  "Identifier[name=/^(createPythonBridge|dbtPythonPathOverride|detectPythonFromTerminal|dbtCustomRunnerImport|PythonEnvironment|SecretStorage|DBTClient|FusionVersionDetection|DBTInstallationVerificationEvent|DBTCoreProjectIntegration|DBTCloudProjectIntegration|DBTCoreCommandProjectIntegration|RuntimePythonEnvironment|DBTProjectDetection|DBTDetection)$/]",
+  "MemberExpression[property.name='secrets']",
+  "Literal[value=/ms-python[.]python|node_python_bridge|altimate_python_packages|dbt_core_integration|@altimateai/]",
+  "TemplateElement[value.raw=/ms-python[.]python|node_python_bridge|altimate_python_packages|dbt_core_integration|@altimateai/]",
+].map((selector) => ({ selector, message: REMOVED_MESSAGE }));
+const removedImports = [{ group: ["@altimateai/*"], message: REMOVED_MESSAGE }];
 const BUG_CLASS_RULES = {
   "@typescript-eslint/no-for-in-array": "error",
   "@typescript-eslint/no-misused-spread": "error",
@@ -174,12 +183,14 @@ module.exports = [
         ...settingsSyntax,
         ...processSyntax,
         ...fsRequireSyntax,
+        ...removedSyntax,
       ],
       "@typescript-eslint/no-require-imports": "error",
       "no-restricted-imports": [
         "error",
         {
           paths: [...processImports, ...environmentImports, ...fsWriteImports],
+          patterns: removedImports,
         },
       ],
     },
@@ -188,20 +199,36 @@ module.exports = [
     files: ["src/settings/**/*.ts"],
     rules: {
       "no-restricted-properties": ["error", ...fsWriteProperties],
-      "no-restricted-syntax": ["error", ...processSyntax, ...fsRequireSyntax],
+      "no-restricted-syntax": [
+        "error",
+        ...processSyntax,
+        ...fsRequireSyntax,
+        ...removedSyntax,
+      ],
       "no-restricted-imports": [
         "error",
-        { paths: [...processImports, ...fsWriteImports] },
+        {
+          paths: [...processImports, ...fsWriteImports],
+          patterns: removedImports,
+        },
       ],
     },
   },
   {
     files: ["src/fusion/process.ts"],
     rules: {
-      "no-restricted-syntax": ["error", ...settingsSyntax, ...fsRequireSyntax],
+      "no-restricted-syntax": [
+        "error",
+        ...settingsSyntax,
+        ...fsRequireSyntax,
+        ...removedSyntax,
+      ],
       "no-restricted-imports": [
         "error",
-        { paths: [...environmentImports, ...fsWriteImports] },
+        {
+          paths: [...environmentImports, ...fsWriteImports],
+          patterns: removedImports,
+        },
       ],
     },
   },
