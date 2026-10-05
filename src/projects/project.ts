@@ -13,8 +13,6 @@ import {
   readDbtProjectFile,
   ResolvedDefer,
 } from "../core/project";
-import { ProjectConfigChangedEvent } from "../dbt_client/event/projectConfigChangedEvent";
-import { RunResultsEvent } from "../dbt_client/event/runResultsEvent";
 import {
   DBColumn,
   DBTTerminal,
@@ -124,11 +122,6 @@ export class Project implements Disposable, ManifestProject {
   private warnedTasksUnavailable = false;
   private disposed = false;
 
-  private _onProjectConfigChanged =
-    new EventEmitter<ProjectConfigChangedEvent>();
-  public onProjectConfigChanged = this._onProjectConfigChanged.event;
-  private _onRunResults = new EventEmitter<RunResultsEvent>();
-  public onRunResults = this._onRunResults.event;
   private _onSourceFileChanged = new EventEmitter<void>();
   public onSourceFileChanged = this._onSourceFileChanged.event;
   private _onDidChangeManifest = new EventEmitter<Project>();
@@ -136,9 +129,7 @@ export class Project implements Disposable, ManifestProject {
   readonly onDidChangeManifest = this._onDidChangeManifest.event;
   private disposables: Disposable[] = [
     this._onDidChangeManifest,
-    this._onProjectConfigChanged,
     this._onSourceFileChanged,
-    this._onRunResults,
   ];
 
   /** The latest complete metadata publication. */
@@ -152,8 +143,6 @@ export class Project implements Disposable, ManifestProject {
   private readonly runHistory: RunResultsHistory = {
     addEntry: (entry) => {
       this.runHistoryService.addEntry(entry);
-      const uniqueIds = entry.results.map((r) => r.uniqueId);
-      this._onRunResults.fire(new RunResultsEvent(this, uniqueIds));
     },
   };
 
@@ -238,7 +227,6 @@ export class Project implements Disposable, ManifestProject {
   private subscribeLifecycle(): void {
     this.lifecycle.onDidCommit(() => {
       this.updateDiagnosticsInProblemsPanel();
-      this._onProjectConfigChanged.fire(new ProjectConfigChangedEvent(this));
       this.trigger.start();
     });
     this.lifecycle.onDidFailResolution((diagnostic) => {
@@ -387,7 +375,6 @@ export class Project implements Disposable, ManifestProject {
 
   private async handleProjectFileChanged(): Promise<void> {
     await this.refreshConfigWith(this.getFusionCli(), true);
-    this._onProjectConfigChanged.fire(new ProjectConfigChangedEvent(this));
     await this.rebuild();
   }
 

@@ -53,7 +53,6 @@ describe("RunTest — singular test classification and dispatch", () => {
     });
 
     return {
-      project: {} as any,
       nodeMetaMap: new Map() as any,
       macroMetaMap: new Map() as any,
       metricMetaMap: new Map() as any,
