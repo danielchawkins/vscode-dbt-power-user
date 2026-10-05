@@ -23,16 +23,13 @@ describe("QueryManifestService.rewire", () => {
 
     projectsDouble = {
       get: vi.fn((uri: any) =>
-        (uri as any)?.fsPath === "/workspace/projects/general"
-          ? mockProject
-          : undefined,
+        uri?.fsPath === "/workspace/projects/general" ? mockProject : undefined,
       ),
       all: vi.fn(() => []),
     };
 
     const forResourceMock = vi.fn((uri: any) =>
-      (uri as any)?.fsPath ===
-      "/workspace/projects/general/models/general_model.sql"
+      uri?.fsPath === "/workspace/projects/general/models/general_model.sql"
         ? declaredProject
         : undefined,
     );
@@ -44,9 +41,9 @@ describe("QueryManifestService.rewire", () => {
     };
 
     service = new QueryManifestService(
-      projectsDouble as any,
+      projectsDouble,
       { debug: vi.fn(), error: vi.fn(), warn: vi.fn() } as any,
-      contextDouble as any,
+      contextDouble,
     );
   });
 

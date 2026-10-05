@@ -223,7 +223,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   }
 
   private renderWebviewView(context: WebviewViewResolveContext) {
-    const webview = this._panel!.webview!;
+    const webview = this._panel!.webview;
     webview.html = panelHtml(webview, this.extensionContext.extensionUri, {
       entry: this.entry,
       csp: {},

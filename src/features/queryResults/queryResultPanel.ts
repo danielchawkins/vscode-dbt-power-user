@@ -155,7 +155,7 @@ export class QueryResultPanel extends PanelHost {
   private updateViewTypeToWebview(viewType: QueryPanelViewType) {
     void this.post({
       command: "updateViewType",
-      args: { body: { type: viewType as queryResults.ViewType } },
+      args: { body: { type: viewType } },
     });
   }
 

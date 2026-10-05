@@ -12,7 +12,6 @@ import { EventEmitter, Uri, workspace } from "vscode";
 import { DBTTerminal } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { Project } from "../../projects/project";
-import { ProjectRegistry } from "../../projects/projectRegistry";
 import { Projects } from "../../projects/projects";
 
 describe("Projects", () => {
@@ -111,7 +110,7 @@ describe("Projects", () => {
         return undefined;
       }),
       dispose: vi.fn(),
-    } as unknown as ProjectRegistry;
+    };
 
     projects = new Projects(
       mockProjectRegistry,
@@ -148,7 +147,7 @@ describe("Projects", () => {
       listener?.({
         affectsConfiguration: (key: string, scope?: Uri) =>
           key === "fusionPowerUser.target" && scope?.fsPath === "/project1",
-      } as never);
+      });
 
       expect(mockProject1.rebuildManifest).toHaveBeenCalledTimes(1);
       expect(mockProject2.rebuildManifest).not.toHaveBeenCalled();

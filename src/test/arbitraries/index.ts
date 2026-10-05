@@ -18,7 +18,7 @@ export const staticAnalysisMode = fc.constantFrom(
   "off",
   "baseline",
   "strict",
-) as fc.Arbitrary<"project" | "off" | "baseline" | "strict">;
+);
 
 const SQL_KEYWORDS = new Set(["as", "with", "select", "from", "recursive"]);
 
@@ -63,8 +63,4 @@ export const nodeDag = fc
     ),
   );
 
-export const traceLevel = fc.constantFrom(
-  "off",
-  "messages",
-  "verbose",
-) as fc.Arbitrary<"off" | "messages" | "verbose">;
+export const traceLevel = fc.constantFrom("off", "messages", "verbose");

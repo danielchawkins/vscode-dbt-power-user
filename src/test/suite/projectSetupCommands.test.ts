@@ -72,7 +72,7 @@ describe("ProjectSetupCommands project resolution", () => {
   });
 
   it("validateProjects cancels silently when the picker is dismissed", async () => {
-    vi.mocked(window.showErrorMessage).mockResolvedValue(undefined as never);
+    vi.mocked(window.showErrorMessage).mockResolvedValue(undefined);
     const { commands, mockPicker, mockProject } = createCommands({
       pickerResult: undefined,
     });
@@ -100,7 +100,7 @@ describe("ProjectSetupCommands project resolution", () => {
   });
 
   it("installDeps cancels silently when the picker is dismissed", async () => {
-    vi.mocked(window.showErrorMessage).mockResolvedValue(undefined as never);
+    vi.mocked(window.showErrorMessage).mockResolvedValue(undefined);
     const { commands, mockPicker, mockProject } = createCommands({
       pickerResult: undefined,
     });

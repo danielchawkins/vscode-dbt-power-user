@@ -62,7 +62,7 @@ function mockTerminal(): DBTTerminal {
     info: () => undefined,
     log: () => undefined,
     dispose: () => undefined,
-  } as unknown as DBTTerminal;
+  };
 }
 
 interface StubCli {
@@ -91,7 +91,7 @@ function pathChangeEvent(root: string): ConfigurationChangeEvent {
     affectsConfiguration: (section: string, scope?: Uri) =>
       section === `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}` &&
       scope?.fsPath === root,
-  } as ConfigurationChangeEvent;
+  };
 }
 
 function build(

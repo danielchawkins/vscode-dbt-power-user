@@ -19,7 +19,7 @@ function progressValue(
   if (typeof value !== "object" || value === null) {
     return undefined;
   }
-  return value as { kind?: string; title?: string; message?: string };
+  return value;
 }
 
 function progressToken(params: unknown): string {

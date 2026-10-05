@@ -54,7 +54,7 @@ function terminal(): DBTTerminal & { error: Mock } {
     warn: vi.fn(),
     error: vi.fn(),
     dispose: vi.fn(),
-  } as unknown as DBTTerminal & { error: Mock };
+  };
 }
 
 function settings(values: Record<string, unknown>): void {

@@ -169,7 +169,7 @@ describe("docs editor save", () => {
 
   it("creates a new schema file chosen in the save dialog", async () => {
     vi.mocked(window.showSaveDialog).mockResolvedValue(
-      Uri.file(path.join(root, "models", "new.yml")) as never,
+      Uri.file(path.join(root, "models", "new.yml")),
     );
 
     expect(await save(undefined, "New file")).toBe(true);

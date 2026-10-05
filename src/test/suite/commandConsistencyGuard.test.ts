@@ -24,7 +24,7 @@ function scanCommandRegistrations() {
 
     function visit(node: ts.Node): void {
       if (ts.isCallExpression(node)) {
-        const callExpr = node as ts.CallExpression;
+        const callExpr = node;
         const { expression: callee } = callExpr;
 
         if (

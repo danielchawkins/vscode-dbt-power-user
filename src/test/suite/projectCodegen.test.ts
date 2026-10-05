@@ -20,7 +20,7 @@ describe("projectCodegen", () => {
 
       await generateSchemaYML(
         columns as never,
-        Uri.file(path.join(root, "orders.sql")) as never,
+        Uri.file(path.join(root, "orders.sql")),
         "orders",
       );
 

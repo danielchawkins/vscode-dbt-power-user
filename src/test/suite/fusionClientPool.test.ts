@@ -126,7 +126,7 @@ describe("FusionClientPool", () => {
       affectsConfiguration: (section: string, scope?: Uri) =>
         section === `${CONFIGURATION_SECTION}.${key}` &&
         scope?.fsPath === root.fsPath,
-    } as ConfigurationChangeEvent);
+    });
   }
 
   beforeEach(() => {
@@ -135,13 +135,13 @@ describe("FusionClientPool", () => {
     registry = new FakeRegistry();
     resolver = {
       resolve: vi.fn(),
-    } as Mocked<FusionExecutableResolver>;
+    };
     factory = {
       create: vi.fn(
         (options: FusionClientOptions) =>
           new FakeClient(options.project, options),
       ),
-    } as Mocked<FusionClientFactory>;
+    };
     settings = { "lint.enabled": true, staticAnalysis: "baseline" };
 
     vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(

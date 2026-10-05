@@ -426,7 +426,7 @@ describe("LineagePanel", () => {
       syncRequestId: "cll-2",
     });
 
-    const body = (mockPostMessage.mock.calls[0][0] as any).args.body;
+    const body = mockPostMessage.mock.calls[0][0].args.body;
     expect(body.column_lineage).toEqual([]);
     expect(Object.keys(body.errors)).toEqual(["model.p.a"]);
     expect(body.errors["model.p.a"][0]).toContain(expected);
@@ -451,7 +451,7 @@ describe("LineagePanel", () => {
       syncRequestId: "cll-3",
     });
 
-    const body = (mockPostMessage.mock.calls[0][0] as any).args.body;
+    const body = mockPostMessage.mock.calls[0][0].args.body;
     expect(body.errors).toEqual({
       "model.p.x": ["Could not read column lineage for y: timeout"],
     });
@@ -462,15 +462,15 @@ describe("LineagePanel — after a save", () => {
   it("tells the webview when the current project's manifest is replaced", () => {
     const panel = Object.create(LineagePanel.prototype);
     const postMessage = vi.fn();
-    (panel as any)._panel = { webview: { postMessage } };
-    (panel as any).dbtTerminal = { info: vi.fn(), error: vi.fn() };
+    panel._panel = { webview: { postMessage } };
+    panel.dbtTerminal = { info: vi.fn(), error: vi.fn() };
     const current = {
       projectRoot: { fsPath: "/p" },
       throwDiagnosticsErrorIfAvailable: vi.fn(),
       manifest: { publicationEpoch: 1 } as any,
     };
     const other = { manifest: { publicationEpoch: 1 } as any } as any;
-    (panel as any).queryManifestService = {
+    panel.queryManifestService = {
       getProject: () => current,
       getEventByCurrentProject: () => undefined,
     };
@@ -497,8 +497,8 @@ describe("LineagePanel — after a save", () => {
     (_label, epochA, epochB) => {
       const panel = Object.create(LineagePanel.prototype);
       const postMessage = vi.fn();
-      (panel as any)._panel = { webview: { postMessage } };
-      (panel as any).dbtTerminal = { info: vi.fn(), error: vi.fn() };
+      panel._panel = { webview: { postMessage } };
+      panel.dbtTerminal = { info: vi.fn(), error: vi.fn() };
       const project = (root: string, publicationEpoch: number) => ({
         projectRoot: { fsPath: root },
         throwDiagnosticsErrorIfAvailable: vi.fn(),
@@ -507,7 +507,7 @@ describe("LineagePanel — after a save", () => {
       const a = project("/a", epochA);
       const b = project("/b", epochB);
       let current: any = a;
-      (panel as any).queryManifestService = {
+      panel.queryManifestService = {
         getProject: () => current,
         getEventByCurrentProject: () => undefined,
       };

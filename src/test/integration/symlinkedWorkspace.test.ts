@@ -74,7 +74,7 @@ suite("Symlinked workspace (extension)", function () {
     const folder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(folder, "Integration workspace must have a folder open");
     assert.strictEqual(
-      path.basename(folder!.uri.fsPath),
+      path.basename(folder.uri.fsPath),
       "single-project-link",
       "The symlinked label must have opened the symlink path, proving this suite " +
         "actually exercises a symlinked project root",
@@ -141,7 +141,7 @@ suite("Symlinked workspace (extension)", function () {
       'expected at least one definition location for ref("base")',
     );
 
-    const first = locations![0];
+    const first = locations[0];
     const targetUri = "targetUri" in first ? first.targetUri : first.uri;
     assert.ok(
       targetUri.fsPath.includes("single-project-link"),

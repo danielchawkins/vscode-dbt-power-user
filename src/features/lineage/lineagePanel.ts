@@ -84,7 +84,7 @@ function storedLineageSettings(
       delete stored.inferenceConfidenceThreshold;
     }
   }
-  return stored as StoredLineageSettings;
+  return stored;
 }
 
 interface LineagePanelView extends WebviewViewProvider {

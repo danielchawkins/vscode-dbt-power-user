@@ -40,7 +40,7 @@ describe("ManifestMetadataSource", () => {
       children: new Map(),
       tests: new Map(),
       metrics: new Map(),
-    } as any,
+    },
     testMetaMap: new Map(),
     unitTestMetaMap: new Map(),
     docMetaMap: new Map(),
@@ -63,7 +63,7 @@ describe("ManifestMetadataSource", () => {
       },
       contains: vi.fn(),
       dispose: vi.fn(),
-    } as unknown as Mocked<DeclaredProject>;
+    };
 
     mockManifest = undefined;
     manifestChangedEmitter = new EventEmitter<Project>();
@@ -115,7 +115,7 @@ describe("ManifestMetadataSource", () => {
 
   it("should propagate errors from refresh", async () => {
     const error = new Error("Rebuild failed");
-    (mockProject.rebuildManifest as Mock).mockRejectedValueOnce(error as never);
+    (mockProject.rebuildManifest as Mock).mockRejectedValueOnce(error);
 
     await expect(source.refresh()).rejects.toThrow("Rebuild failed");
   });

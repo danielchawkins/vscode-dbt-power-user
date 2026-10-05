@@ -15,7 +15,7 @@ function createProject(): Mocked<ReplayProject> {
     buildProject: vi.fn(),
     runTest: vi.fn(),
     compileModel: vi.fn(),
-  } as unknown as Mocked<ReplayProject>;
+  };
 }
 
 describe("parseHistoryArgs", () => {

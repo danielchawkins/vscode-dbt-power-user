@@ -177,8 +177,8 @@ export class VSCodeCommands implements Disposable {
               try {
                 await this.cteProfilerService.profileModel(
                   docUri,
-                  document!,
-                  ctes!,
+                  document,
+                  ctes,
                 );
               } catch (error) {
                 this.dbtTerminal.error(

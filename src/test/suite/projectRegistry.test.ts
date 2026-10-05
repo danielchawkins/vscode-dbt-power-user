@@ -554,10 +554,10 @@ describe("ProjectRegistry", () => {
     } as any);
     vi.spyOn(workspace, "onDidChangeConfiguration").mockReturnValue({
       dispose: configurationDispose,
-    } as any);
+    });
     vi.spyOn(workspace, "onDidChangeWorkspaceFolders").mockReturnValue({
       dispose: foldersDispose,
-    } as any);
+    });
     (workspace.workspaceFolders as any) = [single];
     const registry = new ProjectRegistry(terminal);
 
