@@ -58,6 +58,8 @@ export const viteConfig = defineConfig({
       input: panelEntries,
       output: {
         entryFileNames: `assets/[name].js`,
+        // Code shared by two or more entries goes in one named chunk, not one named after its first module.
+        advancedChunks: { groups: [{ name: "shared", minShareCount: 2 }] },
         chunkFileNames: `assets/chunk-[name].js`,
         assetFileNames: "assets/[name].[ext]",
       },
