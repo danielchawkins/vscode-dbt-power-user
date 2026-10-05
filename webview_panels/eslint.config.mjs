@@ -135,6 +135,14 @@ export default defineConfig(
             "CallExpression[callee.property.name='postMessage']:not([callee.object.name='window'])",
           message: "Send through the panel's requests module.",
         },
+        {
+          selector: "Literal[value=/altimate/i]",
+          message: "No vendor names or hosted links in shipped strings.",
+        },
+        {
+          selector: "TemplateElement[value.raw=/altimate/i]",
+          message: "No vendor names or hosted links in shipped strings.",
+        },
       ],
     },
   },
