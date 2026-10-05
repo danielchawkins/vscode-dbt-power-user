@@ -65,7 +65,7 @@ src/
 ├── projects/                # Project Registry, Project Context (Declared Project scoping), QueryManifestService
 ├── fusion/                  # executable resolution, version gate, static-analysis mode, client pool, transport, status
 ├── metadata/                # ProjectMetadataSource port and its manifest implementation
-├── dbt_client/              # dbt integrations, manifest parsing, command execution
+├── dbt_integration/         # shared domain types, `DBTCommand`, `DBTTerminal`
 ├── webview/                 # PanelHost, the shared webview panel infrastructure
 ├── features/                # commands, trees, panels, lenses; imported only by the roots
 └── test/                    # Vitest suites, hand-written VS Code mocks
@@ -75,8 +75,8 @@ Unit tests are Vitest (`vitest.config.ts`) against a hand-written VS Code mock (
 
 Two facts dominate change ordering, both detailed in the plan:
 
-- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps, and every panel, tree, lens, and language provider consumes them through `QueryManifestService` via `ManifestCacheProjectAddedEvent`. `ProjectMetadataSource` (`src/metadata/`) is the producer port; the Fusion LSP payload cannot populate the full contract (see `docs/lsp-metadata-gaps.md`), so the manifest source remains the only implementation. Do not introduce a second consumer seam.
-- **The dbt integration layer is owned code in `src/dbt_integration/`.** It holds the manifest parsers, the Fusion CLI command integration, and the shared domain types, vendored from the MIT-licensed `@altimateai/dbt-integration` with Core, Cloud, Python, and hosted paths removed. Parsers depend on `ManifestProject`, which `FusionProjectIntegration` implements. Column-level lineage is not implemented. Never patch `node_modules`.
+- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps, and every panel, tree, lens, and language provider consumes them through `QueryManifestService` via `Project.onDidChangeManifest`. `ProjectMetadataSource` (`src/metadata/`) is the producer port; the Fusion LSP payload cannot populate the full contract (see `docs/lsp-metadata-gaps.md`), so the manifest source remains the only implementation. Do not introduce a second consumer seam.
+- **The dbt integration layer is owned code in `src/core/` and `src/dbt_integration/`.** `src/core/manifest/` holds the manifest parsers and `src/dbt_integration/` the shared domain types, vendored from the MIT-licensed `@altimateai/dbt-integration` with Core, Cloud, Python, and hosted paths removed. Parsers depend on `ManifestProject`, which `Project` implements. Column-level lineage is not implemented. Never patch `node_modules`.
 
 ## Comments and prose
 
