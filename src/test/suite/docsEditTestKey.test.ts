@@ -51,6 +51,16 @@ function testKeyPanel(panelClass: typeof DocsEditViewPanel): TestKeyPanel {
   return instance as TestKeyPanel;
 }
 
+/** The text after `edit`'s single replacement; the mock document reports offsets as the character of line 0. */
+function applied(edit: WorkspaceEdit, before: string): string {
+  const [replacement] = edit.replacements;
+  return (
+    before.slice(0, replacement.range.start.character) +
+    replacement.newText +
+    before.slice(replacement.range.end.character)
+  );
+}
+
 describe("docs editor test key", () => {
   let panel: TestKeyPanel;
 
@@ -135,7 +145,7 @@ describe("docs editor save", () => {
     const edit = vi.mocked(workspace.applyEdit).mock
       .calls[0][0] as unknown as WorkspaceEdit;
     expect(edit.replacements).toHaveLength(1);
-    const written = parse(edit.replacements[0].newText);
+    const written = parse(applied(edit, schemaYaml));
     expect(written.models[0].columns[1]).toEqual({
       name: "id",
       data_tests: ["not_null"],
@@ -155,7 +165,7 @@ describe("docs editor save", () => {
 
     const edit = vi.mocked(workspace.applyEdit).mock
       .calls[0][0] as unknown as WorkspaceEdit;
-    const columns = parse(edit.replacements[0].newText).models[0].columns;
+    const columns = parse(applied(edit, unsaved)).models[0].columns;
     expect(columns.map((c: { name: string }) => c.name)).toEqual([
       "amount",
       "draft",

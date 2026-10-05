@@ -25,8 +25,13 @@ export async function writeUserFile(
   const document = await workspace.openTextDocument(uri);
   const hadUnsavedChanges = document.isDirty;
   const current = document.getText();
-  const end = document.positionAt(current.length);
-  edit.replace(uri, new Range(document.positionAt(0), end), render(current));
+  const next = render(current);
+  const { start, end, replacement } = changedRange(current, next);
+  edit.replace(
+    uri,
+    new Range(document.positionAt(start), document.positionAt(end)),
+    replacement,
+  );
   if (!(await workspace.applyEdit(edit))) {
     return "rejected";
   }
@@ -34,4 +39,38 @@ export async function writeUserFile(
     return "applied-unsaved";
   }
   return (await document.save()) ? "saved" : "rejected";
+}
+
+const isHighSurrogate = (code: number) => code >= 0xd800 && code <= 0xdbff;
+const isLowSurrogate = (code: number) => code >= 0xdc00 && code <= 0xdfff;
+
+/** The smallest range of `before` whose replacement turns it into `after`, from their common prefix and suffix. */
+function changedRange(
+  before: string,
+  after: string,
+): { start: number; end: number; replacement: string } {
+  const limit = Math.min(before.length, after.length);
+  let prefix = 0;
+  while (prefix < limit && before[prefix] === after[prefix]) {
+    prefix += 1;
+  }
+  let suffix = 0;
+  while (
+    suffix < limit - prefix &&
+    before[before.length - 1 - suffix] === after[after.length - 1 - suffix]
+  ) {
+    suffix += 1;
+  }
+  // Never split a surrogate pair: a boundary inside one is not a valid position.
+  if (prefix > 0 && isHighSurrogate(before.charCodeAt(prefix - 1))) {
+    prefix -= 1;
+  }
+  if (suffix > 0 && isLowSurrogate(before.charCodeAt(before.length - suffix))) {
+    suffix -= 1;
+  }
+  return {
+    start: prefix,
+    end: before.length - suffix,
+    replacement: after.slice(prefix, after.length - suffix),
+  };
 }
