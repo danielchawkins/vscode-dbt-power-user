@@ -19,6 +19,7 @@ interface RegularTable {
   draw(): Promise<void>;
 }
 
+/** @internal */
 export type CellViewerKind = "json" | "string";
 
 /** Detail of the `string-json-viewer` window event a decorated cell dispatches on click. */
@@ -40,7 +41,10 @@ const isJson = (text: string): boolean => {
   }
 };
 
-/** Classifies a string cell: JSON objects and arrays open as JSON, overflowing text as a string, the rest not at all. */
+/**
+ * Classifies a string cell: JSON objects and arrays open as JSON, overflowing text as a string, the rest not at all.
+ * @internal
+ */
 export function cellViewerKind(
   value: string,
   cellWidth: number,
@@ -51,7 +55,10 @@ export function cellViewerKind(
   return cellWidth < CHARACTER_WIDTH * value.length ? "string" : undefined;
 }
 
-/** Resolves the source column of a view column path such as `"group|split|name"`. */
+/**
+ * Resolves the source column of a view column path such as `"group|split|name"`.
+ * @internal
+ */
 export function sourceColumn(columnPath: string): string {
   return columnPath.split("|").pop() ?? columnPath;
 }

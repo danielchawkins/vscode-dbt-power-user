@@ -1,7 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import {
   beginWebviewResolve,
-  clearWebviewRuntimeTimings,
   completeWebviewReady,
   getWebviewRuntimeTimings,
 } from "../../benchmark/runtimeTimings";
@@ -10,7 +9,6 @@ describe("runtime timings", () => {
   const originalBenchmark = process.env.FPU_RUNTIME_BENCHMARK;
 
   afterEach(() => {
-    clearWebviewRuntimeTimings();
     if (originalBenchmark === undefined) {
       delete process.env.FPU_RUNTIME_BENCHMARK;
     } else {

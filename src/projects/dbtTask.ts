@@ -27,7 +27,7 @@ export const DBT_TASK_COMMANDS = [
   "deps",
 ] as const satisfies readonly QueuedCliCommand["kind"][];
 
-export type DbtTaskCommand = (typeof DBT_TASK_COMMANDS)[number];
+type DbtTaskCommand = (typeof DBT_TASK_COMMANDS)[number];
 
 /** A `dbt` task as written in tasks.json; `project` is the project root and may be omitted with one project. */
 export interface DbtTaskDefinition extends TaskDefinition {

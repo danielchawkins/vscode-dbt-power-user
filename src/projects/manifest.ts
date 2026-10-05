@@ -28,7 +28,7 @@ import { DBT_PROJECT_FILE, dbtProjectFilePath } from "../core/project";
 import { DBTTerminal, MANIFEST_FILE, ParsedManifest } from "../dbt_integration";
 
 /** Delay between the last watched file event and the rebuild it triggers. */
-export const MANIFEST_TRIGGER_DEBOUNCE_MS = 500;
+const MANIFEST_TRIGGER_DEBOUNCE_MS = 500;
 
 /** Reports more than this many consecutive unreadable manifests as an error. */
 const READ_FAILURE_REPORT_THRESHOLD = 3;

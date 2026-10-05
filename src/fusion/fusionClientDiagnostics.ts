@@ -4,10 +4,14 @@ import { testCommandsEnabled } from "../settings";
 import { FusionClientPool } from "./fusionClientPool";
 import { FusionClientState } from "./fusionLanguageClient";
 
-/** Test-only: reports LSP client state per Declared Project for the smoke and integration suites. */
+/**
+ * Test-only: reports LSP client state per Declared Project for the smoke and integration suites.
+ * @internal
+ */
 export const FUSION_CLIENT_STATES_COMMAND =
   "fusionPowerUser.test.getFusionClientStates";
 
+/** @internal */
 export interface FusionClientStateReport {
   projectName: string;
   state: FusionClientState;

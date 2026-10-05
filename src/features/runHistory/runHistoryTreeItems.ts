@@ -92,7 +92,10 @@ export class RunTreeItem extends TreeItem {
   }
 }
 
-/** Maps normalized RunStatus to icon and theme color for display */
+/**
+ * Maps normalized RunStatus to icon and theme color for display
+ * @internal
+ */
 export function getStatusIcon(status: RunStatus): {
   icon: string;
   color: string;

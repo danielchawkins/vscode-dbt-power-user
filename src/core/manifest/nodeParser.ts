@@ -33,7 +33,7 @@ const RESOURCE_TYPE_FALLBACK_ORDER: readonly NodeResourceType[] = [
   RESOURCE_TYPE_SNAPSHOT,
 ];
 
-export class NodeMetaMapImpl implements NodeMetaMap {
+class NodeMetaMapImpl implements NodeMetaMap {
   constructor(
     private latestVersionLookupMap: Map<string, string> = new Map(),
     // Bare-name lookups are partitioned by resource_type so that a model and a

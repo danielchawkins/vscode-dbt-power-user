@@ -6,35 +6,14 @@ import {
   GraphMetaMap,
   MacroMetaMap,
   MetricMetaMap,
-  NodeMetaData,
   NodeMetaMap,
   SemanticModelMetaMap,
   SourceMetaMap,
-  SourceTable,
   TestMetaMap,
   UnitTestMetaMap,
 } from "../core/manifest/types";
 
 export * from "../core/manifest/types";
-
-export type NodeMetaType = NodeMetaData;
-export type SourceMetaType = SourceTable;
-
-export interface ProjectInfo {
-  projectRoot: string | undefined;
-  projectName: string | undefined;
-  selectedTarget: string | undefined;
-  targetNames: string[] | undefined;
-  targetPath: string | undefined;
-  packageInstallPath: string | undefined;
-  modelPaths: string[] | undefined;
-  seedPaths: string[] | undefined;
-  macroPaths: string[] | undefined;
-  manifestPath: string | undefined;
-  catalogPath: string | undefined;
-  dbtVersion: string | undefined;
-  adapterType: string | undefined;
-}
 
 export interface ParsedManifest {
   nodeMetaMap: NodeMetaMap;
@@ -65,7 +44,7 @@ export type RunStatus = "success" | "error" | "warn" | "skipped";
 /**
  * Valid dbt resource types that can appear in run results.
  */
-export type ResourceType = "model" | "test" | "seed" | "snapshot" | "analysis";
+type ResourceType = "model" | "test" | "seed" | "snapshot" | "analysis";
 
 /**
  * Individual resource result in a run history entry.
@@ -108,17 +87,6 @@ export interface RunResultsEventData {
   elapsedTime: number;
 }
 
-type ConfigOption =
-  | { configPath: string; configType: "Manual" }
-  | {
-      config: unknown;
-      config_schema: { files_required: string }[];
-      configType: "Saas";
-    }
-  | { configType: "All" };
-
-export type DataPilotHealtCheckParams = { projectRoot: string } & ConfigOption;
-
 export type Table = {
   label: string;
   table: string;
@@ -138,14 +106,6 @@ export type Table = {
   packageName?: string;
 };
 
-interface ModelGraphMetaData {
-  uniqueId: string;
-  name: string;
-  dependencies?: string[];
-}
-
-export type ModelGraphMetaMap = Map<string, ModelGraphMetaData>;
-
 export enum RunModelType {
   RUN_PARENTS,
   RUN_CHILDREN,
@@ -153,7 +113,6 @@ export enum RunModelType {
   BUILD_CHILDREN,
   BUILD_CHILDREN_PARENTS,
   TEST,
-  SNAPSHOT,
 }
 
 export interface EnvironmentVariables {
@@ -171,13 +130,6 @@ export interface RunModelParams {
 }
 
 export type DBColumn = { column: string; dtype: string };
-
-export interface HealthcheckArgs {
-  manifestPath: string;
-  catalogPath?: string;
-  config?: any;
-  configPath?: string;
-}
 
 export interface QueryExecutionResult {
   columnNames: string[];

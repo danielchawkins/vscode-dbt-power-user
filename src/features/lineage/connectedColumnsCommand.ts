@@ -5,14 +5,23 @@ import {
   DbtLineageService,
 } from "./dbtLineageService";
 
-/** Test-only: answers the lineage panel's `getConnectedColumns` for the integration suites. */
+/**
+ * Test-only: answers the lineage panel's `getConnectedColumns` for the integration suites.
+ * @internal
+ */
 export const CONNECTED_COLUMNS_COMMAND =
   "fusionPowerUser.test.getConnectedColumns";
 
-/** Test-only: answers the lineage panel's `getColumns` for the integration suites. */
+/**
+ * Test-only: answers the lineage panel's `getColumns` for the integration suites.
+ * @internal
+ */
 export const LINEAGE_COLUMNS_COMMAND = "fusionPowerUser.test.getLineageColumns";
 
-/** Test-only: answers the lineage service's `getParentTables` for the integration suites. */
+/**
+ * Test-only: answers the lineage service's `getParentTables` for the integration suites.
+ * @internal
+ */
 export const PARENT_TABLES_COMMAND = "fusionPowerUser.test.getParentTables";
 
 /** Registers the connected-columns and parent-tables commands when the integration harness asks for them. */

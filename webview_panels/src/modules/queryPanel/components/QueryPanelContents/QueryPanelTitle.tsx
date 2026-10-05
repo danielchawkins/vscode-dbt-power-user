@@ -2,7 +2,7 @@ import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Nav, NavItem, NavLink } from "@uicore";
 import { QueryPanelTitleTabState } from "./types";
 import { useMemo } from "react";
-import { QueryPanelViewType } from "@modules/queryPanel/context/types";
+import { DEFAULT_VIEW_TYPE } from "@modules/queryPanel/context/types";
 
 const QueryPanelTitle = ({
   setTabState,
@@ -27,7 +27,7 @@ const QueryPanelTitle = ({
 
   const commonTabs = useMemo(
     () =>
-      viewType === QueryPanelViewType.DEFAULT ? (
+      viewType === DEFAULT_VIEW_TYPE ? (
         <>
           <NavItem>
             <NavLink

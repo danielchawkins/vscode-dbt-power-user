@@ -77,10 +77,7 @@ import { readEnvironmentOverride } from "./settings";
 import { StartupGate } from "./startupGate";
 
 /** Builds the Project of a Declared Project. */
-export type ProjectFactory = (project: DeclaredProject) => Project;
-
-/** The manifest parsers one Project owns. */
-export type ProjectParsers = ReturnType<typeof createProjectParsers>;
+type ProjectFactory = (project: DeclaredProject) => Project;
 
 /** The composed graph: the extension plus the collaborators tests inspect. */
 export interface Composition {
@@ -96,7 +93,10 @@ export interface Composition {
 const readDbtLoomConfigPath = () =>
   readEnvironmentOverride("dbtLoomConfigPath");
 
-/** Builds a fresh set of manifest parsers; each Project gets its own. */
+/**
+ * Builds a fresh set of manifest parsers; each Project gets its own.
+ * @internal
+ */
 export function createProjectParsers(terminal: DBTTerminal) {
   return {
     childrenParentParser: new ChildrenParentParser(),

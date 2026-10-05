@@ -3,7 +3,7 @@ import type { Edge, Node } from "@xyflow/react";
 import { columnHandle, geometry, layout, tableHeight } from "./graph";
 
 /** What a table node draws; `columns` is undefined while the list is hidden. */
-export interface TableNodeData extends Record<string, unknown> {
+interface TableNodeData extends Record<string, unknown> {
   table: lineage.LineageTable;
   columns?: lineage.LineageColumn[];
   isStart: boolean;

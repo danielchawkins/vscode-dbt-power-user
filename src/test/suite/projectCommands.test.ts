@@ -7,8 +7,6 @@ import { FusionCli } from "../../fusion/fusionCli";
 import { CommandQueue } from "../../projects/commandQueue";
 import { DbtTaskTerminal } from "../../projects/dbtTask";
 import {
-  enqueueCommand,
-  formatCliStatus,
   modelParamsFor,
   ProjectCommandDeps,
   queueCli,
@@ -64,20 +62,37 @@ describe("modelParamsFor", () => {
   });
 });
 
-describe("formatCliStatus", () => {
-  it("formats a bare build without a selection", () => {
-    expect(formatCliStatus({ kind: "build" }, [])).toBe("dbt build");
-  });
-
-  it("formats a selected command followed by its params", () => {
-    const status = formatCliStatus({ kind: "run", select: "orders" }, [
-      "--full-refresh",
-    ]);
-    expect(status).toBe("dbt run --select orders --full-refresh");
-  });
-});
-
 describe("queueCli", () => {
+  it.each([
+    [{ kind: "build" } as const, "dbt build"],
+    [
+      { kind: "run", select: "orders" } as const,
+      "dbt run --select orders --full-refresh",
+    ],
+  ])("reports %o as %s when prepare throws", async (cli, status) => {
+    const notifyFailed = vi.fn();
+    const deps = {
+      cli: () =>
+        ({
+          prepare: () => {
+            throw new Error("no dbt");
+          },
+        }) as unknown as FusionCli,
+      snapshot: () =>
+        ({
+          invocation: { commandParams: { run: ["--full-refresh"] } },
+        }) as unknown as ProjectSnapshot,
+      notifyFailed,
+      terminal: { error: vi.fn() } as unknown as DBTTerminal,
+    } as unknown as ProjectCommandDeps;
+
+    await expect(
+      queueCli(deps, cli, new DbtTaskTerminal(() => undefined)),
+    ).rejects.toThrow("no dbt");
+
+    expect(notifyFailed).toHaveBeenCalledWith(status, "Error: no dbt");
+  });
+
   it("notifies failure and queues nothing when prepare throws", async () => {
     const enqueue = vi.fn();
     const notifyFailed = vi.fn();
@@ -116,7 +131,16 @@ describe("queueCli", () => {
   });
 });
 
-describe("enqueueCommand", () => {
+describe("queueCli with a prepared command", () => {
+  function enqueueCommand(
+    deps: ProjectCommandDeps,
+    command: DBTCommand,
+    terminal: DbtTaskTerminal,
+  ) {
+    const cli = () => ({ prepare: () => command }) as unknown as FusionCli;
+    return queueCli({ ...deps, cli }, { kind: "run", select: "a" }, terminal);
+  }
+
   function depsWith() {
     const deps: ProjectCommandDeps = {
       commandQueue: new CommandQueue(),

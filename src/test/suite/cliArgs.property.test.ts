@@ -37,7 +37,6 @@ const commands: fc.Arbitrary<CliCommand> = fc.oneof(
     })),
   selections.map((select): CliCommand => ({ kind: "test", select })),
   selections.map((select): CliCommand => ({ kind: "compile", select })),
-  payload.map((node): CliCommand => ({ kind: "compileNode", node })),
   fc
     .record({ sql: payload, output: fc.constantFrom("json", "quiet") })
     .map(({ sql, output }): CliCommand => ({
@@ -87,8 +86,6 @@ function payloadOf(c: CliCommand): string[] {
     case "compile":
     case "build":
       return c.select === undefined ? [] : [c.select];
-    case "compileNode":
-      return [c.node];
     case "compileInline":
       return [c.sql];
     case "show":

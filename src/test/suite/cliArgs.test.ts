@@ -122,21 +122,6 @@ describe("toCliArgs builds each kind's body, then command params, then snapshot 
       ["compile", "--select", "+a", ...projectDir, "--no-defer"],
     ],
     [
-      { kind: "compileNode", node: "a" },
-      [
-        "compile",
-        "--select",
-        "a",
-        "--output",
-        "json",
-        "--log-format",
-        "json",
-        "--log-level",
-        "debug",
-        ...projectDir,
-      ],
-    ],
-    [
       { kind: "compileInline", sql: "select 1", output: "json" },
       [
         "compile",
@@ -437,21 +422,6 @@ describe("toCliArgs with a profiles directory, params and each defer state", () 
       true,
     ],
     [{ kind: "compile", select: "+a" }, ["compile", "--select", "+a"], true],
-    [
-      { kind: "compileNode", node: "a" },
-      [
-        "compile",
-        "--select",
-        "a",
-        "--output",
-        "json",
-        "--log-format",
-        "json",
-        "--log-level",
-        "debug",
-      ],
-      false,
-    ],
     [
       { kind: "compileInline", sql: "select 1", output: "json" },
       [

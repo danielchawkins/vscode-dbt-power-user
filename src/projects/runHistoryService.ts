@@ -6,12 +6,6 @@ export interface CommandFailedEvent {
   error: string;
 }
 
-export type {
-  RunResultEntry,
-  RunResultsEventData,
-  RunStatus,
-} from "../dbt_integration";
-
 export class RunHistoryService implements Disposable {
   private static readonly MAX_ENTRIES = 50;
 

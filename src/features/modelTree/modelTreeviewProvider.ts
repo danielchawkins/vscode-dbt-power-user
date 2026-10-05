@@ -375,7 +375,7 @@ class DocTreeItem extends TreeItem {
   }
 }
 
-export class DocNode extends Node {
+class DocNode extends Node {
   description: string;
 
   constructor(label: string, key: string, url: string, description: string) {
@@ -384,7 +384,7 @@ export class DocNode extends Node {
   }
 }
 
-export class NodeTreeItem extends TreeItem {
+class NodeTreeItem extends TreeItem {
   collapsibleState = TreeItemCollapsibleState.Collapsed;
   key: string;
   url: string | undefined;
@@ -514,7 +514,7 @@ export class DocumentationTreeview extends DocumentationTreeviewProvider {
 }
 
 // Find appropriate a model from file content (if YAML) or from a file name (otherwise)
-export function lookupModelByEditorContent(
+function lookupModelByEditorContent(
   nodeMetaMap: NodeMetaMap,
   document: TextDocument,
 ): NodeMetaData | undefined {

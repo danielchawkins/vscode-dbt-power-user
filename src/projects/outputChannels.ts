@@ -15,8 +15,12 @@ import { DBTTerminal } from "../dbt_integration";
 import { stripANSI } from "../utils";
 import { DeclaredProject } from "./projectRegistry";
 
-/** The extension log's channel; each Declared Project's channel is this name, a colon and the project name. */
+/**
+ * The extension log's channel; each Declared Project's channel is this name, a colon and the project name.
+ * @internal
+ */
 export const EXTENSION_CHANNEL_NAME = "Fusion Power User";
+/** @internal */
 export const DIAGNOSTICS_CHANNEL_NAME = "Fusion Power User - Diagnostics";
 
 const SHOW_CHANNEL_COMMAND = "workbench.action.output.show.";

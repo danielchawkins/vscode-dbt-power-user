@@ -5,14 +5,11 @@ export type TableData = Record<string, unknown>[];
 
 export type QueryHistory = queryResults.QueryHistoryEntry;
 
-export enum QueryPanelViewType {
-  DEFAULT,
-  OPEN_RESULTS_IN_TAB,
-  OPEN_RESULTS_FROM_HISTORY_BOOKMARKS,
-}
+/** The bottom panel's view type; results tabs and history runs use the others. */
+export const DEFAULT_VIEW_TYPE = 0 satisfies queryResults.ViewType;
 
 export interface QueryPanelStateProps {
-  viewType: QueryPanelViewType;
+  viewType: queryResults.ViewType;
   loading: boolean;
   queryResults?: {
     data: TableData;

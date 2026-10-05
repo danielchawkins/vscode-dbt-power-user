@@ -49,7 +49,7 @@ export type FetchConnected = (
 ) => Promise<lineage.ConnectedColumns>;
 
 /** Most `getConnectedColumns` rounds per direction of one trace. */
-export const MAX_TRACE_HOPS = 10;
+const MAX_TRACE_HOPS = 10;
 
 export const emptyGraph = (start?: LineageTable): GraphState => ({
   start: start?.table,
@@ -62,9 +62,10 @@ export const emptyGraph = (start?: LineageTable): GraphState => ({
   errors: {},
 });
 
-export const expansionKey = (direction: Direction, table: string): string =>
+const expansionKey = (direction: Direction, table: string): string =>
   `${direction === "children" ? "c" : "p"}:${table}`;
 
+/** @internal */
 export const parseExpansion = (
   key: string,
 ): [Direction, string] | undefined => {
@@ -85,12 +86,15 @@ export const isExpanded = (
   table: string,
 ): boolean => state.expansions.includes(expansionKey(direction, table));
 
-export const neighbourCount = (
+const neighbourCount = (
   table: LineageTable,
   direction: Direction,
 ): number => (direction === "children" ? table.childCount : table.parentCount);
 
-/** The drawn tables and table edges, each edge `[parent, child]`. */
+/**
+ * The drawn tables and table edges, each edge `[parent, child]`.
+ * @internal
+ */
 export function drawnGraph(state: GraphState): {
   tables: LineageTable[];
   edges: [string, string][];
@@ -153,7 +157,10 @@ function prune(state: GraphState): GraphState {
   }
 }
 
-/** Draws `neighbours` as the `direction` neighbours of `table`. */
+/**
+ * Draws `neighbours` as the `direction` neighbours of `table`.
+ * @internal
+ */
 export function addNeighbours(
   state: GraphState,
   direction: Direction,

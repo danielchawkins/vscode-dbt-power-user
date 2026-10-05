@@ -12,7 +12,10 @@ export type MessageOf<M extends Message, C extends string> = M extends {
     : never
   : never;
 
-/** What a message with command `C` carries besides `command` and the executor's `syncRequestId`. */
+/**
+ * What a message with command `C` carries besides `command` and the executor's `syncRequestId`.
+ * @internal
+ */
 export type Payload<M extends Message, C extends M["command"]> = M extends {
   command: infer K;
 }
@@ -22,7 +25,7 @@ export type Payload<M extends Message, C extends M["command"]> = M extends {
   : never;
 
 /** Commands whose message accepts a `syncRequestId`, so the host answers them with a `response`. */
-export type RequestCommand<M extends Message> = Extract<
+type RequestCommand<M extends Message> = Extract<
   M,
   { syncRequestId?: string }
 >["command"];

@@ -1,6 +1,5 @@
 export enum Source {
   YAML = "YAML",
-  DATABASE = "DATABASE",
 }
 
 export interface MetadataColumn {
@@ -8,7 +7,7 @@ export interface MetadataColumn {
   type?: string;
 }
 
-export interface DBTDocumentationColumn extends MetadataColumn {
+interface DBTDocumentationColumn extends MetadataColumn {
   description?: string;
   generated: boolean;
   source: Source;

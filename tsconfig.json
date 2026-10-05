@@ -16,10 +16,7 @@
     "allowJs": true,
     "checkJs": false,
     "moduleResolution": "bundler",
-    "types": ["node", "mocha", "vscode"],
-    "paths": {
-      "@extension": ["./src/modules.ts"]
-    }
+    "types": ["node", "mocha", "vscode"]
   },
   "include": ["src/**/*", "packages/webview-contract/src/**/*.test.ts"],
   "exclude": ["node_modules", ".vscode-test", "webview_panels", "dist", "out"],

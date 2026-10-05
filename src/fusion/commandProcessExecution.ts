@@ -54,6 +54,7 @@ export interface CommandProcessResult {
   exitCode?: number | null;
 }
 
+/** @internal */
 export class CommandProcessExecution {
   constructor(
     private terminal: DBTTerminal,

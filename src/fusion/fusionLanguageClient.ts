@@ -44,9 +44,9 @@ export const FUSION_LSP_COMMANDS = {
 } as const;
 
 /** Client command in Fusion's CTE code lenses; not advertised by initialize, and no command here handles it. */
-export const FUSION_LSP_PREVIEW_CTE = "dbt.previewCte" as const;
+const FUSION_LSP_PREVIEW_CTE = "dbt.previewCte" as const;
 
-export type FusionLspCommand =
+type FusionLspCommand =
   | (typeof FUSION_LSP_COMMANDS)[keyof typeof FUSION_LSP_COMMANDS]
   | typeof FUSION_LSP_PREVIEW_CTE;
 
@@ -88,33 +88,38 @@ export interface FusionClient extends Disposable {
   stop(): Promise<void>;
 }
 
-export type LspRelativePattern = {
+type LspRelativePattern = {
   baseUri: string;
   pattern: string;
 };
 
-export type FusionDocumentFilter = {
+type FusionDocumentFilter = {
   language: string;
   pattern: LspRelativePattern;
 };
 
 const EXTENSION_PREFIX_NAMESPACE = "fusionPowerUser";
-export const CONNECTION_TIMEOUT_MS = 30_000;
+const CONNECTION_TIMEOUT_MS = 30_000;
+/** @internal */
 export const DISPOSAL_GRACE_MS = 5_000;
+/** @internal */
 export const MAX_UNEXPECTED_EXIT_RETRIES = 3;
-export const BACKOFF_BASE_MS = 500;
-export const BACKOFF_CAP_MS = 8_000;
+const BACKOFF_BASE_MS = 500;
+const BACKOFF_CAP_MS = 8_000;
 const STDERR_BUFFER_LIMIT = 16_384;
+/** @internal */
 export const PARTIAL_LINE_LIMIT = 4_096;
 
 export function commandPrefixForProject(project: DeclaredProject): string {
   return `${EXTENSION_PREFIX_NAMESPACE}:${projectRootDigest(project.root.fsPath)}:`;
 }
 
+/** @internal */
 export function languageClientIdForProject(project: DeclaredProject): string {
   return `fusion-lsp-${projectRootDigest(project.root.fsPath)}`;
 }
 
+/** @internal */
 export function prefixedCommand(
   commandPrefix: string,
   command: FusionLspCommand,
@@ -126,6 +131,7 @@ export function prefixedCommand(
  * Fusion canonicalizes `--project-dir` but matches document URIs literally, so a project opened through a
  * symlink loads no documents. Returns the realpath to launch Fusion on and converters that move URIs between
  * the opened root and that realpath; converters are undefined when the two are the same.
+ * @internal
  */
 export function canonicalProjectRoot(
   root: string,
@@ -180,6 +186,7 @@ export function canonicalProjectRoot(
 /**
  * Drops server code lenses whose command no extension here registers. Fusion emits `dbt.previewCte` lenses for
  * the official dbt extension's client command; `CteCodeLensProvider` supplies the CTE actions instead.
+ * @internal
  */
 export function withoutUnregisteredLspLenses<
   T extends { command?: { command: string } },
@@ -193,6 +200,7 @@ export function withoutUnregisteredLspLenses<
  * Per-project LSP document filters using protocol RelativePattern bases.
  * Selectors isolate disjoint Declared Project roots; overlapping roots are not
  * isolated.
+ * @internal
  */
 export function documentSelectorForProject(root: Uri): FusionDocumentFilter[] {
   const baseUri = root.toString();
@@ -214,6 +222,7 @@ export function vscodeDocumentSelectorForProject(root: Uri): DocumentFilter[] {
 const FUSION_DOCUMENT_LANGUAGES = ["jinja-sql", "sql", "yaml"] as const;
 const PROJECT_GLOB = "**/*";
 
+/** @internal */
 export function validateDocumentSelectorPatterns(
   selector: readonly FusionDocumentFilter[],
 ): void {
@@ -243,7 +252,10 @@ export function validateDocumentSelectorPatterns(
   }
 }
 
-/** Returns minimal dbt config: `{lsp:{linter:{enabled:bool}}}`, null for other sections. */
+/**
+ * Returns minimal dbt config: `{lsp:{linter:{enabled:bool}}}`, null for other sections.
+ * @internal
+ */
 export function buildWorkspaceConfigurationResponse(
   section: string,
   lintEnabled: boolean,
@@ -260,7 +272,10 @@ export function buildWorkspaceConfigurationResponse(
   return null;
 }
 
-/** Line buffer for piped Fusion server stdout/stderr. */
+/**
+ * Line buffer for piped Fusion server stdout/stderr.
+ * @internal
+ */
 export class ProcessStreamBuffer {
   private partial = "";
 
@@ -303,7 +318,10 @@ class StderrAccumulator {
   }
 }
 
-/** Child process adapter; stderr-only accumulator feeds getStderr(). */
+/**
+ * Child process adapter; stderr-only accumulator feeds getStderr().
+ * @internal
+ */
 export class SpawnedLspProcess implements ExitingProcess {
   private readonly stderrAccumulator = new StderrAccumulator();
   private readonly stdoutBuffer = new ProcessStreamBuffer();
@@ -382,12 +400,15 @@ type ClientHandle = Pick<
   Partial<Pick<LanguageClient, "diagnostics" | "onNotification">>;
 
 /** Fusion's notifications that end a compile; `errors` lists what it found. */
-export const FUSION_COMPILE_COMPLETE = [
+const FUSION_COMPILE_COMPLETE = [
   "dbt/lspCompileComplete",
   "dbt/lspBackgroundCompileComplete",
 ] as const;
 
-/** The `Error`-severity messages of a compile-complete notification's `errors`. */
+/**
+ * The `Error`-severity messages of a compile-complete notification's `errors`.
+ * @internal
+ */
 export function compileErrorMessages(params: unknown): string[] {
   const errors = (params as { errors?: unknown } | null)?.errors;
   if (!Array.isArray(errors)) {

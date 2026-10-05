@@ -1,9 +1,10 @@
 import { commands, Disposable } from "vscode";
 import { readHarnessSwitch } from "../settings";
 
+/** @internal */
 export const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 
-export interface WebviewRuntimeTiming {
+interface WebviewRuntimeTiming {
   entry: string;
   resolveStart: number;
   ready: number;
@@ -41,13 +42,9 @@ export function completeWebviewReady(entry: string): void {
   resolveStarts.delete(entry);
 }
 
+/** @internal */
 export function getWebviewRuntimeTimings(): WebviewRuntimeTiming[] {
   return records.map((record) => ({ ...record }));
-}
-
-export function clearWebviewRuntimeTimings(): void {
-  resolveStarts.clear();
-  records.length = 0;
 }
 
 /** Registers {@link RUNTIME_TIMINGS_COMMAND} when the runtime benchmark asks for it. */

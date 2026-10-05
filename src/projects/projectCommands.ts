@@ -58,7 +58,7 @@ export function modelParamsFor(
 }
 
 /** The status line for a command that could not be prepared: its selection and `commandParams`. */
-export function formatCliStatus(
+function formatCliStatus(
   cli: QueuedCliCommand,
   params: readonly string[],
 ): string {
@@ -144,7 +144,7 @@ export async function queueCli(
  * Queues a prepared command to run in the task `terminal`, recording its run results and failing on a reported dbt
  * error; settles once it has run. It is skipped when the terminal closed while it waited.
  */
-export function enqueueCommand(
+function enqueueCommand(
   deps: ProjectCommandDeps,
   command: DBTCommand,
   terminal: DbtTaskTerminal,

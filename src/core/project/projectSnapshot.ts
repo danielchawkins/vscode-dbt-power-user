@@ -5,6 +5,7 @@ import { ProjectPaths, resolveProjectPaths } from "./projectPaths";
 /** `project` passes no `--static-analysis`, so the project's own `+static_analysis` model config applies. */
 export type StaticAnalysisMode = "project" | "off" | "baseline" | "strict";
 
+/** @internal */
 export const DEFAULT_STATIC_ANALYSIS_MODE: StaticAnalysisMode = "project";
 
 const STATIC_ANALYSIS_MODES = [
@@ -14,6 +15,7 @@ const STATIC_ANALYSIS_MODES = [
   "strict",
 ] as const satisfies readonly StaticAnalysisMode[];
 
+/** @internal */
 export function parseStaticAnalysisMode(raw: unknown): StaticAnalysisMode {
   return (
     STATIC_ANALYSIS_MODES.find((mode) => mode === raw) ??
@@ -27,7 +29,7 @@ export function parseStaticAnalysisMode(raw: unknown): StaticAnalysisMode {
  * `DBT_LSP_USE_TARGET_LSP`; `dbt lsp --target-path` does not move this output (evidence experiment l8).
  */
 const LSP_COMPILED_OUTPUTS = ["separate", "shared"] as const;
-export type LspCompiledOutput = (typeof LSP_COMPILED_OUTPUTS)[number];
+type LspCompiledOutput = (typeof LSP_COMPILED_OUTPUTS)[number];
 const DEFAULT_LSP_COMPILED_OUTPUT: LspCompiledOutput = "separate";
 
 function parseLspCompiledOutput(raw: unknown): LspCompiledOutput | undefined {
@@ -36,7 +38,7 @@ function parseLspCompiledOutput(raw: unknown): LspCompiledOutput | undefined {
 }
 
 /** The environment override wins over the setting; either is ignored when invalid. */
-export function resolveLspCompiledOutput(
+function resolveLspCompiledOutput(
   override: unknown,
   setting: unknown,
 ): LspCompiledOutput {
@@ -47,9 +49,11 @@ export function resolveLspCompiledOutput(
   );
 }
 
+/** @internal */
 export const TRACE_SERVER_LEVELS = ["off", "messages", "verbose"] as const;
 export type TraceServerLevel = (typeof TRACE_SERVER_LEVELS)[number];
 
+/** @internal */
 export function parseTraceServerLevel(raw: unknown): TraceServerLevel {
   return TRACE_SERVER_LEVELS.find((level) => level === raw) ?? "off";
 }
@@ -61,7 +65,10 @@ export interface DeferSettingsEntry {
   manifestPathForDeferral?: string;
 }
 
-/** The setting values one snapshot reads, as the settings module returns them for the project root. */
+/**
+ * The setting values one snapshot reads, as the settings module returns them for the project root.
+ * @internal
+ */
 export interface ProjectSnapshotSettings {
   dbtPath: string | undefined;
   target: string | undefined;
@@ -147,6 +154,7 @@ export interface VariableScope {
 /**
  * Expands `${env:NAME}`, `${userHome}` and, when `folder` is known, `${workspaceFolder}`. Unresolved placeholders
  * stay in the result; replacements are literal, so `$1` in a value is not a backreference.
+ * @internal
  */
 export function substituteVariables(
   value: string,
@@ -165,7 +173,7 @@ export function substituteVariables(
 }
 
 /** Absolute path for a folder-relative setting, or undefined when it is empty or cannot be resolved. */
-export function resolveFolderPath(
+function resolveFolderPath(
   raw: string | undefined,
   scope: VariableScope,
 ): string | undefined {
@@ -222,7 +230,7 @@ export function deferSettingsKey(
  * Resolves one `defer.perProject` entry. The manifest path resolves against the project root, which is also what
  * `${workspaceFolder}` means in it; an empty path is kept as given.
  */
-export function resolveDefer(
+function resolveDefer(
   entry: DeferSettingsEntry | undefined,
   root: string,
   scope: Omit<VariableScope, "folder">,

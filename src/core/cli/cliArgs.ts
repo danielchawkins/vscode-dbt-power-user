@@ -10,8 +10,6 @@ export type CliCommand =
   | { kind: "test"; select?: string }
   /** The queued model compile. */
   | { kind: "compile"; select?: string }
-  /** JSON output from which the compiled SQL is read back. */
-  | { kind: "compileNode"; node: string }
   | { kind: "compileInline"; sql: string; output: "json" | "quiet" }
   | { kind: "show"; sql: string; limit: number }
   | { kind: "parse" }
@@ -90,8 +88,6 @@ function body(command: CliCommand, params: readonly string[]): string[] {
     case "test":
     case "compile":
       return [command.kind, ...selectArgs(command.select)];
-    case "compileNode":
-      return ["compile", "--select", command.node, ...DEBUG_JSON_LOGS];
     case "compileInline":
       return [
         "compile",
@@ -167,7 +163,10 @@ function deferArgs(state: DeferState): string[] {
   }
 }
 
-/** Whether `params` already set a flag as `--name value`, `--name=value` or, given an alias, `-t value`/`-tvalue`. */
+/**
+ * Whether `params` already set a flag as `--name value`, `--name=value` or, given an alias, `-t value`/`-tvalue`.
+ * @internal
+ */
 export function carriesFlag(
   params: readonly string[],
   name: string,

@@ -8,6 +8,7 @@ export const SCHEMA_ORIGIN_HOOK = `{{ env_var('${SCHEMA_ORIGIN_ENV}', 'remote') 
 /**
  * The schema-origin variable for the language server: `local` for a project known to be warehouse-free, `remote`
  * otherwise. Always set, so the extension host's environment never decides the origin.
+ * @internal
  */
 export function schemaOriginEnv(
   status: SchemaOriginStatus,
@@ -35,7 +36,7 @@ export function schemaOriginLaunchEnv(
   );
 }
 
-export interface UntypedSource {
+interface UntypedSource {
   source: string;
   table: string;
   /** Absent when the table declares no columns at all. */
@@ -85,7 +86,10 @@ export function resolveSchemaOrigin(input: {
     : { kind: "local" };
 }
 
-/** True when `sources: +schema_origin` in the project file reads the extension's variable. */
+/**
+ * True when `sources: +schema_origin` in the project file reads the extension's variable.
+ * @internal
+ */
 export function hasSchemaOriginHook(config: DbtProjectConfig): boolean {
   const value = child(config.sources, "+schema_origin");
   return typeof value === "string" && value.includes(SCHEMA_ORIGIN_ENV);

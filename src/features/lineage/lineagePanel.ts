@@ -65,7 +65,7 @@ const STORED_KEYS: Record<keyof StoredLineageSettings, true> = {
 };
 
 /** The known view settings in `params`, with the confidence threshold clamped to 0..1; other keys are dropped. */
-export function storedLineageSettings(
+function storedLineageSettings(
   params: Partial<lineage.LineageSettings>,
 ): StoredLineageSettings {
   const stored: Record<string, unknown> = {};
@@ -87,7 +87,7 @@ export function storedLineageSettings(
   return stored as StoredLineageSettings;
 }
 
-export interface LineagePanelView extends WebviewViewProvider {
+interface LineagePanelView extends WebviewViewProvider {
   init(): void;
   /** Called with the project whose manifest changed, or `undefined` on project removal and panel init. */
   manifestChanged(project: Project | undefined): void;
@@ -105,7 +105,7 @@ interface ResolvedSourceTable {
 }
 
 /** The lineage component shows `errors[table]` as a tooltip on that table. */
-export function noLineageErrors(
+function noLineageErrors(
   targets: [string, string][],
   reason: NoLineage,
 ): Record<string, string[]> {
@@ -117,7 +117,7 @@ export function noLineageErrors(
 }
 
 /** One tooltip line per failed column, on the column's table. */
-export function partialFailureErrors(
+function partialFailureErrors(
   failures: TargetFailure[],
 ): Record<string, string[]> {
   const errors: Record<string, string[]> = {};

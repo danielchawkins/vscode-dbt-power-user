@@ -12,7 +12,7 @@ import { RunHistoryService } from "../projects/runHistoryService";
 import { SharedStateService } from "../projects/sharedStateService";
 
 /** A Fusion 2.0.6 executable at `executablePath`. */
-export function sampleExecutable(
+function sampleExecutable(
   executablePath = "/mock/bin/dbt",
   env: Record<string, string> = process.env as Record<string, string>,
 ): FusionExecutable {
@@ -24,7 +24,7 @@ export function sampleExecutable(
 }
 
 /** A resolver that always returns `sampleExecutable()`. */
-export function stubResolver(): FusionExecutableResolver {
+function stubResolver(): FusionExecutableResolver {
   return { resolve: vi.fn(async () => sampleExecutable()) };
 }
 
