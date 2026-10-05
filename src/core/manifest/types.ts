@@ -20,7 +20,7 @@ export interface NodeMetaMap {
 }
 
 interface MacroMetaData {
-  path: string | undefined; // in dbt cloud, packages are not downloaded locally
+  path: string | undefined;
   line: number;
   character: number;
   unique_id: string;
@@ -72,7 +72,7 @@ export interface SemanticModelMetaData {
 
 export interface NodeMetaData {
   unique_id: string;
-  path: string | undefined; // in dbt cloud, packages are not downloaded locally
+  path: string | undefined;
   database: string;
   schema: string;
   alias: string;
@@ -144,7 +144,7 @@ interface SourceMetaData {
 export interface SourceTable {
   name: string;
   identifier: string;
-  path: string | undefined; // in dbt cloud, packages are not downloaded locally
+  path: string | undefined;
   description: string;
   columns: { [columnName: string]: ColumnMetaData };
 }
@@ -178,7 +178,7 @@ interface DependsOn {
 }
 
 export interface TestMetaData {
-  path: string | undefined; // in dbt cloud, packages are not downloaded locally
+  path: string | undefined;
   database: string;
   schema: string;
   alias: string;
@@ -212,7 +212,7 @@ export interface ExposureMetaData {
   url?: string;
   type: string;
   config: { enabled: boolean };
-  path: string | undefined; // in dbt cloud, packages are not downloaded locally
+  path: string | undefined;
   unique_id: string;
   sources?: [string];
   metrics?: unknown[];

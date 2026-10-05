@@ -208,9 +208,9 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
 
   // Re-root the lineage when the cursor moves to a different source table
   // within an open source YAML. This is what makes opening a `sources:` file
-  // and clicking on a `- name:` entry show that source's lineage, mirroring the
-  // dbt Cloud IDE. Guarded so ordinary cursor movement (same table, or any
-  // non-source file) never triggers a redundant re-render.
+  // and clicking on a `- name:` entry show that source's lineage. Guarded so
+  // ordinary cursor movement (same table, or any non-source file) never triggers
+  // a redundant re-render.
   public changedTextEditorSelection(editor: TextEditor) {
     if (!this._panel) {
       return;

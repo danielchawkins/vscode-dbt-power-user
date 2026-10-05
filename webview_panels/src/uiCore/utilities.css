@@ -1,4 +1,4 @@
-/* The layout utilities panels use in markup; each mirrors the Bootstrap class it replaced. */
+/* The layout utilities panels use in markup. */
 
 .d-flex {
   display: flex !important;
