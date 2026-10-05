@@ -271,6 +271,7 @@ The reviewer confirms that `just lint` runs knip, both dependency-cruiser config
 - Resolves: Prac 15; Prac §3 (`glob`, `ts-mockito`, `which`/`@types/which`, `vite-plugin-svgr`, `use-debounce`, 8 GB flag); Qual M4 (`ts-mockito`, `glob`), O3.
 - Revisions: one per package or flag.
 - Verify: `just check`; `just package`; `npm ls vscode-languageserver-protocol` shows it only under `vscode-languageclient`; `just webviews::build` passes without the flag, with peak RSS recorded (`/usr/bin/time -l`) in the step's result.
+- Result: `@types/which` 3 with `which` 7 compiles and `which(name)` in `fusionExecutable.ts` types without a cast; nothing to change.
 - Depends: 1.11. Sequential (`package.json`, lockfile, `fusionLanguageClient.ts`).
 
 ### 1.7 Clear the cheap suppressions
