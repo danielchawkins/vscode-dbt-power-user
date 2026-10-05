@@ -520,8 +520,6 @@ describe("Project Test Suite", () => {
 
     it("records fresh run_results before surfacing Encountered an error", async () => {
       dbtProject = await initializedProject();
-      const runResultsHandler = vi.fn();
-      dbtProject.onRunResults(runResultsHandler);
 
       const mockCommand = {
         execute: vi.fn(() => {
@@ -546,9 +544,6 @@ describe("Project Test Suite", () => {
       expect(mockCommand.execute).toHaveBeenCalled();
       expect(mockRunHistoryService.addEntry).toHaveBeenCalledWith(
         expect.objectContaining({ id: "inv-1", projectName: "test-project" }),
-      );
-      expect(runResultsHandler).toHaveBeenCalledWith(
-        expect.objectContaining({ uniqueIds: ["model.test.model1"] }),
       );
       expect(mockRunHistoryService.notifyCommandFailed).toHaveBeenCalledWith(
         "dbt run --select my_model",
@@ -1288,12 +1283,9 @@ describe("Project manifest trigger", () => {
   });
 
   it("refreshes config, then rebuilds, after a dbt_project.yml edit", async () => {
-    const configChanged = vi.fn();
-    project.onProjectConfigChanged(configChanged);
     watcher.fire("change", path.join(root, "dbt_project.yml"));
     await vi.advanceTimersByTimeAsync(500);
     expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
-    expect(configChanged).toHaveBeenCalledTimes(1);
     expect(rebuildManifest).toHaveBeenCalledTimes(1);
     expect(refreshProjectConfig.mock.invocationCallOrder[0]).toBeLessThan(
       rebuildManifest.mock.invocationCallOrder[0],

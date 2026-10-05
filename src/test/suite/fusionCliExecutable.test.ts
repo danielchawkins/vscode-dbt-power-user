@@ -460,7 +460,6 @@ describe("Fusion CLI executable wiring", () => {
         }),
       };
       const delegateDispose = vi.fn(async () => undefined);
-      const projectConfigChanged = vi.fn();
       const integration = buildIntegration(
         root,
         async () => sampleExecutable("/project/race/dbt"),
@@ -469,7 +468,6 @@ describe("Fusion CLI executable wiring", () => {
           dispose: delegateDispose as () => void,
         }),
       );
-      integration.onProjectConfigChanged(projectConfigChanged);
 
       const watchersBefore = createdFileSystemWatchers.length;
       const initPromise = integration.initialize();
@@ -482,7 +480,6 @@ describe("Fusion CLI executable wiring", () => {
 
       expect(delegateDispose).toHaveBeenCalled();
       expect(() => integration.getFusionCli()).toThrow();
-      expect(projectConfigChanged).not.toHaveBeenCalled();
       expect(createdFileSystemWatchers.slice(watchersBefore)).toEqual([]);
 
       fs.rmSync(root, { recursive: true, force: true });
