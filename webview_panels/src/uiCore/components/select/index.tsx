@@ -4,7 +4,7 @@ import {
   SelectUncheckedIcon,
   UncheckIcon,
 } from "@assets/icons";
-import Select, {
+import ReactSelect, {
   components,
   GroupBase,
   OptionProps,
@@ -57,7 +57,7 @@ const IconOption = (
   );
 };
 
-type Props = Parameters<typeof Select>[0] & {
+type Props = Parameters<typeof ReactSelect>[0] & {
   isCreatable?: boolean;
   hideOptionIcon?: boolean;
 };
@@ -115,7 +115,7 @@ const themeStyles: StylesConfig<OptionType> = {
   }),
 };
 
-const AltimateSelect = (props: Props): JSX.Element => {
+const Select = (props: Props): JSX.Element => {
   const colourStyles: StylesConfig<OptionType> = {
     ...themeStyles,
     container: (styles, cprops) => ({
@@ -130,7 +130,7 @@ const AltimateSelect = (props: Props): JSX.Element => {
       <CreatableSelect<OptionType>
         {...props}
         styles={colourStyles}
-        className={`${props.className} altimate-select`}
+        className={`${props.className} select`}
         hideOptionIcon={props.hideOptionIcon}
         // @ts-expect-error TODO fix this type
         components={{
@@ -141,10 +141,10 @@ const AltimateSelect = (props: Props): JSX.Element => {
     );
   }
   return (
-    <Select<OptionType>
+    <ReactSelect<OptionType>
       {...props}
       styles={colourStyles}
-      className={`${props.className} altimate-select`}
+      className={`${props.className} select`}
       hideOptionIcon={props.hideOptionIcon}
       // @ts-expect-error TODO fix this type
       components={{
@@ -155,4 +155,4 @@ const AltimateSelect = (props: Props): JSX.Element => {
   );
 };
 
-export default AltimateSelect;
+export default Select;
