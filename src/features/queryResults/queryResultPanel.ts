@@ -58,7 +58,7 @@ export class QueryResultPanel extends PanelHost {
   // Perspective fetches and compiles its .wasm and runs its engine in a worker started from a Blob.
   protected readonly csp = { wasm: true, connect: true, blobWorkers: true };
   protected override panelDescription = "Query results panel";
-  private _queryTabData: any;
+  private _queryTabData: unknown;
   private _bottomPanel: WebviewView | undefined;
 
   private queryExecution?: QueryExecution;

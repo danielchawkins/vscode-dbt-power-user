@@ -232,7 +232,7 @@
   },
   "src/features/queryResults/queryResultPanel.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 2
+      "count": 1
     },
     "max-lines": {
       "count": 1

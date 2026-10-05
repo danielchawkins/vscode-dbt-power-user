@@ -1,4 +1,3 @@
-/* eslint-disable */
 // https://github.com/microsoft/vscode-webview-ui-toolkit-samples/blob/main/frameworks/hello-world-react-vite/webview-ui/src/utilities/vscode.ts
 import { panelLogger } from "@modules/logger";
 import type { WebviewApi } from "vscode-webview";
@@ -33,6 +32,8 @@ class VSCodeAPIWrapper {
    */
   public postMessage(message: unknown) {
     if (this.vsCodeApi) {
+      // This wrapper is the one place that posts to the host.
+      // eslint-disable-next-line no-restricted-syntax
       this.vsCodeApi.postMessage(message);
     } else {
       panelLogger.log(message);
@@ -47,7 +48,7 @@ class VSCodeAPIWrapper {
    *
    * @return The current state or `undefined` if no state has been set.
    */
-  public getState(): unknown | undefined {
+  public getState(): unknown {
     if (this.vsCodeApi) {
       return this.vsCodeApi.getState();
     } else {
@@ -67,7 +68,7 @@ class VSCodeAPIWrapper {
    *
    * @return The new state.
    */
-  public setState<T extends unknown | undefined>(newState: T): T {
+  public setState<T>(newState: T): T {
     if (this.vsCodeApi) {
       return this.vsCodeApi.setState(newState);
     } else {
