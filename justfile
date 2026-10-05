@@ -310,6 +310,7 @@ package:
     done
     mkdir -p out
     realpath "$vsix" > out/latest-vsix
+    node scripts/quality/size-budget.mjs
 
 # Local dry run of the release pipeline: build, checksum, verify the tag, publish nothing.
 [group("package")]

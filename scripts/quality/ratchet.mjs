@@ -52,6 +52,7 @@ const internalTagCount = () =>
 
 /** `type-coverage --strict` percentage for the project in `dir`, with tests ignored. */
 const typeCoverage = (dir) => {
+  // knip cannot see this by-path spawn, hence `ignoreDependencies` in knip.json.
   const cwd = path.join(root, dir);
   const result = spawnSync(
     process.execPath,
@@ -229,8 +230,14 @@ function classify(result, trailers, change) {
 
 const readJson = (file) => JSON.parse(fs.readFileSync(file, "utf8"));
 
-const writeCeilings = (values) =>
-  fs.writeFileSync(ceilingsPath, `${JSON.stringify(values, null, 2)}\n`);
+/** Replaces the ratcheted keys and keeps the entries other checks own (`coverage.*`, `size`). */
+const writeCeilings = (values) => {
+  const kept = fs.existsSync(ceilingsPath) ? readJson(ceilingsPath) : {};
+  fs.writeFileSync(
+    ceilingsPath,
+    `${JSON.stringify({ ...kept, ...values }, null, 2)}\n`,
+  );
+};
 
 function measureAll() {
   return Object.fromEntries(
