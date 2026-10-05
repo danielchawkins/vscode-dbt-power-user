@@ -885,8 +885,6 @@
     "@types/node": "^24.19.1",
     "@types/vscode": "1.125.0",
     "@types/which": "^3.0.4",
-    "@typescript-eslint/eslint-plugin": "^8.70.0",
-    "@typescript-eslint/parser": "^8.70.0",
     "@vitest/coverage-v8": "^5.0.3",
     "@vscode/test-cli": "^0.0.15",
     "@vscode/test-electron": "^3.1.0",
@@ -905,6 +903,7 @@
     "prettier-plugin-organize-imports": "^4.3.0",
     "ts-mockito": "^2.6.1",
     "typescript": "^6.0.3",
+    "typescript-eslint": "^8.71.0",
     "vitest": "^5.0.3",
     "vscode-uri": "^3.2.0"
   },

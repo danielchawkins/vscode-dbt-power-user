@@ -1,5 +1,4 @@
-const typescriptEslint = require("@typescript-eslint/eslint-plugin");
-const tsParser = require("@typescript-eslint/parser");
+const tseslint = require("typescript-eslint");
 const sonarjs = require("eslint-plugin-sonarjs");
 const prettier = require("eslint-config-prettier/flat");
 
@@ -117,13 +116,13 @@ module.exports = [
       "scripts/spikes/**",
     ],
   },
-  typescriptEslint.configs["flat/base"],
-  typescriptEslint.configs["flat/eslint-recommended"],
+  tseslint.configs.base,
+  tseslint.configs.eslintRecommended,
   prettier,
   {
     files: ["src/**/*.ts", "packages/*/src/**/*.ts"],
     languageOptions: {
-      parser: tsParser,
+      parser: tseslint.parser,
       parserOptions: { projectService: true, tsconfigRootDir: __dirname },
     },
     plugins: { sonarjs },
