@@ -1,6 +1,6 @@
 /**
- * Import rules for the extension host. The layer rules from docs/refactor/rearchitecture-plan.md are added in the
- * PR that creates each layer; a rule lands passing.
+ * Import rules for the extension host and the webview contract. Layers, lowest first: core, settings, fusion,
+ * projects; features and the roots sit above them.
  * @type {import("dependency-cruiser").IConfiguration}
  */
 module.exports = {
@@ -65,11 +65,72 @@ module.exports = {
       from: { path: "^src/features/([^/]+)/" },
       to: { path: "^src/features/", pathNot: "^src/features/$1/" },
     },
+    {
+      name: "settings-imports-core",
+      severity: "error",
+      comment: "settings/ imports only core/ and itself.",
+      from: { path: "^src/settings/" },
+      to: { path: "^src/", pathNot: "^src/(core|settings)/" },
+    },
+    {
+      name: "fusion-imports-core-and-settings",
+      severity: "error",
+      comment:
+        "fusion/ imports only core/, settings/ and itself. Exception until the dbt_integration types move: " +
+        "fusion/ may import dbt_integration/ (DBTTerminal, EnvironmentVariables, DBColumn, DBTCommand, " +
+        "QueryExecution).",
+      from: { path: "^src/fusion/" },
+      to: {
+        path: "^src/",
+        pathNot: "^src/(core|settings|fusion|dbt_integration)/",
+      },
+    },
+    {
+      name: "lower-layers-skip-webview",
+      severity: "error",
+      comment:
+        "core/, settings/, fusion/ and projects/ do not import the webview host.",
+      from: { path: "^src/(core|settings|fusion|projects)/" },
+      to: { path: "^src/webview/" },
+    },
+    {
+      name: "contract-is-pure",
+      severity: "error",
+      comment:
+        "The webview contract imports only itself, so both builds can consume it.",
+      from: { path: "^packages/webview-contract/src/" },
+      to: { pathNot: "^packages/webview-contract/src/" },
+    },
+    {
+      name: "no-orphans",
+      severity: "error",
+      comment:
+        "A module nothing imports is dead code or a missing entry point.",
+      from: {
+        orphan: true,
+        pathNot: [
+          "\\.d\\.ts$",
+          "^src/extension\\.ts$",
+          "^packages/webview-contract/src/index\\.ts$",
+        ],
+      },
+      to: {},
+    },
+    {
+      name: "no-deprecated-core",
+      severity: "error",
+      comment: "Deprecated Node core modules.",
+      from: {},
+      to: {
+        dependencyTypes: ["core"],
+        path: "^(punycode|domain|constants|sys|_linklist|_stream_wrap)$",
+      },
+    },
   ],
   options: {
     tsConfig: { fileName: "tsconfig.json" },
     doNotFollow: { path: "node_modules" },
-    exclude: { path: "^src/test" },
+    exclude: { path: ["^src/test", "\\.test\\.ts$"] },
     tsPreCompilationDeps: true,
   },
 };

@@ -872,7 +872,7 @@
     "package:vsix": "vsce package",
     "lint:prune": "eslint src scripts packages --prune-suppressions",
     "lint:unused": "knip --no-progress --no-tag-hints && knip --production --no-progress",
-    "lint:imports": "depcruise src --config .dependency-cruiser.cjs --output-type err"
+    "lint:imports": "depcruise src packages/webview-contract/src --config .dependency-cruiser.cjs --output-type err"
   },
   "workspaces": [
     "packages/*",
