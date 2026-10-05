@@ -1,21 +1,7 @@
-import { createContext, useContext, useMemo, useReducer } from "react";
+import { useMemo, useReducer } from "react";
 import QueryPanel from "./QueryPanel";
-import {
-  initialState,
-  QueryPanelAction,
-  queryPanelReducer,
-} from "./context/queryPanelReducer";
-import { QueryPanelStateProps } from "./context/types";
-
-interface ContextProps {
-  state: QueryPanelStateProps;
-  dispatch: React.Dispatch<QueryPanelAction>;
-}
-
-export const QueryPanelContext = createContext<ContextProps>({
-  state: initialState,
-  dispatch: () => null,
-});
+import { QueryPanelContext } from "./context/queryPanelContext";
+import { initialState, queryPanelReducer } from "./context/queryPanelReducer";
 
 const QueryPanelProvider = (): JSX.Element => {
   const [state, dispatch] = useReducer(queryPanelReducer, initialState);
@@ -36,8 +22,3 @@ const QueryPanelProvider = (): JSX.Element => {
 };
 
 export default QueryPanelProvider;
-
-export const useQueryPanelDispatch = (): React.Dispatch<QueryPanelAction> => {
-  const { dispatch } = useContext(QueryPanelContext);
-  return dispatch;
-};

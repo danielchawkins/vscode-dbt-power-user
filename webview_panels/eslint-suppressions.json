@@ -95,11 +95,6 @@
       "count": 1
     }
   },
-  "src/modules/queryPanel/QueryPanelProvider.tsx": {
-    "react-refresh/only-export-components": {
-      "count": 2
-    }
-  },
   "src/modules/queryPanel/components/QueryPanelContents/QueryPanelTitle.tsx": {
     "@eslint-react/exhaustive-deps": {
       "count": 1

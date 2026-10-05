@@ -1,8 +1,8 @@
 import { ErrorIcon } from "@assets/icons";
-import { executeRequestInSync } from "@modules/queryPanel/requests";
+import { useQueryPanelDispatch } from "@modules/queryPanel/context/queryPanelContext";
 import { setLoading } from "@modules/queryPanel/context/queryPanelReducer";
-import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
-import { Stack, Button } from "@uicore";
+import { executeRequestInSync } from "@modules/queryPanel/requests";
+import { Button, Stack } from "@uicore";
 import { ReactNode, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
