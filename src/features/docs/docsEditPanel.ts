@@ -175,7 +175,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
         unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
         project: this.getProject()?.getProjectName(),
         docBlocks: this.getDocBlocksForCurrentProject(),
-        publication: publicationId(this.getProject()?.manifest),
+        publication: publicationId(this.queryManifestService.manifestFor()),
         draft: this.documentation
           ? this.drafts.get(this.documentation.filePath)
           : undefined,
@@ -187,12 +187,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     name: string;
     path: string;
   }> {
-    const project = this.getProject();
-    if (!project) {
-      return [];
-    }
-
-    const manifestEvent = project.manifest;
+    const manifestEvent = this.queryManifestService.manifestFor();
     if (!manifestEvent?.docMetaMap) {
       return [];
     }

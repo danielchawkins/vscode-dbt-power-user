@@ -240,7 +240,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
     const current = this.queryManifestService.getProject();
     const seen = this.seenPublication;
     const root = current?.projectRoot.fsPath;
-    const epoch = current?.manifest?.publicationEpoch;
+    const epoch = this.queryManifestService.manifestFor()?.publicationEpoch;
     const saved =
       seen !== undefined &&
       seen.root === root &&
@@ -277,9 +277,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
       command: "render",
       args: {
         ...this.getStartingNode(resolvedSource),
-        publication: publicationId(
-          this.queryManifestService.getProject()?.manifest,
-        ),
+        publication: publicationId(this.queryManifestService.manifestFor()),
       },
     });
   }

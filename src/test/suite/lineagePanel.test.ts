@@ -30,6 +30,7 @@ describe("LineagePanel", () => {
     (panel as any).queryManifestService = {
       getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
       getProject: vi.fn().mockReturnValue(undefined),
+      manifestFor: vi.fn().mockReturnValue(undefined),
     };
     (panel as any).dbtTerminal = {
       info: vi.fn(),
@@ -472,6 +473,7 @@ describe("LineagePanel — after a save", () => {
     const other = { manifest: { publicationEpoch: 1 } as any } as any;
     panel.queryManifestService = {
       getProject: () => current,
+      manifestFor: () => current?.manifest,
       getEventByCurrentProject: () => undefined,
     };
 
@@ -509,6 +511,7 @@ describe("LineagePanel — after a save", () => {
       let current: any = a;
       panel.queryManifestService = {
         getProject: () => current,
+        manifestFor: () => current?.manifest,
         getEventByCurrentProject: () => undefined,
       };
 
@@ -618,6 +621,7 @@ describe("LineagePanel — source YAML rooting", () => {
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
       getProject: vi.fn().mockReturnValue(undefined),
+      manifestFor: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -653,6 +657,7 @@ describe("LineagePanel — source YAML rooting", () => {
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
       getProject: vi.fn().mockReturnValue(undefined),
+      manifestFor: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
@@ -700,6 +705,7 @@ describe("LineagePanel — source YAML rooting", () => {
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
       getProject: vi.fn().mockReturnValue(undefined),
+      manifestFor: vi.fn().mockReturnValue(undefined),
     };
     // Cursor on line 4 → the "tracks" table.
     (window as any).activeTextEditor = makeEditor(filePath, body, 4);
@@ -736,6 +742,7 @@ describe("LineagePanel — source YAML rooting", () => {
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
       getProject: vi.fn().mockReturnValue(undefined),
+      manifestFor: vi.fn().mockReturnValue(undefined),
     };
     // Cursor on line 0 (the `sources:` line), above any table name.
     (window as any).activeTextEditor = makeEditor(filePath, body, 0);
@@ -778,6 +785,7 @@ describe("LineagePanel — source YAML rooting", () => {
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
       getProject: vi.fn().mockReturnValue(undefined),
+      manifestFor: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(filePath, body, 2);
 
@@ -820,6 +828,7 @@ describe("LineagePanel — source YAML rooting", () => {
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
       getProject: vi.fn().mockReturnValue(undefined),
+      manifestFor: vi.fn().mockReturnValue(undefined),
     };
     // Cursor on line 6 → ga's "events", not seg's (a name-only lookup
     // would find seg's declaration line for both candidates).
@@ -847,6 +856,7 @@ describe("LineagePanel — source YAML rooting", () => {
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
       getProject: vi.fn().mockReturnValue(undefined),
+      manifestFor: vi.fn().mockReturnValue(undefined),
     };
     (panel as any).dbtLineageService = {
       createTable: vi.fn().mockReturnValue(undefined),
@@ -883,6 +893,7 @@ describe("LineagePanel — source YAML rooting", () => {
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
       getProject: vi.fn().mockReturnValue(undefined),
+      manifestFor: vi.fn().mockReturnValue(undefined),
     };
     const editor = makeEditor(
       filePath,
@@ -929,6 +940,7 @@ describe("LineagePanel — source YAML rooting", () => {
         .fn()
         .mockReturnValue(makeEvent(sourceMetaMap)),
       getProject: vi.fn().mockReturnValue(undefined),
+      manifestFor: vi.fn().mockReturnValue(undefined),
     };
     (window as any).activeTextEditor = makeEditor(
       filePath,
