@@ -1,12 +1,7 @@
-import { createContext, ReactNode, useMemo, useReducer } from "react";
+import { ReactNode, useMemo, useReducer } from "react";
 import { appReducer, initialState } from "./appReducer";
-import { ContextProps } from "./types";
+import { AppContext } from "./context";
 import useListeners from "./useListeners";
-
-export const AppContext = createContext<ContextProps>({
-  state: initialState,
-  dispatch: () => null,
-});
 
 const AppProvider = ({ children }: { children: ReactNode }): JSX.Element => {
   const [state, dispatch] = useReducer(appReducer, initialState);

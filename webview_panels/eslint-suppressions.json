@@ -1,9 +1,4 @@
 {
-  "src/modules/app/AppProvider.tsx": {
-    "react-refresh/only-export-components": {
-      "count": 1
-    }
-  },
   "src/modules/app/useListeners.ts": {
     "@eslint-react/exhaustive-deps": {
       "count": 1

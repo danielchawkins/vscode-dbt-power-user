@@ -1,10 +1,10 @@
-import { AppContext } from "@modules/app/AppProvider";
 import { initialState } from "@modules/app/appReducer";
+import { AppContext } from "@modules/app/context";
 import { Themes } from "@modules/app/types";
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import CodeBlock from "./index";
 import classes from "./codeblock.module.css";
+import CodeBlock from "./index";
 
 const sampleSql = "select 1 as id";
 const sampleYaml = "version: 2";
@@ -103,7 +103,9 @@ describe("CodeBlock", () => {
     });
 
     const darkStyle = darkContainer.querySelector("pre")?.getAttribute("style");
-    const lightStyle = lightContainer.querySelector("pre")?.getAttribute("style");
+    const lightStyle = lightContainer
+      .querySelector("pre")
+      ?.getAttribute("style");
     expect(darkStyle).toBeTruthy();
     expect(lightStyle).toBeTruthy();
     expect(darkStyle).not.toEqual(lightStyle);
