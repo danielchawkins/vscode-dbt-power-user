@@ -1,5 +1,5 @@
 import { randomBytes } from "crypto";
-import { readFileSync } from "fs";
+import { readFileSync, statSync } from "fs";
 import { Uri, Webview, WebviewOptions } from "vscode";
 
 /**
@@ -98,15 +98,21 @@ export function contentSecurityPolicy(
   ].join("; ");
 }
 
-const manifests = new Map<string, ViteManifest>();
+const manifests = new Map<
+  string,
+  { mtimeMs: number; manifest: ViteManifest }
+>();
 
+/** The built manifest, re-read when the file's modification time changes. */
 function readManifest(extensionUri: Uri): ViteManifest {
   const file = Uri.joinPath(assetRoot(extensionUri), "manifest.json").fsPath;
-  let manifest = manifests.get(file);
-  if (!manifest) {
-    manifest = JSON.parse(readFileSync(file, "utf8")) as ViteManifest;
-    manifests.set(file, manifest);
+  const { mtimeMs } = statSync(file);
+  const cached = manifests.get(file);
+  if (cached?.mtimeMs === mtimeMs) {
+    return cached.manifest;
   }
+  const manifest = JSON.parse(readFileSync(file, "utf8")) as ViteManifest;
+  manifests.set(file, { mtimeMs, manifest });
   return manifest;
 }
 
