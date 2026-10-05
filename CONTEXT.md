@@ -20,4 +20,8 @@ Fusion Power User is a local-first editor for dbt Fusion projects. It provides d
 
 **Fusion Client**: The reverse-socket `LanguageClient` connected to one Declared Project's `dbt lsp` process. *Avoid*: LSP connection, client wrapper
 
-**Project Metadata Source**: The producer behind `Project.onDidChangeManifest` for one Declared Project. *Avoid*: Metadata provider, manifest producer
+**Project Metadata Source**: The composite producer behind `Projects.onDidChangeManifest` for one Declared Project: the Server Producer first, the Parse Producer for the gaps. *Avoid*: Metadata provider, manifest producer
+
+**Server Producer**: The Project Metadata Source half that reads `dbt.listNodes` and `dbt.getProjectInfo`. *Avoid*: LSP cache, graph source
+
+**Parse Producer**: The Project Metadata Source half that reads `manifest.json` from `dbt parse`, for the fields in `docs/lsp-metadata-gaps.md`. *Avoid*: Manifest fallback
