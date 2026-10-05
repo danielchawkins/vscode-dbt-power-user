@@ -3,7 +3,7 @@ import { parseDocument } from "yaml";
 import {
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
-} from "./dbt_integration";
+} from "./core/manifest/types";
 import { readSetting } from "./settings";
 
 export function stripANSI(src: string): string {

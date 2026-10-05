@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
+import { SourceMetaMap } from "../../core/manifest/types";
 import { parseDbtProjectYaml } from "../../core/project";
-import { SourceMetaMap } from "../../dbt_integration/domain";
 import {
   hasProjectStrictAnalysis,
   hasSchemaOriginHook,

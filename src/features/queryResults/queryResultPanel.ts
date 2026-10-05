@@ -19,7 +19,7 @@ import {
   ExecuteSQLError,
   ExecuteSQLResult,
   QueryExecution,
-} from "../../dbt_integration";
+} from "../../dbt_integration/dbtIntegration";
 import { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
 import { activeModelUri } from "../../projects/previewUri";

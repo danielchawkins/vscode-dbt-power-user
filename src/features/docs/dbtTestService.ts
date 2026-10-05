@@ -8,7 +8,7 @@ import {
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
   UnitTestMetaData,
-} from "../../dbt_integration";
+} from "../../core/manifest/types";
 import { QueryManifestService } from "../../projects/queryManifestService";
 import {
   getColumnTestConfigFromYml,

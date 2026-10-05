@@ -1,6 +1,6 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import * as vscode from "vscode";
-import { DBTCommand } from "../../dbt_integration";
+import { DBTCommand } from "../../dbt_integration/dbtIntegration";
 import {
   CommandQueue,
   formatCommandStatus,

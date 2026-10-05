@@ -14,13 +14,13 @@ import {
   readDbtProjectFile,
   ResolvedDefer,
 } from "../core/project";
+import { QueryExecution } from "../dbt_integration/dbtIntegration";
 import {
   DBColumn,
   ParsedManifest,
-  QueryExecution,
   QueryExecutionResult,
   RunModelParams,
-} from "../dbt_integration";
+} from "../dbt_integration/domain";
 import { CommandProcessResult } from "../fusion/commandProcessExecution";
 import {
   ExecutableLifecycle,

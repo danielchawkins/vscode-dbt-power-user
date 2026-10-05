@@ -13,8 +13,6 @@ import {
   UnitTestMetaMap,
 } from "../core/manifest/types";
 
-export * from "../core/manifest/types";
-
 export interface ParsedManifest {
   nodeMetaMap: NodeMetaMap;
   macroMetaMap: MacroMetaMap;

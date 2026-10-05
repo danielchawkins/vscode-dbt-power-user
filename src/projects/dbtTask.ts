@@ -11,7 +11,7 @@ import {
   Uri,
   workspace,
 } from "vscode";
-import { DBTCommand } from "../dbt_integration";
+import { DBTCommand } from "../dbt_integration/dbtIntegration";
 import { CommandProcessResult } from "../fusion/commandProcessExecution";
 import { QueuedCliCommand } from "../fusion/fusionCli";
 

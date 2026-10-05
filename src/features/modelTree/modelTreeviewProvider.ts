@@ -18,7 +18,7 @@ import {
   NodeData,
   NodeMetaData,
   NodeMetaMap,
-} from "../../dbt_integration";
+} from "../../core/manifest/types";
 import { extensionRoot } from "../../extensionRoot";
 import type { Manifest } from "../../projects/manifestTypes";
 import { Projects } from "../../projects/projects";

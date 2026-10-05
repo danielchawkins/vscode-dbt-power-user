@@ -1,5 +1,8 @@
 import { commands, Disposable } from "vscode";
-import { ExecuteSQLResult, QueryExecution } from "../../dbt_integration";
+import {
+  ExecuteSQLResult,
+  QueryExecution,
+} from "../../dbt_integration/dbtIntegration";
 import { testCommandsEnabled } from "../../settings";
 import { QueryResultPanel } from "./queryResultPanel";
 

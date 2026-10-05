@@ -21,7 +21,7 @@ import {
   RESOURCE_TYPE_SOURCE,
   SourceMetaMap,
   SourceTable,
-} from "../../dbt_integration";
+} from "../../core/manifest/types";
 import { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
 import type { Manifest } from "../../projects/manifestTypes";

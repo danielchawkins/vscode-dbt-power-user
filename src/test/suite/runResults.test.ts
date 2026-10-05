@@ -12,7 +12,7 @@ import {
   vi,
 } from "vitest";
 import type { Log } from "../../core/log";
-import { RunResultsEventData } from "../../dbt_integration";
+import { RunResultsEventData } from "../../dbt_integration/domain";
 import {
   parseRunResultsJson,
   resolveRunStatus,

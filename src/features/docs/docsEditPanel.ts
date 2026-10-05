@@ -26,7 +26,7 @@ import {
   TestMetaData,
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
-} from "../../dbt_integration";
+} from "../../core/manifest/types";
 import { ExtensionContextStore } from "../../extensionContext";
 import { UserInputError } from "../../local/errors";
 import { publicationId } from "../../projects/manifest";

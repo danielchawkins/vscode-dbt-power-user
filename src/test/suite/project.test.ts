@@ -28,14 +28,14 @@ import {
   TestParser,
   UnitTestParser,
 } from "../../core/manifest";
+import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
 import { DBT_PROJECT_FILE } from "../../core/project";
 import {
   DBTCommand,
-  DBTDiagnosticData,
-  MANIFEST_FILE,
   QueryExecution,
-  RESOURCE_TYPE_MODEL,
-} from "../../dbt_integration";
+} from "../../dbt_integration/dbtIntegration";
+import { DBTDiagnosticData } from "../../dbt_integration/diagnostics";
+import { MANIFEST_FILE } from "../../dbt_integration/domain";
 import { FusionCli } from "../../fusion/fusionCli";
 import { DbtTaskTerminal } from "../../projects/dbtTask";
 import { ManifestParsers } from "../../projects/manifest";

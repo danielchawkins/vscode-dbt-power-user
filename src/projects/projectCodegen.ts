@@ -10,7 +10,8 @@ import {
   workspace,
 } from "vscode";
 import type { Log } from "../core/log";
-import { ColumnMetaData, DBColumn } from "../dbt_integration";
+import { ColumnMetaData } from "../core/manifest/types";
+import { DBColumn } from "../dbt_integration/domain";
 import { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
 import { getColumnNameByCase } from "../utils";

@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { ConfigurationChangeEvent, Uri, workspace } from "vscode";
 import type { Log } from "../../core/log";
-import { DBTDiagnosticData } from "../../dbt_integration";
+import { DBTDiagnosticData } from "../../dbt_integration/diagnostics";
 import {
   ExecutableLifecycle,
   ExecutableLifecycleHooks,

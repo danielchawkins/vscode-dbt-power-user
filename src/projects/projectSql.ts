@@ -3,8 +3,8 @@ import type { Log } from "../core/log";
 import {
   type ExecuteSQLResult,
   QueryExecution,
-  type QueryExecutionResult,
-} from "../dbt_integration";
+} from "../dbt_integration/dbtIntegration";
+import { type QueryExecutionResult } from "../dbt_integration/domain";
 import { FusionCli } from "../fusion/fusionCli";
 
 type SqlExecutor = Pick<FusionCli, "executeSQL">;

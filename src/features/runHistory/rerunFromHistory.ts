@@ -2,7 +2,7 @@ import { window } from "vscode";
 import type {
   RunModelParams,
   RunResultsEventData,
-} from "../../dbt_integration";
+} from "../../dbt_integration/domain";
 import type { Project } from "../../projects/project";
 import { extractDbtSubcommand } from "../../utils";
 

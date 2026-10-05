@@ -2,7 +2,7 @@ import { commands, Disposable, EventEmitter, Uri, window } from "vscode";
 import { firstLogLine, isConfigError, textLogErrors } from "../core/cli";
 import type { Log } from "../core/log";
 import { ProjectSnapshot } from "../core/project";
-import { DBTDiagnosticData } from "../dbt_integration";
+import { DBTDiagnosticData } from "../dbt_integration/diagnostics";
 import { CommandProcessResult } from "../fusion/commandProcessExecution";
 
 /** Where a project error came from; each source's errors are replaced independently. */

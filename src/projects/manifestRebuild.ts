@@ -1,6 +1,6 @@
 import type { Log } from "../core/log";
 import type { ManifestProject } from "../core/manifest";
-import type { ParsedManifest } from "../dbt_integration";
+import type { ParsedManifest } from "../dbt_integration/domain";
 import type { ExecutableLifecycle } from "../fusion/executableLifecycle";
 import type { FusionCli } from "../fusion/fusionCli";
 import { buildManifest, type ManifestParsers } from "./manifest";

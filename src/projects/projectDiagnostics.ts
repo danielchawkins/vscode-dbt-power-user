@@ -7,7 +7,7 @@ import {
   Range,
   Uri,
 } from "vscode";
-import { DBTDiagnosticData } from "../dbt_integration";
+import { DBTDiagnosticData } from "../dbt_integration/diagnostics";
 import { EXECUTABLE_DIAGNOSTIC_SOURCE } from "../fusion/executableLifecycle";
 import { isWithinRoot } from "../fusion/fusionDiagnostics";
 

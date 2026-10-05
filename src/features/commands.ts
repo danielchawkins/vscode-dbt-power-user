@@ -17,7 +17,11 @@ import {
 } from "vscode";
 import type { Log } from "../core/log";
 import { DBT_PROJECT_FILE, readDbtProjectFile } from "../core/project";
-import { CATALOG_FILE, MANIFEST_FILE, RunModelType } from "../dbt_integration";
+import {
+  CATALOG_FILE,
+  MANIFEST_FILE,
+  RunModelType,
+} from "../dbt_integration/domain";
 import { ExtensionContextStore } from "../extensionContext";
 import { activeModelUri, previewUriFor } from "../projects/previewUri";
 import { Project } from "../projects/project";

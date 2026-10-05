@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { CustomExecution, TaskRevealKind, tasks } from "vscode";
-import { DBTCommand } from "../../dbt_integration";
+import { DBTCommand } from "../../dbt_integration/dbtIntegration";
 import { CommandProcessResult } from "../../fusion/commandProcessExecution";
 import {
   cliCommandOf,

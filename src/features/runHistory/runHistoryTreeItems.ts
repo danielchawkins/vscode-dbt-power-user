@@ -8,7 +8,7 @@ import type {
   RunResultEntry,
   RunResultsEventData,
   RunStatus,
-} from "../../dbt_integration";
+} from "../../dbt_integration/domain";
 
 /**
  * Top-level tree item representing a dbt command execution (e.g., `dbt run`, `dbt test`).

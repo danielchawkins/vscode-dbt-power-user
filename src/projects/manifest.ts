@@ -26,7 +26,7 @@ import {
   UnitTestParser,
 } from "../core/manifest";
 import { DBT_PROJECT_FILE, dbtProjectFilePath } from "../core/project";
-import { MANIFEST_FILE, ParsedManifest } from "../dbt_integration";
+import { MANIFEST_FILE, ParsedManifest } from "../dbt_integration/domain";
 
 /** Delay between the last watched file event and the rebuild it triggers. */
 const MANIFEST_TRIGGER_DEBOUNCE_MS = 500;
