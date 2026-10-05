@@ -15,7 +15,7 @@
     "watch": "npm run build:contract && concurrently --names contract,webview \"npm run watch --prefix ../packages/webview-contract\" \"npm run watch:app\"",
     "watch:app": "rm -rf dist && tsc && vite build --watch",
     "build": "npm run build:contract && npm run build:app",
-    "build:app": "rm -rf dist && NODE_OPTIONS=--max-old-space-size=8192 tsc && NODE_OPTIONS=--max-old-space-size=8192 vite build --emptyOutDir=false",
+    "build:app": "rm -rf dist && tsc && vite build --emptyOutDir=false",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0 && npm run lint:imports",
