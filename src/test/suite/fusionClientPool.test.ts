@@ -17,7 +17,6 @@ import {
   WorkspaceFolder,
 } from "vscode";
 import { StaticAnalysisMode } from "../../core/project";
-import { FusionClientPoolImpl } from "../../fusion/fusionClientPool";
 import {
   DBT_PATH_SETTING,
   FusionExecutableResolver,
@@ -27,13 +26,15 @@ import {
   FusionClient,
   FusionClientFactory,
   FusionClientOptions,
+  FusionProjectRef,
 } from "../../fusion/fusionLanguageClient";
-import { schemaOriginLaunchEnv } from "../../fusion/schemaOrigin";
+import { FusionClientPoolImpl } from "../../projects/fusionClientPool";
 import {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/projectRegistry";
 import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
+import { schemaOriginLaunchEnv } from "../../projects/schemaOrigin";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
@@ -89,7 +90,7 @@ class FakeClient implements FusionClient {
   }
 
   constructor(
-    readonly project: DeclaredProject,
+    readonly project: FusionProjectRef,
     readonly options: FusionClientOptions | undefined,
     readonly state: FusionClient["state"] = "running",
   ) {}

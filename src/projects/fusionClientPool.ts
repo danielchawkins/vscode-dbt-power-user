@@ -2,16 +2,13 @@ import { Disposable, Event, EventEmitter, LogOutputChannel, Uri } from "vscode";
 import { LspLaunch, sameLspLaunch, toLspLaunch } from "../core/lsp";
 import { ProjectSnapshot } from "../core/project";
 import { DBTTerminal } from "../dbt_integration";
-import { DeclaredProject, ProjectRegistry } from "../projects/projectRegistry";
-import { PROJECT_SNAPSHOT_SETTINGS } from "../projects/readProjectSnapshot";
-import { onDidChangeSettings, SettingsChange } from "../settings";
 import {
   ConfiguredFusionExecutableResolver,
   formatFusionExecutableResolutionFailure,
   FusionExecutable,
   FusionExecutableResolver,
   isFusionExecutable,
-} from "./fusionExecutable";
+} from "../fusion/fusionExecutable";
 import {
   commandPrefixForProject,
   DefaultFusionClientFactory,
@@ -19,7 +16,10 @@ import {
   FusionClient,
   FusionClientFactory,
   FusionClientOptions,
-} from "./fusionLanguageClient";
+} from "../fusion/fusionLanguageClient";
+import { onDidChangeSettings, SettingsChange } from "../settings";
+import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
+import { PROJECT_SNAPSHOT_SETTINGS } from "./readProjectSnapshot";
 
 export interface FusionClientPool extends Disposable {
   /** One client per Declared Project, created and torn down with the registry. */

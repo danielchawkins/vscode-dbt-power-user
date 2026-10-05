@@ -9,6 +9,7 @@ import {
   LogOutputChannel,
   RelativePattern,
   Uri,
+  WorkspaceFolder,
 } from "vscode";
 import {
   State,
@@ -19,7 +20,6 @@ import {
 import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
 import { DBT_LSP_USE_TARGET_LSP, toLspArgs, type LspLaunch } from "../core/lsp";
 import { projectRootDigest, type StaticAnalysisMode } from "../core/project";
-import { DeclaredProject } from "../projects/projectRegistry";
 import {
   clearDiagnosticsOnDelete,
   ProjectDiagnosticsFilter,
@@ -50,11 +50,18 @@ type FusionLspCommand =
   | (typeof FUSION_LSP_COMMANDS)[keyof typeof FUSION_LSP_COMMANDS]
   | typeof FUSION_LSP_PREVIEW_CTE;
 
+/** The project fields a Fusion client reads; a Declared Project satisfies it. */
+export interface FusionProjectRef {
+  readonly root: Uri;
+  readonly name: string;
+  readonly folder: WorkspaceFolder;
+}
+
 export type FusionClientState =
   "starting" | "running" | "restarting" | "stopped" | "failed";
 
 export interface FusionClientOptions {
-  project: DeclaredProject;
+  project: FusionProjectRef;
   /** Supplies the spawned path; its environment is not used. */
   executable: FusionExecutable;
   /** Reused by `restart()` and unexpected-exit restarts. */
@@ -70,7 +77,7 @@ export interface FusionClientOptions {
 }
 
 export interface FusionClient extends Disposable {
-  readonly project: DeclaredProject;
+  readonly project: FusionProjectRef;
   readonly state: FusionClientState;
   /** Configured `fusionPowerUser.staticAnalysis` for this Declared Project; fixed for the client's lifetime. */
   readonly staticAnalysis: StaticAnalysisMode;
@@ -110,12 +117,12 @@ const STDERR_BUFFER_LIMIT = 16_384;
 /** @internal */
 export const PARTIAL_LINE_LIMIT = 4_096;
 
-export function commandPrefixForProject(project: DeclaredProject): string {
+export function commandPrefixForProject(project: FusionProjectRef): string {
   return `${EXTENSION_PREFIX_NAMESPACE}:${projectRootDigest(project.root.fsPath)}:`;
 }
 
 /** @internal */
-export function languageClientIdForProject(project: DeclaredProject): string {
+export function languageClientIdForProject(project: FusionProjectRef): string {
   return `fusion-lsp-${projectRootDigest(project.root.fsPath)}`;
 }
 
@@ -458,7 +465,7 @@ class FusionLanguageClientImpl implements FusionClient {
     void this.begin();
   }
 
-  get project(): DeclaredProject {
+  get project(): FusionProjectRef {
     return this.options.project;
   }
 
@@ -904,7 +911,7 @@ export class FailedFusionClient implements FusionClient {
 
   /** Writes `message` to `outputChannel`, which it never disposes. */
   constructor(
-    readonly project: DeclaredProject,
+    readonly project: FusionProjectRef,
     private readonly message: string,
     staticAnalysis: StaticAnalysisMode,
     readonly outputChannel: LogOutputChannel,

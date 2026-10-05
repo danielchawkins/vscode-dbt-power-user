@@ -26,7 +26,7 @@ import {
   FusionClient,
   FusionClientState,
 } from "../../fusion/fusionLanguageClient";
-import { failureSummary } from "../../fusion/fusionStatus";
+import { failureSummary } from "../../projects/fusionStatus";
 import type { Manifest } from "../../projects/manifestTypes";
 import { QueryManifestService } from "../../projects/queryManifestService";
 

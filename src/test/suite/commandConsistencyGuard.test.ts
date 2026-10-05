@@ -199,7 +199,7 @@ describe("command contribution consistency", () => {
       "fusionPowerUser.pickProject":
         "Declared Project picker; src/features/projectPicker/actionsCenter.ts",
       "fusionPowerUser.showFusionOutput":
-        "Language status item command; src/fusion/fusionStatus.ts",
+        "Language status item command; src/projects/fusionStatus.ts",
     };
 
     const nonLiteralAllowlist: Record<string, string> = {
@@ -207,7 +207,7 @@ describe("command contribution consistency", () => {
         "`VSCodeCommands.register` forwards a literal from its callers",
       "benchmark/runtimeTimings.ts:RUNTIME_TIMINGS_COMMAND":
         "Constant export; conditional registration",
-      "fusion/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":
+      "projects/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":
         "Constant export; conditional registration",
       "features/lineage/connectedColumnsCommand.ts:CONNECTED_COLUMNS_COMMAND":
         "Constant export; conditional registration",

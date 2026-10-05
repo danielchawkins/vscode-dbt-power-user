@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 import {
   FUSION_CLIENT_STATES_COMMAND,
   FusionClientStateReport,
-} from "../../fusion/fusionClientDiagnostics";
+} from "../../projects/fusionClientDiagnostics";
 
 /**
  * Pins that a `fusionPowerUser.target` change applies without a reload: the project's Fusion Client

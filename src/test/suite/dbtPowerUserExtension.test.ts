@@ -6,7 +6,7 @@ import {
   PARENT_TABLES_COMMAND,
 } from "../../features/lineage/connectedColumnsCommand";
 import { ProjectConfigCommands } from "../../features/projectSetup/projectConfigCommands";
-import { FUSION_CLIENT_STATES_COMMAND } from "../../fusion/fusionClientDiagnostics";
+import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/fusionClientDiagnostics";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { StartupGate } from "../../startupGate";
 

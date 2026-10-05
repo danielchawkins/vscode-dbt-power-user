@@ -1,8 +1,8 @@
 import { commands, Disposable } from "vscode";
-import { ProjectRegistry } from "../projects/projectRegistry";
+import { FusionClientState } from "../fusion/fusionLanguageClient";
 import { testCommandsEnabled } from "../settings";
 import { FusionClientPool } from "./fusionClientPool";
-import { FusionClientState } from "./fusionLanguageClient";
+import { ProjectRegistry } from "./projectRegistry";
 
 /**
  * Test-only: reports LSP client state per Declared Project for the smoke and integration suites.

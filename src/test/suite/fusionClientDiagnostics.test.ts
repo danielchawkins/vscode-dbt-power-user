@@ -11,8 +11,8 @@ import { commands, Uri } from "vscode";
 import {
   FUSION_CLIENT_STATES_COMMAND,
   registerFusionClientDiagnostics,
-} from "../../fusion/fusionClientDiagnostics";
-import { FusionClientPool } from "../../fusion/fusionClientPool";
+} from "../../projects/fusionClientDiagnostics";
+import { FusionClientPool } from "../../projects/fusionClientPool";
 import {
   DeclaredProject,
   ProjectRegistry,

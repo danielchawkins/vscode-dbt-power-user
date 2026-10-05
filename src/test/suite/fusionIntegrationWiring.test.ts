@@ -3,7 +3,7 @@ import path from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
-import { FusionStatus } from "../../fusion/fusionStatus";
+import { FusionStatus } from "../../projects/fusionStatus";
 import { Project } from "../../projects/project";
 
 import { ConfiguredFusionExecutableResolver } from "../../fusion/fusionExecutable";

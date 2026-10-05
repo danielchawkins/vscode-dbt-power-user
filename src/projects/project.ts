@@ -29,11 +29,6 @@ import {
 import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
 import { FusionExecutableResolver } from "../fusion/fusionExecutable";
 import { FusionVersion } from "../fusion/fusionVersion";
-import {
-  hasProjectStrictAnalysis,
-  resolveSchemaOrigin,
-  SchemaOriginStatus,
-} from "../fusion/schemaOrigin";
 import { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
 import { CommandQueue } from "./commandQueue";
@@ -87,6 +82,11 @@ import {
   RunResultsReader,
   withRunResults,
 } from "./runResults";
+import {
+  hasProjectStrictAnalysis,
+  resolveSchemaOrigin,
+  SchemaOriginStatus,
+} from "./schemaOrigin";
 import { SharedStateService } from "./sharedStateService";
 
 const LOG_SOURCE = "Project";

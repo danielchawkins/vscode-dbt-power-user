@@ -55,15 +55,14 @@ import { registerDbtTaskProvider } from "./features/tasks/dbtTaskProvider";
 import { TreeviewProviders } from "./features/treeViews";
 import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
 import { FusionCli } from "./fusion/fusionCli";
+import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
+import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
+import { CurrentProject } from "./projects/currentProject";
 import {
   createFusionClientPool,
   FusionLaunchSources,
-} from "./fusion/fusionClientPool";
-import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
-import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
-import { FusionStatus } from "./fusion/fusionStatus";
-import { schemaOriginLaunchEnv } from "./fusion/schemaOrigin";
-import { CurrentProject } from "./projects/currentProject";
+} from "./projects/fusionClientPool";
+import { FusionStatus } from "./projects/fusionStatus";
 import { OutputChannels } from "./projects/outputChannels";
 import { Project } from "./projects/project";
 import { ProjectQuickPick } from "./projects/projectQuickPick";
@@ -72,6 +71,7 @@ import { Projects } from "./projects/projects";
 import { QueryManifestService } from "./projects/queryManifestService";
 import { readProjectSnapshot } from "./projects/readProjectSnapshot";
 import { RunHistoryService } from "./projects/runHistoryService";
+import { schemaOriginLaunchEnv } from "./projects/schemaOrigin";
 import { SharedStateService } from "./projects/sharedStateService";
 import { readEnvironmentOverride } from "./settings";
 import { StartupGate } from "./startupGate";

@@ -8,7 +8,7 @@ import {
   SCHEMA_ORIGIN_HOOK,
   schemaOriginEnv,
   schemaOriginLaunchEnv,
-} from "../../fusion/schemaOrigin";
+} from "../../projects/schemaOrigin";
 
 const withHook = `name: p\nsources:\n  +schema_origin: "${SCHEMA_ORIGIN_HOOK}"\n`;
 const config = (yaml: string) => parseDbtProjectYaml(yaml).config;
