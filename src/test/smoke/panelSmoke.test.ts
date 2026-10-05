@@ -124,7 +124,7 @@ suite("Pinned-host VSIX smoke", function () {
     await evidence?.capture({
       name: "model editor",
       expect:
-        "models/child.sql open with jinja-sql highlighting and the Execute Query | Document code lens on line 1",
+        "models/child.sql open with jinja-sql highlighting and no code lens on line 1",
       measured: { languageId: modelLanguage, lineCount: doc.lineCount },
     });
     if (evidence) {
