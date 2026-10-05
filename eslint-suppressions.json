@@ -1,16 +1,15 @@
 {
+  "src/core/dbtCommand.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
   "src/core/manifest/childrenParentParser.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 11
     },
     "complexity": {
       "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    },
-    "sonarjs/no-collapsible-if": {
-      "count": 2
     }
   },
   "src/core/manifest/docParser.ts": {
@@ -77,9 +76,6 @@
     },
     "sonarjs/cognitive-complexity": {
       "count": 3
-    },
-    "sonarjs/no-collapsible-if": {
-      "count": 1
     }
   },
   "src/core/manifest/semanticModelParser.ts": {
@@ -108,14 +104,6 @@
     }
   },
   "src/dbtPowerUserExtension.ts": {
-    "@typescript-eslint/await-thenable": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/core/dbtCommand.ts": {
     "max-params": {
       "count": 1
     }
@@ -140,12 +128,6 @@
     }
   },
   "src/features/commands.ts": {
-    "@typescript-eslint/no-floating-promises": {
-      "count": 2
-    },
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    },
     "max-lines": {
       "count": 1
     },
@@ -185,9 +167,6 @@
   "src/features/docs/dbtTestService.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
     }
   },
   "src/features/docs/docGenService.ts": {
@@ -204,12 +183,6 @@
   "src/features/docs/docsEditPanel.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 11
-    },
-    "@typescript-eslint/no-floating-promises": {
-      "count": 4
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
     },
     "max-lines": {
       "count": 1
@@ -246,11 +219,6 @@
       "count": 2
     }
   },
-  "src/features/lineage/lineageViewProvider.ts": {
-    "@typescript-eslint/no-floating-promises": {
-      "count": 1
-    }
-  },
   "src/features/modelTree/modelTreeviewProvider.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
@@ -262,24 +230,11 @@
       "count": 1
     }
   },
-  "src/features/projectSetup/projectSetupCommands.ts": {
-    "@typescript-eslint/await-thenable": {
-      "count": 1
-    }
-  },
   "src/features/queryResults/queryResultPanel.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 2
     },
-    "@typescript-eslint/no-floating-promises": {
-      "count": 7
-    },
     "max-lines": {
-      "count": 1
-    }
-  },
-  "src/features/run/runModel.ts": {
-    "@typescript-eslint/no-floating-promises": {
       "count": 1
     }
   },
@@ -296,15 +251,7 @@
       "count": 1
     }
   },
-  "src/fusion/executableLifecycle.ts": {
-    "@typescript-eslint/await-thenable": {
-      "count": 3
-    }
-  },
   "src/fusion/fusionLanguageClient.ts": {
-    "@typescript-eslint/no-floating-promises": {
-      "count": 1
-    },
     "max-lines": {
       "count": 1
     },
@@ -328,37 +275,14 @@
       "count": 1
     }
   },
-  "src/test/integration/nativeEditorFeatures.test.ts": {
-    "eqeqeq": {
-      "count": 1
-    }
-  },
-  "src/test/integration/targetIsolationRegression.test.ts": {
-    "@typescript-eslint/await-thenable": {
-      "count": 1
-    }
-  },
   "src/test/smoke/cdpClient.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
     }
   },
-  "src/test/suite/fusionCliExecutable.test.ts": {
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    }
-  },
-  "src/test/suite/fusionClientPool.test.ts": {
-    "@typescript-eslint/no-floating-promises": {
-      "count": 2
-    }
-  },
   "src/utils.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3
-    },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
     },
     "complexity": {
       "count": 1

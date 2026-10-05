@@ -74,7 +74,7 @@ export class LineageViewProvider implements WebviewViewProvider, Disposable {
     this.context = context;
     this.token = token;
 
-    this.init();
+    void this.init();
     panel.webview.onDidReceiveMessage(
       (message: unknown) => this.getPanel().handleCommand(message),
       null,

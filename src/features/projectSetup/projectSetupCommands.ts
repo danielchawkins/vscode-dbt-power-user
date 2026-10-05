@@ -28,7 +28,7 @@ export class ProjectSetupCommands {
     }
 
     const pickedProject = await this.projectQuickPick.projectPicker(
-      await this.projects.all(),
+      this.projects.all(),
     );
     if (!pickedProject) {
       return undefined;

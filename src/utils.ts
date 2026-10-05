@@ -120,7 +120,7 @@ export const getColumnTestConfigFromYml = (
 
     // For multiple tests with same name but diff config from  external packages like dbt_utils,
     // match all the config values
-    const { model, column_name, ...rest } = kwargs;
+    const { model: _model, column_name: _columnName, ...rest } = kwargs;
     return Object.entries(rest).every(([k, v]) => t[testName][k] === v);
   });
 

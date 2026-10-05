@@ -150,7 +150,7 @@ export class DBTPowerUserExtension implements Disposable {
       if (this.disposed) {
         return;
       }
-      await this.statusBars.initialize();
+      this.statusBars.initialize();
     } catch (error) {
       this.dbtTerminal.error(
         "extensionActivationError",

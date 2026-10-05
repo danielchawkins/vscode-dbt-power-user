@@ -221,7 +221,7 @@ describe("FusionClientPool", () => {
       client.stop = vi.fn(
         () =>
           new Promise<void>((resolve) => {
-            stopGate.then(resolve);
+            void stopGate.then(resolve);
           }),
       );
       return client;
@@ -270,7 +270,7 @@ describe("FusionClientPool", () => {
       client.stop = vi.fn(
         () =>
           new Promise<void>((resolve) => {
-            stopGate.then(resolve);
+            void stopGate.then(resolve);
           }),
       );
       return client;

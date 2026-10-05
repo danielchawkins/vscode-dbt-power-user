@@ -168,7 +168,7 @@ export class ExecutableLifecycle {
     if (this.isCurrent(generation)) {
       return true;
     }
-    await candidate.dispose();
+    candidate.dispose();
     return false;
   }
 
@@ -200,7 +200,7 @@ export class ExecutableLifecycle {
     const previous = this.committed;
     this.committed = candidate;
     if (previous && previous !== candidate) {
-      await previous.dispose();
+      previous.dispose();
     }
     this.commitEmitter.fire();
   }
@@ -258,6 +258,6 @@ export class ExecutableLifecycle {
     if (!committed) {
       return;
     }
-    await committed.dispose();
+    committed.dispose();
   }
 }

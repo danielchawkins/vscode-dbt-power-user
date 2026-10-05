@@ -214,8 +214,9 @@ export class VSCodeCommands implements Disposable {
       ),
       commands.registerTextEditorCommand(
         "fusionPowerUser.sqlPreview",
-        (editor: TextEditor) =>
-          this.openCompiledPreview(editor.document.uri, true),
+        (editor: TextEditor) => {
+          void this.openCompiledPreview(editor.document.uri, true);
+        },
       ),
       this.register("fusionPowerUser.goToDocumentationEditor", async () => {
         await commands.executeCommand(
@@ -325,7 +326,7 @@ export class VSCodeCommands implements Disposable {
           }`,
         );
 
-        project.buildProject();
+        void project.buildProject();
       }),
       this.register("fusionPowerUser.cleanCurrentProject", () => {
         if (!window.activeTextEditor) {
@@ -355,7 +356,7 @@ export class VSCodeCommands implements Disposable {
           }`,
         );
 
-        project.clean();
+        void project.clean();
       }),
       this.register("fusionPowerUser.buildChildrenModels", () =>
         this.runModel.buildModelOnActiveWindow(RunModelType.BUILD_CHILDREN),

@@ -219,7 +219,11 @@ export class RunModel {
     const project = this.projects.get(params.currentDoc);
     const sourcePath = path.dirname(params.currentDoc.fsPath);
     if (project) {
-      project.generateModel(params.sourceName, params.tableName, sourcePath);
+      void project.generateModel(
+        params.sourceName,
+        params.tableName,
+        sourcePath,
+      );
     } else {
       window.showErrorMessage(
         "Could not generate model! No project found for " +
