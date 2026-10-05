@@ -1,9 +1,9 @@
 import { LoadingSpinner } from "@assets/icons";
 import { HINTS } from "@modules/queryPanel/constants";
+import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Button, Stack } from "@uicore";
 import classes from "../../querypanel.module.css";
-import { executeRequestInAsync } from "@modules/queryPanel/requests";
 
 const QueryPanelLoader = (): JSX.Element => {
   const { hintIndex } = useQueryPanelState();

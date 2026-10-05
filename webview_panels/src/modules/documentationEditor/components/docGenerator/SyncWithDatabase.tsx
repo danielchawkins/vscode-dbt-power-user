@@ -1,8 +1,8 @@
-import { Button } from "@uicore";
 import { RefreshIcon } from "@assets/icons";
-import classes from "../../styles.module.css";
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { panelLogger } from "@modules/logger";
+import { Button } from "@uicore";
+import classes from "../../styles.module.css";
 
 const SyncWithDatabase = (): JSX.Element => {
   const onSyncBtnClick = () => {

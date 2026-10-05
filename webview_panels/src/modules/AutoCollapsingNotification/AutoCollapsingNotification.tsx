@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { Alert } from "@uicore";
 import { InfoCircleIcon } from "@assets/icons";
+import { Alert } from "@uicore";
+import { useEffect, useState } from "react";
 
 const AutoCollapsingNotification = ({
   text,

@@ -1,20 +1,20 @@
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
-import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
-import {
-  Button,
-  Stack,
-  DropdownButton,
-  PopoverWithButton,
-  PopoverWithButtonRef,
-} from "@uicore";
-import { MouseEvent, useEffect, useRef, useState } from "react";
 import { setIncomingDocsData } from "@modules/documentationEditor/state/documentationReducer";
-import classes from "../../styles.module.css";
 import {
   DBTDocumentation,
   DBTModelTest,
 } from "@modules/documentationEditor/state/types";
+import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { isStateDirty } from "@modules/documentationEditor/utils";
+import {
+  Button,
+  DropdownButton,
+  PopoverWithButton,
+  PopoverWithButtonRef,
+  Stack,
+} from "@uicore";
+import { MouseEvent, useEffect, useRef, useState } from "react";
+import classes from "../../styles.module.css";
 
 const noop = (): void => undefined;
 

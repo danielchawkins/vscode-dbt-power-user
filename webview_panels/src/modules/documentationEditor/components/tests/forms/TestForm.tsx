@@ -11,8 +11,8 @@ import {
 import { FormEvent, useEffect } from "react";
 import useTestFormSave, { TestOperation } from "../hooks/useTestFormSave";
 import useTestFormValues from "../hooks/useTestFormValues";
-import { isTestFormComplete } from "./isTestFormComplete";
 import AcceptedValues from "./AcceptedValues";
+import { isTestFormComplete } from "./isTestFormComplete";
 import Relationships from "./Relationships";
 
 interface Props {

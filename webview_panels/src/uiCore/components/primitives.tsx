@@ -12,7 +12,11 @@ export const Alert = ({
   className,
   ...rest
 }: DivProps & { color?: "warning" }): JSX.Element => (
-  <div {...rest} role="alert" className={cx("alert alert-warning", className)} />
+  <div
+    {...rest}
+    role="alert"
+    className={cx("alert alert-warning", className)}
+  />
 );
 
 export const ButtonGroup = ({ className, ...rest }: DivProps): JSX.Element => (

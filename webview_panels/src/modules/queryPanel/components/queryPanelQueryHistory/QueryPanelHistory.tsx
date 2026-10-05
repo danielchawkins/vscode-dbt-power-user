@@ -1,20 +1,20 @@
+import { ChevronRightIcon, NoHistoryIcon, OpenNewIcon } from "@assets/icons";
+import AutoCollapsingNotification from "@modules/AutoCollapsingNotification/AutoCollapsingNotification";
+import { QueryHistory } from "@modules/queryPanel/context/types";
+import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
-import QueryHistoryRow from "./QueryHistoryRow";
 import {
+  Button,
   CodeBlock,
   IconButton,
   Label,
   ListGroup,
   Stack,
-  Button,
 } from "@uicore";
-import styles from "../../querypanel.module.css";
 import { useEffect, useMemo, useState } from "react";
-import { QueryHistory } from "@modules/queryPanel/context/types";
+import styles from "../../querypanel.module.css";
 import Filters, { QueryFilters } from "../filters/Filters";
-import { ChevronRightIcon, NoHistoryIcon, OpenNewIcon } from "@assets/icons";
-import { executeRequestInAsync } from "@modules/queryPanel/requests";
-import AutoCollapsingNotification from "@modules/AutoCollapsingNotification/AutoCollapsingNotification";
+import QueryHistoryRow from "./QueryHistoryRow";
 
 const QueryPanelHistory = (): JSX.Element => {
   const [filters, setFilters] = useState<QueryFilters>({ tags: [] });
@@ -89,9 +89,7 @@ const QueryPanelHistory = (): JSX.Element => {
             <div>
               <h6>Execute your queries to view in history</h6>
               <p>
-                <Button
-                  onClick={() => executeRequestInAsync("runAdhocQuery")}
-                >
+                <Button onClick={() => executeRequestInAsync("runAdhocQuery")}>
                   + New query
                 </Button>
               </p>

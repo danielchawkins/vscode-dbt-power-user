@@ -12,7 +12,11 @@ interface Props {
 
 const option = (value?: string) => (value ? { label: value, value } : null);
 
-const Relationships = ({ toValue, fieldValue, setValue }: Props): JSX.Element => {
+const Relationships = ({
+  toValue,
+  fieldValue,
+  setValue,
+}: Props): JSX.Element => {
   const [toFieldOptions, setToFieldOptions] = useState<OptionType[]>([]);
   const [toModelOptions, setModels] = useState<OptionType[]>([]);
   const [toSourceOptions, setSources] = useState<OptionType[]>([]);
@@ -87,9 +91,7 @@ const Relationships = ({ toValue, fieldValue, setValue }: Props): JSX.Element =>
           openMenuOnFocus
           options={toOptions}
           value={option(toValue)}
-          onChange={(val: unknown) =>
-            setValue("to", (val as OptionType).value)
-          }
+          onChange={(val: unknown) => setValue("to", (val as OptionType).value)}
         />
       </div>
       <div>

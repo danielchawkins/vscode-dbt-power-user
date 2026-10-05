@@ -1,11 +1,11 @@
+import { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { Stack } from "@uicore";
-import DocGeneratorColumn from "./DocGeneratorColumn";
-import classes from "../../styles.module.css";
-import SyncWithDatabase from "./SyncWithDatabase";
 import { useMemo } from "react";
-import { DBTModelTest } from "@modules/documentationEditor/state/types";
+import classes from "../../styles.module.css";
 import SearchColumnsInput from "../search/SearchColumnsInput";
+import DocGeneratorColumn from "./DocGeneratorColumn";
+import SyncWithDatabase from "./SyncWithDatabase";
 
 const DocGeneratorColumnsList = (): JSX.Element => {
   const {

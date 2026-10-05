@@ -1,7 +1,7 @@
 const typescriptEslint = require("@typescript-eslint/eslint-plugin");
 const tsParser = require("@typescript-eslint/parser");
 const sonarjs = require("eslint-plugin-sonarjs");
-const prettier = require("eslint-plugin-prettier/recommended");
+const prettier = require("eslint-config-prettier/flat");
 
 // Violations present when a rule was introduced live in eslint-suppressions.json; new ones fail `just lint`.
 // Fixing one requires `npm run lint:prune` so the baseline only ever shrinks.
@@ -9,7 +9,8 @@ const prettier = require("eslint-plugin-prettier/recommended");
 // Flat config replaces rule options per file, so an exemption re-sets the whole rule minus its own entries.
 const SETTINGS_MESSAGE = "Read settings through src/settings/.";
 const PROCESS_MESSAGE = "Spawn processes through src/fusion/process.ts.";
-const WRITE_MESSAGE = "Change user files through WorkspaceEdit; fs writes belong in the extension's storage module.";
+const WRITE_MESSAGE =
+  "Change user files through WorkspaceEdit; fs writes belong in the extension's storage module.";
 const FS_WRITES = [
   "writeFile",
   "writeFileSync",
@@ -36,23 +37,40 @@ const FS_WRITES = [
   "symlinkSync",
 ];
 const SETTINGS_NAMES = "/^(getConfiguration|onDidChangeConfiguration)$/";
-const settingsProperties = ["getConfiguration", "onDidChangeConfiguration"].map((property) => ({
-  object: "workspace",
-  property,
-  message: SETTINGS_MESSAGE,
-}));
+const settingsProperties = ["getConfiguration", "onDidChangeConfiguration"].map(
+  (property) => ({
+    object: "workspace",
+    property,
+    message: SETTINGS_MESSAGE,
+  }),
+);
 const ENVIRONMENT_MESSAGE = "Read the environment through src/settings/.";
-const environmentProperties = [{ object: "process", property: "env", message: ENVIRONMENT_MESSAGE }];
+const environmentProperties = [
+  { object: "process", property: "env", message: ENVIRONMENT_MESSAGE },
+];
 const environmentImports = ["process", "node:process"].map((name) => ({
   name,
   importNames: ["env"],
   message: ENVIRONMENT_MESSAGE,
 }));
-const fsWriteProperties = FS_WRITES.map((property) => ({ object: "fs", property, message: WRITE_MESSAGE }));
-const processImports = ["child_process", "node:child_process"].map((name) => ({ name, message: PROCESS_MESSAGE }));
+const fsWriteProperties = FS_WRITES.map((property) => ({
+  object: "fs",
+  property,
+  message: WRITE_MESSAGE,
+}));
+const processImports = ["child_process", "node:child_process"].map((name) => ({
+  name,
+  message: PROCESS_MESSAGE,
+}));
 const fsWriteImports = [
-  ...["fs", "node:fs"].map((name) => ({ name, importNames: ["default", "promises", ...FS_WRITES] })),
-  ...["fs/promises", "node:fs/promises"].map((name) => ({ name, importNames: FS_WRITES })),
+  ...["fs", "node:fs"].map((name) => ({
+    name,
+    importNames: ["default", "promises", ...FS_WRITES],
+  })),
+  ...["fs/promises", "node:fs/promises"].map((name) => ({
+    name,
+    importNames: FS_WRITES,
+  })),
 ].map((path) => ({ ...path, message: WRITE_MESSAGE }));
 const settingsSyntax = [
   `MemberExpression[object.type='MemberExpression'][object.property.name='workspace'][property.name=${SETTINGS_NAMES}]`,
@@ -66,7 +84,8 @@ const processSyntax = [
 ].map((selector) => ({ selector, message: PROCESS_MESSAGE }));
 const fsRequireSyntax = [
   {
-    selector: "CallExpression[callee.name='require'][arguments.0.value=/^(node:)?(fs|fs\\/promises)$/]",
+    selector:
+      "CallExpression[callee.name='require'][arguments.0.value=/^(node:)?(fs|fs\\/promises)$/]",
     message: WRITE_MESSAGE,
   },
 ];
@@ -79,12 +98,25 @@ const BUG_CLASS_RULES = {
   "@typescript-eslint/no-unnecessary-type-assertion": "error",
   "@typescript-eslint/prefer-promise-reject-errors": "error",
   "@typescript-eslint/only-throw-error": "error",
-  "@typescript-eslint/ban-ts-comment": ["error", { "ts-expect-error": "allow-with-description" }],
+  "@typescript-eslint/ban-ts-comment": [
+    "error",
+    { "ts-expect-error": "allow-with-description" },
+  ],
   "no-async-promise-executor": "error",
 };
 
 module.exports = [
-  { ignores: ["out/**", "dist/**", "packages/*/dist/**", "webview_panels/**", "src/test/fixtures/**", "**/*.d.ts", "scripts/spikes/**"] },
+  {
+    ignores: [
+      "out/**",
+      "dist/**",
+      "packages/*/dist/**",
+      "webview_panels/**",
+      "src/test/fixtures/**",
+      "**/*.d.ts",
+      "scripts/spikes/**",
+    ],
+  },
   typescriptEslint.configs["flat/base"],
   typescriptEslint.configs["flat/eslint-recommended"],
   prettier,
@@ -103,8 +135,14 @@ module.exports = [
       complexity: ["error", 15],
       "max-depth": ["error", 4],
       "max-params": ["error", 5],
-      "max-lines": ["error", { max: 600, skipBlankLines: true, skipComments: true }],
-      "max-lines-per-function": ["error", { max: 80, skipBlankLines: true, skipComments: true }],
+      "max-lines": [
+        "error",
+        { max: 600, skipBlankLines: true, skipComments: true },
+      ],
+      "max-lines-per-function": [
+        "error",
+        { max: 80, skipBlankLines: true, skipComments: true },
+      ],
       "sonarjs/cognitive-complexity": ["error", 15],
       "sonarjs/no-identical-functions": "error",
       "sonarjs/no-duplicated-branches": "error",
@@ -118,14 +156,33 @@ module.exports = [
       "@typescript-eslint/await-thenable": "error",
       "@typescript-eslint/no-unused-vars": [
         "error",
-        { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+        },
       ],
       ...BUG_CLASS_RULES,
       // Confinement: settings and environment reads, process spawning and user-file writes each have one home.
-      "no-restricted-properties": ["error", ...settingsProperties, ...environmentProperties, ...fsWriteProperties],
-      "no-restricted-syntax": ["error", ...settingsSyntax, ...processSyntax, ...fsRequireSyntax],
+      "no-restricted-properties": [
+        "error",
+        ...settingsProperties,
+        ...environmentProperties,
+        ...fsWriteProperties,
+      ],
+      "no-restricted-syntax": [
+        "error",
+        ...settingsSyntax,
+        ...processSyntax,
+        ...fsRequireSyntax,
+      ],
       "@typescript-eslint/no-require-imports": "error",
-      "no-restricted-imports": ["error", { paths: [...processImports, ...environmentImports, ...fsWriteImports] }],
+      "no-restricted-imports": [
+        "error",
+        {
+          paths: [...processImports, ...environmentImports, ...fsWriteImports],
+        },
+      ],
     },
   },
   {
@@ -133,14 +190,20 @@ module.exports = [
     rules: {
       "no-restricted-properties": ["error", ...fsWriteProperties],
       "no-restricted-syntax": ["error", ...processSyntax, ...fsRequireSyntax],
-      "no-restricted-imports": ["error", { paths: [...processImports, ...fsWriteImports] }],
+      "no-restricted-imports": [
+        "error",
+        { paths: [...processImports, ...fsWriteImports] },
+      ],
     },
   },
   {
     files: ["src/fusion/process.ts"],
     rules: {
       "no-restricted-syntax": ["error", ...settingsSyntax, ...fsRequireSyntax],
-      "no-restricted-imports": ["error", { paths: [...environmentImports, ...fsWriteImports] }],
+      "no-restricted-imports": [
+        "error",
+        { paths: [...environmentImports, ...fsWriteImports] },
+      ],
     },
   },
   {

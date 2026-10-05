@@ -1,8 +1,8 @@
+import { DEFAULT_VIEW_TYPE } from "@modules/queryPanel/context/types";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Nav, NavItem, NavLink } from "@uicore";
-import { QueryPanelTitleTabState } from "./types";
 import { useMemo } from "react";
-import { DEFAULT_VIEW_TYPE } from "@modules/queryPanel/context/types";
+import { QueryPanelTitleTabState } from "./types";
 
 const QueryPanelTitle = ({
   setTabState,
