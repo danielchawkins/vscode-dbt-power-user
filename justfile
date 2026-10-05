@@ -108,6 +108,7 @@ lint:
     just lint-mise-lock
     just lint-code
     just lint-unused
+    just lint-ratchet
     just webviews::lint
     just lint-format
     just lint-lockfiles
@@ -157,6 +158,11 @@ lint-unused:
 lint-prune:
     npm run lint:prune
     just webviews::lint-prune
+
+# Fail when a ratcheted count or floor differs from scripts/quality/ceilings.json; --write stores the measured values.
+[group("quality")]
+lint-ratchet *args:
+    node scripts/quality/ratchet.mjs "$@"
 
 [group("quality")]
 lint-format:

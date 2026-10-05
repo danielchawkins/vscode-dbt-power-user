@@ -15,9 +15,28 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
+          # A pull request needs its base commit and its own commits to compare ratchet ceilings.
+          # Quoted: a bare 0 is falsy in expressions, so `&& 0 || 1` always yields 1.
+          fetch-depth: ${{ github.event_name == 'pull_request' && '0' || '1' }}
 
       - name: Install tools
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+
+      - name: Compare ratchet ceilings with the base branch
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          base="$RUNNER_TEMP/base-ceilings.json"
+          messages="$RUNNER_TEMP/pr-messages.txt"
+          if git cat-file -e "$BASE_SHA:scripts/quality/ceilings.json"; then
+            git show "$BASE_SHA:scripts/quality/ceilings.json" > "$base"
+          else
+            rm -f "$base"
+          fi
+          git log --format=%B "$BASE_SHA..$HEAD_SHA" > "$messages"
+          node scripts/quality/ratchet.mjs compare --base "$base" --messages "$messages"
 
       - name: Install JavaScript dependencies
         run: just sync
