@@ -6,7 +6,7 @@ import { readSetting } from "../settings";
 
 export const PROJECTS_SETTING = "projects";
 
-export type ProjectConfigurationProblem =
+type ProjectConfigurationProblem =
   | { reason: "invalidEntry"; entry: string }
   | { reason: "missingProjectFile"; entry: string; root: string };
 

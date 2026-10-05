@@ -35,7 +35,7 @@ export function schemaOriginLaunchEnv(
   );
 }
 
-export interface UntypedSource {
+interface UntypedSource {
   source: string;
   table: string;
   /** Absent when the table declares no columns at all. */

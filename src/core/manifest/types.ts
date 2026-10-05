@@ -19,7 +19,7 @@ export interface NodeMetaMap {
   nodes(): Iterable<NodeMetaData>;
 }
 
-export interface MacroMetaData {
+interface MacroMetaData {
   path: string | undefined; // in dbt cloud, packages are not downloaded locally
   line: number;
   character: number;
@@ -130,7 +130,7 @@ interface Config {
   materialized: string;
 }
 
-export interface SourceMetaData {
+interface SourceMetaData {
   unique_id: string;
   name: string;
   database: string;
@@ -219,14 +219,14 @@ export interface ExposureMetaData {
   meta?: Record<string, unknown>;
 }
 
-export interface FunctionArgument {
+interface FunctionArgument {
   name: string;
   data_type: string;
   description?: string;
   default_value?: string;
 }
 
-export interface FunctionReturns {
+interface FunctionReturns {
   data_type: string;
   description?: string;
 }
@@ -291,7 +291,7 @@ export interface GraphMetaMap {
  * - `semantic`: derived from paired semantic-layer primary/foreign entities
  * - `inferred`: derived from naming-convention inference
  */
-export type RefSource = "test" | "contract" | "semantic" | "inferred";
+type RefSource = "test" | "contract" | "semantic" | "inferred";
 
 export type Cardinality =
   "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
@@ -300,7 +300,7 @@ export type Cardinality =
  * Endpoint of a relationship ref. Columns are ordered and always provided
  * as an array to support composite keys.
  */
-export interface RefEndpoint {
+interface RefEndpoint {
   /** unique_id of the referenced model, source, or seed. */
   table: string;
   columns: string[];
@@ -326,7 +326,6 @@ export interface Ref {
 }
 
 export const RESOURCE_TYPE_MODEL = "model";
-export const RESOURCE_TYPE_MACRO = "macro";
 export const RESOURCE_TYPE_ANALYSIS = "analysis";
 export const RESOURCE_TYPE_SOURCE = "source";
 export const RESOURCE_TYPE_EXPOSURE = "exposure";

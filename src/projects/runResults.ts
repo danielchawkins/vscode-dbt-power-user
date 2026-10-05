@@ -47,7 +47,7 @@ function normalizeStringOrArray(
 type RunArgs = NonNullable<RawRunResults["args"]> & { which: string };
 
 /** The subcommand, selection lists, and full-refresh flag in a dbt CLI argv. */
-export interface CliSelection {
+interface CliSelection {
   which: string;
   select: string[];
   exclude: string[];

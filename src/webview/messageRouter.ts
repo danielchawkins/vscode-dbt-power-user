@@ -37,7 +37,7 @@ const requestIdOf = (value: unknown): string | undefined => {
 };
 
 /** Posts a host message to the panel that sent the request. */
-export type Reply = (response: Response) => unknown;
+type Reply = (response: Response) => unknown;
 
 /** Where `dispatchMessage` logs, and how it answers the panel a message came from. */
 export interface MessageSink {

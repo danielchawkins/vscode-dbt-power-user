@@ -40,9 +40,6 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      "@extension": path.resolve(ROOT, "./src/modules.ts"),
-    },
     extensions: [".ts", ".js"],
   },
   performance: {

@@ -27,8 +27,8 @@ import {
   FusionClientState,
 } from "../../fusion/fusionLanguageClient";
 import { failureSummary } from "../../fusion/fusionStatus";
-import { QueryManifestService } from "../../modules";
 import type { Manifest } from "../../projects/manifestTypes";
+import { QueryManifestService } from "../../projects/queryManifestService";
 
 /** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */
 export interface ConnectedColumnsRequest {

@@ -44,9 +44,9 @@ export const FUSION_LSP_COMMANDS = {
 } as const;
 
 /** Client command in Fusion's CTE code lenses; not advertised by initialize, and no command here handles it. */
-export const FUSION_LSP_PREVIEW_CTE = "dbt.previewCte" as const;
+const FUSION_LSP_PREVIEW_CTE = "dbt.previewCte" as const;
 
-export type FusionLspCommand =
+type FusionLspCommand =
   | (typeof FUSION_LSP_COMMANDS)[keyof typeof FUSION_LSP_COMMANDS]
   | typeof FUSION_LSP_PREVIEW_CTE;
 
@@ -88,22 +88,22 @@ export interface FusionClient extends Disposable {
   stop(): Promise<void>;
 }
 
-export type LspRelativePattern = {
+type LspRelativePattern = {
   baseUri: string;
   pattern: string;
 };
 
-export type FusionDocumentFilter = {
+type FusionDocumentFilter = {
   language: string;
   pattern: LspRelativePattern;
 };
 
 const EXTENSION_PREFIX_NAMESPACE = "fusionPowerUser";
-export const CONNECTION_TIMEOUT_MS = 30_000;
+const CONNECTION_TIMEOUT_MS = 30_000;
 export const DISPOSAL_GRACE_MS = 5_000;
 export const MAX_UNEXPECTED_EXIT_RETRIES = 3;
-export const BACKOFF_BASE_MS = 500;
-export const BACKOFF_CAP_MS = 8_000;
+const BACKOFF_BASE_MS = 500;
+const BACKOFF_CAP_MS = 8_000;
 const STDERR_BUFFER_LIMIT = 16_384;
 export const PARTIAL_LINE_LIMIT = 4_096;
 
@@ -382,7 +382,7 @@ type ClientHandle = Pick<
   Partial<Pick<LanguageClient, "diagnostics" | "onNotification">>;
 
 /** Fusion's notifications that end a compile; `errors` lists what it found. */
-export const FUSION_COMPILE_COMPLETE = [
+const FUSION_COMPILE_COMPLETE = [
   "dbt/lspCompileComplete",
   "dbt/lspBackgroundCompileComplete",
 ] as const;

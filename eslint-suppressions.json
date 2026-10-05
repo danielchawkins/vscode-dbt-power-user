@@ -134,7 +134,7 @@
   },
   "src/dbt_integration/domain.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 3
+      "count": 2
     }
   },
   "src/features/codegen/sourceModelCreationCodeLensProvider.ts": {

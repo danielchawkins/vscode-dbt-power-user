@@ -3,7 +3,7 @@ import { readHarnessSwitch } from "../settings";
 
 export const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 
-export interface WebviewRuntimeTiming {
+interface WebviewRuntimeTiming {
   entry: string;
   resolveStart: number;
   ready: number;

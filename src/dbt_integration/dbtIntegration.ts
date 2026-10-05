@@ -1,10 +1,4 @@
-import * as crypto from "crypto";
-
 import { CommandProcessResult } from "../fusion/commandProcessExecution";
-
-export function hashProjectRoot(projectRoot: string) {
-  return crypto.createHash("md5").update(projectRoot).digest("hex");
-}
 
 export interface DBTCommandExecutionStrategy {
   execute(
@@ -58,10 +52,6 @@ export class ExecuteSQLError extends Error {
     super(message);
     this.compiled_sql = compiled_sql;
   }
-}
-
-export interface CompilationResult {
-  compiled_sql: string;
 }
 
 export class QueryExecution {

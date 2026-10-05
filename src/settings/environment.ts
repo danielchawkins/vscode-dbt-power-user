@@ -1,5 +1,5 @@
 /** Extension-host environment variables that override product behaviour, keyed by reader name. */
-export const ENVIRONMENT_OVERRIDES = {
+const ENVIRONMENT_OVERRIDES = {
   /** Overrides `fusionPowerUser.lsp.compiledOutput` for every project. */
   lspCompiledOutput: "FUSION_POWER_USER_LSP_COMPILED_OUTPUT",
   /** Replaces `<project>/dbt_loom.config.yml` as the dbt-loom config path. */

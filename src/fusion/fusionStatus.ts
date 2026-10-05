@@ -25,7 +25,7 @@ export interface ProjectOptIns {
 }
 
 /** One missing column-lineage opt-in; `command` adds it after that command's own confirmation. */
-export interface OptInLine {
+interface OptInLine {
   text: string;
   command?: Command;
 }

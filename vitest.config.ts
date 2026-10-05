@@ -12,7 +12,6 @@ export default defineConfig({
         find: /^vscode-languageclient\/node$/,
         replacement: fromRoot("./src/test/mock/vscode-languageclient-node.ts"),
       },
-      { find: /^@extension$/, replacement: fromRoot("./src/modules.ts") },
       {
         find: /^@fusion-power-user\/webview-contract$/,
         replacement: fromRoot("./packages/webview-contract/src/index.ts"),

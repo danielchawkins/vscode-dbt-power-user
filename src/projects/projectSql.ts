@@ -10,7 +10,7 @@ import { FusionCli } from "../fusion/fusionCli";
 type SqlExecutor = Pick<FusionCli, "executeSQL">;
 
 /** The project state the query wrappers read. */
-export interface SqlProject {
+interface SqlProject {
   getFusionCli(): SqlExecutor;
   getProjectName(): string;
   getAdapterType(): string;

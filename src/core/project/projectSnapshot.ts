@@ -27,7 +27,7 @@ export function parseStaticAnalysisMode(raw: unknown): StaticAnalysisMode {
  * `DBT_LSP_USE_TARGET_LSP`; `dbt lsp --target-path` does not move this output (evidence experiment l8).
  */
 const LSP_COMPILED_OUTPUTS = ["separate", "shared"] as const;
-export type LspCompiledOutput = (typeof LSP_COMPILED_OUTPUTS)[number];
+type LspCompiledOutput = (typeof LSP_COMPILED_OUTPUTS)[number];
 const DEFAULT_LSP_COMPILED_OUTPUT: LspCompiledOutput = "separate";
 
 function parseLspCompiledOutput(raw: unknown): LspCompiledOutput | undefined {
@@ -36,7 +36,7 @@ function parseLspCompiledOutput(raw: unknown): LspCompiledOutput | undefined {
 }
 
 /** The environment override wins over the setting; either is ignored when invalid. */
-export function resolveLspCompiledOutput(
+function resolveLspCompiledOutput(
   override: unknown,
   setting: unknown,
 ): LspCompiledOutput {
@@ -165,7 +165,7 @@ export function substituteVariables(
 }
 
 /** Absolute path for a folder-relative setting, or undefined when it is empty or cannot be resolved. */
-export function resolveFolderPath(
+function resolveFolderPath(
   raw: string | undefined,
   scope: VariableScope,
 ): string | undefined {
@@ -222,7 +222,7 @@ export function deferSettingsKey(
  * Resolves one `defer.perProject` entry. The manifest path resolves against the project root, which is also what
  * `${workspaceFolder}` means in it; an empty path is kept as given.
  */
-export function resolveDefer(
+function resolveDefer(
   entry: DeferSettingsEntry | undefined,
   root: string,
   scope: Omit<VariableScope, "folder">,
