@@ -82,6 +82,19 @@ class Source extends Node {
   };
 }
 
+/** Subscriptions that refresh a tree when the active editor, its selection, a manifest or the project set changes. */
+function refreshOnProjectChange(
+  projects: Projects,
+  refresh: () => void,
+): Disposable[] {
+  return [
+    window.onDidChangeActiveTextEditor(() => refresh()),
+    projects.onDidChangeManifest(() => refresh()),
+    projects.onDidRemoveProject(() => refresh()),
+    window.onDidChangeTextEditorSelection(() => refresh()),
+  ];
+}
+
 abstract class ModelTreeviewProvider
   implements TreeDataProvider<NodeTreeItem>, Disposable
 {
@@ -97,14 +110,9 @@ abstract class ModelTreeviewProvider
   ) {
     this.treeType = treeType;
     this.disposables.push(
-      window.onDidChangeActiveTextEditor(() => {
-        this._onDidChangeTreeData.fire();
-      }),
-      this.projects.onDidChangeManifest(() => this._onDidChangeTreeData.fire()),
-      this.projects.onDidRemoveProject(() => this._onDidChangeTreeData.fire()),
-      window.onDidChangeTextEditorSelection(() => {
-        this._onDidChangeTreeData.fire();
-      }),
+      ...refreshOnProjectChange(this.projects, () =>
+        this._onDidChangeTreeData.fire(),
+      ),
     );
   }
 
@@ -246,14 +254,9 @@ class DocumentationTreeviewProvider
 
   constructor(private projects: Projects) {
     this.disposables.push(
-      window.onDidChangeActiveTextEditor(() => {
-        this._onDidChangeTreeData.fire();
-      }),
-      this.projects.onDidChangeManifest(() => this._onDidChangeTreeData.fire()),
-      this.projects.onDidRemoveProject(() => this._onDidChangeTreeData.fire()),
-      window.onDidChangeTextEditorSelection(() => {
-        this._onDidChangeTreeData.fire();
-      }),
+      ...refreshOnProjectChange(this.projects, () =>
+        this._onDidChangeTreeData.fire(),
+      ),
     );
   }
 
