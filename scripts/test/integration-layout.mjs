@@ -21,6 +21,9 @@ export const TRUSTED_VSIX_LABEL = "trusted-vsix";
 /** Labels launched directly against the packaged VSIX, in run order. */
 export const VSIX_LABELS = [UNTRUSTED_LABEL, TRUSTED_VSIX_LABEL];
 
+/** The file under `<root>/spy` that the `dbt` wrapper appends each invocation to; see `run-integration.mjs`. */
+export const SPY_LOG_FILE = "dbt-invocations.log";
+
 /** The environment variable naming the ephemeral root that holds every label's directories. */
 export const ROOT_ENV = "FPU_INTEGRATION_ROOT";
 

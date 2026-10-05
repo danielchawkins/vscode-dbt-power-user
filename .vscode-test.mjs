@@ -1,9 +1,11 @@
 import { defineConfig } from "@vscode/test-cli";
+import path from "path";
 import {
   labelLayout,
   LABELS,
   nativeMode,
   ROOT_ENV,
+  SPY_LOG_FILE,
   VSCODE_VERSION,
 } from "./scripts/test/integration-layout.mjs";
 
@@ -20,7 +22,7 @@ const suites = "out/test/integration";
 /** Suites and extra environment per label; every other suite assumes a different workspace. */
 const selection = {
   trusted: {
-    files: `${suites}/!(columnLineage|lineageTableEdges|targetChange).test.js`,
+    files: `${suites}/!(columnLineage|lineageTableEdges|serverProducer|targetChange).test.js`,
   },
   symlinked: {
     files: `${suites}/symlinkedWorkspace.test.js`,
@@ -38,6 +40,7 @@ export default defineConfig(
             `${suites}/nativeEditorFeatures.test.js`,
             `${suites}/columnLineage.test.js`,
             `${suites}/lineageTableEdges.test.js`,
+            `${suites}/serverProducer.test.js`,
             `${suites}/targetChange.test.js`,
           ],
           env: {
@@ -61,6 +64,7 @@ export default defineConfig(
       env: {
         DBT_PROFILES_DIR: layout.decoyProfiles,
         DBT_ENGINE_PROFILES_DIR: layout.decoyProfiles,
+        FPU_DBT_SPY_LOG: path.join(root, "spy", SPY_LOG_FILE),
         ...env,
       },
     };

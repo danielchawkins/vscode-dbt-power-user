@@ -321,12 +321,12 @@ function assertObserved(mode: string, results: Record<string, Recorded>) {
     range: "0:35-0:40",
     placeholder: "total",
   });
-  // Only the extension's own SqlActionsCodeLensProvider contributes lenses.
+  // A model with no CTE has no lens: the extension's SQL actions are YAML-only and Fusion's lenses are CTE lenses.
   assert.deepStrictEqual(
     (valueOf(results, "codeLens order_totals") as { command: string }[]).map(
       (lens) => lens.command,
     ),
-    ["fusionPowerUser.executeSQL", "fusionPowerUser.DocsEdit.focus"],
+    [],
   );
   assert.match(
     json("hover ref('stg_orders') (readiness)"),
