@@ -297,7 +297,7 @@ suite("Fusion LSP editor features (extension)", function () {
 
     const diagnostics = vscode.languages
       .getDiagnostics(document.uri)
-      .map((d) => `${d.source}:${d.code}:${d.message}`);
+      .map((d) => `${d.source}:${JSON.stringify(d.code)}:${d.message}`);
     const kinds = actions?.map((action) => action.kind?.value) ?? [];
     assert.ok(
       kinds.some((kind) => kind?.startsWith("source.fixAll")),

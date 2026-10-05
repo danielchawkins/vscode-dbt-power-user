@@ -415,9 +415,7 @@ export class VSCodeCommands implements Disposable {
                 ? `${key} is overridden in ${overriddenIn} settings`
                 : "";
               const valueText =
-                Array.isArray(value) || typeof value === "object"
-                  ? JSON.stringify(value)
-                  : value;
+                typeof value === "string" ? value : JSON.stringify(value);
               return `${key}=${valueText}\t\t${overridenText}`;
             }),
           );

@@ -494,7 +494,6 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   ) {
     if (models && models.items) {
       return (
-        // @ts-ignore
         (models.items.find(
           (
             item:

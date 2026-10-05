@@ -24,12 +24,8 @@ export const getExternalProjectNamesFromDbtLoomConfig = (
 
       return dbtLoomConfig.manifests?.map((manifest) => manifest.name);
     }
-  } catch (error) {
-    console.debug(
-      "NodeParser",
-      `Error reading dbt_loom.config.yml at ${dbtLoomConfigPath}`,
-      error,
-    );
+  } catch {
+    // Most projects have no dbt_loom config; an unreadable one names no external projects.
   }
   return null;
 };

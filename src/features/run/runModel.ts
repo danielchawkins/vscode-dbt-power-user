@@ -10,6 +10,9 @@ import { Projects } from "../../projects/projects";
 /** The model tree item fields a run reads. */
 type NodeTreeItem = Pick<TreeItem, "label"> & { url: string | undefined };
 
+const labelText = (label: NonNullable<TreeItem["label"]>): string =>
+  typeof label === "string" ? label : label.label;
+
 export class RunModel {
   constructor(
     private projects: Projects,
@@ -96,7 +99,7 @@ export class RunModel {
           if (model.label) {
             this.runDBTTest(
               Uri.file(model.url),
-              model.label.toString().split(".")[0],
+              labelText(model.label).split(".")[0],
             );
           }
           break;

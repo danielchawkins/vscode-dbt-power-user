@@ -213,7 +213,6 @@ export class GraphParser {
         }
         case "test": {
           // nodeName => more interesting label possibilities?
-          // console.log(`${nodeName} => (parent: ${parentNodeName})`);
           const url = testMetaMap.get(nodeName.split(".")[0])?.path;
           return {
             label: nodeName,
@@ -266,7 +265,10 @@ export class GraphParser {
           };
         }
         default:
-          console.log(`Node Type '${nodeType}' not implemented!`);
+          this.terminal.debug(
+            "GraphParser",
+            `Node type '${nodeType}' not implemented`,
+          );
           return undefined;
       }
     };

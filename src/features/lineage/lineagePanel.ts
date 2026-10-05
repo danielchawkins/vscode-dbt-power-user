@@ -397,7 +397,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
       nodeName,
       table.name,
     );
-    console.log("addColumnsFromDB: ", nodeName, " -> ", columnsFromDB);
+    this.dbtTerminal.debug("Lineage:addColumnsFromDB", nodeName, columnsFromDB);
     return project.mergeColumnsFromDB(table, columnsFromDB);
   }
 

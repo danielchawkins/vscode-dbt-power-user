@@ -1,3 +1,4 @@
+import { inspect } from "util";
 import {
   commands,
   Disposable,
@@ -217,7 +218,14 @@ export class ChannelLog implements DBTTerminal {
     _sendTelemetry?: boolean,
     ...args: unknown[]
   ): void {
-    const cause = e instanceof Error ? e.message : e ? String(e) : undefined;
+    const cause =
+      e instanceof Error
+        ? e.message
+        : typeof e === "string"
+          ? e
+          : e
+            ? inspect(e)
+            : undefined;
     const text = cause ? `${message}: ${cause}` : message;
     this.channel.error(`${name}: ${stripANSI(text)}`, ...args);
   }

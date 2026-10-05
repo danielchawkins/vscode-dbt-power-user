@@ -236,7 +236,10 @@ export function acceptWithProcessExit(
     process.on("exit", onExit);
     server.accept(timeoutMs).then(
       (streams) => settle(() => resolve(streams)),
-      (error) => settle(() => reject(error)),
+      (error: unknown) =>
+        settle(() =>
+          reject(error instanceof Error ? error : new Error(String(error))),
+        ),
     );
   });
 }

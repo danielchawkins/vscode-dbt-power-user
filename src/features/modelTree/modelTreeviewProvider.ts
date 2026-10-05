@@ -173,9 +173,6 @@ abstract class ModelTreeviewProvider
       case "model":
         return new Model(nodeData.label, nodeData.key, nodeData.url);
       default:
-        console.log(
-          `Resource Type '${resourceType}' not implemented in ModelTreeviewProvider.nodeDataToNode`,
-        );
         return undefined;
     }
   }
