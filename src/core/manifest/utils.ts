@@ -1,34 +1,5 @@
-import { existsSync, readFileSync } from "fs";
+import { existsSync } from "fs";
 import * as path from "path";
-
-import { parse } from "yaml";
-
-/** Reads the dbt-loom override path at parse time; `undefined` selects the project default. */
-export type DbtLoomConfigPathReader = () => string | undefined;
-
-export const getExternalProjectNamesFromDbtLoomConfig = (
-  projectRoot: string,
-  configPath?: string,
-) => {
-  const dbtLoomConfigPath =
-    configPath || path.join(projectRoot, "dbt_loom.config.yml");
-
-  try {
-    const fileContents = readFileSync(dbtLoomConfigPath, "utf8");
-    if (fileContents) {
-      const dbtLoomConfig = (parse(fileContents, {
-        strict: false,
-        uniqueKeys: false,
-        maxAliasCount: -1,
-      }) || {}) as { manifests?: { name: string }[] };
-
-      return dbtLoomConfig.manifests?.map((manifest) => manifest.name);
-    }
-  } catch {
-    // Most projects have no dbt_loom config; an unreadable one names no external projects.
-  }
-  return null;
-};
 
 export const createFullPathForNode: (
   projectName: string,

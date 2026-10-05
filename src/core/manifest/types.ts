@@ -84,7 +84,6 @@ export interface NodeMetaData {
   config: Config;
   resource_type: string;
   depends_on: DependsOn;
-  is_external_project: boolean;
   compiled_path: string;
   meta: any;
   /** Model-level constraints (dbt 1.5+ contracts). May reference multiple columns. */
@@ -137,7 +136,6 @@ interface SourceMetaData {
   schema: string;
   tables: SourceTable[];
   package_name: string;
-  is_external_project: boolean;
   meta: any;
 }
 
@@ -240,7 +238,6 @@ export interface FunctionMetaData {
   depends_on: DependsOn;
   path: string | undefined;
   package_name: string;
-  is_external_project: boolean;
   resource_type: string;
   config: {
     materialized?: string;

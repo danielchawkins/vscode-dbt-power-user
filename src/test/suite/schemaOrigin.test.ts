@@ -25,7 +25,6 @@ function sources(
         database: "d",
         schema: "main",
         package_name: "p",
-        is_external_project: false,
         meta: {},
         tables: Object.entries(tables).map(([name, columns]) => ({
           name,

@@ -1,9 +1,5 @@
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Uri, window, workspace } from "vscode";
-import { getExternalProjectNamesFromDbtLoomConfig } from "../../core/manifest";
 import {
   getColumnNameByCase,
   getColumnTestConfigFromYml,
@@ -103,32 +99,6 @@ describe("utils tests", () => {
     expect(
       getColumnTestConfigFromYml(tests, { severity: "warn" }, "not_null"),
     ).toEqual({ not_null: { severity: "warn" } });
-  });
-
-  it("getExternalProjectNamesFromDbtLoomConfig reads file", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "loom-"));
-    const file = path.join(dir, "dbt_loom.config.yml");
-    fs.writeFileSync(file, "manifests:\n  - name: proj1\n  - name: proj2\n");
-    const result = getExternalProjectNamesFromDbtLoomConfig(dir);
-    expect(result).toEqual(["proj1", "proj2"]);
-    fs.rmSync(dir, { recursive: true, force: true });
-  });
-
-  it("getExternalProjectNamesFromDbtLoomConfig prefers the override path", () => {
-    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "loom-"));
-    const file = path.join(dir, "custom-loom.yml");
-    fs.writeFileSync(file, "manifests:\n  - name: other\n");
-    const result = getExternalProjectNamesFromDbtLoomConfig(
-      "/no/such/dir",
-      file,
-    );
-    expect(result).toEqual(["other"]);
-    fs.rmSync(dir, { recursive: true, force: true });
-  });
-
-  it("getExternalProjectNamesFromDbtLoomConfig handles missing file", () => {
-    const result = getExternalProjectNamesFromDbtLoomConfig("/no/such/dir");
-    expect(result).toBeNull();
   });
 
   it("stripANSI removes escape codes", () => {

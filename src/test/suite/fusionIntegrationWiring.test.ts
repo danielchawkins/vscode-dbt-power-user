@@ -26,8 +26,7 @@ sharedWindow.createOutputChannel = vi.fn(
     createMockLogOutputChannel(name),
 );
 
-import { compose, createProjectParsers } from "../../compositionRoot";
-import { OutputChannels } from "../../projects/outputChannels";
+import { compose } from "../../compositionRoot";
 
 function stubContext(workspaceValue?: string) {
   return {
@@ -126,29 +125,5 @@ describe("Fusion-only integration wiring", () => {
     expect(project).toBeInstanceOf(Project);
     expect(() => project.getFusionCli()).toThrow(/not initialized/);
     await project.dispose();
-  });
-
-  it("reads DBT_LOOM_CONFIG_PATH on each parse through the project parsers", () => {
-    const reads: (string | undefined)[] = [];
-    const parsers = createProjectParsers(
-      new OutputChannels("danielchawkins.fusion-power-user"),
-    );
-    for (const parser of [parsers.nodeParser, parsers.sourceParser]) {
-      const read = (
-        parser as unknown as { readDbtLoomConfigPath: () => string | undefined }
-      ).readDbtLoomConfigPath;
-      process.env.DBT_LOOM_CONFIG_PATH = "/first/dbt_loom.config.yml";
-      reads.push(read());
-      process.env.DBT_LOOM_CONFIG_PATH = "/second/dbt_loom.config.yml";
-      reads.push(read());
-    }
-    delete process.env.DBT_LOOM_CONFIG_PATH;
-
-    expect(reads).toEqual([
-      "/first/dbt_loom.config.yml",
-      "/second/dbt_loom.config.yml",
-      "/first/dbt_loom.config.yml",
-      "/second/dbt_loom.config.yml",
-    ]);
   });
 });

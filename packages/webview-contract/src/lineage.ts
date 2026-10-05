@@ -50,7 +50,6 @@ export interface LineageTable {
   childCount: number;
   /** Number of dbt parents. */
   parentCount: number;
-  isExternalProject: boolean;
   packageName?: string;
   /** The node's data tests; `raw_sql` is the test's SQL. */
   tests: { key: string; raw_sql?: string; column_name?: string }[];

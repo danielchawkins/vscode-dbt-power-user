@@ -15,7 +15,6 @@ const table = (id: string): lineage.LineageTable => ({
   nodeType: "model",
   childCount: 1,
   parentCount: 0,
-  isExternalProject: false,
   tests: [],
 });
 

@@ -13,11 +13,7 @@ import {
 } from "./types";
 
 import type { Log } from "../log";
-import {
-  createFullPathForNode,
-  DbtLoomConfigPathReader,
-  getExternalProjectNamesFromDbtLoomConfig,
-} from "./utils";
+import { createFullPathForNode } from "./utils";
 
 // Priority order for the model-preferred fallback when `lookupByBaseName` is
 // called without an explicit `resourceType`. Models take precedence so a
@@ -92,10 +88,7 @@ class NodeMetaMapImpl implements NodeMetaMap {
 }
 
 export class NodeParser {
-  constructor(
-    private terminal: Pick<Log, "debug">,
-    private readDbtLoomConfigPath: DbtLoomConfigPathReader = () => undefined,
-  ) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   async createNodeMetaMap(
     nodesMap: Record<string, any> | null | undefined,
@@ -123,10 +116,6 @@ export class NodeParser {
     if (packagePath === undefined) {
       throw new Error("packagePath is not defined " + projectRoot);
     }
-    const externalProjectNames = getExternalProjectNamesFromDbtLoomConfig(
-      projectRoot,
-      this.readDbtLoomConfigPath(),
-    );
     for (const nodesMap of nodesMaps) {
       const {
         name,
@@ -184,9 +173,6 @@ export class NodeParser {
         config,
         resource_type,
         depends_on,
-        is_external_project: Boolean(
-          externalProjectNames?.includes(package_name),
-        ),
         compiled_path: targetPath
           ? path.join(targetPath, "compiled", package_name, original_file_path)
           : "",
