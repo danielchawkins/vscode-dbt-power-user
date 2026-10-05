@@ -4,7 +4,7 @@
   "internalTags": 66,
   "strictTs.host": 121,
   "strictTs.webview": 65,
-  "typeCoverage.host": 97.97,
+  "typeCoverage.host": 97.99,
   "typeCoverage.webview": 99.06,
   "coverage.host": {
     "lines": 70,
