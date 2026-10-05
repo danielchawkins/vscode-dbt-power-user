@@ -1,8 +1,8 @@
 import useAppContext from "@modules/app/useAppContext";
 import { panelLogger } from "@modules/logger";
+import { useQueryPanelDispatch } from "@modules/queryPanel/context/queryPanelContext";
 import { setPerspectiveTheme } from "@modules/queryPanel/context/queryPanelReducer";
 import { TableData } from "@modules/queryPanel/context/types";
-import { useQueryPanelDispatch } from "@modules/queryPanel/QueryPanelProvider";
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import perspective from "@perspective-dev/client";

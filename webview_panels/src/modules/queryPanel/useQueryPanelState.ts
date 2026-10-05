@@ -1,5 +1,5 @@
 import { useContext } from "react";
-import { QueryPanelContext } from "./QueryPanelProvider";
+import { QueryPanelContext } from "./context/queryPanelContext";
 import { QueryPanelStateProps } from "./context/types";
 
 const useQueryPanelState = (): QueryPanelStateProps & {

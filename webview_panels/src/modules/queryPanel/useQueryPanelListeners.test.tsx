@@ -11,8 +11,8 @@ vi.mock("./QueryPanel", () => ({
   default: (): null => null,
 }));
 
+import { QueryPanelContext } from "./context/queryPanelContext";
 import { initialState, queryPanelReducer } from "./context/queryPanelReducer";
-import { QueryPanelContext } from "./QueryPanelProvider";
 import useQueryPanelListeners from "./useQueryPanelListeners";
 import useQueryPanelState from "./useQueryPanelState";
 

@@ -6,8 +6,8 @@ import {
   executeRequestInSync,
 } from "@modules/queryPanel/requests";
 import { useCallback, useEffect, useRef } from "react";
-import { useQueryPanelDispatch } from "./QueryPanelProvider";
 import { HINTS } from "./constants";
+import { useQueryPanelDispatch } from "./context/queryPanelContext";
 import {
   resetData,
   setActiveEditor,

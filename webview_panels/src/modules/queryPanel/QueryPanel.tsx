@@ -1,7 +1,6 @@
 import { readViewState, writeViewState } from "@modules/app/viewState";
 import { Stack } from "@uicore";
 import { useEffect, useRef } from "react";
-import { useQueryPanelDispatch } from "./QueryPanelProvider";
 import QueryPanelContent from "./components/QueryPanelContents/QueryPanelContent";
 import QueryPanelTitle from "./components/QueryPanelContents/QueryPanelTitle";
 import { QueryPanelTitleTabState } from "./components/QueryPanelContents/types";
@@ -9,6 +8,7 @@ import ClearResultsButton from "./components/clearResultsButton/ClearResultsButt
 import ShowInTabButton from "./components/openInTabButton/OpenInTabButton";
 import QueryLimit from "./components/queryLimit/QueryLimit";
 import RunAdhocQueryButton from "./components/runAdhocQueryButton/RunAdhocQueryButton";
+import { useQueryPanelDispatch } from "./context/queryPanelContext";
 import { setTabState } from "./context/queryPanelReducer";
 import { DEFAULT_VIEW_TYPE } from "./context/types";
 import classes from "./querypanel.module.css";

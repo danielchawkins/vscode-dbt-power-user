@@ -1,5 +1,5 @@
 import { Dispatch, useContext } from "react";
-import { DocumentationContext } from "../DocumentationProvider";
+import { DocumentationContext } from "../context";
 import type { DocumentationAction } from "./documentationReducer";
 import { DocumentationStateProps } from "./types";
 
