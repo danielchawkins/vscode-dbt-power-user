@@ -12,12 +12,12 @@ import {
   WorkspaceFolder,
 } from "vscode";
 import {
+  ExecuteCommandRequest,
   State,
   type LanguageClient,
   type LanguageClientOptions,
   type ServerOptions,
 } from "vscode-languageclient/node";
-import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
 import { DBT_LSP_USE_TARGET_LSP, toLspArgs, type LspLaunch } from "../core/lsp";
 import { projectRootDigest, type StaticAnalysisMode } from "../core/project";
 import {
