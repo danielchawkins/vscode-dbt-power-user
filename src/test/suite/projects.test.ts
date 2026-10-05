@@ -14,6 +14,15 @@ import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 
+let epoch = 0;
+
+/** Gives `project` a new manifest publication and fires its event, as `Project` does after a rebuild. */
+function publish(project: Mocked<Project>, emitter: EventEmitter<Project>) {
+  epoch += 1;
+  (project as { manifest?: unknown }).manifest = { publicationEpoch: epoch };
+  emitter.fire(project);
+}
+
 describe("Projects", () => {
   let projects: Projects;
   let mockDbtTerminal: Mocked<Log>;
@@ -230,8 +239,8 @@ describe("Projects", () => {
       const changedHandler = vi.fn();
       projects.onDidChangeManifest(changedHandler);
 
-      project1Manifest.fire(mockProject1);
-      project2Manifest.fire(mockProject2);
+      publish(mockProject1, project1Manifest);
+      publish(mockProject2, project2Manifest);
       expect(changedHandler.mock.calls).toEqual([
         [mockProject1],
         [mockProject2],
@@ -240,7 +249,7 @@ describe("Projects", () => {
       mockProjectRegistry.projects = [declaredProject1];
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
-      project2Manifest.fire(mockProject2);
+      publish(mockProject2, project2Manifest);
 
       expect(changedHandler).toHaveBeenCalledTimes(2);
     });
@@ -360,7 +369,7 @@ describe("Projects", () => {
       projects.onDidChangeManifest(changed);
       projects.onDidRemoveProject(removed);
 
-      project1Manifest.fire(mockProject1);
+      publish(mockProject1, project1Manifest);
 
       expect(changed).toHaveBeenCalledTimes(1);
       expect(changed.mock.calls[0]?.[0]).toBe(mockProject1);
@@ -377,7 +386,7 @@ describe("Projects", () => {
       );
       expect(sourceDispose).toHaveBeenCalledTimes(1);
 
-      project1Manifest.fire(mockProject1);
+      publish(mockProject1, project1Manifest);
       expect(changed).toHaveBeenCalledTimes(1);
 
       projects.dispose();

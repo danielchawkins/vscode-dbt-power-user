@@ -276,7 +276,11 @@ describe("Metadata contract — shape and key set snapshot", () => {
       dispose: () => {},
     } as DeclaredProject;
     const source = new ManifestMetadataSource(declaredProject, project);
+    const published: Manifest[] = [];
+    source.onDidPublish((m) => published.push(m));
     manifestEvents.fire(project);
+    manifestEvents.fire(project);
+    expect(published).toEqual([event]);
     const forwarded = source.current();
     expect(forwarded).toBe(event);
     if (!forwarded) {
