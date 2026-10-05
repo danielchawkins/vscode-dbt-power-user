@@ -57,10 +57,10 @@ describe("SourceModelCreationCodeLensProvider", () => {
         ],
       }),
     ]);
-    // Zero-based line, but the one-based column that `LineCounter.linePos` returns.
+    // `LineCounter.linePos` is one-based in both; a Range is zero-based.
     expect(lenses.map((lens) => lens.range)).toEqual([
-      new Range(6, 9, 6, 9),
-      new Range(7, 9, 7, 9),
+      new Range(6, 8, 6, 8),
+      new Range(7, 8, 7, 8),
     ]);
   });
 

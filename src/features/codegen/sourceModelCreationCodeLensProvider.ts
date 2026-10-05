@@ -129,9 +129,9 @@ export class SourceModelCreationCodeLensProvider
                   new CodeLens(
                     new Range(
                       table.pos.line - 1,
-                      table.pos.col,
+                      table.pos.col - 1,
                       table.pos.line - 1,
-                      table.pos.col,
+                      table.pos.col - 1,
                     ),
                     {
                       title: "Generate model",
