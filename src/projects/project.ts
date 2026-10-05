@@ -2,6 +2,7 @@ import {
   CustomExecution,
   Diagnostic,
   Disposable,
+  Event,
   EventEmitter,
   Task,
   Uri,
@@ -109,6 +110,8 @@ export interface ProjectOptions {
   projectCount?: () => number;
   /** The project's current Fusion Client; resolved per call so a restart leaves no stale reference. */
   fusionClient?: () => FusionClient | undefined;
+  /** Fires when that client is replaced or changes state. */
+  clientChanged?: Event<void>;
 }
 
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
@@ -131,7 +134,10 @@ export class Project implements Disposable, ManifestProject {
   private disposed = false;
 
   private _onSourceFileChanged = new EventEmitter<void>();
+  /** Fires after the debounce for a model, macro, seed or `dbt_project.yml` change on disk. */
   public onSourceFileChanged = this._onSourceFileChanged.event;
+  /** Fires when the project's Fusion client is replaced or changes state. */
+  readonly onDidChangeClient: Event<void>;
   private _onDidChangeManifest = new EventEmitter<Project>();
   /** Fires after this project publishes a new manifest. */
   readonly onDidChangeManifest = this._onDidChangeManifest.event;
@@ -161,6 +167,7 @@ export class Project implements Disposable, ManifestProject {
     this.runHistoryService = options.runHistoryService;
     this.projectCount = options.projectCount ?? (() => 1);
     this.lsp = createFusionCommands(options.fusionClient ?? (() => undefined));
+    this.onDidChangeClient = options.clientChanged ?? (() => Disposable.from());
     const root = this.projectRoot.fsPath;
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
@@ -383,6 +390,7 @@ export class Project implements Disposable, ManifestProject {
   }
 
   private async handleProjectFileChanged(): Promise<void> {
+    this._onSourceFileChanged.fire();
     await this.refreshConfigWith(this.getFusionCli(), true);
     await this.rebuild();
   }

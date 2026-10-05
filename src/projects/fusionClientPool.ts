@@ -345,6 +345,28 @@ function sameEnv(
   );
 }
 
+/** Fires when the project's client is replaced or changes state. */
+export function onClientChange(
+  pool: FusionClientPool,
+  project: DeclaredProject,
+): Event<void> {
+  return (listener) => {
+    let stateSubscription: Disposable | undefined;
+    const follow = () => {
+      stateSubscription?.dispose();
+      stateSubscription = pool.get(project)?.onDidChangeState(() => listener());
+    };
+    follow();
+    const replaced = pool.onDidChangeClients(() => {
+      follow();
+      listener();
+    });
+    return Disposable.from(replaced, {
+      dispose: () => stateSubscription?.dispose(),
+    });
+  };
+}
+
 export type FusionClientPoolDependencies = FusionLaunchSources & {
   resolver?: FusionExecutableResolver;
   factory?: FusionClientFactory;

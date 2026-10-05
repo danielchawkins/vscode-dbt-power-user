@@ -62,6 +62,7 @@ import {
   createFusionClientPool,
   type FusionClientPool,
   FusionLaunchSources,
+  onClientChange,
 } from "./projects/fusionClientPool";
 import { FusionStatus } from "./projects/fusionStatus";
 import { OutputChannels } from "./projects/outputChannels";
@@ -163,6 +164,10 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
       projectRoot: declared.root,
       projectCount: () => projects.all().length,
       fusionClient: () => clients.pool?.get(declared),
+      clientChanged: (listener) =>
+        clients.pool
+          ? onClientChange(clients.pool, declared)(listener)
+          : Disposable.from(),
     });
   };
 
