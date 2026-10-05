@@ -64,7 +64,8 @@ function fusionSkipReason(
       return "dbt Fusion on PATH is older than 2.0.6";
     case "untestedMajor":
       return "dbt Fusion major version is untested";
-    default:
+    case "ok":
+    case "notFound":
       return "dbt Fusion on PATH is not supported for this probe";
   }
 }

@@ -129,7 +129,9 @@ const DocumentationProvider = (): JSX.Element => {
           );
         }
         break;
-      default:
+      // The app listener settles responses; this panel shows no error state.
+      case "response":
+      case "renderError":
         break;
     }
   }, []);

@@ -276,7 +276,9 @@ export function clientSeverity(
       return LanguageStatusSeverity.Error;
     case "stopped":
       return LanguageStatusSeverity.Warning;
-    default:
+    case "starting":
+    case "running":
+    case "restarting":
       return LanguageStatusSeverity.Information;
   }
 }

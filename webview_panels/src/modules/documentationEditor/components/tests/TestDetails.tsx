@@ -89,11 +89,15 @@ const TestDetails = ({ testType, test }: Props): JSX.Element => {
               </Card>
             );
 
+          case undefined:
           default:
             break;
         }
         break;
-      default:
+      case DbtTestTypes.EXTERNAL_PACKAGE:
+      case DbtTestTypes.MACRO:
+      case DbtTestTypes.SINGULAR:
+      case DbtTestTypes.UNKNOWN:
         break;
     }
     return null;
