@@ -1,5 +1,4 @@
-import { readFileSync, readdirSync } from "fs";
-import { globSync } from "glob";
+import { globSync, readFileSync, readdirSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { esmDirname } from "../esmDirname";
@@ -12,12 +11,8 @@ function referencedMediaFiles(): string[] {
     "package.json",
     ...globSync(
       ["src/**/*.{ts,tsx,js}", "webview_panels/src/**/*.{ts,tsx,js}"],
-      {
-        cwd: repositoryRoot,
-        nodir: true,
-        ignore: ["src/test/**"],
-      },
-    ),
+      { cwd: repositoryRoot },
+    ).filter((file) => !file.startsWith(`src${path.sep}test${path.sep}`)),
   ];
   const references = new Set<string>();
   const mediaPath = /media\/images\/([A-Za-z0-9._-]+)/g;
