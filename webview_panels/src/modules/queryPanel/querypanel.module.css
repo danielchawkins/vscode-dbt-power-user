@@ -161,7 +161,7 @@
   .list-group-item
   > :first-child
   .codicon {
-  color: #89d185;
+  color: var(--vscode-charts-green);
   margin-right: 0.5rem;
 }
 .queryPanel

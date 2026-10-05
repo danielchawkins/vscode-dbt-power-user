@@ -72,7 +72,7 @@ const EntityWithUnitTests = ({ title, unitTests }: Props): JSX.Element => {
                     selectedTest?.name === test.name ? "primary" : "default"
                   }
                   key={test.name}
-                  className={`badge ${classes.newTestTag}`}
+                  className={classes.newTestTag}
                   onClick={() => onSelect(test)}
                 >
                   {test.name}
