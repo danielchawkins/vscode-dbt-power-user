@@ -10,17 +10,27 @@ import {
 } from "vitest";
 import { EventEmitter, Uri, workspace } from "vscode";
 import type { Log } from "../../core/log";
-import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
+import { emptyParsedManifest } from "../../core/metadata";
+import type { ParsedManifest } from "../../dbt_integration/domain";
+import { CompositeMetadataSource } from "../../metadata/compositeMetadataSource";
 import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 
 let epoch = 0;
 
-/** Gives `project` a new manifest publication and fires its event, as `Project` does after a rebuild. */
-function publish(project: Mocked<Project>, emitter: EventEmitter<Project>) {
-  epoch += 1;
-  (project as { manifest?: unknown }).manifest = { publicationEpoch: epoch };
-  emitter.fire(project);
+/** Stamps a merged value as the next publication, as `Project.publishMerged` does. */
+const publishMerged = vi.fn((merged: object) => ({
+  ...merged,
+  publicationEpoch: ++epoch,
+}));
+
+/** Fires a parse result on `project`, as `Project` does after `dbt parse`. */
+function publish(
+  project: Mocked<Project>,
+  emitter: EventEmitter<ParsedManifest>,
+) {
+  void project;
+  emitter.fire(emptyParsedManifest());
 }
 
 describe("Projects", () => {
@@ -33,8 +43,8 @@ describe("Projects", () => {
   let declaredProject1: any;
   let declaredProject2: any;
   let registryOnDidChangeProjects: EventEmitter<void>;
-  let project1Manifest: EventEmitter<Project>;
-  let project2Manifest: EventEmitter<Project>;
+  let project1Manifest: EventEmitter<ParsedManifest>;
+  let project2Manifest: EventEmitter<ParsedManifest>;
 
   beforeEach(() => {
     // Mock Log
@@ -62,8 +72,8 @@ describe("Projects", () => {
       dispose: vi.fn(),
     };
 
-    project1Manifest = new EventEmitter<Project>();
-    project2Manifest = new EventEmitter<Project>();
+    project1Manifest = new EventEmitter<ParsedManifest>();
+    project2Manifest = new EventEmitter<ParsedManifest>();
 
     // Mock Project instances
     mockProject1 = {
@@ -73,7 +83,12 @@ describe("Projects", () => {
       initialize: vi.fn(),
       dispose: vi.fn(),
       manifest: undefined,
-      onDidChangeManifest: project1Manifest.event,
+      onDidParse: project1Manifest.event,
+      onDidCompile: new EventEmitter<void>().event,
+      onSourceFileChanged: new EventEmitter<void>().event,
+      onDidChangeClient: new EventEmitter<void>().event,
+      lsp: {},
+      publishMerged: publishMerged,
       rebuildManifest: vi.fn(),
     } as unknown as Mocked<Project>;
 
@@ -84,7 +99,12 @@ describe("Projects", () => {
       initialize: vi.fn(),
       dispose: vi.fn(),
       manifest: undefined,
-      onDidChangeManifest: project2Manifest.event,
+      onDidParse: project2Manifest.event,
+      onDidCompile: new EventEmitter<void>().event,
+      onSourceFileChanged: new EventEmitter<void>().event,
+      onDidChangeClient: new EventEmitter<void>().event,
+      lsp: {},
+      publishMerged: publishMerged,
       rebuildManifest: vi.fn(),
     } as unknown as Mocked<Project>;
 
@@ -363,7 +383,7 @@ describe("Projects", () => {
       const changed = vi.fn<(project: Project) => void>();
       const removed = vi.fn<(root: Uri) => void>();
       const sourceDispose = vi.spyOn(
-        ManifestMetadataSource.prototype,
+        CompositeMetadataSource.prototype,
         "dispose",
       );
       projects.onDidChangeManifest(changed);

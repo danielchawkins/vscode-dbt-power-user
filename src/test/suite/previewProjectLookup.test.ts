@@ -47,7 +47,11 @@ describe("compiled preview project lookup", () => {
       projectRoot: root,
       initialize: vi.fn(),
       dispose: vi.fn(),
-      onDidChangeManifest: new EventEmitter<Project>().event,
+      onDidParse: new EventEmitter<unknown>().event,
+      onDidCompile: new EventEmitter<void>().event,
+      onSourceFileChanged: new EventEmitter<void>().event,
+      onDidChangeClient: new EventEmitter<void>().event,
+      lsp: {},
     }) as unknown as Project;
 
   beforeEach(async () => {

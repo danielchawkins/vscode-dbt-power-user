@@ -32,11 +32,13 @@ import {
 } from "../../core/manifest";
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
 import { DBT_PROJECT_FILE } from "../../core/project";
-import { MANIFEST_FILE } from "../../dbt_integration/domain";
+import {
+  MANIFEST_FILE,
+  type ParsedManifest,
+} from "../../dbt_integration/domain";
 import { FusionCli } from "../../fusion/fusionCli";
 import { DbtTaskTerminal } from "../../projects/dbtTask";
 import { ManifestParsers } from "../../projects/manifest";
-import { Manifest } from "../../projects/manifestTypes";
 import { Project } from "../../projects/project";
 import { ProjectCommandDeps, queueCli } from "../../projects/projectCommands";
 import { ProjectDiagnostics } from "../../projects/projectDiagnostics";
@@ -1041,33 +1043,35 @@ describe("Project manifest", () => {
         getPackageInstallPath: () => path.join(root, "dbt_packages"),
       }),
     );
-    const published: (Manifest | undefined)[] = [];
-    project.onDidChangeManifest((p) => published.push(p.manifest));
-    const lastPublication = () => {
-      const publication = published[published.length - 1];
-      if (!publication) {
-        throw new Error("Expected a published manifest event");
+    const parses: ParsedManifest[] = [];
+    project.onDidParse((parsed) => parses.push(parsed));
+    const lastParse = () => {
+      const parse = parses[parses.length - 1];
+      if (!parse) {
+        throw new Error("Expected a parse event");
       }
-      return publication;
+      return parse;
     };
 
     await project.parseManifest();
-    const first = lastPublication();
+    const first = project.publishMerged(lastParse());
     await project.parseManifest();
-    const second = lastPublication();
+    const second = project.publishMerged(lastParse());
 
+    expect(first).toBeDefined();
+    expect(second).toBeDefined();
+    if (!first || !second) {
+      throw new Error("Expected publications");
+    }
     expect([...first.nodeMetaMap.nodes()].length).toBeGreaterThan(0);
-    expect(first.graphMetaMap.parents.size).toBeGreaterThan(0);
     expect(first.macroMetaMap.size).toBeGreaterThan(0);
-    expect(first.modelDepthMap.size).toBeGreaterThan(0);
-    expect(first.metadataProducer).toBe("manifest");
     expect(second.publicationEpoch).toBe(first.publicationEpoch + 1);
     expect(project.manifest?.publicationEpoch).toBe(second.publicationEpoch);
     expect(project.manifest).toBe(second);
     await project.dispose();
   });
 
-  it("fires onDidChangeManifest after each publication and exposes it as manifest", async () => {
+  it("fires onDidParse for each parse without publishing a manifest", async () => {
     const { root, targetDir } = copyFixture("fusion-changed-");
     tempRoot = root;
     fs.mkdirSync(targetDir, { recursive: true });
@@ -1082,19 +1086,18 @@ describe("Project manifest", () => {
         getPackageInstallPath: () => path.join(root, "dbt_packages"),
       }),
     );
-    const changed = vi.fn((p: Project) => p.manifest);
-    project.onDidChangeManifest(changed);
+    const parsed = vi.fn();
+    project.onDidParse(parsed);
 
     await project.parseManifest();
 
-    expect(changed).toHaveBeenCalledWith(project);
-    expect(project.manifest).toBeDefined();
-    expect(changed.mock.results[0]?.value).toBe(project.manifest);
+    expect(parsed).toHaveBeenCalledTimes(1);
+    expect(project.manifest).toBeUndefined();
 
     await project.dispose();
-    changed.mockClear();
+    parsed.mockClear();
     await project.parseManifest().catch(() => undefined);
-    expect(changed).not.toHaveBeenCalled();
+    expect(parsed).not.toHaveBeenCalled();
   });
 
   it("reads the adapter type from manifest metadata, unknown before a manifest", async () => {

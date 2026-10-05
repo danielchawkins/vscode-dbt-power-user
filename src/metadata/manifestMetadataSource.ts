@@ -1,31 +1,28 @@
 import { Disposable, Event, EventEmitter } from "vscode";
-import type { Manifest } from "../projects/manifestTypes";
+import type { ParsedManifest } from "../dbt_integration/domain";
 import { Project } from "../projects/project";
 import { DeclaredProject } from "../projects/projectRegistry";
-import { ProjectMetadataSource } from "./projectMetadataSource";
 
-/** Publishes the manifest `Project` parses and rebuilds. */
-export class ManifestMetadataSource implements ProjectMetadataSource {
-  private readonly emitter = new EventEmitter<Manifest>();
-  readonly onDidPublish: Event<Manifest> = this.emitter.event;
+/** The Parse Producer: forwards each `dbt parse` result of a Project. It publishes nothing to consumers itself. */
+export class ManifestMetadataSource implements Disposable {
+  private readonly emitter = new EventEmitter<ParsedManifest>();
+  readonly onDidParse: Event<ParsedManifest> = this.emitter.event;
   private readonly subscription: Disposable;
-  private lastEpoch: number | undefined;
+  private latest: ParsedManifest | undefined;
 
   constructor(
     readonly project: DeclaredProject,
     private dbtProject: Project,
   ) {
-    this.subscription = dbtProject.onDidChangeManifest(() => {
-      const manifest = dbtProject.manifest;
-      if (manifest && manifest.publicationEpoch !== this.lastEpoch) {
-        this.lastEpoch = manifest.publicationEpoch;
-        this.emitter.fire(manifest);
-      }
+    this.subscription = dbtProject.onDidParse((parsed) => {
+      this.latest = parsed;
+      this.emitter.fire(parsed);
     });
   }
 
-  current(): Manifest | undefined {
-    return this.dbtProject.manifest;
+  /** The last parse result, or undefined before the first one. */
+  current(): ParsedManifest | undefined {
+    return this.latest;
   }
 
   async refresh(): Promise<void> {
