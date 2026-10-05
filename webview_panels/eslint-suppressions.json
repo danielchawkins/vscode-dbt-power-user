@@ -10,9 +10,6 @@
     },
     "max-lines-per-function": {
       "count": 1
-    },
-    "react-refresh/only-export-components": {
-      "count": 1
     }
   },
   "src/modules/documentationEditor/components/docGenerator/DocBlockInserter.tsx": {

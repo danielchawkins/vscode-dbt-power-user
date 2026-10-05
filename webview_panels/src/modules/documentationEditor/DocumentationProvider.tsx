@@ -5,14 +5,8 @@ import {
   executeRequestInSync,
 } from "@modules/documentationEditor/requests";
 import { panelLogger } from "@modules/logger";
-import {
-  createContext,
-  useCallback,
-  useEffect,
-  useMemo,
-  useReducer,
-  useRef,
-} from "react";
+import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
+import { DocumentationContext } from "./context";
 import DocumentationEditor from "./DocumentationEditor";
 import {
   documentationReducer,
@@ -29,17 +23,11 @@ import {
 } from "./state/documentationReducer";
 import { DBTDocumentation, DBTModelTest, DBTUnitTest } from "./state/types";
 import useDraftSync from "./state/useDraftSync";
-import { ContextProps } from "./types";
 import {
   fromFetchedColumns,
   fromHostDocumentation,
   isStateDirty,
 } from "./utils";
-
-export const DocumentationContext = createContext<ContextProps>({
-  state: initialState,
-  dispatch: () => null,
-});
 
 type HostMessage = documentationEditor.HostMessage;
 /** `renderDocumentation` with `docs` mapped by `fromHostDocumentation`; the test types are the contract's own. */
