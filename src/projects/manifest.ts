@@ -84,7 +84,6 @@ export function nextManifestPublication<
   publicationEpochs.set(projectKey, publicationEpoch);
   return {
     ...parsed,
-    project,
     publicationEpoch,
     metadataProducer: "manifest" as const,
   };

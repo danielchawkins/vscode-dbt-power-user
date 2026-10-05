@@ -239,7 +239,6 @@ describe("Metadata contract — shape and key set snapshot", () => {
       rebuildManifest: async () => {},
     } as unknown as Project;
     const event: Manifest = {
-      project,
       nodeMetaMap,
       macroMetaMap,
       metricMetaMap: await new MetricParser(terminal).createMetricMetaMap(

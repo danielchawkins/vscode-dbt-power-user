@@ -26,8 +26,7 @@ describe("ManifestMetadataSource", () => {
     manifestChangedEmitter.fire(mockProject);
   };
 
-  const createTestMetadata = (project: Project): Manifest => ({
-    project,
+  const createTestMetadata = (): Manifest => ({
     nodeMetaMap: {
       lookupByBaseName: new Map(),
       lookupByUniqueId: new Map(),
@@ -92,7 +91,7 @@ describe("ManifestMetadataSource", () => {
   });
 
   it("should capture current snapshot on initialization", () => {
-    const testMetadata = createTestMetadata(mockProject);
+    const testMetadata = createTestMetadata();
     mockManifest = testMetadata;
     const source2 = new ManifestMetadataSource(
       mockDeclaredProject,
@@ -103,7 +102,7 @@ describe("ManifestMetadataSource", () => {
   });
 
   it("should read the latest published manifest", () => {
-    const newMetadata = createTestMetadata(mockProject);
+    const newMetadata = createTestMetadata();
     publish(newMetadata);
 
     expect(source.current()).toBe(newMetadata);
@@ -122,7 +121,7 @@ describe("ManifestMetadataSource", () => {
   });
 
   it("should preserve metadata structure", () => {
-    const richMetadata = createTestMetadata(mockProject);
+    const richMetadata = createTestMetadata();
     richMetadata.modelDepthMap.set("model1", 2);
     publish(richMetadata);
 

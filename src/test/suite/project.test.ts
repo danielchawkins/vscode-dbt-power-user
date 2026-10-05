@@ -1063,9 +1063,7 @@ describe("Project manifest", () => {
     expect(first.graphMetaMap.parents.size).toBeGreaterThan(0);
     expect(first.macroMetaMap.size).toBeGreaterThan(0);
     expect(first.modelDepthMap.size).toBeGreaterThan(0);
-    expect(first).toEqual(
-      expect.objectContaining({ project, metadataProducer: "manifest" }),
-    );
+    expect(first.metadataProducer).toBe("manifest");
     expect(second.publicationEpoch).toBe(first.publicationEpoch + 1);
     expect(project.manifest?.publicationEpoch).toBe(second.publicationEpoch);
     expect(project.manifest).toBe(second);
