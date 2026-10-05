@@ -70,6 +70,18 @@ const fsRequireSyntax = [
     message: WRITE_MESSAGE,
   },
 ];
+const BUG_CLASS_RULES = {
+  "@typescript-eslint/no-for-in-array": "error",
+  "@typescript-eslint/no-misused-spread": "error",
+  "@typescript-eslint/no-base-to-string": "error",
+  "@typescript-eslint/no-non-null-asserted-optional-chain": "error",
+  "@typescript-eslint/switch-exhaustiveness-check": "error",
+  "@typescript-eslint/no-unnecessary-type-assertion": "error",
+  "@typescript-eslint/prefer-promise-reject-errors": "error",
+  "@typescript-eslint/only-throw-error": "error",
+  "@typescript-eslint/ban-ts-comment": ["error", { "ts-expect-error": "allow-with-description" }],
+  "no-async-promise-executor": "error",
+};
 
 module.exports = [
   { ignores: ["out/**", "dist/**", "packages/*/dist/**", "webview_panels/**", "src/test/fixtures/**", "**/*.d.ts", "scripts/spikes/**"] },
@@ -108,6 +120,7 @@ module.exports = [
         "error",
         { argsIgnorePattern: "^_", varsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" },
       ],
+      ...BUG_CLASS_RULES,
       // Confinement: settings and environment reads, process spawning and user-file writes each have one home.
       "no-restricted-properties": ["error", ...settingsProperties, ...environmentProperties, ...fsWriteProperties],
       "no-restricted-syntax": ["error", ...settingsSyntax, ...processSyntax, ...fsRequireSyntax],
@@ -129,6 +142,12 @@ module.exports = [
       "no-restricted-syntax": ["error", ...settingsSyntax, ...fsRequireSyntax],
       "no-restricted-imports": ["error", { paths: [...environmentImports, ...fsWriteImports] }],
     },
+  },
+  {
+    // Production code logs through DBTTerminal; scripts, configs and tests may print.
+    files: ["src/**/*.ts"],
+    ignores: ["src/test/**"],
+    rules: { "no-console": "error" },
   },
   {
     // Tests trade size budgets for readable, table-driven cases.

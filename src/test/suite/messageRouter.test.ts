@@ -106,6 +106,7 @@ describe("dispatchMessage", () => {
     const typed = {
       a: vi.fn(),
       b: () => Promise.reject(new Error("async boom")),
+      // eslint-disable-next-line @typescript-eslint/prefer-promise-reject-errors -- covers a non-Error rejection
       c: () => Promise.reject("plain"),
     } satisfies Handlers<Message>;
     await dispatchMessage(
