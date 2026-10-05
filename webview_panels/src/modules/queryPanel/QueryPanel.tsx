@@ -10,7 +10,7 @@ import ShowInTabButton from "./components/openInTabButton/OpenInTabButton";
 import QueryLimit from "./components/queryLimit/QueryLimit";
 import RunAdhocQueryButton from "./components/runAdhocQueryButton/RunAdhocQueryButton";
 import { setTabState } from "./context/queryPanelReducer";
-import { QueryPanelViewType } from "./context/types";
+import { DEFAULT_VIEW_TYPE } from "./context/types";
 import classes from "./querypanel.module.css";
 import useQueryPanelListeners from "./useQueryPanelListeners";
 import useQueryPanelState from "./useQueryPanelState";
@@ -53,7 +53,7 @@ const QueryPanel = (): JSX.Element => {
           <QueryPanelTitle tabState={tabState} setTabState={changeTabState} />
         </Stack>
         <Stack className={classes.toolbar}>
-          {viewType === QueryPanelViewType.DEFAULT && (
+          {viewType === DEFAULT_VIEW_TYPE && (
             <>
               <QueryLimit />
               <RunAdhocQueryButton />

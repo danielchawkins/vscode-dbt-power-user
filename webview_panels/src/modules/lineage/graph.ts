@@ -49,7 +49,7 @@ export type FetchConnected = (
 ) => Promise<lineage.ConnectedColumns>;
 
 /** Most `getConnectedColumns` rounds per direction of one trace. */
-export const MAX_TRACE_HOPS = 10;
+const MAX_TRACE_HOPS = 10;
 
 export const emptyGraph = (start?: LineageTable): GraphState => ({
   start: start?.table,
@@ -62,7 +62,7 @@ export const emptyGraph = (start?: LineageTable): GraphState => ({
   errors: {},
 });
 
-export const expansionKey = (direction: Direction, table: string): string =>
+const expansionKey = (direction: Direction, table: string): string =>
   `${direction === "children" ? "c" : "p"}:${table}`;
 
 export const parseExpansion = (
@@ -85,7 +85,7 @@ export const isExpanded = (
   table: string,
 ): boolean => state.expansions.includes(expansionKey(direction, table));
 
-export const neighbourCount = (
+const neighbourCount = (
   table: LineageTable,
   direction: Direction,
 ): number => (direction === "children" ? table.childCount : table.parentCount);

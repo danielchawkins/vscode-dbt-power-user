@@ -29,7 +29,7 @@ export interface DBTDocumentation {
   resource_type?: string;
 }
 
-export interface TestMetadataKwArgs {
+interface TestMetadataKwArgs {
   column_name: string;
   model: string;
 }

@@ -71,7 +71,7 @@ export const viewStateOf = (
     : undefined;
 
 /** The saved state to replay for `start` at `publication`, or `undefined` to draw at the default expansion. */
-export const restorableState = (
+const restorableState = (
   saved: LineageViewState | undefined,
   start: string,
   publication: string | undefined,

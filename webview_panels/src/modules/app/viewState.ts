@@ -5,7 +5,7 @@ import { vscode } from "@modules/vscode";
  * View state the documentation editor restores after VS Code rebuilds its page. `model` is the unique id of
  * the documented model; scroll and search apply only to that model at the same manifest publication.
  */
-export interface DocumentationEditorViewState {
+interface DocumentationEditorViewState {
   panel: "documentationEditor";
   publication?: string;
   model?: string;
@@ -14,7 +14,7 @@ export interface DocumentationEditorViewState {
 }
 
 /** View state the query results panel restores; `tabState` is the active title tab. */
-export interface QueryResultsViewState {
+interface QueryResultsViewState {
   panel: "queryResults";
   publication?: string;
   tabState: number;

@@ -1,11 +1,11 @@
 import { typedReducer } from "@modules/app/typedReducer";
 import { QueryPanelTitleTabState } from "../components/QueryPanelContents/types";
-import { QueryPanelStateProps, QueryPanelViewType } from "./types";
+import { QueryPanelStateProps, DEFAULT_VIEW_TYPE } from "./types";
 
 type S = QueryPanelStateProps;
 
 export const initialState: S = {
-  viewType: QueryPanelViewType.DEFAULT,
+  viewType: DEFAULT_VIEW_TYPE,
   loading: false,
   queryResults: undefined,
   queryExecutionInfo: undefined,
