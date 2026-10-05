@@ -87,7 +87,7 @@ const shapeOf =
   (fields: Readonly<Record<string, Predicate>>): Check<unknown> =>
   (value): value is unknown =>
     isRecord(value) &&
-    Object.keys(fields).every((key) => fields[key](own(value, key)));
+    Object.entries(fields).every(([key, check]) => check(own(value, key)));
 
 /** An object whose own properties pass `fields`; other properties are allowed. */
 export const shape = <T>(fields: Fields<NoInfer<T>>): Check<T> =>
