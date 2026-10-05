@@ -882,7 +882,6 @@
   "devDependencies": {
     "@fusion-power-user/webview-contract": "*",
     "@rsbuild/core": "^2.2.8",
-    "@types/istanbul-lib-coverage": "^2.0.6",
     "@types/mocha": "^10.0.10",
     "@types/node": "^24.19.1",
     "@types/vscode": "1.125.0",
@@ -901,8 +900,6 @@
     "eslint-plugin-sonarjs": "^4.2.1",
     "fast-check": "^4.10.2",
     "glob": "^13.0.6",
-    "istanbul-lib-coverage": "^3.2.2",
-    "istanbul-lib-instrument": "^6.0.3",
     "knip": "^6.38.0",
     "lockfile-lint": "^5.0.1",
     "mocha": "^12.0.2",

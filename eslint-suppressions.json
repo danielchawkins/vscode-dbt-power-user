@@ -389,11 +389,6 @@
       "count": 2
     }
   },
-  "src/test/suite/runTest.ts": {
-    "@typescript-eslint/no-floating-promises": {
-      "count": 1
-    }
-  },
   "src/utils.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 3

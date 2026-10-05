@@ -12,7 +12,7 @@ const columnName = fc.oneof(
 );
 
 /** A column id as `dbt.listNodes` spells it at column grain: `<node unique_id>.<column>`, with its name. */
-export const columnId = fc
+const columnId = fc
   .tuple(nodeId, columnName)
   .map(([node, column]) => ({ id: `${node}.${column}`, name: column }));
 
