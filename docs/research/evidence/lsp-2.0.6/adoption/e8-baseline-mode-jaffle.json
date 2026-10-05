@@ -1,0 +1,144 @@
+{
+  "experiment": "e8-baseline-mode",
+  "target": "jaffle",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:27:32.792Z",
+  "rule": "see header",
+  "strict": {
+    "loadMs": 1484,
+    "grain": "project",
+    "error": null,
+    "nodes": 14,
+    "byType": {
+      "exposure": 1,
+      "model": 7,
+      "seed": 3,
+      "source": 1,
+      "test": 1,
+      "unit_test": 1
+    },
+    "modelIds": 7,
+    "edges": 14,
+    "lensCount": 4,
+    "lensCommands": [
+      "dbt.previewCte"
+    ],
+    "columnSample": [
+      "models/orders.sql",
+      "models/staging/stg_orders.sql",
+      "models/customers.sql",
+      "models/payments_dollars.sql",
+      "models/src_orders.sql"
+    ],
+    "columnCounts": {
+      "models/orders.sql": 9,
+      "models/staging/stg_orders.sql": 4,
+      "models/customers.sql": 7,
+      "models/payments_dollars.sql": 3,
+      "models/src_orders.sql": 3
+    },
+    "fallbackUsed": {},
+    "columnMs": [
+      1,
+      0,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0
+    ],
+    "columnP50": 0
+  },
+  "baseline": {
+    "loadMs": 1487,
+    "grain": "project",
+    "error": null,
+    "nodes": 14,
+    "byType": {
+      "exposure": 1,
+      "model": 7,
+      "seed": 3,
+      "source": 1,
+      "test": 1,
+      "unit_test": 1
+    },
+    "modelIds": 7,
+    "edges": 14,
+    "lensCount": 4,
+    "lensCommands": [
+      "dbt.previewCte"
+    ],
+    "columnSample": [
+      "models/orders.sql",
+      "models/staging/stg_orders.sql",
+      "models/customers.sql",
+      "models/payments_dollars.sql",
+      "models/src_orders.sql"
+    ],
+    "columnCounts": {
+      "models/orders.sql": 9,
+      "models/staging/stg_orders.sql": 4,
+      "models/customers.sql": 7,
+      "models/payments_dollars.sql": 3,
+      "models/src_orders.sql": 3
+    },
+    "fallbackUsed": {
+      "models/orders.sql": true,
+      "models/staging/stg_orders.sql": true,
+      "models/customers.sql": true,
+      "models/payments_dollars.sql": true,
+      "models/src_orders.sql": true
+    },
+    "columnMs": [
+      55,
+      38,
+      39,
+      36,
+      37,
+      37,
+      37,
+      37,
+      37,
+      37,
+      36,
+      37,
+      37,
+      37,
+      37,
+      34,
+      36,
+      35,
+      37,
+      37,
+      37,
+      36,
+      36,
+      37,
+      35
+    ],
+    "columnP50": 37
+  },
+  "missingModels": [],
+  "missingEdges": [],
+  "missingEdgeCount": 0,
+  "stop": false,
+  "decision": "passes: baseline listNodes returns every strict model and edge; graph fields stay server-owned in baseline"
+}

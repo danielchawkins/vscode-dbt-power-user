@@ -1,0 +1,80 @@
+{
+  "experiment": "e9-compiled-paths",
+  "target": "jaffle",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:32:23.512Z",
+  "rule": "see header",
+  "separate": {
+    "before": {
+      "compileFile": {
+        "path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+        "exists": true,
+        "compiled": true,
+        "marker": false,
+        "bytes": 1143
+      },
+      "lens": {
+        "path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+        "exists": true,
+        "compiled": true,
+        "marker": false,
+        "bytes": 1143
+      }
+    },
+    "after": {
+      "compileFile": {
+        "path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+        "exists": true,
+        "compiled": true,
+        "marker": true,
+        "bytes": 1169
+      },
+      "lens": {
+        "path": "<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql",
+        "exists": true,
+        "compiled": true,
+        "marker": true,
+        "bytes": 1169
+      }
+    },
+    "targetLspExists": true,
+    "passes": true
+  },
+  "shared": {
+    "before": {
+      "compileFile": {
+        "path": "<P>/target/compiled/jaffle_shop/models/orders.sql",
+        "exists": true,
+        "compiled": true,
+        "marker": false,
+        "bytes": 1143
+      },
+      "lens": {
+        "path": "<P>/target/compiled/jaffle_shop/models/orders.sql",
+        "exists": true,
+        "compiled": true,
+        "marker": false,
+        "bytes": 1143
+      }
+    },
+    "after": {
+      "compileFile": {
+        "path": "<P>/target/compiled/jaffle_shop/models/orders.sql",
+        "exists": true,
+        "compiled": true,
+        "marker": true,
+        "bytes": 1169
+      },
+      "lens": {
+        "path": "<P>/target/compiled/jaffle_shop/models/orders.sql",
+        "exists": true,
+        "compiled": true,
+        "marker": true,
+        "bytes": 1169
+      }
+    },
+    "targetLspExists": false,
+    "passes": true
+  },
+  "decision": "both modes pass: 2.7 and 2.9 read the returned paths verbatim"
+}

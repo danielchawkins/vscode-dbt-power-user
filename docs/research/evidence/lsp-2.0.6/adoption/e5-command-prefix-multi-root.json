@@ -1,0 +1,122 @@
+{
+  "experiment": "e5-command-prefix",
+  "target": "multi-root",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:13:25.500Z",
+  "rule": "observe; 2.9 matches it",
+  "projects": [
+    {
+      "project": "general",
+      "prefix": "fusionPowerUser:<digest>:",
+      "loaded": true,
+      "advertised": [
+        "fusionPowerUser:<digest>:dbt.listNodes",
+        "fusionPowerUser:<digest>:dbt.getCurrentNode",
+        "fusionPowerUser:<digest>:dbt.compileFile",
+        "fusionPowerUser:<digest>:dbt.compileLsp",
+        "fusionPowerUser:<digest>:dbt.clearTarget",
+        "fusionPowerUser:<digest>:dbt.getProjectInfo",
+        "fusionPowerUser:<digest>:dbt.show"
+      ],
+      "lensCommands": [
+        "dbt.previewCte"
+      ],
+      "lensCount": 2,
+      "lensArguments": [
+        "<general>/models/general_ctes.sql",
+        {
+          "compiled_path": "<general>/target/.lsp/compiled/general/models/general_ctes.sql",
+          "compiled_start": 0,
+          "compiled_stop": 37,
+          "name": "first_cte",
+          "start": 0,
+          "start_location": {
+            "col": 6,
+            "index": 5,
+            "line": 1
+          },
+          "stop": 37
+        }
+      ],
+      "prefixedExecutes": {
+        "result": {
+          "adapter_type": "duckdb",
+          "models_count": 2,
+          "models_count_is_estimate": false,
+          "project_name": "general"
+        },
+        "error": null
+      },
+      "bareExecutes": {
+        "result": {
+          "adapter_type": "duckdb",
+          "models_count": 2,
+          "models_count_is_estimate": false,
+          "project_name": "general"
+        },
+        "error": null
+      },
+      "otherPrefixExecutes": {
+        "result": null,
+        "error": null
+      }
+    },
+    {
+      "project": "sox",
+      "prefix": "fusionPowerUser:<digest>:",
+      "loaded": true,
+      "advertised": [
+        "fusionPowerUser:<digest>:dbt.listNodes",
+        "fusionPowerUser:<digest>:dbt.getCurrentNode",
+        "fusionPowerUser:<digest>:dbt.compileFile",
+        "fusionPowerUser:<digest>:dbt.compileLsp",
+        "fusionPowerUser:<digest>:dbt.clearTarget",
+        "fusionPowerUser:<digest>:dbt.getProjectInfo",
+        "fusionPowerUser:<digest>:dbt.show"
+      ],
+      "lensCommands": [
+        "dbt.previewCte"
+      ],
+      "lensCount": 2,
+      "lensArguments": [
+        "<sox>/models/sox_ctes.sql",
+        {
+          "compiled_path": "<sox>/target/.lsp/compiled/sox/models/sox_ctes.sql",
+          "compiled_start": 0,
+          "compiled_stop": 37,
+          "name": "first_cte",
+          "start": 0,
+          "start_location": {
+            "col": 6,
+            "index": 5,
+            "line": 1
+          },
+          "stop": 37
+        }
+      ],
+      "prefixedExecutes": {
+        "result": {
+          "adapter_type": "duckdb",
+          "models_count": 2,
+          "models_count_is_estimate": false,
+          "project_name": "sox"
+        },
+        "error": null
+      },
+      "bareExecutes": {
+        "result": {
+          "adapter_type": "duckdb",
+          "models_count": 2,
+          "models_count_is_estimate": false,
+          "project_name": "sox"
+        },
+        "error": null
+      },
+      "otherPrefixExecutes": {
+        "result": null,
+        "error": null
+      }
+    }
+  ],
+  "decision": "lens command [\"dbt.previewCte\"]; executeCommandProvider names carry the prefix; prefixed call answers, bare call answers"
+}

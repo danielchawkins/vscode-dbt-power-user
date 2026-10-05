@@ -1,0 +1,136 @@
+{
+  "experiment": "e8-baseline-mode",
+  "target": "finance",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:44:01.119Z",
+  "rule": "see header",
+  "strict": {
+    "loadMs": 14157,
+    "grain": "project",
+    "error": null,
+    "nodes": 1600,
+    "byType": {
+      "model": 330,
+      "source": 1270
+    },
+    "modelIds": 330,
+    "edges": 684,
+    "lensCount": 4,
+    "lensCommands": [
+      "dbt.previewCte"
+    ],
+    "columnSample": [
+      "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+      "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+      "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+      "models/12_base/backend/backend_grant/base__backend_grant__ach_credits.sql",
+      "models/12_base/backend/backend_grant/base__backend_grant__ach_payments.sql"
+    ],
+    "columnCounts": {
+      "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql": 24,
+      "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql": 36,
+      "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql": 26,
+      "models/12_base/backend/backend_grant/base__backend_grant__ach_credits.sql": 30,
+      "models/12_base/backend/backend_grant/base__backend_grant__ach_payments.sql": 40
+    },
+    "fallbackUsed": {},
+    "columnMs": [
+      1,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1,
+      0,
+      0,
+      1
+    ],
+    "columnP50": 0
+  },
+  "baseline": {
+    "loadMs": 7772,
+    "grain": "project",
+    "error": null,
+    "nodes": 1600,
+    "byType": {
+      "model": 330,
+      "source": 1270
+    },
+    "modelIds": 330,
+    "edges": 684,
+    "lensCount": 4,
+    "lensCommands": [
+      "dbt.previewCte"
+    ],
+    "columnSample": [
+      "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql",
+      "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql",
+      "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql",
+      "models/12_base/backend/backend_grant/base__backend_grant__ach_credits.sql",
+      "models/12_base/backend/backend_grant/base__backend_grant__ach_payments.sql"
+    ],
+    "columnCounts": {
+      "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql": 24,
+      "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql": 36,
+      "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql": 26,
+      "models/12_base/backend/backend_grant/base__backend_grant__ach_credits.sql": 31,
+      "models/12_base/backend/backend_grant/base__backend_grant__ach_payments.sql": 41
+    },
+    "fallbackUsed": {
+      "models/13_staging/money_movement/stripe/stg__stripe__transfer_reversal.sql": true,
+      "models/13_staging/money_movement/marqeta/stg__marqeta__declines.sql": true,
+      "models/12_base/money_movement/stripe_grant/base__stripe_grant__topup.sql": true,
+      "models/12_base/backend/backend_grant/base__backend_grant__ach_credits.sql": true,
+      "models/12_base/backend/backend_grant/base__backend_grant__ach_payments.sql": true
+    },
+    "columnMs": [
+      2747,
+      2402,
+      2044,
+      1965,
+      2250,
+      2079,
+      1989,
+      1932,
+      1985,
+      2141,
+      1895,
+      1969,
+      2084,
+      2011,
+      1942,
+      1967,
+      2151,
+      2885,
+      2015,
+      1915,
+      2337,
+      2059,
+      2049,
+      5460,
+      4095
+    ],
+    "columnP50": 2049
+  },
+  "missingModels": [],
+  "missingEdges": [],
+  "missingEdgeCount": 0,
+  "stop": false,
+  "decision": "passes: baseline listNodes returns every strict model and edge; graph fields stay server-owned in baseline"
+}
