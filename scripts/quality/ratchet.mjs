@@ -8,6 +8,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { strictErrors } from "./strict-ts.mjs";
 
 const root = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -70,6 +71,18 @@ export const METRICS = [
     kind: "ceiling",
     precision: 0,
     measure: internalTagCount,
+  },
+  {
+    key: "strictTs.host",
+    kind: "ceiling",
+    precision: 0,
+    measure: () => strictErrors("host"),
+  },
+  {
+    key: "strictTs.webview",
+    kind: "ceiling",
+    precision: 0,
+    measure: () => strictErrors("webview"),
   },
 ];
 
