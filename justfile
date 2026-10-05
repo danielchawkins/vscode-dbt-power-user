@@ -181,6 +181,7 @@ fmt-markdown:
 lint-markdown:
     dprint check
     rumdl check .
+    node scripts/quality/docs-symbols.mjs
 
 [group("quality")]
 fmt-shell:

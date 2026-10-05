@@ -1,1 +1,11 @@
 # Names the documents may mention that the code does not define.
+# ADR 0005 records the deleted capture suite and the diagnostic code it compared.
+src/test/integration/s1DependencyDiagnosticsCapture.test.ts
+# ADR 0005 and the evidence README describe the deleted launch builder (now toLspLaunch).
+buildFusionLspArgs
+# ADR 0005 cites the LSP initialize capability, a protocol key.
+diagnosticProvider
+# ADR 0005 names a field of the deleted capture suite's decision record.
+fusionRootBlocker
+# ADR 0005 names a field of the deleted capture suite's decision record.
+syntheticBlocker
