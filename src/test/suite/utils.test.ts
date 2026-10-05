@@ -2,11 +2,9 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { Position, Uri, window, workspace } from "vscode";
+import { Uri, window, workspace } from "vscode";
 import { getExternalProjectNamesFromDbtLoomConfig } from "../../core/manifest";
 import {
-  arrayEquals,
-  debounce,
   getColumnNameByCase,
   getColumnTestConfigFromYml,
   getCurrentlySelectedModelNameInYamlConfig,
@@ -15,10 +13,8 @@ import {
   getStringSizeInMb,
   isAcceptedValues,
   isColumnNameEqual,
-  isEnclosedWithinCodeBlock,
   isQuotedIdentifier,
   isRelationship,
-  setupWatcherHandler,
   stripANSI,
 } from "../../utils";
 
@@ -135,35 +131,6 @@ describe("utils tests", () => {
     expect(result).toBeNull();
   });
 
-  it("setupWatcherHandler wires events", () => {
-    const watcher = {
-      onDidChange: vi.fn((cb: any) => (cb(), { dispose: vi.fn() })),
-      onDidCreate: vi.fn((cb: any) => (cb(), { dispose: vi.fn() })),
-      onDidDelete: vi.fn((cb: any) => (cb(), { dispose: vi.fn() })),
-    } as any;
-    const handler = vi.fn();
-    const disposables = setupWatcherHandler(watcher, handler);
-    expect(handler).toHaveBeenCalledTimes(3);
-    expect(disposables).toHaveLength(3);
-  });
-
-  it("arrayEquals compares arrays regardless of order", () => {
-    expect(arrayEquals([1, 2], [2, 1])).toBe(true);
-    expect(arrayEquals([1, 2], [1, 2, 3])).toBe(false);
-  });
-
-  it("debounce delays execution", () => {
-    vi.useFakeTimers();
-    const fn = vi.fn();
-    const debounced = debounce(fn as any, 50);
-    debounced();
-    vi.advanceTimersByTime(49);
-    expect(fn).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(1);
-    expect(fn).toHaveBeenCalled();
-    vi.useRealTimers();
-  });
-
   it("stripANSI removes escape codes", () => {
     const cleaned = stripANSI("\u001b[31mred\u001b[0m");
     expect(cleaned).toBe("red");
@@ -172,20 +139,5 @@ describe("utils tests", () => {
   it("getFormattedDateTime formats date", () => {
     const formatted = getFormattedDateTime();
     expect(formatted).toMatch(/^\d{2}-\d{2}-\d{4}-\d{2}-\d{2}-\d{2}$/);
-  });
-
-  it("isEnclosedWithinCodeBlock detects braces", () => {
-    const lines = ["{{", "ref('model')", "}}", "other"];
-    const document = {
-      lineCount: lines.length,
-      lineAt: (i: number) => ({ text: lines[i] }),
-    } as any;
-    const range = { start: new Position(1, 2), end: new Position(1, 5) } as any;
-    expect(isEnclosedWithinCodeBlock(document, range)).toBe(true);
-    const outside = {
-      start: new Position(3, 1),
-      end: new Position(3, 2),
-    } as any;
-    expect(isEnclosedWithinCodeBlock(document, outside)).toBe(false);
   });
 });

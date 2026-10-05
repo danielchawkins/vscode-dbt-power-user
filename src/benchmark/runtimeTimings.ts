@@ -45,11 +45,6 @@ export function getWebviewRuntimeTimings(): WebviewRuntimeTiming[] {
   return records.map((record) => ({ ...record }));
 }
 
-export function clearWebviewRuntimeTimings(): void {
-  resolveStarts.clear();
-  records.length = 0;
-}
-
 /** Registers {@link RUNTIME_TIMINGS_COMMAND} when the runtime benchmark asks for it. */
 export function registerRuntimeTimings(): Disposable | undefined {
   if (!enabled()) {

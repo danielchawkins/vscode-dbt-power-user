@@ -41,10 +41,7 @@ import { DbtTaskTerminal } from "../../projects/dbtTask";
 import { ManifestParsers } from "../../projects/manifest";
 import { Manifest } from "../../projects/manifestTypes";
 import { Project } from "../../projects/project";
-import {
-  enqueueCommand,
-  ProjectCommandDeps,
-} from "../../projects/projectCommands";
+import { ProjectCommandDeps, queueCli } from "../../projects/projectCommands";
 import { ProjectDiagnostics } from "../../projects/projectDiagnostics";
 import { RunHistoryService } from "../../projects/runHistoryService";
 import { SharedStateService } from "../../projects/sharedStateService";
@@ -64,6 +61,19 @@ const fixtureRoot = path.resolve(
 
 const commandDeps = (project: Project) =>
   (project as unknown as { commandDeps: ProjectCommandDeps }).commandDeps;
+const enqueueCommand = (
+  deps: ProjectCommandDeps,
+  command: DBTCommand,
+  terminal: DbtTaskTerminal,
+) =>
+  queueCli(
+    {
+      ...deps,
+      cli: () => ({ prepare: () => command }) as unknown as FusionCli,
+    },
+    { kind: "run", select: "my_model" },
+    terminal,
+  );
 const projectDiagnostics = (project: Project) =>
   (project as unknown as { diagnostics: ProjectDiagnostics }).diagnostics;
 const flush = async () => {
