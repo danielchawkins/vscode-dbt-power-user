@@ -5,7 +5,7 @@ import {
   languages,
   Uri,
 } from "vscode";
-import { DBTDiagnosticData } from "../../dbt_integration/diagnostics";
+import { DBTDiagnosticData } from "../../core/diagnostics";
 import { ProjectDiagnostics } from "../../projects/projectDiagnostics";
 
 const data = (

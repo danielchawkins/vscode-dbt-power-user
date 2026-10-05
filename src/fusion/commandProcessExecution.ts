@@ -1,7 +1,7 @@
 import { spawnProcess } from "./process";
 
 import type { Log } from "../core/log";
-import { EnvironmentVariables } from "../dbt_integration/domain";
+import { CommandProcessResult, EnvironmentVariables } from "../core/types";
 
 function isCommandNotFoundError(error: unknown): boolean {
   return (
@@ -44,14 +44,6 @@ export class CommandProcessExecutionFactory {
       envVars,
     );
   }
-}
-
-export interface CommandProcessResult {
-  stdout: string;
-  stderr: string;
-  fullOutput: string;
-  /** Null when the process was ended by a signal. */
-  exitCode?: number | null;
 }
 
 /** @internal */

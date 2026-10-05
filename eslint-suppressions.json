@@ -115,7 +115,7 @@
       "count": 1
     }
   },
-  "src/dbt_integration/dbtIntegration.ts": {
+  "src/core/dbtCommand.ts": {
     "max-params": {
       "count": 1
     }

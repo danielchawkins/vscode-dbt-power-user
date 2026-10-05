@@ -1,7 +1,7 @@
 import { Disposable, Event, EventEmitter, Uri } from "vscode";
+import { type DBTDiagnosticData } from "../core/diagnostics";
 import type { Log } from "../core/log";
 import { dbtProjectFilePath } from "../core/project";
-import { type DBTDiagnosticData } from "../dbt_integration/diagnostics";
 import { onDidChangeSettings, SettingsChange } from "../settings";
 import { FusionCli } from "./fusionCli";
 import {

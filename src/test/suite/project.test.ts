@@ -12,6 +12,8 @@ import {
   vi,
 } from "vitest";
 import * as vscode from "vscode";
+import { DBTCommand, QueryExecution } from "../../core/dbtCommand";
+import { DBTDiagnosticData } from "../../core/diagnostics";
 import type { Log } from "../../core/log";
 import {
   ChildrenParentParser,
@@ -30,11 +32,6 @@ import {
 } from "../../core/manifest";
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
 import { DBT_PROJECT_FILE } from "../../core/project";
-import {
-  DBTCommand,
-  QueryExecution,
-} from "../../dbt_integration/dbtIntegration";
-import { DBTDiagnosticData } from "../../dbt_integration/diagnostics";
 import { MANIFEST_FILE } from "../../dbt_integration/domain";
 import { FusionCli } from "../../fusion/fusionCli";
 import { DbtTaskTerminal } from "../../projects/dbtTask";

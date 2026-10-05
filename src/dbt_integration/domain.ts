@@ -113,10 +113,6 @@ export enum RunModelType {
   TEST,
 }
 
-export interface EnvironmentVariables {
-  [key: string]: string | undefined;
-}
-
 export const MANIFEST_FILE = "manifest.json";
 export const RUN_RESULTS_FILE = "run_results.json";
 export const CATALOG_FILE = "catalog.json";
@@ -126,8 +122,6 @@ export interface RunModelParams {
   modelName: string;
   plusOperatorRight: string;
 }
-
-export type DBColumn = { column: string; dtype: string };
 
 export interface QueryExecutionResult {
   columnNames: string[];

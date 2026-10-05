@@ -1,4 +1,4 @@
-import { CommandProcessResult } from "../fusion/commandProcessExecution";
+import { CommandProcessResult } from "./types";
 
 export interface DBTCommandExecutionStrategy {
   execute(

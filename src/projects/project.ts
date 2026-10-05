@@ -7,6 +7,7 @@ import {
   Uri,
   window,
 } from "vscode";
+import { QueryExecution } from "../core/dbtCommand";
 import type { Log } from "../core/log";
 import { type ManifestProject } from "../core/manifest";
 import {
@@ -14,14 +15,12 @@ import {
   readDbtProjectFile,
   ResolvedDefer,
 } from "../core/project";
-import { QueryExecution } from "../dbt_integration/dbtIntegration";
+import { CommandProcessResult, DBColumn } from "../core/types";
 import {
-  DBColumn,
   ParsedManifest,
   QueryExecutionResult,
   RunModelParams,
 } from "../dbt_integration/domain";
-import { CommandProcessResult } from "../fusion/commandProcessExecution";
 import {
   ExecutableLifecycle,
   FusionCommandIntegrationFactory,

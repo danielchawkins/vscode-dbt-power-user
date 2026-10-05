@@ -15,22 +15,16 @@ import {
   toCliArgs,
   toCliEnvironment,
 } from "../core/cli";
+import { DBTCommand, QueryExecution } from "../core/dbtCommand";
+import { DBTDiagnosticData, DBTDiagnosticResult } from "../core/diagnostics";
 import type { Log } from "../core/log";
 import {
   DBT_PROJECT_FILE,
   deferSettingsKey,
   ProjectSnapshot,
 } from "../core/project";
-import { DBTCommand, QueryExecution } from "../dbt_integration/dbtIntegration";
-import {
-  DBTDiagnosticData,
-  DBTDiagnosticResult,
-} from "../dbt_integration/diagnostics";
-import { DBColumn } from "../dbt_integration/domain";
-import {
-  CommandProcessExecutionFactory,
-  CommandProcessResult,
-} from "./commandProcessExecution";
+import { CommandProcessResult, DBColumn } from "../core/types";
+import { CommandProcessExecutionFactory } from "./commandProcessExecution";
 
 /** The resolved dbt binary and the environment every invocation inherits. */
 export interface FusionCliExecutable {

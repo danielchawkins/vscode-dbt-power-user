@@ -7,10 +7,8 @@ import {
   ProjectSnapshotSettings,
   resolveProjectSnapshot,
 } from "../../core/project";
-import {
-  CommandProcessExecutionFactory,
-  CommandProcessResult,
-} from "../../fusion/commandProcessExecution";
+import { CommandProcessResult } from "../../core/types";
+import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { noSettings, snapshotFolder } from "../arbitraries/projectSnapshot";
 

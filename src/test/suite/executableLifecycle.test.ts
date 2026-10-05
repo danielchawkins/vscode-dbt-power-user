@@ -8,8 +8,8 @@ import {
   vi,
 } from "vitest";
 import { ConfigurationChangeEvent, Uri, workspace } from "vscode";
+import { DBTDiagnosticData } from "../../core/diagnostics";
 import type { Log } from "../../core/log";
-import { DBTDiagnosticData } from "../../dbt_integration/diagnostics";
 import {
   ExecutableLifecycle,
   ExecutableLifecycleHooks,

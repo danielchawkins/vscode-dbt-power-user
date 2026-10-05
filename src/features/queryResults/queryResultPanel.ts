@@ -14,12 +14,12 @@ import {
 } from "vscode";
 
 import * as path from "path";
-import type { Log } from "../../core/log";
 import {
   ExecuteSQLError,
   ExecuteSQLResult,
   QueryExecution,
-} from "../../dbt_integration/dbtIntegration";
+} from "../../core/dbtCommand";
+import type { Log } from "../../core/log";
 import { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
 import { activeModelUri } from "../../projects/previewUri";

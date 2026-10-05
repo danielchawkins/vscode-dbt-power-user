@@ -1,9 +1,6 @@
 import { window } from "vscode";
+import { type ExecuteSQLResult, QueryExecution } from "../core/dbtCommand";
 import type { Log } from "../core/log";
-import {
-  type ExecuteSQLResult,
-  QueryExecution,
-} from "../dbt_integration/dbtIntegration";
 import { type QueryExecutionResult } from "../dbt_integration/domain";
 import { FusionCli } from "../fusion/fusionCli";
 

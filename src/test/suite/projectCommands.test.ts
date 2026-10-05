@@ -1,9 +1,9 @@
 import * as fs from "fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
+import { DBTCommand } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import { ProjectSnapshot } from "../../core/project";
-import { DBTCommand } from "../../dbt_integration/dbtIntegration";
 import { RunModelType } from "../../dbt_integration/domain";
 import { FusionCli } from "../../fusion/fusionCli";
 import { CommandQueue } from "../../projects/commandQueue";

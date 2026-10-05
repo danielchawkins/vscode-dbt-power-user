@@ -1,9 +1,9 @@
 import { commands, Disposable, EventEmitter, Uri, window } from "vscode";
 import { firstLogLine, isConfigError, textLogErrors } from "../core/cli";
+import { DBTDiagnosticData } from "../core/diagnostics";
 import type { Log } from "../core/log";
 import { ProjectSnapshot } from "../core/project";
-import { DBTDiagnosticData } from "../dbt_integration/diagnostics";
-import { CommandProcessResult } from "../fusion/commandProcessExecution";
+import { CommandProcessResult } from "../core/types";
 
 /** Where a project error came from; each source's errors are replaced independently. */
 export type ProjectErrorSource = "parse" | "compile" | "executable";

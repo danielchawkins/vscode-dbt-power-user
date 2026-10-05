@@ -11,7 +11,7 @@ import {
 } from "vscode";
 import type { Log } from "../core/log";
 import { ColumnMetaData } from "../core/manifest/types";
-import { DBColumn } from "../dbt_integration/domain";
+import { DBColumn } from "../core/types";
 import { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
 import { getColumnNameByCase } from "../utils";
