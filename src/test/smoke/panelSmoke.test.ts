@@ -392,8 +392,23 @@ interface PanelTheme {
   ready: boolean;
 }
 
-/** The page's theme class, the computed colors of its body and first button, and whether its content has loaded. */
-const READ_PANEL_THEME = `(() => {
+/** Records the page's React Flow warnings in `window.fpuLineageWarnings`; installed once per lineage page. */
+const CAPTURE_LINEAGE_WARNINGS = `
+  if (document.body.dataset.entry === "lineage" && !window.fpuLineageWarnings) {
+    window.fpuLineageWarnings = [];
+    const warn = console.warn.bind(console);
+    console.warn = (...args) => {
+      const text = args.map(String).join(" ");
+      if (text.includes("React Flow")) window.fpuLineageWarnings.push(text.slice(0, 300));
+      warn(...args);
+    };
+  }`;
+
+/**
+ * The page's theme class, the computed colors of its body and first button, and whether its content has loaded.
+ * On the lineage page it first installs the React Flow warning capture, so the capture precedes the first draw.
+ */
+const READ_PANEL_THEME = `(() => {${CAPTURE_LINEAGE_WARNINGS}
   const body = document.body;
   const kind = ["vscode-high-contrast", "vscode-dark", "vscode-light"].find((c) => body.classList.contains(c)) ?? "";
   const style = getComputedStyle(body);
@@ -422,6 +437,8 @@ interface LineageGraph {
   columnLists: number;
   columns: string;
   tables: string[];
+  /** React Flow warnings the page logged since it was first reached. */
+  warnings: string[];
 }
 
 /** The drawn tables, table and column edges, and open column lists of the lineage graph. */
@@ -435,6 +452,7 @@ const READ_LINEAGE_GRAPH = `(() => {
     columnLists: lists.length,
     columns: lists.map((l) => l.innerText.replace(/\\s+/g, " ").trim()).join(" | ").slice(0, 200),
     tables: [...document.querySelectorAll("[data-table]")].map((n) => n.dataset.table),
+    warnings: (window.fpuLineageWarnings ?? []).slice(-10),
   };
 })()`;
 
@@ -488,6 +506,11 @@ function assertLineageDrawn(graph: LineageGraph | undefined, theme: string) {
     assert.ok(
       graph.nodes >= 2 && graph.edges >= 1 && graph.columnLists >= 1,
       `lineage must draw nodes, an edge and a column list under ${theme}: ${JSON.stringify(graph)}`,
+    );
+    assert.deepStrictEqual(
+      graph.warnings,
+      [],
+      `lineage must draw without React Flow warnings under ${theme}`,
     );
   }
 }

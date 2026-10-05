@@ -20,6 +20,7 @@ import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
 import TableDetails from "./TableDetails";
 import { TableNode } from "./TableNode";
 import Toolbar from "./Toolbar";
+import { useHandleMeasurement } from "./useHandleMeasurement";
 import { useLineageGraph } from "./useLineageGraph";
 import {
   ResolvedSettings,
@@ -29,6 +30,11 @@ import {
 } from "./viewModel";
 
 const nodeTypes = { table: TableNode };
+
+/** Logs React Flow's warnings to the webview devtools console. */
+const onError = (code: string, message: string) => {
+  panelLogger.warn(`[React Flow] ${code}: ${message}`);
+};
 
 /** The host's view settings; a change is applied at once and persisted through `persistLineageSettings`. */
 const useSettings = () => {
@@ -136,6 +142,7 @@ const Canvas = ({
   const canvas = useSize();
   const minimap = useMinimap(canvas.size);
   const flow = useReactFlow();
+  useHandleMeasurement(nodes);
   const { width, height } = canvas.size;
   // Re-fit after the panel is resized, so a shrunk panel still shows the whole graph.
   useEffect(() => {
@@ -155,6 +162,7 @@ const Canvas = ({
         minZoom={0.05}
         fitView
         proOptions={{ hideAttribution: true }}
+        onError={onError}
         onNodeClick={(_event: unknown, node: { id: string }) => select(node.id)}
         onPaneClick={() => select(undefined)}
       >
