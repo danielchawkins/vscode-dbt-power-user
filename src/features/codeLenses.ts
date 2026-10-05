@@ -1,5 +1,8 @@
 import { Disposable, languages } from "vscode";
-import { DBTPowerUserExtension } from "../dbtPowerUserExtension";
+import {
+  DBT_SQL_SELECTOR,
+  DBT_YAML_SELECTOR,
+} from "../fusion/documentSelectors";
 import { Projects } from "../projects/projects";
 import { SourceModelCreationCodeLensProvider } from "./codegen/sourceModelCreationCodeLensProvider";
 import { CteCodeLensProvider } from "./cte/cteCodeLensProvider";
@@ -26,23 +29,23 @@ export class CodeLensProviders implements Disposable {
   private registerProviders(): void {
     this.disposables.push(
       languages.registerCodeLensProvider(
-        DBTPowerUserExtension.DBT_YAML_SELECTOR,
+        DBT_YAML_SELECTOR,
         this.sourceModelCreationCodeLensProvider,
       ),
       languages.registerCodeLensProvider(
-        DBTPowerUserExtension.DBT_SQL_SELECTOR,
+        DBT_SQL_SELECTOR,
         this.virtualSqlCodeLensProvider,
       ),
       languages.registerCodeLensProvider(
-        DBTPowerUserExtension.DBT_SQL_SELECTOR,
+        DBT_SQL_SELECTOR,
         this.cteCodeLensProvider,
       ),
       languages.registerCodeLensProvider(
-        DBTPowerUserExtension.DBT_SQL_SELECTOR,
+        DBT_SQL_SELECTOR,
         this.sqlActionsCodeLensProvider,
       ),
       languages.registerCodeLensProvider(
-        DBTPowerUserExtension.DBT_YAML_SELECTOR,
+        DBT_YAML_SELECTOR,
         this.sqlActionsCodeLensProvider,
       ),
     );
