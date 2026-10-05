@@ -66,11 +66,11 @@ function fusionSkipReason(
       return "dbt Fusion major version is untested";
     case "ok":
     case "notFound":
-      return "dbt Fusion on PATH is not supported for this probe";
+      return "dbt Fusion on PATH is not supported for this test";
   }
 }
 
-suite("Fusion LSP capture probe", function () {
+suite("Lineage progress retention", function () {
   this.timeout(30_000);
 
   const fusionVerdict = checkFusionVersion();
@@ -78,13 +78,13 @@ suite("Fusion LSP capture probe", function () {
   suiteSetup(function () {
     if (fusionVerdict.kind !== "ok") {
       console.warn(
-        `Skipping Fusion LSP capture probe: ${fusionSkipReason(fusionVerdict)}.`,
+        `Skipping lineage progress retention: ${fusionSkipReason(fusionVerdict)}.`,
       );
       this.skip();
     }
   });
 
-  // Capture-client health probe: verifies stable cursors and retention over a
+  // Verifies stable cursors and retention over a
   // read-shaped command in a temp copy. Not product bootstrap or load proof.
   test("retains Computing Lineage progress after listNodes", async function () {
     const sourceRoot = fixturePath("single-project");
