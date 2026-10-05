@@ -67,7 +67,10 @@ type SelectionFlag = keyof typeof SELECTION_FLAGS;
 const isSelectionFlag = (flag: string): flag is SelectionFlag =>
   flag in SELECTION_FLAGS;
 
-/** Reads the subcommand, `--select`/`--exclude`/`--selector` lists, and `--full-refresh` from dbt CLI args. */
+/**
+ * Reads the subcommand, `--select`/`--exclude`/`--selector` lists, and `--full-refresh` from dbt CLI args.
+ * @internal
+ */
 export function selectionFromCliArgs(args: readonly string[]): CliSelection {
   const selection: CliSelection = {
     which: args[0] !== undefined && !args[0].startsWith("-") ? args[0] : "",
@@ -146,6 +149,7 @@ function formatRunCommand(runArgs: RunArgs): string {
   return parts.join(" ");
 }
 
+/** @internal */
 export function resolveRunStatus(
   status: string,
 ): RunResultsEventData["results"][0]["status"] {
@@ -163,7 +167,10 @@ export function resolveRunStatus(
   }
 }
 
-/** Builds a history entry from run_results.json, selection falling back to `launched`; throws on missing fields. */
+/**
+ * Builds a history entry from run_results.json, selection falling back to `launched`; throws on missing fields.
+ * @internal
+ */
 export function parseRunResultsJson(
   raw: unknown,
   projectName: string,

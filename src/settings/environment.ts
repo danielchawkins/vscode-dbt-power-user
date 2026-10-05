@@ -6,7 +6,10 @@ const ENVIRONMENT_OVERRIDES = {
   dbtLoomConfigPath: "DBT_LOOM_CONFIG_PATH",
 } as const;
 
-/** Set by this repository's smoke and benchmark runners, never by users. */
+/**
+ * Set by this repository's smoke and benchmark runners, never by users.
+ * @internal
+ */
 export const HARNESS_SWITCHES = {
   /** `"1"` records webview runtime timings for the benchmark. */
   runtimeBenchmark: "FPU_RUNTIME_BENCHMARK",

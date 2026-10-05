@@ -93,7 +93,10 @@ export interface Composition {
 const readDbtLoomConfigPath = () =>
   readEnvironmentOverride("dbtLoomConfigPath");
 
-/** Builds a fresh set of manifest parsers; each Project gets its own. */
+/**
+ * Builds a fresh set of manifest parsers; each Project gets its own.
+ * @internal
+ */
 export function createProjectParsers(terminal: DBTTerminal) {
   return {
     childrenParentParser: new ChildrenParentParser(),

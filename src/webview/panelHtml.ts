@@ -2,7 +2,10 @@ import { randomBytes } from "crypto";
 import { readFileSync } from "fs";
 import { Uri, Webview, WebviewOptions } from "vscode";
 
-/** The Vite entries under `webview_panels/src/entries`, one per panel. */
+/**
+ * The Vite entries under `webview_panels/src/entries`, one per panel.
+ * @internal
+ */
 export const panelEntries = [
   "documentationEditor",
   "queryResults",
@@ -46,7 +49,10 @@ export function panelWebviewOptions(extensionUri: Uri): WebviewOptions {
   return { enableScripts: true, localResourceRoots: [assetRoot(extensionUri)] };
 }
 
-/** The entry's script and every stylesheet its static imports carry, as paths under `dist`. */
+/**
+ * The entry's script and every stylesheet its static imports carry, as paths under `dist`.
+ * @internal
+ */
 export function entryAssets(
   manifest: ViteManifest,
   entry: PanelEntry,
@@ -71,7 +77,10 @@ export function entryAssets(
   return { script: manifest[key].file, styles: [...styles] };
 }
 
-/** The policy for one page: everything denied, then the shared allowances and the panel's own. */
+/**
+ * The policy for one page: everything denied, then the shared allowances and the panel's own.
+ * @internal
+ */
 export function contentSecurityPolicy(
   cspSource: string,
   nonce: string,

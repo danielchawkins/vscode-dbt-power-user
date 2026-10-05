@@ -49,7 +49,10 @@ function markColumnTypesUnknown(result: ExecuteSQLResult): ExecuteSQLResult {
   };
 }
 
-/** Strips a trailing semicolon and trailing `LIMIT n`, which overrides `limit` when positive. */
+/**
+ * Strips a trailing semicolon and trailing `LIMIT n`, which overrides `limit` when positive.
+ * @internal
+ */
 export function normalizeQueryLimit(
   query: string,
   limit: number,
@@ -68,7 +71,10 @@ export function normalizeQueryLimit(
   return { query: normalizedQuery, limit };
 }
 
-/** Runs `query` against `modelName`; `immediate` awaits and row-shapes the result. */
+/**
+ * Runs `query` against `modelName`; `immediate` awaits and row-shapes the result.
+ * @internal
+ */
 export async function executeSql(
   cli: SqlExecutor,
   query: string,

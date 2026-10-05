@@ -1,5 +1,6 @@
 import * as net from "net";
 
+/** @internal */
 export interface Disposable {
   dispose(): void;
 }

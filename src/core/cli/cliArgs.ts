@@ -163,7 +163,10 @@ function deferArgs(state: DeferState): string[] {
   }
 }
 
-/** Whether `params` already set a flag as `--name value`, `--name=value` or, given an alias, `-t value`/`-tvalue`. */
+/**
+ * Whether `params` already set a flag as `--name value`, `--name=value` or, given an alias, `-t value`/`-tvalue`.
+ * @internal
+ */
 export function carriesFlag(
   params: readonly string[],
   name: string,

@@ -65,6 +65,7 @@ export const emptyGraph = (start?: LineageTable): GraphState => ({
 const expansionKey = (direction: Direction, table: string): string =>
   `${direction === "children" ? "c" : "p"}:${table}`;
 
+/** @internal */
 export const parseExpansion = (
   key: string,
 ): [Direction, string] | undefined => {
@@ -90,7 +91,10 @@ const neighbourCount = (
   direction: Direction,
 ): number => (direction === "children" ? table.childCount : table.parentCount);
 
-/** The drawn tables and table edges, each edge `[parent, child]`. */
+/**
+ * The drawn tables and table edges, each edge `[parent, child]`.
+ * @internal
+ */
 export function drawnGraph(state: GraphState): {
   tables: LineageTable[];
   edges: [string, string][];
@@ -153,7 +157,10 @@ function prune(state: GraphState): GraphState {
   }
 }
 
-/** Draws `neighbours` as the `direction` neighbours of `table`. */
+/**
+ * Draws `neighbours` as the `direction` neighbours of `table`.
+ * @internal
+ */
 export function addNeighbours(
   state: GraphState,
   direction: Direction,

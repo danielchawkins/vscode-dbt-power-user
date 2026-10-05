@@ -3,11 +3,17 @@ import { ExecuteSQLResult, QueryExecution } from "../../dbt_integration";
 import { testCommandsEnabled } from "../../settings";
 import { QueryResultPanel } from "./queryResultPanel";
 
-/** Test-only: shows a synthetic result of `rowCount` rows through the host's query path. */
+/**
+ * Test-only: shows a synthetic result of `rowCount` rows through the host's query path.
+ * @internal
+ */
 export const RENDER_TEST_RESULT_COMMAND =
   "fusionPowerUser.test.renderQueryResult";
 
-/** A five-column result of `rowCount` rows, shaped like an `executeSQL` table. */
+/**
+ * A five-column result of `rowCount` rows, shaped like an `executeSQL` table.
+ * @internal
+ */
 export function syntheticResult(rowCount: number): ExecuteSQLResult {
   return {
     table: {

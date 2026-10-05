@@ -34,7 +34,10 @@ interface FileNameTemplateMap {
   [key: string]: string;
 }
 
-/** Renders a schema YAML document listing `columnsInRelation` under model `modelName`. */
+/**
+ * Renders a schema YAML document listing `columnsInRelation` under model `modelName`.
+ * @internal
+ */
 export function createYMLContent(
   columnsInRelation: { [key: string]: string }[],
   modelName: string,

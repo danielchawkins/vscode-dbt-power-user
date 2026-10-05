@@ -46,10 +46,16 @@ type FieldKind = "number" | "string" | "strings";
 /** Longest string a view state field may hold. */
 export const MAX_VIEW_STATE_STRING = 200;
 
-/** Most entries a `strings` field may hold. */
+/**
+ * Most entries a `strings` field may hold.
+ * @internal
+ */
 export const MAX_VIEW_STATE_LIST = 200;
 
-/** Every key each panel may persist and its kind; `panel` is checked separately. */
+/**
+ * Every key each panel may persist and its kind; `panel` is checked separately.
+ * @internal
+ */
 export const VIEW_STATE_FIELDS: {
   [P in PanelName]: Record<Exclude<keyof ViewStateOf<P>, "panel">, FieldKind>;
 } = {
@@ -88,7 +94,10 @@ const fitsKind = (kind: FieldKind, value: unknown): boolean => {
   }
 };
 
-/** True when `value` is a view state of `panel` holding only that panel's allowlisted fields. */
+/**
+ * True when `value` is a view state of `panel` holding only that panel's allowlisted fields.
+ * @internal
+ */
 export const isViewState = <P extends PanelName>(
   panel: P,
   value: unknown,

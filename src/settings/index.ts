@@ -3,6 +3,7 @@ import { DeferSettingsEntry } from "../core/project";
 
 export * from "./environment";
 
+/** @internal */
 export const CONFIGURATION_SECTION = "fusionPowerUser";
 
 /**
@@ -36,7 +37,10 @@ export interface SettingsSchema {
 
 export type SettingKey = keyof SettingsSchema;
 
-/** The package.json `scope` of each setting; `window` where package.json omits it. */
+/**
+ * The package.json `scope` of each setting; `window` where package.json omits it.
+ * @internal
+ */
 export const SETTING_SCOPES = {
   "lineage.defaultExpansion": "window",
   enabled: "resource",

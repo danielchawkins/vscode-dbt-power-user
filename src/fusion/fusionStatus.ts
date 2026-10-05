@@ -209,7 +209,10 @@ export class FusionStatus implements Disposable {
   }
 }
 
-/** The missing column-lineage opt-ins, each with the command that adds it when one exists. */
+/**
+ * The missing column-lineage opt-ins, each with the command that adds it when one exists.
+ * @internal
+ */
 export function optInLines(optIns: ProjectOptIns | undefined): OptInLine[] {
   if (!optIns) {
     return [];
@@ -248,6 +251,7 @@ export function optInLines(optIns: ProjectOptIns | undefined): OptInLine[] {
   return lines;
 }
 
+/** @internal */
 export function clientText(state: FusionClientState): string {
   switch (state) {
     case "starting":
@@ -263,6 +267,7 @@ export function clientText(state: FusionClientState): string {
   }
 }
 
+/** @internal */
 export function clientSeverity(
   state: FusionClientState,
 ): LanguageStatusSeverity {

@@ -7,11 +7,15 @@ import { CommandProcessResult } from "../fusion/commandProcessExecution";
 /** Where a project error came from; each source's errors are replaced independently. */
 export type ProjectErrorSource = "parse" | "compile" | "executable";
 
+/** @internal */
 export const SHOW_OUTPUT = "Show output";
 const SHOW_OUTPUT_COMMAND = "fusionPowerUser.showFusionOutput";
 const LOG_SOURCE = "ProjectErrors";
 
-/** The sentence that tells the user what to do about `message`, if it is a failure we recognize. */
+/**
+ * The sentence that tells the user what to do about `message`, if it is a failure we recognize.
+ * @internal
+ */
 export function errorHint(
   message: string,
   invocation: Pick<ProjectSnapshot["invocation"], "profilesDir" | "target">,

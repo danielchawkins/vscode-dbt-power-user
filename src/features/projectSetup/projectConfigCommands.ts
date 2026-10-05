@@ -84,7 +84,10 @@ export class ProjectConfigCommands implements Disposable {
   }
 }
 
-/** Returns true when the edit was applied. */
+/**
+ * Returns true when the edit was applied.
+ * @internal
+ */
 export async function applyProjectConfigInsertion(
   project: DeclaredProject,
   insertion: (projectName: string) => ProjectConfigInsertion,

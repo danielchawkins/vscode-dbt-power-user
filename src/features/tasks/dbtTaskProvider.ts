@@ -9,7 +9,10 @@ import {
 import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 
-/** Lists each Declared Project's dbt tasks and resolves `dbt` tasks from tasks.json. */
+/**
+ * Lists each Declared Project's dbt tasks and resolves `dbt` tasks from tasks.json.
+ * @internal
+ */
 export class DbtTaskProvider implements TaskProvider {
   constructor(private readonly projects: Projects) {}
 

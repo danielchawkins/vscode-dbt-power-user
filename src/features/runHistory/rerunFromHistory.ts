@@ -12,7 +12,10 @@ export type ReplayProject = Pick<
   "runModel" | "buildModel" | "buildProject" | "runTest" | "compileModel"
 >;
 
-/** Converts a history entry's selection arguments into model run parameters. */
+/**
+ * Converts a history entry's selection arguments into model run parameters.
+ * @internal
+ */
 export function parseHistoryArgs(args: string[]): RunModelParams {
   if (args.length === 0) {
     return { plusOperatorLeft: "", modelName: "", plusOperatorRight: "" };

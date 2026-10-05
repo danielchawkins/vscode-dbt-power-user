@@ -1,6 +1,7 @@
 import { commands, Disposable } from "vscode";
 import { readHarnessSwitch } from "../settings";
 
+/** @internal */
 export const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 
 interface WebviewRuntimeTiming {
@@ -41,6 +42,7 @@ export function completeWebviewReady(entry: string): void {
   resolveStarts.delete(entry);
 }
 
+/** @internal */
 export function getWebviewRuntimeTimings(): WebviewRuntimeTiming[] {
   return records.map((record) => ({ ...record }));
 }

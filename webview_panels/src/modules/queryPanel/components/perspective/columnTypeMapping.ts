@@ -1,7 +1,10 @@
 import { TableData } from "@modules/queryPanel/context/types";
 import type { ColumnType } from "@perspective-dev/client";
 
-/** Maps a known legacy agate type to a Perspective schema type. */
+/**
+ * Maps a known legacy agate type to a Perspective schema type.
+ * @internal
+ */
 export const mapColumnType = (
   agateType: string | null | undefined,
 ): ColumnType => {
