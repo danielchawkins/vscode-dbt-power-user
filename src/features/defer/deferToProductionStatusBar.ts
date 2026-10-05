@@ -5,7 +5,7 @@ import {
   TextEditor,
   window,
 } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 import { Projects } from "../../projects/projects";
 import { onDidChangeSettings } from "../../settings";
 
@@ -18,7 +18,7 @@ export class DeferToProductionStatusBar implements Disposable {
 
   constructor(
     private projects: Projects,
-    private dbtTerminal: DBTTerminal,
+    private dbtTerminal: Log,
   ) {
     this.disposables.push(
       onDidChangeSettings(["defer.perProject"], (change) => {

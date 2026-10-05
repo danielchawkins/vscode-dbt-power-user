@@ -1,5 +1,6 @@
+import type { Log } from "../core/log";
 import type { ManifestProject } from "../core/manifest";
-import type { DBTTerminal, ParsedManifest } from "../dbt_integration";
+import type { ParsedManifest } from "../dbt_integration";
 import type { ExecutableLifecycle } from "../fusion/executableLifecycle";
 import type { FusionCli } from "../fusion/fusionCli";
 import { buildManifest, type ManifestParsers } from "./manifest";
@@ -23,7 +24,7 @@ export class ManifestRebuild {
     private readonly lifecycle: ExecutableLifecycle,
     private readonly parsers: ManifestParsers,
     private readonly project: ManifestProject,
-    private readonly terminal: DBTTerminal,
+    private readonly terminal: Log,
     private readonly callbacks: ManifestRebuildCallbacks,
   ) {}
 

@@ -1,11 +1,11 @@
 import * as path from "path";
 
-import { ManifestLogger } from "./logger";
+import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
 import { FunctionMetaMap, RESOURCE_TYPE_FUNCTION } from "./types";
 
 export class FunctionParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   createFunctionMetaMap(
     functionsMap: Record<string, any>,

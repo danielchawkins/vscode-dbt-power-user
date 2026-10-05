@@ -1,7 +1,7 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
 import { Position, TextDocument } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 import {
   CteCodeLensProvider,
   CteInfo,
@@ -15,7 +15,7 @@ const terminal = {
   info: () => {},
   log: () => {},
   trace: () => {},
-} as unknown as DBTTerminal;
+} as unknown as Log;
 const provider = new CteCodeLensProvider(terminal);
 
 const documentOf = (text: string): TextDocument =>

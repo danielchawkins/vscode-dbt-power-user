@@ -8,6 +8,7 @@ import {
   Uri,
   workspace,
 } from "vscode";
+import type { Log } from "../core/log";
 import {
   ChildrenParentParser,
   DocParser,
@@ -25,7 +26,7 @@ import {
   UnitTestParser,
 } from "../core/manifest";
 import { DBT_PROJECT_FILE, dbtProjectFilePath } from "../core/project";
-import { DBTTerminal, MANIFEST_FILE, ParsedManifest } from "../dbt_integration";
+import { MANIFEST_FILE, ParsedManifest } from "../dbt_integration";
 
 /** Delay between the last watched file event and the rebuild it triggers. */
 const MANIFEST_TRIGGER_DEBOUNCE_MS = 500;
@@ -112,7 +113,7 @@ export async function buildManifest(
   parsers: ManifestParsers,
   project: ManifestProject,
   targetPath: string,
-  terminal: DBTTerminal,
+  terminal: Log,
   readFailures: ManifestReadFailures,
 ): Promise<BuiltManifest | undefined> {
   const projectRoot = project.getProjectRoot();
@@ -246,7 +247,7 @@ async function parseResourceMaps(
 function readManifestFile(
   projectRoot: string,
   targetPath: string,
-  terminal: DBTTerminal,
+  terminal: Log,
   readFailures: ManifestReadFailures,
 ): ManifestJson | undefined {
   const segments = isAbsolute(targetPath)
@@ -295,7 +296,7 @@ export class ManifestTrigger implements Disposable {
 
   constructor(
     private readonly projectRoot: string,
-    private readonly terminal: DBTTerminal,
+    private readonly terminal: Log,
     private readonly handlers: ManifestTriggerHandlers,
   ) {}
 

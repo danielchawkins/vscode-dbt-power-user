@@ -1,9 +1,9 @@
 import * as path from "path";
 
-import { ManifestLogger } from "./logger";
 import { ManifestProject } from "./manifestProject";
 import { RESOURCE_TYPE_SOURCE, SourceMetaMap } from "./types";
 
+import type { Log } from "../log";
 import {
   DbtLoomConfigPathReader,
   getExternalProjectNamesFromDbtLoomConfig,
@@ -11,7 +11,7 @@ import {
 
 export class SourceParser {
   constructor(
-    private terminal: ManifestLogger,
+    private terminal: Pick<Log, "debug">,
     private readDbtLoomConfigPath: DbtLoomConfigPathReader = () => undefined,
   ) {}
 

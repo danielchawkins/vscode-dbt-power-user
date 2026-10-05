@@ -1,8 +1,8 @@
 import { readFileSync } from "fs";
 import * as path from "path";
 import { parse, stringify } from "yaml";
+import type { Log } from "../../core/log";
 import {
-  DBTTerminal,
   MacroMetaMap,
   TestMetaData,
   TestMetadataAcceptedValues,
@@ -55,7 +55,7 @@ export class DbtTestService {
   private filterAndStringifyTest = (
     testsPerColumnOrModelFromYml: Record<string, Record<string, unknown>>[],
     test: TestMetaData,
-    log: DBTTerminal,
+    log: Log,
   ) => {
     if (!testsPerColumnOrModelFromYml?.length) {
       return this.returnTestMetadataFromKwargs(test);

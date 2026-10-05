@@ -7,6 +7,7 @@ import {
   Uri,
   window,
 } from "vscode";
+import type { Log } from "../core/log";
 import { type ManifestProject } from "../core/manifest";
 import {
   dbtProjectFilePath,
@@ -15,7 +16,6 @@ import {
 } from "../core/project";
 import {
   DBColumn,
-  DBTTerminal,
   ParsedManifest,
   QueryExecution,
   QueryExecutionResult,
@@ -94,7 +94,7 @@ const LOG_SOURCE = "Project";
 /** The collaborators a `Project` is built from. */
 export interface ProjectOptions {
   /** The Declared Project's log; the Project does not dispose it. */
-  terminal: DBTTerminal;
+  terminal: Log;
   sharedState: SharedStateService;
   runHistoryService: RunHistoryService;
   resolver: FusionExecutableResolver;
@@ -109,7 +109,7 @@ export interface ProjectOptions {
 export class Project implements Disposable, ManifestProject {
   private _manifest?: Manifest;
   readonly projectRoot: Uri;
-  private readonly terminal: DBTTerminal;
+  private readonly terminal: Log;
   private readonly sharedState: SharedStateService;
   private readonly runHistoryService: RunHistoryService;
   private readonly lifecycle: ExecutableLifecycle;
@@ -220,7 +220,7 @@ export class Project implements Disposable, ManifestProject {
   }
 
   /** The Declared Project's log, for features that act on this Project. */
-  get log(): DBTTerminal {
+  get log(): Log {
     return this.terminal;
   }
 

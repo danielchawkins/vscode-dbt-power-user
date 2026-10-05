@@ -8,7 +8,7 @@ import {
   WorkspaceConfiguration,
   WorkspaceFolder,
 } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 import { CurrentProject } from "../../projects/currentProject";
 import { previewUriFor } from "../../projects/previewUri";
 import { Project } from "../../projects/project";
@@ -36,7 +36,7 @@ describe("compiled preview project lookup", () => {
     debug: vi.fn(),
     info: vi.fn(),
     error: vi.fn(),
-  } as unknown as DBTTerminal;
+  } as unknown as Log;
   const picker = { declaredProjectPicker: vi.fn() };
   let registry: ProjectRegistry;
   let projects: Projects;

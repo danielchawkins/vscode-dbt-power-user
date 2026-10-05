@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
+import type { Log } from "../../core/log";
 import {
   DocParser,
   MacroParser,
-  ManifestLogger,
   ManifestProject,
   MetricParser,
   NodeParser,
 } from "../../core/manifest";
 
-const logger = { debug: () => undefined } as unknown as ManifestLogger;
+const logger = { debug: () => undefined } as unknown as Pick<Log, "debug">;
 
 function project(packagePath: string | undefined): ManifestProject {
   return {

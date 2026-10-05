@@ -1,13 +1,13 @@
 import { readFileSync } from "fs";
 
-import { ManifestLogger } from "./logger";
 import { ManifestProject } from "./manifestProject";
 import { DocMetaMap } from "./types";
 
+import type { Log } from "../log";
 import { createFullPathForNode } from "./utils";
 
 export class DocParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   async createDocMetaMap(
     docs: Record<string, any> | null | undefined,

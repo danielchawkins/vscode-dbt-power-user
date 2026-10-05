@@ -12,6 +12,7 @@ import {
   vi,
 } from "vitest";
 import * as vscode from "vscode";
+import type { Log } from "../../core/log";
 import {
   ChildrenParentParser,
   DocParser,
@@ -31,7 +32,6 @@ import { DBT_PROJECT_FILE } from "../../core/project";
 import {
   DBTCommand,
   DBTDiagnosticData,
-  DBTTerminal,
   MANIFEST_FILE,
   QueryExecution,
   RESOURCE_TYPE_MODEL,
@@ -82,7 +82,7 @@ const flush = async () => {
   }
 };
 
-function realParsers(terminal: DBTTerminal): ManifestParsers {
+function realParsers(terminal: Log): ManifestParsers {
   return {
     childrenParentParser: new ChildrenParentParser(),
     nodeParser: new NodeParser(terminal),
@@ -101,7 +101,7 @@ function realParsers(terminal: DBTTerminal): ManifestParsers {
 }
 
 describe("Project Test Suite", () => {
-  let mockTerminal: Mocked<DBTTerminal>;
+  let mockTerminal: Mocked<Log>;
   let mockSharedStateService: Mocked<SharedStateService>;
   let mockRunHistoryService: Mocked<RunHistoryService>;
   let mockFusionCli: any;
@@ -160,7 +160,7 @@ describe("Project Test Suite", () => {
       logHorizontalRule: vi.fn(),
       logBlock: vi.fn(),
       warn: vi.fn(),
-    } as unknown as Mocked<DBTTerminal>;
+    } as unknown as Mocked<Log>;
     mockSharedStateService = {} as unknown as Mocked<SharedStateService>;
     mockRunHistoryService = {
       addEntry: vi.fn(),
@@ -968,7 +968,7 @@ describe("Project Test Suite", () => {
   });
 });
 
-function mockTerminal(): DBTTerminal {
+function mockTerminal(): Log {
   return {
     debug: () => undefined,
     info: () => undefined,
@@ -976,7 +976,7 @@ function mockTerminal(): DBTTerminal {
     error: () => undefined,
     warn: () => undefined,
     trace: () => undefined,
-  } as unknown as DBTTerminal;
+  } as unknown as Log;
 }
 
 function stubDelegate(

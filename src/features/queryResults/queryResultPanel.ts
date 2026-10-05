@@ -14,8 +14,8 @@ import {
 } from "vscode";
 
 import * as path from "path";
+import type { Log } from "../../core/log";
 import {
-  DBTTerminal,
   ExecuteSQLError,
   ExecuteSQLResult,
   QueryExecution,
@@ -75,7 +75,7 @@ export class QueryResultPanel extends PanelHost {
   public constructor(
     protected override extensionContext: ExtensionContextStore,
     eventEmitterService: SharedStateService,
-    protected override dbtTerminal: DBTTerminal,
+    protected override dbtTerminal: Log,
     protected override queryManifestService: QueryManifestService,
     onDidRemoveProject: Event<Uri>,
   ) {

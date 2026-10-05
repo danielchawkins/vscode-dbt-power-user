@@ -1,5 +1,5 @@
 import { TextDocument, Uri, window } from "vscode";
-import { DBTTerminal } from "../dbt_integration";
+import type { Log } from "../core/log";
 import { CurrentProject } from "./currentProject";
 import type { Manifest } from "./manifestTypes";
 import { Project } from "./project";
@@ -9,7 +9,7 @@ import { Projects } from "./projects";
 export class QueryManifestService {
   public constructor(
     private projects: Projects,
-    private dbtTerminal: DBTTerminal,
+    private dbtTerminal: Log,
     private currentProject: CurrentProject,
   ) {}
 

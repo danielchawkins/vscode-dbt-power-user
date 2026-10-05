@@ -1,4 +1,4 @@
-import { ManifestLogger } from "./logger";
+import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
 import {
   FunctionMetaMap,
@@ -31,7 +31,7 @@ function withEdgeType(node: NodeData, isConstraintOnly: boolean): NodeData {
 }
 
 export class GraphParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   createGraphMetaMap(
     project: ManifestProject,

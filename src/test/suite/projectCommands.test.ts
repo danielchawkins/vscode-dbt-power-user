@@ -1,8 +1,9 @@
 import * as fs from "fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
+import type { Log } from "../../core/log";
 import { ProjectSnapshot } from "../../core/project";
-import { DBTCommand, DBTTerminal, RunModelType } from "../../dbt_integration";
+import { DBTCommand, RunModelType } from "../../dbt_integration";
 import { FusionCli } from "../../fusion/fusionCli";
 import { CommandQueue } from "../../projects/commandQueue";
 import { DbtTaskTerminal } from "../../projects/dbtTask";
@@ -83,7 +84,7 @@ describe("queueCli", () => {
           invocation: { commandParams: { run: ["--full-refresh"] } },
         }) as unknown as ProjectSnapshot,
       notifyFailed,
-      terminal: { error: vi.fn() } as unknown as DBTTerminal,
+      terminal: { error: vi.fn() } as unknown as Log,
     } as unknown as ProjectCommandDeps;
 
     await expect(
@@ -111,7 +112,7 @@ describe("queueCli", () => {
         }) as unknown as ProjectSnapshot,
       withRunResults: (run) => run(),
       notifyFailed,
-      terminal: { error } as unknown as DBTTerminal,
+      terminal: { error } as unknown as Log,
     };
 
     await expect(
@@ -148,7 +149,7 @@ describe("queueCli with a prepared command", () => {
       snapshot: () => ({}) as ProjectSnapshot,
       withRunResults: vi.fn((run) => run()),
       notifyFailed: vi.fn(),
-      terminal: {} as DBTTerminal,
+      terminal: {} as Log,
     };
     return deps;
   }
@@ -269,7 +270,7 @@ describe("queueCli with a task terminal", () => {
         }) as unknown as ProjectSnapshot,
       withRunResults: (run: () => Promise<unknown>) => run(),
       notifyFailed: vi.fn(),
-      terminal: { error: vi.fn() } as unknown as DBTTerminal,
+      terminal: { error: vi.fn() } as unknown as Log,
     } as unknown as ProjectCommandDeps;
 
     await expect(queueCli(deps, { kind: "deps" }, terminal)).rejects.toThrow();

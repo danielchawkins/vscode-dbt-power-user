@@ -1,13 +1,13 @@
 import { readFileSync } from "fs";
 
-import { ManifestLogger } from "./logger";
 import { ManifestProject } from "./manifestProject";
 import { MacroMetaMap } from "./types";
 
+import type { Log } from "../log";
 import { createFullPathForNode } from "./utils";
 
 export class MacroParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   async createMacroMetaMap(
     macros: Record<string, any> | null | undefined,

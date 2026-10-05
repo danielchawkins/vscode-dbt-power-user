@@ -4,8 +4,8 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { promisify } from "util";
+import type { Log } from "../../core/log";
 import { readDbtProjectFile, resolveProjectSnapshot } from "../../core/project";
-import { DBTTerminal } from "../../dbt_integration";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { checkFusionVersion, getExtensionRoot } from "./helpers/testFixtures";
@@ -38,7 +38,7 @@ async function runDbt(
   }
 }
 
-function silentTerminal(): DBTTerminal {
+function silentTerminal(): Log {
   return {
     debug: () => undefined,
     log: () => undefined,
@@ -46,7 +46,7 @@ function silentTerminal(): DBTTerminal {
     warn: () => undefined,
     info: () => undefined,
     trace: () => undefined,
-  } as unknown as DBTTerminal;
+  } as unknown as Log;
 }
 
 function writeProject(projectDir: string): void {

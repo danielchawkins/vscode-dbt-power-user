@@ -10,12 +10,12 @@ import {
   workspace,
   WorkspaceFolder,
 } from "vscode";
+import type { Log } from "../core/log";
 import {
   DBT_PROJECT_FILE,
   declaredProjectName,
   readDbtProjectFile,
 } from "../core/project";
-import { DBTTerminal } from "../dbt_integration";
 import { onDidChangeSettings } from "../settings";
 import { activeModelUri } from "./previewUri";
 import {
@@ -41,7 +41,7 @@ export class ProjectRegistry implements Disposable {
   private initialized = false;
   private disposed = false;
 
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: Log) {}
 
   get projects(): readonly DeclaredProject[] {
     return this._projects;

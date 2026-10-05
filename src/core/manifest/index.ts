@@ -3,7 +3,6 @@ export * from "./docParser";
 export * from "./exposureParser";
 export * from "./functionParser";
 export * from "./graphParser";
-export * from "./logger";
 export * from "./macroParser";
 export * from "./manifestProject";
 export * from "./metricParser";

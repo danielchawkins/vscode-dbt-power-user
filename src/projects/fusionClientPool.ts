@@ -1,7 +1,7 @@
 import { Disposable, Event, EventEmitter, LogOutputChannel, Uri } from "vscode";
+import type { Log } from "../core/log";
 import { LspLaunch, sameLspLaunch, toLspLaunch } from "../core/lsp";
 import { ProjectSnapshot } from "../core/project";
-import { DBTTerminal } from "../dbt_integration";
 import {
   ConfiguredFusionExecutableResolver,
   formatFusionExecutableResolutionFailure,
@@ -77,7 +77,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
   constructor(
     private readonly registry: ProjectRegistry,
-    private readonly terminal: DBTTerminal,
+    private readonly terminal: Log,
     private readonly resolver: FusionExecutableResolver,
     private readonly factory: FusionClientFactory,
     sources: FusionLaunchSources,
@@ -352,7 +352,7 @@ export type FusionClientPoolDependencies = FusionLaunchSources & {
 
 export function createFusionClientPool(
   registry: ProjectRegistry,
-  terminal: DBTTerminal,
+  terminal: Log,
   deps: FusionClientPoolDependencies,
 ): FusionClientPoolImpl {
   const resolver = deps.resolver ?? new ConfiguredFusionExecutableResolver();

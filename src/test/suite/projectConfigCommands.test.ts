@@ -127,7 +127,6 @@ describe("applyProjectConfigInsertion", () => {
     expect(projectLog.warn).toHaveBeenCalledWith(
       "projectConfigEdit",
       expect.any(String),
-      false,
     );
     commandsDisposable.dispose();
   });

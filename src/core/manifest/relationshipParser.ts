@@ -1,4 +1,4 @@
-import { ManifestLogger } from "./logger";
+import type { Log } from "../log";
 import {
   Cardinality,
   ColumnLevelConstraint,
@@ -42,7 +42,7 @@ const SOURCE_PATTERN =
  * the parser knowing about UI.
  */
 export class RelationshipParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   // ─────────────────────────────────────────────────────────────────────────
   // Phase 1 — relationships data tests

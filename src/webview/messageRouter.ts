@@ -1,5 +1,5 @@
 import type { Response } from "@fusion-power-user/webview-contract";
-import { DBTTerminal } from "../dbt_integration";
+import type { Log } from "../core/log";
 
 /** The member of `M` whose `command` can be `C`, including members whose `command` is itself a union. */
 export type MessageOf<
@@ -41,7 +41,7 @@ type Reply = (response: Response) => unknown;
 
 /** Where `dispatchMessage` logs, and how it answers the panel a message came from. */
 export interface MessageSink {
-  log: DBTTerminal;
+  log: Log;
   reply: Reply;
 }
 
@@ -62,7 +62,6 @@ const settle = async (
       `${source}:reply`,
       "Could not answer a webview request",
       replyError,
-      false,
     );
   }
 };
@@ -84,7 +83,6 @@ export async function dispatchMessage<M extends { command: string }>(
     sink.log.warn(
       `${source}:message`,
       `Dropped a malformed webview message (${describe(message)})`,
-      false,
     );
     if (syncRequestId !== undefined) {
       await settle(source, sink, syncRequestId, "Malformed request");
@@ -101,7 +99,6 @@ export async function dispatchMessage<M extends { command: string }>(
       `${source}:${message.command}`,
       "Webview message handler failed",
       error,
-      false,
     );
     if (syncRequestId !== undefined) {
       const text = error instanceof Error ? error.message : String(error);

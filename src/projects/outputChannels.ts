@@ -11,8 +11,8 @@ import {
   ViewColumn,
   window,
 } from "vscode";
+import type { Log } from "../core/log";
 import { projectRootDigest } from "../core/project";
-import { DBTTerminal } from "../dbt_integration";
 import { stripANSI } from "../utils";
 import { DeclaredProject } from "./projectRegistry";
 
@@ -164,8 +164,8 @@ function channelFileName(name: string): string {
   return name.replace(/[\\/:*?"<>|]/g, "");
 }
 
-/** A `DBTTerminal` over one log output channel; calls after `dispose` are dropped. */
-export class ChannelLog implements DBTTerminal {
+/** A `Log` over one log output channel; calls after `dispose` are dropped. */
+export class ChannelLog implements Log {
   /** The underlying channel, for a Fusion Client to log to; only this log's `dispose` closes it. */
   readonly channel: LogOutputChannel;
 
@@ -181,43 +181,19 @@ export class ChannelLog implements DBTTerminal {
     return this.channel.name;
   }
 
-  log(message: string, ...args: unknown[]): void {
-    this.channel.info(stripANSI(message), ...args);
-  }
-
-  trace(message: string): void {
-    this.channel.trace(stripANSI(message));
-  }
-
   debug(name: string, message: string, ...args: unknown[]): void {
     this.channel.debug(`${name}: ${stripANSI(message)}`, ...args);
   }
 
-  info(
-    name: string,
-    message: string,
-    _sendTelemetry?: boolean,
-    ...args: unknown[]
-  ): void {
+  info(name: string, message: string, ...args: unknown[]): void {
     this.channel.info(`${name}: ${stripANSI(message)}`, ...args);
   }
 
-  warn(
-    name: string,
-    message: string,
-    _sendTelemetry?: boolean,
-    ...args: unknown[]
-  ): void {
+  warn(name: string, message: string, ...args: unknown[]): void {
     this.channel.warn(`${name}: ${stripANSI(message)}`, ...args);
   }
 
-  error(
-    name: string,
-    message: string,
-    e: unknown,
-    _sendTelemetry?: boolean,
-    ...args: unknown[]
-  ): void {
+  error(name: string, message: string, e?: unknown, ...args: unknown[]): void {
     const cause =
       e instanceof Error
         ? e.message
@@ -228,6 +204,10 @@ export class ChannelLog implements DBTTerminal {
             : undefined;
     const text = cause ? `${message}: ${cause}` : message;
     this.channel.error(`${name}: ${stripANSI(text)}`, ...args);
+  }
+
+  output(text: string): void {
+    this.channel.info(stripANSI(text));
   }
 
   /** Idempotent. */

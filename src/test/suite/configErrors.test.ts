@@ -11,7 +11,7 @@ import {
   vi,
 } from "vitest";
 import { commands, languages, Uri, window, workspace } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { formatFusionExecutableResolutionFailure } from "../../fusion/fusionExecutable";
@@ -45,10 +45,8 @@ const flush = async () => {
   }
 };
 
-function terminal(): DBTTerminal & { error: Mock } {
+function terminal(): Log & { error: Mock } {
   return {
-    log: vi.fn(),
-    trace: vi.fn(),
     debug: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),

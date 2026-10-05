@@ -9,7 +9,7 @@ import {
   Uri,
   window,
 } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 import { extensionRoot } from "../../extensionRoot";
 import { CteProfilerService } from "./cteProfilerService";
 import { CteProfileEntry } from "./cteProfilerTypes";
@@ -24,7 +24,7 @@ export class CteProfilerDecorationProvider implements Disposable {
 
   constructor(
     private cteProfilerService: CteProfilerService,
-    private dbtTerminal: DBTTerminal,
+    private dbtTerminal: Log,
   ) {
     this.hotDecorationType = window.createTextEditorDecorationType({
       gutterIconPath: Uri.file(

@@ -17,7 +17,7 @@ import {
   window,
   workspace,
 } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 import {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
@@ -70,14 +70,12 @@ function sampleExecutable(
   };
 }
 
-function mockTerminal(): DBTTerminal {
+function mockTerminal(): Log {
   return {
     debug: () => undefined,
     error: () => undefined,
     warn: () => undefined,
-    trace: () => undefined,
     info: () => undefined,
-    log: () => undefined,
     dispose: () => undefined,
   };
 }
@@ -179,7 +177,7 @@ describe("Fusion CLI executable wiring", () => {
   });
 
   function fusionCliFactory(
-    terminal: DBTTerminal,
+    terminal: Log,
     commandProcessExecutionFactory: CommandProcessExecutionFactory,
   ): FusionCommandIntegrationFactory {
     return (executable, root) =>
@@ -193,7 +191,7 @@ describe("Fusion CLI executable wiring", () => {
 
   function productionFactory(
     _projectRoot: string,
-    terminal: DBTTerminal,
+    terminal: Log,
     commandProcessExecutionFactory: CommandProcessExecutionFactory,
   ): FusionCommandIntegrationFactory {
     const base = fusionCliFactory(terminal, commandProcessExecutionFactory);

@@ -8,7 +8,8 @@ import {
   vi,
 } from "vitest";
 import { ConfigurationChangeEvent, Uri, workspace } from "vscode";
-import { DBTDiagnosticData, DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
+import { DBTDiagnosticData } from "../../dbt_integration";
 import {
   ExecutableLifecycle,
   ExecutableLifecycleHooks,
@@ -53,14 +54,12 @@ function sampleExecutable(executablePath: string): FusionExecutable {
   };
 }
 
-function mockTerminal(): DBTTerminal {
+function mockTerminal(): Log {
   return {
     debug: () => undefined,
     error: () => undefined,
     warn: () => undefined,
-    trace: () => undefined,
     info: () => undefined,
-    log: () => undefined,
     dispose: () => undefined,
   };
 }

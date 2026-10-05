@@ -15,13 +15,9 @@ import {
   window,
   workspace,
 } from "vscode";
+import type { Log } from "../core/log";
 import { DBT_PROJECT_FILE, readDbtProjectFile } from "../core/project";
-import {
-  CATALOG_FILE,
-  DBTTerminal,
-  MANIFEST_FILE,
-  RunModelType,
-} from "../dbt_integration";
+import { CATALOG_FILE, MANIFEST_FILE, RunModelType } from "../dbt_integration";
 import { ExtensionContextStore } from "../extensionContext";
 import { activeModelUri, previewUriFor } from "../projects/previewUri";
 import { Project } from "../projects/project";
@@ -51,7 +47,7 @@ export class VSCodeCommands implements Disposable {
     private runModel: RunModel,
     private runTest: RunTest,
     private projectSetupCommands: ProjectSetupCommands,
-    private dbtTerminal: DBTTerminal,
+    private dbtTerminal: Log,
     private diagnosticsOutputChannel: DiagnosticsOutputChannel,
     private runHistoryService: RunHistoryService,
     private cteProfilerService: CteProfilerService,
