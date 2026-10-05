@@ -1,6 +1,7 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { Edge, Node } from "@xyflow/react";
-import { columnHandle, geometry, layout, tableHeight } from "./graph";
+import { expansionKey } from "./graph";
+import { columnHandle, geometry, layout, tableHeight } from "./layout";
 
 /** What a table node draws; `columns` is undefined while the list is hidden. */
 interface TableNodeData extends Record<string, unknown> {
@@ -50,10 +51,12 @@ function toEdges(
   listed: (table: string) => lineage.LineageColumn[] | undefined,
 ): Edge[] {
   const { data, selectedTable } = input;
-  const handle = (side: "in" | "out", [table, column]: [string, string]) =>
-    listed(table)?.some((c) => c.name.toLowerCase() === column.toLowerCase())
-      ? columnHandle(side, column)
-      : side;
+  const handle = (side: "in" | "out", [table, column]: [string, string]) => {
+    const match = listed(table)?.find(
+      (c) => c.name.toLowerCase() === column.toLowerCase(),
+    );
+    return match ? columnHandle(side, match.name) : side;
+  };
   const touchesSelection = (a: string, b: string) =>
     selectedTable !== undefined && (a === selectedTable || b === selectedTable);
   return [
@@ -115,8 +118,8 @@ export function toFlow(input: FlowInput): {
       columns: listed(t.table),
       isStart: t.table === data.start,
       expanded: {
-        parents: expansions.includes(`p:${t.table}`),
-        children: expansions.includes(`c:${t.table}`),
+        parents: expansions.includes(expansionKey("parents", t.table)),
+        children: expansions.includes(expansionKey("children", t.table)),
       },
       traced: [...(traced.get(t.table) ?? [])],
       selectedColumn:

@@ -5,6 +5,7 @@ import {
   Background,
   ControlButton,
   Controls,
+  FitViewOptions,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
@@ -30,6 +31,20 @@ import {
 } from "./viewModel";
 
 const nodeTypes = { table: TableNode };
+
+/** Fit options whose pixel padding keeps the graph clear of the controls, the legend and the minimap when shown. */
+const fitOptions = (minimap?: {
+  width: number;
+  height: number;
+}): FitViewOptions => ({
+  maxZoom: 1,
+  padding: {
+    top: "16px",
+    right: `${(minimap?.width ?? 0) + 16}px`,
+    bottom: `${Math.max(40, (minimap?.height ?? 0) + 16)}px`,
+    left: "56px",
+  },
+});
 
 /** Logs React Flow's warnings to the webview devtools console. */
 const onError = (code: string, message: string) => {
@@ -138,18 +153,37 @@ const Canvas = ({
   nodes,
   edges,
   select,
-}: FlowGraph & { select: (table: string | undefined) => void }) => {
+  drawnKey,
+}: FlowGraph & {
+  select: (table: string | undefined) => void;
+  drawnKey: number;
+}) => {
   const canvas = useSize();
   const minimap = useMinimap(canvas.size);
   const flow = useReactFlow();
   useHandleMeasurement(nodes);
   const { width, height } = canvas.size;
+  const mapSize = minimapStyle(canvas.size);
+  const mapWidth = mapSize.width;
+  const mapHeight = mapSize.height;
+  const options = useMemo(
+    () =>
+      fitOptions(
+        minimap.shown ? { width: mapWidth, height: mapHeight } : undefined,
+      ),
+    [minimap.shown, mapWidth, mapHeight],
+  );
   // Re-fit after the panel is resized, so a shrunk panel still shows the whole graph.
   useEffect(() => {
     if (width > 0 && height > 0) {
-      void flow.fitView({ maxZoom: 1 });
+      void flow.fitView(options);
     }
-  }, [width, height, flow]);
+  }, [width, height, flow, options]);
+  useEffect(() => {
+    if (drawnKey > 0) {
+      requestAnimationFrame(() => void flow.fitView(options));
+    }
+  }, [drawnKey, flow, options]);
   const label = minimap.shown ? "Hide minimap" : "Show minimap";
   return (
     <div className={styles.canvas} ref={canvas.ref}>
@@ -161,6 +195,7 @@ const Canvas = ({
         nodesDraggable={false}
         minZoom={0.05}
         fitView
+        fitViewOptions={options}
         proOptions={{ hideAttribution: true }}
         onError={onError}
         onNodeClick={(_event: unknown, node: { id: string }) => select(node.id)}
@@ -212,15 +247,8 @@ const Graph = (): JSX.Element => {
     openDetails,
   );
   const refs = useRefs(settings, drawnKey);
-  const flow = useReactFlow();
 
   tableActions.current = actions;
-
-  useEffect(() => {
-    if (drawnKey > 0) {
-      requestAnimationFrame(() => void flow.fitView({ maxZoom: 1 }));
-    }
-  }, [drawnKey, flow]);
 
   const { nodes, edges } = useMemo(() => {
     const data = lineageData(graph, {
@@ -247,7 +275,7 @@ const Graph = (): JSX.Element => {
         <MissingLineageMessage missingLineageMessage={notice} />
         <Toolbar settings={settings} change={change} reset={reset} />
       </div>
-      <Canvas nodes={nodes} edges={edges} select={select} />
+      <Canvas nodes={nodes} edges={edges} select={select} drawnKey={drawnKey} />
       <Drawer ref={drawerRef} title="Details">
         {details ? <TableDetails table={details} /> : null}
       </Drawer>

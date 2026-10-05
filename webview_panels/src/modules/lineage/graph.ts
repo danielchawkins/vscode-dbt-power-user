@@ -1,4 +1,3 @@
-import dagre from "@dagrejs/dagre";
 import type { lineage } from "@fusion-power-user/webview-contract";
 
 type LineageTable = lineage.LineageTable;
@@ -29,6 +28,8 @@ export interface GraphState {
   columnEdges: ColumnLineage[];
   /** Tooltip lines per table from the last trace. */
   errors: Record<string, string[]>;
+  /** Collapse count per expansion key; an expansion whose count changed while fetching is dropped. */
+  cancelled: Record<string, number>;
   selectedTable?: string;
   selectedColumn?: ColumnRef;
 }
@@ -60,9 +61,10 @@ export const emptyGraph = (start?: LineageTable): GraphState => ({
   columnTables: [],
   columnEdges: [],
   errors: {},
+  cancelled: {},
 });
 
-const expansionKey = (direction: Direction, table: string): string =>
+export const expansionKey = (direction: Direction, table: string): string =>
   `${direction === "children" ? "c" : "p"}:${table}`;
 
 /** @internal */
@@ -90,7 +92,8 @@ const neighbourCount = (table: LineageTable, direction: Direction): number =>
   direction === "children" ? table.childCount : table.parentCount;
 
 /**
- * The drawn tables and table edges, each edge `[parent, child]`.
+ * The drawn tables and table edges, each edge `[parent, child]`. Every known parent-child pair between drawn
+ * tables is an edge, whichever expansion fetched it.
  * @internal
  */
 export function drawnGraph(state: GraphState): {
@@ -101,17 +104,21 @@ export function drawnGraph(state: GraphState): {
     return { tables: [], edges: [] };
   }
   const drawn = new Set([state.start]);
-  const edges = new Map<string, [string, string]>();
   for (const key of state.expansions) {
+    const table = parseExpansion(key)?.[1];
+    if (table && drawn.has(table)) {
+      state.neighbours[key]?.forEach((other) => drawn.add(other));
+    }
+  }
+  const edges = new Map<string, [string, string]>();
+  for (const [key, others] of Object.entries(state.neighbours)) {
     const parsed = parseExpansion(key);
     if (!parsed || !drawn.has(parsed[1])) {
       continue;
     }
-    const [direction, table] = parsed;
-    for (const other of state.neighbours[key] ?? []) {
-      drawn.add(other);
+    for (const other of others.filter((o) => drawn.has(o))) {
       const edge: [string, string] =
-        direction === "children" ? [table, other] : [other, table];
+        parsed[0] === "children" ? [parsed[1], other] : [other, parsed[1]];
       edges.set(edge.join("\u0000"), edge);
     }
   }
@@ -190,6 +197,7 @@ export function collapse(
   return prune({
     ...state,
     expansions: state.expansions.filter((k) => k !== key),
+    cancelled: { ...state.cancelled, [key]: (state.cancelled[key] ?? 0) + 1 },
   });
 }
 
@@ -208,7 +216,12 @@ export async function expand(
   ) {
     return [];
   }
+  const key = expansionKey(direction, table);
+  const cancelledBefore = store.get().cancelled[key] ?? 0;
   const neighbours = await fetch(direction, table);
+  if ((store.get().cancelled[key] ?? 0) !== cancelledBefore) {
+    return [];
+  }
   store.update((s) => addNeighbours(s, direction, table, neighbours));
   return neighbours.map((n) => n.table);
 }
@@ -362,8 +375,6 @@ async function traceDirection(
     const body = await fetch({
       targets: frontier,
       upstreamExpansion,
-      currAnd1HopTables: [...drawn],
-      selectedColumn: { table: column[0], name: column[1] },
     });
     if (!sameColumn(store.get().selectedColumn, column)) {
       return false;
@@ -414,63 +425,3 @@ export function lineageData(
     ),
   };
 }
-
-/** Node geometry the layout and the stylesheet share, in pixels. */
-export const geometry = {
-  tableWidth: 280,
-  headerHeight: 56,
-  actionsHeight: 28,
-  columnHeight: 24,
-  listPadding: 8,
-  rankGap: 160,
-  nodeGap: 40,
-};
-
-/** The height of a table node, listing `columns` when given; an empty list keeps one row for its message. */
-export const tableHeight = (columns?: readonly unknown[]): number =>
-  geometry.headerHeight +
-  geometry.actionsHeight +
-  (columns
-    ? geometry.listPadding + Math.max(columns.length, 1) * geometry.columnHeight
-    : 0);
-
-/** Top-left corner of each table, laid out left to right from parents to children by dagre. */
-export function layout(
-  tables: readonly LineageTable[],
-  edges: readonly [string, string][],
-  heightOf: (table: string) => number,
-): Map<string, { x: number; y: number }> {
-  const g = new dagre.graphlib.Graph();
-  g.setGraph({
-    rankdir: "LR",
-    ranksep: geometry.rankGap,
-    nodesep: geometry.nodeGap,
-  });
-  g.setDefaultEdgeLabel(() => ({}));
-  for (const t of tables) {
-    g.setNode(t.table, {
-      width: geometry.tableWidth,
-      height: heightOf(t.table),
-    });
-  }
-  for (const [parent, child] of edges) {
-    g.setEdge(parent, child);
-  }
-  dagre.layout(g);
-  // dagre positions node centres.
-  return new Map(
-    tables.map((t) => {
-      const n = g.node(t.table) as {
-        x: number;
-        y: number;
-        width: number;
-        height: number;
-      };
-      return [t.table, { x: n.x - n.width / 2, y: n.y - n.height / 2 }];
-    }),
-  );
-}
-
-/** The handle ID of `column` on the given side of its table node; names match case-insensitively. */
-export const columnHandle = (side: "in" | "out", column: string): string =>
-  `${side}:${column.toLowerCase()}`;
