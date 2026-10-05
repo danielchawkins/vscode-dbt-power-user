@@ -1,0 +1,96 @@
+{
+  "experiment": "e2-show-concurrency",
+  "target": "finance",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:46:04.593Z",
+  "rule": "interferes when other > solo p50 + 1 s, answers after the show, or either errors; cancel by query history",
+  "solo": {
+    "listNodes": {
+      "samples": [
+        61,
+        59,
+        58,
+        59,
+        57
+      ],
+      "p50": 59
+    },
+    "compileFile": {
+      "samples": [
+        0,
+        1,
+        0,
+        0,
+        1
+      ],
+      "p50": 0
+    },
+    "longShow": {
+      "ms": 11600,
+      "error": null
+    }
+  },
+  "pairs": {
+    "show+listNodes": {
+      "otherMs": 10465,
+      "otherSoloP50": 59,
+      "showMs": 11418,
+      "otherAnsweredBeforeShow": false,
+      "otherError": null,
+      "showError": null,
+      "interferes": true
+    },
+    "show+compileFile": {
+      "otherMs": 1,
+      "otherSoloP50": 0,
+      "showMs": 10971,
+      "otherAnsweredBeforeShow": true,
+      "otherError": null,
+      "showError": null,
+      "interferes": false
+    }
+  },
+  "cancellation": {
+    "cancelSentAtMs": 3010,
+    "answeredAtMs": 61312,
+    "answeredEarly": false,
+    "response": {
+      "columns": [
+        "N",
+        "MARKER"
+      ],
+      "data": [
+        {
+          "MARKER": "<string>",
+          "N": "<string>"
+        }
+      ],
+      "error": null
+    },
+    "serverCpuBeforeCancel": 0,
+    "serverCpuAfterCancel": [
+      1.1,
+      0.2,
+      2.3,
+      4.4,
+      36.4
+    ]
+  },
+  "warehouse": {
+    "established": true,
+    "rows": [
+      {
+        "status": "SUCCESS",
+        "error": null,
+        "elapsedMs": 60125
+      }
+    ],
+    "stopped": false
+  },
+  "decision": {
+    "queues": "shared queue for show+listNodes",
+    "cancel": "cancel does not stop the warehouse query: the UI drops the result and says the query may still run",
+    "lineageBlockedMs": 10465,
+    "stop": true
+  }
+}

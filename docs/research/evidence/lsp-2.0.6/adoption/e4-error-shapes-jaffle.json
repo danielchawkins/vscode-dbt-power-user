@@ -1,0 +1,299 @@
+{
+  "experiment": "e4-error-shapes",
+  "target": "jaffle",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:50:06.819Z",
+  "rule": "see header",
+  "timings": {
+    "dbt.show": {
+      "samples": [
+        30,
+        35,
+        32,
+        33,
+        33
+      ],
+      "p50": 33,
+      "p95": 35,
+      "kind": "ok",
+      "deadlineMs": null
+    },
+    "dbt.compileFile": {
+      "samples": [
+        1,
+        0,
+        0,
+        0,
+        1
+      ],
+      "p50": 0,
+      "p95": 1,
+      "kind": "ok",
+      "deadlineMs": 5000
+    },
+    "dbt.getCurrentNode": {
+      "samples": [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "p50": 0,
+      "p95": 1,
+      "kind": "ok",
+      "deadlineMs": 5000
+    },
+    "dbt.listNodes": {
+      "samples": [
+        19,
+        22,
+        22,
+        23,
+        23
+      ],
+      "p50": 22,
+      "p95": 23,
+      "kind": "ok",
+      "deadlineMs": 5000
+    }
+  },
+  "shapes": {
+    "dbt.show sql syntax": {
+      "args": [
+        {
+          "inline": "selec 1 frm",
+          "limit": 1
+        }
+      ],
+      "ms": 36,
+      "kind": "server",
+      "shape": {
+        "columns": null,
+        "data": null,
+        "error": "string"
+      },
+      "error": "Internal: Parser Error: syntax error at or near \"1\"\n\nLINE 2: selec 1 frm\n              ^ (sqlstate: [0, 0, 0, 0, 0], vendor_code: -2147483648)",
+      "errorKind": null
+    },
+    "dbt.show missing ref": {
+      "args": [
+        {
+          "inline": "select * from {{ ref('fpu_no_such_model') }}",
+          "limit": 1
+        }
+      ],
+      "ms": 29,
+      "kind": "server",
+      "shape": {
+        "columns": null,
+        "data": null,
+        "error": "string"
+      },
+      "error": "Failed to render SQL not a key type: ref not found for package: jaffle_shop, model: fpu_no_such_model, version: None\n(in :1:15)",
+      "errorKind": null
+    },
+    "dbt.show jinja syntax": {
+      "args": [
+        {
+          "inline": "select {{ 1 ",
+          "limit": 1
+        }
+      ],
+      "ms": 28,
+      "kind": "server",
+      "shape": {
+        "columns": null,
+        "data": null,
+        "error": "string"
+      },
+      "error": "Failed to render SQL syntax error: unexpected end of input, expected end of variable block",
+      "errorKind": null
+    },
+    "dbt.show missing relation": {
+      "args": [
+        {
+          "inline": "select * from fpu_no_such_relation",
+          "limit": 1
+        }
+      ],
+      "ms": 35,
+      "kind": "server",
+      "shape": {
+        "columns": null,
+        "data": null,
+        "error": "string"
+      },
+      "error": "Internal: Catalog Error: Table with name fpu_no_such_relation does not exist!\nDid you mean \"pg_constraint\"?\n\nLINE 2: select * from fpu_no_such_relation\n                      ^ (sqlstate: [0, 0, 0, 0, 0], vendor_code: -2147483648)",
+      "errorKind": null
+    },
+    "dbt.show unknown uri": {
+      "args": [
+        {
+          "uri": "file://<P>/models/fpu_missing.sql",
+          "limit": 1
+        }
+      ],
+      "ms": 27,
+      "kind": "no columns, no error",
+      "shape": {
+        "columns": null,
+        "data": null,
+        "error": null
+      },
+      "error": null,
+      "errorKind": null
+    },
+    "dbt.show no argument": {
+      "args": [],
+      "ms": 1,
+      "kind": "null result",
+      "shape": null,
+      "error": null,
+      "errorKind": null
+    },
+    "dbt.compileFile unknown uri": {
+      "args": [
+        "file://<P>/models/fpu_missing.sql"
+      ],
+      "ms": 0,
+      "kind": "server",
+      "shape": {
+        "error": "string",
+        "file_uri": null
+      },
+      "error": "Compiled file path not found.",
+      "errorKind": null
+    },
+    "dbt.compileFile yaml file": {
+      "args": [
+        "file://<P>/models/schema.yml"
+      ],
+      "ms": 0,
+      "kind": "ok",
+      "shape": {
+        "error": null,
+        "file_uri": "string"
+      },
+      "error": null,
+      "errorKind": null
+    },
+    "dbt.compileFile relative path": {
+      "args": [
+        "models/orders.sql"
+      ],
+      "ms": 0,
+      "kind": "server",
+      "shape": {
+        "error": "string",
+        "file_uri": null
+      },
+      "error": "relative URL without a base",
+      "errorKind": null
+    },
+    "dbt.compileFile no argument": {
+      "args": [],
+      "ms": 0,
+      "kind": "null result",
+      "shape": null,
+      "error": null,
+      "errorKind": null
+    },
+    "dbt.getCurrentNode unknown path": {
+      "args": [
+        "models/fpu_missing.sql"
+      ],
+      "ms": 1,
+      "kind": "null result",
+      "shape": null,
+      "error": null,
+      "errorKind": null
+    },
+    "dbt.getCurrentNode absolute uri": {
+      "args": [
+        "file://<P>/models/orders.sql"
+      ],
+      "ms": 0,
+      "kind": "null result",
+      "shape": null,
+      "error": null,
+      "errorKind": null
+    },
+    "dbt.getCurrentNode no argument": {
+      "args": [],
+      "ms": 0,
+      "kind": "null result",
+      "shape": null,
+      "error": null,
+      "errorKind": null
+    },
+    "dbt.listNodes no match": {
+      "args": [
+        "fpu_no_such_model"
+      ],
+      "ms": 20,
+      "kind": "empty",
+      "shape": {
+        "error": "string",
+        "error_kind": "string",
+        "grain": "string",
+        "nodes": "array",
+        "root_project": "string"
+      },
+      "error": "No nodes found",
+      "errorKind": "lineage_query_failed"
+    },
+    "dbt.listNodes bad selector": {
+      "args": [
+        "+++"
+      ],
+      "ms": 23,
+      "kind": "empty",
+      "shape": {
+        "error": "string",
+        "error_kind": "string",
+        "grain": "string",
+        "nodes": "array",
+        "root_project": "string"
+      },
+      "error": "No nodes found",
+      "errorKind": "lineage_query_failed"
+    },
+    "dbt.listNodes empty list": {
+      "args": [],
+      "ms": 0,
+      "kind": "null result",
+      "shape": null,
+      "error": null,
+      "errorKind": null
+    },
+    "dbt.listNodes object argument": {
+      "args": [
+        {
+          "select": "orders"
+        }
+      ],
+      "ms": 0,
+      "kind": "server",
+      "shape": {
+        "error": "string",
+        "error_kind": "string",
+        "grain": "string",
+        "nodes": "array"
+      },
+      "error": "empty selector list passed to --select/--exclude",
+      "errorKind": "invalid_selector"
+    }
+  },
+  "newKinds": [
+    "no columns, no error",
+    "null result"
+  ],
+  "deadlines": {
+    "dbt.show": null,
+    "dbt.compileFile": 5000,
+    "dbt.getCurrentNode": 5000,
+    "dbt.listNodes": 5000
+  },
+  "decision": "kinds server/timeout/notRunning/cancelled plus unmapped shapes no columns, no error, null result"
+}

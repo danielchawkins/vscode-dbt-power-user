@@ -1,0 +1,100 @@
+{
+  "experiment": "e6-disk-watch",
+  "target": "jaffle",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:24:38.816Z",
+  "rule": "see header",
+  "pollMs": 30000,
+  "silent": {
+    "rows": {
+      "model (control)": {
+        "seenBefore": false,
+        "seen": true,
+        "ms": 1173,
+        "backgroundCompiles": 0
+      },
+      "macro": {
+        "seenBefore": false,
+        "seen": true,
+        "ms": 2006,
+        "backgroundCompiles": 1
+      },
+      "dbt_project.yml": {
+        "seenBefore": false,
+        "seen": true,
+        "ms": 1174,
+        "backgroundCompiles": 0
+      },
+      "packages.yml": {
+        "seenBefore": false,
+        "seen": true,
+        "ms": 1170,
+        "backgroundCompiles": 0
+      }
+    },
+    "registrations": [
+      {
+        "registrations": [
+          {
+            "id": "default-dbt-file-system-watcher",
+            "method": "workspace/didChangeWatchedFiles",
+            "registerOptions": {
+              "watchers": [
+                {
+                  "globPattern": "**/*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "notified": {
+    "rows": {
+      "model (control)": {
+        "seenBefore": false,
+        "seen": true,
+        "ms": 1024,
+        "backgroundCompiles": 0
+      },
+      "macro": {
+        "seenBefore": false,
+        "seen": true,
+        "ms": 1031,
+        "backgroundCompiles": 0
+      },
+      "dbt_project.yml": {
+        "seenBefore": false,
+        "seen": true,
+        "ms": 1027,
+        "backgroundCompiles": 0
+      },
+      "packages.yml": {
+        "seenBefore": false,
+        "seen": true,
+        "ms": 1020,
+        "backgroundCompiles": 0
+      }
+    },
+    "registrations": [
+      {
+        "registrations": [
+          {
+            "id": "default-dbt-file-system-watcher",
+            "method": "workspace/didChangeWatchedFiles",
+            "registerOptions": {
+              "watchers": [
+                {
+                  "globPattern": "**/*"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  },
+  "missed": [],
+  "decision": "the server reflects every edit when notified: no registry-triggered refresh is needed"
+}

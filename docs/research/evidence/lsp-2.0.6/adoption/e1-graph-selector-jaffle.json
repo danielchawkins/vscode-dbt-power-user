@@ -1,0 +1,97 @@
+{
+  "experiment": "e1-graph-selector",
+  "target": "jaffle",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:04:19.469Z",
+  "rule": "smallest complete candidate; else package:<root> with placeholders",
+  "loadMs": 2526,
+  "candidates": {
+    "package": {
+      "selectors": [
+        "package:jaffle_shop"
+      ],
+      "ms": 11,
+      "error": null,
+      "nodes": 15,
+      "edges": 15,
+      "byType": {
+        "exposure": 1,
+        "model": 7,
+        "seed": 3,
+        "snapshot": 1,
+        "source": 1,
+        "test": 1,
+        "unit_test": 1
+      },
+      "packages": [
+        "jaffle_shop"
+      ],
+      "missingTargets": 0,
+      "missingSample": [],
+      "missingByPrefix": {},
+      "placeholderEdgeShare": 0
+    },
+    "plusPackage": {
+      "selectors": [
+        "+package:jaffle_shop"
+      ],
+      "ms": 23,
+      "error": null,
+      "nodes": 15,
+      "edges": 15,
+      "byType": {
+        "exposure": 1,
+        "model": 7,
+        "seed": 3,
+        "snapshot": 1,
+        "source": 1,
+        "test": 1,
+        "unit_test": 1
+      },
+      "packages": [
+        "jaffle_shop"
+      ],
+      "missingTargets": 0,
+      "missingSample": [],
+      "missingByPrefix": {},
+      "placeholderEdgeShare": 0
+    },
+    "union": {
+      "selectors": [
+        "package:jaffle_shop",
+        "+package:jaffle_shop"
+      ],
+      "ms": 22,
+      "error": null,
+      "nodes": 15,
+      "edges": 15,
+      "byType": {
+        "exposure": 1,
+        "model": 7,
+        "seed": 3,
+        "snapshot": 1,
+        "source": 1,
+        "test": 1,
+        "unit_test": 1
+      },
+      "packages": [
+        "jaffle_shop"
+      ],
+      "missingTargets": 0,
+      "missingSample": [],
+      "missingByPrefix": {},
+      "placeholderEdgeShare": 0
+    }
+  },
+  "chosen": "package",
+  "resourceTypes": [
+    "exposure",
+    "model",
+    "seed",
+    "snapshot",
+    "source",
+    "test",
+    "unit_test"
+  ],
+  "decision": "selector [\"package:jaffle_shop\"] (15 nodes) contains every depends_on target"
+}

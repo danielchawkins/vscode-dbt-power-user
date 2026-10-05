@@ -14,3 +14,5 @@ scripts/spikes
 src/test/suite/fixtures
 eslint-suppressions.json
 .dependency-cruiser-known-violations.json
+# Captured language server responses; byte-exact
+docs/research/evidence

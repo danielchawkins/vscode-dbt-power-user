@@ -1,0 +1,63 @@
+{
+  "experiment": "e3-unsaved-compile",
+  "target": "jaffle",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:12:38.597Z",
+  "rule": "compiled text of the unsaved buffer from compileFile or an inline show; else D5 stands",
+  "before": {
+    "ms": 1,
+    "result": {
+      "error": null,
+      "file_uri": "file://<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql"
+    }
+  },
+  "compileFileAfterChange": {
+    "ms": 0,
+    "result": {
+      "error": null,
+      "file_uri": "file://<P>/target/.lsp/compiled/jaffle_shop/models/orders.sql"
+    },
+    "reflectsUnsaved": false,
+    "hasJinja": false
+  },
+  "showInline": {
+    "ms": 34,
+    "keys": [
+      "columns",
+      "data",
+      "error"
+    ],
+    "columns": [
+      "order_id",
+      "customer_id",
+      "order_date",
+      "status",
+      "credit_card_amount",
+      "coupon_amount",
+      "bank_transfer_amount",
+      "gift_card_amount",
+      "amount",
+      "fpu_e3_unsaved_marker"
+    ],
+    "error": null,
+    "returnsCompiledText": false,
+    "columnsReflectUnsaved": true
+  },
+  "showUri": {
+    "ms": 43,
+    "columns": [
+      "order_id",
+      "customer_id",
+      "order_date",
+      "status",
+      "credit_card_amount",
+      "coupon_amount",
+      "bank_transfer_amount",
+      "gift_card_amount",
+      "amount"
+    ],
+    "error": null,
+    "columnsReflectUnsaved": false
+  },
+  "decision": "neither compileFile nor an inline show returns compiled text for the buffer: D5 stands"
+}

@@ -1,0 +1,100 @@
+{
+  "experiment": "e7-will-rename",
+  "target": "jaffle",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:21:04.589Z",
+  "rule": "see header",
+  "advertised": {
+    "filters": [
+      {
+        "pattern": {
+          "glob": "**/*.{sql,csv}",
+          "matches": "file"
+        },
+        "scheme": "file"
+      }
+    ]
+  },
+  "result": {
+    "changes": {
+      "file://<P>/models/customers.sql": [
+        {
+          "newText": "stg_orders_renamed",
+          "range": {
+            "end": {
+              "character": 36,
+              "line": 8
+            },
+            "start": {
+              "character": 26,
+              "line": 8
+            }
+          }
+        }
+      ],
+      "file://<P>/models/orders.sql": [
+        {
+          "newText": "stg_orders_renamed",
+          "range": {
+            "end": {
+              "character": 36,
+              "line": 4
+            },
+            "start": {
+              "character": 26,
+              "line": 4
+            }
+          }
+        }
+      ],
+      "file://<P>/models/schema.yml": [
+        {
+          "newText": "stg_orders_renamed",
+          "range": {
+            "end": {
+              "character": 30,
+              "line": 92
+            },
+            "start": {
+              "character": 20,
+              "line": 92
+            }
+          }
+        }
+      ],
+      "file://<P>/models/staging/schema.yml": [
+        {
+          "newText": "stg_orders_renamed",
+          "range": {
+            "end": {
+              "character": 20,
+              "line": 10
+            },
+            "start": {
+              "character": 10,
+              "line": 10
+            }
+          }
+        }
+      ]
+    }
+  },
+  "editedFiles": [
+    "models/customers.sql",
+    "models/orders.sql",
+    "models/schema.yml",
+    "models/staging/schema.yml"
+  ],
+  "refEdits": 4,
+  "childrenWithRef": [
+    "models/customers.sql",
+    "models/orders.sql"
+  ],
+  "client": {
+    "established": false,
+    "reason": "needs a rename in a running VS Code and Cursor with the extension; not run by this script",
+    "languageClientRegistersWillRename": true,
+    "extensionMiddlewareTouchesRename": false
+  },
+  "decision": "server half passes: it advertises willRename for model files and edits every ref() to the renamed model; client half not established"
+}

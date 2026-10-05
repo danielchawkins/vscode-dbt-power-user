@@ -1,0 +1,79 @@
+{
+  "experiment": "e2-show-concurrency",
+  "target": "jaffle",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:11:36.370Z",
+  "rule": "interferes when other > solo p50 + 1 s, answers after the show, or either errors; cancel by query history",
+  "solo": {
+    "listNodes": {
+      "samples": [
+        23,
+        29,
+        27,
+        27,
+        36
+      ],
+      "p50": 27
+    },
+    "compileFile": {
+      "samples": [
+        3,
+        1,
+        1,
+        0,
+        1
+      ],
+      "p50": 1
+    },
+    "longShow": {
+      "ms": 40235,
+      "error": null
+    }
+  },
+  "pairs": {
+    "show+listNodes": {
+      "otherMs": 36350,
+      "otherSoloP50": 27,
+      "showMs": 37337,
+      "otherAnsweredBeforeShow": false,
+      "otherError": null,
+      "showError": null,
+      "interferes": true
+    },
+    "show+compileFile": {
+      "otherMs": 1,
+      "otherSoloP50": 1,
+      "showMs": 34219,
+      "otherAnsweredBeforeShow": true,
+      "otherError": null,
+      "showError": null,
+      "interferes": false
+    }
+  },
+  "cancellation": {
+    "cancelSentAtMs": 3022,
+    "answeredAtMs": null,
+    "answeredEarly": false,
+    "response": {
+      "timeout": 90000
+    },
+    "serverCpuBeforeCancel": 97.9,
+    "serverCpuAfterCancel": [
+      100,
+      98.5,
+      99.4,
+      100,
+      98.7
+    ]
+  },
+  "warehouse": {
+    "established": false,
+    "reason": "jaffle runs DuckDB in process; no warehouse query history"
+  },
+  "decision": {
+    "queues": "shared queue for show+listNodes",
+    "cancel": "warehouse cancel not established (jaffle runs DuckDB in process; no warehouse query history)",
+    "lineageBlockedMs": 36350,
+    "stop": true
+  }
+}

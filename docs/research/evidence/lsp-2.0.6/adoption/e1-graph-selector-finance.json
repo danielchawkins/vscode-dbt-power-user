@@ -1,0 +1,88 @@
+{
+  "experiment": "e1-graph-selector",
+  "target": "finance",
+  "dbtVersion": "dbt 2.0.6",
+  "date": "2026-10-05T00:42:15.616Z",
+  "rule": "smallest complete candidate; else package:<root> with placeholders",
+  "loadMs": 9414,
+  "candidates": {
+    "package": {
+      "selectors": [
+        "package:finance_general"
+      ],
+      "ms": 49,
+      "error": null,
+      "nodes": 1600,
+      "edges": 684,
+      "byType": {
+        "model": 330,
+        "source": 1270
+      },
+      "packages": [
+        "finance_general"
+      ],
+      "missingTargets": 1,
+      "missingSample": [
+        "function.<warehouse-name>.normalize_timestamp"
+      ],
+      "missingByPrefix": {
+        "function": 1
+      },
+      "placeholderEdgeShare": 0.4824561403508772
+    },
+    "plusPackage": {
+      "selectors": [
+        "+package:finance_general"
+      ],
+      "ms": 58,
+      "error": null,
+      "nodes": 1603,
+      "edges": 686,
+      "byType": {
+        "function": 3,
+        "model": 330,
+        "source": 1270
+      },
+      "packages": [
+        "finance_general",
+        "<warehouse-name>"
+      ],
+      "missingTargets": 0,
+      "missingSample": [],
+      "missingByPrefix": {},
+      "placeholderEdgeShare": 0
+    },
+    "union": {
+      "selectors": [
+        "package:finance_general",
+        "+package:finance_general"
+      ],
+      "ms": 57,
+      "error": null,
+      "nodes": 1600,
+      "edges": 684,
+      "byType": {
+        "model": 330,
+        "source": 1270
+      },
+      "packages": [
+        "finance_general"
+      ],
+      "missingTargets": 1,
+      "missingSample": [
+        "function.<warehouse-name>.normalize_timestamp"
+      ],
+      "missingByPrefix": {
+        "function": 1
+      },
+      "placeholderEdgeShare": 0.4824561403508772
+    }
+  },
+  "chosen": "plusPackage",
+  "resourceTypes": [
+    "function",
+    "model",
+    "source"
+  ],
+  "decision": "selector [\"+package:finance_general\"] (1603 nodes) contains every depends_on target"
+}
