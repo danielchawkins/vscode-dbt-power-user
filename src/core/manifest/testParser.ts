@@ -19,7 +19,7 @@ export class TestParser {
     return columnName;
   }
   createTestMetaMap(
-    testsMap: any[],
+    testsMap: Record<string, any>,
     project: ManifestProject,
   ): Promise<TestMetaMap> {
     return new Promise((resolve) => {

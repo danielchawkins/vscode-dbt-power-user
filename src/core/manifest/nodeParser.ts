@@ -97,122 +97,115 @@ export class NodeParser {
     private readDbtLoomConfigPath: DbtLoomConfigPathReader = () => undefined,
   ) {}
 
-  createNodeMetaMap(
-    nodesMap: any[],
+  async createNodeMetaMap(
+    nodesMap: Record<string, any> | null | undefined,
     project: ManifestProject,
   ): Promise<NodeMetaMap> {
-    return new Promise(async (resolve) => {
-      const projectRoot = project.getProjectRoot();
-      const projectName = project.getProjectName();
-      this.terminal.debug(
-        "NodeParser",
-        `Parsing nodes for "${projectName}" at ${projectRoot}`,
-      );
-      const latestVersionLookupMap: Map<string, string> = new Map();
-      const modelMetadataLookupMap: Map<string, NodeMetaData> = new Map();
-      const nameLookupMapsByType: Map<
-        NodeResourceType,
-        Map<string, string>
-      > = new Map();
-      if (nodesMap === null || nodesMap === undefined) {
-        resolve(new NodeMetaMapImpl(new Map(), new Map()));
-      }
-      const nodesMaps = Object.values(nodesMap).filter((model) =>
-        isResourceNode(model.resource_type),
-      );
-      const packagePath = project.getPackageInstallPath();
-      if (packagePath === undefined) {
-        throw new Error("packagePath is not defined " + projectRoot);
-      }
-      const externalProjectNames = getExternalProjectNamesFromDbtLoomConfig(
+    const projectRoot = project.getProjectRoot();
+    const projectName = project.getProjectName();
+    this.terminal.debug(
+      "NodeParser",
+      `Parsing nodes for "${projectName}" at ${projectRoot}`,
+    );
+    const latestVersionLookupMap: Map<string, string> = new Map();
+    const modelMetadataLookupMap: Map<string, NodeMetaData> = new Map();
+    const nameLookupMapsByType: Map<
+      NodeResourceType,
+      Map<string, string>
+    > = new Map();
+    if (nodesMap === null || nodesMap === undefined) {
+      return new NodeMetaMapImpl(new Map(), new Map());
+    }
+    const nodesMaps = Object.values(nodesMap).filter((model) =>
+      isResourceNode(model.resource_type),
+    );
+    const packagePath = project.getPackageInstallPath();
+    if (packagePath === undefined) {
+      throw new Error("packagePath is not defined " + projectRoot);
+    }
+    const externalProjectNames = getExternalProjectNamesFromDbtLoomConfig(
+      projectRoot,
+      this.readDbtLoomConfigPath(),
+    );
+    for (const nodesMap of nodesMaps) {
+      const {
+        name,
+        original_file_path,
+        database,
+        schema,
+        alias,
+        package_name,
+        latest_version,
+        version,
+        unique_id,
+        columns,
+        description,
+        patch_path,
+        config,
+        resource_type,
+        depends_on,
+        meta,
+        constraints,
+        relation_name,
+      } = nodesMap;
+      const fullPath = createFullPathForNode(
+        projectName,
         projectRoot,
-        this.readDbtLoomConfigPath(),
+        package_name,
+        packagePath,
+        original_file_path,
       );
-      for (const nodesMap of nodesMaps) {
-        const {
-          name,
-          original_file_path,
-          database,
-          schema,
-          alias,
-          package_name,
-          latest_version,
-          version,
-          unique_id,
-          columns,
-          description,
-          patch_path,
-          config,
-          resource_type,
-          depends_on,
-          meta,
-          constraints,
-          relation_name,
-        } = nodesMap;
-        const fullPath = createFullPathForNode(
-          projectName,
-          projectRoot,
-          package_name,
-          packagePath,
-          original_file_path,
-        );
-        const targetPath = project.getTargetPath();
-        if (fullPath) {
-          const nodeResourceType = resource_type as NodeResourceType;
-          let nameMap = nameLookupMapsByType.get(nodeResourceType);
-          if (!nameMap) {
-            nameMap = new Map<string, string>();
-            nameLookupMapsByType.set(nodeResourceType, nameMap);
-          }
-          nameMap.set(path.parse(fullPath).name, unique_id);
+      const targetPath = project.getTargetPath();
+      if (fullPath) {
+        const nodeResourceType = resource_type as NodeResourceType;
+        let nameMap = nameLookupMapsByType.get(nodeResourceType);
+        if (!nameMap) {
+          nameMap = new Map<string, string>();
+          nameLookupMapsByType.set(nodeResourceType, nameMap);
         }
-        if (version && latest_version && version === latest_version) {
-          const parts = unique_id.split(".");
-          parts.pop();
-          latestVersionLookupMap.set(parts.join("."), unique_id);
-        }
-        modelMetadataLookupMap.set(unique_id, {
-          path: fullPath,
-          database,
-          schema,
-          alias,
-          name,
-          package_name,
-          unique_id,
-          columns,
-          description,
-          patch_path,
-          config,
-          resource_type,
-          depends_on,
-          is_external_project: Boolean(
-            externalProjectNames?.includes(package_name),
-          ),
-          compiled_path: targetPath
-            ? path.join(
-                targetPath,
-                "compiled",
-                package_name,
-                original_file_path,
-              )
-            : "",
-          meta: meta,
-          constraints,
-          relation_name,
-        });
+        nameMap.set(path.parse(fullPath).name, unique_id);
       }
-      this.terminal.debug(
-        "NodeParser",
-        `Returning nodes for "${projectName}" at ${projectRoot}`,
-        nameLookupMapsByType,
-        modelMetadataLookupMap,
-      );
-      const nodeMetaMap: NodeMetaMap = new NodeMetaMapImpl(
-        latestVersionLookupMap,
-        nameLookupMapsByType,
-        modelMetadataLookupMap,
-      );
-      resolve(nodeMetaMap);
-    });
+      if (version && latest_version && version === latest_version) {
+        const parts = unique_id.split(".");
+        parts.pop();
+        latestVersionLookupMap.set(parts.join("."), unique_id);
+      }
+      modelMetadataLookupMap.set(unique_id, {
+        path: fullPath,
+        database,
+        schema,
+        alias,
+        name,
+        package_name,
+        unique_id,
+        columns,
+        description,
+        patch_path,
+        config,
+        resource_type,
+        depends_on,
+        is_external_project: Boolean(
+          externalProjectNames?.includes(package_name),
+        ),
+        compiled_path: targetPath
+          ? path.join(targetPath, "compiled", package_name, original_file_path)
+          : "",
+        meta: meta,
+        constraints,
+        relation_name,
+      });
+    }
+    this.terminal.debug(
+      "NodeParser",
+      `Returning nodes for "${projectName}" at ${projectRoot}`,
+      nameLookupMapsByType,
+      modelMetadataLookupMap,
+    );
+    const nodeMetaMap: NodeMetaMap = new NodeMetaMapImpl(
+      latestVersionLookupMap,
+      nameLookupMapsByType,
+      modelMetadataLookupMap,
+    );
+    return nodeMetaMap;
   }
 }

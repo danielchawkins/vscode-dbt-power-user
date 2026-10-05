@@ -6,7 +6,7 @@ export class ModelDepthParser {
   constructor(private terminal: ManifestLogger) {}
 
   public createModelDepthsMap(
-    nodeMap: any[],
+    nodeMap: Record<string, any>,
     parentMetaMap: DBTGraphType,
     childMetaMap: DBTGraphType,
   ): Map<string, number> {

@@ -8,7 +8,7 @@ export class ExposureParser {
   constructor(private terminal: ManifestLogger) {}
 
   createExposureMetaMap(
-    exposuresMap: any[],
+    exposuresMap: Record<string, any>,
     project: ManifestProject,
   ): Promise<ExposureMetaMap> {
     return new Promise((resolve) => {

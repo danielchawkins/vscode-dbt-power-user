@@ -16,7 +16,7 @@ export class SourceParser {
   ) {}
 
   createSourceMetaMap(
-    sourcesMap: any[],
+    sourcesMap: Record<string, any>,
     project: ManifestProject,
   ): Promise<SourceMetaMap> {
     return new Promise((resolve) => {

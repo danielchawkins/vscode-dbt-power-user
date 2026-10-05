@@ -175,7 +175,7 @@ export class GraphParser {
           const [sourceName, tableName] = nodeName.split(".");
           const url = sourceMetaMap
             .get(sourceName)
-            ?.tables.find((table) => table.name === tableName)?.path!;
+            ?.tables.find((table) => table.name === tableName)?.path;
           return {
             label: `${tableName} (${sourceName})`,
             key: parentNodeName,
@@ -189,7 +189,7 @@ export class GraphParser {
           if (!model) {
             return;
           }
-          const url = model?.path!;
+          const url = model.path;
           return {
             label: model.alias,
             key: parentNodeName,
@@ -203,7 +203,7 @@ export class GraphParser {
           if (!model) {
             return;
           }
-          const url = model?.path!;
+          const url = model.path;
           return {
             label: model.alias,
             key: parentNodeName,
@@ -223,7 +223,7 @@ export class GraphParser {
           };
         }
         case "analysis": {
-          const url = nodeMetaMap.lookupByBaseName(nodeName, "analysis")?.path!;
+          const url = nodeMetaMap.lookupByBaseName(nodeName, "analysis")?.path;
           return {
             label: nodeName,
             key: parentNodeName,
@@ -232,7 +232,7 @@ export class GraphParser {
           };
         }
         case "snapshot": {
-          const url = nodeMetaMap.lookupByBaseName(nodeName, "snapshot")?.path!;
+          const url = nodeMetaMap.lookupByBaseName(nodeName, "snapshot")?.path;
           return {
             label: nodeName,
             key: parentNodeName,
@@ -241,7 +241,7 @@ export class GraphParser {
           };
         }
         case "exposure": {
-          const url = nodeMetaMap.lookupByBaseName(nodeName)?.path!;
+          const url = nodeMetaMap.lookupByBaseName(nodeName)?.path;
           return {
             label: nodeName,
             key: parentNodeName,

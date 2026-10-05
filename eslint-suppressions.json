@@ -15,9 +15,6 @@
   },
   "src/core/manifest/docParser.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    },
-    "@typescript-eslint/no-misused-promises": {
       "count": 1
     }
   },
@@ -45,16 +42,10 @@
   "src/core/manifest/macroParser.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
-    },
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
     }
   },
   "src/core/manifest/metricParser.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "@typescript-eslint/no-misused-promises": {
       "count": 1
     }
   },
@@ -70,11 +61,8 @@
     "@typescript-eslint/no-explicit-any": {
       "count": 1
     },
-    "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    },
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     }
   },
   "src/core/manifest/relationshipParser.ts": {
