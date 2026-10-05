@@ -107,6 +107,7 @@ lint:
     just lint-just
     just lint-mise-lock
     just lint-code
+    just lint-unused
     just webviews::lint
     just lint-format
     just lint-lockfiles
@@ -146,7 +147,7 @@ lint-code:
     npm run lint
     npm run lint:imports
 
-# Unused files, exports and dependencies. On demand only: refactors pass through states with dead code.
+# Unused files, exports, types, enum members and dependencies, in all code and in production code alone.
 [group("quality")]
 lint-unused:
     npm run lint:unused

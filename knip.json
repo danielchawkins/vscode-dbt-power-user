@@ -1,30 +1,30 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
+  "tags": ["-internal"],
   "workspaces": {
     ".": {
       "entry": [
-        "src/extension.ts",
-        "src/test/**/*.ts",
+        "src/test/**/*.test.ts",
+        "src/test/{integration,smoke}/**/*.ts",
+        "src/test/mock/{extensionRoot,vscode,vscode-languageclient-node}.ts",
         "scripts/**/*.{mjs,ts}",
-        "rsbuild.config.ts",
-        "vitest.config.ts"
+        ".vscode-test.mjs"
       ],
-      "project": ["src/**/*.ts", "scripts/**/*.{mjs,ts}"],
-      "ignore": [
-        "src/test/fixtures/**",
-        "src/test/mock/**",
-        "scripts/spikes/**"
-      ],
-      "ignoreDependencies": ["@types/vscode", "ts-loader"],
-      "ignoreBinaries": ["sample", "dbt"]
+      "project": ["src/**/*.ts!", "scripts/**/*.{mjs,ts}", "!src/test/**!"],
+      "ignore": ["scripts/spikes/**"],
+      "ignoreBinaries": ["dbt", "sample"]
     },
     "packages/webview-contract": {
       "entry": ["src/**/*.test.ts"],
-      "project": ["src/**/*.ts"]
+      "project": ["src/**/*.ts!", "!src/**/*.test.ts!"]
     },
     "webview_panels": {
-      "entry": ["src/entries/*.tsx", "src/**/*.test.{ts,tsx}"],
-      "project": ["src/**/*.{ts,tsx}"],
+      "entry": ["src/entries/*.tsx!", "src/**/*.test.{ts,tsx}"],
+      "project": [
+        "src/**/*.{ts,tsx}!",
+        "!src/**/*.test.{ts,tsx}!",
+        "!src/test/**!"
+      ],
       "ignoreDependencies": ["@vscode/codicons"]
     }
   }
