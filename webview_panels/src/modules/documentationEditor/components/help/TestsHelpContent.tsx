@@ -27,7 +27,7 @@ const TestHelpContent = (): JSX.Element => {
       </p>
       <p>
         Need more help? Check out the&nbsp;
-        <a href="https://docs.myaltimate.com/test/generatetest">
+        <a href="https://docs.getdbt.com/docs/build/data-tests">
           documentation
         </a>
         .

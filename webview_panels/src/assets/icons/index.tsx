@@ -67,7 +67,7 @@ export const CloseIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
 );
 
 export const LoadingSpinner = (): JSX.Element => (
-  <img src={LoadingSpinnerUrl} alt="Altimate loader" />
+  <img src={LoadingSpinnerUrl} alt="Loading" />
 );
 
 export const PlayCircleIcon = (
