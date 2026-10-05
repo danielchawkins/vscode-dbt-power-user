@@ -12,7 +12,8 @@
       ],
       "project": ["src/**/*.ts!", "scripts/**/*.{mjs,ts}", "!src/test/**!"],
       "ignore": ["scripts/spikes/**"],
-      "ignoreBinaries": ["dbt", "sample"]
+      "ignoreBinaries": ["dbt", "sample"],
+      "ignoreDependencies": ["type-coverage"]
     },
     "packages/webview-contract": {
       "entry": ["src/**/*.test.ts"],
