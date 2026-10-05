@@ -1,6 +1,6 @@
 # Implementation dispatch
 
-This is the execution layer on top of [`rearchitecture-plan.md`](rearchitecture-plan.md). The plan is the spec: goals, exits, verification, and order. This file says how work is implemented serially, pipelined through review and CI, and landed.
+This is the execution layer on top of [`rearchitecture-plan.md`](rearchitecture-plan.md) and [`quality-and-lsp-plan.md`](quality-and-lsp-plan.md). The plan is the spec: goals, exits, verification, and order. This file says how work is implemented serially, pipelined through review and CI, and landed.
 
 ## Trunk
 
@@ -24,7 +24,7 @@ Merge from the pull request page. After merge: `just jj git fetch` and rebase th
 
 ## Serial implementation, pipelined landing
 
-Implement one PR at a time. Revisions within that PR are serial too. External review and CI for PR N do not block local implementation of PR N+1: after N's bookmark tip is locally green, passes the local read-only review, and is pushed, create N+1 as a child of N's bookmark tip in a separate jj workspace. Do not push N+1 until N has passed external review and CI and merged into `main`.
+Implement one PR at a time, except under [Parallel workspaces](#parallel-workspaces). Revisions within that PR are serial too. External review and CI for PR N do not block local implementation of PR N+1: after N's bookmark tip is locally green, passes the local read-only review, and is pushed, create N+1 as a child of N's bookmark tip in a separate jj workspace. Do not push N+1 until N has passed external review and CI and merged into `main`.
 
 ```bash
 just jj workspace add ../fusion-pu-<next-step> --revision <step-bookmark> -m "<next-step subject>"
@@ -34,7 +34,11 @@ The local revision chain records dependency order within and across PRs. If revi
 
 Run `just sync` inside each new workspace. After rebasing its successor off a merged PR, forget the merged workspace, remove its directory, and abandon the obsolete local revision range with `just jj abandon <pr-root>::<pr-tip>`.
 
-Review agents are read-only and may run while the next implementation proceeds. CI investigation and review fixes interrupt the next step only long enough to repair or rebase the affected ancestor. Do not open multiple implementation changes for parallel coding.
+Review agents are read-only and may run while the next implementation proceeds. CI investigation and review fixes interrupt the next step only long enough to repair or rebase the affected ancestor.
+
+## Parallel workspaces
+
+At most two implementation workspaces run at once, and only for steps the plan marks parallel-safe: they touch none of the same files and none of the plan's shared files. Each parallel bookmark roots on the same parent tip and rebases after its sibling merges. Every other step is serial as above, and one smoke or integration run at a time still applies.
 
 ## Agent orchestration loop
 

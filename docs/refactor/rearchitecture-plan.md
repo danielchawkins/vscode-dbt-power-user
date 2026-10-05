@@ -1,6 +1,6 @@
 # Rearchitecture plan
 
-This is the authoritative plan. It replaced the v1 plans (the Fusion LSP plan, its step index and the column-lineage ship plan), which are in git history before commit `fa939daf`; their outcome is recorded in [Closing the v1 refactor](#closing-the-v1-refactor). Vocabulary is [`CONTEXT.md`](../../CONTEXT.md); decisions are in [`../adr/`](../adr/); landing rules are in [`implementation-dispatch.md`](implementation-dispatch.md).
+This is the authoritative plan. It replaced the v1 plans (the Fusion LSP plan, its step index and the column-lineage ship plan), which are in git history before commit `fa939daf`; their outcome is recorded in [Closing the v1 refactor](#closing-the-v1-refactor). Vocabulary is [`CONTEXT.md`](../../CONTEXT.md); decisions are in [`../adr/`](../adr/); landing rules are in [`implementation-dispatch.md`](implementation-dispatch.md). After R8, [`quality-and-lsp-plan.md`](quality-and-lsp-plan.md) runs its Phases 0–4 before R10.
 
 Evidence:
 
@@ -28,17 +28,17 @@ Rules for every step:
 
 v1 is complete for beta.
 
-| v1 area                                                                   | Outcome                                                                                                                                                                                |
-| ------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Phases 0–4 (tooling, identity, characterization, cuts, Declared Projects) | Done. Project Registry is the scope authority.                                                                                                                                         |
-| Phase 5 (LSP transport, client, lifecycle)                                | Done through 5.6: one Fusion Client per Declared Project over the reverse socket; legacy providers deleted.                                                                            |
-| Phase 6 (metadata producer)                                               | Settled: the manifest source stays; the LSP cannot populate the contract ([`../lsp-metadata-gaps.md`](../lsp-metadata-gaps.md)).                                                       |
-| Phase 7 (operation routing)                                               | 7.1 done. 7.2–7.6 are superseded by R3, which routes every CLI and LSP operation through one Project Snapshot.                                                                         |
-| Phase 8 (deletions)                                                       | Done.                                                                                                                                                                                  |
-| Phase 9 (namespace, docs, smoke, release)                                 | Done; `v0.4.0-beta.1` published.                                                                                                                                                       |
-| Phase 10 (finance-pipelines adoption)                                     | Carried forward as R9.                                                                                                                                                                 |
-| Column-lineage ship plan steps 1–8                                        | Done; step 8 was `v0.4.0-beta.1`. Steps 9–10 become R9 and R10.                                                                                                                        |
-| v2 horizon                                                                | Carried forward, reduced and reordered as R6–R8. The contract package stays; the joint benchmark narrows to the lineage renderer because the styling decision no longer depends on it. |
+| v1 area                                                                   | Outcome                                                                                                                                                                                                                                                     |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phases 0–4 (tooling, identity, characterization, cuts, Declared Projects) | Done. Project Registry is the scope authority.                                                                                                                                                                                                              |
+| Phase 5 (LSP transport, client, lifecycle)                                | Done through 5.6: one Fusion Client per Declared Project over the reverse socket; legacy providers deleted.                                                                                                                                                 |
+| Phase 6 (metadata producer)                                               | Superseded: the manifest source stays for the fields in [`../lsp-metadata-gaps.md`](../lsp-metadata-gaps.md); a composite producer takes the rest from the language server ([quality plan D8](quality-and-lsp-plan.md#one-seam-the-composite-producer-d8)). |
+| Phase 7 (operation routing)                                               | 7.1 done. 7.2–7.6 are superseded by R3, which routes every CLI and LSP operation through one Project Snapshot.                                                                                                                                              |
+| Phase 8 (deletions)                                                       | Done.                                                                                                                                                                                                                                                       |
+| Phase 9 (namespace, docs, smoke, release)                                 | Done; `v0.4.0-beta.1` published.                                                                                                                                                                                                                            |
+| Phase 10 (finance-pipelines adoption)                                     | Carried forward as R9.                                                                                                                                                                                                                                      |
+| Column-lineage ship plan steps 1–8                                        | Done; step 8 was `v0.4.0-beta.1`. Steps 9–10 become R9 and R10.                                                                                                                                                                                             |
+| v2 horizon                                                                | Carried forward, reduced and reordered as R6–R8. The contract package stays; the joint benchmark narrows to the lineage renderer because the styling decision no longer depends on it.                                                                      |
 
 Still open from v1: issues #110, #118, #120, and the ship plan's open questions (strict without authentication, view contents after a selective compile, downstream `select *` children), which become evidence tasks in R3.
 
@@ -84,7 +84,7 @@ Each phase is a serial set of PRs, each green at its tip: `just check`; `just pa
 Goal: make the principles mechanically checked before the restructuring starts.
 
 1. **Done — type-aware, complexity and size lint with a shrinking baseline** (`build/quality-lint`). `eslint-suppressions.json` records existing violations of `complexity` (15), `sonarjs/cognitive-complexity` (15), `max-depth` (4), `max-params` (5), `max-lines` (600), `max-lines-per-function` (80), `no-explicit-any`, `no-floating-promises`, `no-misused-promises`, `await-thenable`, and duplication rules. New violations fail `just lint`; `just lint-prune` removes fixed entries, so the file only shrinks.
-2. **Done — dead code on demand**: `just lint-unused` runs knip. Not in `check` or pre-push, because refactors pass through states with temporary dead code.
+2. **Done — dead code on demand**: `just lint-unused` runs knip. From quality plan step 0.4, knip gates `just lint`.
 3. **Layer rules**: add dependency-cruiser with `no-circular` and `no-orphans` now; add each layer rule from [Target model](#target-model) in the PR that creates the layer (R2: `core/`, `settings/`; R3: `projects/`, `fusion/`; R4: `features/`). A rule lands passing; the PR that introduces it moves the code that would violate it.
 4. **Settings rule**: `no-restricted-properties` on `workspace.getConfiguration` and `workspace.onDidChangeConfiguration` everywhere in `src/` except `src/settings/`, with the current call sites recorded in the baseline. R2 empties them.
 5. **Property-based tests**: add `fast-check`. Properties live beside unit tests as `*.property.test.ts`, generators in `src/test/arbitraries/`, with a fixed `numRuns` and the seed printed on failure. First targets, all existing pure functions:
@@ -324,7 +324,7 @@ The project-side compile fixes are tracked in Kikoff/finance-pipelines#106. The 
 
 ### R10 — 1.0.0
 
-Cut once R9 confirms the consumer works, with R1–R5 on `main`. R6–R8 may follow 1.0.0: they change panel internals, not settings, commands or files users depend on.
+Cut once R9 confirms the consumer works, with R1–R8 on `main` and Phases 0–4 of [`quality-and-lsp-plan.md`](quality-and-lsp-plan.md) done.
 
 ## Naming and code conventions
 
@@ -339,28 +339,27 @@ These extend `AGENTS.md`; the ESLint config enforces what it can.
 
 ## Dependencies
 
-| Package                                                          | Now             | Target                               | Where   | Phase    |
-| ---------------------------------------------------------------- | --------------- | ------------------------------------ | ------- | -------- |
-| `fast-check`, `dependency-cruiser`                               | —               | added                                | root    | R1       |
-| `jest`, `ts-jest`, `@jest/globals`                               | 30, 29          | replaced by Vitest                   | root    | R4       |
-| `@vscode/test-electron` launch script                            | custom          | `@vscode/test-cli`                   | root    | R1       |
-| `typescript`                                                     | 6               | 6 until typescript-eslint supports 7 | both    | —        |
-| `inversify`, `reflect-metadata`, `ts-loader`                     | 8, 0.2, 9       | removed                              | root    | R4       |
-| `react-router-dom`                                               | 7               | removed                              | webview | R6       |
-| `@reduxjs/toolkit`                                               | 2               | removed with the lineage component   | webview | R8       |
-| `reactstrap`, `bootstrap`, `sass`                                | —               | removed                              | webview | R7       |
-| `react-hook-form`, `yup`, `react-copy-to-clipboard`              | —               | native                               | webview | R7       |
-| Storybook, `faker`, `factory.ts`, `react-markdown`, `remark-gfm` | —               | removed                              | webview | R7       |
-| `@finos/perspective*`                                            | 3.8, deprecated | `@perspective-dev/*`                 | webview | R7       |
-| `react`, `react-dom`                                             | 18              | 19, after 1.0.0                      | webview | post-1.0 |
-| `@types/node`                                                    | 24.19           | current LTS                          | root    | R7       |
-| `@altimateai/ui-components`, `tailwindcss`, `postcss`            | 0.0.88, 3       | removed                              | webview | R8       |
+| Package                                                          | Now             | Target                               | Where   | Phase       |
+| ---------------------------------------------------------------- | --------------- | ------------------------------------ | ------- | ----------- |
+| `fast-check`, `dependency-cruiser`                               | —               | added                                | root    | R1          |
+| `jest`, `ts-jest`, `@jest/globals`                               | 30, 29          | replaced by Vitest                   | root    | R4          |
+| `@vscode/test-electron` launch script                            | custom          | `@vscode/test-cli`                   | root    | R1          |
+| `typescript`                                                     | 6               | 6 until typescript-eslint supports 7 | both    | —           |
+| `inversify`, `reflect-metadata`, `ts-loader`                     | 8, 0.2, 9       | removed                              | root    | R4          |
+| `react-router-dom`                                               | 7               | removed                              | webview | R6          |
+| `@reduxjs/toolkit`                                               | 2               | removed with the lineage component   | webview | R8          |
+| `reactstrap`, `bootstrap`, `sass`                                | —               | removed                              | webview | R7          |
+| `react-hook-form`, `yup`, `react-copy-to-clipboard`              | —               | native                               | webview | R7          |
+| Storybook, `faker`, `factory.ts`, `react-markdown`, `remark-gfm` | —               | removed                              | webview | R7          |
+| `@finos/perspective*`                                            | 3.8, deprecated | `@perspective-dev/*`                 | webview | R7          |
+| `react`, `react-dom`                                             | 18              | 19 before 1.0                        | webview | quality 4.3 |
+| `@types/node`                                                    | 24.19           | current LTS                          | root    | R7          |
+| `@altimateai/ui-components`, `tailwindcss`, `postcss`            | 0.0.88, 3       | removed                              | webview | R8          |
 
 ## Considered and not planned
 
 - **`TestController` for dbt tests.** dbt tests are graph nodes whose result is a row count, not a unit-test tree; mapping them costs more than it gives.
 - **A TypeScript 7 type-check step** before typescript-eslint supports 7: it adds a second compiler to the gate with no consumer.
-- **React 19 inside R7:** unrelated to the phase's goal; it follows 1.0.0.
 
 ## Risks
 
