@@ -10,11 +10,11 @@ import {
 } from "vscode";
 import { LspLaunch } from "../../core/lsp";
 import { StaticAnalysisMode } from "../../core/project";
-import { FusionClientPool } from "../../fusion/fusionClientPool";
 import {
   FusionClient,
   FusionClientState,
 } from "../../fusion/fusionLanguageClient";
+import { FusionClientPool } from "../../projects/fusionClientPool";
 import {
   clientSeverity,
   clientText,
@@ -22,7 +22,7 @@ import {
   FusionStatus,
   optInLines,
   ProjectOptIns,
-} from "../../fusion/fusionStatus";
+} from "../../projects/fusionStatus";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
 const folder: WorkspaceFolder = {

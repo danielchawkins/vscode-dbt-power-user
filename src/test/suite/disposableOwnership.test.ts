@@ -29,8 +29,8 @@ import { DbtLineageService } from "../../features/lineage/dbtLineageService";
 import {
   FUSION_CLIENT_STATES_COMMAND,
   registerFusionClientDiagnostics,
-} from "../../fusion/fusionClientDiagnostics";
-import { FusionClientPool } from "../../fusion/fusionClientPool";
+} from "../../projects/fusionClientDiagnostics";
+import { FusionClientPool } from "../../projects/fusionClientPool";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
 

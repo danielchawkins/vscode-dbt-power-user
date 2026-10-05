@@ -21,9 +21,9 @@ import {
   planProjectConfigInsertion,
   ProjectConfigInsertion,
 } from "../../fusion/projectConfigEdits";
-import { SCHEMA_ORIGIN_HOOK } from "../../fusion/schemaOrigin";
 import { CurrentProject } from "../../projects/currentProject";
 import { DeclaredProject } from "../../projects/projectRegistry";
+import { SCHEMA_ORIGIN_HOOK } from "../../projects/schemaOrigin";
 import { StartupGate } from "../../startupGate";
 
 const CONFIRM = "Add";

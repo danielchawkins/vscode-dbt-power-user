@@ -9,13 +9,13 @@ import {
   Uri,
 } from "vscode";
 import { DBT_PROJECT_FILE, projectRootDigest } from "../core/project";
-import { DeclaredProject } from "../projects/projectRegistry";
-import { FusionClientPool } from "./fusionClientPool";
 import {
   FusionClient,
   FusionClientState,
   vscodeDocumentSelectorForProject,
-} from "./fusionLanguageClient";
+} from "../fusion/fusionLanguageClient";
+import { FusionClientPool } from "./fusionClientPool";
+import { DeclaredProject } from "./projectRegistry";
 import { SchemaOriginStatus } from "./schemaOrigin";
 
 /** What a project has opted into in its own project file. */

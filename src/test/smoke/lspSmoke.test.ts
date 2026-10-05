@@ -5,7 +5,7 @@ import * as vscode from "vscode";
 import {
   FUSION_CLIENT_STATES_COMMAND,
   FusionClientStateReport,
-} from "../../fusion/fusionClientDiagnostics";
+} from "../../projects/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
 import { assertNoWorkbenchNotifications, validateSmokeHost } from "./cdpClient";

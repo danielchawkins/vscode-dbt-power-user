@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { planProjectConfigInsertion } from "../../fusion/projectConfigEdits";
-import { SCHEMA_ORIGIN_HOOK } from "../../fusion/schemaOrigin";
+import { SCHEMA_ORIGIN_HOOK } from "../../projects/schemaOrigin";
 
 const strict = {
   path: ["models", "jaffle", "+static_analysis"],

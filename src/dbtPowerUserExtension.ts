@@ -12,10 +12,10 @@ import { FileAssociationsCommand } from "./features/projectSetup/fileAssociation
 import { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
 import { StatusBars } from "./features/statusBars";
 import { TreeviewProviders } from "./features/treeViews";
-import { registerFusionClientDiagnostics } from "./fusion/fusionClientDiagnostics";
-import { FusionClientPool } from "./fusion/fusionClientPool";
-import { FusionStatus } from "./fusion/fusionStatus";
 import { CurrentProject } from "./projects/currentProject";
+import { registerFusionClientDiagnostics } from "./projects/fusionClientDiagnostics";
+import { FusionClientPool } from "./projects/fusionClientPool";
+import { FusionStatus } from "./projects/fusionStatus";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { Projects } from "./projects/projects";
 import { RunHistoryService } from "./projects/runHistoryService";

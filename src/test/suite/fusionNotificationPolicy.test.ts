@@ -10,11 +10,11 @@ import {
 import { extensions, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { toLspLaunch } from "../../core/lsp";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
-import { FusionClientPoolImpl } from "../../fusion/fusionClientPool";
 import {
   DefaultFusionClientFactory,
   FailedFusionClient,
 } from "../../fusion/fusionLanguageClient";
+import { FusionClientPoolImpl } from "../../projects/fusionClientPool";
 import {
   DeclaredProject,
   ProjectRegistry,
