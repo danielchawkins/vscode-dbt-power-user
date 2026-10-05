@@ -136,7 +136,7 @@ type PackageJsonContributes = {
   commands?: Array<{ command: string }>;
   menus?: Record<string, MenuEntry[]>;
   submenus?: Array<{ id: string }>;
-  keybindings?: Array<{ command: string }>;
+  keybindings?: Array<{ command: string; when?: string }>;
   [contributionPoint: string]: unknown;
 };
 
@@ -434,5 +434,24 @@ describe("semantic token scopes", () => {
     for (const entry of contributes.semanticTokenScopes) {
       expect(entry.scopes.keyword).toEqual(["support.function.dbt.jinja"]);
     }
+  });
+
+  it("gates every SQL-language menu and keybinding on a Declared Project", () => {
+    const contributes = readContributes();
+    const sqlLanguage = /resourceLangId =~ \/\^sql\$\|\^jinja-sql\$\//;
+    const inProject = /fusionPowerUser\.inProject/;
+    const untitled = /resourceScheme == untitled/;
+    const whens = [
+      ...Object.values(contributes.menus ?? {}).flatMap((entries) =>
+        entries.map((entry) => entry.when ?? ""),
+      ),
+      ...((contributes.keybindings ?? []) as { when?: string }[]).map(
+        (binding) => binding.when ?? "",
+      ),
+    ].filter((when) => sqlLanguage.test(when));
+    expect(whens.length).toBeGreaterThan(0);
+    expect(
+      whens.filter((when) => !inProject.test(when) || !untitled.test(when)),
+    ).toEqual([]);
   });
 });

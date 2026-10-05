@@ -1,4 +1,5 @@
 import {
+  commands,
   Disposable,
   Event,
   EventEmitter,
@@ -27,6 +28,7 @@ export class CurrentProject implements Disposable {
       window.onDidChangeActiveTextEditor(() => this.updateCurrent()),
       registry.onDidChangeProjects(() => this.updateCurrent()),
     );
+    this.publishInProject();
   }
 
   /** Active editor/folder project, retained non-file pick, then the sole project. */
@@ -113,7 +115,21 @@ export class CurrentProject implements Disposable {
     this._onDidChangeCurrent.dispose();
   }
 
+  /** Backs the `fusionPowerUser.inProject` key that gates dbt editor actions on SQL files. */
+  private publishInProject(): void {
+    const uri = window.activeTextEditor?.document.uri;
+    const activeUri = uri && activeModelUri(uri);
+    const inProject =
+      activeUri !== undefined && !!this.registry.findProject(activeUri);
+    void commands.executeCommand(
+      "setContext",
+      "fusionPowerUser.inProject",
+      inProject,
+    );
+  }
+
   private updateCurrent(): void {
+    this.publishInProject();
     if (
       this.selectedProject &&
       !this.registry.projects.includes(this.selectedProject)
