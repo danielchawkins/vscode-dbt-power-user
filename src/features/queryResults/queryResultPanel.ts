@@ -74,7 +74,7 @@ export class QueryResultPanel extends PanelHost {
 
   public constructor(
     protected override extensionContext: ExtensionContextStore,
-    private eventEmitterService: SharedStateService,
+    eventEmitterService: SharedStateService,
     protected override dbtTerminal: DBTTerminal,
     protected override queryManifestService: QueryManifestService,
     onDidRemoveProject: Event<Uri>,
@@ -184,7 +184,7 @@ export class QueryResultPanel extends PanelHost {
 
   public override async resolveWebviewView(
     panel: WebviewView,
-    context: WebviewViewResolveContext,
+    _context: WebviewViewResolveContext,
     _token: CancellationToken,
   ) {
     this.beginWebviewResolve();
@@ -192,7 +192,7 @@ export class QueryResultPanel extends PanelHost {
     this._panel = panel;
     this._bottomPanel = panel;
     this._webview = panel.webview;
-    this.bindWebviewOptions(context);
+    this.bindWebviewOptions();
     this.renderWebviewView(panel.webview);
     this.setupWebviewHooks();
     _token.onCancellationRequested(async () => {
@@ -201,7 +201,7 @@ export class QueryResultPanel extends PanelHost {
   }
 
   /** Sets the page's title, description and webview options. */
-  private bindWebviewOptions(context: WebviewViewResolveContext) {
+  private bindWebviewOptions() {
     if (!this._panel) {
       return;
     }
@@ -230,7 +230,6 @@ export class QueryResultPanel extends PanelHost {
     message: MessageOf<PanelMessage, "executeQuery">,
   ) {
     try {
-      const isHistoryTab = Boolean(message.projectName);
       const project = await this.getProject(message.projectName);
       if (!project) {
         throw new Error("Unable to find project to execute query");

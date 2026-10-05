@@ -23,11 +23,6 @@ import { SharedStateService } from "./projects/sharedStateService";
 import { readSetting } from "./settings";
 import { StartupGate } from "./startupGate";
 
-enum PromptAnswer {
-  YES = "Yes",
-  NO = "No",
-}
-
 const UPSTREAM_EXTENSION_ID = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_POWER_USER = "Uninstall Power User";
 

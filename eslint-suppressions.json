@@ -111,9 +111,6 @@
     "@typescript-eslint/await-thenable": {
       "count": 1
     },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
     "max-params": {
       "count": 1
     }
@@ -129,9 +126,6 @@
     }
   },
   "src/features/codegen/sourceModelCreationCodeLensProvider.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
     "complexity": {
       "count": 1
     },
@@ -150,9 +144,6 @@
       "count": 2
     },
     "@typescript-eslint/no-misused-promises": {
-      "count": 1
-    },
-    "@typescript-eslint/no-unused-vars": {
       "count": 1
     },
     "max-lines": {
@@ -218,7 +209,7 @@
       "count": 4
     },
     "@typescript-eslint/no-unused-vars": {
-      "count": 4
+      "count": 2
     },
     "max-lines": {
       "count": 1
@@ -264,9 +255,6 @@
     "@typescript-eslint/no-explicit-any": {
       "count": 1
     },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
     "max-lines": {
       "count": 1
     },
@@ -286,9 +274,6 @@
     "@typescript-eslint/no-floating-promises": {
       "count": 7
     },
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    },
     "max-lines": {
       "count": 1
     }
@@ -299,18 +284,10 @@
     }
   },
   "src/features/sqlActions/sqlActionsCodeLensProvider.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    },
     "max-depth": {
       "count": 1
     },
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/features/sqlActions/virtualSqlCodeLensProvider.ts": {
-    "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
@@ -351,11 +328,6 @@
       "count": 1
     }
   },
-  "src/test/integration/lspProtocolClient.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/test/integration/nativeEditorFeatures.test.ts": {
     "eqeqeq": {
       "count": 1
@@ -366,18 +338,8 @@
       "count": 1
     }
   },
-  "src/test/mock/vscode.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/test/smoke/cdpClient.ts": {
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/test/suite/cteCodeLensProvider.test.ts": {
-    "@typescript-eslint/no-unused-vars": {
       "count": 1
     }
   },
@@ -400,11 +362,6 @@
     },
     "complexity": {
       "count": 1
-    }
-  },
-  "src/webview/panelHost.ts": {
-    "@typescript-eslint/no-unused-vars": {
-      "count": 2
     }
   }
 }

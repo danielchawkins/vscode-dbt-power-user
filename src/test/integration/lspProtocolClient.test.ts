@@ -823,7 +823,7 @@ suite("lspProtocolClient", function () {
   });
 
   test("timeout errors name the method only", async function () {
-    await withLoopbackPair(async (clientSocket, serverSocket) => {
+    await withLoopbackPair(async (clientSocket, _serverSocket) => {
       const client = attachLspProtocolClient(clientSocket);
 
       await assert.rejects(

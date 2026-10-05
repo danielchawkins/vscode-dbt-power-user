@@ -279,7 +279,6 @@ class DocumentationTreeviewProvider
       return Promise.resolve([]);
     }
     const projectRootpath = project.projectRoot;
-    const { nodeMetaMap } = event;
 
     if (!element) {
       const currentNode = lookupModelByEditorContent(

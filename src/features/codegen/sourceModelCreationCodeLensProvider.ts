@@ -30,7 +30,7 @@ export class SourceModelCreationCodeLensProvider
 
   public provideCodeLenses(
     document: TextDocument,
-    token: CancellationToken,
+    _token: CancellationToken,
   ): CodeLens[] | Thenable<CodeLens[]> {
     this.codeLenses = [];
     const lineCounter = new LineCounter();

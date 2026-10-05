@@ -63,7 +63,7 @@ export abstract class PanelHost implements WebviewViewProvider {
     return (<WebviewView>panel).show !== undefined;
   }
 
-  protected async onEvent({ command, payload }: SharedStateEventEmitterProps) {
+  protected async onEvent({ command }: SharedStateEventEmitterProps) {
     switch (command) {
       default:
         break;
@@ -108,16 +108,16 @@ export abstract class PanelHost implements WebviewViewProvider {
 
   resolveWebviewView(
     panel: WebviewView,
-    context: WebviewViewResolveContext<unknown>,
+    _context: WebviewViewResolveContext<unknown>,
     _token: CancellationToken,
   ): void | Thenable<void> {
     this.beginWebviewResolve();
     this._panel = panel;
-    this.setupWebviewOptions(context);
+    this.setupWebviewOptions();
     this.renderWebviewView(this._panel.webview);
   }
 
-  private setupWebviewOptions(context: WebviewViewResolveContext) {
+  private setupWebviewOptions() {
     if (this._panel && "description" in this._panel) {
       this._panel.description = this.panelDescription;
     }

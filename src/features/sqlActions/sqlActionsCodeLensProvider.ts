@@ -17,12 +17,12 @@ export class SqlActionsCodeLensProvider
     _token: CancellationToken,
   ): ProviderResult<CodeLens[]> {
     if (document.fileName.endsWith(".sql")) {
-      return this.provideSqlCodeLenses(document);
+      return this.provideSqlCodeLenses();
     }
     return this.provideYamlCodeLenses(document);
   }
 
-  private provideSqlCodeLenses(document: TextDocument): CodeLens[] {
+  private provideSqlCodeLenses(): CodeLens[] {
     const codeLenses: CodeLens[] = [
       new CodeLens(new Range(0, 0, 0, 0), {
         title: "$(play) Execute Query",

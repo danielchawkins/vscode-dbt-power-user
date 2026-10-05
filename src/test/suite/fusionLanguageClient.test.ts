@@ -99,7 +99,7 @@ class FakeReverseSocketServer implements ReverseSocketServer {
   accept = vi.fn<(timeoutMs: number) => Promise<ReverseSocketStreams>>();
   dispose = vi.fn();
 
-  constructor(private readonly streams: ReverseSocketStreams) {
+  constructor(streams: ReverseSocketStreams) {
     this.accept.mockResolvedValue(streams);
   }
 }

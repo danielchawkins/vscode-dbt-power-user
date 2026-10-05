@@ -31,7 +31,7 @@ export class VirtualSqlCodeLensProvider
 
   public provideCodeLenses(
     document: TextDocument,
-    token: CancellationToken,
+    _token: CancellationToken,
   ): CodeLens[] | Thenable<CodeLens[]> {
     // Enable this code lens only for untitled SQL queries.
     if (
