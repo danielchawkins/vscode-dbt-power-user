@@ -9,3 +9,10 @@ diagnosticProvider
 fusionRootBlocker
 # ADR 0005 names a field of the deleted capture suite's decision record.
 syntheticBlocker
+# The composite producer lands in the metadata step; ADR 0007 names it first.
+CompositeMetadataSource
+ServerMetadataSource
+FIELD_OWNERS
+src/core/metadata/fieldOwners.ts
+FusionCommands
+mergeMetadata
