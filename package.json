@@ -21,7 +21,10 @@
     "npm": ">=11"
   },
   "capabilities": {
-    "hoverProvider": true,
+    "virtualWorkspaces": {
+      "supported": false,
+      "description": "Runs a local dbt executable."
+    },
     "untrustedWorkspaces": {
       "supported": false,
       "description": "Runs the dbt executable that workspace settings choose, so it stays disabled until the workspace is trusted."
@@ -231,11 +234,6 @@
               "Solarized Dark",
               "Monokai"
             ]
-          },
-          "fusionPowerUser.query.template": {
-            "type": "string",
-            "description": "Override the default query template that is used by the `Preview SQL Query` command. Use this if your database has special syntax to limit query results",
-            "default": "select * from ({query}\n) as query limit {limit}"
           },
           "fusionPowerUser.generateModel.fileNameTemplate": {
             "type": "string",
@@ -589,34 +587,35 @@
         "key": "Ctrl+Enter",
         "mac": "Cmd+Enter",
         "command": "fusionPowerUser.executeSQL",
-        "when": "editorFocus && (resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/)"
+        "when": "editorFocus && (resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/)"
       },
       {
         "key": "Ctrl+'",
         "mac": "Cmd+'",
-        "command": "fusionPowerUser.sqlPreview"
+        "command": "fusionPowerUser.sqlPreview",
+        "when": "editorTextFocus && (resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/)"
       }
     ],
     "menus": {
       "editor/title": [
         {
           "command": "fusionPowerUser.executeSQL",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@1"
         },
         {
           "command": "fusionPowerUser.runCurrentModel",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@3"
         },
         {
           "command": "fusionPowerUser.testCurrentModel",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@4"
         },
         {
           "command": "fusionPowerUser.sqlPreview",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@5"
         }
       ],
@@ -624,7 +623,7 @@
         {
           "submenu": "fusionPowerUser.editorContext",
           "group": "dbt@1",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/"
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/"
         }
       ],
       "fusionPowerUser.editorContext": [
@@ -656,37 +655,37 @@
       "editor/title/run": [
         {
           "command": "fusionPowerUser.buildCurrentProject",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildCurrentModel",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildChildrenModels",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildParentModels",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildChildrenParentModels",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.runCurrentModel",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.cleanCurrentProject",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         }
       ],
@@ -735,7 +734,7 @@
         },
         {
           "command": "fusionPowerUser.copyModelName",
-          "when": "(view == parent_model_treeview || view ==  children_model_treeview || view == documentation_treeview) && viewItem != source",
+          "when": "(view == parent_model_treeview || view == children_model_treeview || view == documentation_treeview) && viewItem != source",
           "group": "navigation"
         },
         {
@@ -747,22 +746,22 @@
       "fusionPowerUser.buildModel": [
         {
           "command": "fusionPowerUser.buildCurrentModel",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildChildrenModels",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildParentModels",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         },
         {
           "command": "fusionPowerUser.buildChildrenParentModels",
-          "when": "resourceScheme == query-preview || resourceLangId =~ /^sql$|^jinja-sql$/",
+          "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "inline"
         }
       ],

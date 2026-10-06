@@ -1,5 +1,6 @@
 import * as assert from "assert";
 import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
 import {
@@ -772,6 +773,8 @@ async function captureEditorSurfaces(
     },
   });
 
+  await captureNonProjectSql(evidence, cdpPort, host);
+
   const output = await showProjectOutput(cdpPort, host, root);
   await evidence.capture({
     name: "project output channel",
@@ -791,6 +794,63 @@ async function captureEditorSurfaces(
   );
   assert.ok(output.text, "the project channel must show Fusion log lines");
   await vscode.commands.executeCommand("workbench.action.closePanel");
+}
+
+const EDITOR_TITLE_ACTIONS = `(() => {
+  const labels = [...document.querySelectorAll(".editor-actions .action-label")]
+    .map((e) => e.getAttribute("aria-label") || e.getAttribute("title") || "");
+  return labels.filter((l) => /execute dbt sql|run dbt model|test dbt model|build dbt model|compiled dbt preview/i.test(l));
+})()`;
+
+/** A SQL file outside every Declared Project has no dbt editor-title action; an untitled SQL editor keeps them. */
+async function captureNonProjectSql(
+  evidence: Evidence,
+  cdpPort: string,
+  host: string,
+): Promise<void> {
+  const outside = path.join(
+    fs.mkdtempSync(path.join(os.tmpdir(), "fpu-")),
+    "outside.sql",
+  );
+  fs.writeFileSync(outside, "select 1\n");
+  await vscode.window.showTextDocument(
+    await vscode.workspace.openTextDocument(outside),
+  );
+  await sleep(1_000);
+  const outsideActions =
+    (await evaluateWorkbench<string[]>(cdpPort, host, EDITOR_TITLE_ACTIONS)) ??
+    [];
+  await evidence.capture({
+    name: "non-project sql",
+    expect:
+      "A .sql file outside every Declared Project shows no dbt editor-title action",
+    measured: { actions: outsideActions },
+  });
+  assert.deepStrictEqual(
+    outsideActions,
+    [],
+    "no dbt editor-title action outside a project",
+  );
+
+  const untitled = await vscode.workspace.openTextDocument({
+    language: "sql",
+    content: "select 1\n",
+  });
+  await vscode.window.showTextDocument(untitled);
+  await sleep(1_000);
+  const untitledActions =
+    (await evaluateWorkbench<string[]>(cdpPort, host, EDITOR_TITLE_ACTIONS)) ??
+    [];
+  await evidence.capture({
+    name: "untitled sql",
+    expect: "An untitled SQL editor shows the dbt editor-title actions",
+    measured: { actions: untitledActions },
+  });
+  assert.ok(
+    untitledActions.length > 0,
+    "untitled SQL keeps the dbt editor-title actions",
+  );
+  await vscode.commands.executeCommand("workbench.action.closeActiveEditor");
 }
 
 const PROJECT_NAME = "single_project";
