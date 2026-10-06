@@ -1,3 +1,4 @@
+import { relative as relativePath, sep } from "path";
 import {
   CustomExecution,
   Diagnostic,
@@ -10,6 +11,7 @@ import {
 } from "vscode";
 import { QueryExecution } from "../core/dbtCommand";
 import type { Log } from "../core/log";
+import { dbColumnsFrom } from "../core/lsp";
 import { type ManifestProject } from "../core/manifest";
 import {
   dbtProjectFilePath,
@@ -661,7 +663,25 @@ export class Project implements Disposable, ManifestProject {
     return this.getFusionCli().compileInline(query);
   }
 
-  async getColumnsOfModel(modelName: string) {
+  /**
+   * A model's columns: from the language server when it knows them, else from the warehouse through the CLI (always
+   * in `baseline`, where the server returns none).
+   */
+  async getColumnsOfModel(modelName: string): Promise<DBColumn[]> {
+    const path = this.manifest?.nodeMetaMap.lookupByBaseName(modelName)?.path;
+    if (path) {
+      const relative = relativePath(this.projectRoot.fsPath, path)
+        .split(sep)
+        .join("/");
+      try {
+        const columns = dbColumnsFrom(await this.lsp.getCurrentNode(relative));
+        if (columns) {
+          return columns;
+        }
+      } catch (error) {
+        this.terminal.debug("Project", "getCurrentNode failed", error);
+      }
+    }
     return this.getFusionCli().getColumnsOfModel(modelName);
   }
 

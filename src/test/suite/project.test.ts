@@ -414,6 +414,57 @@ describe("Project Test Suite", () => {
       );
     });
 
+    describe("model columns from the language server", () => {
+      const withNode = (getCurrentNode: Mock) => {
+        Object.assign(dbtProject, {
+          lsp: { getCurrentNode },
+          _manifest: {
+            nodeMetaMap: {
+              lookupByBaseName: () => ({
+                path: "/test/project/models/my_model.sql",
+              }),
+            },
+          },
+        });
+      };
+
+      it("uses the server's columns, in its spelling, without the CLI", async () => {
+        const getCurrentNode = vi.fn(() =>
+          Promise.resolve({
+            node: { columns: { ORDER_ID: { data_type: "INTEGER" } } },
+          }),
+        );
+        withNode(getCurrentNode);
+        mockFusionCli.getColumnsOfModel.mockClear();
+
+        expect(await dbtProject.getColumnsOfModel("my_model")).toEqual([
+          { column: "ORDER_ID", dtype: "integer" },
+        ]);
+        expect(getCurrentNode).toHaveBeenCalledWith("models/my_model.sql");
+        expect(mockFusionCli.getColumnsOfModel).not.toHaveBeenCalled();
+      });
+
+      it.each([
+        ["no node", undefined],
+        ["no columns", { node: { columns: {} } }],
+      ])("falls back to the CLI for %s", async (_label, answer) => {
+        withNode(vi.fn(() => Promise.resolve(answer)));
+        mockFusionCli.getColumnsOfModel.mockResolvedValueOnce([
+          { column: "id", dtype: "int" },
+        ]);
+        expect(await dbtProject.getColumnsOfModel("my_model")).toEqual([
+          { column: "id", dtype: "int" },
+        ]);
+      });
+
+      it("falls back to the CLI when the server command fails", async () => {
+        withNode(vi.fn(() => Promise.reject(new Error("timeout"))));
+        mockFusionCli.getColumnsOfModel.mockResolvedValueOnce([]);
+        await dbtProject.getColumnsOfModel("my_model");
+        expect(mockFusionCli.getColumnsOfModel).toHaveBeenCalled();
+      });
+    });
+
     it("should get columns of source", async () => {
       const mockColumns = [{ name: "col1", type: "varchar" }];
       mockFusionCli.getColumnsOfSource.mockImplementation(() =>
