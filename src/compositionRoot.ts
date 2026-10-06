@@ -292,9 +292,11 @@ function composeWebviews(
     new DocsEditViewPanel(
       projects,
       extensionContextStore,
-      new DocGenService(projects, queryManifestService),
-      new DbtTestService(queryManifestService),
-      queryManifestService,
+      {
+        docGenService: new DocGenService(projects, queryManifestService),
+        dbtTestService: new DbtTestService(queryManifestService),
+        queryManifestService,
+      },
       terminal,
       graph.parseDemand,
     ),

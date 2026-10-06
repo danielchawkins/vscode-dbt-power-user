@@ -1,30 +1,20 @@
-import { describe, expect, it } from "vitest";
-import { EventEmitter } from "vscode";
-import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { afterAll, describe, expect, it } from "vitest";
+import { convertColumnNamesByCaseConfig } from "../../features/docs/docsYaml";
 
-/** The panel's column-sync path with its collaborators bypassed; only the spelling rule runs. */
-function spelling(
-  columns: { name: string }[],
-  existing: string[],
-): { name: string }[] {
-  const panel = new DocsEditViewPanel(
-    {
-      onDidChangeManifest: new EventEmitter<unknown>().event,
-      onDidRemoveProject: new EventEmitter<unknown>().event,
-      get: () => undefined,
-    } as never,
-    {} as never,
-    {} as never,
-    {} as never,
-    { manifestFor: () => undefined } as never,
-    { debug: () => undefined, info: () => undefined } as never,
-  ) as unknown as {
-    modifyColumnNames: (
-      c: { name: string }[],
-      e: string[],
-    ) => { name: string }[];
-  };
-  return panel.modifyColumnNames(columns, existing);
+const root = mkdtempSync(join(tmpdir(), "col-spelling-"));
+afterAll(() => rmSync(root, { recursive: true }));
+
+/** The YAML spelling applied to `columns` for a model whose schema file lists `existing`. */
+function spelling(columns: { name: string }[], existing: string[]) {
+  const body = existing.map((name) => `      - name: ${name}`).join("\n");
+  writeFileSync(
+    join(root, "schema.yml"),
+    `models:\n  - name: m\n    columns:\n${body || "      []"}\n`,
+  );
+  return convertColumnNamesByCaseConfig(columns, "m", "schema.yml", root);
 }
 
 describe("column spelling when syncing from the server", () => {
