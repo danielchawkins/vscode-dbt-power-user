@@ -581,6 +581,24 @@ The reviewer runs `just test-integration` and `just smoke-visual` and reads ever
 - Verify: `just check`; `just test-integration`; jscpd test clone count recorded in the step result.
 - Depends: 3.8. Sequential with 3.11.
 
+Remaining Phase 3 work for 3.10:
+
+- `src/test/suite/fusionCliExecutable.test.ts` (454 lines) is not merged into `executableLifecycle.test.ts` (316).
+- `src/test/suite/cliArgs.test.ts` (498) and `cliArgs.property.test.ts` are not reduced to a golden table plus properties.
+- `src/test/suite/lspLaunch.test.ts`, `lspLaunch.property.test.ts` and `projectSnapshot.test.ts` share no fixture.
+- `src/test/suite/configErrors.test.ts` (457) is not trimmed to `errorHint`.
+- `src/test/suite/dbtPowerUserExtension.test.ts` (352) has no single composition fixture.
+- `src/test/suite/lineagePanel.test.ts` (955) has only two `it.each` groups.
+- `src/test/suite/fusionClientPool.test.ts` (734) has no `startPool`/`expectRestarted` helpers.
+- `src/test/integration/lspEditorFeatures.test.ts` and `nativeEditorFeatures.test.ts` do not import `lspFixture`.
+- Local duplicates remain: `src/test/suite/runResults.test.ts` `mockTerminal` and `src/test/suite/queryResultPanel.test.ts` `log()` (use `silentLog`/`spyLog`).
+- Record per-cluster `wc -l` before and after, and the jscpd test clone count.
+- Characterization tests are coupled to structure. `src/test/suite/queryResultPanel.test.ts` sets private state (`_panel`, `_bottomPanel`, `isWebviewReady`) and reads `panel.history.all()`; drive it through `handleCommand` and the posted messages instead. `src/test/suite/panelHost.test.ts` wraps `resolveWebviewView` in a `try` that ignores every error; stub `panelHtml` and assert the HTML it returns.
+- Raise the coverage floors in `scripts/quality/ceilings.json` for `panelHost.ts`, `commands.ts` and `queryResultPanel.ts` in the revision of each suite; one revision raised all six at once.
+- 3.7 clones: `src/core/manifest/graphParser.ts` keeps the `parents` (`PARSE_GRAPH_TYPES`) and `constraintOnlyParents` loops as clones, and its three builders use `as never` to satisfy `NodeGraphMap`; type `NodeGraphMap` entries as `{ nodes: NodeData[] }` and share one loop helper. `src/features/docs/dbtTestService.ts` `getTestsForCurrentModel` and `getTestsForModel` share an unextracted preamble (event, project, `getEventByCurrentProject`).
+- 3.3 deviations: `DocsEditViewPanel` does not extend `PanelHost`, and the replay buffer stays in `queryResultPanel.ts` behind `recordPosted`; move both into `panelHost.ts`.
+- `src/test/suite/docsEditTestKey.test.ts` builds an `Object.create(DocsEditViewPanel.prototype)` object and assigns `getTestDataByModel`/`getTestDataByColumn` wrappers onto it; call the functions in `docsTestData.ts` directly and keep only the save tests on the panel.
+
 ### 3.11 Assert outcomes, not calls
 
 - Goal: the most mock-heavy suites assert values.
@@ -590,6 +608,14 @@ The reviewer runs `just test-integration` and `just smoke-visual` and reads ever
 - Verify: `just check`; the share of `toHaveBeenCalled` assertions in `src/test/suite` is recorded and lower.
 - Depends: 3.10. Sequential.
 
+Remaining Phase 3 work for 3.11:
+
+- `src/test/suite/runModel.test.ts` (218 lines, 22 call assertions): assert the `CliCommand`/`QueuedCliCommand` built through `cliArgs`.
+- `src/test/suite/projectSetupCommands.test.ts`: replace the `ran` recorders with command and outcome assertions; eight call assertions remain.
+- `src/test/suite/dbtPowerUserExtension.test.ts` (39) and `src/test/suite/projects.test.ts` (30): replace call assertions where an outcome exists.
+- `src/test/suite/commands.test.ts` has 21 call assertions; assert the values the handlers produce.
+- Record the share of `toHaveBeenCalled` assertions in `src/test/suite`. It was 598 at the start of Phase 3 and 625 at its tip, and must end lower.
+
 ### 3.12 Meet the suppression targets
 
 - Goal: root suppressions at most 100, webview at most 30.
@@ -598,6 +624,15 @@ The reviewer runs `just test-integration` and `just smoke-visual` and reads ever
 - Revisions: one per rule.
 - Verify: `just check`; `ceilings.json` shows 100 or fewer and 30 or fewer.
 - Depends: 3.11. Sequential.
+
+Remaining Phase 3 work for 3.12:
+
+- Webview suppressions still in place: 10 `exhaustive-deps` (`app/useListeners.ts`, `DbtTestCode.tsx`, `TestForm.tsx`, `DocumentationProvider.tsx`, `Filters.tsx`, `QueryPanelTitle.tsx`, `QueryPanel.tsx`, `PerspectiveViewer.tsx` ×3), 15 `max-lines-per-function`, 2 `complexity`, 1 `cognitive-complexity`, 2 `no-autofocus`.
+- `src/dbt_integration/domain.ts` `tests: any[]` keeps its suppression.
+- `src/features/projectSetup/projectSetupCommands.ts` has prompt strings over 120 characters, and `src/projects/projectCodegen.ts` two messages; wrap them.
+- `PanelHost<H>` in `src/webview/panelHost.ts` defaults `H` to `{ command: string }`, so a panel that omits it loses contract checking; make `H` required.
+- `withSaveProgress` in `src/features/docs/docsEditHandlers.ts` also wraps the "Syncing columns" progress; rename it `withProgress`.
+- Coverage floors stay per revision: raise the floors of each characterized file in the revision that touches it.
 
 ### Phase 3 checkpoint
 

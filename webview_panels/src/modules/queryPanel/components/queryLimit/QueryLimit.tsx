@@ -4,7 +4,7 @@ import { setLimit } from "@modules/queryPanel/context/queryPanelReducer";
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { activateClickOnKeyDown, Input, Stack } from "@uicore";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import styles from "./styles.module.css";
 
 enum LimitSaveState {
@@ -13,11 +13,29 @@ enum LimitSaveState {
   Saved,
 }
 
+function saveStateOf(
+  value: string,
+  saved: string,
+  justSaved: boolean,
+): LimitSaveState {
+  if (value && value !== saved) {
+    return LimitSaveState.Dirty;
+  }
+  return justSaved ? LimitSaveState.Saved : LimitSaveState.Default;
+}
+
 const QueryLimit = (): JSX.Element => {
   const { limit, activeEditor } = useQueryPanelState();
   const limitStr = limit?.toString() ?? "500";
+  const resetKey = `${limitStr}|${activeEditor?.filepath ?? ""}`;
   const [value, setValue] = useState(limitStr);
-  const [limitSaveState, setLimitSaveState] = useState(LimitSaveState.Default);
+  const [valueKey, setValueKey] = useState(resetKey);
+  const [saved, setSaved] = useState(false);
+  if (valueKey !== resetKey) {
+    setValueKey(resetKey);
+    setValue(limitStr);
+  }
+  const limitSaveState = saveStateOf(value, limitStr, saved);
   const [isFocused, setIsFocused] = useState(false);
   const dispatch = useQueryPanelDispatch();
   const saveLimit = () => {
@@ -26,23 +44,11 @@ const QueryLimit = (): JSX.Element => {
     }
     dispatch(setLimit(parseInt(value)));
     executeRequestInAsync("updateConfig", { limit: parseInt(value) });
-    setLimitSaveState(LimitSaveState.Saved);
+    setSaved(true);
     setTimeout(() => {
-      setLimitSaveState(LimitSaveState.Default);
+      setSaved(false);
     }, 2000);
   };
-
-  useEffect(() => {
-    setValue(limitStr);
-  }, [limitStr, activeEditor?.filepath]);
-
-  useEffect(() => {
-    if (value && value !== limitStr) {
-      setLimitSaveState(LimitSaveState.Dirty);
-    } else if (limitSaveState !== LimitSaveState.Saved) {
-      setLimitSaveState(LimitSaveState.Default);
-    }
-  }, [value, limitStr]);
 
   return (
     <div className={styles.container}>

@@ -13,7 +13,7 @@ import {
   PopoverWithButtonRef,
   Stack,
 } from "@uicore";
-import { MouseEvent, useEffect, useRef, useState } from "react";
+import { MouseEvent, useRef } from "react";
 import classes from "../../styles.module.css";
 
 const noop = (): void => undefined;
@@ -27,10 +27,10 @@ const noop = (): void => undefined;
  *  - update existing model
  */
 const SaveDocumentation = (): JSX.Element | null => {
-  const [patchPath, setPatchPath] = useState("");
   const popoverRef = useRef<PopoverWithButtonRef | null>(null);
   const { state, dispatch } = useDocumentationContext();
   const { currentDocsData, currentDocsTests } = state;
+  const patchPath = currentDocsData?.patchPath ?? "";
 
   const saveDocumentation = async (
     dialogType?: "New file" | "Existing file",
@@ -66,10 +66,6 @@ const SaveDocumentation = (): JSX.Element | null => {
     }
     await saveDocumentation();
   };
-
-  useEffect(() => {
-    setPatchPath(currentDocsData?.patchPath ?? "");
-  }, [currentDocsData?.patchPath]);
 
   const options = [
     { label: "Existing file", value: "Existing file" },

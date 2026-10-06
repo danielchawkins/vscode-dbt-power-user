@@ -18,9 +18,6 @@
     }
   },
   "src/modules/documentationEditor/components/docGenerator/DocGeneratorInput.tsx": {
-    "@eslint-react/set-state-in-effect": {
-      "count": 2
-    },
     "complexity": {
       "count": 1
     },
@@ -29,9 +26,6 @@
     }
   },
   "src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx": {
-    "@eslint-react/set-state-in-effect": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     }
@@ -114,12 +108,6 @@
     }
   },
   "src/modules/queryPanel/components/queryLimit/QueryLimit.tsx": {
-    "@eslint-react/exhaustive-deps": {
-      "count": 1
-    },
-    "@eslint-react/set-state-in-effect": {
-      "count": 3
-    },
     "max-lines-per-function": {
       "count": 1
     }
