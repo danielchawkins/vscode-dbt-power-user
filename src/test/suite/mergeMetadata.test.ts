@@ -7,7 +7,6 @@ import {
   ChildrenParentParser,
   FunctionParser,
   GraphParser,
-  ModelDepthParser,
   NodeParser,
   SourceParser,
   TestParser,
@@ -75,11 +74,7 @@ async function parseNodes(nodes: RawNodes): Promise<ParsedManifest> {
     testMetaMap,
     functionMetaMap,
     graphMetaMap,
-    modelDepthMap: new ModelDepthParser(log).createModelDepthsMap(
-      nodes,
-      maps.parentMetaMap,
-      maps.childMetaMap,
-    ),
+    modelDepthMap: new Map(),
     macroMetaMap: new Map(),
     metricMetaMap: new Map(),
     unitTestMetaMap: new Map(),
@@ -132,19 +127,33 @@ describe("mergeMetadata", () => {
     expect(mergeMetadata(undefined, parse)).toBe(parse);
   });
 
-  it("matches the parse graph and depth for the single-project fixture", async () => {
+  it("builds the graph and depth of the single-project fixture from the server nodes alone", async () => {
     const manifest = JSON.parse(
       fs.readFileSync(path.join(root, "manifest.contract.json"), "utf8"),
     ) as { nodes: RawNodes };
-    const parse = await parseNodes(manifest.nodes);
-    const merged = mergeMetadata(serverOf(manifest.nodes), parse);
-    expect(edgeSet(merged.graphMetaMap.parents)).toEqual(
-      edgeSet(parse.graphMetaMap.parents),
+    const merged = mergeMetadata(
+      serverOf(manifest.nodes),
+      await parseNodes(manifest.nodes),
     );
+    const expected = Object.values(manifest.nodes)
+      .filter((n) => n.resource_type === "model")
+      .flatMap((n) =>
+        (n.depends_on as { nodes: string[] }).nodes.map(
+          (d) => `${n.unique_id}->${d}`,
+        ),
+      )
+      .sort();
+    expect(expected.length).toBeGreaterThan(0);
+    expect(edgeSet(merged.graphMetaMap.parents)).toEqual(expected);
     expect(edgeSet(merged.graphMetaMap.children)).toEqual(
-      edgeSet(parse.graphMetaMap.children),
+      expected.map((e) => e.split("->").reverse().join("->")).sort(),
     );
-    expect([...merged.modelDepthMap]).toEqual([...parse.modelDepthMap]);
+    expect(Object.fromEntries(merged.modelDepthMap)).toEqual({
+      broken_ref: 1,
+      child: 2,
+      "model.single_project.broken_ref": 1,
+      "model.single_project.child": 2,
+    });
   });
 
   it("keeps parse-owned fields and takes the server's graph for any DAG", async () => {
@@ -229,6 +238,26 @@ describe("mergeMetadata", () => {
     ).toBeDefined();
     expect([...merged.nodeMetaMap.nodes()].map((n) => n.unique_id)).toContain(
       "model.pkg.shipped",
+    );
+  });
+
+  it("keeps the parents of an analysis, which the server does not list", async () => {
+    const model = rawModel("model.p.a");
+    const nodes: RawNodes = {
+      "model.p.a": model,
+      "analysis.p.an": {
+        ...rawModel("analysis.p.an", ["model.p.a"]),
+        resource_type: "analysis",
+        original_file_path: "analyses/an.sql",
+      },
+    };
+    const parse = await parseNodes(nodes);
+    const merged = mergeMetadata(serverOf({ "model.p.a": model }), parse);
+    expect(edgeSet(merged.graphMetaMap.parents)).toContain(
+      "analysis.p.an->model.p.a",
+    );
+    expect(edgeSet(merged.graphMetaMap.children)).toContain(
+      "model.p.a->analysis.p.an",
     );
   });
 

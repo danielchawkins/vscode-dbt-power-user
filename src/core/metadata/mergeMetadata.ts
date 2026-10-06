@@ -1,5 +1,5 @@
 import type { Log } from "../log";
-import { GraphParser, ModelDepthParser, type DBTGraphType } from "../manifest";
+import { GraphParser, type DBTGraphType } from "../manifest";
 import type {
   DocMetaMap,
   ExposureMetaMap,
@@ -23,6 +23,7 @@ import {
   SERVER_GRAPH_TYPES,
   SERVER_PARENT_KEY_TYPES,
 } from "./fieldOwners";
+import { createModelDepthsMap } from "./modelDepth";
 import type { ServerMetadata, ServerNode } from "./serverMetadata";
 
 /** The maps consumers read; `ParsedManifest` has the same shape. */
@@ -97,7 +98,8 @@ export interface MergeOptions {
 
 /**
  * The manifest consumers read: server-owned fields from `server` where it has a value, the rest from `parse`.
- * Until the parse graph parsers go, a missing server value leaves the parse's graph in place.
+ * Without a server value the graph fields stay empty: the parse supplies only tests, metrics, the constraint
+ * overlay and the parents of kinds the server does not list.
  */
 export function mergeMetadata(
   server: ServerMetadata | undefined,
@@ -227,8 +229,7 @@ function mergedParentIds(
 ): DBTGraphType {
   const parents: DBTGraphType = {};
   for (const [id, entry] of parse.parents) {
-    const dropped = REPLACED_TYPES.has(typeOf(id)) && !serverNodes.has(id);
-    if (!dropped && !serverNodes.has(id)) {
+    if (!removed.has(id) && !serverNodes.has(id)) {
       parents[id] = entry.nodes.map((n) => n.key);
     }
   }
@@ -337,9 +338,5 @@ function depths(
       models[node.unique_id] = { resource_type: "model", name: node.name };
     }
   }
-  return new ModelDepthParser(quiet).createModelDepthsMap(
-    models,
-    parents,
-    children,
-  );
+  return createModelDepthsMap(models, parents, children);
 }

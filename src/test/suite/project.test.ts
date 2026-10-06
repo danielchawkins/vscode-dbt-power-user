@@ -23,7 +23,6 @@ import {
   GraphParser,
   MacroParser,
   MetricParser,
-  ModelDepthParser,
   NodeParser,
   SemanticModelParser,
   SourceParser,
@@ -94,7 +93,6 @@ function realParsers(terminal: Log): ManifestParsers {
     exposureParser: new ExposureParser(terminal),
     functionParser: new FunctionParser(terminal),
     docParser: new DocParser(terminal),
-    modelDepthParser: new ModelDepthParser(terminal),
     semanticModelParser: new SemanticModelParser(terminal),
   };
 }
@@ -1065,7 +1063,9 @@ describe("Project manifest", () => {
       throw new Error("Expected publications");
     }
     expect([...first.nodeMetaMap.nodes()].length).toBeGreaterThan(0);
+    expect(first.graphMetaMap.children.size).toBe(0);
     expect(first.macroMetaMap.size).toBeGreaterThan(0);
+    expect(first.modelDepthMap.size).toBe(0);
     expect(second.publicationEpoch).toBe(first.publicationEpoch + 1);
     expect(project.manifest?.publicationEpoch).toBe(second.publicationEpoch);
     expect(project.manifest).toBe(second);

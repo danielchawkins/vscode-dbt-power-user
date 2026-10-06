@@ -8,7 +8,6 @@ import {
   GraphParser,
   MacroParser,
   MetricParser,
-  ModelDepthParser,
   NodeParser,
   SemanticModelParser,
   SourceParser,
@@ -108,7 +107,6 @@ export function createProjectParsers(terminal: Log) {
     exposureParser: new ExposureParser(terminal),
     functionParser: new FunctionParser(terminal),
     docParser: new DocParser(terminal),
-    modelDepthParser: new ModelDepthParser(terminal),
     semanticModelParser: new SemanticModelParser(terminal),
   };
 }

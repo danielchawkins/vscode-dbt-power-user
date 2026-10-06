@@ -12,7 +12,6 @@ import {
   MacroParser,
   ManifestProject,
   MetricParser,
-  ModelDepthParser,
   NodeParser,
   SemanticModelParser,
   SourceParser,
@@ -223,11 +222,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
       functionMetaMap,
       parentMaps.constraintOnlyParents,
     );
-    const modelDepthMap = new ModelDepthParser(terminal).createModelDepthsMap(
-      manifest.nodes,
-      parentMaps.parentMetaMap,
-      parentMaps.childMetaMap,
-    );
+    const modelDepthMap = new Map<string, number>();
     const manifestEvents = new EventEmitter<ParsedManifest>();
     const project = {
       projectRoot: Uri.file(fixtureRoot),

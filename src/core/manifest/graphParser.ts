@@ -20,19 +20,21 @@ export type DBTGraphType = {
   [name: string]: string[];
 };
 
-// Encodes a directed `child -> parent` edge as a single Set key.
-const EDGE_SEP = "\u0000";
-function edgeKey(child: string, parent: string): string {
-  return `${child}${EDGE_SEP}${parent}`;
-}
-
 function withEdgeType(node: NodeData, isConstraintOnly: boolean): NodeData {
   return { ...node, edgeType: isConstraintOnly ? "constraint" : "data" };
 }
 
+/** Node kinds the server does not list, so their `depends_on` edges stay with the parse. */
+const PARSE_GRAPH_TYPES = new Set(["analysis"]);
+
 export class GraphParser {
   constructor(private terminal: Pick<Log, "debug">) {}
 
+  /**
+   * The parse-owned part of the graph: `tests`, `metrics`, the constraint overlay in `parents`, and the `parents`
+   * of kinds the server does not list (`analysis`). The other edges of `parents` and `children` come from the
+   * Server Producer.
+   */
   createGraphMetaMap(
     project: ManifestProject,
     parentMap: DBTGraphType,
@@ -50,62 +52,32 @@ export class GraphParser {
       `Parsing graph for "${projectName}" at ${projectRoot}`,
     );
 
-    // Edges (`child` -> `parent`) that exist only because of a FK constraint.
-    // Used to stamp `edgeType` so data-flow consumers can hide/style them without
-    // removing them from the dependency graph (build order / depth / impact stay intact).
-    const constraintEdges = new Set<string>();
-    Object.entries(constraintOnlyParents).forEach(([child, parents]) => {
-      parents.forEach((parent) => constraintEdges.add(edgeKey(child, parent)));
+    const resolve = this.mapToNode(
+      sourceMetaMap,
+      nodeMetaMap,
+      testMetaMap,
+      functionMetaMap,
+    );
+    const parents: NodeGraphMap = new Map();
+    Object.entries(parentMap)
+      .filter(([child]) => PARSE_GRAPH_TYPES.has(child.split(".")[0] ?? ""))
+      .forEach(([child, ids]) => {
+        parents.set(child, {
+          nodes: ids
+            .map(resolve)
+            .filter(notEmpty)
+            .map((node) => withEdgeType(node, false)),
+        } as never);
+      });
+    Object.entries(constraintOnlyParents).forEach(([child, ids]) => {
+      parents.set(child, {
+        nodes: ids
+          .map(resolve)
+          .filter(notEmpty)
+          .map((node) => withEdgeType(node, true)),
+      } as never);
     });
-
-    const parents: NodeGraphMap = Object.entries(parentMap).reduce(
-      (map, [nodeName, nodes]) => {
-        const currentNodes = nodes
-          .map(
-            this.mapToNode(
-              sourceMetaMap,
-              nodeMetaMap,
-              testMetaMap,
-              functionMetaMap,
-            ),
-          )
-          .filter(notEmpty)
-          .map((node) =>
-            withEdgeType(
-              node,
-              constraintEdges.has(edgeKey(nodeName, node.key)),
-            ),
-          );
-        map.set(nodeName, { nodes: currentNodes });
-        return map;
-      },
-      new Map(),
-    );
-
-    const children: NodeGraphMap = Object.entries(childrenMap).reduce(
-      (map, [nodeName, nodes]) => {
-        const currentNodes = nodes
-          .map(
-            this.mapToNode(
-              sourceMetaMap,
-              nodeMetaMap,
-              testMetaMap,
-              functionMetaMap,
-            ),
-          )
-          .filter((n) => n?.resourceType !== RESOURCE_TYPE_TEST)
-          .filter(notEmpty)
-          .map((node) =>
-            withEdgeType(
-              node,
-              constraintEdges.has(edgeKey(node.key, nodeName)),
-            ),
-          );
-        map.set(nodeName, { nodes: currentNodes });
-        return map;
-      },
-      new Map(),
-    );
+    const children: NodeGraphMap = new Map();
 
     const tests: NodeGraphMap = Object.entries(childrenMap).reduce(
       (map, [nodeName, nodes]) => {

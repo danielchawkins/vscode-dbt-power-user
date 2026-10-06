@@ -1,17 +1,15 @@
 import { DBTGraphType } from "./graphParser";
 
 export interface ChildrenParentMetaMap {
-  /** Full build-order parent graph from `depends_on.nodes` — nothing removed. */
+  /** Full `depends_on.nodes` parent graph — nothing removed. */
   parentMetaMap: DBTGraphType;
-  /** Full build-order child graph (reverse of `parentMetaMap`). */
+  /** Reverse of `parentMetaMap`. */
   childMetaMap: DBTGraphType;
   /**
    * Subset of `parentMetaMap`: for each child, the parent edges that exist ONLY
    * because of a declared foreign-key constraint (`to: ref(...)` / `to: source(...)`)
-   * whose target relation is not referenced by the model's SQL. These edges are
-   * still present in `parentMetaMap`/`childMetaMap`; this map flags them so a
-   * data-flow consumer (e.g. the lineage panel) can hide or style them without
-   * altering the dependency graph used for build order, depth, or impact analysis.
+   * whose target relation is not referenced by the model's SQL. The lineage panel
+   * hides or styles them; they remain in `parentMetaMap`/`childMetaMap`.
    */
   constraintOnlyParents: DBTGraphType;
 }
