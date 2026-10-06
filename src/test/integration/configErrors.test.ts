@@ -12,7 +12,11 @@ import {
 } from "../../core/project";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
-import { compileErrorMessages } from "../../fusion/lspClientSupport";
+import {
+  CompileSignal,
+  subscribeToCompileComplete,
+  type ClientHandle,
+} from "../../fusion/lspClientSupport";
 import { errorHint } from "../../projects/projectErrors";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture } from "./lspFixture";
@@ -166,6 +170,20 @@ suite("Configuration errors", function () {
   });
 
   test("the language server reports the missing variable as a configuration error", async function () {
+    const compileErrors = (params: unknown): string[] => {
+      let messages: string[] = [];
+      const client = {
+        onNotification: (method: string, handler: (p: unknown) => void) => {
+          if (method === "dbt/lspCompileComplete") {
+            handler(params);
+          }
+        },
+      } as unknown as ClientHandle;
+      subscribeToCompileComplete(client, new CompileSignal(), (m) => {
+        messages = m;
+      });
+      return messages;
+    };
     const fixture = await createLspFixture(projectDir, projectDir, {
       executable: dbt,
       env: environment(),
@@ -193,10 +211,10 @@ suite("Configuration errors", function () {
         .catch(() => undefined);
       const complete = await fixture.waitForNotification(
         "dbt/lspCompileComplete",
-        (params) => compileErrorMessages(params).length > 0,
+        (params) => compileErrors(params).length > 0,
         30_000,
       );
-      const messages = compileErrorMessages(complete);
+      const messages = compileErrors(complete);
       assert.ok(
         messages.some((m) => m.includes(MISSING) && isConfigError(m)),
         JSON.stringify(messages),

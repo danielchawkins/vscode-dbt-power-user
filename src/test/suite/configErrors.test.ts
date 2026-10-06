@@ -7,15 +7,19 @@ import {
   describe,
   expect,
   it,
-  type Mock,
   vi,
+  type Mock,
 } from "vitest";
 import { commands, languages, Uri, window, workspace } from "vscode";
 import type { Log } from "../../core/log";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { formatFusionExecutableResolutionFailure } from "../../fusion/fusionExecutable";
-import { compileErrorMessages } from "../../fusion/lspClientSupport";
+import {
+  CompileSignal,
+  subscribeToCompileComplete,
+  type ClientHandle,
+} from "../../fusion/lspClientSupport";
 import { Project } from "../../projects/project";
 import {
   errorHint,
@@ -273,12 +277,26 @@ describe("configuration errors", () => {
         },
       ],
     };
-    project.errors.reportCompile(compileErrorMessages(notification));
-    project.errors.reportCompile(compileErrorMessages(notification));
+    const compileErrors = (params: unknown): string[] => {
+      let messages: string[] = [];
+      const client = {
+        onNotification: (method: string, handler: (p: unknown) => void) => {
+          if (method === "dbt/lspCompileComplete") {
+            handler(params);
+          }
+        },
+      } as unknown as ClientHandle;
+      subscribeToCompileComplete(client, new CompileSignal(), (m) => {
+        messages = m;
+      });
+      return messages;
+    };
+    project.errors.reportCompile(compileErrors(notification));
+    project.errors.reportCompile(compileErrors(notification));
     expect(window.showErrorMessage).toHaveBeenCalledTimes(1);
     expect(project.errors.current).toContain("FPU_MISSING_VAR");
 
-    project.errors.reportCompile(compileErrorMessages({ errors: [] }));
+    project.errors.reportCompile(compileErrors({ errors: [] }));
     expect(project.errors.current).toBeUndefined();
   });
 

@@ -253,6 +253,38 @@ suite("Fusion LSP editor features (extension)", function () {
     assert.ok(edits && edits.length > 0, "expected formatting edits");
   });
 
+  test("formatting a model before its first compile shows no error", async function () {
+    const document = await openScratch(
+      "scratch_format_first.sql",
+      "SELECT   2   AS   id\n",
+    );
+    const shown: string[] = [];
+    const original = vscode.window.showErrorMessage;
+    (vscode.window as { showErrorMessage: unknown }).showErrorMessage = (
+      message: string,
+    ) => {
+      shown.push(message);
+      return Promise.resolve(undefined);
+    };
+    try {
+      // One unpolled request: it may land before the server compiled the new file.
+      const edits = await vscode.commands.executeCommand<vscode.TextEdit[]>(
+        "vscode.executeFormatDocumentProvider",
+        document.uri,
+        { tabSize: 4, insertSpaces: true },
+      );
+      assert.ok(Array.isArray(edits) || edits === undefined || edits === null);
+    } finally {
+      (vscode.window as { showErrorMessage: unknown }).showErrorMessage =
+        original;
+    }
+    assert.deepStrictEqual(
+      shown.filter((message) => /format/i.test(message)),
+      [],
+      "formatting must not raise an error notification",
+    );
+  });
+
   test("a broken ref() produces a diagnostic", async function () {
     const document = await openScratch(
       "scratch_broken_ref.sql",
