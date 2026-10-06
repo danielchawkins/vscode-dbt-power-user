@@ -91,7 +91,7 @@
   :global
   .codicon {
   font-size: 14px;
-  color: #fff;
+  color: var(--vscode-button-foreground);
 }
 .documentation-wrapper .entity-tests .btn-add-test:hover :global .codicon {
   color: var(--vscode-button-background);
@@ -270,7 +270,7 @@
   margin-left: -5px;
 }
 .docsIcon path {
-  fill: #198754;
+  fill: var(--vscode-charts-green);
 }
 
 .docsIconInBtn {
@@ -279,7 +279,7 @@
   vertical-align: text-bottom;
 }
 .docsIconInBtn path {
-  fill: #fff;
+  fill: var(--vscode-button-foreground);
 }
 
 .search {

@@ -28,7 +28,7 @@
 
 .playButton {
   padding: calc(0.5rem - 1px);
-  color: #ffffff;
+  color: var(--vscode-button-foreground);
   border-top-right-radius: 0.15rem;
   display: flex;
 }

@@ -4,9 +4,7 @@
 }
 
 .popover {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
+  position: fixed;
   z-index: 1060;
   max-width: calc(100vw - 2rem);
   padding: 1rem;

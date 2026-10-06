@@ -87,3 +87,28 @@
 .text-blue {
   color: var(--vscode-textLink-foreground);
 }
+
+.d-inline {
+  display: inline;
+}
+
+.flex {
+  display: flex;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.px-3 {
+  padding-right: 1rem;
+  padding-left: 1rem;
+}
+
+.rounded {
+  border-radius: 4px;
+}
+
+.card-footer {
+  padding: 0.5rem 0;
+}

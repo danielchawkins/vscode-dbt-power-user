@@ -1,10 +1,19 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { act, createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
-import { Button, Drawer, DrawerRef, Nav, NavItem, NavLink, Tooltip } from "..";
+import {
+  Button,
+  Drawer,
+  DrawerRef,
+  Nav,
+  NavItem,
+  NavLink,
+  PopoverWithButton,
+  Tooltip,
+} from "..";
 
 describe("uiCore native components", () => {
-  it("marks the selected tab active, the class the panel smoke reads", () => {
+  it("marks the pressed nav button active, the class the panel smoke reads", () => {
     render(
       <Nav>
         <NavItem>
@@ -15,9 +24,9 @@ describe("uiCore native components", () => {
         </NavItem>
       </Nav>,
     );
-    const [preview, sql] = screen.getAllByRole("tab");
+    const [preview, sql] = screen.getAllByRole("button");
     expect(preview).toHaveClass("nav-link", "active");
-    expect(preview).toHaveAttribute("aria-selected", "true");
+    expect(preview).toHaveAttribute("aria-pressed", "true");
     expect(sql).not.toHaveClass("active");
   });
 
@@ -66,5 +75,50 @@ describe("uiCore native components", () => {
     expect(screen.queryByRole("tooltip")).toBeNull();
     fireEvent.focus(screen.getByText("unique"));
     expect(screen.getByRole("tooltip")).toHaveTextContent("Click to add");
+  });
+
+  it("renders a tooltip through a portal, links it to the anchor, and closes it on Escape", () => {
+    render(
+      <Tooltip title="Click to add">
+        <button type="button">anchor</button>
+      </Tooltip>,
+    );
+    fireEvent.focus(screen.getByText("anchor"));
+    const tooltip = screen.getByRole("tooltip");
+    expect(tooltip.parentElement).toBe(document.body);
+    expect(screen.getByText("anchor").parentElement).toHaveAttribute(
+      "aria-describedby",
+      tooltip.id,
+    );
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("keeps a tooltip open when focus moves within its anchor", () => {
+    render(
+      <Tooltip title="Both">
+        <button type="button">first</button>
+        <button type="button">second</button>
+      </Tooltip>,
+    );
+    const first = screen.getByText("first");
+    fireEvent.focus(first);
+    fireEvent.blur(first, { relatedTarget: screen.getByText("second") });
+    expect(screen.getByRole("tooltip")).toBeInTheDocument();
+    fireEvent.blur(first, { relatedTarget: document.body });
+    expect(screen.queryByRole("tooltip")).toBeNull();
+  });
+
+  it("moves focus into a popover on open and closes it on Escape", () => {
+    render(
+      <PopoverWithButton button={<button type="button">open</button>}>
+        {() => <input aria-label="field" />}
+      </PopoverWithButton>,
+    );
+    fireEvent.click(screen.getByText("open"));
+    expect(screen.getByLabelText("field")).toHaveFocus();
+    expect(screen.getByRole("dialog").parentElement).toBe(document.body);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
   });
 });
