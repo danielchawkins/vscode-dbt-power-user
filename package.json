@@ -866,7 +866,7 @@
     "lint:fix": "eslint src scripts packages --fix",
     "check:format": "prettier --check \"**/*.{js,cjs,mjs,ts,tsx,css,html,json}\"",
     "check:lockfile": "lockfile-lint --path package-lock.json --type npm --allowed-hosts npm --validate-https --validate-integrity",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:coverage": "vitest run --coverage",
     "test:integration": "node scripts/test/run-integration.mjs",
     "package:vsix": "vsce package",

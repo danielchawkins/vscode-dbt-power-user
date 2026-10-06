@@ -21,7 +21,7 @@
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0 && npm run lint:imports",
     "lint:imports": "depcruise src --config .dependency-cruiser.cjs --output-type err",
     "lint:fix": "eslint . --fix",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "test:watch": "vitest",
     "lint:prune": "eslint . --prune-suppressions"
   },

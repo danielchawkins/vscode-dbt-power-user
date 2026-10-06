@@ -1,8 +1,13 @@
+import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 const fromRoot = (path: string) =>
   fileURLToPath(new URL(path, import.meta.url));
+
+const ceilings = JSON.parse(
+  readFileSync(fromRoot("./scripts/quality/ceilings.json"), "utf8"),
+) as Record<string, Record<string, number>>;
 
 export default defineConfig({
   resolve: {
@@ -37,6 +42,8 @@ export default defineConfig({
       include: ["src/**/*.{ts,tsx}", "packages/*/src/**/*.ts"],
       exclude: ["src/test/**", "packages/*/src/**/*.test.ts"],
       reportsDirectory: "coverage",
+      reporter: ["text-summary"],
+      thresholds: ceilings["coverage.host"],
     },
   },
 });
