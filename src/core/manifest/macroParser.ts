@@ -47,7 +47,7 @@ export class MacroParser {
         const macroFileLines = macroFile.split("\n");
 
         for (let index = 0; index < macroFileLines.length; index++) {
-          const currentLine = macroFileLines[index];
+          const currentLine = macroFileLines[index] ?? "";
           if (
             currentLine.match(new RegExp(`macro\\s${name}\\(`)) ||
             currentLine.match(

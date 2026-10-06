@@ -35,10 +35,11 @@ type RenderMessage = Omit<
   MessageOf<HostMessage, "renderDocumentation">,
   "docs" | "tests" | "unitTests" | "draft"
 > & {
-  docs?: DBTDocumentation;
-  tests?: DBTModelTest[];
-  unitTests?: DBTUnitTest[];
-  draft?: { docs: DBTDocumentation; tests?: DBTModelTest[] } | undefined;
+  docs?: DBTDocumentation | undefined;
+  tests?: DBTModelTest[] | undefined;
+  unitTests?: DBTUnitTest[] | undefined;
+  draft?:
+    { docs: DBTDocumentation; tests?: DBTModelTest[] | undefined } | undefined;
 };
 
 enum ActionState {

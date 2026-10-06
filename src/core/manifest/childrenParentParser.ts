@@ -244,7 +244,7 @@ function resolveConstraintTo(
     /^ref\s*\(\s*['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])?(?:\s*,\s*v?=?\s*([^)]+))?\s*\)$/,
   );
   if (refMatch) {
-    const a = refMatch[1];
+    const a = refMatch[1] ?? "";
     const b = refMatch[2];
     const v = refMatch[3]?.trim().replace(/['"]/g, "");
     // ref('name') → a=name, b=undefined
@@ -258,7 +258,9 @@ function resolveConstraintTo(
     /^source\s*\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)$/,
   );
   if (sourceMatch) {
-    const id = sourceIndex.get(sourceKey(sourceMatch[1], sourceMatch[2]));
+    const id = sourceIndex.get(
+      sourceKey(sourceMatch[1] ?? "", sourceMatch[2] ?? ""),
+    );
     return id ? [id] : [];
   }
 
@@ -269,8 +271,8 @@ function lookupRef(
   index: Map<string, string[]>,
   entry: {
     name: string;
-    package?: string | null;
-    version?: string | number | null;
+    package?: string | null | undefined;
+    version?: string | number | null | undefined;
   },
 ): string[] {
   const candidates: string[] = [];

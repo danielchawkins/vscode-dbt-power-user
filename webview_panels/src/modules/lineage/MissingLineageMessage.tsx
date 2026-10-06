@@ -5,7 +5,7 @@ import { executeRequestInAsync } from "./requests";
 const MissingLineageMessageComponent = ({
   missingLineageMessage,
 }: {
-  missingLineageMessage?: PanelNotice;
+  missingLineageMessage?: PanelNotice | undefined;
 }): JSX.Element | null => {
   const openProblemsTab = () => {
     return executeRequestInAsync("openProblemsTab");

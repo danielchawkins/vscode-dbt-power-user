@@ -13,7 +13,7 @@ export interface InferenceOptions {
   /** Default 0.6. Refs scoring below this are dropped. */
   minConfidence?: number;
   /** Default false. When true, source tables are candidate targets for FKs. */
-  includeSources?: boolean;
+  includeSources?: boolean | undefined;
   /** Default false. When true, a column can infer-FK to its own table. */
   allowSelfReference?: boolean;
 }

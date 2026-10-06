@@ -104,7 +104,7 @@ export class ProjectErrors implements Disposable {
       }
       return;
     }
-    const line = firstLogLine(messages[0]);
+    const line = firstLogLine(messages[0] ?? "");
     this.active.set(source, line);
     if (line === previous) {
       return;

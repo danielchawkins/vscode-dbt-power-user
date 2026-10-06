@@ -141,13 +141,13 @@ export interface SemanticModelMetaData {
   name: string;
   package_name: string;
   /** unique_id of the anchor model resolved via `model: ref('...')`. May be undefined if resolution fails. */
-  model_unique_id?: string;
+  model_unique_id?: string | undefined;
   /** Raw `model` field from manifest (e.g. `"ref('orders')"`). Kept for diagnostics. */
-  model_ref?: string;
+  model_ref?: string | undefined;
   entities: SemanticEntity[];
-  description?: string;
-  meta?: Record<string, unknown>;
-  path?: string;
+  description?: string | undefined;
+  meta?: Record<string, unknown> | undefined;
+  path?: string | undefined;
 }
 
 export interface NodeMetaData {
@@ -261,13 +261,15 @@ export interface TestMetaData {
   schema: string;
   alias: string;
   raw_sql?: string | null | undefined;
-  column_name?: string;
-  test_metadata?: {
-    kwargs: TestMetadataAcceptedValues | TestMetadataRelationships;
-    name: string;
-    namespace?: string;
-  };
-  attached_node?: string;
+  column_name?: string | undefined;
+  test_metadata?:
+    | {
+        kwargs: TestMetadataAcceptedValues | TestMetadataRelationships;
+        name: string;
+        namespace?: string;
+      }
+    | undefined;
+  attached_node?: string | undefined;
   depends_on: DependsOn;
   unique_id: string;
   /**
@@ -334,7 +336,7 @@ export interface FunctionMetaData {
 export interface NodeData {
   label: string;
   key: string;
-  url?: string;
+  url?: string | undefined;
   resourceType: string;
   /**
    * How this edge was derived. `"data"` (default) means the parent is referenced
@@ -395,7 +397,7 @@ export interface Ref {
   cardinality: Cardinality;
   source: RefSource;
   /** Optional edge label supplied by the user (e.g. dbterd's `relationship_label`). */
-  label?: string;
+  label?: string | undefined;
   /** Confidence score in [0, 1]. Set only for `source: "inferred"`. */
   confidence?: number;
   /** unique_id of the source test node. Set only for `source: "test"`. */
@@ -424,7 +426,7 @@ export function isResourceNode(resourceType: string): boolean {
 
 export interface UnitTestMetaData {
   name: string;
-  path?: string;
+  path?: string | undefined;
   original_file_path: string;
   model?: string | null | undefined;
   unique_id: string;

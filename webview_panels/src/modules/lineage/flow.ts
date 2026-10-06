@@ -6,14 +6,14 @@ import { columnHandle, geometry, layout, tableHeight } from "./layout";
 /** What a table node draws; `columns` is undefined while the list is hidden. */
 interface TableNodeData extends Record<string, unknown> {
   table: lineage.LineageTable;
-  columns?: lineage.LineageColumn[];
+  columns?: lineage.LineageColumn[] | undefined;
   isStart: boolean;
   expanded: { parents: boolean; children: boolean };
   /** Lower-cased names of this table's columns the traced edges touch. */
   traced: string[];
   /** The selected column's lower-cased name when it belongs to this table. */
-  selectedColumn?: string;
-  errors?: string[];
+  selectedColumn?: string | undefined;
+  errors?: string[] | undefined;
 }
 
 export type TableNode = Node<TableNodeData, "table">;
@@ -25,8 +25,8 @@ export interface FlowInput {
   columnTables: readonly string[];
   expansions: readonly string[];
   errors: Record<string, string[]>;
-  selectedTable?: string;
-  selectedColumn?: [string, string];
+  selectedTable?: string | undefined;
+  selectedColumn?: [string, string] | undefined;
   refs: readonly lineage.LineageRef[];
 }
 

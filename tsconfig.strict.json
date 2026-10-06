@@ -1,9 +1,0 @@
-{
-  "extends": "./tsconfig.json",
-  "compilerOptions": {
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "incremental": true,
-    "tsBuildInfoFile": "out/tsconfig.strict.tsbuildinfo"
-  }
-}

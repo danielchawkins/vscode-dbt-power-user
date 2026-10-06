@@ -7,7 +7,7 @@ import { SetTestFormValue } from "../hooks/useTestFormValues";
 
 interface Props {
   column: string;
-  values?: string[];
+  values?: string[] | undefined;
   setValue: SetTestFormValue;
 }
 const AcceptedValues = ({ column, setValue, values }: Props): JSX.Element => {

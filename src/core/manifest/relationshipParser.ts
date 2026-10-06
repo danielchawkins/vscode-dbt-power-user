@@ -186,7 +186,10 @@ export class RelationshipParser {
       }
       return [attachedNode, to];
     }
-    return [dependsOnNodes[0], dependsOnNodes[1]];
+    const [first, second] = dependsOnNodes;
+    return first !== undefined && second !== undefined
+      ? [first, second]
+      : undefined;
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -351,7 +354,7 @@ export class RelationshipParser {
     const trimmed = to.trim();
     const refMatch = REF_PATTERN.exec(trimmed);
     if (refMatch) {
-      return index.byBaseName.get(refMatch[1]);
+      return index.byBaseName.get(refMatch[1] ?? "");
     }
     const sourceMatch = SOURCE_PATTERN.exec(trimmed);
     if (sourceMatch) {

@@ -17,10 +17,10 @@ type CodeBlockLanguage = "sql" | "yaml" | "markdown" | "json" | "javascript";
 interface Props {
   code: string;
   language: CodeBlockLanguage;
-  fileName?: string;
-  showLineNumbers?: boolean;
-  titleActions?: ReactNode;
-  classname?: string;
+  fileName?: string | undefined;
+  showLineNumbers?: boolean | undefined;
+  titleActions?: ReactNode | undefined;
+  classname?: string | undefined;
 }
 
 SyntaxHighlighter.registerLanguage("sql", sql);

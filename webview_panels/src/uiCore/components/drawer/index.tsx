@@ -13,12 +13,12 @@ import IconButton from "../iconButton/IconButton";
 import classes from "./styles.module.css";
 
 interface Props {
-  title?: string;
+  title?: string | undefined;
   /** Called when the user closes the drawer; `DrawerRef.close` does not call it. */
-  onClose?: () => void;
+  onClose?: (() => void) | undefined;
   children: ReactNode;
   /** A backdrop that closes the drawer on click; without it the page stays usable. */
-  backdrop?: boolean;
+  backdrop?: boolean | undefined;
 }
 
 export interface DrawerRef {

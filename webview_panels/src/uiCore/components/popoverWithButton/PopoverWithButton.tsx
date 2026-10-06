@@ -13,8 +13,8 @@ import styles from "./styles.module.css";
 
 interface Props {
   button: ReactNode;
-  title?: string | ReactNode;
-  width?: number | string;
+  title?: string | ReactNode | undefined;
+  width?: number | string | undefined;
   children: (args: {
     styles: CSSModuleClasses;
     close: () => void;

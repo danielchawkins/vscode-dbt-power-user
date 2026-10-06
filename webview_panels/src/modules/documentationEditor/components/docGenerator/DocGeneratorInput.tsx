@@ -18,10 +18,10 @@ import classes from "./docGenInput.module.css";
 
 interface Props {
   entity: DBTDocumentationColumn | DBTDocumentation;
-  placeholder?: string;
+  placeholder?: string | undefined;
   type: EntityType;
   title: string;
-  tests?: DBTModelTest[];
+  tests?: DBTModelTest[] | undefined;
 }
 const DocGeneratorInput = ({
   entity,

@@ -49,7 +49,11 @@ const LOCATION = /(?:-->\s+|\(in\s+)([^\s:()]+):(\d+):(\d+)/;
 export function logLocation(message: string): LogLocation | undefined {
   const match = LOCATION.exec(message);
   return match
-    ? { file: match[1], line: Number(match[2]), column: Number(match[3]) }
+    ? {
+        file: match[1] ?? "",
+        line: Number(match[2]),
+        column: Number(match[3]),
+      }
     : undefined;
 }
 
@@ -172,10 +176,10 @@ export function showPreview(stdout: string): ShowPreview {
     return data ? [data] : [];
   });
   const preview = JSON.parse(String(previewData.preview)) as JsonRecord[];
+  const [firstRow] = preview;
   return {
-    columns: preview.length > 0 ? Object.keys(preview[0]) : [],
+    columns: firstRow ? Object.keys(firstRow) : [],
     rows: preview.map((row) => Object.values(row)),
-    compiledSql:
-      sqlLines.length > 0 ? String(sqlLines[sqlLines.length - 1].sql) : "",
+    compiledSql: String((sqlLines.at(-1)?.["sql"] as string | undefined) ?? ""),
   };
 }

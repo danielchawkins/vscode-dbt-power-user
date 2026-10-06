@@ -36,7 +36,7 @@ interface Props {
   data: TableData;
   columnNames: string[];
   columnTypes: (string | null)[];
-  styles?: CSSProperties;
+  styles?: CSSProperties | undefined;
 }
 const PerspectiveViewer = ({
   columnNames,

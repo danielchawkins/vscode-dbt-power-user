@@ -5,8 +5,8 @@ import { useEffect, useMemo, useState } from "react";
 import { SetTestFormValue } from "../hooks/useTestFormValues";
 
 interface Props {
-  toValue?: string;
-  fieldValue?: string;
+  toValue?: string | undefined;
+  fieldValue?: string | undefined;
   setValue: SetTestFormValue;
 }
 
@@ -22,17 +22,20 @@ const Relationships = ({
   const [toSourceOptions, setToSourceOptions] = useState<OptionType[]>([]);
 
   const getColumnsOfModel = async (model: string) => {
-    const matches = [...model.matchAll(/['"]([^'"]*)['"]/g)].map((m) => m[1]);
+    const matches = [...model.matchAll(/['"]([^'"]*)['"]/g)].map(
+      (m) => m[1] ?? "",
+    );
+    const [first = "", second = ""] = matches;
     if (!matches.length) {
       panelLogger.info("No model name parsed", matches);
       return;
     }
     const columnsResult = (
       matches.length === 1
-        ? await executeRequestInSync("getColumnsOfModel", { model: matches[0] })
+        ? await executeRequestInSync("getColumnsOfModel", { model: first })
         : await executeRequestInSync("getColumnsOfSources", {
-            source: matches[0],
-            table: matches[1],
+            source: first,
+            table: second,
           })
     ) as { columns: string[] };
     setToFieldOptions(

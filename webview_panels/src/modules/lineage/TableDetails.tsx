@@ -7,20 +7,20 @@ import { fetchDetails, fetchTableColumns, openFile } from "./requests";
 
 /** The exposure and function fields the drawer shows. */
 interface ExtraDetails {
-  description?: string;
-  maturity?: string;
-  type?: string;
-  url?: string;
+  description?: string | undefined;
+  maturity?: string | undefined;
+  type?: string | undefined;
+  url?: string | undefined;
   owner?: { name?: string; email?: string };
-  config?: { volatility?: string };
+  config?: { volatility?: string } | undefined;
 }
 
 type Tab = "columns" | "tests" | "meta";
 
 interface Loaded {
   id: string;
-  columns?: lineage.TableColumns;
-  extra?: ExtraDetails;
+  columns?: lineage.TableColumns | undefined;
+  extra?: ExtraDetails | undefined;
 }
 
 const extraCommand = (nodeType: string) =>
@@ -123,7 +123,7 @@ const Links = ({
   refresh,
 }: {
   table: lineage.LineageTable;
-  url?: string;
+  url?: string | undefined;
   refresh: () => Promise<void>;
 }) => {
   const [syncing, setSyncing] = useState(false);

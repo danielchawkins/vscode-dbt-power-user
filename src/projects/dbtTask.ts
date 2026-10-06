@@ -45,10 +45,14 @@ export function cliCommandOf(
   switch (command) {
     case "run":
     case "build":
-      return { kind: command, select, fullRefresh: fullRefresh || undefined };
+      return {
+        kind: command,
+        ...(select !== undefined && { select }),
+        ...(fullRefresh && { fullRefresh }),
+      };
     case "test":
     case "compile":
-      return { kind: command, select };
+      return { kind: command, ...(select !== undefined && { select }) };
     case "deps":
       return { kind: "deps" };
     default:

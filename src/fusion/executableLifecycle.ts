@@ -40,10 +40,10 @@ export interface ExecutableLifecycleHooks {
  * makes every earlier generation stale, and a stale candidate is disposed instead of committed.
  */
 export class ExecutableLifecycle {
-  private committed?: FusionCli;
+  private committed: FusionCli | undefined;
   private committedVersion?: FusionVersion;
-  private failure?: DBTDiagnosticData;
-  private configurationSubscription?: Disposable;
+  private failure: DBTDiagnosticData | undefined;
+  private configurationSubscription: Disposable | undefined;
   private refreshChain: Promise<void> = Promise.resolve();
   private refreshGeneration = 0;
   private disposed = false;

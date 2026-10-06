@@ -96,11 +96,11 @@ const useQueryPanelListeners = (): { loading: boolean } => {
 
   const handleQueryResults = useCallback(
     (result: {
-      rows?: TableData;
-      columnNames?: string[];
-      columnTypes?: (string | null)[];
-      raw_sql?: string;
-      compiled_sql?: string;
+      rows?: TableData | undefined;
+      columnNames?: string[] | undefined;
+      columnTypes?: (string | null)[] | undefined;
+      raw_sql?: string | undefined;
+      compiled_sql?: string | undefined;
     }) => {
       dispatch(setLoading(false));
       dispatch(

@@ -119,11 +119,13 @@ const useSize = () => {
     if (!element) {
       return;
     }
-    const observer = new ResizeObserver(([entry]) =>
-      setSize({
-        width: entry.contentRect.width,
-        height: entry.contentRect.height,
-      }),
+    const observer = new ResizeObserver(
+      ([entry]) =>
+        entry &&
+        setSize({
+          width: entry.contentRect.width,
+          height: entry.contentRect.height,
+        }),
     );
     observer.observe(element);
     return () => observer.disconnect();

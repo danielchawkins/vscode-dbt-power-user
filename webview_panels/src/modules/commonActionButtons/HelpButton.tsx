@@ -9,7 +9,7 @@ enum Pages {
 }
 
 interface Props {
-  onClose?: () => void;
+  onClose?: (() => void) | undefined;
 }
 
 const HelpButton = ({ onClose }: Props): JSX.Element => {

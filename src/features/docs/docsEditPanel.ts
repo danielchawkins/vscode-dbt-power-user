@@ -46,7 +46,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   public static readonly viewType = "fusionPowerUser.DocsEdit";
   private readonly entry = "documentationEditor";
   private _panel: WebviewView | undefined = undefined;
-  private documentation?: DBTDocumentation;
+  private documentation: DBTDocumentation | undefined;
   /** Unsaved drafts by model file path; host memory only, never webview state. */
   private readonly drafts = new Map<
     string,

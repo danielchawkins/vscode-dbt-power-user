@@ -16,7 +16,7 @@ export interface ManifestRebuildCallbacks {
 /** Rebuilds and parses a project's manifest for the committed executable or an activation candidate. */
 export class ManifestRebuild {
   /** A candidate being parsed before commit; parsers read project paths through it. */
-  private parsingCandidate?: FusionCli;
+  private parsingCandidate: FusionCli | undefined;
   private readonly readFailures = { count: 0 };
   private _adapterType = "unknown";
 

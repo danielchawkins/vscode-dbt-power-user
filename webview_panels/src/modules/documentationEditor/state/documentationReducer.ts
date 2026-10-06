@@ -34,9 +34,9 @@ const takeIncomingDocs = (
   state: S,
   payload:
     | {
-        docs?: DBTDocumentation;
-        tests?: DBTModelTest[];
-        unitTests?: DBTUnitTest[];
+        docs?: DBTDocumentation | undefined;
+        tests?: DBTModelTest[] | undefined;
+        unitTests?: DBTUnitTest[] | undefined;
       }
     | undefined,
 ): S => {

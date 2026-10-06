@@ -10,8 +10,8 @@ interface Props {
 }
 
 interface GetUnitTestCodeResponse {
-  yaml?: string;
-  error?: string;
+  yaml?: string | undefined;
+  error?: string | undefined;
 }
 
 const UnitTestDetails = ({ test, modelName }: Props): JSX.Element => {

@@ -1,8 +1,8 @@
 import { DbtGenericTests } from "@modules/documentationEditor/state/types";
 
 export interface SaveRequest {
-  to?: string;
-  field?: string;
-  accepted_values?: string[];
-  test?: DbtGenericTests;
+  to?: string | undefined;
+  field?: string | undefined;
+  accepted_values?: string[] | undefined;
+  test?: DbtGenericTests | undefined;
 }

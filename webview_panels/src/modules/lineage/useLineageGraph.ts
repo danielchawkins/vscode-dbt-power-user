@@ -49,8 +49,9 @@ async function build(
   await showColumns(store, saved.columnTables, fetchColumns);
   store.update((s) => selectTable(s, saved.selectedTable));
   const column = saved.selectedColumn;
-  if (column?.length === 2) {
-    await traceColumn(store, [column[0], column[1]], fetchConnected);
+  const [table, name] = column ?? [];
+  if (table !== undefined && name !== undefined) {
+    await traceColumn(store, [table, name], fetchConnected);
   }
 }
 
@@ -153,7 +154,7 @@ export function useLineageGraph(
   openDetails: (table: string) => void,
 ): {
   graph: GraphState;
-  notice?: PanelNotice;
+  notice?: PanelNotice | undefined;
   drawnKey: number;
   actions: TableActions;
   select: (table: string | undefined) => void;

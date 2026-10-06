@@ -88,7 +88,7 @@ export interface GenerateModelFromSourceParams {
   database: string;
   schema: string;
   tableName: string;
-  tableIdentifier?: string;
+  tableIdentifier?: string | undefined;
 }
 
 /** Writes and opens a staging model selecting every column of a source table unless it exists. */
@@ -124,7 +124,7 @@ export async function generateModel(
 
         // Parse setting to fileName
         if (fileNameTemplate in fileNameTemplateMap) {
-          fileName = fileNameTemplateMap[fileNameTemplate];
+          fileName = fileNameTemplateMap[fileNameTemplate] ?? fileName;
         }
         // Create filePath based on source.yml location
         const location = path.join(sourcePath, fileName + ".sql");

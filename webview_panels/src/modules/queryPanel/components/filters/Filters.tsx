@@ -7,7 +7,7 @@ import styles from "../../querypanel.module.css";
 
 export interface QueryFilters {
   tags: string[];
-  searchQuery?: string;
+  searchQuery?: string | undefined;
 }
 
 interface Props {

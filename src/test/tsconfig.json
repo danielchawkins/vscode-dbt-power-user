@@ -1,0 +1,10 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false,
+    "tsBuildInfoFile": "../../out/tsconfig.test.tsbuildinfo"
+  },
+  "include": ["../**/*", "../../packages/webview-contract/src/**/*.test.ts"],
+  "exclude": ["../../node_modules", "../../out", "../../dist"]
+}

@@ -21,7 +21,7 @@ export function parseHistoryArgs(args: string[]): RunModelParams {
   if (args.length === 0) {
     return { plusOperatorLeft: "", modelName: "", plusOperatorRight: "" };
   }
-  const selector = args[0];
+  const selector = args[0] ?? "";
   const plusOperatorLeft = selector.startsWith("+") ? "+" : "";
   const plusOperatorRight = selector.endsWith("+") ? "+" : "";
   const modelName = selector.replace(/^\+/, "").replace(/\+$/, "");
@@ -61,9 +61,10 @@ export function rerunFromHistory(
         void project.buildProject();
       }
       break;
-    case "test":
-      if (entry.args.length > 0) {
-        void project.runTest(entry.args[0]);
+    case "test": {
+      const [first] = entry.args;
+      if (first !== undefined) {
+        void project.runTest(first);
       } else {
         window.showWarningMessage(
           "Re-running project-wide dbt test is not currently supported. " +
@@ -71,6 +72,7 @@ export function rerunFromHistory(
         );
       }
       break;
+    }
     case "compile":
       if (runModelParams.modelName) {
         void project.compileModel(runModelParams);

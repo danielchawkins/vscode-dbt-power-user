@@ -13,7 +13,12 @@ export const REF_SOURCES: RefSource[] = [
 ];
 
 /** Settings with every optional field resolved to its default. */
-export type ResolvedSettings = Required<Omit<Settings, "enabledRefSources">> & {
+export type ResolvedSettings = {
+  [K in keyof Omit<Settings, "enabledRefSources">]-?: Exclude<
+    Settings[K],
+    undefined
+  >;
+} & {
   enabledRefSources: Record<RefSource, boolean>;
 };
 
@@ -91,7 +96,9 @@ export function planRender(input: {
   publication: string | undefined;
   refresh: boolean;
   stored: () => LineageViewState | undefined;
-}): { start?: lineage.LineageTable; saved?: LineageViewState } | undefined {
+}):
+  | { start?: lineage.LineageTable; saved?: LineageViewState | undefined }
+  | undefined {
   const { args, graph, publication, refresh } = input;
   const start = args?.node as lineage.LineageTable | undefined;
   const sameStart = start !== undefined && start.table === graph.start;

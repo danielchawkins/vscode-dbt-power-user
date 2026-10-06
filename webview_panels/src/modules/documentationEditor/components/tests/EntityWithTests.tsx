@@ -11,7 +11,7 @@ import Test from "./Test";
 
 interface Props {
   title: string;
-  tests?: DBTModelTest[];
+  tests?: DBTModelTest[] | undefined;
   type: EntityType;
 }
 

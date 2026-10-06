@@ -9,7 +9,7 @@ const PreTag = ({
   text,
   ...rest
 }: DetailedHTMLProps<HTMLAttributes<HTMLPreElement>, HTMLPreElement> & {
-  text?: string;
+  text?: string | undefined;
 }): JSX.Element => {
   const [isCopied, setIsCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);

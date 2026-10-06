@@ -40,7 +40,7 @@ export interface DocsEditHost {
 }
 
 interface Reply {
-  syncRequestId?: string;
+  syncRequestId?: string | undefined;
   data?: unknown;
   error?: string;
 }
@@ -101,7 +101,7 @@ export class DocsEditRequests {
   }
 
   /** Runs `handler` with the active editor's project, or answers the request with why there is none. */
-  withProject<M extends { syncRequestId?: string }>(
+  withProject<M extends { syncRequestId?: string | undefined }>(
     handler: (message: M, project: Project, modelPath: Uri) => unknown,
   ): (message: M) => unknown {
     return (message) => {
@@ -155,13 +155,14 @@ export class DocsEditRequests {
 
   /** Answers with `read` of the active editor's URI. */
   private inProject(command: string, read: (uri: Uri | undefined) => unknown) {
-    return this.withProject(({ syncRequestId }: { syncRequestId?: string }) =>
-      this.handleSyncRequest(
-        syncRequestId,
-        () => read(window.activeTextEditor?.document.uri),
-        command,
-        command === "getSourcesInProject",
-      ),
+    return this.withProject(
+      ({ syncRequestId }: { syncRequestId?: string | undefined }) =>
+        this.handleSyncRequest(
+          syncRequestId,
+          () => read(window.activeTextEditor?.document.uri),
+          command,
+          command === "getSourcesInProject",
+        ),
     );
   }
 

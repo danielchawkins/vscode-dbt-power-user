@@ -129,7 +129,7 @@ export class GraphParser {
         case "source": {
           const [sourceName, tableName] = nodeName.split(".");
           const url = sourceMetaMap
-            .get(sourceName)
+            .get(sourceName ?? "")
             ?.tables.find((table) => table.name === tableName)?.path;
           return {
             label: `${tableName} (${sourceName})`,
@@ -168,7 +168,7 @@ export class GraphParser {
         }
         case "test": {
           // nodeName => more interesting label possibilities?
-          const url = testMetaMap.get(nodeName.split(".")[0])?.path;
+          const url = testMetaMap.get(nodeName.split(".")[0] ?? "")?.path;
           return {
             label: nodeName,
             key: parentNodeName,
@@ -219,6 +219,7 @@ export class GraphParser {
             resourceType: "function",
           };
         }
+        case undefined:
         default:
           this.terminal.debug(
             "GraphParser",

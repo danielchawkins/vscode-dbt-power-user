@@ -55,9 +55,10 @@ export interface FusionLaunchSources {
   readSnapshot: (root: Uri) => ProjectSnapshot;
   /** The Declared Project's log channel, shared by every client the pool starts for it. */
   outputChannel: (project: DeclaredProject) => LogOutputChannel;
-  launchEnv?: FusionLaunchEnvironment;
+  launchEnv?: FusionLaunchEnvironment | undefined;
   /** Receives each compile's error messages from the project's client. */
-  reportCompileErrors?: (project: DeclaredProject, messages: string[]) => void;
+  reportCompileErrors?:
+    ((project: DeclaredProject, messages: string[]) => void) | undefined;
 }
 
 export class FusionClientPoolImpl implements FusionClientPool {
