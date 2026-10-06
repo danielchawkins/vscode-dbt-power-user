@@ -28,10 +28,7 @@
       "@uicore": ["./src/uiCore/index.ts"],
       "@assets/*": ["./src/assets/*"],
       "@modules/*": ["./src/modules/*"],
-      "@vscodeApi": ["./src/modules/vscode/index.ts"],
-      "@perspective-dev/viewer/src/ts/*": [
-        "../node_modules/@perspective-dev/viewer/dist/esm/*"
-      ]
+      "@vscodeApi": ["./src/modules/vscode/index.ts"]
     },
     "types": []
   },

@@ -28,11 +28,8 @@
   "dependencies": {
     "@dagrejs/dagre": "^3.1.1",
     "@fusion-power-user/webview-contract": "*",
-    "@perspective-dev/client": "5.5.1",
-    "@perspective-dev/server": "5.5.1",
-    "@perspective-dev/viewer": "5.5.1",
-    "@perspective-dev/viewer-charts": "5.5.1",
-    "@perspective-dev/viewer-datagrid": "5.5.1",
+    "@tanstack/react-table": "^9.2.6",
+    "@tanstack/react-virtual": "^3.14.13",
     "@vscode/codicons": "^0.0.45",
     "@xyflow/react": "^12.12.0",
     "prismjs": "^1.30.0",

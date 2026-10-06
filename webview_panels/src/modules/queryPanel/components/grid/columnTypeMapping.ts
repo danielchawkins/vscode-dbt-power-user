@@ -1,28 +1,19 @@
 import { TableData } from "@modules/queryPanel/context/types";
-import type { ColumnType } from "@perspective-dev/client";
+
+/** How the grid renders and sorts a column. */
+export type GridColumnType = "string" | "number";
 
 /**
- * Maps a known legacy agate type to a Perspective schema type.
+ * Maps a known legacy agate type to a grid column type.
  * @internal
  */
 export const mapColumnType = (
   agateType: string | null | undefined,
-): ColumnType => {
-  switch (agateType) {
-    case "Text":
-      return "string";
-    case "Integer":
-      return "float";
-    case "BigInteger":
-      // JS numbers lose precision above 2^53; keep known big integers as strings.
-      return "string";
-    case "Number":
-      return "float";
-    case null:
-    case undefined:
-    default:
-      return "string";
-  }
+): GridColumnType => {
+  // BigInteger stays a string: JS numbers lose precision above 2^53.
+  return agateType === "Integer" || agateType === "Number"
+    ? "number"
+    : "string";
 };
 
 const toText = (value: unknown): string | null => {
@@ -43,21 +34,21 @@ const toText = (value: unknown): string | null => {
 };
 
 /**
- * Explicit Perspective schema plus rows that conform to it. A column whose type was not reported is `string`, and
+ * Explicit column types plus rows that conform to them. A column whose type was not reported is `string`, and
  * its values are shown as text; types are never guessed from values.
  */
-export function buildPerspectiveTableInit(
+export function buildGridInit(
   columnNames: string[],
   columnTypes: (string | null | undefined)[],
   data: TableData,
 ): {
-  schema: Record<string, ColumnType>;
+  schema: Record<string, GridColumnType>;
   rows: Record<string, unknown>[];
   /** Result column order; an object's key order moves integer-like names first, so the schema cannot carry it. */
   columns: string[];
 } {
   const rows = Array.isArray(data) ? data : [];
-  const schema: Record<string, ColumnType> = {};
+  const schema: Record<string, GridColumnType> = {};
   columnNames.forEach((name, i) => {
     schema[name] = mapColumnType(columnTypes[i]);
   });
@@ -73,4 +64,18 @@ export function buildPerspectiveTableInit(
       ),
     ),
   };
+}
+
+/** The text a cell shows: numbers keep every digit and no grouping, missing values are empty. */
+export function formatCell(value: unknown): string {
+  if (value === null || value === undefined) {
+    return "";
+  }
+  if (typeof value === "number") {
+    return value.toLocaleString("en-US", {
+      useGrouping: false,
+      maximumFractionDigits: 20,
+    });
+  }
+  return typeof value === "string" ? value : JSON.stringify(value);
 }

@@ -6,7 +6,7 @@ import { Button, Stack } from "@uicore";
 import { ReactNode, useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
-const PerspectiveErrorBoundary = ({
+const GridErrorBoundary = ({
   children,
 }: {
   children: ReactNode;
@@ -29,7 +29,7 @@ const PerspectiveErrorBoundary = ({
     setError(
       errorObject instanceof Error
         ? errorObject
-        : new Error("Unknown Perspective rendering error"),
+        : new Error("Unknown results grid rendering error"),
     );
   };
 
@@ -58,4 +58,4 @@ const PerspectiveErrorBoundary = ({
   );
 };
 
-export default PerspectiveErrorBoundary;
+export default GridErrorBoundary;

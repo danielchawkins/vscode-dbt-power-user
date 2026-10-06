@@ -96,14 +96,6 @@
       "count": 2
     }
   },
-  "src/modules/queryPanel/components/perspective/PerspectiveViewer.tsx": {
-    "@eslint-react/exhaustive-deps": {
-      "count": 3
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "src/modules/queryPanel/components/queryLimit/QueryLimit.tsx": {
     "max-lines-per-function": {
       "count": 1
