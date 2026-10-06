@@ -1,7 +1,6 @@
-import { existsSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { dirname, join } from "path";
 import {
-  CancellationTokenSource,
   CodeLens,
   commands,
   Disposable,
@@ -15,6 +14,7 @@ import {
   window,
   workspace,
 } from "vscode";
+import { previewSql, type FusionCte } from "../core/cte/ctePreview";
 import type { Log } from "../core/log";
 import { DBT_PROJECT_FILE, readDbtProjectFile } from "../core/project";
 import {
@@ -31,7 +31,6 @@ import { RunHistoryService } from "../projects/runHistoryService";
 import { inspectSettings, readEnvironment } from "../settings";
 import { StartupGate } from "../startupGate";
 import { getFirstWorkspacePath } from "../utils";
-import { CteCodeLensProvider, CteInfo } from "./cte/cteCodeLensProvider";
 import { CteProfilerDecorationProvider } from "./cte/cteProfilerDecorationProvider";
 import { CteProfilerService } from "./cte/cteProfilerService";
 import { DeferToProductionStatusBar } from "./defer/deferToProductionStatusBar";
@@ -56,7 +55,6 @@ export class VSCodeCommands implements Disposable {
     private runHistoryService: RunHistoryService,
     private cteProfilerService: CteProfilerService,
     private cteProfilerDecorationProvider: CteProfilerDecorationProvider,
-    private cteCodeLensProvider: CteCodeLensProvider,
     private deferToProductionStatusBar: DeferToProductionStatusBar,
     private startupGate: Pick<StartupGate, "whenSettled">,
   ) {
@@ -87,7 +85,7 @@ export class VSCodeCommands implements Disposable {
       }),
       this.register(
         "fusionPowerUser.profileCtes",
-        async (uri?: Uri, ctes?: CteInfo[]) => {
+        async (uri?: Uri, ctes?: FusionCte[]) => {
           // When called from command palette, args are undefined — use active editor
           const activeEditor = window.activeTextEditor;
           const docUri = uri ?? activeEditor?.document.uri;
@@ -96,44 +94,19 @@ export class VSCodeCommands implements Disposable {
             return;
           }
 
-          let document = workspace.textDocuments.find(
-            (doc) => doc.uri.toString() === docUri.toString(),
-          );
-          if (!document) {
-            try {
-              document = await workspace.openTextDocument(docUri);
-            } catch (error) {
-              this.dbtTerminal.error(
-                "CteProfiler",
-                "Failed to open document",
-                error,
-              );
-              window.showErrorMessage("Document not found");
-              return;
-            }
-          }
-
-          // If ctes not provided (command palette), re-detect from CodeLens provider
+          // Called from the command palette: read the CTEs from the server's lenses.
           if (!ctes) {
-            const cts = new CancellationTokenSource();
-            // `provideCodeLenses` returns `CodeLens[] | Thenable<CodeLens[]>`;
-            // `await` handles all three (sync array, Promise, custom Thenable).
-            const resolved = await this.cteCodeLensProvider.provideCodeLenses(
-              document,
-              cts.token,
-            );
-            cts.dispose();
-            // Extract CteInfo from CodeLens arguments (index 1 is the ctes array)
-            const profileLens = resolved.find(
-              (cl: CodeLens) =>
-                cl.command?.command === "fusionPowerUser.profileCtes",
-            );
-            ctes = profileLens?.command?.arguments?.[1] as
-              CteInfo[] | undefined;
-
+            const lenses =
+              (await commands.executeCommand<CodeLens[]>(
+                "vscode.executeCodeLensProvider",
+                docUri,
+              )) ?? [];
+            ctes = lenses.find(
+              (lens) => lens.command?.command === "fusionPowerUser.profileCtes",
+            )?.command?.arguments?.[1] as FusionCte[] | undefined;
             if (!ctes || ctes.length === 0) {
               window.showInformationMessage(
-                "No CTEs found in this file to profile.",
+                "No CTEs found in this file to profile. Save the file first.",
               );
               return;
             }
@@ -174,11 +147,7 @@ export class VSCodeCommands implements Disposable {
               );
 
               try {
-                await this.cteProfilerService.profileModel(
-                  docUri,
-                  document,
-                  ctes,
-                );
+                await this.cteProfilerService.profileModel(docUri, ctes);
               } catch (error) {
                 this.dbtTerminal.error(
                   "profileCtesError",
@@ -286,8 +255,8 @@ export class VSCodeCommands implements Disposable {
       ),
       this.register(
         "fusionPowerUser.runCteWithDependencies",
-        (uri: Uri, cteIndex: number, ctes: CteInfo[]) =>
-          this.runCteWithDependencies(uri, cteIndex, ctes),
+        (target: { uri: Uri; cte: FusionCte }) =>
+          this.runCte(target.uri, target.cte),
       ),
       this.register(
         "fusionPowerUser.createModelBasedonSourceConfig",
@@ -614,183 +583,17 @@ export class VSCodeCommands implements Disposable {
     await project.debug();
   }
 
-  private async runCteWithDependencies(
-    uri: Uri,
-    cteIndex: number,
-    ctes: CteInfo[],
-  ): Promise<void> {
-    this.dbtTerminal.debug(
-      "CteExecution",
-      `Starting CTE execution for index ${cteIndex} with ${ctes.length} total CTEs`,
-    );
-
+  private async runCte(uri: Uri, cte: FusionCte): Promise<void> {
     try {
-      // Get the document asynchronously
-      let document = workspace.textDocuments.find(
-        (doc) => doc.uri.toString() === uri.toString(),
-      );
-
-      if (!document) {
-        // Try to open the document if not found in workspace
-        try {
-          document = await workspace.openTextDocument(uri);
-        } catch (error) {
-          this.dbtTerminal.error(
-            "CteExecution",
-            `Failed to open document: ${uri.toString()}`,
-            error,
-          );
-          window.showErrorMessage("Document not found and could not be opened");
-          return;
-        }
-      }
-
-      const text = document.getText();
-
-      // Find the target CTE and all its dependencies
-      const targetCte = ctes[cteIndex];
-      if (!targetCte) {
-        this.dbtTerminal.warn(
-          "CteExecution",
-          `CTE not found at index ${cteIndex}, available CTEs: ${ctes.length}`,
-        );
-        window.showErrorMessage("CTE not found");
-        return;
-      }
-
-      this.dbtTerminal.debug(
-        "CteExecution",
-        `Target CTE: ${targetCte.name} (index: ${targetCte.index})`,
-      );
-
-      // Get all CTEs from the same WITH clause that come before or at the target index
-      const sameScopeCtesUpToTarget = ctes.filter(
-        (cte) =>
-          cte.withClauseStart === targetCte.withClauseStart &&
-          cte.index <= targetCte.index,
-      );
-
-      this.dbtTerminal.debug(
-        "CteExecution",
-        `Found ${sameScopeCtesUpToTarget.length} CTEs in dependency chain: ${sameScopeCtesUpToTarget.map((c) => c.name).join(", ")}`,
-      );
-
-      // Build the complete query with dependencies
-      const cteDefinitions: string[] = [];
-
-      for (const cte of sameScopeCtesUpToTarget) {
-        // Extract the full CTE definition (name + AS + query)
-        const cteStart = cte.range.start;
-
-        // Get from CTE name to end of its query
-        const cteStartPos = document.offsetAt(cteStart);
-
-        // Improved regex to handle quoted identifiers, dotted names, and complex column lists
-        // Supports: identifier, "quoted identifier", schema.table, `backtick quoted`, [bracket quoted]
-        const cteNameMatch = text
-          .substring(cteStartPos)
-          .match(
-            /^((?:[a-zA-Z_][a-zA-Z0-9_]*|"[^"]+"|`[^`]+`|\[[^\]]+\])(?:\.(?:[a-zA-Z_][a-zA-Z0-9_]*|"[^"]+"|`[^`]+`|\[[^\]]+\]))*(?:\s*\([^)]*\))?)\s+as\s*\(/i,
-          );
-
-        if (cteNameMatch) {
-          const cteQuery = document.getText(cte.queryRange);
-          const fullCteDefinition = `${cteNameMatch[1]} AS (\n${cteQuery}\n)`;
-          cteDefinitions.push(fullCteDefinition);
-
-          this.dbtTerminal.debug(
-            "CteExecution",
-            `Added CTE to query: ${cteNameMatch[1]} (${cteQuery.length} chars)`,
-          );
-        } else {
-          this.dbtTerminal.warn(
-            "CteExecution",
-            `Could not parse CTE definition for: ${cte.name}`,
-          );
-        }
-      }
-
-      // Check if we have any valid CTE definitions
-      if (cteDefinitions.length === 0) {
-        this.dbtTerminal.warn(
-          "CteExecution",
-          "No valid CTE definitions found, cannot build query",
-        );
-        window.showErrorMessage("Failed to extract CTE definitions");
-        return;
-      }
-
-      // Build the complete query including preamble before WITH clause
-      // Extract everything before the WITH clause (dbt configs, variables, etc.)
-      const preamble = text.substring(0, targetCte.withClauseStart).trim();
-
-      let query = "";
-      if (preamble) {
-        query += preamble + "\n\n";
-        this.dbtTerminal.debug(
-          "CteExecution",
-          `Including preamble (${preamble.length} chars) before WITH clause`,
-        );
-      }
-
-      query += "WITH ";
-      query += cteDefinitions.join(",\n");
-
-      // Add a simple SELECT to execute the target CTE with proper quoting
-      const quotedTargetName = this.quoteSqlIdentifier(targetCte.name);
-      query += `\nSELECT * FROM ${quotedTargetName}`;
-
-      this.dbtTerminal.debug(
-        "CteExecution",
-        `Generated query length: ${query.length} characters`,
-      );
-
-      // Create a unique model name with timestamp to prevent collisions
-      const timestamp = Date.now();
-      const hash = this.generateShortHash(targetCte.name + timestamp);
-      const modelName = `cte_${targetCte.name}_${hash}`;
-
-      this.dbtTerminal.debug(
-        "CteExecution",
-        `Executing CTE query with model name: ${modelName}`,
-      );
-
-      await this.runModel.executeSQL(uri, query, modelName);
+      const query = previewSql(readFileSync(cte.compiledPath), cte);
+      const hash = Date.now().toString(36).slice(-6);
+      await this.runModel.executeSQL(uri, query, `cte_${cte.name}_${hash}`);
     } catch (error) {
-      this.dbtTerminal.error(
-        "CteExecution",
-        "Unexpected error in runCteWithDependencies",
-        error,
-      );
+      this.dbtTerminal.error("CteExecution", "Unable to execute CTE", error);
       window.showErrorMessage(
         `Failed to execute CTE: ${error instanceof Error ? error.message : "Unknown error"}`,
       );
     }
-  }
-
-  private quoteSqlIdentifier(identifier: string): string {
-    // If identifier is already quoted or contains dots, return as-is
-    if (identifier.match(/^["'`\[]/) || identifier.includes(".")) {
-      return identifier;
-    }
-
-    // If identifier contains special characters or spaces, quote it
-    if (!identifier.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      return `"${identifier}"`;
-    }
-
-    return identifier;
-  }
-
-  private generateShortHash(input: string): string {
-    // Simple hash function to generate a short unique suffix
-    let hash = 0;
-    for (let i = 0; i < input.length; i++) {
-      const char = input.charCodeAt(i);
-      hash = (hash << 5) - hash + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash).toString(36).substring(0, 6);
   }
 
   dispose() {

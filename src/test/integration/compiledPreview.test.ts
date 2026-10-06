@@ -20,7 +20,7 @@ suite("Compiled preview from the language server", function () {
     }
     const projectDir = vscode.workspace.workspaceFolders![0].uri.fsPath;
     const model = vscode.Uri.file(
-      path.join(projectDir, "models", "order_totals.sql"),
+      path.join(projectDir, "models", "cte_probe.sql"),
     );
     await vscode.window.showTextDocument(model);
     const spawned = dbtInvocations().length;

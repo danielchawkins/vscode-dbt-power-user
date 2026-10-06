@@ -22,7 +22,7 @@ const suites = "out/test/integration";
 /** Suites and extra environment per label; every other suite assumes a different workspace. */
 const selection = {
   trusted: {
-    files: `${suites}/!(columnLineage|lineageTableEdges|serverProducer|targetChange).test.js`,
+    files: `${suites}/!(columnLineage|lineageTableEdges|serverProducer|targetChange|compiledPreview|cteLenses).test.js`,
   },
   symlinked: {
     files: `${suites}/symlinkedWorkspace.test.js`,
@@ -42,6 +42,8 @@ export default defineConfig(
             `${suites}/lineageTableEdges.test.js`,
             `${suites}/serverProducer.test.js`,
             `${suites}/targetChange.test.js`,
+            `${suites}/compiledPreview.test.js`,
+            `${suites}/cteLenses.test.js`,
           ],
           env: {
             FPU_NATIVE_EDITOR_MODE: mode,

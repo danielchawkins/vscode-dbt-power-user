@@ -1,16 +1,26 @@
+import { readFileSync } from "fs";
 import {
   CancellationTokenSource,
   Disposable,
   Event,
   EventEmitter,
-  TextDocument,
   Uri,
   window,
 } from "vscode";
+import { countSql, type FusionCte } from "../../core/cte/ctePreview";
 import type { Log } from "../../core/log";
 import { Projects } from "../../projects/projects";
-import { CteInfo } from "./cteCodeLensProvider";
 import { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
+
+/** Reads a compiled file once per profiling run, so every CTE is sliced from the same version. */
+function readOnce(files: Map<string, Buffer>, filePath: string): Buffer {
+  let bytes = files.get(filePath);
+  if (!bytes) {
+    bytes = readFileSync(filePath);
+    files.set(filePath, bytes);
+  }
+  return bytes;
+}
 
 export class CteProfilerService implements Disposable {
   private results: Map<string, CteProfileResult> = new Map();
@@ -45,11 +55,7 @@ export class CteProfilerService implements Disposable {
     return this.cancellationTokenSource !== undefined;
   }
 
-  async profileModel(
-    uri: Uri,
-    document: TextDocument,
-    ctes: CteInfo[],
-  ): Promise<void> {
+  async profileModel(uri: Uri, ctes: FusionCte[]): Promise<void> {
     if (this.cancellationTokenSource) {
       window.showWarningMessage(
         "A CTE profiling run is already in progress. Cancel it first.",
@@ -94,11 +100,12 @@ export class CteProfilerService implements Disposable {
     );
 
     try {
-      const text = document.getText();
       const cteEntries: CteProfileEntry[] = [];
       let previousCumulativeTime = 0;
+      // One read per file, so every CTE of the run is sliced from the same version.
+      const compiledFiles = new Map<string, Buffer>();
 
-      for (let i = 0; i < ctes.length; i++) {
+      for (const [i, targetCte] of ctes.entries()) {
         // Cancellation is intentionally checked between CTEs only — we cannot
         // abort a query that's already in flight inside
         // `immediatelyExecuteSQLWithLimit()`, which is a shared helper without
@@ -113,17 +120,10 @@ export class CteProfilerService implements Disposable {
           break;
         }
 
-        const targetCte = ctes[i];
-
-        const query = this.buildCountQuery(text, ctes, targetCte, document);
-
-        if (!query) {
-          log.warn(
-            "CteProfiler",
-            `Failed to build query for CTE: ${targetCte.name}`,
-          );
-          continue;
-        }
+        const query = countSql(
+          readOnce(compiledFiles, targetCte.compiledPath),
+          targetCte,
+        );
 
         log.debug(
           "CteProfiler",
@@ -144,7 +144,7 @@ export class CteProfilerService implements Disposable {
 
         cteEntries.push({
           name: targetCte.name,
-          line: targetCte.range.start.line,
+          line: targetCte.line,
           queryTimeMs: elapsed,
           marginalTimeMs: marginalTime,
           rowCount,
@@ -208,64 +208,6 @@ export class CteProfilerService implements Disposable {
     this._onResultChanged.fire(undefined);
   }
 
-  private buildCountQuery(
-    text: string,
-    ctes: CteInfo[],
-    targetCte: CteInfo,
-    document: TextDocument,
-  ): string | undefined {
-    // Reuse exact pattern from runCteWithDependencies
-    const sameScopeCtesUpToTarget = ctes.filter(
-      (cte) =>
-        cte.withClauseStart === targetCte.withClauseStart &&
-        cte.index <= targetCte.index,
-    );
-
-    const cteDefinitions: string[] = [];
-
-    // Rebuild each CTE by slicing the raw source between the name position and
-    // the query body. This preserves column lists and any comments between
-    // the identifier and the AS keyword, matching what detectCtes() accepts.
-    for (const cte of sameScopeCtesUpToTarget) {
-      const headerStart = document.offsetAt(cte.range.start);
-      const queryBodyStart = document.offsetAt(cte.queryRange.start);
-      if (queryBodyStart <= headerStart) {
-        continue;
-      }
-      const headerWithOpenParen = text.substring(headerStart, queryBodyStart);
-      const cteQuery = document.getText(cte.queryRange);
-      cteDefinitions.push(`${headerWithOpenParen}\n${cteQuery}\n)`);
-    }
-
-    if (cteDefinitions.length === 0) {
-      return undefined;
-    }
-
-    // Include preamble (dbt configs, variables before WITH)
-    const preamble = text.substring(0, targetCte.withClauseStart).trim();
-    let query = "";
-    if (preamble) {
-      query += preamble + "\n\n";
-    }
-
-    query += "WITH ";
-    query += cteDefinitions.join(",\n");
-
-    const quotedName = this.quoteSqlIdentifier(
-      this.stripColumnList(targetCte.name),
-    );
-    query += `\nSELECT COUNT(*) AS _profile_count FROM ${quotedName}`;
-
-    return query;
-  }
-
-  private stripColumnList(rawName: string): string {
-    // CteCodeLensProvider.name may include a trailing column list like
-    // "my_cte (id, name)". Strip it so the FROM clause references only the
-    // identifier.
-    return rawName.replace(/\s*\([^)]*\)\s*$/, "").trim();
-  }
-
   private extractRowCount(data: Record<string, unknown>[]): number {
     if (data.length === 0) {
       return 0;
@@ -301,16 +243,6 @@ export class CteProfilerService implements Disposable {
       }
       return { ...e, tier };
     });
-  }
-
-  private quoteSqlIdentifier(identifier: string): string {
-    if (identifier.match(/^["'`\[]/) || identifier.includes(".")) {
-      return identifier;
-    }
-    if (!identifier.match(/^[a-zA-Z_][a-zA-Z0-9_]*$/)) {
-      return `"${identifier}"`;
-    }
-    return identifier;
   }
 
   private extractModelName(uri: Uri): string {

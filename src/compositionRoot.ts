@@ -21,7 +21,6 @@ import { CodeLensProviders } from "./features/codeLenses";
 import { VSCodeCommands } from "./features/commands";
 import { SqlPreviewContentProvider } from "./features/compiledSql/sqlPreviewContentProvider";
 import { ContentProviders } from "./features/contentProviders";
-import { CteCodeLensProvider } from "./features/cte/cteCodeLensProvider";
 import { CteProfilerDecorationProvider } from "./features/cte/cteProfilerDecorationProvider";
 import { CteProfilerService } from "./features/cte/cteProfilerService";
 import { DeferToProductionStatusBar } from "./features/defer/deferToProductionStatusBar";
@@ -297,7 +296,6 @@ function composeWebviews(
 function composeCommands(graph: ProjectsGraph, startupGate: StartupGate) {
   const { projects, terminal, extensionContextStore } = graph;
   const cteProfilerService = new CteProfilerService(projects);
-  const cteCodeLensProvider = new CteCodeLensProvider(terminal);
   const deferToProductionStatusBar = new DeferToProductionStatusBar(
     projects,
     terminal,
@@ -320,17 +318,13 @@ function composeCommands(graph: ProjectsGraph, startupGate: StartupGate) {
     graph.runHistoryService,
     cteProfilerService,
     new CteProfilerDecorationProvider(cteProfilerService, terminal),
-    cteCodeLensProvider,
     deferToProductionStatusBar,
     startupGate,
   );
-  return { vscodeCommands, cteCodeLensProvider, deferToProductionStatusBar };
+  return { vscodeCommands, deferToProductionStatusBar };
 }
 
-function composeEditorProviders(
-  graph: ProjectsGraph,
-  cteCodeLensProvider: CteCodeLensProvider,
-) {
+function composeEditorProviders(graph: ProjectsGraph) {
   const { projects } = graph;
   return {
     treeviewProviders: new TreeviewProviders(
@@ -347,7 +341,6 @@ function composeEditorProviders(
       projects,
       new SourceModelCreationCodeLensProvider(),
       new VirtualSqlCodeLensProvider(graph.queryManifestService),
-      cteCodeLensProvider,
       new SqlActionsCodeLensProvider(),
     ),
   };
@@ -360,7 +353,7 @@ export function compose(context: ExtensionContext): Composition {
   const fusion = composeFusion(graph);
   const startupGate = new StartupGate();
   const commands = composeCommands(graph, startupGate);
-  const editor = composeEditorProviders(graph, commands.cteCodeLensProvider);
+  const editor = composeEditorProviders(graph);
 
   const extension = new DBTPowerUserExtension(
     graph.projects,
