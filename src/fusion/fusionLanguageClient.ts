@@ -31,11 +31,11 @@ import {
 } from "./fusionDiagnostics";
 import {
   canonicalProjectRoot,
-  compileErrorMessages,
+  CompileSignal,
   defaultCreateLanguageClient,
   defaultSpawn,
-  FUSION_COMPILE_COMPLETE,
   languageClientOptions,
+  subscribeToCompileComplete,
   type ClientHandle,
   type FusionLanguageClientDependencies,
 } from "./lspClientSupport";
@@ -118,6 +118,8 @@ class FusionLanguageClientImpl implements FusionClient {
   get failureReason(): string | undefined {
     return this._failureReason;
   }
+
+  private readonly compiled = new CompileSignal();
 
   get outputChannel(): LogOutputChannel {
     return this.options.outputChannel;
@@ -300,6 +302,7 @@ class FusionLanguageClientImpl implements FusionClient {
           outputChannel: this.outputChannel,
           diagnosticsFilter,
           lintEnabled: launch.lintEnabled,
+          compiled: this.compiled,
         }),
       );
 
@@ -308,7 +311,8 @@ class FusionLanguageClientImpl implements FusionClient {
         root,
         () => client.diagnostics,
       );
-      this.subscribeToCompileErrors(client);
+      const { onCompileErrors } = this.options;
+      subscribeToCompileComplete(client, this.compiled, onCompileErrors);
       await client.start();
 
       const generation = (this.transportGeneration += 1);
@@ -325,17 +329,6 @@ class FusionLanguageClientImpl implements FusionClient {
     } catch (error) {
       await this.teardownTransport();
       throw error;
-    }
-  }
-
-  private subscribeToCompileErrors(client: ClientHandle): void {
-    const onCompileErrors = this.options.onCompileErrors;
-    if (onCompileErrors) {
-      for (const method of FUSION_COMPILE_COMPLETE) {
-        client.onNotification?.(method, (params: unknown) =>
-          onCompileErrors(compileErrorMessages(params)),
-        );
-      }
     }
   }
 
