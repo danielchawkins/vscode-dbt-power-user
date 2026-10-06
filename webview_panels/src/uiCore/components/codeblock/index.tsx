@@ -1,18 +1,9 @@
 import { Themes } from "@modules/app/types";
 import useAppContext from "@modules/app/useAppContext";
-import { ReactNode } from "react";
-import javascript from "react-syntax-highlighter/dist/esm/languages/prism/javascript";
-import json from "react-syntax-highlighter/dist/esm/languages/prism/json";
-import markdown from "react-syntax-highlighter/dist/esm/languages/prism/markdown";
-import sql from "react-syntax-highlighter/dist/esm/languages/prism/sql";
-import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
-import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/prism-light";
-import vs from "react-syntax-highlighter/dist/esm/styles/prism/vs";
-import vscDarkPlus from "react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus";
+import { ReactNode, useMemo } from "react";
 import { Card, CardBody, CardTitle } from "../primitives";
 import classes from "./codeblock.module.css";
-
-type CodeBlockLanguage = "sql" | "yaml" | "markdown" | "json" | "javascript";
+import { CodeBlockLanguage, highlightLines } from "./prism";
 
 interface Props {
   code: string;
@@ -22,12 +13,6 @@ interface Props {
   titleActions?: ReactNode | undefined;
   classname?: string | undefined;
 }
-
-SyntaxHighlighter.registerLanguage("sql", sql);
-SyntaxHighlighter.registerLanguage("yaml", yaml);
-SyntaxHighlighter.registerLanguage("markdown", markdown);
-SyntaxHighlighter.registerLanguage("json", json);
-SyntaxHighlighter.registerLanguage("javascript", javascript);
 
 const CodeBlockComponent = ({
   code,
@@ -41,6 +26,7 @@ const CodeBlockComponent = ({
     state: { theme },
   } = useAppContext();
   const isDark = theme === Themes.Dark;
+  const lines = useMemo(() => highlightLines(code, language), [code, language]);
 
   return (
     <div className={classes.wrapper}>
@@ -51,13 +37,28 @@ const CodeBlockComponent = ({
           </CardTitle>
         ) : null}
         <CardBody>
-          <SyntaxHighlighter
-            showLineNumbers={showLineNumbers}
-            language={language}
-            style={isDark ? vscDarkPlus : vs}
+          <pre
+            className={isDark ? classes.dark : classes.light}
+            style={{ color: isDark ? "#d4d4d4" : "#393a34" }}
           >
-            {code}
-          </SyntaxHighlighter>
+            <code className={`language-${language}`}>
+              {lines.map((line, lineIndex) => (
+                // Lines have no identity beyond their position.
+                // eslint-disable-next-line @eslint-react/no-array-index-key
+                <div key={lineIndex}>
+                  {showLineNumbers ? (
+                    <span className={classes.lineNumber}>{lineIndex + 1}</span>
+                  ) : null}
+                  {line.map((span, spanIndex) => (
+                    // eslint-disable-next-line @eslint-react/no-array-index-key
+                    <span key={spanIndex} className={span.className}>
+                      {span.text}
+                    </span>
+                  ))}
+                </div>
+              ))}
+            </code>
+          </pre>
         </CardBody>
       </Card>
     </div>

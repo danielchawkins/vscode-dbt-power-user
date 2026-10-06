@@ -42,7 +42,7 @@ describe("CodeBlock", () => {
       showLineNumbers: true,
     });
 
-    expect(container.querySelector(".linenumber")).not.toBeNull();
+    expect(container.querySelector(`.${classes.lineNumber}`)).not.toBeNull();
     expect(container.querySelector("code.language-sql")?.textContent).toContain(
       sampleSql,
     );
@@ -55,7 +55,7 @@ describe("CodeBlock", () => {
       showLineNumbers: false,
     });
 
-    expect(container.querySelector(".linenumber")).toBeNull();
+    expect(container.querySelector(`.${classes.lineNumber}`)).toBeNull();
   });
 
   it("renders YAML language path", () => {
