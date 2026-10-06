@@ -88,6 +88,13 @@ const fsRequireSyntax = [
     message: WRITE_MESSAGE,
   },
 ];
+const FS_WRITE_NAMES = `/^(${FS_WRITES.join("|")})$/`;
+// Any identifier named fs*, `fs.promises`, or an aliased promises import, plus VS Code's `workspace.fs`.
+const fsWriteCallSyntax = [
+  `CallExpression[callee.property.name=${FS_WRITE_NAMES}][callee.object.name=/^(fs|fsp|fsPromises|promises|nodeFs)$/]`,
+  `CallExpression[callee.property.name=${FS_WRITE_NAMES}][callee.object.property.name='promises']`,
+  "CallExpression[callee.property.name=/^(writeFile|delete|rename|copy|createDirectory)$/][callee.object.property.name='fs'][callee.object.object.name='workspace']",
+].map((selector) => ({ selector, message: WRITE_MESSAGE }));
 const REMOVED_MESSAGE =
   "This integration was removed; the extension is local-only and Fusion-only.";
 const removedSyntax = [
@@ -190,6 +197,7 @@ module.exports = [
         ...settingsSyntax,
         ...processSyntax,
         ...fsRequireSyntax,
+        ...fsWriteCallSyntax,
         ...removedSyntax,
         ...vendorNameSyntax,
       ],
@@ -211,6 +219,7 @@ module.exports = [
         "error",
         ...processSyntax,
         ...fsRequireSyntax,
+        ...fsWriteCallSyntax,
         ...removedSyntax,
         ...vendorNameSyntax,
       ],
@@ -230,6 +239,7 @@ module.exports = [
         "error",
         ...settingsSyntax,
         ...fsRequireSyntax,
+        ...fsWriteCallSyntax,
         ...removedSyntax,
         ...vendorNameSyntax,
       ],

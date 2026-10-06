@@ -1,4 +1,12 @@
-import { readdirSync } from "fs";
+import {
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  rmSync,
+  utimesSync,
+  writeFileSync,
+} from "fs";
+import { tmpdir } from "os";
 import path from "path";
 import { describe, expect, it } from "vitest";
 import { Uri, Webview } from "vscode";
@@ -147,5 +155,38 @@ describe("panelWebviewOptions", () => {
         expect.objectContaining({ path: "/ext/webview_panels/dist/assets" }),
       ],
     });
+  });
+});
+
+describe("panelHtml manifest cache", () => {
+  it("re-reads the built manifest when its modification time changes", () => {
+    const root = mkdtempSync(path.join(tmpdir(), "panel-html-"));
+    const assets = path.join(root, "webview_panels", "dist", "assets");
+    mkdirSync(assets, { recursive: true });
+    const file = path.join(assets, "manifest.json");
+    const write = (script: string, seconds: number) => {
+      const built: ViteManifest = {
+        "src/entries/lineage.tsx": {
+          file: script,
+          name: "lineage",
+          isEntry: true,
+        },
+      };
+      writeFileSync(file, JSON.stringify(built));
+      utimesSync(file, seconds, seconds);
+    };
+    const render = () =>
+      panelHtml(webview, Uri.file(root), {
+        entry: "lineage",
+        csp: {},
+      });
+    try {
+      write("assets/one.js", 1_000);
+      expect(render()).toContain("assets/one.js");
+      write("assets/two.js", 2_000);
+      expect(render()).toContain("assets/two.js");
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
   });
 });

@@ -52,9 +52,9 @@ export class SqlActionsCodeLensProvider
               const position = lineCounter.linePos(properties.key.offset);
               const lensRange = new Range(
                 position.line - 1,
-                position.col,
+                position.col - 1,
                 position.line - 1,
-                position.col,
+                position.col - 1,
               );
               codeLenses.push(
                 new CodeLens(lensRange, {
