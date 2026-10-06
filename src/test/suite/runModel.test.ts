@@ -195,7 +195,7 @@ describe("RunModel project commands", () => {
     runModel.showRunSQL(model);
 
     expect(projects.get).toHaveBeenCalledWith(model);
-    expect(project.compileQuery).toHaveBeenCalledWith("select 1");
+    expect(project.compileQuery).toHaveBeenCalledWith("select 1", model);
     expect(project.runTest).toHaveBeenCalledWith("unique_orders");
     expect(project.runModelTest).toHaveBeenCalledWith("orders");
     expect(project.generateSchemaYML).toHaveBeenCalledWith(model, "orders");

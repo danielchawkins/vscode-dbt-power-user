@@ -8,6 +8,7 @@ import {
 import {
   ExecuteCommandRequest,
   State,
+  type LanguageClientOptions,
   type ServerOptions,
 } from "vscode-languageclient/node";
 import { DBT_LSP_USE_TARGET_LSP, toLspArgs } from "../core/lsp";
@@ -31,6 +32,7 @@ import {
 } from "./fusionDiagnostics";
 import {
   canonicalProjectRoot,
+  commandArguments,
   CompileSignal,
   defaultCreateLanguageClient,
   defaultSpawn,
@@ -91,6 +93,7 @@ class FusionLanguageClientImpl implements FusionClient {
   private transportGeneration = 0;
   private unexpectedStopHandledGeneration = 0;
   private listNodesQueue: Promise<unknown> = Promise.resolve();
+  private uriConverters: LanguageClientOptions["uriConverters"];
 
   constructor(
     private readonly options: FusionClientOptions,
@@ -156,7 +159,7 @@ class FusionLanguageClientImpl implements FusionClient {
       ExecuteCommandRequest.type,
       {
         command: prefixedCommand(this.options.commandPrefix, command),
-        arguments: args,
+        arguments: commandArguments(command, args, this.uriConverters),
       },
       token,
     ) as Promise<T>;
@@ -253,6 +256,7 @@ class FusionLanguageClientImpl implements FusionClient {
     const { launchRoot, uriConverters } = canonicalProjectRoot(
       this.options.project.root.fsPath,
     );
+    this.uriConverters = uriConverters;
     const root = this.options.project.root;
     const diagnosticsFilter = new ProjectDiagnosticsFilter([
       root.fsPath,

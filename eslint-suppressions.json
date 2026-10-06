@@ -48,14 +48,6 @@
       "count": 1
     }
   },
-  "src/core/manifest/modelDepthParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "src/core/manifest/nodeParser.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
@@ -135,11 +127,6 @@
       "count": 5
     },
     "max-params": {
-      "count": 1
-    }
-  },
-  "src/features/compiledSql/sqlPreviewContentProvider.ts": {
-    "@typescript-eslint/no-explicit-any": {
       "count": 1
     }
   },

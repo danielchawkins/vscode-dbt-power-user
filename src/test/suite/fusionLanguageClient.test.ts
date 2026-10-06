@@ -1,4 +1,7 @@
 import { EventEmitter } from "events";
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import { PassThrough } from "stream";
 import { describe, expect, it, type Mock, vi } from "vitest";
 import {
@@ -12,6 +15,7 @@ import {
   LanguageClientOptions,
   State,
 } from "vscode-languageclient/node";
+import { URI as VsCodeUri } from "vscode-uri";
 import { DBT_LSP_USE_TARGET_LSP, LspLaunch } from "../../core/lsp";
 import { parseTraceServerLevel } from "../../core/project";
 import { DbtLineageService } from "../../features/lineage/dbtLineageService";
@@ -1316,6 +1320,62 @@ describe("FusionLanguageClient lifecycle", () => {
 
     await client.stop();
     client.dispose();
+  });
+
+  it("sends compileFile the realpath URI when the project is opened through a symlink", async () => {
+    const streams = makeStreams();
+    const server = new FakeReverseSocketServer(streams);
+    const languageClient = makeLanguageClient();
+    languageClient.sendRequest.mockResolvedValue({ ok: true } as never);
+    const real = fs.mkdtempSync(path.join(os.tmpdir(), "fpu-real-"));
+    const link = `${real}-link`;
+    fs.symlinkSync(real, link);
+    vi.mocked(Uri.parse).mockImplementation((value: string) =>
+      VsCodeUri.parse(value),
+    );
+    try {
+      const factory = new DefaultFusionClientFactory({
+        listenForServer: async () => server,
+        acceptWithProcessExit: async () => streams,
+        spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
+        createLanguageClient: async (_id, _name, _server, options) => {
+          void options;
+          return languageClient as any;
+        },
+        sleep: async () => {},
+      });
+      const client = factory.create({
+        project: makeProject(link),
+        executable: {
+          path: "/opt/dbt",
+          version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
+          env: {},
+        },
+        launch: makeLaunch(),
+        commandPrefix: "p:",
+        outputChannel: channel(),
+      });
+
+      await flushAsync();
+      await client.request(FUSION_LSP_COMMANDS.compileFile, [
+        Uri.file(path.join(link, "models", "a.sql")).toString(),
+      ]);
+
+      const sent = languageClient.sendRequest.mock.calls.at(-1)?.[1] as {
+        arguments: string[];
+      };
+      expect(sent.arguments).toEqual([
+        Uri.file(
+          path.join(fs.realpathSync.native(real), "models", "a.sql"),
+        ).toString(),
+      ]);
+      await client.stop();
+      client.dispose();
+    } finally {
+      vi.mocked(Uri.parse).mockReset();
+      fs.rmSync(link, { force: true });
+      fs.rmSync(real, { recursive: true, force: true });
+    }
   });
 
   it("never has two listNodes requests in flight for concurrent upstream and downstream lineage", async () => {

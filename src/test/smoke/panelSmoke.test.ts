@@ -698,6 +698,41 @@ const CLOSE_HOVER = `(() => {
   return true;
 })()`;
 
+/** Opens the compiled preview of models/child.sql and records its text. */
+async function captureCompiledPreview(
+  evidence: Evidence,
+  root: vscode.Uri,
+): Promise<void> {
+  const model = vscode.Uri.joinPath(root, "models/child.sql");
+  await vscode.window.showTextDocument(
+    await vscode.workspace.openTextDocument(model),
+  );
+  await vscode.commands.executeCommand("fusionPowerUser.showCompiledSQL");
+  let preview: vscode.TextEditor | undefined;
+  for (let attempt = 0; attempt < 30; attempt += 1) {
+    await sleep(500);
+    preview = vscode.window.visibleTextEditors.find(
+      (e) => e.document.uri.scheme === "query-preview",
+    );
+    if (preview && !preview.document.getText().startsWith("Waiting")) {
+      break;
+    }
+  }
+  const text = preview?.document.getText() ?? "";
+  assert.ok(
+    text.length > 0 &&
+      !text.startsWith("Waiting") &&
+      !text.startsWith("-- Could not compile"),
+    `the compiled preview must show compiled SQL, not a placeholder or an error: ${text}`,
+  );
+  await evidence.capture({
+    name: "compiled preview",
+    expect:
+      "A compiled SQL preview is open beside models/child.sql and shows the compiled SQL of the model (not a placeholder or a compile error, although models/broken_ref.sql in the same project does not compile); its text matches measured.previewText and no notification is shown",
+    measured: { previewText: text },
+  });
+}
+
 /** The rows of the Parent Models and Children Models views, by view name. */
 const TREE_ROWS = `(() => {
   const out = {};
@@ -812,6 +847,7 @@ async function captureEditorSurfaces(
   await captureNonProjectSql(evidence, cdpPort, host);
 
   await captureModelTrees(evidence, cdpPort, host);
+  await captureCompiledPreview(evidence, root);
 
   const output = await showProjectOutput(cdpPort, host, root);
   await evidence.capture({

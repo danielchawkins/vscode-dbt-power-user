@@ -165,7 +165,7 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.compileQuery(query);
+    void project.compileQuery(query, modelPath);
   }
 
   runDBTTest(modelPath: Uri, testName: string) {

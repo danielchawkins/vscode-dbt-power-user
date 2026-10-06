@@ -37,6 +37,7 @@ import { FusionVersion } from "../fusion/fusionVersion";
 import { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
 import { CommandQueue } from "./commandQueue";
+import { compiledModelSql } from "./compiledModel";
 import {
   cliCommandOf,
   dbtTask,
@@ -634,8 +635,15 @@ export class Project implements Disposable, ManifestProject {
     );
   }
 
-  async compileQuery(query: string): Promise<string | undefined> {
-    return compileOrReport((q) => this.unsafeCompileQuery(q), query);
+  /** Compiles a saved model through the language server, and unsaved or untitled text through the CLI. */
+  async compileQuery(query: string, model?: Uri): Promise<string | undefined> {
+    return compileOrReport(
+      async (q) =>
+        model && model.scheme !== "untitled"
+          ? ((await this.compiledSql(model)) ?? this.unsafeCompileQuery(q))
+          : this.unsafeCompileQuery(q),
+      query,
+    );
   }
 
   showRunSQL(modelPath: Uri) {
@@ -643,6 +651,12 @@ export class Project implements Disposable, ManifestProject {
     void findModelInTargetfolder(root, this.getTargetPath(), modelPath, "run");
   }
 
+  /** The compiled SQL of a saved model from the language server; `undefined` before its first compile. */
+  async compiledSql(model: Uri): Promise<string | undefined> {
+    return compiledModelSql(this.lsp, model);
+  }
+
+  /** Compiles text that has no file, through the CLI. */
   async unsafeCompileQuery(query: string) {
     return this.getFusionCli().compileInline(query);
   }
