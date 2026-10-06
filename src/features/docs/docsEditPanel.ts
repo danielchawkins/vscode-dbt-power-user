@@ -97,7 +97,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
             return;
           }
           if (this._panel) {
-            this.transmitData();
+            void this.transmitData();
           }
         },
       ),
@@ -219,7 +219,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     this.setupWebviewOptions();
     this.renderWebviewView();
     this.setupWebviewHooks();
-    this.transmitData();
+    void this.transmitData();
   }
 
   private renderWebviewView() {
@@ -844,7 +844,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       }
       return true;
     } catch (error) {
-      this.transmitError();
+      void this.transmitError();
       window.showErrorMessage(
         `Could not save documentation to ${patchPath}: ${error}`,
       );
@@ -943,7 +943,11 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
 
         if (existingColumn) {
           // ignore tests, data_tests from existing column, as it will be recreated in `getTestDataByColumn`
-          const { tests, data_tests, ...rest } = existingColumn.toJSON();
+          const {
+            tests: _tests,
+            data_tests: _dataTests,
+            ...rest
+          } = existingColumn.toJSON();
           this.setOrDeleteInParsedDocument(
             existingColumn,
             "description",
@@ -1050,7 +1054,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     }
     this.loadedFromManifest = true;
     if (this._panel) {
-      this.transmitData();
+      void this.transmitData();
     }
   }
 }

@@ -102,7 +102,7 @@ function stubDelegate(root: string, hooks: Partial<FusionCli> = {}): FusionCli {
   const stub: Partial<FusionCli> = {
     refreshProjectConfig: vi.fn(async () => undefined),
     rebuildManifest: vi.fn(async () => undefined),
-    dispose: vi.fn(async () => undefined),
+    dispose: vi.fn(),
     getDiagnostics: () => ({
       projectConfigDiagnostics: [],
       rebuildManifestDiagnostics: [],

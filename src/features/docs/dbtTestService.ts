@@ -45,7 +45,7 @@ export class DbtTestService {
   private returnTestMetadataFromKwargs(test: TestMetaData) {
     // If this is new test added in doc editor webview panel and not saved yet, return the config from kwargs
     if (test.test_metadata?.kwargs) {
-      const { model, ...rest } = test.test_metadata.kwargs;
+      const { model: _model, ...rest } = test.test_metadata.kwargs;
       if (Object.keys(rest).length > 0) {
         return stringify(rest);
       }

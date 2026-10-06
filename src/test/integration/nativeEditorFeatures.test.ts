@@ -100,7 +100,9 @@ function serializePrepareRename(
 }
 
 function isNonEmpty(value: unknown): boolean {
-  return Array.isArray(value) ? value.length > 0 : value != null;
+  return Array.isArray(value)
+    ? value.length > 0
+    : value !== null && value !== undefined;
 }
 
 /** Runs a call, retrying until it returns something non-empty or `settleMs` passes; records the last outcome. */

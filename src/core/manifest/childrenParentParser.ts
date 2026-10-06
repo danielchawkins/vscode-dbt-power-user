@@ -323,10 +323,12 @@ function parentAppearsInBody(parent: any, body: Body): boolean {
   // is the parse-only path before the user has compiled.
   const name = parent.name;
   const pkg = parent.package_name;
-  if (typeof name === "string" && name.length > 0) {
-    if (containsRefCall(body.text, name, pkg)) {
-      return true;
-    }
+  if (
+    typeof name === "string" &&
+    name.length > 0 &&
+    containsRefCall(body.text, name, pkg)
+  ) {
+    return true;
   }
 
   const sourceName = parent.source_name;
@@ -335,11 +337,10 @@ function parentAppearsInBody(parent: any, body: Body): boolean {
     typeof sourceName === "string" &&
     sourceName.length > 0 &&
     typeof sourceTable === "string" &&
-    sourceTable.length > 0
+    sourceTable.length > 0 &&
+    containsSourceCall(body.text, sourceName, sourceTable)
   ) {
-    if (containsSourceCall(body.text, sourceName, sourceTable)) {
-      return true;
-    }
+    return true;
   }
 
   return false;

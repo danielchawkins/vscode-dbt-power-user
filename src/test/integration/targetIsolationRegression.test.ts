@@ -31,7 +31,7 @@ function runSuite(): void {
   test("isolates compile output to target/.lsp; clearTarget preserves target/compiled", async function () {
     this.timeout(TIMEOUT_MS);
 
-    const verdict = await checkFusionVersion();
+    const verdict = checkFusionVersion();
     const executable = process.env.FPU_TARGET_ISOLATION_DBT;
     if (!executable && verdict.kind !== "ok") {
       this.skip();

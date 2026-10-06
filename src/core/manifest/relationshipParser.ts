@@ -576,15 +576,16 @@ export class RelationshipParser {
         continue;
       }
       for (const e of sm.entities) {
-        if (e.type === "primary" || e.type === "unique") {
-          // Primary takes precedence over unique on collision.
-          if (e.type === "primary" || !primaryByName.has(e.name)) {
-            primaryByName.set(e.name, {
-              sm_unique_id: sm.unique_id,
-              model: sm.model_unique_id,
-              expr: e.expr ?? e.name,
-            });
-          }
+        // Primary takes precedence over unique on collision.
+        if (
+          e.type === "primary" ||
+          (e.type === "unique" && !primaryByName.has(e.name))
+        ) {
+          primaryByName.set(e.name, {
+            sm_unique_id: sm.unique_id,
+            model: sm.model_unique_id,
+            expr: e.expr ?? e.name,
+          });
         }
       }
     }

@@ -840,7 +840,7 @@ class FusionLanguageClientImpl implements FusionClient {
       // Best-effort shutdown before transport teardown.
     }
     try {
-      client.dispose();
+      void client.dispose();
     } catch {
       // Best-effort disposal after stop.
     }

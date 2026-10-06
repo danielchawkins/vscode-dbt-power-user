@@ -89,7 +89,7 @@ export class QueryResultPanel extends PanelHost {
       onDidRemoveProject(() => this.replay.clear()),
       window.onDidChangeActiveTextEditor(() => {
         // to reset the limit on editor change
-        this.sendUpdatedContextToWebview();
+        void this.sendUpdatedContextToWebview();
       }),
     );
   }
@@ -165,20 +165,20 @@ export class QueryResultPanel extends PanelHost {
   }: SharedStateEventEmitterProps) {
     switch (command) {
       case "executeQuery":
-        this.executeQuery(
+        void this.executeQuery(
           payload.query as string,
           payload.fn as Promise<QueryExecution>,
           payload.projectName as string,
         );
         break;
       default:
-        super.onEvent({ command, payload });
+        void super.onEvent({ command, payload });
     }
   }
 
   private openResultsInTab(queryTabData: unknown) {
     this._queryTabData = queryTabData;
-    this.createQueryResultsPanelVirtualDocument("Query results");
+    void this.createQueryResultsPanelVirtualDocument("Query results");
     this.updateViewTypeToWebview(QueryPanelViewType.OPEN_RESULTS_IN_TAB);
   }
 
@@ -284,7 +284,9 @@ export class QueryResultPanel extends PanelHost {
         queryExecutionInfo: { elapsedTime: queryHistory.duration },
       },
     };
-    this.createQueryResultsPanelVirtualDocument(editorName || "Custom query");
+    void this.createQueryResultsPanelVirtualDocument(
+      editorName || "Custom query",
+    );
     this.updateViewTypeToWebview(QueryPanelViewType.OPEN_RESULTS_IN_TAB);
   }
 
@@ -349,7 +351,7 @@ export class QueryResultPanel extends PanelHost {
         this.sendQueryTabData(panel, syncRequestId),
       getQueryPanelContext: () => this.sendUpdatedContextToWebview(),
       cancelQuery: async () => {
-        this.queryExecution?.cancel();
+        void this.queryExecution?.cancel();
         await this.transmitReset();
       },
       error: ({ text }) => window.showErrorMessage(text),
@@ -544,7 +546,7 @@ export class QueryResultPanel extends PanelHost {
     if (this._panel && this.isWebviewView(this._panel)) {
       this._panel.show(); // Show the view
     }
-    this.transmitLoading();
+    void this.transmitLoading();
     try {
       const queryExecution = (this.queryExecution =
         await queryExecutionPromise);
