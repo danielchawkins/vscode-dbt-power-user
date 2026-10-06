@@ -137,8 +137,8 @@ describe("ProjectSetupCommands project resolution", () => {
       expect.any(Error),
     );
     expect(window.showErrorMessage).toHaveBeenCalledWith(
-      'Error running dbt debug for project test_project. See the "Fusion Power User: test_project" ' +
-        "output for details.",
+      expect.stringContaining("test_project: Error running dbt debug"),
+      "Show output",
     );
   });
 
@@ -153,8 +153,10 @@ describe("ProjectSetupCommands project resolution", () => {
 
     expect(projectLog.error).toHaveBeenCalled();
     expect(window.showErrorMessage).toHaveBeenCalledWith(
-      "Error installing dbt dependencies for project test_project. See the dbt task terminal or the " +
-        '"Fusion Power User: test_project" output for details.',
+      expect.stringContaining(
+        "test_project: Error installing dbt dependencies",
+      ),
+      "Show output",
     );
   });
 });

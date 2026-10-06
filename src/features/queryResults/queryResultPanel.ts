@@ -23,6 +23,10 @@ import type { Log } from "../../core/log";
 import { getFormattedDateTime, getStringSizeInMb } from "../../core/text";
 import { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
+import {
+  notifyError,
+  notifyErrorWithoutProject,
+} from "../../projects/notifications";
 import { activeModelUri } from "../../projects/previewUri";
 import { QueryManifestService } from "../../projects/queryManifestService";
 import {
@@ -249,7 +253,7 @@ export class QueryResultPanel extends PanelHost {
       }
       return;
     } catch (error) {
-      window.showErrorMessage((error as Error).message);
+      void notifyErrorWithoutProject("Unable to execute query", error);
       this.dbtTerminal.error(
         "ExecuteSqlError",
         "Unable to execute query",
@@ -352,7 +356,7 @@ export class QueryResultPanel extends PanelHost {
         void this.queryExecution?.cancel();
         await this.transmitReset();
       },
-      error: ({ text }) => window.showErrorMessage(text),
+      error: ({ text }) => notifyErrorWithoutProject(text),
       updateConfig: (message) => this.updateConfig(message),
       "queryResultTab:render": ({ queryTabData }) =>
         this.openResultsInTab(queryTabData),
@@ -393,13 +397,13 @@ export class QueryResultPanel extends PanelHost {
   }: MessageOf<PanelMessage, "executeQueryFromActiveWindow">) {
     const activeEditor = window.activeTextEditor;
     if (!activeEditor) {
-      window.showErrorMessage("No active editor found");
+      void notifyErrorWithoutProject("No active editor found");
       return;
     }
     const project = await this.getProject();
     if (!project) {
-      window.showErrorMessage(
-        "Unable to find dbt project for executing query.",
+      void notifyErrorWithoutProject(
+        "Unable to find dbt project for executing query",
       );
       return;
     }
@@ -560,8 +564,10 @@ export class QueryResultPanel extends PanelHost {
       return result;
     } catch (exc: any) {
       if (exc instanceof ExecuteSQLError) {
-        window.showErrorMessage(
-          "An error occured while trying to execute your query: " + exc.message,
+        void notifyError(
+          this.queryManifestService.getProject(),
+          "Query failed",
+          exc,
         );
         await this.transmitError(
           {

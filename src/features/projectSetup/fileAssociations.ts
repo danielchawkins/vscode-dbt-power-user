@@ -6,6 +6,7 @@ import {
   SkippedDirectory,
   SkipReason,
 } from "../../dbt_integration/dbtAssociations";
+import { notifyErrorWithoutProject } from "../../projects/notifications";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 import {
   FileAssociations,
@@ -126,8 +127,9 @@ export class FileAssociationsCommand implements Disposable {
     try {
       return await this.writeUserAssociations();
     } catch (error) {
-      void window.showErrorMessage(
-        `Could not write dbt file associations: ${error instanceof Error ? error.message : String(error)}`,
+      void notifyErrorWithoutProject(
+        "Could not write dbt file associations",
+        error,
       );
       return undefined;
     }

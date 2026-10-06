@@ -9,6 +9,10 @@ import {
 } from "vscode";
 import { countSql, type FusionCte } from "../../core/cte/ctePreview";
 import type { Log } from "../../core/log";
+import {
+  notifyError,
+  notifyErrorWithoutProject,
+} from "../../projects/notifications";
 import { Projects } from "../../projects/projects";
 import { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
 
@@ -70,7 +74,9 @@ export class CteProfilerService implements Disposable {
 
     const project = this.projects.get(uri);
     if (!project) {
-      window.showErrorMessage("Could not find dbt project for this file.");
+      void notifyErrorWithoutProject(
+        "Could not find dbt project for this file",
+      );
       return;
     }
 
@@ -188,7 +194,7 @@ export class CteProfilerService implements Disposable {
       result.error = error instanceof Error ? error.message : "Unknown error";
       this.results.set(uri.toString(), result);
       this._onResultChanged.fire(result);
-      window.showErrorMessage(`CTE profiling failed: ${result.error}`);
+      void notifyError(project, "CTE profiling failed", result.error);
     } finally {
       this.cancellationTokenSource?.dispose();
       this.cancellationTokenSource = undefined;

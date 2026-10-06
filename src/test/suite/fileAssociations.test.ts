@@ -89,6 +89,7 @@ describe("FileAssociationsCommand", () => {
     expect(await invoke()).toBeUndefined();
     expect(window.showErrorMessage).toHaveBeenCalledWith(
       "Could not write dbt file associations: read-only",
+      "Show output",
     );
     subject.dispose();
   });

@@ -98,7 +98,8 @@ describe("VSCodeCommands", () => {
     const { handler } = build();
     await handler("fusionPowerUser.profileCtes")();
     expect(window.showErrorMessage).toHaveBeenCalledWith(
-      "No active SQL file to profile.",
+      "No active SQL file to profile",
+      "Show output",
     );
   });
 

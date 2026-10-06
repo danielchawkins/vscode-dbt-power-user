@@ -22,6 +22,7 @@ import {
   ProjectConfigInsertion,
 } from "../../fusion/projectConfigEdits";
 import { CurrentProject } from "../../projects/currentProject";
+import { notifyError } from "../../projects/notifications";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { SCHEMA_ORIGIN_HOOK } from "../../projects/schemaOrigin";
 import { StartupGate } from "../../startupGate";
@@ -109,8 +110,9 @@ export async function applyProjectConfigInsertion(
       "projectConfigEdit",
       error instanceof Error ? error.message : String(error),
     );
-    window.showErrorMessage(
-      `Could not edit ${path.basename(file.fsPath)}: it does not parse as YAML.`,
+    void notifyError(
+      project,
+      `Could not edit ${path.basename(file.fsPath)}: it does not parse as YAML`,
     );
     return false;
   }

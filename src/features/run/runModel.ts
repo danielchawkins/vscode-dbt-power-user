@@ -2,6 +2,7 @@ import * as path from "path";
 import { TreeItem, Uri, window } from "vscode";
 import { RunModelType } from "../../dbt_integration/domain";
 import { CurrentProject } from "../../projects/currentProject";
+import { notifyErrorWithoutProject } from "../../projects/notifications";
 import { activeModelUri } from "../../projects/previewUri";
 import { GenerateModelFromSourceParams } from "../../projects/projectCodegen";
 import { modelParamsFor } from "../../projects/projectCommands";
@@ -225,10 +226,8 @@ export class RunModel {
         sourcePath,
       );
     } else {
-      window.showErrorMessage(
-        "Could not generate model! No project found for " +
-          params.currentDoc.fsPath +
-          ".",
+      void notifyErrorWithoutProject(
+        `Could not generate model: no project found for ${params.currentDoc.fsPath}`,
       );
     }
   }

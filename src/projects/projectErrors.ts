@@ -10,7 +10,7 @@ export type ProjectErrorSource = "parse" | "compile" | "executable";
 
 /** @internal */
 export const SHOW_OUTPUT = "Show output";
-const SHOW_OUTPUT_COMMAND = "fusionPowerUser.showFusionOutput";
+export const SHOW_OUTPUT_COMMAND = "fusionPowerUser.showFusionOutput";
 const LOG_SOURCE = "ProjectErrors";
 
 /**

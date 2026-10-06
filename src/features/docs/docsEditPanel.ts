@@ -41,6 +41,7 @@ import {
   isQuotedIdentifier,
 } from "../../projects/columnNames";
 import { publicationId } from "../../projects/manifest";
+import { notifyError } from "../../projects/notifications";
 import type { ParseDemand } from "../../projects/parseDemand";
 import { activeModelUri } from "../../projects/previewUri";
 import { Project } from "../../projects/project";
@@ -770,9 +771,10 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
           }
         } catch (exc) {
           await this.transmitError();
-          window.showErrorMessage(
-            `An error occured while fetching metadata for ${modelName} from the database: ` +
-              (exc instanceof Error ? exc.message : String(exc)),
+          void notifyError(
+            project,
+            `Could not fetch metadata for ${modelName} from the database`,
+            exc,
           );
           this.terminal.error(
             "docsEditPanelLoadError",
@@ -856,8 +858,10 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       return true;
     } catch (error) {
       void this.transmitError();
-      window.showErrorMessage(
-        `Could not save documentation to ${patchPath}: ${error}`,
+      void notifyError(
+        this.getProject(),
+        `Could not save documentation to ${patchPath}`,
+        error,
       );
       this.terminal.error(
         "saveDocumentationError",
@@ -1036,7 +1040,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
         this.terminal.error(command, message, error);
       }
       if (showErrorNotification) {
-        window.showErrorMessage(message);
+        void notifyError(this.getProject(), message);
       }
       this.sendResponseToWebview({ syncRequestId, error: message });
     }

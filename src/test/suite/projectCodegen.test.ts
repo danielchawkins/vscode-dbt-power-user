@@ -16,7 +16,11 @@ describe("projectCodegen", () => {
     try {
       vi.mocked(workspace.applyEdit).mockClear();
       vi.mocked(workspace.applyEdit).mockResolvedValue(true);
-      const columns = { getColumnsOfModel: async () => [{ column: "id" }] };
+      const columns = {
+        getColumnsOfModel: async () => [{ column: "id" }],
+        root: Uri.file(root),
+        name: "orders",
+      };
 
       await generateSchemaYML(
         columns as never,
