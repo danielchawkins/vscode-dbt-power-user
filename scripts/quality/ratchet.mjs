@@ -5,6 +5,7 @@
 //   node scripts/quality/ratchet.mjs compare --base <file> --messages <file>
 //                                                    fail when ceilings.json loosens a key relative to <file>
 //                                                    unless <messages> has a `Ratchet-Loosen: <key> <reason>` trailer
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
@@ -49,6 +50,36 @@ const internalTagCount = () =>
       0,
     );
 
+/** `type-coverage --strict` percentage for the project in `dir`, with tests ignored. */
+const typeCoverage = (dir) => {
+  const cwd = path.join(root, dir);
+  const result = spawnSync(
+    process.execPath,
+    [
+      path.join(root, "node_modules/type-coverage/bin/type-coverage"),
+      "--strict",
+      "--json-output",
+      "--ignore-files",
+      "src/test/**",
+      "--ignore-files",
+      "**/*.test.ts",
+      "--ignore-files",
+      "**/*.test.tsx",
+      // Root `.mjs` files enter the program as unchecked JS and would count as `any`.
+      "--ignore-files",
+      "**/*.mjs",
+    ],
+    { cwd, encoding: "utf8" },
+  );
+  if (result.status !== 0) {
+    throw new Error(
+      `type-coverage failed in ${cwd}:\n${result.stdout}${result.stderr}`,
+    );
+  }
+  const { correctCount, totalCount } = JSON.parse(result.stdout);
+  return (100 * correctCount) / totalCount;
+};
+
 /**
  * Every ratcheted value. A `ceiling` may only fall and a `floor` may only rise. Values are stored and compared
  * at `precision` decimals; floors round down and ceilings round up.
@@ -83,6 +114,18 @@ export const METRICS = [
     kind: "ceiling",
     precision: 0,
     measure: () => strictErrors("webview"),
+  },
+  {
+    key: "typeCoverage.host",
+    kind: "floor",
+    precision: 2,
+    measure: () => typeCoverage(""),
+  },
+  {
+    key: "typeCoverage.webview",
+    kind: "floor",
+    precision: 2,
+    measure: () => typeCoverage("webview_panels"),
   },
 ];
 
