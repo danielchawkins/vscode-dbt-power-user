@@ -348,6 +348,7 @@ These extend `AGENTS.md`; the ESLint config enforces what it can.
 | `inversify`, `reflect-metadata`, `ts-loader`                     | 8, 0.2, 9       | removed                              | root    | R4          |
 | `react-router-dom`                                               | 7               | removed                              | webview | R6          |
 | `@reduxjs/toolkit`                                               | 2               | removed with the lineage component   | webview | R8          |
+| `jsdom`                                                          | 30.1            | `happy-dom` 20.14, 35% faster suite  | webview | quality 4.5 |
 | `react-select`, `@emotion/*`                                     | 5.10            | native select and chip input         | webview | quality 4.2 |
 | `reactstrap`, `bootstrap`, `sass`                                | —               | removed                              | webview | R7          |
 | `react-hook-form`, `yup`, `react-copy-to-clipboard`              | —               | native                               | webview | R7          |
@@ -355,6 +356,7 @@ These extend `AGENTS.md`; the ESLint config enforces what it can.
 | `@finos/perspective*`                                            | 3.8, deprecated | `@perspective-dev/*`                 | webview | R7          |
 | `react`, `react-dom`                                             | 19.3            | 19, done                             | webview | quality 4.3 |
 | `@types/node`                                                    | 24.19           | current LTS                          | root    | R7          |
+| `react-syntax-highlighter`                                       | 16.1            | Prism core with five grammars        | webview | quality 4.4 |
 | `@altimateai/ui-components`, `tailwindcss`, `postcss`            | 0.0.88, 3       | removed                              | webview | R8          |
 
 ## Considered and not planned

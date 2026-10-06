@@ -39,25 +39,28 @@ const Harness = ({
 const textarea = (): HTMLTextAreaElement =>
   screen.getByPlaceholderText("Describe") as HTMLTextAreaElement;
 
+/** The row count the component set; happy-dom reflects the attribute as a string. */
+const rows = (): number => Number(textarea().getAttribute("rows"));
+
 describe("DocGeneratorInput", () => {
   it("renders an empty description without throwing on the row count", () => {
     const [column] = orders("").columns;
     render(<Harness entity={column} />);
     expect(textarea().value).toBe("");
-    expect(textarea().rows).toBe(1);
+    expect(rows()).toBe(1);
   });
 
   it("renders a description, with at least one row when the width is unknown", () => {
     const [column] = orders("one line").columns;
     render(<Harness entity={column} />);
     expect(textarea().value).toBe("one line");
-    expect(textarea().rows).toBeGreaterThanOrEqual(1);
+    expect(rows()).toBeGreaterThanOrEqual(1);
   });
 
   it("adds a row for each line break", () => {
     const [column] = orders("a\nb\nc").columns;
     render(<Harness entity={column} />);
-    expect(textarea().rows).toBeGreaterThanOrEqual(2);
+    expect(rows()).toBeGreaterThanOrEqual(2);
   });
 
   it("takes a changed description from its entity", () => {
