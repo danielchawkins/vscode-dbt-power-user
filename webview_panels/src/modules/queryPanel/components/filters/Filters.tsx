@@ -1,8 +1,8 @@
 import { FilterIcon, SearchIcon } from "@assets/icons";
+import { useDebouncedValue } from "@modules/app/useDebouncedValue";
 import { IconButton, Input, OptionType, Select, Stack } from "@uicore";
 import { ChangeEvent, MouseEvent, useEffect, useState } from "react";
 import { ActionMeta } from "react-select";
-import { useDebounce } from "use-debounce";
 import styles from "../../querypanel.module.css";
 
 export interface QueryFilters {
@@ -23,7 +23,7 @@ const Filters = ({
   const [text, setText] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [showSearch, setShowSearch] = useState(false);
-  const [value] = useDebounce(text, 1000);
+  const value = useDebouncedValue(text, 1000);
 
   const stopPropagation = (e: MouseEvent) => {
     e.stopPropagation();

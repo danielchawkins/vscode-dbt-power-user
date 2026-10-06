@@ -1,14 +1,12 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import { anything, instance, mock, verify, when } from "ts-mockito";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Log } from "../../core/log";
 import {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
 } from "../../fusion/commandProcessExecution";
-import { ChannelLog } from "../../projects/outputChannels";
 
 describe("CommandProcessExecution Tests", () => {
   let mockTerminal: Log;
@@ -16,9 +14,14 @@ describe("CommandProcessExecution Tests", () => {
   let testDir: string;
 
   beforeEach(() => {
-    mockTerminal = mock(ChannelLog);
-    when(mockTerminal.debug(anything(), anything(), anything())).thenReturn();
-    factory = new CommandProcessExecutionFactory(instance(mockTerminal));
+    mockTerminal = {
+      debug: vi.fn(),
+      info: vi.fn(),
+      warn: vi.fn(),
+      error: vi.fn(),
+      dispose: vi.fn(),
+    };
+    factory = new CommandProcessExecutionFactory(mockTerminal);
     testDir = path.join(
       os.tmpdir(),
       "test-dir-" + Math.random().toString(36).slice(2),
@@ -43,7 +46,7 @@ describe("CommandProcessExecution Tests", () => {
     const result = await execution.complete();
     expect(result.stdout.trim()).toBe("test");
     expect(result.stderr).toBe("");
-    verify(mockTerminal.debug(anything(), anything(), anything())).called();
+    expect(mockTerminal.debug).toHaveBeenCalled();
   });
 
   it("should handle command errors", async () => {
@@ -123,7 +126,7 @@ describe("CommandProcessExecution Tests", () => {
     "returns the same result with or without onOutput",
     async () => {
       const run = (onOutput?: (chunk: string) => void) =>
-        new CommandProcessExecution(instance(mockTerminal), "sh", [
+        new CommandProcessExecution(mockTerminal, "sh", [
           "-c",
           "printf 'a\\n\\nb'; printf 'err\\n' >&2; exit 3",
         ]).complete({ onOutput });

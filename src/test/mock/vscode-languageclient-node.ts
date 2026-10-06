@@ -1,6 +1,10 @@
 import { EventEmitter } from "events";
 import { vi } from "vitest";
 
+export const ExecuteCommandRequest = {
+  type: { method: "workspace/executeCommand" },
+};
+
 export enum State {
   Stopped = 1,
   Running = 2,

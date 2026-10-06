@@ -7,8 +7,11 @@ import {
   workspace,
   WorkspaceFolder,
 } from "vscode";
-import { LanguageClientOptions, State } from "vscode-languageclient/node";
-import { ExecuteCommandRequest } from "vscode-languageserver-protocol/node";
+import {
+  ExecuteCommandRequest,
+  LanguageClientOptions,
+  State,
+} from "vscode-languageclient/node";
 import { DBT_LSP_USE_TARGET_LSP, LspLaunch } from "../../core/lsp";
 import { parseTraceServerLevel } from "../../core/project";
 import { DbtLineageService } from "../../features/lineage/dbtLineageService";
