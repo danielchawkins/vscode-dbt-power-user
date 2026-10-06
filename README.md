@@ -1,6 +1,6 @@
 # Fusion Power User
 
-Fusion Power User is an independent, local-first VS Code and Cursor extension for [dbt Fusion](https://docs.getdbt.com/docs/fusion/about-fusion), forked from [`vscode-dbt-power-user`](https://github.com/AltimateAI/vscode-dbt-power-user). The native Fusion language server runs alongside the legacy manifest-backed completion, definition, and hover providers inherited from the fork base; the refactor plan's step 5.6 deletes each legacy provider once its LSP-backed replacement has a passing test. No feature depends on a hosted service, an extension-specific account, or telemetry.
+Fusion Power User is an independent, local-first VS Code and Cursor extension for [dbt Fusion](https://docs.getdbt.com/docs/fusion/about-fusion), forked from [`vscode-dbt-power-user`](https://github.com/AltimateAI/vscode-dbt-power-user). The native Fusion language server supplies table and column lineage, the Parent and Children trees, the compiled preview of a saved model, model columns and CTE lenses. The dbt CLI runs tasks, query previews, CTE execution, and `dbt parse` for descriptions, tests, macros and doc blocks. [`docs/architecture.md`](docs/architecture.md) lists what runs where. No feature depends on a hosted service, an extension-specific account, or telemetry.
 
 ## Scope
 
