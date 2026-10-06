@@ -148,8 +148,7 @@ const panels: Panel[] = [
         args: {
           params: {
             targets: [],
-            upstreamExpansion: true,
-            currAnd1HopTables: [1],
+            upstreamExpansion: "yes",
           },
         },
       },

@@ -143,10 +143,6 @@ export interface ConnectedColumnsParams {
   targets: [string, string][];
   /** True asks for the targets' children, false for their parents. */
   upstreamExpansion: boolean;
-  /** The drawn tables and their one-hop neighbours. */
-  currAnd1HopTables?: string[];
-  selectedColumn?: { name: string; table: string };
-  showIndirectEdges?: boolean;
 }
 
 /** Lineage messages from the panel to the extension host. */
@@ -162,10 +158,7 @@ export type PanelMessage =
   | Request<"getColumns", { table: string; refresh?: boolean }>
   | Request<"getExposureDetails", { name: string }>
   | Request<"getFunctionDetails", { name: string }>
-  | OptionalRequest<
-      "getRelationships",
-      { includeSources?: boolean; allowSelfReference?: boolean }
-    >
+  | OptionalRequest<"getRelationships", { includeSources?: boolean }>
   | Request<"getConnectedColumns", ConnectedColumnsParams>
   | OptionalRequest<"getLineageSettings">
   | Request<"persistLineageSettings", Partial<LineageSettings>>;
@@ -215,14 +208,10 @@ const panelFields: CommandFields<PanelMessage> = {
   getFunctionDetails: request({ name: isString }),
   getRelationships: optionalRequest({
     includeSources: optionalBoolean,
-    allowSelfReference: optionalBoolean,
   }),
   getConnectedColumns: request<ConnectedColumnsParams>({
     targets: arrayOf(tuple<[string, string]>(isString, isString)),
     upstreamExpansion: isBoolean,
-    currAnd1HopTables: optional(arrayOf(isString)),
-    selectedColumn: optional(shape({ name: isString, table: isString })),
-    showIndirectEdges: optionalBoolean,
   }),
   getLineageSettings: optionalRequest({}),
   persistLineageSettings: request<Partial<LineageSettings>>({

@@ -126,6 +126,7 @@ describe("useLineageGraph", () => {
     expect(result.current.graph.columnTables).toEqual(["c"]);
     expect(result.current.graph.selectedTable).toBe("c");
     expect(result.current.graph.selectedColumn).toEqual(["c", "id"]);
+    expect(commands()).toContain("getConnectedColumns");
     expect(result.current.graph.columnEdges).toEqual([
       { source: ["b", "id"], target: ["c", "id"], type: "direct" },
     ]);

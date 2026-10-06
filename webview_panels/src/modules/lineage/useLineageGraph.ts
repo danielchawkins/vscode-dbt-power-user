@@ -100,6 +100,7 @@ function useGraphStore(defaultExpansion: () => number) {
   const [drawnKey, setDrawnKey] = useState(0);
   const graphRef = useRef(graph);
   const generationRef = useRef(0);
+  const buildingRef = useRef(false);
 
   const storeFor = useCallback(
     (gen: number): GraphStore => ({
@@ -120,14 +121,18 @@ function useGraphStore(defaultExpansion: () => number) {
       const gen = ++generationRef.current;
       graphRef.current = emptyGraph(start);
       setGraph(graphRef.current);
+      buildingRef.current = !!start;
       if (!start) {
         return;
       }
       build(storeFor(gen), saved, defaultExpansion())
         .catch(logError("rebuild"))
-        .finally(
-          () => gen === generationRef.current && setDrawnKey((k) => k + 1),
-        );
+        .finally(() => {
+          if (gen === generationRef.current) {
+            buildingRef.current = false;
+            setDrawnKey((k) => k + 1);
+          }
+        });
     },
     [storeFor, defaultExpansion],
   );
@@ -136,7 +141,7 @@ function useGraphStore(defaultExpansion: () => number) {
     () => storeFor(generationRef.current),
     [storeFor],
   );
-  return { graph, graphRef, drawnKey, current, rebuild };
+  return { graph, graphRef, drawnKey, buildingRef, current, rebuild };
 }
 
 /**
@@ -154,7 +159,7 @@ export function useLineageGraph(
   select: (table: string | undefined) => void;
   reset: () => void;
 } {
-  const { graph, graphRef, drawnKey, current, rebuild } =
+  const { graph, graphRef, drawnKey, buildingRef, current, rebuild } =
     useGraphStore(defaultExpansion);
   const [notice, setNotice] = useState<PanelNotice>();
   const publicationRef = useRef<string>();
@@ -201,13 +206,15 @@ export function useLineageGraph(
   }, [onRender]);
 
   useEffect(() => {
-    const state = restoredRef.current
-      ? viewStateOf(graph, publicationRef.current)
-      : undefined;
+    // A rebuild's partial graph is not written; drawnKey advances when it settles.
+    const state =
+      restoredRef.current && !buildingRef.current
+        ? viewStateOf(graph, publicationRef.current)
+        : undefined;
     if (state) {
       writeViewState(state);
     }
-  }, [graph]);
+  }, [graph, drawnKey, buildingRef]);
 
   const reset = () => {
     const start = graphRef.current.start;

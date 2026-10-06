@@ -9,14 +9,13 @@ import {
   GraphState,
   GraphStore,
   hideColumns,
-  layout,
   lineageData,
   parseExpansion,
   replayExpansions,
   showColumns,
-  tableHeight,
   traceColumn,
 } from "./graph";
+import { columnHandle, layout, tableHeight } from "./layout";
 
 const table = (
   id: string,
@@ -128,6 +127,30 @@ describe("lineage graph", () => {
     expect(hidden.columnTables).toEqual([]);
     await showColumns(storeOf(hidden), ["a"], fetchColumns);
     expect(fetchColumns).toHaveBeenCalledTimes(1);
+  });
+
+  it("draws a known parent-child pair between drawn tables even when a different expansion fetched it", async () => {
+    const store = storeOf(emptyGraph(TABLES.b));
+    await expandLevels(store, 1, fetchNeighbours);
+    await expand(store, "children", "a", fetchNeighbours);
+    const { edges } = drawnGraph(store.get());
+    expect(edges.map((e) => e.join(">")).sort()).toEqual(["a>b", "b>c", "d>b"]);
+  });
+
+  it("drops an in-flight expansion when it is collapsed meanwhile", async () => {
+    const store = storeOf(emptyGraph(TABLES.a));
+    let release: (tables: lineage.LineageTable[]) => void = () => undefined;
+    const slow = () =>
+      new Promise<lineage.LineageTable[]>((r) => (release = r));
+    const pending = expand(store, "children", "a", slow);
+    store.update((s) => collapse(s, "children", "a"));
+    release([TABLES.b]);
+    expect(await pending).toEqual([]);
+    expect(ids(store.get())).toEqual(["a"]);
+  });
+
+  it("keeps column case in handle IDs", () => {
+    expect(columnHandle("in", "OrderID")).toBe("in:OrderID");
   });
 
   it("traces a column through drawn tables in both directions, hop by hop", async () => {

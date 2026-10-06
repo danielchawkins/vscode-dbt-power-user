@@ -174,10 +174,7 @@
   --xy-controls-button-border-color: var(--vscode-widget-border, transparent);
   --xy-minimap-background-color: var(--vscode-editorWidget-background);
   --xy-minimap-node-background-color: var(--vscode-disabledForeground);
-  --xy-minimap-mask-background-color: var(
-    --vscode-widget-shadow,
-    rgb(0 0 0 / 30%)
-  );
+  --xy-minimap-mask-background-color: var(--vscode-widget-shadow, transparent);
 }
 
 .node {

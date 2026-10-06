@@ -409,10 +409,9 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
    * filter and style per-source. Sources are excluded by default — opt-in via
    * params.
    */
-  private getRelationships(params?: {
-    includeSources?: boolean;
-    allowSelfReference?: boolean;
-  }): { refs: Ref[] } {
+  private getRelationships(params?: { includeSources?: boolean }): {
+    refs: Ref[];
+  } {
     const event = this.queryManifestService.getEventByCurrentProject();
     if (!event?.event) {
       return { refs: [] };
@@ -428,7 +427,6 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
       // user-controlled threshold via the popover slider.
       minConfidence: 0.6,
       includeSources: params?.includeSources ?? false,
-      allowSelfReference: params?.allowSelfReference ?? false,
     });
     const fromSemantic = parser.fromSemanticEntities(semanticModelMetaMap);
 

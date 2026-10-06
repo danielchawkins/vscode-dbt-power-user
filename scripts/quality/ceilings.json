@@ -5,7 +5,7 @@
   "strictTs.host": 121,
   "strictTs.webview": 65,
   "typeCoverage.host": 97.94,
-  "typeCoverage.webview": 99.05,
+  "typeCoverage.webview": 99.06,
   "coverage.host": {
     "lines": 70,
     "branches": 62,
