@@ -299,7 +299,6 @@ export class DbtLineageService {
         childCount,
         parentCount,
         nodeType,
-        isExternalProject: _node.is_external_project,
         tests: (graphMetaMap["tests"].get(key)?.nodes || []).map((n) => {
           const testKey = n.label.split(".")[0];
           return { ...testMetaMap.get(testKey), key: testKey };
@@ -320,7 +319,6 @@ export class DbtLineageService {
         materialization: undefined,
         tests: [],
         columns: {},
-        isExternalProject: false,
       };
     }
     const { nodeMetaMap } = event;
@@ -337,7 +335,6 @@ export class DbtLineageService {
         materialization: undefined,
         tests: [],
         columns: {},
-        isExternalProject: false,
       };
     }
 
@@ -355,7 +352,6 @@ export class DbtLineageService {
         materialization: fnType ? `${fnType} function` : "function",
         tests: [],
         columns: {},
-        isExternalProject: fn?.is_external_project ?? false,
       };
     }
 
@@ -371,7 +367,6 @@ export class DbtLineageService {
       url: tableUrl,
       childCount,
       parentCount,
-      isExternalProject: node.is_external_project,
       nodeType,
       materialization,
       description: node.description,

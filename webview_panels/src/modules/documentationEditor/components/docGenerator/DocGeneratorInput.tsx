@@ -99,7 +99,7 @@ const DocGeneratorInput = ({
 
     setDescription(newValue);
 
-    // Update Redux state
+    // Update the store
     if (type === EntityType.COLUMN) {
       dispatch(
         updateColumnsInCurrentDocsData({

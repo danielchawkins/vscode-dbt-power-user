@@ -98,7 +98,6 @@ export type Table = {
   description?: string;
   tests: any[];
   meta?: Map<string, any>;
-  isExternalProject: boolean;
   columns: { [columnName: string]: ColumnMetaData };
   patchPath?: string;
   packageName?: string;

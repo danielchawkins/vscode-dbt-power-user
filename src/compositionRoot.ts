@@ -73,7 +73,6 @@ import { readProjectSnapshot } from "./projects/readProjectSnapshot";
 import { RunHistoryService } from "./projects/runHistoryService";
 import { schemaOriginLaunchEnv } from "./projects/schemaOrigin";
 import { SharedStateService } from "./projects/sharedStateService";
-import { readEnvironmentOverride } from "./settings";
 import { StartupGate } from "./startupGate";
 
 /** Builds the Project of a Declared Project. */
@@ -90,9 +89,6 @@ export interface Composition {
   fusionOutputChannel: FusionLaunchSources["outputChannel"];
 }
 
-const readDbtLoomConfigPath = () =>
-  readEnvironmentOverride("dbtLoomConfigPath");
-
 /**
  * Builds a fresh set of manifest parsers; each Project gets its own.
  * @internal
@@ -100,11 +96,11 @@ const readDbtLoomConfigPath = () =>
 export function createProjectParsers(terminal: Log) {
   return {
     childrenParentParser: new ChildrenParentParser(),
-    nodeParser: new NodeParser(terminal, readDbtLoomConfigPath),
+    nodeParser: new NodeParser(terminal),
     macroParser: new MacroParser(terminal),
     metricParser: new MetricParser(terminal),
     graphParser: new GraphParser(terminal),
-    sourceParser: new SourceParser(terminal, readDbtLoomConfigPath),
+    sourceParser: new SourceParser(terminal),
     testParser: new TestParser(terminal),
     unitTestParser: new UnitTestParser(terminal),
     exposureParser: new ExposureParser(terminal),

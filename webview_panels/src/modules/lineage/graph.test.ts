@@ -28,7 +28,6 @@ const table = (
   nodeType: "model",
   childCount,
   parentCount,
-  isExternalProject: false,
   tests: [],
 });
 

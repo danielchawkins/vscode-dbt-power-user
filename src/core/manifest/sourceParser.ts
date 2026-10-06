@@ -4,16 +4,9 @@ import { ManifestProject } from "./manifestProject";
 import { RESOURCE_TYPE_SOURCE, SourceMetaMap } from "./types";
 
 import type { Log } from "../log";
-import {
-  DbtLoomConfigPathReader,
-  getExternalProjectNamesFromDbtLoomConfig,
-} from "./utils";
 
 export class SourceParser {
-  constructor(
-    private terminal: Pick<Log, "debug">,
-    private readDbtLoomConfigPath: DbtLoomConfigPathReader = () => undefined,
-  ) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   createSourceMetaMap(
     sourcesMap: Record<string, any>,
@@ -35,10 +28,6 @@ export class SourceParser {
       if (packagePath === undefined) {
         throw new Error("packagePath is not defined in " + projectRoot);
       }
-      const externalProjectNames = getExternalProjectNamesFromDbtLoomConfig(
-        projectRoot,
-        this.readDbtLoomConfigPath(),
-      );
       Object.values(sourcesMap)
         .filter((source) => source.resource_type === RESOURCE_TYPE_SOURCE)
         .reduce(
@@ -67,9 +56,6 @@ export class SourceParser {
                 database: database,
                 schema: schema,
                 package_name,
-                is_external_project: Boolean(
-                  externalProjectNames?.includes(package_name),
-                ),
                 meta: meta,
               };
               previousValue.set(source_name, source);
