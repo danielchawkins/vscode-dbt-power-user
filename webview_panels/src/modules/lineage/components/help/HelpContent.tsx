@@ -1,4 +1,4 @@
-const HelpContent = (): JSX.Element => {
+const HelpContent = (): React.JSX.Element => {
   return (
     <div className="p-3 h-100 d-flex flex-column overflow-y">
       <div className="mb-2 d-flex">

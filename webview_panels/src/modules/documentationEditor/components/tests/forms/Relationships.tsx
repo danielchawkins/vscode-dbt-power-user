@@ -14,7 +14,7 @@ const Relationships = ({
   toValue,
   fieldValue,
   setValue,
-}: Props): JSX.Element => {
+}: Props): React.JSX.Element => {
   const [toFieldOptions, setToFieldOptions] = useState<OptionType[]>([]);
   const [toModelOptions, setToModelOptions] = useState<OptionType[]>([]);
   const [toSourceOptions, setToSourceOptions] = useState<OptionType[]>([]);

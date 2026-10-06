@@ -10,7 +10,7 @@ const PreTag = ({
   ...rest
 }: DetailedHTMLProps<HTMLAttributes<HTMLPreElement>, HTMLPreElement> & {
   text?: string | undefined;
-}): JSX.Element => {
+}): React.JSX.Element => {
   const [isCopied, setIsCopied] = useState(false);
   const [copyFailed, setCopyFailed] = useState(false);
 

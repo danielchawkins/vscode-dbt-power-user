@@ -18,70 +18,70 @@ const Icon = ({
   <i className={`${className} codicon codicon-${icon}`} {...rest} />
 );
 
-export const PlayIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="play" {...props} />
-);
+export const PlayIcon = (
+  props: HTMLAttributes<HTMLElement>,
+): React.JSX.Element => <Icon icon="play" {...props} />;
 
-export const RemoveIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="remove" {...props} />
-);
+export const RemoveIcon = (
+  props: HTMLAttributes<HTMLElement>,
+): React.JSX.Element => <Icon icon="remove" {...props} />;
 
-export const AddIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="add" {...props} />
-);
+export const AddIcon = (
+  props: HTMLAttributes<HTMLElement>,
+): React.JSX.Element => <Icon icon="add" {...props} />;
 
-export const DeleteIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="trash" {...props} />
-);
+export const DeleteIcon = (
+  props: HTMLAttributes<HTMLElement>,
+): React.JSX.Element => <Icon icon="trash" {...props} />;
 
-export const FilesIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="files" {...props} />
-);
+export const FilesIcon = (
+  props: HTMLAttributes<HTMLElement>,
+): React.JSX.Element => <Icon icon="files" {...props} />;
 
 export const CheckedIcon = (
   props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="pass-filled" {...props} />;
+): React.JSX.Element => <Icon icon="pass-filled" {...props} />;
 
 export const RefreshIcon = (
   props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="debug-restart" {...props} />;
+): React.JSX.Element => <Icon icon="debug-restart" {...props} />;
 
 export const ChevronDownIcon = (
   props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="chevron-down" {...props} />;
+): React.JSX.Element => <Icon icon="chevron-down" {...props} />;
 
 export const ChevronRightIcon = (
   props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="chevron-right" {...props} />;
+): React.JSX.Element => <Icon icon="chevron-right" {...props} />;
 
 export const InfoCircleIcon = (
   props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="info" {...props} />;
+): React.JSX.Element => <Icon icon="info" {...props} />;
 
-export const CloseIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="close" {...props} />
-);
+export const CloseIcon = (
+  props: HTMLAttributes<HTMLElement>,
+): React.JSX.Element => <Icon icon="close" {...props} />;
 
-export const LoadingSpinner = (): JSX.Element => (
+export const LoadingSpinner = (): React.JSX.Element => (
   <img src={LoadingSpinnerUrl} alt="Loading" />
 );
 
 export const PlayCircleIcon = (
   props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="play-circle" {...props} />;
+): React.JSX.Element => <Icon icon="play-circle" {...props} />;
 
-export const FilterIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="filter" {...props} />
-);
+export const FilterIcon = (
+  props: HTMLAttributes<HTMLElement>,
+): React.JSX.Element => <Icon icon="filter" {...props} />;
 
-export const SearchIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <Icon icon="search" {...props} />
-);
+export const SearchIcon = (
+  props: HTMLAttributes<HTMLElement>,
+): React.JSX.Element => <Icon icon="search" {...props} />;
 
 export const FileCodeIcon = (
   props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="file-code" {...props} />;
+): React.JSX.Element => <Icon icon="file-code" {...props} />;
 
 export const OpenNewIcon = (
   props: HTMLAttributes<HTMLElement>,
-): JSX.Element => <Icon icon="link-external" {...props} />;
+): React.JSX.Element => <Icon icon="link-external" {...props} />;

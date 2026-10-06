@@ -3,7 +3,7 @@ import { useState } from "react";
 import { describe, expect, it, vi } from "vitest";
 import ChipInput from "./ChipInput";
 
-const Harness = ({ onSubmit }: { onSubmit: () => void }): JSX.Element => {
+const Harness = ({ onSubmit }: { onSubmit: () => void }): React.JSX.Element => {
   const [values, setValues] = useState<string[]>([]);
   return (
     <form

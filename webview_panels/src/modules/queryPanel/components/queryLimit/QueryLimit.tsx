@@ -24,7 +24,7 @@ function saveStateOf(
   return justSaved ? LimitSaveState.Saved : LimitSaveState.Default;
 }
 
-const QueryLimit = (): JSX.Element => {
+const QueryLimit = (): React.JSX.Element => {
   const { limit, activeEditor } = useQueryPanelState();
   const limitStr = limit?.toString() ?? "500";
   const resetKey = `${limitStr}|${activeEditor?.filepath ?? ""}`;

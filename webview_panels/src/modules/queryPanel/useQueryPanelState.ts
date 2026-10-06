@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { use } from "react";
 import { QueryPanelContext } from "./context/queryPanelContext";
 import { QueryPanelStateProps } from "./context/types";
 
@@ -8,7 +8,7 @@ const useQueryPanelState = (): QueryPanelStateProps & {
   hasCode: boolean;
   queryResultsRowCount: number;
 } => {
-  const { state } = useContext(QueryPanelContext);
+  const { state } = use(QueryPanelContext);
 
   const hasData = Boolean(state.queryResults);
   const hasError = Boolean(state.queryResultsError?.data);

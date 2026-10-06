@@ -18,7 +18,7 @@ const Filters = ({
   filters: { tags: selectedTags, searchQuery },
   tags,
   onFiltersChange,
-}: Props): JSX.Element | null => {
+}: Props): React.JSX.Element | null => {
   const [text, setText] = useState("");
   const [showForm, setShowForm] = useState(false);
   const [showSearch, setShowSearch] = useState(false);

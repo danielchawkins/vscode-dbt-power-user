@@ -14,7 +14,7 @@ interface GetUnitTestCodeResponse {
   error?: string | undefined;
 }
 
-const UnitTestDetails = ({ test, modelName }: Props): JSX.Element => {
+const UnitTestDetails = ({ test, modelName }: Props): React.JSX.Element => {
   const [content, setContent] = useState<GetUnitTestCodeResponse | null>(null);
 
   useEffect(() => {

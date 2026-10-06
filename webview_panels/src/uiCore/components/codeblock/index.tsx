@@ -36,7 +36,7 @@ const CodeBlockComponent = ({
   showLineNumbers,
   titleActions,
   classname,
-}: Props): JSX.Element => {
+}: Props): React.JSX.Element => {
   const {
     state: { theme },
   } = useAppContext();

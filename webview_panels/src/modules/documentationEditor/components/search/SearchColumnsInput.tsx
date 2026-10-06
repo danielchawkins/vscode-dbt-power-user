@@ -4,7 +4,7 @@ import useDocumentationContext from "@modules/documentationEditor/state/useDocum
 import { Input, Stack } from "@uicore";
 import styles from "../../styles.module.css";
 
-const SearchColumnsInput = (): JSX.Element => {
+const SearchColumnsInput = (): React.JSX.Element => {
   const {
     state: { searchQuery },
     dispatch,

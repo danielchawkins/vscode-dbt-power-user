@@ -12,7 +12,7 @@ const Tag = ({
   children: ReactNode;
   color?: "primary" | "orange" | "default" | undefined;
   type?: "rounded" | "default" | undefined;
-} & HTMLAttributes<HTMLSpanElement>): JSX.Element => {
+} & HTMLAttributes<HTMLSpanElement>): React.JSX.Element => {
   const classNames = `${className ?? ""} ${classes.tag} ${color === "default" ? "" : color} ${type === "rounded" ? classes.rounded : ""}`;
   if (onClick) {
     return (

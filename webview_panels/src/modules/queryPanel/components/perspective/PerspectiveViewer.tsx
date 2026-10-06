@@ -43,7 +43,7 @@ const PerspectiveViewer = ({
   columnTypes,
   data,
   styles,
-}: Props): JSX.Element => {
+}: Props): React.JSX.Element => {
   const {
     state: { theme },
   } = useAppContext();
@@ -298,7 +298,7 @@ const PerspectiveViewer = ({
   return (
     <>
       <perspective-viewer
-        class={classes.perspectiveViewer}
+        class={classes.perspectiveViewer ?? ""}
         ref={perspectiveViewerRef}
         style={styles}
       ></perspective-viewer>

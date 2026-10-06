@@ -23,7 +23,7 @@ interface Props {
   type: EntityType;
 }
 
-const AddTest = ({ title, currentTests, type }: Props): JSX.Element => {
+const AddTest = ({ title, currentTests, type }: Props): React.JSX.Element => {
   const [formType, setFormType] = useState<DbtGenericTests | null>(null);
   const [showButtons, setShowButtons] = useState(false);
   const drawerRef = useRef<DrawerRef>(null);

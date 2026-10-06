@@ -12,9 +12,9 @@ import { HTMLAttributes, RefObject, useMemo, useState } from "react";
 import documentationStyles from "../../styles.module.css";
 import styles from "./DocBlockInserter.module.css";
 
-const DocBlockIcon = (props: HTMLAttributes<HTMLElement>): JSX.Element => (
-  <i className={`codicon codicon-book`} {...props} />
-);
+const DocBlockIcon = (
+  props: HTMLAttributes<HTMLElement>,
+): React.JSX.Element => <i className={`codicon codicon-book`} {...props} />;
 
 interface Props {
   inputRef: RefObject<HTMLTextAreaElement | null>;
@@ -24,7 +24,7 @@ interface Props {
 const DocBlockInserter = ({
   inputRef,
   onInsert,
-}: Props): JSX.Element | null => {
+}: Props): React.JSX.Element | null => {
   const {
     state: { docBlocks },
   } = useDocumentationContext();

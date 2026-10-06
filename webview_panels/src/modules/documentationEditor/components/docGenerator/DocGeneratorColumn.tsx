@@ -10,7 +10,7 @@ interface Props {
   column: DBTDocumentationColumn;
   tests: DBTModelTest[];
 }
-const DocGeneratorColumn = ({ column, tests }: Props): JSX.Element => {
+const DocGeneratorColumn = ({ column, tests }: Props): React.JSX.Element => {
   return (
     <div>
       <DocGeneratorInput

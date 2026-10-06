@@ -8,7 +8,10 @@ interface Props extends ButtonProps {
   onToggleClick: () => void;
 }
 
-const DropdownButton = ({ onToggleClick, ...props }: Props): JSX.Element => (
+const DropdownButton = ({
+  onToggleClick,
+  ...props
+}: Props): React.JSX.Element => (
   <Stack className={classes.dropdownButton}>
     <Button color="primary" {...props}>
       {props.children}

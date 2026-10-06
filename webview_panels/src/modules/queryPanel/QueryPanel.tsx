@@ -15,7 +15,7 @@ import classes from "./querypanel.module.css";
 import useQueryPanelListeners from "./useQueryPanelListeners";
 import useQueryPanelState from "./useQueryPanelState";
 
-const QueryPanel = (): JSX.Element => {
+const QueryPanel = (): React.JSX.Element => {
   const { tabState, viewType, publication } = useQueryPanelState();
   const dispatch = useQueryPanelDispatch();
   const { loading } = useQueryPanelListeners();

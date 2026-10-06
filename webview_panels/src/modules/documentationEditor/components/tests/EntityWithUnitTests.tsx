@@ -14,7 +14,10 @@ interface Props {
 
 const MaxVisibleUnitTests = 3;
 
-const EntityWithUnitTests = ({ title, unitTests }: Props): JSX.Element => {
+const EntityWithUnitTests = ({
+  title,
+  unitTests,
+}: Props): React.JSX.Element => {
   const {
     state: { currentDocsData },
   } = useDocumentationContext();

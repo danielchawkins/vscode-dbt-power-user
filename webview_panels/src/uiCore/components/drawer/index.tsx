@@ -1,8 +1,7 @@
 import { ChevronRightIcon } from "@assets/icons";
 import {
-  forwardRef,
-  ForwardRefRenderFunction,
   ReactNode,
+  Ref,
   useCallback,
   useEffect,
   useImperativeHandle,
@@ -19,6 +18,7 @@ interface Props {
   children: ReactNode;
   /** A backdrop that closes the drawer on click; without it the page stays usable. */
   backdrop?: boolean | undefined;
+  ref?: Ref<DrawerRef> | undefined;
 }
 
 export interface DrawerRef {
@@ -27,10 +27,13 @@ export interface DrawerRef {
 }
 
 /** A panel on the right edge; its children mount only while it is open. Escape closes it. */
-const Drawer: ForwardRefRenderFunction<DrawerRef, Props> = (
-  { title, onClose, children, backdrop = true },
+const Drawer = ({
+  title,
+  onClose,
+  children,
+  backdrop = true,
   ref,
-) => {
+}: Props): React.JSX.Element | null => {
   const [show, setShow] = useState(false);
   const drawerRef = useRef<HTMLElement>(null);
   const returnFocusRef = useRef<Element | null>(null);
@@ -107,4 +110,4 @@ const Drawer: ForwardRefRenderFunction<DrawerRef, Props> = (
   );
 };
 
-export default forwardRef(Drawer);
+export default Drawer;

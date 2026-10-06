@@ -27,7 +27,7 @@ export const Select = ({
   placeholder = "Select...",
   className,
   ...rest
-}: SingleProps): JSX.Element => (
+}: SingleProps): React.JSX.Element => (
   <select
     {...rest}
     className={`${classes.select} ${className ?? ""}`}
@@ -60,7 +60,7 @@ export const MultiSelect = ({
   onChange,
   className,
   ...rest
-}: MultiProps): JSX.Element => (
+}: MultiProps): React.JSX.Element => (
   <select
     {...rest}
     multiple

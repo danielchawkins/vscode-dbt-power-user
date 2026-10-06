@@ -29,7 +29,7 @@ const DocGeneratorInput = ({
   type,
   title,
   tests,
-}: Props): JSX.Element => {
+}: Props): React.JSX.Element => {
   const stackRef = useRef<HTMLDivElement | null>(null);
   const {
     state: { incomingDocsData, currentDocsData },

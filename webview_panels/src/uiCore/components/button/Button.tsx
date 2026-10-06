@@ -19,7 +19,7 @@ export const Button = ({
   children,
   type = "button",
   ...rest
-}: ButtonProps): JSX.Element => {
+}: ButtonProps): React.JSX.Element => {
   const [hovered, setHovered] = useState(false);
   const showText = showTextAlways ?? (!icon || hovered);
   return (

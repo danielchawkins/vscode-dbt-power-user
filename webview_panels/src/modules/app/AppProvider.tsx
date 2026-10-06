@@ -3,7 +3,11 @@ import { appReducer, initialState } from "./appReducer";
 import { AppContext } from "./context";
 import useListeners from "./useListeners";
 
-const AppProvider = ({ children }: { children: ReactNode }): JSX.Element => {
+const AppProvider = ({
+  children,
+}: {
+  children: ReactNode;
+}): React.JSX.Element => {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
   useListeners(dispatch);
@@ -17,9 +21,9 @@ const AppProvider = ({ children }: { children: ReactNode }): JSX.Element => {
   );
 
   return (
-    <AppContext.Provider value={values}>
+    <AppContext value={values}>
       <div className="App">{children}</div>
-    </AppContext.Provider>
+    </AppContext>
   );
 };
 

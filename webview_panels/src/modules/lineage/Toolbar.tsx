@@ -121,7 +121,7 @@ const Toolbar = ({
   settings: ResolvedSettings;
   change: Change;
   reset: () => void;
-}): JSX.Element => (
+}): React.JSX.Element => (
   <div className={styles.toolbar}>
     <PopoverWithButton
       width={260}

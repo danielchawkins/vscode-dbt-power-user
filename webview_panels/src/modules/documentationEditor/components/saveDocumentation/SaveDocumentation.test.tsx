@@ -33,7 +33,7 @@ const Harness = ({
 }: {
   current: DBTDocumentation;
   incoming: DBTDocumentation;
-}): JSX.Element => {
+}): React.JSX.Element => {
   const [state, dispatch] = useReducer(documentationReducer, {
     ...initialState,
     incomingDocsData: { docs: incoming },

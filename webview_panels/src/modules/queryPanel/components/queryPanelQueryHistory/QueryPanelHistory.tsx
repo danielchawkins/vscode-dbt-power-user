@@ -16,7 +16,7 @@ import styles from "../../querypanel.module.css";
 import Filters, { QueryFilters } from "../filters/Filters";
 import QueryHistoryRow from "./QueryHistoryRow";
 
-const QueryPanelHistory = (): JSX.Element => {
+const QueryPanelHistory = (): React.JSX.Element => {
   const [filters, setFilters] = useState<QueryFilters>({ tags: [] });
 
   const [activeHistory, setActiveHistory] = useState<QueryHistory | null>(null);

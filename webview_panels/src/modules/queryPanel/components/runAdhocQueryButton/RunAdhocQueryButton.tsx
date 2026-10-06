@@ -1,7 +1,7 @@
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import { Button } from "@uicore";
 
-const RunAdhocQueryButton = (): JSX.Element => {
+const RunAdhocQueryButton = (): React.JSX.Element => {
   const handleClick = () => {
     executeRequestInAsync("runAdhocQuery");
   };

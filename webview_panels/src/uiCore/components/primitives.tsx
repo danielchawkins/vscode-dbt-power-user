@@ -11,7 +11,7 @@ type DivProps = HTMLAttributes<HTMLDivElement>;
 export const Alert = ({
   className,
   ...rest
-}: DivProps & { color?: "warning" }): JSX.Element => (
+}: DivProps & { color?: "warning" }): React.JSX.Element => (
   <div
     {...rest}
     role="alert"
@@ -19,34 +19,49 @@ export const Alert = ({
   />
 );
 
-export const ButtonGroup = ({ className, ...rest }: DivProps): JSX.Element => (
+export const ButtonGroup = ({
+  className,
+  ...rest
+}: DivProps): React.JSX.Element => (
   <div {...rest} role="group" className={cx("btn-group", className)} />
 );
 
-export const InputGroup = ({ className, ...rest }: DivProps): JSX.Element => (
+export const InputGroup = ({
+  className,
+  ...rest
+}: DivProps): React.JSX.Element => (
   <div {...rest} className={cx("input-group", className)} />
 );
 
-export const Card = ({ className, ...rest }: DivProps): JSX.Element => (
+export const Card = ({ className, ...rest }: DivProps): React.JSX.Element => (
   <div {...rest} className={cx("card", className)} />
 );
 
-export const CardTitle = ({ className, ...rest }: DivProps): JSX.Element => (
+export const CardTitle = ({
+  className,
+  ...rest
+}: DivProps): React.JSX.Element => (
   <div {...rest} className={cx("card-title", className)} />
 );
 
-export const CardBody = ({ className, ...rest }: DivProps): JSX.Element => (
+export const CardBody = ({
+  className,
+  ...rest
+}: DivProps): React.JSX.Element => (
   <div {...rest} className={cx("card-body", className)} />
 );
 
-export const CardFooter = ({ className, ...rest }: DivProps): JSX.Element => (
+export const CardFooter = ({
+  className,
+  ...rest
+}: DivProps): React.JSX.Element => (
   <div {...rest} className={cx("card-footer", className)} />
 );
 
 export const Label = ({
   className,
   ...rest
-}: LabelHTMLAttributes<HTMLLabelElement>): JSX.Element => (
+}: LabelHTMLAttributes<HTMLLabelElement>): React.JSX.Element => (
   // eslint-disable-next-line jsx-a11y-x/label-has-associated-control -- callers pass htmlFor or wrap the control
   <label {...rest} className={cx("form-label", className)} />
 );
@@ -54,14 +69,14 @@ export const Label = ({
 export const ListGroup = ({
   className,
   ...rest
-}: HTMLAttributes<HTMLUListElement>): JSX.Element => (
+}: HTMLAttributes<HTMLUListElement>): React.JSX.Element => (
   <ul {...rest} className={cx("list-group", className)} />
 );
 
 export const ListGroupItem = ({
   className,
   ...rest
-}: LiHTMLAttributes<HTMLLIElement>): JSX.Element => (
+}: LiHTMLAttributes<HTMLLIElement>): React.JSX.Element => (
   <li {...rest} className={cx("list-group-item", className)} />
 );
 
@@ -69,14 +84,14 @@ export const ListGroupItem = ({
 export const Nav = ({
   className,
   ...rest
-}: HTMLAttributes<HTMLUListElement>): JSX.Element => (
+}: HTMLAttributes<HTMLUListElement>): React.JSX.Element => (
   <ul {...rest} className={cx("nav", className)} />
 );
 
 export const NavItem = ({
   className,
   ...rest
-}: LiHTMLAttributes<HTMLLIElement>): JSX.Element => (
+}: LiHTMLAttributes<HTMLLIElement>): React.JSX.Element => (
   <li {...rest} className={cx("nav-item", className)} />
 );
 
@@ -86,7 +101,7 @@ export const NavLink = ({
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
   active?: boolean | undefined;
-}): JSX.Element => (
+}): React.JSX.Element => (
   <button
     {...rest}
     type="button"

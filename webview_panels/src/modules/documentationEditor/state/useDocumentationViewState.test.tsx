@@ -26,13 +26,13 @@ const docs = {
 let dispatchRef: React.Dispatch<Parameters<typeof documentationReducer>[1]>;
 let stateRef: ReturnType<typeof documentationReducer>;
 
-const Probe = (): JSX.Element => {
+const Probe = (): React.JSX.Element => {
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   useDocumentationViewState(scroller);
   return <div ref={setScroller} data-testid="scroller" />;
 };
 
-const Harness = (): JSX.Element => {
+const Harness = (): React.JSX.Element => {
   const [state, dispatch] = useReducer(documentationReducer, initialState);
   dispatchRef = dispatch;
   stateRef = state;

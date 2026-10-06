@@ -18,7 +18,7 @@ const ChipInput = ({
   onChange,
   placeholder,
   required,
-}: Props): JSX.Element => {
+}: Props): React.JSX.Element => {
   const [draft, setDraft] = useState("");
 
   const commit = () => {

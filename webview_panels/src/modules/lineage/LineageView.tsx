@@ -232,7 +232,7 @@ const Canvas = ({
   );
 };
 
-const Graph = (): JSX.Element => {
+const Graph = (): React.JSX.Element => {
   const drawerRef = useRef<DrawerRef>(null);
   const [detailsTable, setDetailsTable] = useState<string>();
   const { settings, settingsRef, change } = useSettings();
@@ -286,7 +286,7 @@ const Graph = (): JSX.Element => {
 };
 
 /** The lineage panel: tables, their columns and column lineage drawn with React Flow and laid out by dagre. */
-const LineageView = (): JSX.Element => (
+const LineageView = (): React.JSX.Element => (
   <ReactFlowProvider>
     <Graph />
   </ReactFlowProvider>

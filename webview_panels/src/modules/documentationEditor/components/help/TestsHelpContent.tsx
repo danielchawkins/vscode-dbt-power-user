@@ -1,6 +1,6 @@
 import { Stack } from "@uicore";
 
-const TestHelpContent = (): JSX.Element => {
+const TestHelpContent = (): React.JSX.Element => {
   return (
     <Stack direction="column">
       <p>

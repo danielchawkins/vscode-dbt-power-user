@@ -3,7 +3,7 @@ import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Button } from "@uicore";
 
-const OpenInTabButton = (): JSX.Element | null => {
+const OpenInTabButton = (): React.JSX.Element | null => {
   const queryTabData = useQueryPanelState();
   const handleClick = () => {
     executeRequestInAsync("queryResultTab:render", {

@@ -40,7 +40,7 @@ const DisplayTestDetails = ({
   test,
   column,
   type,
-}: Props): JSX.Element => {
+}: Props): React.JSX.Element => {
   const { values, setValue } = useTestFormValues();
   const complete = isTestFormComplete(test.test_metadata?.name, values);
 

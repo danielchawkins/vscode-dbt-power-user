@@ -163,7 +163,7 @@ export function useLineageGraph(
   const { graph, graphRef, drawnKey, buildingRef, current, rebuild } =
     useGraphStore(defaultExpansion);
   const [notice, setNotice] = useState<PanelNotice>();
-  const publicationRef = useRef<string>();
+  const publicationRef = useRef<string | undefined>(undefined);
   const refreshRef = useRef(false);
   const restoredRef = useRef(false);
 

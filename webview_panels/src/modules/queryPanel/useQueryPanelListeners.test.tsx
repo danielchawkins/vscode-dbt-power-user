@@ -31,7 +31,7 @@ const ProbeHarness = ({
   onHistory,
 }: {
   onHistory: (history: unknown) => void;
-}): JSX.Element => {
+}): React.JSX.Element => {
   const [state, dispatch] = useReducer(queryPanelReducer, initialState);
 
   return (

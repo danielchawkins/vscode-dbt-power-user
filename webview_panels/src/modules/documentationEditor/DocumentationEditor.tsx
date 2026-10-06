@@ -12,7 +12,7 @@ import useDocumentationContext from "./state/useDocumentationContext";
 import useDocumentationViewState from "./state/useDocumentationViewState";
 import classes from "./styles.module.css";
 
-const DocumentationEditor = (): JSX.Element => {
+const DocumentationEditor = (): React.JSX.Element => {
   const {
     state: { currentDocsData, currentDocsTests, currentUnitTests },
   } = useDocumentationContext();
