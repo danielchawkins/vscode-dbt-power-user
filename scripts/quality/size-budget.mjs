@@ -32,11 +32,6 @@ function measure(budgets) {
     if (key === "vsix") {
       const vsix = fs.readFileSync(path.join(root, "out/latest-vsix"), "utf8");
       sizes[key] = fs.statSync(vsix.trim()).size;
-    } else if (key === "wasm") {
-      sizes[key] = fs
-        .readdirSync(path.join(root, assets))
-        .filter((name) => name.endsWith(".wasm"))
-        .reduce((total, name) => total + sizeOf(`${assets}/${name}`), 0);
     } else if (fs.existsSync(path.join(root, key))) {
       sizes[key] = sizeOf(key);
     }

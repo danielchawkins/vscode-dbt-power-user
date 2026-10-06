@@ -18,15 +18,14 @@
   },
   "size": {
     "dist/extension.js": 1250000,
-    "vsix": 5500000,
-    "wasm": 4011253,
+    "vsix": 800000,
     "webview_panels/dist/assets/chunk-shared.js": 282300,
     "webview_panels/dist/assets/documentationEditor.css": 8760,
     "webview_panels/dist/assets/documentationEditor.js": 34970,
     "webview_panels/dist/assets/lineage.css": 26040,
     "webview_panels/dist/assets/lineage.js": 275000,
-    "webview_panels/dist/assets/queryResults.css": 127960,
-    "webview_panels/dist/assets/queryResults.js": 637600,
+    "webview_panels/dist/assets/queryResults.css": 9800,
+    "webview_panels/dist/assets/queryResults.js": 102700,
     "webview_panels/dist/assets/shared.css": 12200
   }
 }
