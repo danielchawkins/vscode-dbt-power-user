@@ -28,3 +28,12 @@ node scripts/spikes/lsp-capabilities/collect.mjs /tmp/lsp-out/finance-strict doc
 ```
 
 `DBT_BIN` overrides the Fusion binary. The project root is canonicalised before launch: Fusion matches document URIs against the realpath of `--project-dir`, so a root under macOS `/tmp` loads no documents otherwise.
+
+## Fusion upgrade procedure
+
+Run after changing the Fusion pin in `mise.toml`:
+
+1. Run `probe.mjs`, `extras.mjs` and `bench.mjs` on the jaffle fixture and on the local finance copy, in both `strict` and `baseline`.
+2. Write the results to `docs/research/lsp-capabilities-fusion-<version>.md` and its evidence under `docs/research/evidence/lsp-<version>/`.
+3. For each row of `docs/lsp-metadata-gaps.md`, check the migration rule there. Each field that now qualifies is one revision touching four files: its `FIELD_OWNERS` entry in `src/core/metadata/fieldOwners.ts`, the server adapter in `src/core/metadata/serverMetadata.ts`, the golden test in `src/test/suite/mergeMetadata.test.ts`, and its row in `docs/lsp-metadata-gaps.md`.
+4. Update the minimum version in `src/fusion/fusionExecutable.ts`, the version tests and the docs that name it.
