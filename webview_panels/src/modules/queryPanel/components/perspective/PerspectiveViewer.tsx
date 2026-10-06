@@ -159,7 +159,7 @@ const PerspectiveViewer = ({
     if (!shadowRoot) {
       return;
     }
-    const id = "altimate-styles";
+    const id = "perspective-styles";
     shadowRoot.getElementById(id)?.remove();
 
     const style = document.createElement("style");
@@ -298,7 +298,7 @@ const PerspectiveViewer = ({
   return (
     <>
       <perspective-viewer
-        class={classes.altimatePerspectiveViewer}
+        class={classes.perspectiveViewer}
         ref={perspectiveViewerRef}
         style={styles}
       ></perspective-viewer>

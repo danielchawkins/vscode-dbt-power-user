@@ -32,7 +32,10 @@ const HelpContent = (): JSX.Element => {
         </ul>
         <div>
           <span>If you want to know more please check our </span>
-          <a href="https://docs.myaltimate.com" className="text-blue">
+          <a
+            href="https://docs.getdbt.com/terms/data-lineage"
+            className="text-blue"
+          >
             Documentation
           </a>
         </div>

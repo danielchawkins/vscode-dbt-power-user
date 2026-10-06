@@ -96,6 +96,13 @@ const removedSyntax = [
   "Literal[value=/ms-python[.]python|node_python_bridge|altimate_python_packages|dbt_core_integration|@altimateai/]",
   "TemplateElement[value.raw=/ms-python[.]python|node_python_bridge|altimate_python_packages|dbt_core_integration|@altimateai/]",
 ].map((selector) => ({ selector, message: REMOVED_MESSAGE }));
+const vendorNameSyntax = [
+  "Literal[value=/altimate/i]",
+  "TemplateElement[value.raw=/altimate/i]",
+].map((selector) => ({
+  selector,
+  message: "No vendor names or hosted links in shipped strings.",
+}));
 const removedImports = [{ group: ["@altimateai/*"], message: REMOVED_MESSAGE }];
 const BUG_CLASS_RULES = {
   "@typescript-eslint/no-for-in-array": "error",
@@ -184,6 +191,7 @@ module.exports = [
         ...processSyntax,
         ...fsRequireSyntax,
         ...removedSyntax,
+        ...vendorNameSyntax,
       ],
       "@typescript-eslint/no-require-imports": "error",
       "no-restricted-imports": [
@@ -204,6 +212,7 @@ module.exports = [
         ...processSyntax,
         ...fsRequireSyntax,
         ...removedSyntax,
+        ...vendorNameSyntax,
       ],
       "no-restricted-imports": [
         "error",
@@ -222,6 +231,7 @@ module.exports = [
         ...settingsSyntax,
         ...fsRequireSyntax,
         ...removedSyntax,
+        ...vendorNameSyntax,
       ],
       "no-restricted-imports": [
         "error",

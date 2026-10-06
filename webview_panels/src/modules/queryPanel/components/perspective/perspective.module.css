@@ -1,10 +1,10 @@
-.altimatePerspectiveViewer {
+.perspectiveViewer {
   height: 100%;
   min-height: 50vh;
   font-size: 1.25rem !important;
   z-index: 20;
 }
-.altimatePerspectiveViewer[theme="Vintage"] {
+.perspectiveViewer[theme="Vintage"] {
   font-family: var(--vscode-font-family) !important;
   width: auto;
   --psp--background-color: var(--vscode-editor-background);

@@ -1,15 +1,12 @@
-:global .vscode-dark .altimate-select [class*="-control"],
+:global .vscode-dark .select [class*="-control"],
 :global
   .vscode-high-contrast:not(.vscode-high-contrast-light)
-  .altimate-select
+  .select
   [class*="-control"] {
   border-color: transparent;
   background-color: var(--vscode-editorWidget-background);
 }
-:global .vscode-dark .altimate-select input,
-:global
-  .vscode-high-contrast:not(.vscode-high-contrast-light)
-  .altimate-select
-  input {
+:global .vscode-dark .select input,
+:global .vscode-high-contrast:not(.vscode-high-contrast-light) .select input {
   caret-color: var(--vscode-foreground);
 }

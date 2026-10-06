@@ -52,7 +52,7 @@ const DocumentationHelpContent = ({
       </p>
       <p>
         Need more help? Check out the&nbsp;
-        <a href="https://docs.myaltimate.com/document/generatedoc/">
+        <a href="https://docs.getdbt.com/docs/build/documentation">
           documentation
         </a>
         .
