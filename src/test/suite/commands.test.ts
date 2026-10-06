@@ -205,6 +205,7 @@ describe("VSCodeCommands", () => {
       (window as any).visibleTextEditors = [];
       (window as any).showTextDocument = vi.fn();
       (workspace.openTextDocument as Mock).mockResolvedValue({ doc: 1 });
+      (window as any).showTextDocument = vi.fn();
       await handler("fusionPowerUser.showCompiledSQL")();
       expect(window.showTextDocument).toHaveBeenCalledWith(
         { doc: 1 },
