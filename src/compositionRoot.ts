@@ -60,6 +60,7 @@ import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
 import { CurrentProject } from "./projects/currentProject";
 import {
   createFusionClientPool,
+  type FusionClientPool,
   FusionLaunchSources,
 } from "./projects/fusionClientPool";
 import { FusionStatus } from "./projects/fusionStatus";
@@ -124,6 +125,8 @@ interface ProjectsGraph {
   projectQuickPick: ProjectQuickPick;
   currentProject: CurrentProject;
   queryManifestService: QueryManifestService;
+  /** Filled by `composeFusion`; projects read their client through it. */
+  clients: { pool?: FusionClientPool };
 }
 
 function composeProjects(context: ExtensionContext): ProjectsGraph {
@@ -140,6 +143,7 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
         extensionContextStore.setToGlobalState(key, value),
     }),
   });
+  const clients: { pool?: FusionClientPool } = {};
   const projectFactory: ProjectFactory = (declared) => {
     const log = outputChannels.projectLog(declared);
     const processes = new CommandProcessExecutionFactory(log);
@@ -158,6 +162,7 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
       parsers: createProjectParsers(log),
       projectRoot: declared.root,
       projectCount: () => projects.all().length,
+      fusionClient: () => clients.pool?.get(declared),
     });
   };
 
@@ -184,6 +189,7 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
     projectQuickPick,
     currentProject,
     queryManifestService,
+    clients,
   };
 }
 
@@ -209,6 +215,7 @@ function composeFusion(graph: ProjectsGraph) {
         projects.get(declared.root)?.errors.reportCompile(messages),
     },
   );
+  graph.clients.pool = fusionClientPool;
   const dbtLineageService = new DbtLineageService(
     graph.queryManifestService,
     () => {
@@ -218,6 +225,10 @@ function composeFusion(graph: ProjectsGraph) {
     () => {
       const project = currentProject.current;
       return project ? projects.get(project.root)?.errors.current : undefined;
+    },
+    () => {
+      const project = currentProject.current;
+      return project ? projects.get(project.root)?.lsp : undefined;
     },
   );
   const fusionStatus = new FusionStatus(

@@ -5,12 +5,11 @@ import {
   columnEdges,
   ColumnLineage,
   columnLineageArgs,
-  CurrentNodeResult,
   InferredColumn,
   inferredColumns,
-  ListNodesResult,
   toPanelLineage,
 } from "../../core/lineage";
+import { FusionCommandError, type ListNodesResult } from "../../core/lsp";
 import {
   GraphMetaMap,
   NodeGraphMap,
@@ -22,7 +21,10 @@ import {
 import { StaticAnalysisMode } from "../../core/project";
 import { Table } from "../../dbt_integration/domain";
 import {
-  FUSION_LSP_COMMANDS,
+  createFusionCommands,
+  type FusionCommands,
+} from "../../fusion/fusionCommands";
+import {
   FusionClient,
   FusionClientState,
 } from "../../fusion/fusionLanguageClient";
@@ -60,9 +62,6 @@ export interface TargetFailure {
   message: string;
 }
 
-/** LSP `RequestCancelled` and `ServerCancelled`. */
-const CANCELLED_CODES = new Set([-32800, -32802]);
-
 /** One sentence for the panel's per-table tooltip. */
 export function describeNoLineage(reason: NoLineage): string {
   switch (reason.kind) {
@@ -86,7 +85,14 @@ export class DbtLineageService {
     private currentClient: () => FusionClient | undefined = () => undefined,
     /** The Current Project's configuration error, which explains a lineage request that found no nodes. */
     private currentError: () => string | undefined = () => undefined,
-  ) {}
+    /** The Current Project's server commands; defaults to commands over `currentClient`. */
+    currentLsp?: () => FusionCommands | undefined,
+  ) {
+    const fallback = createFusionCommands(() => this.currentClient());
+    this.currentLsp = currentLsp ?? (() => fallback);
+  }
+
+  private readonly currentLsp: () => FusionCommands | undefined;
 
   /**
    * Answers the panel's column click from the Fusion Client's `dbt.listNodes`, one request per distinct target
@@ -97,7 +103,8 @@ export class DbtLineageService {
     request: ConnectedColumnsRequest,
   ): Promise<ConnectedColumnsResult> {
     const client = this.currentClient();
-    if (!client || client.state !== "running") {
+    const lsp = this.currentLsp();
+    if (!client || !lsp || client.state !== "running") {
       return {
         kind: "noLineage",
         reason: {
@@ -109,14 +116,7 @@ export class DbtLineageService {
     }
     const targets = distinctTargets(request.targets);
     const listNodes = async (table: string, column: string) => {
-      const result = await client.request<ListNodesResult>(
-        FUSION_LSP_COMMANDS.listNodes,
-        columnLineageArgs(table, column),
-      );
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-      return result ?? {};
+      return lsp.listNodes(columnLineageArgs(table, column));
     };
     const settled = await Promise.allSettled(
       targets.map(async ([table, column]) => {
@@ -189,7 +189,8 @@ export class DbtLineageService {
     file: string,
   ): Promise<InferredColumn[] | undefined> {
     const client = this.currentClient();
-    if (!client || client.state !== "running") {
+    const lsp = this.currentLsp();
+    if (!client || !lsp || client.state !== "running") {
       return undefined;
     }
     const relativePath = path
@@ -197,12 +198,7 @@ export class DbtLineageService {
       .split(path.sep)
       .join("/");
     const ask = async () =>
-      inferredColumns(
-        await client.request<CurrentNodeResult>(
-          FUSION_LSP_COMMANDS.getCurrentNode,
-          [relativePath],
-        ),
-      );
+      inferredColumns(await lsp.getCurrentNode(relativePath));
     try {
       const columns = await ask();
       if (columns !== undefined) {
@@ -404,13 +400,8 @@ function distinctTargets(targets: [string, string][]): [string, string][] {
   return [...seen.values()];
 }
 
-/** Whether a `dbt.listNodes` failure is the server cancelling the request rather than answering it. */
 function isCancelled(error: unknown): boolean {
-  const code = (error as { code?: unknown } | undefined)?.code;
-  return (
-    (typeof code === "number" && CANCELLED_CODES.has(code)) ||
-    /\bcancell?ed\b/i.test(errorMessage(error))
-  );
+  return error instanceof FusionCommandError && error.kind === "cancelled";
 }
 
 function errorMessage(error: unknown): string {
