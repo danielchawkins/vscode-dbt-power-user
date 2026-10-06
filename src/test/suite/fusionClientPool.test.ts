@@ -36,7 +36,9 @@ import {
 import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { schemaOriginLaunchEnv } from "../../projects/schemaOrigin";
 import { CONFIGURATION_SECTION } from "../../settings";
+import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";
+import { declaredProject } from "../projectHarness";
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
@@ -44,15 +46,8 @@ const folder: WorkspaceFolder = {
   index: 0,
 };
 
-function makeProject(name: string, rootPath: string): DeclaredProject {
-  return {
-    root: Uri.file(rootPath),
-    name,
-    folder,
-    contains: () => false,
-    dispose: () => {},
-  };
-}
+const makeProject = (name: string, rootPath: string) =>
+  declaredProject(name, rootPath, folder);
 
 class FakeRegistry {
   private readonly listeners: Array<() => void> = [];
@@ -737,9 +732,3 @@ describe("FusionClientPool", () => {
     await pool.stop();
   });
 });
-
-async function flushAsync(): Promise<void> {
-  for (let i = 0; i < 8; i += 1) {
-    await Promise.resolve();
-  }
-}

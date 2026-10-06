@@ -1,5 +1,5 @@
 import { vi } from "vitest";
-import { Uri } from "vscode";
+import { Uri, type WorkspaceFolder } from "vscode";
 import type { Log } from "../core/log";
 import { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
 import {
@@ -8,11 +8,12 @@ import {
 } from "../fusion/fusionExecutable";
 import { ManifestParsers } from "../projects/manifest";
 import { Project, ProjectOptions } from "../projects/project";
+import type { DeclaredProject } from "../projects/projectRegistry";
 import { RunHistoryService } from "../projects/runHistoryService";
 import { SharedStateService } from "../projects/sharedStateService";
 
 /** A Fusion 2.0.6 executable at `executablePath`. */
-function sampleExecutable(
+export function sampleExecutable(
   executablePath = "/mock/bin/dbt",
   env: Record<string, string> = process.env as Record<string, string>,
 ): FusionExecutable {
@@ -52,4 +53,19 @@ export function buildTestProject(
     projectRoot: Uri.file(root),
     ...overrides,
   });
+}
+
+/** A Declared Project named `name` at `rootPath` in `folder`, which contains no file. */
+export function declaredProject(
+  name: string,
+  rootPath: string,
+  folder: WorkspaceFolder,
+): DeclaredProject {
+  return {
+    root: Uri.file(rootPath),
+    name,
+    folder,
+    contains: () => false,
+    dispose: () => {},
+  };
 }

@@ -15,6 +15,7 @@ import {
   OutputChannels,
 } from "../../projects/outputChannels";
 import { DeclaredProject } from "../../projects/projectRegistry";
+import { declaredProject } from "../projectHarness";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";
 
@@ -26,15 +27,8 @@ const folder: WorkspaceFolder = {
   index: 0,
 };
 
-function makeProject(name: string, root: string): DeclaredProject {
-  return {
-    root: Uri.file(root),
-    name,
-    folder,
-    contains: () => false,
-    dispose: () => {},
-  };
-}
+const makeProject = (name: string, rootPath: string) =>
+  declaredProject(name, rootPath, folder);
 
 function created(): LogOutputChannel[] {
   return vi

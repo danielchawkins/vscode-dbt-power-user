@@ -2,7 +2,6 @@ import * as fs from "fs";
 import * as path from "path";
 import { describe, expect, it } from "vitest";
 import { EventEmitter, Uri } from "vscode";
-import type { Log } from "../../core/log";
 import {
   ChildrenParentParser,
   DocParser,
@@ -23,6 +22,7 @@ import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { Project } from "../../projects/project";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { esmDirname } from "../esmDirname";
+import { silentLog } from "../testLog";
 
 const fixtureRoot = path.resolve(
   esmDirname(import.meta.url),
@@ -36,36 +36,6 @@ function loadManifestJson(): unknown {
     ? generatedManifest
     : contractPath;
   return JSON.parse(fs.readFileSync(manifestPath, "utf8"));
-}
-
-function mockTerminal(): Log {
-  return {
-    debug: () => undefined,
-    log: () => undefined,
-    error: () => undefined,
-    warn: () => undefined,
-    logNewLine: () => undefined,
-    logLine: () => undefined,
-    logHorizontalRule: () => undefined,
-    logBlock: () => undefined,
-    logError: () => undefined,
-    logWarning: () => undefined,
-    logSuccess: () => undefined,
-    disposables: [],
-    writeEmitter: new EventEmitter<string>(),
-    outputChannel: {
-      append: () => undefined,
-      appendLine: () => undefined,
-      clear: () => undefined,
-      show: () => undefined,
-    },
-    onDidWrite: new EventEmitter<string>().event,
-    clear: () => undefined,
-    show: () => undefined,
-    dispose: () => undefined,
-    write: () => undefined,
-    processQueue: () => Promise.resolve(),
-  } as unknown as Log;
 }
 
 function mapKeys(map: Map<string, unknown>): string[] {
@@ -177,7 +147,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
       semantic_models: any;
       unit_tests: any;
     };
-    const terminal = mockTerminal();
+    const terminal = silentLog();
     const adapter = {
       getProjectRoot: () => fixtureRoot,
       getProjectName: () => "single_project",

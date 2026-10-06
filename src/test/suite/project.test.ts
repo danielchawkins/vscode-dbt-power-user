@@ -52,6 +52,7 @@ import {
   resetMocks,
 } from "../mock/vscode";
 import { buildTestProject } from "../projectHarness";
+import { silentLog } from "../testLog";
 
 const fixtureRoot = path.resolve(
   esmDirname(import.meta.url),
@@ -1018,17 +1019,6 @@ describe("Project Test Suite", () => {
   });
 });
 
-function mockTerminal(): Log {
-  return {
-    debug: () => undefined,
-    info: () => undefined,
-    log: () => undefined,
-    error: () => undefined,
-    warn: () => undefined,
-    trace: () => undefined,
-  } as unknown as Log;
-}
-
 function stubDelegate(
   projectRoot: string,
   overrides: Partial<FusionCli> = {},
@@ -1056,7 +1046,7 @@ async function buildProject(
   fusionDelegate: FusionCli,
   overrides: Partial<ProjectOptions> = {},
 ): Promise<Project> {
-  const terminal = mockTerminal();
+  const terminal = silentLog();
   const project = buildTestProject(projectRoot, () => fusionDelegate, {
     terminal,
     parsers: realParsers(terminal),

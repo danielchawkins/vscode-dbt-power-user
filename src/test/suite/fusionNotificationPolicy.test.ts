@@ -19,6 +19,7 @@ import {
 } from "../../projects/projectRegistry";
 import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { StartupGate } from "../../startupGate";
+import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
 const folder: WorkspaceFolder = {
@@ -153,9 +154,3 @@ describe("fusionNotificationPolicy", () => {
     pool.dispose();
   });
 });
-
-async function flushAsync(): Promise<void> {
-  for (let i = 0; i < 8; i += 1) {
-    await Promise.resolve();
-  }
-}
