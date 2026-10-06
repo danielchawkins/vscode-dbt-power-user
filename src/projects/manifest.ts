@@ -18,7 +18,6 @@ import {
   MacroParser,
   type ManifestProject,
   MetricParser,
-  ModelDepthParser,
   NodeParser,
   SemanticModelParser,
   SourceParser,
@@ -47,7 +46,6 @@ export interface ManifestParsers {
   exposureParser: ExposureParser;
   functionParser: FunctionParser;
   docParser: DocParser;
-  modelDepthParser: ModelDepthParser;
   semanticModelParser: SemanticModelParser;
 }
 
@@ -129,7 +127,6 @@ export async function buildManifest(
   if (manifestJson === undefined) {
     return undefined;
   }
-  const { nodes } = manifestJson;
   const {
     parentMetaMap,
     childMetaMap,
@@ -145,11 +142,6 @@ export async function buildManifest(
     exposureMetaMap,
     functionMetaMap,
   } = await parseResourceMaps(parsers, project, manifestJson);
-  const modelDepthMap = parsers.modelDepthParser.createModelDepthsMap(
-    nodes,
-    parentMetaMap,
-    childMetaMap,
-  );
   const graphMetaMap = parsers.graphParser.createGraphMetaMap(
     project,
     parentMetaMap,
@@ -174,7 +166,7 @@ export async function buildManifest(
       exposureMetaMap,
       functionMetaMap,
       semanticModelMetaMap,
-      modelDepthMap,
+      modelDepthMap: new Map(),
     },
   };
 }

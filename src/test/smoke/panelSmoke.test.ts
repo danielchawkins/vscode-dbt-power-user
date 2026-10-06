@@ -698,6 +698,42 @@ const CLOSE_HOVER = `(() => {
   return true;
 })()`;
 
+/** The rows of the Parent Models and Children Models views, by view name. */
+const TREE_ROWS = `(() => {
+  const out = {};
+  for (const name of ["Parent Models", "Children Models"]) {
+    const header = [...document.querySelectorAll(".pane-header")].find((h) => h.textContent.includes(name));
+    const pane = header?.closest(".pane");
+    out[name] = pane ? [...pane.querySelectorAll(".monaco-list-row")].map((r) => r.getAttribute("aria-label")) : null;
+  }
+  return out;
+})()`;
+
+/** Opens models/child.sql and the dbt view container, and records the Parent and Children trees. */
+async function captureModelTrees(
+  evidence: Evidence,
+  cdpPort: string,
+  host: string,
+): Promise<void> {
+  const folder = vscode.workspace.workspaceFolders?.[0];
+  assert.ok(folder, "fixture workspace should be open");
+  await vscode.window.showTextDocument(
+    await vscode.workspace.openTextDocument(
+      vscode.Uri.joinPath(folder.uri, "models/child.sql"),
+    ),
+  );
+  await vscode.commands.executeCommand("workbench.view.extension.dbt_view");
+  await sleep(1_500);
+  await evidence.capture({
+    name: "model trees",
+    expect:
+      "The Parent Models and Children Models views are expanded for models/child.sql; each lists its graph neighbours or one line explaining why the graph is empty",
+    measured: {
+      rows: (await evaluateWorkbench(cdpPort, host, TREE_ROWS)) ?? null,
+    },
+  });
+}
+
 const EXPLORER_ROWS = `[...document.querySelectorAll(".explorer-folders-view .monaco-list-row")].map((row) => {
   const label = row.querySelector(".monaco-icon-label");
   const icon = label && getComputedStyle(label, "::before");
@@ -774,6 +810,8 @@ async function captureEditorSurfaces(
   });
 
   await captureNonProjectSql(evidence, cdpPort, host);
+
+  await captureModelTrees(evidence, cdpPort, host);
 
   const output = await showProjectOutput(cdpPort, host, root);
   await evidence.capture({

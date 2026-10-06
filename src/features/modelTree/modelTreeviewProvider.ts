@@ -135,7 +135,8 @@ abstract class ModelTreeviewProvider
     }
 
     const currentFilePath = window.activeTextEditor.document.uri;
-    const event = this.projects.get(currentFilePath)?.manifest;
+    const project = this.projects.get(currentFilePath);
+    const event = project?.manifest;
     if (event === undefined) {
       return Promise.resolve([]);
     }
@@ -155,7 +156,12 @@ abstract class ModelTreeviewProvider
     if (!model) {
       return Promise.resolve([]);
     }
-    return Promise.resolve(this.getTreeItems(model.unique_id, event));
+    const items = this.getTreeItems(model.unique_id, event);
+    const notice =
+      items.length === 0 && this.treeType !== "tests"
+        ? project?.graphNotice?.()
+        : undefined;
+    return Promise.resolve(notice ? [noticeItem(notice)] : items);
   }
 
   private nodeDataToNode(nodeData: NodeData): Node | undefined {
@@ -424,6 +430,15 @@ class NodeTreeItem extends TreeItem {
 
 class ModelTreeItem extends NodeTreeItem {
   override contextValue = "model";
+}
+
+/** The single item that explains an empty server-owned graph. */
+function noticeItem(message: string): NodeTreeItem {
+  const item = new NodeTreeItem(new Model(message, "notice"));
+  item.collapsibleState = TreeItemCollapsibleState.None;
+  item.contextValue = "notice";
+  item.tooltip = message;
+  return item;
 }
 
 class SourceTreeItem extends NodeTreeItem {

@@ -6,7 +6,6 @@ export * from "./graphParser";
 export * from "./macroParser";
 export * from "./manifestProject";
 export * from "./metricParser";
-export * from "./modelDepthParser";
 export * from "./nodeParser";
 export * from "./relationshipParser";
 export * from "./semanticModelParser";

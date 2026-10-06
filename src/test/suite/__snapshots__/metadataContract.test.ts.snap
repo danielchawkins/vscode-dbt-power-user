@@ -6,38 +6,14 @@ exports[`Metadata contract — shape and key set snapshot > snapshots parser map
   "exposureKeys": [],
   "functionKeys": [],
   "graphShapes": {
-    "children": {
-      "model.single_project.broken_ref": {
-        "currentNode": undefined,
-        "nodes": [
-          {
-            "key": "model.single_project.child",
-            "resourceType": "model",
-          },
-        ],
-      },
-    },
+    "children": {},
     "metrics": {
       "model.single_project.broken_ref": {
         "currentNode": undefined,
         "nodes": [],
       },
     },
-    "parents": {
-      "model.single_project.broken_ref": {
-        "currentNode": undefined,
-        "nodes": [],
-      },
-      "model.single_project.child": {
-        "currentNode": undefined,
-        "nodes": [
-          {
-            "key": "model.single_project.broken_ref",
-            "resourceType": "model",
-          },
-        ],
-      },
-    },
+    "parents": {},
     "tests": {
       "model.single_project.broken_ref": {
         "currentNode": undefined,
@@ -56,12 +32,7 @@ exports[`Metadata contract — shape and key set snapshot > snapshots parser map
     },
   ],
   "metricKeys": [],
-  "modelDepthMap": {
-    "broken_ref": 1,
-    "child": 2,
-    "model.single_project.broken_ref": 1,
-    "model.single_project.child": 2,
-  },
+  "modelDepthMap": {},
   "nodeKeys": [
     "model.single_project.broken_ref",
     "model.single_project.child",

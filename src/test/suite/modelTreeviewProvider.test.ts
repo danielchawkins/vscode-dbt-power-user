@@ -94,6 +94,20 @@ describe("model tree views", () => {
     expect(await tree.getChildren()).toEqual([]);
   });
 
+  it("shows one item naming the setting when the graph is empty", async () => {
+    const m = manifest();
+    m.graphMetaMap.parents = new Map();
+    byRoot.set(rootA.fsPath, {
+      projectRoot: rootA,
+      manifest: m,
+      graphNotice: () => "set fusionPowerUser.staticAnalysis to strict",
+    });
+    const items = await new ParentModelTreeview(projects).getChildren();
+    expect(items.map((i) => i.label)).toEqual([
+      "set fusionPowerUser.staticAnalysis to strict",
+    ]);
+  });
+
   it("returns no children without an active editor", async () => {
     byRoot.set(rootA.fsPath, { projectRoot: rootA, manifest: manifest() });
     (window.activeTextEditor as any) = undefined;
