@@ -82,22 +82,20 @@ describe("fusionPowerUser.diagnostics", () => {
       debug: vi.fn(() => Promise.resolve()),
     };
 
-    new VSCodeCommands(
-      {
-        all: () => [failedProject, healthyProject],
-      } as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      { error: vi.fn(), debug: vi.fn() } as never,
+    new VSCodeCommands({
+      projects: { all: () => [failedProject, healthyProject] } as never,
+      extensionContext: {} as never,
+      runModel: {} as never,
+      runTest: {} as never,
+      projectSetupCommands: {} as never,
+      log: { error: vi.fn(), debug: vi.fn() } as never,
       diagnosticsOutputChannel,
-      {} as never,
-      {} as never,
-      {} as never,
-      {} as never,
-      { whenSettled: () => initialized },
-    );
+      runHistoryService: {} as never,
+      cteProfilerService: {} as never,
+      cteProfilerDecorationProvider: {} as never,
+      deferToProductionStatusBar: {} as never,
+      startupGate: { whenSettled: () => initialized },
+    });
 
     const registration = (commands.registerCommand as Mock).mock.calls.find(
       ([command]) => command === "fusionPowerUser.diagnostics",

@@ -110,17 +110,6 @@
       "count": 2
     }
   },
-  "src/features/commands.ts": {
-    "max-lines": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 3
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/features/cte/cteProfilerDecorationProvider.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
