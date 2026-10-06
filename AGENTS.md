@@ -54,7 +54,7 @@ Just is the workflow authority. The root file owns repository workflows and dele
 
 See [`docs/architecture.md`](docs/architecture.md) for the *why* behind activation, Declared Projects, the Fusion client pool, and the metadata port.
 
-Two build outputs from one repository: the extension host bundle (TypeScript, rsbuild) and the webview panels (React 18 + Vite + Redux Toolkit, built separately under `webview_panels/`). They communicate through VS Code's webview messaging with typed message contracts.
+Two build outputs from one repository: the extension host bundle (TypeScript, rsbuild) and the webview panels (React 19 + Vite + Redux Toolkit, built separately under `webview_panels/`). They communicate through VS Code's webview messaging with typed message contracts.
 
 `src/extension.ts` → `src/dbtPowerUserExtension.ts` is the single activation path. Every collaborator is constructed with plain constructors by `compose` in `src/compositionRoot.ts`; there is no container or service locator. Fusion is the only dbt integration; dbt Core and dbt Cloud are removed.
 
