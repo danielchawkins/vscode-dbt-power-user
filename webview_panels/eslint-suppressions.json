@@ -130,15 +130,6 @@
     }
   },
   "src/modules/queryPanel/useQueryPanelListeners.ts": {
-    "@eslint-react/exhaustive-deps": {
-      "count": 4
-    },
-    "@eslint-react/naming-convention-ref-name": {
-      "count": 3
-    },
-    "@eslint-react/purity": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     }

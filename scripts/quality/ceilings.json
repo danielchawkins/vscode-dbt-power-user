@@ -1,6 +1,6 @@
 {
   "suppressions.host": 29,
-  "suppressions.webview": 45,
+  "suppressions.webview": 37,
   "internalTags": 63,
   "strictTs.host": 98,
   "strictTs.webview": 65,
