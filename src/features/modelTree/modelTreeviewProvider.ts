@@ -19,14 +19,14 @@ import {
   NodeMetaData,
   NodeMetaMap,
 } from "../../core/manifest/types";
+import { removeProtocol } from "../../core/text";
 import { extensionRoot } from "../../extensionRoot";
 import type { Manifest } from "../../projects/manifestTypes";
 import { Projects } from "../../projects/projects";
 import {
   getCurrentlySelectedModelNameInYamlConfig,
   getDepthColor,
-  removeProtocol,
-} from "../../utils";
+} from "./modelTreeHelpers";
 
 interface IconPath {
   light: string;

@@ -14,7 +14,7 @@ import { ColumnMetaData } from "../core/manifest/types";
 import { DBColumn } from "../core/types";
 import { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
-import { getColumnNameByCase } from "../utils";
+import { getColumnNameByCase } from "./columnNames";
 import { writeUserFile } from "./userFiles";
 
 async function createUserFile(location: string, text: string): Promise<void> {

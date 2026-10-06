@@ -23,12 +23,23 @@ import {
 } from "../../benchmark/runtimeTimings";
 import type { Log } from "../../core/log";
 import {
+  getColumnTestConfigFromYml,
+  isAcceptedValues,
+  isRelationship,
+} from "../../core/manifest/testConfig";
+import {
   TestMetaData,
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
 } from "../../core/manifest/types";
+import { removeProtocol } from "../../core/text";
 import { ExtensionContextStore } from "../../extensionContext";
 import { UserInputError } from "../../local/errors";
+import {
+  getColumnNameByCase,
+  isColumnNameEqual,
+  isQuotedIdentifier,
+} from "../../projects/columnNames";
 import { publicationId } from "../../projects/manifest";
 import type { ParseDemand } from "../../projects/parseDemand";
 import { activeModelUri } from "../../projects/previewUri";
@@ -36,15 +47,6 @@ import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 import { QueryManifestService } from "../../projects/queryManifestService";
 import { writeUserFile } from "../../projects/userFiles";
-import {
-  getColumnNameByCase,
-  getColumnTestConfigFromYml,
-  isAcceptedValues,
-  isColumnNameEqual,
-  isQuotedIdentifier,
-  isRelationship,
-  removeProtocol,
-} from "../../utils";
 import {
   dispatchMessage,
   Handlers,

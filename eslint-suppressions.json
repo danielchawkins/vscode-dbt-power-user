@@ -80,6 +80,11 @@
       "count": 1
     }
   },
+  "src/core/manifest/testConfig.ts": {
+    "@typescript-eslint/no-explicit-any": {
+      "count": 3
+    }
+  },
   "src/core/manifest/testParser.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
@@ -181,6 +186,11 @@
       "count": 2
     }
   },
+  "src/features/modelTree/modelTreeHelpers.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
   "src/features/modelTree/modelTreeviewProvider.ts": {
     "@typescript-eslint/no-explicit-any": {
       "count": 1
@@ -231,14 +241,6 @@
   },
   "src/test/smoke/cdpClient.ts": {
     "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
-  "src/utils.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    },
-    "complexity": {
       "count": 1
     }
   }

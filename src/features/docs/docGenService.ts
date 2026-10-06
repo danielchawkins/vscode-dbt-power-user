@@ -4,10 +4,10 @@ import * as path from "path";
 import { Uri, window } from "vscode";
 import { parse as parseYaml } from "yaml";
 import { NodeMetaData, RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
+import { removeProtocol } from "../../core/text";
 import { activeModelUri } from "../../projects/previewUri";
 import { Projects } from "../../projects/projects";
 import { QueryManifestService } from "../../projects/queryManifestService";
-import { removeProtocol } from "../../utils";
 import { DBTDocumentation, Source } from "./docGenTypes";
 
 interface DBTDocumentationMessage {
