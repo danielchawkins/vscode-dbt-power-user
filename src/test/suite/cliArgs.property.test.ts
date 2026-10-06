@@ -170,7 +170,7 @@ describe("toCliArgs properties", () => {
   });
 
   it("keeps each selection and SQL payload as one byte-equal element after the subcommand", () => {
-    property((s, c, args) => {
+    property((_s, c, args) => {
       const subcommand = c.kind.startsWith("compile") ? "compile" : c.kind;
       expect(args[0]).toBe(subcommand);
       const expected = payloadOf(c);

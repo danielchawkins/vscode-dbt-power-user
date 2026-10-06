@@ -89,7 +89,6 @@ export class VSCodeCommands implements Disposable {
         "fusionPowerUser.profileCtes",
         async (uri?: Uri, ctes?: CteInfo[]) => {
           // When called from command palette, args are undefined — use active editor
-          const source = uri ? "codeLens" : "commandPalette";
           const activeEditor = window.activeTextEditor;
           const docUri = uri ?? activeEditor?.document.uri;
           if (!docUri) {

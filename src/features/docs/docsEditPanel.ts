@@ -211,18 +211,18 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
 
   public async resolveWebviewView(
     panel: WebviewView,
-    context: WebviewViewResolveContext,
+    _context: WebviewViewResolveContext,
     _token: CancellationToken,
   ) {
     beginWebviewResolve(this.entry);
     this._panel = panel;
-    this.setupWebviewOptions(context);
-    this.renderWebviewView(context);
+    this.setupWebviewOptions();
+    this.renderWebviewView();
     this.setupWebviewHooks();
     this.transmitData();
   }
 
-  private renderWebviewView(context: WebviewViewResolveContext) {
+  private renderWebviewView() {
     const webview = this._panel!.webview;
     webview.html = panelHtml(webview, this.extensionContext.extensionUri, {
       entry: this.entry,
@@ -230,7 +230,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     });
   }
 
-  private setupWebviewOptions(context: WebviewViewResolveContext) {
+  private setupWebviewOptions() {
     this._panel!.title = "";
     this._panel!.description = "Edit model documentation";
     this._panel!.webview.options = panelWebviewOptions(

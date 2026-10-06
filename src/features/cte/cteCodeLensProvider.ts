@@ -509,7 +509,6 @@ export class CteCodeLensProvider implements CodeLensProvider, Disposable {
       const validationResult = this.validateCteMatchWithComments(
         withClauseContent,
         matchIndex,
-        match[0],
         identifierName,
       );
       if (validationResult.isValid) {
@@ -531,7 +530,6 @@ export class CteCodeLensProvider implements CodeLensProvider, Disposable {
   private validateCteMatchWithComments(
     content: string,
     startIndex: number,
-    fullMatch: string,
     identifierName: string,
   ): { isValid: boolean; fullMatch?: string } {
     // Find the end of the identifier (including column list if present)

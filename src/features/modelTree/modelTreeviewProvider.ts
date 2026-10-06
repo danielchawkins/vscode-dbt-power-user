@@ -1,7 +1,6 @@
 import * as path from "path";
 
 import {
-  Command,
   Disposable,
   Event,
   EventEmitter,
@@ -56,28 +55,28 @@ class Model extends Node {}
 class Seed extends Node {}
 class Test extends Node {
   // displayInModelTree = false;
-  iconPath = {
+  override iconPath = {
     light: path.join(extensionRoot, "../media/images/source_light.svg"),
     dark: path.join(extensionRoot, "../media/images/source_dark.svg"),
   };
 }
 class Analysis extends Node {
-  displayInModelTree = true;
+  override displayInModelTree = true;
 }
 class Exposure extends Node {
-  displayInModelTree = true;
+  override displayInModelTree = true;
 }
 class Function extends Node {
-  displayInModelTree = true;
+  override displayInModelTree = true;
 }
 class Metric extends Node {
-  displayInModelTree = false;
+  override displayInModelTree = false;
 }
 
 class Snapshot extends Node {}
 
 class Source extends Node {
-  iconPath = {
+  override iconPath = {
     light: path.join(extensionRoot, "../media/images/source_light.svg"),
     dark: path.join(extensionRoot, "../media/images/source_dark.svg"),
   };
@@ -280,7 +279,6 @@ class DocumentationTreeviewProvider
       return Promise.resolve([]);
     }
     const projectRootpath = project.projectRoot;
-    const { nodeMetaMap } = event;
 
     if (!element) {
       const currentNode = lookupModelByEditorContent(
@@ -347,11 +345,10 @@ class DocumentationTreeviewProvider
 }
 
 class DocTreeItem extends TreeItem {
-  collapsibleState: TreeItemCollapsibleState =
+  override collapsibleState: TreeItemCollapsibleState =
     TreeItemCollapsibleState.Collapsed;
-  description: string;
+  override description: string;
   children?: DocTreeItem[];
-  command?: Command;
   constructor(node: DocNode) {
     super(node.label, TreeItemCollapsibleState.Collapsed);
     this.description = node.description !== undefined ? node.description : " ";
@@ -382,7 +379,7 @@ class DocNode extends Node {
 }
 
 class NodeTreeItem extends TreeItem {
-  collapsibleState = TreeItemCollapsibleState.Collapsed;
+  override collapsibleState = TreeItemCollapsibleState.Collapsed;
   key: string;
   url: string | undefined;
   depth?: number;
@@ -423,30 +420,30 @@ class NodeTreeItem extends TreeItem {
 }
 
 class ModelTreeItem extends NodeTreeItem {
-  contextValue = "model";
+  override contextValue = "model";
 }
 
 class SourceTreeItem extends NodeTreeItem {
-  iconPath = {
+  override iconPath = {
     light: Uri.file(
       path.join(extensionRoot, "../media/images/source_light.svg"),
     ),
     dark: Uri.file(path.join(extensionRoot, "../media/images/source_dark.svg")),
   };
-  contextValue = "source";
+  override contextValue = "source";
 }
 
 class SeedTreeItem extends NodeTreeItem {
-  iconPath = {
+  override iconPath = {
     light: Uri.file(path.join(extensionRoot, "../media/images/seed_light.svg")),
     dark: Uri.file(path.join(extensionRoot, "../media/images/seed_dark.svg")),
   };
-  contextValue = "seed";
+  override contextValue = "seed";
 }
 
 class SnapshotTreeItem extends NodeTreeItem {
-  contextValue = "snapshot";
-  iconPath = {
+  override contextValue = "snapshot";
+  override iconPath = {
     light: Uri.file(
       path.join(extensionRoot, "../media/images/snapshot_light.svg"),
     ),
@@ -457,8 +454,8 @@ class SnapshotTreeItem extends NodeTreeItem {
 }
 
 class ExposureTreeItem extends NodeTreeItem {
-  contextValue = "exposure";
-  iconPath = {
+  override contextValue = "exposure";
+  override iconPath = {
     light: Uri.file(
       path.join(extensionRoot, "../media/images/exposure_light.svg"),
     ),
@@ -469,21 +466,21 @@ class ExposureTreeItem extends NodeTreeItem {
 }
 
 class FunctionTreeItem extends NodeTreeItem {
-  contextValue = "function";
+  override contextValue = "function";
 }
 
 class AnalysisTreeItem extends NodeTreeItem {
-  contextValue = "analysis";
+  override contextValue = "analysis";
 }
 
 class TestTreeItem extends NodeTreeItem {
-  iconPath = {
+  override iconPath = {
     light: Uri.file(
       path.join(extensionRoot, "../media/images/tests_light.svg"),
     ),
     dark: Uri.file(path.join(extensionRoot, "../media/images/tests_dark.svg")),
   };
-  contextValue = "test";
+  override contextValue = "test";
 }
 
 export class ModelTestTreeview extends ModelTreeviewProvider {

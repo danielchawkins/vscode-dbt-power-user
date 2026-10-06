@@ -163,7 +163,7 @@ function lineAtOffset(text: string, offset: number): number {
 export class LineagePanel extends PanelHost implements LineagePanelView {
   protected readonly entry = "lineage";
   protected readonly csp = {};
-  protected panelDescription = "Lineage panel";
+  protected override panelDescription = "Lineage panel";
   // The source unique_id the panel last rooted at when a source YAML is the
   // active file. Used to avoid redundant re-renders on every cursor move; the
   // panel only re-roots when the cursor moves onto a different source table.
@@ -173,11 +173,11 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
     { root: string; epoch: number | undefined } | undefined;
 
   public constructor(
-    protected extensionContext: ExtensionContextStore,
+    protected override extensionContext: ExtensionContextStore,
     private terminal: DBTTerminal,
     private dbtLineageService: DbtLineageService,
     eventEmitterService: SharedStateService,
-    protected queryManifestService: QueryManifestService,
+    protected override queryManifestService: QueryManifestService,
   ) {
     super(
       extensionContext,
@@ -259,7 +259,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
     void this._panel?.webview.postMessage(message);
   }
 
-  protected onWebviewReady() {
+  protected override onWebviewReady() {
     super.onWebviewReady();
     this.renderStartingNode();
   }

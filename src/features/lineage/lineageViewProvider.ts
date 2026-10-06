@@ -20,7 +20,7 @@ export class LineageViewProvider implements WebviewViewProvider, Disposable {
 
   public constructor(
     private lineagePanel: LineagePanel,
-    private projects: Projects,
+    projects: Projects,
   ) {
     this.disposables.push(
       lineagePanel,

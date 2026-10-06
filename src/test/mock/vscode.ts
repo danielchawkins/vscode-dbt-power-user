@@ -426,7 +426,7 @@ export const workspace = {
     update: vi.fn(),
   }),
   workspaceFolders: [],
-  getWorkspaceFolder: vi.fn((uri: typeof Uri) => {
+  getWorkspaceFolder: vi.fn((_uri: typeof Uri) => {
     if (workspace.workspaceFolders && workspace.workspaceFolders.length > 0) {
       return workspace.workspaceFolders[0];
     }

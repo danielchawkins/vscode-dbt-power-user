@@ -96,9 +96,8 @@ describe("CteCodeLensProvider", () => {
     cte: CteInfo,
     expectedName: string,
     expectedIndex: number,
-    description?: string,
+    _description?: string,
   ) => {
-    const msg = description ? ` (${description})` : "";
     expect(cte.name).toBe(expectedName);
     expect(cte.index).toBe(expectedIndex);
     expect(cte.range).toBeDefined();
