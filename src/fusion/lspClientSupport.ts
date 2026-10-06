@@ -1,12 +1,13 @@
 import { realpathSync } from "fs";
 import * as path from "path";
 import type { CancellationToken, Disposable, LogOutputChannel } from "vscode";
-import { Uri } from "vscode";
+import { CodeLens, Uri } from "vscode";
 import type {
   LanguageClient,
   LanguageClientOptions,
   ServerOptions,
 } from "vscode-languageclient/node";
+import { fusionCteFromLens, type FusionCte } from "../core/cte/ctePreview";
 import type { FusionProjectRef } from "./fusionClient";
 import type { ProjectDiagnosticsFilter } from "./fusionDiagnostics";
 import { spawnProcess, type ChildProcess } from "./process";
@@ -74,16 +75,58 @@ export function canonicalProjectRoot(
 }
 
 /**
- * Drops server code lenses whose command no extension here registers. Fusion emits `dbt.previewCte` lenses for
- * the official dbt extension's client command; `CteCodeLensProvider` supplies the CTE actions instead.
+ * Maps Fusion's `dbt.previewCte` lenses, which carry a client command this extension does not register, to the
+ * extension's own CTE actions: "Execute CTE: <name>" on each CTE and one "Profile CTEs" on the first. Other lenses
+ * pass through. A lens whose argument has an unexpected shape is dropped.
  * @internal
  */
-export function withoutUnregisteredLspLenses<
-  T extends { command?: { command: string } },
->(lenses: T[] | null | undefined): T[] | null | undefined {
-  return lenses?.filter(
-    (lens) => lens.command?.command !== FUSION_LSP_PREVIEW_CTE,
-  );
+export function mapCteLenses(
+  lenses: CodeLens[] | null | undefined,
+  documentUri: Uri,
+): CodeLens[] | null | undefined {
+  if (!lenses) {
+    return lenses;
+  }
+  const mapped: CodeLens[] = [];
+  const ctes: FusionCte[] = [];
+  const lensOfCte: CodeLens[] = [];
+  for (const lens of lenses) {
+    if (lens.command?.command !== FUSION_LSP_PREVIEW_CTE) {
+      mapped.push(lens);
+      continue;
+    }
+    const cte = fusionCteFromLens(
+      lens.command.arguments?.[1],
+      lens.range.start.line,
+    );
+    if (cte) {
+      ctes.push(cte);
+      lensOfCte.push(lens);
+    }
+  }
+  ctes.forEach((cte, index) => {
+    const range = lensOfCte[index]?.range;
+    if (!range) {
+      return;
+    }
+    mapped.push(
+      new CodeLens(range, {
+        title: `$(play) Execute CTE: ${cte.name}`,
+        command: "fusionPowerUser.runCteWithDependencies",
+        arguments: [{ uri: documentUri, cte }],
+      }),
+    );
+    if (index === 0) {
+      mapped.push(
+        new CodeLens(range, {
+          title: "⏱ Profile CTEs",
+          command: "fusionPowerUser.profileCtes",
+          arguments: [documentUri, ctes],
+        }),
+      );
+    }
+  });
+  return mapped;
 }
 
 /**
@@ -284,7 +327,7 @@ export function languageClientOptions(input: {
     },
     middleware: {
       provideCodeLenses: async (document, token, next) =>
-        withoutUnregisteredLspLenses(await next(document, token)),
+        mapCteLenses(await next(document, token), document.uri),
       sendRequest: (type, param, token, next) => {
         const method = typeof type === "string" ? type : type.method;
         return FORMAT_METHODS.has(method)

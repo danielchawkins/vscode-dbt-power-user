@@ -698,12 +698,12 @@ const CLOSE_HOVER = `(() => {
   return true;
 })()`;
 
-/** Opens the compiled preview of models/child.sql and records its text. */
+/** Opens the compiled preview of models/with_ctes.sql and records its text. */
 async function captureCompiledPreview(
   evidence: Evidence,
   root: vscode.Uri,
 ): Promise<void> {
-  const model = vscode.Uri.joinPath(root, "models/child.sql");
+  const model = vscode.Uri.joinPath(root, "models/with_ctes.sql");
   await vscode.window.showTextDocument(
     await vscode.workspace.openTextDocument(model),
   );
@@ -714,7 +714,8 @@ async function captureCompiledPreview(
     preview = vscode.window.visibleTextEditors.find(
       (e) => e.document.uri.scheme === "query-preview",
     );
-    if (preview && !preview.document.getText().startsWith("Waiting")) {
+    const text = preview?.document.getText() ?? "";
+    if (text !== "" && !text.startsWith("Waiting")) {
       break;
     }
   }
@@ -728,8 +729,35 @@ async function captureCompiledPreview(
   await evidence.capture({
     name: "compiled preview",
     expect:
-      "A compiled SQL preview is open beside models/child.sql and shows the compiled SQL of the model (not a placeholder or a compile error, although models/broken_ref.sql in the same project does not compile); its text matches measured.previewText and no notification is shown",
+      "A compiled SQL preview is open beside models/with_ctes.sql and shows the compiled SQL of the model (not a placeholder or a compile error, although models/broken_ref.sql in the same project does not compile); its text matches measured.previewText and no notification is shown",
     measured: { previewText: text },
+  });
+}
+
+/** Opens models/with_ctes.sql and records the CTE lenses the server supplies. */
+async function captureCteLenses(
+  evidence: Evidence,
+  root: vscode.Uri,
+): Promise<void> {
+  const model = vscode.Uri.joinPath(root, "models/with_ctes.sql");
+  await vscode.window.showTextDocument(
+    await vscode.workspace.openTextDocument(model),
+  );
+  let titles: string[] = [];
+  for (let attempt = 0; attempt < 40 && titles.length === 0; attempt += 1) {
+    const lenses =
+      (await vscode.commands.executeCommand<vscode.CodeLens[]>(
+        "vscode.executeCodeLensProvider",
+        model,
+      )) ?? [];
+    titles = lenses.map((lens) => lens.command?.title ?? "");
+    await sleep(500);
+  }
+  await evidence.capture({
+    name: "cte lenses",
+    expect:
+      "models/with_ctes.sql shows an Execute CTE lens above each of first_cte and second_cte and one Profile CTEs lens; measured.titles lists them",
+    measured: { titles },
   });
 }
 
@@ -847,6 +875,7 @@ async function captureEditorSurfaces(
   await captureNonProjectSql(evidence, cdpPort, host);
 
   await captureModelTrees(evidence, cdpPort, host);
+  await captureCteLenses(evidence, root);
   await captureCompiledPreview(evidence, root);
 
   const output = await showProjectOutput(cdpPort, host, root);

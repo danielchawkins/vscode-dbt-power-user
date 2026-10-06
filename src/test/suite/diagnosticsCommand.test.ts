@@ -96,7 +96,6 @@ describe("fusionPowerUser.diagnostics", () => {
       {} as never,
       {} as never,
       {} as never,
-      {} as never,
       { whenSettled: () => initialized },
     );
 
