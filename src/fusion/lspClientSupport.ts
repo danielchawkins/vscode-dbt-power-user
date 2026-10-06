@@ -241,6 +241,23 @@ async function formatOnceCompiled<R>(
   }
 }
 
+/**
+ * The arguments of `command`. `compileFile` takes a URI string, which skips the document `uriConverters`, so it is
+ * mapped the same way; the server matches URIs literally and would not find a file under a symlinked root.
+ */
+export function commandArguments(
+  command: string,
+  args: unknown[],
+  uriConverters: LanguageClientOptions["uriConverters"],
+): unknown[] {
+  if (command !== "dbt.compileFile" || !uriConverters) {
+    return args;
+  }
+  return args.map((arg) =>
+    typeof arg === "string" ? uriConverters.code2Protocol(Uri.parse(arg)) : arg,
+  );
+}
+
 /** The options one Declared Project's `LanguageClient` is created with. */
 export function languageClientOptions(input: {
   project: FusionProjectRef;
