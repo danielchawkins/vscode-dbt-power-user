@@ -339,25 +339,30 @@ These extend `AGENTS.md`; the ESLint config enforces what it can.
 
 ## Dependencies
 
-| Package                                                          | Now             | Target                               | Where   | Phase       |
-| ---------------------------------------------------------------- | --------------- | ------------------------------------ | ------- | ----------- |
-| `fast-check`, `dependency-cruiser`                               | —               | added                                | root    | R1          |
-| `jest`, `ts-jest`, `@jest/globals`                               | 30, 29          | replaced by Vitest                   | root    | R4          |
-| `@vscode/test-electron` launch script                            | custom          | `@vscode/test-cli`                   | root    | R1          |
-| `typescript`                                                     | 6               | 6 until typescript-eslint supports 7 | both    | —           |
-| `inversify`, `reflect-metadata`, `ts-loader`                     | 8, 0.2, 9       | removed                              | root    | R4          |
-| `react-router-dom`                                               | 7               | removed                              | webview | R6          |
-| `@reduxjs/toolkit`                                               | 2               | removed with the lineage component   | webview | R8          |
-| `jsdom`                                                          | 30.1            | `happy-dom` 20.14, 35% faster suite  | webview | quality 4.5 |
-| `react-select`, `@emotion/*`                                     | 5.10            | native select and chip input         | webview | quality 4.2 |
-| `reactstrap`, `bootstrap`, `sass`                                | —               | removed                              | webview | R7          |
-| `react-hook-form`, `yup`, `react-copy-to-clipboard`              | —               | native                               | webview | R7          |
-| Storybook, `faker`, `factory.ts`, `react-markdown`, `remark-gfm` | —               | removed                              | webview | R7          |
-| `@finos/perspective*`                                            | 3.8, deprecated | `@perspective-dev/*`                 | webview | R7          |
-| `react`, `react-dom`                                             | 19.3            | 19, done                             | webview | quality 4.3 |
-| `@types/node`                                                    | 24.19           | current LTS                          | root    | R7          |
-| `react-syntax-highlighter`                                       | 16.1            | Prism core with five grammars        | webview | quality 4.4 |
-| `@altimateai/ui-components`, `tailwindcss`, `postcss`            | 0.0.88, 3       | removed                              | webview | R8          |
+| Package                                                          | Now             | Target                                                                               | Where   | Phase       |
+| ---------------------------------------------------------------- | --------------- | ------------------------------------------------------------------------------------ | ------- | ----------- |
+| `fast-check`, `dependency-cruiser`                               | —               | added                                                                                | root    | R1          |
+| `jest`, `ts-jest`, `@jest/globals`                               | 30, 29          | replaced by Vitest                                                                   | root    | R4          |
+| `@vscode/test-electron` launch script                            | custom          | `@vscode/test-cli`                                                                   | root    | R1          |
+| `typescript`                                                     | 6               | 6 until typescript-eslint supports 7                                                 | both    | —           |
+| `inversify`, `reflect-metadata`, `ts-loader`                     | 8, 0.2, 9       | removed                                                                              | root    | R4          |
+| `react-router-dom`                                               | 7               | removed                                                                              | webview | R6          |
+| `@reduxjs/toolkit`                                               | 2               | removed with the lineage component                                                   | webview | R8          |
+| `jsdom`                                                          | 30.1            | `happy-dom` 20.14, 35% faster suite                                                  | webview | quality 4.5 |
+| `react-select`, `@emotion/*`                                     | 5.10            | native select and chip input                                                         | webview | quality 4.2 |
+| `reactstrap`, `bootstrap`, `sass`                                | —               | removed                                                                              | webview | R7          |
+| `react-hook-form`, `yup`, `react-copy-to-clipboard`              | —               | native                                                                               | webview | R7          |
+| Storybook, `faker`, `factory.ts`, `react-markdown`, `remark-gfm` | —               | removed                                                                              | webview | R7          |
+| `@finos/perspective*`                                            | 3.8, deprecated | `@tanstack/react-table` 9, `@tanstack/react-virtual` 3                               | webview | quality 4.7 |
+| `react`, `react-dom`                                             | 19.3            | 19, done                                                                             | webview | quality 4.3 |
+| `@types/node`                                                    | 24.19           | current LTS                                                                          | root    | R7          |
+| `react-syntax-highlighter`                                       | 16.1            | Prism core with five grammars                                                        | webview | quality 4.4 |
+| `@altimateai/ui-components`, `tailwindcss`, `postcss`            | 0.0.88, 3       | removed                                                                              | webview | R8          |
+| `typescript`, majors 6 → 7                                       | 6.0             | defer: `typescript-eslint` 8.71 peers `<6.1.0`                                       | both    | quality 4.8 |
+| `@types/node`, majors 24 → 26                                    | 24.19           | decline: `engines.node` is `>=24 <25` and the types track the runtime                | both    | quality 4.8 |
+| `@types/vscode`, 1.125 → 1.140                                   | 1.125           | decline: stays at the `engines.vscode` floor, so the API cannot outrun the host      | root    | quality 4.8 |
+| `@vscode/codicons`, 0.0.45 → 0.0.46-24                           | 0.0.45          | decline: the newer line is a prerelease                                              | webview | quality 4.8 |
+| `type-coverage`, `concurrently`                                  | 2.30, 10        | kept; `shell-quote` overridden, `fast-glob` served by a local stand-in, 0 advisories | root    | quality 4.8 |
 
 ## Considered and not planned
 
