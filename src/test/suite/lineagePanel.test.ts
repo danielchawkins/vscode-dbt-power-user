@@ -9,6 +9,7 @@ import {
 } from "vitest";
 import { window, workspace } from "vscode";
 import { LineagePanel } from "../../features/lineage/lineagePanel";
+import { resolveSourceStartingNode } from "../../features/lineage/lineageSources";
 
 describe("LineagePanel", () => {
   let panel: LineagePanel;
@@ -596,12 +597,11 @@ describe("LineagePanel — source YAML rooting", () => {
         },
       ],
     ]);
-    const matches = (panel as any).getSourceTablesForFile(
-      sourceMetaMap,
-      filePath,
+    const matches = resolveSourceStartingNode(
+      { sourceMetaMap } as never,
+      makeEditor(filePath, "") as never,
     );
-    expect(matches).toHaveLength(1);
-    expect(matches[0].key).toBe(
+    expect(matches?.key).toBe(
       "source.proj.segment_website_production.identifies",
     );
   });
@@ -903,17 +903,14 @@ describe("LineagePanel — source YAML rooting", () => {
       3,
     );
     (window as any).activeTextEditor = editor;
-    const resolveSpy = vi.spyOn(
-      panel as any,
-      "resolveSourceStartingNode" as any,
-    );
+    const lookups = vi.spyOn(sourceMetaMap, "values");
 
     (panel as any).changedTextEditorSelection(editor);
 
     // The guard's resolution is threaded into the render path; without the
     // threading this is 2 (guard + getStartingNode), iterating
     // sourceMetaMap twice per cursor move.
-    expect(resolveSpy).toHaveBeenCalledTimes(1);
+    expect(lookups).toHaveBeenCalledTimes(1);
     expect((panel as any)._panel.webview.postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         command: "render",
