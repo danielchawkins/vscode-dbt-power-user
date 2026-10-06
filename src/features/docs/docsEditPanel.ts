@@ -30,6 +30,7 @@ import {
 import { ExtensionContextStore } from "../../extensionContext";
 import { UserInputError } from "../../local/errors";
 import { publicationId } from "../../projects/manifest";
+import type { ParseDemand } from "../../projects/parseDemand";
 import { activeModelUri } from "../../projects/previewUri";
 import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
@@ -75,6 +76,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   private loadedFromManifest = false;
   private _disposables: Disposable[] = [];
   private onMessageDisposable: Disposable | undefined;
+  private demandSubscription: Disposable | undefined;
 
   public constructor(
     private projects: Projects,
@@ -83,6 +85,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     private dbtTestService: DbtTestService,
     private queryManifestService: QueryManifestService,
     private terminal: Log,
+    private parseDemand?: ParseDemand,
   ) {
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
@@ -214,7 +217,18 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     this.setupWebviewOptions();
     this.renderWebviewView();
     this.setupWebviewHooks();
+    this.followVisibility(panel);
     void this.transmitData();
+  }
+
+  /** The documentation editor reads parse-owned fields, so a visible editor keeps the parse current. */
+  private followVisibility(panel: WebviewView) {
+    this.demandSubscription?.dispose();
+    this.demandSubscription = this.parseDemand?.follow(
+      () => panel.visible,
+      panel.onDidChangeVisibility,
+    );
+    panel.onDidDispose(() => this.demandSubscription?.dispose());
   }
 
   private renderWebviewView() {

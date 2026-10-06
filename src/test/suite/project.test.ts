@@ -38,7 +38,8 @@ import {
 import { FusionCli } from "../../fusion/fusionCli";
 import { DbtTaskTerminal } from "../../projects/dbtTask";
 import { ManifestParsers } from "../../projects/manifest";
-import { Project } from "../../projects/project";
+import { ParseDemand } from "../../projects/parseDemand";
+import { Project, type ProjectOptions } from "../../projects/project";
 import { ProjectCommandDeps, queueCli } from "../../projects/projectCommands";
 import { ProjectDiagnostics } from "../../projects/projectDiagnostics";
 import { RunHistoryService } from "../../projects/runHistoryService";
@@ -1052,11 +1053,13 @@ function stubDelegate(
 async function buildProject(
   projectRoot: string,
   fusionDelegate: FusionCli,
+  overrides: Partial<ProjectOptions> = {},
 ): Promise<Project> {
   const terminal = mockTerminal();
   const project = buildTestProject(projectRoot, () => fusionDelegate, {
     terminal,
     parsers: realParsers(terminal),
+    ...overrides,
   });
   await project.initialize();
   return project;
@@ -1339,6 +1342,141 @@ describe("Project manifest trigger", () => {
     expect(rebuildManifest).toHaveBeenCalledTimes(1);
     expect(refreshProjectConfig.mock.invocationCallOrder[0]).toBeLessThan(
       rebuildManifest.mock.invocationCallOrder[0],
+    );
+  });
+
+  describe("with parse-field consumers tracked", () => {
+    let demand: ParseDemand;
+    let tracked: Project;
+    let trackedWatcher: MockFileSystemWatcher;
+
+    beforeEach(async () => {
+      demand = new ParseDemand();
+      createdFileSystemWatchers.length = 0;
+      tracked = await buildProject(
+        root,
+        stubDelegate(root, { rebuildManifest, refreshProjectConfig }),
+        { parseDemand: demand },
+      );
+      trackedWatcher = createdFileSystemWatchers[0];
+      rebuildManifest.mockClear();
+    });
+
+    afterEach(async () => {
+      await tracked.dispose();
+    });
+
+    it("does not parse on a source change while no consumer is showing", async () => {
+      trackedWatcher.fire("change", path.join(root, "models", "a.sql"));
+      await vi.advanceTimersByTimeAsync(500);
+      expect(rebuildManifest).not.toHaveBeenCalled();
+    });
+
+    it("parses on a source change while a consumer is showing", async () => {
+      const hold = demand.acquire();
+      trackedWatcher.fire("change", path.join(root, "models", "a.sql"));
+      await vi.advanceTimersByTimeAsync(500);
+      expect(rebuildManifest).toHaveBeenCalledTimes(1);
+      hold.dispose();
+    });
+
+    it("parses once when a consumer appears after a stale change", async () => {
+      trackedWatcher.fire("change", path.join(root, "models", "a.sql"));
+      await vi.advanceTimersByTimeAsync(500);
+      const hold = demand.acquire();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(rebuildManifest).toHaveBeenCalledTimes(1);
+      hold.dispose();
+    });
+
+    it("rebuilds a stale parse on ensureParsed, and not a fresh one", async () => {
+      await tracked.ensureParsed();
+      expect(rebuildManifest).not.toHaveBeenCalled();
+      trackedWatcher.fire("change", path.join(root, "models", "a.sql"));
+      await vi.advanceTimersByTimeAsync(500);
+      await tracked.ensureParsed();
+      expect(rebuildManifest).toHaveBeenCalledTimes(1);
+    });
+
+    it("runs one parse at a time, and one more for a change that arrives during it", async () => {
+      let release = () => {};
+      rebuildManifest.mockImplementationOnce(
+        () => new Promise<void>((resolve) => (release = resolve)),
+      );
+      const hold = demand.acquire();
+      trackedWatcher.fire("change", path.join(root, "models", "a.sql"));
+      await vi.advanceTimersByTimeAsync(500);
+      expect(rebuildManifest).toHaveBeenCalledTimes(1);
+
+      trackedWatcher.fire("change", path.join(root, "models", "b.sql"));
+      await vi.advanceTimersByTimeAsync(500);
+      expect(rebuildManifest).toHaveBeenCalledTimes(1);
+
+      release();
+      await vi.advanceTimersByTimeAsync(0);
+      expect(rebuildManifest).toHaveBeenCalledTimes(2);
+      hold.dispose();
+    });
+
+    it("stays stale when the parse that published started before the latest change", async () => {
+      vi.useRealTimers();
+      const { root: dir, targetDir } = copyFixture("fusion-stale-");
+      fs.mkdirSync(targetDir, { recursive: true });
+      fs.copyFileSync(
+        path.join(fixtureRoot, "manifest.contract.json"),
+        path.join(targetDir, MANIFEST_FILE),
+      );
+      const parseDemand = new ParseDemand();
+      let release = () => {};
+      const slowRebuild = vi.fn<() => Promise<void>>().mockResolvedValue();
+      const slow = await buildProject(
+        dir,
+        stubDelegate(dir, {
+          rebuildManifest: slowRebuild,
+          getTargetPath: () => targetDir,
+          getPackageInstallPath: () => path.join(dir, "dbt_packages"),
+        }),
+        { parseDemand },
+      );
+      const slowWatcher =
+        createdFileSystemWatchers[createdFileSystemWatchers.length - 1];
+      slowRebuild.mockClear();
+      slowRebuild.mockImplementationOnce(
+        () => new Promise<void>((resolve) => (release = resolve)),
+      );
+      const hold = parseDemand.acquire();
+      slowWatcher.fire("change", path.join(dir, "models", "a.sql"));
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      expect(slowRebuild).toHaveBeenCalledTimes(1);
+
+      // The consumer hides, and a second save lands while the first parse is still running.
+      hold.dispose();
+      slowWatcher.fire("change", path.join(dir, "models", "a.sql"));
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      release();
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      slowRebuild.mockClear();
+
+      // The first parse published, but it started before the second save, so the parse is still stale.
+      await slow.ensureParsed();
+      expect(slowRebuild).toHaveBeenCalledTimes(1);
+      await slow.dispose();
+      fs.rmSync(dir, { recursive: true, force: true });
+      vi.useFakeTimers();
+    });
+
+    it.each([
+      "profiles.yml",
+      "packages.yml",
+      "dependencies.yml",
+      "selectors.yml",
+    ])(
+      "refreshes config and parses on a %s change whatever the demand",
+      async (name) => {
+        trackedWatcher.fire("change", path.join(root, name));
+        await vi.advanceTimersByTimeAsync(500);
+        expect(rebuildManifest).toHaveBeenCalledTimes(1);
+      },
     );
   });
 

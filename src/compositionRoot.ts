@@ -64,6 +64,7 @@ import {
 } from "./projects/fusionClientPool";
 import { FusionStatus } from "./projects/fusionStatus";
 import { OutputChannels } from "./projects/outputChannels";
+import { ParseDemand } from "./projects/parseDemand";
 import { Project } from "./projects/project";
 import { ProjectQuickPick } from "./projects/projectQuickPick";
 import { DeclaredProject, ProjectRegistry } from "./projects/projectRegistry";
@@ -125,6 +126,8 @@ interface ProjectsGraph {
   queryManifestService: QueryManifestService;
   /** Filled by `composeFusion`; projects read their client through it. */
   clients: { pool?: FusionClientPool };
+  /** Views reading parse-owned fields; projects parse on a source change only while one is showing. */
+  parseDemand: ParseDemand;
 }
 
 function composeProjects(context: ExtensionContext): ProjectsGraph {
@@ -142,6 +145,7 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
     }),
   });
   const clients: { pool?: FusionClientPool } = {};
+  const parseDemand = new ParseDemand();
   const projectFactory: ProjectFactory = (declared) => {
     const log = outputChannels.projectLog(declared);
     const processes = new CommandProcessExecutionFactory(log);
@@ -165,6 +169,7 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
         clients.pool
           ? onClientChange(clients.pool, declared)(listener)
           : Disposable.from(),
+      parseDemand,
     });
   };
 
@@ -192,6 +197,7 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
     currentProject,
     queryManifestService,
     clients,
+    parseDemand,
   };
 }
 
@@ -288,8 +294,9 @@ function composeWebviews(
       new DbtTestService(queryManifestService),
       queryManifestService,
       terminal,
+      graph.parseDemand,
     ),
-    new LineageViewProvider(lineagePanel, projects),
+    new LineageViewProvider(lineagePanel, projects, graph.parseDemand),
   );
 }
 
@@ -330,8 +337,11 @@ function composeEditorProviders(graph: ProjectsGraph) {
     treeviewProviders: new TreeviewProviders(
       new ChildrenModelTreeview(projects),
       new ParentModelTreeview(projects),
-      new ModelTestTreeview(projects),
-      new DocumentationTreeview(projects),
+      {
+        test: new ModelTestTreeview(projects),
+        documentation: new DocumentationTreeview(projects),
+        parseDemand: graph.parseDemand,
+      },
       new RunHistoryTreeviewProvider(graph.runHistoryService),
     ),
     contentProviders: new ContentProviders(

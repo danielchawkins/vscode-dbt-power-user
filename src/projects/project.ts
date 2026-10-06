@@ -57,6 +57,7 @@ import {
 } from "./manifest";
 import { ManifestRebuild } from "./manifestRebuild";
 import type { Manifest } from "./manifestTypes";
+import type { ParseDemand } from "./parseDemand";
 import {
   findModelInTargetfolder,
   generateModel,
@@ -116,6 +117,8 @@ export interface ProjectOptions {
   fusionClient?: () => FusionClient | undefined;
   /** Fires when that client is replaced or changes state. */
   clientChanged?: Event<void>;
+  /** Views reading parse-owned fields; without it every source change rebuilds. */
+  parseDemand?: ParseDemand;
 }
 
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
@@ -137,6 +140,14 @@ export class Project implements Disposable, ManifestProject {
   /** Server commands over the project's current Fusion Client. */
   readonly lsp: FusionCommands;
   private readonly fusionClient: () => FusionClient | undefined;
+  private readonly parseDemand: ParseDemand | undefined;
+  /** A source file changed since the last parse and no consumer was showing to need it. */
+  private parseStale = false;
+  /** Counts source-file changes; a parse records the count it started at. */
+  private sourceGeneration = 0;
+  private parseStartedAtGeneration = 0;
+  private rebuilding: Promise<void> | undefined;
+  private rebuildAgain = false;
   private warnedTasksUnavailable = false;
   private disposed = false;
 
@@ -190,6 +201,7 @@ export class Project implements Disposable, ManifestProject {
     this.runHistoryService = options.runHistoryService;
     this.projectCount = options.projectCount ?? (() => 1);
     this.fusionClient = options.fusionClient ?? (() => undefined);
+    this.parseDemand = options.parseDemand;
     this.lsp = createFusionCommands(this.fusionClient);
     this.onDidChangeClient = options.clientChanged ?? (() => Disposable.from());
     const root = this.projectRoot.fsPath;
@@ -265,6 +277,15 @@ export class Project implements Disposable, ManifestProject {
   }
 
   private subscribeLifecycle(): void {
+    if (this.parseDemand) {
+      this.disposables.push(
+        this.parseDemand.onDidBecomeActive(() => {
+          if (this.parseStale) {
+            void this.rebuild();
+          }
+        }),
+      );
+    }
     this.lifecycle.onDidCommit(() => {
       this.updateDiagnosticsInProblemsPanel();
       this.trigger.start();
@@ -390,15 +411,32 @@ export class Project implements Disposable, ManifestProject {
   }
 
   async parseManifest(): Promise<ParsedManifest | undefined> {
+    this.parseStartedAtGeneration = this.sourceGeneration;
     return this.manifestRebuild.parse(this.getFusionCli());
   }
 
   private async rebuild(): Promise<void> {
-    this.terminal.debug(
-      LOG_SOURCE,
-      `Going to rebuild the manifest for project at ${this.projectRoot.fsPath}`,
-    );
-    await this.manifestRebuild.rebuild(this.getFusionCli());
+    if (this.rebuilding) {
+      this.rebuildAgain = true;
+      return this.rebuilding;
+    }
+    this.rebuilding = this.rebuildLoop().finally(() => {
+      this.rebuilding = undefined;
+    });
+    return this.rebuilding;
+  }
+
+  /** Runs one parse at a time, and one more for every request made while a parse ran. */
+  private async rebuildLoop(): Promise<void> {
+    do {
+      this.rebuildAgain = false;
+      this.parseStartedAtGeneration = this.sourceGeneration;
+      this.terminal.debug(
+        LOG_SOURCE,
+        `Going to rebuild the manifest for project at ${this.projectRoot.fsPath}`,
+      );
+      await this.manifestRebuild.rebuild(this.getFusionCli());
+    } while (this.rebuildAgain && !this.disposed);
   }
 
   private async refreshConfigWith(
@@ -414,14 +452,27 @@ export class Project implements Disposable, ManifestProject {
   }
 
   private async handleProjectFileChanged(): Promise<void> {
+    this.sourceGeneration += 1;
     this._onSourceFileChanged.fire();
     await this.refreshConfigWith(this.getFusionCli(), true);
     await this.rebuild();
   }
 
   private async handleSourceFileChanged(): Promise<void> {
+    this.sourceGeneration += 1;
     this._onSourceFileChanged.fire();
+    if (this.parseDemand && !this.parseDemand.active) {
+      this.parseStale = true;
+      return;
+    }
     await this.rebuild();
+  }
+
+  /** Rebuilds a stale parse; resolves once the manifest is current. */
+  async ensureParsed(): Promise<void> {
+    if (this.parseStale && !this.disposed) {
+      await this.rebuild();
+    }
   }
 
   private onRebuildStatus(inProgress: boolean): void {
@@ -436,6 +487,10 @@ export class Project implements Disposable, ManifestProject {
   private publishParsedManifest(parsed: ParsedManifest): void {
     if (this.disposed) {
       return;
+    }
+    // A parse that read the files before the latest source change does not make the parse current.
+    if (this.parseStartedAtGeneration === this.sourceGeneration) {
+      this.parseStale = false;
     }
     this._onDidParse.fire(parsed);
     this.terminal.debug(

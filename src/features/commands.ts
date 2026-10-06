@@ -62,10 +62,10 @@ export class VSCodeCommands implements Disposable {
       this.diagnosticsOutputChannel,
       this.cteProfilerService,
       this.cteProfilerDecorationProvider,
-      this.register("fusionPowerUser.runCurrentModel", () => {
+      this.register("fusionPowerUser.runCurrentModel", async () => {
         // `dbt run` on a singular test file is never meaningful; route it
         // to `dbt test --select <test>` instead.
-        if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
+        if (await this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
           return;
         }
         this.runModel.runModelOnActiveWindow();
@@ -170,10 +170,10 @@ export class VSCodeCommands implements Disposable {
       this.register("fusionPowerUser.toggleProfileDecorations", () =>
         this.cteProfilerDecorationProvider.toggle(),
       ),
-      this.register("fusionPowerUser.testCurrentModel", () => {
+      this.register("fusionPowerUser.testCurrentModel", async () => {
         // Singular data tests must be selected by their own test name, not
         // the surrounding model.
-        if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
+        if (await this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
           return;
         }
         this.runModel.runTestsOnActiveWindow();
@@ -192,7 +192,7 @@ export class VSCodeCommands implements Disposable {
           "workbench.view.extension.docs_edit_view",
         );
       }),
-      this.register("fusionPowerUser.runTest", (model) => {
+      this.register("fusionPowerUser.runTest", async (model) => {
         // Tree-item invocation (from the test treeview): run the selected
         // test node — never a singular test, always a generic test.
         if (model !== undefined) {
@@ -202,7 +202,7 @@ export class VSCodeCommands implements Disposable {
         // Command-palette invocation (no tree item): route singular test
         // files to `dbt test --select <test>`; otherwise fall back to
         // running the generic tests attached to the active model.
-        if (this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
+        if (await this.runTest.runSingularTestOnActiveWindowIfApplicable()) {
           return;
         }
         this.runModel.runModelOnNodeTreeItem(RunModelType.TEST)(model);

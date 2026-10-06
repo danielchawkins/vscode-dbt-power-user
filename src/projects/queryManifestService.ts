@@ -36,6 +36,13 @@ export class QueryManifestService {
     return project ? this.manifestAt(project.projectRoot) : undefined;
   }
 
+  /** Like {@link manifestFor}, after rebuilding a parse that a source change left stale. */
+  public async freshManifest(uri?: Uri): Promise<Manifest | undefined> {
+    const project = uri ? this.resolveProject(uri) : this.getProject();
+    await project?.ensureParsed();
+    return this.manifestFor(uri);
+  }
+
   public getProjectByUri(uri?: Uri): Project | undefined {
     return this.resolveProject(uri);
   }
