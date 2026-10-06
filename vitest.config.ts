@@ -1,12 +1,16 @@
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
-const fromRoot = (path: string) => fileURLToPath(new URL(path, import.meta.url));
+const fromRoot = (path: string) =>
+  fileURLToPath(new URL(path, import.meta.url));
 
 export default defineConfig({
   resolve: {
     alias: [
-      { find: /^(\.{1,2}\/)+extensionRoot$/, replacement: fromRoot("./src/test/mock/extensionRoot.ts") },
+      {
+        find: /^(\.{1,2}\/)+extensionRoot$/,
+        replacement: fromRoot("./src/test/mock/extensionRoot.ts"),
+      },
       { find: /^vscode$/, replacement: fromRoot("./src/test/mock/vscode.ts") },
       {
         find: /^vscode-languageclient\/node$/,
@@ -23,7 +27,11 @@ export default defineConfig({
     globals: false,
     taskTitleValueFormatTruncate: 0,
     include: ["src/**/*.test.ts", "packages/*/src/**/*.test.ts"],
-    exclude: ["**/node_modules/**", "src/test/integration/**", "src/test/smoke/**"],
+    exclude: [
+      "**/node_modules/**",
+      "src/test/integration/**",
+      "src/test/smoke/**",
+    ],
     coverage: {
       provider: "v8",
       include: ["src/**/*.{ts,tsx}", "packages/*/src/**/*.ts"],

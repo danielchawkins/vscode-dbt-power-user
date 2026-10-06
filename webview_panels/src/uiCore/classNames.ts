@@ -1,10 +1,5 @@
 export type ButtonColor =
-  | "primary"
-  | "secondary"
-  | "success"
-  | "warning"
-  | "danger"
-  | "link";
+  "primary" | "secondary" | "success" | "warning" | "danger" | "link";
 
 /** Joins the class names that are set. */
 export const cx = (...names: (string | false | null | undefined)[]): string =>

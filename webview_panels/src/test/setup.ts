@@ -18,7 +18,6 @@ Object.defineProperty(globalThis, "acquireVsCodeApi", {
   configurable: true,
 });
 
-
 afterEach(() => {
   cleanup();
 });

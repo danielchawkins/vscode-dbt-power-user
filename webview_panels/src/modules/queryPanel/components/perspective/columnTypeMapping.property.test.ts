@@ -42,9 +42,11 @@ const table = fc
         maxLength: names.length,
       }),
       rows: fc.array(
-        fc.tuple(...names.map(() => cellValue)).map((cells) =>
-          Object.fromEntries(names.map((n, i) => [n, cells[i]])),
-        ),
+        fc
+          .tuple(...names.map(() => cellValue))
+          .map((cells) =>
+            Object.fromEntries(names.map((n, i) => [n, cells[i]])),
+          ),
         { maxLength: 5 },
       ),
     }),

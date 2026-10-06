@@ -86,10 +86,8 @@ export const isExpanded = (
   table: string,
 ): boolean => state.expansions.includes(expansionKey(direction, table));
 
-const neighbourCount = (
-  table: LineageTable,
-  direction: Direction,
-): number => (direction === "children" ? table.childCount : table.parentCount);
+const neighbourCount = (table: LineageTable, direction: Direction): number =>
+  direction === "children" ? table.childCount : table.parentCount;
 
 /**
  * The drawn tables and table edges, each edge `[parent, child]`.

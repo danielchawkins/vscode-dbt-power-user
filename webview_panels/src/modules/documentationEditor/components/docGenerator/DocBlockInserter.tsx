@@ -1,15 +1,14 @@
+import { SearchIcon } from "@assets/icons";
+import { DocBlock } from "@modules/documentationEditor/state/types";
+import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import {
-  PopoverWithButton,
-  Stack,
   Button,
   Input,
+  PopoverWithButton,
+  Stack,
   activateClickOnKeyDown,
 } from "@uicore";
-import { RefObject, useState, useMemo } from "react";
-import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
-import { DocBlock } from "@modules/documentationEditor/state/types";
-import { HTMLAttributes } from "react";
-import { SearchIcon } from "@assets/icons";
+import { HTMLAttributes, RefObject, useMemo, useState } from "react";
 import documentationStyles from "../../styles.module.css";
 import styles from "./DocBlockInserter.module.css";
 
@@ -42,7 +41,7 @@ const DocBlockInserter = ({
     return docBlocks.filter(
       (docBlock) =>
         docBlock.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        docBlock.path.toLowerCase().includes(searchTerm.toLowerCase())
+        docBlock.path.toLowerCase().includes(searchTerm.toLowerCase()),
     );
   }, [docBlocks, searchTerm]);
 
@@ -76,7 +75,9 @@ const DocBlockInserter = ({
     >
       {({ close }) => (
         <Stack direction="column" className={styles.popoverContent}>
-          <Stack className={`${documentationStyles.search} ${styles.searchContainer}`}>
+          <Stack
+            className={`${documentationStyles.search} ${styles.searchContainer}`}
+          >
             <SearchIcon />
             <Input
               placeholder="Search doc blocks..."
@@ -100,7 +101,10 @@ const DocBlockInserter = ({
                     )
                   }
                 >
-                  <Stack direction="column" className={`align-items-start ${styles.itemContent}`}>
+                  <Stack
+                    direction="column"
+                    className={`align-items-start ${styles.itemContent}`}
+                  >
                     <strong className={styles.itemName}>{docBlock.name}</strong>
                   </Stack>
                 </div>

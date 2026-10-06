@@ -16,15 +16,13 @@ export const fromHostDocumentation = (
   docs && {
     name: docs.name,
     description: docs.description ?? "",
-    columns: docs.columns.map(
-      (column): DBTDocumentationColumn => ({
-        name: column.name,
-        type: column.type ?? undefined,
-        description: column.description ?? undefined,
-        generated: column.generated ?? false,
-        source: column.source === "DATABASE" ? Source.DATABASE : Source.YAML,
-      }),
-    ),
+    columns: docs.columns.map((column): DBTDocumentationColumn => ({
+      name: column.name,
+      type: column.type ?? undefined,
+      description: column.description ?? undefined,
+      generated: column.generated ?? false,
+      source: column.source === "DATABASE" ? Source.DATABASE : Source.YAML,
+    })),
     generated: docs.generated ?? false,
     filePath: docs.filePath,
     patchPath: docs.patchPath ?? undefined,

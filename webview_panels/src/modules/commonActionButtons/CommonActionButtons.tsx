@@ -1,7 +1,7 @@
-import { Button, Stack } from "@uicore";
-import HelpButton from "./HelpButton";
 import { HelpIcon } from "@assets/icons";
+import { Button, Stack } from "@uicore";
 import { useState } from "react";
+import HelpButton from "./HelpButton";
 
 const CommonActionButtons = (): JSX.Element => {
   const [showHelp, setShowHelp] = useState(false);
@@ -14,9 +14,7 @@ const CommonActionButtons = (): JSX.Element => {
         icon={<HelpIcon style={{ height: 16 }} />}
         onClick={() => setShowHelp(true)}
       />
-      {showHelp ? (
-        <HelpButton onClose={() => setShowHelp(false)} />
-      ) : null}
+      {showHelp ? <HelpButton onClose={() => setShowHelp(false)} /> : null}
     </Stack>
   );
 };

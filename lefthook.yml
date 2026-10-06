@@ -8,7 +8,7 @@ pre-commit:
       glob: "webview_panels/src/**/*.{ts,tsx}"
       run: mise exec -- just webviews::lint
     prettier:
-      glob: "*.{js,css,html,json}"
+      glob: "*.{js,cjs,mjs,ts,tsx,css,html,json}"
       run: mise exec -- just lint-format
     markdown:
       glob: "*.md"

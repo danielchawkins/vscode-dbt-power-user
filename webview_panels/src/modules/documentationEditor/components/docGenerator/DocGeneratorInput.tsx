@@ -12,12 +12,7 @@ import useDocumentationContext from "@modules/documentationEditor/state/useDocum
 import { isArrayEqual } from "@modules/documentationEditor/utils";
 import { panelLogger } from "@modules/logger";
 import { InputGroup, Stack, Tag, TextArea } from "@uicore";
-import {
-  ChangeEvent,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { ChangeEvent, useEffect, useRef, useState } from "react";
 import DocBlockInserter from "./DocBlockInserter";
 import classes from "./docGenInput.module.css";
 

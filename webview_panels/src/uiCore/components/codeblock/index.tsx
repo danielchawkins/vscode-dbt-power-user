@@ -1,12 +1,12 @@
 import { Themes } from "@modules/app/types";
 import useAppContext from "@modules/app/useAppContext";
 import { ReactNode } from "react";
-import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/prism-light";
 import javascript from "react-syntax-highlighter/dist/esm/languages/prism/javascript";
 import json from "react-syntax-highlighter/dist/esm/languages/prism/json";
 import markdown from "react-syntax-highlighter/dist/esm/languages/prism/markdown";
 import sql from "react-syntax-highlighter/dist/esm/languages/prism/sql";
 import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
+import SyntaxHighlighter from "react-syntax-highlighter/dist/esm/prism-light";
 import vs from "react-syntax-highlighter/dist/esm/styles/prism/vs";
 import vscDarkPlus from "react-syntax-highlighter/dist/esm/styles/prism/vsc-dark-plus";
 import { Card, CardBody, CardTitle } from "../primitives";

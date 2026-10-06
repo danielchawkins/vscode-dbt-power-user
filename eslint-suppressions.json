@@ -72,6 +72,9 @@
     "complexity": {
       "count": 2
     },
+    "max-lines": {
+      "count": 1
+    },
     "sonarjs/cognitive-complexity": {
       "count": 3
     },
@@ -264,6 +267,9 @@
     "@typescript-eslint/no-unused-vars": {
       "count": 1
     },
+    "max-lines": {
+      "count": 1
+    },
     "sonarjs/cognitive-complexity": {
       "count": 1
     }
@@ -282,6 +288,9 @@
     },
     "@typescript-eslint/no-unused-vars": {
       "count": 2
+    },
+    "max-lines": {
+      "count": 1
     }
   },
   "src/features/run/runModel.ts": {
@@ -323,6 +332,11 @@
       "count": 1
     },
     "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/projects/project.ts": {
+    "max-lines": {
       "count": 1
     }
   },

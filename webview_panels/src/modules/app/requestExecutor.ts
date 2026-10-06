@@ -1,7 +1,9 @@
 import type { ResponseArgs } from "@fusion-power-user/webview-contract";
 import { vscode } from "@vscodeApi";
 
-interface Message { command: string }
+interface Message {
+  command: string;
+}
 
 /** The member of `M` whose `command` can be `C`, including members whose `command` is itself a union. */
 export type MessageOf<M extends Message, C extends string> = M extends {

@@ -1,7 +1,7 @@
+import { FileCodeIcon } from "@assets/icons";
 import { QueryHistory } from "@modules/queryPanel/context/types";
 import { activateClickOnKeyDown, ListGroupItem } from "@uicore";
 import ExecuteQueryButton from "./ExecuteQueryButton";
-import { FileCodeIcon } from "@assets/icons";
 
 interface Props {
   queryHistory: QueryHistory;

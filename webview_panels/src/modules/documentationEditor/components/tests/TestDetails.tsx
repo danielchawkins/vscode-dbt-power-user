@@ -40,9 +40,7 @@ const TestDetails = ({ testType, test }: Props): JSX.Element => {
                       test.test_metadata
                         .kwargs as TestMetadataAcceptedValuesKwArgs
                     ).values?.map((value) => (
-                      <ListGroupItem key={value}>
-                        {value}
-                      </ListGroupItem>
+                      <ListGroupItem key={value}>{value}</ListGroupItem>
                     ))}
                   </ListGroup>
                 </CardBody>
@@ -60,7 +58,9 @@ const TestDetails = ({ testType, test }: Props): JSX.Element => {
                       <Label>To:</Label>
                       <div
                         className="p-2 px-3 rounded"
-                        style={{ background: "var(--vscode-textCodeBlock-background)" }}
+                        style={{
+                          background: "var(--vscode-textCodeBlock-background)",
+                        }}
                       >
                         {
                           (
@@ -74,7 +74,9 @@ const TestDetails = ({ testType, test }: Props): JSX.Element => {
                       <Label>Field:</Label>
                       <div
                         className="p-2 px-3 rounded"
-                        style={{ background: "var(--vscode-textCodeBlock-background)" }}
+                        style={{
+                          background: "var(--vscode-textCodeBlock-background)",
+                        }}
                       >
                         {
                           (

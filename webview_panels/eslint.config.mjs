@@ -1,15 +1,13 @@
-import { createRequire } from "node:module";
-import { defineConfig } from "eslint/config";
-import js from "@eslint/js";
 import eslintReact from "@eslint-react/eslint-plugin";
-import typescriptEslint from "@typescript-eslint/eslint-plugin";
-import tsparser from "@typescript-eslint/parser";
-import reactRefresh from "eslint-plugin-react-refresh";
-import jsxA11yX from "eslint-plugin-jsx-a11y-x";
+import js from "@eslint/js";
 import prettier from "eslint-config-prettier";
-import lodashUnderscore from "eslint-plugin-you-dont-need-lodash-underscore";
+import jsxA11yX from "eslint-plugin-jsx-a11y-x";
+import reactRefresh from "eslint-plugin-react-refresh";
 import sonarjs from "eslint-plugin-sonarjs";
+import { defineConfig } from "eslint/config";
 import globals from "globals";
+import { createRequire } from "node:module";
+import tseslint from "typescript-eslint";
 
 const require = createRequire(import.meta.url);
 const typescriptRules = require("./eslint/typescript.cjs");
@@ -45,15 +43,15 @@ export default defineConfig(
     ignores: testFiles,
     extends: [
       js.configs.recommended,
-      ...typescriptEslint.configs["flat/recommended-type-checked"],
-      ...typescriptEslint.configs["flat/stylistic-type-checked"],
+      ...tseslint.configs.recommendedTypeChecked,
+      ...tseslint.configs.stylisticTypeChecked,
       eslintReact.configs["recommended-typescript"],
       eslintReact.configs["disable-experimental"],
       jsxA11yX.configs.recommended,
       prettier,
     ],
     languageOptions: {
-      parser: tsparser,
+      parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: "latest",
         extraFileExtensions: [".json"],
@@ -78,11 +76,9 @@ export default defineConfig(
     },
     plugins: {
       "@eslint-react": eslintReact,
-      "you-dont-need-lodash-underscore": lodashUnderscore,
     },
     rules: {
       ...typescriptRules,
-      ...lodashUnderscore.configs.compatible.rules,
       "no-console": "error",
       "no-async-promise-executor": "error",
       "@typescript-eslint/no-for-in-array": "error",
@@ -103,11 +99,7 @@ export default defineConfig(
         "error",
         {
           props: true,
-          ignorePropertyModificationsFor: [
-            "state",
-            "beforeUnloadEvent",
-            "acc",
-          ],
+          ignorePropertyModificationsFor: ["state", "beforeUnloadEvent", "acc"],
         },
       ],
       "@typescript-eslint/dot-notation": "error",
@@ -150,14 +142,14 @@ export default defineConfig(
     files: testFiles,
     extends: [
       js.configs.recommended,
-      ...typescriptEslint.configs["flat/recommended"],
-      typescriptEslint.configs["flat/disable-type-checked"],
+      ...tseslint.configs.recommended,
+      tseslint.configs.disableTypeChecked,
       eslintReact.configs["disable-type-checked"],
       eslintReact.configs["disable-experimental"],
       prettier,
     ],
     languageOptions: {
-      parser: tsparser,
+      parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: "latest",
         sourceType: "module",
@@ -226,7 +218,7 @@ export default defineConfig(
       "max-params": ["error", 5],
       "max-lines": [
         "error",
-        { max: 600, skipBlankLines: true, skipComments: true },
+        { max: 400, skipBlankLines: true, skipComments: true },
       ],
       "max-lines-per-function": [
         "error",
