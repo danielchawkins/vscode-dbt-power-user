@@ -177,19 +177,24 @@ suite("Pinned-host VSIX smoke", function () {
         );
       }
       if (panel.entry === "queryResults") {
-        const grid = await renderPerspectiveResult(cdpPort);
+        const grid = await renderGridResult(cdpPort);
         await evidence?.capture({
           name: "query results grid",
           expect:
-            "The query results panel shows a Perspective datagrid with columns n and label and rows 1 one, 2 two",
+            "The query results panel shows a grid with columns n and label and rows 1 one, 2 two",
           measured: grid,
         });
         assert.ok(
-          perspectiveRendered(grid),
-          `Perspective must render the result rows: ${JSON.stringify({
+          gridRendered(grid),
+          `The grid must render the result rows: ${JSON.stringify({
             ...grid,
             cspViolations: await readCspViolations(cdpPort, panel.entry),
           })}`,
+        );
+        assert.notStrictEqual(
+          grid.wasmCompile,
+          "ok",
+          "the query results policy must not allow WebAssembly compilation",
         );
       }
       const violations = await readCspViolations(cdpPort, panel.entry);
@@ -417,7 +422,7 @@ const READ_PANEL_THEME = `(() => {${CAPTURE_LINEAGE_WARNINGS}
   const text = body.innerText.trim();
   const ready = {
     documentationEditor: () => text.includes("Model:"),
-    queryResults: () => !!document.querySelector("perspective-viewer") || /welcome/i.test(text),
+    queryResults: () => !!document.querySelector("[role=grid]") || /welcome/i.test(text),
     lineage: () => !!document.querySelector(".react-flow__node"),
   }[body.dataset.entry]?.() ?? false;
   return {
@@ -597,7 +602,7 @@ function sleep(ms: number): Promise<void> {
 
 type Evidence = NonNullable<ReturnType<typeof visualEvidence>>;
 
-/** Posts a two-row result into the query results page as the host would, then reads the grid Perspective draws. */
+/** Posts a two-row result into the query results page as the host would, then reads the grid it draws. */
 const RENDER_RESULT = `(async () => {
   if (document.body.dataset.entry !== "queryResults") return null;
   if (!globalThis.__fpuResultPosted) {
@@ -611,59 +616,42 @@ const RENDER_RESULT = `(async () => {
       compiled_sql: "select 1",
     } }));
   }
-  const textOf = (node) => {
-    const parts = [];
-    const walk = (n) => {
-      if (n.nodeName === "TD" || n.nodeName === "TH") parts.push(n.textContent);
-      if (n.shadowRoot) walk(n.shadowRoot);
-      n.childNodes.forEach(walk);
-    };
-    walk(node);
-    return parts.join(" ").replace(/\\s+/g, " ").trim();
-  };
-  const viewer = document.querySelector("perspective-viewer");
+  const grid = document.querySelector("[role=grid]");
   // The smallest valid module; the page's CSP alone decides whether it compiles.
   const wasmCompile = await WebAssembly.compile(new Uint8Array([0, 97, 115, 109, 1, 0, 0, 0]))
     .then(() => "ok", (error) => String(error));
-  // The datagrid paints only rows that fit the viewport; the table holds every row.
-  let labels = [];
-  try {
-    const table = await viewer?.getTable();
-    const view = await table?.view({ columns: ["label"] });
-    labels = (await view?.to_columns())?.label ?? [];
-    await view?.delete();
-  } catch {}
+  const cells = (row) => [...row.querySelectorAll("[role=gridcell]")].map((c) => c.textContent.trim());
+  const headers = grid ? [...grid.querySelectorAll("[role=columnheader]")].map((h) => h.textContent.trim()) : [];
+  const rows = grid ? [...grid.querySelectorAll("[role=row]")].map(cells).filter((c) => c.length) : [];
   return {
     entry: document.body.dataset.entry,
-    viewer: Boolean(viewer),
-    text: viewer ? textOf(viewer).slice(0, 300) : "",
-    labels,
+    grid: Boolean(grid),
+    headers,
+    rows,
     wasmCompile,
   };
 })()`;
 
-type PerspectiveResult = {
-  viewer: boolean;
-  text: string;
-  labels: string[];
+type GridResult = {
+  grid: boolean;
+  headers: string[];
+  rows: string[][];
   wasmCompile?: string;
 };
 
-/** True when the table holds both rows and the grid painted at least the first. */
-function perspectiveRendered(result: PerspectiveResult): boolean {
-  return (
-    result.labels.includes("one") &&
-    result.labels.includes("two") &&
-    result.text.includes("one")
-  );
+/** True when the grid shows the n and label headers (each with a sort mark at most) and both rows. */
+function gridRendered(result: GridResult): boolean {
+  const named = (name: string) =>
+    result.headers.some((header) => header.startsWith(name));
+  const has = (...cells: string[]) =>
+    result.rows.some((row) => cells.every((cell, i) => row[i] === cell));
+  return named("n") && named("label") && has("1", "one") && has("2", "two");
 }
 
-async function renderPerspectiveResult(
-  cdpPort: string,
-): Promise<PerspectiveResult> {
-  let last: PerspectiveResult = { viewer: false, text: "", labels: [] };
+async function renderGridResult(cdpPort: string): Promise<GridResult> {
+  let last: GridResult = { grid: false, headers: [], rows: [] };
   for (let attempt = 0; attempt < 60; attempt += 1) {
-    const panel = await evaluatePanel<PerspectiveResult & { entry: string }>(
+    const panel = await evaluatePanel<GridResult & { entry: string }>(
       cdpPort,
       "queryResults",
       RENDER_RESULT,
@@ -671,7 +659,7 @@ async function renderPerspectiveResult(
     if (panel) {
       const { entry: _entry, ...value } = panel.value;
       last = value;
-      if (perspectiveRendered(last)) {
+      if (gridRendered(last)) {
         break;
       }
     }

@@ -36,7 +36,6 @@ export interface RenderError {
 export interface QueryContext {
   command: "getContext";
   limit: number;
-  perspectiveTheme: string;
   activeEditor: { query?: string | undefined; filepath?: string | undefined };
   /** The Current Project's manifest publication; the panel's saved view state names it. */
   publication?: string | undefined;
@@ -75,11 +74,7 @@ export interface QueryHistoryEntry {
 export type PanelMessage =
   | WebviewReady
   | { command: "error"; text: string }
-  | {
-      command: "updateConfig";
-      limit?: number | undefined;
-      perspectiveTheme?: string | undefined;
-    }
+  | { command: "updateConfig"; limit?: number | undefined }
   | { command: "cancelQuery" }
   /** Asks the host to send `getContext`; there is no `response`. */
   | { command: "getQueryPanelContext" }
@@ -143,7 +138,6 @@ const hostFields: CommandFields<HostMessage> = {
   resetState: {},
   getContext: {
     limit: isNumber,
-    perspectiveTheme: isString,
     activeEditor: shape({
       query: optional(isString),
       filepath: optional(isString),
@@ -159,10 +153,7 @@ const hostFields: CommandFields<HostMessage> = {
 const panelFields: CommandFields<PanelMessage> = {
   "webview:ready": {},
   error: { text: isString },
-  updateConfig: {
-    limit: optional(isNumber),
-    perspectiveTheme: optional(isString),
-  },
+  updateConfig: { limit: optional(isNumber) },
   cancelQuery: {},
   getQueryPanelContext: {},
   getQueryHistory: {},

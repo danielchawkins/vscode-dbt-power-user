@@ -46,16 +46,12 @@ export function failureOf(exc: unknown, query: string) {
   };
 }
 
-/** Saves the row limit and the Perspective theme the page changed. */
+/** Saves the row limit the page changed. */
 export function updateQueryConfig({
   limit,
-  perspectiveTheme,
 }: Extract<PanelMessage, { command: "updateConfig" }>) {
   if (limit !== undefined) {
     void writeSetting("query.limit", limit);
-  }
-  if (perspectiveTheme !== undefined) {
-    void writeSetting("queryResults.theme", perspectiveTheme);
   }
 }
 

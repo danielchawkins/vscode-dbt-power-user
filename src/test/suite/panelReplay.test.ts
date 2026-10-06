@@ -23,7 +23,6 @@ describe("query results replay", () => {
     replay.record("bottom", {
       command: "getContext",
       limit: 1,
-      perspectiveTheme: "",
       activeEditor: {},
     });
 

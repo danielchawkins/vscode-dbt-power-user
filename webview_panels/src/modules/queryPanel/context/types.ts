@@ -31,7 +31,6 @@ export interface QueryPanelStateProps {
   compiledCodeMarkup?: string | undefined;
   hintIndex: number;
   limit?: number | undefined;
-  perspectiveTheme: string;
   queryHistory: QueryHistory[];
   tabState: QueryPanelTitleTabState;
   activeEditor?:

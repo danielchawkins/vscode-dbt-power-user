@@ -13,7 +13,6 @@ export const initialState: S = {
   compiledCodeMarkup: undefined,
   hintIndex: -1,
   limit: undefined,
-  perspectiveTheme: "Vintage",
   queryHistory: [],
   tabState: QueryPanelTitleTabState.Preview,
   activeEditor: undefined,
@@ -33,7 +32,6 @@ const queryPanel = typedReducer<
     setHintIndex: S["hintIndex"];
     setTabState: S["tabState"];
     setQueryHistory: S["queryHistory"];
-    setPerspectiveTheme: S["perspectiveTheme"] | undefined;
     setCompiledCodeMarkup: S["compiledCodeMarkup"];
     setLimit: S["limit"];
     setQueryResultsError: S["queryResultsError"];
@@ -56,10 +54,6 @@ const queryPanel = typedReducer<
   setHintIndex: set("hintIndex"),
   setTabState: set("tabState"),
   setQueryHistory: set("queryHistory"),
-  setPerspectiveTheme: (state, theme) => ({
-    ...state,
-    perspectiveTheme: theme === undefined || theme === "" ? "Vintage" : theme,
-  }),
   setCompiledCodeMarkup: set("compiledCodeMarkup"),
   setLimit: set("limit"),
   setQueryResultsError: (state, queryResultsError) => ({
@@ -87,7 +81,6 @@ export const {
   setQueryExecutionInfo,
   setQueryResults,
   setLimit,
-  setPerspectiveTheme,
   setQueryHistory,
   setTabState,
   setActiveEditor,

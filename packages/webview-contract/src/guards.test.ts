@@ -145,10 +145,9 @@ const queryResultsHost: Fixture[] = [
     message: {
       command: "getContext",
       limit: 500,
-      perspectiveTheme: "Vintage",
       activeEditor: { query: "", filepath: "/m.sql" },
     },
-    required: ["limit", "perspectiveTheme", "activeEditor"],
+    required: ["limit", "activeEditor"],
   },
   {
     message: { command: "queryHistory", args: { body: [historyEntry()] } },
@@ -184,7 +183,6 @@ const queryResultsPanel: Fixture[] = [
     message: {
       command: "updateConfig",
       limit: 10,
-      perspectiveTheme: "Vintage",
     },
     required: [],
   },

@@ -4,7 +4,6 @@ import { HARNESS_SWITCHES } from "../../settings/environment";
 import {
   evaluatePanel,
   readWebviewHeap,
-  readWorkerHeaps,
   validateSmokeHost,
   waitForWebviewPaint,
 } from "./cdpClient";
@@ -93,28 +92,24 @@ const typeDescription = (text: string) => `(() => {
 })()`;
 
 /**
- * The row count of the table Perspective loaded, its first `label`, and whether the datagrid's painted text, read
- * through its shadow roots, contains that label; the grid paints only the rows in its viewport.
+ * The row count the grid reports (`aria-rowcount` less the header row), the `label` cell of its first painted row,
+ * and whether that row is painted; the grid paints only the rows in its viewport.
  */
-const READ_GRID = `(async () => {
+const READ_GRID = `(() => {
   if (document.body.dataset.entry !== "queryResults") return null;
-  const viewer = document.querySelector("perspective-viewer");
-  if (!viewer) return { entry: "queryResults", rows: 0, first: null, painted: false };
-  const table = await viewer.getTable(true);
-  const view = await table.view();
-  const rows = await view.num_rows();
-  const columns = await view.to_columns({ start_row: 0, end_row: 1 });
-  await view.delete();
-  const first = columns.label?.[0] ?? null;
-  let text = "";
-  const walk = (n) => {
-    if (n.nodeName === "TBODY") text += n.textContent;
-    if (n.shadowRoot) walk(n.shadowRoot);
-    n.childNodes.forEach(walk);
+  const grid = document.querySelector("[role=grid]");
+  if (!grid) return { entry: "queryResults", rows: 0, first: null, painted: false };
+  const headers = [...grid.querySelectorAll("[role=columnheader]")].map((h) => h.textContent.trim());
+  const index = headers.findIndex((h) => h.startsWith("label"));
+  const row = grid.querySelector("[role=row][aria-rowindex]");
+  const first = index < 0 || !row ? null : row.querySelectorAll("[role=gridcell]")[index]?.textContent.trim() ?? null;
+  return {
+    entry: "queryResults",
+    rows: Number(grid.getAttribute("aria-rowcount") ?? 1) - 1,
+    first,
+    painted: first !== null,
   };
-  walk(viewer);
-  return { entry: "queryResults", rows, first, painted: first !== null && text.includes(first) };
-})().catch((error) => ({ entry: "queryResults", rows: 0, first: null, painted: false, error: String(error) }))`;
+})()`;
 
 interface Grid {
   entry: string;
@@ -341,7 +336,7 @@ suite("Panel view state", function () {
       await showResults(port, host);
       samples.push(await sampleHeaps(port, rows));
     }
-    const growth = (key: "frame" | "worker" | "host") =>
+    const growth = (key: "frame" | "host") =>
       (samples[samples.length - 1][key] - samples[0][key]) / samples[0][key];
     console.log(
       `FPU_WEBVIEW_HEAP=${JSON.stringify({
@@ -349,7 +344,6 @@ suite("Panel view state", function () {
         rows,
         growth: {
           frame: growth("frame"),
-          worker: growth("worker"),
           host: growth("host"),
         },
         samples,
@@ -386,8 +380,8 @@ async function showPanel(
 }
 
 /**
- * Once the datagrid has painted rows of the `rows`-row result, the used heap of the query results frame, of its
- * Perspective worker, and of this extension host.
+ * Once the grid has painted rows of the `rows`-row result, the used heap of the query results frame and of this
+ * extension host.
  */
 async function sampleHeaps(port: string, rows: number) {
   await waitForTabs(port, (tabs) =>
@@ -401,16 +395,12 @@ async function sampleHeaps(port: string, rows: number) {
       value.rows === rows &&
       value.first === "row 0" &&
       value.painted,
-    `Perspective never loaded ${rows} rows and painted the first`,
+    `The grid never reported ${rows} rows and painted the first`,
   );
   await sleep(2_000);
-  const workers = await readWorkerHeaps(port, RESULTS.entry);
-  assert.ok(workers.length > 0, "the Perspective worker should be attached");
   return {
     tableRows: grid!.rows,
     frame: (await readWebviewHeap(port, RESULTS.entry)).usedSize,
-    worker: workers.reduce((sum, { usedSize }) => sum + usedSize, 0),
-    workers: workers.length,
     host: process.memoryUsage().heapUsed,
   };
 }

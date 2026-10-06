@@ -28,7 +28,6 @@ export interface SettingsSchema {
   "build.additionalParams": readonly string[];
   "test.additionalParams": readonly string[];
   "query.limit": number;
-  "queryResults.theme": string;
   "generateModel.fileNameTemplate": string;
   "generateModel.prefix": string;
   "defer.perProject": Readonly<Record<string, DeferSettingsEntry>> | undefined;
@@ -56,7 +55,6 @@ export const SETTING_SCOPES = {
   "build.additionalParams": "window",
   "test.additionalParams": "window",
   "query.limit": "window",
-  "queryResults.theme": "window",
   "generateModel.fileNameTemplate": "window",
   "generateModel.prefix": "window",
   "defer.perProject": "resource",

@@ -117,13 +117,11 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   }
 
   private async sendUpdatedContextToWebview() {
-    const perspectiveTheme = readSetting("queryResults.theme");
     const limit = readSetting("query.limit");
     const editor = window.activeTextEditor;
     await this.post({
       command: "getContext",
       limit,
-      perspectiveTheme,
       activeEditor: activeEditorContext(editor),
       publication: publicationId(this.queryManifestService.manifestFor()),
     });

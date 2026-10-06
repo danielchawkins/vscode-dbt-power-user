@@ -54,7 +54,6 @@ const panels: Panel[] = [
     keys: [
       "text",
       "limit",
-      "perspectiveTheme",
       "query",
       "projectName",
       "editorName",

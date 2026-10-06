@@ -15,7 +15,6 @@ import {
   setHintIndex,
   setLimit,
   setLoading,
-  setPerspectiveTheme,
   setPublication,
   setQueryExecutionInfo,
   setQueryHistory,
@@ -149,7 +148,6 @@ const useQueryPanelListeners = (): { loading: boolean } => {
           break;
         case "getContext":
           dispatch(setLimit(message.limit));
-          dispatch(setPerspectiveTheme(message.perspectiveTheme));
           dispatch(setPublication(message.publication));
           dispatch(
             setActiveEditor(
