@@ -282,8 +282,8 @@ module.exports = [
   },
   {
     // The manifest core reads untyped JSON; every value is typed at its entry.
-    files: ["src/core/**/*.ts"],
-    ignores: ["src/core/**/*.test.ts"],
+    files: ["src/core/**/*.ts", "src/settings/**/*.ts", "src/fusion/**/*.ts"],
+    ignores: ["src/**/*.test.ts"],
     rules: {
       "@typescript-eslint/no-unsafe-assignment": "error",
       "@typescript-eslint/no-unsafe-call": "error",
