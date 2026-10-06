@@ -2,6 +2,7 @@ import { window } from "vscode";
 import { ExtensionContextStore } from "../../extensionContext";
 import { notifyError } from "../../projects/notifications";
 import { OutputChannels } from "../../projects/outputChannels";
+import { Project } from "../../projects/project";
 import {
   ProjectQuickPick,
   ProjectQuickPickItem,
@@ -42,18 +43,24 @@ export class ProjectSetupCommands {
     return pickedProject;
   }
 
-  async validateProjects(
+  private async runSetup(
     projectContext: ProjectQuickPickItem | undefined,
-    skipConfirmation = false,
+    skipConfirmation: boolean,
+    step: {
+      prompt: (label: string) => string;
+      run: (project: Project) => Promise<void>;
+      logKey: string;
+      logMessage: (label: string) => string;
+      notice: string;
+    },
   ) {
-    const projectContextResolved = await this.resolveProject(projectContext);
-    if (projectContextResolved === undefined) {
+    const resolved = await this.resolveProject(projectContext);
+    if (resolved === undefined) {
       return;
     }
-    const debugCommand = "dbt debug";
     if (!skipConfirmation) {
       const answer = await window.showInformationMessage(
-        `Do you want to validate the project: ${projectContextResolved.label}? This will run the command '${debugCommand}' inside this project. Do you want to continue?`,
+        step.prompt(resolved.label),
         PromptAnswer.YES,
         PromptAnswer.NO,
       );
@@ -62,78 +69,54 @@ export class ProjectSetupCommands {
       }
     }
     try {
-      const project = this.projects.get(projectContextResolved.uri);
+      const project = this.projects.get(resolved.uri);
       if (project === undefined) {
-        throw new Error(
-          `Project ${projectContextResolved.label} was not found`,
-        );
+        throw new Error(`Project ${resolved.label} was not found`);
       }
-      const runModelOutput = await project.debug();
-      if (runModelOutput.fullOutput.includes("ERROR")) {
-        throw new Error(runModelOutput.fullOutput);
-      }
+      await step.run(project);
     } catch (err) {
-      const log = this.outputChannels.logFor(projectContextResolved.uri);
-      log.error(
-        "validateProjectError",
-        `Error when validating ${projectContextResolved.label}`,
-        err,
-      );
+      this.outputChannels
+        .logFor(resolved.uri)
+        .error(step.logKey, step.logMessage(resolved.label), err);
       void notifyError(
-        {
-          root: projectContextResolved.uri,
-          name: projectContextResolved.label,
-        },
-        "Error running dbt debug",
+        { root: resolved.uri, name: resolved.label },
+        step.notice,
         err,
       );
       throw err;
     }
   }
 
-  async installDeps(
+  validateProjects(
     projectContext: ProjectQuickPickItem | undefined,
     skipConfirmation = false,
   ) {
-    const projectContextResolved = await this.resolveProject(projectContext);
-    if (projectContextResolved === undefined) {
-      return;
-    }
-    if (!skipConfirmation) {
-      const answer = await window.showInformationMessage(
-        `Do you want to install packages for the project: ${projectContextResolved.label}? This will run the command 'dbt deps' inside this project. Do you want to continue?`,
-        PromptAnswer.YES,
-        PromptAnswer.NO,
-      );
-      if (answer !== PromptAnswer.YES) {
-        return;
-      }
-    }
-    try {
-      const project = this.projects.get(projectContextResolved.uri);
-      if (project === undefined) {
-        throw new Error(
-          `Project ${projectContextResolved.label} was not found`,
-        );
-      }
+    return this.runSetup(projectContext, skipConfirmation, {
+      prompt: (label) =>
+        `Do you want to validate the project: ${label}? This will run the command 'dbt debug' inside this project. Do you want to continue?`,
+      run: async (project) => {
+        const output = await project.debug();
+        if (output.fullOutput.includes("ERROR")) {
+          throw new Error(output.fullOutput);
+        }
+      },
+      logKey: "validateProjectError",
+      logMessage: (label) => `Error when validating ${label}`,
+      notice: "Error running dbt debug",
+    });
+  }
 
-      await project.installDeps();
-    } catch (err) {
-      const log = this.outputChannels.logFor(projectContextResolved.uri);
-      log.error(
-        "ProjectSetupCommands.installDeps",
-        "Could not install deps",
-        err,
-      );
-      void notifyError(
-        {
-          root: projectContextResolved.uri,
-          name: projectContextResolved.label,
-        },
-        "Error installing dbt dependencies",
-        err,
-      );
-      throw err;
-    }
+  installDeps(
+    projectContext: ProjectQuickPickItem | undefined,
+    skipConfirmation = false,
+  ) {
+    return this.runSetup(projectContext, skipConfirmation, {
+      prompt: (label) =>
+        `Do you want to install packages for the project: ${label}? This will run the command 'dbt deps' inside this project. Do you want to continue?`,
+      run: (project) => project.installDeps(),
+      logKey: "ProjectSetupCommands.installDeps",
+      logMessage: () => "Could not install deps",
+      notice: "Error installing dbt dependencies",
+    });
   }
 }

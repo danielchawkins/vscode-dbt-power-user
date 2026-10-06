@@ -30,25 +30,36 @@ describe("ProjectSetupCommands project resolution", () => {
     debugOutput?: string;
     installError?: Error;
   }) {
+    const ran: string[] = [];
+    const picked: ProjectQuickPickItem[] = [];
     const mockProject = {
-      debug: vi.fn(() =>
-        Promise.resolve({
+      debug: () => {
+        ran.push("debug");
+        return Promise.resolve({
           fullOutput: options.debugOutput ?? "All checks passed",
-        }),
-      ),
-      installDeps: vi.fn(() =>
-        options.installError
+        });
+      },
+      installDeps: () => {
+        ran.push("deps");
+        return options.installError
           ? Promise.reject(options.installError)
-          : Promise.resolve(),
-      ),
+          : Promise.resolve();
+      },
     };
-    const mockStore = { setToWorkspaceState: vi.fn() };
+    const mockStore = {
+      setToWorkspaceState: (_key: string, value: ProjectQuickPickItem) => {
+        picked.push(value);
+      },
+    };
     const mockProjects = {
       all: vi.fn(() => Promise.resolve([mockProject])),
       get: vi.fn(() => mockProject),
     };
     const mockPicker = {
-      projectPicker: vi.fn(() => Promise.resolve(options.pickerResult)),
+      projectPicker: () => {
+        ran.push("picker");
+        return Promise.resolve(options.pickerResult);
+      },
     };
 
     const commands = new ProjectSetupCommands(
@@ -58,69 +69,55 @@ describe("ProjectSetupCommands project resolution", () => {
       outputChannels as never,
     );
 
-    return { commands, mockStore, mockPicker, mockProject };
+    return { commands, ran, picked };
   }
 
   it("validateProjects uses a provided project without opening the picker", async () => {
-    const { commands, mockPicker, mockProject } = createCommands({});
+    const { commands, ran } = createCommands({});
 
     await commands.validateProjects(pickedProject, true);
 
-    expect(mockPicker.projectPicker).not.toHaveBeenCalled();
-    expect(mockProject.debug).toHaveBeenCalledTimes(1);
+    expect(ran).toEqual(["debug"]);
     expect(window.showErrorMessage).not.toHaveBeenCalled();
   });
 
   it("validateProjects cancels silently when the picker is dismissed", async () => {
     vi.mocked(window.showErrorMessage).mockResolvedValue(undefined);
-    const { commands, mockPicker, mockProject } = createCommands({
-      pickerResult: undefined,
-    });
+    const { commands, ran } = createCommands({ pickerResult: undefined });
 
     await commands.validateProjects(undefined, true);
 
-    expect(mockPicker.projectPicker).toHaveBeenCalledTimes(1);
-    expect(mockProject.debug).not.toHaveBeenCalled();
+    expect(ran).toEqual(["picker"]);
     expect(window.showErrorMessage).not.toHaveBeenCalled();
   });
 
   it("validateProjects falls back to the picker and persists the selection", async () => {
-    const { commands, mockStore, mockPicker, mockProject } = createCommands({
+    const { commands, ran, picked } = createCommands({
       pickerResult: pickedProject,
     });
 
     await commands.validateProjects(undefined, true);
 
-    expect(mockPicker.projectPicker).toHaveBeenCalledTimes(1);
-    expect(mockStore.setToWorkspaceState).toHaveBeenCalledWith(
-      "fusionPowerUser.projectSelected",
-      pickedProject,
-    );
-    expect(mockProject.debug).toHaveBeenCalledTimes(1);
+    expect(picked).toEqual([pickedProject]);
+    expect(ran).toEqual(["picker", "debug"]);
   });
 
   it("installDeps cancels silently when the picker is dismissed", async () => {
     vi.mocked(window.showErrorMessage).mockResolvedValue(undefined);
-    const { commands, mockPicker, mockProject } = createCommands({
-      pickerResult: undefined,
-    });
+    const { commands, ran } = createCommands({ pickerResult: undefined });
 
     await commands.installDeps(undefined, true);
 
-    expect(mockPicker.projectPicker).toHaveBeenCalledTimes(1);
-    expect(mockProject.installDeps).not.toHaveBeenCalled();
+    expect(ran).toEqual(["picker"]);
     expect(window.showErrorMessage).not.toHaveBeenCalled();
   });
 
   it("installDeps runs after picker selection", async () => {
-    const { commands, mockPicker, mockProject } = createCommands({
-      pickerResult: pickedProject,
-    });
+    const { commands, ran } = createCommands({ pickerResult: pickedProject });
 
     await commands.installDeps(undefined, true);
 
-    expect(mockPicker.projectPicker).toHaveBeenCalledTimes(1);
-    expect(mockProject.installDeps).toHaveBeenCalledTimes(1);
+    expect(ran).toEqual(["picker", "deps"]);
   });
 
   it("validateProjects names the project's channel when dbt debug fails", async () => {
