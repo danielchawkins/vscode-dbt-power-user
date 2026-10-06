@@ -1,5 +1,3 @@
-import { readdirSync, readFileSync, statSync } from "fs";
-import path from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
@@ -7,7 +5,6 @@ import { FusionStatus } from "../../projects/fusionStatus";
 import { Project } from "../../projects/project";
 
 import { ConfiguredFusionExecutableResolver } from "../../fusion/fusionExecutable";
-import { esmDirname } from "../esmDirname";
 import * as vscodeMock from "../mock/vscode";
 import { createMockLogOutputChannel } from "../mock/vscode";
 const vscodeMockAny = vscodeMock as Record<string, unknown>;
@@ -40,39 +37,6 @@ function stubContext(workspaceValue?: string) {
   } as never;
 }
 
-const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
-const srcRoot = path.join(repositoryRoot, "src");
-const forbiddenProductionSymbols = [
-  "DBTClient",
-  "FusionVersionDetection",
-  "Factory<DBTDetection>",
-  "DBTInstallationVerificationEvent",
-];
-
-const compositionRootSource = readFileSync(
-  path.join(srcRoot, "compositionRoot.ts"),
-  "utf8",
-);
-
-function collectProductionSources(dir: string): string[] {
-  const files: string[] = [];
-  for (const entry of readdirSync(dir)) {
-    const entryPath = path.join(dir, entry);
-    const stat = statSync(entryPath);
-    if (stat.isDirectory()) {
-      if (entry === "test" || entry === "node_modules") {
-        continue;
-      }
-      files.push(...collectProductionSources(entryPath));
-      continue;
-    }
-    if (entry.endsWith(".ts") && !entry.endsWith(".d.ts")) {
-      files.push(entryPath);
-    }
-  }
-  return files;
-}
-
 describe("Fusion-only integration wiring", () => {
   const disposables: Array<{ dispose: () => void }> = [];
 
@@ -82,41 +46,13 @@ describe("Fusion-only integration wiring", () => {
     }
   });
 
-  it("does not reference global detection symbols in production code", () => {
-    const offenders: string[] = [];
-    for (const filePath of collectProductionSources(srcRoot)) {
-      const content = readFileSync(filePath, "utf8");
-      for (const symbol of forbiddenProductionSymbols) {
-        if (content.includes(symbol)) {
-          offenders.push(
-            `${path.relative(repositoryRoot, filePath)}:${symbol}`,
-          );
-        }
-      }
-    }
-    expect(offenders).toEqual([]);
-  });
-
   function composeTracked(workspaceValue?: string) {
     const composition = compose(stubContext(workspaceValue));
     disposables.push(composition.extension, composition.fusionStatus);
     return composition;
   }
 
-  it("does not compose project detection", () => {
-    expect(compositionRootSource).not.toContain("DBTProjectDetection");
-  });
-
   it("does not compose unsupported integrations", () => {
-    for (const name of [
-      "DBTCoreProjectIntegration",
-      "DBTCloudProjectIntegration",
-      "DBTCoreCommandProjectIntegration",
-      "FusionProjectIntegration",
-      "RuntimePythonEnvironment",
-    ]) {
-      expect(compositionRootSource).not.toContain(name);
-    }
     expect(Object.keys(composeTracked()).sort()).toEqual([
       "extension",
       "extensionContextStore",

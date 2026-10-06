@@ -117,6 +117,14 @@ module.exports = {
       to: {},
     },
     {
+      name: "no-removed-packages",
+      severity: "error",
+      comment:
+        "The Altimate packages were removed; the extension is local-only.",
+      from: {},
+      to: { path: "@altimateai/" },
+    },
+    {
       name: "no-deprecated-core",
       severity: "error",
       comment: "Deprecated Node core modules.",

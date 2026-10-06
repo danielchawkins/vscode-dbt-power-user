@@ -50,3 +50,47 @@ describe("package manifest contracts", () => {
     }
   });
 });
+
+describe("removed integrations stay out of configuration", () => {
+  const forbidden: Array<{ label: string; pattern: RegExp }> = [
+    { label: "ms-python.python dependency", pattern: /ms-python\.python/ },
+    { label: "dbtPythonPathOverride", pattern: /dbtPythonPathOverride/ },
+    { label: "dbtCustomRunnerImport", pattern: /dbtCustomRunnerImport/ },
+    {
+      label: "installDepsOnProjectInitialization",
+      pattern: /installDepsOnProjectInitialization/,
+    },
+    { label: "sqlFmtPath", pattern: /sqlFmtPath/ },
+    {
+      label: "@altimateai/dbt-integration",
+      pattern: /@altimateai\/dbt-integration/,
+    },
+    { label: "printEnvVars", pattern: /\bprintEnvVars\b/ },
+    {
+      label: "detectPythonFromTerminal",
+      pattern: /\bdetectPythonFromTerminal\b/,
+    },
+  ];
+
+  it("has no Python-bridge surfaces in package.json or launch.json", () => {
+    const hits: string[] = [];
+    for (const relativePath of ["package.json", ".vscode/launch.json"]) {
+      const contents = readFileSync(
+        path.join(repositoryRoot, relativePath),
+        "utf8",
+      );
+      for (const { label, pattern } of forbidden) {
+        if (pattern.test(contents)) {
+          hits.push(`${relativePath}: ${label}`);
+        }
+      }
+      if (
+        relativePath === ".vscode/launch.json" &&
+        /"type"\s*:\s*"python"/.test(contents)
+      ) {
+        hits.push(`${relativePath}: python launch configuration`);
+      }
+    }
+    expect(hits).toEqual([]);
+  });
+});
