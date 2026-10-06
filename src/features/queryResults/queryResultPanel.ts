@@ -39,7 +39,7 @@ import {
   Handlers,
   MessageOf,
 } from "../../webview/messageRouter";
-import { PanelHost } from "../../webview/panelHost";
+import { PanelHost, postToWebview } from "../../webview/panelHost";
 import { panelWebviewOptions } from "../../webview/panelHtml";
 import { PanelReplay } from "./panelReplay";
 
@@ -56,7 +56,7 @@ enum QueryPanelViewType {
   OPEN_RESULTS_FROM_HISTORY_BOOKMARKS,
 }
 
-export class QueryResultPanel extends PanelHost {
+export class QueryResultPanel extends PanelHost<HostMessage> {
   public static readonly viewType = "fusionPowerUser.PreviewResults";
   protected readonly entry = "queryResults";
   // Perspective fetches and compiles its .wasm and runs its engine in a worker started from a Blob.
@@ -98,21 +98,15 @@ export class QueryResultPanel extends PanelHost {
     );
   }
 
-  /** Posts to the panel the host currently targets: the bottom view or an opened results tab. */
-  private post(message: HostMessage): Thenable<boolean> | undefined {
-    return this._panel && this.postTo(this._panel, message);
-  }
-
   private pageOf(panel: WebviewView | WebviewPanel): Page {
     return this.isWebviewView(panel) ? "bottom" : panel;
   }
 
-  private postTo(
+  protected override recordPosted(
     panel: WebviewView | WebviewPanel,
     message: HostMessage,
-  ): Thenable<boolean> {
+  ): void {
     this.replay.record(this.pageOf(panel), message);
-    return panel.webview.postMessage(message);
   }
 
   private async sendUpdatedContextToWebview() {
@@ -596,7 +590,7 @@ export class QueryResultPanel extends PanelHost {
     const replay = this.replay.messagesFor(this.pageOf(panel));
     this.onWebviewReady();
     for (const message of replay) {
-      void panel.webview.postMessage(message);
+      void postToWebview(panel, message);
     }
   }
 

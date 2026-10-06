@@ -65,6 +65,13 @@ const errorMessageProperties = [
       "Error notifications go through notifyError or notifyErrorWithoutProject (src/projects/notifications.ts).",
   },
 ];
+const postMessageSyntax = [
+  "CallExpression[callee.type='MemberExpression'][callee.property.name='postMessage']",
+].map((selector) => ({
+  selector,
+  message:
+    "Host messages leave through PanelHost.post or postToWebview (src/webview/panelHost.ts).",
+}));
 const processImports = ["child_process", "node:child_process"].map((name) => ({
   name,
   message: PROCESS_MESSAGE,
@@ -209,6 +216,7 @@ module.exports = [
         ...fsWriteCallSyntax,
         ...removedSyntax,
         ...vendorNameSyntax,
+        ...postMessageSyntax,
       ],
       "@typescript-eslint/no-require-imports": "error",
       "no-restricted-imports": [

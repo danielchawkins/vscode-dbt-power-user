@@ -161,7 +161,10 @@ function lineAtOffset(text: string, offset: number): number {
   return line;
 }
 
-export class LineagePanel extends PanelHost implements LineagePanelView {
+export class LineagePanel
+  extends PanelHost<HostMessage>
+  implements LineagePanelView
+{
   protected readonly entry = "lineage";
   protected readonly csp = {};
   protected override panelDescription = "Lineage panel";
@@ -254,10 +257,6 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
       return;
     }
     this.renderStartingNode();
-  }
-
-  private post(message: HostMessage): void {
-    void this._panel?.webview.postMessage(message);
   }
 
   protected override onWebviewReady() {
