@@ -1,0 +1,38 @@
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid
+    var(--vscode-dropdown-border, var(--vscode-contrastBorder, transparent));
+  border-radius: 2px;
+  background: var(--vscode-dropdown-background);
+}
+.chips:focus-within {
+  border-color: var(--vscode-focusBorder);
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  border-radius: 26px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+}
+.remove {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+.input {
+  flex: 1;
+  min-width: 120px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: var(--vscode-input-foreground);
+}

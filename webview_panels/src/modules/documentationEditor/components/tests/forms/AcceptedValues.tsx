@@ -1,7 +1,7 @@
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { panelLogger } from "@modules/logger";
-import { LoadingButton, OptionType, Select, Stack } from "@uicore";
+import { ChipInput, LoadingButton, Stack } from "@uicore";
 import { useState } from "react";
 import { SetTestFormValue } from "../hooks/useTestFormValues";
 
@@ -43,25 +43,12 @@ const AcceptedValues = ({ column, setValue, values }: Props): JSX.Element => {
 
   return (
     <div>
-      <Select
-        components={{
-          DropdownIndicator: null,
-          Menu: () => null,
-        }}
-        inputId="accepted_values"
+      <ChipInput
+        id="accepted_values"
         name="accepted_values"
         required
-        hideOptionIcon
-        isCreatable
-        isClearable
-        value={values?.map((v) => ({ label: v, value: v })) ?? []}
-        isMulti
-        onChange={(updates: unknown) =>
-          setValue(
-            "accepted_values",
-            ((updates ?? []) as OptionType[]).map((val) => val.value),
-          )
-        }
+        values={values ?? []}
+        onChange={(updates) => setValue("accepted_values", updates)}
         placeholder="Type a value and press enter to add"
       />
       <Stack className="mt-2 justify-content-between align-items-baseline">

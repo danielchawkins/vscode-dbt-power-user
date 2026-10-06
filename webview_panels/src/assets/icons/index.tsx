@@ -1,15 +1,11 @@
 import { HTMLAttributes } from "react";
 import LoadingSpinnerUrl from "./spinner.gif";
 import "./styles.css";
-export { default as CheckBlueIcon } from "./check-blue.svg?react";
 export { default as EditIcon } from "./edit.svg?react";
 export { default as ErrorIcon } from "./error.svg?react";
 export { default as HelpIcon } from "./help.svg?react";
 export { default as NoHistoryIcon } from "./no-history.svg?react";
-export { default as SelectCheckedIcon } from "./select-checked.svg?react";
-export { default as SelectUncheckedIcon } from "./select-unchecked.svg?react";
 export { default as TestsIcon } from "./tests.svg?react";
-export { default as UncheckIcon } from "./uncheck.svg?react";
 
 interface Props {
   icon: string;

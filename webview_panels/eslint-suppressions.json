@@ -94,9 +94,6 @@
     },
     "jsx-a11y-x/no-autofocus": {
       "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
     }
   },
   "src/modules/queryPanel/components/perspective/PerspectiveViewer.tsx": {

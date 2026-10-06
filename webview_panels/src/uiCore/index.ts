@@ -1,4 +1,5 @@
 export { Button } from "./components/button/Button";
+export { default as ChipInput } from "./components/chipInput/ChipInput";
 export { default as CodeBlock } from "./components/codeblock/index";
 export { default as Drawer } from "./components/drawer/index";
 export type { DrawerRef } from "./components/drawer/index";
@@ -24,7 +25,7 @@ export {
   NavItem,
   NavLink,
 } from "./components/primitives";
-export { default as Select } from "./components/select";
+export { MultiSelect, Select } from "./components/select";
 export type { OptionType } from "./components/select";
 export { default as Stack } from "./components/stack/Stack";
 export { default as Tag } from "./components/tag/Tag";
