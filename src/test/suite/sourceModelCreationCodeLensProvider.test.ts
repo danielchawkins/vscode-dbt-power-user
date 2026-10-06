@@ -130,7 +130,7 @@ describe("SourceModelCreationCodeLensProvider", () => {
     expect(argsOf(lenses).map((a) => a.tableName)).toEqual(["kept"]);
   });
 
-  it("carries an identifier from a nameless table into the next table", () => {
+  it("does not carry an identifier from a nameless table into the next table", () => {
     const lenses = lensesFor(
       [
         "sources:",
@@ -142,7 +142,10 @@ describe("SourceModelCreationCodeLensProvider", () => {
     );
 
     expect(argsOf(lenses)).toEqual([
-      expect.objectContaining({ tableName: "next", tableIdentifier: "orphan" }),
+      expect.objectContaining({
+        tableName: "next",
+        tableIdentifier: undefined,
+      }),
     ]);
   });
 

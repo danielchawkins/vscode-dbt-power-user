@@ -11,11 +11,6 @@ import {
 import { CST, LineCounter, Parser } from "yaml";
 import { GenerateModelFromSourceParams } from "../../projects/projectCodegen";
 
-interface Position {
-  line: number;
-  col: number;
-}
-
 export class SourceModelCreationCodeLensProvider
   implements CodeLensProvider, Disposable
 {
@@ -32,124 +27,102 @@ export class SourceModelCreationCodeLensProvider
     document: TextDocument,
     _token: CancellationToken,
   ): CodeLens[] | Thenable<CodeLens[]> {
-    this.codeLenses = [];
     const lineCounter = new LineCounter();
-    let currentSource: string | undefined = undefined;
-    let currentDatabase: string | undefined = undefined;
-    let currentSchema: string | undefined = undefined;
-    let currentTables: {
-      tableName: string;
-      tableIdentifier?: string;
-      pos: Position;
-    }[];
-
+    this.codeLenses = [];
     for (const token of new Parser(lineCounter.addNewLine).parse(
       document.getText(),
     )) {
-      if (token.type === "document" && CST.isCollection(token.value)) {
-        for (const item of token.value.items) {
-          if (
-            CST.isScalar(item.key) &&
-            item.key.source === "sources" &&
-            CST.isCollection(item.value)
-          ) {
-            // inside sources
-            for (const source of item.value.items) {
-              // inside a source
-              currentTables = [];
-              if (CST.isCollection(source.value)) {
-                //
-                for (const sourceProperty of source.value.items) {
-                  if (
-                    CST.isScalar(sourceProperty.key) &&
-                    CST.isScalar(sourceProperty.value)
-                  ) {
-                    if (sourceProperty.key.source === "name") {
-                      currentSource = sourceProperty.value.source;
-                    }
-                    if (sourceProperty.key.source === "database") {
-                      currentDatabase = sourceProperty.value.source;
-                    }
-                    if (sourceProperty.key.source === "schema") {
-                      currentSchema = sourceProperty.value.source;
-                    }
-                  }
-                  if (
-                    CST.isScalar(sourceProperty.key) &&
-                    CST.isCollection(sourceProperty.value) &&
-                    sourceProperty.key.source === "tables"
-                  ) {
-                    // inside tables
-                    let tableName: string | undefined = undefined;
-                    let tableIdentifier: string | undefined = undefined;
-                    let position: Position | undefined = undefined;
-                    for (const table of sourceProperty.value.items) {
-                      if (CST.isCollection(table.value)) {
-                        for (const tableProperty of table.value.items) {
-                          position = lineCounter.linePos(table.value.offset);
-                          if (
-                            CST.isScalar(tableProperty.value) &&
-                            CST.isScalar(tableProperty.key)
-                          ) {
-                            if (tableProperty.key.source === "name") {
-                              tableName = tableProperty.value.source;
-                            }
-                            if (tableProperty.key.source === "identifier") {
-                              tableIdentifier = tableProperty.value.source;
-                            }
-                          }
-                        }
-                      }
-                      if (tableName !== undefined && position !== undefined) {
-                        currentTables.push({
-                          tableName: tableName,
-                          tableIdentifier: tableIdentifier,
-                          pos: position,
-                        });
-                        tableName = undefined;
-                        tableIdentifier = undefined;
-                        position = undefined;
-                      }
-                    }
-                  }
-                }
-              }
-
-              // add all tables
-              for (const table of currentTables) {
-                const params: GenerateModelFromSourceParams = {
-                  currentDoc: document.uri,
-                  sourceName: currentSource!,
-                  database: currentDatabase!,
-                  schema: currentSchema!,
-                  tableName: table.tableName,
-                  tableIdentifier: table.tableIdentifier,
-                };
-                this.codeLenses.push(
-                  new CodeLens(
-                    new Range(
-                      table.pos.line - 1,
-                      table.pos.col - 1,
-                      table.pos.line - 1,
-                      table.pos.col - 1,
-                    ),
-                    {
-                      title: "Generate model",
-                      tooltip: "Generate model based on source configuration",
-                      command: "fusionPowerUser.createModelBasedonSourceConfig",
-                      arguments: [params],
-                    },
-                  ),
-                );
-              }
-              currentDatabase = undefined;
-              currentSchema = undefined;
-              currentSource = undefined;
-            }
-          }
+      if (token.type !== "document" || !CST.isCollection(token.value)) {
+        continue;
+      }
+      for (const item of token.value.items) {
+        if (!isPair(item, "sources") || !CST.isCollection(item.value)) {
+          continue;
+        }
+        for (const source of item.value.items) {
+          this.codeLenses.push(
+            ...sourceLenses(document, source.value, lineCounter),
+          );
         }
       }
     }
     return this.codeLenses;
   }
+}
+
+const isPair = (item: CST.CollectionItem, key: string): boolean =>
+  CST.isScalar(item.key) && item.key.source === key;
+
+const scalarSource = (value: CST.CollectionItem["value"]) =>
+  CST.isScalar(value) ? value.source : undefined;
+
+/** The source's database, schema and name, from its scalar properties. */
+function sourceProperties(items: CST.CollectionItem[]) {
+  const properties: Partial<Record<string, string>> = {};
+  for (const property of items) {
+    if (!CST.isScalar(property.key)) {
+      continue;
+    }
+    const value = scalarSource(property.value);
+    if (value !== undefined) {
+      properties[property.key.source] = value;
+    }
+  }
+  return properties;
+}
+
+/** One table of a source: its name, identifier and the position of its mapping. */
+function tableOf(table: CST.CollectionItem, lineCounter: LineCounter) {
+  if (!CST.isCollection(table.value) || table.value.items.length === 0) {
+    return undefined;
+  }
+  const properties = sourceProperties(table.value.items);
+  if (properties.name === undefined) {
+    return undefined;
+  }
+  return {
+    tableName: properties.name,
+    tableIdentifier: properties.identifier,
+    pos: lineCounter.linePos(table.value.offset),
+  };
+}
+
+function sourceLenses(
+  document: TextDocument,
+  sourceValue: CST.CollectionItem["value"],
+  lineCounter: LineCounter,
+): CodeLens[] {
+  if (!CST.isCollection(sourceValue)) {
+    return [];
+  }
+  const { name, database, schema } = sourceProperties(sourceValue.items) as {
+    name: string;
+    database: string;
+    schema: string;
+  };
+  const tables = sourceValue.items
+    .filter((property) => isPair(property, "tables"))
+    .flatMap((property) =>
+      CST.isCollection(property.value) ? property.value.items : [],
+    )
+    .map((table) => tableOf(table, lineCounter))
+    .filter((table) => table !== undefined);
+  return tables.map((table) => {
+    const params: GenerateModelFromSourceParams = {
+      currentDoc: document.uri,
+      sourceName: name,
+      database,
+      schema,
+      tableName: table.tableName,
+      tableIdentifier: table.tableIdentifier,
+    };
+    const line = table.pos.line - 1;
+    const col = table.pos.col - 1;
+    return new CodeLens(new Range(line, col, line, col), {
+      title: "Generate model",
+      tooltip: "Generate model based on source configuration",
+      command: "fusionPowerUser.createModelBasedonSourceConfig",
+      arguments: [params],
+    });
+  });
 }
