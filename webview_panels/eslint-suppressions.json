@@ -47,9 +47,6 @@
     }
   },
   "src/modules/documentationEditor/components/tests/EntityWithTests.tsx": {
-    "@eslint-react/use-state": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     }
@@ -65,9 +62,6 @@
     }
   },
   "src/modules/documentationEditor/components/tests/forms/Relationships.tsx": {
-    "@eslint-react/use-state": {
-      "count": 2
-    },
     "max-lines-per-function": {
       "count": 1
     }
