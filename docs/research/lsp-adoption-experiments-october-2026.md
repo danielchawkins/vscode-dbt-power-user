@@ -138,6 +138,16 @@ Evidence: [`e9-compiled-paths-jaffle.json`](evidence/lsp-2.0.6/adoption/e9-compi
 
 Decision: both modes pass. The server returns the directory it writes to, so 2.7 and 2.9 read the returned paths verbatim, and the `shared` value stays.
 
+## E10: compile reports caused by our own requests
+
+Rule: for each of `dbt.listNodes`, `dbt.getProjectInfo` and `dbt.compileFile` sent to a project that has finished its first compile, count `dbt/lspCompileComplete` and `dbt/lspBackgroundCompileComplete` in the 8 s that follow and record their latency from the send.
+
+- `dbt.listNodes ["+package:single_project"]`: one `dbt/lspCompileComplete` 16 to 19 ms after the request and one `dbt/lspBackgroundCompileComplete` 1,288 to 1,291 ms after it (two runs). Both carry `cause: "didSave"` and repeat the compile errors of the project, so they cannot be told apart from a report caused by a save.
+- `dbt.getProjectInfo` and `dbt.compileFile` on an already compiled file: no report.
+- A save (`didChange` plus `didSave`) also produces one report of each kind, the background one about 1.3 s later.
+
+Decision: the earlier 1 s window would have missed the background report, which arrives after it closes. The Server Producer instead refreshes on a report only while its graph is stale (a source change, a client start or a failed fetch) and clears that flag when a fetch starts. Its own fetch's reports therefore start nothing at any latency. The integration test `listNodesCompileReport.test.ts` pins the report count per request, so a server that reports differently fails it before the loop returns.
+
 ## Not established
 
 - **E2, local cancellation outcome**: on DuckDB the cancelled request did not answer within 90 s. Whether it would have answered with rows or an error was not observed before the server was stopped.
