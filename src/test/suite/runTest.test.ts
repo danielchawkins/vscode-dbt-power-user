@@ -66,7 +66,6 @@ describe("RunTest — singular test classification and dispatch", () => {
       semanticModelMetaMap: new Map() as any,
       modelDepthMap: new Map() as any,
       publicationEpoch: 1,
-      metadataProducer: "manifest",
     };
   };
 

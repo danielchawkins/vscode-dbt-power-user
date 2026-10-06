@@ -19,8 +19,8 @@ import {
   TestParser,
   UnitTestParser,
 } from "../../core/manifest";
+import type { ParsedManifest } from "../../dbt_integration/domain";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
-import { Manifest } from "../../projects/manifestTypes";
 import { Project } from "../../projects/project";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { esmDirname } from "../esmDirname";
@@ -82,7 +82,7 @@ function projectMacroKeys(
     .sort();
 }
 
-function graphShapes(graph: Manifest["graphMetaMap"]) {
+function graphShapes(graph: ParsedManifest["graphMetaMap"]) {
   const strip = (map: typeof graph.parents) =>
     Object.fromEntries(
       [...map.entries()]
@@ -122,7 +122,7 @@ function macroShapes(macros: Map<string, { unique_id: string; name: string }>) {
     .sort((a, b) => a.key.localeCompare(b.key));
 }
 
-function nodeShapes(event: Manifest) {
+function nodeShapes(event: ParsedManifest) {
   return [...event.nodeMetaMap.nodes()]
     .map((node) => ({
       unique_id: node.unique_id,
@@ -136,7 +136,7 @@ function nodeShapes(event: Manifest) {
     .sort((a, b) => a.unique_id.localeCompare(b.unique_id));
 }
 
-function sourceShapes(event: Manifest) {
+function sourceShapes(event: ParsedManifest) {
   return [...event.sourceMetaMap.values()]
     .map((source) => ({
       unique_id: source.unique_id,
@@ -152,7 +152,7 @@ function sourceShapes(event: Manifest) {
     .sort((a, b) => a.unique_id.localeCompare(b.unique_id));
 }
 
-function testShapes(event: Manifest) {
+function testShapes(event: ParsedManifest) {
   return [...event.testMetaMap.entries()]
     .map(([key, test]) => ({
       key,
@@ -228,17 +228,14 @@ describe("Metadata contract — shape and key set snapshot", () => {
       parentMaps.parentMetaMap,
       parentMaps.childMetaMap,
     );
-    const manifestEvents = new EventEmitter<Project>();
+    const manifestEvents = new EventEmitter<ParsedManifest>();
     const project = {
       projectRoot: Uri.file(fixtureRoot),
       getProjectName: () => "single_project",
-      get manifest() {
-        return event;
-      },
-      onDidChangeManifest: manifestEvents.event,
+      onDidParse: manifestEvents.event,
       rebuildManifest: async () => {},
     } as unknown as Project;
-    const event: Manifest = {
+    const event: ParsedManifest = {
       nodeMetaMap,
       macroMetaMap,
       metricMetaMap: await new MetricParser(terminal).createMetricMetaMap(
@@ -265,8 +262,6 @@ describe("Metadata contract — shape and key set snapshot", () => {
         terminal,
       ).createSemanticModelMetaMap(manifest.semantic_models, adapter),
       modelDepthMap,
-      publicationEpoch: 1,
-      metadataProducer: "manifest",
     };
     const declaredProject = {
       root: Uri.file(fixtureRoot),
@@ -276,11 +271,11 @@ describe("Metadata contract — shape and key set snapshot", () => {
       dispose: () => {},
     } as DeclaredProject;
     const source = new ManifestMetadataSource(declaredProject, project);
-    const published: Manifest[] = [];
-    source.onDidPublish((m) => published.push(m));
-    manifestEvents.fire(project);
-    manifestEvents.fire(project);
-    expect(published).toEqual([event]);
+    const published: ParsedManifest[] = [];
+    source.onDidParse((m) => published.push(m));
+    manifestEvents.fire(event);
+    manifestEvents.fire(event);
+    expect(published).toEqual([event, event]);
     const forwarded = source.current();
     expect(forwarded).toBe(event);
     if (!forwarded) {

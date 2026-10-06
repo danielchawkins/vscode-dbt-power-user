@@ -86,7 +86,6 @@ export function nextManifestPublication<
   return {
     ...parsed,
     publicationEpoch,
-    metadataProducer: "manifest" as const,
   };
 }
 

@@ -1,7 +1,8 @@
 import { Disposable, Event, EventEmitter, Uri } from "vscode";
 import type { Log } from "../core/log";
-import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
+import { CompositeMetadataSource } from "../metadata/compositeMetadataSource";
 import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
+import { ServerMetadataSource } from "../metadata/serverMetadataSource";
 import { onDidChangeSettings } from "../settings";
 import { Project } from "./project";
 import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
@@ -139,7 +140,20 @@ export class Projects implements Disposable {
       }
       if (!this.projectsByRoot.has(rootPath)) {
         const project = this.projectFactory(declared);
-        const metadataSource = new ManifestMetadataSource(declared, project);
+        const metadataSource = new CompositeMetadataSource(
+          declared,
+          project,
+          new ServerMetadataSource(
+            project.lsp,
+            () => project.getProjectName(),
+            {
+              compileComplete: project.onDidCompile,
+              sourceChanged: project.onSourceFileChanged,
+              clientChanged: project.onDidChangeClient,
+            },
+            this.dbtTerminal,
+          ),
+        );
         const subscriptions: Disposable[] = [
           metadataSource.onDidPublish(() =>
             this._onDidChangeManifest.fire(project),

@@ -5,6 +5,7 @@ import {
 import { spawn, spawnSync } from "child_process";
 import {
   appendFileSync,
+  chmodSync,
   cpSync,
   existsSync,
   mkdirSync,
@@ -23,6 +24,7 @@ import {
   LABELS,
   nativeMode,
   ROOT_ENV,
+  SPY_LOG_FILE,
   TRUSTED_VSIX_LABEL,
   UNTRUSTED_LABEL,
   VSCODE_VERSION,
@@ -81,6 +83,31 @@ const onSignal = (signal) => {
 };
 process.on("SIGINT", onSignal);
 process.on("SIGTERM", onSignal);
+
+/**
+ * A `dbt` wrapper that appends `<epoch ms> <argv>` to the spy log and runs the real binary, so a test can assert
+ * which dbt processes the extension spawned. Undefined when no real binary can be found.
+ */
+function createDbtSpy() {
+  const real =
+    fusionPath ??
+    spawnSync("which", ["dbt"], { encoding: "utf-8" }).stdout.trim();
+  if (!real) {
+    return undefined;
+  }
+  const dir = path.join(ephemeralRoot, "spy");
+  mkdirSync(dir, { recursive: true });
+  const log = path.join(dir, SPY_LOG_FILE);
+  writeFileSync(log, "");
+  const wrapper = path.join(dir, "dbt");
+  writeFileSync(
+    wrapper,
+    `#!/bin/sh\nprintf '%s %s\\n' "$(date +%s)000" "$*" >> '${log}'\nexec '${real}' "$@"\n`,
+  );
+  chmodSync(wrapper, 0o755);
+  return wrapper;
+}
+const dbtSpy = createDbtSpy();
 
 try {
   for (const label of [...LABELS, ...VSIX_LABELS]) {
@@ -236,8 +263,8 @@ function prepareLabel(label) {
   }[label];
   const userSettings = {
     ...trustSettings,
-    ...(fusionPath && label !== UNTRUSTED_LABEL
-      ? { "fusionPowerUser.dbtPath": fusionPath }
+    ...(dbtSpy && label !== UNTRUSTED_LABEL
+      ? { "fusionPowerUser.dbtPath": dbtSpy }
       : {}),
   };
   writeJson(path.join(layout.userData, "User", "settings.json"), userSettings);

@@ -2,6 +2,7 @@ import {
   CustomExecution,
   Diagnostic,
   Disposable,
+  Event,
   EventEmitter,
   Task,
   Uri,
@@ -109,6 +110,8 @@ export interface ProjectOptions {
   projectCount?: () => number;
   /** The project's current Fusion Client; resolved per call so a restart leaves no stale reference. */
   fusionClient?: () => FusionClient | undefined;
+  /** Fires when that client is replaced or changes state. */
+  clientChanged?: Event<void>;
 }
 
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
@@ -131,13 +134,23 @@ export class Project implements Disposable, ManifestProject {
   private disposed = false;
 
   private _onSourceFileChanged = new EventEmitter<void>();
+  /** Fires after the debounce for a model, macro, seed or `dbt_project.yml` change on disk. */
   public onSourceFileChanged = this._onSourceFileChanged.event;
-  private _onDidChangeManifest = new EventEmitter<Project>();
-  /** Fires after this project publishes a new manifest. */
-  readonly onDidChangeManifest = this._onDidChangeManifest.event;
+  /** Fires when the project's Fusion client is replaced or changes state. */
+  readonly onDidChangeClient: Event<void>;
+  private _onDidParse = new EventEmitter<ParsedManifest>();
+  /**
+   * Fires with each `dbt parse` result. Producer input only: it is not a manifest publication, so it carries no
+   * server graph and no epoch. Consumers read `Projects.onDidChangeManifest`.
+   */
+  readonly onDidParse = this._onDidParse.event;
+  private _onDidCompile = new EventEmitter<void>();
+  /** Fires when the project's language server reports a finished compile. */
+  readonly onDidCompile = this._onDidCompile.event;
   private disposables: Disposable[] = [
-    this._onDidChangeManifest,
+    this._onDidParse,
     this._onSourceFileChanged,
+    this._onDidCompile,
   ];
 
   /** The latest complete metadata publication. */
@@ -161,6 +174,7 @@ export class Project implements Disposable, ManifestProject {
     this.runHistoryService = options.runHistoryService;
     this.projectCount = options.projectCount ?? (() => 1);
     this.lsp = createFusionCommands(options.fusionClient ?? (() => undefined));
+    this.onDidChangeClient = options.clientChanged ?? (() => Disposable.from());
     const root = this.projectRoot.fsPath;
     this.diagnostics = new ProjectDiagnostics(
       Uri.file(this.getDBTProjectFilePath()),
@@ -383,6 +397,7 @@ export class Project implements Disposable, ManifestProject {
   }
 
   private async handleProjectFileChanged(): Promise<void> {
+    this._onSourceFileChanged.fire();
     await this.refreshConfigWith(this.getFusionCli(), true);
     await this.rebuild();
   }
@@ -405,13 +420,28 @@ export class Project implements Disposable, ManifestProject {
     if (this.disposed) {
       return;
     }
-    this._manifest = nextManifestPublication(this, parsed);
-    this._onDidChangeManifest.fire(this);
+    this._onDidParse.fire(parsed);
     this.terminal.debug(
       "manifestParsed",
       "manifest succesfully parsed",
       parsed,
     );
+  }
+
+  /** Called by the Fusion client pool for every compile the server finishes. */
+  notifyCompileComplete(): void {
+    if (!this.disposed) {
+      this._onDidCompile.fire();
+    }
+  }
+
+  /** Replaces the published manifest with the composite producer's merged value, stamped as the next publication. */
+  publishMerged(merged: ParsedManifest): Manifest | undefined {
+    if (this.disposed) {
+      return undefined;
+    }
+    this._manifest = nextManifestPublication(this, merged);
+    return this._manifest;
   }
 
   /** The last `metadata.adapter_type` a manifest carried; `"unknown"` until one has. */
