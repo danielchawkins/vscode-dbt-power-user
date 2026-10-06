@@ -38,7 +38,7 @@ type RenderMessage = Omit<
   docs?: DBTDocumentation;
   tests?: DBTModelTest[];
   unitTests?: DBTUnitTest[];
-  draft?: { docs: DBTDocumentation; tests?: DBTModelTest[] };
+  draft?: { docs: DBTDocumentation; tests?: DBTModelTest[] } | undefined;
 };
 
 enum ActionState {
