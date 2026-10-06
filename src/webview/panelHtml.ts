@@ -16,13 +16,7 @@ export type PanelEntry = (typeof panelEntries)[number];
 
 /** What a panel's page loads beyond its nonce'd scripts, its styles, codicons and images. */
 export interface PanelCsp {
-  /** WebAssembly compilation (`'wasm-unsafe-eval'`). */
-  wasm?: boolean;
-  /** `fetch` of the extension's own assets. */
-  connect?: boolean;
-  /** Workers started from `blob:` URLs. */
-  blobWorkers?: boolean;
-  /** `<style>` elements and `style` attributes in markup, which Perspective injects. */
+  /** `<style>` elements and `style` attributes in markup. */
   inlineStyles?: boolean;
 }
 
@@ -92,12 +86,10 @@ export function contentSecurityPolicy(
   return [
     "default-src 'none'",
     // The nonce admits the entry; `cspSource` admits the chunks it imports.
-    `script-src 'nonce-${nonce}' ${cspSource}${csp.wasm ? " 'wasm-unsafe-eval'" : ""}`,
+    `script-src 'nonce-${nonce}' ${cspSource}`,
     `style-src ${cspSource}${csp.inlineStyles ? " 'unsafe-inline'" : ""}`,
     `font-src ${cspSource}`,
     `img-src ${cspSource} data:`,
-    ...(csp.connect ? [`connect-src ${cspSource}`] : []),
-    ...(csp.blobWorkers ? ["worker-src blob:"] : []),
   ].join("; ");
 }
 

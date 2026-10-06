@@ -9,11 +9,8 @@ import type { QueryHistoryStore } from "./queryHistory";
 
 type PanelMessage = queryResults.PanelMessage;
 
-/** Perspective fetches and compiles its .wasm, runs its engine in a Blob worker and injects styles. */
+/** The drawer and the virtual rows set inline styles; the grid loads nothing beyond the entry's own assets. */
 export const QUERY_RESULTS_CSP = {
-  wasm: true,
-  connect: true,
-  blobWorkers: true,
   inlineStyles: true,
 };
 
