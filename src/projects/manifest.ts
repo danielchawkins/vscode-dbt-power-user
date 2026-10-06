@@ -269,6 +269,14 @@ function readManifestFile(
   }
 }
 
+/** Files at the project root whose change always calls for a config refresh and a parse. */
+const PROJECT_LEVEL_FILES = [
+  "profiles.yml",
+  "packages.yml",
+  "dependencies.yml",
+  "selectors.yml",
+];
+
 export interface ManifestTriggerHandlers {
   /** Model, macro and seed paths; read on every event. */
   sourcePaths(): string[] | undefined;
@@ -327,7 +335,12 @@ export class ManifestTrigger implements Disposable {
   }
 
   private handle(fsPath: string): void {
-    if (fsPath === dbtProjectFilePath(this.projectRoot)) {
+    if (
+      fsPath === dbtProjectFilePath(this.projectRoot) ||
+      PROJECT_LEVEL_FILES.some(
+        (name) => fsPath === join(this.projectRoot, name),
+      )
+    ) {
       this.terminal.debug(
         "ManifestTrigger",
         `${DBT_PROJECT_FILE} changed in ${this.projectRoot}`,

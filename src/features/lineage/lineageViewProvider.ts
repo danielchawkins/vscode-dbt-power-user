@@ -7,6 +7,7 @@ import {
   WebviewViewResolveContext,
   window,
 } from "vscode";
+import type { ParseDemand } from "../../projects/parseDemand";
 import { Projects } from "../../projects/projects";
 import { LINEAGE_VIEW_TYPE, LineagePanel } from "./lineagePanel";
 
@@ -21,6 +22,7 @@ export class LineageViewProvider implements WebviewViewProvider, Disposable {
   public constructor(
     private lineagePanel: LineagePanel,
     projects: Projects,
+    private parseDemand?: ParseDemand,
   ) {
     this.disposables.push(
       lineagePanel,
@@ -73,6 +75,16 @@ export class LineageViewProvider implements WebviewViewProvider, Disposable {
     this.panel = panel;
     this.context = context;
     this.token = token;
+
+    // The lineage drawer reads descriptions, tests and meta, which only the parse supplies.
+    const demand = this.parseDemand?.follow(
+      () => panel.visible,
+      panel.onDidChangeVisibility,
+    );
+    if (demand) {
+      this.disposables.push(demand);
+      panel.onDidDispose(() => demand.dispose());
+    }
 
     void this.init();
     panel.webview.onDidReceiveMessage(

@@ -59,16 +59,17 @@ export class RunTest {
   }
 
   /**
-   * Attempts to run the active editor's file as a singular test. Returns
-   * `true` if the file was a singular test and the run was dispatched,
-   * `false` otherwise — in which case the caller should fall back to the
+   * Attempts to run the active editor's file as a singular test, after rebuilding a parse that a source change left
+   * stale (a test file added while no parse-field view was showing is not in it). Resolves `true` if the file was a
+   * singular test and the run was dispatched, `false` otherwise — in which case the caller should fall back to the
    * regular model/test behavior.
    */
-  runSingularTestOnActiveWindowIfApplicable(): boolean {
+  async runSingularTestOnActiveWindowIfApplicable(): Promise<boolean> {
     if (!window.activeTextEditor) {
       return false;
     }
     const uri = activeModelUri(window.activeTextEditor.document.uri);
+    await this.queryManifestService.freshManifest(uri);
     const testName = this.getSingularTestName(uri);
     if (testName === undefined) {
       return false;

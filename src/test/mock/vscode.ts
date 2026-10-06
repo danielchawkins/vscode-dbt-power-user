@@ -347,6 +347,11 @@ export const window = {
   ),
   registerWebviewViewProvider: mockRegisterProvider,
   registerTreeDataProvider: mockRegisterProvider,
+  createTreeView: vi.fn(() => ({
+    visible: false,
+    onDidChangeVisibility: vi.fn(() => mockDisposable),
+    dispose: vi.fn(),
+  })),
   createTextEditorDecorationType: vi.fn(() => mockDisposable),
   createTerminal: vi.fn().mockReturnValue({
     sendText: vi.fn(),

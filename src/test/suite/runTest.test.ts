@@ -92,6 +92,7 @@ describe("RunTest — singular test classification and dispatch", () => {
 
     mockQueryManifestService = {
       getEventByDocument: vi.fn().mockReturnValue(makeEvent()),
+      freshManifest: vi.fn(async () => undefined),
     } as unknown as Mocked<QueryManifestService>;
 
     runTest = new RunTest(mockProjects, mockQueryManifestService);
@@ -130,10 +131,11 @@ describe("RunTest — singular test classification and dispatch", () => {
   });
 
   describe("runSingularTestOnActiveWindowIfApplicable", () => {
-    it("dispatches runTest and returns true for a singular test file", () => {
+    it("dispatches runTest and returns true for a singular test file", async () => {
       setActiveEditor(singularTestPath);
 
-      const dispatched = runTest.runSingularTestOnActiveWindowIfApplicable();
+      const dispatched =
+        await runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(true);
       expect(mockProjects.get).toHaveBeenCalledWith(expect.anything());
@@ -142,31 +144,51 @@ describe("RunTest — singular test classification and dispatch", () => {
       );
     });
 
-    it("returns false for a regular model file (caller falls back to RunModel)", () => {
+    it("reads the test map only after a stale parse was rebuilt", async () => {
+      setActiveEditor(singularTestPath);
+      const order: string[] = [];
+      mockQueryManifestService.freshManifest = vi.fn(async () => {
+        order.push("parsed");
+        return undefined;
+      });
+      mockQueryManifestService.getEventByDocument = vi.fn(() => {
+        order.push("read");
+        return makeEvent();
+      });
+
+      await runTest.runSingularTestOnActiveWindowIfApplicable();
+
+      expect(order).toEqual(["parsed", "read"]);
+    });
+
+    it("returns false for a regular model file (caller falls back to RunModel)", async () => {
       setActiveEditor(modelPath);
 
-      const dispatched = runTest.runSingularTestOnActiveWindowIfApplicable();
+      const dispatched =
+        await runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(false);
       expect(mockProject.runTest).not.toHaveBeenCalled();
     });
 
-    it("returns false when there is no active editor", () => {
+    it("returns false when there is no active editor", async () => {
       setActiveEditor(null);
 
-      const dispatched = runTest.runSingularTestOnActiveWindowIfApplicable();
+      const dispatched =
+        await runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(false);
       expect(mockProject.runTest).not.toHaveBeenCalled();
     });
 
-    it("returns false when the manifest has no matching test", () => {
+    it("returns false when the manifest has no matching test", async () => {
       setActiveEditor(singularTestPath);
       mockQueryManifestService.getEventByDocument = vi
         .fn()
         .mockReturnValue(undefined) as any;
 
-      const dispatched = runTest.runSingularTestOnActiveWindowIfApplicable();
+      const dispatched =
+        await runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(false);
       expect(mockProject.runTest).not.toHaveBeenCalled();
