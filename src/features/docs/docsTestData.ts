@@ -3,6 +3,7 @@ import {
   getColumnTestConfigFromYml,
   isAcceptedValues,
   isRelationship,
+  type YamlTest,
 } from "../../core/manifest/testConfig";
 import type {
   TestMetaData,
@@ -112,7 +113,7 @@ function columnTestEntry(
   }
   const { kwargs } = test.test_metadata;
   const fromYml = getColumnTestConfigFromYml(
-    existingColumn?.tests as unknown[] | undefined,
+    existingColumn?.tests as YamlTest[] | undefined,
     kwargs,
     fullName,
   );

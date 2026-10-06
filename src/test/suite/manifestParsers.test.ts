@@ -29,13 +29,16 @@ const nodes = {
 describe("manifest parsers", () => {
   it("reject instead of hanging when the package path is unknown", async () => {
     await expect(
-      new NodeParser(logger).createNodeMetaMap(nodes, project(undefined)),
+      new NodeParser(logger).createNodeMetaMap(
+        nodes as never,
+        project(undefined),
+      ),
     ).rejects.toThrow("packagePath is not defined");
     await expect(
       new MacroParser(logger).createMacroMetaMap({}, project(undefined)),
     ).rejects.toThrow("packagePath is not defined");
     await expect(
-      new DocParser(logger).createDocMetaMap(docs, project(undefined)),
+      new DocParser(logger).createDocMetaMap(docs as never, project(undefined)),
     ).rejects.toThrow("packagePath is not defined");
   });
 

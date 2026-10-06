@@ -1,7 +1,11 @@
 import * as path from "path";
 
 import { ManifestProject } from "./manifestProject";
-import { RESOURCE_TYPE_SOURCE, SourceMetaMap } from "./types";
+import {
+  ManifestResources,
+  RESOURCE_TYPE_SOURCE,
+  SourceMetaMap,
+} from "./types";
 
 import type { Log } from "../log";
 
@@ -9,7 +13,7 @@ export class SourceParser {
   constructor(private terminal: Pick<Log, "debug">) {}
 
   createSourceMetaMap(
-    sourcesMap: Record<string, any>,
+    sourcesMap: ManifestResources,
     project: ManifestProject,
   ): Promise<SourceMetaMap> {
     return new Promise((resolve) => {
@@ -47,6 +51,9 @@ export class SourceParser {
               meta,
             },
           ) => {
+            if (!source_name) {
+              return previousValue;
+            }
             let source = previousValue.get(source_name);
             if (!source) {
               source = {

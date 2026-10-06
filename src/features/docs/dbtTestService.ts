@@ -24,7 +24,7 @@ export class DbtTestService {
       | TestMetadataAcceptedValues
       | TestMetadataRelationships
       | {
-          [x: string]: any;
+          [x: string]: unknown;
         }
       | null
     )[],
@@ -158,7 +158,9 @@ export class DbtTestService {
       return null;
     }
 
-    const model = parsedDocFile.models?.find((m: any) => m.name === modelName);
+    const model = parsedDocFile.models?.find(
+      (m: { name: string }) => m.name === modelName,
+    );
 
     // model test
     if (!columnNameFromTestMetadata) {
@@ -173,7 +175,7 @@ export class DbtTestService {
 
     const column =
       model.columns &&
-      model.columns.find((yamlColumn: any) =>
+      model.columns.find((yamlColumn: { name: string }) =>
         isColumnNameEqual(yamlColumn.name, columnNameFromTestMetadata),
       );
     log.debug(

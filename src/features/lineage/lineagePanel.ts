@@ -504,7 +504,7 @@ export class LineagePanel
           datatype: string;
           description: string;
         };
-        meta?: { [key: string]: any };
+        meta?: Record<string, unknown> | undefined;
       }
     | undefined
   > {

@@ -97,7 +97,7 @@ export type Table = {
   materialization?: string;
   description?: string;
   tests: any[];
-  meta?: Map<string, any>;
+  meta?: Record<string, unknown>;
   columns: { [columnName: string]: ColumnMetaData };
   patchPath?: string;
   packageName?: string;

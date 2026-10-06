@@ -2,13 +2,17 @@ import * as path from "path";
 
 import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
-import { RESOURCE_TYPE_UNIT_TEST, UnitTestMetaMap } from "./types";
+import {
+  ManifestResources,
+  RESOURCE_TYPE_UNIT_TEST,
+  UnitTestMetaMap,
+} from "./types";
 
 export class UnitTestParser {
   constructor(private terminal: Pick<Log, "debug">) {}
 
   createUnitTestMetaMap(
-    nodesMap: Record<string, any>,
+    nodesMap: ManifestResources,
     project: ManifestProject,
   ): Promise<UnitTestMetaMap> {
     return new Promise((resolve) => {
@@ -24,8 +28,8 @@ export class UnitTestParser {
         return;
       }
       Object.values(nodesMap)
-        .filter((node: any) => node.resource_type === RESOURCE_TYPE_UNIT_TEST)
-        .forEach(({ name, original_file_path, model, unique_id }: any) => {
+        .filter((node) => node.resource_type === RESOURCE_TYPE_UNIT_TEST)
+        .forEach(({ name, original_file_path, model, unique_id }) => {
           const fullPath = original_file_path
             ? path.join(projectRoot, original_file_path)
             : undefined;

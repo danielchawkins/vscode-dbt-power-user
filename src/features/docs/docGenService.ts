@@ -51,7 +51,7 @@ export class DocGenService {
     }
     return {
       name: modelName,
-      patchPath: currentNode.patch_path,
+      patchPath: currentNode.patch_path ?? "",
       description: currentNode.description,
       generated: false,
       uniqueId: currentNode.unique_id,
@@ -217,7 +217,7 @@ export class DocGenService {
       return {
         documentation: {
           ...emptyDocumentation,
-          patchPath: currentNode.patch_path,
+          patchPath: currentNode.patch_path ?? "",
           description: modelDef.description || "",
           columns: (modelDef.columns || []).map((column) => ({
             name: column.name,

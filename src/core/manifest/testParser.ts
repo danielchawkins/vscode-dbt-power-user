@@ -2,12 +2,14 @@ import * as path from "path";
 
 import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
-import { RESOURCE_TYPE_TEST, TestMetaMap } from "./types";
+import { ManifestResources, RESOURCE_TYPE_TEST, TestMetaMap } from "./types";
 
 export class TestParser {
   constructor(private terminal: Pick<Log, "debug">) {}
 
-  private getColumnNameWithoutQuotes(columnName: string): string | undefined {
+  private getColumnNameWithoutQuotes(
+    columnName: string | undefined,
+  ): string | undefined {
     if (!columnName) {
       return undefined;
     }
@@ -19,7 +21,7 @@ export class TestParser {
     return columnName;
   }
   createTestMetaMap(
-    testsMap: Record<string, any>,
+    testsMap: ManifestResources,
     project: ManifestProject,
   ): Promise<TestMetaMap> {
     return new Promise((resolve) => {

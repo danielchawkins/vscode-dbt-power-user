@@ -3,6 +3,7 @@ import {
   Cardinality,
   ColumnLevelConstraint,
   ConstraintType,
+  Meta,
   ModelLevelConstraint,
   NodeMetaData,
   NodeMetaMap,
@@ -631,8 +632,8 @@ export class RelationshipParser {
   // Shared helpers
   // ─────────────────────────────────────────────────────────────────────────
 
-  private isIgnoredByMeta(meta: any): boolean {
-    return Boolean(meta && meta.ignore_in_erd === true);
+  private isIgnoredByMeta(meta: Meta): boolean {
+    return meta?.ignore_in_erd === true;
   }
 
   /**
@@ -640,7 +641,7 @@ export class RelationshipParser {
    * Returns `undefined` when meta is absent or carries an unknown value
    * so callers can fall back to detection logic.
    */
-  private cardinalityOverrideFromMeta(meta: any): Cardinality | undefined {
+  private cardinalityOverrideFromMeta(meta: Meta): Cardinality | undefined {
     const raw = meta?.relationship_type;
     if (
       typeof raw === "string" &&
@@ -651,7 +652,7 @@ export class RelationshipParser {
     return undefined;
   }
 
-  private labelFromMeta(meta: any): string | undefined {
+  private labelFromMeta(meta: Meta): string | undefined {
     const raw = meta?.relationship_label;
     return typeof raw === "string" && raw.length > 0 ? raw : undefined;
   }

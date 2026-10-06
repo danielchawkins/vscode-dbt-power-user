@@ -39,7 +39,7 @@ type RawNodes = Record<string, Record<string, unknown>>;
 /** Parses raw `manifest.json` nodes the way `ManifestRebuild` does, for the resources the fixtures use. */
 async function parseNodes(nodes: RawNodes): Promise<ParsedManifest> {
   const nodeMetaMap = await new NodeParser(log).createNodeMetaMap(
-    nodes,
+    nodes as never,
     project,
   );
   const sourceMetaMap = await new SourceParser(log).createSourceMetaMap(
@@ -47,7 +47,7 @@ async function parseNodes(nodes: RawNodes): Promise<ParsedManifest> {
     project,
   );
   const testMetaMap = await new TestParser(log).createTestMetaMap(
-    nodes,
+    nodes as never,
     project,
   );
   const functionMetaMap = await new FunctionParser(log).createFunctionMetaMap(
@@ -55,7 +55,7 @@ async function parseNodes(nodes: RawNodes): Promise<ParsedManifest> {
     project,
   );
   const maps = await new ChildrenParentParser().createChildrenParentMetaMap(
-    nodes,
+    nodes as never,
     {},
   );
   const graphMetaMap = new GraphParser(log).createGraphMetaMap(

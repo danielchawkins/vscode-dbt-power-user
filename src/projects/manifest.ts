@@ -24,6 +24,13 @@ import {
   TestParser,
   UnitTestParser,
 } from "../core/manifest";
+import type {
+  ExposureResource,
+  FunctionResource,
+  MacroResource,
+  ManifestResources,
+  SemanticModelResource,
+} from "../core/manifest/types";
 import { DBT_PROJECT_FILE, dbtProjectFilePath } from "../core/project";
 import { MANIFEST_FILE, ParsedManifest } from "../dbt_integration/domain";
 
@@ -87,18 +94,15 @@ export function nextManifestPublication<
   };
 }
 
-/** A `manifest.json` resource section: resources keyed by unique id. */
-type ManifestResources = Record<string, unknown>;
-
 interface ManifestJson {
   metadata?: { adapter_type?: string };
   nodes: ManifestResources;
   sources: ManifestResources;
-  macros: ManifestResources;
-  semantic_models: ManifestResources;
+  macros: ManifestResources<MacroResource>;
+  semantic_models: ManifestResources<SemanticModelResource>;
   docs: ManifestResources;
-  exposures: ManifestResources;
-  functions?: ManifestResources;
+  exposures: ManifestResources<ExposureResource>;
+  functions?: ManifestResources<FunctionResource>;
   unit_tests?: ManifestResources;
 }
 
