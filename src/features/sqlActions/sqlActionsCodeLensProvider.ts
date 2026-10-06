@@ -17,27 +17,9 @@ export class SqlActionsCodeLensProvider
     _token: CancellationToken,
   ): ProviderResult<CodeLens[]> {
     if (document.fileName.endsWith(".sql")) {
-      return this.provideSqlCodeLenses();
+      return [];
     }
     return this.provideYamlCodeLenses(document);
-  }
-
-  private provideSqlCodeLenses(): CodeLens[] {
-    const codeLenses: CodeLens[] = [
-      new CodeLens(new Range(0, 0, 0, 0), {
-        title: "$(play) Execute Query",
-        tooltip: "Execute this SQL query",
-        command: "fusionPowerUser.executeSQL",
-        arguments: [],
-      }),
-      new CodeLens(new Range(0, 0, 0, 0), {
-        title: "$(book) Document",
-        tooltip: "Add documentation or tests for this model",
-        command: "fusionPowerUser.DocsEdit.focus",
-        arguments: [],
-      }),
-    ];
-    return codeLenses;
   }
 
   private provideYamlCodeLenses(document: TextDocument): CodeLens[] {
