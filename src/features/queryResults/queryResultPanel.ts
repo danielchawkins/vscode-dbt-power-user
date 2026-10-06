@@ -123,9 +123,7 @@ export class QueryResultPanel extends PanelHost {
         query: editor?.document.getText(),
         filepath: editor && activeModelUri(editor.document.uri).fsPath,
       },
-      publication: publicationId(
-        this.queryManifestService.getProject()?.manifest,
-      ),
+      publication: publicationId(this.queryManifestService.manifestFor()),
     });
   }
 

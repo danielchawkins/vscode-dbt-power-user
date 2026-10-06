@@ -193,10 +193,12 @@ suite("Panel view state", function () {
     await vscode.commands.executeCommand(OTHER_PANEL);
     await sleep(1_000);
     await showResults(port, host);
+    // The rebuilt page paints the default tab before the saved one is restored.
     const after = await waitForTabs(
       port,
       (tabs) =>
         tabs.timeOrigin !== selected.timeOrigin &&
+        tabs.active === "SQL" &&
         tabs.tabs.some((tab) => tab.startsWith("Preview")),
     );
     console.log(

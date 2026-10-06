@@ -297,7 +297,7 @@ The reviewer confirms that `just lint` runs knip, both dependency-cruiser config
   }
   ```
 
-- Files: `src/metadata/projectMetadataSource.ts` gains `onDidPublish`; `ManifestMetadataSource` holds the parse result that `Project` holds today and fires `onDidPublish` after each rebuild; `src/projects/projects.ts` fires `onDidChangeManifest` from `entry.metadataSource.onDidPublish` instead of `project.onDidChangeManifest`, and `Project.manifest` returns `metadataSource.current()`; `metadataContract.test.ts` asserts one publication per epoch; `QueryManifestService.manifestFor(uri)` replaces the duplicated preamble (`queryManifestService.ts:88-103`, `115-130`); `modelTreeviewProvider.ts`, `lineagePanel.ts`, `docsEditPanel.ts` and `queryResultPanel.ts` read through it; the duplicated tree subscription block (`modelTreeviewProvider.ts:100-112`, `252-264`) becomes one helper; the `architecture.md` metadata port section says the port is the only publication path.
+- Files: `src/metadata/projectMetadataSource.ts` gains `onDidPublish`; `ManifestMetadataSource` adapts `Project` (which keeps the parse result and its own change event) and fires `onDidPublish` once per epoch; `src/projects/projects.ts` fires `onDidChangeManifest` from `entry.metadataSource.onDidPublish` instead of `project.onDidChangeManifest`, and `Project.manifest` returns `metadataSource.current()`; `metadataContract.test.ts` asserts one publication per epoch; `QueryManifestService.manifestFor(uri)` replaces the duplicated preamble (`queryManifestService.ts:88-103`, `115-130`); `modelTreeviewProvider.ts`, `lineagePanel.ts`, `docsEditPanel.ts` and `queryResultPanel.ts` read through it; the duplicated tree subscription block (`modelTreeviewProvider.ts:100-112`, `252-264`) becomes one helper; the `architecture.md` metadata port section says the port is the only publication path.
 - Resolves: Qual M1 (option a: the port is used, not deleted); Qual §4 (manifest-read row; `queryManifestService` and `modelTreeviewProvider` clones).
 - Revisions: (1) publication through the port; (2) `manifestFor` and feature reads; (3) tree helper; (4) docs.
 - Verify: `just check`; `rg -n 'project\.onDidChangeManifest' src/projects/projects.ts` is empty; `rg -n 'onDidChangeManifest' src/features` lists only `projects.onDidChangeManifest`; `just lint-markdown`.
@@ -396,6 +396,7 @@ The reviewer reads every Phase 1 PNG against its record (menus outside a project
 ### 2.4 Server Producer behind the metadata port
 
 - Goal: the language server fills every field it can supply, behind the existing port and seam (D8).
+- Note: 1.8 left `Project` owning the manifest and its event, with `ManifestMetadataSource` as an adapter; this step moves that ownership into the source when it wires `CompositeMetadataSource`.
 - Seam:
 
   ```ts

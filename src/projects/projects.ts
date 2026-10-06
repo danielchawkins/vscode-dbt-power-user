@@ -141,7 +141,9 @@ export class Projects implements Disposable {
         const project = this.projectFactory(declared);
         const metadataSource = new ManifestMetadataSource(declared, project);
         const subscriptions: Disposable[] = [
-          project.onDidChangeManifest((p) => this._onDidChangeManifest.fire(p)),
+          metadataSource.onDidPublish(() =>
+            this._onDidChangeManifest.fire(project),
+          ),
           project.errors?.onDidChange(() =>
             this._onDidChangeErrors.fire(project),
           ) ?? Disposable.from(),

@@ -33,7 +33,7 @@ function draftPanel() {
     {} as any,
     docGenService as any,
     dbtTestService as any,
-    {} as any,
+    { manifestFor: () => undefined } as any,
     terminal,
   );
   const postMessage = vi.fn();

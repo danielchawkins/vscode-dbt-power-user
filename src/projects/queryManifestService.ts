@@ -30,6 +30,12 @@ export class QueryManifestService {
     return undefined;
   }
 
+  /** The latest manifest of the project owning `uri`, or of the Current Project when `uri` is omitted. */
+  public manifestFor(uri?: Uri): Manifest | undefined {
+    const project = uri ? this.resolveProject(uri) : this.getProject();
+    return project ? this.manifestAt(project.projectRoot) : undefined;
+  }
+
   public getProjectByUri(uri?: Uri): Project | undefined {
     return this.resolveProject(uri);
   }
@@ -68,34 +74,15 @@ export class QueryManifestService {
       "getting event for project, currentFilePath: ",
       currentFilePath.fsPath,
     );
-    const projectRootpath = this.resolveProject(currentFilePath)?.projectRoot;
-    if (projectRootpath === undefined) {
-      this.dbtTerminal.debug(
-        "no project for currentFilePath: ",
-        currentFilePath.fsPath,
-      );
-      return;
-    }
-
-    const event = this.manifestAt(projectRootpath);
+    const event = this.manifestFor(currentFilePath);
     if (event === undefined) {
-      this.dbtTerminal.debug("no event for project: ", projectRootpath.fsPath);
-      return;
+      this.dbtTerminal.debug("no manifest for: ", currentFilePath.fsPath);
     }
     return event;
   }
 
   public getSourcesInProject(currentFilePath?: Uri) {
-    if (!currentFilePath) {
-      return;
-    }
-
-    const projectRootpath = this.resolveProject(currentFilePath)?.projectRoot;
-    if (projectRootpath === undefined) {
-      return;
-    }
-
-    const event = this.manifestAt(projectRootpath);
+    const event = currentFilePath && this.manifestFor(currentFilePath);
     if (!event) {
       return;
     }
@@ -112,16 +99,7 @@ export class QueryManifestService {
   public getModelsInProject(
     currentFilePath?: Uri,
   ): Iterable<string> | undefined {
-    if (!currentFilePath) {
-      return;
-    }
-
-    const projectRootpath = this.resolveProject(currentFilePath)?.projectRoot;
-    if (projectRootpath === undefined) {
-      return;
-    }
-
-    const event = this.manifestAt(projectRootpath);
+    const event = currentFilePath && this.manifestFor(currentFilePath);
     if (!event) {
       return;
     }
