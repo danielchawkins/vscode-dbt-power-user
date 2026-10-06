@@ -46,6 +46,7 @@ import {
   executeTask,
   taskName,
 } from "./dbtTask";
+import { graphUnavailable } from "./graphAvailability";
 import {
   ManifestParsers,
   ManifestTrigger,
@@ -117,6 +118,8 @@ export interface ProjectOptions {
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
 export class Project implements Disposable, ManifestProject {
   private _manifest?: Manifest;
+  /** Whether the published manifest was merged with a Server Producer value. */
+  private serverValuePublished = false;
   readonly projectRoot: Uri;
   private readonly terminal: Log;
   private readonly sharedState: SharedStateService;
@@ -130,6 +133,7 @@ export class Project implements Disposable, ManifestProject {
   private readonly projectCount: () => number;
   /** Server commands over the project's current Fusion Client. */
   readonly lsp: FusionCommands;
+  private readonly fusionClient: () => FusionClient | undefined;
   private warnedTasksUnavailable = false;
   private disposed = false;
 
@@ -153,6 +157,15 @@ export class Project implements Disposable, ManifestProject {
     this._onDidCompile,
   ];
 
+  /** Why the server-owned graph is empty (the client is not running, or has not compiled yet), or `undefined`. */
+  graphNotice(): string | undefined {
+    const client = this.fusionClient();
+    return graphUnavailable(
+      client?.state ?? "notRunning",
+      this.serverValuePublished,
+    );
+  }
+
   /** The latest complete metadata publication. */
   get manifest(): Manifest | undefined {
     return this._manifest;
@@ -173,7 +186,8 @@ export class Project implements Disposable, ManifestProject {
     this.sharedState = options.sharedState;
     this.runHistoryService = options.runHistoryService;
     this.projectCount = options.projectCount ?? (() => 1);
-    this.lsp = createFusionCommands(options.fusionClient ?? (() => undefined));
+    this.fusionClient = options.fusionClient ?? (() => undefined);
+    this.lsp = createFusionCommands(this.fusionClient);
     this.onDidChangeClient = options.clientChanged ?? (() => Disposable.from());
     const root = this.projectRoot.fsPath;
     this.diagnostics = new ProjectDiagnostics(
@@ -436,10 +450,14 @@ export class Project implements Disposable, ManifestProject {
   }
 
   /** Replaces the published manifest with the composite producer's merged value, stamped as the next publication. */
-  publishMerged(merged: ParsedManifest): Manifest | undefined {
+  publishMerged(
+    merged: ParsedManifest,
+    hasServerValue: boolean,
+  ): Manifest | undefined {
     if (this.disposed) {
       return undefined;
     }
+    this.serverValuePublished = hasServerValue;
     this._manifest = nextManifestPublication(this, merged);
     return this._manifest;
   }

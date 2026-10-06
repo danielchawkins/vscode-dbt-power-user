@@ -468,6 +468,7 @@ describe("LineagePanel — after a save", () => {
     const current = {
       projectRoot: { fsPath: "/p" },
       throwDiagnosticsErrorIfAvailable: vi.fn(),
+      graphNotice: () => undefined,
       manifest: { publicationEpoch: 1 } as any,
     };
     const other = { manifest: { publicationEpoch: 1 } as any } as any;
@@ -504,6 +505,7 @@ describe("LineagePanel — after a save", () => {
       const project = (root: string, publicationEpoch: number) => ({
         projectRoot: { fsPath: root },
         throwDiagnosticsErrorIfAvailable: vi.fn(),
+        graphNotice: () => undefined,
         manifest: { publicationEpoch } as any,
       });
       const a = project("/a", epochA);

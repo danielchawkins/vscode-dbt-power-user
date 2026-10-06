@@ -405,3 +405,41 @@ describe("DbtLineageService.getInferredColumns", () => {
     ).toBeUndefined();
   });
 });
+
+describe("DbtLineageService — merged value", () => {
+  it("draws a server node the parse lacks with no tests", () => {
+    const svc = new DbtLineageService({} as any);
+    const added = {
+      unique_id: "model.p.new",
+      alias: "new",
+      path: "/p/models/new.sql",
+      description: "",
+      columns: {},
+      config: { materialized: "view" },
+      package_name: "p",
+      patch_path: "",
+      meta: {},
+    };
+    const event: any = {
+      graphMetaMap: {
+        parents: new Map(),
+        children: new Map(),
+        tests: new Map(),
+        metrics: new Map(),
+      },
+      testMetaMap: new Map(),
+      nodeMetaMap: {
+        lookupByUniqueId: (id: string) =>
+          id === added.unique_id ? added : undefined,
+      },
+    };
+    expect(
+      svc.createTable(event, "/p/models/new.sql", "model.p.new"),
+    ).toMatchObject({
+      table: "model.p.new",
+      label: "new",
+      materialization: "view",
+      tests: [],
+    });
+  });
+});

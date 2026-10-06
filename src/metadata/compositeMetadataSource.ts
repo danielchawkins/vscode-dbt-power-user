@@ -50,13 +50,17 @@ export class CompositeMetadataSource implements ProjectMetadataSource {
     }
     const root = this.dbtProject.projectRoot.fsPath;
     const projectName = this.dbtProject.getProjectName();
-    const merged = mergeMetadata(this.server.current(), this.parsed, {
+    const server = this.server.current();
+    const merged = mergeMetadata(server, this.parsed, {
       pathOf: (node) =>
         node.packageName === projectName
           ? path.join(root, node.originalFilePath)
           : undefined,
     });
-    const manifest = this.dbtProject.publishMerged(merged);
+    const manifest = this.dbtProject.publishMerged(
+      merged,
+      server !== undefined,
+    );
     if (manifest) {
       this.emitter.fire(manifest);
     }

@@ -663,6 +663,11 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
       return { message: (err as Error).message, type: "error" };
     }
 
+    const project = this.queryManifestService.getProject();
+    const graphNotice = project?.graphNotice();
+    if (graphNotice) {
+      return { message: graphNotice, type: "warning" };
+    }
     return { message, type: "warning" };
   }
 
