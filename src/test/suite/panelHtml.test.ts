@@ -69,6 +69,15 @@ describe("contentSecurityPolicy", () => {
     expect(policy.get("script-src")).toEqual(["'nonce-N'", "SRC"]);
   });
 
+  it("allows inline styles only to a panel that asks for them", () => {
+    expect(contentSecurityPolicy("SRC", "N", {})).not.toContain(
+      "'unsafe-inline'",
+    );
+    expect(contentSecurityPolicy("SRC", "N", { inlineStyles: true })).toContain(
+      "style-src SRC 'unsafe-inline'",
+    );
+  });
+
   it("never allows eval or remote origins", () => {
     const policy = contentSecurityPolicy("SRC", "N", {
       wasm: true,

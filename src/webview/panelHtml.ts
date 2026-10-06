@@ -22,6 +22,8 @@ export interface PanelCsp {
   connect?: boolean;
   /** Workers started from `blob:` URLs. */
   blobWorkers?: boolean;
+  /** `<style>` elements and `style` attributes in markup, which Perspective injects. */
+  inlineStyles?: boolean;
 }
 
 /** The page a panel host renders: its entry and the CSP allowances that entry needs. */
@@ -91,7 +93,7 @@ export function contentSecurityPolicy(
     "default-src 'none'",
     // The nonce admits the entry; `cspSource` admits the chunks it imports.
     `script-src 'nonce-${nonce}' ${cspSource}${csp.wasm ? " 'wasm-unsafe-eval'" : ""}`,
-    `style-src ${cspSource} 'unsafe-inline'`,
+    `style-src ${cspSource}${csp.inlineStyles ? " 'unsafe-inline'" : ""}`,
     `font-src ${cspSource}`,
     `img-src ${cspSource} data:`,
     ...(csp.connect ? [`connect-src ${cspSource}`] : []),

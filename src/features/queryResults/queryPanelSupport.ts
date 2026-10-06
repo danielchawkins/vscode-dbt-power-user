@@ -9,6 +9,14 @@ import type { QueryHistoryStore } from "./queryHistory";
 
 type PanelMessage = queryResults.PanelMessage;
 
+/** Perspective fetches and compiles its .wasm, runs its engine in a Blob worker and injects styles. */
+export const QUERY_RESULTS_CSP = {
+  wasm: true,
+  connect: true,
+  blobWorkers: true,
+  inlineStyles: true,
+};
+
 /** The tab data a results tab renders for a history entry. */
 export function tabDataOf(entry: queryResults.QueryHistoryEntry) {
   return {
