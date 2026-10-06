@@ -1054,9 +1054,10 @@ describe("Project manifest", () => {
     };
 
     await project.parseManifest();
-    const first = project.publishMerged(lastParse());
+    const first = project.publishMerged(lastParse(), false);
     await project.parseManifest();
-    const second = project.publishMerged(lastParse());
+    const second = project.publishMerged(lastParse(), true);
+    expect(project.graphNotice()).toBeUndefined();
 
     expect(first).toBeDefined();
     expect(second).toBeDefined();
