@@ -8,19 +8,19 @@ import {
   vi,
 } from "vitest";
 import { Position, TextDocument } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 import {
   CteCodeLensProvider,
   CteInfo,
 } from "../../features/cte/cteCodeLensProvider";
 
 describe("CteCodeLensProvider", () => {
-  let mockDBTTerminal: Mocked<DBTTerminal>;
+  let mockLog: Mocked<Log>;
   let provider: CteCodeLensProvider;
 
   beforeEach(() => {
-    // Mock DBTTerminal
-    mockDBTTerminal = {
+    // Mock Log
+    mockLog = {
       debug: vi.fn(),
       warn: vi.fn(),
       error: vi.fn(),
@@ -30,7 +30,7 @@ describe("CteCodeLensProvider", () => {
     } as any;
 
     // Create provider instance
-    provider = new CteCodeLensProvider(mockDBTTerminal);
+    provider = new CteCodeLensProvider(mockLog);
   });
 
   afterEach(() => {

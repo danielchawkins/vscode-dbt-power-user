@@ -7,7 +7,7 @@ import {
   Range,
   TextDocument,
 } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 export interface CteInfo {
   name: string;
   range: Range;
@@ -32,7 +32,7 @@ export class CteCodeLensProvider implements CodeLensProvider, Disposable {
    * 1000 chars accommodates complex column definitions in most practical scenarios. */
   private static readonly MAX_COLUMN_LIST_LENGTH = 1000;
 
-  constructor(private dbtTerminal: DBTTerminal) {}
+  constructor(private dbtTerminal: Log) {}
 
   dispose() {
     while (this.disposables.length) {

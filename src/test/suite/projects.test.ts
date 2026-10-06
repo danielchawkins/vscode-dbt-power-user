@@ -9,14 +9,14 @@ import {
   vi,
 } from "vitest";
 import { EventEmitter, Uri, workspace } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 
 describe("Projects", () => {
   let projects: Projects;
-  let mockDbtTerminal: Mocked<DBTTerminal>;
+  let mockDbtTerminal: Mocked<Log>;
   let mockProjectRegistry: any;
   let mockDbtProjectFactory: Mock;
   let mockProject1: Mocked<Project>;
@@ -28,13 +28,13 @@ describe("Projects", () => {
   let project2Manifest: EventEmitter<Project>;
 
   beforeEach(() => {
-    // Mock DBTTerminal
+    // Mock Log
     mockDbtTerminal = {
       debug: vi.fn(),
       error: vi.fn(),
       info: vi.fn(),
       dispose: vi.fn(),
-    } as unknown as Mocked<DBTTerminal>;
+    } as unknown as Mocked<Log>;
 
     // Create mock declared projects
     declaredProject1 = {

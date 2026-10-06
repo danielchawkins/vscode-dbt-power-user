@@ -12,7 +12,7 @@ import {
   completeWebviewReady,
   beginWebviewResolve as recordWebviewResolveStart,
 } from "../benchmark/runtimeTimings";
-import { DBTTerminal } from "../dbt_integration";
+import type { Log } from "../core/log";
 import { ExtensionContextStore } from "../extensionContext";
 import { QueryManifestService } from "../projects/queryManifestService";
 import {
@@ -48,7 +48,7 @@ export abstract class PanelHost implements WebviewViewProvider {
   public constructor(
     protected extensionContext: ExtensionContextStore,
     protected emitterService: SharedStateService,
-    protected dbtTerminal: DBTTerminal,
+    protected dbtTerminal: Log,
     protected queryManifestService: QueryManifestService,
   ) {
     const t = this;

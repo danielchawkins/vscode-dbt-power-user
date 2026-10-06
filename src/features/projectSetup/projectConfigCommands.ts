@@ -10,13 +10,13 @@ import {
   workspace,
   WorkspaceEdit,
 } from "vscode";
+import type { Log } from "../../core/log";
 import {
   DBT_PROJECT_FILE,
   dbtProjectFilePath,
   declaredProjectName,
   parseDbtProjectYaml,
 } from "../../core/project";
-import { DBTTerminal } from "../../dbt_integration/terminal";
 import {
   planProjectConfigInsertion,
   ProjectConfigInsertion,
@@ -38,7 +38,7 @@ export class ProjectConfigCommands implements Disposable {
   constructor(
     private readonly startupGate: Pick<StartupGate, "whenSettled">,
     private readonly currentProject: CurrentProject,
-    private readonly logFor: (root: Uri) => DBTTerminal,
+    private readonly logFor: (root: Uri) => Log,
   ) {
     this.disposables = [
       commands.registerCommand(
@@ -91,7 +91,7 @@ export class ProjectConfigCommands implements Disposable {
 export async function applyProjectConfigInsertion(
   project: DeclaredProject,
   insertion: (projectName: string) => ProjectConfigInsertion,
-  terminal: DBTTerminal,
+  terminal: Log,
 ): Promise<boolean> {
   const file = Uri.file(dbtProjectFilePath(project.root.fsPath));
   const open = workspace.textDocuments.find(
@@ -108,7 +108,6 @@ export async function applyProjectConfigInsertion(
     terminal.warn(
       "projectConfigEdit",
       error instanceof Error ? error.message : String(error),
-      false,
     );
     window.showErrorMessage(
       `Could not edit ${path.basename(file.fsPath)}: it does not parse as YAML.`,

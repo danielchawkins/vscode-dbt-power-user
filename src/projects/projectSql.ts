@@ -1,10 +1,7 @@
 import { window } from "vscode";
-import {
-  type DBTTerminal,
-  type ExecuteSQLResult,
-  QueryExecution,
-  type QueryExecutionResult,
-} from "../dbt_integration";
+import { type ExecuteSQLResult, QueryExecution } from "../core/dbtCommand";
+import type { Log } from "../core/log";
+import { type QueryExecutionResult } from "../dbt_integration/domain";
 import { FusionCli } from "../fusion/fusionCli";
 
 type SqlExecutor = Pick<FusionCli, "executeSQL">;
@@ -20,7 +17,7 @@ interface SqlProject {
 /** The collaborators the query wrappers run against. */
 export interface SqlDeps {
   project: SqlProject;
-  terminal: DBTTerminal;
+  terminal: Log;
 }
 
 /** A deferred query execution the query panel runs. */
@@ -141,7 +138,7 @@ async function queryExecution(
 }
 
 function logQuery(deps: SqlDeps, query: string, limit: number): void {
-  deps.terminal.info("executeSQL", "Executed query: " + query, true, {
+  deps.terminal.info("executeSQL", "Executed query: " + query, {
     adapter: deps.project.getAdapterType(),
     limit: limit.toString(),
   });
@@ -216,7 +213,7 @@ export async function compileOrReport(
 /** Returns up to 100 distinct values of `column` in `model`. */
 export async function getColumnValues(
   cli: SqlExecutor,
-  terminal: DBTTerminal,
+  terminal: Log,
   model: string,
   column: string,
 ) {

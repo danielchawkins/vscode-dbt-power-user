@@ -1,4 +1,5 @@
 import { Disposable, ExtensionContext, Uri } from "vscode";
+import type { Log } from "./core/log";
 import {
   ChildrenParentParser,
   DocParser,
@@ -14,7 +15,6 @@ import {
   TestParser,
   UnitTestParser,
 } from "./core/manifest";
-import { DBTTerminal } from "./dbt_integration";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 import { ExtensionContextStore } from "./extensionContext";
 import { SourceModelCreationCodeLensProvider } from "./features/codegen/sourceModelCreationCodeLensProvider";
@@ -97,7 +97,7 @@ const readDbtLoomConfigPath = () =>
  * Builds a fresh set of manifest parsers; each Project gets its own.
  * @internal
  */
-export function createProjectParsers(terminal: DBTTerminal) {
+export function createProjectParsers(terminal: Log) {
   return {
     childrenParentParser: new ChildrenParentParser(),
     nodeParser: new NodeParser(terminal, readDbtLoomConfigPath),
@@ -118,7 +118,7 @@ export function createProjectParsers(terminal: DBTTerminal) {
 interface ProjectsGraph {
   extensionContextStore: ExtensionContextStore;
   outputChannels: OutputChannels;
-  terminal: DBTTerminal;
+  terminal: Log;
   sharedState: SharedStateService;
   runHistoryService: RunHistoryService;
   fusionExecutableResolver: ConfiguredFusionExecutableResolver;
@@ -133,11 +133,11 @@ interface ProjectsGraph {
 function composeProjects(context: ExtensionContext): ProjectsGraph {
   const extensionContextStore = new ExtensionContextStore(context);
   const outputChannels = new OutputChannels(context.extension.id);
-  const terminal: DBTTerminal = outputChannels;
+  const terminal: Log = outputChannels;
   const sharedState = new SharedStateService();
   const runHistoryService = new RunHistoryService();
   const fusionExecutableResolver = new ConfiguredFusionExecutableResolver({
-    logWarning: (message) => terminal.warn("FusionVersion", message, false),
+    logWarning: (message) => terminal.warn("FusionVersion", message),
     getGlobalState: () => ({
       get: (key) => extensionContextStore.getFromGlobalState(key),
       update: (key, value) =>

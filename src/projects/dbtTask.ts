@@ -11,8 +11,8 @@ import {
   Uri,
   workspace,
 } from "vscode";
-import { DBTCommand } from "../dbt_integration";
-import { CommandProcessResult } from "../fusion/commandProcessExecution";
+import { DBTCommand } from "../core/dbtCommand";
+import { CommandProcessResult } from "../core/types";
 import { QueuedCliCommand } from "../fusion/fusionCli";
 
 /** The task type, task source, and `taskDefinitions` entry of dbt tasks. */

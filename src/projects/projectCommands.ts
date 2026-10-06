@@ -2,14 +2,11 @@ import { realpathSync } from "fs";
 import { basename } from "path";
 import { Uri } from "vscode";
 import { commandParamsFor, fullRefreshArgs } from "../core/cli";
+import { DBTCommand } from "../core/dbtCommand";
+import type { Log } from "../core/log";
 import { ProjectSnapshot } from "../core/project";
-import {
-  DBTCommand,
-  DBTTerminal,
-  RunModelParams,
-  RunModelType,
-} from "../dbt_integration";
-import { CommandProcessResult } from "../fusion/commandProcessExecution";
+import { CommandProcessResult } from "../core/types";
+import { RunModelParams, RunModelType } from "../dbt_integration/domain";
 import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
 import { CommandQueue, formatCommandStatus } from "./commandQueue";
 import { DbtTaskTerminal } from "./dbtTask";
@@ -28,7 +25,7 @@ export interface ProjectCommandDeps {
   notifyFailed(statusMessage: string, error: string): void;
   /** Receives every queued command's result once it has run. */
   onCommandOutput?(result: CommandProcessResult | undefined): void;
-  terminal: DBTTerminal;
+  terminal: Log;
 }
 
 /** The `--select` value for a model and its graph operators. */
@@ -75,7 +72,7 @@ function formatCliStatus(
  */
 export async function refreshCliConfig(
   cli: FusionCli,
-  terminal: DBTTerminal,
+  terminal: Log,
   label: string,
   sourcePaths?: () => string[] | undefined,
 ): Promise<boolean> {

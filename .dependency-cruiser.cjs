@@ -75,14 +75,11 @@ module.exports = {
     {
       name: "fusion-imports-core-and-settings",
       severity: "error",
-      comment:
-        "fusion/ imports only core/, settings/ and itself. Exception until the dbt_integration types move: " +
-        "fusion/ may import dbt_integration/ (DBTTerminal, EnvironmentVariables, DBColumn, DBTCommand, " +
-        "QueryExecution).",
+      comment: "fusion/ imports only core/, settings/ and itself.",
       from: { path: "^src/fusion/" },
       to: {
         path: "^src/",
-        pathNot: "^src/(core|settings|fusion|dbt_integration)/",
+        pathNot: "^src/(core|settings|fusion)/",
       },
     },
     {

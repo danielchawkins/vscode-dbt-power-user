@@ -9,7 +9,9 @@ import {
   window,
   workspace,
 } from "vscode";
-import { ColumnMetaData, DBColumn, DBTTerminal } from "../dbt_integration";
+import type { Log } from "../core/log";
+import { ColumnMetaData } from "../core/manifest/types";
+import { DBColumn } from "../core/types";
 import { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
 import { getColumnNameByCase } from "../utils";
@@ -93,7 +95,7 @@ export interface GenerateModelFromSourceParams {
 /** Writes and opens a staging model selecting every column of a source table unless it exists. */
 export async function generateModel(
   columns: Pick<ColumnSource, "getColumnsOfSource">,
-  terminal: Pick<DBTTerminal, "debug">,
+  terminal: Pick<Log, "debug">,
   sourceName: string,
   tableName: string,
   sourcePath: string,

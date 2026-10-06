@@ -1,6 +1,6 @@
 import { commands, Disposable, extensions, window, workspace } from "vscode";
 import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
-import { DBTTerminal } from "./dbt_integration";
+import type { Log } from "./core/log";
 import { CodeLensProviders } from "./features/codeLenses";
 import { VSCodeCommands } from "./features/commands";
 import { ContentProviders } from "./features/contentProviders";
@@ -39,7 +39,7 @@ export class DBTPowerUserExtension implements Disposable {
     private codeLensProviders: CodeLensProviders,
     private statusBars: StatusBars,
     private puStatusBars: DbtPowerUserActionsCenter,
-    private dbtTerminal: DBTTerminal,
+    private dbtTerminal: Log,
     private projectRegistry: ProjectRegistry,
     private currentProject: CurrentProject,
     private fusionClientPool: FusionClientPool,

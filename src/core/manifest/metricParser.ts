@@ -1,9 +1,9 @@
-import { ManifestLogger } from "./logger";
+import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
 import { MetricMetaMap } from "./types";
 
 export class MetricParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   async createMetricMetaMap(
     metrics: Record<string, any> | null | undefined,

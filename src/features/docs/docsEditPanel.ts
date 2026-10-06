@@ -21,12 +21,12 @@ import {
   beginWebviewResolve,
   completeWebviewReady,
 } from "../../benchmark/runtimeTimings";
+import type { Log } from "../../core/log";
 import {
-  DBTTerminal,
   TestMetaData,
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
-} from "../../dbt_integration";
+} from "../../core/manifest/types";
 import { ExtensionContextStore } from "../../extensionContext";
 import { UserInputError } from "../../local/errors";
 import { publicationId } from "../../projects/manifest";
@@ -82,7 +82,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     private docGenService: DocGenService,
     private dbtTestService: DbtTestService,
     private queryManifestService: QueryManifestService,
-    private terminal: DBTTerminal,
+    private terminal: Log,
   ) {
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
@@ -767,7 +767,6 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
             "docsEditPanelLoadError",
             `An error occured while fetching metadata for ${modelName} from the database`,
             exc,
-            false,
           );
           if (syncRequestId) {
             await this.post({
@@ -853,7 +852,6 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
         "saveDocumentationError",
         `Could not save documentation to ${patchPath}`,
         error,
-        false,
       );
       return false;
     }

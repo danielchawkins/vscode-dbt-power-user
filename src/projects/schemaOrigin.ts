@@ -1,5 +1,5 @@
+import { SourceMetaMap } from "../core/manifest/types";
 import { DbtProjectConfig, declaredProjectName } from "../core/project";
-import { SourceMetaMap } from "../dbt_integration/domain";
 
 /** The documented hook (ADR 0006): the extension sets this variable in the language server's environment. */
 const SCHEMA_ORIGIN_ENV = "FUSION_POWER_USER_SCHEMA_ORIGIN";

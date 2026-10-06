@@ -1,6 +1,6 @@
 import * as path from "path";
 import { TreeItem, Uri, window } from "vscode";
-import { RunModelType } from "../../dbt_integration";
+import { RunModelType } from "../../dbt_integration/domain";
 import { CurrentProject } from "../../projects/currentProject";
 import { activeModelUri } from "../../projects/previewUri";
 import { GenerateModelFromSourceParams } from "../../projects/projectCodegen";

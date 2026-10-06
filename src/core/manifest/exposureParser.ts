@@ -1,11 +1,11 @@
 import * as path from "path";
 
-import { ManifestLogger } from "./logger";
+import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
 import { ExposureMetaMap, RESOURCE_TYPE_EXPOSURE } from "./types";
 
 export class ExposureParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   createExposureMetaMap(
     exposuresMap: Record<string, any>,

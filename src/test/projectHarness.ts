@@ -1,6 +1,6 @@
 import { vi } from "vitest";
 import { Uri } from "vscode";
-import { DBTTerminal } from "../dbt_integration";
+import type { Log } from "../core/log";
 import { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
 import {
   FusionExecutable,
@@ -40,7 +40,7 @@ export function buildTestProject(
       info: vi.fn(),
       warn: vi.fn(),
       error: vi.fn(),
-    } as unknown as DBTTerminal,
+    } as unknown as Log,
     sharedState: {} as SharedStateService,
     runHistoryService: {
       addEntry: vi.fn(),

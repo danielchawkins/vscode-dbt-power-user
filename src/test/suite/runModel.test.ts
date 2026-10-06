@@ -9,7 +9,7 @@ import {
   vi,
 } from "vitest";
 import { Uri, window } from "vscode";
-import { RunModelType } from "../../dbt_integration";
+import { RunModelType } from "../../dbt_integration/domain";
 import { RunModel } from "../../features/run/runModel";
 import { CurrentProject } from "../../projects/currentProject";
 import { previewUriFor } from "../../projects/previewUri";

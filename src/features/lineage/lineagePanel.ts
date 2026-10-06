@@ -11,9 +11,9 @@ import {
 } from "vscode";
 import { isMap, isScalar, isSeq, parseDocument } from "yaml";
 import { ColumnLineage, panelColumns } from "../../core/lineage";
+import type { Log } from "../../core/log";
 import { RelationshipParser } from "../../core/manifest";
 import {
-  DBTTerminal,
   ExposureMetaData,
   FunctionMetaData,
   Ref,
@@ -21,7 +21,7 @@ import {
   RESOURCE_TYPE_SOURCE,
   SourceMetaMap,
   SourceTable,
-} from "../../dbt_integration";
+} from "../../core/manifest/types";
 import { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
 import type { Manifest } from "../../projects/manifestTypes";
@@ -174,7 +174,7 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
 
   public constructor(
     protected override extensionContext: ExtensionContextStore,
-    private terminal: DBTTerminal,
+    private terminal: Log,
     private dbtLineageService: DbtLineageService,
     eventEmitterService: SharedStateService,
     protected override queryManifestService: QueryManifestService,

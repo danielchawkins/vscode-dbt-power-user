@@ -2,6 +2,7 @@ import * as fs from "fs";
 import * as path from "path";
 import { describe, expect, it } from "vitest";
 import { EventEmitter, Uri } from "vscode";
+import type { Log } from "../../core/log";
 import {
   ChildrenParentParser,
   DocParser,
@@ -18,7 +19,6 @@ import {
   TestParser,
   UnitTestParser,
 } from "../../core/manifest";
-import { DBTTerminal } from "../../dbt_integration";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import { Manifest } from "../../projects/manifestTypes";
 import { Project } from "../../projects/project";
@@ -39,7 +39,7 @@ function loadManifestJson(): unknown {
   return JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 }
 
-function mockTerminal(): DBTTerminal {
+function mockTerminal(): Log {
   return {
     debug: () => undefined,
     log: () => undefined,
@@ -66,7 +66,7 @@ function mockTerminal(): DBTTerminal {
     dispose: () => undefined,
     write: () => undefined,
     processQueue: () => Promise.resolve(),
-  } as unknown as DBTTerminal;
+  } as unknown as Log;
 }
 
 function mapKeys(map: Map<string, unknown>): string[] {

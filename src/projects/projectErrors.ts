@@ -1,8 +1,9 @@
 import { commands, Disposable, EventEmitter, Uri, window } from "vscode";
 import { firstLogLine, isConfigError, textLogErrors } from "../core/cli";
+import { DBTDiagnosticData } from "../core/diagnostics";
+import type { Log } from "../core/log";
 import { ProjectSnapshot } from "../core/project";
-import { DBTDiagnosticData, DBTTerminal } from "../dbt_integration";
-import { CommandProcessResult } from "../fusion/commandProcessExecution";
+import { CommandProcessResult } from "../core/types";
 
 /** Where a project error came from; each source's errors are replaced independently. */
 export type ProjectErrorSource = "parse" | "compile" | "executable";
@@ -54,7 +55,7 @@ export class ProjectErrors implements Disposable {
     private readonly root: Uri,
     private readonly projectName: () => string,
     private readonly snapshot: () => ProjectSnapshot,
-    private readonly terminal: DBTTerminal,
+    private readonly terminal: Log,
   ) {}
 
   /** The first line of the first active error, if any. */

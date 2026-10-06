@@ -1,11 +1,11 @@
 import * as path from "path";
 
-import { ManifestLogger } from "./logger";
+import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
 import { RESOURCE_TYPE_UNIT_TEST, UnitTestMetaMap } from "./types";
 
 export class UnitTestParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   createUnitTestMetaMap(
     nodesMap: Record<string, any>,

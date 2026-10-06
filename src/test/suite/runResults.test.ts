@@ -11,7 +11,8 @@ import {
   type Mock,
   vi,
 } from "vitest";
-import { DBTTerminal, RunResultsEventData } from "../../dbt_integration";
+import type { Log } from "../../core/log";
+import { RunResultsEventData } from "../../dbt_integration/domain";
 import {
   parseRunResultsJson,
   resolveRunStatus,
@@ -20,12 +21,12 @@ import {
   withRunResults,
 } from "../../projects/runResults";
 
-function mockTerminal(): DBTTerminal {
+function mockTerminal(): Log {
   return {
     debug: () => undefined,
     error: () => undefined,
     trace: () => undefined,
-  } as unknown as DBTTerminal;
+  } as unknown as Log;
 }
 
 function sampleRunResultsJson(invocationId = "inv-123") {

@@ -1,16 +1,14 @@
 import * as path from "path";
 import { describe, expect, it, vi } from "vitest";
 import { toCliArgs } from "../../core/cli";
+import type { Log } from "../../core/log";
 import {
   ProjectSnapshot,
   ProjectSnapshotSettings,
   resolveProjectSnapshot,
 } from "../../core/project";
-import { DBTTerminal } from "../../dbt_integration/terminal";
-import {
-  CommandProcessExecutionFactory,
-  CommandProcessResult,
-} from "../../fusion/commandProcessExecution";
+import { CommandProcessResult } from "../../core/types";
+import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { noSettings, snapshotFolder } from "../arbitraries/projectSnapshot";
 
@@ -74,13 +72,12 @@ function fakeProcesses(
 function fakeTerminal() {
   const warn = vi.fn();
   const error = vi.fn();
-  const log = vi.fn((_message: string) => undefined);
+  const log = vi.fn((_text: string) => undefined);
   const noop = () => undefined;
-  const terminal: DBTTerminal = {
-    log,
-    trace: noop,
+  const terminal: Log = {
     debug: noop,
     info: noop,
+    output: log,
     warn,
     error,
     dispose: noop,
@@ -175,7 +172,6 @@ describe("FusionCli", () => {
     expect(warn).toHaveBeenCalledWith(
       "deferMissingManifestPath",
       expect.stringContaining("fusionPowerUser.defer.perProject"),
-      false,
     );
     expect(calls[0].args).not.toContain("--state");
   });

@@ -1,9 +1,8 @@
-import { ManifestLogger } from "./logger";
-
+import type { Log } from "../log";
 import { DBTGraphType } from "./graphParser";
 
 export class ModelDepthParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   public createModelDepthsMap(
     nodeMap: Record<string, any>,

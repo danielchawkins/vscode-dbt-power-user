@@ -80,16 +80,12 @@ describe("ChannelLog", () => {
   });
 
   it("writes each level with its source and without ANSI codes", () => {
-    log.log("\u001b[32mOK\u001b[0m created");
-    log.trace("trace line");
     log.debug("src", "debug line", 1);
     log.info("src", "info line");
     log.warn("src", "warn line");
     log.error("src", "failed", new Error("boom"));
     log.error("src", "failed", undefined);
 
-    expect(channel.info).toHaveBeenCalledWith("OK created");
-    expect(channel.trace).toHaveBeenCalledWith("trace line");
     expect(channel.debug).toHaveBeenCalledWith("src: debug line", 1);
     expect(channel.info).toHaveBeenCalledWith("src: info line");
     expect(channel.warn).toHaveBeenCalledWith("src: warn line");

@@ -4,12 +4,12 @@ import * as os from "os";
 import * as path from "path";
 import { pathToFileURL } from "url";
 import { isConfigError } from "../../core/cli";
+import type { Log } from "../../core/log";
 import {
   ProjectSnapshotSettings,
   readDbtProjectFile,
   resolveProjectSnapshot,
 } from "../../core/project";
-import { DBTTerminal } from "../../dbt_integration";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { compileErrorMessages } from "../../fusion/fusionLanguageClient";
@@ -20,15 +20,13 @@ import { createLspFixture } from "./lspFixture";
 const MISSING = "FPU_MISSING_VAR";
 const dbt = process.env.FPU_INTEGRATION_DBT_PATH ?? "dbt";
 
-function silentTerminal(): DBTTerminal {
+function silentTerminal(): Log {
   const noop = () => undefined;
   return {
     debug: noop,
-    log: noop,
     error: noop,
     warn: noop,
     info: noop,
-    trace: noop,
     dispose: noop,
   };
 }

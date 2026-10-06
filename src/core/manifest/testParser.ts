@@ -1,11 +1,11 @@
 import * as path from "path";
 
-import { ManifestLogger } from "./logger";
+import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
 import { RESOURCE_TYPE_TEST, TestMetaMap } from "./types";
 
 export class TestParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   private getColumnNameWithoutQuotes(columnName: string): string | undefined {
     if (!columnName) {

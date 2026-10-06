@@ -7,7 +7,7 @@ import {
   Uri,
   window,
 } from "vscode";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 import { Projects } from "../../projects/projects";
 import { CteInfo } from "./cteCodeLensProvider";
 import { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
@@ -23,7 +23,7 @@ export class CteProfilerService implements Disposable {
   private disposables: Disposable[] = [this._onResultChanged];
 
   /** The log of the Project being profiled. */
-  private runningLog: DBTTerminal | undefined;
+  private runningLog: Log | undefined;
 
   constructor(private projects: Projects) {}
 

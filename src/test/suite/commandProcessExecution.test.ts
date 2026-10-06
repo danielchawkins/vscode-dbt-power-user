@@ -3,7 +3,7 @@ import * as os from "os";
 import * as path from "path";
 import { anything, instance, mock, verify, when } from "ts-mockito";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { DBTTerminal } from "../../dbt_integration";
+import type { Log } from "../../core/log";
 import {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
@@ -11,7 +11,7 @@ import {
 import { ChannelLog } from "../../projects/outputChannels";
 
 describe("CommandProcessExecution Tests", () => {
-  let mockTerminal: DBTTerminal;
+  let mockTerminal: Log;
   let factory: CommandProcessExecutionFactory;
   let testDir: string;
 

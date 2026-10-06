@@ -1,7 +1,7 @@
 import { spawnProcess } from "./process";
 
-import { EnvironmentVariables } from "../dbt_integration/domain";
-import { DBTTerminal } from "../dbt_integration/terminal";
+import type { Log } from "../core/log";
+import { CommandProcessResult, EnvironmentVariables } from "../core/types";
 
 function isCommandNotFoundError(error: unknown): boolean {
   return (
@@ -17,7 +17,7 @@ function createCommandNotFoundError(command: string): Error {
 }
 
 export class CommandProcessExecutionFactory {
-  constructor(private terminal: DBTTerminal) {}
+  constructor(private terminal: Log) {}
 
   createCommandProcessExecution({
     command,
@@ -46,18 +46,10 @@ export class CommandProcessExecutionFactory {
   }
 }
 
-export interface CommandProcessResult {
-  stdout: string;
-  stderr: string;
-  fullOutput: string;
-  /** Null when the process was ended by a signal. */
-  exitCode?: number | null;
-}
-
 /** @internal */
 export class CommandProcessExecution {
   constructor(
-    private terminal: DBTTerminal,
+    private terminal: Log,
     private command: string,
     private args?: string[],
     private stdin?: string,
@@ -149,7 +141,6 @@ export class CommandProcessExecution {
           "CommandProcessExecutionError",
           "Command errored: " + this.command,
           error,
-          true,
           this.command,
           this.args,
           error,

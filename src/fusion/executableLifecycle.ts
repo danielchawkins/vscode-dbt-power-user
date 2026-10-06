@@ -1,6 +1,7 @@
 import { Disposable, Event, EventEmitter, Uri } from "vscode";
+import { type DBTDiagnosticData } from "../core/diagnostics";
+import type { Log } from "../core/log";
 import { dbtProjectFilePath } from "../core/project";
-import { type DBTDiagnosticData, DBTTerminal } from "../dbt_integration";
 import { onDidChangeSettings, SettingsChange } from "../settings";
 import { FusionCli } from "./fusionCli";
 import {
@@ -61,7 +62,7 @@ export class ExecutableLifecycle {
     private readonly resolver: FusionExecutableResolver,
     private readonly factory: FusionCommandIntegrationFactory,
     private readonly projectRoot: string,
-    private readonly terminal: DBTTerminal,
+    private readonly terminal: Log,
     private readonly hooks: ExecutableLifecycleHooks,
   ) {}
 
@@ -130,7 +131,7 @@ export class ExecutableLifecycle {
       this.projectRoot,
       verdict,
     );
-    this.terminal.error(LOG_SOURCE, message, false);
+    this.terminal.error(LOG_SOURCE, message);
     this.setFailure(message);
     return undefined;
   }
@@ -246,7 +247,6 @@ export class ExecutableLifecycle {
         LOG_SOURCE,
         "Fusion executable refresh failed",
         error,
-        false,
       );
     });
     return run;

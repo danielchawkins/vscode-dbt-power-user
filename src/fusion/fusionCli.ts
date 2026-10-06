@@ -15,22 +15,16 @@ import {
   toCliArgs,
   toCliEnvironment,
 } from "../core/cli";
+import { DBTCommand, QueryExecution } from "../core/dbtCommand";
+import { DBTDiagnosticData, DBTDiagnosticResult } from "../core/diagnostics";
+import type { Log } from "../core/log";
 import {
   DBT_PROJECT_FILE,
   deferSettingsKey,
   ProjectSnapshot,
 } from "../core/project";
-import { DBTCommand, QueryExecution } from "../dbt_integration/dbtIntegration";
-import {
-  DBTDiagnosticData,
-  DBTDiagnosticResult,
-} from "../dbt_integration/diagnostics";
-import { DBColumn } from "../dbt_integration/domain";
-import { DBTTerminal } from "../dbt_integration/terminal";
-import {
-  CommandProcessExecutionFactory,
-  CommandProcessResult,
-} from "./commandProcessExecution";
+import { CommandProcessResult, DBColumn } from "../core/types";
+import { CommandProcessExecutionFactory } from "./commandProcessExecution";
 
 /** The resolved dbt binary and the environment every invocation inherits. */
 export interface FusionCliExecutable {
@@ -135,7 +129,7 @@ export class FusionCli {
     private readonly executable: FusionCliExecutable,
     private readonly snapshot: () => ProjectSnapshot,
     private readonly processes: CommandProcessExecutionFactory,
-    private readonly terminal: DBTTerminal,
+    private readonly terminal: Log,
   ) {}
 
   /**
@@ -152,15 +146,10 @@ export class FusionCli {
     }
     const args = toCliArgs(snapshot, command, diskProbe);
     const commandLine = `dbt ${args.join(" ")}`;
-    this.terminal.info(
-      "dbtCommand",
-      `Executed dbt command: ${commandLine}`,
-      true,
-      {
-        command: commandLine,
-        execution: "cli",
-      },
-    );
+    this.terminal.info("dbtCommand", `Executed dbt command: ${commandLine}`, {
+      command: commandLine,
+      execution: "cli",
+    });
     const execution = this.processes.createCommandProcessExecution({
       command: this.executable.path,
       args,
@@ -295,7 +284,6 @@ export class FusionCli {
         "dbtFusionCannotParseProjectCommandExecuteError",
         "Could not parse project command execution error",
         error,
-        true,
       );
       this.rebuildManifestDiagnostics = [
         {
@@ -380,7 +368,7 @@ export class FusionCli {
         this.run(cli, {
           signal: anySignal(signal, c.signal),
           onOutput: (chunk) => {
-            this.terminal.log(chunk);
+            this.terminal.output?.(chunk);
             onOutput?.(chunk);
           },
         }),
@@ -397,7 +385,6 @@ export class FusionCli {
         `fusionPowerUser.defer.perProject has deferToProduction enabled for ` +
           `${deferSettingsKey(snapshot.root, snapshot.folder)} but no manifestPathForDeferral; ` +
           `running without --state.`,
-        false,
       );
       return;
     }

@@ -1,16 +1,16 @@
 import * as path from "path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { EventEmitter } from "vscode";
+import type { Log } from "../../core/log";
 import { ManifestProject, TestParser } from "../../core/manifest";
-import { DBTTerminal } from "../../dbt_integration";
 
 describe("TestParser Test Suite", () => {
   let testParser: TestParser;
   let mockAdapter: ManifestProject;
-  let mockTerminal: DBTTerminal;
+  let mockTerminal: Log;
 
   beforeEach(() => {
-    // Create a proper mock of DBTTerminal with all required methods
+    // Create a proper mock of Log with all required methods
     mockTerminal = {
       debug: () => {},
       log: () => {},
@@ -37,7 +37,7 @@ describe("TestParser Test Suite", () => {
       dispose: () => {},
       write: () => {},
       processQueue: () => Promise.resolve(),
-    } as unknown as DBTTerminal; // Use unknown to force the type cast
+    } as unknown as Log; // Use unknown to force the type cast
 
     testParser = new TestParser(mockTerminal);
     mockAdapter = {

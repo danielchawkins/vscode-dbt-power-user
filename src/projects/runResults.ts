@@ -1,10 +1,10 @@
 import { existsSync, readFileSync } from "fs";
 import { join } from "path";
+import type { Log } from "../core/log";
 import {
-  DBTTerminal,
   RUN_RESULTS_FILE,
   type RunResultsEventData,
-} from "../dbt_integration";
+} from "../dbt_integration/domain";
 
 /** Snapshot of run_results.json content before a command; null when absent. */
 export type RunResultsObservation = string | null;
@@ -216,7 +216,7 @@ export class RunResultsReader {
   constructor(
     private readonly targetPath: () => string | undefined,
     private readonly projectName: () => string,
-    private readonly terminal: DBTTerminal,
+    private readonly terminal: Log,
   ) {}
 
   observe(): RunResultsObservation {
@@ -243,11 +243,17 @@ export class RunResultsReader {
   ): RunResultsEventData | null {
     const after = this.observe();
     if (after === null) {
-      this.terminal.trace("Run results file does not exist after command");
+      this.terminal.debug(
+        "runResults",
+        "Run results file does not exist after command",
+      );
       return null;
     }
     if (after === before) {
-      this.terminal.trace("Ignoring unchanged run_results.json after command");
+      this.terminal.debug(
+        "runResults",
+        "Ignoring unchanged run_results.json after command",
+      );
       return null;
     }
     try {

@@ -1,5 +1,5 @@
 import { Disposable, Event, EventEmitter, Uri } from "vscode";
-import { DBTTerminal } from "../dbt_integration";
+import type { Log } from "../core/log";
 import { ManifestMetadataSource } from "../metadata/manifestMetadataSource";
 import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
 import { onDidChangeSettings } from "../settings";
@@ -50,7 +50,7 @@ export class Projects implements Disposable {
   constructor(
     private projectRegistry: ProjectRegistry,
     private projectFactory: (project: DeclaredProject) => Project,
-    private dbtTerminal: DBTTerminal,
+    private dbtTerminal: Log,
   ) {}
 
   async initialize(): Promise<void> {

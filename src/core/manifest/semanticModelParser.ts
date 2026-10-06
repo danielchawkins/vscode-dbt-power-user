@@ -1,4 +1,4 @@
-import { ManifestLogger } from "./logger";
+import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
 import {
   SemanticEntity,
@@ -21,7 +21,7 @@ const REF_PATTERN =
  * entity data. Adding entities here keeps the change isolated.
  */
 export class SemanticModelParser {
-  constructor(private terminal: ManifestLogger) {}
+  constructor(private terminal: Pick<Log, "debug">) {}
 
   /**
    * Walks the manifest's `semantic_models` section and produces a map keyed

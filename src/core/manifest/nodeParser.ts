@@ -1,6 +1,5 @@
 import * as path from "path";
 
-import { ManifestLogger } from "./logger";
 import { ManifestProject } from "./manifestProject";
 import {
   isResourceNode,
@@ -13,6 +12,7 @@ import {
   RESOURCE_TYPE_SNAPSHOT,
 } from "./types";
 
+import type { Log } from "../log";
 import {
   createFullPathForNode,
   DbtLoomConfigPathReader,
@@ -93,7 +93,7 @@ class NodeMetaMapImpl implements NodeMetaMap {
 
 export class NodeParser {
   constructor(
-    private terminal: ManifestLogger,
+    private terminal: Pick<Log, "debug">,
     private readDbtLoomConfigPath: DbtLoomConfigPathReader = () => undefined,
   ) {}
 

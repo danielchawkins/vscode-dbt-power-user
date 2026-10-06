@@ -1,4 +1,4 @@
-import { ColumnMetaData } from "../dbt_integration";
+import { ColumnMetaData } from "../core/manifest/types";
 
 export type ModelNode = {
   database: string;

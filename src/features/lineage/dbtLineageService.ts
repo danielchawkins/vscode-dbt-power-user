@@ -11,7 +11,6 @@ import {
   ListNodesResult,
   toPanelLineage,
 } from "../../core/lineage";
-import { StaticAnalysisMode } from "../../core/project";
 import {
   GraphMetaMap,
   NodeGraphMap,
@@ -19,8 +18,9 @@ import {
   RESOURCE_TYPE_FUNCTION,
   RESOURCE_TYPE_METRIC,
   RESOURCE_TYPE_SOURCE,
-  Table,
-} from "../../dbt_integration";
+} from "../../core/manifest/types";
+import { StaticAnalysisMode } from "../../core/project";
+import { Table } from "../../dbt_integration/domain";
 import {
   FUSION_LSP_COMMANDS,
   FusionClient,
