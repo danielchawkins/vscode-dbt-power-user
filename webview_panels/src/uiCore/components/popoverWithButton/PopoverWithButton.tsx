@@ -1,6 +1,10 @@
 import {
+  cloneElement,
+  ReactElement,
+  MouseEvent as ReactMouseEvent,
   ReactNode,
   Ref,
+  RefObject,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -11,7 +15,7 @@ import { useAnchoredPosition } from "../../anchoredPosition";
 import styles from "./styles.module.css";
 
 interface Props {
-  button: ReactNode;
+  button: ReactElement<ButtonProps>;
   title?: string | ReactNode | undefined;
   width?: number | string | undefined;
   children: (args: {
@@ -21,12 +25,95 @@ interface Props {
   ref?: Ref<PopoverWithButtonRef> | undefined;
 }
 
+interface ButtonProps {
+  onClick?: (event: ReactMouseEvent<HTMLElement>) => unknown;
+}
+
 export interface PopoverWithButtonRef {
   close: () => void;
   open: () => void;
+  toggle: () => void;
 }
 
-/** A panel below `button`, opened by clicking it and closed by a click anywhere outside. */
+/** The close handler of the popover that is open, so opening another one closes it. */
+let openPopoverClose: (() => void) | null = null;
+
+/** While open: close on Escape (focusing the button), on a pointer-down outside, or when another popover opens. */
+const useDismiss = (
+  open: boolean,
+  setOpen: (open: boolean) => void,
+  rootRef: RefObject<HTMLElement | null>,
+  popoverRef: RefObject<HTMLElement | null>,
+  triggerRef: RefObject<HTMLElement | null>,
+) => {
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const close = () => setOpen(false);
+    openPopoverClose?.();
+    openPopoverClose = close;
+    const onPointerDown = (event: PointerEvent) => {
+      const target = event.target as Node;
+      if (
+        !rootRef.current?.contains(target) &&
+        !popoverRef.current?.contains(target)
+      ) {
+        close();
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        close();
+        const trigger = triggerRef.current;
+        if (trigger?.isConnected) {
+          trigger.focus();
+        } else {
+          rootRef.current
+            ?.querySelector<HTMLElement>("button, [href]")
+            ?.focus();
+        }
+      }
+    };
+    // Capture, so a handler that stops propagation (the lineage canvas) can't swallow it.
+    document.addEventListener("pointerdown", onPointerDown, { capture: true });
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      if (openPopoverClose === close) {
+        openPopoverClose = null;
+      }
+      document.removeEventListener("pointerdown", onPointerDown, {
+        capture: true,
+      });
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, setOpen, rootRef, popoverRef, triggerRef]);
+};
+
+/**
+ * The element that opened the popover, which gets focus back on Escape: the control clicked (recorded in the
+ * capture phase, before any open handler runs), else the focused element in the anchor when it opens.
+ */
+const useTrigger = (open: boolean, rootRef: RefObject<HTMLElement | null>) => {
+  const triggerRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (!open) {
+      triggerRef.current = null;
+      return;
+    }
+    const active = document.activeElement;
+    if (
+      !triggerRef.current &&
+      active instanceof HTMLElement &&
+      rootRef.current?.contains(active)
+    ) {
+      triggerRef.current = active;
+    }
+  }, [open, rootRef]);
+  return triggerRef;
+};
+
+/** A panel below `button`, toggled by clicking it and closed by Escape or a pointer-down outside. */
 const PopoverWithButton = ({
   title,
   button,
@@ -46,34 +133,13 @@ const PopoverWithButton = ({
     open() {
       setOpen(true);
     },
+    toggle() {
+      setOpen((value) => !value);
+    },
   }));
 
-  useEffect(() => {
-    if (!open) {
-      return;
-    }
-    const onMouseUp = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (
-        !rootRef.current?.contains(target) &&
-        !popoverRef.current?.contains(target)
-      ) {
-        setOpen(false);
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        setOpen(false);
-        rootRef.current?.querySelector<HTMLElement>("button, [href]")?.focus();
-      }
-    };
-    document.addEventListener("mouseup", onMouseUp);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("mouseup", onMouseUp);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open]);
+  const triggerRef = useTrigger(open, rootRef);
+  useDismiss(open, setOpen, rootRef, popoverRef, triggerRef);
 
   useEffect(() => {
     if (open) {
@@ -86,9 +152,29 @@ const PopoverWithButton = ({
   }, [open]);
 
   return (
-    <span ref={rootRef} className={styles.anchor}>
-      {/* eslint-disable-next-line jsx-a11y-x/no-static-element-interactions, jsx-a11y-x/click-events-have-key-events -- child is always an interactive control; wrapper only forwards clicks */}
-      <span onClick={() => setOpen(true)}>{button}</span>
+    <span
+      ref={rootRef}
+      className={styles.anchor}
+      onClickCapture={(event) => {
+        // Runs before the click handlers that open the popover.
+        if (!open && event.target instanceof Element) {
+          triggerRef.current =
+            event.target.closest<HTMLElement>("button, [href]");
+        }
+      }}
+    >
+      {/* eslint-disable-next-line @eslint-react/no-clone-element -- aria state and toggle go on the caller's button */}
+      {cloneElement(button, {
+        "aria-haspopup": "dialog",
+        "aria-expanded": open,
+        onClick: (event: ReactMouseEvent<HTMLElement>) => {
+          button.props.onClick?.(event);
+          // A button that stops propagation handles its own opening (via `open`).
+          if (!event.isPropagationStopped()) {
+            setOpen((value) => !value);
+          }
+        },
+      } as Partial<ButtonProps>)}
       {open
         ? createPortal(
             <div

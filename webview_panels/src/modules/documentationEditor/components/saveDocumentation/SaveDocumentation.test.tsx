@@ -73,6 +73,53 @@ describe("SaveDocumentation", () => {
     });
   });
 
+  it("opens the path popover from the chevron even when a schema file exists", () => {
+    render(
+      <Harness
+        current={model({ description: "edited", patchPath: "/models/s.yml" })}
+        incoming={model({ patchPath: "/models/s.yml" })}
+      />,
+    );
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const [, chevron] = screen.getAllByRole("button");
+    fireEvent.click(chevron!);
+    expect(screen.getByRole("dialog")).toHaveTextContent("/models/s.yml");
+    expect(executeRequestInSync).not.toHaveBeenCalled();
+  });
+
+  it("toggles the popover from the chevron, which carries the aria state", () => {
+    render(
+      <Harness
+        current={model({ description: "edited", patchPath: "/models/s.yml" })}
+        incoming={model({ patchPath: "/models/s.yml" })}
+      />,
+    );
+    const [save, chevron] = screen.getAllByRole("button");
+    expect(save).not.toHaveAttribute("aria-expanded");
+    expect(chevron).toHaveAttribute("aria-haspopup", "dialog");
+    expect(chevron).toHaveAttribute("aria-expanded", "false");
+    fireEvent.click(chevron!);
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(chevron).toHaveAttribute("aria-expanded", "true");
+    fireEvent.click(chevron!);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(chevron).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("returns focus to the chevron on Escape", () => {
+    render(
+      <Harness
+        current={model({ description: "edited", patchPath: "/models/s.yml" })}
+        incoming={model({ patchPath: "/models/s.yml" })}
+      />,
+    );
+    const [, chevron] = screen.getAllByRole("button");
+    fireEvent.click(chevron!);
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(chevron).toHaveFocus();
+  });
+
   it("saves with an empty patch path when the model has no schema file yet", async () => {
     render(
       <Harness current={model({ description: "edited" })} incoming={model()} />,

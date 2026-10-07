@@ -16,8 +16,6 @@ import {
 import { MouseEvent, useRef } from "react";
 import classes from "../../styles.module.css";
 
-const noop = (): void => undefined;
-
 /**
  * Handles save documentation functionality
  * Conditions:
@@ -82,7 +80,7 @@ const SaveDocumentation = (): React.JSX.Element | null => {
       ref={popoverRef}
       button={
         <DropdownButton
-          onToggleClick={noop}
+          onToggleClick={() => popoverRef.current?.toggle()}
           color="primary"
           onClick={onSaveBtnClick}
         >
