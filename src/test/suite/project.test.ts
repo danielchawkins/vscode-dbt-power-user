@@ -417,16 +417,17 @@ describe("Project Test Suite", () => {
 
     describe("model columns from the language server", () => {
       const withNode = (getCurrentNode: Mock) => {
-        Object.assign(dbtProject, {
-          lsp: { getCurrentNode },
-          _manifest: {
+        Object.assign(dbtProject, { lsp: { getCurrentNode } });
+        dbtProject.publishMerged(
+          {
             nodeMetaMap: {
               lookupByBaseName: () => ({
                 path: "/test/project/models/my_model.sql",
               }),
             },
-          },
-        });
+          } as never,
+          true,
+        );
       };
 
       it("uses the server's columns, in its spelling, without the CLI", async () => {
@@ -1465,12 +1466,43 @@ describe("Project manifest trigger", () => {
       vi.useFakeTimers();
     });
 
-    it.each([
-      "profiles.yml",
-      "packages.yml",
-      "dependencies.yml",
-      "selectors.yml",
-    ])(
+    it("is current before onDidParse listeners run, so ensureParsed in a listener does not parse again", async () => {
+      vi.useRealTimers();
+      const { root: dir, targetDir } = copyFixture("fusion-listener-");
+      fs.mkdirSync(targetDir, { recursive: true });
+      fs.copyFileSync(
+        path.join(fixtureRoot, "manifest.contract.json"),
+        path.join(targetDir, MANIFEST_FILE),
+      );
+      const rebuild = vi.fn<() => Promise<void>>().mockResolvedValue();
+      const current = await buildProject(
+        dir,
+        stubDelegate(dir, {
+          rebuildManifest: rebuild,
+          getTargetPath: () => targetDir,
+          getPackageInstallPath: () => path.join(dir, "dbt_packages"),
+        }),
+        { parseDemand: new ParseDemand() },
+      );
+      const currentWatcher = createdFileSystemWatchers.at(-1);
+      currentWatcher?.fire("change", path.join(dir, "models", "a.sql"));
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      rebuild.mockClear();
+
+      let listenerDone: Promise<void> | undefined;
+      current.onDidParse(() => {
+        listenerDone = current.ensureParsed();
+      });
+      await current.parseManifest();
+      await listenerDone;
+
+      expect(rebuild).not.toHaveBeenCalled();
+      await current.dispose();
+      fs.rmSync(dir, { recursive: true, force: true });
+      vi.useFakeTimers();
+    });
+
+    it.each(["packages.yml", "dependencies.yml", "selectors.yml"])(
       "refreshes config and parses on a %s change whatever the demand",
       async (name) => {
         trackedWatcher.fire("change", path.join(root, name));

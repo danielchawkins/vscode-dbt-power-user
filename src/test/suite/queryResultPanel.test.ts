@@ -94,8 +94,8 @@ describe("QueryResultPanel", () => {
         raw_sql: "select 1",
         compiled_sql: "select compiled",
       });
-      expect(panel._queryHistory).toHaveLength(1);
-      expect(panel._queryHistory[0]).toMatchObject({
+      expect(panel.history.all()).toHaveLength(1);
+      expect(panel.history.all()[0]).toMatchObject({
         rawSql: "select 1",
         adapter: "duckdb",
         projectName: "jaffle",
@@ -112,8 +112,8 @@ describe("QueryResultPanel", () => {
           "jaffle",
         );
       }
-      expect(panel._queryHistory).toHaveLength(10);
-      expect(panel._queryHistory[0].rawSql).toBe("select 11");
+      expect(panel.history.all()).toHaveLength(10);
+      expect(panel.history.all()[0].rawSql).toBe("select 11");
     });
 
     it("skips history when no project is found", async () => {
@@ -123,7 +123,7 @@ describe("QueryResultPanel", () => {
         Promise.resolve({ executeQuery: async () => output() }),
         "",
       );
-      expect(panel._queryHistory).toEqual([]);
+      expect(panel.history.all()).toEqual([]);
     });
 
     it("renders a server error and notifies", async () => {
@@ -186,7 +186,7 @@ describe("QueryResultPanel", () => {
         command: "clearQueryHistory",
         syncRequestId: "s1",
       });
-      expect(panel._queryHistory).toEqual([]);
+      expect(panel.history.all()).toEqual([]);
       expect(posted().at(-1)).toMatchObject({
         command: "response",
         args: { syncRequestId: "s1", status: true },

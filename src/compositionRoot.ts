@@ -31,9 +31,9 @@ import { DocsEditViewPanel } from "./features/docs/docsEditPanel";
 import { DbtLineageService } from "./features/lineage/dbtLineageService";
 import { LineagePanel } from "./features/lineage/lineagePanel";
 import { LineageViewProvider } from "./features/lineage/lineageViewProvider";
+import { DocumentationTreeview } from "./features/modelTree/documentationTreeview";
 import {
   ChildrenModelTreeview,
-  DocumentationTreeview,
   ModelTestTreeview,
   ParentModelTreeview,
 } from "./features/modelTree/modelTreeviewProvider";

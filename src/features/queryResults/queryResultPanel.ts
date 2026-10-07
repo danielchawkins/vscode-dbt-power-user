@@ -3,24 +3,21 @@ import {
   CancellationToken,
   commands,
   Event,
-  Range,
   Uri,
   ViewColumn,
   WebviewPanel,
   WebviewView,
   WebviewViewResolveContext,
   window,
-  workspace,
 } from "vscode";
 
-import * as path from "path";
 import {
   ExecuteSQLError,
   ExecuteSQLResult,
   QueryExecution,
 } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
-import { getFormattedDateTime, getStringSizeInMb } from "../../core/text";
+import { getFormattedDateTime } from "../../core/text";
 import { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
 import {
@@ -33,7 +30,7 @@ import {
   SharedStateEventEmitterProps,
   SharedStateService,
 } from "../../projects/sharedStateService";
-import { readSetting, writeSetting } from "../../settings";
+import { readSetting } from "../../settings";
 import {
   dispatchMessage,
   Handlers,
@@ -41,12 +38,21 @@ import {
 } from "../../webview/messageRouter";
 import { PanelHost, postToWebview } from "../../webview/panelHost";
 import { panelWebviewOptions } from "../../webview/panelHtml";
+import { executeActiveEditorQuery } from "./activeEditorQuery";
 import { PanelReplay } from "./panelReplay";
+import { QueryHistoryStore } from "./queryHistory";
+import {
+  failureOf,
+  openSqlInEditor,
+  recordResult,
+  resolveQueryProject,
+  runOnQueryPanel,
+  tabDataOf,
+  updateQueryConfig,
+} from "./queryPanelSupport";
 
 type HostMessage = queryResults.HostMessage;
 type PanelMessage = queryResults.PanelMessage;
-type QueryHistory = queryResults.QueryHistoryEntry;
-type JsonObj = Record<string, unknown>;
 /** A query results page: the bottom view, whichever `WebviewView` VS Code resolved last, or one results tab. */
 type Page = "bottom" | WebviewPanel;
 
@@ -74,7 +80,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   }
 
   // stored only for current session, if user reloads or opens new workspace, this will be reset
-  private _queryHistory: QueryHistory[] = [];
+  private readonly history: QueryHistoryStore;
 
   public constructor(
     protected override extensionContext: ExtensionContextStore,
@@ -89,12 +95,13 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
       dbtTerminal,
       queryManifestService,
     );
+    this.history = new QueryHistoryStore(dbtTerminal);
     this._disposables.push(
       onDidRemoveProject(() => this.replay.clear()),
-      window.onDidChangeActiveTextEditor(() => {
-        // to reset the limit on editor change
-        void this.sendUpdatedContextToWebview();
-      }),
+      // Resets the limit on editor change.
+      window.onDidChangeActiveTextEditor(() =>
+        this.sendUpdatedContextToWebview(),
+      ),
     );
   }
 
@@ -192,7 +199,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     this.renderWebviewView(panel.webview);
     this.setupWebviewHooks();
     _token.onCancellationRequested(async () => {
-      await this.transmitReset();
+      await this.post({ command: "resetState" });
     });
   }
 
@@ -210,16 +217,8 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     );
   }
 
-  private async getProject(projectName?: string) {
-    if (!projectName) {
-      return this.queryManifestService.getOrPickProjectFromWorkspace();
-    }
-
-    const project = this.queryManifestService.getProjectByName(projectName);
-    if (!project) {
-      throw new Error("Unable to find project to execute query");
-    }
-    return project;
+  private getProject(projectName?: string) {
+    return resolveQueryProject(this.queryManifestService, projectName);
   }
 
   private async executeIncomingQuery(
@@ -227,25 +226,13 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   ) {
     try {
       const project = await this.getProject(message.projectName);
-      if (!project) {
-        throw new Error("Unable to find project to execute query");
-      }
       if (message.editorName) {
         await this.createQueryResultsPanelVirtualDocument(message.editorName);
       }
       this.updateViewTypeToWebview(
         QueryPanelViewType.OPEN_RESULTS_FROM_HISTORY_BOOKMARKS,
       );
-      if (message.limit) {
-        await project.executeSQLWithLimitOnQueryPanel(
-          message.query,
-          "",
-          message.limit,
-        );
-      } else {
-        await project.executeSQLOnQueryPanel(message.query, "");
-      }
-      return;
+      await runOnQueryPanel(project, message);
     } catch (error) {
       void notifyErrorWithoutProject("Unable to execute query", error);
       this.dbtTerminal.error(
@@ -256,30 +243,11 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     }
   }
 
-  private async handleOpenCodeInEditor(code = "") {
-    const document = await workspace.openTextDocument({
-      language: "jinja-sql",
-      content: code,
-    });
-    await window.showTextDocument(document);
-  }
-
   private viewResultSet({
     queryHistory,
     editorName,
   }: MessageOf<PanelMessage, "viewResultSet">) {
-    this._queryTabData = {
-      queryResults: {
-        data: queryHistory.data,
-        columnNames: queryHistory.columnNames,
-        columnTypes: queryHistory.columnTypes,
-      },
-      compiledCodeMarkup: queryHistory.compiledSql,
-      rawSql: queryHistory.rawSql,
-      elapsedTime: {
-        queryExecutionInfo: { elapsedTime: queryHistory.duration },
-      },
-    };
+    this._queryTabData = tabDataOf(queryHistory);
     void this.createQueryResultsPanelVirtualDocument(
       editorName || "Custom query",
     );
@@ -307,18 +275,6 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     }
   }
 
-  private updateConfig({
-    limit,
-    perspectiveTheme,
-  }: MessageOf<PanelMessage, "updateConfig">) {
-    if (limit !== undefined) {
-      void writeSetting("query.limit", limit);
-    }
-    if (perspectiveTheme !== undefined) {
-      void writeSetting("queryResults.theme", perspectiveTheme);
-    }
-  }
-
   /** One handler per query-results panel command sent by the page in `panel`. */
   private handlers(panel: WebviewView | WebviewPanel): Handlers<PanelMessage> {
     return {
@@ -326,32 +282,34 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
       "webview:ready": () => this.onPageReady(panel),
       // The panel clears its history after a rendering error, then retries.
       clearQueryHistory: ({ syncRequestId }) => {
-        this._queryHistory = [];
+        this.history.clear();
         return this.post({
           command: "response",
           args: { syncRequestId, body: {}, status: true },
         });
       },
-      openCodeInEditor: ({ code }) => this.handleOpenCodeInEditor(code),
+      openCodeInEditor: ({ code }) => openSqlInEditor(code),
       viewResultSet: (message) => this.viewResultSet(message),
-      runAdhocQuery: () => this.handleOpenCodeInEditor(),
-      executeQueryFromActiveWindow: (message) =>
-        this.executeQueryFromActiveWindow(message),
+      runAdhocQuery: () => openSqlInEditor(),
+      executeQueryFromActiveWindow: ({ limit }) =>
+        executeActiveEditorQuery(limit, () =>
+          this.queryManifestService.getOrPickProjectFromWorkspace(),
+        ),
       executeQuery: (message) => this.executeIncomingQuery(message),
       getQueryHistory: () =>
         this.post({
           command: "queryHistory",
-          args: { body: this._queryHistory },
+          args: { body: this.history.all() },
         }),
       getQueryTabData: ({ syncRequestId }) =>
         this.sendQueryTabData(panel, syncRequestId),
       getQueryPanelContext: () => this.sendUpdatedContextToWebview(),
       cancelQuery: async () => {
         void this.queryExecution?.cancel();
-        await this.transmitReset();
+        await this.post({ command: "resetState" });
       },
       error: ({ text }) => notifyErrorWithoutProject(text),
-      updateConfig: (message) => this.updateConfig(message),
+      updateConfig: updateQueryConfig,
       "queryResultTab:render": ({ queryTabData }) =>
         this.openResultsInTab(queryTabData),
     };
@@ -386,64 +344,6 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     }
   }
 
-  private async executeQueryFromActiveWindow({
-    limit,
-  }: MessageOf<PanelMessage, "executeQueryFromActiveWindow">) {
-    const activeEditor = window.activeTextEditor;
-    if (!activeEditor) {
-      void notifyErrorWithoutProject("No active editor found");
-      return;
-    }
-    const project = await this.getProject();
-    if (!project) {
-      void notifyErrorWithoutProject(
-        "Unable to find dbt project for executing query",
-      );
-      return;
-    }
-    const modelName = path.basename(activeEditor.document.uri.fsPath, ".sql");
-    let query = activeEditor.document.getText();
-    const selection = activeEditor.selection;
-    if (selection && !selection.isEmpty) {
-      const selectionRange = new Range(
-        selection.start.line,
-        selection.start.character,
-        selection.end.line,
-        selection.end.character,
-      );
-      query = activeEditor.document.getText(selectionRange);
-    }
-    await project.executeSQLWithLimitOnQueryPanel(query, modelName, limit);
-  }
-
-  /** Sends query result data to webview */
-  private async transmitData(
-    columnNames: string[],
-    columnTypes: (string | null)[],
-    rows: JsonObj[],
-    raw_sql: string,
-    compiled_sql: string,
-  ) {
-    const result = {
-      columnNames,
-      columnTypes,
-      rows,
-      raw_sql,
-      compiled_sql,
-    };
-    await this.post({ command: "renderQuery", ...result });
-    return result;
-  }
-
-  /** Sends error result data to webview */
-  private async transmitError(
-    error: MessageOf<HostMessage, "renderError">["error"],
-    raw_sql: string,
-    compiled_sql: string,
-  ) {
-    await this.post({ command: "renderError", error, raw_sql, compiled_sql });
-  }
-
   /** Sends VSCode render loading command to webview */
   private async transmitLoading() {
     if (this._panel && this.isWebviewReady) {
@@ -453,81 +353,23 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     this.pendingMessages.push({ command: "renderLoading" });
   }
 
-  /** Sends VSCode clear state command */
-  private async transmitReset() {
-    await this.post({ command: "resetState" });
-  }
-
-  /** A wrapper for {@link transmitData} which converts server
-   * results interface ({@link ExecuteSQLResult}) to what the webview expects */
+  /** Sends a result to the webview, converting the server's row arrays to the objects it expects. */
   private async transmitDataWrapper(result: ExecuteSQLResult, query: string) {
-    const rows: JsonObj[] = new Array(result.table.rows.length);
-    // Convert compressed array format to dict[] - optimized version
-    for (let i = 0; i < result.table.rows.length; i++) {
-      const row: JsonObj = {};
-      const currentRow = result.table.rows[i];
-      for (let j = 0; j < currentRow.length; j++) {
-        row[result.table.column_names[j]] = currentRow[j];
-      }
-      rows[i] = row;
-    }
-    return await this.transmitData(
-      result.table.column_names,
+    const { column_names: columnNames, column_types: columnTypes } =
+      result.table;
+    const rows = result.table.rows.map((row) =>
+      Object.fromEntries(row.map((value, j) => [columnNames[j], value])),
+    );
+    const sent = {
+      columnNames,
       // executeSql already reports every column type as unknown.
-      result.table.column_types,
+      columnTypes,
       rows,
-      query,
-      result.compiled_sql,
-    );
-  }
-
-  private updateQueryHistory(
-    result: {
-      columnNames: string[];
-      columnTypes: (string | null)[];
-      rows: JsonObj[];
-      raw_sql: string;
-      compiled_sql: string;
-    },
-    projectName: string,
-    query: string,
-    duration: number,
-    modelName: string,
-  ) {
-    const project = projectName
-      ? this.queryManifestService.getProjectByName(projectName) // for queries executed from history and bookmarks tab
-      : this.queryManifestService.getProject(); // queries executed from main window
-    if (!project) {
-      this.dbtTerminal.debug(
-        "updateQueryHistory",
-        "skipping query history update, no project found, may be executed from query history",
-      );
-      return;
-    }
-    const queryHistoryCurrentSize = getStringSizeInMb(
-      JSON.stringify(this._queryHistory),
-    );
-    // if current history size > 3MB, remove the oldest entry
-    if (queryHistoryCurrentSize > 3) {
-      this._queryHistory.pop();
-      this.dbtTerminal.info(
-        "updateQueryHistory",
-        "Query history size exceeded 3MB, cleared oldest entry",
-      );
-    }
-    this._queryHistory.unshift({
-      rawSql: query,
-      compiledSql: result.compiled_sql,
-      timestamp: Date.now(),
-      duration,
-      adapter: project.getAdapterType(),
-      projectName: project.getProjectName(),
-      data: result.rows,
-      columnNames: result.columnNames,
-      columnTypes: result.columnTypes,
-      modelName,
-    });
-    this._queryHistory = this._queryHistory.splice(0, 10);
+      raw_sql: query,
+      compiled_sql: result.compiled_sql,
+    };
+    await this.post({ command: "renderQuery", ...sent });
+    return sent;
   }
 
   /** Runs a query transmitting appropriate notifications to webview */
@@ -548,37 +390,30 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
         await queryExecutionPromise);
       const output = await queryExecution.executeQuery();
       const result = await this.transmitDataWrapper(output, query);
-      this.updateQueryHistory(
+      recordResult(this.history, this.queryManifestService, this.dbtTerminal, {
         result,
         projectName,
         query,
-        Date.now() - start,
-        output.modelName,
-      );
+        start,
+        modelName: output.modelName,
+      });
       return result;
-    } catch (exc: any) {
+    } catch (exc: unknown) {
       if (exc instanceof ExecuteSQLError) {
         void notifyError(
           this.queryManifestService.getProject(),
           "Query failed",
           exc,
         );
-        await this.transmitError(
-          {
-            code: -1,
-            message: exc.message,
-            data: JSON.stringify(exc.stack, null, 2),
-          },
-          query,
-          exc.compiled_sql,
-        );
-        return;
       }
-      await this.transmitError(
-        { code: -1, message: `${exc}`, data: {} },
-        query,
-        query,
-      );
+      const failure = failureOf(exc, query);
+      await this.post({
+        command: "renderError",
+        error: failure.error,
+        raw_sql: query,
+        compiled_sql: failure.compiledSql,
+      });
+      return undefined;
     } finally {
       this.queryExecution = undefined;
       this._panel = this._bottomPanel;

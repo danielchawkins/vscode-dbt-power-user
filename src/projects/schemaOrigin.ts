@@ -1,5 +1,9 @@
 import { SourceMetaMap } from "../core/manifest/types";
-import { DbtProjectConfig, declaredProjectName } from "../core/project";
+import {
+  DbtProjectConfig,
+  declaredProjectName,
+  readDbtProjectFile,
+} from "../core/project";
 
 /** The documented hook (ADR 0006): the extension sets this variable in the language server's environment. */
 const SCHEMA_ORIGIN_ENV = "FUSION_POWER_USER_SCHEMA_ORIGIN";
@@ -55,7 +59,7 @@ export type SchemaOriginStatus =
  * are not checked. Sources from Dependency Projects count, because the root `sources:` config is not yet
  * shown to exclude them.
  */
-export function resolveSchemaOrigin(input: {
+function resolveSchemaOrigin(input: {
   projectConfig: DbtProjectConfig;
   sources: SourceMetaMap;
 }): SchemaOriginStatus {
@@ -95,8 +99,10 @@ export function hasSchemaOriginHook(config: DbtProjectConfig): boolean {
   return typeof value === "string" && value.includes(SCHEMA_ORIGIN_ENV);
 }
 
-/** True when `models: <project name>: +static_analysis` is `strict`, the project-level opt-in. */
-export function hasProjectStrictAnalysis(config: DbtProjectConfig): boolean {
+/**
+ * True when `models: <project name>: +static_analysis` is `strict`, the project-level opt-in.
+ */
+function hasProjectStrictAnalysis(config: DbtProjectConfig): boolean {
   const name = declaredProjectName(config);
   return (
     name !== undefined &&
@@ -108,4 +114,26 @@ function child(value: unknown, key: string): unknown {
   return value && typeof value === "object" && !Array.isArray(value)
     ? (value as Record<string, unknown>)[key]
     : undefined;
+}
+
+/** The schema-origin status of the project at `root`, from its project file and the sources of `manifest`. */
+export function projectSchemaOrigin(
+  root: string,
+  manifest: { sourceMetaMap: SourceMetaMap } | undefined,
+): SchemaOriginStatus {
+  return resolveSchemaOrigin({
+    projectConfig: readDbtProjectFile(root).config,
+    sources: manifest?.sourceMetaMap ?? new Map(),
+  });
+}
+
+/** The column-lineage opt-ins the project at `root` has made in its own project file. */
+export function projectOptIns(
+  root: string,
+  manifest: { sourceMetaMap: SourceMetaMap } | undefined,
+): { strict: boolean; schemaOrigin: SchemaOriginStatus } {
+  return {
+    strict: hasProjectStrictAnalysis(readDbtProjectFile(root).config),
+    schemaOrigin: projectSchemaOrigin(root, manifest),
+  };
 }

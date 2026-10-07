@@ -30,7 +30,7 @@ describe("editor intelligence project resolution", () => {
       .sort();
 
     expect(directCallers).toEqual([
-      "features/queryResults/queryResultPanel.ts",
+      "features/queryResults/queryPanelSupport.ts",
       "features/run/runModel.ts",
     ]);
   });

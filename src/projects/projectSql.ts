@@ -8,7 +8,7 @@ import { notifyError, type NotifiableProject } from "./notifications";
 type SqlExecutor = Pick<FusionCli, "executeSQL">;
 
 /** The project state the query wrappers read. */
-interface SqlProject {
+export interface SqlProject {
   readonly projectRoot: Uri;
   getFusionCli(): SqlExecutor;
   getProjectName(): string;

@@ -233,7 +233,8 @@ describe("query results handlers", () => {
     const panel = Object.create(QueryResultPanel.prototype);
     const postMessage = vi.fn();
     panel._panel = { webview: { postMessage } };
-    panel._queryHistory = [{}];
+    panel.history = { all: () => entries, clear: () => entries.splice(0) };
+    const entries: unknown[] = [{}];
     panel.dbtTerminal = terminal();
 
     await panel.handleCommand({
@@ -241,7 +242,7 @@ describe("query results handlers", () => {
       syncRequestId: "r",
     });
 
-    expect(panel._queryHistory).toEqual([]);
+    expect(entries).toEqual([]);
     expect(postMessage).toHaveBeenCalledWith({
       command: "response",
       args: { syncRequestId: "r", body: {}, status: true },

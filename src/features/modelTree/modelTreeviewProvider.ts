@@ -5,50 +5,22 @@ import {
   Event,
   EventEmitter,
   MarkdownString,
-  ProviderResult,
-  TextDocument,
   TreeDataProvider,
   TreeItem,
   TreeItemCollapsibleState,
   Uri,
   window,
 } from "vscode";
-import {
-  GraphMetaMap,
-  NodeData,
-  NodeMetaData,
-  NodeMetaMap,
-} from "../../core/manifest/types";
-import { removeProtocol } from "../../core/text";
+import { GraphMetaMap, NodeData } from "../../core/manifest/types";
 import { extensionRoot } from "../../extensionRoot";
 import type { Manifest } from "../../projects/manifestTypes";
 import { Projects } from "../../projects/projects";
+import { getDepthColor } from "./modelTreeHelpers";
 import {
-  getCurrentlySelectedModelNameInYamlConfig,
-  getDepthColor,
-} from "./modelTreeHelpers";
-
-interface IconPath {
-  light: string;
-  dark: string;
-}
-
-abstract class Node {
-  label: string;
-  key: string;
-  url: string | undefined;
-  iconPath: IconPath = {
-    light: path.join(extensionRoot, "../media/images/model_light.svg"),
-    dark: path.join(extensionRoot, "../media/images/model_dark.svg"),
-  };
-  displayInModelTree: boolean = true;
-
-  constructor(label: string, key: string, url?: string) {
-    this.label = label;
-    this.key = key;
-    this.url = url;
-  }
-}
+  lookupModelByEditorContent,
+  Node,
+  refreshOnProjectChange,
+} from "./treeSupport";
 
 class Model extends Node {}
 
@@ -80,19 +52,6 @@ class Source extends Node {
     light: path.join(extensionRoot, "../media/images/source_light.svg"),
     dark: path.join(extensionRoot, "../media/images/source_dark.svg"),
   };
-}
-
-/** Subscriptions that refresh a tree when the active editor, its selection, a manifest or the project set changes. */
-function refreshOnProjectChange(
-  projects: Projects,
-  refresh: () => void,
-): Disposable[] {
-  return [
-    window.onDidChangeActiveTextEditor(() => refresh()),
-    projects.onDidChangeManifest(() => refresh()),
-    projects.onDidRemoveProject(() => refresh()),
-    window.onDidChangeTextEditorSelection(() => refresh()),
-  ];
 }
 
 abstract class ModelTreeviewProvider
@@ -249,143 +208,6 @@ abstract class ModelTreeviewProvider
   }
 }
 
-class DocumentationTreeviewProvider
-  implements TreeDataProvider<DocTreeItem>, Disposable
-{
-  private _onDidChangeTreeData: EventEmitter<DocTreeItem | undefined | void> =
-    new EventEmitter<DocTreeItem | undefined | void>();
-  readonly onDidChangeTreeData: Event<DocTreeItem | undefined | void> =
-    this._onDidChangeTreeData.event;
-  private disposables: Disposable[] = [this._onDidChangeTreeData];
-
-  constructor(private projects: Projects) {
-    this.disposables.push(
-      ...refreshOnProjectChange(this.projects, () =>
-        this._onDidChangeTreeData.fire(),
-      ),
-    );
-  }
-
-  getTreeItem(element: DocTreeItem): TreeItem {
-    return {
-      label: element.label,
-      description: element.description,
-      command: element.command,
-      collapsibleState: element.children
-        ? TreeItemCollapsibleState.Expanded
-        : TreeItemCollapsibleState.None,
-    };
-  }
-
-  getChildren(element: DocTreeItem): ProviderResult<DocTreeItem[]> {
-    if (window.activeTextEditor === undefined) {
-      return Promise.resolve([]);
-    }
-    const currentFilePath = window.activeTextEditor.document.uri;
-    const project = this.projects.get(currentFilePath);
-    const event = project?.manifest;
-    if (project === undefined || event === undefined) {
-      return Promise.resolve([]);
-    }
-    const projectRootpath = project.projectRoot;
-
-    if (!element) {
-      const currentNode = lookupModelByEditorContent(
-        event.nodeMetaMap,
-        window.activeTextEditor.document,
-      );
-
-      if (currentNode === undefined) {
-        return Promise.resolve([]);
-      }
-      const modelName = currentNode.name;
-
-      const children = [];
-
-      if (Object.keys(currentNode.columns).length !== 0) {
-        for (const columnName in currentNode.columns) {
-          if (currentNode.columns.hasOwnProperty(columnName)) {
-            const column = currentNode.columns[columnName];
-            const { description } = column;
-            const child: any = {
-              label: columnName,
-              description,
-            };
-            children.push(child);
-          }
-        }
-        const url = currentNode.patch_path
-          ? path.join(
-              projectRootpath.fsPath,
-              removeProtocol(currentNode.patch_path),
-            )
-          : " ";
-
-        if (Object.keys(currentNode.columns).length === 0) {
-          window.showWarningMessage(
-            `Documentation View Warning: No columns found in manifest.json for ${modelName}, go edit the documentation in the documentation editor panel and run dbt docs generate`,
-          );
-        }
-        const key = currentNode.unique_id;
-        const label = currentNode.alias;
-        const description = `[ ${(currentNode.config.materialized ?? "").toUpperCase()} ]  -  schema : ${
-          currentNode.schema
-        }`;
-        const nodeItem = new DocNode(label, key, url, description);
-        const treeItem = new DocTreeItem(nodeItem);
-        treeItem.children = children;
-        return [treeItem];
-      }
-      return [];
-    }
-    return element.children;
-  }
-
-  refresh(): void {
-    this._onDidChangeTreeData.fire();
-  }
-
-  dispose(): void {
-    while (this.disposables.length) {
-      this.disposables.pop()?.dispose();
-    }
-  }
-}
-
-class DocTreeItem extends TreeItem {
-  override collapsibleState: TreeItemCollapsibleState =
-    TreeItemCollapsibleState.Collapsed;
-  override description: string;
-  children?: DocTreeItem[];
-  constructor(node: DocNode) {
-    super(node.label, TreeItemCollapsibleState.Collapsed);
-    this.description = node.description !== undefined ? node.description : " ";
-    // this. tooltip = "test tooltip" // node.description !== undefined ? node.description : " ";
-    if (node.url) {
-      this.command = {
-        command: "vscode.open",
-        title: "Open YML",
-        arguments: [Uri.file(node.url)],
-      };
-    }
-    if (node.iconPath !== undefined) {
-      this.iconPath = {
-        light: Uri.file(node.iconPath.light),
-        dark: Uri.file(node.iconPath.dark),
-      };
-    }
-  }
-}
-
-class DocNode extends Node {
-  description: string;
-
-  constructor(label: string, key: string, url: string, description: string) {
-    super(label, key, url);
-    this.description = description;
-  }
-}
-
 class NodeTreeItem extends TreeItem {
   override collapsibleState = TreeItemCollapsibleState.Collapsed;
   key: string;
@@ -516,23 +338,4 @@ export class ChildrenModelTreeview extends ModelTreeviewProvider {
   constructor(projects: Projects) {
     super(projects, "children");
   }
-}
-
-export class DocumentationTreeview extends DocumentationTreeviewProvider {
-  constructor(projects: Projects) {
-    super(projects);
-  }
-}
-
-// Find appropriate a model from file content (if YAML) or from a file name (otherwise)
-function lookupModelByEditorContent(
-  nodeMetaMap: NodeMetaMap,
-  document: TextDocument,
-): NodeMetaData | undefined {
-  const modelCandidateName =
-    document.languageId === "yaml" &&
-    getCurrentlySelectedModelNameInYamlConfig()
-      ? getCurrentlySelectedModelNameInYamlConfig()
-      : path.parse(document.fileName).name;
-  return nodeMetaMap.lookupByBaseName(modelCandidateName);
 }

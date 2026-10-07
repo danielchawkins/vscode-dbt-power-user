@@ -1,10 +1,13 @@
-import { describe, expect, it } from "vitest";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { afterAll, describe, expect, it } from "vitest";
 import { SourceMetaMap } from "../../core/manifest/types";
 import { parseDbtProjectYaml } from "../../core/project";
 import {
-  hasProjectStrictAnalysis,
   hasSchemaOriginHook,
-  resolveSchemaOrigin,
+  projectOptIns,
+  projectSchemaOrigin,
   SCHEMA_ORIGIN_HOOK,
   schemaOriginEnv,
   schemaOriginLaunchEnv,
@@ -12,6 +15,26 @@ import {
 
 const withHook = `name: p\nsources:\n  +schema_origin: "${SCHEMA_ORIGIN_HOOK}"\n`;
 const config = (yaml: string) => parseDbtProjectYaml(yaml).config;
+
+const roots: string[] = [];
+/** A project root whose `dbt_project.yml` holds `yaml`. */
+function projectRoot(yaml: string): string {
+  const root = mkdtempSync(join(tmpdir(), "schema-origin-"));
+  roots.push(root);
+  writeFileSync(join(root, "dbt_project.yml"), yaml);
+  return root;
+}
+afterAll(() => roots.forEach((r) => rmSync(r, { recursive: true })));
+
+const resolveSchemaOrigin = (input: {
+  projectConfig: string;
+  sources: SourceMetaMap;
+}) =>
+  projectSchemaOrigin(projectRoot(input.projectConfig), {
+    sourceMetaMap: input.sources,
+  });
+const hasProjectStrictAnalysis = (yaml: string) =>
+  projectOptIns(projectRoot(yaml), undefined).strict;
 
 function sources(
   tables: Record<string, Record<string, string | undefined> | undefined>,
@@ -52,7 +75,7 @@ describe("resolveSchemaOrigin", () => {
   it("is local with the hook and every source column typed", () => {
     expect(
       resolveSchemaOrigin({
-        projectConfig: config(withHook),
+        projectConfig: withHook,
         sources: sources({ orders: { id: "integer", note: "varchar" } }),
       }),
     ).toEqual({ kind: "local" });
@@ -61,7 +84,7 @@ describe("resolveSchemaOrigin", () => {
   it("reports noHook first", () => {
     expect(
       resolveSchemaOrigin({
-        projectConfig: config("name: p\n"),
+        projectConfig: "name: p\n",
         sources: sources({ orders: {} }),
       }),
     ).toEqual({ kind: "noHook" });
@@ -70,7 +93,7 @@ describe("resolveSchemaOrigin", () => {
   it("lists untyped columns and tables with no columns", () => {
     expect(
       resolveSchemaOrigin({
-        projectConfig: config(withHook),
+        projectConfig: withHook,
         sources: sources({
           orders: { id: "integer", note: undefined, amount: "  " },
           contacts: undefined,
@@ -108,7 +131,7 @@ describe("hasProjectStrictAnalysis", () => {
     ["models:\n  p:\n    +static_analysis: strict\n", false],
     ["name: p\nmodels:\n  p:\n    +static_analysis: strict\nbad: [\n", false],
   ])("%j -> %s", (yaml, expected) => {
-    expect(hasProjectStrictAnalysis(config(yaml))).toBe(expected);
+    expect(hasProjectStrictAnalysis(yaml)).toBe(expected);
   });
 });
 

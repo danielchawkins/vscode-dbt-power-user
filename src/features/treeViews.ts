@@ -1,8 +1,8 @@
 import { Disposable, TreeDataProvider, window } from "vscode";
 import type { ParseDemand } from "../projects/parseDemand";
+import { DocumentationTreeview } from "./modelTree/documentationTreeview";
 import {
   ChildrenModelTreeview,
-  DocumentationTreeview,
   ModelTestTreeview,
   ParentModelTreeview,
 } from "./modelTree/modelTreeviewProvider";

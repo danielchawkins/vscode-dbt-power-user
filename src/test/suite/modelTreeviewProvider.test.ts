@@ -1,9 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter, Uri, window } from "vscode";
-import {
-  DocumentationTreeview,
-  ParentModelTreeview,
-} from "../../features/modelTree/modelTreeviewProvider";
+import { DocumentationTreeview } from "../../features/modelTree/documentationTreeview";
+import { ParentModelTreeview } from "../../features/modelTree/modelTreeviewProvider";
 
 const rootA = Uri.file("/workspace/a");
 const modelPath = "/workspace/a/models/orders.sql";
