@@ -20,7 +20,8 @@ esac
 dest="$cache_root/cursor-${FPU_CURSOR_VERSION}-${FPU_CURSOR_PLATFORM}"
 cli=$(host_cli cursor)
 verify_cached_cursor() {
-  python3 - "$(host_product_json cursor)" "$FPU_CURSOR_VERSION" "$FPU_CURSOR_PRODUCT_COMMIT" "$FPU_VSCODE_VERSION" << 'PY'
+  python3 - "$(host_product_json cursor)" "$FPU_CURSOR_VERSION" "$FPU_CURSOR_PRODUCT_COMMIT" \
+    "$FPU_VSCODE_VERSION" << 'PY'
 import json, sys
 path, expected_version, expected_commit, expected_vscode_version = sys.argv[1:5]
 product = json.load(open(path))
@@ -37,6 +38,30 @@ if [[ "$force" -eq 0 ]] && [[ -x "$cli" ]] && verify_cached_cursor; then
 fi
 
 mkdir -p "$cache_root"
+if [[ "$smoke_platform" == linux-arm64 ]]; then
+  deb="$cache_root/cursor-${FPU_CURSOR_VERSION}.deb"
+  trap 'rm -f "$deb"' EXIT
+  curl -fsSL --retry 3 --retry-all-errors --max-time 1800 \
+    -A "FusionPowerUserHostFetch/1.0" \
+    "$FPU_CURSOR_LINUX_URL" \
+    -o "$deb"
+  verify_sha256 "$deb" "$FPU_CURSOR_LINUX_SHA256"
+  rm -rf "$dest"
+  mkdir -p "$dest"
+  if command -v dpkg-deb > /dev/null; then
+    dpkg-deb -x "$deb" "$dest"
+  else
+    # Without dpkg, unpack the ar archive's data member by hand; tar detects the compression.
+    staging=$(mktemp -d "$cache_root/cursor-extract.XXXXXX")
+    trap 'rm -rf "$staging"; rm -f "$deb"' EXIT
+    (cd "$staging" && ar x "$deb")
+    tar -xf "$staging"/data.tar.* -C "$dest"
+  fi
+  verify_cached_cursor
+  echo "Cached Cursor ${FPU_CURSOR_VERSION} at $dest"
+  exit 0
+fi
+
 dmg="$cache_root/cursor-${FPU_CURSOR_VERSION}.dmg"
 curl -fsSL --retry 3 --retry-all-errors --max-time 1800 \
   -A "FusionPowerUserHostFetch/1.0" \

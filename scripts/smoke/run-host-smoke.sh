@@ -22,6 +22,7 @@ host=""
 vsix=""
 fixture=""
 force=0
+original_args=("$@")
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --host)
@@ -57,6 +58,14 @@ if [[ -z "$host" ]]; then
   exit 2
 fi
 
+# Electron needs a display; a headless Linux run gets a virtual one.
+if [[ "$smoke_platform" == linux-arm64 && -z "${DISPLAY:-}" ]]; then
+  if ! command -v xvfb-run > /dev/null; then
+    echo "Linux smoke needs DISPLAY or xvfb-run" >&2
+    exit 1
+  fi
+  exec xvfb-run -a -s "-screen 0 1920x1080x24" "$0" "${original_args[@]}"
+fi
 if [[ "$force" -eq 1 ]]; then
   "$smoke_root/fetch-host.sh" "$host" --force
 else
@@ -73,10 +82,10 @@ if [[ ! -f "$vsix" ]]; then
   exit 1
 fi
 vsix=$(realpath "$vsix")
-echo "FPU_SMOKE_VSIX=$vsix sha256=$(shasum -a 256 "$vsix" | cut -d' ' -f1)"
+echo "FPU_SMOKE_VSIX=$vsix sha256=$(sha256_file "$vsix")"
 if [[ -n "${FPU_SMOKE_SCREENSHOTS:-}" ]]; then
   mkdir -p "$FPU_SMOKE_SCREENSHOTS"
-  shasum -a 256 "$vsix" > "$FPU_SMOKE_SCREENSHOTS/vsix.sha256"
+  echo "$(sha256_file "$vsix")  $vsix" > "$FPU_SMOKE_SCREENSHOTS/vsix.sha256"
 fi
 
 echo "# host metadata ($host)"

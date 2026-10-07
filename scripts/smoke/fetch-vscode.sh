@@ -37,6 +37,28 @@ if [[ "$force" -eq 0 ]] && [[ -x "$cli" ]] && verify_cached_vscode; then
 fi
 
 mkdir -p "$cache_root"
+if [[ "$smoke_platform" == linux-arm64 ]]; then
+  tarball="$cache_root/vscode-${FPU_VSCODE_VERSION}.tar.gz"
+  staging=$(mktemp -d "$cache_root/vscode-extract.XXXXXX")
+  trap 'rm -rf "$staging"; rm -f "$tarball"' EXIT
+  meta=$(curl -fsSL --retry 3 --retry-all-errors --max-time 60 "$FPU_VSCODE_LINUX_API")
+  url=$(node -e "console.log(JSON.parse(process.argv[1]).url)" "$meta")
+  expected=$(node -e "console.log(JSON.parse(process.argv[1]).sha256hash)" "$meta")
+  if [[ "$expected" != "$FPU_VSCODE_LINUX_SHA256" ]]; then
+    echo "VS Code API sha256hash ($expected) differs from pins.env ($FPU_VSCODE_LINUX_SHA256)" >&2
+    exit 1
+  fi
+  curl -fsSL --retry 3 --retry-all-errors --max-time 1800 "$url" -o "$tarball"
+  verify_sha256 "$tarball" "$FPU_VSCODE_LINUX_SHA256"
+  tar -xzf "$tarball" -C "$staging"
+  rm -rf "$dest"
+  mkdir -p "$dest"
+  mv "$staging/VSCode-linux-arm64" "$dest/VSCode-linux-arm64"
+  verify_cached_vscode
+  echo "Cached VS Code ${FPU_VSCODE_VERSION} at $dest"
+  exit 0
+fi
+
 zip="$cache_root/vscode-${FPU_VSCODE_VERSION}.zip"
 staging=$(mktemp -d "$cache_root/vscode-extract.XXXXXX")
 trap 'rm -rf "$staging"; rm -f "$zip"' EXIT
