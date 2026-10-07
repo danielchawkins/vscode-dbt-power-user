@@ -52,6 +52,15 @@ export function labelLayout(root, label) {
   };
 }
 
+/** The labels `run-integration.mjs` prepares: those `--label` selected, by name or `LABELS` index, or all when none was. */
+export function labelsToPrepare(selected) {
+  // test-cli also selects a config by its position in `LABELS`, so `--label 2` means the third label.
+  const names = selected.map((s) => (/^\d+$/.test(s) ? LABELS[Number(s)] : s));
+  return [...LABELS, ...VSIX_LABELS].filter(
+    (label) => !selected.length || names.includes(label),
+  );
+}
+
 /** The static-analysis mode a `native-*` label opens with, else undefined. */
 export function nativeMode(label) {
   return label.startsWith("native-")

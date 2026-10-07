@@ -21,7 +21,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import {
   labelLayout,
-  LABELS,
+  labelsToPrepare,
   nativeMode,
   ROOT_ENV,
   SPY_LOG_FILE,
@@ -110,7 +110,7 @@ function createDbtSpy() {
 const dbtSpy = createDbtSpy();
 
 try {
-  for (const label of [...LABELS, ...VSIX_LABELS]) {
+  for (const label of labelsToPrepare(labels)) {
     prepareLabel(label);
   }
   let failed = false;
