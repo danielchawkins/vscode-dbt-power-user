@@ -1,5 +1,5 @@
 import { OutputChannel } from "vscode";
-import { stripANSI } from "../../utils";
+import { stripANSI } from "../../core/text";
 
 /** Writes the diagnostics report to `outputChannel`, which it disposes. */
 export class DiagnosticsOutputChannel {

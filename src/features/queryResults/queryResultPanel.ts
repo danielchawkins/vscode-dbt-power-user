@@ -20,6 +20,7 @@ import {
   QueryExecution,
 } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
+import { getFormattedDateTime, getStringSizeInMb } from "../../core/text";
 import { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
 import { activeModelUri } from "../../projects/previewUri";
@@ -29,7 +30,6 @@ import {
   SharedStateService,
 } from "../../projects/sharedStateService";
 import { readSetting, writeSetting } from "../../settings";
-import { getFormattedDateTime, getStringSizeInMb } from "../../utils";
 import {
   dispatchMessage,
   Handlers,

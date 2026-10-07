@@ -13,7 +13,7 @@ import {
 } from "vscode";
 import type { Log } from "../core/log";
 import { projectRootDigest } from "../core/project";
-import { stripANSI } from "../utils";
+import { stripANSI } from "../core/text";
 import { DeclaredProject } from "./projectRegistry";
 
 /**

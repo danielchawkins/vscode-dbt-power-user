@@ -2,6 +2,7 @@ import { readFileSync } from "fs";
 import * as path from "path";
 import { parse, stringify } from "yaml";
 import type { Log } from "../../core/log";
+import { getColumnTestConfigFromYml } from "../../core/manifest/testConfig";
 import {
   MacroMetaMap,
   TestMetaData,
@@ -9,12 +10,9 @@ import {
   TestMetadataRelationships,
   UnitTestMetaData,
 } from "../../core/manifest/types";
+import { removeProtocol } from "../../core/text";
+import { isColumnNameEqual } from "../../projects/columnNames";
 import { QueryManifestService } from "../../projects/queryManifestService";
-import {
-  getColumnTestConfigFromYml,
-  isColumnNameEqual,
-  removeProtocol,
-} from "../../utils";
 
 export class DbtTestService {
   public constructor(private queryManifestService: QueryManifestService) {}

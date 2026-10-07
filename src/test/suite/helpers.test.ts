@@ -1,20 +1,29 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Uri, window, workspace } from "vscode";
 import {
-  getColumnNameByCase,
   getColumnTestConfigFromYml,
-  getCurrentlySelectedModelNameInYamlConfig,
-  getFirstWorkspacePath,
+  isAcceptedValues,
+  isRelationship,
+} from "../../core/manifest/testConfig";
+import {
+  extractDbtSubcommand,
   getFormattedDateTime,
   getStringSizeInMb,
-  isAcceptedValues,
+  removeProtocol,
+  stripANSI,
+} from "../../core/text";
+import {
+  getCurrentlySelectedModelNameInYamlConfig,
+  getDepthColor,
+} from "../../features/modelTree/modelTreeHelpers";
+import {
+  getColumnNameByCase,
   isColumnNameEqual,
   isQuotedIdentifier,
-  isRelationship,
-  stripANSI,
-} from "../../utils";
+} from "../../projects/columnNames";
+import { getFirstWorkspacePath } from "../../projects/workspacePath";
 
-describe("utils tests", () => {
+describe("text, column name, test config and workspace helpers", () => {
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -109,5 +118,17 @@ describe("utils tests", () => {
   it("getFormattedDateTime formats date", () => {
     const formatted = getFormattedDateTime();
     expect(formatted).toMatch(/^\d{2}-\d{2}-\d{4}-\d{2}-\d{2}-\d{2}$/);
+  });
+
+  it("removeProtocol and extractDbtSubcommand strip prefixes", () => {
+    expect(removeProtocol("p://models/a.yml")).toBe("models/a.yml");
+    expect(extractDbtSubcommand("dbt build --select a")).toBe("build");
+    expect(extractDbtSubcommand("build")).toBe("build");
+  });
+
+  it("getDepthColor grades depth", () => {
+    expect(getDepthColor(1)).toBe("#00ff00");
+    expect(getDepthColor(5)).toBe("#ffa500");
+    expect(getDepthColor(10)).toBe("#ff0000");
   });
 });
