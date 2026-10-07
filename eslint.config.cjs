@@ -161,7 +161,12 @@ module.exports = [
     files: ["src/**/*.ts", "packages/*/src/**/*.ts"],
     languageOptions: {
       parser: tseslint.parser,
-      parserOptions: { projectService: true, tsconfigRootDir: __dirname },
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ["packages/*/src/*.test.ts"],
+        },
+        tsconfigRootDir: __dirname,
+      },
     },
     plugins: { sonarjs },
     rules: {

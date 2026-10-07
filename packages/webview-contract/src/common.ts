@@ -12,10 +12,10 @@ import {
 
 /** The `args` of a host reply to a request that carried `syncRequestId`. */
 export interface ResponseArgs<B = unknown> {
-  syncRequestId?: string;
-  body?: B;
+  syncRequestId?: string | undefined;
+  body?: B | undefined;
   status: boolean;
-  error?: string;
+  error?: string | undefined;
 }
 
 /** The host's reply to a panel request. */
@@ -37,8 +37,8 @@ export interface OpenProblemsTab {
 export interface ShowNotification {
   command: "showInformationMessage" | "showWarningMessage";
   infoMessage: string;
-  items?: string[];
-  syncRequestId?: string;
+  items?: string[] | undefined;
+  syncRequestId?: string | undefined;
 }
 
 /** A warning or error shown in place of a panel's content. */

@@ -37,9 +37,9 @@ export interface QueryContext {
   command: "getContext";
   limit: number;
   perspectiveTheme: string;
-  activeEditor: { query?: string; filepath?: string };
+  activeEditor: { query?: string | undefined; filepath?: string | undefined };
   /** The Current Project's manifest publication; the panel's saved view state names it. */
-  publication?: string;
+  publication?: string | undefined;
 }
 
 /** `type` is the panel's view type: 0 the bottom panel, 1 a results tab, 2 a history or bookmark run. */
@@ -65,7 +65,7 @@ export interface QueryHistoryEntry {
   duration: number;
   adapter: string;
   projectName: string;
-  data?: Record<string, unknown>[];
+  data?: Record<string, unknown>[] | undefined;
   columnNames: string[];
   columnTypes: (string | null)[];
   modelName: string;
@@ -75,7 +75,11 @@ export interface QueryHistoryEntry {
 export type PanelMessage =
   | WebviewReady
   | { command: "error"; text: string }
-  | { command: "updateConfig"; limit?: number; perspectiveTheme?: string }
+  | {
+      command: "updateConfig";
+      limit?: number | undefined;
+      perspectiveTheme?: string | undefined;
+    }
   | { command: "cancelQuery" }
   /** Asks the host to send `getContext`; there is no `response`. */
   | { command: "getQueryPanelContext" }
@@ -84,21 +88,25 @@ export type PanelMessage =
   | {
       command: "executeQuery";
       query: string;
-      projectName?: string;
-      editorName?: string;
-      limit?: number;
+      projectName?: string | undefined;
+      editorName?: string | undefined;
+      limit?: number | undefined;
     }
   | { command: "executeQueryFromActiveWindow"; limit: number }
-  | { command: "getQueryTabData"; syncRequestId?: string }
+  | { command: "getQueryTabData"; syncRequestId?: string | undefined }
   | { command: "runAdhocQuery" }
   | {
       command: "viewResultSet";
       queryHistory: QueryHistoryEntry;
-      editorName?: string;
+      editorName?: string | undefined;
     }
-  | { command: "openCodeInEditor"; code?: string }
+  | { command: "openCodeInEditor"; code?: string | undefined }
   /** `error` is the rendering error that made the panel clear its history. */
-  | { command: "clearQueryHistory"; syncRequestId?: string; error?: unknown }
+  | {
+      command: "clearQueryHistory";
+      syncRequestId?: string | undefined;
+      error?: unknown | undefined;
+    }
   /** Opens the current results in an editor tab; `queryTabData` is the panel's result state. */
   | { command: "queryResultTab:render"; queryTabData: Record<string, unknown> };
 

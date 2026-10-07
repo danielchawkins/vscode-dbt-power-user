@@ -61,7 +61,7 @@ export function normalizeQueryLimit(
     normalizedQuery,
   );
   if (limitMatch) {
-    const parsedLimit = parseInt(limitMatch[1], 10);
+    const parsedLimit = parseInt(limitMatch[1] ?? "", 10);
     if (parsedLimit > 0) {
       limit = parsedLimit;
     }
@@ -113,13 +113,12 @@ export async function executeSql(
   }
   const result = await execution.executeQuery();
   const rows: Record<string, unknown>[] = [];
-  for (let rowIndex = 0; rowIndex < result.table.rows.length; rowIndex++) {
-    result.table.rows[rowIndex].forEach((value, columnIndex) => {
-      rows[rowIndex] = {
-        ...rows[rowIndex],
-        [result.table.column_names[columnIndex]]: value,
-      };
+  for (const sourceRow of result.table.rows) {
+    const row: Record<string, unknown> = {};
+    sourceRow.forEach((value, columnIndex) => {
+      row[String(result.table.column_names[columnIndex])] = value;
     });
+    rows.push(row);
   }
   return {
     columnNames: result.table.column_names,

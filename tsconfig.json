@@ -10,6 +10,8 @@
     "rootDir": ".",
     // "rootDirs": ["src", "../altimate-dbt-integration/src"],
     "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "exactOptionalPropertyTypes": true,
     "noImplicitOverride": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
@@ -21,7 +23,15 @@
     "moduleResolution": "bundler",
     "types": ["node", "mocha", "vscode"]
   },
-  "include": ["src/**/*", "packages/webview-contract/src/**/*.test.ts"],
-  "exclude": ["node_modules", ".vscode-test", "webview_panels", "dist", "out"],
+  "include": ["src/**/*"],
+  "exclude": [
+    "node_modules",
+    ".vscode-test",
+    "webview_panels",
+    "dist",
+    "out",
+    "src/test",
+    "src/**/*.test.ts"
+  ],
   "references": [{ "path": "./packages/webview-contract" }]
 }

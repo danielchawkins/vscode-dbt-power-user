@@ -64,7 +64,7 @@ export interface ManifestReadFailures {
 export interface BuiltManifest {
   parsed: ParsedManifest;
   /** `metadata.adapter_type`, when the manifest carries one. */
-  adapterType?: string;
+  adapterType?: string | undefined;
 }
 
 const publicationEpochs = new Map<string, number>();
@@ -292,10 +292,10 @@ export interface ManifestTriggerHandlers {
 
 /** Debounced file events under one Declared Project root that call for a manifest rebuild. */
 export class ManifestTrigger implements Disposable {
-  private watcher?: FileSystemWatcher;
+  private watcher: FileSystemWatcher | undefined;
   private subscriptions: Disposable[] = [];
-  private projectFileTimer?: ReturnType<typeof setTimeout>;
-  private sourceFileTimer?: ReturnType<typeof setTimeout>;
+  private projectFileTimer: ReturnType<typeof setTimeout> | undefined;
+  private sourceFileTimer: ReturnType<typeof setTimeout> | undefined;
 
   constructor(
     private readonly projectRoot: string,

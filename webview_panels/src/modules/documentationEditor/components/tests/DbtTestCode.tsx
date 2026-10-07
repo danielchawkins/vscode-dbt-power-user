@@ -6,8 +6,8 @@ import { CodeBlock } from "@uicore";
 import { useEffect, useState } from "react";
 
 interface GetTestCodeResponse {
-  sql?: string;
-  config?: string;
+  sql?: string | undefined;
+  config?: string | undefined;
 }
 const DbtTestCode = ({ test }: { test: DBTModelTest }): JSX.Element | null => {
   const {

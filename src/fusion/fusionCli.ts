@@ -33,11 +33,11 @@ export interface FusionCliExecutable {
 }
 
 export interface FusionCliRunOptions {
-  signal?: AbortSignal;
+  signal?: AbortSignal | undefined;
   /** Merged over the executable's environment; wins on conflicts. */
   env?: Record<string, string>;
   /** Receives each stdout and stderr chunk in arrival order. */
-  onOutput?: (chunk: string) => void;
+  onOutput?: ((chunk: string) => void) | undefined;
 }
 
 function diskProbe(target: string): PathKind {
@@ -154,10 +154,12 @@ export class FusionCli {
       command: this.executable.path,
       args,
       cwd: snapshot.root,
-      signal: options.signal,
+      ...(options.signal ? { signal: options.signal } : {}),
       envVars: { ...toCliEnvironment(snapshot), ...options.env },
     });
-    return execution.complete({ onOutput: options.onOutput });
+    return execution.complete(
+      options.onOutput ? { onOutput: options.onOutput } : {},
+    );
   }
 
   /**

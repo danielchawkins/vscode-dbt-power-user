@@ -42,7 +42,11 @@ export interface ConnectedColumnsRequest {
 
 /** Why a request produced no column lineage. */
 export type NoLineage =
-  | { kind: "notRunning"; state: FusionClientState; failure?: string }
+  | {
+      kind: "notRunning";
+      state: FusionClientState;
+      failure?: string | undefined;
+    }
   /** No column nodes while the client runs with a mode that computes none. */
   | { kind: "staticAnalysis"; mode: StaticAnalysisMode }
   | { kind: "empty" }
@@ -133,11 +137,12 @@ export class DbtLineageService {
     const results: ListNodesResult[] = [];
     const failures: TargetFailure[] = [];
     settled.forEach((outcome, index) => {
+      const target = targets[index];
       if (outcome.status === "fulfilled") {
         results.push(outcome.value);
-      } else {
+      } else if (target) {
         failures.push({
-          target: targets[index],
+          target,
           message: errorMessage(outcome.reason),
         });
       }
@@ -266,7 +271,8 @@ export class DbtLineageService {
     key: string,
   ): Table | undefined {
     const splits = key.split(".");
-    const nodeType = splits[0];
+    const at = (index: number) => splits[index] ?? "";
+    const nodeType = at(0);
     const { graphMetaMap, testMetaMap } = event;
     const childCount = this.getConnectedNodeCount(
       graphMetaMap["children"],
@@ -278,8 +284,8 @@ export class DbtLineageService {
     );
     if (nodeType === RESOURCE_TYPE_SOURCE) {
       const { sourceMetaMap } = event;
-      const schema = splits[2];
-      const table = splits[3];
+      const schema = at(2);
+      const table = at(3);
       const _node = sourceMetaMap.get(schema);
       if (!_node) {
         return;
@@ -296,7 +302,7 @@ export class DbtLineageService {
         parentCount,
         nodeType,
         tests: (graphMetaMap["tests"].get(key)?.nodes || []).map((n) => {
-          const testKey = n.label.split(".")[0];
+          const testKey = n.label.split(".")[0] ?? "";
           return { ...testMetaMap.get(testKey), key: testKey };
         }),
         columns: _table.columns,
@@ -307,7 +313,7 @@ export class DbtLineageService {
     if (nodeType === RESOURCE_TYPE_METRIC) {
       return {
         table: key,
-        label: splits[2],
+        label: at(2),
         url: tableUrl,
         childCount,
         parentCount,
@@ -319,7 +325,7 @@ export class DbtLineageService {
     }
     const { nodeMetaMap } = event;
 
-    const table = splits[2];
+    const table = at(2);
     if (nodeType === RESOURCE_TYPE_EXPOSURE) {
       return {
         table: key,
@@ -369,7 +375,7 @@ export class DbtLineageService {
       columns: node.columns,
       patchPath: node.patch_path ?? "",
       tests: (graphMetaMap["tests"].get(key)?.nodes || []).map((n) => {
-        const testKey = n.label.split(".")[0];
+        const testKey = n.label.split(".")[0] ?? "";
         return { ...testMetaMap.get(testKey), key: testKey };
       }),
       packageName: node.package_name,

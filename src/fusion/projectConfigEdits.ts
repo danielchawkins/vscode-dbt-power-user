@@ -23,7 +23,7 @@ export function planProjectConfigInsertion(
   const document = parseDocument(projectYaml);
   if (document.errors.length > 0) {
     throw new Error(
-      `${DBT_PROJECT_FILE} does not parse: ${document.errors[0].message}`,
+      `${DBT_PROJECT_FILE} does not parse: ${document.errors[0]?.message}`,
     );
   }
   const current: unknown = document.getIn(insertion.path);

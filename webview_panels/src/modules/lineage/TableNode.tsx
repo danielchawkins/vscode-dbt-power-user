@@ -40,7 +40,7 @@ const Header = ({
   errors,
 }: {
   table: lineage.LineageTable;
-  errors?: string[];
+  errors?: string[] | undefined;
 }) => (
   <div className={styles.header}>
     <Handle
@@ -173,14 +173,14 @@ const ColumnList = ({
   table: string;
   columns: lineage.LineageColumn[];
   traced: string[];
-  selectedColumn?: string;
+  selectedColumn?: string | undefined;
 }) => {
   const tracedSet = new Set(traced);
   const stateOf = (name: string) =>
     name === selectedColumn
-      ? styles.selected
+      ? (styles.selected ?? "")
       : tracedSet.has(name)
-        ? styles.traced
+        ? (styles.traced ?? "")
         : "";
   return (
     <div

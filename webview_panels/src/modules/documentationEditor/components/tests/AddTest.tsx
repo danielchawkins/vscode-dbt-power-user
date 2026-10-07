@@ -19,7 +19,7 @@ import useTestFormSave, { TestOperation } from "./hooks/useTestFormSave";
 
 interface Props {
   title: string;
-  currentTests?: string[];
+  currentTests?: string[] | undefined;
   type: EntityType;
 }
 

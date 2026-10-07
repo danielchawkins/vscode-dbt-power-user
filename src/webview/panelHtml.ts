@@ -33,8 +33,8 @@ export interface PanelPage {
 /** The fields of a Vite manifest chunk the host reads. */
 interface ManifestChunk {
   file: string;
-  name?: string;
-  isEntry?: boolean;
+  name?: string | undefined;
+  isEntry?: boolean | undefined;
   imports?: string[];
   css?: string[];
 }
@@ -58,7 +58,7 @@ export function entryAssets(
   entry: PanelEntry,
 ): { script: string; styles: string[] } {
   const key = Object.keys(manifest).find(
-    (k) => manifest[k].isEntry && manifest[k].name === entry,
+    (k) => manifest[k]?.isEntry && manifest[k].name === entry,
   );
   if (!key) {
     throw new Error(`The webview build has no entry named ${entry}`);
@@ -66,15 +66,16 @@ export function entryAssets(
   const styles = new Set<string>();
   const seen = new Set<string>();
   const visit = (k: string) => {
-    if (seen.has(k)) {
+    const chunk = manifest[k];
+    if (seen.has(k) || !chunk) {
       return;
     }
     seen.add(k);
-    manifest[k].imports?.forEach(visit);
-    manifest[k].css?.forEach((file) => styles.add(file));
+    chunk.imports?.forEach(visit);
+    chunk.css?.forEach((file) => styles.add(file));
   };
   visit(key);
-  return { script: manifest[key].file, styles: [...styles] };
+  return { script: manifest[key]?.file ?? "", styles: [...styles] };
 }
 
 /**

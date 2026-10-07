@@ -100,7 +100,7 @@ export class RunModel {
           if (model.label) {
             this.runDBTTest(
               Uri.file(model.url),
-              labelText(model.label).split(".")[0],
+              labelText(model.label).split(".")[0] ?? "",
             );
           }
           break;

@@ -94,10 +94,10 @@ export type Table = {
   /** Number of dbt parents. */
   parentCount: number;
   nodeType: string;
-  materialization?: string;
+  materialization?: string | undefined;
   description?: string;
   tests: any[];
-  meta?: Record<string, unknown>;
+  meta?: Record<string, unknown> | undefined;
   columns: { [columnName: string]: ColumnMetaData };
   patchPath?: string;
   packageName?: string;

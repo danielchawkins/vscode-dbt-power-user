@@ -10,8 +10,8 @@ const Tag = ({
   ...rest
 }: {
   children: ReactNode;
-  color?: "primary" | "orange" | "default";
-  type?: "rounded" | "default";
+  color?: "primary" | "orange" | "default" | undefined;
+  type?: "rounded" | "default" | undefined;
 } & HTMLAttributes<HTMLSpanElement>): JSX.Element => {
   const classNames = `${className ?? ""} ${classes.tag} ${color === "default" ? "" : color} ${type === "rounded" ? classes.rounded : ""}`;
   if (onClick) {

@@ -6,8 +6,8 @@ import classes from "./tooltip.module.css";
 interface Props {
   children: ReactNode;
   /** Shown while the pointer or focus is on the children; hovering it keeps it open, so it may hold links. */
-  title?: ReactNode;
-  className?: string;
+  title?: ReactNode | undefined;
+  className?: string | undefined;
 }
 
 const Tooltip = ({ children, title, className }: Props): JSX.Element => {

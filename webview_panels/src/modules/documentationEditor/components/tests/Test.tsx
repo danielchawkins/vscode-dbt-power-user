@@ -5,7 +5,7 @@ interface Props {
   test: DBTModelTest;
   onSelect: (test: DBTModelTest) => void;
   selectedTest: DBTModelTest | null;
-  className?: string;
+  className?: string | undefined;
 }
 
 const Test = ({

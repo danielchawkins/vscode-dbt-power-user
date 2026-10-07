@@ -37,9 +37,9 @@ export class DocumentationTreeview
 
   getTreeItem(element: DocTreeItem): TreeItem {
     return {
-      label: element.label,
+      ...(element.label !== undefined && { label: element.label }),
       description: element.description,
-      command: element.command,
+      ...(element.command && { command: element.command }),
       collapsibleState: element.children
         ? TreeItemCollapsibleState.Expanded
         : TreeItemCollapsibleState.None,

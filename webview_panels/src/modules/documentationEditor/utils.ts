@@ -32,7 +32,7 @@ export const fromHostDocumentation = (
 
 /** Columns a warehouse metadata fetch returned, as editor columns that are not yet in YAML. */
 export const fromFetchedColumns = (
-  columns: { name: string; type?: string }[],
+  columns: { name: string; type?: string | undefined }[],
 ): DBTDocumentationColumn[] =>
   columns.map((column) => ({
     name: column.name,

@@ -17,7 +17,7 @@
     "build": "npm run build:contract && npm run build:app",
     "build:app": "rm -rf dist && tsc && vite build --emptyOutDir=false",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json --noEmit",
     "lint": "eslint . --report-unused-disable-directives --max-warnings 0 && npm run lint:imports",
     "lint:imports": "depcruise src --config .dependency-cruiser.cjs --output-type err",
     "lint:fix": "eslint . --fix",

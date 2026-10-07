@@ -3,7 +3,7 @@ import { ButtonColor, buttonClassName } from "../../classNames";
 import classes from "./styles.module.css";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
-  color?: ButtonColor;
+  color?: ButtonColor | undefined;
 }
 
 const IconButton = ({

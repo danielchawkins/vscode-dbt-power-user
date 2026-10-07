@@ -47,7 +47,7 @@ export class LineageDetails {
    * filter and style per-source. Sources are excluded by default — opt-in via
    * params.
    */
-  getRelationships(params?: { includeSources?: boolean }): {
+  getRelationships(params?: { includeSources?: boolean | undefined }): {
     refs: Ref[];
   } {
     const event = this.queryManifestService.getEventByCurrentProject();
@@ -102,7 +102,7 @@ export class LineageDetails {
     // Node IDs use unique_id format (exposure.project.name), but
     // exposureMetaMap is keyed by simple exposure name.
     const splits = name.split(".");
-    const exposureName = splits.length >= 3 ? splits[2] : name;
+    const exposureName = splits.length >= 3 ? (splits[2] ?? name) : name;
     return exposureMetaMap.get(exposureName);
   }
 
@@ -119,7 +119,7 @@ export class LineageDetails {
     // Node IDs use unique_id format (function.project.name), but
     // functionMetaMap is keyed by simple function name.
     const splits = name.split(".");
-    const functionName = splits.length >= 3 ? splits[2] : name;
+    const functionName = splits.length >= 3 ? (splits[2] ?? name) : name;
     return functionMetaMap.get(functionName);
   }
 
@@ -140,7 +140,7 @@ export class LineageDetails {
       return this.sourceColumns(event.event, project, table, splits, refresh);
     }
     if (splits[0] === RESOURCE_TYPE_FUNCTION) {
-      return this.functionColumns(event.event, table, splits[2]);
+      return this.functionColumns(event.event, table, splits[2] ?? "");
     }
     const node = event.event.nodeMetaMap.lookupByUniqueId(table);
     if (!node) {
@@ -168,7 +168,7 @@ export class LineageDetails {
     splits: string[],
     refresh: boolean,
   ): Promise<ColumnsBody | undefined> {
-    const node = event.sourceMetaMap.get(splits[2]);
+    const node = event.sourceMetaMap.get(splits[2] ?? "");
     const sourceTable = node?.tables.find((t) => t.name === splits[3]);
     if (!node || !sourceTable) {
       return;

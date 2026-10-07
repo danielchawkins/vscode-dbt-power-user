@@ -15,7 +15,7 @@ export type ColumnRef = [table: string, column: string];
  * start table plus each entry of `expansions`, in order, whose table is drawn.
  */
 export interface GraphState {
-  start?: string;
+  start?: string | undefined;
   known: Record<string, LineageTable>;
   /** The neighbour IDs each expansion key added. */
   neighbours: Record<string, string[]>;
@@ -30,8 +30,8 @@ export interface GraphState {
   errors: Record<string, string[]>;
   /** Collapse count per expansion key; an expansion whose count changed while fetching is dropped. */
   cancelled: Record<string, number>;
-  selectedTable?: string;
-  selectedColumn?: ColumnRef;
+  selectedTable?: string | undefined;
+  selectedColumn?: ColumnRef | undefined;
 }
 
 /** Reads and changes the latest graph; an async step reads after each answer, so it never applies a stale base. */

@@ -7,11 +7,11 @@ export enum Source {
 
 export interface MetadataColumn {
   name: string;
-  type?: string;
+  type?: string | undefined;
 }
 
 export interface DBTDocumentationColumn extends MetadataColumn {
-  description?: string;
+  description?: string | undefined;
   generated: boolean;
   source: Source;
 }
@@ -24,9 +24,9 @@ export interface DBTDocumentation {
   generated: boolean;
   /** The model's SQL file; the host sends it and `saveDocumentation` returns it. */
   filePath: string;
-  patchPath?: string;
-  uniqueId?: string;
-  resource_type?: string;
+  patchPath?: string | undefined;
+  uniqueId?: string | undefined;
+  resource_type?: string | undefined;
 }
 
 interface TestMetadataKwArgs {
@@ -51,13 +51,13 @@ export enum DbtGenericTests {
 
 // for accepted_values
 export interface TestMetadataAcceptedValuesKwArgs extends TestMetadataKwArgs {
-  values?: string[];
+  values?: string[] | undefined;
 }
 
 // for relationship
 export interface TestMetadataRelationshipsKwArgs extends TestMetadataKwArgs {
-  field?: string;
-  to?: string;
+  field?: string | undefined;
+  to?: string | undefined;
 }
 
 export interface DocBlock {
@@ -68,16 +68,23 @@ export interface DocBlock {
 export type DBTUnitTest = documentationEditor.UnitTest;
 
 export interface DocumentationStateProps {
-  incomingDocsData?: { docs?: DBTDocumentation; tests?: DBTModelTest[] };
-  currentDocsData?: DBTDocumentation;
-  currentDocsTests?: DBTModelTest[];
-  currentUnitTests?: DBTUnitTest[];
-  project?: string;
-  missingDocumentationMessage?: { message: string; type: "warning" | "error" };
+  incomingDocsData?:
+    | {
+        docs?: DBTDocumentation | undefined;
+        tests?: DBTModelTest[] | undefined;
+        unitTests?: DBTUnitTest[] | undefined;
+      }
+    | undefined;
+  currentDocsData?: DBTDocumentation | undefined;
+  currentDocsTests?: DBTModelTest[] | undefined;
+  currentUnitTests?: DBTUnitTest[] | undefined;
+  project?: string | undefined;
+  missingDocumentationMessage?:
+    { message: string; type: "warning" | "error" } | undefined;
   searchQuery: string;
   docBlocks: DocBlock[];
   /** The manifest publication the host read the current documentation from. */
-  publication?: string;
+  publication?: string | undefined;
 }
 
 export type DBTModelTest = documentationEditor.ModelTest;

@@ -27,58 +27,60 @@ import {
 /** A column of the model being documented; `source` says whether it came from YAML or a database fetch. */
 export interface DocumentationColumn {
   name: string;
-  type?: string | null;
-  description?: string | null;
-  generated?: boolean;
-  source?: "YAML" | "DATABASE";
+  type?: string | null | undefined;
+  description?: string | null | undefined;
+  generated?: boolean | undefined;
+  source?: "YAML" | "DATABASE" | undefined;
 }
 
 /** The documentation of the model in the active editor; manifest-derived fields may be `null`. */
 export interface Documentation {
   name: string;
-  description?: string | null;
+  description?: string | null | undefined;
   columns: DocumentationColumn[];
-  generated?: boolean;
+  generated?: boolean | undefined;
   filePath: string;
-  patchPath?: string | null;
-  uniqueId?: string;
-  resource_type?: string;
+  patchPath?: string | null | undefined;
+  uniqueId?: string | undefined;
+  resource_type?: string | undefined;
 }
 
 /** A generic test's `test_metadata.kwargs`; which keys appear depends on the test. */
 export interface TestKwargs {
-  column_name?: string;
-  model?: string;
+  column_name?: string | undefined;
+  model?: string | undefined;
   /** `accepted_values`. */
-  values?: unknown[];
+  values?: unknown[] | undefined;
   /** `relationships`: the parent column and the parent `ref`. */
-  field?: string;
-  to?: string;
+  field?: string | undefined;
+  to?: string | undefined;
 }
 
 /** A data test attached to the model or one of its columns; `key` is the test's manifest name, and manifest-derived
  * fields may be `null`. */
 export interface ModelTest {
   key: string;
-  column_name?: string | null;
-  path?: string;
-  test_metadata?: {
-    name: string;
-    namespace?: string | null;
-    kwargs: TestKwargs;
-  };
+  column_name?: string | null | undefined;
+  path?: string | undefined;
+  test_metadata?:
+    | {
+        name: string;
+        namespace?: string | null | undefined;
+        kwargs: TestKwargs;
+      }
+    | undefined;
 }
 
 /** A unit test of the model. */
 export interface UnitTest {
   name: string;
-  path?: string;
+  path?: string | undefined;
 }
 
 /** The editor's unsaved documentation and tests of one model. */
 export interface DocumentationDraft {
   docs: Documentation;
-  tests?: ModelTest[];
+  tests?: ModelTest[] | undefined;
 }
 
 /** Documentation-editor messages from the extension host to the panel. */
@@ -88,20 +90,20 @@ export type HostMessage =
   /** `docs` is absent when the active editor has no documented model. */
   | {
       command: "renderDocumentation";
-      docs?: Documentation;
-      missingDocumentationMessage?: PanelNotice;
-      tests?: ModelTest[];
-      unitTests?: UnitTest[];
-      project?: string;
+      docs?: Documentation | undefined;
+      missingDocumentationMessage?: PanelNotice | undefined;
+      tests?: ModelTest[] | undefined;
+      unitTests?: UnitTest[] | undefined;
+      project?: string | undefined;
       docBlocks: { name: string; path: string }[];
       /** The manifest publication the documentation was read from; the panel's saved view state names it. */
-      publication?: string;
+      publication?: string | undefined;
       /** The unsaved draft the host holds for this model; the editor shows it over `docs` and `tests`. */
-      draft?: DocumentationDraft;
+      draft?: DocumentationDraft | undefined;
     }
   | {
       command: "renderColumnsFromMetadataFetch";
-      columns: { name: string; type?: string }[];
+      columns: { name: string; type?: string | undefined }[];
     };
 
 /** Where `saveDocumentation` writes when the model has no `patchPath`. */
@@ -114,43 +116,51 @@ export type PanelMessage =
   | ShowNotification
   | { command: "getCurrentModelDocumentation" }
   /** The editor's unsaved draft of the model at file path `model`, kept in host memory; absent clears it. */
-  | { command: "saveDraft"; model: string; draft?: DocumentationDraft }
+  | {
+      command: "saveDraft";
+      model: string;
+      draft?: DocumentationDraft | undefined;
+    }
   | {
       command: "getTestCode";
       test: Record<string, unknown>;
       model: string;
-      syncRequestId?: string;
+      syncRequestId?: string | undefined;
     }
   | {
       command: "getUnitTestCode";
-      path?: string;
-      model?: string;
-      name?: string;
-      syncRequestId?: string;
+      path?: string | undefined;
+      model?: string | undefined;
+      name?: string | undefined;
+      syncRequestId?: string | undefined;
     }
   | {
       command: "getDistinctColumnValues";
       /** Absent or `null` before the panel has loaded a model. */
-      model?: string | null;
+      model?: string | null | undefined;
       column: string;
-      syncRequestId?: string;
+      syncRequestId?: string | undefined;
     }
   | {
       command: "getColumnsOfSources";
       source: string;
       table: string;
-      syncRequestId?: string;
+      syncRequestId?: string | undefined;
     }
-  | { command: "getColumnsOfModel"; model: string; syncRequestId?: string }
-  | { command: "getSourcesInProject"; syncRequestId?: string }
-  | { command: "getModelsInProject"; syncRequestId?: string }
-  | { command: "fetchMetadataFromDatabase"; syncRequestId?: string }
+  | {
+      command: "getColumnsOfModel";
+      model: string;
+      syncRequestId?: string | undefined;
+    }
+  | { command: "getSourcesInProject"; syncRequestId?: string | undefined }
+  | { command: "getModelsInProject"; syncRequestId?: string | undefined }
+  | { command: "fetchMetadataFromDatabase"; syncRequestId?: string | undefined }
   /** `updatedTests` is the panel's test metadata for the model and its columns. */
   | (Documentation & {
       command: "saveDocumentation";
-      updatedTests?: unknown;
-      dialogType?: SaveDialog;
-      syncRequestId?: string;
+      updatedTests?: unknown | undefined;
+      dialogType?: SaveDialog | undefined;
+      syncRequestId?: string | undefined;
     });
 
 const isColumn = shape<DocumentationColumn>({

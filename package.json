@@ -857,7 +857,7 @@
     "build:dev:app": "rsbuild build --mode development",
     "watch:extension": "npm run build:contract && concurrently --names contract,extension \"npm run watch:contract\" \"npm run watch:extension:app\"",
     "watch:extension:app": "rsbuild build --mode development --watch",
-    "compile": "tsc -b",
+    "compile": "tsc -b && tsc -p src/test/tsconfig.json",
     "compile:integration": "npm run build:contract && tsc -p tsconfig.integration.json",
     "clean": "node -e \"for (const d of ['out','coverage','dist']) require('fs').rmSync(d,{recursive:true,force:true})\"",
     "format": "prettier --write \"**/*.{js,cjs,mjs,ts,tsx,css,html,json}\"",

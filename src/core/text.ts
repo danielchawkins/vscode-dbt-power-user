@@ -43,5 +43,7 @@ export function removeProtocol(input: string): string {
  * "dbt build --select model" → "build"
  */
 export function extractDbtSubcommand(command: string): string {
-  return command.startsWith("dbt ") ? command.split(" ")[1] : command;
+  return command.startsWith("dbt ")
+    ? (command.split(" ")[1] ?? command)
+    : command;
 }

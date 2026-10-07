@@ -7,8 +7,8 @@ import { vscode } from "@modules/vscode";
  */
 interface DocumentationEditorViewState {
   panel: "documentationEditor";
-  publication?: string;
-  model?: string;
+  publication?: string | undefined;
+  model?: string | undefined;
   scrollTop: number;
   searchQuery: string;
 }
@@ -16,7 +16,7 @@ interface DocumentationEditorViewState {
 /** View state the query results panel restores; `tabState` is the active title tab. */
 interface QueryResultsViewState {
   panel: "queryResults";
-  publication?: string;
+  publication?: string | undefined;
   tabState: number;
 }
 
@@ -27,12 +27,12 @@ interface QueryResultsViewState {
  */
 export interface LineageViewState {
   panel: "lineage";
-  publication?: string;
-  start?: string;
+  publication?: string | undefined;
+  start?: string | undefined;
   expansions: string[];
   columnTables: string[];
-  selectedTable?: string;
-  selectedColumn?: string[];
+  selectedTable?: string | undefined;
+  selectedColumn?: string[] | undefined;
 }
 
 /** What a panel may write through `vscode.setState`: view state only. */
@@ -114,7 +114,7 @@ export const isViewState = <P extends PanelName>(
     ([key, field]) =>
       key === "panel" ||
       field === undefined ||
-      (key in fields && fitsKind(fields[key], field)),
+      (fields[key] && fitsKind(fields[key], field)),
   );
 };
 

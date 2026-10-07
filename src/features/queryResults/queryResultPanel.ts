@@ -24,7 +24,6 @@ import {
   notifyError,
   notifyErrorWithoutProject,
 } from "../../projects/notifications";
-import { activeModelUri } from "../../projects/previewUri";
 import { QueryManifestService } from "../../projects/queryManifestService";
 import {
   SharedStateEventEmitterProps,
@@ -42,6 +41,7 @@ import { executeActiveEditorQuery } from "./activeEditorQuery";
 import { PanelReplay } from "./panelReplay";
 import { QueryHistoryStore } from "./queryHistory";
 import {
+  activeEditorContext,
   failureOf,
   openSqlInEditor,
   recordResult,
@@ -71,7 +71,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   private _queryTabData: unknown;
   private _bottomPanel: WebviewView | undefined;
 
-  private queryExecution?: QueryExecution;
+  private queryExecution: QueryExecution | undefined;
   private pendingMessages: HostMessage[] = [];
   private _replay?: PanelReplay<Page>;
 
@@ -124,10 +124,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
       command: "getContext",
       limit,
       perspectiveTheme,
-      activeEditor: {
-        query: editor?.document.getText(),
-        filepath: editor && activeModelUri(editor.document.uri).fsPath,
-      },
+      activeEditor: activeEditorContext(editor),
       publication: publicationId(this.queryManifestService.manifestFor()),
     });
   }

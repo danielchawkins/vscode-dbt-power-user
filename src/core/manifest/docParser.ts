@@ -46,7 +46,7 @@ export class DocParser {
         const docFile: string = readFileSync(fullPath).toString("utf8");
         const macroFileLines = docFile.split("\n");
         for (let index = 0; index < macroFileLines.length; index++) {
-          const currentLine = macroFileLines[index];
+          const currentLine = macroFileLines[index] ?? "";
           if (currentLine.match(new RegExp(`docs\\s${name}`))) {
             docMetaMap.set(docName, {
               path: fullPath,

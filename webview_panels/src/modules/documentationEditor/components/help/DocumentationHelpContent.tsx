@@ -5,7 +5,7 @@ import { Alert, Button, Stack } from "@uicore";
 const DocumentationHelpContent = ({
   showMissingDocumentationMessage,
 }: {
-  showMissingDocumentationMessage?: boolean;
+  showMissingDocumentationMessage?: boolean | undefined;
 }): JSX.Element => {
   const {
     state: { missingDocumentationMessage },

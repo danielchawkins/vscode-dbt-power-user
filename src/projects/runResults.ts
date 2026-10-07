@@ -89,7 +89,7 @@ export function selectionFromCliArgs(args: readonly string[]): CliSelection {
     const [flag, inline] = arg.split(/=(.*)/s, 2);
     if (flag === "--full-refresh") {
       selection.fullRefresh = true;
-    } else if (isSelectionFlag(flag)) {
+    } else if (flag !== undefined && isSelectionFlag(flag)) {
       list = selection[SELECTION_FLAGS[flag]];
       if (inline !== undefined) {
         list.push(inline);
@@ -194,7 +194,7 @@ export function parseRunResultsJson(
         uniqueId: entry.unique_id,
         status: resolveRunStatus(entry.status),
         executionTime: entry.execution_time ?? null,
-        message: entry.message,
+        ...(entry.message !== undefined && { message: entry.message }),
         resourceType: entry.unique_id.split(
           ".",
         )[0] as RunResultsEventData["results"][0]["resourceType"],

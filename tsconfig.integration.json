@@ -6,7 +6,9 @@
     "outDir": "out",
     "noEmit": false,
     "tsBuildInfoFile": null,
-    "rootDir": "src"
+    "rootDir": "src",
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false
   },
   "include": ["src/**/*"],
   "exclude": [

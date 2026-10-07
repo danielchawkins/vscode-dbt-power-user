@@ -1,7 +1,8 @@
 import { queryResults } from "@fusion-power-user/webview-contract";
-import { window, workspace } from "vscode";
+import { TextEditor, window, workspace } from "vscode";
 import { ExecuteSQLError } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
+import { activeModelUri } from "../../projects/previewUri";
 import type { QueryManifestService } from "../../projects/queryManifestService";
 import { writeSetting } from "../../settings";
 import type { QueryHistoryStore } from "./queryHistory";
@@ -89,7 +90,7 @@ export async function resolveQueryProject(
 /** Runs a query from history or bookmarks on the query panel, with its own row limit when it has one. */
 export async function runOnQueryPanel(
   project: QueryPanelProject,
-  message: { query: string; limit?: number },
+  message: { query: string; limit?: number | undefined },
 ): Promise<void> {
   if (message.limit) {
     await project.executeSQLWithLimitOnQueryPanel(
@@ -142,4 +143,16 @@ export function recordResult(
     columnTypes: run.result.columnTypes,
     modelName: run.modelName,
   });
+}
+
+/** The active editor's query and file, or none when no editor is open. */
+export function activeEditorContext(
+  editor: TextEditor | undefined,
+): queryResults.QueryContext["activeEditor"] {
+  return editor
+    ? {
+        query: editor.document.getText(),
+        filepath: activeModelUri(editor.document.uri).fsPath,
+      }
+    : {};
 }

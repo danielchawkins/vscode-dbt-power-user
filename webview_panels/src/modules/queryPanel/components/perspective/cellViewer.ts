@@ -6,7 +6,7 @@ import OpenIcon from "./openIcon.svg?raw";
 /** The part of a `regular-table` body cell's metadata the cell viewer reads. */
 interface CellMeta {
   type: string;
-  x?: number;
+  x?: number | undefined;
   value: unknown;
   column_header: unknown[];
 }

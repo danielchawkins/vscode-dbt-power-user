@@ -45,14 +45,15 @@ const useTestFormSave = (): {
         test.test_metadata?.name === type &&
         test.test_metadata.kwargs.column_name === column,
     );
-    if (currentIndex > -1) {
+    const existing = temp[currentIndex];
+    if (existing) {
       temp[currentIndex] = {
-        ...temp[currentIndex],
+        ...existing,
         test_metadata: {
-          ...temp[currentIndex].test_metadata,
-          name: temp[currentIndex].test_metadata?.name ?? "",
+          ...existing.test_metadata,
+          name: existing.test_metadata?.name ?? "",
           kwargs: {
-            ...temp[currentIndex].test_metadata!.kwargs,
+            ...existing.test_metadata?.kwargs,
             ...data,
           },
         },
@@ -89,9 +90,9 @@ const useTestFormSave = (): {
           kwargs: {
             column_name: column,
             model: currentDocsData?.name ?? "",
-            values: newValues,
-            to: data.to ?? undefined,
-            field: data.field,
+            ...(newValues && { values: newValues }),
+            ...(data.to && { to: data.to }),
+            ...(data.field && { field: data.field }),
           },
         },
       });

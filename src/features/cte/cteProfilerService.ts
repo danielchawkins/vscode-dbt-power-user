@@ -174,12 +174,8 @@ export class CteProfilerService implements Disposable {
       if (result.status === "running") {
         result.status = "complete";
       }
-      result.totalTimeMs =
-        cteEntries.length > 0
-          ? cteEntries[cteEntries.length - 1].queryTimeMs
-          : 0;
-      result.totalRows =
-        cteEntries.length > 0 ? cteEntries[cteEntries.length - 1].rowCount : 0;
+      result.totalTimeMs = cteEntries.at(-1)?.queryTimeMs ?? 0;
+      result.totalRows = cteEntries.at(-1)?.rowCount ?? 0;
 
       this.results.set(uri.toString(), result);
       this._onResultChanged.fire(result);
@@ -223,7 +219,7 @@ export class CteProfilerService implements Disposable {
     // fold the alias according to their dialect's identifier rules — Snowflake
     // and Oracle uppercase unquoted aliases, so a lowercase key lookup
     // misses the row and the profiler reports 0 for every CTE.
-    const count = Object.values(data[0])[0];
+    const count = Object.values(data[0] ?? {})[0];
     return typeof count === "number" ? count : Number(count) || 0;
   }
 
@@ -254,7 +250,7 @@ export class CteProfilerService implements Disposable {
   private extractModelName(uri: Uri): string {
     const path = uri.fsPath;
     const parts = path.split(/[/\\]/);
-    const fileName = parts[parts.length - 1];
+    const fileName = parts[parts.length - 1] ?? "";
     return fileName.replace(/\.sql$/i, "");
   }
 }

@@ -2,12 +2,12 @@ import { ButtonHTMLAttributes, ReactNode, useState } from "react";
 import { ButtonColor, buttonClassName } from "../../classNames";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  color?: ButtonColor;
+  color?: ButtonColor | undefined;
   /** A border in the color instead of a fill. */
-  outline?: boolean;
+  outline?: boolean | undefined;
   /** With an icon, the label shows only on hover unless `showTextAlways` is set. */
-  icon?: ReactNode;
-  showTextAlways?: boolean;
+  icon?: ReactNode | undefined;
+  showTextAlways?: boolean | undefined;
 }
 
 export const Button = ({

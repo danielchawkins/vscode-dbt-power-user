@@ -27,14 +27,14 @@ import {
 interface Request<C extends string, P> {
   command: C;
   args: { params: P };
-  syncRequestId?: string;
+  syncRequestId?: string | undefined;
 }
 
 /** A request whose `args` and `params` may be absent. */
 interface OptionalRequest<C extends string, P = Record<never, never>> {
   command: C;
-  args?: { params?: P };
-  syncRequestId?: string;
+  args?: { params?: P | undefined } | undefined;
+  syncRequestId?: string | undefined;
 }
 
 /** A table as `render`, `childTables` and `parentTables` carry it. */
@@ -42,35 +42,39 @@ export interface LineageTable {
   /** The node's unique ID. */
   table: string;
   label: string;
-  url?: string;
+  url?: string | undefined;
   nodeType: string;
-  materialization?: string;
-  description?: string;
+  materialization?: string | undefined;
+  description?: string | undefined;
   /** Number of dbt children. */
   childCount: number;
   /** Number of dbt parents. */
   parentCount: number;
-  packageName?: string;
+  packageName?: string | undefined;
   /** The node's data tests; `raw_sql` is the test's SQL. */
-  tests: { key: string; raw_sql?: string; column_name?: string }[];
-  meta?: Record<string, unknown>;
+  tests: {
+    key: string;
+    raw_sql?: string | undefined;
+    column_name?: string | undefined;
+  }[];
+  meta?: Record<string, unknown> | undefined;
 }
 
 /** A column in the `getColumns` body. */
 export interface LineageColumn {
   table: string;
   name: string;
-  datatype?: string;
-  description?: string;
+  datatype?: string | undefined;
+  description?: string | undefined;
 }
 
 /** The `getColumns` body. */
 export interface TableColumns {
   id: string;
-  purpose?: string;
+  purpose?: string | undefined;
   columns: LineageColumn[];
   returns?: { datatype: string; description: string };
-  meta?: Record<string, unknown>;
+  meta?: Record<string, unknown> | undefined;
 }
 
 /** One column-level edge: `target` is computed from `source`; `indirect` when the source only filters or joins. */
@@ -78,18 +82,18 @@ export interface ColumnLineage {
   source: [table: string, column: string];
   target: [table: string, column: string];
   type: "direct" | "indirect";
-  viewsType?: string;
+  viewsType?: string | undefined;
 }
 
 /** The `getConnectedColumns` body; `errors` holds tooltip lines per table. */
 export interface ConnectedColumns {
   column_lineage: ColumnLineage[];
-  errors?: Record<string, string[]>;
+  errors?: Record<string, string[]> | undefined;
 }
 
 /** What the lineage renderer draws: tables, table edges as `[parent, child]`, and column edges among them. */
 export interface LineageData {
-  start?: string;
+  start?: string | undefined;
   tables: LineageTable[];
   edges: [parent: string, child: string][];
   columnEdges: ColumnLineage[];
@@ -97,16 +101,16 @@ export interface LineageData {
 
 /** What the lineage panel draws first; absent when no starting node resolves. */
 export interface RenderArgs {
-  node?: unknown;
-  missingLineageMessage?: PanelNotice;
+  node?: unknown | undefined;
+  missingLineageMessage?: PanelNotice | undefined;
   /** The Current Project's manifest publication; a restored view state applies only to the same one. */
-  publication?: string;
+  publication?: string | undefined;
 }
 
 /** Lineage messages from the extension host to the panel. */
 export type HostMessage =
   | Response
-  | { command: "render"; args?: RenderArgs }
+  | { command: "render"; args?: RenderArgs | undefined }
   /** The Current Project's manifest changed; the panel redraws, then sends `init`. */
   | { command: "projectSaved" };
 
@@ -120,8 +124,8 @@ export interface LineageRef {
   to: { table: string; columns: string[] };
   cardinality: string;
   source: RefSource;
-  label?: string;
-  confidence?: number;
+  label?: string | undefined;
+  confidence?: number | undefined;
 }
 
 /** The lineage component's view settings; `getLineageSettings` answers with them. */
@@ -130,11 +134,11 @@ export interface LineageSettings {
   showNonSelectEdges: boolean;
   defaultExpansion: number;
   /** The ERD overlay toggle; absent means on. */
-  showRefs?: boolean;
-  enabledRefSources?: Partial<Record<RefSource, boolean>>;
+  showRefs?: boolean | undefined;
+  enabledRefSources?: Partial<Record<RefSource, boolean>> | undefined;
   /** The inferred-relationship confidence floor, 0 to 1. */
-  inferenceConfidenceThreshold?: number;
-  includeSourcesInInference?: boolean;
+  inferenceConfidenceThreshold?: number | undefined;
+  includeSourcesInInference?: boolean | undefined;
 }
 
 /** The `getConnectedColumns` request; the host reads `targets` and `upstreamExpansion`. */
@@ -155,10 +159,13 @@ export type PanelMessage =
   | Request<"childTables", { table: string }>
   /** The tables `table` depends on (its dbt parents). */
   | Request<"parentTables", { table: string }>
-  | Request<"getColumns", { table: string; refresh?: boolean }>
+  | Request<"getColumns", { table: string; refresh?: boolean | undefined }>
   | Request<"getExposureDetails", { name: string }>
   | Request<"getFunctionDetails", { name: string }>
-  | OptionalRequest<"getRelationships", { includeSources?: boolean }>
+  | OptionalRequest<
+      "getRelationships",
+      { includeSources?: boolean | undefined }
+    >
   | Request<"getConnectedColumns", ConnectedColumnsParams>
   | OptionalRequest<"getLineageSettings">
   | Request<"persistLineageSettings", Partial<LineageSettings>>;
@@ -169,7 +176,9 @@ const request = <P>(params: Fields<NoInfer<P>>) => ({
 });
 
 const optionalRequest = <P>(params: Fields<NoInfer<P>>) => ({
-  args: optional(shape<{ params?: P }>({ params: optional(shape<P>(params)) })),
+  args: optional(
+    shape<{ params?: P | undefined }>({ params: optional(shape<P>(params)) }),
+  ),
   syncRequestId,
 });
 

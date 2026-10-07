@@ -85,7 +85,7 @@ export const NavLink = ({
   className,
   ...rest
 }: ButtonHTMLAttributes<HTMLButtonElement> & {
-  active?: boolean;
+  active?: boolean | undefined;
 }): JSX.Element => (
   <button
     {...rest}

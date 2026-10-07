@@ -258,7 +258,7 @@ export class DbtTestService {
     const key = _node.unique_id;
     return (graphMetaMap["tests"].get(key)?.nodes || [])
       .map((n) => {
-        const testKey = n.label.split(".")[0];
+        const testKey = n.label.split(".")[0] ?? "";
         const testData = testMetaMap.get(testKey);
 
         if (!testData) {
@@ -298,7 +298,7 @@ export class DbtTestService {
   }
 
   public async getUnitTestsForCurrentModel(): Promise<
-    { name: string; path?: string }[] | undefined
+    { name: string; path?: string | undefined }[] | undefined
   > {
     const eventResult = this.queryManifestService.getEventByCurrentProject();
     if (!eventResult?.currentDocument) {
@@ -314,7 +314,7 @@ export class DbtTestService {
 
   private getUnitTestsForModel(
     modelName: string,
-  ): { name: string; path?: string }[] {
+  ): { name: string; path?: string | undefined }[] {
     const eventResult = this.queryManifestService.getEventByCurrentProject();
     if (!eventResult?.event) {
       return [];

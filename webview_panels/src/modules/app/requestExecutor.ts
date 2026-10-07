@@ -29,7 +29,7 @@ export type Payload<M extends Message, C extends M["command"]> = M extends {
 /** Commands whose message accepts a `syncRequestId`, so the host answers them with a `response`. */
 type RequestCommand<M extends Message> = Extract<
   M,
-  { syncRequestId?: string }
+  { syncRequestId?: string | undefined }
 >["command"];
 
 /** `true` when some member of `P` has a required field. */

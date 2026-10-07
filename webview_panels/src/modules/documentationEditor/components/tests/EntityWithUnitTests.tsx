@@ -9,7 +9,7 @@ import UnitTestDetails from "./UnitTestDetails";
 
 interface Props {
   title: string;
-  unitTests?: DBTUnitTest[];
+  unitTests?: DBTUnitTest[] | undefined;
 }
 
 const MaxVisibleUnitTests = 3;

@@ -28,11 +28,11 @@ import {
 /** The panel's documentation of one model, as sent on save. */
 export interface SaveInput extends UpdatedTests {
   name: string;
-  description?: string | null;
+  description?: string | null | undefined;
   columns: {
     name: string;
-    description?: string | null;
-    type?: string | null;
+    description?: string | null | undefined;
+    type?: string | null | undefined;
   }[];
 }
 

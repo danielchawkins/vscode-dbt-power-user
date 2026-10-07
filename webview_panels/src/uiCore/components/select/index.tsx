@@ -21,7 +21,7 @@ export interface OptionType {
 }
 
 interface SelectExtraProps {
-  hideOptionIcon?: boolean;
+  hideOptionIcon?: boolean | undefined;
 }
 
 const IconOption = (
@@ -58,8 +58,8 @@ const IconOption = (
 };
 
 type Props = Parameters<typeof ReactSelect>[0] & {
-  isCreatable?: boolean;
-  hideOptionIcon?: boolean;
+  isCreatable?: boolean | undefined;
+  hideOptionIcon?: boolean | undefined;
 };
 const themeStyles: StylesConfig<OptionType> = {
   menu: (styles) => ({

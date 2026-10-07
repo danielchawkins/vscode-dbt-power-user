@@ -4,7 +4,7 @@ export enum Source {
 
 export interface MetadataColumn {
   name: string;
-  type?: string;
+  type?: string | undefined;
 }
 
 interface DBTDocumentationColumn extends MetadataColumn {

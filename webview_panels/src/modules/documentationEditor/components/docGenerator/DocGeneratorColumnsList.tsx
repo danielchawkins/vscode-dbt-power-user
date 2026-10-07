@@ -19,11 +19,10 @@ const DocGeneratorColumnsList = (): JSX.Element => {
           if (!columnTest.column_name) {
             return acc;
           }
-          acc[columnTest.column_name] = acc[columnTest.column_name] ?? [];
           return {
             ...acc,
             [columnTest.column_name]: [
-              ...acc[columnTest.column_name],
+              ...(acc[columnTest.column_name] ?? []),
               columnTest,
             ],
           };
@@ -62,7 +61,7 @@ const DocGeneratorColumnsList = (): JSX.Element => {
           <DocGeneratorColumn
             key={`${column.name}-${column.type}`}
             column={column}
-            tests={testsPerColumns[column.name]}
+            tests={testsPerColumns[column.name] ?? []}
           />
         ))}
       </Stack>

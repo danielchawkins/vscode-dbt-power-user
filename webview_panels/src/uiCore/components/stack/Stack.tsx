@@ -8,7 +8,7 @@ const Stack = forwardRef(function stack(
     ...rest
   }: {
     children: ReactNode;
-    direction?: "row" | "column";
+    direction?: "row" | "column" | undefined;
   } & HTMLAttributes<HTMLDivElement>,
   ref: ForwardedRef<HTMLDivElement>,
 ): JSX.Element {
