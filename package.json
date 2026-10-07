@@ -905,13 +905,13 @@
     "brace-expansion@<2.0.2": "^2.0.2",
     "minimatch@<9.0.7": "^9.0.7",
     "@babel/runtime": "^7.26.10",
-    "maplibre-gl": "^6.11.2"
+    "maplibre-gl": "^6.11.2",
+    "shell-quote": "^1.12.0",
+    "fast-glob": "file:./scripts/quality/fast-glob-shim"
   },
   "packageManager": "npm@11.19.0",
   "allowScripts": {
-    "@parcel/watcher@2.6.0": false,
     "@vscode/vsce-sign@2.1.0": true,
-    "es5-ext@0.10.64": false,
     "fsevents@2.3.3": false
   }
 }

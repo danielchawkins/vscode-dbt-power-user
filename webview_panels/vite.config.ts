@@ -1,5 +1,6 @@
 import react from "@vitejs/plugin-react";
 import { copyFileSync, existsSync, mkdirSync, readdirSync } from "fs";
+import { createRequire } from "module";
 import path from "path";
 import { defineConfig, type Plugin } from "vite";
 import svgr from "vite-plugin-svgr";
@@ -14,9 +15,8 @@ const panelEntries = Object.fromEntries(
 );
 
 function copyCodicons(): Plugin {
-  const srcDir = path.resolve(
-    import.meta.dirname,
-    "node_modules/@vscode/codicons/dist",
+  const srcDir = path.dirname(
+    createRequire(import.meta.url).resolve("@vscode/codicons/dist/codicon.css"),
   );
   let destDir: string;
 

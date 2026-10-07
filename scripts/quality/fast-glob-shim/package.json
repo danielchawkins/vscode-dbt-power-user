@@ -1,0 +1,7 @@
+{
+  "name": "fast-glob",
+  "version": "3.3.3",
+  "private": true,
+  "description": "Stand-in for fast-glob used by type-coverage-core; see index.cjs",
+  "main": "index.cjs"
+}
