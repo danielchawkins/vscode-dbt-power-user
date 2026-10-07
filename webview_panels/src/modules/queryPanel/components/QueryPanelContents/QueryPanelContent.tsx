@@ -2,8 +2,8 @@ import PreTag from "@modules/markdown/PreTag";
 import QueryPanelDefaultView from "@modules/queryPanel/QueryPanelDefaultView";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { CodeBlock } from "@uicore";
-import PerspectiveErrorBoundary from "../perspective/PerspectiveErrorBoundary";
-import PerspectiveViewer from "../perspective/PerspectiveViewer";
+import GridErrorBoundary from "../grid/GridErrorBoundary";
+import ResultsGrid from "../grid/ResultsGrid";
 import QueryPanelHistory from "../queryPanelQueryHistory/QueryPanelHistory";
 import QueryPanelError from "./QueryPanelError";
 import QueryPanelLoader from "./QueryPanelLoader";
@@ -37,13 +37,13 @@ const QueryPanelContent = ({
 
   if (queryResults) {
     return (
-      <PerspectiveErrorBoundary>
-        <PerspectiveViewer
+      <GridErrorBoundary>
+        <ResultsGrid
           data={queryResults.data}
           columnNames={queryResults.columnNames}
           columnTypes={queryResults.columnTypes}
         />
-      </PerspectiveErrorBoundary>
+      </GridErrorBoundary>
     );
   }
 

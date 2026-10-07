@@ -3,8 +3,8 @@ import {
   initialState,
   queryPanelReducer,
   resetData,
+  setLimit,
   setLoading,
-  setPerspectiveTheme,
   setQueryResults,
   setQueryResultsError,
 } from "./queryPanelReducer";
@@ -23,7 +23,7 @@ describe("queryPanelReducer", () => {
       setLoading(true),
       setQueryResults(results),
       setQueryResultsError({ message: "m", code: 1, data: "d" }),
-      setPerspectiveTheme("Pro Dark"),
+      setLimit(50),
     ].reduce(queryPanelReducer, initialState);
 
     const reset = queryPanelReducer(loaded, resetData());
@@ -31,7 +31,7 @@ describe("queryPanelReducer", () => {
     expect(reset.queryResults).toBeUndefined();
     expect(reset.queryResultsError).toBeUndefined();
     expect(reset.loading).toBe(false);
-    expect(reset.perspectiveTheme).toBe("Pro Dark");
+    expect(reset.limit).toBe(50);
   });
 
   it("stops loading when an error arrives", () => {
@@ -41,12 +41,5 @@ describe("queryPanelReducer", () => {
     );
     expect(state.loading).toBe(false);
     expect(state.queryResultsError?.message).toBe("m");
-  });
-
-  it("falls back to the Vintage theme when none is given", () => {
-    expect(
-      queryPanelReducer(initialState, setPerspectiveTheme(undefined))
-        .perspectiveTheme,
-    ).toBe("Vintage");
   });
 });

@@ -9,11 +9,8 @@ import type { QueryHistoryStore } from "./queryHistory";
 
 type PanelMessage = queryResults.PanelMessage;
 
-/** Perspective fetches and compiles its .wasm, runs its engine in a Blob worker and injects styles. */
+/** The drawer and the virtual rows set inline styles; the grid loads nothing beyond the entry's own assets. */
 export const QUERY_RESULTS_CSP = {
-  wasm: true,
-  connect: true,
-  blobWorkers: true,
   inlineStyles: true,
 };
 
@@ -49,16 +46,12 @@ export function failureOf(exc: unknown, query: string) {
   };
 }
 
-/** Saves the row limit and the Perspective theme the page changed. */
+/** Saves the row limit the page changed. */
 export function updateQueryConfig({
   limit,
-  perspectiveTheme,
 }: Extract<PanelMessage, { command: "updateConfig" }>) {
   if (limit !== undefined) {
     void writeSetting("query.limit", limit);
-  }
-  if (perspectiveTheme !== undefined) {
-    void writeSetting("queryResults.theme", perspectiveTheme);
   }
 }
 

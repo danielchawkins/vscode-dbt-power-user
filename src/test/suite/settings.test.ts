@@ -80,11 +80,11 @@ describe("settings", () => {
       .mockReturnValue({ update } as unknown as WorkspaceConfiguration);
 
     await writeSetting("query.limit", 100);
-    await writeSetting("queryResults.theme", undefined);
+    await writeSetting("query.limit", undefined);
 
     expect(getConfiguration).toHaveBeenCalledWith(CONFIGURATION_SECTION);
     expect(update).toHaveBeenNthCalledWith(1, "query.limit", 100);
-    expect(update).toHaveBeenNthCalledWith(2, "queryResults.theme", undefined);
+    expect(update).toHaveBeenNthCalledWith(2, "query.limit", undefined);
   });
 
   it("inspects each key of the user, default and workspace layers", () => {

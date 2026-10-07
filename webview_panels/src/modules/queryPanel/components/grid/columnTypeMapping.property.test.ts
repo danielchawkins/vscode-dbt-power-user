@@ -1,6 +1,6 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { buildPerspectiveTableInit } from "./columnTypeMapping";
+import { buildGridInit } from "./columnTypeMapping";
 
 const NUM_RUNS = 200;
 
@@ -52,11 +52,11 @@ const table = fc
     }),
   );
 
-describe("buildPerspectiveTableInit properties", () => {
+describe("buildGridInit properties", () => {
   it("keys the schema by every column name", () => {
     fc.assert(
       fc.property(table, ({ names, types, rows }) => {
-        const { schema } = buildPerspectiveTableInit(names, types, rows);
+        const { schema } = buildGridInit(names, types, rows);
         expect(Object.keys(schema).sort()).toEqual([...names].sort());
       }),
       { numRuns: NUM_RUNS },
@@ -66,7 +66,7 @@ describe("buildPerspectiveTableInit properties", () => {
   it("reports the result's column order exactly, whatever the names", () => {
     fc.assert(
       fc.property(table, ({ names, types, rows }) => {
-        const { columns } = buildPerspectiveTableInit(names, types, rows);
+        const { columns } = buildGridInit(names, types, rows);
         expect(columns).toEqual(names);
       }),
       { numRuns: NUM_RUNS },
@@ -76,7 +76,7 @@ describe("buildPerspectiveTableInit properties", () => {
   it("renders values of an unknown or absent type as text or null", () => {
     fc.assert(
       fc.property(table, ({ names, types, rows }) => {
-        const init = buildPerspectiveTableInit(names, types, rows);
+        const init = buildGridInit(names, types, rows);
         names.forEach((name, i) => {
           if (types[i] === "unrecognized" || types[i] == null) {
             for (const row of init.rows) {
@@ -94,7 +94,7 @@ describe("buildPerspectiveTableInit properties", () => {
   it("passes values of a numeric type through unchanged", () => {
     fc.assert(
       fc.property(table, ({ names, types, rows }) => {
-        const init = buildPerspectiveTableInit(names, types, rows);
+        const init = buildGridInit(names, types, rows);
         names.forEach((name, i) => {
           if (NUMERIC_TYPES.includes(types[i] as string)) {
             init.rows.forEach((row, r) => {

@@ -78,27 +78,13 @@ describe("contentSecurityPolicy", () => {
     );
   });
 
-  it("never allows eval or remote origins", () => {
-    const policy = contentSecurityPolicy("SRC", "N", {
-      wasm: true,
-      connect: true,
-      blobWorkers: true,
-    });
+  it("never allows eval, workers, fetches or remote origins", () => {
+    const policy = contentSecurityPolicy("SRC", "N", { inlineStyles: true });
     expect(policy).not.toContain("'unsafe-eval'");
+    expect(policy).not.toContain("'wasm-unsafe-eval'");
+    expect(policy).not.toContain("worker-src");
+    expect(policy).not.toContain("connect-src");
     expect(policy).not.toMatch(/https:(?!\/\/)|\*/);
-  });
-
-  it("adds only the allowances a panel declares", () => {
-    const policy = directives(
-      contentSecurityPolicy("SRC", "N", {
-        wasm: true,
-        connect: true,
-        blobWorkers: true,
-      }),
-    );
-    expect(policy.get("script-src")).toContain("'wasm-unsafe-eval'");
-    expect(policy.get("connect-src")).toEqual(["SRC"]);
-    expect(policy.get("worker-src")).toEqual(["blob:"]);
   });
 });
 

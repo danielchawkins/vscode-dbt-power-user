@@ -221,20 +221,6 @@
             "default": 500,
             "minimum": 1
           },
-          "fusionPowerUser.queryResults.theme": {
-            "type": "string",
-            "description": "Theme for perspective viewer in query results panel",
-            "default": "Vintage",
-            "enum": [
-              "Vintage",
-              "Pro Light",
-              "Pro Dark",
-              "Vaporwave",
-              "Solarized",
-              "Solarized Dark",
-              "Monokai"
-            ]
-          },
           "fusionPowerUser.generateModel.fileNameTemplate": {
             "type": "string",
             "enum": [
