@@ -42,6 +42,7 @@ just jj ...                                 # run jj, gating git push on just ch
 just package                                # build the VSIX
 just smoke                                  # package, then smoke that VSIX on both pinned hosts
 just smoke-visual [out]                     # smoke plus screenshot checkpoints under out/
+just smoke-docker [out]                     # the same smoke on both hosts in Linux containers, no windows
 just release                                # local dry run of the tag-triggered release
 just --list
 ```
@@ -110,6 +111,8 @@ Unit tests and the integration suite run from source. Anything that claims to sh
 ## Visual evidence
 
 For any change a user sees (panels, editor language, highlighting, lenses, menus), run `just smoke-visual` after `just package` and include the result in the review. Each checkpoint under `<out>/<host>/<fixture>/` is a workbench PNG plus a JSON record: `expect` (what should be visible), `measured` (text and state the test read at the same moment), and `notifications`. Open every PNG and confirm it agrees with its `measured` and `expect`; report any disagreement as a finding, since text alone missed a model opening as plain SQL and a legend covering the graph.
+
+`just smoke-docker` gives the same evidence without opening windows, while CI still smokes on macOS.
 
 ## Jujutsu
 

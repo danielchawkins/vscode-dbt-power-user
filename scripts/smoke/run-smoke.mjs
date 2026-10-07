@@ -106,9 +106,13 @@ const cdpPort =
   process.env.FPU_CDP_PORT ??
   String(await findAvailablePort(10_000 + (process.pid % 20_000)));
 
-const [cliPath, ...cliArgs] = resolveCliArgsFromVSCodeExecutablePath(hostApp, {
-  reuseMachineInstall: true,
-});
+// test-electron assumes Linux ships bin/code; Cursor's launcher is bin/cursor, beside the executable's name.
+const [cliPath, ...cliArgs] =
+  process.platform === "linux"
+    ? [path.join(path.dirname(hostApp), "bin", path.basename(hostApp))]
+    : resolveCliArgsFromVSCodeExecutablePath(hostApp, {
+        reuseMachineInstall: true,
+      });
 const install = spawnSync(
   cliPath,
   [
@@ -123,6 +127,9 @@ const install = spawnSync(
   ],
   { stdio: "inherit", encoding: "utf-8" },
 );
+if (install.error) {
+  console.error(`Could not run ${cliPath}: ${install.error.message}`);
+}
 if (install.status !== 0) {
   process.exit(install.status ?? 1);
 }

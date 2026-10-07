@@ -1,0 +1,6 @@
+*
+!scripts/smoke/pins.env
+!scripts/smoke/common.sh
+!scripts/smoke/fetch-host.sh
+!scripts/smoke/fetch-vscode.sh
+!scripts/smoke/fetch-cursor.sh
