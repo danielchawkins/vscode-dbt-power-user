@@ -136,9 +136,18 @@ const watchdog = setTimeout(() => {
   const ps = spawnSync("ps", ["-eo", "pid,ppid,pcpu,etime,command"], {
     encoding: "utf-8",
   });
+  // On Linux the host lives in its install directory (e.g. .../usr/share/cursor), not a .app bundle.
+  const bundle =
+    process.platform === "linux"
+      ? path.dirname(hostApp)
+      : hostApp.slice(0, hostApp.indexOf(".app") + 4);
   const hostLines = ps.stdout
     .split("\n")
-    .filter((line) => /Cursor|Code|dbt|Electron/.test(line));
+    .filter((line) =>
+      process.platform === "linux"
+        ? line.includes(bundle)
+        : /Cursor|Code|dbt|Electron/.test(line),
+    );
   out(hostLines.join("\n"));
   const logs = listLogs(path.join(userDataDir, "logs")).sort(
     (a, b) =>
@@ -152,7 +161,6 @@ const watchdog = setTimeout(() => {
   }
   // The busiest processes of the host under test are the likeliest to be spinning; native stacks name the
   // loop. Helper processes retitle themselves, so match the bundle path or a helper title.
-  const bundle = hostApp.slice(0, hostApp.indexOf(".app") + 4);
   const busiest = hostLines
     .filter(
       (line) => line.includes(bundle) || /(Cursor|Code) Helper/.test(line),

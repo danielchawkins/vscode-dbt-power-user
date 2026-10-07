@@ -2,18 +2,34 @@
 set -euo pipefail
 
 smoke_root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-cache_root=${FPU_HOST_CACHE:-${XDG_CACHE_HOME:-$HOME/Library/Caches}/fusion-power-user/hosts}
 
 # shellcheck disable=SC1091
 source "$smoke_root/pins.env"
 
-if [[ "$(uname -s)-$(uname -m)" != "Darwin-arm64" ]]; then
-  echo "Pinned host smoke requires Darwin arm64" >&2
-  exit 1
-fi
+# FPU_SMOKE_PLATFORM forces a platform so another OS can exercise fetch and verification only.
+case "${FPU_SMOKE_PLATFORM:-$(uname -s)-$(uname -m)}" in
+  Darwin-arm64 | darwin-arm64)
+    smoke_platform=darwin-arm64
+    cache_root=${FPU_HOST_CACHE:-${XDG_CACHE_HOME:-$HOME/Library/Caches}/fusion-power-user/hosts}
+    ;;
+  Linux-aarch64 | linux-arm64)
+    smoke_platform=linux-arm64
+    cache_root=${FPU_HOST_CACHE:-${XDG_CACHE_HOME:-$HOME/.cache}/fusion-power-user/hosts}
+    FPU_VSCODE_PLATFORM=$FPU_VSCODE_LINUX_PLATFORM
+    FPU_CURSOR_PLATFORM=$FPU_CURSOR_LINUX_PLATFORM
+    ;;
+  *)
+    echo "Pinned host smoke requires Darwin arm64 or Linux arm64" >&2
+    exit 1
+    ;;
+esac
 
 sha256_file() {
-  shasum -a 256 "$1" | awk '{print $1}'
+  if command -v shasum > /dev/null; then
+    shasum -a 256 "$1" | awk '{print $1}'
+  else
+    sha256sum "$1" | awk '{print $1}'
+  fi
 }
 
 verify_sha256() {
@@ -32,21 +48,55 @@ attach_dmg() {
 }
 
 vscode_app_dir() {
-  echo "$cache_root/vscode-${FPU_VSCODE_VERSION}-${FPU_VSCODE_PLATFORM}/Visual Studio Code.app"
+  if [[ "$smoke_platform" == linux-arm64 ]]; then
+    echo "$cache_root/vscode-${FPU_VSCODE_VERSION}-${FPU_VSCODE_PLATFORM}/VSCode-linux-arm64"
+  else
+    echo "$cache_root/vscode-${FPU_VSCODE_VERSION}-${FPU_VSCODE_PLATFORM}/Visual Studio Code.app"
+  fi
 }
 
 cursor_app_dir() {
-  echo "$cache_root/cursor-${FPU_CURSOR_VERSION}-${FPU_CURSOR_PLATFORM}/Cursor.app"
+  if [[ "$smoke_platform" == linux-arm64 ]]; then
+    echo "$cache_root/cursor-${FPU_CURSOR_VERSION}-${FPU_CURSOR_PLATFORM}/usr/share/cursor"
+  else
+    echo "$cache_root/cursor-${FPU_CURSOR_VERSION}-${FPU_CURSOR_PLATFORM}/Cursor.app"
+  fi
+}
+
+# The resources/app directory inside an app dir.
+app_resources_dir() {
+  if [[ "$smoke_platform" == linux-arm64 ]]; then
+    echo "$1/resources/app"
+  else
+    echo "$1/Contents/Resources/app"
+  fi
+}
+
+# The directory holding the CLI launchers; it sits beside resources/ on Linux, inside it on macOS.
+app_bin_dir() {
+  if [[ "$smoke_platform" == linux-arm64 ]]; then
+    echo "$1/bin"
+  else
+    echo "$1/Contents/Resources/app/bin"
+  fi
 }
 
 host_executable() {
   local host=$1
   case "$host" in
     vscode)
-      echo "$(vscode_app_dir)/Contents/MacOS/Electron"
+      if [[ "$smoke_platform" == linux-arm64 ]]; then
+        echo "$(vscode_app_dir)/code"
+      else
+        echo "$(vscode_app_dir)/Contents/MacOS/Electron"
+      fi
       ;;
     cursor)
-      echo "$(cursor_app_dir)/Contents/MacOS/Cursor"
+      if [[ "$smoke_platform" == linux-arm64 ]]; then
+        echo "$(cursor_app_dir)/cursor"
+      else
+        echo "$(cursor_app_dir)/Contents/MacOS/Cursor"
+      fi
       ;;
     *)
       echo "unknown host: $host" >&2
@@ -59,10 +109,10 @@ host_cli() {
   local host=$1
   case "$host" in
     vscode)
-      echo "$(vscode_app_dir)/Contents/Resources/app/bin/code"
+      echo "$(app_bin_dir "$(vscode_app_dir)")/code"
       ;;
     cursor)
-      echo "$(cursor_app_dir)/Contents/Resources/app/bin/cursor"
+      echo "$(app_bin_dir "$(cursor_app_dir)")/cursor"
       ;;
     *)
       echo "unknown host: $host" >&2
@@ -75,10 +125,10 @@ host_product_json() {
   local host=$1
   case "$host" in
     vscode)
-      echo "$(vscode_app_dir)/Contents/Resources/app/product.json"
+      echo "$(app_resources_dir "$(vscode_app_dir)")/product.json"
       ;;
     cursor)
-      echo "$(cursor_app_dir)/Contents/Resources/app/product.json"
+      echo "$(app_resources_dir "$(cursor_app_dir)")/product.json"
       ;;
   esac
 }
