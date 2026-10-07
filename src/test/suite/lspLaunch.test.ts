@@ -5,54 +5,32 @@ import { LspLaunch, toLspArgs, toLspLaunch } from "../../core/lsp";
 import {
   ProjectSnapshotInputs,
   ProjectSnapshotSettings,
-  resolveProjectSnapshot,
 } from "../../core/project";
+import {
+  baseInputs,
+  snapshotFolder,
+  snapshotWith,
+} from "../arbitraries/projectSnapshot";
 import { esmDirname } from "../esmDirname";
 
 const repositoryRoot = path.resolve(esmDirname(import.meta.url), "../../..");
-const folder = "/workspace/general";
-
-const noSettings: ProjectSnapshotSettings = {
-  dbtPath: undefined,
-  target: undefined,
-  profilesDir: undefined,
-  staticAnalysis: undefined,
-  lspCompiledOutput: undefined,
-  lintEnabled: undefined,
-  traceServer: undefined,
-  deferPerProject: undefined,
-  runParams: [],
-  buildParams: [],
-  testParams: [],
-};
+const folder = baseInputs.root;
 
 const launchFor = (
   settings: Partial<ProjectSnapshotSettings>,
   rest: Partial<ProjectSnapshotInputs> = {},
 ): LspLaunch =>
-  toLspLaunch(
-    resolveProjectSnapshot({
-      root: folder,
-      folder,
-      firstWorkspaceFolder: folder,
-      userHome: "/home/test",
-      environment: {},
-      lspCompiledOutputOverride: undefined,
-      projectFile: { kind: "missing", config: {} },
-      ...rest,
-      settings: { ...noSettings, ...settings },
-    }),
-  );
+  toLspLaunch(snapshotWith(settings, { environment: {}, ...rest }));
 
 const run = {
   port: 4242,
   commandPrefix: "fusionPowerUser:abc:",
-  projectDir: "/workspace/general",
+  projectDir: folder,
 };
 
 const launch = (overrides: Partial<LspLaunch> = {}): LspLaunch => ({
   executable: { source: "path" },
-  projectDir: "/workspace/general",
+  projectDir: folder,
   target: undefined,
   profilesDir: undefined,
   staticAnalysis: "project",
@@ -80,7 +58,7 @@ describe("toLspArgs", () => {
       "--socket",
       "4242",
       "--project-dir",
-      "/workspace/general",
+      folder,
       "--lint-enabled",
       "false",
       "--static-analysis",
@@ -175,7 +153,7 @@ describe("toLspLaunch", () => {
         { profilesDir: "${env:FUSION_PROFILES}" },
         { environment: { FUSION_PROFILES: "profiles" } },
       ).profilesDir,
-    ).toBe(path.resolve(folder, "profiles"));
+    ).toBe(path.resolve(snapshotFolder, "profiles"));
   });
 
   it.each([

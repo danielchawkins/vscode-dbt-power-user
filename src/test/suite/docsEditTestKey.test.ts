@@ -18,21 +18,13 @@ import {
 } from "../../features/docs/docsTestData";
 import { createMockTextDocument, type WorkspaceEdit } from "../mock/vscode";
 
-type TestData = { tests?: unknown[]; data_tests?: unknown[] } | undefined;
-
-interface TestKeyPanel {
-  getTestDataByModel(
-    message: unknown,
-    modelName: string,
-    existingModel?: unknown,
-  ): TestData;
-  getTestDataByColumn(
-    message: unknown,
-    column: string,
-    existingColumn?: unknown,
-  ): TestData;
-  saveDocumentation(message: unknown, syncRequestId: string): Promise<void>;
-}
+const deps = {
+  terminal: { debug: vi.fn(), error: vi.fn() },
+  dbtTestService: Object.create(DbtTestService.prototype),
+} as never as {
+  terminal: never;
+  dbtTestService: never;
+};
 
 const modelTest = {
   test_metadata: { name: "unique_combo", kwargs: { model: "orders" } },
@@ -42,35 +34,18 @@ const columnTest = {
   test_metadata: { name: "not_null", kwargs: { column_name: "id" } },
 };
 
-function testKeyPanel(panelClass: typeof DocsEditViewPanel): TestKeyPanel {
+/** A panel for the project at `root`, built without its constructor's collaborators. */
+function savePanel(root: string): SavePanel {
   const project = {
-    projectRoot: Uri.file("/project"),
+    projectRoot: Uri.file(root),
     getAdapterType: () => "duckdb",
   };
-  const instance = Object.create(panelClass.prototype);
-  instance.dbtTestService = Object.create(DbtTestService.prototype);
-  instance.dbtTerminal = { debug: vi.fn(), error: vi.fn() };
-  instance.projects = { get: () => project };
-  instance.getProject = () => project;
-  instance.getTestDataByModel = (
-    message: never,
-    modelName: string,
-    existingModel?: never,
-  ) =>
-    getTestDataByModel(message, modelName, existingModel, {
-      terminal: instance.dbtTerminal,
-      dbtTestService: instance.dbtTestService,
-    });
-  instance.getTestDataByColumn = (
-    message: never,
-    column: string,
-    existingColumn?: never,
-  ) =>
-    getTestDataByColumn(message, column, existingColumn, {
-      terminal: instance.dbtTerminal,
-      dbtTestService: instance.dbtTestService,
-    });
-  return instance as TestKeyPanel;
+  return Object.assign(Object.create(DocsEditViewPanel.prototype), {
+    dbtTestService: deps.dbtTestService,
+    dbtTerminal: deps.terminal,
+    projects: { get: () => project },
+    getProject: () => project,
+  });
 }
 
 /** The text after `edit`'s single replacement; the mock document reports offsets as the character of line 0. */
@@ -84,41 +59,34 @@ function applied(edit: WorkspaceEdit, before: string): string {
 }
 
 describe("docs editor test key", () => {
-  let panel: TestKeyPanel;
-
-  beforeEach(() => {
-    panel = testKeyPanel(DocsEditViewPanel);
-  });
+  const model = (message: object, existing?: object) =>
+    getTestDataByModel(message, "orders", existing, deps);
+  const column = (message: object, existing?: object) =>
+    getTestDataByColumn(message, "id", existing, deps);
 
   it("writes data_tests for a model whose YAML has no tests key", () => {
     const message = { updatedTests: [modelTest] };
-    expect(panel.getTestDataByModel(message, "orders", {})).toEqual({
-      data_tests: ["unique_combo"],
-    });
-    expect(panel.getTestDataByModel(message, "orders")).toEqual({
-      data_tests: ["unique_combo"],
-    });
+    expect(model(message, {})).toEqual({ data_tests: ["unique_combo"] });
+    expect(model(message)).toEqual({ data_tests: ["unique_combo"] });
   });
 
   it("keeps tests for a model whose YAML already uses tests", () => {
     const message = { updatedTests: [modelTest] };
-    expect(panel.getTestDataByModel(message, "orders", { tests: [] })).toEqual({
-      tests: ["unique_combo"],
-    });
+    expect(model(message, { tests: [] })).toEqual({ tests: ["unique_combo"] });
   });
 
   it("writes data_tests for an existing column without a tests key", () => {
     const message = { updatedTests: [columnTest] };
-    expect(panel.getTestDataByColumn(message, "id", { name: "id" })).toEqual({
+    expect(column(message, { name: "id" })).toEqual({
       data_tests: ["not_null"],
     });
   });
 
   it("keeps tests for a column whose YAML already uses tests", () => {
     const message = { updatedTests: [columnTest] };
-    expect(
-      panel.getTestDataByColumn(message, "id", { name: "id", tests: [] }),
-    ).toEqual({ tests: ["not_null"] });
+    expect(column(message, { name: "id", tests: [] })).toEqual({
+      tests: ["not_null"],
+    });
   });
 });
 
@@ -136,17 +104,7 @@ describe("docs editor save", () => {
       createMockTextDocument(schemaYaml) as never,
     );
     vi.mocked(workspace.applyEdit).mockClear();
-    const instance = testKeyPanel(DocsEditViewPanel) as unknown as {
-      projects: unknown;
-      getProject: unknown;
-    };
-    const project = {
-      projectRoot: Uri.file(root),
-      getAdapterType: () => "duckdb",
-    };
-    instance.projects = { get: () => project };
-    instance.getProject = () => project;
-    panel = instance as unknown as SavePanel;
+    panel = savePanel(root);
   });
 
   afterEach(() => rmSync(root, { recursive: true, force: true }));

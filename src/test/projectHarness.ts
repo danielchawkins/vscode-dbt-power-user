@@ -1,8 +1,22 @@
+import * as fs from "fs";
+import * as os from "os";
+import * as path from "path";
 import { vi } from "vitest";
-import { Uri, type WorkspaceFolder } from "vscode";
-import type { Log } from "../core/log";
-import { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
 import {
+  type ConfigurationChangeEvent,
+  Uri,
+  type WorkspaceFolder,
+  workspace,
+} from "vscode";
+import type { Log } from "../core/log";
+import type {
+  CommandProcessExecution,
+  CommandProcessExecutionFactory,
+} from "../fusion/commandProcessExecution";
+import { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
+import type { FusionCli } from "../fusion/fusionCli";
+import {
+  DBT_PATH_SETTING,
   FusionExecutable,
   FusionExecutableResolver,
 } from "../fusion/fusionExecutable";
@@ -11,6 +25,8 @@ import { Project, ProjectOptions } from "../projects/project";
 import type { DeclaredProject } from "../projects/projectRegistry";
 import { RunHistoryService } from "../projects/runHistoryService";
 import { SharedStateService } from "../projects/sharedStateService";
+import { CONFIGURATION_SECTION } from "../settings";
+import { silentLog } from "./testLog";
 
 /** A Fusion 2.0.6 executable at `executablePath`. */
 export function sampleExecutable(
@@ -68,4 +84,122 @@ export function declaredProject(
     contains: () => false,
     dispose: () => {},
   };
+}
+
+/** What an executable resolver may answer. */
+export type Verdict =
+  FusionExecutable | { kind: "notFound"; path: string; source: "configured" };
+
+/** A resolver verdict for a configured `dbt` path that does not exist. */
+export function notFound(missingPath: string): Verdict {
+  return { kind: "notFound", path: missingPath, source: "configured" };
+}
+
+/** A configuration change that affects only `dbtPath` in the workspace folder at `root`. */
+function pathChangeEvent(root: string): ConfigurationChangeEvent {
+  return {
+    affectsConfiguration: (section: string, scope?: Uri) =>
+      section === `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}` &&
+      scope?.fsPath === root,
+  };
+}
+
+/**
+ * Captures configuration listeners so a test can fire scoped `dbtPath` changes. Call it in `beforeEach`; the spy
+ * goes away with `vi.restoreAllMocks()`.
+ */
+export function captureConfigChanges(): { changePath(root: string): void } {
+  const listeners: Array<(event: ConfigurationChangeEvent) => void> = [];
+  vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(
+    (listener) => {
+      listeners.push(listener as (event: ConfigurationChangeEvent) => void);
+      return { dispose: vi.fn() };
+    },
+  );
+  return {
+    changePath: (root) =>
+      listeners.forEach((listener) => listener(pathChangeEvent(root))),
+  };
+}
+
+const projectRoots: string[] = [];
+const projects: Project[] = [];
+
+/** A temporary dbt project root. `cleanUpProjects()` removes it. */
+export function createProjectRoot(prefix: string): string {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), `fusion-${prefix}-`));
+  for (const dir of ["models", "macros", "seeds"]) {
+    fs.mkdirSync(path.join(root, dir), { recursive: true });
+  }
+  fs.writeFileSync(
+    path.join(root, "dbt_project.yml"),
+    "name: cli_test\nversion: 1.0.0\n",
+  );
+  projectRoots.push(root);
+  return root;
+}
+
+/** Disposes every project from `buildIntegration` and removes every root from `createProjectRoot`. */
+export async function cleanUpProjects(): Promise<void> {
+  await Promise.all(projects.splice(0).map((project) => project.dispose()));
+  for (const root of projectRoots.splice(0)) {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+/** A command execution factory that records each call's options and completes with exit code 0. */
+export function recordingExecutionFactory(): {
+  factory: CommandProcessExecutionFactory;
+  calls: Array<Record<string, unknown>>;
+} {
+  const calls: Array<Record<string, unknown>> = [];
+  const execution = {
+    complete: vi.fn(async () => ({ stdout: "", stderr: "", exitCode: 0 })),
+    dispose: vi.fn(),
+  } as unknown as CommandProcessExecution;
+  const factory = {
+    createCommandProcessExecution: vi.fn((options: Record<string, unknown>) => {
+      calls.push(options);
+      return execution;
+    }),
+  } as unknown as CommandProcessExecutionFactory;
+  return { factory, calls };
+}
+
+/** An inert `FusionCli` for the project at `root`; `hooks` replaces any member. */
+export function stubFusionCli(
+  root: string,
+  hooks: Partial<FusionCli> = {},
+): FusionCli {
+  const stub: Partial<FusionCli> = {
+    refreshProjectConfig: vi.fn(async () => undefined),
+    rebuildManifest: vi.fn(async () => undefined),
+    dispose: vi.fn(),
+    getDiagnostics: () => ({
+      projectConfigDiagnostics: [],
+      rebuildManifestDiagnostics: [],
+    }),
+    getProjectName: () => "cli_test",
+    getModelPaths: () => [path.join(root, "models")],
+    getMacroPaths: () => [path.join(root, "macros")],
+    getSeedPaths: () => [path.join(root, "seeds")],
+    getTargetPath: () => path.join(root, "target"),
+    run: vi.fn(async () => ({ stdout: "", stderr: "", fullOutput: "" })),
+    ...hooks,
+  };
+  return stub as FusionCli;
+}
+
+/** A `Project` at `root` whose resolver answers `resolve()`. `cleanUpProjects()` disposes it. */
+export function buildIntegration(
+  root: string,
+  resolve: () => Promise<Verdict>,
+  cliFactory: FusionCommandIntegrationFactory,
+): Project {
+  const project = buildTestProject(root, cliFactory, {
+    resolver: { resolve: vi.fn(async () => resolve()) },
+    terminal: silentLog(),
+  });
+  projects.push(project);
+  return project;
 }

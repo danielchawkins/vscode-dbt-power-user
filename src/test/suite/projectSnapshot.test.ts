@@ -1,49 +1,16 @@
 import * as path from "path";
 import { describe, expect, it } from "vitest";
 import {
-  ProjectSnapshotInputs,
-  ProjectSnapshotSettings,
   resolveProjectSnapshot,
   substituteVariables,
 } from "../../core/project";
+import {
+  baseInputs as base,
+  snapshotFolder as folder,
+  snapshotWith as withSettings,
+} from "../arbitraries/projectSnapshot";
 
-const folder = path.join("/", "ws");
-const first = path.join("/", "first");
-
-const noSettings: ProjectSnapshotSettings = {
-  dbtPath: undefined,
-  target: undefined,
-  profilesDir: undefined,
-  staticAnalysis: undefined,
-  lspCompiledOutput: undefined,
-  lintEnabled: undefined,
-  traceServer: undefined,
-  deferPerProject: undefined,
-  runParams: [],
-  buildParams: [],
-  testParams: [],
-};
-
-const base: ProjectSnapshotInputs = {
-  root: path.join(folder, "proj"),
-  folder,
-  firstWorkspaceFolder: first,
-  userHome: path.join("/", "home", "u"),
-  environment: { DBT_BIN: path.join("/", "opt", "dbt") },
-  lspCompiledOutputOverride: undefined,
-  settings: noSettings,
-  projectFile: { kind: "missing", config: {} },
-};
-
-const withSettings = (
-  settings: Partial<ProjectSnapshotSettings>,
-  rest: Partial<ProjectSnapshotInputs> = {},
-) =>
-  resolveProjectSnapshot({
-    ...base,
-    ...rest,
-    settings: { ...noSettings, ...settings },
-  });
+const first = base.firstWorkspaceFolder;
 
 describe("resolveProjectSnapshot", () => {
   it("uses dbt's standard layout and PATH lookup when nothing is configured", () => {

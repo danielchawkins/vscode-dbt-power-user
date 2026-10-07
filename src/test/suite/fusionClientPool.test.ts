@@ -99,6 +99,7 @@ describe("FusionClientPool", () => {
   let configListener: ((event: ConfigurationChangeEvent) => void) | undefined;
   let settings: Record<string, unknown>;
   let channels: Map<string, LogOutputChannel>;
+  let pools: FusionClientPoolImpl[];
 
   /** One channel per Declared Project root, as `OutputChannels.projectLog` keeps one per Declared Project. */
   function channelFor(project: DeclaredProject): LogOutputChannel {
@@ -127,9 +128,14 @@ describe("FusionClientPool", () => {
   beforeEach(() => {
     terminal = { warn: vi.fn(), error: vi.fn() };
     channels = new Map();
+    pools = [];
     registry = new FakeRegistry();
     resolver = {
-      resolve: vi.fn(),
+      resolve: vi.fn().mockResolvedValue({
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
+        env: {},
+      }),
     };
     factory = {
       create: vi.fn(
@@ -150,20 +156,41 @@ describe("FusionClientPool", () => {
     } as any);
   });
 
-  afterEach(() => {
+  afterEach(async () => {
+    await Promise.all(pools.splice(0).map((pool) => pool.stop()));
     vi.mocked(workspace.onDidChangeConfiguration).mockRestore();
     vi.mocked(workspace.getConfiguration).mockRestore();
   });
 
   function createPool(): FusionClientPoolImpl {
-    return new FusionClientPoolImpl(
+    const pool = new FusionClientPoolImpl(
       registry as unknown as ProjectRegistry,
       terminal as any,
       resolver,
       factory,
       { readSnapshot: readProjectSnapshot, outputChannel: channelFor },
     );
+    pools.push(pool);
+    return pool;
   }
+
+  /** Initializes a pool over `projects` and returns it with each project's first client. */
+  async function startPool(...projects: DeclaredProject[]) {
+    const pool = createPool();
+    pool.initialize();
+    registry.setProjects(projects);
+    await flushAsync();
+    return { pool, clients: projects.map((p) => pool.get(p) as FakeClient) };
+  }
+
+  /** `client` was disposed exactly once and the factory has now built `creates` clients in all. */
+  function expectRestarted(client: FakeClient, creates: number): void {
+    expect(client.dispose).toHaveBeenCalledTimes(1);
+    expect(factory.create).toHaveBeenCalledTimes(creates);
+  }
+
+  /** The options of the factory's latest `create` call. */
+  const lastCreate = () => factory.create.mock.calls.at(-1)?.[0];
 
   it("does not create clients before initialize", async () => {
     const pool = createPool();
@@ -175,19 +202,11 @@ describe("FusionClientPool", () => {
   });
 
   it("reconciles one client per declared project with stable identity", async () => {
-    const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
-
     const project = makeProject("general", "/workspace/general");
-    pool.initialize();
-    registry.setProjects([project]);
-    await flushAsync();
-
-    const first = pool.get(project);
+    const {
+      pool,
+      clients: [first],
+    } = await startPool(project);
     expect(first).toBeDefined();
     expect(factory.create).toHaveBeenCalledTimes(1);
 
@@ -196,7 +215,6 @@ describe("FusionClientPool", () => {
 
     expect(pool.get(project)).toBe(first);
     expect(factory.create).toHaveBeenCalledTimes(1);
-    await pool.stop();
   });
 
   it("clears pool.get before awaiting client stop on removal", async () => {
@@ -392,74 +410,39 @@ describe("FusionClientPool", () => {
   });
 
   it("replaces the client when the project object at the same root changes", async () => {
-    const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
-
     const firstProject = makeProject("general", "/workspace/general");
     const replacement = makeProject("general-renamed", "/workspace/general");
-
-    pool.initialize();
-    registry.setProjects([firstProject]);
-    await flushAsync();
-    const firstClient = pool.get(firstProject)! as FakeClient;
+    const { pool, clients } = await startPool(firstProject);
+    const [firstClient] = clients;
 
     registry.setProjects([replacement]);
     await flushAsync();
 
-    expect(firstClient.dispose).toHaveBeenCalled();
     expect(firstClient.stop).toHaveBeenCalled();
     expect(pool.get(replacement)).not.toBe(firstClient);
-    expect(factory.create).toHaveBeenCalledTimes(2);
-    await pool.stop();
+    expectRestarted(firstClient, 2);
   });
 
   it("replaces only the affected project on launch configuration changes", async () => {
-    const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
-
     const general = makeProject("general", "/workspace/general");
     const sox = makeProject("sox", "/workspace/sox");
-
-    pool.initialize();
-    registry.setProjects([general, sox]);
-    await flushAsync();
-
-    const generalClient = pool.get(general)! as FakeClient;
-    const soxClient = pool.get(sox)! as FakeClient;
+    const {
+      clients: [generalClient, soxClient],
+    } = await startPool(general, sox);
 
     changeSetting("lint.enabled", general.root, false);
     await flushAsync();
 
     expect(generalClient.restart).not.toHaveBeenCalled();
-    expect(generalClient.dispose).toHaveBeenCalled();
     expect(soxClient.dispose).not.toHaveBeenCalled();
-    expect(factory.create).toHaveBeenCalledTimes(3);
-    const latestGeneral =
-      factory.create.mock.calls[factory.create.mock.calls.length - 1]?.[0];
-    expect(latestGeneral?.launch.lintEnabled).toBe(false);
-    await pool.stop();
+    expectRestarted(generalClient, 3);
+    expect(lastCreate()?.launch.lintEnabled).toBe(false);
   });
 
   it("gives a replacement client its project's channel after a launch change", async () => {
-    const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
     const general = makeProject("general", "/workspace/general");
     const sox = makeProject("sox", "/workspace/sox");
-    pool.initialize();
-    registry.setProjects([general, sox]);
-    await flushAsync();
+    await startPool(general, sox);
 
     changeSetting("target", general.root, "prod");
     await flushAsync();
@@ -473,75 +456,49 @@ describe("FusionClientPool", () => {
     expect(generalCalls[0].outputChannel).toBe(channelFor(general));
     expect(soxCall?.outputChannel).toBe(channelFor(sox));
     expect(soxCall?.outputChannel).not.toBe(generalCalls[0].outputChannel);
-    await pool.stop();
   });
 
   it("re-resolves executable when fusionPath changes", async () => {
-    const pool = createPool();
+    const executable = (dbt: string) => ({
+      path: dbt,
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
+      env: {},
+    });
     resolver.resolve
-      .mockResolvedValueOnce({
-        path: "/opt/dbt-old",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      })
-      .mockResolvedValueOnce({
-        path: "/opt/dbt-new",
-        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-        env: {},
-      });
-
+      .mockResolvedValueOnce(executable("/opt/dbt-old"))
+      .mockResolvedValueOnce(executable("/opt/dbt-new"));
     const project = makeProject("general", "/workspace/general");
-    pool.initialize();
-    registry.setProjects([project]);
-    await flushAsync();
+    const {
+      clients: [firstClient],
+    } = await startPool(project);
 
-    const firstClient = pool.get(project)! as FakeClient;
     changeSetting(DBT_PATH_SETTING, project.root, "/opt/dbt-new");
     await flushAsync();
 
     expect(resolver.resolve).toHaveBeenCalledTimes(2);
     expect(firstClient.dispose).toHaveBeenCalled();
-    const latestCall =
-      factory.create.mock.calls[factory.create.mock.calls.length - 1]?.[0];
-    expect(latestCall?.executable.path).toBe("/opt/dbt-new");
-    await pool.stop();
+    expect(lastCreate()?.executable.path).toBe("/opt/dbt-new");
   });
 
   it("replaces the affected project when traceServer changes", async () => {
-    const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
-
     const project = makeProject("general", "/workspace/general");
-    pool.initialize();
-    registry.setProjects([project]);
-    await flushAsync();
+    const {
+      clients: [firstClient],
+    } = await startPool(project);
 
-    const firstClient = pool.get(project)! as FakeClient;
     changeSetting("trace.server", project.root, "messages");
     await flushAsync();
 
-    expect(firstClient.dispose).toHaveBeenCalled();
-    expect(factory.create).toHaveBeenCalledTimes(2);
-    await pool.stop();
+    expectRestarted(firstClient, 2);
   });
 
   it("does not restart when a settings change leaves the launch equal", async () => {
     settings.target = "dev";
-    const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
     const project = makeProject("general", "/workspace/general");
-    pool.initialize();
-    registry.setProjects([project]);
-    await flushAsync();
-    const client = pool.get(project)! as FakeClient;
+    const {
+      pool,
+      clients: [client],
+    } = await startPool(project);
     const onChange = vi.fn();
     pool.onDidChangeClients(onChange);
 
@@ -553,67 +510,38 @@ describe("FusionClientPool", () => {
     expect(client.dispose).not.toHaveBeenCalled();
     expect(factory.create).toHaveBeenCalledTimes(1);
     expect(onChange).not.toHaveBeenCalled();
-    await pool.stop();
   });
 
   it("restarts exactly once when the target changes", async () => {
-    const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
     const project = makeProject("general", "/workspace/general");
-    pool.initialize();
-    registry.setProjects([project]);
-    await flushAsync();
-    const client = pool.get(project)! as FakeClient;
+    const {
+      clients: [client],
+    } = await startPool(project);
 
     changeSetting("target", project.root, "prod");
     await flushAsync();
     changeSetting("target", project.root);
     await flushAsync();
 
-    expect(client.dispose).toHaveBeenCalledTimes(1);
-    expect(factory.create).toHaveBeenCalledTimes(2);
+    expectRestarted(client, 2);
     expect(factory.create.mock.calls[1][0].launch.target).toBe("prod");
-    await pool.stop();
   });
 
   it("does not restart a project the settings change does not affect", async () => {
-    const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
-    const general = makeProject("general", "/workspace/general");
-    pool.initialize();
-    registry.setProjects([general]);
-    await flushAsync();
-    const client = pool.get(general)! as FakeClient;
+    const {
+      clients: [client],
+    } = await startPool(makeProject("general", "/workspace/general"));
 
     changeSetting("target", Uri.file("/workspace/sox"), "prod");
     await flushAsync();
 
     expect(client.dispose).not.toHaveBeenCalled();
     expect(factory.create).toHaveBeenCalledTimes(1);
-    await pool.stop();
   });
 
   it("passes the snapshot launch to the factory", async () => {
     settings["lint.enabled"] = false;
-    const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
-
-    const project = makeProject("general", "/workspace/general");
-    pool.initialize();
-    registry.setProjects([project]);
-    await flushAsync();
+    await startPool(makeProject("general", "/workspace/general"));
 
     expect(factory.create).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -624,7 +552,6 @@ describe("FusionClientPool", () => {
         }),
       }),
     );
-    await pool.stop();
   });
 
   it("logs failed enqueue operations and keeps processing later work", async () => {
@@ -656,21 +583,12 @@ describe("FusionClientPool", () => {
   });
 
   it("stop awaits every managed client", async () => {
-    const pool = createPool();
-    resolver.resolve.mockResolvedValue({
-      path: "/opt/dbt",
-      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
-      env: {},
-    });
-
     const general = makeProject("general", "/workspace/general");
     const sox = makeProject("sox", "/workspace/sox");
-    pool.initialize();
-    registry.setProjects([general, sox]);
-    await flushAsync();
-
-    const generalClient = pool.get(general)! as FakeClient;
-    const soxClient = pool.get(sox)! as FakeClient;
+    const {
+      pool,
+      clients: [generalClient, soxClient],
+    } = await startPool(general, sox);
 
     await pool.stop();
 

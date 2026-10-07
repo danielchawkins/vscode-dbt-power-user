@@ -1,3 +1,4 @@
+import * as path from "path";
 import {
   afterEach,
   beforeEach,
@@ -7,7 +8,7 @@ import {
   type Mock,
   vi,
 } from "vitest";
-import { ConfigurationChangeEvent, Uri, workspace } from "vscode";
+import { DiagnosticSeverity, Uri, window } from "vscode";
 import { DBTDiagnosticData } from "../../core/diagnostics";
 import {
   ExecutableLifecycle,
@@ -15,19 +16,26 @@ import {
   FusionCommandIntegrationFactory,
 } from "../../fusion/executableLifecycle";
 import { FusionCli } from "../../fusion/fusionCli";
-import {
-  DBT_PATH_SETTING,
-  FusionExecutable,
-} from "../../fusion/fusionExecutable";
-import { CONFIGURATION_SECTION } from "../../settings";
+import { Project } from "../../projects/project";
+import { SHOW_OUTPUT } from "../../projects/projectErrors";
+import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { flushAsync, waitFor } from "../async";
-import { sampleExecutable } from "../projectHarness";
+import { createdFileSystemWatchers } from "../mock/vscode";
+import {
+  buildIntegration,
+  captureConfigChanges,
+  cleanUpProjects,
+  createProjectRoot,
+  notFound,
+  recordingExecutionFactory,
+  sampleExecutable,
+  stubFusionCli,
+  type Verdict,
+} from "../projectHarness";
 import { silentLog } from "../testLog";
 
 const ROOT = "/workspace/project";
-
-type Verdict =
-  FusionExecutable | { kind: "notFound"; path: string; source: "configured" };
+const ENV_MARKER = "FUSION_PU_CLI_ENV";
 
 interface StubCli {
   path: string;
@@ -50,14 +58,6 @@ function recordingFactory(): {
   return { factory, created };
 }
 
-function pathChangeEvent(root: string): ConfigurationChangeEvent {
-  return {
-    affectsConfiguration: (section: string, scope?: Uri) =>
-      section === `${CONFIGURATION_SECTION}.${DBT_PATH_SETTING}` &&
-      scope?.fsPath === root,
-  };
-}
-
 function build(
   resolve: () => Promise<Verdict>,
   factory: FusionCommandIntegrationFactory,
@@ -76,24 +76,14 @@ function build(
 }
 
 describe("ExecutableLifecycle", () => {
-  let configListeners: Array<(event: ConfigurationChangeEvent) => void>;
+  let config: ReturnType<typeof captureConfigChanges>;
 
   function changePath(root = ROOT): void {
-    for (const listener of configListeners) {
-      listener(pathChangeEvent(root));
-    }
+    config.changePath(root);
   }
 
   beforeEach(() => {
-    configListeners = [];
-    vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(
-      (listener) => {
-        configListeners.push(
-          listener as (event: ConfigurationChangeEvent) => void,
-        );
-        return { dispose: vi.fn() };
-      },
-    );
+    config = captureConfigChanges();
   });
 
   afterEach(() => {
@@ -313,4 +303,273 @@ describe("ExecutableLifecycle", () => {
     await lifecycle.dispose();
     expect(lifecycle.isCurrent(lifecycle.generation)).toBe(false);
   });
+});
+
+describe("Project executable wiring", () => {
+  let config: ReturnType<typeof captureConfigChanges>;
+
+  beforeEach(() => {
+    config = captureConfigChanges();
+  });
+
+  afterEach(async () => {
+    delete process.env[ENV_MARKER];
+    await cleanUpProjects();
+    vi.restoreAllMocks();
+  });
+
+  function fusionCliFactory(
+    recording: ReturnType<typeof recordingExecutionFactory>,
+    { stubRebuild = false } = {},
+  ): FusionCommandIntegrationFactory {
+    return (executable, root) => {
+      const cli = new FusionCli(
+        executable,
+        () => readProjectSnapshot(Uri.file(root)),
+        recording.factory,
+        silentLog(),
+      );
+      if (stubRebuild) {
+        vi.spyOn(cli, "rebuildManifest").mockResolvedValue(undefined);
+      }
+      return cli;
+    };
+  }
+
+  function lifecycleFactory(
+    root: string,
+    hooks: Partial<FusionCli> = {},
+  ): FusionCommandIntegrationFactory {
+    return () => stubFusionCli(root, hooks);
+  }
+
+  function executableErrors(project: Project) {
+    return project
+      .getAllDiagnostic()
+      .filter(
+        (diagnostic) =>
+          diagnostic.code === "fusion-executable" &&
+          diagnostic.severity === DiagnosticSeverity.Error,
+      );
+  }
+
+  function subcommands(
+    recording: ReturnType<typeof recordingExecutionFactory>,
+  ) {
+    return recording.calls.map((call) => (call.args as string[])[0]);
+  }
+
+  it("spawns only dbt parse when a project activates", async () => {
+    const root = createProjectRoot("activate");
+    const recording = recordingExecutionFactory();
+    const project = buildIntegration(
+      root,
+      async () => sampleExecutable("/bin/dbt"),
+      fusionCliFactory(recording),
+    );
+
+    await project.initialize();
+
+    expect(subcommands(recording)).toEqual(["parse"]);
+  });
+
+  it("executes CLI with per-project path and cwd, and the snapshot environment", async () => {
+    const rootA = createProjectRoot("a");
+    const rootB = createProjectRoot("b");
+    process.env[ENV_MARKER] = "host";
+    const recordingA = recordingExecutionFactory();
+    const recordingB = recordingExecutionFactory();
+    const projectA = buildIntegration(
+      rootA,
+      async () =>
+        sampleExecutable("/project/a/bin/dbt", {
+          [ENV_MARKER]: "executable-a",
+        }),
+      fusionCliFactory(recordingA, { stubRebuild: true }),
+    );
+    const projectB = buildIntegration(
+      rootB,
+      async () =>
+        sampleExecutable("/project/b/bin/dbt", {
+          [ENV_MARKER]: "executable-b",
+        }),
+      fusionCliFactory(recordingB, { stubRebuild: true }),
+    );
+
+    await projectA.initialize();
+    await projectB.initialize();
+    await projectA.getFusionCli().run({ kind: "deps" });
+    await projectB.getFusionCli().run({ kind: "deps" });
+
+    expect(recordingA.calls[0]).toMatchObject({
+      command: "/project/a/bin/dbt",
+      cwd: rootA,
+      envVars: expect.objectContaining({ [ENV_MARKER]: "host" }),
+    });
+    expect(recordingB.calls[0]).toMatchObject({
+      command: "/project/b/bin/dbt",
+      cwd: rootB,
+      envVars: expect.objectContaining({ [ENV_MARKER]: "host" }),
+    });
+  });
+
+  it("records resolution failure diagnostics without initializing delegate", async () => {
+    const project = buildIntegration(
+      createProjectRoot("fail"),
+      async () => notFound("/missing/dbt"),
+      fusionCliFactory(recordingExecutionFactory(), { stubRebuild: true }),
+    );
+
+    await project.initialize();
+
+    expect(executableErrors(project)).toHaveLength(1);
+    expect(() => project.getFusionCli()).toThrow(/not initialized/);
+  });
+
+  const siblingTest =
+    "keeps a healthy sibling initializing when one project's resolver fails, notifying only for it";
+  it(siblingTest, async () => {
+    const failedRoot = createProjectRoot("sibling-failed");
+    const healthyRoot = createProjectRoot("sibling-healthy");
+    const failed = buildIntegration(
+      failedRoot,
+      async () => notFound("/missing/dbt"),
+      lifecycleFactory(failedRoot),
+    );
+    const refreshProjectConfig = vi.fn(async () => undefined);
+    const healthy = buildIntegration(
+      healthyRoot,
+      async () => sampleExecutable("/opt/healthy/dbt"),
+      lifecycleFactory(healthyRoot, { refreshProjectConfig }),
+    );
+
+    await Promise.all([failed.initialize(), healthy.initialize()]);
+
+    expect(executableErrors(failed)).toHaveLength(1);
+    expect(() => failed.getFusionCli()).toThrow(/not initialized/);
+    expect(healthy.getFusionCli()).toBeDefined();
+    expect(refreshProjectConfig).toHaveBeenCalledTimes(1);
+    expect(window.showErrorMessage).toHaveBeenCalledTimes(1);
+    expect(window.showErrorMessage).toHaveBeenCalledWith(
+      expect.stringContaining("fusionPowerUser.dbtPath for "),
+      SHOW_OUTPUT,
+    );
+    expect(vi.mocked(window.showErrorMessage).mock.calls[0][0]).toContain(
+      "/missing/dbt",
+    );
+    expect(window.showWarningMessage).not.toHaveBeenCalled();
+    expect(window.showInformationMessage).not.toHaveBeenCalled();
+  });
+
+  it("re-resolves on scoped path change, keeps sibling path, and executes B after A refresh", async () => {
+    const rootA = createProjectRoot("refresh-a");
+    const rootB = createProjectRoot("refresh-b");
+    let pathA = "/missing/a/dbt";
+    const recordingA = recordingExecutionFactory();
+    const recordingB = recordingExecutionFactory();
+    const projectA = buildIntegration(
+      rootA,
+      async () =>
+        pathA.startsWith("/missing")
+          ? notFound(pathA)
+          : sampleExecutable(pathA),
+      fusionCliFactory(recordingA, { stubRebuild: true }),
+    );
+    const projectB = buildIntegration(
+      rootB,
+      async () => sampleExecutable("/project/b/bin/dbt"),
+      fusionCliFactory(recordingB, { stubRebuild: true }),
+    );
+
+    await projectA.initialize();
+    await projectB.initialize();
+    expect(() => projectA.getFusionCli()).toThrow();
+
+    pathA = "/project/a/recovered/dbt";
+    config.changePath(rootA);
+    await waitFor(() => projectA.getFusionCli());
+    await projectA.getFusionCli().run({ kind: "deps" });
+    await projectB.getFusionCli().run({ kind: "deps" });
+
+    expect(recordingA.calls[0]).toMatchObject({
+      command: "/project/a/recovered/dbt",
+      cwd: rootA,
+    });
+    expect(recordingB.calls[0]).toMatchObject({
+      command: "/project/b/bin/dbt",
+      cwd: rootB,
+    });
+  });
+
+  it("clears the previous executable's rebuild diagnostics when re-resolution fails", async () => {
+    const root = createProjectRoot("stale");
+    let missing = false;
+    const project = buildIntegration(
+      root,
+      async () =>
+        missing ? notFound("/missing/dbt") : sampleExecutable("/bin/dbt"),
+      lifecycleFactory(root, {
+        getDiagnostics: () => ({
+          projectConfigDiagnostics: [],
+          rebuildManifestDiagnostics: [
+            {
+              message: "stale rebuild error",
+              severity: "error",
+              filePath: path.join(root, "models", "a.sql"),
+              source: "dbt",
+              category: "error",
+            },
+          ],
+        }),
+      }),
+    );
+    await project.initialize();
+    project.updateDiagnosticsInProblemsPanel();
+    expect(project.getAllDiagnostic().map((d) => d.code)).toEqual([
+      "rebuild-manifest",
+    ]);
+
+    missing = true;
+    config.changePath(root);
+    await waitFor(() => expect(executableErrors(project)).toHaveLength(1));
+
+    expect(project.getAllDiagnostic().map((d) => d.code)).toEqual([
+      "fusion-executable",
+    ]);
+  });
+
+  it.each(["refreshProjectConfig", "rebuildManifest"] as const)(
+    "does not commit delegate or watchers when disposed during %s",
+    async (gatedMethod) => {
+      const root = createProjectRoot(`race-${gatedMethod}`);
+      let releaseGate!: () => void;
+      const gate = new Promise<void>((resolve) => {
+        releaseGate = resolve;
+      });
+      const gated = vi.fn(async () => {
+        await gate;
+      });
+      const delegateDispose = vi.fn(() => undefined);
+      const project = buildIntegration(
+        root,
+        async () => sampleExecutable("/project/race/dbt"),
+        lifecycleFactory(root, {
+          [gatedMethod]: gated,
+          dispose: delegateDispose,
+        }),
+      );
+
+      const watchersBefore = createdFileSystemWatchers.length;
+      const initPromise = project.initialize();
+      await waitFor(() => expect(gated.mock.calls.length).toBe(1));
+      await project.dispose();
+      expect(() => project.getFusionCli()).toThrow();
+      releaseGate();
+      await initPromise;
+
+      expect(delegateDispose).toHaveBeenCalled();
+      expect(() => project.getFusionCli()).toThrow();
+      expect(createdFileSystemWatchers.slice(watchersBefore)).toEqual([]);
+    },
+  );
 });

@@ -6,6 +6,7 @@ import {
   deferSettingsKey,
   ProjectSnapshotInputs,
   ProjectSnapshotSettings,
+  resolveProjectSnapshot,
 } from "../../core/project";
 
 export const snapshotFolder = path.join("/", "ws");
@@ -23,6 +24,29 @@ export const noSettings: ProjectSnapshotSettings = {
   buildParams: [],
   testParams: [],
 };
+
+/** Inputs for a project at `/ws/proj` with nothing configured, a `DBT_BIN` variable and no project file. */
+export const baseInputs: ProjectSnapshotInputs = {
+  root: path.join(snapshotFolder, "proj"),
+  folder: snapshotFolder,
+  firstWorkspaceFolder: path.join("/", "first"),
+  userHome: path.join("/", "home", "u"),
+  environment: { DBT_BIN: path.join("/", "opt", "dbt") },
+  lspCompiledOutputOverride: undefined,
+  settings: noSettings,
+  projectFile: { kind: "missing", config: {} },
+};
+
+/** A snapshot of `baseInputs` with `settings` laid over the unset ones and `rest` over the other inputs. */
+export const snapshotWith = (
+  settings: Partial<ProjectSnapshotSettings> = {},
+  rest: Partial<ProjectSnapshotInputs> = {},
+) =>
+  resolveProjectSnapshot({
+    ...baseInputs,
+    ...rest,
+    settings: { ...noSettings, ...settings },
+  });
 
 const parsed = (config: Record<string, unknown>): DbtProjectFile => ({
   kind: "parsed",
