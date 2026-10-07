@@ -10,6 +10,7 @@ import {
   readSetting,
 } from "../settings";
 import {
+  FusionExecutableSource,
   FusionVersion,
   FusionVersionVerdict,
   judgeFusionVersion,
@@ -128,20 +129,41 @@ export function formatFusionExecutableResolutionFailure(
   label: string,
   verdict: FusionVersionVerdict,
 ): string {
-  const minimum = `${MINIMUM_FUSION.major}.${MINIMUM_FUSION.minor}.${MINIMUM_FUSION.patch}`;
+  const { major, minor, patch } = MINIMUM_FUSION;
+  const minimum = `${major}.${minor}.${patch}`;
   const requirement = `Fusion Power User needs dbt Fusion ${minimum} or later.`;
   if (verdict.kind === "notFound") {
     return verdict.source === "configured"
-      ? `fusionPowerUser.dbtPath for ${label} is ${verdict.path}, which is not an executable file. ${requirement}`
-      : `No dbt executable on PATH for ${label}; set fusionPowerUser.dbtPath. ${requirement}`;
+      ? `fusionPowerUser.dbtPath for ${label} is ${verdict.path}, ` +
+          `which is not an executable file. ${requirement}`
+      : `No dbt executable on PATH for ${label}; ` +
+          `set fusionPowerUser.dbtPath. ${requirement}`;
   }
   if (verdict.kind === "tooOld") {
-    return `dbt Fusion ${verdict.version.major}.${verdict.version.minor}.${verdict.version.patch} for ${label} is too old. ${requirement}`;
+    const { version } = verdict;
+    return (
+      `dbt Fusion ${version.major}.${version.minor}.${version.patch} at ` +
+      `${describeBinary(verdict)} for ${label} is too old. ${requirement}`
+    );
   }
-  if (verdict.kind === "untestedMajor") {
-    return `Untested Fusion major version for ${label}`;
+  if (verdict.kind === "untestedMajor" || verdict.kind === "ok") {
+    throw new Error(
+      `Fusion version verdict "${verdict.kind}" is not a resolution failure`,
+    );
   }
-  return `The dbt executable for ${label} is not dbt Fusion (dbt --version printed "${firstLine(verdict.kind === "notFusion" ? verdict.raw : "")}"). ${requirement}`;
+  return (
+    `The dbt executable at ${describeBinary(verdict)} for ${label} is not dbt Fusion ` +
+    `(dbt --version printed "${firstLine(verdict.raw)}"). ${requirement}`
+  );
+}
+
+function describeBinary(binary: {
+  path: string;
+  source: FusionExecutableSource;
+}): string {
+  const source =
+    binary.source === "configured" ? "fusionPowerUser.dbtPath" : "PATH";
+  return `${binary.path} (from ${source})`;
 }
 
 function firstLine(text: string): string {
@@ -195,7 +217,7 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
     ) {
       return { kind: "notFound", path: executable.path, source: "configured" };
     }
-    return this.probe(executable.path);
+    return this.probe(executable.path, "configured");
   }
 
   private async resolveFromPath(): Promise<
@@ -210,11 +232,12 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
       };
     }
 
-    return this.probe(onPath);
+    return this.probe(onPath, "path");
   }
 
   private async probe(
     executablePath: string,
+    source: FusionExecutableSource,
   ): Promise<FusionExecutable | FusionVersionVerdict> {
     const absolutePath = path.resolve(executablePath);
     const env = readEnvironment();
@@ -235,12 +258,17 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
 
     const raw = versionOutput(stdout, stderr);
     if (raw.trim() === "") {
-      return { kind: "notFusion", raw: runError ?? "empty" };
+      return {
+        kind: "notFusion",
+        raw: runError ?? "empty",
+        path: absolutePath,
+        source,
+      };
     }
 
     const verdict = judgeFusionVersion(parseFusionVersion(raw), raw);
-    if (verdict.kind !== "ok" && verdict.kind !== "untestedMajor") {
-      return verdict;
+    if (verdict.kind === "tooOld" || verdict.kind === "notFusion") {
+      return { ...verdict, path: absolutePath, source };
     }
     if (verdict.kind === "untestedMajor") {
       this.warnUntestedMajorOnce(verdict.version.major);
@@ -269,7 +297,8 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
 
       this.logWarning?.(
         `dbt Fusion major version ${major} is newer than this extension has been tested ` +
-          `against (minimum supported ${MINIMUM_FUSION.major}.${MINIMUM_FUSION.minor}.${MINIMUM_FUSION.patch}). Continuing.`,
+          `against (minimum supported ${MINIMUM_FUSION.major}.${MINIMUM_FUSION.minor}.` +
+          `${MINIMUM_FUSION.patch}). Continuing.`,
       );
       void globalState?.update(key, true);
     } catch {
