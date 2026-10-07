@@ -236,7 +236,7 @@ export class DocsEditRequests {
 }
 
 /** Shows a progress notification while `work` runs. */
-export function withSaveProgress<T>(title: string, work: () => Promise<T>) {
+export function withProgress<T>(title: string, work: () => Promise<T>) {
   return window.withProgress(
     { title, location: ProgressLocation.Notification, cancellable: false },
     work,

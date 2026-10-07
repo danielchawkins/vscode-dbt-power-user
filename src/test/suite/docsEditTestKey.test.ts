@@ -49,7 +49,7 @@ function testKeyPanel(panelClass: typeof DocsEditViewPanel): TestKeyPanel {
   };
   const instance = Object.create(panelClass.prototype);
   instance.dbtTestService = Object.create(DbtTestService.prototype);
-  instance.terminal = { debug: vi.fn(), error: vi.fn() };
+  instance.dbtTerminal = { debug: vi.fn(), error: vi.fn() };
   instance.projects = { get: () => project };
   instance.getProject = () => project;
   instance.getTestDataByModel = (
@@ -58,7 +58,7 @@ function testKeyPanel(panelClass: typeof DocsEditViewPanel): TestKeyPanel {
     existingModel?: never,
   ) =>
     getTestDataByModel(message, modelName, existingModel, {
-      terminal: instance.terminal,
+      terminal: instance.dbtTerminal,
       dbtTestService: instance.dbtTestService,
     });
   instance.getTestDataByColumn = (
@@ -67,7 +67,7 @@ function testKeyPanel(panelClass: typeof DocsEditViewPanel): TestKeyPanel {
     existingColumn?: never,
   ) =>
     getTestDataByColumn(message, column, existingColumn, {
-      terminal: instance.terminal,
+      terminal: instance.dbtTerminal,
       dbtTestService: instance.dbtTestService,
     });
   return instance as TestKeyPanel;

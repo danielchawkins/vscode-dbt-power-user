@@ -7,14 +7,9 @@ import {
   TextEditor,
   Uri,
   WebviewView,
-  WebviewViewProvider,
   WebviewViewResolveContext,
   window,
 } from "vscode";
-import {
-  beginWebviewResolve,
-  completeWebviewReady,
-} from "../../benchmark/runtimeTimings";
 import type { Log } from "../../core/log";
 import { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
@@ -24,17 +19,17 @@ import { activeModelUri } from "../../projects/previewUri";
 import { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 import { QueryManifestService } from "../../projects/queryManifestService";
+import type { SharedStateService } from "../../projects/sharedStateService";
 import {
   dispatchMessage,
   Handlers,
   MessageOf,
 } from "../../webview/messageRouter";
-import { postToWebview } from "../../webview/panelHost";
-import { panelHtml, panelWebviewOptions } from "../../webview/panelHtml";
+import { PanelHost } from "../../webview/panelHost";
 import { DbtTestService } from "./dbtTestService";
 import { DocGenService } from "./docGenService";
 import { DBTDocumentation, MetadataColumn } from "./docGenTypes";
-import { DocsEditRequests, withSaveProgress } from "./docsEditHandlers";
+import { DocsEditRequests, withProgress } from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
 import { convertColumnNamesByCaseConfig } from "./docsYaml";
 
@@ -42,10 +37,11 @@ type HostMessage = documentationEditor.HostMessage;
 type PanelMessage = documentationEditor.PanelMessage;
 type SaveMessage = MessageOf<PanelMessage, "saveDocumentation">;
 
-export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
+export class DocsEditViewPanel extends PanelHost<HostMessage> {
   public static readonly viewType = "fusionPowerUser.DocsEdit";
-  private readonly entry = "documentationEditor";
-  private _panel: WebviewView | undefined = undefined;
+  protected readonly entry = "documentationEditor";
+  protected readonly csp = {};
+  protected override panelDescription = "Edit model documentation";
   private documentation: DBTDocumentation | undefined;
   /** Unsaved drafts by model file path; host memory only, never webview state. */
   private readonly drafts = new Map<
@@ -54,26 +50,30 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   >();
   private readonly docGenService: DocGenService;
   private readonly dbtTestService: DbtTestService;
-  private readonly queryManifestService: QueryManifestService;
   private loadedFromManifest = false;
-  private _disposables: Disposable[] = [];
   private onMessageDisposable: Disposable | undefined;
   private demandSubscription: Disposable | undefined;
 
   public constructor(
     private projects: Projects,
-    private extensionContext: ExtensionContextStore,
+    extensionContext: ExtensionContextStore,
     services: {
       docGenService: DocGenService;
       dbtTestService: DbtTestService;
       queryManifestService: QueryManifestService;
+      emitterService: SharedStateService;
     },
-    private terminal: Log,
+    terminal: Log,
     private parseDemand?: ParseDemand,
   ) {
+    super(
+      extensionContext,
+      services.emitterService,
+      terminal,
+      services.queryManifestService,
+    );
     this.docGenService = services.docGenService;
     this.dbtTestService = services.dbtTestService;
-    this.queryManifestService = services.queryManifestService;
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
       projects.onDidRemoveProject((root) => {
@@ -94,12 +94,10 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     );
   }
 
-  dispose() {
+  override dispose() {
     this.onMessageDisposable?.dispose();
     this.onMessageDisposable = undefined;
-    while (this._disposables.length) {
-      this._disposables.pop()?.dispose();
-    }
+    super.dispose();
   }
 
   private getProject(): Project | undefined {
@@ -114,10 +112,6 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
 
   private async transmitError() {
     await this.post({ command: "renderError" });
-  }
-
-  private post(message: HostMessage): Thenable<boolean> | undefined {
-    return postToWebview(this._panel, message);
   }
 
   private forgetDrafts(root: Uri) {
@@ -181,15 +175,13 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     await this.post({ command: "renderColumnsFromMetadataFetch", columns });
   }
 
-  public async resolveWebviewView(
+  public override async resolveWebviewView(
     panel: WebviewView,
-    _context: WebviewViewResolveContext,
-    _token: CancellationToken,
+    context: WebviewViewResolveContext,
+    token: CancellationToken,
   ) {
-    beginWebviewResolve(this.entry);
-    this._panel = panel;
-    this.setupWebviewOptions();
-    this.renderWebviewView();
+    super.resolveWebviewView(panel, context, token);
+    panel.title = "";
     this.setupWebviewHooks();
     this.followVisibility(panel);
     void this.transmitData();
@@ -205,21 +197,6 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     panel.onDidDispose(() => this.demandSubscription?.dispose());
   }
 
-  private renderWebviewView() {
-    const webview = this._panel!.webview;
-    webview.html = panelHtml(webview, this.extensionContext.extensionUri, {
-      entry: this.entry,
-      csp: {},
-    });
-  }
-
-  private setupWebviewOptions() {
-    this._panel!.title = "";
-    this._panel!.description = "Edit model documentation";
-    this._panel!.webview.options = panelWebviewOptions(
-      this.extensionContext.extensionUri,
-    );
-  }
   private setupWebviewHooks() {
     this.onMessageDisposable?.dispose();
     this.onMessageDisposable = this._panel!.webview.onDidReceiveMessage(
@@ -231,7 +208,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
 
   /** Routes an inbound message through the documentation-editor guard and handler map. */
   private async handleCommand(message: unknown): Promise<void> {
-    this.terminal.debug(
+    this.dbtTerminal.debug(
       "docsEditPanel:handleCommand",
       "onDidReceiveMessage",
       message,
@@ -241,13 +218,13 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       message,
       documentationEditor.isPanelMessage,
       this.handlers(),
-      { log: this.terminal, reply: (response) => this.post(response) },
+      { log: this.dbtTerminal, reply: (response) => this.post(response) },
     );
   }
 
   private get requests(): DocsEditRequests {
     return new DocsEditRequests({
-      terminal: this.terminal,
+      terminal: this.dbtTerminal,
       queryManifestService: this.queryManifestService,
       dbtTestService: this.dbtTestService,
       getProject: () => this.getProject(),
@@ -260,7 +237,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     const { requests } = this;
     return {
       ...requests.handlers(),
-      "webview:ready": () => completeWebviewReady(this.entry),
+      ...this.commonHandlers(),
       getCurrentModelDocumentation: () => this.transmitData(),
       saveDraft: (message) => this.saveDraft(message),
       openProblemsTab: () =>
@@ -270,9 +247,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
           this.fetchMetadataFromDatabase(project, modelPath, syncRequestId),
       ),
       saveDocumentation: requests.withProject((message) =>
-        withSaveProgress("Saving documentation", () =>
-          this.saveAndReply(message),
-        ),
+        withProgress("Saving documentation", () => this.saveAndReply(message)),
       ),
     };
   }
@@ -316,7 +291,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
     modelPath: Uri,
     syncRequestId: string | undefined,
   ) {
-    return withSaveProgress(
+    return withProgress(
       "Syncing columns with metadata from database",
       async () => {
         const modelName = path.basename(modelPath.fsPath, ".sql");
@@ -345,7 +320,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
             `Could not fetch metadata for ${modelName} from the database`,
             exc,
           );
-          this.terminal.error(
+          this.dbtTerminal.error(
             "docsEditPanelLoadError",
             `An error occured while fetching metadata for ${modelName} from the database`,
             exc,
@@ -376,9 +351,9 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
       this.getProject(),
       {
         projects: this.projects,
-        terminal: this.terminal,
+        terminal: this.dbtTerminal,
         testData: {
-          terminal: this.terminal,
+          terminal: this.dbtTerminal,
           dbtTestService: this.dbtTestService,
         },
       },
@@ -389,7 +364,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
           `Could not save documentation to ${patchPath}`,
           error,
         );
-        this.terminal.error(
+        this.dbtTerminal.error(
           "saveDocumentationError",
           `Could not save documentation to ${patchPath}`,
           error,

@@ -1,7 +1,8 @@
+import type { lineage } from "@fusion-power-user/webview-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PanelHost } from "../../webview/panelHost";
 
-class TestPanel extends PanelHost {
+class TestPanel extends PanelHost<lineage.HostMessage> {
   protected readonly entry = "lineage" as never;
   protected readonly csp = {} as never;
   protected override panelDescription = "Test description";

@@ -38,7 +38,6 @@ import {
 import { PanelHost, postToWebview } from "../../webview/panelHost";
 import { panelWebviewOptions } from "../../webview/panelHtml";
 import { executeActiveEditorQuery } from "./activeEditorQuery";
-import { PanelReplay } from "./panelReplay";
 import { QueryHistoryStore } from "./queryHistory";
 import {
   activeEditorContext,
@@ -51,11 +50,10 @@ import {
   tabDataOf,
   updateQueryConfig,
 } from "./queryPanelSupport";
+import { QUERY_RESULTS_REPLAY } from "./replayRules";
 
 type HostMessage = queryResults.HostMessage;
 type PanelMessage = queryResults.PanelMessage;
-/** A query results page: the bottom view, whichever `WebviewView` VS Code resolved last, or one results tab. */
-type Page = "bottom" | WebviewPanel;
 
 enum QueryPanelViewType {
   DEFAULT,
@@ -73,10 +71,9 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
 
   private queryExecution: QueryExecution | undefined;
   private pendingMessages: HostMessage[] = [];
-  private _replay?: PanelReplay<Page>;
 
-  private get replay(): PanelReplay<Page> {
-    return (this._replay ??= new PanelReplay<Page>());
+  protected override replayRules() {
+    return QUERY_RESULTS_REPLAY;
   }
 
   // stored only for current session, if user reloads or opens new workspace, this will be reset
@@ -103,17 +100,6 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
         this.sendUpdatedContextToWebview(),
       ),
     );
-  }
-
-  private pageOf(panel: WebviewView | WebviewPanel): Page {
-    return this.isWebviewView(panel) ? "bottom" : panel;
-  }
-
-  protected override recordPosted(
-    panel: WebviewView | WebviewPanel,
-    message: HostMessage,
-  ): void {
-    this.replay.record(this.pageOf(panel), message);
   }
 
   private async sendUpdatedContextToWebview() {
