@@ -5,6 +5,7 @@ import { afterAll, describe, expect, it } from "vitest";
 import { SourceMetaMap } from "../../core/manifest/types";
 import { parseDbtProjectYaml } from "../../core/project";
 import {
+  effectiveStaticAnalysis,
   hasSchemaOriginHook,
   projectOptIns,
   projectSchemaOrigin,
@@ -172,4 +173,27 @@ describe("schemaOriginLaunchEnv", () => {
       FUSION_POWER_USER_SCHEMA_ORIGIN: "remote",
     });
   });
+});
+
+describe("effectiveStaticAnalysis", () => {
+  const strictYaml = "name: p\nmodels:\n  p:\n    +static_analysis: strict\n";
+
+  it.each([
+    ["project", false, "baseline"],
+    ["project", true, "strict"],
+    ["strict", false, "strict"],
+    ["strict", true, "strict"],
+    ["baseline", false, "baseline"],
+    ["baseline", true, "baseline"],
+    ["off", false, "off"],
+    ["off", true, "off"],
+  ] as const)(
+    "setting %s with project opt-in %s is %s",
+    (setting, optedIn, expected) => {
+      const yaml = optedIn ? strictYaml : "name: p\n";
+      expect(
+        effectiveStaticAnalysis(setting, hasProjectStrictAnalysis(yaml)),
+      ).toBe(expected);
+    },
+  );
 });

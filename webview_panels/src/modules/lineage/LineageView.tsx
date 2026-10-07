@@ -244,10 +244,12 @@ const Graph = (): React.JSX.Element => {
     () => settingsRef.current.defaultExpansion,
     [settingsRef],
   );
-  const { graph, notice, drawnKey, actions, select, reset } = useLineageGraph(
+  const { graph, rendered, drawnKey, actions, select, reset } = useLineageGraph(
     defaultExpansion,
     openDetails,
   );
+  const notice = rendered?.missingLineageMessage;
+  const columnsNeedStrict = rendered?.columnsNeedStrict === true;
   const refs = useRefs(settings, drawnKey);
 
   tableActions.current = actions;
@@ -266,9 +268,10 @@ const Graph = (): React.JSX.Element => {
       errors: graph.errors,
       selectedTable: graph.selectedTable,
       selectedColumn: graph.selectedColumn,
+      columnsNeedStrict,
       refs: visibleRefs(refs, settings, drawn),
     });
-  }, [graph, settings, refs]);
+  }, [graph, settings, refs, columnsNeedStrict]);
   const details = detailsTable ? graph.known[detailsTable] : undefined;
 
   return (

@@ -368,6 +368,32 @@ export function onClientChange(
   };
 }
 
+/** Fires when the Current Project switches, or its client is replaced or changes state. */
+export function onCurrentClientChange(
+  pool: FusionClientPool,
+  current: {
+    readonly current: DeclaredProject | undefined;
+    readonly onDidChangeCurrent: Event<unknown>;
+  },
+): Event<void> {
+  return (listener) => {
+    let clientChange: Disposable | undefined;
+    const follow = () => {
+      clientChange?.dispose();
+      const project = current.current;
+      clientChange = project && onClientChange(pool, project)(listener);
+    };
+    follow();
+    const switched = current.onDidChangeCurrent(() => {
+      follow();
+      listener();
+    });
+    return Disposable.from(switched, {
+      dispose: () => clientChange?.dispose(),
+    });
+  };
+}
+
 export type FusionClientPoolDependencies = FusionLaunchSources & {
   resolver?: FusionExecutableResolver;
   factory?: FusionClientFactory;

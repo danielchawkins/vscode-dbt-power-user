@@ -8,7 +8,7 @@ import {
   LanguageStatusSeverity,
   Uri,
 } from "vscode";
-import { DBT_PROJECT_FILE, projectRootDigest } from "../core/project";
+import { projectRootDigest, StaticAnalysisMode } from "../core/project";
 import { vscodeDocumentSelectorForProject } from "../fusion/documentSelector";
 import {
   FusionClient,
@@ -16,7 +16,14 @@ import {
 } from "../fusion/fusionLanguageClient";
 import { FusionClientPool } from "./fusionClientPool";
 import { DeclaredProject } from "./projectRegistry";
-import { SchemaOriginStatus } from "./schemaOrigin";
+import {
+  effectiveStaticAnalysis,
+  FolderScope,
+  folderScopeOf,
+  SchemaOriginStatus,
+  USE_STRICT_ANALYSIS_COMMAND,
+  whyNotStrict,
+} from "./schemaOrigin";
 
 /** What a project has opted into in its own project file. */
 export interface ProjectOptIns {
@@ -161,8 +168,27 @@ export class FusionStatus implements Disposable {
     }
   }
 
+  private renderStatic({ project, client, staticItem }: ProjectStatus): void {
+    const optIns = this.optIns(project);
+    const lines = optInLines(
+      optIns,
+      client.staticAnalysis,
+      folderScopeOf(this.registry.projects, project),
+    );
+    staticItem.text = staticText(
+      client.staticAnalysis,
+      optIns?.strict ?? false,
+    );
+    staticItem.detail = [
+      project.name,
+      ...(lines.length ? [lines.map((line) => line.text).join(" ")] : []),
+    ].join(" · ");
+    const command = lines.find((line) => line.command)?.command;
+    staticItem.command = command && { ...command, arguments: [project.root] };
+  }
+
   private render(status: ProjectStatus): void {
-    const { project, client, clientItem, staticItem } = status;
+    const { project, client, clientItem } = status;
     const failure =
       client.state === "failed"
         ? failureSummary(client.failureReason)
@@ -182,14 +208,7 @@ export class FusionStatus implements Disposable {
       arguments: [project.root],
     };
 
-    const lines = optInLines(this.optIns(project));
-    staticItem.text = `static: ${client.staticAnalysis}`;
-    staticItem.detail = [
-      project.name,
-      ...(lines.length ? [lines.map((line) => line.text).join(" ")] : []),
-    ].join(" · ");
-    const command = lines.find((line) => line.command)?.command;
-    staticItem.command = command && { ...command, arguments: [project.root] };
+    this.renderStatic(status);
 
     const target = this.clientPool.getLaunch(project)?.target;
     if (!target) {
@@ -211,19 +230,25 @@ export class FusionStatus implements Disposable {
 
 /**
  * The missing column-lineage opt-ins, each with the command that adds it when one exists.
+ * `setting` is the configured `fusionPowerUser.staticAnalysis`; it decides whether the project file matters.
+ * `folder` names the folder the strict fix changes.
  * @internal
  */
-export function optInLines(optIns: ProjectOptIns | undefined): OptInLine[] {
+export function optInLines(
+  optIns: ProjectOptIns | undefined,
+  setting: StaticAnalysisMode,
+  folder?: FolderScope,
+): OptInLine[] {
   if (!optIns) {
     return [];
   }
   const lines: OptInLine[] = [];
-  if (!optIns.strict) {
+  if (effectiveStaticAnalysis(setting, optIns.strict) !== "strict") {
     lines.push({
-      text: `Strict analysis is not enabled in ${DBT_PROJECT_FILE}.`,
+      text: whyNotStrict(setting, folder),
       command: {
-        title: "Enable strict analysis",
-        command: "fusionPowerUser.enableStrictAnalysis",
+        title: "Use strict analysis",
+        command: USE_STRICT_ANALYSIS_COMMAND,
       },
     });
   }
@@ -249,6 +274,17 @@ export function optInLines(optIns: ProjectOptIns | undefined): OptInLine[] {
       break;
   }
   return lines;
+}
+
+/** The static-analysis status text: the setting, or under `project` the mode the project file selects. */
+function staticText(
+  setting: StaticAnalysisMode,
+  projectStrict: boolean,
+): string {
+  const mode = effectiveStaticAnalysis(setting, projectStrict);
+  return setting === "project"
+    ? `static: ${mode} (project)`
+    : `static: ${mode}`;
 }
 
 /** @internal */

@@ -1,4 +1,4 @@
-import type { lineage, PanelNotice } from "@fusion-power-user/webview-contract";
+import type { lineage } from "@fusion-power-user/webview-contract";
 import {
   LineageViewState,
   readViewState,
@@ -154,7 +154,8 @@ export function useLineageGraph(
   openDetails: (table: string) => void,
 ): {
   graph: GraphState;
-  notice?: PanelNotice | undefined;
+  /** The latest `render` arguments: the panel notice and whether empty column lists need strict analysis. */
+  rendered?: lineage.RenderArgs | undefined;
   drawnKey: number;
   actions: TableActions;
   select: (table: string | undefined) => void;
@@ -162,14 +163,14 @@ export function useLineageGraph(
 } {
   const { graph, graphRef, drawnKey, buildingRef, current, rebuild } =
     useGraphStore(defaultExpansion);
-  const [notice, setNotice] = useState<PanelNotice>();
+  const [rendered, setRendered] = useState<lineage.RenderArgs>();
   const publicationRef = useRef<string | undefined>(undefined);
   const refreshRef = useRef(false);
   const restoredRef = useRef(false);
 
   const onRender = useCallback(
     (args: lineage.RenderArgs | undefined) => {
-      setNotice(args?.missingLineageMessage);
+      setRendered(args);
       const plan = planRender({
         args,
         graph: graphRef.current,
@@ -227,5 +228,5 @@ export function useLineageGraph(
     select(table);
     openDetails(table);
   });
-  return { graph, notice, drawnKey, actions, select, reset };
+  return { graph, rendered, drawnKey, actions, select, reset };
 }

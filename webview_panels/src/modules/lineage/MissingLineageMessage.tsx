@@ -32,6 +32,16 @@ const MissingLineageMessageComponent = ({
       ) : (
         ""
       )}
+      {(missingLineageMessage.actions ?? []).map(({ title, action }) => (
+        <Button
+          key={action}
+          color="link"
+          className="pt-0 pb-0"
+          onClick={() => executeRequestInAsync("runNoticeAction", { action })}
+        >
+          {title}
+        </Button>
+      ))}
     </Alert>
   );
 };

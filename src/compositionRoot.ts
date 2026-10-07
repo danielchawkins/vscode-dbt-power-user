@@ -61,6 +61,7 @@ import {
   type FusionClientPool,
   FusionLaunchSources,
   onClientChange,
+  onCurrentClientChange,
 } from "./projects/fusionClientPool";
 import { FusionStatus } from "./projects/fusionStatus";
 import { bindExtensionOutput } from "./projects/notifications";
@@ -243,6 +244,14 @@ function composeFusion(graph: ProjectsGraph) {
       const project = currentProject.current;
       return project ? projects.get(project.root)?.lsp : undefined;
     },
+    () => {
+      const root = currentProject.current?.root;
+      const optIns = root && projects.get(root)?.projectOptIns();
+      return {
+        strict: optIns?.strict ?? false,
+        folder: currentProject.folderScope(),
+      };
+    },
   );
   const fusionStatus = new FusionStatus(
     graph.projectRegistry,
@@ -281,6 +290,11 @@ function composeWebviews(
     sharedState,
     queryManifestService,
   );
+  if (graph.clients.pool) {
+    lineagePanel.renderOn(
+      onCurrentClientChange(graph.clients.pool, graph.currentProject),
+    );
+  }
   return new WebviewViewProviders(
     new QueryResultPanel(
       extensionContextStore,

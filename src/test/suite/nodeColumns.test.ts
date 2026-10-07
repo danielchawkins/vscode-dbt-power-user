@@ -87,4 +87,19 @@ describe("panelColumns", () => {
       },
     ]);
   });
+
+  it("keeps every declared column when the server infers none", () => {
+    const declared = [{ name: "id", data_type: "INT", description: "key" }];
+    const expected = [
+      {
+        table: T,
+        name: "id",
+        datatype: "int",
+        can_lineage_expand: false,
+        description: "key",
+      },
+    ];
+    expect(panelColumns(T, declared, [])).toEqual(expected);
+    expect(panelColumns(T, declared, undefined)).toEqual(expected);
+  });
 });

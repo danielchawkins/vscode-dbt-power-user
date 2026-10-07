@@ -2,12 +2,13 @@ import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
 import { tmpdir } from "os";
 import * as path from "path";
 import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
-import { commands, Uri, window, workspace } from "vscode";
+import { commands, ConfigurationTarget, Uri, window, workspace } from "vscode";
 import {
   applyProjectConfigInsertion,
   ProjectConfigCommands,
 } from "../../features/projectSetup/projectConfigCommands";
 import { DeclaredProject } from "../../projects/projectRegistry";
+import { flushAsync } from "../async";
 
 const strict = (name: string) => ({
   path: ["models", name, "+static_analysis"],
@@ -129,5 +130,103 @@ describe("applyProjectConfigInsertion", () => {
       expect.any(String),
     );
     commandsDisposable.dispose();
+  });
+});
+
+describe("fusionPowerUser.useStrictAnalysis", () => {
+  const root = Uri.file("/workspace/general/jaffle");
+  const declared = {
+    root,
+    name: "jaffle",
+    folder: { name: "general" },
+  } as DeclaredProject;
+  let registered: ProjectConfigCommands | undefined;
+
+  function register(
+    requireForCommand: Mock,
+    projectLog: { warn: Mock } = { warn: vi.fn() },
+  ) {
+    registered = new ProjectConfigCommands(
+      { whenSettled: () => Promise.resolve() },
+      { requireForCommand } as never,
+      () => projectLog as never,
+    );
+    const registration = (commands.registerCommand as Mock).mock.calls.findLast(
+      ([command]) => command === "fusionPowerUser.useStrictAnalysis",
+    );
+    return registration![1] as (root?: Uri) => Promise<boolean>;
+  }
+
+  afterEach(() => {
+    registered?.dispose();
+    vi.clearAllMocks();
+  });
+
+  it("writes the folder-scoped setting for the given project root", async () => {
+    const update = vi.fn(() => Promise.resolve());
+    (workspace.getConfiguration as Mock).mockReturnValueOnce({ update });
+    const requireForCommand = vi.fn().mockResolvedValue(declared);
+
+    expect(await register(requireForCommand)(root)).toBe(true);
+
+    expect(requireForCommand).toHaveBeenCalledWith(root);
+    expect(workspace.getConfiguration).toHaveBeenLastCalledWith(
+      "fusionPowerUser",
+      root,
+    );
+    expect(update).toHaveBeenCalledWith(
+      "staticAnalysis",
+      "strict",
+      ConfigurationTarget.WorkspaceFolder,
+    );
+  });
+
+  it("resolves the project through requireForCommand from the Command Palette", async () => {
+    const update = vi.fn(() => Promise.resolve());
+    (workspace.getConfiguration as Mock).mockReturnValueOnce({ update });
+    const requireForCommand = vi.fn().mockResolvedValue(declared);
+
+    expect(await register(requireForCommand)()).toBe(true);
+
+    expect(requireForCommand).toHaveBeenCalledWith(undefined);
+    expect(workspace.getConfiguration).toHaveBeenLastCalledWith(
+      "fusionPowerUser",
+      root,
+    );
+    expect(update).toHaveBeenCalledOnce();
+  });
+
+  it("writes nothing when no project is current or picked", async () => {
+    const requireForCommand = vi.fn().mockResolvedValue(undefined);
+
+    expect(await register(requireForCommand)()).toBe(false);
+
+    expect(workspace.getConfiguration).not.toHaveBeenCalled();
+    expect(window.showErrorMessage).not.toHaveBeenCalled();
+  });
+
+  it("logs a failed write to the project's channel and offers that channel", async () => {
+    const update = vi.fn(() => Promise.reject(new Error("read-only")));
+    (workspace.getConfiguration as Mock).mockReturnValueOnce({ update });
+    const projectLog = { warn: vi.fn() };
+    (window.showErrorMessage as Mock).mockResolvedValueOnce("Show output");
+
+    expect(
+      await register(vi.fn().mockResolvedValue(declared), projectLog)(),
+    ).toBe(false);
+    await flushAsync();
+
+    expect(projectLog.warn).toHaveBeenCalledWith(
+      "useStrictAnalysis",
+      "read-only",
+    );
+    expect(window.showErrorMessage).toHaveBeenCalledWith(
+      "jaffle: Could not set fusionPowerUser.staticAnalysis for the folder general: read-only",
+      "Show output",
+    );
+    expect(commands.executeCommand).toHaveBeenCalledWith(
+      "fusionPowerUser.showFusionOutput",
+      root,
+    );
   });
 });

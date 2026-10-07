@@ -110,35 +110,67 @@ describe("fusionStatus helpers", () => {
 
   it("lists nothing when both opt-ins are in place", () => {
     expect(
-      optInLines({ strict: true, schemaOrigin: { kind: "local" } }),
+      optInLines({ strict: true, schemaOrigin: { kind: "local" } }, "project"),
     ).toEqual([]);
-    expect(optInLines(undefined)).toEqual([]);
+    expect(
+      optInLines({ strict: false, schemaOrigin: { kind: "local" } }, "strict"),
+    ).toEqual([]);
+    expect(optInLines(undefined, "project")).toEqual([]);
   });
 
   it("pairs each missing opt-in with its command", () => {
-    const lines = optInLines({
-      strict: false,
-      schemaOrigin: { kind: "noHook" },
-    });
+    const lines = optInLines(
+      { strict: false, schemaOrigin: { kind: "noHook" } },
+      "project",
+    );
     expect(lines.map((line) => line.command?.command)).toEqual([
-      "fusionPowerUser.enableStrictAnalysis",
+      "fusionPowerUser.useStrictAnalysis",
       "fusionPowerUser.addSchemaOriginHook",
     ]);
-    expect(lines[0].text).toContain("Strict analysis is not enabled");
+    expect(lines[0].text).toContain("has no +static_analysis: strict");
     expect(lines.every((line) => !line.text.includes("command:"))).toBe(true);
   });
 
-  it("counts untyped sources, with no command", () => {
-    const [untyped] = optInLines({
-      strict: true,
-      schemaOrigin: {
-        kind: "untypedSources",
-        missing: [
-          { source: "raw", table: "a", column: "x" },
-          { source: "raw", table: "b" },
-        ],
-      },
+  it("names an explicit setting that overrides the project", () => {
+    const [line] = optInLines(
+      { strict: true, schemaOrigin: { kind: "local" } },
+      "off",
+    );
+    expect(line.text).toContain('is "off", which overrides the project');
+    expect(line.command?.command).toBe("fusionPowerUser.useStrictAnalysis");
+  });
+
+  it("names the folder the fix changes when it declares several projects", () => {
+    const optIns = { strict: false, schemaOrigin: { kind: "local" } } as const;
+    const [many] = optInLines(optIns, "project", {
+      name: "general",
+      projects: 3,
     });
+    expect(many.text).toContain("Fusion's default (baseline) applies.");
+    expect(many.text).toContain(
+      "This sets fusionPowerUser.staticAnalysis for the folder general, which applies to its 3 projects.",
+    );
+    const [one] = optInLines(optIns, "project", {
+      name: "general",
+      projects: 1,
+    });
+    expect(one.text).not.toContain("This sets");
+  });
+
+  it("counts untyped sources, with no command", () => {
+    const [untyped] = optInLines(
+      {
+        strict: true,
+        schemaOrigin: {
+          kind: "untypedSources",
+          missing: [
+            { source: "raw", table: "a", column: "x" },
+            { source: "raw", table: "b" },
+          ],
+        },
+      },
+      "project",
+    );
     expect(untyped.text).toMatch(/^2 source column/);
     expect(untyped.command).toBeUndefined();
   });
@@ -333,6 +365,20 @@ describe("FusionStatus", () => {
     status.dispose();
   });
 
+  it("shows the effective static analysis mode under the project setting", () => {
+    const general = makeProject("general", "/workspace/general");
+    add(general, new FakeClient(general, "running", "project"));
+    const status = createStatus();
+    status.initialize();
+    const staticItem = item("static", general)!;
+    expect(staticItem.text).toBe("static: baseline (project)");
+
+    optIns = { strict: true, schemaOrigin: { kind: "local" } };
+    optInsChanged.fire();
+    expect(staticItem.text).toBe("static: strict (project)");
+    status.dispose();
+  });
+
   it("follows a replacement client's state and static analysis mode", () => {
     const general = makeProject("general", "/workspace/general");
     const first = new FakeClient(general);
@@ -356,18 +402,18 @@ describe("FusionStatus", () => {
 
   it("offers the first missing opt-in's command on the static item", () => {
     const general = makeProject("general", "/workspace/general");
-    add(general, new FakeClient(general));
+    add(general, new FakeClient(general, "running", "project"));
     optIns = { strict: false, schemaOrigin: { kind: "noHook" } };
     const status = createStatus();
     status.initialize();
     const staticItem = item("static", general)!;
     expect(staticItem.command).toEqual({
-      title: "Enable strict analysis",
-      command: "fusionPowerUser.enableStrictAnalysis",
+      title: "Use strict analysis",
+      command: "fusionPowerUser.useStrictAnalysis",
       arguments: [general.root],
     });
     expect(staticItem.detail).toMatch(
-      /^general · Strict analysis is not enabled/,
+      /^general · fusionPowerUser.staticAnalysis is "project" and dbt_project.yml has no/,
     );
 
     optIns = { strict: true, schemaOrigin: { kind: "noHook" } };

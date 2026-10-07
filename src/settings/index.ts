@@ -170,6 +170,13 @@ export function writeUserFileAssociations(
     .update("associations", associations, ConfigurationTarget.Global);
 }
 
+/** Sets `fusionPowerUser.staticAnalysis` to `strict` in the workspace-folder settings containing `root`. */
+export function writeStrictStaticAnalysis(root: Uri): Thenable<void> {
+  return workspace
+    .getConfiguration(CONFIGURATION_SECTION, root)
+    .update("staticAnalysis", "strict", ConfigurationTarget.WorkspaceFolder);
+}
+
 /** A configuration change, queried for the keys it was subscribed with. */
 export interface SettingsChange {
   /** Whether a subscribed key changed for `resource`, or in any scope when omitted. */

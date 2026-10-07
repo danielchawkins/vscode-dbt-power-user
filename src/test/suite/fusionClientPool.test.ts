@@ -28,7 +28,10 @@ import {
   FusionClientOptions,
   FusionProjectRef,
 } from "../../fusion/fusionLanguageClient";
-import { FusionClientPoolImpl } from "../../projects/fusionClientPool";
+import {
+  FusionClientPoolImpl,
+  onCurrentClientChange,
+} from "../../projects/fusionClientPool";
 import {
   DeclaredProject,
   ProjectRegistry,
@@ -648,5 +651,109 @@ describe("FusionClientPool", () => {
     await flushAsync();
     expect(factory.create).toHaveBeenCalledTimes(2);
     await pool.stop();
+  });
+});
+
+describe("onCurrentClientChange", () => {
+  type Listener = () => void;
+  const emitter = () => {
+    const listeners = new Set<Listener>();
+    return {
+      event: (listener: Listener) => {
+        listeners.add(listener);
+        return { dispose: () => listeners.delete(listener) };
+      },
+      fire: () => listeners.forEach((listener) => listener()),
+      count: () => listeners.size,
+    };
+  };
+
+  function setup() {
+    const first = makeProject("first", "/workspace/general/first");
+    const second = makeProject("second", "/workspace/general/second");
+    const clientsChanged = emitter();
+    const switched = emitter();
+    const states = new Map<DeclaredProject, ReturnType<typeof emitter>>([
+      [first, emitter()],
+      [second, emitter()],
+    ]);
+    const pool = {
+      get: (project: DeclaredProject) => ({
+        onDidChangeState: states.get(project)!.event,
+      }),
+      onDidChangeClients: clientsChanged.event,
+    };
+    const current = {
+      current: first as DeclaredProject | undefined,
+      onDidChangeCurrent: switched.event,
+    };
+    const listener = vi.fn();
+    const subscription = onCurrentClientChange(
+      pool as never,
+      current as never,
+    )(listener);
+    return {
+      first,
+      second,
+      clientsChanged,
+      switched,
+      states,
+      current,
+      listener,
+      subscription,
+    };
+  }
+
+  it("fires on a Current Project switch and follows the new project", () => {
+    const { second, switched, states, current, listener } = setup();
+
+    current.current = second;
+    switched.fire();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    states.get(second)!.fire();
+    expect(listener).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops following the previous project after a switch", () => {
+    const { first, second, switched, states, current, listener } = setup();
+
+    current.current = second;
+    switched.fire();
+    listener.mockClear();
+
+    states.get(first)!.fire();
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("fires when the current client is replaced", () => {
+    const { clientsChanged, listener } = setup();
+
+    clientsChanged.fire();
+
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("fires on a state change of the current client only", () => {
+    const { first, second, states, listener } = setup();
+
+    states.get(first)!.fire();
+    expect(listener).toHaveBeenCalledTimes(1);
+
+    states.get(second)!.fire();
+    expect(listener).toHaveBeenCalledTimes(1);
+  });
+
+  it("releases its subscriptions on dispose", () => {
+    const { first, clientsChanged, switched, states, subscription, listener } =
+      setup();
+
+    subscription.dispose();
+    clientsChanged.fire();
+    switched.fire();
+    states.get(first)!.fire();
+
+    expect(listener).not.toHaveBeenCalled();
+    expect(states.get(first)!.count()).toBe(0);
   });
 });
