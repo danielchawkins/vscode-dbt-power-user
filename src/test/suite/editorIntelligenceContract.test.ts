@@ -15,8 +15,8 @@ describe("editor intelligence project resolution", () => {
       .sort();
 
     expect(callers).toEqual([
-      "features/commands.ts",
       "features/projectPicker/actionsCenter.ts",
+      "features/projectSetup/commands.ts",
       "features/projectSetup/projectSetupCommands.ts",
     ]);
   });

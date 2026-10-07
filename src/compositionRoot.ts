@@ -311,27 +311,30 @@ function composeCommands(graph: ProjectsGraph, startupGate: StartupGate) {
     projects,
     terminal,
   );
-  const vscodeCommands = new VSCodeCommands(
+  const vscodeCommands = new VSCodeCommands({
     projects,
-    extensionContextStore,
-    new RunModel(projects, graph.currentProject),
-    new RunTest(projects, graph.queryManifestService),
-    new ProjectSetupCommands(
+    extensionContext: extensionContextStore,
+    runModel: new RunModel(projects, graph.currentProject),
+    runTest: new RunTest(projects, graph.queryManifestService),
+    projectSetupCommands: new ProjectSetupCommands(
       projects,
       extensionContextStore,
       graph.projectQuickPick,
       graph.outputChannels,
     ),
-    terminal,
-    new DiagnosticsOutputChannel(
+    log: terminal,
+    diagnosticsOutputChannel: new DiagnosticsOutputChannel(
       graph.outputChannels.createDiagnosticsChannel(),
     ),
-    graph.runHistoryService,
+    runHistoryService: graph.runHistoryService,
     cteProfilerService,
-    new CteProfilerDecorationProvider(cteProfilerService, terminal),
+    cteProfilerDecorationProvider: new CteProfilerDecorationProvider(
+      cteProfilerService,
+      terminal,
+    ),
     deferToProductionStatusBar,
     startupGate,
-  );
+  });
   return { vscodeCommands, deferToProductionStatusBar };
 }
 

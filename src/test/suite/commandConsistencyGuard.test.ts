@@ -27,16 +27,16 @@ function scanCommandRegistrations() {
         const callExpr = node;
         const { expression: callee } = callExpr;
 
-        if (
-          ts.isPropertyAccessExpression(callee) &&
-          ((ts.isIdentifier(callee.expression) &&
+        const isRegistration =
+          (ts.isPropertyAccessExpression(callee) &&
+            ts.isIdentifier(callee.expression) &&
             callee.expression.text === "commands" &&
             (callee.name.text === "registerCommand" ||
               callee.name.text === "registerTextEditorCommand")) ||
-            (callee.expression.kind === ts.SyntaxKind.ThisKeyword &&
-              callee.name.text === "register")) &&
-          callExpr.arguments.length > 0
-        ) {
+          // The feature command modules receive `register` as a parameter.
+          (ts.isIdentifier(callee) && callee.text === "register");
+
+        if (isRegistration && callExpr.arguments.length > 0) {
           const arg0 = callExpr.arguments[0];
           if (
             ts.isStringLiteral(arg0) ||
@@ -203,8 +203,8 @@ describe("command contribution consistency", () => {
     };
 
     const nonLiteralAllowlist: Record<string, string> = {
-      "features/commands.ts:command":
-        "`VSCodeCommands.register` forwards a literal from its callers",
+      "commandRegistry.ts:command":
+        "`gatedRegister` forwards a literal from its callers",
       "benchmark/runtimeTimings.ts:RUNTIME_TIMINGS_COMMAND":
         "Constant export; conditional registration",
       "projects/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":

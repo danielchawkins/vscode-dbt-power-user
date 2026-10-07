@@ -32,20 +32,23 @@ const build = (over: { projects?: unknown; runTest?: unknown } = {}) => {
     getFromWorkspaceState: vi.fn(() => "picked"),
   };
   const log = { error: vi.fn(), debug: vi.fn() };
-  new VSCodeCommands(
-    (over.projects ?? { get: () => undefined, all: () => [] }) as never,
-    extensionContext as never,
-    runModel as never,
-    runTest as never,
-    projectSetupCommands as never,
-    log as never,
-    {} as never,
-    runHistoryService as never,
-    { cancel: vi.fn(), clearResults: vi.fn() } as never,
-    { toggle: vi.fn() } as never,
-    deferBar as never,
-    { whenSettled: async () => undefined },
-  );
+  new VSCodeCommands({
+    projects: (over.projects ?? {
+      get: () => undefined,
+      all: () => [],
+    }) as never,
+    extensionContext: extensionContext as never,
+    runModel: runModel as never,
+    runTest: runTest as never,
+    projectSetupCommands: projectSetupCommands as never,
+    log: log as never,
+    diagnosticsOutputChannel: {} as never,
+    runHistoryService: runHistoryService as never,
+    cteProfilerService: { cancel: vi.fn(), clearResults: vi.fn() } as never,
+    cteProfilerDecorationProvider: { toggle: vi.fn() } as never,
+    deferToProductionStatusBar: deferBar as never,
+    startupGate: { whenSettled: async () => undefined },
+  });
   const handler = (id: string): Handler => {
     const call = (commands.registerCommand as Mock).mock.calls.find(
       ([command]) => command === id,
@@ -135,6 +138,27 @@ describe("VSCodeCommands", () => {
     ).resolves.toBeUndefined();
   });
 
+  it("does not turn a failed YAML lens run into a command error", async () => {
+    const runModel = vi.fn().mockRejectedValue(new Error("boom"));
+    const { handler } = build({ projects: { get: () => ({ runModel }) } });
+    await expect(
+      handler("fusionPowerUser.yamlRunModel")(Uri.file("/p/s.yml"), "a"),
+    ).resolves.toBeUndefined();
+  });
+
+  it("logs a CTE that cannot be run", async () => {
+    const { handler, log } = build({ projects: { get: () => undefined } });
+    await handler("fusionPowerUser.runCteWithDependencies")({
+      uri: Uri.file("/p/a.sql"),
+      cte: { name: "c", compiledPath: "/does/not/exist.sql" },
+    });
+    expect(log.error).toHaveBeenCalledWith(
+      "CteExecution",
+      "Unable to execute CTE",
+      expect.anything(),
+    );
+  });
+
   it("builds and cleans the project of the active file", async () => {
     const buildProject = vi.fn();
     const clean = vi.fn();
@@ -206,7 +230,6 @@ describe("VSCodeCommands", () => {
       (window as any).visibleTextEditors = [];
       (window as any).showTextDocument = vi.fn();
       (workspace.openTextDocument as Mock).mockResolvedValue({ doc: 1 });
-      (window as any).showTextDocument = vi.fn();
       await handler("fusionPowerUser.showCompiledSQL")();
       expect(window.showTextDocument).toHaveBeenCalledWith(
         { doc: 1 },
