@@ -44,6 +44,7 @@ import {
   activeEditorContext,
   failureOf,
   openSqlInEditor,
+  QUERY_RESULTS_CSP,
   recordResult,
   resolveQueryProject,
   runOnQueryPanel,
@@ -65,8 +66,7 @@ enum QueryPanelViewType {
 export class QueryResultPanel extends PanelHost<HostMessage> {
   public static readonly viewType = "fusionPowerUser.PreviewResults";
   protected readonly entry = "queryResults";
-  // Perspective fetches and compiles its .wasm and runs its engine in a worker started from a Blob.
-  protected readonly csp = { wasm: true, connect: true, blobWorkers: true };
+  protected readonly csp = QUERY_RESULTS_CSP;
   protected override panelDescription = "Query results panel";
   private _queryTabData: unknown;
   private _bottomPanel: WebviewView | undefined;

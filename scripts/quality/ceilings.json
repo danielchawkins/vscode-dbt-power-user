@@ -1,9 +1,9 @@
 {
   "suppressions.host": 29,
-  "suppressions.webview": 30,
+  "suppressions.webview": 29,
   "internalTags": 63,
   "typeCoverage.host": 99.49,
-  "typeCoverage.webview": 99.07,
+  "typeCoverage.webview": 99.11,
   "coverage.host": {
     "lines": 80,
     "branches": 72,
@@ -20,13 +20,13 @@
     "dist/extension.js": 1250000,
     "vsix": 5500000,
     "wasm": 4011253,
-    "webview_panels/dist/assets/chunk-shared.js": 329412,
+    "webview_panels/dist/assets/chunk-shared.js": 242119,
     "webview_panels/dist/assets/documentationEditor.css": 8760,
     "webview_panels/dist/assets/documentationEditor.js": 34970,
     "webview_panels/dist/assets/lineage.css": 26040,
     "webview_panels/dist/assets/lineage.js": 275000,
     "webview_panels/dist/assets/queryResults.css": 127960,
     "webview_panels/dist/assets/queryResults.js": 637600,
-    "webview_panels/dist/assets/shared.css": 9742
+    "webview_panels/dist/assets/shared.css": 10884
   }
 }

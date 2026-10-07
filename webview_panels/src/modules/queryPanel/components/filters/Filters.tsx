@@ -1,8 +1,7 @@
 import { FilterIcon, SearchIcon } from "@assets/icons";
 import { useDebouncedValue } from "@modules/app/useDebouncedValue";
-import { IconButton, Input, OptionType, Select, Stack } from "@uicore";
+import { IconButton, Input, MultiSelect, Stack } from "@uicore";
 import { ChangeEvent, MouseEvent, useEffect, useState } from "react";
-import { ActionMeta } from "react-select";
 import styles from "../../querypanel.module.css";
 
 export interface QueryFilters {
@@ -55,16 +54,8 @@ const Filters = ({
     setShowForm(false);
   };
 
-  const handleTagsChange = (
-    changedTags: unknown,
-    triggeredAction: ActionMeta<unknown>,
-  ) => {
-    if (triggeredAction.action === "clear") {
-      setShowForm(false);
-    }
-    onFiltersChange({
-      tags: (changedTags as OptionType[]).map((tag) => tag.value),
-    });
+  const handleTagsChange = (changedTags: string[]) => {
+    onFiltersChange({ tags: changedTags });
   };
 
   return (
@@ -87,21 +78,12 @@ const Filters = ({
           </IconButton>
         )}
         {showForm ? (
-          <Select
-            closeMenuOnSelect={false}
-            components={{ DropdownIndicator: null }}
-            styles={{
-              container: (s) => ({
-                ...s,
-                minWidth: 200,
-                marginBottom: "1rem",
-              }),
-            }}
+          <MultiSelect
             autoFocus
-            inputId="tags"
-            openMenuOnFocus
-            isMulti
-            options={tags?.map((v) => ({ label: v, value: v })) ?? []}
+            id="tags"
+            style={{ minWidth: 200, marginBottom: "1rem" }}
+            options={tags.map((v) => ({ label: v, value: v }))}
+            value={selectedTags}
             onChange={handleTagsChange}
             onBlur={handleTagsBlur}
           />

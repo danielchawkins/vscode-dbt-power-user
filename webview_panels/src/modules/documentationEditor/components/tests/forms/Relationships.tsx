@@ -10,8 +10,6 @@ interface Props {
   setValue: SetTestFormValue;
 }
 
-const option = (value?: string) => (value ? { label: value, value } : null);
-
 const Relationships = ({
   toValue,
   fieldValue,
@@ -88,27 +86,23 @@ const Relationships = ({
       <div style={{ marginBottom: "var(--spacing-xl)" }}>
         <Label htmlFor="relationship-to">To</Label>
         <Select
-          inputId="relationship-to"
+          id="relationship-to"
           name="to"
           required
-          openMenuOnFocus
           options={toOptions}
-          value={option(toValue)}
-          onChange={(val: unknown) => setValue("to", (val as OptionType).value)}
+          value={toValue}
+          onChange={(val) => setValue("to", val)}
         />
       </div>
       <div>
         <Label htmlFor="relationship-field">Field</Label>
         <Select
-          inputId="relationship-field"
+          id="relationship-field"
           name="field"
           required
-          openMenuOnFocus
           options={toFieldOptions}
-          value={option(fieldValue)}
-          onChange={(val: unknown) =>
-            setValue("field", (val as OptionType).value)
-          }
+          value={fieldValue}
+          onChange={(val) => setValue("field", val)}
         />
       </div>
     </div>

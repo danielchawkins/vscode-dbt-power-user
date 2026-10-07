@@ -4,22 +4,22 @@ Every panel page comes from `panelHtml` (`src/webview/panelHtml.ts`). The policy
 
 ## Shared allowances
 
-| Directive                               | Why                                                                                                                                                                                                              |
-| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `script-src 'nonce-…' <cspSource>`      | The nonce admits the entry script; `cspSource` admits the chunks it imports with `import()`.                                                                                                                     |
-| `style-src <cspSource> 'unsafe-inline'` | `renderPanel.css`, the entry's own stylesheet and `codicon.css`; `'unsafe-inline'` covers React `style=` attributes and the inline styles react-select (Emotion) and Perspective inject.                         |
-| `font-src <cspSource>`                  | `codicon.ttf`. No built stylesheet has an `@font-face` with a `data:` source, so `data:` was removed.                                                                                                            |
-| `img-src <cspSource> data:`             | `spinner.gif`, the 23 Bootstrap SVG data URIs in `renderPanel.css` that every entry loads, and in `queryResults.css` 374 SVG, 6 PNG and 12 GIF data URIs. `lineage.css` and `documentationEditor.css` have none. |
+| Directive                          | Why                                                                                                                                                                                                                                                       |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `script-src 'nonce-…' <cspSource>` | The nonce admits the entry script; `cspSource` admits the chunks it imports with `import()`.                                                                                                                                                              |
+| `style-src <cspSource>`            | `renderPanel.css`, the entry's own stylesheet and `codicon.css`. React sets `style` props through the CSSOM, which the policy permits. `'unsafe-inline'` is granted only to the query results panel, whose Perspective viewer injects `<style>` elements. |
+| `font-src <cspSource>`             | `codicon.ttf`. No built stylesheet has an `@font-face` with a `data:` source, so `data:` was removed.                                                                                                                                                     |
+| `img-src <cspSource> data:`        | `spinner.gif`, the 23 Bootstrap SVG data URIs in `renderPanel.css` that every entry loads, and in `queryResults.css` 374 SVG, 6 PNG and 12 GIF data URIs. `lineage.css` and `documentationEditor.css` have none.                                          |
 
 Removed from the previous two policies: `'unsafe-eval'`, `https:` in `img-src`, the `https://*.vscode-resource.vscode-cdn.net` script source (covered by `cspSource`), and `data:` in `font-src`.
 
 ## Per-panel policies
 
-| Panel                | Allowances beyond the shared ones                                   |
-| -------------------- | ------------------------------------------------------------------- |
-| documentation editor | none                                                                |
-| lineage              | none                                                                |
-| query results        | `'wasm-unsafe-eval'`, `connect-src <cspSource>`, `worker-src blob:` |
+| Panel                | Allowances beyond the shared ones                                                                |
+| -------------------- | ------------------------------------------------------------------------------------------------ |
+| documentation editor | none (`'unsafe-inline'` styles removed after react-select was replaced)                          |
+| lineage              | none                                                                                             |
+| query results        | `style-src 'unsafe-inline'`, `'wasm-unsafe-eval'`, `connect-src <cspSource>`, `worker-src blob:` |
 
 Only the query results entry imports Perspective. Lineage needs no `'wasm-unsafe-eval'`: its code views (`TableDetails.tsx` and `LineageModals.tsx` in the `@altimateai/ui-components` source maps) render `CodeBlock` from `@altimateai/lego`, which highlights with Prism through react-syntax-highlighter. The bundled Shiki Oniguruma WebAssembly chunk is reachable only from lego's `ai-elements/code-block` (used by its streamdown message rendering), which the lineage component does not use.
 
