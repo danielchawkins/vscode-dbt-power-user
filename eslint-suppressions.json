@@ -105,20 +105,6 @@
       "count": 2
     }
   },
-  "src/features/codegen/sourceModelCreationCodeLensProvider.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-depth": {
-      "count": 16
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
-      "count": 1
-    }
-  },
   "src/features/commands.ts": {
     "max-lines": {
       "count": 1

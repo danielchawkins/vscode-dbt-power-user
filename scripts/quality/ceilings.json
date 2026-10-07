@@ -1,8 +1,8 @@
 {
-  "suppressions.host": 119,
+  "suppressions.host": 100,
   "suppressions.webview": 48,
   "internalTags": 64,
-  "strictTs.host": 107,
+  "strictTs.host": 106,
   "strictTs.webview": 65,
   "typeCoverage.host": 98.04,
   "typeCoverage.webview": 99.06,
