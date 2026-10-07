@@ -37,6 +37,7 @@ version = "2.0.6"
 backend = "aqua:getdbt.com/dbt-fusion"
 
 [tools."aqua:getdbt.com/dbt-fusion"."platforms.linux-arm64"]
+checksum = "sha256:e7b885da811090df88631b8791676bed31953bac6532a7fa0c3fbde1645a57ad"
 url = "https://public.cdn.getdbt.com/fs/cli/fs-v2.0.6-aarch64-unknown-linux-gnu.tar.gz"
 
 [tools."aqua:getdbt.com/dbt-fusion"."platforms.linux-arm64-musl"]

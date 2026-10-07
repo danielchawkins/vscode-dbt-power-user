@@ -502,7 +502,10 @@ export function attachLspProtocolClient(
     if (method === "window/workDoneProgress/create") {
       return () => null;
     }
-    if (method === "client/registerCapability") {
+    if (
+      method === "client/registerCapability" ||
+      method === "workspace/codeLens/refresh"
+    ) {
       return () => null;
     }
     if (method === "workspace/configuration") {

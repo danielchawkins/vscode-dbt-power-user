@@ -137,6 +137,27 @@ suite("Column lineage from the language server", function () {
     return columns;
   }
 
+  /** Both directions requested together, reissued while the server cancels them to reanalyze the written file. */
+  async function concurrentPair(): Promise<
+    (ConnectedColumnsResult | undefined)[]
+  > {
+    const deadline = Date.now() + 60_000;
+    for (;;) {
+      const pair = await Promise.all(
+        [false, true].map((upstreamExpansion) =>
+          request({ targets: [[ORDER_TOTALS, "total"]], upstreamExpansion }),
+        ),
+      );
+      const cancelled = pair.some((result) =>
+        (JSON.stringify(result) ?? "undefined").includes("Operation cancelled"),
+      );
+      if (!cancelled || Date.now() > deadline) {
+        return pair;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 1_000));
+    }
+  }
+
   test("answers concurrent upstream and downstream requests for one column", async function () {
     const star = path.join(projectDir, "models", "totals_star.sql");
     fs.writeFileSync(star, "select * from {{ ref('order_totals') }}\n");
@@ -148,18 +169,7 @@ suite("Column lineage from the language server", function () {
         { targets: [[ORDER_TOTALS, "total"]], upstreamExpansion: true },
         (lineage) => lineage.length > 1,
       );
-      const [upstream, downstream] = (
-        await Promise.all([
-          request({
-            targets: [[ORDER_TOTALS, "total"]],
-            upstreamExpansion: false,
-          }),
-          request({
-            targets: [[ORDER_TOTALS, "total"]],
-            upstreamExpansion: true,
-          }),
-        ])
-      ).map((result) => {
+      const [upstream, downstream] = (await concurrentPair()).map((result) => {
         assert.ok(result?.kind === "lineage", JSON.stringify(result));
         return edges(result.columnLineage);
       });

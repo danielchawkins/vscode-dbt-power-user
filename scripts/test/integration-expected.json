@@ -1,0 +1,14 @@
+{
+  "$comment": [
+    "Mocha passing and pending counts per label on the pinned Fusion.",
+    "Update this file whenever a test is added, removed or newly skipped.",
+    "A label fails on a non-zero exit, a failing test, a different passing count or more pending."
+  ],
+  "trusted": { "passing": 55, "pending": 8 },
+  "symlinked": { "passing": 3, "pending": 0 },
+  "native-strict": { "passing": 9, "pending": 0 },
+  "native-baseline": { "passing": 4, "pending": 5 },
+  "native-project": { "passing": 4, "pending": 5 },
+  "untrusted": { "passing": 2, "pending": 2 },
+  "trusted-vsix": { "passing": 2, "pending": 2 }
+}

@@ -508,6 +508,33 @@ Citations:
 - [r14a](../../mise.lock): "url = "<https://public.cdn.getdbt.com/fs/cli/fs-v2.0.6-aarch64-unknown-linux-gnu.tar.gz>""
 - [r14b](../../mise.lock): "checksum = "sha256:1ff8e942149c9c42e0a26419f294c3293e500b84264ccb95a1ff9b6585c88ddb""
 
+## Docker pilot
+
+All seven integration labels run in Linux arm64 containers on Colima (aarch64, 6 CPU, 16 GiB) under `xvfb-run -a`, with Electron, the dbt spy wrapper and Fusion 2.0.6 working on aarch64. `just test-integration-docker` runs every label; `just test-integration-docker <label>` runs one.
+
+Files: `docker/integration/Dockerfile`, `docker/integration/fetch-vscode.mjs`, `.dockerignore`, `scripts/test/docker-integration.sh`, `scripts/test/integration-result.mjs` (log parsing and the parity verdict), `scripts/test/integration-expected.json`, `scripts/test/integration-shards.mjs`, `scripts/test/integration-summary.mjs`, and `DOCKER_SHARDS` in `scripts/test/integration-layout.mjs`.
+
+Design: the host runs `just build-integration` (clean, package, build, compile) once while the image builds in parallel. Four shards then start as separate `docker run`s: `trusted` alone, and three groups of the other labels. Each container mounts the repository read-only at `/src`, copies it into its own `/work` (keeping the host-built `out/`, `dist/` and VSIX, and rewriting `out/latest-vsix` to the container path), and runs its labels one after another. The image supplies `node_modules` from `npm ci --strict-allow-scripts`, Node and Fusion from `mise.lock`, and VS Code baked into `/work/.vscode-test`. No shard runs `npm ci` or `just package`, and no two shards share a writable directory. Output is printed as one summary table of label, passing and pending against expected, seconds, and ok/FAIL; the exit code is non-zero if any label fails.
+
+Parity gate: a label passes only with exit code 0, no failing test, a passing count equal to the expected one and a pending count no greater than expected. A silent skip (Fusion not found, 0 passing) therefore fails. The counts are the host baseline on pinned Fusion 2.0.6: trusted 55/8, symlinked 3/0, native-strict 9/0, native-baseline 4/5, native-project 4/5, untrusted 2/2, trusted-vsix 2/2 (passing/pending). Adding a test means updating `integration-expected.json`.
+
+Measured wall time, from `just test-integration-docker` with a warm image: 82 s sharded, against 141 s for the host run. Three further consecutive runs took 86 s, 113 s and 239 s. The 239 s run rebuilt the last image layers after a Dockerfile edit, so it is not a steady-state figure. Per-label seconds in the 86 s run: trusted 75, native-baseline 56, native-strict 38, native-project 35, symlinked 4, untrusted 3, trusted-vsix 3. In the 113 s run the native labels took 50 to 63 s, so the four containers compete for the 6 CPUs and the shard times vary by about 20 s between runs. `trusted` is the longest label and bounds the wall time; the host build before the shards takes about 15 s.
+
+Image: 3.44 GB on disk, 849 MB of compressed content. A cold build (`--no-cache`, base image present) takes 4 min 41 s, of which the mise downloads of Node and Fusion and the VS Code download are the largest parts. A build with every layer cached takes 3 s. The tag is a content hash of the Dockerfile, `fetch-vscode.mjs`, `integration-layout.mjs`, `mise.toml`, `mise.lock`, `package.json` and `package-lock.json`, so workspaces with different inputs do not share a tag.
+
+Linux-specific findings:
+
+- Electron refuses to start as root without `--no-sandbox`, which the VSIX launches do not pass. The container therefore runs as the non-root user `tester`. As a non-root user, Chromium needs unprivileged user namespaces, which Docker's default seccomp profile blocks, so each `docker run` passes `--security-opt seccomp=unconfined`. Setting the setuid `chrome-sandbox` helper up as root was tried and does not work without `CAP_SYS_ADMIN`. With this, `untrusted` and `trusted-vsix` both pass in the container (2 passing and 2 pending each) with the sandbox enabled.
+- Tests run `dbt` from `PATH` (`checkFusionVersion` in `src/test/integration/helpers/testFixtures.ts`), and a mise shim fails outside a directory with `mise.toml`, so the suite skips silently. The image puts a symlink to the real Fusion binary first on `PATH`, and the parity gate catches a skip.
+- `mise install --locked` now verifies the Fusion linux-arm64 download: `mise.lock` carries the sha256 of the asset it names (`shasum -a 256` of `fs-v2.0.6-aarch64-unknown-linux-gnu.tar.gz`), and `just lint-mise-lock` passes.
+- Chromium prints `dbus` and GPU `CreateCommandBuffer` errors under Xvfb with no system bus; they are harmless here.
+- `npm ci` on the host-built checkout is not needed: the compiled output is plain JavaScript, so the host build is shared with every shard.
+
+Test changes, each a race or gap in the test that the Linux run exposed:
+
+- `src/test/integration/lspProtocolClient.ts`: the fixture client answered `client/registerCapability` but not `workspace/codeLens/refresh`, so a server request for it was recorded as an error and `lineageProgressRetention` failed its `getErrors().length === 0` assertion on every Linux run. The macOS run does not see the request within the test's window. The client now answers it with `null`, as it does for `client/registerCapability`. The assertion also prints the captured errors.
+- `src/test/integration/columnLineage.test.ts`: "answers concurrent upstream and downstream requests for one column" wrote a model and queried at once. The server cancels in-flight requests to reanalyze the written file, and the product retries a cancelled request only once, so the test failed in about half of the Linux runs. The test now reissues the pair, for up to 60 s, while either answer is "Operation cancelled". Every edge assertion is unchanged.
+
 ## Alternatives the thesis missed
 
 [high] Use Linux containers first for a measured integration pilot, but do not call them a replacement for smoke. Build one private writable worktree per shard, run one selected label under Xvfb, and fix `prepareLabel` to prepare only selected labels before scaling out. This addresses the actual all-label preparation and shared-output defects rather than multiplying them.

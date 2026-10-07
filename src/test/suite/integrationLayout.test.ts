@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  DOCKER_SHARDS,
   LABELS,
   labelsToPrepare,
   VSIX_LABELS,
@@ -30,5 +31,14 @@ describe("labelsToPrepare", () => {
       "native-strict",
       "untrusted",
     ]);
+  });
+});
+
+describe("DOCKER_SHARDS", () => {
+  it("runs every label exactly once, with trusted alone", () => {
+    expect(DOCKER_SHARDS.flat().sort()).toEqual(
+      [...LABELS, ...VSIX_LABELS].sort(),
+    );
+    expect(DOCKER_SHARDS).toContainEqual(["trusted"]);
   });
 });

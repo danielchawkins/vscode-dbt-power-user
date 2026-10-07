@@ -187,7 +187,8 @@ suite("Lineage progress retention", function () {
         progress.some((params) => isLineageProgress(params, "end")),
         "capture should retain Computing Lineage end after listNodes cursor",
       );
-      assert.strictEqual(fixture.getErrors().length, 0);
+      const errors = fixture.getErrors();
+      assert.strictEqual(errors.length, 0, JSON.stringify(errors));
 
       void fixture
         .request("workspace/executeCommand", {
