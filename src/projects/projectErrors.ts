@@ -8,7 +8,6 @@ import { CommandProcessResult } from "../core/types";
 /** Where a project error came from; each source's errors are replaced independently. */
 export type ProjectErrorSource = "parse" | "compile" | "executable";
 
-/** @internal */
 export const SHOW_OUTPUT = "Show output";
 export const SHOW_OUTPUT_COMMAND = "fusionPowerUser.showFusionOutput";
 const LOG_SOURCE = "ProjectErrors";

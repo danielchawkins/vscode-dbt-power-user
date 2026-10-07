@@ -31,9 +31,11 @@ function draftPanel() {
   const panel = new DocsEditViewPanel(
     projects,
     {} as any,
-    docGenService as any,
-    dbtTestService as any,
-    { manifestFor: () => undefined } as any,
+    {
+      docGenService,
+      dbtTestService,
+      queryManifestService: { manifestFor: () => undefined },
+    } as any,
     terminal,
   );
   const postMessage = vi.fn();

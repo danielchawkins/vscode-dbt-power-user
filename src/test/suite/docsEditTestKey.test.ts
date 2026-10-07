@@ -12,6 +12,10 @@ import { Uri, window, workspace } from "vscode";
 import { parse } from "yaml";
 import { DbtTestService } from "../../features/docs/dbtTestService";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
+import {
+  getTestDataByColumn,
+  getTestDataByModel,
+} from "../../features/docs/docsTestData";
 import { createMockTextDocument, type WorkspaceEdit } from "../mock/vscode";
 
 type TestData = { tests?: unknown[]; data_tests?: unknown[] } | undefined;
@@ -48,6 +52,24 @@ function testKeyPanel(panelClass: typeof DocsEditViewPanel): TestKeyPanel {
   instance.terminal = { debug: vi.fn(), error: vi.fn() };
   instance.projects = { get: () => project };
   instance.getProject = () => project;
+  instance.getTestDataByModel = (
+    message: never,
+    modelName: string,
+    existingModel?: never,
+  ) =>
+    getTestDataByModel(message, modelName, existingModel, {
+      terminal: instance.terminal,
+      dbtTestService: instance.dbtTestService,
+    });
+  instance.getTestDataByColumn = (
+    message: never,
+    column: string,
+    existingColumn?: never,
+  ) =>
+    getTestDataByColumn(message, column, existingColumn, {
+      terminal: instance.terminal,
+      dbtTestService: instance.dbtTestService,
+    });
   return instance as TestKeyPanel;
 }
 
