@@ -19,6 +19,7 @@ import {
 import { onDidChangeSettings } from "../settings";
 import { activeModelUri } from "./previewUri";
 import {
+  ENABLED_SETTING,
   PROJECTS_SETTING,
   resolveDeclaredProjectRoots,
 } from "./projectConfiguration";
@@ -68,7 +69,7 @@ export class ProjectRegistry implements Disposable {
     this.initialized = true;
     this.reconcile();
     this.subscriptions.push(
-      onDidChangeSettings([PROJECTS_SETTING], (change) => {
+      onDidChangeSettings([PROJECTS_SETTING, ENABLED_SETTING], (change) => {
         if (change.affects()) {
           this.reconcile();
         }

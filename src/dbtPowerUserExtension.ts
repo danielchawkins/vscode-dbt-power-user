@@ -134,25 +134,18 @@ export class DBTPowerUserExtension implements Disposable {
         return;
       }
 
-      const folders = workspace.workspaceFolders ?? [];
-      if (
-        folders.length > 0 &&
-        folders.every((folder) => !readSetting("enabled", folder.uri))
-      ) {
-        return;
-      }
-
       await this.projectRegistry.initialize();
       if (this.disposed) {
         return;
       }
-      this.fusionClientPool.initialize();
-      this.fusionStatus.initialize();
-      await this.projects.initialize();
-      if (this.disposed) {
+      if (
+        this.allFoldersDisabled() &&
+        this.projectRegistry.projects.length === 0
+      ) {
+        this.startWhenFirstProject();
         return;
       }
-      this.statusBars.initialize();
+      await this.startServices();
     } catch (error) {
       this.dbtTerminal.error(
         "extensionActivationError",
@@ -162,5 +155,41 @@ export class DBTPowerUserExtension implements Disposable {
     } finally {
       this.startupGate.settle();
     }
+  }
+
+  private allFoldersDisabled(): boolean {
+    const folders = workspace.workspaceFolders ?? [];
+    return (
+      folders.length > 0 &&
+      folders.every((folder) => !readSetting("enabled", folder.uri))
+    );
+  }
+
+  /** Keeps everything but the registry idle until a folder is enabled and registers a project. */
+  private startWhenFirstProject(): void {
+    const subscription = this.projectRegistry.onDidChangeProjects(() => {
+      if (this.disposed || this.projectRegistry.projects.length === 0) {
+        return;
+      }
+      subscription.dispose();
+      this.startServices().catch((error) =>
+        this.dbtTerminal.error(
+          "extensionActivationError",
+          "Unable to activate Fusion Power User",
+          error,
+        ),
+      );
+    });
+    this.own(subscription);
+  }
+
+  private async startServices(): Promise<void> {
+    this.fusionClientPool.initialize();
+    this.fusionStatus.initialize();
+    await this.projects.initialize();
+    if (this.disposed) {
+      return;
+    }
+    this.statusBars.initialize();
   }
 }

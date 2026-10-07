@@ -7,7 +7,6 @@ import {
 } from "../../features/lineage/connectedColumnsCommand";
 import { ProjectConfigCommands } from "../../features/projectSetup/projectConfigCommands";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/fusionClientDiagnostics";
-import { CONFIGURATION_SECTION } from "../../settings";
 import { StartupGate } from "../../startupGate";
 
 const UPSTREAM_EXTENSION = "innoverio.vscode-dbt-power-user";
@@ -22,6 +21,8 @@ const activationHarness = (enabled: boolean) => {
     projects: () => Promise.resolve(),
   };
   const errors: unknown[][] = [];
+  const registryProjects: unknown[] = [];
+  const listeners: Array<() => void> = [];
   const extension = new (DBTPowerUserExtension as any)();
   Object.assign(extension, {
     projects: {
@@ -32,9 +33,16 @@ const activationHarness = (enabled: boolean) => {
       },
     },
     projectRegistry: {
+      projects: registryProjects,
       initialize: () => {
         started.push("registry");
         return behavior.registry();
+      },
+      onDidChangeProjects: (listener: () => void) => {
+        listeners.push(listener);
+        return {
+          dispose: () => listeners.splice(listeners.indexOf(listener), 1),
+        };
       },
     },
     fusionClientPool: { initialize: () => started.push("pool") },
@@ -67,6 +75,11 @@ const activationHarness = (enabled: boolean) => {
     started,
     behavior,
     errors,
+    /** Simulates a folder being enabled so the registry gains a project. */
+    registerProject: () => {
+      registryProjects.push({});
+      [...listeners].forEach((listener) => listener());
+    },
   };
 };
 
@@ -123,7 +136,7 @@ describe("DBTPowerUserExtension startup gate", () => {
     await harness.extension.activate();
 
     await expect(command.run()).resolves.toBe(false);
-    expect(harness.started).toEqual([]);
+    expect(harness.started).toEqual(["registry"]);
   });
 
   it("runs gated commands when Power User is installed", async () => {
@@ -259,18 +272,33 @@ describe("DBTPowerUserExtension.activate", () => {
     expect(harness.started).toEqual(["registry"]);
   });
 
-  it("stops activation silently when disabled for the workspace folder", async () => {
+  it("starts only the registry when every folder is disabled", async () => {
     const harness = activationHarness(false);
 
     await harness.extension.activate();
 
-    expect((workspace.getConfiguration as Mock).mock.calls).toEqual([
-      [CONFIGURATION_SECTION, harness.folder.uri],
-    ]);
+    expect(harness.started).toEqual(["registry"]);
     expect((window.showErrorMessage as Mock).mock.calls).toEqual([]);
-    expect(harness.started).toEqual([]);
     expect(harness.errors).toEqual([]);
-    expect(harness.extension.disposables).toHaveLength(0);
+  });
+
+  it("starts everything once a disabled folder is enabled and registers a project", async () => {
+    const harness = activationHarness(false);
+    await harness.extension.activate();
+
+    harness.registerProject();
+    await new Promise((resolve) => setImmediate(resolve));
+
+    expect(harness.started).toEqual([
+      "registry",
+      "pool",
+      "status",
+      "projects",
+      "statusBars",
+    ]);
+    harness.registerProject();
+    expect(harness.started).toHaveLength(5);
+    expect(harness.errors).toEqual([]);
   });
 
   it("activates when any workspace folder remains enabled", async () => {

@@ -12,7 +12,10 @@ import {
 } from "vitest";
 import { RelativePattern, Uri, workspace, WorkspaceFolder } from "vscode";
 import { DBT_PROJECT_FILE } from "../../core/project";
-import { PROJECTS_SETTING } from "../../projects/projectConfiguration";
+import {
+  ENABLED_SETTING,
+  PROJECTS_SETTING,
+} from "../../projects/projectConfiguration";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 import { esmDirname } from "../esmDirname";
 
@@ -67,6 +70,71 @@ describe("ProjectRegistry", () => {
     expect(registry.projects[1].root.fsPath).toContain("projects/sox");
     expect(registry.projects[0].name).toBe("general");
     expect(registry.projects[1].name).toBe("sox");
+  });
+
+  it("registers no projects for a folder with enabled false", async () => {
+    const enabled = makeFolder("multi-root");
+    const disabled = { ...makeFolder("single-project"), index: 1 };
+    vi.spyOn(workspace, "getConfiguration").mockImplementation(
+      (_section, scope) =>
+        ({
+          get: (key: string) =>
+            key === ENABLED_SETTING
+              ? scope !== disabled.uri
+              : key === PROJECTS_SETTING
+                ? [scope === disabled.uri ? "." : "projects/general"]
+                : undefined,
+        }) as any,
+    );
+    (workspace.workspaceFolders as any) = [enabled, disabled];
+
+    const registry = new ProjectRegistry(terminal);
+    await registry.initialize();
+
+    expect(registry.projects.map((p) => p.root.fsPath)).toEqual([
+      path.join(enabled.uri.fsPath, "projects/general"),
+    ]);
+  });
+
+  it("adds and removes projects when enabled toggles", async () => {
+    const folder = makeFolder("multi-root");
+    let enabled = false;
+    let onConfiguration:
+      | ((event: { affectsConfiguration(section: string): boolean }) => void)
+      | undefined;
+    vi.spyOn(workspace, "getConfiguration").mockImplementation(
+      () =>
+        ({
+          get: (key: string) =>
+            key === ENABLED_SETTING
+              ? enabled
+              : key === PROJECTS_SETTING
+                ? ["projects/general"]
+                : undefined,
+        }) as any,
+    );
+    vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(
+      (listener) => {
+        onConfiguration = listener as typeof onConfiguration;
+        return { dispose: vi.fn() };
+      },
+    );
+    (workspace.workspaceFolders as any) = [folder];
+    const registry = new ProjectRegistry(terminal);
+    await registry.initialize();
+    expect(registry.projects).toHaveLength(0);
+
+    const affectsEnabled = {
+      affectsConfiguration: (section: string) =>
+        section === "fusionPowerUser.enabled",
+    };
+    enabled = true;
+    onConfiguration?.(affectsEnabled);
+    expect(registry.projects).toHaveLength(1);
+
+    enabled = false;
+    onConfiguration?.(affectsEnabled);
+    expect(registry.projects).toHaveLength(0);
   });
 
   it("registers the same projects from a parent folder or individual folders", async () => {
