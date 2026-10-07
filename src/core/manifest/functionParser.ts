@@ -2,13 +2,18 @@ import * as path from "path";
 
 import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
-import { FunctionMetaMap, RESOURCE_TYPE_FUNCTION } from "./types";
+import {
+  FunctionMetaMap,
+  FunctionResource,
+  ManifestResources,
+  RESOURCE_TYPE_FUNCTION,
+} from "./types";
 
 export class FunctionParser {
   constructor(private terminal: Pick<Log, "debug">) {}
 
   createFunctionMetaMap(
-    functionsMap: Record<string, any>,
+    functionsMap: ManifestResources<FunctionResource>,
     project: ManifestProject,
   ): Promise<FunctionMetaMap> {
     return new Promise((resolve) => {

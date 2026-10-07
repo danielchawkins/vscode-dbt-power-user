@@ -356,7 +356,7 @@ export class DbtLineageService {
       return;
     }
 
-    const materialization = node.config.materialized;
+    const materialization = node.config.materialized ?? undefined;
     return {
       table: key,
       label: node.alias,
@@ -367,7 +367,7 @@ export class DbtLineageService {
       materialization,
       description: node.description,
       columns: node.columns,
-      patchPath: node.patch_path,
+      patchPath: node.patch_path ?? "",
       tests: (graphMetaMap["tests"].get(key)?.nodes || []).map((n) => {
         const testKey = n.label.split(".")[0];
         return { ...testMetaMap.get(testKey), key: testKey };

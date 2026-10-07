@@ -47,7 +47,7 @@ describe("TestParser Test Suite", () => {
   });
 
   it("should handle null/undefined testsMap", async () => {
-    const result = await testParser.createTestMetaMap([], mockAdapter);
+    const result = await testParser.createTestMetaMap([] as never, mockAdapter);
     expect(result.size).toBe(0);
   });
 
@@ -77,7 +77,7 @@ describe("TestParser Test Suite", () => {
     ];
 
     const result = await testParser.createTestMetaMap(
-      mockTestsMap,
+      mockTestsMap as never,
       mockAdapter,
     );
     expect(result.size).toBe(1);
@@ -116,7 +116,7 @@ describe("TestParser Test Suite", () => {
     ];
 
     const result = await testParser.createTestMetaMap(
-      mockTestsMap,
+      mockTestsMap as never,
       mockAdapter,
     );
     const testMeta = result.get("not_null_column_test");
@@ -156,7 +156,7 @@ describe("TestParser Test Suite", () => {
     ];
 
     const result = await testParser.createTestMetaMap(
-      mockTestsMap,
+      mockTestsMap as never,
       mockAdapter,
     );
     const testMeta = result.get("custom_test");
@@ -199,7 +199,7 @@ describe("TestParser Test Suite", () => {
     ];
 
     const result = await testParser.createTestMetaMap(
-      mockTestsMap,
+      mockTestsMap as never,
       mockAdapter,
     );
     const testMeta = result.get("dependent_test");

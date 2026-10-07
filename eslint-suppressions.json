@@ -5,25 +5,7 @@
     }
   },
   "src/core/manifest/childrenParentParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 11
-    },
     "complexity": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/docParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/exposureParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/functionParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
       "count": 1
     }
   },
@@ -32,34 +14,18 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 3
+      "count": 2
     },
     "max-params": {
       "count": 1
     }
   },
-  "src/core/manifest/macroParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/metricParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
   "src/core/manifest/nodeParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     }
   },
   "src/core/manifest/relationshipParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    },
     "complexity": {
       "count": 2
     },
@@ -70,36 +36,6 @@
       "count": 3
     }
   },
-  "src/core/manifest/semanticModelParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 2
-    }
-  },
-  "src/core/manifest/sourceParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/testConfig.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    }
-  },
-  "src/core/manifest/testParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/types.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    }
-  },
-  "src/core/manifest/unitTestParser.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
-    }
-  },
   "src/dbtPowerUserExtension.ts": {
     "max-params": {
       "count": 1
@@ -107,7 +43,7 @@
   },
   "src/dbt_integration/domain.ts": {
     "@typescript-eslint/no-explicit-any": {
-      "count": 2
+      "count": 1
     }
   },
   "src/features/cte/cteProfilerDecorationProvider.ts": {
@@ -118,11 +54,6 @@
   "src/features/cte/cteProfilerService.ts": {
     "max-lines-per-function": {
       "count": 1
-    }
-  },
-  "src/features/docs/dbtTestService.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 3
     }
   },
   "src/features/docs/docGenService.ts": {
@@ -145,9 +76,6 @@
     }
   },
   "src/features/lineage/lineagePanel.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
     "complexity": {
       "count": 1
     },

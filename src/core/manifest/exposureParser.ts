@@ -2,13 +2,18 @@ import * as path from "path";
 
 import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
-import { ExposureMetaMap, RESOURCE_TYPE_EXPOSURE } from "./types";
+import {
+  ExposureMetaMap,
+  ExposureResource,
+  ManifestResources,
+  RESOURCE_TYPE_EXPOSURE,
+} from "./types";
 
 export class ExposureParser {
   constructor(private terminal: Pick<Log, "debug">) {}
 
   createExposureMetaMap(
-    exposuresMap: Record<string, any>,
+    exposuresMap: ManifestResources<ExposureResource>,
     project: ManifestProject,
   ): Promise<ExposureMetaMap> {
     return new Promise((resolve) => {

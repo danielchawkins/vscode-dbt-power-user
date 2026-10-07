@@ -5,7 +5,16 @@ import {
   SemanticEntityType,
   SemanticModelMetaData,
   SemanticModelMetaMap,
+  SemanticModelResource,
 } from "./types";
+
+interface EntityResource {
+  name: string;
+  type: string;
+  expr?: unknown;
+  description?: string;
+  role?: string;
+}
 
 const REF_PATTERN =
   /^ref\(\s*['"]([^'"]+)['"]\s*(?:,\s*['"]([^'"]+)['"]\s*)?\)$/;
@@ -32,7 +41,7 @@ export class SemanticModelParser {
    * silently skipped — `terminal.debug` records why.
    */
   createSemanticModelMetaMap(
-    semanticModels: any,
+    semanticModels: Record<string, SemanticModelResource> | null | undefined,
     project: ManifestProject,
   ): Promise<SemanticModelMetaMap> {
     return new Promise((resolve) => {
@@ -105,7 +114,7 @@ export class SemanticModelParser {
     return match[1];
   }
 
-  private parseEntities(entities: any): SemanticEntity[] {
+  private parseEntities(entities: unknown): SemanticEntity[] {
     if (!Array.isArray(entities)) {
       return [];
     }
@@ -116,7 +125,7 @@ export class SemanticModelParser {
       "natural",
     ]);
     const result: SemanticEntity[] = [];
-    for (const e of entities) {
+    for (const e of entities as (EntityResource | null | undefined)[]) {
       if (!e || typeof e.name !== "string") {
         continue;
       }
@@ -131,9 +140,9 @@ export class SemanticModelParser {
       result.push({
         name: e.name,
         type,
-        expr: typeof e.expr === "string" ? e.expr : undefined,
-        description: e.description,
-        role: e.role,
+        ...(typeof e.expr === "string" ? { expr: e.expr } : {}),
+        ...(e.description === undefined ? {} : { description: e.description }),
+        ...(e.role === undefined ? {} : { role: e.role }),
       });
     }
     return result;

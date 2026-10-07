@@ -1,4 +1,26 @@
 import { DBTGraphType } from "./graphParser";
+import type { ModelLevelConstraint } from "./types";
+
+/** What the graph classification reads of a node, source, exposure or function. */
+interface GraphResource {
+  unique_id: string;
+  name: string;
+  package_name?: string;
+  version?: string | number | null;
+  source_name?: string | null;
+  relation_name?: string | null;
+  depends_on?: { nodes?: string[] };
+  columns?: Record<
+    string,
+    { constraints?: ModelLevelConstraint[] } | undefined
+  >;
+  constraints?: ModelLevelConstraint[];
+  compiled_code?: string;
+  raw_code?: string;
+}
+
+type ManifestResources = Record<string, GraphResource>;
+type ManifestResource = GraphResource;
 
 export interface ChildrenParentMetaMap {
   /** Full `depends_on.nodes` parent graph — nothing removed. */
@@ -16,8 +38,8 @@ export interface ChildrenParentMetaMap {
 
 export class ChildrenParentParser {
   createChildrenParentMetaMap(
-    nodesMap: Record<string, any>,
-    sourcesMap?: Record<string, any>,
+    nodesMap: ManifestResources,
+    sourcesMap?: ManifestResources,
   ): Promise<ChildrenParentMetaMap> {
     const parentMetaMap: DBTGraphType = {};
     const childMetaMap: DBTGraphType = {};
@@ -79,7 +101,7 @@ export class ChildrenParentParser {
 // Indexes
 // -----------------------------------------------------------------------------
 
-function buildRefIndex(nodesMap: Record<string, any>): Map<string, string[]> {
+function buildRefIndex(nodesMap: ManifestResources): Map<string, string[]> {
   const index = new Map<string, string[]>();
   Object.values(nodesMap).forEach((node) => {
     if (!node?.unique_id || !node?.name) {
@@ -101,9 +123,7 @@ function buildRefIndex(nodesMap: Record<string, any>): Map<string, string[]> {
   return index;
 }
 
-function buildSourceIndex(
-  sourcesMap?: Record<string, any>,
-): Map<string, string> {
+function buildSourceIndex(sourcesMap?: ManifestResources): Map<string, string> {
   const index = new Map<string, string>();
   if (!sourcesMap) {
     return index;
@@ -118,8 +138,8 @@ function buildSourceIndex(
 }
 
 function buildRelationIndex(
-  nodesMap: Record<string, any>,
-  sourcesMap?: Record<string, any>,
+  nodesMap: ManifestResources,
+  sourcesMap?: ManifestResources,
 ): Map<string, string> {
   // Maps a normalized relation_name (e.g. `"db"."schema"."table"`) to unique_id.
   // After `dbt compile`, the `constraints[].to` field is rewritten from
@@ -163,14 +183,14 @@ function addToIndex(index: Map<string, string[]>, key: string, value: string) {
 // -----------------------------------------------------------------------------
 
 function collectConstraintTargets(
-  node: any,
+  node: ManifestResource,
   refIndex: Map<string, string[]>,
   sourceIndex: Map<string, string>,
   relationIndex: Map<string, string>,
 ): Set<string> {
   const targets = new Set<string>();
 
-  const handleConstraint = (constraint: any) => {
+  const handleConstraint = (constraint: ModelLevelConstraint | undefined) => {
     if (!constraint || constraint.type !== "foreign_key") {
       return;
     }
@@ -189,7 +209,7 @@ function collectConstraintTargets(
 
   const columns = node?.columns;
   if (columns && typeof columns === "object") {
-    Object.values(columns).forEach((col: any) => {
+    Object.values(columns).forEach((col) => {
       const constraints = col?.constraints;
       if (Array.isArray(constraints)) {
         constraints.forEach(handleConstraint);
@@ -280,7 +300,7 @@ function lookupRef(
 type Body =
   { kind: "compiled"; text: string } | { kind: "raw"; text: string } | null;
 
-function pickBody(node: any): Body {
+function pickBody(node: ManifestResource): Body {
   const compiled = node?.compiled_code;
   if (typeof compiled === "string" && compiled.length > 0) {
     return { kind: "compiled", text: compiled };
@@ -292,7 +312,10 @@ function pickBody(node: any): Body {
   return null;
 }
 
-function parentAppearsInBody(parent: any, body: Body): boolean {
+function parentAppearsInBody(
+  parent: ManifestResource | undefined,
+  body: Body,
+): boolean {
   if (!parent || body === null) {
     return true; // conservatively treat as data flow
   }

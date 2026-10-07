@@ -1,12 +1,12 @@
 import type { Log } from "../log";
 import { ManifestProject } from "./manifestProject";
-import { MetricMetaMap } from "./types";
+import { ManifestResources, MetricMetaMap } from "./types";
 
 export class MetricParser {
   constructor(private terminal: Pick<Log, "debug">) {}
 
   async createMetricMetaMap(
-    metrics: Record<string, any> | null | undefined,
+    metrics: ManifestResources<{ name: string }> | null | undefined,
     project: ManifestProject,
   ): Promise<MetricMetaMap> {
     const projectRoot = project.getProjectRoot();

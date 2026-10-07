@@ -27,6 +27,24 @@ function withEdgeType(node: NodeData, isConstraintOnly: boolean): NodeData {
 /** Node kinds the server does not list, so their `depends_on` edges stay with the parse. */
 const PARSE_GRAPH_TYPES = new Set(["analysis"]);
 
+/** For each node, its neighbours in `graph` that are of `resourceType`. */
+function graphOfType(
+  graph: DBTGraphType,
+  resolve: (name: string) => NodeData | undefined,
+  resourceType: string,
+): NodeGraphMap {
+  const result: NodeGraphMap = new Map();
+  for (const [nodeName, nodes] of Object.entries(graph)) {
+    result.set(nodeName, {
+      nodes: nodes
+        .map(resolve)
+        .filter((n) => n?.resourceType === resourceType)
+        .filter(notEmpty),
+    } as never);
+  }
+  return result;
+}
+
 export class GraphParser {
   constructor(private terminal: Pick<Log, "debug">) {}
 
@@ -79,43 +97,8 @@ export class GraphParser {
     });
     const children: NodeGraphMap = new Map();
 
-    const tests: NodeGraphMap = Object.entries(childrenMap).reduce(
-      (map, [nodeName, nodes]) => {
-        const currentNodes = nodes
-          .map(
-            this.mapToNode(
-              sourceMetaMap,
-              nodeMetaMap,
-              testMetaMap,
-              functionMetaMap,
-            ),
-          )
-          .filter((n) => n?.resourceType === RESOURCE_TYPE_TEST)
-          .filter(notEmpty);
-        map.set(nodeName, { nodes: currentNodes });
-        return map;
-      },
-      new Map(),
-    );
-
-    const metrics: NodeGraphMap = Object.entries(childrenMap).reduce(
-      (map, [nodeName, nodes]) => {
-        const currentNodes = nodes
-          .map(
-            this.mapToNode(
-              sourceMetaMap,
-              nodeMetaMap,
-              testMetaMap,
-              functionMetaMap,
-            ),
-          )
-          .filter((n) => n?.resourceType === RESOURCE_TYPE_METRIC)
-          .filter(notEmpty);
-        map.set(nodeName, { nodes: currentNodes });
-        return map;
-      },
-      new Map(),
-    );
+    const tests = graphOfType(childrenMap, resolve, RESOURCE_TYPE_TEST);
+    const metrics = graphOfType(childrenMap, resolve, RESOURCE_TYPE_METRIC);
 
     const graph = {
       parents,

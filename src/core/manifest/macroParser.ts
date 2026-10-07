@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 
 import { ManifestProject } from "./manifestProject";
-import { MacroMetaMap } from "./types";
+import { MacroMetaMap, MacroResource, ManifestResources } from "./types";
 
 import type { Log } from "../log";
 import { createFullPathForNode } from "./utils";
@@ -10,7 +10,7 @@ export class MacroParser {
   constructor(private terminal: Pick<Log, "debug">) {}
 
   async createMacroMetaMap(
-    macros: Record<string, any> | null | undefined,
+    macros: ManifestResources<MacroResource> | null | undefined,
     project: ManifestProject,
   ): Promise<MacroMetaMap> {
     const projectRoot = project.getProjectRoot();

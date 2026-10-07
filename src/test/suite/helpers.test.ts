@@ -4,6 +4,7 @@ import {
   getColumnTestConfigFromYml,
   isAcceptedValues,
   isRelationship,
+  type YamlTest,
 } from "../../core/manifest/testConfig";
 import {
   extractDbtSubcommand,
@@ -86,7 +87,7 @@ describe("text, column name, test config and workspace helpers", () => {
   });
 
   it("getColumnTestConfigFromYml extracts config", () => {
-    const tests = [
+    const tests: YamlTest[] = [
       { relationships: { field: "id", to: "ref" } },
       { accepted_values: { values: ["a", "b"] } },
       { not_null: { severity: "warn" } },
@@ -108,6 +109,12 @@ describe("text, column name, test config and workspace helpers", () => {
     expect(
       getColumnTestConfigFromYml(tests, { severity: "warn" }, "not_null"),
     ).toEqual({ not_null: { severity: "warn" } });
+  });
+
+  it("getColumnTestConfigFromYml treats a test listed without config as having none", () => {
+    const tests: YamlTest[] = [{ not_null: null }, "unique"];
+    expect(getColumnTestConfigFromYml(tests, {}, "not_null")).toBeUndefined();
+    expect(getColumnTestConfigFromYml(tests, {}, "unique")).toBeUndefined();
   });
 
   it("stripANSI removes escape codes", () => {

@@ -8,6 +8,86 @@ export type FunctionMetaMap = Map<string, FunctionMetaData>;
 export type DocMetaMap = Map<string, DocMetaData>;
 export type SemanticModelMetaMap = Map<string, SemanticModelMetaData>;
 
+/** A dbt `meta` block: free-form keys the project author chose. */
+export type Meta = Record<string, unknown> | undefined;
+
+/**
+ * One resource as `manifest.json` records it. Only the fields the parsers read are listed. A field is required
+ * when dbt writes it for every kind the parser filters to; a field dbt leaves null or omits is nullable or optional.
+ */
+interface ManifestResource {
+  unique_id: string;
+  name: string;
+  resource_type: string;
+  package_name: string;
+  original_file_path: string;
+  database: string;
+  schema: string;
+  alias: string;
+  description: string;
+  /** `null` for a resource with no schema YAML. */
+  patch_path: string | null;
+  identifier?: string | null;
+  source_name?: string | null;
+  columns: { [columnName: string]: ColumnMetaData };
+  config: { materialized?: string | null };
+  depends_on: DependsOn;
+  meta: Meta;
+  version?: string | number | null;
+  latest_version?: string | number | null;
+  constraints: ModelLevelConstraint[];
+  relation_name?: string | null;
+  raw_sql?: string | null;
+  raw_code?: string;
+  compiled_code?: string;
+  column_name?: string;
+  test_metadata?: TestMetaData["test_metadata"];
+  attached_node?: string;
+  model?: string | null;
+}
+
+type MacroArguments = { name: string; type: string; description: string }[];
+
+export interface MacroResource extends ManifestResource {
+  arguments: MacroArguments;
+}
+
+export interface ExposureResource extends Omit<
+  ManifestResource,
+  "config" | "columns" | "meta"
+> {
+  meta?: Record<string, unknown>;
+  config: ExposureMetaData["config"];
+  owner: ExposureMetaData["owner"];
+  tags: ExposureMetaData["tags"];
+  type: string;
+  url?: string;
+  label?: string;
+  maturity?: string;
+}
+
+export interface FunctionResource extends Omit<ManifestResource, "meta"> {
+  meta?: Record<string, unknown>;
+  arguments: NonNullable<FunctionMetaData["arguments"]>;
+  returns?: NonNullable<FunctionMetaData["returns"]>;
+}
+
+/** A `semantic_models` entry as `manifest.json` records it. */
+export interface SemanticModelResource {
+  unique_id?: string;
+  name: string;
+  package_name: string;
+  model?: string;
+  depends_on?: { nodes?: string[] };
+  entities?: unknown;
+  description?: string;
+  meta?: Record<string, unknown>;
+  original_file_path?: string;
+}
+
+/** A manifest section: resources keyed by unique id. */
+export type ManifestResources<R = ManifestResource> = Record<string, R>;
+
 export type NodeResourceType = "model" | "seed" | "analysis" | "snapshot";
 
 export interface NodeMetaMap {
@@ -79,24 +159,24 @@ export interface NodeMetaData {
   name: string;
   package_name: string;
   description: string;
-  patch_path: string;
+  patch_path: string | null;
   columns: { [columnName: string]: ColumnMetaData };
   config: Config;
   resource_type: string;
   depends_on: DependsOn;
   compiled_path: string;
-  meta: any;
+  meta: Meta;
   /** Model-level constraints (dbt 1.5+ contracts). May reference multiple columns. */
   constraints?: ModelLevelConstraint[];
   /** `relation_name` from manifest (quoted, fully-qualified). Used by FK constraint resolution. */
-  relation_name?: string;
+  relation_name?: string | null | undefined;
 }
 
 export interface ColumnMetaData {
   name: string;
   description: string;
   data_type: string;
-  meta: any;
+  meta: Meta;
   /** Column-level constraints (dbt 1.5+ contracts). */
   constraints?: ColumnLevelConstraint[];
 }
@@ -126,7 +206,7 @@ export interface ModelLevelConstraint extends ColumnLevelConstraint {
 }
 
 interface Config {
-  materialized: string;
+  materialized?: string | null | undefined;
 }
 
 interface SourceMetaData {
@@ -136,12 +216,12 @@ interface SourceMetaData {
   schema: string;
   tables: SourceTable[];
   package_name: string;
-  meta: any;
+  meta: Meta;
 }
 
 export interface SourceTable {
   name: string;
-  identifier: string;
+  identifier?: string | null | undefined;
   path: string | undefined;
   description: string;
   columns: { [columnName: string]: ColumnMetaData };
@@ -180,7 +260,7 @@ export interface TestMetaData {
   database: string;
   schema: string;
   alias: string;
-  raw_sql: string;
+  raw_sql?: string | null | undefined;
   column_name?: string;
   test_metadata?: {
     kwargs: TestMetadataAcceptedValues | TestMetadataRelationships;
@@ -240,7 +320,7 @@ export interface FunctionMetaData {
   package_name: string;
   resource_type: string;
   config: {
-    materialized?: string;
+    materialized?: string | null;
     type?: string;
     volatility?: string;
     runtime_version?: string;
@@ -346,6 +426,6 @@ export interface UnitTestMetaData {
   name: string;
   path?: string;
   original_file_path: string;
-  model: string;
+  model?: string | null | undefined;
   unique_id: string;
 }

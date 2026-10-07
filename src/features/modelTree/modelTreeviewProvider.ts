@@ -314,13 +314,12 @@ class DocumentationTreeviewProvider
             children.push(child);
           }
         }
-        const url =
-          currentNode.patch_path !== null
-            ? path.join(
-                projectRootpath.fsPath,
-                removeProtocol(currentNode.patch_path),
-              )
-            : " ";
+        const url = currentNode.patch_path
+          ? path.join(
+              projectRootpath.fsPath,
+              removeProtocol(currentNode.patch_path),
+            )
+          : " ";
 
         if (Object.keys(currentNode.columns).length === 0) {
           window.showWarningMessage(
@@ -329,7 +328,7 @@ class DocumentationTreeviewProvider
         }
         const key = currentNode.unique_id;
         const label = currentNode.alias;
-        const description = `[ ${currentNode.config.materialized.toUpperCase()} ]  -  schema : ${
+        const description = `[ ${(currentNode.config.materialized ?? "").toUpperCase()} ]  -  schema : ${
           currentNode.schema
         }`;
         const nodeItem = new DocNode(label, key, url, description);

@@ -3,6 +3,7 @@ import * as path from "path";
 import { ManifestProject } from "./manifestProject";
 import {
   isResourceNode,
+  ManifestResources,
   NodeMetaData,
   NodeMetaMap,
   NodeResourceType,
@@ -91,7 +92,7 @@ export class NodeParser {
   constructor(private terminal: Pick<Log, "debug">) {}
 
   async createNodeMetaMap(
-    nodesMap: Record<string, any> | null | undefined,
+    nodesMap: ManifestResources | null | undefined,
     project: ManifestProject,
   ): Promise<NodeMetaMap> {
     const projectRoot = project.getProjectRoot();
