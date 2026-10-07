@@ -26,3 +26,71 @@
   font-size: var(--vscode-editor-font-size, 13px) !important;
   line-height: 1.5 !important;
 }
+.codeblock :global(pre) {
+  padding: 1em;
+  overflow: auto;
+}
+.lineNumber {
+  display: inline-block;
+  min-width: 2.5em;
+  padding-right: 1em;
+  text-align: right;
+  opacity: 0.5;
+  user-select: none;
+}
+
+/* Token colors follow VS Code's Dark+ and Light+ themes. */
+.dark :global(.token.comment) {
+  color: #6a9955;
+}
+.dark :global(.token.string),
+.dark :global(.token.attr-value) {
+  color: #ce9178;
+}
+.dark :global(.token.number) {
+  color: #b5cea8;
+}
+.dark :global(.token.keyword),
+.dark :global(.token.boolean) {
+  color: #569cd6;
+}
+.dark :global(.token.function),
+.dark :global(.token.builtin) {
+  color: #dcdcaa;
+}
+.dark :global(.token.property),
+.dark :global(.token.key),
+.dark :global(.token.atrule) {
+  color: #9cdcfe;
+}
+.dark :global(.token.operator),
+.dark :global(.token.punctuation) {
+  color: #d4d4d4;
+}
+.light :global(.token.comment) {
+  color: #008000;
+}
+.light :global(.token.string),
+.light :global(.token.attr-value) {
+  color: #a31515;
+}
+.light :global(.token.number) {
+  color: #098658;
+}
+.light :global(.token.keyword),
+.light :global(.token.boolean) {
+  color: #0000ff;
+}
+.light :global(.token.function),
+.light :global(.token.builtin) {
+  color: #795e26;
+}
+.light :global(.token.property),
+.light :global(.token.key),
+.light :global(.token.atrule) {
+  color: #001080;
+}
+.light :global(.token.operator),
+.light :global(.token.punctuation) {
+  color: #393a34;
+}
