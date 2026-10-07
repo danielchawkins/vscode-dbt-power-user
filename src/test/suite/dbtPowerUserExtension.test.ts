@@ -14,23 +14,39 @@ const UPSTREAM_EXTENSION = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_ACTION = "Uninstall Power User";
 
 const activationHarness = (enabled: boolean) => {
-  const initializeProjects = vi.fn(() => Promise.resolve());
-  const initializeStatusBars = vi.fn(() => Promise.resolve());
-  const registryInitialize = vi.fn(() => Promise.resolve());
-  const fusionClientPoolInitialize = vi.fn();
-  const fusionStatusInitialize = vi.fn();
+  /** The startup steps that ran, in order. */
+  const started: string[] = [];
+  /** What each awaited startup step does when it runs; tests replace these. */
+  const behavior = {
+    registry: () => Promise.resolve(),
+    projects: () => Promise.resolve(),
+  };
+  const errors: unknown[][] = [];
   const extension = new (DBTPowerUserExtension as any)();
   Object.assign(extension, {
     projects: {
       setContext: vi.fn(),
-      initialize: initializeProjects,
+      initialize: () => {
+        started.push("projects");
+        return behavior.projects();
+      },
     },
-    projectRegistry: { initialize: registryInitialize },
-    fusionClientPool: { initialize: fusionClientPoolInitialize },
-    fusionStatus: { initialize: fusionStatusInitialize },
+    projectRegistry: {
+      initialize: () => {
+        started.push("registry");
+        return behavior.registry();
+      },
+    },
+    fusionClientPool: { initialize: () => started.push("pool") },
+    fusionStatus: { initialize: () => started.push("status") },
     currentProject: {},
-    statusBars: { initialize: initializeStatusBars },
-    dbtTerminal: { error: vi.fn() },
+    statusBars: {
+      initialize: () => {
+        started.push("statusBars");
+        return Promise.resolve();
+      },
+    },
+    dbtTerminal: { error: (...args: unknown[]) => errors.push(args) },
     runHistoryService: { dispose: vi.fn() },
     sharedState: { dispose: vi.fn() },
     startupGate: new StartupGate(),
@@ -48,18 +64,19 @@ const activationHarness = (enabled: boolean) => {
   return {
     extension,
     folder,
-    initializeProjects,
-    initializeStatusBars,
-    registryInitialize,
-    fusionClientPoolInitialize,
-    fusionStatusInitialize,
-    dbtTerminal: extension.dbtTerminal,
+    started,
+    behavior,
+    errors,
   };
 };
 
 describe("DBTPowerUserExtension startup gate", () => {
   const gatedCommand = (extension: DBTPowerUserExtension) => {
-    const requireForCommand = vi.fn(() => Promise.resolve(undefined));
+    const asked: unknown[] = [];
+    const requireForCommand = (uri: unknown) => {
+      asked.push(uri);
+      return Promise.resolve(undefined);
+    };
     new ProjectConfigCommands(
       (extension as any).startupGate,
       { requireForCommand } as never,
@@ -69,8 +86,8 @@ describe("DBTPowerUserExtension startup gate", () => {
       ([command]) => command === "fusionPowerUser.enableStrictAnalysis",
     );
     return {
-      run: registration![1] as () => Promise<boolean>,
-      requireForCommand,
+      run: registration![1] as (uri?: Uri) => Promise<boolean>,
+      asked,
     };
   };
 
@@ -83,20 +100,20 @@ describe("DBTPowerUserExtension startup gate", () => {
   it("holds gated commands until startup settles", async () => {
     const harness = activationHarness(true);
     let finishRegistry: () => void = () => {};
-    harness.registryInitialize.mockImplementation(
-      () => new Promise<void>((resolve) => (finishRegistry = resolve)),
-    );
+    harness.behavior.registry = () =>
+      new Promise<void>((resolve) => (finishRegistry = resolve));
     const command = gatedCommand(harness.extension);
 
     const ready = harness.extension.activate();
-    const run = command.run();
+    const target = Uri.file("/workspace/models/a.sql");
+    const run = command.run(target);
     await new Promise((resolve) => setImmediate(resolve));
-    expect(command.requireForCommand).not.toHaveBeenCalled();
+    expect(command.asked).toEqual([]);
 
     finishRegistry();
     await ready;
     await expect(run).resolves.toBe(false);
-    expect(command.requireForCommand).toHaveBeenCalled();
+    expect(command.asked).toEqual([target]);
   });
 
   it("runs gated commands when disabled for every folder", async () => {
@@ -106,7 +123,7 @@ describe("DBTPowerUserExtension startup gate", () => {
     await harness.extension.activate();
 
     await expect(command.run()).resolves.toBe(false);
-    expect(harness.registryInitialize).not.toHaveBeenCalled();
+    expect(harness.started).toEqual([]);
   });
 
   it("runs gated commands when Power User is installed", async () => {
@@ -119,21 +136,19 @@ describe("DBTPowerUserExtension startup gate", () => {
     await harness.extension.activate();
 
     await expect(command.run()).resolves.toBe(false);
-    expect(harness.registryInitialize).not.toHaveBeenCalled();
+    expect(harness.started).toEqual([]);
   });
 
   it("runs gated commands when the project registry fails to initialize", async () => {
     const harness = activationHarness(true);
-    harness.registryInitialize.mockImplementation(() =>
-      Promise.reject(new Error("boom")),
-    );
+    harness.behavior.registry = () => Promise.reject(new Error("boom"));
     const command = gatedCommand(harness.extension);
 
     await harness.extension.activate();
 
     await expect(command.run()).resolves.toBe(false);
-    expect(harness.dbtTerminal.error).toHaveBeenCalled();
-    expect(harness.initializeProjects).not.toHaveBeenCalled();
+    expect(harness.errors).toHaveLength(1);
+    expect(harness.started).toEqual(["registry"]);
   });
 
   it("runs gated commands after dispose without activation", async () => {
@@ -164,25 +179,19 @@ describe("DBTPowerUserExtension.activate", () => {
 
     await harness.extension.activate();
 
-    expect(window.showErrorMessage).toHaveBeenCalledTimes(1);
-    expect(window.showErrorMessage).toHaveBeenCalledWith(
-      expect.stringContaining("dbt Power User"),
-      { modal: true },
-      UNINSTALL_ACTION,
-    );
-    expect(commands.executeCommand).toHaveBeenCalledWith(
-      "workbench.extensions.uninstallExtension",
-      UPSTREAM_EXTENSION,
-    );
-    expect(commands.executeCommand).toHaveBeenCalledWith(
-      "workbench.action.reloadWindow",
-    );
-    expect(harness.registryInitialize).not.toHaveBeenCalled();
-    expect(harness.fusionClientPoolInitialize).not.toHaveBeenCalled();
-    expect(harness.fusionStatusInitialize).not.toHaveBeenCalled();
-    expect(harness.initializeProjects).not.toHaveBeenCalled();
-    expect(harness.initializeStatusBars).not.toHaveBeenCalled();
-    expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
+    expect((window.showErrorMessage as Mock).mock.calls).toEqual([
+      [
+        expect.stringContaining("dbt Power User"),
+        { modal: true },
+        UNINSTALL_ACTION,
+      ],
+    ]);
+    expect((commands.executeCommand as Mock).mock.calls).toEqual([
+      ["workbench.extensions.uninstallExtension", UPSTREAM_EXTENSION],
+      ["workbench.action.reloadWindow"],
+    ]);
+    expect(harness.started).toEqual([]);
+    expect(harness.errors).toEqual([]);
     expect(harness.extension.disposables).toHaveLength(0);
   });
 
@@ -213,7 +222,7 @@ describe("DBTPowerUserExtension.activate", () => {
       );
       answer(undefined);
       await ready;
-      expect(harness.registryInitialize).not.toHaveBeenCalled();
+      expect(harness.started).toEqual([]);
     } finally {
       if (previous === undefined) {
         delete process.env.FPU_INTEGRATION_COMMANDS;
@@ -226,34 +235,28 @@ describe("DBTPowerUserExtension.activate", () => {
   it("resolves ready and logs when a startup step throws", async () => {
     const harness = activationHarness(true);
     const failure = new Error("boom");
-    harness.initializeProjects.mockImplementation(() =>
-      Promise.reject(failure),
-    );
+    harness.behavior.projects = () => Promise.reject(failure);
 
     await expect(harness.extension.activate()).resolves.toBeUndefined();
 
-    expect(harness.dbtTerminal.error).toHaveBeenCalledWith(
-      "extensionActivationError",
-      expect.any(String),
-      failure,
-    );
-    expect(harness.initializeStatusBars).not.toHaveBeenCalled();
+    expect(harness.errors).toEqual([
+      ["extensionActivationError", expect.any(String), failure],
+    ]);
+    expect(harness.started).toEqual(["registry", "pool", "status", "projects"]);
   });
 
   it("stops startup after dispose during an await", async () => {
     const harness = activationHarness(true);
     let finishRegistry: () => void = () => {};
-    harness.registryInitialize.mockImplementation(
-      () => new Promise<void>((resolve) => (finishRegistry = resolve)),
-    );
+    harness.behavior.registry = () =>
+      new Promise<void>((resolve) => (finishRegistry = resolve));
 
     const ready = harness.extension.activate();
     harness.extension.dispose();
     finishRegistry();
     await ready;
 
-    expect(harness.fusionStatusInitialize).not.toHaveBeenCalled();
-    expect(harness.initializeProjects).not.toHaveBeenCalled();
+    expect(harness.started).toEqual(["registry"]);
   });
 
   it("stops activation silently when disabled for the workspace folder", async () => {
@@ -261,17 +264,12 @@ describe("DBTPowerUserExtension.activate", () => {
 
     await harness.extension.activate();
 
-    expect(workspace.getConfiguration).toHaveBeenCalledWith(
-      CONFIGURATION_SECTION,
-      harness.folder.uri,
-    );
-    expect(window.showErrorMessage).not.toHaveBeenCalled();
-    expect(harness.registryInitialize).not.toHaveBeenCalled();
-    expect(harness.fusionClientPoolInitialize).not.toHaveBeenCalled();
-    expect(harness.fusionStatusInitialize).not.toHaveBeenCalled();
-    expect(harness.initializeProjects).not.toHaveBeenCalled();
-    expect(harness.initializeStatusBars).not.toHaveBeenCalled();
-    expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
+    expect((workspace.getConfiguration as Mock).mock.calls).toEqual([
+      [CONFIGURATION_SECTION, harness.folder.uri],
+    ]);
+    expect((window.showErrorMessage as Mock).mock.calls).toEqual([]);
+    expect(harness.started).toEqual([]);
+    expect(harness.errors).toEqual([]);
     expect(harness.extension.disposables).toHaveLength(0);
   });
 
@@ -291,23 +289,28 @@ describe("DBTPowerUserExtension.activate", () => {
 
     await harness.extension.activate();
 
-    expect(harness.registryInitialize).toHaveBeenCalledTimes(1);
-    expect(harness.initializeProjects).toHaveBeenCalledTimes(1);
-    expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
+    expect(harness.started).toEqual([
+      "registry",
+      "pool",
+      "status",
+      "projects",
+      "statusBars",
+    ]);
+    expect(harness.errors).toEqual([]);
   });
 
   it("deactivate awaits pool stop before disposing collaborators", async () => {
     const order: string[] = [];
     const fusionClientPool = {
       initialize: vi.fn(),
-      stop: vi.fn(async () => {
+      stop: async () => {
         order.push("pool.stop");
-      }),
-      dispose: vi.fn(() => {
+      },
+      dispose: () => {
         order.push("pool.dispose");
-      }),
+      },
     };
-    const disposable = { dispose: vi.fn(() => order.push("other.dispose")) };
+    const disposable = { dispose: () => order.push("other.dispose") };
     const extension = new (
       DBTPowerUserExtension as any
     )() as DBTPowerUserExtension;
@@ -319,7 +322,7 @@ describe("DBTPowerUserExtension.activate", () => {
 
     await extension.deactivate();
 
-    expect(fusionClientPool.stop).toHaveBeenCalledTimes(1);
+    expect(order.filter((step) => step === "pool.stop")).toHaveLength(1);
     expect(order.indexOf("pool.stop")).toBeLessThan(
       order.indexOf("other.dispose"),
     );
@@ -330,23 +333,13 @@ describe("DBTPowerUserExtension.activate", () => {
 
     await harness.extension.activate();
 
-    expect(harness.registryInitialize).toHaveBeenCalled();
-    expect(harness.fusionClientPoolInitialize).toHaveBeenCalled();
-    expect(harness.fusionStatusInitialize).toHaveBeenCalled();
-    expect(harness.initializeProjects).toHaveBeenCalled();
-    expect(harness.initializeStatusBars).toHaveBeenCalled();
-
-    const registryCall = (harness.registryInitialize as Mock).mock
-      .invocationCallOrder[0];
-    const poolCall = (harness.fusionClientPoolInitialize as Mock).mock
-      .invocationCallOrder[0];
-    const statusCall = (harness.fusionStatusInitialize as Mock).mock
-      .invocationCallOrder[0];
-    const projectsCall = (harness.initializeProjects as Mock).mock
-      .invocationCallOrder[0];
-    expect(registryCall).toBeLessThan(poolCall);
-    expect(poolCall).toBeLessThan(statusCall);
-    expect(statusCall).toBeLessThan(projectsCall);
-    expect(harness.dbtTerminal.error).not.toHaveBeenCalled();
+    expect(harness.started).toEqual([
+      "registry",
+      "pool",
+      "status",
+      "projects",
+      "statusBars",
+    ]);
+    expect(harness.errors).toEqual([]);
   });
 });
