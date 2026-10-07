@@ -21,6 +21,17 @@ export const TRUSTED_VSIX_LABEL = "trusted-vsix";
 /** Labels launched directly against the packaged VSIX, in run order. */
 export const VSIX_LABELS = [UNTRUSTED_LABEL, TRUSTED_VSIX_LABEL];
 
+/**
+ * The labels each Docker container runs, one after another. `trusted` is the longest label, so it has a shard
+ * to itself; the others are grouped to even out the shards' wall time.
+ */
+export const DOCKER_SHARDS = [
+  ["trusted"],
+  ["native-strict", "symlinked"],
+  ["native-baseline", UNTRUSTED_LABEL],
+  ["native-project", TRUSTED_VSIX_LABEL],
+];
+
 /** The file under `<root>/spy` that the `dbt` wrapper appends each invocation to; see `run-integration.mjs`. */
 export const SPY_LOG_FILE = "dbt-invocations.log";
 

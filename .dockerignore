@@ -1,0 +1,7 @@
+*
+!mise.toml
+!mise.lock
+!package.json
+!package-lock.json
+!docker/integration/fetch-vscode.mjs
+!scripts/test/integration-layout.mjs

@@ -205,13 +205,21 @@ test-coverage *args:
     npm run test:coverage -- "$@"
 
 [group("tests")]
-test-integration *args:
+build-integration:
     just clean
     just package
     npm run build:dev
     npm run compile:integration
     cp src/test/integration/out-package.json out/package.json
+
+[group("tests")]
+test-integration *args: build-integration
     npm run test:integration -- "$@"
+
+# Every label in parallel Linux arm64 containers, or just the one named. Builds once on the host.
+[group("tests")]
+test-integration-docker label="":
+    sh scripts/test/docker-integration.sh {{ quote(label) }}
 
 [group("tests")]
 benchmark *args:
