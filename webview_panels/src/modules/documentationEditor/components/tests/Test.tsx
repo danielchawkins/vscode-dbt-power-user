@@ -13,7 +13,7 @@ const Test = ({
   onSelect,
   selectedTest,
   className,
-}: Props): JSX.Element => {
+}: Props): React.JSX.Element => {
   const handleClick = () => {
     onSelect(test);
   };

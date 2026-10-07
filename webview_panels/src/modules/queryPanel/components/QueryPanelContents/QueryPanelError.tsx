@@ -2,7 +2,7 @@ import PreTag from "@modules/markdown/PreTag";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { CodeBlock } from "@uicore";
 
-const QueryPanelError = (): JSX.Element => {
+const QueryPanelError = (): React.JSX.Element => {
   const { queryResultsError } = useQueryPanelState();
 
   return (

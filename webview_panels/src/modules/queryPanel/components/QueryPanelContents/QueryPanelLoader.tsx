@@ -5,7 +5,7 @@ import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Button, Stack } from "@uicore";
 import classes from "../../querypanel.module.css";
 
-const QueryPanelLoader = (): JSX.Element => {
+const QueryPanelLoader = (): React.JSX.Element => {
   const { hintIndex } = useQueryPanelState();
   const hint = HINTS[hintIndex];
   const handleCancelQuery = () => {

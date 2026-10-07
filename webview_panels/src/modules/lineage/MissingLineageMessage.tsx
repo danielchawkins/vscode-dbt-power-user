@@ -6,7 +6,7 @@ const MissingLineageMessageComponent = ({
   missingLineageMessage,
 }: {
   missingLineageMessage?: PanelNotice | undefined;
-}): JSX.Element | null => {
+}): React.JSX.Element | null => {
   const openProblemsTab = () => {
     return executeRequestInAsync("openProblemsTab");
   };

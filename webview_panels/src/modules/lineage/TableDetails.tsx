@@ -215,7 +215,7 @@ const TableDetails = ({
   table,
 }: {
   table: lineage.LineageTable;
-}): JSX.Element => {
+}): React.JSX.Element => {
   const { columns, extra, refresh } = useDetails(table);
   const [tab, setTab] = useState<Tab>("columns");
   const description = [

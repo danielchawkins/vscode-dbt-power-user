@@ -3,7 +3,7 @@ import { Button, Stack } from "@uicore";
 import { useState } from "react";
 import HelpButton from "./HelpButton";
 
-const CommonActionButtons = (): JSX.Element => {
+const CommonActionButtons = (): React.JSX.Element => {
   const [showHelp, setShowHelp] = useState(false);
 
   return (

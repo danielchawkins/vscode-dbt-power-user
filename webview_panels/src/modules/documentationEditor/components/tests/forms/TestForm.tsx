@@ -21,7 +21,11 @@ interface Props {
   column: string;
 }
 
-const TestForm = ({ formType, onClose, column }: Props): JSX.Element | null => {
+const TestForm = ({
+  formType,
+  onClose,
+  column,
+}: Props): React.JSX.Element | null => {
   const { isSaving, handleSave } = useTestFormSave();
   const { values, setValue, reset } = useTestFormValues();
   const complete = isTestFormComplete(formType, values);

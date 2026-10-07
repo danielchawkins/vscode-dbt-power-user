@@ -7,7 +7,7 @@ import SearchColumnsInput from "../search/SearchColumnsInput";
 import DocGeneratorColumn from "./DocGeneratorColumn";
 import SyncWithDatabase from "./SyncWithDatabase";
 
-const DocGeneratorColumnsList = (): JSX.Element => {
+const DocGeneratorColumnsList = (): React.JSX.Element => {
   const {
     state: { currentDocsData, currentDocsTests, searchQuery },
   } = useDocumentationContext();

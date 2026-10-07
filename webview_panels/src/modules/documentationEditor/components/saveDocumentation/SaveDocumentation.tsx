@@ -26,7 +26,7 @@ const noop = (): void => undefined;
  *  - save existing model but no schema.yml entry
  *  - update existing model
  */
-const SaveDocumentation = (): JSX.Element | null => {
+const SaveDocumentation = (): React.JSX.Element | null => {
   const popoverRef = useRef<PopoverWithButtonRef | null>(null);
   const { state, dispatch } = useDocumentationContext();
   const { currentDocsData, currentDocsTests } = state;

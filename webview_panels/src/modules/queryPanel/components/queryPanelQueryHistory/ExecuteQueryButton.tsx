@@ -11,7 +11,7 @@ const ExecuteQueryButton = ({
   query,
   projectName,
   editorName,
-}: Props): JSX.Element => {
+}: Props): React.JSX.Element => {
   const handleClick = () => {
     executeRequestInAsync("executeQuery", { query, projectName, editorName });
   };

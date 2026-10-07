@@ -4,7 +4,7 @@ import { panelLogger } from "@modules/logger";
 import { Button } from "@uicore";
 import classes from "../../styles.module.css";
 
-const SyncWithDatabase = (): JSX.Element => {
+const SyncWithDatabase = (): React.JSX.Element => {
   const onSyncBtnClick = () => {
     executeRequestInSync("fetchMetadataFromDatabase").catch((err) =>
       panelLogger.error("error while syncing with db", err),

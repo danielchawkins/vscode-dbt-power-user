@@ -9,7 +9,11 @@ interface GetTestCodeResponse {
   sql?: string | undefined;
   config?: string | undefined;
 }
-const DbtTestCode = ({ test }: { test: DBTModelTest }): JSX.Element | null => {
+const DbtTestCode = ({
+  test,
+}: {
+  test: DBTModelTest;
+}): React.JSX.Element | null => {
   const {
     state: { currentDocsData },
   } = useDocumentationContext();

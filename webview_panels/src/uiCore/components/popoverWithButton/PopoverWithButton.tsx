@@ -1,7 +1,6 @@
 import {
-  forwardRef,
-  ForwardRefRenderFunction,
   ReactNode,
+  Ref,
   useEffect,
   useImperativeHandle,
   useRef,
@@ -19,6 +18,7 @@ interface Props {
     styles: CSSModuleClasses;
     close: () => void;
   }) => ReactNode;
+  ref?: Ref<PopoverWithButtonRef> | undefined;
 }
 
 export interface PopoverWithButtonRef {
@@ -27,10 +27,13 @@ export interface PopoverWithButtonRef {
 }
 
 /** A panel below `button`, opened by clicking it and closed by a click anywhere outside. */
-const PopoverWithButton: ForwardRefRenderFunction<
-  PopoverWithButtonRef,
-  Props
-> = ({ title, button, children, width = 350 }, ref) => {
+const PopoverWithButton = ({
+  title,
+  button,
+  children,
+  width = 350,
+  ref,
+}: Props): React.JSX.Element => {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLSpanElement | null>(null);
   const popoverRef = useRef<HTMLDivElement | null>(null);
@@ -104,4 +107,4 @@ const PopoverWithButton: ForwardRefRenderFunction<
   );
 };
 
-export default forwardRef(PopoverWithButton);
+export default PopoverWithButton;

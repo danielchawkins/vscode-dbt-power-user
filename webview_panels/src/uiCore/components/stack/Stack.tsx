@@ -1,17 +1,16 @@
-import { ForwardedRef, forwardRef, HTMLAttributes, ReactNode } from "react";
+import { HTMLAttributes, ReactNode, Ref } from "react";
 import classes from "./stack.module.css";
 
-const Stack = forwardRef(function stack(
-  {
-    children,
-    direction = "row",
-    ...rest
-  }: {
-    children: ReactNode;
-    direction?: "row" | "column" | undefined;
-  } & HTMLAttributes<HTMLDivElement>,
-  ref: ForwardedRef<HTMLDivElement>,
-): JSX.Element {
+const Stack = ({
+  children,
+  direction = "row",
+  ref,
+  ...rest
+}: {
+  children: ReactNode;
+  direction?: "row" | "column" | undefined;
+  ref?: Ref<HTMLDivElement> | undefined;
+} & HTMLAttributes<HTMLDivElement>): React.JSX.Element => {
   return (
     <div
       {...rest}
@@ -21,6 +20,6 @@ const Stack = forwardRef(function stack(
       {children}
     </div>
   );
-});
+};
 
 export default Stack;

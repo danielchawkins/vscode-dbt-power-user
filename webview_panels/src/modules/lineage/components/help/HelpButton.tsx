@@ -4,7 +4,7 @@ import { useRef } from "react";
 import styles from "../../lineageGraph.module.css";
 import HelpContent from "./HelpContent";
 
-const HelpButton = (): JSX.Element => {
+const HelpButton = (): React.JSX.Element => {
   const drawerRef = useRef<DrawerRef>(null);
 
   return (

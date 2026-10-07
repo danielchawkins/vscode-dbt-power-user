@@ -22,7 +22,7 @@ const Harness = ({
   entity,
 }: {
   entity: DBTDocumentation | DBTDocumentation["columns"][number];
-}): JSX.Element => {
+}): React.JSX.Element => {
   const [state, dispatch] = useReducer(documentationReducer, initialState);
   return (
     <DocumentationContext.Provider value={{ state, dispatch }}>
@@ -72,7 +72,7 @@ describe("DocGeneratorInput", () => {
   it("marks a description that differs from the saved one as modified", () => {
     const saved = orders("saved");
     const [edited] = orders("edited").columns;
-    const Dirty = (): JSX.Element => {
+    const Dirty = (): React.JSX.Element => {
       const [state, dispatch] = useReducer(documentationReducer, {
         ...initialState,
         incomingDocsData: { docs: saved },

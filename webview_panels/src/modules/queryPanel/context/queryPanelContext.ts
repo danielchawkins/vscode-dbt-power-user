@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react";
+import { createContext, use } from "react";
 import { initialState, QueryPanelAction } from "./queryPanelReducer";
 import { QueryPanelStateProps } from "./types";
 
@@ -13,6 +13,6 @@ export const QueryPanelContext = createContext<ContextProps>({
 });
 
 export const useQueryPanelDispatch = (): React.Dispatch<QueryPanelAction> => {
-  const { dispatch } = useContext(QueryPanelContext);
+  const { dispatch } = use(QueryPanelContext);
   return dispatch;
 };

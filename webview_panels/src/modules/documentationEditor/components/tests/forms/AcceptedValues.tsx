@@ -10,7 +10,11 @@ interface Props {
   values?: string[] | undefined;
   setValue: SetTestFormValue;
 }
-const AcceptedValues = ({ column, setValue, values }: Props): JSX.Element => {
+const AcceptedValues = ({
+  column,
+  setValue,
+  values,
+}: Props): React.JSX.Element => {
   const {
     state: { currentDocsData },
   } = useDocumentationContext();

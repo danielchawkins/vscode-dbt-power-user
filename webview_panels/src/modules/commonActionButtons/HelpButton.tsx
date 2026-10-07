@@ -12,7 +12,7 @@ interface Props {
   onClose?: (() => void) | undefined;
 }
 
-const HelpButton = ({ onClose }: Props): JSX.Element => {
+const HelpButton = ({ onClose }: Props): React.JSX.Element => {
   const [selectedPage, setSelectedPage] = useState(Pages.DOCUMENTATION);
   const drawerRef = useRef<DrawerRef | null>(null);
 

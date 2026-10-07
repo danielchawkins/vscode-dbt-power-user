@@ -13,7 +13,7 @@ const QueryPanelContent = ({
   tabState,
 }: {
   tabState: QueryPanelTitleTabState;
-}): JSX.Element | null => {
+}): React.JSX.Element | null => {
   const { loading, hasError, queryResults, compiledCodeMarkup } =
     useQueryPanelState();
 

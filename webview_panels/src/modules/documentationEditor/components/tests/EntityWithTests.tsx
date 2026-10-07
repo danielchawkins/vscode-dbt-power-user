@@ -17,7 +17,11 @@ interface Props {
 
 const MaxVisibleTests = 3;
 
-const EntityWithTests = ({ title, tests, type }: Props): JSX.Element | null => {
+const EntityWithTests = ({
+  title,
+  tests,
+  type,
+}: Props): React.JSX.Element | null => {
   const {
     state: { incomingDocsData },
   } = useDocumentationContext();

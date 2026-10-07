@@ -4,7 +4,7 @@ import { resetData } from "@modules/queryPanel/context/queryPanelReducer";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Button } from "@uicore";
 
-const ClearResultsButton = (): JSX.Element | null => {
+const ClearResultsButton = (): React.JSX.Element | null => {
   const { queryResults } = useQueryPanelState();
   const dispatch = useQueryPanelDispatch();
   const handleClear = () => {

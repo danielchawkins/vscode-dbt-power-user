@@ -11,7 +11,7 @@ const useDraftSync = (state: DocumentationStateProps): void => {
   const { currentDocsData, currentDocsTests } = state;
   const model = currentDocsData?.filePath;
   const dirty = isStateDirty(state);
-  const heldRef = useRef<string>();
+  const heldRef = useRef<string | undefined>(undefined);
 
   useEffect(() => {
     const held = heldRef.current;

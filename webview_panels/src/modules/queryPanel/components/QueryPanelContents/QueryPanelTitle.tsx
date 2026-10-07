@@ -10,7 +10,7 @@ const QueryPanelTitle = ({
 }: {
   setTabState: (show: QueryPanelTitleTabState) => void;
   tabState: QueryPanelTitleTabState;
-}): JSX.Element => {
+}): React.JSX.Element => {
   const {
     loading,
     hasData,

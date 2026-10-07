@@ -10,7 +10,7 @@ interface Props {
   className?: string | undefined;
 }
 
-const Tooltip = ({ children, title, className }: Props): JSX.Element => {
+const Tooltip = ({ children, title, className }: Props): React.JSX.Element => {
   const [open, setOpen] = useState(false);
   const id = useId();
   const anchorRef = useRef<HTMLSpanElement>(null);

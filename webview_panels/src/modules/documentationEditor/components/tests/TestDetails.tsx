@@ -23,7 +23,7 @@ interface Props {
   test: DBTModelTest;
 }
 
-const TestDetails = ({ testType, test }: Props): JSX.Element => {
+const TestDetails = ({ testType, test }: Props): React.JSX.Element => {
   const testConfig = useMemo(() => {
     switch (testType) {
       case DbtTestTypes.GENERIC:

@@ -4,7 +4,11 @@ interface Props extends ButtonProps {
   loading: boolean;
 }
 
-const LoadingButton = ({ loading, children, ...rest }: Props): JSX.Element => (
+const LoadingButton = ({
+  loading,
+  children,
+  ...rest
+}: Props): React.JSX.Element => (
   <Button {...rest} disabled={loading || rest.disabled} aria-busy={loading}>
     {loading ? (
       <i className="codicon codicon-loading codicon-modifier-spin" />

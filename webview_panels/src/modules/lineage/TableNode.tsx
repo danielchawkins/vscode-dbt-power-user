@@ -203,7 +203,9 @@ const ColumnList = ({
   );
 };
 
-const TableNodeView = ({ data }: NodeProps<TableNodeType>): JSX.Element => (
+const TableNodeView = ({
+  data,
+}: NodeProps<TableNodeType>): React.JSX.Element => (
   <div
     className={`${styles.node} ${data.isStart ? styles.start : ""}`}
     data-table={data.table.table}

@@ -7,7 +7,10 @@ interface Props {
   queryHistory: QueryHistory;
   onSelect: (queryHistory: QueryHistory) => void;
 }
-const QueryHistoryRow = ({ queryHistory, onSelect }: Props): JSX.Element => {
+const QueryHistoryRow = ({
+  queryHistory,
+  onSelect,
+}: Props): React.JSX.Element => {
   const handleClick = () => {
     onSelect(queryHistory);
   };

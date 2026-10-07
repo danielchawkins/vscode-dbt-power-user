@@ -47,7 +47,7 @@ enum ActionState {
   DISCARD_PROCEED = "Discard",
 }
 
-const DocumentationProvider = (): JSX.Element => {
+const DocumentationProvider = (): React.JSX.Element => {
   const [state, dispatch] = useReducer(documentationReducer, initialState);
   const stateRef = useRef(state);
 
@@ -163,9 +163,9 @@ const DocumentationProvider = (): JSX.Element => {
   useDraftSync(state);
 
   return (
-    <DocumentationContext.Provider value={values}>
+    <DocumentationContext value={values}>
       <DocumentationEditor />
-    </DocumentationContext.Provider>
+    </DocumentationContext>
   );
 };
 

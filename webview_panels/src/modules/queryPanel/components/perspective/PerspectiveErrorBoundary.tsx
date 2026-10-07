@@ -10,7 +10,7 @@ const PerspectiveErrorBoundary = ({
   children,
 }: {
   children: ReactNode;
-}): JSX.Element => {
+}): React.JSX.Element => {
   const [error, setError] = useState<Error | undefined>();
   const dispatch = useQueryPanelDispatch();
 

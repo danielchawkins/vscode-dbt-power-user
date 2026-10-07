@@ -8,7 +8,7 @@ const AutoCollapsingNotification = ({
 }: {
   text: string;
   delay: number;
-}): JSX.Element => {
+}): React.JSX.Element => {
   const [showInfo, setShowInfo] = useState(true);
   useEffect(() => {
     const timer = setTimeout(() => setShowInfo(false), delay);

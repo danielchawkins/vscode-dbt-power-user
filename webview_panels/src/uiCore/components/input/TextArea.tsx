@@ -1,13 +1,16 @@
-import { ForwardedRef, forwardRef, TextareaHTMLAttributes } from "react";
+import { Ref, TextareaHTMLAttributes } from "react";
 import { cx } from "../../classNames";
 
-const TextArea = forwardRef(function textArea(
-  { className, ...rest }: TextareaHTMLAttributes<HTMLTextAreaElement>,
-  ref: ForwardedRef<HTMLTextAreaElement>,
-): JSX.Element {
+const TextArea = ({
+  className,
+  ref,
+  ...rest
+}: TextareaHTMLAttributes<HTMLTextAreaElement> & {
+  ref?: Ref<HTMLTextAreaElement> | undefined;
+}): React.JSX.Element => {
   return (
     <textarea {...rest} ref={ref} className={cx("form-control", className)} />
   );
-});
+};
 
 export default TextArea;

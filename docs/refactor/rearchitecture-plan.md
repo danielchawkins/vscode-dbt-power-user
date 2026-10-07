@@ -348,11 +348,12 @@ These extend `AGENTS.md`; the ESLint config enforces what it can.
 | `inversify`, `reflect-metadata`, `ts-loader`                     | 8, 0.2, 9       | removed                              | root    | R4          |
 | `react-router-dom`                                               | 7               | removed                              | webview | R6          |
 | `@reduxjs/toolkit`                                               | 2               | removed with the lineage component   | webview | R8          |
+| `react-select`, `@emotion/*`                                     | 5.10            | native select and chip input         | webview | quality 4.2 |
 | `reactstrap`, `bootstrap`, `sass`                                | —               | removed                              | webview | R7          |
 | `react-hook-form`, `yup`, `react-copy-to-clipboard`              | —               | native                               | webview | R7          |
 | Storybook, `faker`, `factory.ts`, `react-markdown`, `remark-gfm` | —               | removed                              | webview | R7          |
 | `@finos/perspective*`                                            | 3.8, deprecated | `@perspective-dev/*`                 | webview | R7          |
-| `react`, `react-dom`                                             | 18              | 19 before 1.0                        | webview | quality 4.3 |
+| `react`, `react-dom`                                             | 19.3            | 19, done                             | webview | quality 4.3 |
 | `@types/node`                                                    | 24.19           | current LTS                          | root    | R7          |
 | `@altimateai/ui-components`, `tailwindcss`, `postcss`            | 0.0.88, 3       | removed                              | webview | R8          |
 

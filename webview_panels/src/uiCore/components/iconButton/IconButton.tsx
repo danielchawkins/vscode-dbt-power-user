@@ -11,7 +11,7 @@ const IconButton = ({
   className,
   type = "button",
   ...rest
-}: Props): JSX.Element => (
+}: Props): React.JSX.Element => (
   <button
     {...rest}
     type={type}

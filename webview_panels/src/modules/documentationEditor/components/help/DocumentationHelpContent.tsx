@@ -6,7 +6,7 @@ const DocumentationHelpContent = ({
   showMissingDocumentationMessage,
 }: {
   showMissingDocumentationMessage?: boolean | undefined;
-}): JSX.Element => {
+}): React.JSX.Element => {
   const {
     state: { missingDocumentationMessage },
   } = useDocumentationContext();

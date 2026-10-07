@@ -18,7 +18,7 @@ import QueryLimit from "./QueryLimit";
 
 let dispatchRef: React.Dispatch<Parameters<typeof queryPanelReducer>[1]>;
 
-const Harness = (): JSX.Element => {
+const Harness = (): React.JSX.Element => {
   const [state, dispatch] = useReducer(queryPanelReducer, {
     ...initialState,
     limit: 500,
