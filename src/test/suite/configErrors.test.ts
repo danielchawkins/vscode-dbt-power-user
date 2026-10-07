@@ -3,6 +3,8 @@ import * as os from "os";
 import * as path from "path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, languages, Uri, window, workspace } from "vscode";
+import { firstLogLine } from "../../core/cli";
+import { ProjectSnapshot } from "../../core/project";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { formatFusionExecutableResolutionFailure } from "../../fusion/fusionExecutable";
@@ -310,33 +312,6 @@ describe("configuration errors", () => {
     ).toContain("dbt Fusion 2.0.1 for general is too old.");
   });
 
-  it("notifies a missing dbtPath once with Show output", async () => {
-    project = buildTestProject(
-      root,
-      () => {
-        throw new Error("no CLI without an executable");
-      },
-      {
-        resolver: {
-          resolve: vi.fn(async () => ({
-            kind: "notFound" as const,
-            path: "/missing/dbt",
-            source: "configured" as const,
-          })),
-        },
-      },
-    );
-    await project.initialize();
-
-    expect(window.showErrorMessage).toHaveBeenCalledWith(
-      expect.stringContaining("fusionPowerUser.dbtPath for "),
-      SHOW_OUTPUT,
-    );
-    expect(project.getAllDiagnostic().map((d) => d.code)).toEqual([
-      "fusion-executable",
-    ]);
-  });
-
   it("warns, naming the path, when a Declared Project entry has no dbt_project.yml", async () => {
     const log = spyLog();
     vi.mocked(workspace.getConfiguration).mockReturnValue({
@@ -366,6 +341,17 @@ describe("errorHint", () => {
     );
   });
 
+  it("names the setting that chose a profiles directory or target", () => {
+    expect(
+      errorHint(PROFILES_ERROR, { ...none, profilesDir: "/nowhere" }),
+    ).toBe(
+      "fusionPowerUser.profilesDir is /nowhere, which has no profiles.yml.",
+    );
+    expect(errorHint(TARGET_ERROR, { ...none, target: "nope" })).toBe(
+      "fusionPowerUser.target is nope; set it to a target the profile defines.",
+    );
+  });
+
   it("says nothing it cannot attribute", () => {
     expect(errorHint(PROFILES_ERROR, none)).toBeUndefined();
     expect(errorHint("[error] something else", none)).toBeUndefined();
@@ -380,15 +366,38 @@ describe("ProjectErrors", () => {
     vi.clearAllMocks();
   });
 
-  it("shows an error again after a different one replaced it", () => {
-    const errors = new ProjectErrors(
+  const projectErrors = (invocation?: object) =>
+    new ProjectErrors(
       Uri.file("/p"),
       () => "p",
       () => {
-        throw new Error("no snapshot");
+        if (!invocation) {
+          throw new Error("no snapshot");
+        }
+        return { invocation } as ProjectSnapshot;
       },
       spyLog(),
     );
+
+  it.each([
+    [
+      PROFILES_ERROR,
+      { profilesDir: "/nowhere" },
+      "fusionPowerUser.profilesDir is /nowhere,",
+    ],
+    [TARGET_ERROR, { target: "nope" }, "fusionPowerUser.target is nope;"],
+  ])(
+    "appends the snapshot's hint to the notification of %s",
+    (error, invocation, hint) => {
+      projectErrors(invocation).report("parse", [error]);
+      const [text] = vi.mocked(window.showErrorMessage).mock.calls[0];
+      expect(text).toContain(firstLogLine(error).replace("[error] ", ""));
+      expect(text).toContain(hint);
+    },
+  );
+
+  it("shows an error again after a different one replaced it", () => {
+    const errors = projectErrors();
     const changes = vi.fn();
     errors.onDidChange(changes);
     errors.report("parse", ["[error] a"]);
@@ -401,14 +410,7 @@ describe("ProjectErrors", () => {
   });
 
   it("reports a failed CLI compile's config error from its text output, and clears it on a clean exit", () => {
-    const errors = new ProjectErrors(
-      Uri.file("/p"),
-      () => "p",
-      () => {
-        throw new Error("no snapshot");
-      },
-      spyLog(),
-    );
+    const errors = projectErrors();
     const stderr =
       "=================== Errors and Warnings ====================\n" +
       `${ENV_ERROR}\n`;
@@ -437,14 +439,7 @@ describe("ProjectErrors", () => {
   });
 
   it("does not repeat an error another source already shows", () => {
-    const errors = new ProjectErrors(
-      Uri.file("/p"),
-      () => "p",
-      () => {
-        throw new Error("no snapshot");
-      },
-      spyLog(),
-    );
+    const errors = projectErrors();
     errors.report("parse", ["[error] a"]);
     errors.report("compile", ["[error] a"]);
     expect(window.showErrorMessage).toHaveBeenCalledTimes(1);

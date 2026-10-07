@@ -2,13 +2,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { commands, window } from "vscode";
 import { ExecuteSQLError } from "../../core/dbtCommand";
 import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
-
-const log = () => ({
-  warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn(),
-  info: vi.fn(),
-});
+import { silentLog } from "../testLog";
 
 const bottomView = () => ({
   show: vi.fn(),
@@ -41,7 +35,7 @@ function makePanel(
   const panel = new QueryResultPanel(
     {} as never,
     { eventEmitter: { event: () => ({ dispose: vi.fn() }) } } as never,
-    log() as never,
+    silentLog(),
     service as never,
     () => ({ dispose: vi.fn() }),
   ) as any;

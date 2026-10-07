@@ -11,7 +11,6 @@ import {
   type Mock,
   vi,
 } from "vitest";
-import type { Log } from "../../core/log";
 import { RunResultsEventData } from "../../dbt_integration/domain";
 import {
   parseRunResultsJson,
@@ -20,14 +19,7 @@ import {
   selectionFromCliArgs,
   withRunResults,
 } from "../../projects/runResults";
-
-function mockTerminal(): Log {
-  return {
-    debug: () => undefined,
-    error: () => undefined,
-    trace: () => undefined,
-  } as unknown as Log;
-}
+import { silentLog } from "../testLog";
 
 function sampleRunResultsJson(invocationId = "inv-123") {
   return JSON.stringify({
@@ -199,7 +191,7 @@ describe("RunResultsReader", () => {
     reader = new RunResultsReader(
       () => targetDir,
       () => "single_project",
-      mockTerminal(),
+      silentLog(),
     );
   });
 
@@ -252,7 +244,7 @@ describe("RunResultsReader", () => {
     const noTarget = new RunResultsReader(
       () => undefined,
       () => "p",
-      mockTerminal(),
+      silentLog(),
     );
     expect(noTarget.observe()).toBeNull();
   });
