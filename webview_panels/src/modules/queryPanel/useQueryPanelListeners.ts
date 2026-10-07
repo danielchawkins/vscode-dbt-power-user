@@ -31,10 +31,10 @@ type HostMessage = queryResults.HostMessage;
 const useQueryPanelListeners = (): { loading: boolean } => {
   const dispatch = useQueryPanelDispatch();
   const { loading, hintIndex } = useQueryPanelState();
-  const hintInterval = useRef<number | undefined>(undefined);
+  const hintIntervalRef = useRef<number | undefined>(undefined);
   const hintIndexRef = useRef<number>(hintIndex);
-  const queryExecutionTimer = useRef<number | undefined>(undefined);
-  const queryStart = useRef(Date.now());
+  const queryExecutionTimerRef = useRef<number | undefined>(undefined);
+  const queryStartRef = useRef(0);
 
   useEffect(() => {
     hintIndexRef.current = hintIndex;
@@ -45,18 +45,20 @@ const useQueryPanelListeners = (): { loading: boolean } => {
     HINTS.sort(() => Math.random() - 0.5);
     dispatch(setHintIndex((hintIndexRef.current + 1) % HINTS.length));
 
-    hintInterval.current = window.setInterval(() => {
+    hintIntervalRef.current = window.setInterval(() => {
       dispatch(setHintIndex((hintIndexRef.current + 1) % HINTS.length));
     }, 3500);
-  }, [dispatch, hintIndex]);
+  }, [dispatch]);
 
-  const clearData = () => {
+  const clearData = useCallback(() => {
     dispatch(resetData());
-    queryStart.current = Date.now();
-  };
+    queryStartRef.current = Date.now();
+  }, [dispatch]);
 
-  const endQueryExecutionTimer = () =>
-    window.clearInterval(queryExecutionTimer.current);
+  const endQueryExecutionTimer = useCallback(
+    () => window.clearInterval(queryExecutionTimerRef.current),
+    [],
+  );
 
   const handleLoading = useCallback(() => {
     if (loading) {
@@ -64,57 +66,63 @@ const useQueryPanelListeners = (): { loading: boolean } => {
     }
     clearData();
     dispatch(setLoading(true));
-    queryExecutionTimer.current = window.setInterval(() => {
+    queryExecutionTimerRef.current = window.setInterval(() => {
       const now = Date.now();
-      const elapsedTime = Math.round((now - queryStart.current) / 100) / 10;
+      const elapsedTime = Math.round((now - queryStartRef.current) / 100) / 10;
       const time = isNaN(elapsedTime) ? 0 : elapsedTime;
       dispatch(setQueryExecutionInfo({ elapsedTime: time }));
     }, 100);
     handleHintMessage();
-  }, [loading, dispatch, handleHintMessage]);
+  }, [loading, dispatch, clearData, handleHintMessage]);
 
-  const clearHintInterval = () => {
-    window.clearInterval(hintInterval.current);
-    hintInterval.current = undefined;
-  };
+  const clearHintInterval = useCallback(() => {
+    window.clearInterval(hintIntervalRef.current);
+    hintIntervalRef.current = undefined;
+  }, []);
 
-  const handleError = (message: MessageOf<HostMessage, "renderError">) => {
-    dispatch(
-      setQueryResultsError(
-        message.error as QueryPanelStateProps["queryResultsError"],
-      ),
-    );
-    dispatch(setCompiledCodeMarkup(message.compiled_sql));
-    clearHintInterval();
-    endQueryExecutionTimer();
-  };
+  const handleError = useCallback(
+    (message: MessageOf<HostMessage, "renderError">) => {
+      dispatch(
+        setQueryResultsError(
+          message.error as QueryPanelStateProps["queryResultsError"],
+        ),
+      );
+      dispatch(setCompiledCodeMarkup(message.compiled_sql));
+      clearHintInterval();
+      endQueryExecutionTimer();
+    },
+    [dispatch, clearHintInterval, endQueryExecutionTimer],
+  );
 
-  const handleQueryResults = (result: {
-    rows?: TableData;
-    columnNames?: string[];
-    columnTypes?: (string | null)[];
-    raw_sql?: string;
-    compiled_sql?: string;
-  }) => {
-    dispatch(setLoading(false));
-    dispatch(
-      setQueryResults({
-        data: result.rows,
-        columnNames: result.columnNames,
-        columnTypes: result.columnTypes,
-        raw_sql: result.raw_sql,
-      } as QueryPanelStateProps["queryResults"]),
-    );
-    dispatch(setCompiledCodeMarkup(result.compiled_sql));
-    clearHintInterval();
-    endQueryExecutionTimer();
-  };
+  const handleQueryResults = useCallback(
+    (result: {
+      rows?: TableData;
+      columnNames?: string[];
+      columnTypes?: (string | null)[];
+      raw_sql?: string;
+      compiled_sql?: string;
+    }) => {
+      dispatch(setLoading(false));
+      dispatch(
+        setQueryResults({
+          data: result.rows,
+          columnNames: result.columnNames,
+          columnTypes: result.columnTypes,
+          raw_sql: result.raw_sql,
+        } as QueryPanelStateProps["queryResults"]),
+      );
+      dispatch(setCompiledCodeMarkup(result.compiled_sql));
+      clearHintInterval();
+      endQueryExecutionTimer();
+    },
+    [dispatch, clearHintInterval, endQueryExecutionTimer],
+  );
 
-  const handleResetState = () => {
+  const handleResetState = useCallback(() => {
     clearData();
     clearHintInterval();
     endQueryExecutionTimer();
-  };
+  }, [clearData, clearHintInterval, endQueryExecutionTimer]);
 
   const onMesssage = useCallback(
     (event: MessageEvent<HostMessage>) => {
@@ -154,7 +162,13 @@ const useQueryPanelListeners = (): { loading: boolean } => {
           break;
       }
     },
-    [handleLoading, dispatch],
+    [
+      handleLoading,
+      handleError,
+      handleResetState,
+      handleQueryResults,
+      dispatch,
+    ],
   );
 
   useEffect(() => {
@@ -186,7 +200,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
         );
       }
     });
-  }, []);
+  }, [dispatch, handleQueryResults]);
 
   return { loading };
 };

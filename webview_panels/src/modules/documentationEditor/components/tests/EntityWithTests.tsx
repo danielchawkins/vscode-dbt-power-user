@@ -22,14 +22,14 @@ const EntityWithTests = ({ title, tests, type }: Props): JSX.Element | null => {
     state: { incomingDocsData },
   } = useDocumentationContext();
   const [selectedTest, setSelectedTest] = useState<DBTModelTest | null>(null);
-  const [showAllTests, setshowAllTests] = useState(false);
+  const [showAllTests, setShowAllTests] = useState(false);
   const drawerRef = useRef<DrawerRef | null>(null);
   const handleClose = () => {
     setSelectedTest(null);
     drawerRef.current?.close();
   };
 
-  const handleShowAllTests = () => setshowAllTests(true);
+  const handleShowAllTests = () => setShowAllTests(true);
 
   const onSelect = (test: DBTModelTest) => {
     setSelectedTest(test);

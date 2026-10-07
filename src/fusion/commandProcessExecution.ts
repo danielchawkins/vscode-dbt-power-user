@@ -104,14 +104,14 @@ export class CommandProcessExecution {
       let stdoutBuffer = "";
       let stderrBuffer = "";
       let fullOutput = "";
-      commandProcess.stdout?.on("data", (chunk) => {
-        chunk = chunk.toString();
+      commandProcess.stdout?.on("data", (data: Buffer | string) => {
+        const chunk = data.toString();
         stdoutBuffer += chunk;
         fullOutput += chunk;
         onOutput?.(chunk);
       });
-      commandProcess.stderr?.on("data", (chunk) => {
-        chunk = chunk.toString();
+      commandProcess.stderr?.on("data", (data: Buffer | string) => {
+        const chunk = data.toString();
         stderrBuffer += chunk;
         fullOutput += chunk;
         onOutput?.(chunk);

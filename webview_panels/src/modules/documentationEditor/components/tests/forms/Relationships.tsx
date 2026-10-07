@@ -18,8 +18,8 @@ const Relationships = ({
   setValue,
 }: Props): JSX.Element => {
   const [toFieldOptions, setToFieldOptions] = useState<OptionType[]>([]);
-  const [toModelOptions, setModels] = useState<OptionType[]>([]);
-  const [toSourceOptions, setSources] = useState<OptionType[]>([]);
+  const [toModelOptions, setToModelOptions] = useState<OptionType[]>([]);
+  const [toSourceOptions, setToSourceOptions] = useState<OptionType[]>([]);
 
   const getColumnsOfModel = async (model: string) => {
     const matches = [...model.matchAll(/['"]([^'"]*)['"]/g)].map((m) => m[1]);
@@ -46,13 +46,13 @@ const Relationships = ({
       executeRequestInSync("getSourcesInProject"),
     ])
       .then(([modelsResponse, sourcesResponse]) => {
-        setModels(
+        setToModelOptions(
           (modelsResponse as { models: string[] }).models.map((m) => ({
             label: `ref('${m}')`,
             value: `ref('${m}')`,
           })),
         );
-        setSources(
+        setToSourceOptions(
           (
             sourcesResponse as {
               sources: { name: string; tables: string[] }[];

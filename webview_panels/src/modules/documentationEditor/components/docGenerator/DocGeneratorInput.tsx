@@ -35,9 +35,15 @@ const DocGeneratorInput = ({
     state: { incomingDocsData, currentDocsData },
     dispatch,
   } = useDocumentationContext();
-  const [description, setDescription] = useState("");
+  const [description, setDescription] = useState(entity.description ?? "");
+  const [syncedDescription, setSyncedDescription] = useState(
+    entity.description,
+  );
+  if (syncedDescription !== entity.description) {
+    setSyncedDescription(entity.description);
+    setDescription(entity.description ?? "");
+  }
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
-  const [inputRows, setInputRows] = useState(1);
 
   useEffect(() => {
     if (!inputRef.current) {
@@ -57,12 +63,11 @@ const DocGeneratorInput = ({
         ((description.length - newLines) * charWidth) /
           inputRef.current.clientWidth,
       ) + newLines;
-    setInputRows(rows);
+    // The DOM `rows` setter throws for 0, and `rows` is 0 for an empty description and infinite without layout.
+    inputRef.current.rows = Number.isFinite(rows)
+      ? Math.max(1, rows)
+      : newLines + 1;
   }, [description]);
-
-  useEffect(() => {
-    setDescription(entity.description ?? "");
-  }, [entity.description]);
 
   const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     setDescription(e.target.value);
@@ -175,7 +180,7 @@ const DocGeneratorInput = ({
             ref={inputRef}
             value={description}
             onChange={onChange}
-            rows={inputRows}
+            rows={1}
             placeholder={placeholder}
             className={isDescriptionDirty ? "border-orange" : ""}
           />
