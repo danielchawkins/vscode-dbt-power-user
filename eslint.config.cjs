@@ -57,6 +57,14 @@ const fsWriteProperties = FS_WRITES.map((property) => ({
   property,
   message: WRITE_MESSAGE,
 }));
+const errorMessageProperties = [
+  {
+    object: "window",
+    property: "showErrorMessage",
+    message:
+      "Error notifications go through notifyError or notifyErrorWithoutProject (src/projects/notifications.ts).",
+  },
+];
 const processImports = ["child_process", "node:child_process"].map((name) => ({
   name,
   message: PROCESS_MESSAGE,
@@ -191,6 +199,7 @@ module.exports = [
         ...settingsProperties,
         ...environmentProperties,
         ...fsWriteProperties,
+        ...errorMessageProperties,
       ],
       "no-restricted-syntax": [
         "error",
@@ -208,6 +217,17 @@ module.exports = [
           paths: [...processImports, ...environmentImports, ...fsWriteImports],
           patterns: removedImports,
         },
+      ],
+    },
+  },
+  {
+    files: ["src/projects/notifications.ts", "src/projects/projectErrors.ts"],
+    rules: {
+      "no-restricted-properties": [
+        "error",
+        ...settingsProperties,
+        ...environmentProperties,
+        ...fsWriteProperties,
       ],
     },
   },

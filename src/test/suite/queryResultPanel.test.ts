@@ -139,6 +139,7 @@ describe("QueryResultPanel", () => {
       );
       expect(window.showErrorMessage).toHaveBeenCalledWith(
         expect.stringContaining("bad column"),
+        "Show output",
       );
       const error = posted().find((m) => m.command === "renderError");
       expect(error).toMatchObject({
@@ -234,7 +235,8 @@ describe("QueryResultPanel", () => {
         projectName: "gone",
       });
       expect(window.showErrorMessage).toHaveBeenCalledWith(
-        "Unable to find project to execute query",
+        expect.stringContaining("Unable to execute query"),
+        "Show output",
       );
     });
 
@@ -271,6 +273,7 @@ describe("QueryResultPanel", () => {
       });
       expect(window.showErrorMessage).toHaveBeenCalledWith(
         "No active editor found",
+        "Show output",
       );
       (window as any).activeTextEditor = {
         document: { uri: { fsPath: "/p/a.sql" }, getText: () => "" },
@@ -280,7 +283,8 @@ describe("QueryResultPanel", () => {
         limit: 1,
       });
       expect(window.showErrorMessage).toHaveBeenLastCalledWith(
-        "Unable to find dbt project for executing query.",
+        "Unable to find dbt project for executing query",
+        "Show output",
       );
     });
 

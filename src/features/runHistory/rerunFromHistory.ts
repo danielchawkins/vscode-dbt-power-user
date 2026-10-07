@@ -4,6 +4,7 @@ import type {
   RunModelParams,
   RunResultsEventData,
 } from "../../dbt_integration/domain";
+import { notifyErrorWithoutProject } from "../../projects/notifications";
 import type { Project } from "../../projects/project";
 
 /** Project operations a run-history replay can dispatch to. */
@@ -34,8 +35,8 @@ export function rerunFromHistory(
 ): void {
   const project = findProjectByName(entry.projectName);
   if (!project) {
-    window.showErrorMessage(
-      `Project "${entry.projectName}" is not currently loaded.`,
+    void notifyErrorWithoutProject(
+      `Project "${entry.projectName}" is not currently loaded`,
     );
     return;
   }

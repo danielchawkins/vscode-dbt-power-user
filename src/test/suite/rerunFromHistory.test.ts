@@ -67,6 +67,7 @@ describe("rerunFromHistory", () => {
 
     expect(window.showErrorMessage).toHaveBeenCalledWith(
       expect.stringContaining("missing"),
+      "Show output",
     );
   });
 

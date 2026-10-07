@@ -1,13 +1,15 @@
-import { window } from "vscode";
-import { type ExecuteSQLResult, QueryExecution } from "../core/dbtCommand";
+import { type Uri } from "vscode";
+import { QueryExecution, type ExecuteSQLResult } from "../core/dbtCommand";
 import type { Log } from "../core/log";
 import { type QueryExecutionResult } from "../dbt_integration/domain";
 import { FusionCli } from "../fusion/fusionCli";
+import { notifyError, type NotifiableProject } from "./notifications";
 
 type SqlExecutor = Pick<FusionCli, "executeSQL">;
 
 /** The project state the query wrappers read. */
 interface SqlProject {
+  readonly projectRoot: Uri;
   getFusionCli(): SqlExecutor;
   getProjectName(): string;
   getAdapterType(): string;
@@ -152,8 +154,9 @@ export function queryPanelPayload(
   limit: number,
 ): QueryPanelPayload | undefined {
   if (limit <= 0) {
-    void window.showErrorMessage(
-      "Please enter a positive number for query limit",
+    void notifyError(
+      deps.project,
+      "Enter a positive number for the query limit",
     );
     return undefined;
   }
@@ -196,16 +199,14 @@ export async function executeWithLimit(
 
 /** Compiles `query`, showing an error message and returning undefined when compilation fails. */
 export async function compileOrReport(
+  project: NotifiableProject,
   compile: (query: string) => Promise<string | undefined>,
   query: string,
 ): Promise<string | undefined> {
   try {
     return await compile(query);
   } catch (exc) {
-    void window.showErrorMessage(
-      "Could not compile query: " +
-        (exc instanceof Error ? exc.message : String(exc)),
-    );
+    void notifyError(project, "Could not compile query", exc);
     return undefined;
   }
 }

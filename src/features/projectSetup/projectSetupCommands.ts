@@ -1,5 +1,6 @@
 import { window } from "vscode";
 import { ExtensionContextStore } from "../../extensionContext";
+import { notifyError } from "../../projects/notifications";
 import { OutputChannels } from "../../projects/outputChannels";
 import {
   ProjectQuickPick,
@@ -78,10 +79,13 @@ export class ProjectSetupCommands {
         `Error when validating ${projectContextResolved.label}`,
         err,
       );
-      window.showErrorMessage(
-        "Error running dbt debug for project " +
-          projectContextResolved.label +
-          `. See the "${log.name}" output for details.`,
+      void notifyError(
+        {
+          root: projectContextResolved.uri,
+          name: projectContextResolved.label,
+        },
+        "Error running dbt debug",
+        err,
       );
       throw err;
     }
@@ -121,10 +125,13 @@ export class ProjectSetupCommands {
         "Could not install deps",
         err,
       );
-      window.showErrorMessage(
-        "Error installing dbt dependencies for project " +
-          projectContextResolved.label +
-          `. See the dbt task terminal or the "${log.name}" output for details.`,
+      void notifyError(
+        {
+          root: projectContextResolved.uri,
+          name: projectContextResolved.label,
+        },
+        "Error installing dbt dependencies",
+        err,
       );
       throw err;
     }

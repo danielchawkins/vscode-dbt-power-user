@@ -63,6 +63,7 @@ import {
   onClientChange,
 } from "./projects/fusionClientPool";
 import { FusionStatus } from "./projects/fusionStatus";
+import { bindExtensionOutput } from "./projects/notifications";
 import { OutputChannels } from "./projects/outputChannels";
 import { ParseDemand } from "./projects/parseDemand";
 import { Project } from "./projects/project";
@@ -133,6 +134,7 @@ interface ProjectsGraph {
 function composeProjects(context: ExtensionContext): ProjectsGraph {
   const extensionContextStore = new ExtensionContextStore(context);
   const outputChannels = new OutputChannels(context.extension.id);
+  bindExtensionOutput(() => outputChannels.channel.show(true));
   const terminal: Log = outputChannels;
   const sharedState = new SharedStateService();
   const runHistoryService = new RunHistoryService();

@@ -310,7 +310,11 @@ describe("documentation editor handlers", () => {
   const docsPanel = () => {
     const panel = Object.create(DocsEditViewPanel.prototype);
     const postMessage = vi.fn();
-    const project = { projectRoot: { fsPath: "/p" }, getColumnValues: vi.fn() };
+    const project = {
+      projectRoot: { fsPath: "/p" },
+      getProjectName: () => "p",
+      getColumnValues: vi.fn(),
+    };
     panel._panel = { webview: { postMessage } };
     panel.terminal = terminal();
     panel.projects = { get: () => project };

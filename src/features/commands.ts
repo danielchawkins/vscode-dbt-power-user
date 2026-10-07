@@ -23,6 +23,10 @@ import {
   RunModelType,
 } from "../dbt_integration/domain";
 import { ExtensionContextStore } from "../extensionContext";
+import {
+  notifyError,
+  notifyErrorWithoutProject,
+} from "../projects/notifications";
 import { activeModelUri, previewUriFor } from "../projects/previewUri";
 import { Project } from "../projects/project";
 import { ProjectQuickPickItem } from "../projects/projectQuickPick";
@@ -90,7 +94,7 @@ export class VSCodeCommands implements Disposable {
           const activeEditor = window.activeTextEditor;
           const docUri = uri ?? activeEditor?.document.uri;
           if (!docUri) {
-            window.showErrorMessage("No active SQL file to profile.");
+            void notifyErrorWithoutProject("No active SQL file to profile");
             return;
           }
 
@@ -590,9 +594,7 @@ export class VSCodeCommands implements Disposable {
       await this.runModel.executeSQL(uri, query, `cte_${cte.name}_${hash}`);
     } catch (error) {
       this.dbtTerminal.error("CteExecution", "Unable to execute CTE", error);
-      window.showErrorMessage(
-        `Failed to execute CTE: ${error instanceof Error ? error.message : "Unknown error"}`,
-      );
+      void notifyError(this.projects.get(uri), "Failed to execute CTE", error);
     }
   }
 

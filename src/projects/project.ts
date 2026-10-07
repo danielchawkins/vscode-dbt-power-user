@@ -7,7 +7,6 @@ import {
   EventEmitter,
   Task,
   Uri,
-  window,
 } from "vscode";
 import { QueryExecution } from "../core/dbtCommand";
 import type { Log } from "../core/log";
@@ -57,6 +56,7 @@ import {
 } from "./manifest";
 import { ManifestRebuild } from "./manifestRebuild";
 import type { Manifest } from "./manifestTypes";
+import { notifyError } from "./notifications";
 import type { ParseDemand } from "./parseDemand";
 import {
   findModelInTargetfolder,
@@ -389,9 +389,10 @@ export class Project implements Disposable, ManifestProject {
     try {
       await this.lifecycle.initialize();
     } catch (error) {
-      const message = `initializing the dbt project at ${this.projectRoot}: ${error}.`;
-      void window.showErrorMessage(
-        `An unexpected error occured while ${message}`,
+      void notifyError(
+        this,
+        `Unexpected error initializing the dbt project at ${this.projectRoot.fsPath}`,
+        error,
       );
     }
     this.terminal.debug(
@@ -695,6 +696,7 @@ export class Project implements Disposable, ManifestProject {
   /** Compiles a saved model through the language server, and unsaved or untitled text through the CLI. */
   async compileQuery(query: string, model?: Uri): Promise<string | undefined> {
     return compileOrReport(
+      this,
       async (q) =>
         model && model.scheme !== "untitled"
           ? ((await this.compiledSql(model)) ?? this.unsafeCompileQuery(q))

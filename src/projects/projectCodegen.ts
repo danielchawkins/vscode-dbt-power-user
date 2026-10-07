@@ -15,6 +15,7 @@ import { DBColumn } from "../core/types";
 import { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
 import { getColumnNameByCase } from "./columnNames";
+import { notifyError, type NotifiableProject } from "./notifications";
 import { writeUserFile } from "./userFiles";
 
 async function createUserFile(location: string, text: string): Promise<void> {
@@ -54,7 +55,7 @@ export function createYMLContent(
 
 /** Writes and opens `<model>_schema.yml` beside the model unless that file exists. */
 export async function generateSchemaYML(
-  columns: Pick<ColumnSource, "getColumnsOfModel">,
+  columns: Pick<ColumnSource, "getColumnsOfModel"> & NotifiableProject,
   modelPath: Uri,
   modelName: string,
 ): Promise<void> {
@@ -70,15 +71,13 @@ export async function generateSchemaYML(
       const doc = await workspace.openTextDocument(Uri.file(location));
       window.showTextDocument(doc);
     } else {
-      window.showErrorMessage(
-        `A file called ${modelName}_schema.yml already exists in ${currentDir}. If you want to generate the schema yml, please rename the other file or delete it if you want to generate the yml again.`,
+      void notifyError(
+        columns,
+        `A file called ${modelName}_schema.yml already exists in ${currentDir}. Rename or delete it to generate the schema yml again`,
       );
     }
   } catch (exc) {
-    window.showErrorMessage(
-      "Could not generate schema yaml: " +
-        (exc instanceof Error ? exc.message : String(exc)),
-    );
+    void notifyError(columns, "Could not generate schema yaml", exc);
   }
 }
 
@@ -94,7 +93,7 @@ export interface GenerateModelFromSourceParams {
 
 /** Writes and opens a staging model selecting every column of a source table unless it exists. */
 export async function generateModel(
-  columns: Pick<ColumnSource, "getColumnsOfSource">,
+  columns: Pick<ColumnSource, "getColumnsOfSource"> & NotifiableProject,
   terminal: Pick<Log, "debug">,
   sourceName: string,
   tableName: string,
@@ -157,16 +156,13 @@ export async function generateModel(
           const doc = await workspace.openTextDocument(Uri.file(location));
           window.showTextDocument(doc);
         } else {
-          window.showErrorMessage(
-            `A model called ${fileName} already exists in ${sourcePath}. If you want to generate the model, please rename the other model or delete it if you want to generate the model again.`,
+          void notifyError(
+            columns,
+            `A model called ${fileName} already exists in ${sourcePath}. Rename or delete it to generate the model again`,
           );
         }
       } catch (exc) {
-        window.showErrorMessage(
-          "An error occured while trying to generate the model: " +
-            (exc instanceof Error ? exc.message : String(exc)) +
-            ".",
-        );
+        void notifyError(columns, "Could not generate the model", exc);
       }
     },
   );

@@ -25,6 +25,7 @@ import {
 import { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
 import type { Manifest } from "../../projects/manifestTypes";
+import { notifyError } from "../../projects/notifications";
 import { Project } from "../../projects/project";
 import { QueryManifestService } from "../../projects/queryManifestService";
 import { SharedStateService } from "../../projects/sharedStateService";
@@ -546,12 +547,9 @@ export class LineagePanel extends PanelHost implements LineagePanelView {
           },
         );
         if (!ok) {
-          window.showErrorMessage(
-            "Unable to get columns from DB for model: " +
-              node.name +
-              " table: " +
-              _table.name +
-              ".",
+          void notifyError(
+            project,
+            `Unable to get columns from the database for model ${node.name}, table ${_table.name}`,
           );
           return;
         }
