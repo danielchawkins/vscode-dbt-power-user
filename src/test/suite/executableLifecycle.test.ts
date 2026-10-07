@@ -9,7 +9,6 @@ import {
 } from "vitest";
 import { ConfigurationChangeEvent, Uri, workspace } from "vscode";
 import { DBTDiagnosticData } from "../../core/diagnostics";
-import type { Log } from "../../core/log";
 import {
   ExecutableLifecycle,
   ExecutableLifecycleHooks,
@@ -21,48 +20,14 @@ import {
   FusionExecutable,
 } from "../../fusion/fusionExecutable";
 import { CONFIGURATION_SECTION } from "../../settings";
+import { flushAsync, waitFor } from "../async";
+import { sampleExecutable } from "../projectHarness";
+import { silentLog } from "../testLog";
 
 const ROOT = "/workspace/project";
 
 type Verdict =
   FusionExecutable | { kind: "notFound"; path: string; source: "configured" };
-
-async function waitFor(assertion: () => void, timeoutMs = 2000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      assertion();
-      return;
-    } catch {
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    }
-  }
-  assertion();
-}
-
-async function drainMicrotasks(rounds = 8): Promise<void> {
-  for (let round = 0; round < rounds; round++) {
-    await Promise.resolve();
-  }
-}
-
-function sampleExecutable(executablePath: string): FusionExecutable {
-  return {
-    path: executablePath,
-    version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6\n" },
-    env: {},
-  };
-}
-
-function mockTerminal(): Log {
-  return {
-    debug: () => undefined,
-    error: () => undefined,
-    warn: () => undefined,
-    info: () => undefined,
-    dispose: () => undefined,
-  };
-}
 
 interface StubCli {
   path: string;
@@ -102,7 +67,7 @@ function build(
     { resolve: vi.fn(async () => resolve()) },
     factory,
     ROOT,
-    mockTerminal(),
+    silentLog(),
     {
       activate: hooks.activate ?? (async () => undefined),
       deactivate: hooks.deactivate ?? (() => undefined),
@@ -192,7 +157,7 @@ describe("ExecutableLifecycle", () => {
 
     await lifecycle.initialize();
     changePath("/workspace/sibling");
-    await drainMicrotasks();
+    await flushAsync();
     expect(lifecycle.current()).toBeUndefined();
 
     configuredPath = "/recovered/dbt";
@@ -268,7 +233,7 @@ describe("ExecutableLifecycle", () => {
     await lifecycle.dispose();
     releaseGate();
     await initPromise;
-    await drainMicrotasks();
+    await flushAsync();
 
     expect(resolve).toHaveBeenCalledTimes(1);
     expect(created).toHaveLength(1);

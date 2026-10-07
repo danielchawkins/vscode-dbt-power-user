@@ -31,23 +31,12 @@ import {
 import { Project } from "../../projects/project";
 import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { CONFIGURATION_SECTION } from "../../settings";
+import { waitFor } from "../async";
 import { createdFileSystemWatchers } from "../mock/vscode";
-import { buildTestProject } from "../projectHarness";
+import { buildTestProject, sampleExecutable } from "../projectHarness";
+import { silentLog } from "../testLog";
 
 const ENV_MARKER = "FUSION_PU_CLI_ENV";
-
-async function waitFor(assertion: () => void, timeoutMs = 2000): Promise<void> {
-  const deadline = Date.now() + timeoutMs;
-  while (Date.now() < deadline) {
-    try {
-      assertion();
-      return;
-    } catch {
-      await new Promise((resolve) => setTimeout(resolve, 10));
-    }
-  }
-  assertion();
-}
 
 function prepareProjectRoot(root: string): void {
   fs.mkdirSync(path.join(root, "models"), { recursive: true });
@@ -57,27 +46,6 @@ function prepareProjectRoot(root: string): void {
     path.join(root, "dbt_project.yml"),
     "name: cli_test\nversion: 1.0.0\n",
   );
-}
-
-function sampleExecutable(
-  executablePath: string,
-  env: Record<string, string> = process.env as Record<string, string>,
-): FusionExecutable {
-  return {
-    path: executablePath,
-    version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6\n" },
-    env,
-  };
-}
-
-function mockTerminal(): Log {
-  return {
-    debug: () => undefined,
-    error: () => undefined,
-    warn: () => undefined,
-    info: () => undefined,
-    dispose: () => undefined,
-  };
 }
 
 function recordingExecutionFactory(): {
@@ -134,7 +102,7 @@ function buildIntegration(
 ): Project {
   return buildTestProject(projectRoot, fusionIntegrationFactory, {
     resolver: { resolve: vi.fn(async () => resolve()) },
-    terminal: mockTerminal(),
+    terminal: silentLog(),
   });
 }
 
@@ -209,7 +177,7 @@ describe("Fusion CLI executable wiring", () => {
     const integration = buildIntegration(
       root,
       async () => sampleExecutable("/bin/dbt"),
-      fusionCliFactory(mockTerminal(), recording.factory),
+      fusionCliFactory(silentLog(), recording.factory),
     );
 
     await integration.initialize();
@@ -232,7 +200,7 @@ describe("Fusion CLI executable wiring", () => {
     process.env[ENV_MARKER] = "host";
     const recordingA = recordingExecutionFactory();
     const recordingB = recordingExecutionFactory();
-    const terminal = mockTerminal();
+    const terminal = silentLog();
 
     const integrationA = buildIntegration(
       rootA,
@@ -271,7 +239,7 @@ describe("Fusion CLI executable wiring", () => {
   it("records resolution failure diagnostics without initializing delegate", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-cli-fail-"));
     prepareProjectRoot(root);
-    const terminal = mockTerminal();
+    const terminal = silentLog();
     const integration = buildIntegration(
       root,
       async () => ({
@@ -350,7 +318,7 @@ describe("Fusion CLI executable wiring", () => {
     let pathA = "/missing/a/dbt";
     const recordingA = recordingExecutionFactory();
     const recordingB = recordingExecutionFactory();
-    const terminal = mockTerminal();
+    const terminal = silentLog();
 
     const integrationA = buildIntegration(
       rootA,

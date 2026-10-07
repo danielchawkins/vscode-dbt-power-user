@@ -25,21 +25,15 @@ import {
 } from "../../projects/fusionStatus";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
+import { declaredProject } from "../projectHarness";
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace"),
   name: "workspace",
   index: 0,
 };
 
-function makeProject(name: string, rootPath: string): DeclaredProject {
-  return {
-    root: Uri.file(rootPath),
-    name,
-    folder,
-    contains: () => false,
-    dispose: () => {},
-  };
-}
+const makeProject = (name: string, rootPath: string) =>
+  declaredProject(name, rootPath, folder);
 
 class FakeClient implements FusionClient {
   private readonly stateEmitter = new EventEmitter<FusionClientState>();

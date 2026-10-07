@@ -10,6 +10,7 @@ import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import { LineagePanel } from "../../features/lineage/lineagePanel";
 import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
 import { NUM_RUNS } from "../arbitraries";
+import { spyLog } from "../testLog";
 
 interface Panel {
   name: string;
@@ -27,13 +28,6 @@ interface Panel {
   };
 }
 
-const terminal = () => ({
-  warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn(),
-  info: vi.fn(),
-});
-
 /** An instance of `ctor` with no constructor run, its handler map replaced by spies. */
 function spiedPanel(
   ctor: { prototype: object },
@@ -41,7 +35,7 @@ function spiedPanel(
   logField: string,
 ) {
   const panel = Object.create(ctor.prototype);
-  const log = terminal();
+  const log = spyLog();
   const spies = Object.fromEntries(commands.map((c) => [c, vi.fn()]));
   panel[logField] = log;
   panel.handlers = () => spies;
@@ -235,7 +229,7 @@ describe("query results handlers", () => {
     panel._panel = { webview: { postMessage } };
     panel.history = { all: () => entries, clear: () => entries.splice(0) };
     const entries: unknown[] = [{}];
-    panel.dbtTerminal = terminal();
+    panel.dbtTerminal = spyLog();
 
     await panel.handleCommand({
       command: "clearQueryHistory",
@@ -256,7 +250,7 @@ describe("query results handlers", () => {
     const panel = Object.create(QueryResultPanel.prototype);
     const postMessage = vi.fn();
     panel._panel = { webview: { postMessage } };
-    panel.dbtTerminal = terminal();
+    panel.dbtTerminal = spyLog();
 
     await panel.handleCommand({
       command: "executeQuery",
@@ -285,7 +279,7 @@ describe("documentation editor handlers", () => {
     const panel = Object.create(DocsEditViewPanel.prototype);
     const postMessage = vi.fn();
     panel._panel = { webview: { postMessage } };
-    panel.terminal = terminal();
+    panel.terminal = spyLog();
 
     await panel.handleCommand({
       command: "getColumnsOfModel",
@@ -317,7 +311,7 @@ describe("documentation editor handlers", () => {
       getColumnValues: vi.fn(),
     };
     panel._panel = { webview: { postMessage } };
-    panel.terminal = terminal();
+    panel.terminal = spyLog();
     panel.projects = { get: () => project };
     panel.dbtTestService = {
       getTestsForCurrentModel: vi.fn(),

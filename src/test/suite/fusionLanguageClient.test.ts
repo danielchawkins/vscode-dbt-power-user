@@ -59,6 +59,7 @@ import {
   ReverseSocketStreams,
 } from "../../fusion/reverseSocketTransport";
 import { DeclaredProject } from "../../projects/projectRegistry";
+import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
 function channel() {
@@ -1480,12 +1481,6 @@ function stateListenerFor(
 ): ((event: { newState: State }) => void) | undefined {
   const calls = languageClient.onDidChangeState.mock.calls;
   return calls[calls.length - 1]?.[0];
-}
-
-async function flushAsync(): Promise<void> {
-  for (let i = 0; i < 8; i += 1) {
-    await Promise.resolve();
-  }
 }
 
 async function waitForState(

@@ -5,13 +5,7 @@ import {
   registerQueryResultTestCommand,
   RENDER_TEST_RESULT_COMMAND,
 } from "../../features/queryResults/queryResultTestCommand";
-
-const terminal = () => ({
-  warn: vi.fn(),
-  error: vi.fn(),
-  debug: vi.fn(),
-  info: vi.fn(),
-});
+import { spyLog } from "../testLog";
 
 /** A results tab: a `WebviewPanel` double whose dispose listeners run on `close`. */
 function resultsTab() {
@@ -58,7 +52,7 @@ describe("query results pages", () => {
     const bottom = bottomView();
     const tab = resultsTab();
     panel._panel = bottom;
-    panel.dbtTerminal = terminal();
+    panel.dbtTerminal = spyLog();
 
     await panel.handleCommand(
       { command: "executeQuery", syncRequestId: "r" },
@@ -92,7 +86,7 @@ describe("query results pages", () => {
     const panel = new QueryResultPanel(
       {} as any,
       { eventEmitter: new EventEmitter<unknown>() } as any,
-      terminal() as any,
+      spyLog(),
       {} as any,
       removed.event,
     );

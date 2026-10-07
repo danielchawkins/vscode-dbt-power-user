@@ -1,17 +1,8 @@
 import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
-import {
-  afterEach,
-  beforeEach,
-  describe,
-  expect,
-  it,
-  vi,
-  type Mock,
-} from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, languages, Uri, window, workspace } from "vscode";
-import type { Log } from "../../core/log";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { formatFusionExecutableResolutionFailure } from "../../fusion/fusionExecutable";
@@ -30,6 +21,7 @@ import { ProjectRegistry } from "../../projects/projectRegistry";
 import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { resetMocks } from "../mock/vscode";
 import { buildTestProject } from "../projectHarness";
+import { spyLog } from "../testLog";
 
 const ENV_ERROR =
   "[error] [InvalidConfig (dbt1005)]: Jinja render error: invalid operation: 'env_var': environment variable " +
@@ -49,16 +41,6 @@ const flush = async () => {
   }
 };
 
-function terminal(): Log & { error: Mock } {
-  return {
-    debug: vi.fn(),
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    dispose: vi.fn(),
-  };
-}
-
 function settings(values: Record<string, unknown>): void {
   vi.mocked(workspace.getConfiguration).mockReturnValue({
     get: vi.fn((key: string, fallback?: unknown) => values[key] ?? fallback),
@@ -72,7 +54,7 @@ function projectWithParse(
   root: string,
   parse: () => { stdout: string; exitCode: number },
 ) {
-  const log = terminal();
+  const log = spyLog();
   const processes = {
     createCommandProcessExecution: () => ({
       complete: async () => ({ stderr: "", fullOutput: "", ...parse() }),
@@ -356,7 +338,7 @@ describe("configuration errors", () => {
   });
 
   it("warns, naming the path, when a Declared Project entry has no dbt_project.yml", async () => {
-    const log = terminal();
+    const log = spyLog();
     vi.mocked(workspace.getConfiguration).mockReturnValue({
       get: vi.fn((key: string, fallback?: unknown) =>
         key === "projects" ? ["typo"] : fallback,
@@ -405,7 +387,7 @@ describe("ProjectErrors", () => {
       () => {
         throw new Error("no snapshot");
       },
-      terminal(),
+      spyLog(),
     );
     const changes = vi.fn();
     errors.onDidChange(changes);
@@ -425,7 +407,7 @@ describe("ProjectErrors", () => {
       () => {
         throw new Error("no snapshot");
       },
-      terminal(),
+      spyLog(),
     );
     const stderr =
       "=================== Errors and Warnings ====================\n" +
@@ -461,7 +443,7 @@ describe("ProjectErrors", () => {
       () => {
         throw new Error("no snapshot");
       },
-      terminal(),
+      spyLog(),
     );
     errors.report("parse", ["[error] a"]);
     errors.report("compile", ["[error] a"]);
