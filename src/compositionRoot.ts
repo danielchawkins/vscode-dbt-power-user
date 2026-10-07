@@ -296,6 +296,7 @@ function composeWebviews(
         docGenService: new DocGenService(projects, queryManifestService),
         dbtTestService: new DbtTestService(queryManifestService),
         queryManifestService,
+        emitterService: sharedState,
       },
       terminal,
       graph.parseDemand,

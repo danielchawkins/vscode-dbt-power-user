@@ -22,7 +22,7 @@ Lineage's lists are a `strings` kind: at most 200 entries of at most 200 charact
 
 Result rows and drafts never go into webview state.
 
-`PanelReplay` (`src/features/queryResults/panelReplay.ts`) keeps, in host memory, the last view type and result posted to the bottom view and to each results tab. The host sends them again when a rebuilt page reports `webview:ready`. A results tab asks for its tab data again after each rebuild and gets the same data. A tab's entry lives until the tab closes; every entry is cleared when a project is removed; all of it ends with the extension host.
+`PanelReplay` (`src/webview/panelHost.ts`, with its rules in `src/features/queryResults/replayRules.ts`) keeps, in host memory, the last view type and result posted to the bottom view and to each results tab. The host sends them again when a rebuilt page reports `webview:ready`. A results tab asks for its tab data again after each rebuild and gets the same data. A tab's entry lives until the tab closes; every entry is cleared when a project is removed; all of it ends with the extension host.
 
 The documentation editor host (`src/features/docs/docsEditPanel.ts`) keeps one draft per model file path: the edited documentation and tests. The page sends `saveDraft` while it is dirty and `saveDraft` without a draft once its edits are saved, reverted or discarded; the host also drops the draft after a save and drops every draft under a removed project's root. `renderDocumentation` carries the model's draft, and a rebuilt page shows it over the saved documentation, so the editor is dirty again with the same edits. A live page that is already dirty on the same model keeps its own edits, which are newer than the host's copy.
 

@@ -119,7 +119,7 @@ const panels: Panel[] = [
       spiedPanel(
         DocsEditViewPanel,
         documentationEditor.panelCommands,
-        "terminal",
+        "dbtTerminal",
       ),
   },
   {
@@ -278,7 +278,7 @@ describe("documentation editor handlers", () => {
     const panel = Object.create(DocsEditViewPanel.prototype);
     const postMessage = vi.fn();
     panel._panel = { webview: { postMessage } };
-    panel.terminal = spyLog();
+    panel.dbtTerminal = spyLog();
 
     await panel.handleCommand({
       command: "getColumnsOfModel",
@@ -310,7 +310,7 @@ describe("documentation editor handlers", () => {
       getColumnValues: vi.fn(),
     };
     panel._panel = { webview: { postMessage } };
-    panel.terminal = spyLog();
+    panel.dbtTerminal = spyLog();
     panel.projects = { get: () => project };
     panel.dbtTestService = {
       getTestsForCurrentModel: vi.fn(),

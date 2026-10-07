@@ -18,9 +18,6 @@
     }
   },
   "src/modules/documentationEditor/components/docGenerator/DocGeneratorInput.tsx": {
-    "complexity": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     }
@@ -67,14 +64,6 @@
   },
   "src/modules/documentationEditor/components/tests/hooks/useTestFormSave.ts": {
     "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "src/modules/documentationEditor/utils.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "sonarjs/cognitive-complexity": {
       "count": 1
     }
   },

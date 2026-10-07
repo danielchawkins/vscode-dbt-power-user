@@ -73,7 +73,8 @@ export async function generateSchemaYML(
     } else {
       void notifyError(
         columns,
-        `A file called ${modelName}_schema.yml already exists in ${currentDir}. Rename or delete it to generate the schema yml again`,
+        `A file called ${modelName}_schema.yml already exists in ${currentDir}. ` +
+          "Rename or delete it to generate the schema yml again",
       );
     }
   } catch (exc) {
@@ -158,7 +159,8 @@ export async function generateModel(
         } else {
           void notifyError(
             columns,
-            `A model called ${fileName} already exists in ${sourcePath}. Rename or delete it to generate the model again`,
+            `A model called ${fileName} already exists in ${sourcePath}. ` +
+              "Rename or delete it to generate the model again",
           );
         }
       } catch (exc) {

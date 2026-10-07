@@ -7,6 +7,7 @@ import {
   DBTDocumentation,
   DBTDocumentationColumn,
   DBTModelTest,
+  DocumentationStateProps,
 } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { isArrayEqual } from "@modules/documentationEditor/utils";
@@ -23,6 +24,36 @@ interface Props {
   title: string;
   tests?: DBTModelTest[] | undefined;
 }
+/** Whether an entity's description or tests differ from what the host last sent. */
+const dirtiness = (
+  { entity, type, tests }: Pick<Props, "entity" | "type" | "tests">,
+  {
+    incomingDocsData,
+    currentDocsData,
+  }: Pick<DocumentationStateProps, "incomingDocsData" | "currentDocsData">,
+) => {
+  const entityColumn = incomingDocsData?.docs?.columns?.find(
+    (c) => c.name === entity.name,
+  );
+  const incomingTestKeys = incomingDocsData?.tests
+    ?.filter((t) =>
+      type === EntityType.MODEL
+        ? !t.column_name
+        : t.column_name === entity.name,
+    )
+    .map((t) => t.key);
+  const currTestKeys = tests?.map((t) => t.key);
+  const isTestsDirty = !isArrayEqual(
+    incomingTestKeys ?? [],
+    currTestKeys ?? [],
+  );
+  const isDescriptionDirty =
+    type === EntityType.MODEL
+      ? currentDocsData?.description !== incomingDocsData?.docs?.description
+      : entity.description !== entityColumn?.description;
+  return { isDescriptionDirty, isDirty: isDescriptionDirty || isTestsDirty };
+};
+
 const DocGeneratorInput = ({
   entity,
   placeholder,
@@ -69,24 +100,25 @@ const DocGeneratorInput = ({
       : newLines + 1;
   }, [description]);
 
-  const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-    setDescription(e.target.value);
+  const storeDescription = (value: string) => {
     if (type === EntityType.COLUMN) {
       dispatch(
         updateColumnsInCurrentDocsData({
-          columns: [{ name: entity.name, description: e.target.value }],
+          columns: [{ name: entity.name, description: value }],
         }),
       );
     }
 
     if (type === EntityType.MODEL) {
       dispatch(
-        updateCurrentDocsData({
-          name: entity.name,
-          description: e.target.value,
-        }),
+        updateCurrentDocsData({ name: entity.name, description: value }),
       );
     }
+  };
+
+  const onChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
+    setDescription(e.target.value);
+    storeDescription(e.target.value);
   };
 
   const handleInsertDocBlock = (docRef: string) => {
@@ -103,24 +135,7 @@ const DocGeneratorInput = ({
       currentValue.substring(0, start) + docRef + currentValue.substring(end);
 
     setDescription(newValue);
-
-    // Update the store
-    if (type === EntityType.COLUMN) {
-      dispatch(
-        updateColumnsInCurrentDocsData({
-          columns: [{ name: entity.name, description: newValue }],
-        }),
-      );
-    }
-
-    if (type === EntityType.MODEL) {
-      dispatch(
-        updateCurrentDocsData({
-          name: entity.name,
-          description: newValue,
-        }),
-      );
-    }
+    storeDescription(newValue);
 
     // Set cursor position after the inserted text
     setTimeout(() => {
@@ -132,26 +147,10 @@ const DocGeneratorInput = ({
     }, 10);
   };
 
-  const entityColumn = incomingDocsData?.docs?.columns?.find(
-    (c) => c.name === entity.name,
+  const { isDescriptionDirty, isDirty } = dirtiness(
+    { entity, type, tests },
+    { incomingDocsData, currentDocsData },
   );
-  const incomingTestKeys = incomingDocsData?.tests
-    ?.filter((t) =>
-      type === EntityType.MODEL
-        ? !t.column_name
-        : t.column_name === entity.name,
-    )
-    .map((t) => t.key);
-  const currTestKeys = tests?.map((t) => t.key);
-  const isTestsDirty = !isArrayEqual(
-    incomingTestKeys ?? [],
-    currTestKeys ?? [],
-  );
-  const isDescriptionDirty =
-    type === EntityType.MODEL
-      ? currentDocsData?.description !== incomingDocsData?.docs?.description
-      : entity.description !== entityColumn?.description;
-  const isDirty = isDescriptionDirty || isTestsDirty;
 
   return (
     <>

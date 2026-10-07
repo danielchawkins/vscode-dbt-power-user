@@ -93,7 +93,9 @@ export class ProjectSetupCommands {
   ) {
     return this.runSetup(projectContext, skipConfirmation, {
       prompt: (label) =>
-        `Do you want to validate the project: ${label}? This will run the command 'dbt debug' inside this project. Do you want to continue?`,
+        `Do you want to validate the project: ${label}? ` +
+        "This will run the command 'dbt debug' inside this project. " +
+        "Do you want to continue?",
       run: async (project) => {
         const output = await project.debug();
         if (output.fullOutput.includes("ERROR")) {
@@ -112,7 +114,9 @@ export class ProjectSetupCommands {
   ) {
     return this.runSetup(projectContext, skipConfirmation, {
       prompt: (label) =>
-        `Do you want to install packages for the project: ${label}? This will run the command 'dbt deps' inside this project. Do you want to continue?`,
+        `Do you want to install packages for the project: ${label}? ` +
+        "This will run the command 'dbt deps' inside this project. " +
+        "Do you want to continue?",
       run: (project) => project.installDeps(),
       logKey: "ProjectSetupCommands.installDeps",
       logMessage: () => "Could not install deps",

@@ -1,5 +1,13 @@
+import type { queryResults } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
-import { PanelReplay } from "../../features/queryResults/panelReplay";
+import { QUERY_RESULTS_REPLAY } from "../../features/queryResults/replayRules";
+import { PanelReplay as Replay } from "../../webview/panelHost";
+
+class PanelReplay<K> extends Replay<K, queryResults.HostMessage> {
+  constructor() {
+    super(QUERY_RESULTS_REPLAY);
+  }
+}
 
 const result = {
   command: "renderQuery" as const,
