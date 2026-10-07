@@ -535,6 +535,26 @@ Test changes, each a race or gap in the test that the Linux run exposed:
 - `src/test/integration/lspProtocolClient.ts`: the fixture client answered `client/registerCapability` but not `workspace/codeLens/refresh`, so a server request for it was recorded as an error and `lineageProgressRetention` failed its `getErrors().length === 0` assertion on every Linux run. The macOS run does not see the request within the test's window. The client now answers it with `null`, as it does for `client/registerCapability`. The assertion also prints the captured errors.
 - `src/test/integration/columnLineage.test.ts`: "answers concurrent upstream and downstream requests for one column" wrote a model and queried at once. The server cancels in-flight requests to reanalyze the written file, and the product retries a cancelled request only once, so the test failed in about half of the Linux runs. The test now reissues the pair, for up to 60 s, while either answer is "Operation cancelled". Every edge assertion is unchanged.
 
+### Smoke in containers
+
+`just smoke-docker [out] [args]` (`scripts/smoke/docker-smoke.sh`, `docker/smoke/Dockerfile`) runs the packaged-VSIX smoke for VS Code 1.128.0 and Cursor 3.21.16 in two parallel Linux arm64 containers, each under `xvfb-run` with a 1920x1080x24 screen. The host runs `just package` once and mounts the VSIX read-only at `/vsix/smoke.vsix`. The smoke image is built on the integration image, tagged by content hash, and bakes both hosts into `~/.cache/fusion-power-user/hosts` with `fetch-host.sh all`. It keeps the non-root `tester` user and `seccomp=unconfined`. Each container has its own network namespace, so no `FPU_CDP_PORT` is set. The assertions, fixtures and `expect`/`measured` checks are the macOS ones.
+
+Linux differences:
+
+- Colima shares only the home directory with the VM, so a bind mount of `/tmp/...` is an empty VM directory. The containers write evidence to a staging directory under `out/` in the repository (mounted at `/out`); the script then runs `chown` as root in a container and copies it to the requested path, so the files belong to the host user.
+- `fetch-vscode.sh` runs `node`, and a mise shim fails outside `/work`. The image build puts the real Node first on `PATH` for that step.
+- `/dev/shm` defaults to 64 MB, so the containers get `--shm-size=1g`.
+- Cursor's `.deb` `Depends` (read with `dpkg-deb -I`) are installed explicitly: `libxkbfile1`, `libatspi2.0-0`, `libdbus-1-3`, `libexpat1`, `libudev1`, `xdg-utils` and the GTK/NSS/ALSA set. `ldd` on both executables finds no missing library. No keyring was needed: neither host prompted for a password, so no `gnome-keyring` or `--password-store` is used. Cursor's sign-in did not interfere with `--skip-onboarding`.
+- Chromium prints `dbus` errors with no system bus on every screenshot; they are harmless. Window sizes differ from macOS: VS Code opens at 1440x900 and Cursor at 1280x800, both inside the screen.
+- `multi-root` writes no screenshots, as on macOS; only `single-project` has an `index.json` per host.
+
+Test and harness changes, both platform bugs:
+
+- `scripts/smoke/run-smoke.mjs`: test-electron resolves the Linux CLI as `bin/code`, which Cursor does not have, so the extension install failed with `ENOENT` and exit 1 without output. On Linux the CLI is now `bin/<executable name>`, and a spawn error is printed.
+- `src/test/smoke/panelViewState.test.ts`: the lineage test clicked the toggle "Columns" once, based on a read taken right after "Show 1 parents". The view state restores an open column list after the graph is drawn, so on Linux the restore sometimes landed between the read and the click, and the click closed the list (`columnTables: []` for the whole wait). It failed twice in four Linux runs this way. The test now reads, clicks only while the list is closed, waits 500 ms and reads again until it is open. Three consecutive runs passed after the change. The assertions after that point are unchanged.
+
+Visual check: 44 PNGs across the two hosts. The model editor, CTE lenses, query results grid and lineage graph were opened and agree with their `measured`: Jinja SQL highlighting and lenses on the model, the grid's `n`/`label` columns with rows `1 one` and `2 two`, and the lineage graph with `child` and `broken_ref` and their edges. No frame is blank or black. Every PNG has 1,000 to 3,400 distinct colours, and high-contrast frames are 91–96% background, as expected. A `just smoke-docker` run, including `just package` and both hosts in parallel, took 7 min 35 s.
+
 ## Alternatives the thesis missed
 
 [high] Use Linux containers first for a measured integration pilot, but do not call them a replacement for smoke. Build one private writable worktree per shard, run one selected label under Xvfb, and fix `prepareLabel` to prepare only selected labels before scaling out. This addresses the actual all-label preparation and shared-output defects rather than multiplying them.

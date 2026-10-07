@@ -260,6 +260,11 @@ smoke-visual out="out/smoke-visual" *args:
     FPU_SMOKE_SCREENSHOTS="{{ out }}" just smoke {{ args }}
     @echo "visual evidence: {{ out }}/<host>/<fixture>/index.json"
 
+# The same packaged-VSIX smoke on both hosts in Linux arm64 containers under Xvfb; no windows open on this machine.
+[group("tests")]
+smoke-docker out="out/smoke-docker" *args:
+    bash scripts/smoke/docker-smoke.sh "$@"
+
 ####################
 # Version control
 ####################

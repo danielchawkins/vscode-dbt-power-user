@@ -276,12 +276,23 @@ suite("Panel view state", function () {
     await evaluatePanel(port, LINEAGE.entry, clickOnChild("Hide 1 parents"));
     await waitForLineage(port, (g) => g.tables.length === 1);
     await evaluatePanel(port, LINEAGE.entry, clickOnChild("Show 1 parents"));
-    const shown = await waitForLineage(port, (g) => g.tables.length === 2);
-    // An earlier suite may leave the column list open, and the view state restores it.
-    if (shown.columnTables.length === 0) {
-      await evaluatePanel(port, LINEAGE.entry, clickOnChild("Columns"));
-    }
-    let before = await waitForLineage(port, (g) => g.columnTables.length === 1);
+    await waitForLineage(port, (g) => g.tables.length === 2);
+    // An earlier suite may leave the column list open, and the view state restores it after the graph is drawn.
+    // "Columns" toggles, so click only on a closed list, then read again: a restore landing after a blind click
+    // would close the list it had just opened.
+    let before = (await waitFor(
+      async () => {
+        const state = await readLineage(port);
+        if (state?.columnTables.length === 0) {
+          await evaluatePanel(port, LINEAGE.entry, clickOnChild("Columns"));
+          await sleep(500);
+          return readLineage(port);
+        }
+        return state;
+      },
+      (g): g is LineageState => g !== undefined && g.columnTables.length === 1,
+      "the lineage column list never opened",
+    )) as LineageState;
     if (before.columns.length > 0 && before.traced.length === 0) {
       await evaluatePanel(port, LINEAGE.entry, CLICK_FIRST_COLUMN);
       before = await waitForLineage(port, (g) => g.traced.length > 0);
@@ -351,6 +362,11 @@ suite("Panel view state", function () {
     );
   });
 });
+
+async function readLineage(port: string): Promise<LineageState | undefined> {
+  return (await evaluatePanel<LineageState>(port, LINEAGE.entry, READ_LINEAGE))
+    ?.value;
+}
 
 async function waitForLineage(
   port: string,
