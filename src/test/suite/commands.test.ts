@@ -10,28 +10,37 @@ vi.mock("../../projects/previewUri", () => ({
 type Handler = (...args: any[]) => Promise<unknown>;
 
 const build = (over: { projects?: unknown; runTest?: unknown } = {}) => {
+  /** What the collaborators were asked to do, in order. */
+  const calls: unknown[][] = [];
+  const record =
+    (name: string, result?: unknown) =>
+    (...args: unknown[]) => {
+      calls.push([name, ...args]);
+      return result;
+    };
+  const state = { singularTest: false };
   const runModel = {
-    runModelOnActiveWindow: vi.fn(),
-    runTestsOnActiveWindow: vi.fn(),
-    compileModelOnActiveWindow: vi.fn(),
-    buildModelOnActiveWindow: vi.fn(),
-    runModelOnNodeTreeItem: vi.fn(() => vi.fn()),
-    executeSQL: vi.fn(),
+    runModelOnActiveWindow: record("runModelOnActiveWindow"),
+    runTestsOnActiveWindow: record("runTestsOnActiveWindow"),
+    compileModelOnActiveWindow: record("compileModelOnActiveWindow"),
+    buildModelOnActiveWindow: record("buildModelOnActiveWindow"),
+    runModelOnNodeTreeItem: () => record("runModelOnNodeTreeItem"),
+    executeSQL: record("executeSQL"),
   };
   const runTest = {
-    runSingularTestOnActiveWindowIfApplicable: vi.fn(() => false),
+    runSingularTestOnActiveWindowIfApplicable: () => state.singularTest,
     ...(over.runTest as object),
   };
-  const runHistoryService = { clear: vi.fn() };
-  const deferBar = { updateStatusBar: vi.fn() };
+  const runHistoryService = { clear: record("clearRunHistory") };
+  const deferBar = { updateStatusBar: record("updateStatusBar") };
   const projectSetupCommands = {
-    validateProjects: vi.fn(),
-    installDeps: vi.fn(),
+    validateProjects: record("validateProjects"),
+    installDeps: record("installDeps"),
   };
   const extensionContext = {
-    getFromWorkspaceState: vi.fn(() => "picked"),
+    getFromWorkspaceState: (key: string) => (calls.push([key]), "picked"),
   };
-  const log = { error: vi.fn(), debug: vi.fn() };
+  const log = { error: record("error"), debug: record("debug") };
   new VSCodeCommands({
     projects: (over.projects ?? {
       get: () => undefined,
@@ -56,17 +65,10 @@ const build = (over: { projects?: unknown; runTest?: unknown } = {}) => {
     expect(call, `${id} is registered`).toBeDefined();
     return call![1] as Handler;
   };
-  return {
-    handler,
-    runModel,
-    runTest,
-    runHistoryService,
-    deferBar,
-    projectSetupCommands,
-    extensionContext,
-    log,
-  };
+  return { handler, calls, state };
 };
+
+const lastCall = (mock: Mock) => mock.mock.calls.at(-1);
 
 describe("VSCodeCommands", () => {
   beforeEach(() => {
@@ -75,60 +77,63 @@ describe("VSCodeCommands", () => {
   });
 
   it("routes a singular test file away from the model run", async () => {
-    const { handler, runModel, runTest } = build();
+    const { handler, calls, state } = build();
     await handler("fusionPowerUser.runCurrentModel")();
-    expect(runModel.runModelOnActiveWindow).toHaveBeenCalledTimes(1);
+    expect(calls).toEqual([["runModelOnActiveWindow"]]);
 
-    runTest.runSingularTestOnActiveWindowIfApplicable.mockReturnValue(true);
+    state.singularTest = true;
     await handler("fusionPowerUser.runCurrentModel")();
     await handler("fusionPowerUser.testCurrentModel")();
-    expect(runModel.runModelOnActiveWindow).toHaveBeenCalledTimes(1);
-    expect(runModel.runTestsOnActiveWindow).not.toHaveBeenCalled();
+    expect(calls).toEqual([["runModelOnActiveWindow"]]);
   });
 
   it("clears run history only after confirmation", async () => {
-    const { handler, runHistoryService } = build();
+    const { handler, calls } = build();
     (window.showWarningMessage as Mock).mockResolvedValueOnce(undefined);
     await handler("fusionPowerUser.clearRunHistory")();
-    expect(runHistoryService.clear).not.toHaveBeenCalled();
+    expect(calls).toEqual([]);
 
     (window.showWarningMessage as Mock).mockResolvedValueOnce("Clear");
     await handler("fusionPowerUser.clearRunHistory")();
-    expect(runHistoryService.clear).toHaveBeenCalledTimes(1);
+    expect(calls).toEqual([["clearRunHistory"]]);
   });
 
   it("asks for an active SQL file before profiling CTEs", async () => {
     const { handler } = build();
     await handler("fusionPowerUser.profileCtes")();
-    expect(window.showErrorMessage).toHaveBeenCalledWith(
-      "No active SQL file to profile",
-      "Show output",
-    );
+    expect((window.showErrorMessage as Mock).mock.calls).toEqual([
+      ["No active SQL file to profile", "Show output"],
+    ]);
   });
 
   it("reports no CTEs when the server lenses carry none", async () => {
     const { handler } = build();
     (commands.executeCommand as Mock).mockResolvedValueOnce([]);
     await handler("fusionPowerUser.profileCtes")(Uri.file("/p/a.sql"));
-    expect(window.showInformationMessage).toHaveBeenCalledWith(
-      expect.stringContaining("No CTEs found"),
-    );
+    expect((window.showInformationMessage as Mock).mock.calls).toEqual([
+      [expect.stringContaining("No CTEs found")],
+    ]);
   });
 
   it("runs YAML lens commands on the project that owns the file", async () => {
-    const runModel = vi.fn();
-    const runModelTest = vi.fn();
+    const ran: unknown[][] = [];
     const { handler } = build({
-      projects: { get: () => ({ runModel, runModelTest }) },
+      projects: {
+        get: () => ({
+          runModel: (params: unknown) => ran.push(["runModel", params]),
+          runModelTest: (name: string) => ran.push(["runModelTest", name]),
+        }),
+      },
     });
     await handler("fusionPowerUser.yamlRunModel")(Uri.file("/p/s.yml"), "a");
     await handler("fusionPowerUser.yamlTestModel")(Uri.file("/p/s.yml"), "a");
-    expect(runModel).toHaveBeenCalledWith({
-      plusOperatorLeft: "",
-      modelName: "a",
-      plusOperatorRight: "",
-    });
-    expect(runModelTest).toHaveBeenCalledWith("a");
+    expect(ran).toEqual([
+      [
+        "runModel",
+        { plusOperatorLeft: "", modelName: "a", plusOperatorRight: "" },
+      ],
+      ["runModelTest", "a"],
+    ]);
   });
 
   it("ignores YAML lens commands outside a project", async () => {
@@ -147,78 +152,80 @@ describe("VSCodeCommands", () => {
   });
 
   it("logs a CTE that cannot be run", async () => {
-    const { handler, log } = build({ projects: { get: () => undefined } });
+    const { handler, calls } = build({ projects: { get: () => undefined } });
     await handler("fusionPowerUser.runCteWithDependencies")({
       uri: Uri.file("/p/a.sql"),
       cte: { name: "c", compiledPath: "/does/not/exist.sql" },
     });
-    expect(log.error).toHaveBeenCalledWith(
-      "CteExecution",
-      "Unable to execute CTE",
-      expect.anything(),
-    );
+    expect(calls).toEqual([
+      ["error", "CteExecution", "Unable to execute CTE", expect.anything()],
+    ]);
   });
 
   it("builds and cleans the project of the active file", async () => {
-    const buildProject = vi.fn();
-    const clean = vi.fn();
+    const ran: string[] = [];
     const { handler } = build({
       projects: {
-        get: () => ({ buildProject, clean, getProjectName: () => "p" }),
+        get: () => ({
+          buildProject: () => ran.push("buildProject"),
+          clean: () => ran.push("clean"),
+          getProjectName: () => "p",
+        }),
       },
     });
     await handler("fusionPowerUser.buildCurrentProject")();
-    expect(buildProject).not.toHaveBeenCalled();
+    expect(ran).toEqual([]);
 
     (window as any).activeTextEditor = {
       document: { uri: Uri.file("/p/models/a.sql") },
     };
     await handler("fusionPowerUser.buildCurrentProject")();
     await handler("fusionPowerUser.cleanCurrentProject")();
-    expect(buildProject).toHaveBeenCalledTimes(1);
-    expect(clean).toHaveBeenCalledTimes(1);
+    expect(ran).toEqual(["buildProject", "clean"]);
   });
 
   it("does nothing for the active file outside a project", async () => {
-    const { handler, log } = build();
+    const { handler, calls } = build();
     (window as any).activeTextEditor = {
       document: { uri: Uri.file("/x/a.sql") },
     };
     await handler("fusionPowerUser.buildCurrentProject")();
-    expect(log.debug).toHaveBeenCalledWith(
-      "buildCurrentProject",
-      expect.stringContaining("unable to find dbtproject"),
-    );
+    expect(calls).toEqual([
+      [
+        "debug",
+        "buildCurrentProject",
+        expect.stringContaining("unable to find dbtproject"),
+      ],
+    ]);
   });
 
   it("validates and installs for the project picked in workspace state", async () => {
-    const { handler, projectSetupCommands, extensionContext } = build();
+    const { handler, calls } = build();
     await handler("fusionPowerUser.validateProject")();
     await handler("fusionPowerUser.installDeps")();
-    expect(extensionContext.getFromWorkspaceState).toHaveBeenCalledWith(
-      "fusionPowerUser.projectSelected",
-    );
-    expect(projectSetupCommands.validateProjects).toHaveBeenCalledWith(
-      "picked",
-    );
-    expect(projectSetupCommands.installDeps).toHaveBeenCalledWith("picked");
+    expect(calls).toEqual([
+      ["fusionPowerUser.projectSelected"],
+      ["validateProjects", "picked"],
+      ["fusionPowerUser.projectSelected"],
+      ["installDeps", "picked"],
+    ]);
   });
 
   it("refreshes the defer status bar", async () => {
-    const { handler, deferBar } = build();
+    const { handler, calls } = build();
     await handler("fusionPowerUser.applyDeferConfig")();
-    expect(deferBar.updateStatusBar).toHaveBeenCalledTimes(1);
-    expect(window.showInformationMessage).toHaveBeenCalledWith(
-      "Applied defer configuration",
-    );
+    expect(calls).toEqual([["updateStatusBar"]]);
+    expect((window.showInformationMessage as Mock).mock.calls).toEqual([
+      ["Applied defer configuration"],
+    ]);
   });
 
   it("copies a model name to the clipboard", async () => {
-    const writeText = vi.fn();
-    (env as any).clipboard = { writeText };
+    const copied: string[] = [];
+    (env as any).clipboard = { writeText: (text: string) => copied.push(text) };
     const { handler } = build();
     await handler("fusionPowerUser.copyModelName")({ label: "orders" });
-    expect(writeText).toHaveBeenCalledWith("orders");
+    expect(copied).toEqual(["orders"]);
   });
 
   describe("compiled preview", () => {
@@ -231,16 +238,16 @@ describe("VSCodeCommands", () => {
       (window as any).showTextDocument = vi.fn();
       (workspace.openTextDocument as Mock).mockResolvedValue({ doc: 1 });
       await handler("fusionPowerUser.showCompiledSQL")();
-      expect(window.showTextDocument).toHaveBeenCalledWith(
+      expect(lastCall(window.showTextDocument as Mock)).toEqual([
         { doc: 1 },
         expect.objectContaining({ preserveFocus: true, preview: false }),
-      );
+      ]);
     });
 
     it("does nothing without an active editor", async () => {
       const { handler } = build();
       await handler("fusionPowerUser.showCompiledSQL")();
-      expect(workspace.openTextDocument).not.toHaveBeenCalled();
+      expect((workspace.openTextDocument as Mock).mock.calls).toEqual([]);
     });
   });
 });

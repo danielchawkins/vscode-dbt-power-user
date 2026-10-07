@@ -610,11 +610,11 @@ Remaining Phase 3 work for 3.10:
 
 Remaining Phase 3 work for 3.11:
 
-- `src/test/suite/runModel.test.ts` (218 lines, 22 call assertions): assert the `CliCommand`/`QueuedCliCommand` built through `cliArgs`.
-- `src/test/suite/projectSetupCommands.test.ts`: replace the `ran` recorders with command and outcome assertions; eight call assertions remain.
-- `src/test/suite/dbtPowerUserExtension.test.ts` (39) and `src/test/suite/projects.test.ts` (30): replace call assertions where an outcome exists.
-- `src/test/suite/commands.test.ts` has 21 call assertions; assert the values the handlers produce.
-- Record the share of `toHaveBeenCalled` assertions in `src/test/suite`. It was 598 at the start of Phase 3 and 625 at its tip, and must end lower.
+- Done, `src/test/suite/runModel.test.ts` (22 → 0 call assertions): the project-command tests run a real `ProjectTasks` through the shared `src/test/recordingTasks.ts` and assert the `QueuedCliCommand` values it starts (`{ kind: "run", select: "+orders" }` and so on); the SQL tests assert what the project executed.
+- Done, `src/test/suite/projectSetupCommands.test.ts` (8 → 0): the `ran` recorder is replaced by the `debug` run (the argv `toCliArgs` builds for `{ kind: "debug" }` and the project root as cwd) and the `deps` command from `RecordingTasks`, each asserted as its own ordered list (`ran()` returns `{ debug, tasks }`; a non-zero exit code drives the failure), plus the shown error messages and logged errors as values. The `projectSetupCommands.ts` clone (`:55-70`/`:100-116`) was already extracted into `runSetup` before this step, so no production change was made.
+- Done, `src/test/suite/commands.test.ts` (22 → 0 by `rg -c`; the plan counted 21): handlers are checked against an ordered log of what the fakes were asked to do and against the message lists.
+- Done, `src/test/suite/dbtPowerUserExtension.test.ts` (39 → 0) and `src/test/suite/projects.test.ts` (30 → 0): startup order is one `started` list, project lifecycle, removal events and factory builds are ordered lists. Remaining mock-call reads (`showErrorMessage`, `executeCommand`, `registerCommand`, `getConfiguration`) are asserted as `mock.calls` values because the call is the outcome.
+- `toHaveBeenCalled` lines in `src/test/suite` (`rg -c`): 625 at the tip of Phase 3 (598 at its start), 506 after this step. Coverage floors are unchanged.
 
 ### 3.12 Meet the suppression targets
 

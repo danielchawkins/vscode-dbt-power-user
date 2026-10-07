@@ -45,12 +45,24 @@ describe("Projects", () => {
   let registryOnDidChangeProjects: EventEmitter<void>;
   let project1Manifest: EventEmitter<ParsedManifest>;
   let project2Manifest: EventEmitter<ParsedManifest>;
+  /** The roots the project factory was asked to build, in order. */
+  let constructed: string[];
+  /** Project and registry lifecycle steps that ran, in order. */
+  let lifecycle: string[];
+  /** The projects whose manifests were rebuilt. */
+  let rebuilt: string[];
+  /** The errors the log received. */
+  let logged: unknown[][];
 
   beforeEach(() => {
+    constructed = [];
+    lifecycle = [];
+    rebuilt = [];
+    logged = [];
     // Mock Log
     mockDbtTerminal = {
       debug: vi.fn(),
-      error: vi.fn(),
+      error: (...args: unknown[]) => logged.push(args),
       info: vi.fn(),
       dispose: vi.fn(),
     } as unknown as Mocked<Log>;
@@ -80,8 +92,12 @@ describe("Projects", () => {
       projectRoot: Uri.file("/project1"),
       getProjectName: vi.fn().mockReturnValue("project1"),
       getAdapterType: vi.fn().mockReturnValue("snowflake"),
-      initialize: vi.fn(),
-      dispose: vi.fn(),
+      initialize: vi.fn(() => {
+        lifecycle.push("init project1");
+      }),
+      dispose: vi.fn(() => {
+        lifecycle.push("dispose project1");
+      }),
       manifest: undefined,
       onDidParse: project1Manifest.event,
       onDidCompile: new EventEmitter<void>().event,
@@ -89,15 +105,21 @@ describe("Projects", () => {
       onDidChangeClient: new EventEmitter<void>().event,
       lsp: {},
       publishMerged: publishMerged,
-      rebuildManifest: vi.fn(),
+      rebuildManifest: vi.fn(() => {
+        rebuilt.push("project1");
+      }),
     } as unknown as Mocked<Project>;
 
     mockProject2 = {
       projectRoot: Uri.file("/project2"),
       getProjectName: vi.fn().mockReturnValue("project2"),
       getAdapterType: vi.fn().mockReturnValue("snowflake"),
-      initialize: vi.fn(),
-      dispose: vi.fn(),
+      initialize: vi.fn(() => {
+        lifecycle.push("init project2");
+      }),
+      dispose: vi.fn(() => {
+        lifecycle.push("dispose project2");
+      }),
       manifest: undefined,
       onDidParse: project2Manifest.event,
       onDidCompile: new EventEmitter<void>().event,
@@ -105,11 +127,14 @@ describe("Projects", () => {
       onDidChangeClient: new EventEmitter<void>().event,
       lsp: {},
       publishMerged: publishMerged,
-      rebuildManifest: vi.fn(),
+      rebuildManifest: vi.fn(() => {
+        rebuilt.push("project2");
+      }),
     } as unknown as Mocked<Project>;
 
     // Mock factory
     mockDbtProjectFactory = vi.fn(({ root: uri }: { root: Uri }) => {
+      constructed.push(uri.fsPath);
       const project =
         uri.fsPath === "/project1"
           ? mockProject1
@@ -138,7 +163,9 @@ describe("Projects", () => {
         }
         return undefined;
       }),
-      dispose: vi.fn(),
+      dispose: () => {
+        lifecycle.push("dispose registry");
+      },
     };
 
     projects = new Projects(
@@ -157,16 +184,16 @@ describe("Projects", () => {
     it("should construct Project instances exactly once across multiple syncs", async () => {
       await projects.initialize();
 
-      expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
-      expect(mockProject1.initialize).toHaveBeenCalled();
-      expect(mockProject2.initialize).toHaveBeenCalled();
+      expect(constructed).toEqual(["/project1", "/project2"]);
+      expect(lifecycle.sort()).toEqual(["init project1", "init project2"]);
 
       // Trigger a second sync via registry change
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
 
-      // Factory should not be called again
-      expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
+      // Nothing is constructed or initialized again
+      expect(constructed).toEqual(["/project1", "/project2"]);
+      expect(lifecycle).toHaveLength(2);
     });
 
     it("re-parses only the projects whose target or profilesDir changed", async () => {
@@ -178,8 +205,7 @@ describe("Projects", () => {
           key === "fusionPowerUser.target" && scope?.fsPath === "/project1",
       });
 
-      expect(mockProject1.rebuildManifest).toHaveBeenCalledTimes(1);
-      expect(mockProject2.rebuildManifest).not.toHaveBeenCalled();
+      expect(rebuilt).toEqual(["project1"]);
     });
 
     it("fires onDidInitialize even when no projects exist", async () => {
@@ -190,12 +216,12 @@ describe("Projects", () => {
         mockDbtTerminal,
       );
 
-      const initHandler = vi.fn();
-      other.onDidInitialize(initHandler);
+      const initialized: string[] = [];
+      other.onDidInitialize(() => initialized.push("initialized"));
 
       await other.initialize();
 
-      expect(initHandler).toHaveBeenCalled();
+      expect(initialized).toEqual(["initialized"]);
     });
   });
 
@@ -228,50 +254,44 @@ describe("Projects", () => {
     });
 
     it("should fire project removed before disposing removed projects", async () => {
-      const removedHandler = vi.fn();
-      projects.onDidRemoveProject(removedHandler);
+      lifecycle.length = 0;
+      projects.onDidRemoveProject((root) =>
+        lifecycle.push(`removed ${root.fsPath}`),
+      );
 
       // Reduce registry to one project
       mockProjectRegistry.projects = [declaredProject1];
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(removedHandler).toHaveBeenCalledWith(mockProject2.projectRoot);
-      expect(mockProject2.dispose).toHaveBeenCalled();
-      expect(removedHandler.mock.invocationCallOrder[0]).toBeLessThan(
-        (mockProject2.dispose as Mock).mock.invocationCallOrder[0],
-      );
+      expect(lifecycle).toEqual(["removed /project2", "dispose project2"]);
     });
 
     it("fires the removed project's root on onDidRemoveProject", async () => {
-      const removedHandler = vi.fn();
-      projects.onDidRemoveProject(removedHandler);
+      const removed: Uri[] = [];
+      projects.onDidRemoveProject((root) => removed.push(root));
 
       mockProjectRegistry.projects = [declaredProject1];
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(removedHandler).toHaveBeenCalledTimes(1);
-      expect(removedHandler).toHaveBeenCalledWith(mockProject2.projectRoot);
+      expect(removed).toEqual([mockProject2.projectRoot]);
     });
 
     it("aggregates onDidChangeManifest across projects and stops after removal", async () => {
-      const changedHandler = vi.fn();
-      projects.onDidChangeManifest(changedHandler);
+      const changed: Project[] = [];
+      projects.onDidChangeManifest((project) => changed.push(project));
 
       publish(mockProject1, project1Manifest);
       publish(mockProject2, project2Manifest);
-      expect(changedHandler.mock.calls).toEqual([
-        [mockProject1],
-        [mockProject2],
-      ]);
+      expect(changed).toEqual([mockProject1, mockProject2]);
 
       mockProjectRegistry.projects = [declaredProject1];
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
       publish(mockProject2, project2Manifest);
 
-      expect(changedHandler).toHaveBeenCalledTimes(2);
+      expect(changed).toEqual([mockProject1, mockProject2]);
     });
   });
 
@@ -283,18 +303,23 @@ describe("Projects", () => {
       await new Promise((resolve) => setImmediate(resolve));
 
       expect(projects.all()).toEqual([mockProject2, mockProject1]);
-      expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
+      expect(constructed).toEqual(["/project1", "/project2"]);
     });
 
     it("serializes removal after project initialization", async () => {
       mockProjectRegistry.projects = [];
       await projects.initialize();
       let finish!: () => void;
-      mockProject1.initialize.mockReturnValue(
-        new Promise<void>((resolve) => {
-          finish = resolve;
-        }),
-      );
+      lifecycle.length = 0;
+      mockProject1.initialize.mockImplementation(() => {
+        lifecycle.push("init project1 started");
+        return new Promise<void>((resolve) => {
+          finish = () => {
+            lifecycle.push("init project1 finished");
+            resolve();
+          };
+        });
+      });
 
       mockProjectRegistry.projects = [declaredProject1];
       registryOnDidChangeProjects.fire();
@@ -303,11 +328,15 @@ describe("Projects", () => {
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(mockProject1.dispose).not.toHaveBeenCalled();
+      expect(lifecycle).toEqual(["init project1 started"]);
       finish();
       await new Promise((resolve) => setImmediate(resolve));
       await new Promise((resolve) => setImmediate(resolve));
-      expect(mockProject1.dispose).toHaveBeenCalled();
+      expect(lifecycle).toEqual([
+        "init project1 started",
+        "init project1 finished",
+        "dispose project1",
+      ]);
     });
 
     it("reports reconciliation failures", async () => {
@@ -319,11 +348,9 @@ describe("Projects", () => {
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(mockDbtTerminal.error).toHaveBeenCalledWith(
-        "Projects",
-        "Project synchronization failed",
-        expect.any(Error),
-      );
+      expect(logged).toEqual([
+        ["Projects", "Project synchronization failed", expect.any(Error)],
+      ]);
     });
   });
 
@@ -333,9 +360,9 @@ describe("Projects", () => {
     });
 
     it("ignores a second initialize", async () => {
-      mockDbtProjectFactory.mockClear();
+      constructed.length = 0;
       await projects.initialize();
-      expect(mockDbtProjectFactory).not.toHaveBeenCalled();
+      expect(constructed).toEqual([]);
     });
 
     it("resolves adapter and project-name accessors", () => {
@@ -350,27 +377,29 @@ describe("Projects", () => {
     });
 
     it("should dispose projects and subscriptions but not registry", async () => {
+      lifecycle.length = 0;
       projects.dispose();
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(mockProject1.dispose).toHaveBeenCalled();
-      expect(mockProject2.dispose).toHaveBeenCalled();
-      expect(mockProjectRegistry.dispose).not.toHaveBeenCalled();
+      expect(lifecycle.sort()).toEqual([
+        "dispose project1",
+        "dispose project2",
+      ]);
       expect(projects.all()).toEqual([]);
-      expect(mockDbtProjectFactory).toHaveBeenCalledTimes(2);
+      expect(constructed).toEqual(["/project1", "/project2"]);
     });
 
     it("should fire project removed on disposal", () => {
-      const removedHandler = vi.fn<(root: Uri) => void>();
-      projects.onDidRemoveProject(removedHandler);
+      const roots: string[] = [];
+      projects.onDidRemoveProject((root) => roots.push(root.fsPath));
 
       projects.dispose();
 
-      expect(removedHandler).toHaveBeenCalledTimes(2);
-      const roots = removedHandler.mock.calls.map(([root]) => root.fsPath);
-      expect(roots).toContain(mockProject1.projectRoot.fsPath);
-      expect(roots).toContain(mockProject2.projectRoot.fsPath);
+      expect(roots.sort()).toEqual([
+        mockProject1.projectRoot.fsPath,
+        mockProject2.projectRoot.fsPath,
+      ]);
     });
   });
 
@@ -380,37 +409,39 @@ describe("Projects", () => {
     });
 
     it("routes each publication once and drops events after removal", async () => {
-      const changed = vi.fn<(project: Project) => void>();
-      const removed = vi.fn<(root: Uri) => void>();
-      const sourceDispose = vi.spyOn(
-        CompositeMetadataSource.prototype,
-        "dispose",
+      const changed: Project[] = [];
+      const steps: string[] = [];
+      const disposeSource = CompositeMetadataSource.prototype.dispose;
+      vi.spyOn(CompositeMetadataSource.prototype, "dispose").mockImplementation(
+        function (this: CompositeMetadataSource) {
+          steps.push("source disposed");
+          return disposeSource.call(this);
+        },
       );
-      projects.onDidChangeManifest(changed);
-      projects.onDidRemoveProject(removed);
+      projects.onDidChangeManifest((project) => changed.push(project));
+      projects.onDidRemoveProject((root) =>
+        steps.push(`removed ${root.fsPath}`),
+      );
 
       publish(mockProject1, project1Manifest);
 
-      expect(changed).toHaveBeenCalledTimes(1);
-      expect(changed.mock.calls[0]?.[0]).toBe(mockProject1);
+      expect(changed).toEqual([mockProject1]);
 
       mockProjectRegistry.projects = [declaredProject2];
       registryOnDidChangeProjects.fire();
       await new Promise((resolve) => setImmediate(resolve));
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(removed).toHaveBeenCalledTimes(1);
-      expect(removed).toHaveBeenCalledWith(mockProject1.projectRoot);
-      expect(removed.mock.invocationCallOrder[0]).toBeLessThan(
-        sourceDispose.mock.invocationCallOrder[0],
-      );
-      expect(sourceDispose).toHaveBeenCalledTimes(1);
+      expect(steps).toEqual(["removed /project1", "source disposed"]);
 
       publish(mockProject1, project1Manifest);
-      expect(changed).toHaveBeenCalledTimes(1);
+      expect(changed).toEqual([mockProject1]);
 
+      steps.length = 0;
       projects.dispose();
-      expect(sourceDispose).toHaveBeenCalledTimes(2);
+      expect(steps.filter((step) => step === "source disposed")).toHaveLength(
+        1,
+      );
     });
 
     it("replaces the source when Declared Project identity changes", async () => {
@@ -425,8 +456,10 @@ describe("Projects", () => {
       await new Promise((resolve) => setImmediate(resolve));
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(mockDbtProjectFactory).toHaveBeenCalledTimes(3);
-      expect(mockProject1.dispose).toHaveBeenCalledTimes(1);
+      expect(constructed).toEqual(["/project1", "/project2", "/project1"]);
+      expect(lifecycle.filter((step) => step === "dispose project1")).toEqual([
+        "dispose project1",
+      ]);
     });
   });
 });

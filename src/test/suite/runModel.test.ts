@@ -16,6 +16,7 @@ import { previewUriFor } from "../../projects/previewUri";
 import { Project } from "../../projects/project";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { Projects } from "../../projects/projects";
+import { RecordingTasks } from "../recordingTasks";
 
 vi.mock("vscode", async (importOriginal) => ({
   ...(await importOriginal<typeof import("vscode")>()),
@@ -29,22 +30,20 @@ const untitledUri = {
 } as Uri;
 
 describe("RunModel SQL execution", () => {
-  let dbtProject: Mocked<Project>;
+  let executed: [string, string][];
+  let dbtProject: Project;
   let projects: Mocked<Projects>;
   let context: Mocked<CurrentProject>;
   let runModel: RunModel;
   let project: DeclaredProject;
 
   beforeEach(() => {
+    executed = [];
     dbtProject = {
-      executeSQLOnQueryPanel: vi.fn(),
-    } as unknown as Mocked<Project>;
-    projects = {
-      get: vi.fn().mockReturnValue(dbtProject),
-    } as unknown as Mocked<Projects>;
-    context = {
-      requireForCommand: vi.fn(),
-    } as unknown as Mocked<CurrentProject>;
+      executeSQLOnQueryPanel: (query: string, modelName: string) => {
+        executed.push([query, modelName]);
+      },
+    } as unknown as Project;
     project = {
       root: Uri.file("/project"),
       name: "project",
@@ -52,6 +51,14 @@ describe("RunModel SQL execution", () => {
       contains: () => true,
       dispose: vi.fn(),
     };
+    projects = {
+      get: vi.fn((root: Uri) =>
+        root === project.root ? dbtProject : undefined,
+      ),
+    } as unknown as Mocked<Projects>;
+    context = {
+      requireForCommand: vi.fn(),
+    } as unknown as Mocked<CurrentProject>;
     runModel = new RunModel(projects, context);
   });
 
@@ -63,16 +70,13 @@ describe("RunModel SQL execution", () => {
   it.each([Uri.file("/project/models/model.sql"), untitledUri])(
     "executes against the Current Project result for %s",
     async (uri) => {
-      context.requireForCommand.mockResolvedValue(project);
+      context.requireForCommand.mockImplementation((requested) =>
+        Promise.resolve(requested === uri ? project : undefined),
+      );
 
       await runModel.executeSQL(uri, "select 1", "model");
 
-      expect(context.requireForCommand).toHaveBeenCalledWith(uri);
-      expect(projects.get).toHaveBeenCalledWith(project.root);
-      expect(dbtProject.executeSQLOnQueryPanel).toHaveBeenCalledWith(
-        "select 1",
-        "model",
-      );
+      expect(executed).toEqual([["select 1", "model"]]);
     },
   );
 
@@ -81,7 +85,7 @@ describe("RunModel SQL execution", () => {
 
     await runModel.executeSQL(untitledUri, "select 1", "model");
 
-    expect(dbtProject.executeSQLOnQueryPanel).not.toHaveBeenCalled();
+    expect(executed).toEqual([]);
   });
 
   it("awaits project resolution from the active-editor command", async () => {
@@ -100,29 +104,27 @@ describe("RunModel SQL execution", () => {
     };
     const execution = runModel.executeQueryOnActiveWindow();
     await Promise.resolve();
-    expect(dbtProject.executeSQLOnQueryPanel).not.toHaveBeenCalled();
+    expect(executed).toEqual([]);
     resolveProject(project);
     await execution;
 
-    expect(dbtProject.executeSQLOnQueryPanel).toHaveBeenCalledWith(
-      "select 1",
-      "Untitled-1",
-    );
+    expect(executed).toEqual([["select 1", "Untitled-1"]]);
   });
 
   it("tests the model an active compiled preview resolves to", () => {
-    const runModelTest = vi.fn();
+    const tested: string[] = [];
     const model = Uri.file("/project/models/orders.sql");
     const preview = previewUriFor(model);
-    dbtProject.runModelTest = runModelTest;
+    projects.get.mockImplementation((uri: Uri) =>
+      uri.fsPath === model.fsPath
+        ? ({ runModelTest: (name: string) => tested.push(name) } as never)
+        : undefined,
+    );
     (window.activeTextEditor as unknown) = { document: { uri: preview } };
 
     runModel.runTestsOnActiveWindow();
 
-    expect(projects.get).toHaveBeenCalledWith(
-      expect.objectContaining({ fsPath: model.fsPath }),
-    );
-    expect(runModelTest).toHaveBeenCalledWith("orders");
+    expect(tested).toEqual(["orders"]);
   });
 
   it("does nothing when no project owns the resolved root", async () => {
@@ -131,33 +133,38 @@ describe("RunModel SQL execution", () => {
 
     await runModel.executeSQL(untitledUri, "select 1", "model");
 
-    expect(dbtProject.executeSQLOnQueryPanel).not.toHaveBeenCalled();
+    expect(executed).toEqual([]);
   });
 });
 
 describe("RunModel project commands", () => {
   const model = Uri.file("/project/models/orders.sql");
-  let project: Mocked<Project>;
-  let projects: Mocked<Projects>;
+  let tasks: RecordingTasks;
+  let other: string[];
+  let owned: boolean;
   let runModel: RunModel;
 
   beforeEach(() => {
     vi.spyOn(fs.realpathSync, "native").mockImplementation(
       (value) => value as string,
     );
-    project = {
-      runModel: vi.fn(),
-      buildModel: vi.fn(),
-      compileModel: vi.fn(),
-      compileQuery: vi.fn(),
-      runTest: vi.fn(),
-      runModelTest: vi.fn(),
-      generateSchemaYML: vi.fn(),
-      showRunSQL: vi.fn(),
-    } as unknown as Mocked<Project>;
-    projects = {
-      get: vi.fn().mockReturnValue(project),
-    } as unknown as Mocked<Projects>;
+    tasks = new RecordingTasks();
+    other = [];
+    owned = true;
+    const project = {
+      runModel: (params) => tasks.runModel(params),
+      buildModel: (params) => tasks.buildModel(params),
+      compileModel: (params) => tasks.compileModel(params),
+      runTest: (name) => tasks.runTest(name),
+      runModelTest: (name) => tasks.runModelTest(name),
+      compileQuery: (query, uri) => other.push(`compileQuery ${query} ${uri}`),
+      generateSchemaYML: (uri, name) =>
+        other.push(`generateSchemaYML ${uri} ${name}`),
+      showRunSQL: (uri) => other.push(`showRunSQL ${uri}`),
+    } as Record<string, (...args: never[]) => unknown>;
+    const projects = {
+      get: (uri: Uri) => (owned && uri === model ? project : undefined),
+    } as unknown as Projects;
     runModel = new RunModel(projects, {} as CurrentProject);
   });
 
@@ -165,54 +172,45 @@ describe("RunModel project commands", () => {
     vi.restoreAllMocks();
   });
 
-  const orders = {
-    plusOperatorLeft: "",
-    modelName: "orders",
-    plusOperatorRight: "",
-  };
-
-  it("passes model params for run, build, and compile", () => {
+  it("builds run, build, and compile commands selecting the model with graph operators", () => {
     runModel.runDBTModel(model, RunModelType.RUN_PARENTS);
     runModel.buildDBTModel(model, RunModelType.BUILD_CHILDREN);
     runModel.compileDBTModel(model);
 
-    expect(project.runModel).toHaveBeenCalledWith({
-      ...orders,
-      plusOperatorLeft: "+",
-    });
-    expect(project.buildModel).toHaveBeenCalledWith({
-      ...orders,
-      plusOperatorRight: "+",
-    });
-    expect(project.compileModel).toHaveBeenCalledWith(orders);
+    expect(tasks.commands).toEqual([
+      { kind: "run", select: "+orders" },
+      { kind: "build", select: "orders+" },
+      { kind: "compile", select: "orders" },
+    ]);
   });
 
-  it("delegates query, test, schema, and run-SQL operations", () => {
+  it("builds test commands and delegates query, schema, and run-SQL operations", () => {
     runModel.compileDBTQuery(model, "select 1");
     runModel.runDBTTest(model, "unique_orders");
     runModel.runDBTModelTest(model);
     runModel.generateSchemaYML(model);
     runModel.showRunSQL(model);
 
-    expect(projects.get).toHaveBeenCalledWith(model);
-    expect(project.compileQuery).toHaveBeenCalledWith("select 1", model);
-    expect(project.runTest).toHaveBeenCalledWith("unique_orders");
-    expect(project.runModelTest).toHaveBeenCalledWith("orders");
-    expect(project.generateSchemaYML).toHaveBeenCalledWith(model, "orders");
-    expect(project.showRunSQL).toHaveBeenCalledWith(model);
+    expect(tasks.commands).toEqual([
+      { kind: "test", select: "unique_orders" },
+      { kind: "test", select: "orders" },
+    ]);
+    expect(other).toEqual([
+      `compileQuery select 1 ${model}`,
+      `generateSchemaYML ${model} orders`,
+      `showRunSQL ${model}`,
+    ]);
   });
 
   it("does nothing outside any project", () => {
-    projects.get.mockReturnValue(undefined);
+    owned = false;
 
     runModel.runDBTModel(model);
     runModel.buildDBTModel(model);
     runModel.compileDBTModel(model);
     runModel.showRunSQL(model);
 
-    expect(project.runModel).not.toHaveBeenCalled();
-    expect(project.buildModel).not.toHaveBeenCalled();
-    expect(project.compileModel).not.toHaveBeenCalled();
-    expect(project.showRunSQL).not.toHaveBeenCalled();
+    expect(tasks.commands).toEqual([]);
+    expect(other).toEqual([]);
   });
 });
