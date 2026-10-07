@@ -6,6 +6,14 @@ import { pathToFileURL } from "url";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture, type LspFixture } from "./lspFixture";
 
+/**
+ * Target mutation capture: records what Fusion writes under target/ during idle, edit-save,
+ * listNodes, compileLsp and clearTarget, and prints FPU_TARGET_MUTATION_CAPTURE=<json>.
+ *
+ * Opt-in: FPU_RUN_TARGET_MUTATION_CAPTURE=1
+ */
+
+const RUN = process.env.FPU_RUN_TARGET_MUTATION_CAPTURE === "1";
 const SNAPSHOT_INTERVAL_MS = 250;
 const IDLE_AFTER_OPEN_MS = 8_000;
 const WATCHER_DEBOUNCE_MS = 300;
@@ -681,7 +689,7 @@ function summarizeCapture(input: {
   return summary;
 }
 
-suite("Target mutation capture", function () {
+function runSuite(this: Mocha.Suite): void {
   this.timeout(180_000);
 
   const fusionVerdict = checkFusionVersion();
@@ -956,7 +964,17 @@ suite("Target mutation capture", function () {
       await fixture.close();
     }
   });
-});
+}
+
+if (RUN) {
+  suite("Target mutation capture", runSuite);
+} else {
+  suite("Target mutation capture", () => {
+    test("set FPU_RUN_TARGET_MUTATION_CAPTURE=1 to run", function () {
+      this.skip();
+    });
+  });
+}
 
 function openDocument(
   fixture: LspFixture,
