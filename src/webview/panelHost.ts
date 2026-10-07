@@ -30,8 +30,19 @@ import {
 /** The commands every panel on `PanelHost` sends. */
 export type CommonPanelMessage = WebviewReady;
 
+/** The only place a host message leaves for a webview; `H` is the panel's `HostMessage`. */
+export function postToWebview<H extends { command: string }>(
+  target: { readonly webview: Webview } | undefined,
+  message: H,
+): Thenable<boolean> | undefined {
+  // eslint-disable-next-line no-restricted-syntax -- the one outbound path
+  return target?.webview.postMessage(message);
+}
+
 /** Renders a panel's Vite entry and routes the commands every panel sends; each panel subclasses it. */
-export abstract class PanelHost implements WebviewViewProvider {
+export abstract class PanelHost<
+  H extends { command: string } = { command: string },
+> implements WebviewViewProvider {
   public viewType = "fusionPowerUser.Default";
   /** The panel's file in `webview_panels/src/entries`. */
   protected abstract readonly entry: PanelEntry;
@@ -77,6 +88,28 @@ export abstract class PanelHost implements WebviewViewProvider {
       entry: this.entry,
       csp: this.csp,
     });
+  }
+
+  /** Posts to the page the host currently targets. */
+  protected post(message: H): Thenable<boolean> | undefined {
+    return this._panel && this.postTo(this._panel, message);
+  }
+
+  /** Posts to `panel` after {@link recordPosted} saw it, so a rebuilt page can replay its last state. */
+  protected postTo(
+    panel: WebviewView | WebviewPanel,
+    message: H,
+  ): Thenable<boolean> {
+    this.recordPosted(panel, message);
+    return postToWebview(panel, message) as Thenable<boolean>;
+  }
+
+  /** Called with every message before it is posted; a panel that replays state overrides it. */
+  protected recordPosted(
+    _panel: WebviewView | WebviewPanel,
+    _message: H,
+  ): void {
+    // The default panel keeps nothing to replay.
   }
 
   protected onWebviewReady() {

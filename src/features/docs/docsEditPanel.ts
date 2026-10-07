@@ -53,6 +53,7 @@ import {
   Handlers,
   MessageOf,
 } from "../../webview/messageRouter";
+import { postToWebview } from "../../webview/panelHost";
 import { panelHtml, panelWebviewOptions } from "../../webview/panelHtml";
 import { DbtTestService } from "./dbtTestService";
 import {
@@ -146,7 +147,7 @@ export class DocsEditViewPanel implements WebviewViewProvider, Disposable {
   }
 
   private post(message: HostMessage): Thenable<boolean> | undefined {
-    return this._panel?.webview.postMessage(message);
+    return postToWebview(this._panel, message);
   }
 
   private forgetDrafts(root: Uri) {
