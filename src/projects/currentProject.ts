@@ -10,6 +10,7 @@ import {
 import { activeModelUri } from "./previewUri";
 import { ProjectQuickPick } from "./projectQuickPick";
 import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
+import { FolderScope, folderScopeOf } from "./schemaOrigin";
 
 /** The Declared Project that owns the file or command currently being handled. */
 export class CurrentProject implements Disposable {
@@ -63,6 +64,12 @@ export class CurrentProject implements Disposable {
 
   get onDidChangeCurrent(): Event<DeclaredProject | undefined> {
     return this._onDidChangeCurrent.event;
+  }
+
+  /** The workspace folder of the Current Project and how many Declared Projects share its settings. */
+  folderScope(): FolderScope | undefined {
+    const project = this.current;
+    return project && folderScopeOf(this.registry.projects, project);
   }
 
   /** Project owning a specific resource; used by commands that carry a uri. */

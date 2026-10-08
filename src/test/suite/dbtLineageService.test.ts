@@ -299,20 +299,102 @@ describe("DbtLineageService.getConnectedColumns", () => {
       });
       expect(result).toEqual({
         kind: "noLineage",
-        reason: { kind: "staticAnalysis", mode },
+        reason: { kind: "staticAnalysis", mode, setting: mode },
       });
-      expect(describeNoLineage((result as any).reason)).toContain(
-        "fusionPowerUser.staticAnalysis",
+      const message = describeNoLineage((result as any).reason);
+      expect(message).toContain("which overrides the project");
+      expect(message).toContain(
+        'Set fusionPowerUser.staticAnalysis to "strict"',
       );
+      expect(message).not.toContain("enableStrictAnalysis");
     },
   );
 
-  it("answers empty for no nodes under strict or project", async () => {
+  it.each([
+    ["strict", false, "empty"],
+    ["project", true, "empty"],
+    ["project", false, "baseline"],
+    ["baseline", true, "baseline"],
+    ["off", true, "off"],
+  ])(
+    "under %s with project strict=%s, no nodes answer %s",
+    async (setting, strict, expected) => {
+      const request = vi
+        .fn<(...args: any[]) => Promise<any>>()
+        .mockResolvedValue({ error: null, nodes: [] });
+      const result = await new DbtLineageService(
+        {} as any,
+        () => fakeClient(request, { staticAnalysis: setting }),
+        undefined,
+        undefined,
+        () => ({ strict }),
+      ).getConnectedColumns({
+        targets: [["model.p.a", "x"]],
+        upstreamExpansion: true,
+      });
+      expect(result).toEqual({
+        kind: "noLineage",
+        reason:
+          expected === "empty"
+            ? { kind: "empty" }
+            : {
+                kind: "staticAnalysis",
+                mode: expected,
+                setting,
+              },
+      });
+    },
+  );
+
+  it("names the project default when project mode runs baseline", async () => {
     const request = vi
       .fn<(...args: any[]) => Promise<any>>()
       .mockResolvedValue({ error: null, nodes: [] });
     const result = await service(
       fakeClient(request, { staticAnalysis: "project" }),
+    ).getConnectedColumns({
+      targets: [["model.p.a", "x"]],
+      upstreamExpansion: true,
+    });
+    const message = describeNoLineage((result as any).reason);
+    expect(message).toContain("has no +static_analysis: strict");
+    expect(message).toContain("Fusion's default (baseline)");
+    expect(message).toContain('Set fusionPowerUser.staticAnalysis to "strict"');
+    expect(message).not.toContain("overrides the project");
+  });
+
+  it("reports columnsNeedStrict only for a running client outside strict", () => {
+    const needs = (client: unknown, strict = false) =>
+      new DbtLineageService(
+        {} as any,
+        () => client as any,
+        undefined,
+        undefined,
+        () => ({ strict }),
+      ).columnsNeedStrict();
+    const request = vi.fn<(...args: any[]) => Promise<any>>();
+    expect(needs(fakeClient(request, { staticAnalysis: "project" }))).toEqual({
+      mode: "baseline",
+      setting: "project",
+    });
+    expect(
+      needs(fakeClient(request, { staticAnalysis: "project" }), true),
+    ).toBeUndefined();
+    expect(
+      needs(fakeClient(request, { staticAnalysis: "strict" })),
+    ).toBeUndefined();
+    expect(
+      needs(fakeClient(request, { staticAnalysis: "off", state: "failed" })),
+    ).toBeUndefined();
+    expect(needs(undefined)).toBeUndefined();
+  });
+
+  it("answers empty for no nodes under strict", async () => {
+    const request = vi
+      .fn<(...args: any[]) => Promise<any>>()
+      .mockResolvedValue({ error: null, nodes: [] });
+    const result = await service(
+      fakeClient(request, { staticAnalysis: "strict" }),
     ).getConnectedColumns({
       targets: [["model.p.a", "x"]],
       upstreamExpansion: true,

@@ -405,6 +405,11 @@
         "category": "Fusion Power User"
       },
       {
+        "command": "fusionPowerUser.useStrictAnalysis",
+        "title": "Use Strict Static Analysis for This Folder",
+        "category": "Fusion Power User"
+      },
+      {
         "command": "fusionPowerUser.enableStrictAnalysis",
         "title": "Enable Strict Static Analysis in dbt_project.yml",
         "category": "Fusion Power User"

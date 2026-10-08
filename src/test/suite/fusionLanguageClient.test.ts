@@ -1448,7 +1448,7 @@ describe("FusionLanguageClient lifecycle", () => {
     });
     expect(downstream).toEqual({
       kind: "noLineage",
-      reason: { kind: "staticAnalysis", mode: "baseline" },
+      reason: { kind: "staticAnalysis", mode: "baseline", setting: "baseline" },
     });
 
     await client.stop();

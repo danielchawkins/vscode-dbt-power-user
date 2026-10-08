@@ -25,13 +25,15 @@ import { CurrentProject } from "../../projects/currentProject";
 import { notifyError } from "../../projects/notifications";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { SCHEMA_ORIGIN_HOOK } from "../../projects/schemaOrigin";
+import { writeStrictStaticAnalysis } from "../../settings";
 import { StartupGate } from "../../startupGate";
 
 const CONFIRM = "Add";
 
 /**
  * Opt-ins a project makes in its own project file. Each adds one key after a modal that shows the exact
- * lines, never overwrites an existing value, and applies as a WorkspaceEdit so Undo reverts it.
+ * lines, never overwrites an existing value, and applies as a WorkspaceEdit so Undo reverts it. It also owns
+ * the folder-scoped setting that makes a project strict without touching its project file.
  */
 export class ProjectConfigCommands implements Disposable {
   private readonly disposables: Disposable[];
@@ -52,6 +54,10 @@ export class ProjectConfigCommands implements Disposable {
           })),
       ),
       commands.registerCommand(
+        "fusionPowerUser.useStrictAnalysis",
+        (root?: Uri) => this.useStrictAnalysis(root),
+      ),
+      commands.registerCommand(
         "fusionPowerUser.addSchemaOriginHook",
         (uri?: Uri) =>
           this.run(uri, () => ({
@@ -60,6 +66,33 @@ export class ProjectConfigCommands implements Disposable {
           })),
       ),
     ];
+  }
+
+  /**
+   * Sets `fusionPowerUser.staticAnalysis` to `strict` for the workspace folder holding the project, so every
+   * Declared Project in that folder changes mode. The Fusion client pool restarts their language servers.
+   */
+  private async useStrictAnalysis(root: Uri | undefined): Promise<boolean> {
+    await this.startupGate.whenSettled();
+    const project = await this.currentProject.requireForCommand(root);
+    if (!project) {
+      return false;
+    }
+    try {
+      await writeStrictStaticAnalysis(project.root);
+      return true;
+    } catch (error) {
+      this.logFor(project.root).warn(
+        "useStrictAnalysis",
+        error instanceof Error ? error.message : String(error),
+      );
+      void notifyError(
+        project,
+        `Could not set fusionPowerUser.staticAnalysis for the folder ${project.folder.name}`,
+        error,
+      );
+      return false;
+    }
   }
 
   private async run(

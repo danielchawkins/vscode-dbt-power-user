@@ -45,6 +45,16 @@ export interface ShowNotification {
 export interface PanelNotice {
   message: string;
   type: "warning" | "error";
+  /** Buttons shown with the message; the host runs the named action when one is clicked. */
+  actions?: PanelNoticeAction[] | undefined;
+}
+
+/** What a notice button does: `useStrictAnalysis` sets `fusionPowerUser.staticAnalysis` to `strict` for the project. */
+export type PanelNoticeActionId = "useStrictAnalysis";
+
+export interface PanelNoticeAction {
+  title: string;
+  action: PanelNoticeActionId;
 }
 
 export const responseFields: Fields<Omit<Response, "command">> = {
@@ -63,7 +73,17 @@ export const showNotificationFields: Fields<Omit<ShowNotification, "command">> =
     syncRequestId,
   };
 
+export const isPanelNoticeActionId = oneOf("useStrictAnalysis");
+
 export const isPanelNotice = shape<PanelNotice>({
   message: isString,
   type: oneOf("warning", "error"),
+  actions: optional(
+    arrayOf(
+      shape<PanelNoticeAction>({
+        title: isString,
+        action: isPanelNoticeActionId,
+      }),
+    ),
+  ),
 });

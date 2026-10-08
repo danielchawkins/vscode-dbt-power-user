@@ -7,7 +7,7 @@ import {
   type Mock,
   vi,
 } from "vitest";
-import { window, workspace } from "vscode";
+import { commands, window, workspace } from "vscode";
 import { LineagePanel } from "../../features/lineage/lineagePanel";
 import { resolveSourceStartingNode } from "../../features/lineage/lineageSources";
 
@@ -39,6 +39,9 @@ describe("LineagePanel", () => {
       warn: vi.fn(),
       error: vi.fn(),
     };
+    (panel as any).dbtLineageService = {
+      columnsNeedStrict: vi.fn().mockReturnValue(undefined),
+    };
     const globalState = new Map<string, unknown>();
     (panel as any).extensionContext = {
       getFromGlobalState: (key: string) => globalState.get(key),
@@ -48,6 +51,83 @@ describe("LineagePanel", () => {
   });
 
   describe("manifestChanged", () => {
+    it("offers one action, naming an explicit setting that overrides the project", () => {
+      (panel as any).dbtLineageService.columnsNeedStrict = vi
+        .fn()
+        .mockReturnValue({ mode: "baseline", setting: "baseline" });
+      (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
+
+      panel.manifestChanged(undefined);
+
+      const args = mockPostMessage.mock.lastCall![0].args;
+      expect(args.columnsNeedStrict).toBe(true);
+      expect(args.missingLineageMessage.message).toContain(
+        'fusionPowerUser.staticAnalysis is "baseline", which overrides the project',
+      );
+      expect(args.missingLineageMessage.message).not.toContain(
+        "dbt_project.yml",
+      );
+      expect(args.missingLineageMessage.actions).toEqual([
+        { title: "Use strict analysis", action: "useStrictAnalysis" },
+      ]);
+    });
+
+    it("offers the same action, naming the project default under project mode", () => {
+      (panel as any).dbtLineageService.columnsNeedStrict = vi
+        .fn()
+        .mockReturnValue({ mode: "baseline", setting: "project" });
+      (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
+
+      panel.manifestChanged(undefined);
+
+      const { message, actions } =
+        mockPostMessage.mock.lastCall![0].args.missingLineageMessage;
+      expect(message).toContain('is "project"');
+      expect(message).toContain("has no +static_analysis: strict");
+      expect(message).toContain("Fusion's default (baseline)");
+      expect(actions).toEqual([
+        { title: "Use strict analysis", action: "useStrictAnalysis" },
+      ]);
+    });
+
+    it("shows no notice under strict analysis", () => {
+      (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
+
+      panel.manifestChanged(undefined);
+
+      const args = mockPostMessage.mock.lastCall![0].args;
+      expect(args.columnsNeedStrict).toBeUndefined();
+      expect(args.missingLineageMessage).toBeUndefined();
+    });
+
+    it("runs the strict-analysis command for the current project's root", async () => {
+      const projectRoot = { fsPath: "/w/p" };
+      (panel as any).queryManifestService.getProject = () => ({ projectRoot });
+      await (panel as any).handleCommand({
+        command: "runNoticeAction",
+        action: "useStrictAnalysis",
+      });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "fusionPowerUser.useStrictAnalysis",
+        projectRoot,
+      );
+    });
+
+    it("re-renders when the project's client state or mode changes", () => {
+      let fire = () => {};
+      (panel as any)._disposables = [];
+      (panel as any).getStartingNode = () => ({ node: { table: "model.p.a" } });
+      panel.renderOn((listener) => {
+        fire = listener;
+        return { dispose: vi.fn() };
+      });
+
+      fire();
+
+      expect(mockPostMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ command: "render" }),
+      );
+    });
     it("should re-render the starting node when a manifest changes", () => {
       panel.manifestChanged(undefined);
 
@@ -466,6 +546,7 @@ describe("LineagePanel — after a save", () => {
     const postMessage = vi.fn();
     panel._panel = { webview: { postMessage } };
     panel.dbtTerminal = { info: vi.fn(), error: vi.fn() };
+    panel.dbtLineageService = { columnsNeedStrict: () => undefined };
     const current = {
       projectRoot: { fsPath: "/p" },
       throwDiagnosticsErrorIfAvailable: vi.fn(),
@@ -503,6 +584,7 @@ describe("LineagePanel — after a save", () => {
       const postMessage = vi.fn();
       panel._panel = { webview: { postMessage } };
       panel.dbtTerminal = { info: vi.fn(), error: vi.fn() };
+      panel.dbtLineageService = { columnsNeedStrict: () => undefined };
       const project = (root: string, publicationEpoch: number) => ({
         projectRoot: { fsPath: root },
         throwDiagnosticsErrorIfAvailable: vi.fn(),
@@ -574,6 +656,7 @@ describe("LineagePanel — source YAML rooting", () => {
       error: vi.fn(),
     };
     (panel as any).dbtLineageService = {
+      columnsNeedStrict: () => undefined,
       createTable: vi.fn((_e: unknown, _u: unknown, key: string) => ({
         table: key,
       })),

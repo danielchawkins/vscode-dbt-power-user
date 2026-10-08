@@ -1,11 +1,19 @@
 import { lineage, PanelNotice } from "@fusion-power-user/webview-contract";
 import * as path from "path";
-import { commands, TextEditor, Uri, WebviewViewProvider, window } from "vscode";
+import {
+  commands,
+  Event,
+  TextEditor,
+  Uri,
+  WebviewViewProvider,
+  window,
+} from "vscode";
 import type { Log } from "../../core/log";
 import { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
 import { Project } from "../../projects/project";
 import { QueryManifestService } from "../../projects/queryManifestService";
+import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/schemaOrigin";
 import { SharedStateService } from "../../projects/sharedStateService";
 import { dispatchMessage, Handlers } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
@@ -19,12 +27,27 @@ import {
   resolveSourceStartingNode,
   SOURCE_YAML_EXTENSIONS,
 } from "./lineageSources";
+import { NeedsStrict, strictNeededMessage } from "./strictNeeded";
 
 type HostMessage = lineage.HostMessage;
 type PanelMessage = lineage.PanelMessage;
 
 /** The view id contributed in `package.json`. */
 export const LINEAGE_VIEW_TYPE = "fusionPowerUser.Lineage";
+
+/** The panel notice for a project whose effective static-analysis mode computes no column lineage. */
+function staticAnalysisNotice(needs: NeedsStrict): PanelNotice {
+  return {
+    message: strictNeededMessage(needs),
+    type: "warning",
+    actions: [{ title: "Use strict analysis", action: "useStrictAnalysis" }],
+  };
+}
+
+/** Runs the notice button's command for the Current Project's root. */
+function useStrictAnalysis(root: Uri | undefined): Thenable<unknown> {
+  return commands.executeCommand(USE_STRICT_ANALYSIS_COMMAND, root);
+}
 
 interface LineagePanelView extends WebviewViewProvider {
   init(): void;
@@ -69,6 +92,11 @@ export class LineagePanel
     if (columnsCommand) {
       this._disposables.push(columnsCommand);
     }
+  }
+
+  /** Re-renders the starting node on every `event`, so the static-analysis notice follows the client. */
+  renderOn(event: Event<void>): void {
+    this._disposables.push(event(() => this.renderStartingNode()));
   }
 
   private get details(): LineageDetails {
@@ -155,10 +183,18 @@ export class LineagePanel
     if (!this._panel) {
       return;
     }
+    const start = this.getStartingNode(resolvedSource);
+    const needs = this.dbtLineageService.columnsNeedStrict();
     this.post({
       command: "render",
       args: {
-        ...this.getStartingNode(resolvedSource),
+        ...start,
+        ...(needs !== undefined && start.node !== undefined
+          ? {
+              missingLineageMessage: staticAnalysisNotice(needs),
+              columnsNeedStrict: true,
+            }
+          : {}),
         publication: publicationId(this.queryManifestService.manifestFor()),
       },
     });
@@ -179,6 +215,8 @@ export class LineagePanel
       init: () => this.init(),
       openProblemsTab: () =>
         commands.executeCommand("workbench.action.problems.focus"),
+      runNoticeAction: () =>
+        useStrictAnalysis(this.queryManifestService.getProject()?.projectRoot),
       openFile: ({ args }) =>
         commands.executeCommand("vscode.open", Uri.file(args.params.url), {
           preview: false,

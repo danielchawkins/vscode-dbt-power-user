@@ -14,6 +14,7 @@ interface TableNodeData extends Record<string, unknown> {
   /** The selected column's lower-cased name when it belongs to this table. */
   selectedColumn?: string | undefined;
   errors?: string[] | undefined;
+  columnsNeedStrict?: boolean | undefined;
 }
 
 export type TableNode = Node<TableNodeData, "table">;
@@ -28,6 +29,8 @@ export interface FlowInput {
   selectedTable?: string | undefined;
   selectedColumn?: [string, string] | undefined;
   refs: readonly lineage.LineageRef[];
+  /** Empty column lists explain that strict static analysis is missing. */
+  columnsNeedStrict?: boolean | undefined;
 }
 
 /** Lower-cased column names per table that `columnEdges` touch. */
@@ -37,9 +40,9 @@ function tracedColumns(
   const traced = new Map<string, Set<string>>();
   for (const e of columnEdges) {
     for (const [table, column] of [e.source, e.target]) {
-      (traced.get(table) ?? traced.set(table, new Set()).get(table)!).add(
-        column.toLowerCase(),
-      );
+      const columns = traced.get(table) ?? new Set<string>();
+      traced.set(table, columns);
+      columns.add(column.toLowerCase());
     }
   }
   return traced;
@@ -127,6 +130,7 @@ export function toFlow(input: FlowInput): {
           ? input.selectedColumn[1].toLowerCase()
           : undefined,
       errors: errors[t.table],
+      columnsNeedStrict: input.columnsNeedStrict,
     },
   }));
   return { nodes, edges: toEdges(input, listed) };

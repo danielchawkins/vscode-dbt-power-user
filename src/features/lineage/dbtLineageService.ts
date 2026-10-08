@@ -18,7 +18,6 @@ import {
   RESOURCE_TYPE_METRIC,
   RESOURCE_TYPE_SOURCE,
 } from "../../core/manifest/types";
-import { StaticAnalysisMode } from "../../core/project";
 import { Table } from "../../dbt_integration/domain";
 import {
   createFusionCommands,
@@ -31,6 +30,13 @@ import {
 import { failureSummary } from "../../projects/fusionStatus";
 import type { Manifest } from "../../projects/manifestTypes";
 import { QueryManifestService } from "../../projects/queryManifestService";
+import {
+  NeedsStrict,
+  needsStrict,
+  STRICT_FIX,
+  StrictInputs,
+  strictNeededMessage,
+} from "./strictNeeded";
 
 /** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */
 export interface ConnectedColumnsRequest {
@@ -47,8 +53,8 @@ export type NoLineage =
       state: FusionClientState;
       failure?: string | undefined;
     }
-  /** No column nodes while the client runs with a mode that computes none. */
-  | { kind: "staticAnalysis"; mode: StaticAnalysisMode }
+  /** No column nodes while the project's effective mode computes none. */
+  | ({ kind: "staticAnalysis" } & NeedsStrict)
   | { kind: "empty" }
   | { kind: "failed"; message: string };
 
@@ -74,7 +80,7 @@ export function describeNoLineage(reason: NoLineage): string {
         reason.failure ? ` ${reason.failure}` : ""
       }`;
     case "staticAnalysis":
-      return `Column lineage needs strict static analysis, but fusionPowerUser.staticAnalysis is "${reason.mode}" for this project.`;
+      return `${strictNeededMessage(reason)} ${STRICT_FIX}`;
     case "empty":
       return "dbt Fusion has no recorded column lineage for this column. If the model is new, save it.";
     case "failed":
@@ -91,6 +97,8 @@ export class DbtLineageService {
     private currentError: () => string | undefined = () => undefined,
     /** The Current Project's server commands; defaults to commands over `currentClient`. */
     currentLsp?: () => FusionCommands | undefined,
+    /** Whether the Current Project opts into `+static_analysis: strict`, and the folder the strict fix changes. */
+    private currentStrict: () => StrictInputs = () => ({ strict: false }),
   ) {
     const fallback = createFusionCommands(() => this.currentClient());
     this.currentLsp = currentLsp ?? (() => fallback);
@@ -157,7 +165,7 @@ export class DbtLineageService {
       };
     }
     if (failures.length === 0 && results.every((r) => !r.nodes?.length)) {
-      return { kind: "noLineage", reason: this.whyEmpty(client) };
+      return { kind: "noLineage", reason: this.whyEmpty() };
     }
     return {
       kind: "lineage",
@@ -173,15 +181,18 @@ export class DbtLineageService {
   }
 
   /** Why every target answered with no nodes: a configuration error, a static-analysis mode, or no lineage. */
-  private whyEmpty(client: FusionClient): NoLineage {
+  private whyEmpty(): NoLineage {
     const error = this.currentError();
     if (error) {
       return { kind: "failed", message: error };
     }
-    const mode = client.staticAnalysis;
-    return mode === "baseline" || mode === "off"
-      ? { kind: "staticAnalysis", mode }
-      : { kind: "empty" };
+    const needs = this.columnsNeedStrict();
+    return needs ? { kind: "staticAnalysis", ...needs } : { kind: "empty" };
+  }
+
+  /** The effective mode when it computes no column lineage for a running client, else `undefined`. */
+  columnsNeedStrict(): NeedsStrict | undefined {
+    return needsStrict(this.currentClient(), this.currentStrict());
   }
 
   /**
@@ -430,7 +441,9 @@ function adjacentEdges(
   for (const edge of edges) {
     const end = upstreamExpansion ? edge.parent : edge.child;
     const spelling = wanted.get(columnKey(end.uniqueId, end.column));
-    const id = `${columnKey(edge.parent.uniqueId, edge.parent.column)}\u0000${columnKey(edge.child.uniqueId, edge.child.column)}`;
+    const parentKey = columnKey(edge.parent.uniqueId, edge.parent.column);
+    const childKey = columnKey(edge.child.uniqueId, edge.child.column);
+    const id = `${parentKey}\u0000${childKey}`;
     if (spelling === undefined || kept.has(id)) {
       continue;
     }

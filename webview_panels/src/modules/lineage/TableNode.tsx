@@ -164,16 +164,20 @@ const ColumnRow = ({
   </button>
 );
 
+const STRICT_EMPTY = "Columns need strict static analysis";
+
 const ColumnList = ({
   table,
   columns,
   traced,
   selectedColumn,
+  columnsNeedStrict,
 }: {
   table: string;
   columns: lineage.LineageColumn[];
   traced: string[];
   selectedColumn?: string | undefined;
+  columnsNeedStrict?: boolean | undefined;
 }) => {
   const tracedSet = new Set(traced);
   const stateOf = (name: string) =>
@@ -188,7 +192,9 @@ const ColumnList = ({
       data-testid="lineage-columns"
     >
       {columns.length === 0 ? (
-        <div className={styles.empty}>No columns</div>
+        <div className={styles.empty}>
+          {columnsNeedStrict ? STRICT_EMPTY : "No columns"}
+        </div>
       ) : (
         columns.map((column) => (
           <ColumnRow
@@ -222,6 +228,7 @@ const TableNodeView = ({
         columns={data.columns}
         traced={data.traced}
         selectedColumn={data.selectedColumn}
+        columnsNeedStrict={data.columnsNeedStrict}
       />
     ) : null}
   </div>

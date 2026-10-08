@@ -46,6 +46,15 @@ Per Declared Project, resource-scoped settings `fusionPowerUser.profilesDir`, `f
 
 Upgrading from upstream or an earlier fork build requires renaming every extension-owned `dbt.*` key to `fusionPowerUser.*`; see [`docs/settings-migration.md`](docs/settings-migration.md).
 
+## Column lineage requirements
+
+Column lineage and the columns Fusion infers for a model come from strict static analysis ([ADR 0006](docs/adr/0006-column-lineage-from-fusion-static-analysis.md)). Fusion defaults to baseline, which computes none, so the lineage panel lists only the columns declared in YAML and shows a notice for the rest. The notice and the language status item offer one fix: set `fusionPowerUser.staticAnalysis` to `"strict"` for the project's folder (the `Use Strict Static Analysis for This Project` command, or the "Use strict analysis" button). Changing the setting restarts that project's language server. The extension never edits `dbt_project.yml` for you here. What keeps a project out of strict is one of:
+
+- An explicit `fusionPowerUser.staticAnalysis` of `"baseline"` or `"off"`, which overrides the project.
+- The default `"project"` with no `+static_analysis: strict` under `models: <project name>:` in `dbt_project.yml`. Under `"project"` the extension passes no `--static-analysis` flag, so the project runs Fusion's default, baseline. The language status item shows the effective mode, for example `static: baseline (project)`. The command `Enable Strict Static Analysis in dbt_project.yml` remains for teams that want the opt-in in the project file.
+
+Strict analysis also needs each source's schema. By default it reads that schema from the warehouse with `DESCRIBE`. Declare `data_type` for every source column in YAML and set `+schema_origin` through the hook that `Add Source Schema-Origin Hook to dbt_project.yml` adds to `sources:`, and the schema is read locally with no warehouse access. The language status hover lists whichever of these a project still lacks.
+
 ## Architecture
 
 See [`docs/architecture.md`](docs/architecture.md) for activation, Declared Projects, the Fusion client pool, the metadata port, and the panels.

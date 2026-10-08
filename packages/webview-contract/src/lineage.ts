@@ -1,7 +1,9 @@
 import {
   isPanelNotice,
+  isPanelNoticeActionId,
   OpenProblemsTab,
   PanelNotice,
+  PanelNoticeActionId,
   Response,
   responseFields,
   WebviewReady,
@@ -103,6 +105,8 @@ export interface LineageData {
 export interface RenderArgs {
   node?: unknown | undefined;
   missingLineageMessage?: PanelNotice | undefined;
+  /** True when column lists would stay empty because the project's static analysis is not strict. */
+  columnsNeedStrict?: boolean | undefined;
   /** The Current Project's manifest publication; a restored view state applies only to the same one. */
   publication?: string | undefined;
 }
@@ -153,6 +157,8 @@ export interface ConnectedColumnsParams {
 export type PanelMessage =
   | WebviewReady
   | OpenProblemsTab
+  /** A button of the panel's notice was clicked. */
+  | { command: "runNoticeAction"; action: PanelNoticeActionId }
   | OptionalRequest<"init">
   | Request<"openFile", { url: string }>
   /** The tables `table` feeds (its dbt children). */
@@ -198,6 +204,7 @@ const hostFields: CommandFields<HostMessage> = {
       shape<RenderArgs>({
         node: isAnything,
         missingLineageMessage: optional(isPanelNotice),
+        columnsNeedStrict: optional(isBoolean),
         publication: optional(isString),
       }),
     ),
@@ -208,6 +215,7 @@ const hostFields: CommandFields<HostMessage> = {
 const panelFields: CommandFields<PanelMessage> = {
   "webview:ready": {},
   openProblemsTab: {},
+  runNoticeAction: { action: isPanelNoticeActionId },
   init: optionalRequest({}),
   openFile: request({ url: isString }),
   childTables: request({ table: isString }),

@@ -417,6 +417,11 @@ const lineageHost: Fixture[] = [
 const lineagePanel: Fixture[] = [
   { message: { command: "webview:ready" }, required: [] },
   { message: { command: "openProblemsTab" }, required: [] },
+  {
+    message: { command: "runNoticeAction", action: "useStrictAnalysis" },
+    required: ["action"],
+    literals: { action: ["useStrictAnalysis"] },
+  },
   { message: { command: "init", ...params({}) }, required: [] },
   {
     message: { command: "openFile", ...params({ url: "/m.sql" }) },
