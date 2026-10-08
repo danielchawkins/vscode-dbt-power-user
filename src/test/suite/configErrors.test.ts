@@ -367,6 +367,29 @@ describe("errorHint", () => {
     );
   });
 
+  it("names the directory dbt searched when no setting chose one", () => {
+    const search = (environment: Record<string, string>, has: boolean) => ({
+      root: "/ws/proj",
+      environment,
+      home: "/home/me",
+      exists: () => has,
+    });
+
+    expect(errorHint(PROFILES_ERROR, none, search({}, false))).toBe(
+      `dbt looked for profiles.yml in ${path.join("/home/me", ".dbt")}.`,
+    );
+    expect(errorHint(PROFILES_ERROR, none, search({}, true))).toBe(
+      "dbt looked for profiles.yml in /ws/proj.",
+    );
+    expect(
+      errorHint(
+        PROFILES_ERROR,
+        none,
+        search({ DBT_ENGINE_PROFILES_DIR: "/engine" }, true),
+      ),
+    ).toBe("dbt looked for profiles.yml in /engine.");
+  });
+
   it("says nothing it cannot attribute", () => {
     expect(errorHint(PROFILES_ERROR, none)).toBeUndefined();
     expect(errorHint("[error] something else", none)).toBeUndefined();

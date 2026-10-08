@@ -1,8 +1,10 @@
+import { existsSync } from "fs";
+import * as os from "os";
 import { commands, Disposable, EventEmitter, Uri, window } from "vscode";
 import { firstLogLine, isConfigError, textLogErrors } from "../core/cli";
 import { DBTDiagnosticData } from "../core/diagnostics";
 import type { Log } from "../core/log";
-import { ProjectSnapshot } from "../core/project";
+import { ProjectSnapshot, resolveProfilesDir } from "../core/project";
 import { CommandProcessResult } from "../core/types";
 
 /** Where a project error came from; each source's errors are replaced independently. */
@@ -12,13 +14,23 @@ export const SHOW_OUTPUT = "Show output";
 export const SHOW_OUTPUT_COMMAND = "fusionPowerUser.showFusionOutput";
 const LOG_SOURCE = "ProjectErrors";
 
+/** What `errorHint` needs to name the directory dbt searched for `profiles.yml`. */
+interface ProfilesSearch {
+  root: string;
+  environment: Readonly<Record<string, string | undefined>>;
+  home: string;
+  exists: (file: string) => boolean;
+}
+
 /**
- * The sentence that tells the user what to do about `message`, if it is a failure we recognize.
+ * The sentence that tells the user what to do about `message`, if it is a failure we recognize. With `search`, a
+ * missing `profiles.yml` names the directory dbt looked in when no setting chose it.
  * @internal
  */
 export function errorHint(
   message: string,
   invocation: Pick<ProjectSnapshot["invocation"], "profilesDir" | "target">,
+  search?: ProfilesSearch,
 ): string | undefined {
   const envVar = /environment variable '([^']+)' not found/.exec(message)?.[1];
   if (envVar) {
@@ -29,6 +41,16 @@ export function errorHint(
   }
   if (/No profiles\.yml found/.test(message) && invocation.profilesDir) {
     return `fusionPowerUser.profilesDir is ${invocation.profilesDir}, which has no profiles.yml.`;
+  }
+  if (/No profiles\.yml found/.test(message) && search) {
+    const dir = resolveProfilesDir(
+      undefined,
+      search.environment,
+      search.root,
+      search.home,
+      search.exists,
+    );
+    return `dbt looked for profiles.yml in ${dir}.`;
   }
   const target = /target '([^']+)' not found in profile/.exec(message)?.[1];
   if (target) {
@@ -128,7 +150,13 @@ export class ProjectErrors implements Disposable {
   private notify(line: string): void {
     let hint: string | undefined;
     try {
-      hint = errorHint(line, this.snapshot().invocation);
+      const { root, invocation } = this.snapshot();
+      hint = errorHint(line, invocation, {
+        root,
+        environment: invocation.environment,
+        home: os.homedir(),
+        exists: existsSync,
+      });
     } catch {
       hint = undefined;
     }
