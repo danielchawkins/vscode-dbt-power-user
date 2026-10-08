@@ -18,6 +18,7 @@ import {
   FusionClientOptions,
 } from "../fusion/fusionLanguageClient";
 import { onDidChangeSettings, SettingsChange } from "../settings";
+import type { ProjectEnvironments } from "./projectEnvironments";
 import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 import { PROJECT_SNAPSHOT_SETTINGS } from "./readProjectSnapshot";
 
@@ -52,7 +53,12 @@ export interface FusionLaunchEnvironment {
 
 /** Per-project launch inputs the pool reads before each client start. */
 export interface FusionLaunchSources {
-  readSnapshot: (root: Uri) => ProjectSnapshot;
+  readSnapshot: (
+    root: Uri,
+    environment?: Readonly<Record<string, string>>,
+  ) => ProjectSnapshot;
+  /** Resolves each project's environment before its client launches; a change relaunches that client only. */
+  environments: Pick<ProjectEnvironments, "ensure" | "peek" | "onDidChange">;
   /** The Declared Project's log channel, shared by every client the pool starts for it. */
   outputChannel: (project: DeclaredProject) => LogOutputChannel;
   launchEnv?: FusionLaunchEnvironment | undefined;
@@ -69,7 +75,8 @@ export class FusionClientPoolImpl implements FusionClientPool {
   private stopPromise: Promise<void> | undefined;
   private initialized = false;
   private disposed = false;
-  private readonly readSnapshot: (root: Uri) => ProjectSnapshot;
+  private readonly readSnapshot: FusionLaunchSources["readSnapshot"];
+  private readonly environments: FusionLaunchSources["environments"];
   private readonly outputChannel: (
     project: DeclaredProject,
   ) => LogOutputChannel;
@@ -85,6 +92,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
   ) {
     this.readSnapshot = sources.readSnapshot;
     this.outputChannel = sources.outputChannel;
+    this.environments = sources.environments;
     this.launchEnv = sources.launchEnv;
     this.reportCompileErrors = sources.reportCompileErrors;
     this.subscriptions.push(
@@ -93,6 +101,9 @@ export class FusionClientPoolImpl implements FusionClientPool {
       }),
       onDidChangeSettings(PROJECT_SNAPSHOT_SETTINGS, (change) => {
         void this.enqueue(() => this.handleConfigurationChange(change));
+      }),
+      this.environments.onDidChange((project) => {
+        void this.enqueue(() => this.handleEnvironmentChange(project));
       }),
     );
     if (this.launchEnv) {
@@ -185,10 +196,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
       const managed = this.clients.get(key);
       if (
         !managed ||
-        sameLspLaunch(
-          managed.launch,
-          toLspLaunch(this.readSnapshot(project.root)),
-        )
+        sameLspLaunch(managed.launch, toLspLaunch(this.snapshot(project)))
       ) {
         continue;
       }
@@ -202,6 +210,26 @@ export class FusionClientPoolImpl implements FusionClientPool {
     if (changed) {
       this._onDidChangeClients.fire();
     }
+  }
+
+  private async handleEnvironmentChange(
+    project: DeclaredProject,
+  ): Promise<void> {
+    const key = projectKey(project);
+    if (this.initialized && !this.disposed && this.clients.has(key)) {
+      await this.replaceClient(project, key);
+      if (!this.disposed) {
+        this._onDidChangeClients.fire();
+      }
+    }
+  }
+
+  /** The project's snapshot read against its resolved environment, or the host's before it resolves. */
+  private snapshot(project: DeclaredProject): ProjectSnapshot {
+    return this.readSnapshot(
+      project.root,
+      this.environments.peek(project)?.env,
+    );
   }
 
   private async handleLaunchEnvChange(): Promise<void> {
@@ -286,15 +314,16 @@ export class FusionClientPoolImpl implements FusionClientPool {
       }
     }
 
-    const verdict = await this.resolver.resolve(project.root);
-    if (this.disposed) {
+    await this.environments.ensure(project);
+    if (this.disposed || this.findDesiredProject(key) !== project) {
       return;
     }
-    if (this.findDesiredProject(key) !== project) {
+    const verdict = await this.resolver.resolve(project.root);
+    if (this.disposed || this.findDesiredProject(key) !== project) {
       return;
     }
 
-    const launch = toLspLaunch(this.readSnapshot(project.root));
+    const launch = toLspLaunch(this.snapshot(project));
     const executable = isFusionExecutable(verdict) ? verdict : undefined;
     const env = executable ? this.resolveEnv(project) : {};
     const client = isFusionExecutable(verdict)
@@ -408,6 +437,7 @@ export function createFusionClientPool(
   const factory = deps.factory ?? new DefaultFusionClientFactory();
   return new FusionClientPoolImpl(registry, terminal, resolver, factory, {
     readSnapshot: deps.readSnapshot,
+    environments: deps.environments,
     outputChannel: deps.outputChannel,
     launchEnv: deps.launchEnv,
     reportCompileErrors: deps.reportCompileErrors,

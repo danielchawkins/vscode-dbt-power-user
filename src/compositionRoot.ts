@@ -1,19 +1,6 @@
-import { Disposable, ExtensionContext, Uri } from "vscode";
+import { Disposable, ExtensionContext } from "vscode";
 import type { Log } from "./core/log";
-import {
-  ChildrenParentParser,
-  DocParser,
-  ExposureParser,
-  FunctionParser,
-  GraphParser,
-  MacroParser,
-  MetricParser,
-  NodeParser,
-  SemanticModelParser,
-  SourceParser,
-  TestParser,
-  UnitTestParser,
-} from "./core/manifest";
+import { createProjectParsers } from "./core/manifest/projectParsers";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 import { ExtensionContextStore } from "./extensionContext";
 import { SourceModelCreationCodeLensProvider } from "./features/codegen/sourceModelCreationCodeLensProvider";
@@ -68,6 +55,7 @@ import { bindExtensionOutput } from "./projects/notifications";
 import { OutputChannels } from "./projects/outputChannels";
 import { ParseDemand } from "./projects/parseDemand";
 import { Project } from "./projects/project";
+import { ProjectEnvironments } from "./projects/projectEnvironments";
 import { ProjectQuickPick } from "./projects/projectQuickPick";
 import { DeclaredProject, ProjectRegistry } from "./projects/projectRegistry";
 import { Projects } from "./projects/projects";
@@ -92,27 +80,6 @@ export interface Composition {
   fusionOutputChannel: FusionLaunchSources["outputChannel"];
 }
 
-/**
- * Builds a fresh set of manifest parsers; each Project gets its own.
- * @internal
- */
-export function createProjectParsers(terminal: Log) {
-  return {
-    childrenParentParser: new ChildrenParentParser(),
-    nodeParser: new NodeParser(terminal),
-    macroParser: new MacroParser(terminal),
-    metricParser: new MetricParser(terminal),
-    graphParser: new GraphParser(terminal),
-    sourceParser: new SourceParser(terminal),
-    testParser: new TestParser(terminal),
-    unitTestParser: new UnitTestParser(terminal),
-    exposureParser: new ExposureParser(terminal),
-    functionParser: new FunctionParser(terminal),
-    docParser: new DocParser(terminal),
-    semanticModelParser: new SemanticModelParser(terminal),
-  };
-}
-
 interface ProjectsGraph {
   extensionContextStore: ExtensionContextStore;
   outputChannels: OutputChannels;
@@ -120,6 +87,7 @@ interface ProjectsGraph {
   sharedState: SharedStateService;
   runHistoryService: RunHistoryService;
   fusionExecutableResolver: ConfiguredFusionExecutableResolver;
+  projectEnvironments: ProjectEnvironments;
   projectFactory: ProjectFactory;
   projectRegistry: ProjectRegistry;
   projects: Projects;
@@ -148,6 +116,9 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
     }),
   });
   const clients: { pool?: FusionClientPool } = {};
+  const projectEnvironments = new ProjectEnvironments(
+    outputChannels.projectLog.bind(outputChannels),
+  );
   const parseDemand = new ParseDemand();
   const projectFactory: ProjectFactory = (declared) => {
     const log = outputChannels.projectLog(declared);
@@ -157,13 +128,19 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
       sharedState,
       runHistoryService,
       resolver: fusionExecutableResolver,
-      cliFactory: (executable, root) =>
-        new FusionCli(
+      cliFactory: (executable) => {
+        const source = projectEnvironments.snapshotSource(
+          declared,
+          readProjectSnapshot,
+        );
+        return new FusionCli(
           executable,
-          () => readProjectSnapshot(Uri.file(root)),
+          source.snapshot,
           processes,
           log,
-        ),
+          source.ready,
+        );
+      },
       parsers: createProjectParsers(log),
       projectRoot: declared.root,
       projectCount: () => projects.all().length,
@@ -193,6 +170,7 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
     sharedState,
     runHistoryService,
     fusionExecutableResolver,
+    projectEnvironments,
     projectFactory,
     projectRegistry,
     projects,
@@ -216,6 +194,7 @@ function composeFusion(graph: ProjectsGraph) {
       resolver: graph.fusionExecutableResolver,
       factory: new DefaultFusionClientFactory(),
       readSnapshot: readProjectSnapshot,
+      environments: graph.projectEnvironments,
       outputChannel: fusionOutputChannel,
       launchEnv: {
         resolve: (declared) =>
@@ -262,7 +241,10 @@ function composeFusion(graph: ProjectsGraph) {
         projects.onDidChangeManifest(listener),
         projects.onDidChangeErrors(listener),
       ),
-    (declared) => projects.get(declared.root)?.errors.current,
+    (declared) => ({
+      error: projects.get(declared.root)?.errors.current,
+      environment: graph.projectEnvironments.peek(declared)?.projectDirNotice,
+    }),
   );
   return {
     fusionClientPool,
@@ -410,6 +392,7 @@ export function compose(context: ExtensionContext): Composition {
     graph.sharedState,
     graph.runHistoryService,
     registerDbtTaskProvider(graph.projects),
+    graph.projectEnvironments,
   );
 
   return {

@@ -41,7 +41,7 @@ import { schemaOriginLaunchEnv } from "../../projects/schemaOrigin";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";
-import { declaredProject } from "../projectHarness";
+import { declaredProject, fakeProjectEnvironments } from "../projectHarness";
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
@@ -103,6 +103,7 @@ describe("FusionClientPool", () => {
   let settings: Record<string, unknown>;
   let channels: Map<string, LogOutputChannel>;
   let pools: FusionClientPoolImpl[];
+  let environments: ReturnType<typeof fakeProjectEnvironments>;
 
   /** One channel per Declared Project root, as `OutputChannels.projectLog` keeps one per Declared Project. */
   function channelFor(project: DeclaredProject): LogOutputChannel {
@@ -132,6 +133,7 @@ describe("FusionClientPool", () => {
     terminal = { warn: vi.fn(), error: vi.fn() };
     channels = new Map();
     pools = [];
+    environments = fakeProjectEnvironments({ TOOL: "mise" });
     registry = new FakeRegistry();
     resolver = {
       resolve: vi.fn().mockResolvedValue({
@@ -171,7 +173,11 @@ describe("FusionClientPool", () => {
       terminal as any,
       resolver,
       factory,
-      { readSnapshot: readProjectSnapshot, outputChannel: channelFor },
+      {
+        readSnapshot: readProjectSnapshot,
+        environments,
+        outputChannel: channelFor,
+      },
     );
     pools.push(pool);
     return pool;
@@ -545,6 +551,56 @@ describe("FusionClientPool", () => {
     expect(lastCreate()?.launch.profile).toBe("analytics");
   });
 
+  it("awaits the project's environment before resolving the executable or reading the snapshot", async () => {
+    let release: (() => void) | undefined;
+    environments.ensure.mockImplementationOnce(
+      (_project) =>
+        new Promise((resolve) => {
+          release = () => resolve(environments.peek(_project));
+        }),
+    );
+    const readSnapshot = vi.fn(readProjectSnapshot);
+    const pool = new FusionClientPoolImpl(
+      registry as unknown as ProjectRegistry,
+      terminal as any,
+      resolver,
+      factory,
+      { readSnapshot, environments, outputChannel: channelFor },
+    );
+    pools.push(pool);
+    pool.initialize();
+    registry.setProjects([makeProject("general", "/workspace/general")]);
+    await flushAsync();
+
+    expect(environments.ensure).toHaveBeenCalledTimes(1);
+    expect(resolver.resolve).not.toHaveBeenCalled();
+    expect(readSnapshot).not.toHaveBeenCalled();
+    expect(factory.create).not.toHaveBeenCalled();
+
+    release?.();
+    await flushAsync();
+
+    expect(readSnapshot).toHaveBeenCalledWith(expect.anything(), {
+      TOOL: "mise",
+    });
+    expect(factory.create).toHaveBeenCalledTimes(1);
+  });
+
+  it("relaunches only the client whose environment changed", async () => {
+    const general = makeProject("general", "/workspace/general");
+    const sox = makeProject("sox", "/workspace/sox");
+    const {
+      clients: [generalClient, soxClient],
+    } = await startPool(general, sox);
+
+    environments.changed.fire(sox);
+    await flushAsync();
+
+    expect(generalClient.dispose).not.toHaveBeenCalled();
+    expectRestarted(soxClient, 3);
+    expect(lastCreate()?.project).toBe(sox);
+  });
+
   it("does not restart a project the settings change does not affect", async () => {
     const {
       clients: [client],
@@ -639,6 +695,7 @@ describe("FusionClientPool", () => {
       factory,
       {
         readSnapshot: readProjectSnapshot,
+        environments,
         outputChannel: channelFor,
         launchEnv: { resolve, onDidChange: changed.event },
       },

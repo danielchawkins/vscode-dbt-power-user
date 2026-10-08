@@ -8,9 +8,7 @@
         "src/test/{integration,smoke}/**/*.ts",
         "src/test/mock/{extensionRoot,vscode,vscode-languageclient-node}.ts",
         "scripts/**/*.{mjs,ts}",
-        ".vscode-test.mjs",
-        // Until ProjectEnvironments calls it, the tool environment probe is its own production entry.
-        "src/fusion/toolEnvironment.ts!"
+        ".vscode-test.mjs"
       ],
       "project": ["src/**/*.ts!", "scripts/**/*.{mjs,ts}", "!src/test/**!"],
       "ignore": ["scripts/spikes/**"],

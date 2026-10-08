@@ -4,6 +4,7 @@ import * as path from "path";
 import { vi } from "vitest";
 import {
   type ConfigurationChangeEvent,
+  EventEmitter,
   Uri,
   type WorkspaceFolder,
   workspace,
@@ -93,6 +94,25 @@ export type Verdict =
 /** A resolver verdict for a configured `dbt` path that does not exist. */
 export function notFound(missingPath: string): Verdict {
   return { kind: "notFound", path: missingPath, source: "configured" };
+}
+
+/**
+ * Environments that resolve at once to `env`. `changed` fires `onDidChange` for a project; `ensure` records each
+ * call.
+ */
+export function fakeProjectEnvironments(env: Record<string, string> = {}) {
+  const changed = new EventEmitter<DeclaredProject>();
+  const environment = {
+    env,
+    source: "host",
+    result: { kind: "none" },
+  } as const;
+  return {
+    ensure: vi.fn(async (_project: DeclaredProject) => environment),
+    peek: vi.fn((_project: DeclaredProject) => environment),
+    onDidChange: changed.event,
+    changed,
+  };
 }
 
 /** A configuration change that affects only `dbtPath` in the workspace folder at `root`. */

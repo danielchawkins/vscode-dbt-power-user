@@ -442,6 +442,8 @@ export const workspace = {
   onDidSaveTextDocument: vi.fn().mockReturnValue({ dispose: vi.fn() }),
   onDidOpenTextDocument: vi.fn().mockReturnValue({ dispose: vi.fn() }),
   onDidChangeWorkspaceFolders: vi.fn().mockReturnValue({ dispose: vi.fn() }),
+  isTrusted: true,
+  onDidGrantWorkspaceTrust: vi.fn().mockReturnValue({ dispose: vi.fn() }),
   createFileSystemWatcher: vi.fn(createMockFileSystemWatcher),
   findFiles: vi.fn(() => Promise.resolve([])),
   textDocuments: [],

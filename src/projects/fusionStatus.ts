@@ -46,6 +46,14 @@ type ProjectStatus = {
   targetItem: LanguageStatusItem | undefined;
 };
 
+/** What the status shows beside a project's client state. */
+interface ProjectNotes {
+  /** The current configuration error, in full. */
+  error?: string | undefined;
+  /** A note on the project's resolved environment. */
+  environment?: string | undefined;
+}
+
 /** Language status items per Declared Project with a client, scoped to that project's documents. */
 export class FusionStatus implements Disposable {
   private readonly statuses = new Map<string, ProjectStatus>();
@@ -60,10 +68,13 @@ export class FusionStatus implements Disposable {
       project: DeclaredProject,
     ) => ProjectOptIns | undefined = () => undefined,
     onDidChangeOptIns?: Event<unknown>,
-    /** The project's current configuration error, in full; fires `onDidChangeOptIns` when it changes. */
-    private readonly projectError: (
+    /**
+     * The project's current configuration error, in full, and a note on its environment shown beside the client
+     * state; fires `onDidChangeOptIns` when either changes.
+     */
+    private readonly projectNotes: (
       project: DeclaredProject,
-    ) => string | undefined = () => undefined,
+    ) => ProjectNotes = () => ({}),
   ) {
     if (onDidChangeOptIns) {
       this.disposables.push(onDidChangeOptIns(() => this.renderAll()));
@@ -193,7 +204,8 @@ export class FusionStatus implements Disposable {
       client.state === "failed"
         ? failureSummary(client.failureReason)
         : undefined;
-    const error = failure ? undefined : this.projectError(project);
+    const notes = this.projectNotes(project);
+    const error = failure ? undefined : notes.error;
     clientItem.text = error ? clientText("failed") : clientText(client.state);
     clientItem.severity = error
       ? LanguageStatusSeverity.Error
@@ -201,7 +213,10 @@ export class FusionStatus implements Disposable {
     clientItem.busy =
       client.state === "starting" || client.state === "restarting";
     const problem = failure ?? error;
-    clientItem.detail = problem ? `${project.name}: ${problem}` : project.name;
+    const detail = problem ? `${project.name}: ${problem}` : project.name;
+    clientItem.detail = notes.environment
+      ? `${detail} · ${notes.environment}`
+      : detail;
     clientItem.command = {
       title: "Show output",
       command: "fusionPowerUser.showFusionOutput",

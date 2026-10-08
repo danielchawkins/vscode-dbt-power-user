@@ -214,7 +214,7 @@ describe("FusionStatus", () => {
       clientPool,
       () => optIns,
       optInsChanged.event,
-      () => projectError,
+      () => ({ error: projectError }),
     );
   }
 
