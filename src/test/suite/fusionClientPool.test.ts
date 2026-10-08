@@ -530,6 +530,21 @@ describe("FusionClientPool", () => {
     expect(factory.create.mock.calls[1][0].launch.target).toBe("prod");
   });
 
+  it("restarts only the project whose profile changes", async () => {
+    const general = makeProject("general", "/workspace/general");
+    const sox = makeProject("sox", "/workspace/sox");
+    const {
+      clients: [generalClient, soxClient],
+    } = await startPool(general, sox);
+
+    changeSetting("profile", general.root, " analytics ");
+    await flushAsync();
+
+    expectRestarted(generalClient, 3);
+    expect(soxClient.dispose).not.toHaveBeenCalled();
+    expect(lastCreate()?.launch.profile).toBe("analytics");
+  });
+
   it("does not restart a project the settings change does not affect", async () => {
     const {
       clients: [client],

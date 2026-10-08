@@ -40,6 +40,7 @@ Fusion LSP wire commands (`dbt.listNodes`, `dbt.previewCte`, and the rest) are u
 | `dbt.dbtPythonPathOverride`                  | `fusionPowerUser.dbtPath`                                | resource | Removed earlier; use `dbtPath`                                        |
 | `dbt.profilesDir`                            | `fusionPowerUser.profilesDir`                            | resource |                                                                       |
 | `dbt.target`                                 | `fusionPowerUser.target`                                 | resource |                                                                       |
+| `dbt.profileName`                            | `fusionPowerUser.profile`                                | resource | Passed as `--profile` only when set                                   |
 | `dbt.lintEnabled`                            | `fusionPowerUser.lint.enabled`                           | resource |                                                                       |
 | `dbt.traceServer`                            | `fusionPowerUser.trace.server`                           | resource | Per Declared Project server tracing                                   |
 | `dbt.lineage.defaultExpansion`               | `fusionPowerUser.lineage.defaultExpansion`               | window   |                                                                       |

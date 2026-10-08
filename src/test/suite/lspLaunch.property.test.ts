@@ -74,6 +74,10 @@ const restartChanges: [string, (s: ProjectSnapshot) => ProjectSnapshot][] = [
     (s) => withInvocation(s, { target: `${s.invocation.target ?? ""}x` }),
   ],
   [
+    "profile",
+    (s) => withInvocation(s, { profile: `${s.invocation.profile ?? ""}x` }),
+  ],
+  [
     "profilesDir",
     (s) =>
       withInvocation(s, {

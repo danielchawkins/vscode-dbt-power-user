@@ -20,6 +20,7 @@ describe("resolveProjectSnapshot", () => {
     expect(snapshot.invocation).toEqual({
       executable: { source: "path" },
       target: undefined,
+      profile: undefined,
       profilesDir: undefined,
       staticAnalysis: "project",
       compiledOutput: {
@@ -61,6 +62,14 @@ describe("resolveProjectSnapshot", () => {
   it("trims the target and leaves a blank one unset", () => {
     expect(withSettings({ target: " prod " }).invocation.target).toBe("prod");
     expect(withSettings({ target: "  " }).invocation.target).toBeUndefined();
+  });
+
+  it("trims the profile and leaves a blank one unset", () => {
+    expect(withSettings({ profile: " analytics " }).invocation.profile).toBe(
+      "analytics",
+    );
+    expect(withSettings({ profile: "  " }).invocation.profile).toBeUndefined();
+    expect(withSettings({}).invocation.profile).toBeUndefined();
   });
 
   it("falls back to the project's own static analysis for unknown values", () => {

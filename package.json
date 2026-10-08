@@ -151,6 +151,11 @@
             "scope": "resource",
             "description": "dbt target name passed to Fusion when this Declared Project's language server starts."
           },
+          "fusionPowerUser.profile": {
+            "type": "string",
+            "scope": "resource",
+            "description": "dbt profile name passed to Fusion as --profile when this Declared Project's language server starts. Corresponds to the official extension's dbt.profileName. Unset, Fusion takes the profile from dbt_project.yml or DBT_ENGINE_PROFILE."
+          },
           "fusionPowerUser.lsp.compiledOutput": {
             "type": "string",
             "enum": [

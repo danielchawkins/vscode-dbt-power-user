@@ -14,6 +14,7 @@ export const snapshotFolder = path.join("/", "ws");
 export const noSettings: ProjectSnapshotSettings = {
   dbtPath: undefined,
   target: undefined,
+  profile: undefined,
   profilesDir: undefined,
   staticAnalysis: undefined,
   lspCompiledOutput: undefined,

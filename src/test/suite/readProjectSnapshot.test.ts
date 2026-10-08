@@ -49,7 +49,11 @@ describe("readProjectSnapshot", () => {
   });
 
   it("carries settings into the invocation", () => {
-    mockSettings({ target: " prod ", profilesDir: "profiles" });
+    mockSettings({
+      target: " prod ",
+      profile: "analytics",
+      profilesDir: "profiles",
+    });
 
     const { folder: snapshotFolder, invocation } = readProjectSnapshot(
       Uri.file(root),
@@ -57,6 +61,7 @@ describe("readProjectSnapshot", () => {
 
     expect(snapshotFolder).toBe(folder);
     expect(invocation.target).toBe("prod");
+    expect(invocation.profile).toBe("analytics");
     expect(invocation.profilesDir).toBe(path.join(folder, "profiles"));
   });
 

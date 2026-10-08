@@ -14,6 +14,7 @@ export interface LspLaunch {
   /** The snapshot root; the client resolves its realpath at spawn. */
   projectDir: string;
   target: string | undefined;
+  profile: string | undefined;
   profilesDir: string | undefined;
   staticAnalysis: StaticAnalysisMode;
   lintEnabled: boolean;
@@ -45,6 +46,7 @@ export function toLspLaunch(snapshot: ProjectSnapshot): LspLaunch {
     executable: invocation.executable,
     projectDir: snapshot.root,
     target: invocation.target,
+    profile: invocation.profile,
     profilesDir: invocation.profilesDir,
     staticAnalysis: invocation.staticAnalysis,
     lintEnabled: invocation.lsp.lintEnabled,
@@ -73,6 +75,7 @@ export function toLspArgs(launch: LspLaunch, run: LspRun): string[] {
     "--command-prefix",
     run.commandPrefix,
     ...(launch.profilesDir ? ["--profiles-dir", launch.profilesDir] : []),
+    ...(launch.profile ? ["--profile", launch.profile] : []),
     ...(launch.target ? ["--target", launch.target] : []),
     ...(launch.logLevel ? ["--log-level", launch.logLevel] : []),
   ];
@@ -101,6 +104,7 @@ export function sameLspLaunch(a: LspLaunch, b: LspLaunch): boolean {
     sameExecutable(a.executable, b.executable) &&
     a.projectDir === b.projectDir &&
     a.target === b.target &&
+    a.profile === b.profile &&
     a.profilesDir === b.profilesDir &&
     a.staticAnalysis === b.staticAnalysis &&
     a.lintEnabled === b.lintEnabled &&

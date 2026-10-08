@@ -20,6 +20,7 @@ export interface SettingsSchema {
   dbtPath: string | undefined;
   profilesDir: string | undefined;
   target: string | undefined;
+  profile: string | undefined;
   "lsp.compiledOutput": string;
   "lint.enabled": boolean;
   "trace.server": string;
@@ -47,6 +48,7 @@ export const SETTING_SCOPES = {
   dbtPath: "resource",
   profilesDir: "resource",
   target: "resource",
+  profile: "resource",
   "lsp.compiledOutput": "resource",
   "lint.enabled": "resource",
   "trace.server": "resource",

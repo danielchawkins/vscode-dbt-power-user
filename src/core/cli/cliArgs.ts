@@ -198,7 +198,7 @@ export function toCliEnvironment(
 
 /**
  * The argv after the executable for one command against one snapshot. Order: the kind's body, its `commandParams`,
- * then `--profiles-dir`, `--project-dir` and `--target` unless the `commandParams` carry them, then defer flags on
+ * then `--profiles-dir`, `--project-dir`, `--profile` and `--target` unless the `commandParams` carry them, then defer flags on
  * deferrable kinds. `probe` is read only to check an enabled defer state path.
  */
 export function toCliArgs(
@@ -217,6 +217,7 @@ export function toCliArgs(
     ...params,
     ...flag("--profiles-dir", invocation.profilesDir),
     ...flag("--project-dir", snapshot.root),
+    ...flag("--profile", invocation.profile),
     ...flag("--target", invocation.target, "-t"),
     ...(DEFERRABLE_KINDS.includes(command.kind)
       ? deferArgs(deferState(invocation.defer, probe))
