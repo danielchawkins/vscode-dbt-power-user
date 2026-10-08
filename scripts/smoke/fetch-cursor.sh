@@ -21,7 +21,7 @@ dest="$cache_root/cursor-${FPU_CURSOR_VERSION}-${FPU_CURSOR_PLATFORM}"
 cli=$(host_cli cursor)
 verify_cached_cursor() {
   python3 - "$(host_product_json cursor)" "$FPU_CURSOR_VERSION" "$FPU_CURSOR_PRODUCT_COMMIT" \
-    "$FPU_VSCODE_VERSION" << 'PY'
+    "$FPU_CURSOR_VSCODE_VERSION" << 'PY'
 import json, sys
 path, expected_version, expected_commit, expected_vscode_version = sys.argv[1:5]
 product = json.load(open(path))
