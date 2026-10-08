@@ -376,6 +376,8 @@ describe("Fusion executable resolver", () => {
     await expect(resolver.resolve(scope)).resolves.toEqual({
       kind: "notFusion",
       raw,
+      path: "/usr/local/bin/dbt",
+      source: "path",
     });
   });
 
@@ -386,11 +388,18 @@ describe("Fusion executable resolver", () => {
         expected: {
           kind: "tooOld",
           version: { major: 2, minor: 0, patch: 4, raw: "dbt 2.0.4\n" },
+          path: "/usr/local/bin/dbt",
+          source: "path",
         },
       },
       {
         stdout: "Core:\n  - installed: 1.8.8\n",
-        expected: { kind: "notFusion", raw: "Core:\n  - installed: 1.8.8\n" },
+        expected: {
+          kind: "notFusion",
+          raw: "Core:\n  - installed: 1.8.8\n",
+          path: "/usr/local/bin/dbt",
+          source: "path",
+        },
       },
     ] as const;
 
@@ -499,6 +508,8 @@ describe("Fusion executable resolver", () => {
     await expect(resolver.resolve(scope)).resolves.toEqual({
       kind: "notFusion",
       raw: "spawn ENOENT",
+      path: "/usr/local/bin/dbt",
+      source: "path",
     });
   });
 
@@ -511,6 +522,8 @@ describe("Fusion executable resolver", () => {
     await expect(resolver.resolve(scope)).resolves.toEqual({
       kind: "notFusion",
       raw: "empty",
+      path: "/usr/local/bin/dbt",
+      source: "path",
     });
   });
 

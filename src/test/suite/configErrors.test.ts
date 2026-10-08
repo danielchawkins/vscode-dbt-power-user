@@ -299,17 +299,32 @@ describe("configuration errors", () => {
       formatFusionExecutableResolutionFailure("general", {
         kind: "notFusion",
         raw: "Core:\n  - installed: 1.9.0",
+        path: "/opt/dbt",
+        source: "configured",
       }),
     ).toBe(
-      'The dbt executable for general is not dbt Fusion (dbt --version printed "Core:"). ' +
+      "The dbt executable at /opt/dbt (from fusionPowerUser.dbtPath) for general " +
+        'is not dbt Fusion (dbt --version printed "Core:"). ' +
         "Fusion Power User needs dbt Fusion 2.0.6 or later.",
     );
     expect(
       formatFusionExecutableResolutionFailure("general", {
         kind: "tooOld",
         version: { major: 2, minor: 0, patch: 1, raw: "dbt 2.0.1" },
+        path: "/Users/x/.local/bin/dbt",
+        source: "path",
       }),
-    ).toContain("dbt Fusion 2.0.1 for general is too old.");
+    ).toContain(
+      "dbt Fusion 2.0.1 at /Users/x/.local/bin/dbt (from PATH) for general is too old.",
+    );
+    for (const kind of ["ok", "untestedMajor"] as const) {
+      expect(() =>
+        formatFusionExecutableResolutionFailure("general", {
+          kind,
+          version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
+        }),
+      ).toThrow(`"${kind}" is not a resolution failure`);
+    }
   });
 
   it("warns, naming the path, when a Declared Project entry has no dbt_project.yml", async () => {
