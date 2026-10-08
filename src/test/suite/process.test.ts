@@ -1,7 +1,11 @@
 import { realpathSync } from "fs";
 import { tmpdir } from "os";
 import { describe, expect, it } from "vitest";
-import { execFileText, spawnProcess } from "../../fusion/process";
+import {
+  execFileText,
+  runProcessText,
+  spawnProcess,
+} from "../../fusion/process";
 
 const node = process.execPath;
 const script = [
@@ -32,6 +36,66 @@ describe("execFileText", () => {
     await expect(
       execFileText("fpu-missing-executable-for-test", [], {}),
     ).rejects.toMatchObject({ code: "ENOENT", stdout: "", stderr: "" });
+  });
+});
+
+describe("runProcessText", () => {
+  const cwd = realpathSync(tmpdir());
+
+  it("resolves the output of a successful process", async () => {
+    await expect(
+      runProcessText(node, ["-e", "process.stdout.write('ok')"], {
+        cwd,
+        env: process.env,
+        timeoutMs: 10_000,
+      }),
+    ).resolves.toEqual({ stdout: "ok", stderr: "" });
+  });
+
+  it("rejects with the exit code and output on a non-zero exit", async () => {
+    await expect(
+      runProcessText(node, ["-e", script, "4"], {
+        cwd,
+        env: { ...process.env, FPU_PROCESS_TEST: "out" },
+        timeoutMs: 10_000,
+      }),
+    ).rejects.toMatchObject({ code: 4, stdout: "out", stderr: cwd });
+  });
+
+  it("rejects with ETIMEDOUT when the process outlives the timeout", async () => {
+    await expect(
+      runProcessText(node, ["-e", "setInterval(() => {}, 1000)"], {
+        cwd,
+        env: process.env,
+        timeoutMs: 100,
+      }),
+    ).rejects.toMatchObject({ code: "ETIMEDOUT", signal: "SIGTERM" });
+  });
+
+  it("rejects when output exceeds maxBuffer", async () => {
+    await expect(
+      runProcessText(
+        node,
+        [
+          "-e",
+          "process.stdout.write('x'.repeat(100)); setInterval(() => {}, 1000)",
+        ],
+        { cwd, env: process.env, timeoutMs: 10_000, maxBuffer: 10 },
+      ),
+    ).rejects.toMatchObject({ code: "ERR_CHILD_PROCESS_STDIO_MAXBUFFER" });
+  });
+
+  it("ignores stdin, so a reader sees end of input at once", async () => {
+    await expect(
+      runProcessText(
+        node,
+        [
+          "-e",
+          "process.stdin.on('data', () => {}).on('end', () => process.stdout.write('eof'))",
+        ],
+        { cwd, env: process.env, timeoutMs: 10_000 },
+      ),
+    ).resolves.toEqual({ stdout: "eof", stderr: "" });
   });
 });
 
