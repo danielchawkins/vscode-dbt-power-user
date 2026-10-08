@@ -81,6 +81,13 @@ app_bin_dir() {
   fi
 }
 
+# A macOS app's executable, named by CFBundleExecutable (VS Code 1.141 renamed Electron to Code).
+bundle_executable() {
+  local app=$1 name
+  name=$(plutil -extract CFBundleExecutable raw -o - "$app/Contents/Info.plist")
+  echo "$app/Contents/MacOS/$name"
+}
+
 host_executable() {
   local host=$1
   case "$host" in
@@ -88,14 +95,14 @@ host_executable() {
       if [[ "$smoke_platform" == linux-arm64 ]]; then
         echo "$(vscode_app_dir)/code"
       else
-        echo "$(vscode_app_dir)/Contents/MacOS/Electron"
+        bundle_executable "$(vscode_app_dir)"
       fi
       ;;
     cursor)
       if [[ "$smoke_platform" == linux-arm64 ]]; then
         echo "$(cursor_app_dir)/cursor"
       else
-        echo "$(cursor_app_dir)/Contents/MacOS/Cursor"
+        bundle_executable "$(cursor_app_dir)"
       fi
       ;;
     *)

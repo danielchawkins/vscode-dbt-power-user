@@ -10,7 +10,7 @@ export const LABELS = [
 ];
 
 /** The VS Code release every label runs against. */
-export const VSCODE_VERSION = "1.128.0";
+export const VSCODE_VERSION = "1.141.0";
 
 /** The label launched directly, without test-cli, because test-electron always disables workspace trust. */
 export const UNTRUSTED_LABEL = "untrusted";

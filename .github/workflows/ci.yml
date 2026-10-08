@@ -48,11 +48,11 @@ jobs:
       - name: Verify VSIX
         run: shasum -a 256 -c vsix.sha256
 
-      - name: Smoke VS Code 1.128.x
+      - name: Smoke VS Code 1.141.x
         run: |
           just benchmark-runtime-vscode fusion-power-user-*.vsix
 
-      - name: Multi-root LSP smoke VS Code 1.128.x
+      - name: Multi-root LSP smoke VS Code 1.141.x
         env:
           FPU_SKIP_INTEGRATION_COMPILE: "1"
           FPU_SMOKE_REQUIRE_FUSION: "1"

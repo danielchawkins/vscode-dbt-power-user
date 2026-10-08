@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Resolves Cursor latest from the official API, verifies vscodeVersion 1.128.x,
-# and rewrites scripts/smoke/pins.env. Run manually when advancing the Cursor pin.
+# Resolves the Cursor stable release from the official API, verifies its vscodeVersion meets the engines.vscode
+# floor, and rewrites scripts/smoke/pins.env. Run manually when advancing the Cursor pin.
 smoke_root=$(cd "$(dirname "$0")" && pwd)
 pins=$smoke_root/pins.env
 # shellcheck source=scripts/smoke/common.sh
@@ -10,7 +10,7 @@ source "$smoke_root/common.sh"
 platform=${FPU_CURSOR_PLATFORM:-darwin-arm64}
 
 response=$(curl -fsSL --retry 3 --retry-all-errors --max-time 60 \
-  "https://www.cursor.com/api/download?platform=${platform}&releaseTrack=latest")
+  "https://www.cursor.com/api/download?platform=${platform}&releaseTrack=stable")
 version=$(node -e "
 const d = JSON.parse(process.argv[1]);
 if (!d.downloadUrl || !d.version || !d.commitSha) process.exit(2);
@@ -42,8 +42,15 @@ print(product.get("commit", ""), product.get("vscodeVersion", ""))
 PY
 )
 
-if [[ "$vscode_version" != "${FPU_VSCODE_VERSION%.*}."* ]]; then
-  echo "Refusing pin: Cursor $version reports vscodeVersion=$vscode_version (need ${FPU_VSCODE_VERSION%.*}.x)" >&2
+engines_floor=$(node -p "require('$smoke_root/../../package.json').engines.vscode.replace(/^\\D*/, '')")
+if ! python3 - "$vscode_version" "$engines_floor" << 'PY'
+import sys
+def minor(v):
+    return tuple(int(p) for p in v.split(".")[:2])
+sys.exit(0 if minor(sys.argv[1]) >= minor(sys.argv[2]) else 1)
+PY
+then
+  echo "Refusing pin: Cursor $version reports vscodeVersion=$vscode_version (need ${engines_floor} or later)" >&2
   exit 1
 fi
 
@@ -86,6 +93,8 @@ for line in pathlib.Path(path).read_text().splitlines():
         lines.append(f"FPU_CURSOR_ARCHIVE_COMMIT={archive_commit}")
     elif line.startswith("FPU_CURSOR_PRODUCT_COMMIT="):
         lines.append(f"FPU_CURSOR_PRODUCT_COMMIT={product_commit}")
+    elif line.startswith("FPU_CURSOR_VSCODE_VERSION="):
+        lines.append(f"FPU_CURSOR_VSCODE_VERSION={vscode_version}")
     elif line.startswith("FPU_CURSOR_PLATFORM="):
         lines.append(f"FPU_CURSOR_PLATFORM={platform}")
     elif line.startswith("FPU_CURSOR_SHA256="):
