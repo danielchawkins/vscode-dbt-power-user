@@ -1,6 +1,6 @@
 # Webview view state — evidence, October 2026
 
-Query results and the documentation editor register without `retainContextWhenHidden`. When either is hidden, VS Code discards its page and rebuilds it when the panel is shown again. Each page restores its own view state through `vscode.getState`, and its host sends back what the page cannot keep: the query results host its last result, the documentation editor host its unsaved draft. Lineage keeps `retainContextWhenHidden` until R8 (see [Exceptions](#exceptions)); R8 removes it.
+Query results and the documentation editor register without `retainContextWhenHidden`. When either is hidden, VS Code discards its page and rebuilds it when the panel is shown again. Each page restores its own view state through `vscode.getState`, and its host sends back what the page cannot keep: the query results host its last result, the documentation editor host its unsaved draft. Lineage kept `retainContextWhenHidden` until R8 (see [Exceptions](#exceptions)); R8 removed it.
 
 ## Persisted schema
 

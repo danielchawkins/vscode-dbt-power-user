@@ -66,7 +66,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   protected readonly entry = "queryResults";
   protected readonly csp = QUERY_RESULTS_CSP;
   protected override panelDescription = "Query results panel";
-  private _queryTabData: unknown;
+  private _queryTabData: Record<string, unknown> | undefined;
   private _bottomPanel: WebviewView | undefined;
 
   private queryExecution: QueryExecution | undefined;
@@ -160,7 +160,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     }
   }
 
-  private openResultsInTab(queryTabData: unknown) {
+  private openResultsInTab(queryTabData: Record<string, unknown>) {
     this._queryTabData = queryTabData;
     void this.createQueryResultsPanelVirtualDocument("Query results");
     this.updateViewTypeToWebview(QueryPanelViewType.OPEN_RESULTS_IN_TAB);
