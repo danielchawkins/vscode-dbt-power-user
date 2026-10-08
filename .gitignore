@@ -64,3 +64,9 @@ mcp.json
 # Markdown lint cache
 .rumdl_cache/
 *.tsbuildinfo
+
+# Strands harness links into its plans store; .agents/skills stays tracked.
+.agents/memory
+.agents/plans
+.agents/sessions
+.agents/strands.toml
