@@ -5,6 +5,7 @@ import { DBT_PROJECT_FILE } from "../core/project";
 import { readSetting } from "../settings";
 
 export const PROJECTS_SETTING = "projects";
+export const ENABLED_SETTING = "enabled";
 
 type ProjectConfigurationProblem =
   | { reason: "invalidEntry"; entry: string }
@@ -20,10 +21,14 @@ export interface DeclaredProjectRoots {
   problems: readonly ProjectConfigurationProblem[];
 }
 
-/** Resolves one workspace folder's Declared Project roots in declaration order. */
+/** Resolves one workspace folder's Declared Project roots in declaration order; none when the folder is disabled. */
 export function resolveDeclaredProjectRoots(
   folder: WorkspaceFolder,
 ): DeclaredProjectRoots {
+  if (readSetting(ENABLED_SETTING, folder.uri) === false) {
+    return { folder, roots: [], source: "folderRoot", problems: [] };
+  }
+
   const value: unknown = readSetting(PROJECTS_SETTING, folder.uri);
 
   if (!Array.isArray(value) || value.length === 0) {
