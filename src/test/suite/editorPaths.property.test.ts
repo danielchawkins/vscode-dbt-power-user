@@ -105,6 +105,7 @@ describe("toLspArgs properties", () => {
         executable: { source: "path" },
         projectDir: i.projectDir,
         target: i.target,
+        profile: undefined,
         profilesDir: i.profilesDir,
         staticAnalysis: i.staticAnalysis,
         lintEnabled: i.lintEnabled,

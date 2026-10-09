@@ -153,6 +153,24 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
     { settings: { profilesDir: "/p", target: "prod" } },
   ],
   [
+    "profile is passed only when set, before the target",
+    { kind: "deps" },
+    `deps ${P} --profile analytics --target prod`,
+    { settings: { profile: "analytics", target: "prod" } },
+  ],
+  [
+    "--profile in the command params is not duplicated",
+    { kind: "run", select: "a" },
+    `run --select a --profile mine ${P} ${NO_DEFER}`,
+    { settings: { profile: "analytics", runParams: ["--profile", "mine"] } },
+  ],
+  [
+    "a --profiles-dir param does not carry --profile",
+    { kind: "run", select: "a" },
+    `run --select a --profiles-dir /q ${P} --profile analytics ${NO_DEFER}`,
+    { settings: { profile: "analytics", runParams: ["--profiles-dir", "/q"] } },
+  ],
+  [
     "a flag is left out when the command params carry it",
     { kind: "run", select: "a" },
     `run --select a --profiles-dir /already/set --target dev ${P} ${NO_DEFER}`,

@@ -143,6 +143,7 @@ suite("Fusion defer argument integration", function () {
       settings: {
         dbtPath: undefined,
         target: undefined,
+        profile: undefined,
         profilesDir: projectDir,
         staticAnalysis: undefined,
         lspCompiledOutput: undefined,

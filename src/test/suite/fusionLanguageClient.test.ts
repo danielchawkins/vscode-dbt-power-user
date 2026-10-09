@@ -95,6 +95,7 @@ function makeLaunch(overrides: Partial<LspLaunch> = {}): LspLaunch {
     executable: { source: "path" },
     projectDir: "/workspace/general",
     target: undefined,
+    profile: undefined,
     profilesDir: undefined,
     staticAnalysis: "baseline",
     lintEnabled: true,

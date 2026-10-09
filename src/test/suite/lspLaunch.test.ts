@@ -32,6 +32,7 @@ const launch = (overrides: Partial<LspLaunch> = {}): LspLaunch => ({
   executable: { source: "path" },
   projectDir: folder,
   target: undefined,
+  profile: undefined,
   profilesDir: undefined,
   staticAnalysis: "project",
   lintEnabled: true,
@@ -75,6 +76,14 @@ describe("toLspArgs", () => {
     ]);
   });
 
+  it("passes --profile only when the launch sets one", () => {
+    expect(toLspArgs(launch(), run)).not.toContain("--profile");
+    expect(toLspArgs(launch({ profile: "" }), run)).not.toContain("--profile");
+
+    const args = toLspArgs(launch({ profile: "analytics" }), run);
+    expect(args[args.indexOf("--profile") + 1]).toBe("analytics");
+  });
+
   it("omits the log level when there is none", () => {
     const args = toLspArgs(launch({ staticAnalysis: "baseline" }), run);
     expect(args).not.toContain("--log-level");
@@ -108,6 +117,7 @@ describe("toLspLaunch", () => {
       executable: { source: "path" },
       projectDir: folder,
       target: undefined,
+      profile: undefined,
       profilesDir: undefined,
       staticAnalysis: "project",
       lintEnabled: true,
@@ -178,6 +188,7 @@ describe("toLspLaunch", () => {
       expect.arrayContaining([
         "fusionPowerUser.profilesDir",
         "fusionPowerUser.target",
+        "fusionPowerUser.profile",
         "fusionPowerUser.lint.enabled",
         "fusionPowerUser.lsp.compiledOutput",
       ]),

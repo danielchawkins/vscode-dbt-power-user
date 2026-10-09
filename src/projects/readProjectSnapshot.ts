@@ -16,6 +16,7 @@ import {
 export const PROJECT_SNAPSHOT_SETTINGS: readonly SettingKey[] = [
   "dbtPath",
   "target",
+  "profile",
   "profilesDir",
   "staticAnalysis",
   "lsp.compiledOutput",
@@ -39,6 +40,7 @@ export function readProjectSnapshot(root: Uri): ProjectSnapshot {
     settings: {
       dbtPath: readSetting("dbtPath", root),
       target: readSetting("target", root),
+      profile: readSetting("profile", root),
       profilesDir: readSetting("profilesDir", root),
       staticAnalysis: readSetting("staticAnalysis", root),
       lspCompiledOutput: readSetting("lsp.compiledOutput", root),

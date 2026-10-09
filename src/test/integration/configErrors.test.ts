@@ -38,6 +38,7 @@ function silentTerminal(): Log {
 const noSettings: ProjectSnapshotSettings = {
   dbtPath: undefined,
   target: undefined,
+  profile: undefined,
   profilesDir: undefined,
   staticAnalysis: undefined,
   lspCompiledOutput: undefined,

@@ -72,6 +72,7 @@ export interface DeferSettingsEntry {
 export interface ProjectSnapshotSettings {
   dbtPath: string | undefined;
   target: string | undefined;
+  profile: string | undefined;
   profilesDir: string | undefined;
   staticAnalysis: unknown;
   lspCompiledOutput: unknown;
@@ -118,6 +119,8 @@ interface ProjectInvocation {
   executable: ProjectExecutable;
   /** Unset selects dbt's default target from `profiles.yml`. */
   target: string | undefined;
+  /** Unset lets Fusion take the profile from `dbt_project.yml` or `DBT_ENGINE_PROFILE`. */
+  profile: string | undefined;
   /** Absolute; unset lets dbt search its default locations. */
   profilesDir: string | undefined;
   staticAnalysis: StaticAnalysisMode;
@@ -278,6 +281,7 @@ export function resolveProjectSnapshot(
     invocation: {
       executable: resolveExecutable(settings.dbtPath, folderScope),
       target: settings.target?.trim() || undefined,
+      profile: settings.profile?.trim() || undefined,
       profilesDir: resolveFolderPath(settings.profilesDir, folderScope),
       staticAnalysis: parseStaticAnalysisMode(settings.staticAnalysis),
       compiledOutput: {
