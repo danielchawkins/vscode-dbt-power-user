@@ -1,5 +1,5 @@
 /** Lets promise continuations queued by the code under test run. */
-export async function flushAsync(rounds = 8): Promise<void> {
+export async function flushAsync(rounds = 16): Promise<void> {
   for (let round = 0; round < rounds; round++) {
     await Promise.resolve();
   }

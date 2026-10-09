@@ -7,8 +7,8 @@ export type FusionVersion = {
 
 export const MINIMUM_FUSION = { major: 2, minor: 0, patch: 6 };
 
-/** Where the probed binary came from: the `dbtPath` setting or a PATH lookup. */
-export type FusionExecutableSource = "configured" | "path";
+/** Where the probed binary came from: the `dbtPath` setting, a tool manager's PATH, or the host PATH. */
+export type FusionExecutableSource = "configured" | "mise" | "direnv" | "path";
 
 /** Version judgement of `dbt --version` output, before the probed binary is attached. */
 export type FusionVersionJudgement =

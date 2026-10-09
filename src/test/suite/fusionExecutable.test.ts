@@ -5,6 +5,7 @@ import { Uri, window, WorkspaceFolder } from "vscode";
 import {
   ConfiguredFusionExecutableResolver,
   DBT_PATH_SETTING,
+  formatFusionExecutableResolutionFailure,
   FusionExecutable,
 } from "../../fusion/fusionExecutable";
 import { FusionVersionVerdict } from "../../fusion/fusionVersion";
@@ -43,7 +44,8 @@ function createResolver(
     ConstructorParameters<typeof ConfiguredFusionExecutableResolver>[0]
   > = {},
 ) {
-  const findOnPath = vi.fn<(name: string) => Promise<string | undefined>>();
+  const findOnPath =
+    vi.fn<(name: string, pathValue?: string) => Promise<string | undefined>>();
   const isExecutable = vi.fn<(filePath: string) => Promise<boolean>>();
   const runVersion =
     vi.fn<
@@ -524,6 +526,155 @@ describe("Fusion executable resolver", () => {
       raw: "empty",
       path: "/usr/local/bin/dbt",
       source: "path",
+    });
+  });
+
+  describe("project environment", () => {
+    const hostDbt = "/usr/local/bin/dbt";
+    const toolDbt = "/tool/bin/dbt";
+    const toolEnv = { PATH: "/tool/bin", HOME: "/home/dev" };
+
+    function shadowedResolver(
+      overrides: Parameters<typeof createResolver>[0] = {},
+    ) {
+      const created = createResolver(overrides);
+      created.findOnPath.mockImplementation(async (_name, pathValue) =>
+        pathValue === undefined ? hostDbt : toolDbt,
+      );
+      created.runVersion.mockImplementation(async (executable) => ({
+        stdout: executable === hostDbt ? "dbt 2.0.5\n" : "dbt 2.0.6\n",
+        stderr: "",
+      }));
+      return created;
+    }
+
+    it.each(["mise", "direnv"] as const)(
+      "prefers a %s PATH that shadows the host dbt, and runs --version on that environment",
+      async (source) => {
+        const { resolver, runVersion } = shadowedResolver();
+
+        const result = await resolver.resolve(scope, {
+          env: toolEnv,
+          source,
+        });
+
+        assertFusionExecutable(result);
+        expect(result.path).toBe(path.resolve(toolDbt));
+        expect(result.env).toEqual(toolEnv);
+        expect(runVersion).toHaveBeenCalledWith(path.resolve(toolDbt), toolEnv);
+      },
+    );
+
+    it("reads a Windows-style Path key and skips the lookup without any PATH", async () => {
+      const { resolver, findOnPath } = shadowedResolver();
+
+      const result = await resolver.resolve(scope, {
+        env: { Path: "/tool/bin" },
+        source: "mise",
+      });
+      assertFusionExecutable(result);
+      expect(result.path).toBe(path.resolve(toolDbt));
+      expect(findOnPath).toHaveBeenCalledWith("dbt", "/tool/bin");
+
+      findOnPath.mockClear();
+      await resolver.resolve(scope, { env: { HOME: "/h" }, source: "mise" });
+      expect(findOnPath).toHaveBeenCalledTimes(1);
+      expect(findOnPath).toHaveBeenCalledWith("dbt");
+    });
+
+    it("names the tool manager in resolution failures", async () => {
+      const { resolver, runVersion } = shadowedResolver();
+      runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+
+      const result = await resolver.resolve(scope, {
+        env: toolEnv,
+        source: "mise",
+      });
+
+      expect(result).toMatchObject({ kind: "tooOld", source: "mise" });
+      expect(
+        formatFusionExecutableResolutionFailure(
+          "general",
+          result as FusionVersionVerdict,
+        ),
+      ).toContain(`${path.resolve(toolDbt)} (from mise)`);
+    });
+
+    it("keeps the path source when the project lookup matches the host's", async () => {
+      const { resolver, findOnPath, runVersion } = createResolver();
+      findOnPath.mockResolvedValue(hostDbt);
+      runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
+
+      const result = await resolver.resolve(scope, {
+        env: toolEnv,
+        source: "mise",
+      });
+
+      assertFusionExecutable(result);
+      expect(result.path).toBe(path.resolve(hostDbt));
+      runVersion.mockResolvedValue({ stdout: "dbt 2.0.5\n", stderr: "" });
+      await expect(
+        resolver.resolve(scope, { env: toolEnv, source: "mise" }),
+      ).resolves.toMatchObject({ kind: "tooOld", source: "path" });
+    });
+
+    it("falls back to the host PATH when the project PATH has no dbt", async () => {
+      const { resolver, findOnPath, runVersion } = createResolver();
+      findOnPath.mockImplementation(async (_name, pathValue) =>
+        pathValue === undefined ? hostDbt : undefined,
+      );
+      runVersion.mockResolvedValue({ stdout: "dbt 2.0.6\n", stderr: "" });
+
+      const result = await resolver.resolve(scope, {
+        env: toolEnv,
+        source: "direnv",
+      });
+
+      expect(result).toMatchObject({ path: path.resolve(hostDbt) });
+    });
+
+    it("ignores mise shims on the project PATH, which only work where a version is set", async () => {
+      const shimPath = ["/tool/shims", "/tool/bin", "/other/shims/"].join(
+        path.delimiter,
+      );
+      const { resolver, findOnPath } = shadowedResolver();
+
+      await resolver.resolve(scope, {
+        env: { PATH: shimPath },
+        source: "mise",
+      });
+      expect(findOnPath).toHaveBeenCalledWith("dbt", "/tool/bin");
+
+      findOnPath.mockClear();
+      const result = await resolver.resolve(scope, {
+        env: { PATH: "/tool/shims" },
+        source: "mise",
+      });
+      expect(findOnPath).toHaveBeenCalledTimes(1);
+      expect(findOnPath).toHaveBeenCalledWith("dbt");
+      expect(result).toMatchObject({
+        path: path.resolve(hostDbt),
+        source: "path",
+      });
+    });
+
+    it("lets fusionPowerUser.dbtPath win over the project PATH", async () => {
+      const configured = "/opt/fusion/dbt";
+      const { resolver, findOnPath, isExecutable, runVersion } =
+        shadowedResolver({ getConfiguredPath: () => configured });
+      isExecutable.mockResolvedValue(true);
+
+      const result = await resolver.resolve(scope, {
+        env: toolEnv,
+        source: "mise",
+      });
+
+      expect(result).toMatchObject({ path: path.resolve(configured) });
+      expect(findOnPath).not.toHaveBeenCalled();
+      expect(runVersion).toHaveBeenCalledWith(
+        path.resolve(configured),
+        toolEnv,
+      );
     });
   });
 

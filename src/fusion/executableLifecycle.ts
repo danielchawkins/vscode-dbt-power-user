@@ -10,6 +10,7 @@ import {
   FusionExecutable,
   FusionExecutableResolver,
   isFusionExecutable,
+  ResolverEnvironment,
 } from "./fusionExecutable";
 import { FusionVersion } from "./fusionVersion";
 
@@ -22,6 +23,8 @@ export const EXECUTABLE_DIAGNOSTIC_SOURCE = "fusion-executable";
 const LOG_SOURCE = "Project";
 
 export interface ExecutableLifecycleHooks {
+  /** The project's resolved environment, which the executable is looked up on; the host's when absent. */
+  environment?: (() => Promise<ResolverEnvironment>) | undefined;
   /**
    * Prepares `candidate` before commit. Resolves to a step that runs after the commit while
    * `generation` is still current. Returning early when `generation` is stale abandons the candidate.
@@ -119,7 +122,21 @@ export class ExecutableLifecycle {
   private async resolveExecutable(
     generation: number,
   ): Promise<FusionExecutable | undefined> {
-    const verdict = await this.resolver.resolve(Uri.file(this.projectRoot));
+    let environment: ResolverEnvironment | undefined;
+    try {
+      environment = await this.hooks.environment?.();
+    } catch (error) {
+      this.terminal.error(
+        LOG_SOURCE,
+        `Could not read the project environment, using the host's: ${
+          error instanceof Error ? error.message : String(error)
+        }`,
+      );
+    }
+    const verdict = await this.resolver.resolve(
+      Uri.file(this.projectRoot),
+      environment,
+    );
     if (generation !== this.refreshGeneration) {
       return undefined;
     }

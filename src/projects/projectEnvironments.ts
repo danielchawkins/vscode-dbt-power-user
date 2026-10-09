@@ -45,7 +45,7 @@ type Entry = {
   value: ProjectEnvironment | undefined;
 };
 
-const sameEnv = (
+export const sameEnv = (
   a: Readonly<Record<string, string>>,
   b: Readonly<Record<string, string>>,
 ): boolean => {

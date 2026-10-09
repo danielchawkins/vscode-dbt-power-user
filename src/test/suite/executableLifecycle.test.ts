@@ -71,6 +71,7 @@ function build(
     {
       activate: hooks.activate ?? (async () => undefined),
       deactivate: hooks.deactivate ?? (() => undefined),
+      environment: hooks.environment,
     },
   );
 }
@@ -103,6 +104,30 @@ describe("ExecutableLifecycle", () => {
     expect(committed).toHaveBeenCalledTimes(1);
     await lifecycle.dispose();
     expect(created[0].dispose).toHaveBeenCalled();
+  });
+
+  it("resolves with no environment when the environment hook rejects", async () => {
+    const { factory, created } = recordingFactory();
+    const resolve = vi.fn(async () => sampleExecutable("/bin/dbt"));
+    const lifecycle = new ExecutableLifecycle(
+      { resolve },
+      factory,
+      ROOT,
+      silentLog(),
+      {
+        activate: async () => undefined,
+        deactivate: () => undefined,
+        environment: async () => {
+          throw new Error("mise failed");
+        },
+      },
+    );
+
+    await lifecycle.initialize();
+
+    expect(resolve).toHaveBeenCalledWith(expect.anything(), undefined);
+    expect(lifecycle.current()).toBe(created[0]);
+    await lifecycle.dispose();
   });
 
   it("reports resolution failure diagnostics without committing", async () => {

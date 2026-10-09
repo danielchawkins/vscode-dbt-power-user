@@ -30,8 +30,20 @@ export interface FusionExecutable {
 }
 
 export interface FusionExecutableResolver {
-  /** Configured path first, then PATH lookup. Never invokes a tool manager. */
-  resolve(scope: Uri): Promise<FusionExecutable | FusionVersionVerdict>;
+  /**
+   * Configured path first, then `dbt` on the project environment's PATH, then the host PATH.
+   * Never invokes a tool manager; `environment` is what one already resolved.
+   */
+  resolve(
+    scope: Uri,
+    environment?: ResolverEnvironment,
+  ): Promise<FusionExecutable | FusionVersionVerdict>;
+}
+
+/** The part of a `ProjectEnvironment` the resolver reads. */
+export interface ResolverEnvironment {
+  readonly env: Readonly<Record<string, string>>;
+  readonly source: "host" | "mise" | "direnv";
 }
 
 /** The subset of `Memento` the resolver needs to remember which majors it has warned about. */
@@ -46,8 +58,11 @@ export type FusionExecutableResolverDependencies = {
   getConfiguredPath?: (scope: Uri) => string | undefined;
   getWorkspaceFolder?: (scope: Uri) => WorkspaceFolder | undefined;
   getUserHome?: () => string;
-  /** Resolves an absolute, executable path for the given PATH lookup name. */
-  findOnPath?: (name: string) => Promise<string | undefined>;
+  /** Resolves an absolute, executable path for the name on `pathValue`, or on the host PATH without it. */
+  findOnPath?: (
+    name: string,
+    pathValue?: string,
+  ) => Promise<string | undefined>;
   isExecutable?: (filePath: string) => Promise<boolean>;
   runVersion?: (
     executable: string,
@@ -101,9 +116,25 @@ async function defaultIsExecutable(filePath: string): Promise<boolean> {
   }
 }
 
-async function defaultFindOnPath(name: string): Promise<string | undefined> {
+/**
+ * A mise shim chooses its version from the directory it runs in, so one found here can pass `--version` where
+ * the extension host runs and still fail in the project. Only real binaries count.
+ */
+function withoutShims(pathValue: string | undefined): string | undefined {
+  return pathValue
+    ?.split(path.delimiter)
+    .filter((entry) => path.basename(entry.replace(/[\\/]+$/, "")) !== "shims")
+    .join(path.delimiter);
+}
+
+async function defaultFindOnPath(
+  name: string,
+  pathValue?: string,
+): Promise<string | undefined> {
   try {
-    return await which(name);
+    return await (pathValue === undefined
+      ? which(name)
+      : which(name, { path: pathValue }));
   } catch {
     return undefined;
   }
@@ -162,7 +193,11 @@ function describeBinary(binary: {
   source: FusionExecutableSource;
 }): string {
   const source =
-    binary.source === "configured" ? "fusionPowerUser.dbtPath" : "PATH";
+    binary.source === "configured"
+      ? "fusionPowerUser.dbtPath"
+      : binary.source === "path"
+        ? "PATH"
+        : binary.source;
   return `${binary.path} (from ${source})`;
 }
 
@@ -176,7 +211,10 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
     scope: Uri,
   ) => WorkspaceFolder | undefined;
   private readonly getUserHome: () => string;
-  private readonly findOnPath: (name: string) => Promise<string | undefined>;
+  private readonly findOnPath: (
+    name: string,
+    pathValue?: string,
+  ) => Promise<string | undefined>;
   private readonly isExecutable: (filePath: string) => Promise<boolean>;
   private readonly runVersion: (
     executable: string,
@@ -202,14 +240,17 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
     this.getGlobalState = deps.getGlobalState;
   }
 
-  async resolve(scope: Uri): Promise<FusionExecutable | FusionVersionVerdict> {
+  async resolve(
+    scope: Uri,
+    environment?: ResolverEnvironment,
+  ): Promise<FusionExecutable | FusionVersionVerdict> {
     const executable = resolveExecutable(this.getConfiguredPath(scope), {
       folder: this.getWorkspaceFolder(scope)?.uri.fsPath,
       userHome: this.getUserHome(),
       lookup: readEnvironmentVariable,
     });
     if (executable.source === "path") {
-      return this.resolveFromPath();
+      return this.resolveFromPath(environment);
     }
     if (
       executable.source === "unresolvable" ||
@@ -217,13 +258,30 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
     ) {
       return { kind: "notFound", path: executable.path, source: "configured" };
     }
-    return this.probe(executable.path, "configured");
+    return this.probe(executable.path, "configured", environment);
   }
 
-  private async resolveFromPath(): Promise<
-    FusionExecutable | FusionVersionVerdict
-  > {
-    const onPath = await this.findOnPath(PATH_LOOKUP_NAME);
+  private async resolveFromPath(
+    environment: ResolverEnvironment | undefined,
+  ): Promise<FusionExecutable | FusionVersionVerdict> {
+    const toolSource =
+      environment?.source === "host" ? undefined : environment?.source;
+    const projectPath =
+      environment && toolSource
+        ? withoutShims(
+            Object.entries(environment.env).find(
+              ([key]) => key.toUpperCase() === "PATH",
+            )?.[1],
+          )
+        : undefined;
+    const inProject = projectPath
+      ? await this.findOnPath(PATH_LOOKUP_NAME, projectPath)
+      : undefined;
+    const onHost = await this.findOnPath(PATH_LOOKUP_NAME);
+    if (inProject && toolSource && inProject !== onHost) {
+      return this.probe(inProject, toolSource, environment);
+    }
+    const onPath = inProject ?? onHost;
     if (!onPath) {
       return {
         kind: "notFound",
@@ -232,15 +290,16 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
       };
     }
 
-    return this.probe(onPath, "path");
+    return this.probe(onPath, "path", environment);
   }
 
   private async probe(
     executablePath: string,
     source: FusionExecutableSource,
+    environment: ResolverEnvironment | undefined,
   ): Promise<FusionExecutable | FusionVersionVerdict> {
     const absolutePath = path.resolve(executablePath);
-    const env = readEnvironment();
+    const env = environment ? { ...environment.env } : readEnvironment();
     let stdout = "";
     let stderr = "";
     let runError: string | undefined;

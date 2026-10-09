@@ -473,20 +473,39 @@ describe("FusionClientPool", () => {
       version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
       env: {},
     });
-    resolver.resolve
-      .mockResolvedValueOnce(executable("/opt/dbt-old"))
-      .mockResolvedValueOnce(executable("/opt/dbt-new"));
+    resolver.resolve.mockResolvedValue(executable("/opt/dbt-old"));
     const project = makeProject("general", "/workspace/general");
     const {
       clients: [firstClient],
     } = await startPool(project);
 
+    resolver.resolve.mockResolvedValue(executable("/opt/dbt-new"));
     changeSetting(DBT_PATH_SETTING, project.root, "/opt/dbt-new");
     await flushAsync();
 
-    expect(resolver.resolve).toHaveBeenCalledTimes(2);
     expect(firstClient.dispose).toHaveBeenCalled();
     expect(lastCreate()?.executable.path).toBe("/opt/dbt-new");
+  });
+
+  it("replaces the client when a settings change re-resolves a different dbt for a path-source project", async () => {
+    const executable = (dbt: string) => ({
+      path: dbt,
+      version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
+      env: {},
+    });
+    settings.target = "dev";
+    resolver.resolve.mockResolvedValue(executable("/mise/1/bin/dbt"));
+    const project = makeProject("general", "/workspace/general");
+    const {
+      clients: [firstClient],
+    } = await startPool(project);
+
+    resolver.resolve.mockResolvedValue(executable("/mise/2/bin/dbt"));
+    changeSetting("target", project.root, " dev ");
+    await flushAsync();
+
+    expectRestarted(firstClient, 2);
+    expect(lastCreate()?.executable.path).toBe("/mise/2/bin/dbt");
   });
 
   it("replaces the affected project when traceServer changes", async () => {
@@ -599,6 +618,36 @@ describe("FusionClientPool", () => {
     expect(generalClient.dispose).not.toHaveBeenCalled();
     expectRestarted(soxClient, 3);
     expect(lastCreate()?.project).toBe(sox);
+  });
+
+  it("resolves the executable on the project's environment and again after it changes", async () => {
+    const sox = makeProject("sox", "/workspace/sox");
+    const miseEnvironment = {
+      env: { PATH: "/mise/shims" },
+      source: "mise",
+      result: { kind: "none" },
+    } as const;
+    const direnvEnvironment = {
+      env: { PATH: "/direnv/bin" },
+      source: "direnv",
+      result: { kind: "none" },
+    } as const;
+    environments.ensure.mockResolvedValue(miseEnvironment as any);
+    await startPool(sox);
+    expect(resolver.resolve).toHaveBeenLastCalledWith(
+      sox.root,
+      miseEnvironment,
+    );
+
+    environments.ensure.mockResolvedValue(direnvEnvironment as any);
+    environments.changed.fire(sox);
+    await flushAsync();
+
+    expect(resolver.resolve).toHaveBeenCalledTimes(2);
+    expect(resolver.resolve).toHaveBeenLastCalledWith(
+      sox.root,
+      direnvEnvironment,
+    );
   });
 
   it("does not restart a project the settings change does not affect", async () => {

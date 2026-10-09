@@ -100,6 +100,19 @@ interface ProjectsGraph {
   parseDemand: ParseDemand;
 }
 
+function createExecutableResolver(
+  terminal: Log,
+  store: ExtensionContextStore,
+): ConfiguredFusionExecutableResolver {
+  return new ConfiguredFusionExecutableResolver({
+    logWarning: (message) => terminal.warn("FusionVersion", message),
+    getGlobalState: () => ({
+      get: (key) => store.getFromGlobalState(key),
+      update: (key, value) => store.setToGlobalState(key, value),
+    }),
+  });
+}
+
 function composeProjects(context: ExtensionContext): ProjectsGraph {
   const extensionContextStore = new ExtensionContextStore(context);
   const outputChannels = new OutputChannels(context.extension.id);
@@ -107,14 +120,10 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
   const terminal: Log = outputChannels;
   const sharedState = new SharedStateService();
   const runHistoryService = new RunHistoryService();
-  const fusionExecutableResolver = new ConfiguredFusionExecutableResolver({
-    logWarning: (message) => terminal.warn("FusionVersion", message),
-    getGlobalState: () => ({
-      get: (key) => extensionContextStore.getFromGlobalState(key),
-      update: (key, value) =>
-        extensionContextStore.setToGlobalState(key, value),
-    }),
-  });
+  const fusionExecutableResolver = createExecutableResolver(
+    terminal,
+    extensionContextStore,
+  );
   const clients: { pool?: FusionClientPool } = {};
   const projectEnvironments = new ProjectEnvironments(
     outputChannels.projectLog.bind(outputChannels),
@@ -128,6 +137,7 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
       sharedState,
       runHistoryService,
       resolver: fusionExecutableResolver,
+      environment: () => projectEnvironments.ensure(declared),
       cliFactory: (executable) => {
         const source = projectEnvironments.snapshotSource(
           declared,
