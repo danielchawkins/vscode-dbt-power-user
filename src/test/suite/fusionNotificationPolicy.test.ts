@@ -21,6 +21,7 @@ import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { StartupGate } from "../../startupGate";
 import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";
+import { fakeProjectEnvironments } from "../projectHarness";
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace/general"),
@@ -139,6 +140,7 @@ describe("fusionNotificationPolicy", () => {
       factory,
       {
         readSnapshot: readProjectSnapshot,
+        environments: fakeProjectEnvironments(),
         outputChannel: () => createMockLogOutputChannel("project"),
       },
     );

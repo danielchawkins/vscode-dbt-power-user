@@ -28,14 +28,20 @@ export const PROJECT_SNAPSHOT_SETTINGS: readonly SettingKey[] = [
   "test.additionalParams",
 ];
 
-/** Reads every input of one Declared Project's snapshot, each once, and resolves it. */
-export function readProjectSnapshot(root: Uri): ProjectSnapshot {
+/**
+ * Reads every input of one Declared Project's snapshot, each once, and resolves it. `environment` is what the
+ * project's dbt processes inherit; it defaults to the extension host's.
+ */
+export function readProjectSnapshot(
+  root: Uri,
+  environment: Readonly<Record<string, string>> = readEnvironment(),
+): ProjectSnapshot {
   return resolveProjectSnapshot({
     root: root.fsPath,
     folder: workspace.getWorkspaceFolder(root)?.uri.fsPath,
     firstWorkspaceFolder: workspace.workspaceFolders?.[0]?.uri.fsPath,
     userHome: os.homedir(),
-    environment: readEnvironment(),
+    environment,
     lspCompiledOutputOverride: readEnvironmentOverride("lspCompiledOutput"),
     settings: {
       dbtPath: readSetting("dbtPath", root),

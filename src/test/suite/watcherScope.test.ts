@@ -17,6 +17,7 @@ describe("project watcher scope", () => {
     expect(callers).toEqual([
       "fusion/fusionDiagnostics.ts",
       "projects/manifest.ts",
+      "projects/projectEnvironments.ts",
       "projects/projectRegistry.ts",
     ]);
   });

@@ -1,15 +1,99 @@
 import fc from "fast-check";
+import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import { describe, expect, it } from "vitest";
-import { resolveProfilesDir } from "../../core/project/dbtEnvironment";
+import {
+  projectDirVariable,
+  resolveProfilesDir,
+} from "../../core/project/dbtEnvironment";
 import { NUM_RUNS } from "../arbitraries";
 
 const root = path.join("/", "ws", "proj");
 const home = path.join("/", "home", "me");
 const never = () => false;
+const identity = (value: string) => value;
 
 const dir = fc.stringMatching(/^\/[a-z]{1,6}(\/[a-z]{1,6}){0,2}$/);
 const maybeBlank = fc.option(fc.constantFrom("", "  "), { nil: undefined });
+
+describe("projectDirVariable", () => {
+  it("is undefined when neither variable is set or both are blank", () => {
+    expect(projectDirVariable({}, root, identity)).toBeUndefined();
+    expect(
+      projectDirVariable({ DBT_PROJECT_DIR: " " }, root, identity),
+    ).toBeUndefined();
+  });
+
+  it("is undefined when the variable names the root", () => {
+    expect(
+      projectDirVariable({ DBT_PROJECT_DIR: root }, root, identity),
+    ).toBeUndefined();
+    expect(
+      projectDirVariable({ DBT_ENGINE_PROJECT_DIR: "." }, root, identity),
+    ).toBeUndefined();
+  });
+
+  it("names the variable and value when the directory differs", () => {
+    expect(
+      projectDirVariable({ DBT_PROJECT_DIR: "/elsewhere" }, root, identity),
+    ).toEqual({ name: "DBT_PROJECT_DIR", value: "/elsewhere" });
+  });
+
+  it("lets DBT_ENGINE_PROJECT_DIR decide when both are set", () => {
+    const env = {
+      DBT_ENGINE_PROJECT_DIR: root,
+      DBT_PROJECT_DIR: "/elsewhere",
+    };
+    expect(projectDirVariable(env, root, identity)).toBeUndefined();
+    expect(
+      projectDirVariable(
+        { ...env, DBT_ENGINE_PROJECT_DIR: "/other" },
+        root,
+        identity,
+      ),
+    ).toEqual({ name: "DBT_ENGINE_PROJECT_DIR", value: "/other" });
+  });
+
+  it("compares canonical paths, so a symlink to the root is not a difference", () => {
+    const base = fs.realpathSync(
+      fs.mkdtempSync(path.join(os.tmpdir(), "fpu-")),
+    );
+    try {
+      const real = path.join(base, "real");
+      const link = path.join(base, "link");
+      fs.mkdirSync(real);
+      fs.symlinkSync(real, link);
+
+      expect(
+        projectDirVariable({ DBT_PROJECT_DIR: link }, real),
+      ).toBeUndefined();
+      expect(
+        projectDirVariable({ DBT_PROJECT_DIR: real }, link),
+      ).toBeUndefined();
+      expect(projectDirVariable({ DBT_PROJECT_DIR: base }, real)).toEqual({
+        name: "DBT_PROJECT_DIR",
+        value: base,
+      });
+    } finally {
+      fs.rmSync(base, { recursive: true, force: true });
+    }
+  });
+
+  it("reports a variable exactly when the directory differs from the root", () => {
+    fc.assert(
+      fc.property(dir, dir, (value, projectRoot) => {
+        const found = projectDirVariable(
+          { DBT_PROJECT_DIR: value },
+          projectRoot,
+          identity,
+        );
+        expect(found !== undefined).toBe(value !== projectRoot);
+      }),
+      { numRuns: NUM_RUNS },
+    );
+  });
+});
 
 describe("resolveProfilesDir", () => {
   const exists = (file: string) => file === path.join(root, "profiles.yml");

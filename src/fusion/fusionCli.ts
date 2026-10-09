@@ -130,6 +130,9 @@ export class FusionCli {
     private readonly snapshot: () => ProjectSnapshot,
     private readonly processes: CommandProcessExecutionFactory,
     private readonly terminal: Log,
+    /** Settles once the project's environment is resolved; every command awaits it before launching. */
+    private readonly environmentReady: () => Promise<unknown> = async () =>
+      undefined,
   ) {}
 
   /**
@@ -140,6 +143,7 @@ export class FusionCli {
     command: CliCommand,
     options: FusionCliRunOptions = {},
   ): Promise<CommandProcessResult> {
+    await this.environmentReady();
     const snapshot = this.snapshot();
     if (DEFERRABLE_KINDS.includes(command.kind)) {
       this.warnUnusableDefer(snapshot);

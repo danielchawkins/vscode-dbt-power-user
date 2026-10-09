@@ -16,6 +16,7 @@ import { CurrentProject } from "./projects/currentProject";
 import { registerFusionClientDiagnostics } from "./projects/fusionClientDiagnostics";
 import { FusionClientPool } from "./projects/fusionClientPool";
 import { FusionStatus } from "./projects/fusionStatus";
+import { ProjectEnvironments } from "./projects/projectEnvironments";
 import { ProjectRegistry } from "./projects/projectRegistry";
 import { Projects } from "./projects/projects";
 import { RunHistoryService } from "./projects/runHistoryService";
@@ -53,6 +54,7 @@ export class DBTPowerUserExtension implements Disposable {
     /** Disposed after every other collaborator except `sharedState`. */
     private runHistoryService: RunHistoryService,
     private dbtTaskProvider: Disposable,
+    private projectEnvironments: ProjectEnvironments,
   ) {
     this.disposables.push(
       this.sharedState,
@@ -60,6 +62,7 @@ export class DBTPowerUserExtension implements Disposable {
       this.dbtTerminal,
       this.projects,
       this.dbtTaskProvider,
+      this.projectEnvironments,
       this.webviewViewProviders,
       this.treeviewProviders,
       this.contentProviders,

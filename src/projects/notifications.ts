@@ -40,10 +40,7 @@ export async function notifyError(
   if (!project) {
     return notifyErrorWithoutProject(message, error);
   }
-  const [root, name] =
-    "root" in project
-      ? [project.root, project.name]
-      : [project.projectRoot, project.getProjectName()];
+  const [root, name] = locate(project);
   const action = await window.showErrorMessage(
     `${name}: ${withCause(message, error)}`,
     SHOW_OUTPUT,
@@ -52,6 +49,26 @@ export async function notifyError(
     await commands.executeCommand(SHOW_OUTPUT_COMMAND, root);
   }
 }
+
+/** Shows a warning notification that names `project` and offers **Show output** for its channel. */
+export async function notifyWarning(
+  project: NotifiableProject,
+  message: string,
+): Promise<void> {
+  const [root, name] = locate(project);
+  const action = await window.showWarningMessage(
+    `${name}: ${message}`,
+    SHOW_OUTPUT,
+  );
+  if (action === SHOW_OUTPUT) {
+    await commands.executeCommand(SHOW_OUTPUT_COMMAND, root);
+  }
+}
+
+const locate = (project: NotifiableProject): [Uri, string] =>
+  "root" in project
+    ? [project.root, project.name]
+    : [project.projectRoot, project.getProjectName()];
 
 /** Shows an error notification for a failure before a project is resolved; **Show output** opens the extension log. */
 export async function notifyErrorWithoutProject(
