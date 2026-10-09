@@ -31,6 +31,8 @@ const HOST_WATCHDOG_MS = Number(process.env.FPU_SMOKE_WATCHDOG_MS ?? 240_000);
 // A Cursor-launched shell sets this for its own CLI; inherited, it makes the pinned
 // host run as a Node script against our launch args instead of opening a workbench.
 delete process.env.ELECTRON_RUN_AS_NODE;
+// The host inherits this environment; only --suites may select suites.
+delete process.env.FPU_SMOKE_SUITES;
 
 const args = Object.fromEntries(
   process.argv.slice(2).flatMap((arg, index, argv) => {
@@ -205,6 +207,7 @@ try {
       ...profilesEnv,
       FPU_SMOKE_HOST: host,
       FPU_CDP_PORT: cdpPort,
+      ...(args.suites ? { FPU_SMOKE_SUITES: args.suites } : {}),
       ...(process.env.FPU_RUNTIME_BENCHMARK
         ? { FPU_RUNTIME_BENCHMARK: process.env.FPU_RUNTIME_BENCHMARK }
         : {}),

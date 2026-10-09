@@ -92,12 +92,22 @@ echo "# host metadata ($host)"
 "$smoke_root/host-metadata.sh" "$host"
 echo
 
+# Comma-separated opt-in suites for a fixture; empty means the default set.
+suites_for() {
+  case "$1" in
+    *) ;;
+  esac
+}
+
 run_fixture() {
+  local suites
+  suites="$(suites_for "$1")"
   node "$smoke_root/run-smoke.mjs" \
     --host "$host" \
     --host-app "$executable" \
     --vsix "$vsix" \
-    --fixture "$1"
+    --fixture "$1" \
+    ${suites:+--suites "$suites"}
 }
 
 if [[ -n "$fixture" ]]; then
