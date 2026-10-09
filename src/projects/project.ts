@@ -12,7 +12,10 @@ import {
   createFusionCommands,
   type FusionCommands,
 } from "../fusion/fusionCommands";
-import { FusionExecutableResolver } from "../fusion/fusionExecutable";
+import {
+  FusionExecutableResolver,
+  ResolverEnvironment,
+} from "../fusion/fusionExecutable";
 import type { FusionClient } from "../fusion/fusionLanguageClient";
 import { FusionVersion } from "../fusion/fusionVersion";
 import { CommandQueue } from "./commandQueue";
@@ -58,6 +61,8 @@ export interface ProjectOptions {
   runHistoryService: RunHistoryService;
   resolver: FusionExecutableResolver;
   cliFactory: FusionCommandIntegrationFactory;
+  /** The project's resolved environment for executable lookup; the host's when absent. */
+  environment?: () => Promise<ResolverEnvironment>;
   parsers: ManifestParsers;
   projectRoot: Uri;
   /** The number of Declared Projects, which decides whether task names carry the project name. */
@@ -171,17 +176,7 @@ export class Project
       onProjectFileChanged: () => this.scheduler.projectFileChanged(),
       onSourceFileChanged: () => this.scheduler.sourceFileChanged(),
     });
-    this.lifecycle = new ExecutableLifecycle(
-      options.resolver,
-      options.cliFactory,
-      root,
-      this.terminal,
-      {
-        activate: (candidate, generation) =>
-          this.manifestRebuild.prepareCandidate(candidate, generation),
-        deactivate: () => this.trigger.stop(),
-      },
-    );
+    this.lifecycle = this.createLifecycle(options);
     this.manifestRebuild = new ManifestRebuild(
       this.lifecycle,
       options.parsers,
@@ -205,6 +200,21 @@ export class Project
     this.terminal.debug(
       LOG_SOURCE,
       `Created fusion dbt project ${this.getProjectName()} at ${this.projectRoot}`,
+    );
+  }
+
+  private createLifecycle(options: ProjectOptions): ExecutableLifecycle {
+    return new ExecutableLifecycle(
+      options.resolver,
+      options.cliFactory,
+      this.projectRoot.fsPath,
+      this.terminal,
+      {
+        environment: options.environment,
+        activate: (candidate, generation) =>
+          this.manifestRebuild.prepareCandidate(candidate, generation),
+        deactivate: () => this.trigger.stop(),
+      },
     );
   }
 

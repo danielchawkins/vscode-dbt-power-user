@@ -18,7 +18,7 @@ import {
   FusionClientOptions,
 } from "../fusion/fusionLanguageClient";
 import { onDidChangeSettings, SettingsChange } from "../settings";
-import type { ProjectEnvironments } from "./projectEnvironments";
+import { ProjectEnvironments, sameEnv } from "./projectEnvironments";
 import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 import { PROJECT_SNAPSHOT_SETTINGS } from "./readProjectSnapshot";
 
@@ -194,10 +194,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
       }
       const key = projectKey(project);
       const managed = this.clients.get(key);
-      if (
-        !managed ||
-        sameLspLaunch(managed.launch, toLspLaunch(this.snapshot(project)))
-      ) {
+      if (!managed || (await this.isCurrentLaunch(project, managed))) {
         continue;
       }
       await this.replaceClient(project, key);
@@ -210,6 +207,22 @@ export class FusionClientPoolImpl implements FusionClientPool {
     if (changed) {
       this._onDidChangeClients.fire();
     }
+  }
+
+  /** Whether the client's launch equals one built now, with the executable resolved afresh so a switched binary counts. */
+  private async isCurrentLaunch(
+    project: DeclaredProject,
+    managed: ManagedClient,
+  ): Promise<boolean> {
+    const environment = await this.environments.ensure(project);
+    const verdict = await this.resolver.resolve(project.root, environment);
+    return sameLspLaunch(
+      managed.launch,
+      toLspLaunch(
+        this.snapshot(project),
+        isFusionExecutable(verdict) ? verdict.path : undefined,
+      ),
+    );
   }
 
   private async handleEnvironmentChange(
@@ -314,17 +327,17 @@ export class FusionClientPoolImpl implements FusionClientPool {
       }
     }
 
-    await this.environments.ensure(project);
+    const environment = await this.environments.ensure(project);
     if (this.disposed || this.findDesiredProject(key) !== project) {
       return;
     }
-    const verdict = await this.resolver.resolve(project.root);
+    const verdict = await this.resolver.resolve(project.root, environment);
     if (this.disposed || this.findDesiredProject(key) !== project) {
       return;
     }
 
-    const launch = toLspLaunch(this.snapshot(project));
     const executable = isFusionExecutable(verdict) ? verdict : undefined;
+    const launch = toLspLaunch(this.snapshot(project), executable?.path);
     const env = executable ? this.resolveEnv(project) : {};
     const client = isFusionExecutable(verdict)
       ? this.factory.create({
@@ -363,16 +376,6 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
 function projectKey(project: DeclaredProject): string {
   return project.root.fsPath;
-}
-
-function sameEnv(
-  a: Record<string, string>,
-  b: Record<string, string>,
-): boolean {
-  const keys = Object.keys(a);
-  return (
-    keys.length === Object.keys(b).length && keys.every((k) => a[k] === b[k])
-  );
 }
 
 /** Fires when the project's client is replaced or changes state. */

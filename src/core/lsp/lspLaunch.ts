@@ -11,6 +11,8 @@ export const DBT_LSP_USE_TARGET_LSP = "DBT_LSP_USE_TARGET_LSP";
 /** Everything a project's `dbt lsp` process is started with; equal launches need no restart. */
 export interface LspLaunch {
   executable: ProjectExecutable;
+  /** The absolute path the executable resolved to, so a switched binary (mise, direnv) restarts the client. */
+  resolvedPath?: string | undefined;
   /** The snapshot root; the client resolves its realpath at spawn. */
   projectDir: string;
   target: string | undefined;
@@ -38,12 +40,16 @@ function logLevelFor(level: TraceServerLevel): LspLaunch["logLevel"] {
   return level === "verbose" ? "trace" : undefined;
 }
 
-export function toLspLaunch(snapshot: ProjectSnapshot): LspLaunch {
+export function toLspLaunch(
+  snapshot: ProjectSnapshot,
+  resolvedPath?: string,
+): LspLaunch {
   const { invocation } = snapshot;
   const { [DBT_LSP_USE_TARGET_LSP]: _inherited, ...environment } =
     invocation.environment;
   return {
     executable: invocation.executable,
+    resolvedPath,
     projectDir: snapshot.root,
     target: invocation.target,
     profile: invocation.profile,
@@ -81,11 +87,15 @@ export function toLspArgs(launch: LspLaunch, run: LspRun): string[] {
   ];
 }
 
-function sameExecutable(a: ProjectExecutable, b: ProjectExecutable): boolean {
-  if (a.source === "path" || b.source === "path") {
-    return a.source === b.source;
-  }
-  return a.source === b.source && a.path === b.path;
+/** Compares the resolved path for every source, `path` included: mise or direnv can switch the binary. */
+function sameExecutable(a: LspLaunch, b: LspLaunch): boolean {
+  const configuredPath = (e: ProjectExecutable) =>
+    e.source === "path" ? undefined : e.path;
+  return (
+    a.executable.source === b.executable.source &&
+    configuredPath(a.executable) === configuredPath(b.executable) &&
+    a.resolvedPath === b.resolvedPath
+  );
 }
 
 function sameEnvironment(
@@ -101,7 +111,7 @@ function sameEnvironment(
 
 export function sameLspLaunch(a: LspLaunch, b: LspLaunch): boolean {
   return (
-    sameExecutable(a.executable, b.executable) &&
+    sameExecutable(a, b) &&
     a.projectDir === b.projectDir &&
     a.target === b.target &&
     a.profile === b.profile &&

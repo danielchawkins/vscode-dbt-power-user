@@ -1,7 +1,12 @@
 import { readFileSync } from "fs";
 import path from "path";
 import { describe, expect, it } from "vitest";
-import { LspLaunch, toLspArgs, toLspLaunch } from "../../core/lsp";
+import {
+  LspLaunch,
+  sameLspLaunch,
+  toLspArgs,
+  toLspLaunch,
+} from "../../core/lsp";
 import {
   ProjectSnapshotInputs,
   ProjectSnapshotSettings,
@@ -193,5 +198,30 @@ describe("toLspLaunch", () => {
         "fusionPowerUser.lsp.compiledOutput",
       ]),
     );
+  });
+});
+
+describe("sameLspLaunch", () => {
+  it.each([
+    [{ source: "path" } as const],
+    [{ source: "configured", path: "/opt/dbt" } as const],
+  ])(
+    "restarts when only the resolved path differs for source %o",
+    (executable) => {
+      const a = launch({ executable, resolvedPath: "/mise/1/bin/dbt" });
+      const b = launch({ executable, resolvedPath: "/mise/2/bin/dbt" });
+      expect(sameLspLaunch(a, b)).toBe(false);
+      expect(sameLspLaunch(a, { ...a })).toBe(true);
+    },
+  );
+
+  it("treats a path source and a configured source at the same resolved path as different", () => {
+    const resolvedPath = "/opt/dbt";
+    const a = launch({ executable: { source: "path" }, resolvedPath });
+    const b = launch({
+      executable: { source: "configured", path: resolvedPath },
+      resolvedPath,
+    });
+    expect(sameLspLaunch(a, b)).toBe(false);
   });
 });
