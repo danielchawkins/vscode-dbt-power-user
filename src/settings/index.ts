@@ -21,6 +21,7 @@ export interface SettingsSchema {
   profilesDir: string | undefined;
   target: string | undefined;
   profile: string | undefined;
+  toolEnvironment: string;
   "lsp.compiledOutput": string;
   "lint.enabled": boolean;
   "trace.server": string;
@@ -49,6 +50,7 @@ export const SETTING_SCOPES = {
   profilesDir: "resource",
   target: "resource",
   profile: "resource",
+  toolEnvironment: "resource",
   "lsp.compiledOutput": "resource",
   "lint.enabled": "resource",
   "trace.server": "resource",

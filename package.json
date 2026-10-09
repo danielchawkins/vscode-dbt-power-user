@@ -146,6 +146,16 @@
             "scope": "resource",
             "description": "Profiles directory passed to Fusion when this Declared Project's language server starts. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. Relative paths resolve against the containing workspace folder."
           },
+          "fusionPowerUser.toolEnvironment": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "off"
+            ],
+            "default": "auto",
+            "scope": "resource",
+            "description": "Reads the project's mise or direnv environment, read-only, and applies it to dbt processes. It never trusts, installs or allows anything: run mise trust or direnv allow yourself."
+          },
           "fusionPowerUser.target": {
             "type": "string",
             "scope": "resource",
