@@ -531,8 +531,8 @@ describe("Fusion executable resolver", () => {
 
   describe("project environment", () => {
     const hostDbt = "/usr/local/bin/dbt";
-    const toolDbt = "/tool/shims/dbt";
-    const toolEnv = { PATH: "/tool/shims", HOME: "/home/dev" };
+    const toolDbt = "/tool/bin/dbt";
+    const toolEnv = { PATH: "/tool/bin", HOME: "/home/dev" };
 
     function shadowedResolver(
       overrides: Parameters<typeof createResolver>[0] = {},
@@ -569,12 +569,12 @@ describe("Fusion executable resolver", () => {
       const { resolver, findOnPath } = shadowedResolver();
 
       const result = await resolver.resolve(scope, {
-        env: { Path: "/tool/shims" },
+        env: { Path: "/tool/bin" },
         source: "mise",
       });
       assertFusionExecutable(result);
       expect(result.path).toBe(path.resolve(toolDbt));
-      expect(findOnPath).toHaveBeenCalledWith("dbt", "/tool/shims");
+      expect(findOnPath).toHaveBeenCalledWith("dbt", "/tool/bin");
 
       findOnPath.mockClear();
       await resolver.resolve(scope, { env: { HOME: "/h" }, source: "mise" });
@@ -631,6 +631,31 @@ describe("Fusion executable resolver", () => {
       });
 
       expect(result).toMatchObject({ path: path.resolve(hostDbt) });
+    });
+
+    it("ignores mise shims on the project PATH, which only work where a version is set", async () => {
+      const shimPath = ["/tool/shims", "/tool/bin", "/other/shims/"].join(
+        path.delimiter,
+      );
+      const { resolver, findOnPath } = shadowedResolver();
+
+      await resolver.resolve(scope, {
+        env: { PATH: shimPath },
+        source: "mise",
+      });
+      expect(findOnPath).toHaveBeenCalledWith("dbt", "/tool/bin");
+
+      findOnPath.mockClear();
+      const result = await resolver.resolve(scope, {
+        env: { PATH: "/tool/shims" },
+        source: "mise",
+      });
+      expect(findOnPath).toHaveBeenCalledTimes(1);
+      expect(findOnPath).toHaveBeenCalledWith("dbt");
+      expect(result).toMatchObject({
+        path: path.resolve(hostDbt),
+        source: "path",
+      });
     });
 
     it("lets fusionPowerUser.dbtPath win over the project PATH", async () => {

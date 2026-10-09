@@ -116,6 +116,17 @@ async function defaultIsExecutable(filePath: string): Promise<boolean> {
   }
 }
 
+/**
+ * A mise shim chooses its version from the directory it runs in, so one found here can pass `--version` where
+ * the extension host runs and still fail in the project. Only real binaries count.
+ */
+function withoutShims(pathValue: string | undefined): string | undefined {
+  return pathValue
+    ?.split(path.delimiter)
+    .filter((entry) => path.basename(entry.replace(/[\\/]+$/, "")) !== "shims")
+    .join(path.delimiter);
+}
+
 async function defaultFindOnPath(
   name: string,
   pathValue?: string,
@@ -257,9 +268,11 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
       environment?.source === "host" ? undefined : environment?.source;
     const projectPath =
       environment && toolSource
-        ? Object.entries(environment.env).find(
-            ([key]) => key.toUpperCase() === "PATH",
-          )?.[1]
+        ? withoutShims(
+            Object.entries(environment.env).find(
+              ([key]) => key.toUpperCase() === "PATH",
+            )?.[1],
+          )
         : undefined;
     const inProject = projectPath
       ? await this.findOnPath(PATH_LOOKUP_NAME, projectPath)
