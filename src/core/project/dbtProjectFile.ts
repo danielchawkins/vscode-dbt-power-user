@@ -1,8 +1,13 @@
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import * as path from "path";
 import { parse } from "yaml";
 
 export const DBT_PROJECT_FILE = "dbt_project.yml";
+const DBT_PROJECT_FILE_YAML = "dbt_project.yaml";
+/** Accepted project-file names, in order of preference. */
+const DBT_PROJECT_FILES = [DBT_PROJECT_FILE, DBT_PROJECT_FILE_YAML] as const;
+/** Glob matching either project-file name. */
+export const DBT_PROJECT_FILE_GLOB = "dbt_project.{yml,yaml}";
 
 /** The top-level mapping of a parsed `dbt_project.yml`; values are unvalidated. */
 export type DbtProjectConfig = Readonly<Record<string, unknown>>;
@@ -14,8 +19,31 @@ export type DbtProjectFile =
   | { kind: "unreadable"; message: string; config: DbtProjectConfig }
   | { kind: "missing"; config: DbtProjectConfig };
 
-export function dbtProjectFilePath(root: string): string {
-  return path.join(root, DBT_PROJECT_FILE);
+/**
+ * `<root>/dbt_project.yml`, or `<root>/dbt_project.yaml` when only that exists.
+ * Falls back to the `.yml` path when neither exists.
+ */
+export function dbtProjectFilePath(
+  root: string,
+  exists: (p: string) => boolean = existsSync,
+): string {
+  const found = DBT_PROJECT_FILES.map((name) => path.join(root, name)).find(
+    (candidate) => exists(candidate),
+  );
+  return found ?? path.join(root, DBT_PROJECT_FILE);
+}
+
+/** Whether `fsPath` is either project-file name under `root`, whichever exists. */
+export function isDbtProjectFilePath(root: string, fsPath: string): boolean {
+  return DBT_PROJECT_FILES.some((name) => fsPath === path.join(root, name));
+}
+
+/** Whether `root` holds a project file of either name. */
+export function hasDbtProjectFile(
+  root: string,
+  exists: (p: string) => boolean = existsSync,
+): boolean {
+  return DBT_PROJECT_FILES.some((name) => exists(path.join(root, name)));
 }
 
 /** Parses project-file text; never throws. */
@@ -41,7 +69,7 @@ export function parseDbtProjectYaml(text: string): DbtProjectFile {
   }
 }
 
-/** Reads and parses `<root>/dbt_project.yml`; never throws. */
+/** Reads and parses the project file under `root`; never throws. */
 export function readDbtProjectFile(root: string): DbtProjectFile {
   let text: string;
   try {

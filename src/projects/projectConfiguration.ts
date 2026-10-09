@@ -1,7 +1,6 @@
-import { existsSync } from "fs";
 import * as path from "path";
 import { Uri, WorkspaceFolder } from "vscode";
-import { DBT_PROJECT_FILE } from "../core/project";
+import { hasDbtProjectFile } from "../core/project";
 import { readSetting } from "../settings";
 
 export const PROJECTS_SETTING = "projects";
@@ -83,5 +82,5 @@ export function resolveDeclaredProjectRoots(
 }
 
 function hasProjectFile(root: string): boolean {
-  return existsSync(path.join(root, DBT_PROJECT_FILE));
+  return hasDbtProjectFile(root);
 }

@@ -2,7 +2,13 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import { afterEach, describe, expect, it } from "vitest";
-import { parseDbtProjectYaml, readDbtProjectFile } from "../../core/project";
+import {
+  dbtProjectFilePath,
+  hasDbtProjectFile,
+  isDbtProjectFilePath,
+  parseDbtProjectYaml,
+  readDbtProjectFile,
+} from "../../core/project";
 
 describe("readDbtProjectFile", () => {
   const dirs: string[] = [];
@@ -27,6 +33,29 @@ describe("readDbtProjectFile", () => {
       text: "name: p\nprofile: q\n",
       config: { name: "p", profile: "q" },
     });
+  });
+
+  it("reads dbt_project.yaml when it is the only project file", () => {
+    const root = project();
+    fs.writeFileSync(path.join(root, "dbt_project.yaml"), "name: y\n");
+    expect(readDbtProjectFile(root)).toMatchObject({
+      kind: "parsed",
+      config: { name: "y" },
+    });
+    expect(dbtProjectFilePath(root)).toBe(path.join(root, "dbt_project.yaml"));
+    expect(hasDbtProjectFile(root)).toBe(true);
+  });
+
+  it("prefers dbt_project.yml over .yaml", () => {
+    const root = project("name: yml\n");
+    fs.writeFileSync(path.join(root, "dbt_project.yaml"), "name: yaml\n");
+    expect(readDbtProjectFile(root)).toMatchObject({ config: { name: "yml" } });
+  });
+
+  it("defaults to the .yml path when neither exists", () => {
+    const root = project();
+    expect(dbtProjectFilePath(root)).toBe(path.join(root, "dbt_project.yml"));
+    expect(hasDbtProjectFile(root)).toBe(false);
   });
 
   it("reports a missing file", () => {
@@ -59,5 +88,20 @@ describe("readDbtProjectFile", () => {
 
   it("treats a non-mapping document as empty config", () => {
     expect(parseDbtProjectYaml("- a\n- b\n").config).toEqual({});
+  });
+});
+
+describe("isDbtProjectFilePath", () => {
+  it("matches both names regardless of which file exists", () => {
+    const root = path.join(os.tmpdir(), "no-such-root");
+    expect(isDbtProjectFilePath(root, path.join(root, "dbt_project.yml"))).toBe(
+      true,
+    );
+    expect(
+      isDbtProjectFilePath(root, path.join(root, "dbt_project.yaml")),
+    ).toBe(true);
+    expect(isDbtProjectFilePath(root, path.join(root, "other.yml"))).toBe(
+      false,
+    );
   });
 });

@@ -341,7 +341,7 @@ describe("configuration errors", () => {
 
     expect(log.warn).toHaveBeenCalledWith(
       "projectRegistry",
-      `Declared Project entry typo has no dbt_project.yml at ${path.join(root, "typo")}`,
+      `Declared Project entry typo has no dbt_project.yml or dbt_project.yaml at ${path.join(root, "typo")}`,
     );
     registry.dispose();
   });

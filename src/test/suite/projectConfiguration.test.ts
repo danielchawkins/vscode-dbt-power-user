@@ -1,3 +1,5 @@
+import * as fs from "fs";
+import * as os from "os";
 import * as path from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
@@ -82,6 +84,21 @@ describe("resolveDeclaredProjectRoots", () => {
 
     expect(result.roots).toEqual([folder.uri]);
     expect(result).toMatchObject({ source: "folderRoot", problems: [] });
+  });
+
+  it("accepts an explicit root holding dbt_project.yaml", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "fpu-yaml-"));
+    try {
+      fs.writeFileSync(path.join(root, "dbt_project.yaml"), "name: p\n");
+      mockProjects([root]);
+
+      const result = resolveDeclaredProjectRoots(fixtureFolder("multi-root"));
+
+      expect(rootPaths(result)).toEqual([root]);
+      expect(result.problems).toEqual([]);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("reports a missing explicit root", () => {

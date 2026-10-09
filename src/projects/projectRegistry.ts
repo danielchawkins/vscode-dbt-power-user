@@ -12,7 +12,7 @@ import {
 } from "vscode";
 import type { Log } from "../core/log";
 import {
-  DBT_PROJECT_FILE,
+  DBT_PROJECT_FILE_GLOB,
   declaredProjectName,
   readDbtProjectFile,
 } from "../core/project";
@@ -89,7 +89,7 @@ export class ProjectRegistry implements Disposable {
         resolved.problems.forEach((problem) => {
           const message =
             problem.reason === "missingProjectFile"
-              ? `Declared Project entry ${problem.entry} has no ${DBT_PROJECT_FILE} at ${problem.root}`
+              ? `Declared Project entry ${problem.entry} has no dbt_project.yml or dbt_project.yaml at ${problem.root}`
               : `Invalid Declared Project entry: ${problem.entry}`;
           this.terminal.warn("projectRegistry", message);
         });
@@ -155,7 +155,7 @@ export class ProjectRegistry implements Disposable {
       let watcher = this.watchers.get(d.realpathKey);
       if (!watcher) {
         watcher = workspace.createFileSystemWatcher(
-          new RelativePattern(d.root, DBT_PROJECT_FILE),
+          new RelativePattern(d.root, DBT_PROJECT_FILE_GLOB),
         );
         watcher.onDidCreate(() => this.reconcile());
         watcher.onDidChange(() => this.reconcile());

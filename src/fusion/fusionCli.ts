@@ -19,7 +19,7 @@ import { DBTCommand, QueryExecution } from "../core/dbtCommand";
 import { DBTDiagnosticData, DBTDiagnosticResult } from "../core/diagnostics";
 import type { Log } from "../core/log";
 import {
-  DBT_PROJECT_FILE,
+  dbtProjectFilePath,
   deferSettingsKey,
   ProjectSnapshot,
 } from "../core/project";
@@ -259,7 +259,7 @@ export class FusionCli {
     const controller = new AbortController();
     this.rebuildAbort = controller;
     const root = this.snapshot().root;
-    const filePath = path.join(root, DBT_PROJECT_FILE);
+    const filePath = dbtProjectFilePath(root);
     try {
       const { stdout, stderr, exitCode } = await this.run(
         { kind: "parse" },

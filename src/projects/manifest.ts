@@ -31,7 +31,7 @@ import type {
   ManifestResources,
   SemanticModelResource,
 } from "../core/manifest/types";
-import { DBT_PROJECT_FILE, dbtProjectFilePath } from "../core/project";
+import { DBT_PROJECT_FILE, isDbtProjectFilePath } from "../core/project";
 import { MANIFEST_FILE, ParsedManifest } from "../dbt_integration/domain";
 
 /** Delay between the last watched file event and the rebuild it triggers. */
@@ -340,7 +340,7 @@ export class ManifestTrigger implements Disposable {
 
   private handle(fsPath: string): void {
     if (
-      fsPath === dbtProjectFilePath(this.projectRoot) ||
+      isDbtProjectFilePath(this.projectRoot, fsPath) ||
       PROJECT_LEVEL_FILES.some(
         (name) => fsPath === join(this.projectRoot, name),
       )

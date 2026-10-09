@@ -11,7 +11,6 @@ import {
   vi,
 } from "vitest";
 import { RelativePattern, Uri, workspace, WorkspaceFolder } from "vscode";
-import { DBT_PROJECT_FILE } from "../../core/project";
 import {
   ENABLED_SETTING,
   PROJECTS_SETTING,
@@ -520,8 +519,11 @@ describe("ProjectRegistry", () => {
         pattern,
       ]),
     ).toEqual([
-      [path.join(general.uri.fsPath, "projects/general"), DBT_PROJECT_FILE],
-      [path.join(general.uri.fsPath, "projects/sox"), DBT_PROJECT_FILE],
+      [
+        path.join(general.uri.fsPath, "projects/general"),
+        "dbt_project.{yml,yaml}",
+      ],
+      [path.join(general.uri.fsPath, "projects/sox"), "dbt_project.{yml,yaml}"],
     ]);
   });
 
