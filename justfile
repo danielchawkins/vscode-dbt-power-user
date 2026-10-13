@@ -79,8 +79,24 @@ build-dev:
 
 [group("development")]
 watch:
+    #!/usr/bin/env bash
+    set -euo pipefail
     just build-contract
-    npm exec --no -- concurrently --names contract,webview,extension "npm run watch:contract" "npm run watch:app --workspace webview_panels" "npm run watch:extension:app"
+    trap 'trap - EXIT; kill 0' EXIT INT TERM HUP
+    npm run watch:contract &
+    npm run watch:app --workspace webview_panels &
+    npm run watch:extension:app &
+    wait
+
+[group("development")]
+watch-extension:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    just build-contract
+    trap 'trap - EXIT; kill 0' EXIT INT TERM HUP
+    npm run watch:contract &
+    npm run watch:extension:app &
+    wait
 
 [group("development")]
 compile:

@@ -57,7 +57,7 @@ classDiagram
   - Component specific message can be listened within component/respective hook
 - Assets are stored here [./src/assets](./src/assets)
   - can be accessed via `index.tsx` in the same directory
-- `npm run dev` serves `index.html`; `?entry=<name>` selects the panel.
+- `just webviews::dev` serves `index.html`; `?entry=<name>` selects the panel.
 
 ## How to add new panel?
 
