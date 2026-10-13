@@ -21,7 +21,7 @@ import { ProjectRegistry } from "./projects/projectRegistry";
 import { Projects } from "./projects/projects";
 import { RunHistoryService } from "./projects/runHistoryService";
 import { SharedStateService } from "./projects/sharedStateService";
-import { readSetting } from "./settings";
+import { onDidChangeSettings, readSetting } from "./settings";
 import { StartupGate } from "./startupGate";
 
 const UPSTREAM_EXTENSION_ID = "innoverio.vscode-dbt-power-user";
@@ -141,6 +141,7 @@ export class DBTPowerUserExtension implements Disposable {
       if (this.disposed) {
         return;
       }
+      this.watchOpenedFiles();
       if (
         this.allFoldersDisabled() &&
         this.projectRegistry.projects.length === 0
@@ -166,6 +167,34 @@ export class DBTPowerUserExtension implements Disposable {
       folders.length > 0 &&
       folders.every((folder) => !readSetting("enabled", folder.uri))
     );
+  }
+
+  /** Declares projects from open files now, then again when the files, trust, settings or folders change. */
+  private watchOpenedFiles(): void {
+    const rescan = () =>
+      this.projectRegistry.declareFromDocuments(workspace.textDocuments);
+    rescan();
+    this.own(
+      workspace.onDidOpenTextDocument((document) =>
+        this.projectRegistry.declareFromDocuments([document]),
+      ),
+    );
+    this.own(
+      window.onDidChangeVisibleTextEditors((editors) =>
+        this.projectRegistry.declareFromDocuments(
+          editors.map((editor) => editor.document),
+        ),
+      ),
+    );
+    this.own(workspace.onDidGrantWorkspaceTrust(rescan));
+    this.own(
+      onDidChangeSettings(["enabled"], (change) => {
+        if (change.affects()) {
+          rescan();
+        }
+      }),
+    );
+    this.own(workspace.onDidChangeWorkspaceFolders(rescan));
   }
 
   /** Keeps everything but the registry idle until a folder is enabled and registers a project. */

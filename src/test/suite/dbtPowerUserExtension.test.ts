@@ -1,4 +1,21 @@
-import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
+import {
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  rmSync,
+  writeFileSync,
+} from "fs";
+import { tmpdir } from "os";
+import * as path from "path";
+import {
+  afterEach,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mock,
+  vi,
+} from "vitest";
 import { commands, extensions, Uri, window, workspace } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import {
@@ -7,12 +24,14 @@ import {
 } from "../../features/lineage/connectedColumnsCommand";
 import { ProjectConfigCommands } from "../../features/projectSetup/projectConfigCommands";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/fusionClientDiagnostics";
+import { ProjectRegistry } from "../../projects/projectRegistry";
 import { StartupGate } from "../../startupGate";
+import { createMockLogOutputChannel } from "../mock/vscode";
 
 const UPSTREAM_EXTENSION = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_ACTION = "Uninstall Power User";
 
-const activationHarness = (enabled: boolean) => {
+const activationHarness = (enabled: boolean, registry?: ProjectRegistry) => {
   /** The startup steps that ran, in order. */
   const started: string[] = [];
   /** What each awaited startup step does when it runs; tests replace these. */
@@ -32,7 +51,8 @@ const activationHarness = (enabled: boolean) => {
         return behavior.projects();
       },
     },
-    projectRegistry: {
+    projectRegistry: registry ?? {
+      declareFromDocuments: vi.fn(),
       projects: registryProjects,
       initialize: () => {
         started.push("registry");
@@ -368,6 +388,147 @@ describe("DBTPowerUserExtension.activate", () => {
       "projects",
       "statusBars",
     ]);
+    expect(harness.errors).toEqual([]);
+  });
+});
+
+describe("DBTPowerUserExtension opened-file call sites", () => {
+  let tmpDir: string;
+  let nestedDir: string;
+  let modelPath: string;
+  let folder: { uri: Uri; name: string; index: number };
+  let enabled: boolean;
+  let getWorkspaceFolder: Mock;
+
+  const flush = () => new Promise((resolve) => setImmediate(resolve));
+  const lastListener = (event: unknown) =>
+    (event as Mock).mock.calls.at(-1)?.[0] as () => void;
+  const configListeners = () =>
+    (workspace.onDidChangeConfiguration as Mock).mock.calls.map(
+      ([listener]) => listener as (event: unknown) => void,
+    );
+  const roots = (registry: ProjectRegistry) =>
+    registry.projects.map((project) => realpathSync(project.root.fsPath));
+  const modelIn = (scheme = "file") => ({
+    uri: Object.assign(Uri.file(modelPath), { scheme }),
+    languageId: "sql",
+  });
+
+  function setUp(enabledFolder: boolean) {
+    enabled = enabledFolder;
+    const registry = new ProjectRegistry(createMockLogOutputChannel());
+    const harness = activationHarness(enabled, registry);
+    (workspace as any).workspaceFolders = [folder];
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: (key: string, fallback: unknown) =>
+        key === "enabled" ? enabled : fallback,
+    });
+    const declare = vi.spyOn(registry, "declareFromDocuments");
+    return { harness, registry, declare };
+  }
+
+  beforeEach(() => {
+    tmpDir = mkdtempSync(path.join(tmpdir(), "fpu-opened-file-"));
+    nestedDir = path.join(tmpDir, "nested");
+    modelPath = path.join(nestedDir, "models", "model.sql");
+    mkdirSync(path.dirname(modelPath), { recursive: true });
+    writeFileSync(path.join(nestedDir, "dbt_project.yml"), "name: nested\n");
+    writeFileSync(modelPath, "select 1\n");
+    folder = { uri: Uri.file(tmpDir), name: "opened", index: 0 };
+    (workspace as any).isTrusted = true;
+    (workspace as any).textDocuments = [];
+    getWorkspaceFolder = vi
+      .spyOn(workspace, "getWorkspaceFolder")
+      .mockImplementation((uri: Uri) =>
+        (workspace.workspaceFolders ?? []).find((candidate) =>
+          uri.fsPath.startsWith(candidate.uri.fsPath + path.sep),
+        ),
+      ) as Mock;
+    (workspace.onDidChangeConfiguration as Mock).mockClear();
+    (workspace.onDidGrantWorkspaceTrust as Mock).mockClear();
+    (workspace.onDidChangeWorkspaceFolders as Mock).mockClear();
+  });
+
+  afterEach(() => {
+    getWorkspaceFolder.mockRestore();
+    (workspace as any).isTrusted = true;
+    (workspace as any).textDocuments = [];
+    rmSync(tmpDir, { recursive: true, force: true });
+  });
+
+  it("declares the root of a file already open at activation", async () => {
+    const { harness, registry, declare } = setUp(true);
+    (workspace as any).textDocuments = [modelIn()];
+
+    await harness.extension.activate();
+
+    expect(declare).toHaveBeenCalledWith([modelIn()]);
+    expect(roots(registry)).toEqual([realpathSync(nestedDir)]);
+    expect(harness.errors).toEqual([]);
+  });
+
+  it("declares the root once the workspace is trusted", async () => {
+    const { harness, registry } = setUp(true);
+    (workspace as any).isTrusted = false;
+    (workspace as any).textDocuments = [modelIn()];
+    await harness.extension.activate();
+    expect(roots(registry)).toEqual([]);
+
+    (workspace as any).isTrusted = true;
+    lastListener(workspace.onDidGrantWorkspaceTrust)();
+
+    expect(roots(registry)).toEqual([realpathSync(nestedDir)]);
+  });
+
+  it("declares the root when fusionPowerUser.enabled turns on", async () => {
+    const { harness, registry } = setUp(false);
+    (workspace as any).textDocuments = [modelIn()];
+    await harness.extension.activate();
+    expect(roots(registry)).toEqual([]);
+
+    enabled = true;
+    for (const listener of configListeners()) {
+      listener({ affectsConfiguration: () => true });
+    }
+    await flush();
+
+    expect(roots(registry)).toEqual([realpathSync(nestedDir)]);
+    expect(harness.started).toEqual([
+      "pool",
+      "status",
+      "projects",
+      "statusBars",
+    ]);
+    expect(harness.errors).toEqual([]);
+  });
+
+  it("declares the root when its folder joins the workspace", async () => {
+    const { harness, registry } = setUp(true);
+    (workspace as any).workspaceFolders = [];
+    (workspace as any).textDocuments = [modelIn()];
+    await harness.extension.activate();
+    expect(roots(registry)).toEqual([]);
+
+    (workspace as any).workspaceFolders = [folder];
+    lastListener(workspace.onDidChangeWorkspaceFolders)();
+
+    expect(roots(registry)).toEqual([realpathSync(nestedDir)]);
+  });
+
+  it("ignores documents whose scheme is not file, on activation and every rescan", async () => {
+    const { harness, registry } = setUp(true);
+    (workspace as any).textDocuments = [modelIn("untitled"), modelIn("git")];
+
+    await harness.extension.activate();
+    expect(roots(registry)).toEqual([]);
+
+    lastListener(workspace.onDidGrantWorkspaceTrust)();
+    for (const listener of configListeners()) {
+      listener({ affectsConfiguration: () => true });
+    }
+    lastListener(workspace.onDidChangeWorkspaceFolders)();
+
+    expect(roots(registry)).toEqual([]);
     expect(harness.errors).toEqual([]);
   });
 });

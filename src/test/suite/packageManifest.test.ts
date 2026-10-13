@@ -8,6 +8,7 @@ const manifest = JSON.parse(
   readFileSync(path.join(repositoryRoot, "package.json"), "utf8"),
 ) as {
   extensionDependencies?: string[];
+  activationEvents?: string[];
   contributes: {
     languages?: Array<{ id: string }>;
     snippets?: Array<{ language: string; path: string }>;
@@ -22,6 +23,13 @@ function contributedLanguageIds(): Set<string> {
 describe("package manifest contracts", () => {
   it("declares no external extension dependencies", () => {
     expect(manifest.extensionDependencies ?? []).toEqual([]);
+  });
+
+  it("activates for a dbt project at any depth in the workspace", () => {
+    expect(manifest.activationEvents).toEqual([
+      "workspaceContains:**/dbt_project.yml",
+      "workspaceContains:**/dbt_project.yaml",
+    ]);
   });
 
   it("registers snippets only for contributed languages with existing files", () => {
