@@ -10,11 +10,23 @@ export PATH := `mise bin-paths 2>/dev/null | tr '\n' ':' || true` + env("PATH")
 
 [group("development")]
 dev:
-    npm run dev
+    #!/usr/bin/env bash
+    set -euo pipefail
+    npm run build:contract
+    trap 'trap - EXIT; kill 0' EXIT INT TERM HUP
+    npm run watch --prefix ../packages/webview-contract &
+    npm run dev:app &
+    wait
 
 [group("development")]
 watch:
-    npm run watch
+    #!/usr/bin/env bash
+    set -euo pipefail
+    npm run build:contract
+    trap 'trap - EXIT; kill 0' EXIT INT TERM HUP
+    npm run watch --prefix ../packages/webview-contract &
+    npm run watch:app &
+    wait
 
 [group("development")]
 build:

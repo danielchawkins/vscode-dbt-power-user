@@ -2,7 +2,8 @@
 # never invoke mise. Fusion is pinned to the minimum version the product claims, so a
 # failing integration test is attributable to the extension rather than a Fusion upgrade.
 [tools]
-node = "24"
+# Cursor 3.23 runs Node 24.18.1. Both hosts must move before this cap is raised.
+node = "24.18"
 just = "latest"
 "github:terror/just-lsp" = "latest"
 lefthook = "latest"
