@@ -4,6 +4,7 @@ import * as fs from "fs";
 import * as os from "os";
 import * as path from "path";
 import * as vscode from "vscode";
+import { dbtInvocations, waitForDbtExits } from "./helpers/dbtSpy";
 import { checkFusionVersion } from "./helpers/testFixtures";
 import { waitForExtensionActivation } from "./helpers/workspaceHelper";
 
@@ -49,6 +50,16 @@ function readJson(filePath: string): Record<string, unknown> {
     string,
     unknown
   >;
+}
+
+/** The unique_ids a run_results.json reports, or none while the file is missing or only partly written. */
+function reportedModels(runResultsPath: string): string[] {
+  try {
+    const results = readJson(runResultsPath).results as { unique_id: string }[];
+    return results.map((result) => result.unique_id);
+  } catch {
+    return [];
+  }
 }
 
 suite("Artifact production (extension)", function () {
@@ -133,6 +144,7 @@ suite("Artifact production (extension)", function () {
       "child.sql",
     );
     fs.rmSync(compiledPath, { force: true });
+    const dbtMark = dbtInvocations().length;
 
     const document = await vscode.workspace.openTextDocument(
       vscode.Uri.file(childPath),
@@ -151,6 +163,13 @@ suite("Artifact production (extension)", function () {
       compiled.includes("base"),
       "compiled child.sql must resolve the ref to base",
     );
+    // compileCurrentModel does not await its dbt compile, and that compile also writes run_results.json. Wait for it
+    // to exit, or the build test would read the compile's file.
+    assert.deepStrictEqual(
+      await waitForDbtExits(dbtMark, COMMAND_ARTIFACT_TIMEOUT_MS),
+      [],
+      "dbt compile still running after target/compiled/ was written",
+    );
   });
 
   test("buildCurrentModel materializes the model and writes run_results.json", async function () {
@@ -160,6 +179,7 @@ suite("Artifact production (extension)", function () {
     const previousMtimeMs = fs.existsSync(runResultsPath)
       ? fs.statSync(runResultsPath).mtimeMs
       : 0;
+    const dbtMark = dbtInvocations().length;
 
     const document = await vscode.workspace.openTextDocument(
       vscode.Uri.file(basePath),
@@ -171,9 +191,15 @@ suite("Artifact production (extension)", function () {
     await waitUntil(
       () =>
         fs.existsSync(runResultsPath) &&
-        fs.statSync(runResultsPath).mtimeMs > previousMtimeMs,
+        fs.statSync(runResultsPath).mtimeMs > previousMtimeMs &&
+        reportedModels(runResultsPath).includes("model.single_project.base"),
       COMMAND_ARTIFACT_TIMEOUT_MS,
-      "target/run_results.json to be rewritten by buildCurrentModel",
+      "target/run_results.json to be rewritten by buildCurrentModel with model.single_project.base",
+    );
+    assert.deepStrictEqual(
+      await waitForDbtExits(dbtMark, COMMAND_ARTIFACT_TIMEOUT_MS),
+      [],
+      "dbt build still running after target/run_results.json was written",
     );
 
     const runResults = readJson(runResultsPath);
