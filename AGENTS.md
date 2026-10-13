@@ -18,7 +18,7 @@ The parent session orchestrates implementation. Use a fast coding agent for impl
 
 This repository is both a product and a development environment, and they have opposite rules. Before changing anything, say which context the change belongs to. Confusing them is the most expensive mistake available here.
 
-**The shipped extension is tool-manager-neutral.** It runs in someone else's repository, which may use mise, asdf, Homebrew, a bare `PATH`, or nothing. It resolves `dbt` from `PATH` or an explicit path setting. It must never invoke `mise` or `just`, never read `mise.toml`, and never assume a Consumer Repository's layout. This covers `src/`, `webview_panels/`, and the `package.json` contributions.
+**The shipped extension is tool-manager-neutral.** It runs in someone else's repository, which may use mise, asdf, Homebrew, a bare `PATH`, or nothing. It resolves `dbt` from `PATH` or an explicit path setting, and it may read each project's environment with `mise env`, `mise config ls`, `direnv status` and `direnv export json`, all read-only (ADR 0008). It never runs `just`, never parses `mise.toml`, and never trusts, installs or allows anything. It never assumes a Consumer Repository's layout. This covers `src/`, `webview_panels/`, and the `package.json` contributions.
 
 **This repository's own tooling has chosen mise and Just.** `mise.toml` pins the Node runtime, the contributor CLIs, and a dbt Fusion binary for integration tests; contributors and CI go through `just`. None of it ships in the VSIX.
 
@@ -26,7 +26,7 @@ Pinning Fusion in `mise.toml` is therefore correct — it gives *this* repo's te
 
 ## Product boundary
 
-The extension supports dbt Fusion 2.0.6 and later. It does not support dbt Core or dbt Cloud, call hosted APIs, require an account, collect telemetry, install or update dbt, or recursively discover every `dbt_project.yml` in a workspace.
+The extension supports dbt Fusion 2.0.6 and later. It does not support dbt Core or dbt Cloud, call hosted APIs, require an account, collect telemetry, install or update dbt, or recursively discover every `dbt_project.yml` in a workspace. Walking up from an opened `file` document to its nearest project root is allowed (ADR 0003).
 
 ## Commands
 
