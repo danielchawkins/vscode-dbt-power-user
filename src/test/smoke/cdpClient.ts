@@ -8,8 +8,12 @@ import {
 import {
   aggregateWorkbenchNotificationSnapshots,
   collectWorkbenchNotifications,
+  nextNotificationSettleState,
   NOTIFICATION_CENTER_ITEM_SELECTOR,
+  NOTIFICATION_CLEAR_MS,
   NOTIFICATION_TOAST_ITEM_SELECTOR,
+  NotificationSettleState,
+  notificationsSettled,
   WorkbenchNotificationSnapshot,
 } from "./notificationToasts";
 
@@ -142,11 +146,14 @@ export async function assertNoWorkbenchNotifications(
 
 const NOTIFICATION_POLL_MS = 250;
 
+/** How long after opening the notification center before the first read, so its list has rendered. */
+const NOTIFICATION_RENDER_MS = 300;
+
 /**
  * Waits for the workbench's notifications to clear, so a notification that is still running (for example the language
- * client's work-done progress) is not read as an unexpected one. The wait ends when no notification is showing or at
- * `timeoutMs`. Anything still showing at the deadline fails the assertion that follows. It does not tell progress from
- * errors. A CDP read failure throws, as `readWorkbenchNotificationTexts` does after its own retries.
+ * client's work-done progress) is not read as an unexpected one. The wait ends when no notification has shown for
+ * about 2s, or at `timeoutMs`. Anything still showing at the deadline fails the assertion that follows. It does not
+ * tell progress from errors. A CDP read failure throws, as `readWorkbenchNotificationTexts` does after its own retries.
  */
 export async function waitForWorkbenchNotificationsToSettle(
   cdpPort: string,
@@ -157,9 +164,13 @@ export async function waitForWorkbenchNotificationsToSettle(
   const deadline = Date.now() + timeoutMs;
   await commands.executeCommand(SHOW_NOTIFICATIONS);
   try {
+    await sleep(NOTIFICATION_RENDER_MS);
+    let state: NotificationSettleState = {};
     for (;;) {
       const texts = await readWorkbenchNotificationTexts(cdpPort, host);
-      if (texts.length === 0 || Date.now() >= deadline) {
+      const now = Date.now();
+      state = nextNotificationSettleState(state, texts.length, now);
+      if (notificationsSettled(state, now, deadline, NOTIFICATION_CLEAR_MS)) {
         return;
       }
       await sleep(NOTIFICATION_POLL_MS);

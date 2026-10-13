@@ -39,6 +39,39 @@ export function collectWorkbenchNotifications(
   return { workbench, toasts: [...texts].slice(0, maxItems) };
 }
 
+/** How long notifications must stay clear before the workbench counts as settled. */
+export const NOTIFICATION_CLEAR_MS = 2_000;
+
+/** The start of the current run of empty reads, or undefined while the last read showed a notification. */
+export interface NotificationSettleState {
+  clearSince?: number;
+}
+
+/** Folds one read (its notification count, taken at `now`) into the clear window. */
+export function nextNotificationSettleState(
+  state: NotificationSettleState,
+  count: number,
+  now: number,
+): NotificationSettleState {
+  if (count > 0) {
+    return {};
+  }
+  return { clearSince: state.clearSince ?? now };
+}
+
+/** True once the notifications have read empty across `clearMs`, or once `now` reaches the deadline. */
+export function notificationsSettled(
+  state: NotificationSettleState,
+  now: number,
+  deadline: number,
+  clearMs: number,
+): boolean {
+  if (now >= deadline) {
+    return true;
+  }
+  return state.clearSince !== undefined && now - state.clearSince >= clearMs;
+}
+
 export function aggregateWorkbenchNotificationSnapshots(
   snapshots: WorkbenchNotificationSnapshot[],
 ): WorkbenchNotificationSnapshot {
