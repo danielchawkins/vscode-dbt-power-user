@@ -1,0 +1,743 @@
+import {
+  documentationEditor,
+  lineage,
+  queryResults,
+} from "@fusion-power-user/webview-contract";
+import { mkdtempSync, rmSync, writeFileSync } from "fs";
+import { tmpdir } from "os";
+import { join } from "path";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { commands, EventEmitter, Uri, window, workspace } from "vscode";
+import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
+import { LineagePanel } from "../../features/lineage/lineagePanel";
+import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
+import { silentLog } from "../testLog";
+
+/** One row: sends a valid message to a fresh panel and asserts its effect. */
+type Row = () => Promise<void>;
+
+/** The `response` a panel posts to answer the request `syncRequestId`. */
+const response = (syncRequestId: string, body: unknown) => ({
+  command: "response",
+  args: { syncRequestId, body, status: true },
+});
+
+/** The table must have one row per command of the contract, and no others. */
+function expectRowsCover(rows: Record<string, Row>, contract: string[]) {
+  const missing = contract.filter((command) => !(command in rows));
+  expect(missing, "panelCommands entries with no row").toEqual([]);
+  expect(Object.keys(rows).sort()).toEqual([...contract].sort());
+}
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  vi.clearAllMocks();
+  window.activeTextEditor = undefined;
+});
+
+/** A lineage panel with stubbed services; `postMessage` collects what it posts. */
+function lineageHarness() {
+  const panel = Object.create(LineagePanel.prototype);
+  const postMessage = vi.fn();
+  panel._panel = { webview: { postMessage } };
+  panel.terminal = silentLog();
+  panel.dbtTerminal = silentLog();
+  panel.queryManifestService = {
+    getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
+    getProject: vi.fn().mockReturnValue(undefined),
+    manifestFor: vi.fn().mockReturnValue(undefined),
+  };
+  panel.dbtLineageService = {
+    columnsNeedStrict: vi.fn().mockReturnValue(undefined),
+    getChildTables: vi.fn().mockReturnValue([{ table: "model.p.b" }]),
+    getParentTables: vi.fn().mockReturnValue([{ table: "model.p.z" }]),
+    getConnectedColumns: vi
+      .fn()
+      .mockResolvedValue({ kind: "lineage", columnLineage: [] }),
+  };
+  // `details` is a getter that builds a LineageDetails on each read; shadow it with one stub.
+  Object.defineProperty(panel, "details", {
+    value: {
+      getColumns: vi.fn().mockResolvedValue({ id: "model.p.a", columns: [] }),
+      getExposureDetails: vi.fn().mockResolvedValue({ name: "exp" }),
+      getFunctionDetails: vi.fn().mockResolvedValue({ name: "fn" }),
+      getRelationships: vi.fn().mockReturnValue({ parents: [] }),
+    },
+  });
+  const globalState = new Map<string, unknown>();
+  panel.extensionContext = {
+    getFromGlobalState: (key: string) => globalState.get(key),
+    setToGlobalState: (key: string, value: unknown) =>
+      globalState.set(key, value),
+  };
+  return {
+    panel,
+    postMessage,
+    globalState,
+    send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
+  };
+}
+
+describe("lineage panel messages", () => {
+  const rows: Record<string, Row> = {
+    "webview:ready": async () => {
+      const h = lineageHarness();
+      await h.send({ command: "webview:ready" });
+      expect(h.panel.isWebviewReady).toBe(true);
+      expect(h.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ command: "render" }),
+      );
+    },
+    openProblemsTab: async () => {
+      const h = lineageHarness();
+      await h.send({ command: "openProblemsTab" });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "workbench.action.problems.focus",
+      );
+    },
+    runNoticeAction: async () => {
+      const h = lineageHarness();
+      const projectRoot = Uri.file("/p");
+      h.panel.queryManifestService.getProject = () => ({ projectRoot });
+      await h.send({ command: "runNoticeAction", action: "useStrictAnalysis" });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "fusionPowerUser.useStrictAnalysis",
+        projectRoot,
+      );
+    },
+    init: async () => {
+      const h = lineageHarness();
+      await h.send({ command: "init" });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ command: "render" }),
+      );
+    },
+    openFile: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "openFile",
+        args: { params: { url: "/p/models/a.sql" } },
+      });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "vscode.open",
+        Uri.file("/p/models/a.sql"),
+        { preview: false, preserveFocus: true },
+      );
+    },
+    childTables: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "childTables",
+        args: { params: { table: "model.p.a" } },
+        syncRequestId: "c1",
+      });
+      expect(h.panel.dbtLineageService.getChildTables).toHaveBeenCalledWith({
+        table: "model.p.a",
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("c1", [{ table: "model.p.b" }]),
+      );
+    },
+    parentTables: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "parentTables",
+        args: { params: { table: "model.p.a" } },
+        syncRequestId: "p1",
+      });
+      expect(h.panel.dbtLineageService.getParentTables).toHaveBeenCalledWith({
+        table: "model.p.a",
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("p1", [{ table: "model.p.z" }]),
+      );
+    },
+    getColumns: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "getColumns",
+        args: { params: { table: "model.p.a" } },
+        syncRequestId: "g1",
+      });
+      expect(h.panel.details.getColumns).toHaveBeenCalledWith({
+        table: "model.p.a",
+        refresh: false,
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("g1", { id: "model.p.a", columns: [] }),
+      );
+    },
+    getExposureDetails: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "getExposureDetails",
+        args: { params: { name: "exp" } },
+        syncRequestId: "e1",
+      });
+      expect(h.panel.details.getExposureDetails).toHaveBeenCalledWith({
+        name: "exp",
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("e1", { name: "exp" }),
+      );
+    },
+    getFunctionDetails: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "getFunctionDetails",
+        args: { params: { name: "fn" } },
+        syncRequestId: "f1",
+      });
+      expect(h.panel.details.getFunctionDetails).toHaveBeenCalledWith({
+        name: "fn",
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("f1", { name: "fn" }),
+      );
+    },
+    getRelationships: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "getRelationships",
+        args: { params: { includeSources: true } },
+        syncRequestId: "r1",
+      });
+      expect(h.panel.details.getRelationships).toHaveBeenCalledWith({
+        includeSources: true,
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("r1", { parents: [] }),
+      );
+    },
+    getConnectedColumns: async () => {
+      const h = lineageHarness();
+      const targets = [["model.p.a", "id"]];
+      await h.send({
+        command: "getConnectedColumns",
+        args: { params: { targets, upstreamExpansion: true } },
+        syncRequestId: "k1",
+      });
+      expect(
+        h.panel.dbtLineageService.getConnectedColumns,
+      ).toHaveBeenCalledWith({ targets, upstreamExpansion: true });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("k1", { column_lineage: [] }),
+      );
+    },
+    getLineageSettings: async () => {
+      const h = lineageHarness();
+      await h.send({ command: "getLineageSettings", syncRequestId: "l1" });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response(
+          "l1",
+          expect.objectContaining({
+            showSelectEdges: true,
+            showNonSelectEdges: false,
+          }),
+        ),
+      );
+    },
+    persistLineageSettings: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "persistLineageSettings",
+        args: { params: { defaultExpansion: 3, showRefs: true } },
+        syncRequestId: "s1",
+      });
+      expect(workspace.getConfiguration().update).toHaveBeenCalledWith(
+        "lineage.defaultExpansion",
+        3,
+      );
+      expect([...h.globalState.values()]).toContainEqual(
+        expect.objectContaining({ showRefs: true }),
+      );
+      expect(h.postMessage).toHaveBeenCalledWith(response("s1", { ok: true }));
+    },
+  };
+
+  it("has a row for every panelCommands entry", () => {
+    expectRowsCover(rows, lineage.panelCommands);
+  });
+
+  it.each(Object.entries(rows))("%s", async (_command, row) => {
+    await row();
+  });
+});
+
+/** A query results panel on its bottom view; `view` collects what it posts. */
+function queryHarness() {
+  const project = {
+    getAdapterType: () => "duckdb",
+    getProjectName: () => "jaffle",
+    executeSQLOnQueryPanel: vi.fn(),
+    executeSQLWithLimitOnQueryPanel: vi.fn(),
+  };
+  const service = {
+    manifestFor: () => undefined,
+    getProject: () => project,
+    getProjectByName: () => project,
+    getOrPickProjectFromWorkspace: async () => project,
+  };
+  const panel = new QueryResultPanel(
+    {} as never,
+    { eventEmitter: { event: () => ({ dispose: vi.fn() }) } } as never,
+    silentLog(),
+    service as never,
+    () => ({ dispose: vi.fn() }),
+  ) as any;
+  const view = {
+    show: vi.fn(),
+    webview: {
+      postMessage: vi.fn(),
+      onDidReceiveMessage: vi.fn(() => ({ dispose: vi.fn() })),
+    },
+  };
+  panel._panel = view;
+  panel._bottomPanel = view;
+  panel.isWebviewReady = true;
+  return {
+    panel,
+    view,
+    project,
+    send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
+  };
+}
+
+/** The `OPEN_RESULTS_IN_TAB` member of the panel's view-type enum, which is not exported. */
+const OPEN_RESULTS_IN_TAB = 1;
+
+const historyEntry = {
+  rawSql: "select 1",
+  compiledSql: "select 1",
+  timestamp: 1,
+  duration: 1,
+  adapter: "duckdb",
+  projectName: "jaffle",
+  columnNames: [],
+  columnTypes: [],
+  modelName: "orders",
+};
+
+describe("query results panel messages", () => {
+  beforeEach(() => {
+    // The mock has no showTextDocument; the rows that open an editor need one.
+    Object.assign(window, { showTextDocument: vi.fn() });
+  });
+
+  afterEach(() => {
+    delete (window as { showTextDocument?: unknown }).showTextDocument;
+  });
+
+  const rows: Record<string, Row> = {
+    "webview:ready": async () => {
+      const h = queryHarness();
+      h.panel.isWebviewReady = false;
+      await h.send({ command: "webview:ready" });
+      expect(h.panel.isWebviewReady).toBe(true);
+    },
+    error: async () => {
+      const h = queryHarness();
+      await h.send({ command: "error", text: "boom" });
+      expect(vi.mocked(window.showErrorMessage).mock.calls[0][0]).toContain(
+        "boom",
+      );
+    },
+    updateConfig: async () => {
+      const h = queryHarness();
+      await h.send({ command: "updateConfig", limit: 50 });
+      expect(workspace.getConfiguration().update).toHaveBeenCalledWith(
+        "query.limit",
+        50,
+      );
+    },
+    cancelQuery: async () => {
+      const h = queryHarness();
+      const cancel = vi.fn();
+      h.panel.queryExecution = { cancel };
+      await h.send({ command: "cancelQuery" });
+      expect(cancel).toHaveBeenCalledTimes(1);
+      expect(h.view.webview.postMessage).toHaveBeenCalledWith({
+        command: "resetState",
+      });
+    },
+    getQueryPanelContext: async () => {
+      const h = queryHarness();
+      await h.send({ command: "getQueryPanelContext" });
+      expect(h.view.webview.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ command: "getContext" }),
+      );
+    },
+    getQueryHistory: async () => {
+      const h = queryHarness();
+      await h.send({ command: "getQueryHistory" });
+      expect(h.view.webview.postMessage).toHaveBeenCalledWith({
+        command: "queryHistory",
+        args: { body: [] },
+      });
+    },
+    executeQuery: async () => {
+      const h = queryHarness();
+      await h.send({
+        command: "executeQuery",
+        query: "select 1",
+        projectName: "jaffle",
+      });
+      expect(h.project.executeSQLOnQueryPanel).toHaveBeenCalledWith(
+        "select 1",
+        "",
+      );
+    },
+    executeQueryFromActiveWindow: async () => {
+      const h = queryHarness();
+      window.activeTextEditor = {
+        document: {
+          uri: Uri.file("/p/models/orders.sql"),
+          getText: () => "select 2",
+        },
+        selection: { isEmpty: true },
+      } as never;
+      await h.send({ command: "executeQueryFromActiveWindow", limit: 10 });
+      expect(h.project.executeSQLWithLimitOnQueryPanel).toHaveBeenCalledWith(
+        "select 2",
+        "orders",
+        10,
+      );
+    },
+    getQueryTabData: async () => {
+      const h = queryHarness();
+      h.panel._queryTabData = { n: 1 };
+      await h.send({ command: "getQueryTabData", syncRequestId: "t1" });
+      expect(h.view.webview.postMessage).toHaveBeenCalledWith(
+        response("t1", { n: 1 }),
+      );
+    },
+    runAdhocQuery: async () => {
+      const h = queryHarness();
+      const document = { uri: Uri.file("/untitled.sql") };
+      vi.mocked(workspace.openTextDocument).mockResolvedValueOnce(
+        document as never,
+      );
+      await h.send({ command: "runAdhocQuery" });
+      expect(workspace.openTextDocument).toHaveBeenCalledWith({
+        language: "jinja-sql",
+        content: "",
+      });
+      expect(window.showTextDocument).toHaveBeenCalledWith(document);
+    },
+    openCodeInEditor: async () => {
+      const h = queryHarness();
+      const document = { uri: Uri.file("/untitled.sql") };
+      vi.mocked(workspace.openTextDocument).mockResolvedValueOnce(
+        document as never,
+      );
+      await h.send({ command: "openCodeInEditor", code: "select 3" });
+      expect(workspace.openTextDocument).toHaveBeenCalledWith({
+        language: "jinja-sql",
+        content: "select 3",
+      });
+      expect(window.showTextDocument).toHaveBeenCalledWith(document);
+    },
+    viewResultSet: async () => {
+      const h = queryHarness();
+      const open = vi
+        .spyOn(h.panel, "createQueryResultsPanelVirtualDocument")
+        .mockResolvedValue(undefined);
+      await h.send({
+        command: "viewResultSet",
+        queryHistory: historyEntry,
+        editorName: "Mine",
+      });
+      expect(open).toHaveBeenCalledWith("Mine");
+      expect(h.view.webview.postMessage).toHaveBeenCalledWith({
+        command: "updateViewType",
+        args: { body: { type: OPEN_RESULTS_IN_TAB } },
+      });
+    },
+    clearQueryHistory: async () => {
+      const h = queryHarness();
+      const clear = vi.spyOn(h.panel.history, "clear");
+      await h.send({
+        command: "clearQueryHistory",
+        syncRequestId: "c1",
+        error: "boom",
+      });
+      expect(clear).toHaveBeenCalledTimes(1);
+      expect(h.view.webview.postMessage).toHaveBeenCalledWith(
+        response("c1", {}),
+      );
+    },
+    "queryResultTab:render": async () => {
+      const h = queryHarness();
+      const open = vi
+        .spyOn(h.panel, "createQueryResultsPanelVirtualDocument")
+        .mockResolvedValue(undefined);
+      await h.send({
+        command: "queryResultTab:render",
+        queryTabData: { n: 1 },
+      });
+      expect(open).toHaveBeenCalledWith("Query results");
+      expect(h.panel._queryTabData).toEqual({ n: 1 });
+      expect(h.view.webview.postMessage).toHaveBeenCalledWith({
+        command: "updateViewType",
+        args: { body: { type: OPEN_RESULTS_IN_TAB } },
+      });
+    },
+  };
+
+  it("has a row for every panelCommands entry", () => {
+    expectRowsCover(rows, queryResults.panelCommands);
+  });
+
+  it.each(Object.entries(rows))("%s", async (_command, row) => {
+    await row();
+  });
+});
+
+/** A documentation editor on `/p/models/orders.sql`; `postMessage` collects what it posts. */
+function docsHarness() {
+  const docs = {
+    name: "orders",
+    description: "saved",
+    columns: [],
+    filePath: "/p/models/orders.sql",
+  };
+  const project = {
+    projectRoot: Uri.file("/p"),
+    getProjectName: () => "jaffle",
+    getAdapterType: () => "duckdb",
+    getColumnValues: vi.fn(async () => ["a", "b"]),
+    getColumnsOfSource: vi.fn(async () => [{ column: "id" }]),
+    getColumnsOfModel: vi.fn(async () => [{ column: "id", dtype: "INTEGER" }]),
+  };
+  const projects = {
+    onDidChangeManifest: new EventEmitter<unknown>().event,
+    onDidRemoveProject: new EventEmitter<Uri>().event,
+    get: vi.fn(() => project),
+  } as any;
+  const docGenService = {
+    getUncompiledDocumentationForCurrentActiveFile: vi.fn(async () => ({
+      documentation: docs,
+    })),
+  };
+  const dbtTestService = {
+    getTestsForCurrentModel: vi.fn(async () => []),
+    getUnitTestsForCurrentModel: vi.fn(async () => []),
+    getConfigByTest: vi.fn(() => ({ severity: "warn" })),
+  };
+  const queryManifestService = {
+    manifestFor: () => undefined,
+    getSourcesInProject: vi.fn(() => ["raw.orders"]),
+    getModelsInProject: vi.fn(() => ["orders"]),
+  };
+  const panel = new DocsEditViewPanel(
+    projects,
+    {} as any,
+    {
+      docGenService,
+      dbtTestService,
+      queryManifestService,
+      emitterService: { eventEmitter: { event: vi.fn() } },
+    } as any,
+    silentLog(),
+  ) as any;
+  const postMessage = vi.fn();
+  panel._panel = { webview: { postMessage } };
+  window.activeTextEditor = {
+    document: { uri: Uri.file("/p/models/orders.sql") },
+  } as never;
+  return {
+    panel,
+    postMessage,
+    project,
+    docs,
+    dbtTestService,
+    queryManifestService,
+    send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
+  };
+}
+
+describe("documentation editor messages", () => {
+  const rows: Record<string, Row> = {
+    "webview:ready": async () => {
+      const h = docsHarness();
+      await h.send({ command: "webview:ready" });
+      expect(h.panel.isWebviewReady).toBe(true);
+    },
+    openProblemsTab: async () => {
+      const h = docsHarness();
+      await h.send({ command: "openProblemsTab" });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "workbench.action.problems.focus",
+      );
+    },
+    showInformationMessage: async () => {
+      const h = docsHarness();
+      await h.send({
+        command: "showInformationMessage",
+        infoMessage: "Saved",
+        items: ["Undo"],
+        syncRequestId: "i1",
+      });
+      expect(window.showInformationMessage).toHaveBeenCalledWith(
+        "Saved",
+        "Undo",
+      );
+      expect(h.postMessage).toHaveBeenCalledWith(response("i1", undefined));
+    },
+    showWarningMessage: async () => {
+      const h = docsHarness();
+      await h.send({
+        command: "showWarningMessage",
+        infoMessage: "Careful",
+        syncRequestId: "w1",
+      });
+      expect(window.showWarningMessage).toHaveBeenCalledWith("Careful");
+      expect(h.postMessage).toHaveBeenCalledWith(response("w1", undefined));
+    },
+    getCurrentModelDocumentation: async () => {
+      const h = docsHarness();
+      await h.send({ command: "getCurrentModelDocumentation" });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({
+          command: "renderDocumentation",
+          docs: h.docs,
+        }),
+      );
+    },
+    saveDraft: async () => {
+      const h = docsHarness();
+      const draft = { docs: { ...h.docs, description: "unsaved" }, tests: [] };
+      await h.send({ command: "saveDraft", model: h.docs.filePath, draft });
+      await h.send({ command: "getCurrentModelDocumentation" });
+      expect(h.postMessage).toHaveBeenLastCalledWith(
+        expect.objectContaining({ command: "renderDocumentation", draft }),
+      );
+    },
+    getTestCode: async () => {
+      const h = docsHarness();
+      const test = { key: "not_null_orders_id", column_name: "id" };
+      await h.send({
+        command: "getTestCode",
+        test,
+        model: "orders",
+        syncRequestId: "g1",
+      });
+      expect(h.dbtTestService.getConfigByTest).toHaveBeenCalledWith(
+        test,
+        "orders",
+        "id",
+      );
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("g1", { config: { severity: "warn" } }),
+      );
+    },
+    getUnitTestCode: async () => {
+      const dir = mkdtempSync(join(tmpdir(), "docs-panel-"));
+      try {
+        const path = join(dir, "orders.yml");
+        writeFileSync(path, "unit_tests: []\n");
+        const h = docsHarness();
+        await h.send({ command: "getUnitTestCode", path, syncRequestId: "u1" });
+        expect(h.postMessage).toHaveBeenCalledWith(
+          response("u1", { yaml: "unit_tests: []\n" }),
+        );
+      } finally {
+        rmSync(dir, { recursive: true, force: true });
+      }
+    },
+    getDistinctColumnValues: async () => {
+      const h = docsHarness();
+      await h.send({
+        command: "getDistinctColumnValues",
+        model: "orders",
+        column: "id",
+        syncRequestId: "d1",
+      });
+      expect(h.project.getColumnValues).toHaveBeenCalledWith("orders", "id");
+      expect(h.postMessage).toHaveBeenCalledWith(response("d1", ["a", "b"]));
+    },
+    getColumnsOfSources: async () => {
+      const h = docsHarness();
+      await h.send({
+        command: "getColumnsOfSources",
+        source: "raw",
+        table: "orders",
+        syncRequestId: "cs1",
+      });
+      expect(h.project.getColumnsOfSource).toHaveBeenCalledWith(
+        "raw",
+        "orders",
+      );
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("cs1", { columns: ["id"] }),
+      );
+    },
+    getColumnsOfModel: async () => {
+      const h = docsHarness();
+      await h.send({
+        command: "getColumnsOfModel",
+        model: "orders",
+        syncRequestId: "cm1",
+      });
+      expect(h.project.getColumnsOfModel).toHaveBeenCalledWith("orders");
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("cm1", { columns: ["id"] }),
+      );
+    },
+    getSourcesInProject: async () => {
+      const h = docsHarness();
+      await h.send({ command: "getSourcesInProject", syncRequestId: "s1" });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("s1", { sources: ["raw.orders"] }),
+      );
+    },
+    getModelsInProject: async () => {
+      const h = docsHarness();
+      await h.send({ command: "getModelsInProject", syncRequestId: "m1" });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("m1", { models: ["orders"] }),
+      );
+    },
+    fetchMetadataFromDatabase: async () => {
+      const h = docsHarness();
+      await h.send({
+        command: "fetchMetadataFromDatabase",
+        syncRequestId: "f1",
+      });
+      expect(h.project.getColumnsOfModel).toHaveBeenCalledWith("orders");
+      expect(h.postMessage).toHaveBeenCalledWith(
+        expect.objectContaining({ command: "renderColumnsFromMetadataFetch" }),
+      );
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response(
+          "f1",
+          expect.objectContaining({
+            columns: [expect.objectContaining({ name: "id" })],
+          }),
+        ),
+      );
+    },
+    saveDocumentation: async () => {
+      const h = docsHarness();
+      await h.send({
+        command: "saveDocumentation",
+        ...h.docs,
+        patchPath: "models/schema.yml",
+        updatedTests: [],
+        syncRequestId: "sv1",
+      });
+      expect(workspace.applyEdit).toHaveBeenCalledTimes(1);
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("sv1", expect.objectContaining({ saved: true })),
+      );
+    },
+  };
+
+  it("has a row for every panelCommands entry", () => {
+    expectRowsCover(rows, documentationEditor.panelCommands);
+  });
+
+  it.each(Object.entries(rows))("%s", async (_command, row) => {
+    await row();
+  });
+});
