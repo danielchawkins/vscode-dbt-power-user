@@ -14,10 +14,11 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsc -b",
-    "watch": "tsc -b --watch --preserveWatchOutput"
+    "build": "node ../../node_modules/typescript-7/bin/tsc -b",
+    "watch": "node ../../node_modules/typescript-7/bin/tsc -b --watch --preserveWatchOutput"
   },
   "devDependencies": {
-    "typescript": "^6.0.3"
+    "typescript": "npm:@typescript/typescript6@^6.0.0",
+    "typescript-7": "npm:typescript@^7.0.2"
   }
 }
