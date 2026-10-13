@@ -317,7 +317,8 @@ export function languageClientOptions(input: {
   lintEnabled: boolean;
   compiled?: CompileSignal;
   /** Keeps documents under nested roots away from this client; see {@link guardMiddleware}. */
-  nestedRoots?: { guard: NestedRootGuard; openDocuments: OpenDocuments };
+  nestedRoots?:
+    { guard: NestedRootGuard; openDocuments: OpenDocuments } | undefined;
 }): LanguageClientOptions {
   const compiled = input.compiled ?? new CompileSignal();
   const log = (message: string) => input.outputChannel.info(message);
@@ -392,7 +393,12 @@ export type FusionLanguageClientDependencies = {
 
 export type ClientHandle = Pick<
   LanguageClient,
-  "start" | "stop" | "sendRequest" | "onDidChangeState" | "dispose"
+  | "start"
+  | "stop"
+  | "sendRequest"
+  | "sendNotification"
+  | "onDidChangeState"
+  | "dispose"
 > &
   Partial<Pick<LanguageClient, "diagnostics" | "onNotification">>;
 
