@@ -122,5 +122,6 @@ else
     export FPU_SKIP_INTEGRATION_COMPILE=1
     run_fixture "$repo_root/src/test/fixtures/multi-root"
     run_fixture "$repo_root/src/test/fixtures/nested-project"
+    run_fixture "$repo_root/src/test/fixtures/nested-roots"
   fi
 fi

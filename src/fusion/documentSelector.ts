@@ -12,8 +12,9 @@ type FusionDocumentFilter = {
 
 /**
  * Per-project LSP document filters using protocol RelativePattern bases.
- * Selectors isolate disjoint Declared Project roots; overlapping roots are not
- * isolated.
+ * Selectors isolate disjoint Declared Project roots. Overlapping roots are not
+ * isolated by the selector; the nested-root guard in `nestedRoots.ts` keeps a
+ * nested root's documents out of the outer project's client.
  */
 export function documentSelectorForProject(root: Uri): FusionDocumentFilter[] {
   const baseUri = root.toString();

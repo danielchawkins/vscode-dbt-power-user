@@ -5,11 +5,17 @@ import { CodeLens, Uri } from "vscode";
 import type {
   LanguageClient,
   LanguageClientOptions,
+  Middleware,
   ServerOptions,
 } from "vscode-languageclient/node";
 import { fusionCteFromLens, type FusionCte } from "../core/cte/ctePreview";
 import type { FusionProjectRef } from "./fusionClient";
 import type { ProjectDiagnosticsFilter } from "./fusionDiagnostics";
+import {
+  guardMiddleware,
+  type NestedRootGuard,
+  type OpenDocuments,
+} from "./nestedRoots";
 import { spawnProcess, type ChildProcess } from "./process";
 import type {
   acceptWithProcessExit,
@@ -310,10 +316,42 @@ export function languageClientOptions(input: {
   diagnosticsFilter: ProjectDiagnosticsFilter;
   lintEnabled: boolean;
   compiled?: CompileSignal;
+  /** Keeps documents under nested roots away from this client; see {@link guardMiddleware}. */
+  nestedRoots?:
+    { guard: NestedRootGuard; openDocuments: OpenDocuments } | undefined;
 }): LanguageClientOptions {
   const compiled = input.compiled ?? new CompileSignal();
   const log = (message: string) => input.outputChannel.info(message);
-  const { project, diagnosticsFilter } = input;
+  const { project, diagnosticsFilter, nestedRoots } = input;
+  const middleware: Middleware = {
+    provideCodeLenses: async (document, token, next) =>
+      mapCteLenses(await next(document, token), document.uri),
+    sendRequest: (type, param, token, next) => {
+      const method = typeof type === "string" ? type : type.method;
+      return FORMAT_METHODS.has(method)
+        ? formatOnceCompiled(
+            () => next(type, param, token),
+            compiled,
+            log,
+            token,
+          )
+        : next(type, param, token);
+    },
+    handleDiagnostics: (uri, diagnostics, next) => {
+      if (diagnosticsFilter.shouldForward(uri)) {
+        next(uri, diagnostics);
+      }
+    },
+    workspace: {
+      configuration: async (params) =>
+        params.items.map((item) =>
+          buildWorkspaceConfigurationResponse(
+            item.section ?? "",
+            input.lintEnabled,
+          ),
+        ),
+    },
+  };
   return {
     ...(input.selector ? { documentSelector: input.selector } : {}),
     ...(input.uriConverters ? { uriConverters: input.uriConverters } : {}),
@@ -325,35 +363,13 @@ export function languageClientOptions(input: {
       name: project.folder.name,
       index: project.folder.index,
     },
-    middleware: {
-      provideCodeLenses: async (document, token, next) =>
-        mapCteLenses(await next(document, token), document.uri),
-      sendRequest: (type, param, token, next) => {
-        const method = typeof type === "string" ? type : type.method;
-        return FORMAT_METHODS.has(method)
-          ? formatOnceCompiled(
-              () => next(type, param, token),
-              compiled,
-              log,
-              token,
-            )
-          : next(type, param, token);
-      },
-      handleDiagnostics: (uri, diagnostics, next) => {
-        if (diagnosticsFilter.shouldForward(uri)) {
-          next(uri, diagnostics);
-        }
-      },
-      workspace: {
-        configuration: async (params) =>
-          params.items.map((item) =>
-            buildWorkspaceConfigurationResponse(
-              item.section ?? "",
-              input.lintEnabled,
-            ),
-          ),
-      },
-    },
+    middleware: nestedRoots
+      ? guardMiddleware(
+          nestedRoots.guard,
+          middleware,
+          nestedRoots.openDocuments,
+        )
+      : middleware,
   };
 }
 
@@ -377,7 +393,12 @@ export type FusionLanguageClientDependencies = {
 
 export type ClientHandle = Pick<
   LanguageClient,
-  "start" | "stop" | "sendRequest" | "onDidChangeState" | "dispose"
+  | "start"
+  | "stop"
+  | "sendRequest"
+  | "sendNotification"
+  | "onDidChangeState"
+  | "dispose"
 > &
   Partial<Pick<LanguageClient, "diagnostics" | "onNotification">>;
 

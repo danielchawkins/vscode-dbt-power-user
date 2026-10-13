@@ -1,0 +1,16 @@
+outer:
+  target: test
+  outputs:
+    test:
+      type: duckdb
+      path: "target/outer.duckdb"
+      schema: main
+      threads: 1
+inner:
+  target: test
+  outputs:
+    test:
+      type: duckdb
+      path: "target/inner.duckdb"
+      schema: main
+      threads: 1

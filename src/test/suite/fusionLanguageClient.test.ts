@@ -1512,6 +1512,149 @@ async function waitForState(
   });
 }
 
+describe("FusionLanguageClient nested roots", () => {
+  /** A root list the test can grow, firing the change event the way the registry does. */
+  function nestedSource() {
+    const roots: Uri[] = [];
+    const listeners = new Set<() => void>();
+    return {
+      source: {
+        roots: () => roots,
+        onDidChange: (listener: () => void) => {
+          listeners.add(listener);
+          return { dispose: () => listeners.delete(listener) };
+        },
+      },
+      declare: (rootPath: string) => {
+        roots.push(Uri.file(rootPath));
+        for (const listener of listeners) {
+          listener();
+        }
+      },
+    };
+  }
+
+  const documentAt = (path: string) => ({ uri: Uri.file(path) }) as any;
+
+  async function startClient(
+    source: ReturnType<typeof nestedSource>["source"],
+  ) {
+    const streams = makeStreams();
+    const languageClient = {
+      ...makeLanguageClient(),
+      sendNotification: vi.fn(() => Promise.resolve()),
+    };
+    const createLanguageClient = vi.fn(
+      async (
+        _id: string,
+        _name: string,
+        _server: unknown,
+        _options: LanguageClientOptions,
+      ) => languageClient as any,
+    );
+    const factory = new DefaultFusionClientFactory({
+      listenForServer: async () => new FakeReverseSocketServer(streams),
+      acceptWithProcessExit: async () => streams,
+      spawnProcess: vi.fn(() => new FakeExitingProcess() as any),
+      createLanguageClient,
+      sleep: async () => {},
+    });
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
+        env: {},
+      },
+      launch: makeLaunch(),
+      commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
+      nestedRoots: source,
+    });
+    await waitForState(client, "running");
+    const options = createLanguageClient.mock.calls[0]?.[3];
+    return {
+      client,
+      languageClient,
+      createLanguageClient,
+      middleware: options?.middleware as any,
+    };
+  }
+
+  it("stops forwarding documents once a root is declared later, without restarting", async () => {
+    const nested = nestedSource();
+    const { client, createLanguageClient, middleware } = await startClient(
+      nested.source,
+    );
+    const inner = "/workspace/general/inner/models/inner_model.sql";
+
+    const before = vi.fn();
+    await middleware.didOpen(documentAt(inner), before);
+    expect(before).toHaveBeenCalledTimes(1);
+
+    nested.declare("/workspace/general/inner");
+    const after = vi.fn();
+    await middleware.didOpen(documentAt(inner), after);
+
+    expect(after).not.toHaveBeenCalled();
+    expect(createLanguageClient).toHaveBeenCalledTimes(1);
+    await client.stop();
+    client.dispose();
+  });
+
+  it("tracks open documents across didOpen and didClose", async () => {
+    const { client, middleware } = await startClient(nestedSource().source);
+    const model = documentAt("/workspace/general/models/a.sql");
+
+    await middleware.didOpen(model, vi.fn());
+    expect(client.openDocuments?.map((uri) => uri.fsPath)).toEqual([
+      "/workspace/general/models/a.sql",
+    ]);
+
+    await middleware.didClose(model, vi.fn());
+    expect(client.openDocuments).toEqual([]);
+    await client.stop();
+    client.dispose();
+  });
+
+  it("sends didClose for an open document that a later-declared root excludes", async () => {
+    const nested = nestedSource();
+    const { client, languageClient, middleware } = await startClient(
+      nested.source,
+    );
+    const inner = "/workspace/general/inner/models/inner_model.sql";
+    await middleware.didOpen(documentAt(inner), vi.fn());
+    expect(client.openDocuments?.map((uri) => uri.fsPath)).toEqual([inner]);
+
+    nested.declare("/workspace/general/inner");
+
+    expect(languageClient.sendNotification).toHaveBeenCalledWith(
+      expect.anything(),
+      { textDocument: { uri: Uri.file(inner).toString() } },
+    );
+    expect(client.openDocuments).toEqual([]);
+    await client.stop();
+    client.dispose();
+  });
+
+  it("drops the outer client's diagnostics for a document a later-declared root excludes", async () => {
+    const nested = nestedSource();
+    const { client, languageClient, middleware } = await startClient(
+      nested.source,
+    );
+    const diagnostics = { delete: vi.fn() };
+    (languageClient as any).diagnostics = diagnostics;
+    const inner = Uri.file("/workspace/general/inner/models/inner_model.sql");
+    await middleware.didOpen(documentAt(inner.fsPath), vi.fn());
+
+    nested.declare("/workspace/general/inner");
+
+    expect(diagnostics.delete).toHaveBeenCalledWith(inner);
+    await client.stop();
+    client.dispose();
+  });
+});
+
 describe("canonicalProjectRoot", () => {
   const fileUri = (fsPath: string) => Uri.file(fsPath);
 

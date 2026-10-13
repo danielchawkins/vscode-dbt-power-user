@@ -93,7 +93,11 @@ describe("registerFusionClientDiagnostics", () => {
     const pool = {
       get: vi.fn((declared: DeclaredProject) =>
         declared === general
-          ? { state: "running", failureReason: undefined }
+          ? {
+              state: "running",
+              failureReason: undefined,
+              openDocuments: [Uri.file("/workspace/general/models/a.sql")],
+            }
           : undefined,
       ),
       getLaunch: vi.fn((declared: DeclaredProject) =>
@@ -113,6 +117,9 @@ describe("registerFusionClientDiagnostics", () => {
         failureReason: undefined,
         target: "ci",
         origin: "explicit",
+        openDocuments: ["/workspace/general/models/a.sql"],
+        compiles: 0,
+        diagnosticCounts: {},
       },
       {
         projectName: "sox",
@@ -120,7 +127,46 @@ describe("registerFusionClientDiagnostics", () => {
         failureReason: undefined,
         target: undefined,
         origin: "openedFile",
+        openDocuments: [],
+        compiles: 0,
+        diagnosticCounts: {},
       },
+    ]);
+  });
+
+  it("reports completed compiles and diagnostic counts keyed by file path", () => {
+    process.env.FPU_SMOKE_HOST = "vscode";
+    const general = project("general");
+    const model = Uri.file("/workspace/general/models/a.sql");
+    const other = Uri.file("/workspace/general/models/b.sql");
+    const diagnostics = {
+      forEach: (callback: (uri: Uri, entries: unknown[]) => void) => {
+        callback(model, [{}, {}]);
+        callback(other, [{}]);
+      },
+    };
+    const pool = {
+      get: vi.fn(() => ({
+        state: "running",
+        failureReason: undefined,
+        openDocuments: [],
+        compiled: { completions: 2 },
+        diagnostics,
+      })),
+      getLaunch: vi.fn(() => undefined),
+    } as unknown as FusionClientPool;
+
+    registerFusionClientDiagnostics(
+      { projects: [general] } as unknown as ProjectRegistry,
+      pool,
+    );
+
+    expect(commandHandler()()).toEqual([
+      expect.objectContaining({
+        projectName: "general",
+        compiles: 2,
+        diagnosticCounts: { [model.fsPath]: 2, [other.fsPath]: 1 },
+      }),
     ]);
   });
 

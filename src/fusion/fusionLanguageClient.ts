@@ -4,9 +4,9 @@ import {
   Event,
   EventEmitter,
   LogOutputChannel,
+  Uri,
 } from "vscode";
 import {
-  ExecuteCommandRequest,
   State,
   type LanguageClientOptions,
   type ServerOptions,
@@ -16,10 +16,8 @@ import { type StaticAnalysisMode } from "../core/project";
 import { documentSelectorForProject } from "./documentSelector";
 import {
   DISPOSAL_GRACE_MS,
-  FUSION_LSP_COMMANDS,
   languageClientIdForProject,
   MAX_UNEXPECTED_EXIT_RETRIES,
-  prefixedCommand,
   type FusionClient,
   type FusionClientOptions,
   type FusionClientState,
@@ -30,9 +28,9 @@ import {
   clearDiagnosticsOnDelete,
   ProjectDiagnosticsFilter,
 } from "./fusionDiagnostics";
+import { FusionRequests } from "./fusionRequests";
 import {
   canonicalProjectRoot,
-  commandArguments,
   CompileSignal,
   defaultCreateLanguageClient,
   defaultSpawn,
@@ -48,6 +46,7 @@ import {
   SpawnedLspProcess,
   terminateProcess,
 } from "./lspProcess";
+import { ClientNestedRoots } from "./nestedRoots";
 import {
   acceptWithProcessExit,
   listenForServer,
@@ -92,13 +91,24 @@ class FusionLanguageClientImpl implements FusionClient {
   private processExitListener: (() => void) | undefined;
   private transportGeneration = 0;
   private unexpectedStopHandledGeneration = 0;
-  private listNodesQueue: Promise<unknown> = Promise.resolve();
   private uriConverters: LanguageClientOptions["uriConverters"];
+  private readonly requests = new FusionRequests(() => ({
+    client: this.languageClient,
+    state: this._state,
+    commandPrefix: this.options.commandPrefix,
+    uriConverters: this.uriConverters,
+  }));
+  private readonly nestedRoots: ClientNestedRoots | undefined;
 
   constructor(
     private readonly options: FusionClientOptions,
     private readonly deps: FusionLanguageClientDependencies,
   ) {
+    this.nestedRoots =
+      options.nestedRoots &&
+      new ClientNestedRoots(options.project.root, options.nestedRoots, (uri) =>
+        this.release(uri),
+      );
     void this.begin();
   }
 
@@ -122,7 +132,15 @@ class FusionLanguageClientImpl implements FusionClient {
     return this._failureReason;
   }
 
-  private readonly compiled = new CompileSignal();
+  get openDocuments(): readonly Uri[] {
+    return this.nestedRoots?.openDocuments.uris ?? [];
+  }
+
+  get diagnostics() {
+    return this.languageClient?.diagnostics;
+  }
+
+  readonly compiled = new CompileSignal();
 
   get outputChannel(): LogOutputChannel {
     return this.options.outputChannel;
@@ -133,36 +151,7 @@ class FusionLanguageClientImpl implements FusionClient {
     payload: unknown,
     token?: CancellationToken,
   ): Promise<T> {
-    if (command !== FUSION_LSP_COMMANDS.listNodes) {
-      return this.send(command, payload, token);
-    }
-    const sent = this.listNodesQueue.then(() =>
-      this.send<T>(command, payload, token),
-    );
-    this.listNodesQueue = sent.catch(() => undefined);
-    return sent;
-  }
-
-  private send<T>(
-    command: FusionLspCommand,
-    payload: unknown,
-    token?: CancellationToken,
-  ): Promise<T> {
-    if (!this.languageClient) {
-      return Promise.reject(
-        new Error(`Fusion LSP client is not running (${this._state})`),
-      );
-    }
-    const args =
-      payload === undefined ? [] : Array.isArray(payload) ? payload : [payload];
-    return this.languageClient.sendRequest(
-      ExecuteCommandRequest.type,
-      {
-        command: prefixedCommand(this.options.commandPrefix, command),
-        arguments: commandArguments(command, args, this.uriConverters),
-      },
-      token,
-    ) as Promise<T>;
+    return this.requests.request<T>(command, payload, token);
   }
 
   restart(): Promise<void> {
@@ -175,6 +164,7 @@ class FusionLanguageClientImpl implements FusionClient {
       return;
     }
     this.disposed = true;
+    this.nestedRoots?.dispose();
     void this.stop().finally(() => {
       this._onDidChangeState.dispose();
     });
@@ -307,6 +297,7 @@ class FusionLanguageClientImpl implements FusionClient {
           diagnosticsFilter,
           lintEnabled: launch.lintEnabled,
           compiled: this.compiled,
+          nestedRoots: this.nestedRoots,
         }),
       );
 
@@ -369,6 +360,7 @@ class FusionLanguageClientImpl implements FusionClient {
   private async teardownTransport(): Promise<void> {
     this.stateListener?.dispose();
     this.stateListener = undefined;
+    this.nestedRoots?.openDocuments.clear();
 
     const processAdapter = this.childProcess;
     if (processAdapter && this.processExitListener) {
@@ -395,6 +387,20 @@ class FusionLanguageClientImpl implements FusionClient {
       warn: (message) => this.outputChannel.warn(message),
       name: this.options.project.name,
     });
+  }
+
+  /** Closes a document a later-declared root now excludes, and drops the diagnostics this server published for it. */
+  private release(uri: Uri): void {
+    this.languageClient?.diagnostics?.delete(uri);
+    const protocol = this.uriConverters?.code2Protocol(uri) ?? uri.toString();
+    const textDocument = { uri: protocol };
+    this.languageClient
+      ?.sendNotification("textDocument/didClose", { textDocument })
+      .catch((error: unknown) => {
+        this.outputChannel.warn(
+          `Could not close a document moved to a nested root: ${formatError(error)}`,
+        );
+      });
   }
 
   private async shutdownLanguageClient(): Promise<void> {
