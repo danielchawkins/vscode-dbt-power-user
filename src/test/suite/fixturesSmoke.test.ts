@@ -5,7 +5,20 @@ import { parse } from "yaml";
 import { esmDirname } from "../esmDirname";
 
 const fixtures = path.resolve(esmDirname(import.meta.url), "../fixtures");
-const workspaces = ["single-project", "multi-root", "nested-project"];
+const workspaces = [
+  "single-project",
+  "multi-root",
+  "nested-project",
+  "nested-roots",
+];
+
+/** The fixture workspace a project file belongs to, named by its first path segment under the fixtures directory. */
+function workspaceOf(projectFile: string): string {
+  return path.relative(fixtures, projectFile).split(path.sep)[0] ?? "";
+}
+
+/** The one project whose profile comes from its workspace's root `profiles.yml`; every other project needs its own. */
+const ROOT_PROFILES_PROJECT = path.join("nested-roots", "inner");
 
 function findProjectFiles(root: string): string[] {
   return readdirSync(root, { recursive: true })
@@ -21,7 +34,7 @@ describe("fixture workspaces", () => {
       findProjectFiles(path.join(fixtures, workspace)),
     );
 
-    expect(projectFiles).toHaveLength(5);
+    expect(projectFiles).toHaveLength(7);
     for (const projectFile of projectFiles) {
       const parsed = parse(readFileSync(projectFile, "utf8")) as {
         name?: string;
@@ -30,9 +43,14 @@ describe("fixture workspaces", () => {
       expect(parsed.name).toEqual(expect.any(String));
       expect(parsed.profile).toEqual(expect.any(String));
       const projectDir = path.dirname(projectFile);
+      const workspaceDir = path.join(fixtures, workspaceOf(projectFile));
+      const usesRootProfiles =
+        path.relative(fixtures, projectDir) === ROOT_PROFILES_PROJECT;
       expect(
         existsSync(path.join(projectDir, "profiles.yml")) ||
-          existsSync(path.join(projectDir, "profiles", "profiles.yml")),
+          existsSync(path.join(projectDir, "profiles", "profiles.yml")) ||
+          (usesRootProfiles &&
+            existsSync(path.join(workspaceDir, "profiles.yml"))),
       ).toBe(true);
     }
   });
@@ -101,6 +119,17 @@ describe("fixture workspaces", () => {
     expect(settings["fusionPowerUser.profilesDir"]).toBe(
       "${workspaceFolder}/projects/analytics",
     );
+  });
+
+  it("gives nested-roots an outer and an inner project sharing one profiles.yml", () => {
+    const root = path.join(fixtures, "nested-roots");
+    expect(
+      findProjectFiles(root).map((file) => path.relative(root, file)),
+    ).toEqual(["dbt_project.yml", path.join("inner", "dbt_project.yml")]);
+    const profiles = parse(
+      readFileSync(path.join(root, "profiles.yml"), "utf8"),
+    ) as Record<string, unknown>;
+    expect(Object.keys(profiles).sort()).toEqual(["inner", "outer"]);
   });
 
   it("keeps the deliberately broken ref in single-project", () => {

@@ -1,0 +1,6 @@
+name: inner
+version: 1.0.0
+config-version: 2
+profile: inner
+model-paths:
+  - models
