@@ -349,6 +349,10 @@ export class FusionClientPoolImpl implements FusionClientPool {
           outputChannel: this.outputChannel(project),
           onCompileErrors: (messages) =>
             this.reportCompileErrors?.(project, messages),
+          nestedRoots: {
+            roots: () => this.registry.projects.map((other) => other.root),
+            onDidChange: this.registry.onDidChangeProjects,
+          },
         } satisfies FusionClientOptions)
       : new FailedFusionClient(
           project,

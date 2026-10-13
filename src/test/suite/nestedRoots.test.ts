@@ -3,6 +3,7 @@ import { type TextDocument, Uri } from "vscode";
 import type { FileEvent, Middleware } from "vscode-languageclient/node";
 import { URI as VsCodeUri } from "vscode-uri";
 import {
+  ClientNestedRoots,
   guardMiddleware,
   NestedRootGuard,
   OpenDocuments,
@@ -245,5 +246,69 @@ describe("OpenDocuments and releaseNewlyExcluded", () => {
 
     await hookOf(middleware, "didClose")(documentAt(outerModel), next);
     expect(open.uris).toEqual([]);
+  });
+});
+
+describe("ClientNestedRoots late release", () => {
+  /** A root list the test can grow, firing the change event the way the registry does. */
+  function rootSource() {
+    const roots: Uri[] = [];
+    const listeners = new Set<() => void>();
+    return {
+      source: {
+        roots: () => roots,
+        onDidChange: (listener: () => void) => {
+          listeners.add(listener);
+          return { dispose: () => listeners.delete(listener) };
+        },
+      },
+      declare: (uri: Uri) => {
+        roots.push(uri);
+        for (const listener of listeners) {
+          listener();
+        }
+      },
+      listeners,
+    };
+  }
+
+  it("sends didClose once for an open document a later root excludes, then forgets it", () => {
+    const roots = rootSource();
+    const sendDidClose = vi.fn();
+    const nested = new ClientNestedRoots(outer, roots.source, sendDidClose);
+    nested.openDocuments.opened(innerModel);
+    nested.openDocuments.opened(outerModel);
+
+    roots.declare(inner);
+    roots.declare(inner);
+
+    expect(sendDidClose).toHaveBeenCalledTimes(1);
+    expect(sendDidClose).toHaveBeenCalledWith(innerModel);
+    expect(nested.openDocuments.uris).toEqual([outerModel]);
+  });
+
+  it("does not release a document that no declared root excludes", () => {
+    const roots = rootSource();
+    const sendDidClose = vi.fn();
+    const nested = new ClientNestedRoots(outer, roots.source, sendDidClose);
+    nested.openDocuments.opened(outerModel);
+
+    roots.declare(Uri.file("/workspace/elsewhere"));
+
+    expect(sendDidClose).not.toHaveBeenCalled();
+    expect(nested.openDocuments.uris).toEqual([outerModel]);
+  });
+
+  it("stops listening once disposed", () => {
+    const roots = rootSource();
+    const sendDidClose = vi.fn();
+    const nested = new ClientNestedRoots(outer, roots.source, sendDidClose);
+    nested.openDocuments.opened(innerModel);
+
+    nested.dispose();
+    roots.declare(inner);
+
+    expect(sendDidClose).not.toHaveBeenCalled();
+    expect(roots.listeners.size).toBe(0);
   });
 });

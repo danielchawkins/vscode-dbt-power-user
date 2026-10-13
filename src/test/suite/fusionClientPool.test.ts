@@ -210,6 +210,24 @@ describe("FusionClientPool", () => {
     await pool.stop();
   });
 
+  it("passes the registry's live project roots to each client as nested roots", async () => {
+    const general = makeProject("general", "/workspace/general");
+    const inner = makeProject("inner", "/workspace/general/inner");
+    await startPool(general);
+    const nested = lastCreate()?.nestedRoots;
+
+    expect(nested?.roots().map((root) => root.fsPath)).toEqual([
+      "/workspace/general",
+    ]);
+    registry.setProjects([general, inner]);
+    await flushAsync();
+
+    expect(nested?.roots().map((root) => root.fsPath)).toEqual([
+      "/workspace/general",
+      "/workspace/general/inner",
+    ]);
+  });
+
   it("reconciles one client per declared project with stable identity", async () => {
     const project = makeProject("general", "/workspace/general");
     const {

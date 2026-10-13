@@ -1,5 +1,6 @@
 import type {
   CancellationToken,
+  DiagnosticCollection,
   Disposable,
   Event,
   LogOutputChannel,
@@ -9,6 +10,7 @@ import type {
 import type { LspLaunch } from "../core/lsp";
 import { projectRootDigest, type StaticAnalysisMode } from "../core/project";
 import type { FusionExecutable } from "./fusionExecutable";
+import type { NestedRootSource } from "./nestedRoots";
 
 export const FUSION_LSP_COMMANDS = {
   listNodes: "dbt.listNodes",
@@ -47,6 +49,8 @@ export interface FusionClientOptions {
   outputChannel: LogOutputChannel;
   /** Receives the error messages of each compile the server reports; empty after a clean compile. */
   onCompileErrors?: (messages: string[]) => void;
+  /** Live roots of every Declared Project; documents under a root nested in this project go to that root's client. */
+  nestedRoots?: NestedRootSource;
 }
 
 export interface FusionClient extends Disposable {
@@ -57,6 +61,15 @@ export interface FusionClient extends Disposable {
   readonly outputChannel: LogOutputChannel;
   readonly failureReason: string | undefined;
   readonly onDidChangeState: Event<FusionClientState>;
+  /**
+   * Documents this client has opened and not closed. `[]` for a client built without `nestedRoots`; optional so
+   * fakes can omit it.
+   */
+  readonly openDocuments?: readonly Uri[];
+  /** Compile signal of this client's server, read by the smoke suite; optional so fakes can omit it. */
+  readonly compiled?: { readonly completions: number };
+  /** The diagnostics this client has published, read by the smoke suite; optional so fakes can omit it. */
+  readonly diagnostics?: DiagnosticCollection | undefined;
   /** Sends `workspace/executeCommand`; {@link FusionCommands} queues and times out the calls. */
   request<T>(
     command: FusionLspCommand,

@@ -1,3 +1,4 @@
+import type { Disposable, Event } from "vscode";
 import { TextDocument, Uri } from "vscode";
 import type { Middleware } from "vscode-languageclient/node";
 import { isWithinRoot } from "./fusionDiagnostics";
@@ -186,4 +187,48 @@ export function guardMiddleware(
     });
   }
   return guarded;
+}
+
+/** The live nested roots a client's guard reads, and the change event that says when they moved. */
+export interface NestedRootSource {
+  readonly roots: () => readonly Uri[];
+  readonly onDidChange: Event<void>;
+}
+
+/**
+ * One client's guard and open-document record. When a root declared later excludes an open document, `release` is
+ * called for it after it leaves the open set; `dispose` stops listening.
+ */
+export class ClientNestedRoots {
+  readonly guard: NestedRootGuard;
+  readonly openDocuments = new OpenDocuments();
+  private readonly subscription: Disposable;
+
+  constructor(
+    root: Uri,
+    source: NestedRootSource,
+    release: (uri: Uri) => void,
+  ) {
+    this.guard = new NestedRootGuard(root, source.roots);
+    this.subscription = source.onDidChange(() =>
+      releaseNewlyExcluded(this.guard, this.openDocuments, release),
+    );
+  }
+
+  dispose(): void {
+    this.subscription.dispose();
+  }
+}
+
+function releaseNewlyExcluded(
+  guard: NestedRootGuard,
+  open: OpenDocuments,
+  release: (uri: Uri) => void,
+): void {
+  for (const uri of open.uris) {
+    if (guard.excludes(uri)) {
+      open.closed(uri);
+      release(uri);
+    }
+  }
 }
