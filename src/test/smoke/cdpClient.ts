@@ -582,7 +582,7 @@ export async function captureWorkbenchScreenshot(
 }
 
 /** Sends one CDP command to `webSocketUrl` and resolves with its result. */
-function sendCommand(
+export function sendCommand(
   webSocketUrl: string,
   method: string,
   params: Record<string, unknown> = {},

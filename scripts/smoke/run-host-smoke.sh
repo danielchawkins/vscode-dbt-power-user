@@ -94,8 +94,10 @@ echo
 
 # Comma-separated opt-in suites for a fixture; empty means the default set.
 suites_for() {
-  case "$1" in
-    *) ;;
+  case "$(basename "$1")" in
+    single-project)
+      if [[ "${FPU_RUNTIME_BENCHMARK:-}" != "1" ]]; then echo "default,lineageInteractions"; fi
+      ;;
   esac
 }
 
