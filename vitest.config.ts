@@ -31,6 +31,12 @@ export default defineConfig({
     environment: "node",
     globals: false,
     taskTitleValueFormatTruncate: 0,
+    // The trace run swaps the flag, since --throw-deprecation would stop it at the first warning.
+    execArgv: [
+      process.env.TRACE_DEPRECATIONS === "1"
+        ? "--trace-deprecation"
+        : "--throw-deprecation",
+    ],
     include: ["src/**/*.test.ts", "packages/*/src/**/*.test.ts"],
     exclude: [
       "**/node_modules/**",

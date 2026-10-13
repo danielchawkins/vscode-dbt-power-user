@@ -197,6 +197,11 @@ lint-shell:
     shfmt -d -i 2 -ci -sr scripts
     shfmt -f scripts | xargs -r shellcheck
 
+# Traces deprecations over build, lint, test and package; fails on a warning ALLOWED lacks. Not in `just check`.
+[group("quality")]
+trace-deprecations:
+    node scripts/quality/deprecation-trace.mjs
+
 ####################
 # Tests
 ####################
