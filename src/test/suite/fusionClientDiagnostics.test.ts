@@ -13,6 +13,8 @@ import {
   registerFusionClientDiagnostics,
 } from "../../projects/fusionClientDiagnostics";
 import { FusionClientPool } from "../../projects/fusionClientPool";
+import { FusionStatus } from "../../projects/fusionStatus";
+import { ProjectEnvironments } from "../../projects/projectEnvironments";
 import {
   DeclaredProject,
   ProjectRegistry,
@@ -35,6 +37,14 @@ function commandHandler(): () => unknown {
   );
   return registration?.[1] as () => unknown;
 }
+
+const noEnvironments = {
+  peek: vi.fn(),
+} as unknown as ProjectEnvironments;
+
+const noStatus = {
+  clientDetail: vi.fn(),
+} as unknown as FusionStatus;
 
 describe("registerFusionClientDiagnostics", () => {
   const originalHost = process.env.FPU_SMOKE_HOST;
@@ -63,6 +73,8 @@ describe("registerFusionClientDiagnostics", () => {
       registerFusionClientDiagnostics(
         { projects: [] } as unknown as ProjectRegistry,
         { get: vi.fn() } as unknown as FusionClientPool,
+        noEnvironments,
+        noStatus,
       );
 
       expect(commands.registerCommand).not.toHaveBeenCalled();
@@ -77,6 +89,8 @@ describe("registerFusionClientDiagnostics", () => {
       registerFusionClientDiagnostics(
         { projects: [] } as unknown as ProjectRegistry,
         { get: vi.fn() } as unknown as FusionClientPool,
+        noEnvironments,
+        noStatus,
       );
 
       expect(commands.registerCommand).toHaveBeenCalledWith(
@@ -108,6 +122,8 @@ describe("registerFusionClientDiagnostics", () => {
     registerFusionClientDiagnostics(
       { projects: [general, sox] } as unknown as ProjectRegistry,
       pool,
+      noEnvironments,
+      noStatus,
     );
 
     expect(commandHandler()()).toEqual([
@@ -159,6 +175,8 @@ describe("registerFusionClientDiagnostics", () => {
     registerFusionClientDiagnostics(
       { projects: [general] } as unknown as ProjectRegistry,
       pool,
+      noEnvironments,
+      noStatus,
     );
 
     expect(commandHandler()()).toEqual([
@@ -170,6 +188,86 @@ describe("registerFusionClientDiagnostics", () => {
     ]);
   });
 
+  it("reports the environment source the project resolved", () => {
+    process.env.FPU_SMOKE_HOST = "vscode";
+    const general = project("general");
+    const environments = {
+      peek: vi.fn(() => ({ source: "mise" })),
+    } as unknown as ProjectEnvironments;
+
+    registerFusionClientDiagnostics(
+      { projects: [general] } as unknown as ProjectRegistry,
+      { get: vi.fn(), getLaunch: vi.fn() } as unknown as FusionClientPool,
+      environments,
+      noStatus,
+    );
+
+    expect(commandHandler()()).toEqual([
+      expect.objectContaining({ environmentSource: "mise" }),
+    ]);
+    expect(environments.peek).toHaveBeenCalledWith(general);
+  });
+
+  it("reports the executable the client resolved to", () => {
+    process.env.FPU_SMOKE_HOST = "vscode";
+    const general = project("general");
+    const pool = {
+      get: vi.fn(),
+      getLaunch: vi.fn(() => ({ resolvedPath: "/opt/mise/bin/dbt" })),
+    } as unknown as FusionClientPool;
+
+    registerFusionClientDiagnostics(
+      { projects: [general] } as unknown as ProjectRegistry,
+      pool,
+      noEnvironments,
+      noStatus,
+    );
+
+    expect(commandHandler()()).toEqual([
+      expect.objectContaining({ executablePath: "/opt/mise/bin/dbt" }),
+    ]);
+  });
+
+  it("reports the project directory the client was launched with", () => {
+    process.env.FPU_SMOKE_HOST = "vscode";
+    const general = project("general");
+    const pool = {
+      get: vi.fn(),
+      getLaunch: vi.fn(() => ({ projectDir: "/workspace/general" })),
+    } as unknown as FusionClientPool;
+
+    registerFusionClientDiagnostics(
+      { projects: [general] } as unknown as ProjectRegistry,
+      pool,
+      noEnvironments,
+      noStatus,
+    );
+
+    expect(commandHandler()()).toEqual([
+      expect.objectContaining({ projectDir: "/workspace/general" }),
+    ]);
+  });
+
+  it("reports the client item's detail as the status detail", () => {
+    process.env.FPU_SMOKE_HOST = "vscode";
+    const general = project("general");
+    const status = {
+      clientDetail: vi.fn(() => "general · from mise"),
+    } as unknown as FusionStatus;
+
+    registerFusionClientDiagnostics(
+      { projects: [general] } as unknown as ProjectRegistry,
+      { get: vi.fn(), getLaunch: vi.fn() } as unknown as FusionClientPool,
+      noEnvironments,
+      status,
+    );
+
+    expect(commandHandler()()).toEqual([
+      expect.objectContaining({ statusDetail: "general · from mise" }),
+    ]);
+    expect(status.clientDetail).toHaveBeenCalledWith(general.root);
+  });
+
   it("registers when the integration harness asks for test commands", () => {
     delete process.env.FPU_SMOKE_HOST;
     process.env.FPU_INTEGRATION_COMMANDS = "1";
@@ -177,6 +275,8 @@ describe("registerFusionClientDiagnostics", () => {
       registerFusionClientDiagnostics(
         { projects: [] } as unknown as ProjectRegistry,
         { get: vi.fn() } as unknown as FusionClientPool,
+        noEnvironments,
+        noStatus,
       );
     } finally {
       delete process.env.FPU_INTEGRATION_COMMANDS;

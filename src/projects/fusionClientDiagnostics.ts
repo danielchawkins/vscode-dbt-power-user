@@ -2,6 +2,8 @@ import { commands, type DiagnosticCollection, Disposable } from "vscode";
 import { FusionClientState } from "../fusion/fusionLanguageClient";
 import { testCommandsEnabled } from "../settings";
 import { FusionClientPool } from "./fusionClientPool";
+import { FusionStatus } from "./fusionStatus";
+import { ProjectEnvironment, ProjectEnvironments } from "./projectEnvironments";
 import { DeclaredProjectOrigin, ProjectRegistry } from "./projectRegistry";
 
 /**
@@ -25,6 +27,14 @@ export interface FusionClientStateReport {
   compiles: number;
   /** Diagnostic counts the current client holds, keyed by file path. */
   diagnosticCounts: Record<string, number>;
+  /** Where the project's environment came from; undefined until it has resolved. */
+  environmentSource: ProjectEnvironment["source"] | undefined;
+  /** The absolute path the current client's executable resolved to. */
+  executablePath: string | undefined;
+  /** The `--project-dir` the current client was launched with. */
+  projectDir: string | undefined;
+  /** The client item's rendered detail, including the environment note. */
+  statusDetail: string | undefined;
 }
 
 /** Diagnostic counts of a collection, keyed by file path. */
@@ -42,6 +52,8 @@ function countsByFile(
 export function registerFusionClientDiagnostics(
   registry: ProjectRegistry,
   pool: FusionClientPool,
+  environments: ProjectEnvironments,
+  status: FusionStatus,
 ): Disposable | undefined {
   if (!testCommandsEnabled()) {
     return undefined;
@@ -49,15 +61,20 @@ export function registerFusionClientDiagnostics(
   return commands.registerCommand(FUSION_CLIENT_STATES_COMMAND, () =>
     registry.projects.map((project): FusionClientStateReport => {
       const client = pool.get(project);
+      const launch = pool.getLaunch(project);
       return {
         projectName: project.name,
         state: client?.state ?? "stopped",
         failureReason: client?.failureReason,
-        target: pool.getLaunch(project)?.target,
+        target: launch?.target,
         origin: project.origin,
         openDocuments: client?.openDocuments?.map((uri) => uri.fsPath) ?? [],
         compiles: client?.compiled?.completions ?? 0,
         diagnosticCounts: countsByFile(client?.diagnostics),
+        environmentSource: environments.peek(project)?.source,
+        executablePath: launch?.resolvedPath,
+        projectDir: launch?.projectDir,
+        statusDetail: status.clientDetail(project.root),
       };
     }),
   );

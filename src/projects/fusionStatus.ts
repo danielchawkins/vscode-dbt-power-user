@@ -107,6 +107,11 @@ export class FusionStatus implements Disposable {
     this.reconcile();
   }
 
+  /** The rendered detail of the client item for a project root, when that project has one. */
+  clientDetail(root: Uri): string | undefined {
+    return this.statuses.get(root.fsPath)?.clientItem.detail;
+  }
+
   dispose(): void {
     for (const key of [...this.statuses.keys()]) {
       this.remove(key);

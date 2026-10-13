@@ -30,6 +30,13 @@ jobs:
 
       - name: Install tools
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.12
+
+      - name: Install direnv
+        run: |
+          bash scripts/smoke/fetch-direnv.sh "$RUNNER_TEMP/bin"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Restore pinned hosts
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
@@ -80,6 +87,12 @@ jobs:
         run: |
           just smoke-vscode --vsix fusion-power-user-*.vsix --fixture src/test/fixtures/nested-roots
 
+      - name: Tool-environment smoke VS Code 1.141.x
+        env:
+          FPU_SKIP_INTEGRATION_COMPILE: "1"
+        run: |
+          just smoke-vscode --vsix fusion-power-user-*.vsix --tool-env
+
   smoke-cursor:
     needs: check
     runs-on: macos-latest
@@ -92,6 +105,13 @@ jobs:
 
       - name: Install tools
         uses: jdx/mise-action@c2a87611a18de5b3828c5652fe268e992400cb5c # v4.3.0
+        with:
+          version: 2026.9.12
+
+      - name: Install direnv
+        run: |
+          bash scripts/smoke/fetch-direnv.sh "$RUNNER_TEMP/bin"
+          echo "$RUNNER_TEMP/bin" >> "$GITHUB_PATH"
 
       - name: Restore pinned hosts
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
@@ -141,3 +161,9 @@ jobs:
           FPU_SMOKE_REQUIRE_FUSION: "1"
         run: |
           just smoke-cursor --vsix fusion-power-user-*.vsix --fixture src/test/fixtures/nested-roots
+
+      - name: Tool-environment smoke Cursor pinned stable
+        env:
+          FPU_SKIP_INTEGRATION_COMPILE: "1"
+        run: |
+          just smoke-cursor --vsix fusion-power-user-*.vsix --tool-env

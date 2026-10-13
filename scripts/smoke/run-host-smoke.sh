@@ -3,12 +3,14 @@ set -euo pipefail
 
 usage() {
   cat << 'EOF'
-usage: run-host-smoke.sh --host <vscode|cursor> [--vsix PATH] [--fixture PATH] [--force]
+usage: run-host-smoke.sh --host <vscode|cursor> [--vsix PATH] [--fixture PATH] [--force] [--tool-env]
 
 Install the packaged VSIX into a disposable profile and run panel smoke tests.
 Unless --fixture is given, also runs the multi-root and nested-project Fusion LSP smoke suites once each,
 skipped when FPU_RUNTIME_BENCHMARK=1 selects the tight single-fixture timing loop.
+Unless --fixture is given, the tool-environment fixtures also run after nested-roots, under the same guard.
 
+--tool-env runs only the tool-environment fixtures, then checks their evidence for this host.
 --force re-acquires the pinned host even if a cached copy already verifies.
 EOF
 }
@@ -22,6 +24,7 @@ host=""
 vsix=""
 fixture=""
 force=0
+tool_env=0
 original_args=("$@")
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -41,6 +44,10 @@ while [[ $# -gt 0 ]]; do
       force=1
       shift
       ;;
+    --tool-env)
+      tool_env=1
+      shift
+      ;;
     -h | --help)
       usage
       exit 0
@@ -55,6 +62,10 @@ done
 
 if [[ -z "$host" ]]; then
   usage
+  exit 2
+fi
+if [[ "$tool_env" -eq 1 && -n "$fixture" ]]; then
+  echo "--tool-env and --fixture are exclusive" >&2
   exit 2
 fi
 
@@ -114,8 +125,31 @@ run_fixture() {
     ${suites:+--suites "$suites"}
 }
 
+# Entry names from toolEnvFixtures.mjs, as the tool-env-<name> fixture names; the list is not repeated here.
+tool_env_fixture_names() {
+  local code
+  code="import { TOOL_ENV_FIXTURES } from './toolEnvFixtures.mjs';"
+  code+=" for (const entry of TOOL_ENV_FIXTURES) console.log('tool-env-' + entry.name);"
+  (cd "$smoke_root" && node --input-type=module --eval "$code")
+}
+
+# Runs every tool-environment fixture, then checks that each one passed on this host.
+run_tool_env() {
+  local results_root names name
+  results_root="${FPU_SMOKE_SCREENSHOTS:-$repo_root/out/smoke-results}"
+  # Evidence from an earlier run must not pass this one.
+  rm -rf "$results_root/$host"/tool-env-*
+  names="$(tool_env_fixture_names)"
+  for name in $names; do
+    run_fixture "$name"
+  done
+  node "$smoke_root/check-tool-env-evidence.mjs" "$results_root" "$host"
+}
+
 if [[ -n "$fixture" ]]; then
   run_fixture "$fixture"
+elif [[ "$tool_env" -eq 1 ]]; then
+  run_tool_env
 else
   run_fixture "$repo_root/src/test/fixtures/single-project"
   if [[ "${FPU_RUNTIME_BENCHMARK:-}" != "1" ]]; then
@@ -123,5 +157,6 @@ else
     run_fixture "$repo_root/src/test/fixtures/multi-root"
     run_fixture "$repo_root/src/test/fixtures/nested-project"
     run_fixture "$repo_root/src/test/fixtures/nested-roots"
+    run_tool_env
   fi
 fi
