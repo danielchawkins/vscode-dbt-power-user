@@ -13,6 +13,7 @@ const manifest = JSON.parse(
     languages?: Array<{ id: string }>;
     snippets?: Array<{ language: string; path: string }>;
     grammars?: Array<{ language?: string; injectTo?: string[] }>;
+    menus?: { commandPalette?: Array<{ command: string; when?: string }> };
   };
 };
 
@@ -30,6 +31,14 @@ describe("package manifest contracts", () => {
       "workspaceContains:**/dbt_project.yml",
       "workspaceContains:**/dbt_project.yaml",
     ]);
+  });
+
+  it("hides addToProjects from the command palette", () => {
+    expect(
+      manifest.contributes.menus?.commandPalette?.find(
+        ({ command }) => command === "fusionPowerUser.addToProjects",
+      ),
+    ).toEqual({ command: "fusionPowerUser.addToProjects", when: "false" });
   });
 
   it("registers snippets only for contributed languages with existing files", () => {

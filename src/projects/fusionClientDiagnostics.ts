@@ -2,7 +2,7 @@ import { commands, Disposable } from "vscode";
 import { FusionClientState } from "../fusion/fusionLanguageClient";
 import { testCommandsEnabled } from "../settings";
 import { FusionClientPool } from "./fusionClientPool";
-import { ProjectRegistry } from "./projectRegistry";
+import { DeclaredProjectOrigin, ProjectRegistry } from "./projectRegistry";
 
 /**
  * Test-only: reports LSP client state per Declared Project for the smoke and integration suites.
@@ -18,6 +18,7 @@ export interface FusionClientStateReport {
   failureReason: string | undefined;
   /** The `--target` the current client was launched with. */
   target: string | undefined;
+  origin: DeclaredProjectOrigin;
 }
 
 /** Registers {@link FUSION_CLIENT_STATES_COMMAND} when a test harness asks for it. */
@@ -36,6 +37,7 @@ export function registerFusionClientDiagnostics(
         state: client?.state ?? "stopped",
         failureReason: client?.failureReason,
         target: pool.getLaunch(project)?.target,
+        origin: project.origin,
       };
     }),
   );

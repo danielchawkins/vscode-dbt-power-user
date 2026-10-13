@@ -89,7 +89,7 @@ describe("registerFusionClientDiagnostics", () => {
   it("maps registry projects to pool client state", () => {
     process.env.FPU_SMOKE_HOST = "vscode";
     const general = project("general");
-    const sox = project("sox");
+    const sox = { ...project("sox"), origin: "openedFile" as const };
     const pool = {
       get: vi.fn((declared: DeclaredProject) =>
         declared === general
@@ -112,12 +112,14 @@ describe("registerFusionClientDiagnostics", () => {
         state: "running",
         failureReason: undefined,
         target: "ci",
+        origin: "explicit",
       },
       {
         projectName: "sox",
         state: "stopped",
         failureReason: undefined,
         target: undefined,
+        origin: "openedFile",
       },
     ]);
   });

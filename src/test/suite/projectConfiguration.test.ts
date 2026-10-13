@@ -3,12 +3,14 @@ import * as os from "os";
 import * as path from "path";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  ConfigurationTarget,
   Uri,
   workspace,
   WorkspaceConfiguration,
   WorkspaceFolder,
 } from "vscode";
 import {
+  addDeclaredProjectRoot,
   PROJECTS_SETTING,
   resolveDeclaredProjectRoots,
 } from "../../projects/projectConfiguration";
@@ -210,6 +212,87 @@ describe("resolveDeclaredProjectRoots", () => {
   });
 });
 
+describe("addDeclaredProjectRoot", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it("appends the root to explicit entries and keeps broken ones", async () => {
+    const folder = fixtureFolder("multi-root");
+    const update = mockWritableProjects(["projects/general", "projects/typo"]);
+
+    await addDeclaredProjectRoot(
+      folder,
+      Uri.file(fixturePath("multi-root", "projects/sox")),
+    );
+
+    expect(update).toHaveBeenCalledWith(
+      PROJECTS_SETTING,
+      ["projects/general", "projects/typo", "projects/sox"],
+      ConfigurationTarget.WorkspaceFolder,
+    );
+  });
+
+  it("writes the entries unchanged when one already resolves to the root", async () => {
+    const folder = fixtureFolder("multi-root");
+    const update = mockWritableProjects(["projects/sox"]);
+
+    await addDeclaredProjectRoot(
+      folder,
+      Uri.file(fixturePath("multi-root", "projects/sox")),
+    );
+
+    expect(update).toHaveBeenCalledWith(
+      PROJECTS_SETTING,
+      ["projects/sox"],
+      ConfigurationTarget.WorkspaceFolder,
+    );
+  });
+
+  it("starts an unset setting from a folder root project, keeping '.'", async () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "fpu-add-root-"));
+    try {
+      fs.mkdirSync(path.join(tmpDir, "inner"));
+      fs.writeFileSync(path.join(tmpDir, "dbt_project.yml"), "name: outer\n");
+      fs.writeFileSync(
+        path.join(tmpDir, "inner", "dbt_project.yml"),
+        "name: inner\n",
+      );
+      const folder = { uri: Uri.file(tmpDir), name: "outer", index: 0 };
+      const update = mockWritableProjects(undefined);
+
+      await addDeclaredProjectRoot(
+        folder,
+        Uri.file(path.join(tmpDir, "inner")),
+      );
+
+      expect(update).toHaveBeenCalledWith(
+        PROJECTS_SETTING,
+        [".", "inner"],
+        ConfigurationTarget.WorkspaceFolder,
+      );
+    } finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true });
+    }
+  });
+
+  it("writes only the new root when the folder root is not a project", async () => {
+    const folder = fixtureFolder("nested-project");
+    const update = mockWritableProjects(undefined);
+
+    await addDeclaredProjectRoot(
+      folder,
+      Uri.file(fixturePath("nested-project", "projects/analytics")),
+    );
+
+    expect(update).toHaveBeenCalledWith(
+      PROJECTS_SETTING,
+      ["projects/analytics"],
+      ConfigurationTarget.WorkspaceFolder,
+    );
+  });
+});
+
 function fixtureFolder(name: string): WorkspaceFolder {
   return {
     uri: Uri.file(fixturePath(name)),
@@ -224,6 +307,16 @@ function fixturePath(...parts: string[]): string {
 
 function mockProjects(value: unknown): void {
   vi.spyOn(workspace, "getConfiguration").mockReturnValue(configuration(value));
+}
+
+/** Reads `value` for the projects setting and returns the spy that records writes. */
+function mockWritableProjects(value: unknown) {
+  const update = vi.fn((..._args: unknown[]) => Promise.resolve());
+  vi.spyOn(workspace, "getConfiguration").mockReturnValue({
+    ...configuration(value),
+    update,
+  });
+  return update;
 }
 
 function configuration(value: unknown): WorkspaceConfiguration {

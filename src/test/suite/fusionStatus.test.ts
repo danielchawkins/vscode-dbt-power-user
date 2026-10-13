@@ -23,9 +23,18 @@ import {
   optInLines,
   ProjectOptIns,
 } from "../../projects/fusionStatus";
+import { addDeclaredProjectRoot } from "../../projects/projectConfiguration";
 import { DeclaredProject } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
 import { declaredProject } from "../projectHarness";
+
+vi.mock("../../projects/projectConfiguration", async (importOriginal) => ({
+  ...(await importOriginal<
+    typeof import("../../projects/projectConfiguration")
+  >()),
+  addDeclaredProjectRoot: vi.fn(),
+}));
+
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace"),
   name: "workspace",
@@ -225,7 +234,7 @@ describe("FusionStatus", () => {
   }
 
   function item(
-    kind: "client" | "static" | "target",
+    kind: "client" | "static" | "target" | "origin",
     project: DeclaredProject,
   ) {
     const calls = vi.mocked(languages.createLanguageStatusItem).mock.calls;
@@ -446,6 +455,69 @@ describe("FusionStatus", () => {
     launches.delete(general.root.fsPath);
     poolChanged.fire();
     expect(targetItem.dispose).toHaveBeenCalled();
+    status.dispose();
+  });
+
+  it("offers an opened-file project's root to add to the folder's projects, and no item otherwise", () => {
+    const opened = makeProject("nested", "/workspace/shop/nested");
+    Object.assign(opened, { origin: "openedFile" });
+    add(opened, new FakeClient(opened));
+    const general = makeProject("general", "/workspace/general");
+    add(general, new FakeClient(general));
+    const status = createStatus();
+    status.initialize();
+
+    const originItem = item("origin", opened)!;
+    expect(originItem.text).toBe("Declared by an opened file");
+    expect(originItem.detail).toBe("nested");
+    expect(originItem.command).toEqual({
+      title: "Add to projects",
+      command: "fusionPowerUser.addToProjects",
+      arguments: [opened.root],
+    });
+    expect(item("origin", general)).toBeUndefined();
+    expect(commands.registerCommand).toHaveBeenCalledWith(
+      "fusionPowerUser.addToProjects",
+      expect.any(Function),
+    );
+
+    Object.assign(opened, { origin: "explicit" });
+    poolChanged.fire();
+    expect(originItem.dispose).toHaveBeenCalled();
+    status.dispose();
+  });
+
+  function addToProjectsHandler(): (root?: Uri) => Thenable<void> | undefined {
+    const registration = vi
+      .mocked(commands.registerCommand)
+      .mock.calls.findLast(
+        ([command]) => command === "fusionPowerUser.addToProjects",
+      );
+    return registration![1] as (root?: Uri) => Thenable<void> | undefined;
+  }
+
+  it("adds an opened-file project's folder and root to the folder's projects", async () => {
+    const opened = makeProject("nested", "/workspace/shop/nested");
+    Object.assign(opened, { origin: "openedFile" });
+    add(opened, new FakeClient(opened));
+    const status = createStatus();
+    status.initialize();
+
+    await addToProjectsHandler()(opened.root);
+    expect(addDeclaredProjectRoot).toHaveBeenCalledTimes(1);
+    expect(addDeclaredProjectRoot).toHaveBeenCalledWith(folder, opened.root);
+    status.dispose();
+  });
+
+  it("writes nothing when the root is not a declared project", async () => {
+    const opened = makeProject("nested", "/workspace/shop/nested");
+    Object.assign(opened, { origin: "openedFile" });
+    add(opened, new FakeClient(opened));
+    const status = createStatus();
+    status.initialize();
+
+    await addToProjectsHandler()(Uri.file("/workspace/unknown"));
+    expect(addDeclaredProjectRoot).not.toHaveBeenCalled();
     status.dispose();
   });
 });

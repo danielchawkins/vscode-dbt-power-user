@@ -15,6 +15,7 @@ import {
   FusionClientState,
 } from "../fusion/fusionLanguageClient";
 import { FusionClientPool } from "./fusionClientPool";
+import { addDeclaredProjectRoot } from "./projectConfiguration";
 import { DeclaredProject } from "./projectRegistry";
 import {
   effectiveStaticAnalysis,
@@ -44,6 +45,7 @@ type ProjectStatus = {
   clientItem: LanguageStatusItem;
   staticItem: LanguageStatusItem;
   targetItem: LanguageStatusItem | undefined;
+  originItem: LanguageStatusItem | undefined;
 };
 
 /** What the status shows beside a project's client state. */
@@ -86,6 +88,17 @@ export class FusionStatus implements Disposable {
         (root?: Uri) =>
           root &&
           this.statuses.get(root.fsPath)?.client.outputChannel.show(true),
+      ),
+      commands.registerCommand(
+        "fusionPowerUser.addToProjects",
+        (root?: Uri) => {
+          const project = this.registry.projects.find(
+            (candidate) => candidate.root.fsPath === root?.fsPath,
+          );
+          return (
+            project && addDeclaredProjectRoot(project.folder, project.root)
+          );
+        },
       ),
     );
   }
@@ -155,6 +168,7 @@ export class FusionStatus implements Disposable {
       clientItem,
       staticItem,
       targetItem: undefined,
+      originItem: undefined,
     };
     status.subscription = client.onDidChangeState(() => this.render(status));
     this.statuses.set(key, status);
@@ -171,6 +185,7 @@ export class FusionStatus implements Disposable {
     status.clientItem.dispose();
     status.staticItem.dispose();
     status.targetItem?.dispose();
+    status.originItem?.dispose();
   }
 
   private renderAll(): void {
@@ -196,6 +211,30 @@ export class FusionStatus implements Disposable {
     ].join(" · ");
     const command = lines.find((line) => line.command)?.command;
     staticItem.command = command && { ...command, arguments: [project.root] };
+  }
+
+  /** A project declared by an opened file offers to add its root to the folder's configured projects. */
+  private renderOrigin(status: ProjectStatus): void {
+    const { project } = status;
+    if (project.origin !== "openedFile") {
+      status.originItem?.dispose();
+      status.originItem = undefined;
+      return;
+    }
+    if (!status.originItem) {
+      status.originItem = languages.createLanguageStatusItem(
+        `fusionPowerUser.status.origin.${projectRootDigest(project.root.fsPath)}`,
+        vscodeDocumentSelectorForProject(project.root),
+      );
+      status.originItem.name = `Origin (${project.name})`;
+    }
+    status.originItem.text = "Declared by an opened file";
+    status.originItem.detail = project.name;
+    status.originItem.command = {
+      title: "Add to projects",
+      command: "fusionPowerUser.addToProjects",
+      arguments: [project.root],
+    };
   }
 
   private render(status: ProjectStatus): void {
@@ -224,6 +263,7 @@ export class FusionStatus implements Disposable {
     };
 
     this.renderStatic(status);
+    this.renderOrigin(status);
 
     const target = this.clientPool.getLaunch(project)?.target;
     if (!target) {

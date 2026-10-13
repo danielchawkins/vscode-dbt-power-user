@@ -1,4 +1,10 @@
-import { ConfigurationTarget, Disposable, Uri, workspace } from "vscode";
+import {
+  ConfigurationTarget,
+  Disposable,
+  Uri,
+  workspace,
+  WorkspaceFolder,
+} from "vscode";
 import { DeferSettingsEntry } from "../core/project";
 
 export * from "./environment";
@@ -179,6 +185,16 @@ export function writeStrictStaticAnalysis(root: Uri): Thenable<void> {
   return workspace
     .getConfiguration(CONFIGURATION_SECTION, root)
     .update("staticAnalysis", "strict", ConfigurationTarget.WorkspaceFolder);
+}
+
+/** Sets `fusionPowerUser.projects` to `entries` in the workspace-folder settings of `folder`. */
+export function writeDeclaredProjects(
+  folder: WorkspaceFolder,
+  entries: unknown[],
+): Thenable<void> {
+  return workspace
+    .getConfiguration(CONFIGURATION_SECTION, folder.uri)
+    .update("projects", entries, ConfigurationTarget.WorkspaceFolder);
 }
 
 /** A configuration change, queried for the keys it was subscribed with. */

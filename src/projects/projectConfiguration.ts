@@ -1,7 +1,7 @@
 import * as path from "path";
 import { Uri, WorkspaceFolder } from "vscode";
 import { hasDbtProjectFile } from "../core/project";
-import { readSetting } from "../settings";
+import { readSetting, writeDeclaredProjects } from "../settings";
 
 export const PROJECTS_SETTING = "projects";
 export const ENABLED_SETTING = "enabled";
@@ -83,4 +83,31 @@ export function resolveDeclaredProjectRoots(
 
 function hasProjectFile(root: string): boolean {
   return hasDbtProjectFile(root);
+}
+
+/**
+ * Adds `root` to the folder's Declared Project entries and keeps every configured entry, including broken ones.
+ * An unset setting starts from the folder root when that holds a project file.
+ */
+export function addDeclaredProjectRoot(
+  folder: WorkspaceFolder,
+  root: Uri,
+): Thenable<void> {
+  const configured: unknown = readSetting(PROJECTS_SETTING, folder.uri);
+  const current: unknown[] =
+    Array.isArray(configured) && configured.length > 0
+      ? configured
+      : hasProjectFile(folder.uri.fsPath)
+        ? ["."]
+        : [];
+  const resolvesToRoot = current.some(
+    (entry) =>
+      typeof entry === "string" &&
+      path.resolve(folder.uri.fsPath, entry.trim()) === root.fsPath,
+  );
+  const relative = path.relative(folder.uri.fsPath, root.fsPath) || ".";
+  return writeDeclaredProjects(
+    folder,
+    resolvesToRoot ? current : [...current, relative],
+  );
 }

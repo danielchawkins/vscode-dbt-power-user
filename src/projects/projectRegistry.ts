@@ -27,7 +27,7 @@ import {
 import { findProjectRootForFile } from "./projectDiscovery";
 
 /** How a Declared Project came to be declared. */
-type DeclaredProjectOrigin = "explicit" | "folderRoot" | "openedFile";
+export type DeclaredProjectOrigin = "explicit" | "folderRoot" | "openedFile";
 
 /** Languages whose open documents can declare a project. */
 const DECLARING_LANGUAGES: ReadonlySet<string> = new Set([

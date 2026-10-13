@@ -16,6 +16,7 @@ import {
   readUserFileAssociations,
   SETTING_SCOPES,
   SettingsChange,
+  writeDeclaredProjects,
   writeSetting,
   writeUserFileAssociations,
 } from "../../settings";
@@ -85,6 +86,30 @@ describe("settings", () => {
     expect(getConfiguration).toHaveBeenCalledWith(CONFIGURATION_SECTION);
     expect(update).toHaveBeenNthCalledWith(1, "query.limit", 100);
     expect(update).toHaveBeenNthCalledWith(2, "query.limit", undefined);
+  });
+
+  it("writes the declared projects to the folder's workspace settings", async () => {
+    const update = vi.fn((..._args: unknown[]) => Promise.resolve());
+    const folder = {
+      uri: Uri.file("/workspace/shop"),
+      name: "shop",
+      index: 0,
+    };
+    const getConfiguration = vi
+      .spyOn(workspace, "getConfiguration")
+      .mockReturnValue({ update } as unknown as WorkspaceConfiguration);
+
+    await writeDeclaredProjects(folder, [".", "projects/analytics"]);
+
+    expect(getConfiguration).toHaveBeenCalledWith(
+      CONFIGURATION_SECTION,
+      folder.uri,
+    );
+    expect(update).toHaveBeenCalledWith(
+      "projects",
+      [".", "projects/analytics"],
+      ConfigurationTarget.WorkspaceFolder,
+    );
   });
 
   it("inspects each key of the user, default and workspace layers", () => {

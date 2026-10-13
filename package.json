@@ -364,6 +364,11 @@
     },
     "commands": [
       {
+        "command": "fusionPowerUser.addToProjects",
+        "title": "Add to Declared Projects",
+        "category": "Fusion Power User"
+      },
+      {
         "command": "fusionPowerUser.viewInDocEditor",
         "title": "View in documentation editor",
         "category": "Fusion Power User"
@@ -773,6 +778,10 @@
         }
       ],
       "commandPalette": [
+        {
+          "command": "fusionPowerUser.addToProjects",
+          "when": "false"
+        },
         {
           "command": "fusionPowerUser.rerunFromHistory",
           "when": "false"
