@@ -112,6 +112,7 @@ lint:
     just webviews::lint
     just lint-format
     just lint-lockfiles
+    just lint-deps
     just lint-markdown
     just lint-shell
 
@@ -171,6 +172,10 @@ lint-format:
 [group("quality")]
 lint-lockfiles:
     npm run check:lockfile
+
+[group("quality")]
+lint-deps:
+    node scripts/quality/dependency-health.mjs
 
 [group("quality")]
 fmt-markdown:
