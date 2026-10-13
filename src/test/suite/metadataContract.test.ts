@@ -232,6 +232,7 @@ describe("Metadata contract — shape and key set snapshot", () => {
       root: Uri.file(fixtureRoot),
       name: "single_project",
       folder: { uri: Uri.file(fixtureRoot), name: "single_project", index: 0 },
+      origin: "explicit",
       contains: () => true,
       dispose: () => {},
     } as DeclaredProject;

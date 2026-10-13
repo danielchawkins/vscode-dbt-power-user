@@ -7,6 +7,7 @@ describe("ProjectQuickPick.declaredProjectPicker", () => {
   const project1: DeclaredProject = {
     root: Uri.file("/workspace/projects/general"),
     name: "general_project",
+    origin: "explicit",
     folder: { uri: Uri.file("/workspace") } as any,
     contains: vi.fn(() => true),
     dispose: vi.fn(),
@@ -15,6 +16,7 @@ describe("ProjectQuickPick.declaredProjectPicker", () => {
   const project2: DeclaredProject = {
     root: Uri.file("/workspace/projects/sox"),
     name: "sox_project",
+    origin: "explicit",
     folder: { uri: Uri.file("/workspace") } as any,
     contains: vi.fn(() => true),
     dispose: vi.fn(),

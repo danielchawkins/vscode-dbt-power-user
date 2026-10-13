@@ -82,6 +82,7 @@ export function declaredProject(
     root: Uri.file(rootPath),
     name,
     folder,
+    origin: "explicit",
     contains: () => false,
     dispose: () => {},
   };

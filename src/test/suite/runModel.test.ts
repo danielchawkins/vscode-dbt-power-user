@@ -48,6 +48,7 @@ describe("RunModel SQL execution", () => {
       root: Uri.file("/project"),
       name: "project",
       folder: { uri: Uri.file("/workspace"), name: "workspace", index: 0 },
+      origin: "explicit",
       contains: () => true,
       dispose: vi.fn(),
     };

@@ -34,6 +34,7 @@ function makeProject(rootPath = "/workspace/general"): DeclaredProject {
     root: Uri.file(rootPath),
     name: "general",
     folder,
+    origin: "explicit",
     contains: () => false,
     dispose: () => {},
   };

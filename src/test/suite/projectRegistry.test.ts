@@ -11,12 +11,18 @@ import {
   vi,
 } from "vitest";
 import { RelativePattern, Uri, workspace, WorkspaceFolder } from "vscode";
+import type { FusionClientFactory } from "../../fusion/fusionLanguageClient";
+import { FusionClientPoolImpl } from "../../projects/fusionClientPool";
 import {
   ENABLED_SETTING,
   PROJECTS_SETTING,
 } from "../../projects/projectConfiguration";
 import { ProjectRegistry } from "../../projects/projectRegistry";
+import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
+import { waitFor } from "../async";
 import { esmDirname } from "../esmDirname";
+import { createMockLogOutputChannel } from "../mock/vscode";
+import { fakeProjectEnvironments, sampleExecutable } from "../projectHarness";
 
 const fixturesRoot = path.resolve(esmDirname(import.meta.url), "../fixtures");
 
@@ -707,5 +713,249 @@ describe("ProjectRegistry", () => {
         "Declared Project entry projects/typo has no dbt_project.yml",
       ),
     );
+  });
+
+  describe("declareFromDocuments", () => {
+    const general = makeFolder("multi-root");
+    let enabled: boolean;
+    let projects: string[];
+    let onConfiguration:
+      | ((event: { affectsConfiguration(section: string): boolean }) => void)
+      | undefined;
+    let onFolders: (() => void) | undefined;
+
+    const openedDocument = (
+      relative: string,
+      overrides: Record<string, unknown> = {},
+    ) =>
+      ({
+        uri: Uri.file(path.join(general.uri.fsPath, relative)),
+        languageId: "sql",
+        ...overrides,
+      }) as any;
+    const soxModel = "projects/sox/models/sox_model.sql";
+    const roots = (registry: ProjectRegistry) =>
+      registry.projects.map((project) => `${project.name}:${project.origin}`);
+
+    async function start(): Promise<ProjectRegistry> {
+      const registry = new ProjectRegistry(terminal);
+      await registry.initialize();
+      return registry;
+    }
+
+    beforeEach(() => {
+      enabled = true;
+      projects = ["projects/general"];
+      (workspace as any).isTrusted = true;
+      vi.spyOn(workspace, "getConfiguration").mockImplementation(
+        () =>
+          ({
+            get: (key: string) =>
+              key === ENABLED_SETTING
+                ? enabled
+                : key === PROJECTS_SETTING
+                  ? projects
+                  : undefined,
+          }) as any,
+      );
+      vi.spyOn(workspace, "onDidChangeConfiguration").mockImplementation(
+        (listener) => {
+          onConfiguration = listener as typeof onConfiguration;
+          return { dispose: vi.fn() };
+        },
+      );
+      vi.spyOn(workspace, "onDidChangeWorkspaceFolders").mockImplementation(
+        (listener) => {
+          onFolders = listener as () => void;
+          return { dispose: vi.fn() };
+        },
+      );
+      (workspace.workspaceFolders as any) = [general];
+    });
+
+    afterEach(() => {
+      (workspace as any).isTrusted = true;
+    });
+
+    it("declares the nearest root of an opened file with origin openedFile", async () => {
+      const registry = await start();
+      const changed = vi.fn();
+      registry.onDidChangeProjects(changed);
+
+      registry.declareFromDocuments([openedDocument(soxModel)]);
+
+      expect(roots(registry)).toEqual(["general:explicit", "sox:openedFile"]);
+      expect(changed).toHaveBeenCalledTimes(1);
+    });
+
+    it.each(["jinja-sql", "yaml"])(
+      "accepts a %s document",
+      async (language) => {
+        const registry = await start();
+        registry.declareFromDocuments([
+          openedDocument(soxModel, { languageId: language }),
+        ]);
+        expect(roots(registry)).toContain("sox:openedFile");
+      },
+    );
+
+    it.each([
+      [
+        "a non-file scheme",
+        {
+          uri: {
+            scheme: "untitled",
+            fsPath: path.join(general.uri.fsPath, soxModel),
+          },
+        },
+      ],
+      ["an unsupported language", { languageId: "markdown" }],
+    ])("ignores a document with %s", async (_name, overrides) => {
+      const registry = await start();
+      registry.declareFromDocuments([openedDocument(soxModel, overrides)]);
+      expect(roots(registry)).toEqual(["general:explicit"]);
+    });
+
+    it("ignores documents in an untrusted workspace", async () => {
+      (workspace as any).isTrusted = false;
+      const registry = await start();
+      registry.declareFromDocuments([openedDocument(soxModel)]);
+      expect(roots(registry)).toEqual(["general:explicit"]);
+    });
+
+    it("ignores documents in a folder with enabled false", async () => {
+      enabled = false;
+      const registry = await start();
+      registry.declareFromDocuments([openedDocument(soxModel)]);
+      expect(registry.projects).toHaveLength(0);
+    });
+
+    it("does nothing before initialize or after dispose", async () => {
+      const registry = new ProjectRegistry(terminal);
+      const document = openedDocument(soxModel);
+      registry.declareFromDocuments([document]);
+      await registry.initialize();
+      expect(roots(registry)).toEqual(["general:explicit"]);
+
+      registry.dispose();
+      registry.declareFromDocuments([document]);
+      expect(registry.projects).toHaveLength(0);
+    });
+
+    it("changes nothing when the nearest root is already declared", async () => {
+      const registry = await start();
+      const changed = vi.fn();
+      registry.onDidChangeProjects(changed);
+
+      registry.declareFromDocuments([
+        openedDocument("projects/general/models/general_model.sql"),
+      ]);
+
+      expect(roots(registry)).toEqual(["general:explicit"]);
+      expect(changed).not.toHaveBeenCalled();
+    });
+
+    it("adds a nested root even when a declared project is its ancestor", async () => {
+      const tmpDir = mkdtempSync(path.join(tmpdir(), "fpu-project-registry-"));
+      const nested = path.join(tmpDir, "projects", "sox");
+      try {
+        writeFileSync(path.join(tmpDir, "dbt_project.yml"), "name: shop\n");
+        mkdirSync(nested, { recursive: true });
+        writeFileSync(path.join(nested, "dbt_project.yml"), "name: sox\n");
+        projects = ["."];
+        (workspace.workspaceFolders as any) = [
+          { uri: Uri.file(tmpDir), name: "shop", index: 0 },
+        ];
+        const registry = await start();
+
+        registry.declareFromDocuments([
+          {
+            uri: Uri.file(path.join(nested, "models", "sox_model.sql")),
+            languageId: "sql",
+          } as any,
+        ]);
+
+        expect(roots(registry)).toEqual(["shop:explicit", "sox:openedFile"]);
+      } finally {
+        rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    it("drops opened-file roots when their folder is removed", async () => {
+      const registry = await start();
+      registry.declareFromDocuments([openedDocument(soxModel)]);
+      expect(roots(registry)).toHaveLength(2);
+
+      (workspace.workspaceFolders as any) = [];
+      onFolders?.();
+      expect(registry.projects).toHaveLength(0);
+
+      (workspace.workspaceFolders as any) = [general];
+      onFolders?.();
+      expect(roots(registry)).toEqual(["general:explicit"]);
+    });
+
+    it("drops opened-file roots when their folder is disabled, and re-enabling does not restore them", async () => {
+      const registry = await start();
+      registry.declareFromDocuments([openedDocument(soxModel)]);
+      const affectsEnabled = {
+        affectsConfiguration: (section: string) =>
+          section === "fusionPowerUser.enabled",
+      };
+
+      enabled = false;
+      onConfiguration?.(affectsEnabled);
+      expect(registry.projects).toHaveLength(0);
+
+      enabled = true;
+      onConfiguration?.(affectsEnabled);
+      expect(roots(registry)).toEqual(["general:explicit"]);
+    });
+
+    it("gives an opened-file project its environment before the pool resolves it", async () => {
+      const registry = await start();
+      const environments = fakeProjectEnvironments({ TOOL: "mise" });
+      const resolve = vi.fn(async (_root: Uri, _environment: unknown) =>
+        sampleExecutable(),
+      );
+      const create = vi.fn((_options: unknown) => ({
+        stop: vi.fn(() => Promise.resolve()),
+        dispose: vi.fn(),
+      }));
+      const pool = new FusionClientPoolImpl(
+        registry,
+        terminal,
+        { resolve },
+        { create } as unknown as FusionClientFactory,
+        {
+          readSnapshot: readProjectSnapshot,
+          environments,
+          outputChannel: () => createMockLogOutputChannel(),
+        },
+      );
+      pool.initialize();
+      registry.declareFromDocuments([openedDocument(soxModel)]);
+
+      try {
+        const soxRoot = path.join(general.uri.fsPath, "projects/sox");
+        await waitFor(() => expect(create).toHaveBeenCalledTimes(2));
+        const ensureIndex = environments.ensure.mock.calls.findIndex(
+          ([project]) => project.root.fsPath === soxRoot,
+        );
+        const resolveIndex = resolve.mock.calls.findIndex(
+          ([root]) => root.fsPath === soxRoot,
+        );
+        expect(ensureIndex).toBeGreaterThanOrEqual(0);
+        expect(resolveIndex).toBeGreaterThanOrEqual(0);
+        expect(
+          environments.ensure.mock.invocationCallOrder[ensureIndex],
+        ).toBeLessThan(resolve.mock.invocationCallOrder[resolveIndex]);
+        expect(resolve.mock.calls[resolveIndex][1]).toBe(
+          await environments.ensure.mock.results[ensureIndex].value,
+        );
+      } finally {
+        await pool.stop();
+      }
+    });
   });
 });

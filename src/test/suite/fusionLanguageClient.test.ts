@@ -85,6 +85,7 @@ function makeProject(
     root: Uri.file(rootPath),
     name,
     folder,
+    origin: "explicit",
     contains: () => false,
     dispose: () => {},
   };

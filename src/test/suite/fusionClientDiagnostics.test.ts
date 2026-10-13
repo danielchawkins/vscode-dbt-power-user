@@ -23,6 +23,7 @@ function project(name: string): DeclaredProject {
     root: Uri.file(`/workspace/${name}`),
     name,
     folder: { uri: Uri.file("/workspace"), name: "workspace", index: 0 },
+    origin: "explicit",
     contains: () => true,
     dispose: vi.fn(),
   };

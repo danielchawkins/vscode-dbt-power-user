@@ -11,7 +11,7 @@
         ".vscode-test.mjs"
       ],
       "project": ["src/**/*.ts!", "scripts/**/*.{mjs,ts}", "!src/test/**!"],
-      "ignore": ["scripts/spikes/**", "src/projects/projectDiscovery.ts"],
+      "ignore": ["scripts/spikes/**"],
       "ignoreBinaries": ["dbt", "sample"],
       "ignoreDependencies": ["type-coverage"]
     },

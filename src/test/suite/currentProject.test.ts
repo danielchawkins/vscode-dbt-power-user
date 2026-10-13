@@ -253,6 +253,7 @@ function project(
     root: Uri.file(rootPath),
     name,
     folder: owningFolder,
+    origin: "explicit",
     contains: (uri) =>
       uri.fsPath === rootPath || uri.fsPath.startsWith(rootPath + path.sep),
     dispose: vi.fn(),

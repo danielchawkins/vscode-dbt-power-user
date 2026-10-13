@@ -70,6 +70,7 @@ describe("Fusion-only integration wiring", () => {
     const declared = {
       root: Uri.file("/tmp/shared"),
       name: "shared",
+      origin: "explicit" as const,
       folder: { uri: Uri.file("/tmp"), name: "tmp", index: 0 },
       contains: () => false,
       dispose: () => {},
@@ -117,6 +118,7 @@ describe("Fusion-only integration wiring", () => {
     const project = composeTracked().projectFactory({
       root: Uri.file("/tmp/project"),
       name: "project",
+      origin: "explicit",
       folder: { uri: Uri.file("/tmp"), name: "tmp", index: 0 },
       contains: () => false,
       dispose: () => {},

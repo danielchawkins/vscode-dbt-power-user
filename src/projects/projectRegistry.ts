@@ -6,6 +6,7 @@ import {
   EventEmitter,
   FileSystemWatcher,
   RelativePattern,
+  TextDocument,
   Uri,
   workspace,
   WorkspaceFolder,
@@ -16,20 +17,37 @@ import {
   declaredProjectName,
   readDbtProjectFile,
 } from "../core/project";
-import { onDidChangeSettings } from "../settings";
+import { onDidChangeSettings, readSetting } from "../settings";
 import { activeModelUri } from "./previewUri";
 import {
   ENABLED_SETTING,
   PROJECTS_SETTING,
   resolveDeclaredProjectRoots,
 } from "./projectConfiguration";
+import { findProjectRootForFile } from "./projectDiscovery";
+
+/** How a Declared Project came to be declared. */
+type DeclaredProjectOrigin = "explicit" | "folderRoot" | "openedFile";
+
+/** Languages whose open documents can declare a project. */
+const DECLARING_LANGUAGES: ReadonlySet<string> = new Set([
+  "jinja-sql",
+  "sql",
+  "yaml",
+]);
 
 /** One configured dbt project that receives independent editor services. */
 export interface DeclaredProject extends Disposable {
   readonly root: Uri;
   readonly name: string;
   readonly folder: WorkspaceFolder;
+  readonly origin: DeclaredProjectOrigin;
   contains(uri: Uri): boolean;
+}
+
+interface OpenedRoot {
+  folder: WorkspaceFolder;
+  root: Uri;
 }
 
 /** Resolves and tracks the workspace's Declared Projects. */
@@ -37,6 +55,8 @@ export class ProjectRegistry implements Disposable {
   private _projects: DeclaredProjectImpl[] = [];
   private lookupOrder: DeclaredProjectImpl[] = [];
   private watchers = new Map<string, FileSystemWatcher>();
+  /** Roots declared from opened files, keyed by canonical path. Held in memory until the window reloads. */
+  private openedRoots = new Map<string, OpenedRoot>();
   private readonly _onDidChangeProjects = new EventEmitter<void>();
   private readonly subscriptions: Disposable[] = [];
   private initialized = false;
@@ -61,6 +81,32 @@ export class ProjectRegistry implements Disposable {
     return this.lookupOrder.find((project) => project.contains(resource));
   }
 
+  /** Declares the nearest project root of each eligible document; the next reconcile registers new roots. */
+  declareFromDocuments(documents: readonly TextDocument[]): void {
+    if (!this.initialized || this.disposed) {
+      return;
+    }
+    let added = false;
+    for (const document of documents) {
+      const opened = openedRootOf(document);
+      if (!opened) {
+        continue;
+      }
+      const key = canonicalPath(opened.root.fsPath);
+      if (
+        this.openedRoots.has(key) ||
+        this._projects.some((project) => project.realpathKey === key)
+      ) {
+        continue;
+      }
+      this.openedRoots.set(key, opened);
+      added = true;
+    }
+    if (added) {
+      this.reconcile();
+    }
+  }
+
   /** Resolves the initial registry and subscribes to its configuration inputs. */
   async initialize(): Promise<void> {
     if (this.initialized || this.disposed) {
@@ -82,6 +128,7 @@ export class ProjectRegistry implements Disposable {
     if (this.disposed) {
       return;
     }
+    this.pruneOpenedRoots();
     const candidates: Candidate[] = [];
     for (const folder of workspace.workspaceFolders ?? []) {
       const resolved = resolveDeclaredProjectRoots(folder);
@@ -95,23 +142,16 @@ export class ProjectRegistry implements Disposable {
         });
       }
       for (const root of resolved.roots) {
-        const file = readDbtProjectFile(root.fsPath);
-        if (file.kind !== "parsed") {
-          this.terminal.warn(
-            "projectRegistry",
-            `Parse error at ${root.fsPath}: ${file.kind === "missing" ? "file is missing" : file.message}`,
-          );
-          continue;
-        }
-        const name =
-          declaredProjectName(file.config) ?? path.basename(root.fsPath);
-        candidates.push({
+        this.addCandidate(candidates, {
           folder,
           root,
-          name,
-          realpathKey: canonicalPath(root.fsPath),
+          origin: resolved.source,
         });
       }
+    }
+    // Opened-file roots come last, so a root that is also configured keeps its configured origin.
+    for (const opened of this.openedRoots.values()) {
+      this.addCandidate(candidates, { ...opened, origin: "openedFile" });
     }
 
     const byRealpath = new Map<string, DesiredProject>();
@@ -138,19 +178,13 @@ export class ProjectRegistry implements Disposable {
           p.root.fsPath === d.root.fsPath &&
           p.folder.uri.fsPath === d.folder.uri.fsPath &&
           p.name === d.name &&
+          p.origin === d.origin &&
           samePaths(p.aliases, d.aliases),
       );
       if (existing) {
         next.push(existing);
       } else {
-        const proj = new DeclaredProjectImpl(
-          d.folder,
-          d.root,
-          d.name,
-          d.realpathKey,
-          d.aliases,
-        );
-        next.push(proj);
+        next.push(new DeclaredProjectImpl(d));
       }
       let watcher = this.watchers.get(d.realpathKey);
       if (!watcher) {
@@ -191,6 +225,45 @@ export class ProjectRegistry implements Disposable {
     }
   }
 
+  /** Adds the root as a candidate unless its project file cannot be parsed. */
+  private addCandidate(
+    candidates: Candidate[],
+    declared: Omit<Candidate, "name" | "realpathKey">,
+  ): void {
+    const { folder, root, origin } = declared;
+    const file = readDbtProjectFile(root.fsPath);
+    if (file.kind !== "parsed") {
+      this.terminal.warn(
+        "projectRegistry",
+        `Parse error at ${root.fsPath}: ${file.kind === "missing" ? "file is missing" : file.message}`,
+      );
+      return;
+    }
+    const name = declaredProjectName(file.config) ?? path.basename(root.fsPath);
+    candidates.push({
+      folder,
+      root,
+      name,
+      realpathKey: canonicalPath(root.fsPath),
+      origin,
+    });
+  }
+
+  /** Drops opened-file roots whose folder left the workspace or was disabled; re-enabling does not restore them. */
+  private pruneOpenedRoots(): void {
+    const folders = new Set(
+      (workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath),
+    );
+    for (const [key, { folder }] of this.openedRoots) {
+      if (
+        !folders.has(folder.uri.fsPath) ||
+        readSetting(ENABLED_SETTING, folder.uri) === false
+      ) {
+        this.openedRoots.delete(key);
+      }
+    }
+  }
+
   dispose(): void {
     this.disposed = true;
     while (this.subscriptions.length) {
@@ -205,18 +278,27 @@ export class ProjectRegistry implements Disposable {
     this._projects = [];
     this.lookupOrder = [];
     this.watchers.clear();
+    this.openedRoots.clear();
     this._onDidChangeProjects.dispose();
   }
 }
 
 class DeclaredProjectImpl implements DeclaredProject {
-  constructor(
-    readonly folder: WorkspaceFolder,
-    readonly root: Uri,
-    readonly name: string,
-    readonly realpathKey: string,
-    readonly aliases: readonly string[],
-  ) {}
+  readonly folder: WorkspaceFolder;
+  readonly root: Uri;
+  readonly name: string;
+  readonly realpathKey: string;
+  readonly aliases: readonly string[];
+  readonly origin: DeclaredProjectOrigin;
+
+  constructor(desired: DesiredProject) {
+    this.folder = desired.folder;
+    this.root = desired.root;
+    this.name = desired.name;
+    this.realpathKey = desired.realpathKey;
+    this.aliases = desired.aliases;
+    this.origin = desired.origin;
+  }
 
   contains(uri: Uri): boolean {
     if (!uri?.fsPath) {
@@ -236,10 +318,28 @@ interface Candidate {
   root: Uri;
   name: string;
   realpathKey: string;
+  origin: DeclaredProjectOrigin;
 }
 
 interface DesiredProject extends Candidate {
   aliases: string[];
+}
+
+/** The nearest project root of an eligible document, or undefined when the document cannot declare one. */
+function openedRootOf(document: TextDocument): OpenedRoot | undefined {
+  if (
+    document.uri.scheme !== "file" ||
+    !DECLARING_LANGUAGES.has(document.languageId) ||
+    !workspace.isTrusted
+  ) {
+    return undefined;
+  }
+  const folder = workspace.getWorkspaceFolder(document.uri);
+  if (!folder || readSetting(ENABLED_SETTING, folder.uri) === false) {
+    return undefined;
+  }
+  const root = findProjectRootForFile(document.uri, folder);
+  return root ? { folder, root } : undefined;
 }
 
 function canonicalPath(fsPath: string): string {

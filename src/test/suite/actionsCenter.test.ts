@@ -29,6 +29,7 @@ describe("DbtPowerUserActionsCenter project picker", () => {
     project = {
       root: Uri.file("/project"),
       name: "project",
+      origin: "explicit",
       folder: {
         uri: Uri.file("/workspace"),
         name: "workspace",
