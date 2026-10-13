@@ -222,7 +222,8 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
   ) => Promise<{ stdout: string; stderr: string }>;
   private readonly logWarning: ((message: string) => void) | undefined;
   private readonly getGlobalState:
-    (() => FusionExecutableGlobalState | undefined) | undefined;
+    | (() => FusionExecutableGlobalState | undefined)
+    | undefined;
   private readonly warnedMajorsThisSession = new Set<number>();
 
   constructor(deps: FusionExecutableResolverDependencies = {}) {

@@ -13,7 +13,9 @@ import { isWithinRoot } from "../fusion/fusionDiagnostics";
 
 /** The origin of a group of project diagnostics; each kind is replaced independently. */
 export type ProjectDiagnosticKind =
-  "rebuild-manifest" | "project-config" | "fusion-executable";
+  | "rebuild-manifest"
+  | "project-config"
+  | "fusion-executable";
 
 function toSeverity(severity: string): DiagnosticSeverity {
   switch (severity) {

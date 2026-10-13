@@ -33,7 +33,11 @@ export interface FusionProjectRef {
 }
 
 export type FusionClientState =
-  "starting" | "running" | "restarting" | "stopped" | "failed";
+  | "starting"
+  | "running"
+  | "restarting"
+  | "stopped"
+  | "failed";
 
 export interface FusionClientOptions {
   project: FusionProjectRef;

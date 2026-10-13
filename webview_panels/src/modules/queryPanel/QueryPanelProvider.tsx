@@ -1,7 +1,7 @@
 import { useMemo, useReducer } from "react";
-import QueryPanel from "./QueryPanel";
 import { QueryPanelContext } from "./context/queryPanelContext";
 import { initialState, queryPanelReducer } from "./context/queryPanelReducer";
+import QueryPanel from "./QueryPanel";
 
 const QueryPanelProvider = (): React.JSX.Element => {
   const [state, dispatch] = useReducer(queryPanelReducer, initialState);

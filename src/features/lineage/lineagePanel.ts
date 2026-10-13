@@ -71,7 +71,8 @@ export class LineagePanel
   private lastRenderedSourceKey: string | undefined;
   // The current project and manifest epoch the panel last saw; a new epoch for the same root means a save.
   private seenPublication:
-    { root: string; epoch: number | undefined } | undefined;
+    | { root: string; epoch: number | undefined }
+    | undefined;
 
   public constructor(
     protected override extensionContext: ExtensionContextStore,

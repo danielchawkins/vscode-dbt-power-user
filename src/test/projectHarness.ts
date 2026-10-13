@@ -90,7 +90,8 @@ export function declaredProject(
 
 /** What an executable resolver may answer. */
 export type Verdict =
-  FusionExecutable | { kind: "notFound"; path: string; source: "configured" };
+  | FusionExecutable
+  | { kind: "notFound"; path: string; source: "configured" };
 
 /** A resolver verdict for a configured `dbt` path that does not exist. */
 export function notFound(missingPath: string): Verdict {

@@ -15,7 +15,11 @@ export interface ColumnEdge {
 
 /** The lineage component's `ViewsTypes`, restricted to the values Fusion edges map to. */
 type PanelViewsType =
-  "Unchanged" | "Alias" | "Transformation" | "Non select" | "Not sure";
+  | "Unchanged"
+  | "Alias"
+  | "Transformation"
+  | "Non select"
+  | "Not sure";
 
 /**
  * The `ColumnLineage` shape consumed by the vendored lineage component.

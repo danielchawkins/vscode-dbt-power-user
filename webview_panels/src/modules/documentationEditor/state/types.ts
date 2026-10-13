@@ -80,7 +80,8 @@ export interface DocumentationStateProps {
   currentUnitTests?: DBTUnitTest[] | undefined;
   project?: string | undefined;
   missingDocumentationMessage?:
-    { message: string; type: "warning" | "error" } | undefined;
+    | { message: string; type: "warning" | "error" }
+    | undefined;
   searchQuery: string;
   docBlocks: DocBlock[];
   /** The manifest publication the host read the current documentation from. */

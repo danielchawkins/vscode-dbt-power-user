@@ -186,7 +186,12 @@ export interface ColumnMetaData {
  * the rest are kept for completeness so consumers can introspect contracts.
  */
 export type ConstraintType =
-  "check" | "not_null" | "unique" | "primary_key" | "foreign_key" | "custom";
+  | "check"
+  | "not_null"
+  | "unique"
+  | "primary_key"
+  | "foreign_key"
+  | "custom";
 
 export interface ColumnLevelConstraint {
   type: ConstraintType;
@@ -373,7 +378,10 @@ export interface GraphMetaMap {
 type RefSource = "test" | "contract" | "semantic" | "inferred";
 
 export type Cardinality =
-  "one-to-one" | "one-to-many" | "many-to-one" | "many-to-many";
+  | "one-to-one"
+  | "one-to-many"
+  | "many-to-one"
+  | "many-to-many";
 
 /**
  * Endpoint of a relationship ref. Columns are ordered and always provided

@@ -359,9 +359,8 @@ describe("DBTPowerUserExtension.activate", () => {
       },
     };
     const disposable = { dispose: () => order.push("other.dispose") };
-    const extension = new (
-      DBTPowerUserExtension as any
-    )() as DBTPowerUserExtension;
+    const extension =
+      new (DBTPowerUserExtension as any)() as DBTPowerUserExtension;
     Object.assign(extension, {
       fusionClientPool,
       startupGate: new StartupGate(),

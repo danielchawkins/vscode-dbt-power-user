@@ -64,7 +64,8 @@ export interface FusionLaunchSources {
   launchEnv?: FusionLaunchEnvironment | undefined;
   /** Receives each compile's error messages from the project's client. */
   reportCompileErrors?:
-    ((project: DeclaredProject, messages: string[]) => void) | undefined;
+    | ((project: DeclaredProject, messages: string[]) => void)
+    | undefined;
 }
 
 export class FusionClientPoolImpl implements FusionClientPool {

@@ -7,7 +7,7 @@ pre-commit:
     webview:
       glob: "webview_panels/src/**/*.{ts,tsx}"
       run: mise exec -- just webviews::lint
-    prettier:
+    format:
       glob: "*.{js,cjs,mjs,ts,tsx,css,html,json}"
       run: mise exec -- just lint-format
     markdown:
