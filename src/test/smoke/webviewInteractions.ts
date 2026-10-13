@@ -321,6 +321,56 @@ const readFrameState = (entry: string) =>
     };`,
   );
 
+const DOCS_ENTRY = "documentationEditor";
+
+/** The model description, whether the editor marks it modified and offers Save, and the page's load time. */
+const READ_DOCS = `(() => {
+  if (document.body.dataset.entry !== "${DOCS_ENTRY}") return null;
+  const input = document.querySelector("textarea");
+  return {
+    entry: "${DOCS_ENTRY}",
+    description: input?.value ?? null,
+    modified: document.body.innerText.includes("modified"),
+    save: [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === "Save"),
+    timeOrigin: performance.timeOrigin,
+  };
+})()`;
+
+/** The documentation editor's state as its frame reports it. */
+export interface DocsState {
+  entry: string;
+  description: string | null;
+  modified: boolean;
+  save: boolean;
+  timeOrigin: number;
+}
+
+/** Reads the documentation editor's state; undefined when its frame does not answer. */
+export async function readDocsState(
+  port: string,
+): Promise<DocsState | undefined> {
+  return (await evaluatePanel<DocsState>(port, DOCS_ENTRY, READ_DOCS))?.value;
+}
+
+/**
+ * Polls until the documentation editor is clean: not marked modified and no Save offered. An empty description
+ * matches at once, so a restore waits on the editor's state rather than on the text alone.
+ */
+export async function waitForDocsClean(port: string): Promise<DocsState> {
+  const deadline = Date.now() + POLL_TIMEOUT_MS;
+  let last: DocsState | undefined;
+  do {
+    last = await readDocsState(port);
+    if (last && !last.modified && !last.save) {
+      return last;
+    }
+    await sleep(POLL_INTERVAL_MS);
+  } while (Date.now() < deadline);
+  throw new Error(
+    `the editor never reported clean; last value: ${JSON.stringify(last)}`,
+  );
+}
+
 /**
  * Checkpoints for interaction suites, in the same `<dir>/<host>/<fixture>/` sequence as the panel suites. Each one
  * records what the frame shows at capture time next to the checkpoint's own measurements. Undefined when

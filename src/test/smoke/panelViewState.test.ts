@@ -8,6 +8,11 @@ import {
   waitForWebviewPaint,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import {
+  DocsState,
+  readDocsState,
+  waitForDocsClean,
+} from "./webviewInteractions";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RENDER_TEST_RESULT = "fusionPowerUser.test.renderQueryResult";
@@ -67,19 +72,6 @@ const CLICK_FIRST_COLUMN = `(() => {
   return { entry: "lineage", clicked: Boolean(column) };
 })()`;
 
-/** The model description, whether the editor marks it modified and offers Save, and the page's load time. */
-const READ_DOCS = `(() => {
-  if (document.body.dataset.entry !== "documentationEditor") return null;
-  const input = document.querySelector("textarea");
-  return {
-    entry: "documentationEditor",
-    description: input?.value ?? null,
-    modified: document.body.innerText.includes("modified"),
-    save: [...document.querySelectorAll("button")].some((b) => b.textContent.trim() === "Save"),
-    timeOrigin: performance.timeOrigin,
-  };
-})()`;
-
 /** Types `text` into the model description the way React sees a keystroke. */
 const typeDescription = (text: string) => `(() => {
   if (document.body.dataset.entry !== "documentationEditor") return null;
@@ -116,14 +108,6 @@ interface Grid {
   rows: number;
   first: string | null;
   painted: boolean;
-}
-
-interface Docs {
-  entry: string;
-  description: string | null;
-  modified: boolean;
-  save: boolean;
-  timeOrigin: number;
 }
 
 /** The active title tab, the row count it reports and the page's load time, which changes when VS Code rebuilds it. */
@@ -231,8 +215,12 @@ suite("Panel view state", function () {
       vscode.Uri.joinPath(folder.uri, "models/child.sql"),
     );
     await showPanel(port, host, DOCS);
-    const loaded = await waitForDocs(port, (docs) => docs.description !== null);
-    const edit = `${loaded.description} smoke draft`;
+    const loaded = await waitForDocs(
+      port,
+      (docs) => docs.description !== null && !docs.modified,
+    );
+    const base = loaded.description!;
+    const edit = `${base} smoke draft`;
     await evaluatePanel(port, DOCS.entry, typeDescription(edit));
     const edited = await waitForDocs(
       port,
@@ -255,7 +243,7 @@ suite("Panel view state", function () {
     assert.ok(after.modified && after.save, "the editor should still be dirty");
 
     await evaluatePanel(port, DOCS.entry, typeDescription(loaded.description!));
-    await waitForDocs(port, (docs) => !docs.modified);
+    await waitForDocsClean(port);
   });
 
   test("restores the lineage graph after the panel is hidden and shown", async function () {
@@ -423,13 +411,13 @@ async function sampleHeaps(port: string, rows: number) {
 
 async function waitForDocs(
   port: string,
-  done: (docs: Docs) => boolean,
-): Promise<Docs> {
+  done: (docs: DocsState) => boolean,
+): Promise<DocsState> {
   return waitFor(
-    async () => (await evaluatePanel<Docs>(port, DOCS.entry, READ_DOCS))?.value,
-    (docs): docs is Docs => docs !== undefined && done(docs),
+    () => readDocsState(port),
+    (docs): docs is DocsState => docs !== undefined && done(docs),
     "the documentation editor never matched",
-  ) as Promise<Docs>;
+  ) as Promise<DocsState>;
 }
 
 async function waitFor<T>(
