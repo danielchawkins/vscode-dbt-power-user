@@ -18,7 +18,7 @@ import {
   Stack,
   Tag,
 } from "@uicore";
-import { FormEvent, useState } from "react";
+import { SubmitEvent, useState } from "react";
 import classes from "../../styles.module.css";
 import AcceptedValues from "./forms/AcceptedValues";
 import { isTestFormComplete } from "./forms/isTestFormComplete";
@@ -109,7 +109,7 @@ const DisplayTestDetails = ({
     );
   };
 
-  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     const testName = test.test_metadata?.name;
     // Dont submit for non generic test

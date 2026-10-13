@@ -1,0 +1,31 @@
+{
+  "message": "403 Forbidden - POST http://127.0.0.1:9703/-/npm/v1/security/advisories/bulk",
+  "method": "POST",
+  "uri": "http://127.0.0.1:9703/-/npm/v1/security/advisories/bulk",
+  "headers": {
+    "content-type": [
+      "text/plain"
+    ],
+    "date": [
+      "Tue, 13 Oct 2026 05:42:24 GMT"
+    ],
+    "connection": [
+      "keep-alive"
+    ],
+    "keep-alive": [
+      "timeout=5"
+    ],
+    "transfer-encoding": [
+      "chunked"
+    ],
+    "x-fetch-attempts": [
+      "1"
+    ]
+  },
+  "statusCode": 403,
+  "body": "stub",
+  "error": {
+    "summary": "",
+    "detail": ""
+  }
+}

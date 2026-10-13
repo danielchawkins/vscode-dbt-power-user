@@ -36,7 +36,7 @@ just setup                                  # later: refresh tools, dependencies
 just sync                                   # refresh npm dependencies only
 just update                                 # update dependencies within declared ranges
 just fmt                                    # write lint and format fixes
-just lint                                   # read-only code, shell, lockfile, and Markdown checks
+just lint                                   # read-only code, shell, lockfile, dependency-health, and Markdown checks
 just check                                  # lint plus compile and unit tests
 just jj ...                                 # run jj, gating git push on just check
 just package                                # build the VSIX
@@ -47,7 +47,7 @@ just release                                # local dry run of the tag-triggered
 just --list
 ```
 
-The environment script installs mise and the mise-managed Just needed to enter the task layer, then calls `just setup`. Installers skip existing tools; pass `--force` to either entry point to reinstall managed tools and reapply jj configuration. `fmt` writes fixes; `lint` verifies code, shell, formatting, lockfiles, and Markdown without writing; `check` adds compile and unit tests. `just check` is the only full gate: CI, the pre-push hook, and humans call it; pre-commit runs relevant subsets from that gate.
+The environment script installs mise and the mise-managed Just needed to enter the task layer, then calls `just setup`. Installers skip existing tools; pass `--force` to either entry point to reinstall managed tools and reapply jj configuration. `fmt` writes fixes; `lint` verifies code, shell, formatting, lockfiles, dependency health, and Markdown without writing; `check` adds compile and unit tests. The dependency health gate fails on any npm audit finding and any `deprecated` lockfile entry. When the registry is unreachable locally (a connection error, HTTP 5xx or 429), it warns and skips only the audit; CI never skips it. Unit tests run with `--throw-deprecation`, so a deprecated API fails the suite; `just trace-deprecations` runs the build, lint, test and package steps under `--trace-deprecation` and fails on any warning not allowlisted in `scripts/quality/deprecation-trace.mjs`. It is not part of `just check`. `just check` is the only full gate: CI, the pre-push hook, and humans call it; pre-commit runs relevant subsets from that gate.
 
 Just is the workflow authority. The root file owns repository workflows and delegates webview-specific work to `webview_panels/justfile`; package scripts expose package-local operations and required npm or VS Code lifecycle hooks, while Just owns repository-wide grouping and composition. Each tool resolves scope from its own config (`.eslintrc.json`, `dprint.json`, `rumdl.toml`). ESLint and Prettier own TypeScript, JavaScript, JSON, and CSS; dprint and rumdl own Markdown; shfmt and ShellCheck own shell scripts. No file type has two formatters. Copied skills under `.agents/skills/` must pass the Markdown checks. Author Just recipes with the `justfile-expert` skill.
 

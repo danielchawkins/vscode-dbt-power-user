@@ -1,0 +1,7 @@
+{
+  "message": "request to http://registry.invalid/-/npm/v1/security/advisories/bulk failed, reason: getaddrinfo ENOTFOUND registry.invalid",
+  "error": {
+    "summary": "",
+    "detail": ""
+  }
+}

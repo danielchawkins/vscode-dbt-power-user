@@ -1,0 +1,7 @@
+{
+  "message": "network timeout at: http://127.0.0.1:9602/-/npm/v1/security/advisories/bulk",
+  "error": {
+    "summary": "",
+    "detail": ""
+  }
+}

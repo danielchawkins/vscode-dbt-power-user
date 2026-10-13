@@ -15,6 +15,12 @@ export default mergeConfig(
     test: {
       environment: "happy-dom",
       globals: false,
+      // The trace run swaps the flag, since --throw-deprecation would stop it at the first warning.
+      execArgv: [
+        process.env.TRACE_DEPRECATIONS === "1"
+          ? "--trace-deprecation"
+          : "--throw-deprecation",
+      ],
       setupFiles: [`${import.meta.dirname}/src/test/setup.ts`],
       include: ["src/**/*.test.{ts,tsx}"],
       coverage: {
