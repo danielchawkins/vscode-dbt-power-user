@@ -85,8 +85,11 @@ process.on("SIGINT", onSignal);
 process.on("SIGTERM", onSignal);
 
 /**
- * A `dbt` wrapper that appends `<epoch ms> <argv>` to the spy log and runs the real binary, so a test can assert
- * which dbt processes the extension spawned. Undefined when no real binary can be found.
+ * A `dbt` wrapper that logs each invocation to the spy log and runs the real binary, so a test can assert which dbt
+ * processes the extension spawned. It writes `<epoch ms> start <id> <subcommand>` when the invocation starts and
+ * `<epoch ms> exit <id> <code>` when it exits. The id is the wrapper's pid and start time, so it pairs the two. Only
+ * the first argument is logged, with newlines flattened, so every record is one line. Undefined when no real binary
+ * can be found.
  */
 function createDbtSpy() {
   const real =
@@ -102,7 +105,28 @@ function createDbtSpy() {
   const wrapper = path.join(dir, "dbt");
   writeFileSync(
     wrapper,
-    `#!/bin/sh\nprintf '%s %s\\n' "$(date +%s)000" "$*" >> '${log}'\nexec '${real}' "$@"\n`,
+    [
+      "#!/bin/sh",
+      // Dash gives a background job /dev/null as stdin before it applies `0<&0`, so copy stdin to fd 3 first and
+      // hand that to the child.
+      "exec 3<&0",
+      `sub=$(printf '%s' "$1" | tr '\\n' ' ')`,
+      "start=$(date +%s)000",
+      'id="$$-$start"',
+      `printf '%s start %s %s\\n' "$start" "$id" "$sub" >> '${log}'`,
+      // Backgrounded so the signal trap can run.
+      `'${real}' "$@" <&3 3<&- &`,
+      "child=$!",
+      // The editor stops a language server by signalling this shell, so pass the signal on to dbt itself.
+      `trap 'kill -TERM "$child" 2>/dev/null' TERM INT HUP`,
+      'wait "$child"',
+      "status=$?",
+      // A signalled wait returns early, so reap the child before logging its exit.
+      'while kill -0 "$child" 2>/dev/null; do wait "$child"; status=$?; done',
+      `printf '%s exit %s %s\\n' "$(date +%s)000" "$id" "$status" >> '${log}'`,
+      'exit "$status"',
+      "",
+    ].join("\n"),
   );
   chmodSync(wrapper, 0o755);
   return wrapper;
