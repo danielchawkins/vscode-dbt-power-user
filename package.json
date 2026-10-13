@@ -915,7 +915,6 @@
     "oxlint-tsgolint": "7.0.2003",
     "prettier": "^3.9.8",
     "prettier-plugin-organize-imports": "^4.3.0",
-    "type-coverage": "^2.30.3",
     "typescript": "npm:@typescript/typescript6@^6.0.0",
     "typescript-7": "npm:typescript@^7.0.2",
     "typescript-eslint": "^8.71.0",
@@ -931,8 +930,7 @@
     "shell-quote": "^1.12.0",
     "@vscode/test-cli": {
       "mocha": "$mocha"
-    },
-    "fast-glob": "file:./scripts/quality/fast-glob-shim"
+    }
   },
   "packageManager": "npm@11.19.0",
   "allowScripts": {

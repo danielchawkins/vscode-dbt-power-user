@@ -7,27 +7,27 @@ import {
 
 const metrics = [
   { key: "suppressions.host", kind: "ceiling", precision: 0 },
-  { key: "typeCoverage.host", kind: "floor", precision: 2 },
+  { key: "coverage.host.lines", kind: "floor", precision: 2 },
 ];
 
 describe("compareWithBase", () => {
-  const base = { "suppressions.host": 10, "typeCoverage.host": 97.5 };
+  const base = { "suppressions.host": 10, "coverage.host.lines": 97.5 };
 
   it("accepts a loosened key that has a Ratchet-Loosen trailer", () => {
     const messages =
-      "build: delete covered code\n\nRatchet-Loosen: typeCoverage.host covered code deleted\n";
+      "build: delete covered code\n\nRatchet-Loosen: coverage.host.lines covered code deleted\n";
 
     const result = compareWithBase(
       metrics,
       base,
-      { "suppressions.host": 10, "typeCoverage.host": 97.1 },
+      { "suppressions.host": 10, "coverage.host.lines": 97.1 },
       messages,
     );
 
     expect(result.rejected).toEqual([]);
     expect(result.accepted).toEqual([
       {
-        key: "typeCoverage.host",
+        key: "coverage.host.lines",
         from: 97.5,
         to: 97.1,
         reason: "covered code deleted",
@@ -36,12 +36,12 @@ describe("compareWithBase", () => {
   });
 
   it("rejects a loosened key without a trailer, even when another key has one", () => {
-    const messages = "fix: x\n\nRatchet-Loosen: typeCoverage.host reason\n";
+    const messages = "fix: x\n\nRatchet-Loosen: coverage.host.lines reason\n";
 
     const result = compareWithBase(
       metrics,
       base,
-      { "suppressions.host": 11, "typeCoverage.host": 97.5 },
+      { "suppressions.host": 11, "coverage.host.lines": 97.5 },
       messages,
     );
 
@@ -60,7 +60,7 @@ describe("compareWithBase", () => {
     );
 
     expect(result.rejected).toEqual([
-      { key: "typeCoverage.host", from: 97.5, to: undefined },
+      { key: "coverage.host.lines", from: 97.5, to: undefined },
     ]);
   });
 
@@ -68,24 +68,27 @@ describe("compareWithBase", () => {
     const result = compareWithBase(
       metrics,
       undefined,
-      { "suppressions.host": 50, "typeCoverage.host": 1 },
+      { "suppressions.host": 50, "coverage.host.lines": 1 },
       "",
     );
 
     expect(result.rejected).toEqual([]);
-    expect(result.skipped).toEqual(["suppressions.host", "typeCoverage.host"]);
+    expect(result.skipped).toEqual([
+      "suppressions.host",
+      "coverage.host.lines",
+    ]);
   });
 
   it("skips a key that is new in the head", () => {
     const result = compareWithBase(
       metrics,
       { "suppressions.host": 10 },
-      { "suppressions.host": 9, "typeCoverage.host": 90 },
+      { "suppressions.host": 9, "coverage.host.lines": 90 },
       "",
     );
 
     expect(result.rejected).toEqual([]);
-    expect(result.skipped).toEqual(["typeCoverage.host"]);
+    expect(result.skipped).toEqual(["coverage.host.lines"]);
   });
 
   it("rejects a lowered coverage floor and a raised size budget without a trailer", () => {
@@ -122,7 +125,7 @@ describe("compareWithBase", () => {
     const result = compareWithBase(
       metrics,
       base,
-      { "suppressions.host": 3, "typeCoverage.host": 99 },
+      { "suppressions.host": 3, "coverage.host.lines": 99 },
       "",
     );
 
@@ -131,13 +134,13 @@ describe("compareWithBase", () => {
 });
 
 describe("compareMeasured", () => {
-  const ceilings = { "suppressions.host": 10, "typeCoverage.host": 97.5 };
+  const ceilings = { "suppressions.host": 10, "coverage.host.lines": 97.5 };
 
   it("passes when every measured value equals its entry after rounding", () => {
     expect(
       compareMeasured(metrics, ceilings, {
         "suppressions.host": 10,
-        "typeCoverage.host": 97.509,
+        "coverage.host.lines": 97.509,
       }),
     ).toEqual({ worse: [], better: [], missing: [] });
   });
@@ -146,17 +149,17 @@ describe("compareMeasured", () => {
     const result = compareMeasured(
       metrics,
       { "suppressions.host": 10 },
-      { "suppressions.host": 11, "typeCoverage.host": 90 },
+      { "suppressions.host": 11, "coverage.host.lines": 90 },
     );
     expect(result.worse).toEqual([
       { key: "suppressions.host", value: 11, entry: 10 },
     ]);
-    expect(result.missing).toEqual([{ key: "typeCoverage.host", value: 90 }]);
+    expect(result.missing).toEqual([{ key: "coverage.host.lines", value: 90 }]);
 
     expect(
       compareMeasured(metrics, ceilings, {
         "suppressions.host": 9,
-        "typeCoverage.host": 97.5,
+        "coverage.host.lines": 97.5,
       }).better,
     ).toEqual([{ key: "suppressions.host", value: 9, entry: 10 }]);
   });

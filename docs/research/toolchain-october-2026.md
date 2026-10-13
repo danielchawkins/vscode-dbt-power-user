@@ -399,16 +399,16 @@ The antithesis was right about the type-coverage TS API dependency and the two `
 
 Citations:
 
-- [r12a](../../node_modules/type-coverage-core/package.json): ""typescript": "2 || 3 || 4 || 5 || 6 || 7""
+- r12a (`node_modules/type-coverage-core/package.json`, removed in P6): ""typescript": "2 || 3 || 4 || 5 || 6 || 7""
 - [r12b](../../justfile): "npm exec --no -- concurrently --names contract,webview,extension"
-- [r12c](../../scripts/quality/fast-glob-shim/package.json): ""description": "Stand-in for fast-glob used by type-coverage-core; see index.cjs","
+- r12c (`scripts/quality/fast-glob-shim/package.json`, removed in P6): ""description": "Stand-in for fast-glob used by type-coverage-core; see index.cjs","
 - [r12d](../../knip.json): ""ignoreDependencies": ["type-coverage"]"
 
 Thesis (medium): Dependencies made redundant by an ESLint-to-Oxlint/oxfmt switch: `eslint`, `typescript-eslint`, `@eslint/js`, `eslint-config-prettier` and `globals` in both packages, `eslint-plugin-sonarjs` (if its rules load as an Oxlint JS plugin it stays as a dependency; if native rules replace it, it goes), `@eslint-react/eslint-plugin`, `eslint-plugin-jsx-a11y-x` and `eslint-plugin-react-refresh` in the webview, and `prettier` plus `prettier-plugin-organize-imports` if oxfmt replaces them. Those would be replaced by `oxlint`, `oxlint-tsgolint` and optionally `oxfmt`. `type-coverage` is the other lint-tool dependency: the root overrides carry a `fast-glob` stand-in whose own package.json says it exists for type-coverage-core. Removing `type-coverage` would also remove that override and the shim directory, but it would drop the `typeCoverage.host` 99.51 and `typeCoverage.webview` 99.27 ratchet ceilings, which tsgolint's no-unsafe-* rules only partly replace. `concurrently` is used once, in `watch:extension`, and is a candidate for replacement by npm-run-all-free alternatives such as a Just recipe with `&`, or by Node built-ins. `dependency-cruiser` and `knip` are not duplicated by the lint switch, and `jscpd` is not a dependency of this repo.
 
 Thesis citations:
 
-- [c26](../../scripts/quality/fast-glob-shim/package.json): ""description": "Stand-in for fast-glob used by type-coverage-core; see index.cjs","
+- c26 (`scripts/quality/fast-glob-shim/package.json`, removed in P6): ""description": "Stand-in for fast-glob used by type-coverage-core; see index.cjs","
 - [c27](../../scripts/quality/ceilings.json): ""typeCoverage.host": 99.51,"
 - [c28](../../package.json): ""watch:extension": "npm run build:contract && concurrently --names contract,extension \"npm run watch:contract\" \"npm run watch:extension:app\"","
 
@@ -426,7 +426,7 @@ Antithesis: The thesis cites `fast-glob-shim/package.json`'s description as show
 
 Counter-evidence:
 
-- [l1](../../node_modules/type-coverage-core/package.json): ""typescript": "2 || 3 || 4 || 5 || 6 || 7""
+- l1 (`node_modules/type-coverage-core/package.json`, removed in P6): ""typescript": "2 || 3 || 4 || 5 || 6 || 7""
 - [l2](../../justfile): "npm exec --no -- concurrently --names contract,webview,extension"
 - [l3](../../knip.json): ""ignoreDependencies": ["type-coverage"]"
 
@@ -497,7 +497,7 @@ Citations:
 - [q1](../../justfile): "npm exec --no -- concurrently --names contract,webview,extension"
 - [q2](../../package.json): ""vscode": "^1.128.0","
 - [q3](../../node_modules/@vscode/vsce/out/validation.js): "Either upgrade engines.vscode or use an older @types/vscode version"
-- [q4](../../node_modules/type-coverage-core/package.json): ""typescript": "2 || 3 || 4 || 5 || 6 || 7""
+- q4 (`node_modules/type-coverage-core/package.json`, removed in P6): ""typescript": "2 || 3 || 4 || 5 || 6 || 7""
 
 ## Open questions
 

@@ -37,7 +37,7 @@ Citations:
 - [r1a](../../package-lock.json): ""node_modules/@vscode/test-cli/node_modules/mocha/node_modules/glob": {"
 - [r1b](../../package-lock.json): ""deprecated": "Old versions of glob are not supported, and contain widely publicized security vulnerabilities, which have been fixed in the current version. Please update."
 - [r1c](../../package-lock.json): ""node_modules/@vscode/test-cli/node_modules/mocha": {"
-- [r1d](../../scripts/quality/fast-glob-shim/package.json): ""description": "Stand-in for fast-glob used by type-coverage-core; see index.cjs","
+- r1d (`scripts/quality/fast-glob-shim/package.json`, removed in P6): ""description": "Stand-in for fast-glob used by type-coverage-core; see index.cjs","
 
 Thesis (medium): The current dependency tree has no known vulnerabilities. Running `npm audit --json` at the root, which covers all three workspaces, returned zero vulnerabilities at every severity. It covered 751 dependencies: 54 prod, 698 dev and 109 optional (the optional ones overlap the other counts). The remaining zero-known-vulnerability work is to keep the audit gate in CI and to prune the overrides that exist only to patch advisories. The `overrides` block patches uuid, serialize-javascript, diff, brace-expansion, minimatch, shell-quote and maplibre-gl, and it uses a local `fast-glob` shim. Each override should be re-tested for removal when its parent releases a fix. The shim in particular is local tooling to maintain. I did not run `npm ls --all` for deprecated transitive packages, so the zero-deprecated claim is unverified.
 
