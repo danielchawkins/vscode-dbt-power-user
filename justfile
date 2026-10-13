@@ -341,6 +341,14 @@ package:
       echo "error: VSIX contains altimate-core entries: $vsix" >&2
       exit 1
     fi
+    tooling_prog='/(^|\/)([^\/]*-suppressions\.json|knip\.json|\.dependency-cruiser\.cjs|'
+    tooling_prog="$tooling_prog"'eslint\.config\.[^\/]*|oxlint\.config\.[^\/]*)$|(^|\/)lint\//'
+    tooling_entries="$(printf '%s\n' "$entries" | awk "$tooling_prog")"
+    if [[ -n "$tooling_entries" ]]; then
+      echo "error: VSIX contains contributor lint or tooling entries: $vsix" >&2
+      printf '%s\n' "$tooling_entries" >&2
+      exit 1
+    fi
     mkdir -p out
     realpath "$vsix" > out/latest-vsix
     node scripts/quality/size-budget.mjs

@@ -15,3 +15,6 @@ src/test/suite/fixtures
 eslint-suppressions.json
 # Captured language server responses; byte-exact
 docs/research/evidence
+# Lint fixture: Prettier adds parentheses to an assignment in a condition, which erases
+# the no-cond-assign violation the fixture exists to trigger.
+test-fixtures/lint/webview/src/modules/x/eslint-no-cond-assign.tsx
