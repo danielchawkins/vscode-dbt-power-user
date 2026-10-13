@@ -1,0 +1,1834 @@
+{
+  ".vscode-test.mjs": {
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "packages/webview-contract/src/documentationEditor.ts": {
+    "typescript/no-redundant-type-constituents": {
+      "count": 1
+    }
+  },
+  "packages/webview-contract/src/lineage.ts": {
+    "typescript/no-redundant-type-constituents": {
+      "count": 1
+    }
+  },
+  "packages/webview-contract/src/queryResults.ts": {
+    "typescript/no-redundant-type-constituents": {
+      "count": 1
+    }
+  },
+  "rsbuild.config.ts": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "scripts/benchmark/measure-runtime.mjs": {
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/experiments/adoption.mjs": {
+    "curly": {
+      "count": 17
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 2
+    },
+    "no-restricted-properties": {
+      "count": 5
+    },
+    "unicorn/prefer-string-starts-ends-with": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/experiments/e1-graph-selector.mjs": {
+    "curly": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 2
+    },
+    "typescript/require-array-sort-compare": {
+      "count": 2
+    }
+  },
+  "scripts/evidence/experiments/e2-show-concurrency.mjs": {
+    "curly": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/experiments/e3-unsaved-compile.mjs": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/experiments/e4-error-shapes.mjs": {
+    "curly": {
+      "count": 6
+    }
+  },
+  "scripts/evidence/experiments/e5-command-prefix.mjs": {
+    "curly": {
+      "count": 2
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 4
+    }
+  },
+  "scripts/evidence/experiments/e6-disk-watch.mjs": {
+    "max-params": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 7
+    }
+  },
+  "scripts/evidence/experiments/e7-will-rename.mjs": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/experiments/e8-baseline-mode.mjs": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/experiments/e9-compiled-paths.mjs": {
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/experiments/l-facts.mjs": {
+    "curly": {
+      "count": 4
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "typescript/require-array-sort-compare": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/experiments/l-report.mjs": {
+    "curly": {
+      "count": 23
+    },
+    "eqeqeq": {
+      "count": 1
+    },
+    "max-depth": {
+      "count": 2
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "typescript/require-array-sort-compare": {
+      "count": 1
+    },
+    "unicorn/prefer-string-starts-ends-with": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/experiments/l-transcript-notes.mjs": {
+    "curly": {
+      "count": 6
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/lsp-session.mjs": {
+    "curly": {
+      "count": 17
+    },
+    "no-restricted-imports": {
+      "count": 2
+    },
+    "no-restricted-properties": {
+      "count": 13
+    }
+  },
+  "scripts/evidence/steps/protocol/gen-commands.mjs": {
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/steps/protocol/gen-notifications.mjs": {
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/steps/protocol/gen-show-info-schema.mjs": {
+    "curly": {
+      "count": 2
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 1
+    },
+    "typescript/no-base-to-string": {
+      "count": 1
+    },
+    "typescript/restrict-template-expressions": {
+      "count": 1
+    }
+  },
+  "scripts/evidence/summarize.mjs": {
+    "curly": {
+      "count": 9
+    },
+    "eqeqeq": {
+      "count": 2
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/quality/dependency-health.mjs": {
+    "curly": {
+      "count": 3
+    },
+    "no-restricted-imports": {
+      "count": 2
+    },
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "scripts/quality/deprecation-trace.mjs": {
+    "curly": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 2
+    },
+    "typescript/require-array-sort-compare": {
+      "count": 1
+    },
+    "typescript/restrict-template-expressions": {
+      "count": 2
+    }
+  },
+  "scripts/quality/docs-symbols.mjs": {
+    "max-params": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "scripts/quality/fast-glob-shim/index.cjs": {
+    "typescript/no-require-imports": {
+      "count": 2
+    }
+  },
+  "scripts/quality/ratchet.mjs": {
+    "max-params": {
+      "count": 1
+    },
+    "no-restricted-imports": {
+      "count": 2
+    },
+    "no-restricted-properties": {
+      "count": 1
+    },
+    "typescript/restrict-template-expressions": {
+      "count": 9
+    },
+    "unicorn/prefer-string-starts-ends-with": {
+      "count": 1
+    }
+  },
+  "scripts/quality/size-budget.mjs": {
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "scripts/smoke/run-smoke.mjs": {
+    "no-restricted-imports": {
+      "count": 6
+    },
+    "no-restricted-properties": {
+      "count": 11
+    }
+  },
+  "scripts/test/integration-result.mjs": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "scripts/test/run-integration.mjs": {
+    "no-restricted-imports": {
+      "count": 7
+    },
+    "no-restricted-properties": {
+      "count": 4
+    }
+  },
+  "src/core/cli/output.ts": {
+    "unicorn/prefer-string-starts-ends-with": {
+      "count": 1
+    }
+  },
+  "src/core/dbtCommand.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/core/lineage/nodeColumns.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/childrenParentParser.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/core/manifest/graphParser.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/core/manifest/nodeParser.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/relationshipInference.ts": {
+    "complexity": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/relationshipParser.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/core/manifest/testParser.ts": {
+    "unicorn/no-useless-fallback-in-spread": {
+      "count": 2
+    }
+  },
+  "src/core/manifest/utils.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/core/metadata/fieldOwners.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/core/metadata/mergeMetadata.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/core/project/dbtEnvironment.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/core/text.ts": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "src/dbtPowerUserExtension.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/dbt_integration/domain.ts": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "src/features/codeLenses.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/cte/cteProfilerService.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/features/diagnostics/commands.ts": {
+    "typescript/restrict-template-expressions": {
+      "count": 2
+    }
+  },
+  "src/features/docs/dbtTestService.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/docs/docGenService.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "typescript/no-explicit-any": {
+      "count": 1
+    },
+    "typescript/restrict-template-expressions": {
+      "count": 1
+    }
+  },
+  "src/features/docs/docsEditHandlers.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/docs/docsEditPanel.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/docs/docsEditSave.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/docs/docsTestData.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/features/docs/docsYaml.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/features/lineage/dbtLineageService.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/lineage/lineageDetails.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/lineage/lineagePanel.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/modelTree/documentationTreeview.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/modelTree/modelTreeviewProvider.ts": {
+    "typescript/no-unnecessary-parameter-property-assignment": {
+      "count": 1
+    }
+  },
+  "src/features/projectSetup/projectSetupCommands.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/queryResults/queryPanelSupport.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "typescript/restrict-template-expressions": {
+      "count": 1
+    }
+  },
+  "src/features/queryResults/queryResultPanel.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/features/run/runModel.ts": {
+    "typescript/no-meaningless-void-operator": {
+      "count": 1
+    }
+  },
+  "src/features/sqlActions/sqlActionsCodeLensProvider.ts": {
+    "max-depth": {
+      "count": 1
+    }
+  },
+  "src/features/treeViews.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/fusion/commandProcessExecution.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/fusion/executableLifecycle.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/fusion/failedFusionClient.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/fusion/fusionCli.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/fusion/lspClientSupport.ts": {
+    "max-params": {
+      "count": 6
+    },
+    "unicorn/no-useless-spread": {
+      "count": 1
+    }
+  },
+  "src/fusion/nestedRoots.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/metadata/serverMetadataSource.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/projects/commandQueue.ts": {
+    "typescript/unbound-method": {
+      "count": 2
+    }
+  },
+  "src/projects/dbtTask.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/projects/fusionClientPool.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "unicorn/no-useless-spread": {
+      "count": 1
+    }
+  },
+  "src/projects/fusionStatus.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "unicorn/no-useless-spread": {
+      "count": 1
+    }
+  },
+  "src/projects/manifest.ts": {
+    "max-params": {
+      "count": 2
+    },
+    "unicorn/no-useless-fallback-in-spread": {
+      "count": 1
+    }
+  },
+  "src/projects/manifestRebuild.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/projects/project.ts": {
+    "typescript/restrict-template-expressions": {
+      "count": 2
+    }
+  },
+  "src/projects/projectCodegen.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/projects/projectCommands.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "typescript/restrict-template-expressions": {
+      "count": 1
+    }
+  },
+  "src/projects/projectEnvironments.ts": {
+    "unicorn/no-useless-spread": {
+      "count": 2
+    }
+  },
+  "src/projects/projectErrors.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/projects/projectRegistry.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "src/projects/projectSql.ts": {
+    "max-params": {
+      "count": 9
+    }
+  },
+  "src/projects/projectTasks.ts": {
+    "typescript/restrict-template-expressions": {
+      "count": 1
+    }
+  },
+  "src/projects/projectWarehouse.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/projects/runResults.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/test/integration/lspFixture.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "typescript/no-redundant-type-constituents": {
+      "count": 2
+    }
+  },
+  "src/test/integration/lspProtocolClient.ts": {
+    "max-params": {
+      "count": 2
+    },
+    "typescript/no-redundant-type-constituents": {
+      "count": 2
+    }
+  },
+  "src/test/integration/targetMutationCapture.test.ts": {
+    "max-params": {
+      "count": 3
+    }
+  },
+  "src/test/mock/vscode.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "typescript/no-redundant-type-constituents": {
+      "count": 1
+    },
+    "unicorn/no-useless-spread": {
+      "count": 1
+    }
+  },
+  "src/test/smoke/cdpClient.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/test/smoke/documentationEditorInteractions.test.ts": {
+    "no-unsafe-finally": {
+      "count": 1
+    }
+  },
+  "src/test/smoke/notificationToasts.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/test/smoke/panelSmoke.test.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/test/smoke/visualEvidence.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/test/suite/actionsCenter.test.ts": {
+    "typescript/unbound-method": {
+      "count": 2
+    }
+  },
+  "src/test/suite/cliArgs.property.test.ts": {
+    "max-params": {
+      "count": 4
+    }
+  },
+  "src/test/suite/cliArgs.test.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/test/suite/commandProcessExecution.test.ts": {
+    "typescript/unbound-method": {
+      "count": 1
+    }
+  },
+  "src/test/suite/dbtEnvironment.test.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/test/suite/diagnosticsCommand.test.ts": {
+    "typescript/unbound-method": {
+      "count": 2
+    }
+  },
+  "src/test/suite/formatRetry.test.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/test/suite/fusionClientPool.test.ts": {
+    "typescript/unbound-method": {
+      "count": 23
+    }
+  },
+  "src/test/suite/fusionIntegrationWiring.test.ts": {
+    "typescript/unbound-method": {
+      "count": 1
+    }
+  },
+  "src/test/suite/fusionLanguageClient.test.ts": {
+    "max-params": {
+      "count": 8
+    },
+    "typescript/unbound-method": {
+      "count": 6
+    }
+  },
+  "src/test/suite/fusionStatus.test.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "typescript/unbound-method": {
+      "count": 5
+    }
+  },
+  "src/test/suite/mergeMetadata.test.ts": {
+    "typescript/restrict-template-expressions": {
+      "count": 2
+    }
+  },
+  "src/test/suite/nestedRoots.test.ts": {
+    "typescript/unbound-method": {
+      "count": 3
+    }
+  },
+  "src/test/suite/outputChannels.test.ts": {
+    "typescript/unbound-method": {
+      "count": 21
+    }
+  },
+  "src/test/suite/panelMessages.test.ts": {
+    "typescript/unbound-method": {
+      "count": 2
+    }
+  },
+  "src/test/suite/project.test.ts": {
+    "typescript/unbound-method": {
+      "count": 14
+    }
+  },
+  "src/test/suite/projectCommands.test.ts": {
+    "typescript/unbound-method": {
+      "count": 2
+    }
+  },
+  "src/test/suite/projectDiagnostics.test.ts": {
+    "typescript/unbound-method": {
+      "count": 1
+    }
+  },
+  "src/test/suite/projects.test.ts": {
+    "typescript/unbound-method": {
+      "count": 1
+    }
+  },
+  "src/test/suite/quality/lintRules.test.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/test/suite/rerunFromHistory.test.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/test/suite/runModel.test.ts": {
+    "typescript/restrict-template-expressions": {
+      "count": 8
+    }
+  },
+  "src/test/suite/runTest.test.ts": {
+    "typescript/unbound-method": {
+      "count": 5
+    }
+  },
+  "src/webview/messageRouter.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/webview/panelHost.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "typescript/no-this-alias": {
+      "count": 1
+    }
+  },
+  "src/webview/panelHtml.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "typescript/restrict-template-expressions": {
+      "count": 2
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-complexity.ts": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-curly.ts": {
+    "curly": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-eqeqeq.ts": {
+    "eqeqeq": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-max-depth.ts": {
+    "max-depth": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-max-lines-per-function.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 84
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-max-lines.ts": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-max-params.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-no-async-promise-executor.ts": {
+    "no-async-promise-executor": {
+      "count": 1
+    },
+    "typescript/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-no-throw-literal.ts": {
+    "no-throw-literal": {
+      "count": 1
+    },
+    "typescript/only-throw-error": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-no-unused-vars.ts": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-no-var.ts": {
+    "no-var": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-prefer-const.ts": {
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-prefer-rest-params.ts": {
+    "prefer-rest-params": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/eslint-prefer-spread.ts": {
+    "prefer-spread": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-await-thenable.ts": {
+    "typescript/await-thenable": {
+      "count": 1
+    },
+    "unicorn/no-unnecessary-await": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-base-to-string.ts": {
+    "typescript/no-base-to-string": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-floating-promises.ts": {
+    "typescript/no-floating-promises": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-for-in-array.ts": {
+    "typescript/no-for-in-array": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-misused-promises.ts": {
+    "typescript/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-misused-spread.ts": {
+    "typescript/no-misused-promises": {
+      "count": 1
+    },
+    "typescript/no-misused-spread": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-non-null-asserted-optional-chain.ts": {
+    "typescript/no-non-null-asserted-optional-chain": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-unnecessary-type-assertion.ts": {
+    "typescript/no-unnecessary-type-assertion": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-unsafe-argument.ts": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-unsafe-assignment.ts": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-unsafe-call.ts": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-unsafe-member-access.ts": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-no-unsafe-return.ts": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-only-throw-error.ts": {
+    "no-throw-literal": {
+      "count": 1
+    },
+    "typescript/only-throw-error": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-prefer-promise-reject-errors.ts": {
+    "typescript/prefer-promise-reject-errors": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typed-switch-exhaustiveness-check.ts": {
+    "typescript/switch-exhaustiveness-check": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typescript-ban-ts-comment.ts": {
+    "typescript/ban-ts-comment": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typescript-no-explicit-any.ts": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/core/x/typescript-no-require-imports.ts": {
+    "typescript/no-require-imports": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/features/x/a.ts": {
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/features/x/c.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/features/x/d.ts": {
+    "no-restricted-imports": {
+      "count": 2
+    },
+    "typescript/no-require-imports": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/features/x/e.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/features/x/f.ts": {
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/features/x/g.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/fusion/process.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/projects/notifications.ts": {
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/host/src/settings/a.ts": {
+    "no-restricted-properties": {
+      "count": 2
+    }
+  },
+  "test-fixtures/lint/host/src/test/suite/a.test.ts": {
+    "no-restricted-imports": {
+      "count": 1
+    },
+    "no-restricted-properties": {
+      "count": 2
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-complexity.tsx": {
+    "complexity": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-for-direction.tsx": {
+    "for-direction": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-max-depth.tsx": {
+    "max-depth": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-max-lines-per-function.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "no-unused-vars": {
+      "count": 84
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-max-lines.tsx": {
+    "max-lines": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-max-params.tsx": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-async-promise-executor.tsx": {
+    "no-async-promise-executor": {
+      "count": 1
+    },
+    "typescript/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-compare-neg-zero.tsx": {
+    "no-compare-neg-zero": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-cond-assign.tsx": {
+    "no-cond-assign": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-constant-binary-expression.tsx": {
+    "no-constant-binary-expression": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-constant-condition.tsx": {
+    "no-constant-condition": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-control-regex.tsx": {
+    "no-control-regex": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-debugger.tsx": {
+    "no-debugger": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-delete-var.js": {
+    "no-delete-var": {
+      "count": 1
+    },
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-dupe-else-if.tsx": {
+    "no-dupe-else-if": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-duplicate-case.tsx": {
+    "no-duplicate-case": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-empty-character-class.tsx": {
+    "no-empty-character-class": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-empty-pattern.tsx": {
+    "no-empty-pattern": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-empty-static-block.tsx": {
+    "no-empty-static-block": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-ex-assign.tsx": {
+    "no-ex-assign": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-extra-boolean-cast.tsx": {
+    "no-extra-boolean-cast": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-global-assign.tsx": {
+    "no-global-assign": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-invalid-regexp.tsx": {
+    "no-invalid-regexp": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-irregular-whitespace.tsx": {
+    "no-irregular-whitespace": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-loop-func.tsx": {
+    "no-var": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-loss-of-precision.tsx": {
+    "no-loss-of-precision": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-misleading-character-class.tsx": {
+    "no-misleading-character-class": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-nonoctal-decimal-escape.js": {
+    "no-nonoctal-decimal-escape": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-self-assign.tsx": {
+    "no-self-assign": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-shadow-restricted-names.tsx": {
+    "no-shadow-restricted-names": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-sparse-arrays.tsx": {
+    "no-sparse-arrays": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-unassigned-vars.tsx": {
+    "no-unassigned-vars": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-unsafe-finally.tsx": {
+    "no-unsafe-finally": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-unsafe-optional-chaining.tsx": {
+    "no-unsafe-optional-chaining": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-unused-expressions.tsx": {
+    "no-unused-expressions": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-unused-labels.tsx": {
+    "no-unused-labels": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-unused-private-class-members.tsx": {
+    "no-unused-private-class-members": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-unused-vars.tsx": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-useless-backreference.tsx": {
+    "no-useless-backreference": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-useless-catch.tsx": {
+    "no-useless-catch": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-useless-escape.tsx": {
+    "no-useless-escape": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-no-var.tsx": {
+    "no-var": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-prefer-const.tsx": {
+    "prefer-const": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-prefer-rest-params.tsx": {
+    "prefer-rest-params": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-prefer-spread.tsx": {
+    "prefer-spread": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-preserve-caught-error.tsx": {
+    "no-unused-vars": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-require-yield.tsx": {
+    "require-yield": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-use-isnan.tsx": {
+    "use-isnan": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/eslint-valid-typeof.tsx": {
+    "valid-typeof": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/react-unsupported-syntax.tsx": {
+    "no-eval": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/require.ts": {
+    "typescript/no-require-imports": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-await-thenable.tsx": {
+    "typescript/await-thenable": {
+      "count": 1
+    },
+    "unicorn/no-unnecessary-await": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-base-to-string.tsx": {
+    "typescript/no-base-to-string": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-floating-promises.tsx": {
+    "typescript/no-floating-promises": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-for-in-array.tsx": {
+    "typescript/no-for-in-array": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-implied-eval.tsx": {
+    "typescript/no-implied-eval": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-misused-promises.tsx": {
+    "typescript/no-misused-promises": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-misused-spread.tsx": {
+    "typescript/no-misused-promises": {
+      "count": 1
+    },
+    "typescript/no-misused-spread": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-non-null-asserted-optional-chain.tsx": {
+    "typescript/no-non-null-asserted-optional-chain": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-redundant-type-constituents.tsx": {
+    "typescript/no-redundant-type-constituents": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-unnecessary-type-assertion.tsx": {
+    "typescript/no-unnecessary-type-assertion": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-unsafe-argument.tsx": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-unsafe-assignment.tsx": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-unsafe-call.tsx": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-unsafe-member-access.tsx": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-unsafe-return.tsx": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-no-unsafe-unary-minus.tsx": {
+    "typescript/no-unsafe-unary-minus": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-only-throw-error.tsx": {
+    "no-throw-literal": {
+      "count": 1
+    },
+    "typescript/only-throw-error": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-prefer-promise-reject-errors.tsx": {
+    "typescript/prefer-promise-reject-errors": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-prefer-string-starts-ends-with.tsx": {
+    "unicorn/prefer-string-starts-ends-with": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-restrict-template-expressions.tsx": {
+    "typescript/no-base-to-string": {
+      "count": 1
+    },
+    "typescript/restrict-template-expressions": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-switch-exhaustiveness-check.tsx": {
+    "typescript/switch-exhaustiveness-check": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typed-unbound-method.tsx": {
+    "typescript/unbound-method": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-ban-ts-comment.tsx": {
+    "typescript/ban-ts-comment": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-no-array-delete.tsx": {
+    "typescript/no-array-delete": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-no-confusing-non-null-assertion.tsx": {
+    "eqeqeq": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-no-duplicate-enum-values.tsx": {
+    "typescript/no-duplicate-enum-values": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-no-duplicate-type-constituents.tsx": {
+    "typescript/no-duplicate-type-constituents": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-no-explicit-any.tsx": {
+    "typescript/no-explicit-any": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-no-extra-non-null-assertion.tsx": {
+    "typescript/no-extra-non-null-assertion": {
+      "count": 1
+    },
+    "typescript/no-unnecessary-type-assertion": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-no-misused-new.tsx": {
+    "typescript/no-misused-new": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-no-this-alias.tsx": {
+    "typescript/no-this-alias": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-no-unsafe-declaration-merging.tsx": {
+    "typescript/no-unsafe-declaration-merging": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-no-wrapper-object-types.tsx": {
+    "typescript/no-wrapper-object-types": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-prefer-as-const.tsx": {
+    "typescript/no-unnecessary-type-assertion": {
+      "count": 1
+    },
+    "typescript/prefer-as-const": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-prefer-namespace-keyword.tsx": {
+    "typescript/prefer-namespace-keyword": {
+      "count": 1
+    }
+  },
+  "test-fixtures/lint/webview/src/modules/x/typescript-triple-slash-reference.tsx": {
+    "typescript/triple-slash-reference": {
+      "count": 1
+    }
+  },
+  "vitest.config.ts": {
+    "no-restricted-properties": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/app/useListeners.ts": {
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/DocumentationEditor.controls.test.tsx": {
+    "typescript/consistent-type-definitions": {
+      "count": 1
+    },
+    "typescript/explicit-module-boundary-types": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/DocumentationEditor.coverage.test.tsx": {
+    "jsx-a11y/control-has-associated-label": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/DocumentationProvider.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/docGenerator/DocBlockInserter.tsx": {
+    "jsx-a11y/control-has-associated-label": {
+      "count": 1
+    },
+    "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/docGenerator/DocGeneratorColumnsList.tsx": {
+    "react/preserve-manual-memoization": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/docGenerator/DocGeneratorInput.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/search/SearchColumnsInput.tsx": {
+    "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/tests/DbtTestCode.tsx": {
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    },
+    "react/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/tests/DisplayTestDetails.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/tests/EntityWithTests.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/tests/EntityWithUnitTests.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/tests/TestDetails.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/tests/forms/Relationships.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "react/set-state-in-effect": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/tests/forms/TestForm.tsx": {
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/components/tests/hooks/useTestFormSave.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/state/useDocumentationViewState.test.tsx": {
+    "react/globals": {
+      "count": 2
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/state/useDraftSync.test.tsx": {
+    "react/globals": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/documentationEditor/utils.ts": {
+    "no-unsafe-optional-chaining": {
+      "count": 2
+    }
+  },
+  "webview_panels/src/modules/lineage/Lineage.coverage.test.tsx": {
+    "jsx-a11y/control-has-associated-label": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/lineage/LineageView.tsx": {
+    "react/immutability": {
+      "count": 1
+    },
+    "react/refs": {
+      "count": 3
+    }
+  },
+  "webview_panels/src/modules/lineage/TableNode.tsx": {
+    "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/lineage/Toolbar.test.tsx": {
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/lineage/graph.ts": {
+    "max-params": {
+      "count": 3
+    }
+  },
+  "webview_panels/src/modules/lineage/useLineageGraph.test.tsx": {
+    "typescript/consistent-type-definitions": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/QueryPanel.controls.test.tsx": {
+    "typescript/consistent-type-definitions": {
+      "count": 1
+    },
+    "typescript/explicit-module-boundary-types": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/QueryPanel.coverage.test.tsx": {
+    "jsx-a11y/control-has-associated-label": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/QueryPanel.tsx": {
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/components/QueryPanelContents/QueryPanelTitle.tsx": {
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/components/filters/Filters.tsx": {
+    "jsx-a11y/no-autofocus": {
+      "count": 2
+    },
+    "react-hooks/exhaustive-deps": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/components/grid/GridBodyRow.tsx": {
+    "jsx-a11y/prefer-tag-over-role": {
+      "count": 2
+    }
+  },
+  "webview_panels/src/modules/queryPanel/components/grid/GridHeaderCell.tsx": {
+    "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/components/grid/ResultsGrid.tsx": {
+    "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    },
+    "react/incompatible-library": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/components/queryLimit/QueryLimit.test.tsx": {
+    "react/globals": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/components/queryLimit/QueryLimit.tsx": {
+    "jsx-a11y/prefer-tag-over-role": {
+      "count": 2
+    },
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/components/queryPanelQueryHistory/QueryHistoryRow.tsx": {
+    "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/components/queryPanelQueryHistory/QueryPanelHistory.tsx": {
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "typescript/no-meaningless-void-operator": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/modules/queryPanel/useQueryPanelListeners.ts": {
+    "max-lines-per-function": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/test/controlCoverage.ts": {
+    "typescript/require-array-sort-compare": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/test/lineageHarness.tsx": {
+    "no-empty-function": {
+      "count": 2
+    },
+    "typescript/consistent-type-definitions": {
+      "count": 2
+    },
+    "typescript/explicit-module-boundary-types": {
+      "count": 5
+    },
+    "typescript/require-array-sort-compare": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/uiCore/anchoredPosition.ts": {
+    "max-params": {
+      "count": 1
+    },
+    "react/immutability": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/uiCore/components/PopoverWithButton.test.tsx": {
+    "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/uiCore/components/popoverWithButton/PopoverWithButton.tsx": {
+    "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 1
+    }
+  },
+  "webview_panels/src/uiCore/components/primitives.tsx": {
+    "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    }
+  }
+}

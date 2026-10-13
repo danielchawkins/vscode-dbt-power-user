@@ -15,7 +15,6 @@ export default {
     "src/lib/altimate/**",
     "**/*.{css,scss,svg}",
   ],
-  options: { typeAware: true },
   plugins: ["typescript", "unicorn", "import", "react", "jsx-a11y"],
   categories: { correctness: "error" },
   settings: { "jsx-a11y": { components: { Stack: "div" } } },

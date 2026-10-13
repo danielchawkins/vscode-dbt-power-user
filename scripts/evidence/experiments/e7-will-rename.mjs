@@ -32,7 +32,7 @@ const changes =
   );
 const editedFiles = Object.keys(changes)
   .map((u) => path.relative(root, new URL(u).pathname))
-  .sort();
+  .sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
 const newTexts = Object.values(changes)
   .flat()
   .map((t) => t.newText);

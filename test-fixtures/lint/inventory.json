@@ -334,6 +334,10 @@
       "engine": "eslint",
       "from": "@eslint-react/no-unused-class-component-members"
     },
+    "@eslint-react/no-unused-props": {
+      "engine": "held",
+      "from": "@eslint-react/no-unused-props"
+    },
     "@eslint-react/no-use-context": {
       "engine": "eslint",
       "from": "@eslint-react/no-use-context"

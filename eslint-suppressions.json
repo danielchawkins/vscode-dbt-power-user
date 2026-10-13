@@ -1,54 +1,12 @@
 {
-  "src/core/dbtCommand.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/childrenParentParser.ts": {
-    "complexity": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/graphParser.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/nodeParser.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "src/core/manifest/relationshipInference.ts": {
-    "complexity": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
       "count": 1
     }
   },
   "src/core/manifest/relationshipParser.ts": {
-    "complexity": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
       "count": 2
-    }
-  },
-  "src/dbtPowerUserExtension.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
-  "src/dbt_integration/domain.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
     }
   },
   "src/features/cte/cteProfilerDecorationProvider.ts": {
@@ -56,55 +14,12 @@
       "count": 1
     }
   },
-  "src/features/cte/cteProfilerService.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "src/features/docs/docGenService.ts": {
-    "@typescript-eslint/no-explicit-any": {
-      "count": 1
-    },
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "src/features/lineage/dbtLineageService.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "src/features/modelTree/modelTreeHelpers.ts": {
-    "complexity": {
-      "count": 1
-    }
-  },
   "src/features/sqlActions/sqlActionsCodeLensProvider.ts": {
-    "max-depth": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
       "count": 1
     }
   },
-  "src/fusion/commandProcessExecution.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/projects/projectRegistry.ts": {
-    "complexity": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    },
     "sonarjs/cognitive-complexity": {
       "count": 1
     }

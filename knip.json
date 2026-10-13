@@ -12,9 +12,7 @@
       ],
       "project": ["src/**/*.ts!", "scripts/**/*.{mjs,ts}", "!src/test/**!"],
       "ignore": ["scripts/spikes/**"],
-      "ignoreBinaries": ["dbt", "sample"],
-      // oxlint and oxlint-tsgolint run only as binaries: `oxlint --type-aware` spawns tsgolint.
-      "ignoreDependencies": ["oxlint", "oxlint-tsgolint"]
+      "ignoreBinaries": ["dbt", "sample"]
     },
     "packages/webview-contract": {
       "entry": ["src/**/*.test.ts"],
@@ -27,8 +25,7 @@
         "!src/**/*.test.{ts,tsx}!",
         "!src/test/**!"
       ],
-      // Same as the root: oxlint and oxlint-tsgolint run only as binaries, never through an import.
-      "ignoreDependencies": ["@vscode/codicons", "oxlint", "oxlint-tsgolint"]
+      "ignoreDependencies": ["@vscode/codicons"]
     }
   }
 }

@@ -1,9 +1,19 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   compareMeasured,
   compareWithBase,
+  METRICS,
   parseTrailers,
+  SUPPRESSION_FILES,
 } from "../../../../scripts/quality/ratchet.mjs";
+
+const root = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../../../..",
+);
 
 const metrics = [
   { key: "suppressions.host", kind: "ceiling", precision: 0 },
@@ -175,5 +185,55 @@ describe("parseTrailers", () => {
       ["a.b", "first reason"],
       ["e.f", "second"],
     ]);
+  });
+});
+
+describe("suppression ratchet keys", () => {
+  type Suppressions = Record<string, Record<string, { count: number }>>;
+  type Inventory = Record<
+    string,
+    Record<string, { engine: string; from: string }>
+  >;
+  const readJson = <T>(file: string): T =>
+    JSON.parse(readFileSync(path.join(root, file), "utf8")) as T;
+
+  it("maps exactly the four suppression keys to their files", () => {
+    expect(SUPPRESSION_FILES).toEqual({
+      "suppressions.host": "eslint-suppressions.json",
+      "suppressions.webview": "webview_panels/eslint-suppressions.json",
+      "oxlintSuppressions.host": "oxlint-suppressions.json",
+      "oxlintSuppressions.webview": "webview_panels/oxlint-suppressions.json",
+    });
+  });
+
+  it("measures each suppression metric as the total of its own file", () => {
+    for (const metric of METRICS.filter((m) => m.key in SUPPRESSION_FILES)) {
+      const file =
+        SUPPRESSION_FILES[metric.key as keyof typeof SUPPRESSION_FILES];
+      const total = Object.values(readJson<Suppressions>(file))
+        .flatMap((rules) => Object.values(rules))
+        .reduce((sum, { count }) => sum + count, 0);
+      expect(metric.measure(), metric.key).toBe(total);
+    }
+  });
+
+  it("keeps oxlint and held rules out of eslint-suppressions.json after pruning", () => {
+    const inventory = readJson<Inventory>("test-fixtures/lint/inventory.json");
+    for (const [workspace, file] of [
+      ["host", "eslint-suppressions.json"],
+      ["webview", "webview_panels/eslint-suppressions.json"],
+    ]) {
+      const moved = new Set(
+        Object.values(inventory[workspace])
+          .filter(({ engine }) => engine === "oxlint" || engine === "held")
+          .map(({ from }) => from),
+      );
+      const ruleKeys = new Set(
+        Object.values(readJson<Suppressions>(file)).flatMap((rules) =>
+          Object.keys(rules),
+        ),
+      );
+      expect([...ruleKeys].filter((rule) => moved.has(rule))).toEqual([]);
+    }
   });
 });

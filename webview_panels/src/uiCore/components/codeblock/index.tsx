@@ -44,13 +44,13 @@ const CodeBlockComponent = ({
             <code className={`language-${language}`}>
               {lines.map((line, lineIndex) => (
                 // Lines have no identity beyond their position.
-                // eslint-disable-next-line @eslint-react/no-array-index-key
+                // oxlint-disable-next-line react/no-array-index-key
                 <div key={lineIndex}>
                   {showLineNumbers ? (
                     <span className={classes.lineNumber}>{lineIndex + 1}</span>
                   ) : null}
                   {line.map((span, spanIndex) => (
-                    // eslint-disable-next-line @eslint-react/no-array-index-key
+                    // oxlint-disable-next-line react/no-array-index-key
                     <span key={spanIndex} className={span.className}>
                       {span.text}
                     </span>

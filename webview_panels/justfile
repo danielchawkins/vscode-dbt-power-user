@@ -46,16 +46,18 @@ typecheck:
 
 [group("quality")]
 fmt:
-    npm run lint:fix
+    npm run fix:eslint
 
 [group("quality")]
 lint:
-    npm run lint
+    npm run lint:eslint
+    npm run lint:imports
 
 # Drop baseline entries for lint violations that have been fixed, so the baseline only shrinks.
 [group("quality")]
 lint-prune:
-    npm run lint:prune
+    npm run prune:oxlint
+    npm run prune:eslint
 
 [group("tests")]
 test *args:

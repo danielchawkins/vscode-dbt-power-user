@@ -62,7 +62,7 @@ export const Label = ({
   className,
   ...rest
 }: LabelHTMLAttributes<HTMLLabelElement>): React.JSX.Element => (
-  // eslint-disable-next-line jsx-a11y-x/label-has-associated-control -- callers pass htmlFor or wrap the control
+  // oxlint-disable-next-line jsx_a11y/label-has-associated-control -- callers pass htmlFor or wrap the control
   <label {...rest} className={cx("form-label", className)} />
 );
 

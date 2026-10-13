@@ -5,10 +5,11 @@ import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 import { describe, expect, it } from "vitest";
+import { HELD_RULES } from "../../../../lint/held-rules.mjs";
 import hostConfig from "../../../../oxlint.config";
 import webviewConfig from "../../../../webview_panels/oxlint.config";
 
-// Oxlint must-fire fixtures (C5). Each fixture carries headers that say what it must trigger:
+// Must-fire fixtures (C5). Each fixture carries headers that say what it must trigger:
 //   // lint-expect: <engine> <rule-id> [count]
 //   // lint-expect-none: <engine|any> <rule-id>
 // The Oxlint half runs here; the ESLint half and the cross-engine assertions arrive in P4b.
@@ -283,6 +284,77 @@ describe("Oxlint must-fire fixtures", () => {
         (rule) => !inventoried.includes(rule),
       );
       expect({ missing, unknown }).toEqual({ missing: [], unknown: [] });
+    });
+  }
+});
+
+// Held typed rules (D11): configured in neither engine, so each one's fixture must stay silent.
+interface HeldRule {
+  severity: string;
+  options: readonly unknown[];
+  needs: string;
+  watchFor: readonly string[];
+  unblock: string;
+}
+
+function isEnabled(config: OxlintConfig, id: string): boolean {
+  const values = [
+    config.rules,
+    ...(config.overrides ?? []).map((o) => o.rules ?? {}),
+  ];
+  return values.some((rules) => rules[id] !== undefined && rules[id] !== "off");
+}
+
+// `oxlint --rules` prints a markdown table: | rule | source | ... ; the source is the plugin name.
+async function oxlintRuleIds(): Promise<Set<string>> {
+  const { stdout } = await execFileAsync(OXLINT, ["--rules"], {
+    maxBuffer: 16 * 1024 * 1024,
+  });
+  return new Set(
+    stdout.split("\n").flatMap((line) => {
+      const [, rule = "", source = ""] = line
+        .split("|")
+        .map((cell) => cell.trim());
+      return rule && source ? [`${source}/${rule}`] : [];
+    }),
+  );
+}
+
+describe("held typed rules (D11)", () => {
+  for (const ws of WORKSPACES) {
+    const held = HELD_RULES[ws.name as keyof typeof HELD_RULES] as Record<
+      string,
+      HeldRule
+    >;
+    const heldInventory = Object.keys(inventory[ws.name] ?? {}).filter(
+      (rule) => inventory[ws.name]?.[rule]?.engine === "held",
+    );
+
+    it(`${ws.name}: the held inventory entries and HELD_RULES name the same rules`, () => {
+      expect(heldInventory.sort()).toEqual(Object.keys(held).sort());
+    });
+
+    it(`${ws.name}: every held rule has a non-empty unblock and watchFor`, () => {
+      const failures = Object.entries(held).flatMap(([rule, entry]) => [
+        ...(entry.unblock ? [] : [`${rule}: empty unblock`]),
+        ...(entry.watchFor.length > 0 ? [] : [`${rule}: empty watchFor`]),
+      ]);
+      expect(failures).toEqual([]);
+    });
+
+    it(`${ws.name}: no held rule is enabled in the oxlint config under its from or watchFor id`, () => {
+      const enabled = Object.entries(held).flatMap(([rule, entry]) =>
+        [rule, ...entry.watchFor].filter((id) => isEnabled(ws.config, id)),
+      );
+      expect(enabled).toEqual([]);
+    });
+
+    it(`${ws.name}: no held rule's watchFor id is in the pinned oxlint --rules`, async () => {
+      const ids = await oxlintRuleIds();
+      const native = Object.values(held).flatMap((entry) =>
+        entry.watchFor.filter((id) => ids.has(id)),
+      );
+      expect(native).toEqual([]);
     });
   }
 });

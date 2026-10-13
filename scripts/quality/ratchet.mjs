@@ -52,19 +52,20 @@ const internalTagCount = () =>
  * Every ratcheted value. A `ceiling` may only fall and a `floor` may only rise. Values are stored and compared
  * at `precision` decimals; floors round down and ceilings round up.
  */
+export const SUPPRESSION_FILES = {
+  "suppressions.host": "eslint-suppressions.json",
+  "suppressions.webview": "webview_panels/eslint-suppressions.json",
+  "oxlintSuppressions.host": "oxlint-suppressions.json",
+  "oxlintSuppressions.webview": "webview_panels/oxlint-suppressions.json",
+};
+
 export const METRICS = [
-  {
-    key: "suppressions.host",
+  ...Object.entries(SUPPRESSION_FILES).map(([key, file]) => ({
+    key,
     kind: "ceiling",
     precision: 0,
-    measure: () => suppressionTotal("eslint-suppressions.json"),
-  },
-  {
-    key: "suppressions.webview",
-    kind: "ceiling",
-    precision: 0,
-    measure: () => suppressionTotal("webview_panels/eslint-suppressions.json"),
-  },
+    measure: () => suppressionTotal(file),
+  })),
   {
     key: "internalTags",
     kind: "ceiling",

@@ -1,6 +1,6 @@
 {
-  "suppressions.host": 29,
-  "suppressions.webview": 22,
+  "suppressions.host": 7,
+  "suppressions.webview": 0,
   "internalTags": 60,
   "coverage.host": {
     "lines": 80,
@@ -25,5 +25,7 @@
     "webview_panels/dist/assets/queryResults.css": 9800,
     "webview_panels/dist/assets/queryResults.js": 102700,
     "webview_panels/dist/assets/shared.css": 12200
-  }
+  },
+  "oxlintSuppressions.host": 868,
+  "oxlintSuppressions.webview": 76
 }

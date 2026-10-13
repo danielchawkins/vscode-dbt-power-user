@@ -60,7 +60,7 @@ const Filters = ({
 
   return (
     <>
-      {/* eslint-disable-next-line jsx-a11y-x/no-static-element-interactions, jsx-a11y-x/click-events-have-key-events -- nested controls own keyboard behavior; wrapper stops parent accordion click */}
+      {/* oxlint-disable-next-line jsx_a11y/no-static-element-interactions, jsx_a11y/click-events-have-key-events -- nested controls own keyboard behavior; wrapper stops parent accordion click */}
       <Stack className="gap-1" onClick={stopPropagation}>
         {showSearch ? (
           <Input

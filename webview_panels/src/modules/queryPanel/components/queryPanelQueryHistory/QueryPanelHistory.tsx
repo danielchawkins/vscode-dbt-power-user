@@ -23,7 +23,7 @@ const QueryPanelHistory = (): React.JSX.Element => {
   const { queryHistory } = useQueryPanelState();
 
   useEffect(() => {
-    void executeRequestInAsync("getQueryHistory");
+    executeRequestInAsync("getQueryHistory");
   }, []);
 
   const onFiltersChange = (data: { tags?: string[]; searchQuery?: string }) => {
