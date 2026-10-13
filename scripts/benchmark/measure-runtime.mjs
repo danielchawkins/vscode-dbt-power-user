@@ -34,6 +34,7 @@ if (compile.status !== 0) {
 // One smoke run takes seconds; a hung host would otherwise hold the job until its own timeout with no output.
 const RUN_TIMEOUT_MS = 5 * 60_000;
 const samples = [];
+const extHostStarts = [];
 let hostMetadata;
 let runtime;
 let activationMetadata;
@@ -88,13 +89,23 @@ for (let index = 0; index < 10; index += 1) {
   }
   hostMetadata ??= readOutput(result.stdout, "FPU_HOST_METADATA");
   runtime ??= readOutput(result.stdout, "FPU_SMOKE_RUNTIME");
+  // The smoke prints no start time when it cannot measure one, for example after a wall-clock step back.
+  const extHostStartMs = readOptionalOutput(
+    result.stdout,
+    "FPU_SMOKE_EXTHOST_START_MS",
+  );
   if (index === 0) {
     console.log(`FPU_HOST_METADATA=${JSON.stringify(hostMetadata)}`);
     console.log(`FPU_SMOKE_RUNTIME=${JSON.stringify(runtime)}`);
   }
   samples.push(sample);
+  if (extHostStartMs !== undefined) {
+    extHostStarts.push(extHostStartMs);
+  }
+  // One record per launch: the runtime sample, its launch index, and extHostStartMs, the milliseconds from the
+  // launcher's runTests call to the extension host's first test-runner callback (FPU_SMOKE_EXTHOST_START_MS).
   console.log(
-    `FPU_RUNTIME_RAW=${JSON.stringify({ index: index + 1, ...sample })}`,
+    `FPU_RUNTIME_RAW=${JSON.stringify({ index: index + 1, extHostStartMs, ...sample })}`,
   );
 }
 
@@ -133,6 +144,17 @@ const summary = {
       },
     ]),
   ),
+  extHostStartMs:
+    extHostStarts.length === 0
+      ? null
+      : {
+          min: Math.min(...extHostStarts),
+          median: median(
+            [...extHostStarts].sort((left, right) => left - right),
+          ),
+          max: Math.max(...extHostStarts),
+          launches: extHostStarts.length,
+        },
 };
 console.log(`FPU_RUNTIME_SUMMARY=${JSON.stringify(summary)}`);
 
@@ -157,11 +179,16 @@ function percentile(sorted, quantile) {
 }
 
 function readOutput(output, prefix) {
-  const match = output.match(new RegExp(`^${prefix}=(.+)$`, "m"));
-  if (!match) {
+  const value = readOptionalOutput(output, prefix);
+  if (value === undefined) {
     throw new Error(`${prefix} missing for ${host}`);
   }
-  return JSON.parse(match[1]);
+  return value;
+}
+
+function readOptionalOutput(output, prefix) {
+  const match = output.match(new RegExp(`^${prefix}=(.+)$`, "m"));
+  return match ? JSON.parse(match[1]) : undefined;
 }
 
 async function findAvailablePort(start) {
