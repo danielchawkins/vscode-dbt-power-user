@@ -28,7 +28,7 @@ export function syntheticResult(rowCount: number): ExecuteSQLResult {
       ]),
     },
     raw_sql: "select synthetic",
-    compiled_sql: "select synthetic",
+    compiled_sql: "select synthetic /* compiled */",
     modelName: "synthetic",
   };
 }

@@ -96,7 +96,9 @@ echo
 suites_for() {
   case "$(basename "$1")" in
     single-project)
-      if [[ "${FPU_RUNTIME_BENCHMARK:-}" != "1" ]]; then echo "default,lineageInteractions"; fi
+      if [[ "${FPU_RUNTIME_BENCHMARK:-}" != "1" ]]; then
+        echo "default,lineageInteractions,queryResultsInteractions,documentationEditorInteractions"
+      fi
       ;;
   esac
 }
