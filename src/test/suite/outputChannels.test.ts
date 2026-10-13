@@ -108,7 +108,7 @@ describe("ChannelLog", () => {
     it("calls the channel's show without looking up a command", async () => {
       vi.mocked(commands.getCommands).mockClear();
       log.channel.show(true);
-      log.channel.show(2, false);
+      log.channel.show(false);
       await settle();
 
       expect(vi.mocked(channel.show).mock.calls).toEqual([[true], [false]]);
@@ -208,7 +208,7 @@ describe("ChannelLog", () => {
     it("falls back to the channel's show when the host has no command for it", async () => {
       vi.mocked(commands.getCommands).mockResolvedValue([]);
       log.channel.show(true);
-      log.channel.show(2, false);
+      log.channel.show(false);
       await settle();
 
       expect(vi.mocked(channel.show).mock.calls).toEqual([[true], [false]]);

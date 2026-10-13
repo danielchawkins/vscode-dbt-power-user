@@ -8,7 +8,7 @@ import {
   Stack,
   Tag,
 } from "@uicore";
-import { FormEvent, useEffect } from "react";
+import { SubmitEvent, useEffect } from "react";
 import useTestFormSave, { TestOperation } from "../hooks/useTestFormSave";
 import useTestFormValues from "../hooks/useTestFormValues";
 import AcceptedValues from "./AcceptedValues";
@@ -50,7 +50,7 @@ const TestForm = ({
     }
   };
 
-  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: SubmitEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!complete || !event.currentTarget.checkValidity()) {
       return;
