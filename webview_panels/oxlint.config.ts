@@ -3,6 +3,8 @@
 // Only this workspace's tsconfigs see the sources, so this file is ignored by its ESLint config.
 import { vscodeApiPaths, vscodeApiPatterns } from "./lint/boundaries.mjs";
 
+const REACT_TS_GUIDE =
+  "https://kentcdodds.com/blog/how-to-write-a-react-component-in-typescript";
 const TESTS = ["src/**/*.test.{ts,tsx}", "src/test/**/*.{ts,tsx}"];
 
 export default {
@@ -90,6 +92,7 @@ export default {
     "eslint/no-prototype-builtins": "error",
     "eslint/no-regex-spaces": "error",
     "eslint/no-self-assign": ["error", { props: true }],
+    "eslint/no-shadow": "error",
     "eslint/no-shadow-restricted-names": ["error", { reportGlobalThis: true }],
     "eslint/no-sparse-arrays": "error",
     "eslint/no-unassigned-vars": "error",
@@ -352,6 +355,25 @@ export default {
     "typescript/no-non-null-asserted-optional-chain": "error",
     "typescript/no-redundant-type-constituents": "error",
     "typescript/no-require-imports": "error",
+    "typescript/no-restricted-types": [
+      "error",
+      {
+        types: {
+          "React.FC": {
+            message: `React.FC is problematic. [More info here](${REACT_TS_GUIDE})`,
+          },
+          "React.FunctionalComponent": {
+            message: `React.FunctionalComponent is problematic. [More info here](${REACT_TS_GUIDE})`,
+          },
+          "React.VFC": {
+            message: `React.VFC is problematic. [More info here](${REACT_TS_GUIDE})`,
+          },
+          "React.VoidFunctionComponent": {
+            message: `React.VoidFunctionComponent is problematic. [More info here](${REACT_TS_GUIDE})`,
+          },
+        },
+      },
+    ],
     "typescript/no-this-alias": "error",
     "typescript/no-unnecessary-type-assertion": "error",
     "typescript/no-unnecessary-type-constraint": "error",

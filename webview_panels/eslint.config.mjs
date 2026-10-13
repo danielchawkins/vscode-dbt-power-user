@@ -81,30 +81,6 @@ const ESLINT_RULES = {
     { selector: "function", format: ["camelCase"] },
     { selector: "typeLike", format: ["PascalCase"] },
   ],
-  "@typescript-eslint/no-restricted-types": [
-    "error",
-    {
-      types: {
-        "React.FC": {
-          message:
-            "React.FC is problematic. [More info here](https://kentcdodds.com/blog/how-to-write-a-react-component-in-typescript)",
-        },
-        "React.FunctionalComponent": {
-          message:
-            "React.FunctionalComponent is problematic. [More info here](https://kentcdodds.com/blog/how-to-write-a-react-component-in-typescript)",
-        },
-        "React.VFC": {
-          message:
-            "React.VFC is problematic. [More info here](https://kentcdodds.com/blog/how-to-write-a-react-component-in-typescript)",
-        },
-        "React.VoidFunctionComponent": {
-          message:
-            "React.VoidFunctionComponent is problematic. [More info here](https://kentcdodds.com/blog/how-to-write-a-react-component-in-typescript)",
-        },
-      },
-    },
-  ],
-  "@typescript-eslint/no-shadow": "error",
   "no-octal": "error",
   "no-restricted-syntax": [
     "error",

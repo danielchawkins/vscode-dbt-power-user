@@ -1,18 +1,23 @@
+import { ESLint } from "eslint";
+import oxlint from "eslint-plugin-oxlint";
 import { execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { copyFile, mkdir, readdir, rm, writeFile } from "node:fs/promises";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
+import tseslint from "typescript-eslint";
 import { describe, expect, it } from "vitest";
+import eslintConfig from "../../../../eslint.config.mjs";
 import { HELD_RULES } from "../../../../lint/held-rules.mjs";
 import hostConfig from "../../../../oxlint.config";
+import webviewEslintConfig from "../../../../webview_panels/eslint.config.mjs";
 import webviewConfig from "../../../../webview_panels/oxlint.config";
 
 // Must-fire fixtures (C5). Each fixture carries headers that say what it must trigger:
 //   // lint-expect: <engine> <rule-id> [count]
 //   // lint-expect-none: <engine|any> <rule-id>
-// The Oxlint half runs here; the ESLint half and the cross-engine assertions arrive in P4b.
+// Each engine checks its own headers, and `any` headers are checked by both.
 
 const ROOT = fileURLToPath(new URL("../../../../", import.meta.url));
 const FIXTURES = join(ROOT, "test-fixtures/lint");
@@ -195,23 +200,152 @@ async function lintFixtures(
   return reported;
 }
 
+// Shape of a resolved ESLint config, as calculateConfigForFile returns it.
+interface ResolvedEslint {
+  rules: Record<string, unknown>;
+  plugins?: Record<string, unknown>;
+  languageOptions?: { parserOptions?: Record<string, unknown> };
+}
+
+// The fixture that cannot reach its ESLint rule: module code is strict, so the parser rejects the
+// octal literal before any rule runs. The inventory still lists the rule.
+const UNREACHABLE_ESLINT: Record<string, string> = {
+  "no-octal": "the parser rejects octal literals in module code",
+};
+
+function ruleOn(value: unknown): boolean {
+  const severity = Array.isArray(value) ? value[0] : value;
+  return severity !== undefined && severity !== "off" && severity !== 0;
+}
+
+async function fixtureFiles(ws: Workspace): Promise<string[]> {
+  return (await listFiles(join(FIXTURES, ws.name))).filter((file) =>
+    /\.(tsx?|js)$/.test(file),
+  );
+}
+
+async function fixtureHeaders(
+  ws: Workspace,
+): Promise<{ rel: string; header: Header }[]> {
+  const root = join(FIXTURES, ws.name);
+  return (await fixtureFiles(ws)).flatMap((file) => {
+    const rel = relative(root, file).split(sep).join("/");
+    return parseHeaders(readFileSync(file, "utf8")).map((header) => ({
+      rel,
+      header,
+    }));
+  });
+}
+
+// Lints each fixture under its mirrored path, so the ESLint config that applies is the one resolved.
+async function lintWithEslint(
+  ws: Workspace,
+  files: string[],
+): Promise<Map<string, Map<string, number>>> {
+  const eslint = new ESLint({ cwd: ws.dir });
+  const reported = new Map<string, Map<string, number>>();
+  for (const file of files) {
+    const rel = relative(join(FIXTURES, ws.name), file).split(sep).join("/");
+    const [result] = await eslint.lintText(readFileSync(file, "utf8"), {
+      filePath: join(ws.dir, rel),
+    });
+    const counts = new Map<string, number>();
+    for (const message of result.messages) {
+      if (message.ruleId) {
+        counts.set(message.ruleId, (counts.get(message.ruleId) ?? 0) + 1);
+      }
+    }
+    reported.set(rel, counts);
+  }
+  return reported;
+}
+
+const resolvedCache = new Map<string, Promise<Map<string, ResolvedEslint>>>();
+
+// The resolved ESLint config for every fixture path in a workspace, computed once per run.
+function resolvedEslint(ws: Workspace): Promise<Map<string, ResolvedEslint>> {
+  let cached = resolvedCache.get(ws.name);
+  if (cached === undefined) {
+    cached = (async () => {
+      const eslint = new ESLint({ cwd: ws.dir });
+      const resolved = new Map<string, ResolvedEslint>();
+      for (const file of await fixtureFiles(ws)) {
+        const rel = relative(join(FIXTURES, ws.name), file)
+          .split(sep)
+          .join("/");
+        resolved.set(
+          rel,
+          (await eslint.calculateConfigForFile(
+            join(ws.dir, rel),
+          )) as ResolvedEslint,
+        );
+      }
+      return resolved;
+    })();
+    resolvedCache.set(ws.name, cached);
+  }
+  return cached;
+}
+
+// Type-aware parser options, and rules whose metadata says they need type information (D10).
+// naming-convention is marked so, but with the webview's options (no `types` modifiers) it loads and
+// reports untyped; architecture 10 records that as checked on 2026-10-09, so it is the one exception.
+const UNTYPED_BY_CHECK: Record<string, string> = {
+  "@typescript-eslint/naming-convention":
+    "webview options use no types modifiers (checked 2026-10-09)",
+};
+
+function requiresTypeChecking(config: ResolvedEslint, id: string): boolean {
+  const slash = id.lastIndexOf("/");
+  if (slash < 0 || UNTYPED_BY_CHECK[id] !== undefined) {
+    return false;
+  }
+  const plugin = config.plugins?.[id.slice(0, slash)] as
+    | {
+        rules?: Record<
+          string,
+          { meta?: { docs?: { requiresTypeChecking?: boolean } } }
+        >;
+      }
+    | undefined;
+  return (
+    plugin?.rules?.[id.slice(slash + 1)]?.meta?.docs?.requiresTypeChecking ===
+    true
+  );
+}
+
+function typeFailures(rel: string, config: ResolvedEslint): string[] {
+  const parserOptions = config.languageOptions?.parserOptions ?? {};
+  const failures = ["project", "projectService"]
+    .filter((key) => parserOptions[key] !== undefined)
+    .map((key) => `${rel}: parserOptions.${key} makes ESLint type-aware`);
+  for (const [id, value] of Object.entries(config.rules)) {
+    if (ruleOn(value) && requiresTypeChecking(config, id)) {
+      failures.push(`${rel}: ${id} needs type information`);
+    }
+  }
+  return failures;
+}
+
 // The failures one header adds, given how many times Oxlint reported its rule on the fixture.
 function headerFailures(
   ws: Workspace,
-  rel: string,
-  header: Header,
+  fixture: { rel: string; header: Header },
   count: number,
 ): string[] {
+  const { rel, header } = fixture;
   if (header.kind === "none") {
     return count > 0
       ? [`${rel}: ${header.rule} must not be reported, got ${count}`]
       : [];
   }
   if (
-    inventory[ws.name]?.[header.rule]?.engine !== "oxlint" &&
-    header.engine === "oxlint"
+    header.engine !== "any" &&
+    inventory[ws.name]?.[header.rule]?.engine !== header.engine
   ) {
-    return [`${rel}: ${header.rule} is not an oxlint entry in the inventory`];
+    return [
+      `${rel}: ${header.rule} is not a ${header.engine} entry in the inventory`,
+    ];
   }
   if (KNOWN_SILENT[header.rule] !== undefined) {
     return count > 0
@@ -226,26 +360,26 @@ function headerFailures(
 }
 
 function fixtureFailures(
-  ws: Workspace,
+  scope: { ws: Workspace; engine: "oxlint" | "eslint" },
   files: string[],
   reported: Map<string, Map<string, number>>,
 ): string[] {
+  const { ws, engine } = scope;
   const failures: string[] = [];
   for (const file of files) {
     const rel = relative(join(FIXTURES, ws.name), file).split(sep).join("/");
-    // ESLint headers belong to P4b; this check covers the Oxlint half.
-    const headers = parseHeaders(readFileSync(file, "utf8")).filter(
-      (h) => h.engine !== "eslint",
-    );
-    if (headers.length === 0) {
-      failures.push(`${rel}: no oxlint lint-expect or lint-expect-none header`);
+    const all = parseHeaders(readFileSync(file, "utf8"));
+    if (engine === "oxlint" && all.length === 0) {
+      failures.push(`${rel}: no lint-expect or lint-expect-none header`);
     }
+    const headers = all.filter(
+      (h) => h.engine === engine || h.engine === "any",
+    );
     for (const header of headers) {
       failures.push(
         ...headerFailures(
           ws,
-          rel,
-          header,
+          { rel, header },
           reported.get(rel)?.get(header.rule) ?? 0,
         ),
       );
@@ -261,7 +395,9 @@ describe("Oxlint must-fire fixtures", () => {
         /\.(tsx?|js)$/.test(file),
       );
       const reported = await lintFixtures(ws, files);
-      expect(fixtureFailures(ws, files, reported)).toEqual([]);
+      expect(
+        fixtureFailures({ ws, engine: "oxlint" }, files, reported),
+      ).toEqual([]);
     }, 240_000);
 
     // Completeness: each oxlint inventory entry has a lint-expect that fires (above), so
@@ -355,6 +491,207 @@ describe("held typed rules (D11)", () => {
         entry.watchFor.filter((id) => ids.has(id)),
       );
       expect(native).toEqual([]);
+    });
+  }
+});
+
+describe("ESLint must-fire fixtures", () => {
+  for (const ws of WORKSPACES) {
+    it(`${ws.name}: every lint-expect eslint header is reported, and no lint-expect-none rule is`, async () => {
+      const files = await fixtureFiles(ws);
+      const reported = await lintWithEslint(ws, files);
+      expect(
+        fixtureFailures({ ws, engine: "eslint" }, files, reported),
+      ).toEqual([]);
+    }, 120_000);
+  }
+});
+
+describe("lint rules by engine (D10, D11)", () => {
+  for (const ws of WORKSPACES) {
+    const entries = Object.entries(inventory[ws.name] ?? {});
+
+    it(`${ws.name}: every inventory entry has a lint-expect from its own engine`, async () => {
+      const expects = (await fixtureHeaders(ws)).filter(
+        ({ header }) => header.kind === "expect",
+      );
+      const missing = entries
+        .filter(
+          ([rule, entry]) =>
+            entry.engine !== "held" &&
+            UNREACHABLE_ESLINT[rule] === undefined &&
+            !expects.some(
+              ({ header }) =>
+                header.rule === rule && header.engine === entry.engine,
+            ),
+        )
+        .map(([rule]) => rule);
+      expect(missing).toEqual([]);
+    });
+
+    it(`${ws.name}: every held entry has a lint-expect-none any fixture`, async () => {
+      const none = (await fixtureHeaders(ws)).filter(
+        ({ header }) => header.kind === "none" && header.engine === "any",
+      );
+      const missing = entries
+        .filter(([, entry]) => entry.engine === "held")
+        .filter(([rule]) => !none.some(({ header }) => header.rule === rule))
+        .map(([rule]) => rule);
+      expect(missing).toEqual([]);
+    });
+
+    it(`${ws.name}: every eslint entry is enabled in the config its fixture resolves to`, async () => {
+      const headers = await fixtureHeaders(ws);
+      const resolved = await resolvedEslint(ws);
+      const failures = entries.flatMap(([rule, entry]) => {
+        const fixture = headers.find(
+          ({ header }) =>
+            header.kind === "expect" &&
+            header.engine === "eslint" &&
+            header.rule === rule,
+        );
+        if (entry.engine !== "eslint" || fixture === undefined) {
+          return [];
+        }
+        const config = resolved.get(fixture.rel);
+        return ruleOn(config?.rules[entry.from])
+          ? []
+          : [`${fixture.rel}: ${entry.from} is off`];
+      });
+      expect(failures).toEqual([]);
+    });
+
+    it(`${ws.name}: no ESLint rule is enabled without an eslint inventory entry`, async () => {
+      const eslintIds = new Set(
+        entries
+          .filter(([, entry]) => entry.engine === "eslint")
+          .map(([, entry]) => entry.from),
+      );
+      const failures = [...(await resolvedEslint(ws))].flatMap(
+        ([rel, config]) =>
+          Object.entries(config.rules)
+            .filter(([id, value]) => ruleOn(value) && !eslintIds.has(id))
+            .map(([id]) => `${rel}: ${id} is enabled with no eslint entry`),
+      );
+      expect(failures).toEqual([]);
+    });
+
+    it(`${ws.name}: held rules are enabled in no resolved ESLint config`, async () => {
+      const held = Object.entries(
+        HELD_RULES[ws.name as keyof typeof HELD_RULES] as Record<
+          string,
+          HeldRule
+        >,
+      );
+      const ids = held.flatMap(([rule, entry]) => [rule, ...entry.watchFor]);
+      const configs = [...(await resolvedEslint(ws)).values()];
+      const enabled = ids.filter((id) =>
+        configs.some((config) => ruleOn(config.rules[id])),
+      );
+      expect(enabled).toEqual([]);
+    });
+
+    it(`${ws.name}: no resolved ESLint config is type-aware (D10)`, async () => {
+      const failures = [...(await resolvedEslint(ws))].flatMap(
+        ([rel, config]) => typeFailures(rel, config),
+      );
+      expect(failures).toEqual([]);
+    });
+
+    it(`${ws.name}: the untyped check flags type-aware options and typed rules`, async () => {
+      const base = [...(await resolvedEslint(ws)).values()][0];
+      const withProject = {
+        ...base,
+        languageOptions: { parserOptions: { project: "./tsconfig.json" } },
+      };
+      const withService = {
+        ...base,
+        languageOptions: { parserOptions: { projectService: true } },
+      };
+      const withRule = {
+        ...base,
+        plugins: { ...base.plugins, "@typescript-eslint": tseslint.plugin },
+        rules: { ...base.rules, "@typescript-eslint/await-thenable": "error" },
+      };
+      expect(typeFailures("probe", withProject)).toEqual([
+        "probe: parserOptions.project makes ESLint type-aware",
+      ]);
+      expect(typeFailures("probe", withService)).toEqual([
+        "probe: parserOptions.projectService makes ESLint type-aware",
+      ]);
+      expect(typeFailures("probe", withRule)).toEqual([
+        "probe: @typescript-eslint/await-thenable needs type information",
+      ]);
+    });
+  }
+});
+
+describe("ESLint runs after oxlint's flat/all (O10)", () => {
+  const flatAll = oxlint.configs["flat/all"] as unknown[];
+  const turnedOff = flatAll.flatMap((config) =>
+    Object.entries((config as { rules?: Record<string, unknown> }).rules ?? {})
+      .filter(([, value]) => !ruleOn(value))
+      .map(([id]) => id),
+  );
+  const configs = [
+    ["host", eslintConfig],
+    ["webview", webviewEslintConfig],
+  ] as const;
+
+  for (const [name, config] of configs) {
+    it(`${name}: the config ends with oxlint's flat/all, unchanged`, () => {
+      expect((config as unknown[]).slice(-flatAll.length)).toEqual(flatAll);
+    });
+
+    // flat/all turns some rules off, so the resolved config would hide an enable placed before it.
+    it(`${name}: no rule with an oxlint home is enabled by any ESLint config entry`, () => {
+      const oxlintIds = new Set(
+        Object.values(inventory[name] ?? {})
+          .filter((entry) => entry.engine === "oxlint")
+          .map((entry) => entry.from),
+      );
+      const enabled = (config as { rules?: Record<string, unknown> }[]).flatMap(
+        (entry) =>
+          Object.entries(entry.rules ?? {})
+            .filter(([id, value]) => oxlintIds.has(id) && ruleOn(value))
+            .map(([id]) => id),
+      );
+      expect(enabled).toEqual([]);
+    });
+  }
+
+  for (const ws of WORKSPACES) {
+    it(`${ws.name}: no fixture path enables a rule that flat/all turns off`, async () => {
+      const failures = [...(await resolvedEslint(ws))].flatMap(
+        ([rel, config]) =>
+          turnedOff
+            .filter((id) => ruleOn(config.rules[id]))
+            .map((id) => `${rel}: ${id} is enabled after flat/all`),
+      );
+      expect(failures).toEqual([]);
+    });
+  }
+});
+
+describe("ESLint stays untyped (D10)", () => {
+  // The real config plus a typed rule. typescript-eslint's await-thenable calls getParserServices,
+  // so linting any fixture without a project must throw.
+  for (const ws of WORKSPACES) {
+    it(`${ws.name}: a real-config lint with a typed rule throws without type information`, async () => {
+      const eslint = new ESLint({
+        cwd: ws.dir,
+        overrideConfig: {
+          plugins: { "@typescript-eslint": tseslint.plugin },
+          rules: { "@typescript-eslint/await-thenable": "error" },
+        },
+      });
+      const [file] = await fixtureFiles(ws);
+      const rel = relative(join(FIXTURES, ws.name), file).split(sep).join("/");
+      await expect(
+        eslint.lintText(readFileSync(file, "utf8"), {
+          filePath: join(ws.dir, rel),
+        }),
+      ).rejects.toThrow(/requires type information/);
     });
   }
 });

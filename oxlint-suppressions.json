@@ -254,17 +254,12 @@
       "count": 1
     }
   },
-  "scripts/quality/fast-glob-shim/index.cjs": {
-    "typescript/no-require-imports": {
-      "count": 2
-    }
-  },
   "scripts/quality/ratchet.mjs": {
     "max-params": {
       "count": 1
     },
     "no-restricted-imports": {
-      "count": 2
+      "count": 1
     },
     "no-restricted-properties": {
       "count": 1
@@ -286,10 +281,15 @@
   },
   "scripts/smoke/run-smoke.mjs": {
     "no-restricted-imports": {
-      "count": 6
+      "count": 7
     },
     "no-restricted-properties": {
-      "count": 11
+      "count": 15
+    }
+  },
+  "scripts/smoke/toolEnvFixtures.mjs": {
+    "no-restricted-imports": {
+      "count": 2
     }
   },
   "scripts/test/integration-result.mjs": {
@@ -559,6 +559,11 @@
       "count": 1
     }
   },
+  "src/projects/fusionClientDiagnostics.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
   "src/projects/fusionClientPool.ts": {
     "max-params": {
       "count": 1
@@ -733,6 +738,11 @@
       "count": 1
     }
   },
+  "src/test/suite/fusionClientDiagnostics.test.ts": {
+    "typescript/unbound-method": {
+      "count": 2
+    }
+  },
   "src/test/suite/fusionClientPool.test.ts": {
     "typescript/unbound-method": {
       "count": 23
@@ -796,11 +806,6 @@
   },
   "src/test/suite/projects.test.ts": {
     "typescript/unbound-method": {
-      "count": 1
-    }
-  },
-  "src/test/suite/quality/lintRules.test.ts": {
-    "max-params": {
       "count": 1
     }
   },
