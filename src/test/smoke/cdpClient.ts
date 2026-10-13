@@ -140,6 +140,35 @@ export async function assertNoWorkbenchNotifications(
   }
 }
 
+const NOTIFICATION_POLL_MS = 250;
+
+/**
+ * Waits for the workbench's notifications to clear, so a notification that is still running (for example the language
+ * client's work-done progress) is not read as an unexpected one. The wait ends when no notification is showing or at
+ * `timeoutMs`. Anything still showing at the deadline fails the assertion that follows. It does not tell progress from
+ * errors. A CDP read failure throws, as `readWorkbenchNotificationTexts` does after its own retries.
+ */
+export async function waitForWorkbenchNotificationsToSettle(
+  cdpPort: string,
+  smokeHost: string,
+  timeoutMs = 30_000,
+): Promise<void> {
+  const host = validateSmokeHost(smokeHost);
+  const deadline = Date.now() + timeoutMs;
+  await commands.executeCommand(SHOW_NOTIFICATIONS);
+  try {
+    for (;;) {
+      const texts = await readWorkbenchNotificationTexts(cdpPort, host);
+      if (texts.length === 0 || Date.now() >= deadline) {
+        return;
+      }
+      await sleep(NOTIFICATION_POLL_MS);
+    }
+  } finally {
+    await commands.executeCommand(HIDE_NOTIFICATIONS);
+  }
+}
+
 const VISIBLE_FRAME = `document.visibilityState !== "visible" ? false : Promise.race([
   new Promise((resolve) => requestAnimationFrame(() => resolve(true))),
   new Promise((resolve) => setTimeout(() => resolve(false), 1000)),

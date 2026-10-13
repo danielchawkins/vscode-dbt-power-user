@@ -6,7 +6,7 @@ usage() {
 usage: run-host-smoke.sh --host <vscode|cursor> [--vsix PATH] [--fixture PATH] [--force]
 
 Install the packaged VSIX into a disposable profile and run panel smoke tests.
-Unless --fixture is given, also runs the multi-root Fusion LSP smoke suite once,
+Unless --fixture is given, also runs the multi-root and nested-project Fusion LSP smoke suites once each,
 skipped when FPU_RUNTIME_BENCHMARK=1 selects the tight single-fixture timing loop.
 
 --force re-acquires the pinned host even if a cached copy already verifies.
@@ -121,5 +121,6 @@ else
   if [[ "${FPU_RUNTIME_BENCHMARK:-}" != "1" ]]; then
     export FPU_SKIP_INTEGRATION_COMPILE=1
     run_fixture "$repo_root/src/test/fixtures/multi-root"
+    run_fixture "$repo_root/src/test/fixtures/nested-project"
   fi
 fi

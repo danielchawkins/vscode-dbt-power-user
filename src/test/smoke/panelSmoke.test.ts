@@ -19,6 +19,7 @@ import {
   revealWorkbench,
   validateSmokeHost,
   waitForWebviewPaint,
+  waitForWorkbenchNotificationsToSettle,
   WebviewPaintMetric,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
@@ -44,9 +45,9 @@ interface MeasuredWebview extends WebviewPaintMetric {
 }
 
 suite("Pinned-host VSIX smoke", function () {
-  this.timeout(120_000);
-
-  test("reports host runtime versions", () => {
+  test("reports host runtime versions", function () {
+    // No bounded waits; the limit is headroom for the host.
+    this.timeout(30_000);
     const payload = {
       host: process.env[HARNESS_SWITCHES.smokeHost] ?? "unknown",
       node: process.versions.node,
@@ -66,6 +67,22 @@ suite("Pinned-host VSIX smoke", function () {
       this.skip();
       return;
     }
+    // Default path, in seconds: manifest 30, active language 5, 2s pause per panel (3 panels) 6, query results grid
+    // 15, notifications settle 30. That is 86, so the limit is 116 (about 120).
+    // FPU_RUNTIME_BENCHMARK=1 replaces the pauses with up to 3 attempts of a 20s paint wait per panel, plus up to 10s
+    // of host timings: +184.
+    // FPU_SMOKE_SCREENSHOTS adds 13 checkpoints of up to 30.5s each (0.5s pause and a 30s reveal), a 30s language
+    // status hover, compiled preview (15s), CTE lens (20s), client-running (30s) and output (30s) waits, about 4.8s of
+    // sleeps, a 60s paint wait and a 20s theme wait per panel: +766.
+    // CDP call timeouts and retry pauses are left to the headroom.
+    const runtimeEnabled =
+      process.env[HARNESS_SWITCHES.runtimeBenchmark] === "1";
+    const evidenceEnabled = screenshotDirectory() !== undefined;
+    this.timeout(
+      116_000 +
+        whenEnabled(runtimeEnabled, 184_000) +
+        whenEnabled(evidenceEnabled, 766_000),
+    );
     const cdpPort = process.env.FPU_CDP_PORT;
     assert.ok(cdpPort, "smoke requires CDP port");
     const smokeHost = validateSmokeHost(
@@ -95,8 +112,6 @@ suite("Pinned-host VSIX smoke", function () {
       );
     }
 
-    const runtimeEnabled =
-      process.env[HARNESS_SWITCHES.runtimeBenchmark] === "1";
     const evidence = visualEvidence(cdpPort, smokeHost);
 
     const folder = vscode.workspace.workspaceFolders?.[0];
@@ -211,6 +226,7 @@ suite("Pinned-host VSIX smoke", function () {
       })}`,
     );
 
+    await waitForWorkbenchNotificationsToSettle(cdpPort, smokeHost);
     await assertNoWorkbenchNotifications(cdpPort, smokeHost);
 
     if (runtimeEnabled) {
@@ -248,6 +264,12 @@ suite("Pinned-host VSIX smoke", function () {
       process.env[HARNESS_SWITCHES.smokeHost] ?? "",
     );
     const evidence = visualEvidence(cdpPort, smokeHost);
+    // Default path, in seconds: active language 5, color theme 3 x 10, panel theme read 9 x 20 (one per panel per
+    // theme), lineage column wait 3 x 15. That is 260, so the limit is 290.
+    // FPU_SMOKE_SCREENSHOTS adds 9 checkpoints of up to 30.5s each (0.5s pause and a 30s reveal), and a second panel
+    // theme read of up to 20s in each: +455.
+    // CDP call timeouts are left to the headroom.
+    this.timeout(290_000 + whenEnabled(evidence !== undefined, 455_000));
     // The documentation editor follows the active editor; an earlier test may have moved focus off the model.
     const folder = vscode.workspace.workspaceFolders?.[0];
     assert.ok(folder, "fixture workspace should be open");
@@ -598,6 +620,11 @@ async function waitForActiveLanguage(
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/** `ms` when an optional path is enabled, otherwise 0. */
+function whenEnabled(enabled: boolean, ms: number): number {
+  return enabled ? ms : 0;
 }
 
 type Evidence = NonNullable<ReturnType<typeof visualEvidence>>;

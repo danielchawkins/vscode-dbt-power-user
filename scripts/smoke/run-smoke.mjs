@@ -271,15 +271,15 @@ function listLogs(dir) {
 
 /**
  * `fusionPowerUser.profilesDir` is the documented override for a profiles directory the environment gets
- * wrong, so a single-folder fixture's profiles.yml at its root is reached only through it. Workspace
- * fixtures carry their own per-folder settings.
+ * wrong, so a single-folder fixture's profiles.yml at its root is reached only through it. A value the fixture
+ * already sets is kept; workspace fixtures carry their own per-folder settings.
  */
 function configureProfilesThroughSetting(dir) {
   const settingsFile = path.join(dir, ".vscode", "settings.json");
   const settings = existsSync(settingsFile)
     ? JSON.parse(readFileSync(settingsFile, "utf-8"))
     : {};
-  settings["fusionPowerUser.profilesDir"] = "${workspaceFolder}";
+  settings["fusionPowerUser.profilesDir"] ??= "${workspaceFolder}";
   mkdirSync(path.dirname(settingsFile), { recursive: true });
   writeFileSync(settingsFile, JSON.stringify(settings, null, 2));
 }

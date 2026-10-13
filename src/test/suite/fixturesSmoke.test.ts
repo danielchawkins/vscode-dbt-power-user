@@ -91,6 +91,18 @@ describe("fixture workspaces", () => {
     ).toBe(false);
   });
 
+  it("points nested-project's profilesDir at its analytics project", () => {
+    const settings = JSON.parse(
+      readFileSync(
+        path.join(fixtures, "nested-project", ".vscode", "settings.json"),
+        "utf8",
+      ),
+    ) as Record<string, unknown>;
+    expect(settings["fusionPowerUser.profilesDir"]).toBe(
+      "${workspaceFolder}/projects/analytics",
+    );
+  });
+
   it("keeps the deliberately broken ref in single-project", () => {
     const model = readFileSync(
       path.join(fixtures, "single-project", "models", "broken_ref.sql"),

@@ -8,7 +8,11 @@ import {
 } from "../../projects/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import { checkFusionVersion } from "../integration/helpers/testFixtures";
-import { assertNoWorkbenchNotifications, validateSmokeHost } from "./cdpClient";
+import {
+  assertNoWorkbenchNotifications,
+  validateSmokeHost,
+  waitForWorkbenchNotificationsToSettle,
+} from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";
@@ -17,7 +21,9 @@ const LSP_WAIT_TIMEOUT_MS = 45_000;
 const LSP_WAIT_POLL_MS = 100;
 
 suite("Multi-root LSP smoke", function () {
-  this.timeout(90_000);
+  // Bounded waits: Fusion client states 45s, then each project's manifest wait 45s (run in parallel), then
+  // notifications 30s. The limit covers their sum plus about 30s of headroom.
+  this.timeout(150_000);
 
   test("completes the Fusion LSP initialize handshake for every Declared Project", async function () {
     if (currentFixtureName() !== "multi-root") {
@@ -76,6 +82,7 @@ suite("Multi-root LSP smoke", function () {
     }
 
     await assertEachProjectUsedItsOwnProfilesDir();
+    await waitForWorkbenchNotificationsToSettle(cdpPort, smokeHost);
     await assertNoWorkbenchNotifications(cdpPort, smokeHost);
   });
 });
@@ -90,41 +97,47 @@ async function assertEachProjectUsedItsOwnProfilesDir(): Promise<void> {
     vscode.workspace.workspaceFile,
     "multi-root must be opened as a workspace so each folder's settings apply",
   );
-  for (const name of EXPECTED_PROJECT_NAMES) {
-    const folder = vscode.workspace.workspaceFolders?.find(
-      (candidate) => candidate.name === name,
-    );
-    assert.ok(folder, `workspace must contain the ${name} folder`);
-    const configured = vscode.workspace
-      .getConfiguration("fusionPowerUser", folder.uri)
-      .get<string>("profilesDir");
-    assert.ok(configured, `${name} must set fusionPowerUser.profilesDir`);
-    const profilesDir = configured.replace(
-      "${workspaceFolder}",
-      folder.uri.fsPath,
-    );
+  await Promise.all(
+    EXPECTED_PROJECT_NAMES.map((name) =>
+      assertProjectUsedItsOwnProfilesDir(name),
+    ),
+  );
+}
 
-    const root = folder.uri.fsPath;
-    const manifestPath = path.join(root, "target", "manifest.json");
-    const deadline = Date.now() + LSP_WAIT_TIMEOUT_MS;
-    while (!fs.existsSync(manifestPath) && Date.now() < deadline) {
-      await sleep(250);
-    }
-    const dbtLog = path.join(root, "logs", "dbt.log");
-    const log = fs.existsSync(dbtLog) ? fs.readFileSync(dbtLog, "utf-8") : "";
-    assert.ok(
-      fs.existsSync(manifestPath),
-      `${name} parse must write target/manifest.json using its own profilesDir (${profilesDir}); ` +
-        `dbt.log tail: ${log.slice(-800)}`,
-    );
-    const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as {
-      nodes: Record<string, unknown>;
-    };
-    assert.ok(
-      `model.${name}.${name}_model` in manifest.nodes,
-      `${name} manifest must contain its own model`,
-    );
+async function assertProjectUsedItsOwnProfilesDir(name: string): Promise<void> {
+  const folder = vscode.workspace.workspaceFolders?.find(
+    (candidate) => candidate.name === name,
+  );
+  assert.ok(folder, `workspace must contain the ${name} folder`);
+  const configured = vscode.workspace
+    .getConfiguration("fusionPowerUser", folder.uri)
+    .get<string>("profilesDir");
+  assert.ok(configured, `${name} must set fusionPowerUser.profilesDir`);
+  const profilesDir = configured.replace(
+    "${workspaceFolder}",
+    folder.uri.fsPath,
+  );
+
+  const root = folder.uri.fsPath;
+  const manifestPath = path.join(root, "target", "manifest.json");
+  const deadline = Date.now() + LSP_WAIT_TIMEOUT_MS;
+  while (!fs.existsSync(manifestPath) && Date.now() < deadline) {
+    await sleep(250);
   }
+  const dbtLog = path.join(root, "logs", "dbt.log");
+  const log = fs.existsSync(dbtLog) ? fs.readFileSync(dbtLog, "utf-8") : "";
+  assert.ok(
+    fs.existsSync(manifestPath),
+    `${name} parse must write target/manifest.json using its own profilesDir (${profilesDir}); ` +
+      `dbt.log tail: ${log.slice(-800)}`,
+  );
+  const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf-8")) as {
+    nodes: Record<string, unknown>;
+  };
+  assert.ok(
+    `model.${name}.${name}_model` in manifest.nodes,
+    `${name} manifest must contain its own model`,
+  );
 }
 
 async function waitForFusionClientStates(): Promise<FusionClientStateReport[]> {
