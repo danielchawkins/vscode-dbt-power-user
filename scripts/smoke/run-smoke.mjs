@@ -188,6 +188,7 @@ const watchdog = setTimeout(() => {
 watchdog.unref();
 
 try {
+  const launchEpochMs = Date.now();
   await runTests({
     vscodeExecutablePath: hostApp,
     extensionTestsPath: path.join(root, "out/test/smoke/index.js"),
@@ -207,6 +208,7 @@ try {
       ...profilesEnv,
       FPU_SMOKE_HOST: host,
       FPU_CDP_PORT: cdpPort,
+      FPU_SMOKE_LAUNCH_EPOCH_MS: String(launchEpochMs),
       ...(args.suites ? { FPU_SMOKE_SUITES: args.suites } : {}),
       ...(process.env.FPU_RUNTIME_BENCHMARK
         ? { FPU_RUNTIME_BENCHMARK: process.env.FPU_RUNTIME_BENCHMARK }
