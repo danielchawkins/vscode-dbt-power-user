@@ -1,6 +1,6 @@
-import { globSync } from "fs";
 import Mocha from "mocha";
-import * as path from "path";
+import { globSync } from "node:fs";
+import * as path from "node:path";
 
 /** Mocha entry for the untrusted launch, which runs outside test-cli and so needs its own runner. */
 export async function run(): Promise<void> {

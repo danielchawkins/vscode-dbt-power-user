@@ -1,4 +1,4 @@
-import * as fs from "fs";
+import * as fs from "node:fs";
 
 /** Environment variable naming the log the integration runner's `dbt` wrapper appends to. */
 export const DBT_SPY_LOG_ENV = "FPU_DBT_SPY_LOG";
@@ -75,7 +75,7 @@ export function dbtInvocationsSince(
  * the wrapper, so its launches reach the log. Waiting on them would wait for the whole session, so they never count
  * as open.
  */
-const LONG_RUNNING_SUBCOMMANDS = ["lsp"];
+const LONG_RUNNING_SUBCOMMANDS = new Set(["lsp"]);
 
 /**
  * The invocations at or after index `since` of `dbtInvocations()` that have no exit line yet, leaving out the
@@ -90,7 +90,7 @@ function runningSince(records: SpyRecord[], since: number): DbtInvocation[] {
     .filter(
       (invocation) =>
         !exited.has(invocation.id) &&
-        !LONG_RUNNING_SUBCOMMANDS.includes(invocation.subcommand),
+        !LONG_RUNNING_SUBCOMMANDS.has(invocation.subcommand),
     );
 }
 

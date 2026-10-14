@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { ProjectPaths } from "../core/project";
 
 /** Why a template directory has no association. */
@@ -24,7 +24,7 @@ export function literalGlobPath(dir: string): string {
   return path
     .resolve(dir)
     .split(path.sep)
-    .map((part) => part.replace(/[*?[\]}]/g, "[$&]"))
+    .map((part) => part.replaceAll(/[*?[\]}]/g, "[$&]"))
     .join("/");
 }
 

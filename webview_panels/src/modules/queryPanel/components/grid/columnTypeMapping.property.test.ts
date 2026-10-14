@@ -4,7 +4,7 @@ import { buildGridInit } from "./columnTypeMapping";
 
 const NUM_RUNS = 200;
 
-const NUMERIC_TYPES = ["Integer", "Number"];
+const NUMERIC_TYPES = new Set(["Integer", "Number"]);
 
 const columnType = fc.constantFrom(
   "Text",
@@ -96,7 +96,7 @@ describe("buildGridInit properties", () => {
       fc.property(table, ({ names, types, rows }) => {
         const init = buildGridInit(names, types, rows);
         names.forEach((name, i) => {
-          if (NUMERIC_TYPES.includes(types[i] as string)) {
+          if (NUMERIC_TYPES.has(types[i] as string)) {
             init.rows.forEach((row, r) => {
               expect(row[name]).toBe(rows[r][name] ?? null);
             });

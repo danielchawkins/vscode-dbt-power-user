@@ -1,6 +1,6 @@
-import { globSync } from "fs";
 import Mocha from "mocha";
-import * as path from "path";
+import { globSync } from "node:fs";
+import * as path from "node:path";
 import { extHostStartMs } from "./extHostStart";
 import { selectSuites } from "./suiteSelection";
 

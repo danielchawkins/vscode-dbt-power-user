@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import { EventEmitter, Uri, window, workspace, WorkspaceFolder } from "vscode";
 import { CurrentProject } from "../../projects/currentProject";

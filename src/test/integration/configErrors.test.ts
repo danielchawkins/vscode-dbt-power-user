@@ -1,8 +1,8 @@
-import * as assert from "assert";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
-import { pathToFileURL } from "url";
+import * as assert from "node:assert";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { pathToFileURL } from "node:url";
 import { isConfigError } from "../../core/cli";
 import type { Log } from "../../core/log";
 import {

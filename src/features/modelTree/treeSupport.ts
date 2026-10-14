@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { Disposable, TextDocument, window } from "vscode";
 import { NodeMetaData, NodeMetaMap } from "../../core/manifest/types";
 import { extensionRoot } from "../../extensionRoot";

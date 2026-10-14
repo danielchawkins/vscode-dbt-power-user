@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 
 import { ManifestProject } from "./manifestProject";
 import { DocMetaMap, ManifestResources } from "./types";
@@ -47,7 +47,7 @@ export class DocParser {
         const macroFileLines = docFile.split("\n");
         for (let index = 0; index < macroFileLines.length; index++) {
           const currentLine = macroFileLines[index] ?? "";
-          if (currentLine.match(new RegExp(`docs\\s${name}`))) {
+          if (new RegExp(`docs\\s${name}`).test(currentLine)) {
             docMetaMap.set(docName, {
               path: fullPath,
               line: index,

@@ -1,5 +1,5 @@
-import { realpathSync } from "fs";
-import * as path from "path";
+import { realpathSync } from "node:fs";
+import * as path from "node:path";
 import {
   Disposable,
   Event,

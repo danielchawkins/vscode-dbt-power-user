@@ -1,6 +1,6 @@
 import type { PanelNotice } from "@fusion-power-user/webview-contract";
-import { readFile } from "fs/promises";
-import * as path from "path";
+import { readFile } from "node:fs/promises";
+import * as path from "node:path";
 import { Uri, window } from "vscode";
 import { parse as parseYaml } from "yaml";
 import { NodeMetaData, RESOURCE_TYPE_MODEL } from "../../core/manifest/types";

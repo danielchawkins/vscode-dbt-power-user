@@ -4,9 +4,9 @@ import {
   realpathSync,
   rmSync,
   writeFileSync,
-} from "fs";
-import { tmpdir } from "os";
-import * as path from "path";
+} from "node:fs";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
 import {
   afterEach,
   beforeEach,

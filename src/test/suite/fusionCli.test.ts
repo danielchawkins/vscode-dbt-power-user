@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { toCliArgs } from "../../core/cli";
 import type { Log } from "../../core/log";

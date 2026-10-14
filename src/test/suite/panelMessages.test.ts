@@ -3,9 +3,9 @@ import {
   lineage,
   queryResults,
 } from "@fusion-power-user/webview-contract";
-import { mkdtempSync, rmSync, writeFileSync } from "fs";
-import { tmpdir } from "os";
-import { join } from "path";
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, EventEmitter, Uri, window, workspace } from "vscode";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";

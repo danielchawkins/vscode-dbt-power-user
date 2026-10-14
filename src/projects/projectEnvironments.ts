@@ -1,4 +1,4 @@
-import { dirname, isAbsolute, relative } from "path";
+import { dirname, isAbsolute, relative } from "node:path";
 import {
   Disposable,
   Event,

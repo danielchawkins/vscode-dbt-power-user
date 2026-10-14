@@ -57,9 +57,9 @@ export function panelColumns(
     byName.delete(column.name.toLowerCase());
     return toPanelColumn(table, column.name, column.datatype, yaml);
   });
-  const onlyDeclared = [...byName.values()]
-    .map((c) => toPanelColumn(table, c.name, "", c))
-    .sort((a, b) => a.name.localeCompare(b.name));
+  const onlyDeclared = Array.from(byName.values(), (c) =>
+    toPanelColumn(table, c.name, "", c),
+  ).sort((a, b) => a.name.localeCompare(b.name));
   return [...fromServer, ...onlyDeclared];
 }
 

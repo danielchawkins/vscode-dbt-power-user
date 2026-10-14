@@ -67,7 +67,7 @@ const QueryLimit = (): React.JSX.Element => {
             type="number"
             value={value}
             onChange={(e) => {
-              const newValue = e.target.value.replace(/[^\d]/g, "");
+              const newValue = e.target.value.replaceAll(/[^\d]/g, "");
               setValue(newValue);
             }}
             className={styles.input}

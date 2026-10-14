@@ -1,7 +1,7 @@
 // Tool-environment smoke fixtures. Each entry builds a dbt project in a temporary directory, with the mise or direnv
 // setup that decides which `dbt` the extension runs. Forwarders record that they ran, then run the pinned Fusion
 // named by FPU_SMOKE_FUSION. Run directly with <dir>, this builds every entry there and prints one JSON line each.
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
 import {
   accessSync,
   chmodSync,
@@ -11,9 +11,8 @@ import {
   realpathSync,
   statSync,
   writeFileSync,
-} from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+} from "node:fs";
+import path from "node:path";
 
 const SUITES = ["toolEnvironment"];
 
@@ -38,7 +37,7 @@ function isExecutableFile(file) {
 }
 
 function shellQuote(text) {
-  return `'${text.replace(/'/g, `'\\''`)}'`;
+  return `'${text.replaceAll("'", `'\\''`)}'`;
 }
 
 /** A dbt project in the single-project shape, with one model to open. */
@@ -261,7 +260,7 @@ export const TOOL_ENV_FIXTURES = [
   },
 ];
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (process.argv[1] === import.meta.filename) {
   const dir = process.argv[2];
   if (!dir) {
     console.error("usage: toolEnvFixtures.mjs <dir>");

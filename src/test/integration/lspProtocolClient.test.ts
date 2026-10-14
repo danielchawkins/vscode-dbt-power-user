@@ -1,5 +1,5 @@
-import * as assert from "assert";
-import * as net from "net";
+import * as assert from "node:assert";
+import * as net from "node:net";
 import { attachLspProtocolClient, LspRequestError } from "./lspProtocolClient";
 
 const HEADER_DELIMITER = "\r\n\r\n";

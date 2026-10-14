@@ -1,5 +1,5 @@
 export function stripANSI(src: string): string {
-  return src.replace(
+  return src.replaceAll(
     /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
     "",
   );
@@ -8,10 +8,10 @@ export function stripANSI(src: string): string {
 export function getFormattedDateTime(): string {
   const now = new Date();
 
-  const date = now.toLocaleDateString("en-GB").replace(/\//g, "-");
+  const date = now.toLocaleDateString("en-GB").replaceAll("/", "-");
   const time = now
     .toLocaleTimeString("en-GB", { hour12: false })
-    .replace(/:/g, "-");
+    .replaceAll(":", "-");
 
   return `${date}-${time}`;
 }

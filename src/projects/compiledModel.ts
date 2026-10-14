@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 import { Uri } from "vscode";
 import type { FusionCommands } from "../fusion/fusionCommands";
 

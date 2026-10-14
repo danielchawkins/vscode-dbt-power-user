@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { DbtProjectConfig } from "./dbtProjectFile";
 
 /** Absolute resource directories of one dbt project, from its project file with dbt's defaults filling gaps. */
@@ -29,7 +29,7 @@ const SCALAR_KEYS = {
 
 /** `model-paths` or its legacy snake_case spelling. */
 function configured(config: DbtProjectConfig, key: string): unknown {
-  return config[key] ?? config[key.replace(/-/g, "_")];
+  return config[key] ?? config[key.replaceAll("-", "_")];
 }
 
 /**

@@ -16,7 +16,7 @@ export function typedReducer<S, P>(
   actions: { [K in keyof P]: (payload: P[K]) => ReducerAction<P> };
 } {
   const reducer = (state: S, action: ReducerAction<P>): S => {
-    if (!Object.prototype.hasOwnProperty.call(handlers, action.type)) {
+    if (!Object.hasOwn(handlers, action.type)) {
       return state;
     }
     const handler = handlers[action.type] as (state: S, payload: unknown) => S;

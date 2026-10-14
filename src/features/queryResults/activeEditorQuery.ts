@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { Range, window } from "vscode";
 import { notifyErrorWithoutProject } from "../../projects/notifications";
 

@@ -1,6 +1,6 @@
 import fc from "fast-check";
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import type { Log } from "../../core/log";
 import {
@@ -236,9 +236,9 @@ describe("mergeMetadata", () => {
     expect(
       merged.nodeMetaMap.lookupByUniqueId("model.pkg.shipped"),
     ).toBeDefined();
-    expect([...merged.nodeMetaMap.nodes()].map((n) => n.unique_id)).toContain(
-      "model.pkg.shipped",
-    );
+    expect(
+      Array.from(merged.nodeMetaMap.nodes(), (n) => n.unique_id),
+    ).toContain("model.pkg.shipped");
   });
 
   it("keeps the parents of an analysis, which the server does not list", async () => {

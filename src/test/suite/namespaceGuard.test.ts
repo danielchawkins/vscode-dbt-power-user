@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync, statSync } from "fs";
-import path from "path";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";

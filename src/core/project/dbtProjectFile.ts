@@ -1,5 +1,5 @@
-import { existsSync, readFileSync } from "fs";
-import * as path from "path";
+import { existsSync, readFileSync } from "node:fs";
+import * as path from "node:path";
 import { parse } from "yaml";
 
 export const DBT_PROJECT_FILE = "dbt_project.yml";

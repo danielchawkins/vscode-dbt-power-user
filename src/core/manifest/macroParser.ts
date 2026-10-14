@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 
 import { ManifestProject } from "./manifestProject";
 import { MacroMetaMap, MacroResource, ManifestResources } from "./types";
@@ -49,9 +49,9 @@ export class MacroParser {
         for (let index = 0; index < macroFileLines.length; index++) {
           const currentLine = macroFileLines[index] ?? "";
           if (
-            currentLine.match(new RegExp(`macro\\s${name}\\(`)) ||
-            currentLine.match(
-              new RegExp(`test\\s${name.replace("test_", "")}\\(`),
+            new RegExp(`macro\\s${name}\\(`).test(currentLine) ||
+            new RegExp(`test\\s${name.replace("test_", "")}\\(`).test(
+              currentLine,
             )
           ) {
             macroMetaMap.set(macroName, {

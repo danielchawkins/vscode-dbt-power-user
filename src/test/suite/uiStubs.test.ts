@@ -14,16 +14,14 @@ function originalsOf() {
   return STUBBED_WINDOW_FUNCTIONS.map((name) => ({
     name,
     value: windowRecord[name],
-    own: Object.prototype.hasOwnProperty.call(windowRecord, name),
+    own: Object.hasOwn(windowRecord, name),
   }));
 }
 
 function expectOriginals(originals: ReturnType<typeof originalsOf>) {
   for (const { name, value, own } of originals) {
     expect(windowRecord[name], name).toBe(value);
-    expect(Object.prototype.hasOwnProperty.call(windowRecord, name), name).toBe(
-      own,
-    );
+    expect(Object.hasOwn(windowRecord, name), name).toBe(own);
   }
 }
 
@@ -96,20 +94,14 @@ describe("uiStubs", () => {
   });
 
   it("restore deletes showInputBox, which the unit mock window does not have", () => {
-    expect(
-      Object.prototype.hasOwnProperty.call(windowRecord, "showInputBox"),
-    ).toBe(false);
+    expect(Object.hasOwn(windowRecord, "showInputBox")).toBe(false);
     const restore = installUiStubs({ showInputBox: ["typed"] });
     try {
-      expect(
-        Object.prototype.hasOwnProperty.call(windowRecord, "showInputBox"),
-      ).toBe(true);
+      expect(Object.hasOwn(windowRecord, "showInputBox")).toBe(true);
     } finally {
       restore();
     }
-    expect(
-      Object.prototype.hasOwnProperty.call(windowRecord, "showInputBox"),
-    ).toBe(false);
+    expect(Object.hasOwn(windowRecord, "showInputBox")).toBe(false);
   });
 
   it("records every call's arguments, including unscripted ones", () => {

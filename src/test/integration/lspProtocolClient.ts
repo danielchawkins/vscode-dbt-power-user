@@ -1,4 +1,4 @@
-import * as net from "net";
+import * as net from "node:net";
 import type { Disposable } from "../../fusion/reverseSocketTransport";
 
 const HEADER_DELIMITER = Buffer.from("\r\n\r\n");

@@ -1,5 +1,5 @@
-import { readFileSync } from "fs";
-import * as path from "path";
+import { readFileSync } from "node:fs";
+import * as path from "node:path";
 import { parse, stringify } from "yaml";
 import type { Log } from "../../core/log";
 import { getColumnTestConfigFromYml } from "../../core/manifest/testConfig";
@@ -60,7 +60,13 @@ export class DbtTestService {
     }
 
     // Ignore these generic fields, as we handle these fields differently in UI
-    const ignoredFields = ["model", "column_name", "field", "to", "values"];
+    const ignoredFields = new Set([
+      "model",
+      "column_name",
+      "field",
+      "to",
+      "values",
+    ]);
 
     if (!test.test_metadata) {
       return;
@@ -88,7 +94,7 @@ export class DbtTestService {
     // Remove fields which are already handled in UI
     const filteredConfig = Object.entries(existingConfig).reduce(
       (acc: Record<string, unknown>, [key, value]) => {
-        if (ignoredFields.includes(key)) {
+        if (ignoredFields.has(key)) {
           return acc;
         }
 

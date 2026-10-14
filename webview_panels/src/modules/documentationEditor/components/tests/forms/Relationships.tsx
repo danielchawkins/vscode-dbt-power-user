@@ -20,7 +20,8 @@ const Relationships = ({
   const [toSourceOptions, setToSourceOptions] = useState<OptionType[]>([]);
 
   const getColumnsOfModel = async (model: string) => {
-    const matches = [...model.matchAll(/['"]([^'"]*)['"]/g)].map(
+    const matches = Array.from(
+      model.matchAll(/['"]([^'"]*)['"]/g),
       (m) => m[1] ?? "",
     );
     const [first = "", second = ""] = matches;

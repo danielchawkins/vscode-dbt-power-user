@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 
 /**
  * One visual checkpoint in the smoke evidence package: a workbench screenshot and the text-derived measurements
@@ -25,8 +25,8 @@ export function screenshotDirectory(
 export function checkpointStem(sequence: number, name: string): string {
   const slug = name
     .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
+    .replaceAll(/[^a-z0-9]+/g, "-")
+    .replaceAll(/^-|-$/g, "");
   return `${String(sequence).padStart(2, "0")}-${slug || "checkpoint"}`;
 }
 

@@ -1,5 +1,5 @@
-import { existsSync } from "fs";
-import * as path from "path";
+import { existsSync } from "node:fs";
+import * as path from "node:path";
 
 export const createFullPathForNode: (
   projectName: string,

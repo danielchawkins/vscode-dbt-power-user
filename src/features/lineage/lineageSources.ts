@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { TextDocument, TextEditor } from "vscode";
 import { isMap, isScalar, isSeq, parseDocument, type YAMLMap } from "yaml";
 import {

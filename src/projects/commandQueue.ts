@@ -18,9 +18,9 @@ export interface QueuedCommandFailure {
 export function formatCommandStatus(command: DBTCommand): string {
   return command
     .getCommandAsString()
-    .replace(/\s*--project-dir\s+\S+/g, "")
-    .replace(/\s*--profiles-dir\s+\S+/g, "")
-    .replace(/\s+/g, " ")
+    .replaceAll(/\s*--project-dir\s+\S+/g, "")
+    .replaceAll(/\s*--profiles-dir\s+\S+/g, "")
+    .replaceAll(/\s+/g, " ")
     .trim();
 }
 

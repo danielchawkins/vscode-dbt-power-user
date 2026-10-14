@@ -2,7 +2,7 @@ import {
   resolveCliArgsFromVSCodeExecutablePath,
   runTests,
 } from "@vscode/test-electron";
-import { spawnSync } from "child_process";
+import { spawnSync } from "node:child_process";
 import {
   chmodSync,
   copyFileSync,
@@ -17,14 +17,13 @@ import {
   symlinkSync,
   writeFileSync,
   writeSync,
-} from "fs";
-import { createServer } from "net";
-import { tmpdir } from "os";
-import path from "path";
-import { fileURLToPath } from "url";
+} from "node:fs";
+import { createServer } from "node:net";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { resolveOnPath, TOOL_ENV_FIXTURES } from "./toolEnvFixtures.mjs";
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const __dirname = import.meta.dirname;
 const root = path.resolve(__dirname, "../..");
 const SURVIVING_PROCESS_TIMEOUT_MS = 5_000;
 const SURVIVING_PROCESS_POLL_MS = 250;

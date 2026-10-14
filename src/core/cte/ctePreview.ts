@@ -55,7 +55,7 @@ function cteSlice(
 ): string {
   const bytes = typeof compiled === "string" ? Buffer.from(compiled) : compiled;
   const slice = bytes.subarray(cte.compiledStart, cte.compiledStop).toString();
-  const escaped = cte.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const escaped = cte.name.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
   const declaration = new RegExp(
     `["'\`\\[]?${escaped}["'\`\\]]?\\s+as\\s*\\(`,
     "i",

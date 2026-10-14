@@ -1,5 +1,5 @@
-import { realpathSync } from "fs";
-import { basename } from "path";
+import { realpathSync } from "node:fs";
+import { basename } from "node:path";
 import { Uri } from "vscode";
 import { commandParamsFor, fullRefreshArgs } from "../core/cli";
 import { DBTCommand } from "../core/dbtCommand";

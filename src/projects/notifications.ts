@@ -1,4 +1,4 @@
-import { inspect } from "util";
+import { inspect } from "node:util";
 import { commands, Uri, window } from "vscode";
 import { SHOW_OUTPUT, SHOW_OUTPUT_COMMAND } from "./projectErrors";
 

@@ -1,6 +1,6 @@
-import { mkdtempSync, rmSync, statSync, writeFileSync } from "fs";
-import { tmpdir } from "os";
-import * as path from "path";
+import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import {
   CliCommand,

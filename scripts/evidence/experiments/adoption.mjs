@@ -11,11 +11,11 @@ import fs from "node:fs";
 import { createRequire } from "node:module";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 import { parseArgs } from "node:util";
 import YAML from "yaml";
 
-const here = path.dirname(fileURLToPath(import.meta.url));
+const here = import.meta.dirname;
 export const repo = path.resolve(here, "../../..");
 const spike = path.join(repo, "scripts/spikes/lsp-capabilities");
 const rpc = createRequire(import.meta.url)("vscode-jsonrpc/node");
@@ -38,7 +38,7 @@ export function prepareJaffle(dest, dbt) {
   return fs.realpathSync(dest);
 }
 
-const escapeRegExp = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+const escapeRegExp = (s) => s.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const typeOf = (v) => (v === null ? "null" : typeof v);
 
 /** Warehouse names (account, user, role, database, warehouse, schema) from non-DuckDB outputs and SNOWFLAKE_* env. */

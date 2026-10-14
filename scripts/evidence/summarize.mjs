@@ -21,7 +21,7 @@ const one = (v) => {
   if (r == null) return "null";
   if (r.contents)
     return `hover: ${String(r.contents.value ?? r.contents)
-      .replace(/\s+/g, " ")
+      .replaceAll(/\s+/g, " ")
       .slice(0, 100)}`;
   if (r.changes || r.documentChanges) {
     const ch =
@@ -59,7 +59,7 @@ for (const step of fs.readdirSync(path.join(run, "steps")).sort()) {
       );
     } catch {
       console.log(
-        `  stdout not JSON: ${stdout.slice(0, 160).replace(/\n/g, " ")}`,
+        `  stdout not JSON: ${stdout.slice(0, 160).replaceAll("\n", " ")}`,
       );
     }
   }

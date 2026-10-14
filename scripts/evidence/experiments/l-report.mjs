@@ -13,7 +13,7 @@ import path from "node:path";
 const read = (f) => (fs.existsSync(f) ? fs.readFileSync(f, "utf8") : "");
 const PREFIX =
   '--project-dir <P> --profiles-dir <P> --no-version-check --command-prefix "" --log-level-file trace';
-const cell = (s) => String(s).replace(/\|/g, "\\|").replace(/\n/g, " ");
+const cell = (s) => String(s).replaceAll("|", "\\|").replaceAll("\n", " ");
 const lineageRead = (dir) => {
   if (!dir) return "—";
   const out = read(path.join(dir, "stdout.txt"));

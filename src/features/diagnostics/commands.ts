@@ -1,5 +1,5 @@
-import { existsSync } from "fs";
-import { dirname, join } from "path";
+import { existsSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { extensions, version } from "vscode";
 import type { RegisterCommand } from "../../commandRegistry";
 import { DBT_PROJECT_FILE, readDbtProjectFile } from "../../core/project";
@@ -105,7 +105,7 @@ async function printProjectInfo(out: Output, project: Project) {
     out.logNewLine();
     out.logLine(DBT_PROJECT_FILE);
     out.logHorizontalRule();
-    out.logLine(projectFile.text.replace(/\n/g, "\r\n"));
+    out.logLine(projectFile.text.replaceAll("\n", "\r\n"));
     out.logHorizontalRule();
   }
   out.logNewLine();

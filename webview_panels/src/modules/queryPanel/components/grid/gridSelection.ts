@@ -46,7 +46,7 @@ export function selectionToTsv(
   for (let row = top; row <= bottom; row++) {
     const cells: string[] = [];
     for (let col = left; col <= right; col++) {
-      cells.push(cellText(row, col).replace(/[\t\r\n]+/g, " "));
+      cells.push(cellText(row, col).replaceAll(/[\t\r\n]+/g, " "));
     }
     lines.push(cells.join("\t"));
   }

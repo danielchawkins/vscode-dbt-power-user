@@ -1,4 +1,4 @@
-import * as net from "net";
+import * as net from "node:net";
 
 /** @internal */
 export interface Disposable {

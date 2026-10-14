@@ -1,5 +1,5 @@
-import { readFileSync } from "fs";
-import path from "path";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { parseTraceServerLevel, TRACE_SERVER_LEVELS } from "../../core/project";
 import { CONFIGURATION_SECTION } from "../../settings";

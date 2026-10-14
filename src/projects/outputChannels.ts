@@ -1,4 +1,4 @@
-import { inspect } from "util";
+import { inspect } from "node:util";
 import {
   commands,
   Disposable,
@@ -161,7 +161,7 @@ class ClosableLogChannel implements LogOutputChannel {
 
 /** The host's log file name for a channel name, which its Output channel id embeds. */
 function channelFileName(name: string): string {
-  return name.replace(/[\\/:*?"<>|]/g, "");
+  return name.replaceAll(/[\\/:*?"<>|]/g, "");
 }
 
 /** A `Log` over one log output channel; calls after `dispose` are dropped. */

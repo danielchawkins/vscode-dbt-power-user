@@ -1,5 +1,5 @@
-import { EventEmitter } from "events";
-import * as net from "net";
+import { EventEmitter } from "node:events";
+import * as net from "node:net";
 import { afterEach, describe, expect, it } from "vitest";
 import type { StreamInfo } from "vscode-languageclient/node";
 import {

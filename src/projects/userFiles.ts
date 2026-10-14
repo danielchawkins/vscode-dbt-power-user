@@ -1,4 +1,4 @@
-import { existsSync } from "fs";
+import { existsSync } from "node:fs";
 import { Range, Uri, workspace, WorkspaceEdit } from "vscode";
 
 /**

@@ -2,12 +2,9 @@
 // Usage: node scripts/quality/size-budget.mjs   fail when a built artifact exceeds its `size` budget in ceilings.json
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
-const root = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
+const root = path.resolve(import.meta.dirname, "../..");
 
 /** Returns one message per budget that `sizes` exceeds or lacks. */
 export function overBudget(budgets, sizes) {

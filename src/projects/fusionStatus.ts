@@ -393,7 +393,7 @@ export function failureSummary(
   if (!line) {
     return undefined;
   }
-  const plain = line.replace(/\$\([^)]*\)/g, "").trim();
+  const plain = line.replaceAll(/\$\([^)]*\)/g, "").trim();
   if (!plain) {
     return undefined;
   }

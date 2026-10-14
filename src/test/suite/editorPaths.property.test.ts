@@ -1,5 +1,5 @@
 import fc from "fast-check";
-import * as path from "path";
+import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { toLspArgs } from "../../core/lsp";
 import { ProjectPaths } from "../../core/project";
