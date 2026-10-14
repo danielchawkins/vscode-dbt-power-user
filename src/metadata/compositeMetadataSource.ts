@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { Disposable, Event, EventEmitter } from "vscode";
 import { mergeMetadata } from "../core/metadata";
 import type { ParsedManifest } from "../dbt_integration/domain";

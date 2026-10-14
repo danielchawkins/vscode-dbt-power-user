@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { ProjectPaths } from "../../core/project";
 import { dbtTemplateAssociations } from "../../dbt_integration/dbtAssociations";

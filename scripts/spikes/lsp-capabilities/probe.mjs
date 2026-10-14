@@ -151,7 +151,7 @@ for (const [name, spec] of Object.entries(cfg.positions)) {
   if (spec.signature) await std(`signatureHelp ${name}`, "textDocument/signatureHelp", p);
   if (spec.rename) {
     await std(`prepareRename ${name}`, "textDocument/prepareRename", p);
-    await std(`rename ${name}`, "textDocument/rename", { ...p, newName: `${spec.find.replace(/\W/g, "")}_renamed` });
+    await std(`rename ${name}`, "textDocument/rename", { ...p, newName: `${spec.find.replaceAll(/\W/g, "")}_renamed` });
   }
 }
 

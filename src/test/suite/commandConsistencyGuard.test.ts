@@ -1,5 +1,5 @@
-import { readdirSync, readFileSync, statSync } from "fs";
-import path from "path";
+import { readdirSync, readFileSync, statSync } from "node:fs";
+import path from "node:path";
 import ts from "typescript";
 import { describe, expect, it } from "vitest";
 import { esmDirname } from "../esmDirname";
@@ -356,7 +356,7 @@ describe("language contribution consistency", () => {
       /(?:editorLangId|resourceLangId)\s*=~\s*\/([^/]+)\//g,
     )) {
       for (const alternative of match[1].split("|")) {
-        ids.add(alternative.replace(/^\^|\$$/g, ""));
+        ids.add(alternative.replaceAll(/^\^|\$$/g, ""));
       }
     }
 
@@ -384,7 +384,7 @@ describe("language contribution consistency", () => {
         )) {
           const literals = match[1]
             ? [match[1]]
-            : [...match[2].matchAll(/"([\w-]+)"/g)].map((m) => m[1]);
+            : Array.from(match[2].matchAll(/"([\w-]+)"/g), (m) => m[1]);
           literals.forEach((id) => languageLiterals.add(id));
         }
       }

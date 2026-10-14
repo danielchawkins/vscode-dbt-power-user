@@ -8,12 +8,9 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
-const root = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
+const root = path.resolve(import.meta.dirname, "../..");
 const ceilingsPath = path.join(root, "scripts/quality/ceilings.json");
 
 const suppressionTotal = (file) => {

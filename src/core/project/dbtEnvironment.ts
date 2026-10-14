@@ -1,5 +1,5 @@
-import { realpathSync } from "fs";
-import * as path from "path";
+import { realpathSync } from "node:fs";
+import * as path from "node:path";
 
 /** The variables dbt Fusion reads for the project directory, in precedence order. */
 const PROJECT_DIR_VARIABLES = [

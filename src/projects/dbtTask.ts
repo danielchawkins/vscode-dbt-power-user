@@ -216,7 +216,7 @@ export class DbtTaskTerminal implements Pseudoterminal {
   }
 
   private write(text: string): void {
-    this.writeEmitter.fire(text.replace(/\r?\n/g, "\r\n"));
+    this.writeEmitter.fire(text.replaceAll(/\r?\n/g, "\r\n"));
   }
 
   private finish(exitCode: number): void {

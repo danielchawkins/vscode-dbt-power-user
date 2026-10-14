@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { EventEmitter, Uri } from "vscode";
 import {
@@ -92,46 +92,40 @@ function macroShapes(macros: Map<string, { unique_id: string; name: string }>) {
 }
 
 function nodeShapes(event: ParsedManifest) {
-  return [...event.nodeMetaMap.nodes()]
-    .map((node) => ({
-      unique_id: node.unique_id,
-      name: node.name,
-      alias: node.alias,
-      resource_type: node.resource_type,
-      package_name: node.package_name,
-      database: node.database,
-      schema: node.schema,
-    }))
-    .sort((a, b) => a.unique_id.localeCompare(b.unique_id));
+  return Array.from(event.nodeMetaMap.nodes(), (node) => ({
+    unique_id: node.unique_id,
+    name: node.name,
+    alias: node.alias,
+    resource_type: node.resource_type,
+    package_name: node.package_name,
+    database: node.database,
+    schema: node.schema,
+  })).sort((a, b) => a.unique_id.localeCompare(b.unique_id));
 }
 
 function sourceShapes(event: ParsedManifest) {
-  return [...event.sourceMetaMap.values()]
-    .map((source) => ({
-      unique_id: source.unique_id,
-      name: source.name,
-      database: source.database,
-      schema: source.schema,
-      package_name: source.package_name,
-      tables: source.tables.map((table) => ({
-        name: table.name,
-        identifier: table.identifier,
-      })),
-    }))
-    .sort((a, b) => a.unique_id.localeCompare(b.unique_id));
+  return Array.from(event.sourceMetaMap.values(), (source) => ({
+    unique_id: source.unique_id,
+    name: source.name,
+    database: source.database,
+    schema: source.schema,
+    package_name: source.package_name,
+    tables: source.tables.map((table) => ({
+      name: table.name,
+      identifier: table.identifier,
+    })),
+  })).sort((a, b) => a.unique_id.localeCompare(b.unique_id));
 }
 
 function testShapes(event: ParsedManifest) {
-  return [...event.testMetaMap.entries()]
-    .map(([key, test]) => ({
-      key,
-      unique_id: test.unique_id,
-      alias: test.alias,
-      column_name: test.column_name,
-      attached_node: test.attached_node,
-      test_name: test.test_metadata?.name,
-    }))
-    .sort((a, b) => a.key.localeCompare(b.key));
+  return Array.from(event.testMetaMap.entries(), ([key, test]) => ({
+    key,
+    unique_id: test.unique_id,
+    alias: test.alias,
+    column_name: test.column_name,
+    attached_node: test.attached_node,
+    test_name: test.test_metadata?.name,
+  })).sort((a, b) => a.key.localeCompare(b.key));
 }
 
 describe("Metadata contract — shape and key set snapshot", () => {
@@ -248,9 +242,10 @@ describe("Metadata contract — shape and key set snapshot", () => {
       throw new Error("Expected metadata publication");
     }
 
-    const nodeKeys = [...forwarded.nodeMetaMap.nodes()]
-      .map((node) => node.unique_id)
-      .sort();
+    const nodeKeys = Array.from(
+      forwarded.nodeMetaMap.nodes(),
+      (node) => node.unique_id,
+    ).sort();
     expect({
       nodeKeys,
       nodeShapes: nodeShapes(forwarded),

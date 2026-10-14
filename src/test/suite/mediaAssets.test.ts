@@ -1,5 +1,5 @@
-import { globSync, readFileSync, readdirSync } from "fs";
-import path from "path";
+import { globSync, readFileSync, readdirSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { esmDirname } from "../esmDirname";
 

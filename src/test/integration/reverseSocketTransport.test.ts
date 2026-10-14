@@ -1,4 +1,4 @@
-import * as assert from "assert";
+import * as assert from "node:assert";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture } from "./lspFixture";
 

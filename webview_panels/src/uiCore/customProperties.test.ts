@@ -21,14 +21,13 @@ describe("webview custom properties", () => {
   }));
   const defined = new Set(
     files.flatMap(({ text }) =>
-      [...text.matchAll(/(--[\w-]+)\s*:/g)].map((m) => m[1]),
+      Array.from(text.matchAll(/(--[\w-]+)\s*:/g), (m) => m[1]),
     ),
   );
 
   it("reads only --vscode-* tokens or tokens a loaded stylesheet defines", () => {
     const undefinedUses = files.flatMap(({ path, text }) =>
-      [...text.matchAll(/var\(\s*(--[\w-]+)/g)]
-        .map((m) => m[1])
+      Array.from(text.matchAll(/var\(\s*(--[\w-]+)/g), (m) => m[1])
         .filter((name) => !name.startsWith("--vscode-") && !defined.has(name))
         .map((name) => `${path}: ${name}`),
     );
@@ -37,7 +36,10 @@ describe("webview custom properties", () => {
 
   it("closes every var() inside an inline style string", () => {
     const unclosed = files.flatMap(({ path, text }) =>
-      [...text.matchAll(/var\(--[\w-]+["'`]/g)].map((m) => `${path}: ${m[0]}`),
+      Array.from(
+        text.matchAll(/var\(--[\w-]+["'`]/g),
+        (m) => `${path}: ${m[0]}`,
+      ),
     );
     expect(unclosed).toEqual([]);
   });

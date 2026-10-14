@@ -1,12 +1,8 @@
-import { spawnSync } from "child_process";
-import { createServer } from "net";
-import path from "path";
-import { fileURLToPath } from "url";
+import { spawnSync } from "node:child_process";
+import { createServer } from "node:net";
+import path from "node:path";
 
-const root = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
+const root = path.resolve(import.meta.dirname, "../..");
 const args = Object.fromEntries(
   process.argv
     .slice(2)

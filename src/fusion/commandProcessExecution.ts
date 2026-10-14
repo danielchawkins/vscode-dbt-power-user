@@ -152,7 +152,7 @@ export class CommandProcessExecution {
         try {
           commandProcess.stdin.write(this.stdin);
           commandProcess.stdin.end();
-        } catch (_) {
+        } catch {
           // stdin may not be writable if spawn failed (e.g. EBADF)
         }
       }

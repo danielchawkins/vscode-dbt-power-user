@@ -1,4 +1,4 @@
-import { readFileSync } from "fs";
+import { readFileSync } from "node:fs";
 import { CodeLens, commands, ProgressLocation, Uri, window } from "vscode";
 import type { RegisterCommand } from "../../commandRegistry";
 import { previewSql, type FusionCte } from "../../core/cte/ctePreview";

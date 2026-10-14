@@ -1,6 +1,5 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import {
   compareMeasured,
@@ -11,10 +10,7 @@ import {
   SUPPRESSION_FILES,
 } from "../../../../scripts/quality/ratchet.mjs";
 
-const root = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../../../..",
-);
+const root = path.resolve(import.meta.dirname, "../../../..");
 
 const metrics = [
   { key: "suppressions.host", kind: "ceiling", precision: 0 },

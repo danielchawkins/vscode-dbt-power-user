@@ -1,5 +1,5 @@
-import { statSync } from "fs";
-import * as path from "path";
+import { statSync } from "node:fs";
+import * as path from "node:path";
 import {
   CliCommand,
   compiledOutput,

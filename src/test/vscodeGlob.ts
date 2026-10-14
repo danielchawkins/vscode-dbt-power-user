@@ -11,7 +11,7 @@ const PATH_REGEX = "[/\\\\]";
 const NO_PATH_REGEX = "[^/\\\\]";
 
 function escapeRegExpCharacters(value: string): string {
-  return value.replace(/[\\{}*+?|^$.[\]()]/g, "\\$&");
+  return value.replaceAll(/[\\{}*+?|^$.[\]()]/g, "\\$&");
 }
 
 function starsToRegExp(starCount: number, isLastPattern?: boolean): string {

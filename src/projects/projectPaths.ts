@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { Uri } from "vscode";
 import { declaredProjectName, readDbtProjectFile } from "../core/project";
 
@@ -40,5 +40,7 @@ export function packageNameOf(
   if (!packagesInstallPath || !uri.fsPath.startsWith(packagesInstallPath)) {
     return undefined;
   }
-  return uri.path.replace(new RegExp(projectRoot + "/", "g"), "").split("/")[1];
+  return uri.path
+    .replaceAll(new RegExp(projectRoot + "/", "g"), "")
+    .split("/")[1];
 }

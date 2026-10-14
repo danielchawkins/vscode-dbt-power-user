@@ -119,7 +119,7 @@ function inventoryKey(code: string): string | undefined {
   const oxlintName = `${match[1] ?? ""}/${match[2] ?? ""}`;
   return (
     OXLINT_NAME_TO_KEY[oxlintName] ??
-    `${(match[1] ?? "").replace(/-/g, "_")}/${match[2] ?? ""}`
+    `${(match[1] ?? "").replaceAll("-", "_")}/${match[2] ?? ""}`
   );
 }
 

@@ -1,7 +1,7 @@
 import react from "@vitejs/plugin-react";
-import { copyFileSync, existsSync, mkdirSync, readdirSync } from "fs";
-import { createRequire } from "module";
-import path from "path";
+import { copyFileSync, existsSync, mkdirSync, readdirSync } from "node:fs";
+import { createRequire } from "node:module";
+import path from "node:path";
 import { defineConfig, type Plugin } from "vite";
 import svgr from "vite-plugin-svgr";
 

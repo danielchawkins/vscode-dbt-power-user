@@ -1,7 +1,7 @@
-import * as assert from "assert";
-import * as fs from "fs";
-import * as path from "path";
-import { pathToFileURL } from "url";
+import * as assert from "node:assert";
+import * as fs from "node:fs";
+import * as path from "node:path";
+import { pathToFileURL } from "node:url";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture, type LspFixture } from "./lspFixture";
 

@@ -1,6 +1,6 @@
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "fs";
-import { tmpdir } from "os";
-import * as path from "path";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
 import { afterEach, describe, expect, it, type Mock, vi } from "vitest";
 import { commands, ConfigurationTarget, Uri, window, workspace } from "vscode";
 import {

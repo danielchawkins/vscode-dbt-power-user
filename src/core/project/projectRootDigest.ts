@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { createHash } from "node:crypto";
 
 /** A short, stable identifier of a Declared Project's root, safe in command ids, client ids and channel names. */
 export function projectRootDigest(rootFsPath: string): string {

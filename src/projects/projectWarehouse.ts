@@ -1,4 +1,4 @@
-import { relative as relativePath, sep } from "path";
+import { relative as relativePath, sep } from "node:path";
 import { Uri } from "vscode";
 import { QueryExecution } from "../core/dbtCommand";
 import type { Log } from "../core/log";

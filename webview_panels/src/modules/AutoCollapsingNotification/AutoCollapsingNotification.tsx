@@ -11,7 +11,7 @@ const AutoCollapsingNotification = ({
 }): React.JSX.Element => {
   const [showInfo, setShowInfo] = useState(true);
   useEffect(() => {
-    const timer = setTimeout(() => setShowInfo(false), delay);
+    const timer = setTimeout(setShowInfo, delay, false);
     return () => clearTimeout(timer);
   }, [delay]);
 

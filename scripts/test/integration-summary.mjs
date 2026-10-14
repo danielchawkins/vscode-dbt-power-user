@@ -1,9 +1,8 @@
 // Prints the parity table for the shard logs `docker-integration.sh` collected. Usage:
 //   node integration-summary.mjs <label,label,...> <shard log>...
 // Exits 1 when any requested label failed or produced no result.
-import { readFileSync } from "fs";
-import path from "path";
-import { fileURLToPath } from "url";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import {
   expectedCounts,
   formatSummary,
@@ -12,7 +11,7 @@ import {
 } from "./integration-result.mjs";
 
 const [labelList, ...logs] = process.argv.slice(2);
-const dir = path.dirname(fileURLToPath(import.meta.url));
+const dir = import.meta.dirname;
 const expected = expectedCounts(
   JSON.parse(readFileSync(path.join(dir, "integration-expected.json"), "utf8")),
 );

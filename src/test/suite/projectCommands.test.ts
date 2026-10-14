@@ -1,4 +1,4 @@
-import * as fs from "fs";
+import * as fs from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { DBTCommand } from "../../core/dbtCommand";

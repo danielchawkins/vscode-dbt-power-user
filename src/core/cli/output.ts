@@ -20,8 +20,7 @@ function asRecord(value: unknown): JsonRecord | undefined {
     : undefined;
 }
 
-const hasOwn = (record: JsonRecord, key: string) =>
-  Object.prototype.hasOwnProperty.call(record, key);
+const hasOwn = (record: JsonRecord, key: string) => Object.hasOwn(record, key);
 
 /** Parses every line of `text` as JSON; throws on the first line that is not. */
 function jsonLines(text: string): unknown[] {

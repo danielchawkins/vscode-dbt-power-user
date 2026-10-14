@@ -1,8 +1,8 @@
-import { ChildProcess, spawn } from "child_process";
-import * as fs from "fs";
-import * as net from "net";
-import * as os from "os";
-import * as path from "path";
+import { ChildProcess, spawn } from "node:child_process";
+import * as fs from "node:fs";
+import * as net from "node:net";
+import * as os from "node:os";
+import * as path from "node:path";
 import type { Disposable } from "../../fusion/reverseSocketTransport";
 import {
   acceptWithProcessExit,

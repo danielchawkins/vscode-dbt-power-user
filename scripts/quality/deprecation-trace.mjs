@@ -3,12 +3,9 @@
 // Runs the build, lint, test and package steps with --trace-deprecation and fails on any warning ALLOWED does not list.
 import { spawnSync } from "node:child_process";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
-const root = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
+const root = path.resolve(import.meta.dirname, "../..");
 
 /** Deprecations the trace run accepts. Unit tests throw on every code, so no entry here reaches them. */
 export const ALLOWED = {

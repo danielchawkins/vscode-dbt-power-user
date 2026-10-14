@@ -1,6 +1,6 @@
-import { randomUUID } from "crypto";
-import { readFileSync } from "fs";
-import { isAbsolute, join, relative, resolve, sep } from "path";
+import { randomUUID } from "node:crypto";
+import { readFileSync } from "node:fs";
+import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import {
   Disposable,
   FileSystemWatcher,

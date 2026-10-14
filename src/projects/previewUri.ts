@@ -1,4 +1,4 @@
-import { posix } from "path";
+import { posix } from "node:path";
 import { Uri } from "vscode";
 
 export const PREVIEW_SCHEME = "query-preview";

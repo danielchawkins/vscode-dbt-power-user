@@ -20,7 +20,7 @@ const phase = (label, ...actions) => [
   ...actions,
   { wait: 6000, label: `settle ${label}` },
   {
-    snapshot: `${String(++n).padStart(2, "0")}-${label.replace(/[^a-z0-9]+/gi, "-")}`,
+    snapshot: `${String(++n).padStart(2, "0")}-${label.replaceAll(/[^a-z0-9]+/gi, "-")}`,
   },
 ];
 const notify = (method, params, label) => ({ notify: method, params, label });

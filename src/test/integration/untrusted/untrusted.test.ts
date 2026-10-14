@@ -1,5 +1,5 @@
-import * as assert from "assert";
-import * as fs from "fs";
+import * as assert from "node:assert";
+import * as fs from "node:fs";
 import * as vscode from "vscode";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";

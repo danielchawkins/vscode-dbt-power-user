@@ -4,7 +4,7 @@ function csvField(value: unknown): string {
     return "";
   }
   if (typeof value === "string") {
-    return `"${value.replace(/"/g, '""')}"`;
+    return `"${value.replaceAll('"', '""')}"`;
   }
   if (typeof value === "object") {
     return JSON.stringify(value);

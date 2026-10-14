@@ -1,5 +1,5 @@
-import { randomBytes } from "crypto";
-import { readFileSync, statSync } from "fs";
+import { randomBytes } from "node:crypto";
+import { readFileSync, statSync } from "node:fs";
 import { Uri, Webview, WebviewOptions } from "vscode";
 
 /**

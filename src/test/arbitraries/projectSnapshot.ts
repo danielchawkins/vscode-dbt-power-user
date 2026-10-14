@@ -1,5 +1,5 @@
 import fc from "fast-check";
-import * as path from "path";
+import * as path from "node:path";
 import { relativeDir, segment, staticAnalysisMode, traceLevel } from ".";
 import {
   DbtProjectFile,

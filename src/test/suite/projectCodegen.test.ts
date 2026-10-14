@@ -1,6 +1,6 @@
-import { existsSync, mkdtempSync, rmSync } from "fs";
-import { tmpdir } from "os";
-import * as path from "path";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { Uri, workspace } from "vscode";
 import {

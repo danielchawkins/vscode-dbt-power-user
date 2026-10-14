@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { ProjectSnapshot, ResolvedDefer } from "../project";
 
 /** One dbt invocation. Selections and SQL are single argv elements, never split. */

@@ -1,6 +1,6 @@
-import { access, constants } from "fs/promises";
-import { homedir } from "os";
-import * as path from "path";
+import { access, constants } from "node:fs/promises";
+import { homedir } from "node:os";
+import * as path from "node:path";
 import { Uri, workspace, WorkspaceFolder } from "vscode";
 import which from "which";
 import { resolveExecutable } from "../core/project";

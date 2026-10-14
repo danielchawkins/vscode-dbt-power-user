@@ -1,5 +1,5 @@
-import * as fs from "fs";
-import * as path from "path";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { esmDirname } from "../esmDirname";
 
@@ -19,7 +19,7 @@ const testDir = esmDirname(import.meta.url);
  */
 function toJsRegex(pattern: string, extraFlags = ""): RegExp {
   let flags = extraFlags;
-  const cleaned = pattern.replace(/\(\?i\)/g, () => {
+  const cleaned = pattern.replaceAll("(?i)", () => {
     if (!flags.includes("i")) {
       flags += "i";
     }

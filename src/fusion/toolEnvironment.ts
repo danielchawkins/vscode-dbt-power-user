@@ -1,5 +1,5 @@
-import { existsSync } from "fs";
-import { dirname, isAbsolute, join, relative, resolve } from "path";
+import { existsSync } from "node:fs";
+import { dirname, isAbsolute, join, relative, resolve } from "node:path";
 import which from "which";
 import { runProcessText } from "./process";
 
@@ -13,7 +13,7 @@ function isInside(dir: string, path: string): boolean {
 function quoteArg(value: string): string {
   return /^[\w@%+=:,./-]+$/.test(value)
     ? value
-    : `'${value.replace(/'/g, `'\\''`)}'`;
+    : `'${value.replaceAll("'", `'\\''`)}'`;
 }
 
 /**

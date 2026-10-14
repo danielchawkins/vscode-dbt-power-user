@@ -1,5 +1,5 @@
 import { documentationEditor } from "@fusion-power-user/webview-contract";
-import * as path from "path";
+import * as path from "node:path";
 import {
   CancellationToken,
   commands,

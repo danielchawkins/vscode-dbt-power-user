@@ -4,8 +4,8 @@ import {
   type ChildProcess,
   type ExecFileOptions,
   type SpawnOptions,
-} from "child_process";
-import { promisify } from "util";
+} from "node:child_process";
+import { promisify } from "node:util";
 
 export type { ChildProcess };
 
@@ -66,7 +66,7 @@ export function runProcessText(
       failure ??= code;
       child.kill("SIGTERM");
     };
-    const timer = setTimeout(() => fail("ETIMEDOUT"), options.timeoutMs);
+    const timer = setTimeout(fail, options.timeoutMs, "ETIMEDOUT");
     const collect = (stream: "out" | "err") => (chunk: Buffer) => {
       const text = chunk.toString("utf8");
       if (stream === "out") {

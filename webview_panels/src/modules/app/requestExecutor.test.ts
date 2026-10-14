@@ -4,8 +4,8 @@ import {
   lineage,
   queryResults,
 } from "@fusion-power-user/webview-contract";
-import { readdirSync, readFileSync } from "fs";
-import path from "path";
+import { readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { getVsCodeApiMock } from "../../test/setup";
 import { handleIncomingResponse, panelRequests } from "./requestExecutor";
@@ -26,18 +26,19 @@ const sources = (dir: string): string[] =>
 /** The command literal of every `executeRequestIn*(` call in `files`, with the file it is in. */
 const sentCommands = (files: string[]) =>
   files.flatMap((file) =>
-    [
-      ...readFileSync(file, "utf8").matchAll(
+    Array.from(
+      readFileSync(file, "utf8").matchAll(
         /executeRequestIn(?:Sync|Async)\(\s*"([^"]+)"/g,
       ),
-    ].map((match) => ({
-      file: path.relative(modules, file),
-      command: match[1],
-    })),
+      (match) => ({
+        file: path.relative(modules, file),
+        command: match[1],
+      }),
+    ),
   );
 
 /** Commands every panel sends through a shared module rather than its own source. */
-const SHARED_COMMANDS: readonly string[] = ["webview:ready"];
+const SHARED_COMMANDS: ReadonlySet<string> = new Set(["webview:ready"]);
 
 const panels = [
   {
@@ -70,7 +71,7 @@ describe("panel senders", () => {
       expect(
         commands.filter(
           (command) =>
-            !SHARED_COMMANDS.includes(command) &&
+            !SHARED_COMMANDS.has(command) &&
             !text.includes(JSON.stringify(command)),
         ),
       ).toEqual([]);

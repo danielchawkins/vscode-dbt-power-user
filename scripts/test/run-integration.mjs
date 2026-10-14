@@ -2,7 +2,7 @@ import {
   downloadAndUnzipVSCode,
   resolveCliArgsFromVSCodeExecutablePath,
 } from "@vscode/test-electron";
-import { spawn, spawnSync } from "child_process";
+import { spawn, spawnSync } from "node:child_process";
 import {
   appendFileSync,
   chmodSync,
@@ -15,10 +15,9 @@ import {
   rmSync,
   symlinkSync,
   writeFileSync,
-} from "fs";
-import { tmpdir } from "os";
-import path from "path";
-import { fileURLToPath } from "url";
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import {
   labelLayout,
   labelsToPrepare,
@@ -31,10 +30,7 @@ import {
   VSIX_LABELS,
 } from "./integration-layout.mjs";
 
-const root = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
+const root = path.resolve(import.meta.dirname, "../..");
 const fixtures = path.join(root, "src/test/fixtures");
 const { labels, rest } = splitLabels(process.argv.slice(2));
 const cliLabels = labels.filter((label) => !VSIX_LABELS.includes(label));

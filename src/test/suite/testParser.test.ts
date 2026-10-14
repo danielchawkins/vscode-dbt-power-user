@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { EventEmitter } from "vscode";
 import type { Log } from "../../core/log";

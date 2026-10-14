@@ -29,7 +29,7 @@ export type CommandFields<M extends { command: string }> = {
 };
 
 const hasOwn = (value: object, key: string): boolean =>
-  Object.prototype.hasOwnProperty.call(value, key);
+  Object.hasOwn(value, key);
 
 const own = (value: object, key: string): unknown =>
   hasOwn(value, key) ? (value as Record<string, unknown>)[key] : undefined;

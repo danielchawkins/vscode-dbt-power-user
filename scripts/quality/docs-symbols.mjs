@@ -4,12 +4,9 @@
 // Names that are legitimately absent (external APIs, removed code) go in docs-symbols-allow.txt.
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath, pathToFileURL } from "node:url";
+import { pathToFileURL } from "node:url";
 
-const root = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../..",
-);
+const root = path.resolve(import.meta.dirname, "../..");
 const PATH_ROOTS = ["src/", "webview_panels/", "packages/", "scripts/"];
 const SOURCE_DIRS = [
   "src",

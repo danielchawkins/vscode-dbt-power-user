@@ -2,7 +2,7 @@ import type {
   documentationEditor,
   ShowNotification,
 } from "@fusion-power-user/webview-contract";
-import { existsSync, readFileSync } from "fs";
+import { existsSync, readFileSync } from "node:fs";
 import { ProgressLocation, Uri, window } from "vscode";
 import { parse, stringify } from "yaml";
 import type { Log } from "../../core/log";

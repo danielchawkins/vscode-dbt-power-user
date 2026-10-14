@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { Disposable, Task, TaskProvider, tasks, Uri } from "vscode";
 import {
   cliCommandOf,

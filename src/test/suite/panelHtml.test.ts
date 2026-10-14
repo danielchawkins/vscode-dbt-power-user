@@ -5,9 +5,9 @@ import {
   rmSync,
   utimesSync,
   writeFileSync,
-} from "fs";
-import { tmpdir } from "os";
-import path from "path";
+} from "node:fs";
+import { tmpdir } from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 import { Uri, Webview } from "vscode";
 import {

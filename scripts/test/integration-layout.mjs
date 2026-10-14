@@ -1,4 +1,4 @@
-import path from "path";
+import path from "node:path";
 
 /** Integration labels, in run order. `native-*` open the native-editor fixture with one static-analysis mode. */
 export const LABELS = [
@@ -66,9 +66,11 @@ export function labelLayout(root, label) {
 /** The labels `run-integration.mjs` prepares: those `--label` selected, by name or `LABELS` index, or all when none was. */
 export function labelsToPrepare(selected) {
   // test-cli also selects a config by its position in `LABELS`, so `--label 2` means the third label.
-  const names = selected.map((s) => (/^\d+$/.test(s) ? LABELS[Number(s)] : s));
+  const names = new Set(
+    selected.map((s) => (/^\d+$/.test(s) ? LABELS[Number(s)] : s)),
+  );
   return [...LABELS, ...VSIX_LABELS].filter(
-    (label) => !selected.length || names.includes(label),
+    (label) => !selected.length || names.has(label),
   );
 }
 

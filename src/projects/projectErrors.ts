@@ -1,5 +1,5 @@
-import { existsSync } from "fs";
-import * as os from "os";
+import { existsSync } from "node:fs";
+import * as os from "node:os";
 import { commands, Disposable, EventEmitter, Uri, window } from "vscode";
 import { firstLogLine, isConfigError, textLogErrors } from "../core/cli";
 import { DBTDiagnosticData } from "../core/diagnostics";

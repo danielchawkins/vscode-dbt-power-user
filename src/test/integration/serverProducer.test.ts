@@ -1,6 +1,6 @@
-import * as assert from "assert";
-import * as fs from "fs";
-import * as path from "path";
+import * as assert from "node:assert";
+import * as fs from "node:fs";
+import * as path from "node:path";
 import * as vscode from "vscode";
 import { PARENT_TABLES_COMMAND } from "../../features/lineage/connectedColumnsCommand";
 import { dbtInvocations, dbtInvocationsSince } from "./helpers/dbtSpy";

@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { TreeItem, Uri, window } from "vscode";
 import { RunModelType } from "../../dbt_integration/domain";
 import { CurrentProject } from "../../projects/currentProject";

@@ -1,5 +1,5 @@
 import type { documentationEditor } from "@fusion-power-user/webview-contract";
-import * as path from "path";
+import * as path from "node:path";
 import { Uri, window } from "vscode";
 import type { Log } from "../../core/log";
 import { removeProtocol } from "../../core/text";

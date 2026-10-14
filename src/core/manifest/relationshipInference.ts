@@ -156,9 +156,9 @@ function matchColumnToTarget(
     return { target: plural, confidence: 0.8 };
   }
   // Underscore stripped (e.g. `customer_account_id` → `customer_accounts`).
-  const compact = stem.replace(/_/g, "");
+  const compact = stem.replaceAll("_", "");
   for (const [key, target] of targets) {
-    if (key.replace(/_/g, "") === compact) {
+    if (key.replaceAll("_", "") === compact) {
       return { target, confidence: 0.6 };
     }
   }

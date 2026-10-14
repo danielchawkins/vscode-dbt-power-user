@@ -1,9 +1,9 @@
-import * as assert from "assert";
-import { execFile as execFileCb } from "child_process";
-import * as fs from "fs";
-import * as os from "os";
-import * as path from "path";
-import { promisify } from "util";
+import * as assert from "node:assert";
+import { execFile as execFileCb } from "node:child_process";
+import * as fs from "node:fs";
+import * as os from "node:os";
+import * as path from "node:path";
+import { promisify } from "node:util";
 import type { Log } from "../../core/log";
 import { readDbtProjectFile, resolveProjectSnapshot } from "../../core/project";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";

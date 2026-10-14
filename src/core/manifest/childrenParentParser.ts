@@ -151,7 +151,7 @@ function buildRelationIndex(
     }
     index.set(relation, uniqueId);
     // Also index the unquoted form for adapters that don't quote.
-    const unquoted = relation.replace(/"/g, "");
+    const unquoted = relation.replaceAll('"', "");
     if (unquoted !== relation) {
       index.set(unquoted, uniqueId);
     }
@@ -246,7 +246,7 @@ function resolveConstraintTo(
   if (refMatch) {
     const a = refMatch[1] ?? "";
     const b = refMatch[2];
-    const v = refMatch[3]?.trim().replace(/['"]/g, "");
+    const v = refMatch[3]?.trim().replaceAll(/['"]/g, "");
     // ref('name') → a=name, b=undefined
     // ref('pkg', 'name') → a=pkg, b=name
     const name = b ?? a;
@@ -329,7 +329,7 @@ function parentAppearsInBody(
     if (body.text.includes(relation)) {
       return true;
     }
-    const unquoted = relation.replace(/"/g, "");
+    const unquoted = relation.replaceAll('"', "");
     if (unquoted !== relation && body.text.includes(unquoted)) {
       return true;
     }
@@ -401,7 +401,7 @@ function containsSourceCall(
 }
 
 function escapeRegex(s: string): string {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  return s.replaceAll(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 // -----------------------------------------------------------------------------

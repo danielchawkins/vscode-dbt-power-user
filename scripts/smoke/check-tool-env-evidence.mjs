@@ -2,8 +2,8 @@
 // usage: check-tool-env-evidence.mjs <dir> <host>...
 // Each host needs <dir>/<host>/tool-env-<name>/toolEnvironment.json with passed: true for every table entry.
 // Extra or partial tool-env-* directories fail too.
-import { existsSync, readdirSync, readFileSync } from "fs";
-import path from "path";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+import path from "node:path";
 import { TOOL_ENV_FIXTURES } from "./toolEnvFixtures.mjs";
 
 const [dir, ...hosts] = process.argv.slice(2);

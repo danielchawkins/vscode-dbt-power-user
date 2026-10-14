@@ -1,5 +1,5 @@
-import { existsSync, readFileSync, readdirSync } from "fs";
-import * as path from "path";
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { parse } from "yaml";
 import { esmDirname } from "../esmDirname";

@@ -1,6 +1,6 @@
 import fc from "fast-check";
-import { readFileSync } from "fs";
-import * as path from "path";
+import { readFileSync } from "node:fs";
+import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import {
   columnEdges,

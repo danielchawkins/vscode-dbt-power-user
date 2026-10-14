@@ -1,4 +1,4 @@
-import * as path from "path";
+import * as path from "node:path";
 import { DbtProjectFile, declaredProjectName } from "./dbtProjectFile";
 import { ProjectPaths, resolveProjectPaths } from "./projectPaths";
 
@@ -163,14 +163,14 @@ export function substituteVariables(
   value: string,
   scope: VariableScope,
 ): string {
-  let result = value.replace(
+  let result = value.replaceAll(
     /\$\{env:(.*?)\}/g,
     (match, name: string) => scope.lookup(name) ?? match,
   );
-  result = result.replace(/\$\{userHome\}/g, () => scope.userHome);
+  result = result.replaceAll("${userHome}", () => scope.userHome);
   const folder = scope.folder;
   if (folder !== undefined) {
-    result = result.replace(/\$\{workspaceFolder\}/g, () => folder);
+    result = result.replaceAll("${workspaceFolder}", () => folder);
   }
   return result;
 }

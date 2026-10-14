@@ -40,11 +40,11 @@ const log = (dir, msg) =>
 const expand = (v) =>
   JSON.parse(
     JSON.stringify(v)
-      .replace(
+      .replaceAll(
         /\$FILE_URI\(([^)]+)\)/g,
         (_, rel) => `file://${path.join(root, rel)}`,
       )
-      .replace(/\$ROOT_URI/g, `file://${root}`),
+      .replaceAll("$ROOT_URI", `file://${root}`),
   );
 
 const server = net.createServer();
@@ -128,7 +128,7 @@ const request = (method, params, timeoutMs = 60000) =>
     const id = nextId++;
     pending.set(id, resolve);
     send({ jsonrpc: "2.0", id, method, params });
-    setTimeout(() => resolve({ timeout: timeoutMs }), timeoutMs);
+    setTimeout(resolve, timeoutMs, { timeout: timeoutMs });
   });
 
 const matches = (step, e) =>
