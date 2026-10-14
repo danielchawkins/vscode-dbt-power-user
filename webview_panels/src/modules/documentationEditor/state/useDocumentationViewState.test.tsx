@@ -37,9 +37,9 @@ const Harness = (): React.JSX.Element => {
   dispatchRef = dispatch;
   stateRef = state;
   return (
-    <DocumentationContext.Provider value={{ state, dispatch }}>
+    <DocumentationContext value={{ state, dispatch }}>
       <Probe />
-    </DocumentationContext.Provider>
+    </DocumentationContext>
   );
 };
 

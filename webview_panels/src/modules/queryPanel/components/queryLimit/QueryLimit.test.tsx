@@ -25,9 +25,9 @@ const Harness = (): React.JSX.Element => {
   });
   dispatchRef = dispatch;
   return (
-    <QueryPanelContext.Provider value={{ state, dispatch }}>
+    <QueryPanelContext value={{ state, dispatch }}>
       <QueryLimit />
-    </QueryPanelContext.Provider>
+    </QueryPanelContext>
   );
 };
 

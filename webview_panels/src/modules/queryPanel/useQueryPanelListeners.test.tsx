@@ -35,9 +35,9 @@ const ProbeHarness = ({
   const [state, dispatch] = useReducer(queryPanelReducer, initialState);
 
   return (
-    <QueryPanelContext.Provider value={{ state, dispatch }}>
+    <QueryPanelContext value={{ state, dispatch }}>
       <HistoryProbe onHistory={onHistory} />
-    </QueryPanelContext.Provider>
+    </QueryPanelContext>
   );
 };
 

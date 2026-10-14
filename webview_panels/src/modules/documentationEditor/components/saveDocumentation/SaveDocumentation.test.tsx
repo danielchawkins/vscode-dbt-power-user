@@ -40,9 +40,9 @@ const Harness = ({
     currentDocsData: current,
   });
   return (
-    <DocumentationContext.Provider value={{ state, dispatch }}>
+    <DocumentationContext value={{ state, dispatch }}>
       <SaveDocumentation />
-    </DocumentationContext.Provider>
+    </DocumentationContext>
   );
 };
 

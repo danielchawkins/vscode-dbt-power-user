@@ -14,11 +14,11 @@ const renderCodeBlock = (
   props: React.ComponentProps<typeof CodeBlock>,
 ): ReturnType<typeof render> => {
   return render(
-    <AppContext.Provider
+    <AppContext
       value={{ state: { ...initialState, theme }, dispatch: () => undefined }}
     >
       <CodeBlock {...props} />
-    </AppContext.Provider>,
+    </AppContext>,
   );
 };
 
