@@ -39,6 +39,7 @@
     "react-error-boundary": "^6.1.6"
   },
   "devDependencies": {
+    "@e18e/eslint-plugin": "0.8.1",
     "@eslint-react/eslint-plugin": "^5.20.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",

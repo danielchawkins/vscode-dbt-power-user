@@ -896,6 +896,7 @@
     "webview_panels"
   ],
   "devDependencies": {
+    "@e18e/eslint-plugin": "0.8.1",
     "@fusion-power-user/webview-contract": "*",
     "@rsbuild/core": "^2.2.8",
     "@types/mocha": "^10.0.10",

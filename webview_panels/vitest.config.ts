@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { defineConfig, mergeConfig } from "vitest/config";
-import { viteConfig } from "./vite.config.ts";
+import { viteConfig } from "./vite.config";
 
 const ceilings = JSON.parse(
   readFileSync(
