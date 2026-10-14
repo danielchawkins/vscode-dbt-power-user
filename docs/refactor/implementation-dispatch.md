@@ -54,7 +54,7 @@ Reviewers send only blockers and should-fix findings back to the implementer. A 
 
 Gates cost minutes each and slow every agent sharing the machine, so run each one when it can change a decision, not after every edit.
 
-- **While iterating:** the narrowest check that covers the edit, such as one Vitest file, `tsc -b`, or ESLint on the touched files.
+- **While iterating:** the narrowest check that covers the edit, such as one Vitest file, `tsc -b`, or Oxlint and ESLint on the touched files.
 - **Before an implementer reports done:** `just check` once on the final tip, then `just smoke` once (`just smoke-visual` instead for a visible change). Both are required to claim done, and once each is enough when they pass.
 - **Integration suite:** once before done when the change touches `src/fusion/`, `src/projects/`, `src/dbt_integration/`, or the integration tests.
 - **Per-revision gates:** only `tsc -b` and unit tests, and only when the revision lands on its own. A stack's revisions are checked at the tip.
