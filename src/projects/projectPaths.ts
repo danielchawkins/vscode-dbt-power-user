@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { Uri } from "vscode";
+import type { Uri } from "vscode";
 import { declaredProjectName, readDbtProjectFile } from "../core/project";
 
 /** The name `root`'s project file declares, else the directory name. */

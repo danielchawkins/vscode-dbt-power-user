@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { ProjectPaths } from "../core/project";
+import type { ProjectPaths } from "../core/project";
 
 /** Why a template directory has no association. */
 export type SkipReason = "brace" | "projectRoot";

@@ -1,10 +1,10 @@
 import { existsSync } from "node:fs";
 import * as path from "node:path";
+import type { Uri } from "vscode";
 import {
   type DiagnosticCollection,
   type Disposable,
   RelativePattern,
-  Uri,
   workspace,
 } from "vscode";
 

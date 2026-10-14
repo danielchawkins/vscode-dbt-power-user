@@ -1,20 +1,14 @@
 import { readFileSync } from "node:fs";
-import {
-  CancellationTokenSource,
-  Disposable,
-  Event,
-  EventEmitter,
-  Uri,
-  window,
-} from "vscode";
+import type { Disposable, Event, Uri } from "vscode";
+import { CancellationTokenSource, EventEmitter, window } from "vscode";
 import { countSql, type FusionCte } from "../../core/cte/ctePreview";
 import type { Log } from "../../core/log";
 import {
   notifyError,
   notifyErrorWithoutProject,
 } from "../../projects/notifications";
-import { Projects } from "../../projects/projects";
-import { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
+import type { Projects } from "../../projects/projects";
+import type { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
 
 /** Reads a compiled file once per profiling run, so every CTE is sliced from the same version. */
 function readOnce(files: Map<string, Buffer>, filePath: string): Buffer {

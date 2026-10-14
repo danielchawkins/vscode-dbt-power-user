@@ -1,12 +1,13 @@
 import * as path from "node:path";
-import { TreeItem, Uri, window } from "vscode";
+import type { TreeItem } from "vscode";
+import { Uri, window } from "vscode";
 import { RunModelType } from "../../dbt_integration/domain";
-import { CurrentProject } from "../../projects/currentProject";
+import type { CurrentProject } from "../../projects/currentProject";
 import { notifyErrorWithoutProject } from "../../projects/notifications";
 import { activeModelUri } from "../../projects/previewUri";
-import { GenerateModelFromSourceParams } from "../../projects/projectCodegen";
+import type { GenerateModelFromSourceParams } from "../../projects/projectCodegen";
 import { modelParamsFor } from "../../projects/projectCommands";
-import { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/projects";
 
 /** The model tree item fields a run reads. */
 type NodeTreeItem = Pick<TreeItem, "label"> & { url: string | undefined };

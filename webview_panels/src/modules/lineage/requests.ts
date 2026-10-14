@@ -1,4 +1,4 @@
-import { lineage } from "@fusion-power-user/webview-contract";
+import type { lineage } from "@fusion-power-user/webview-contract";
 import { panelRequests } from "@modules/app/requestExecutor";
 import type { Direction } from "./graph";
 

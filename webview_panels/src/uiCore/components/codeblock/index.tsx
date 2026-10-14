@@ -1,9 +1,11 @@
 import { Themes } from "@modules/app/types";
 import useAppContext from "@modules/app/useAppContext";
-import { ReactNode, useMemo } from "react";
+import type { ReactNode } from "react";
+import { useMemo } from "react";
 import { Card, CardBody, CardTitle } from "../primitives";
 import classes from "./codeblock.module.css";
-import { CodeBlockLanguage, highlightLines } from "./prism";
+import type { CodeBlockLanguage } from "./prism";
+import { highlightLines } from "./prism";
 
 interface Props {
   code: string;

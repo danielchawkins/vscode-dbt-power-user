@@ -1,25 +1,20 @@
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  EventEmitter,
-  Uri,
-  window,
-  workspace,
-  WorkspaceConfiguration,
-  WorkspaceFolder,
-} from "vscode";
+import type { WorkspaceConfiguration, WorkspaceFolder } from "vscode";
+import { EventEmitter, Uri, window, workspace } from "vscode";
+import type * as vscodeApi from "vscode";
 import type { Log } from "../../core/log";
 import { CurrentProject } from "../../projects/currentProject";
 import { previewUriFor } from "../../projects/previewUri";
-import { Project } from "../../projects/project";
+import type { Project } from "../../projects/project";
 import { PROJECTS_SETTING } from "../../projects/projectConfiguration";
-import { ProjectQuickPick } from "../../projects/projectQuickPick";
+import type { ProjectQuickPick } from "../../projects/projectQuickPick";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 import { Projects } from "../../projects/projects";
 import { esmDirname } from "../esmDirname";
 
 vi.mock("vscode", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("vscode")>()),
+  ...(await importOriginal<typeof vscodeApi>()),
   Uri: (await import("vscode-uri")).URI,
 }));
 

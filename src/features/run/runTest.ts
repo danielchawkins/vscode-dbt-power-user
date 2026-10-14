@@ -1,7 +1,8 @@
-import { Uri, window } from "vscode";
+import type { Uri } from "vscode";
+import { window } from "vscode";
 import { activeModelUri } from "../../projects/previewUri";
-import { Projects } from "../../projects/projects";
-import { QueryManifestService } from "../../projects/queryManifestService";
+import type { Projects } from "../../projects/projects";
+import type { QueryManifestService } from "../../projects/queryManifestService";
 
 /**
  * Handles singular data tests — standalone `.sql` files that live under the

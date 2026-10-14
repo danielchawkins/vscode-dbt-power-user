@@ -1,9 +1,10 @@
 import * as path from "node:path";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
-import { EventEmitter, Uri, window, workspace, WorkspaceFolder } from "vscode";
+import type { WorkspaceFolder } from "vscode";
+import { EventEmitter, Uri, window, workspace } from "vscode";
 import { CurrentProject } from "../../projects/currentProject";
-import { ProjectQuickPick } from "../../projects/projectQuickPick";
-import {
+import type { ProjectQuickPick } from "../../projects/projectQuickPick";
+import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/projectRegistry";

@@ -1,5 +1,5 @@
-import { Header } from "@tanstack/react-table";
-import { KeyboardEvent } from "react";
+import type { Header } from "@tanstack/react-table";
+import type { KeyboardEvent } from "react";
 import classes from "./grid.module.css";
 import type { GridRow, gridFeatures } from "./gridTable";
 

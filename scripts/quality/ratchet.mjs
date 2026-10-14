@@ -125,12 +125,6 @@ export const METRICS = [
     measure: internalTagCount,
   },
   {
-    key: "tsFlags.verbatimModuleSyntax",
-    kind: "ceiling",
-    precision: 0,
-    measure: () => tsFlagErrors("verbatimModuleSyntax"),
-  },
-  {
     key: "tsFlags.erasableSyntaxOnly",
     kind: "ceiling",
     precision: 0,

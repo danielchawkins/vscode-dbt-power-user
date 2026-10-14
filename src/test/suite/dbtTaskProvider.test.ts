@@ -1,13 +1,14 @@
 import { describe, expect, it, vi } from "vitest";
-import { Task, tasks, Uri } from "vscode";
+import type { Task } from "vscode";
+import { tasks, Uri } from "vscode";
 import {
   DbtTaskProvider,
   registerDbtTaskProvider,
 } from "../../features/tasks/dbtTaskProvider";
-import { QueuedCliCommand } from "../../fusion/fusionCli";
+import type { QueuedCliCommand } from "../../fusion/fusionCli";
 import { taskName } from "../../projects/dbtTask";
-import { Project } from "../../projects/project";
-import { Projects } from "../../projects/projects";
+import type { Project } from "../../projects/project";
+import type { Projects } from "../../projects/projects";
 
 function project(root: string, name: string) {
   return {

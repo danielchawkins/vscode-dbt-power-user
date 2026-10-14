@@ -2,13 +2,13 @@ import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
   clickWebviewPoint,
   expectWebviewDom,
   hoverWebviewPoint,
   interactionEvidence,
-  PanelEntry,
   showPanel,
 } from "./webviewInteractions";
 

@@ -1,11 +1,8 @@
 import * as path from "node:path";
-import { TextDocument, TextEditor } from "vscode";
+import type { TextDocument, TextEditor } from "vscode";
 import { isMap, isScalar, isSeq, parseDocument, type YAMLMap } from "yaml";
-import {
-  RESOURCE_TYPE_SOURCE,
-  SourceMetaMap,
-  SourceTable,
-} from "../../core/manifest/types";
+import type { SourceMetaMap, SourceTable } from "../../core/manifest/types";
+import { RESOURCE_TYPE_SOURCE } from "../../core/manifest/types";
 import type { Manifest } from "../../projects/manifestTypes";
 
 /** A source table resolved to the dbt unique_id key the lineage should root at (`source.<pkg>.<source>.<table>`). */

@@ -1,4 +1,4 @@
-import { lineage } from "@fusion-power-user/webview-contract";
+import type { lineage } from "@fusion-power-user/webview-contract";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { readSetting, writeSetting } from "../../settings";
 

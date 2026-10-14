@@ -1,11 +1,13 @@
 import { existsSync } from "node:fs";
 import * as os from "node:os";
-import { commands, Disposable, EventEmitter, Uri, window } from "vscode";
+import type { Disposable, Uri } from "vscode";
+import { commands, EventEmitter, window } from "vscode";
 import { firstLogLine, isConfigError, textLogErrors } from "../core/cli";
-import { DBTDiagnosticData } from "../core/diagnostics";
+import type { DBTDiagnosticData } from "../core/diagnostics";
 import type { Log } from "../core/log";
-import { ProjectSnapshot, resolveProfilesDir } from "../core/project";
-import { CommandProcessResult } from "../core/types";
+import type { ProjectSnapshot } from "../core/project";
+import { resolveProfilesDir } from "../core/project";
+import type { CommandProcessResult } from "../core/types";
 
 /** Where a project error came from; each source's errors are replaced independently. */
 export type ProjectErrorSource = "parse" | "compile" | "executable";

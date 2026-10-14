@@ -2,7 +2,8 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { Uri, WorkspaceFolder } from "vscode";
+import type { WorkspaceFolder } from "vscode";
+import { Uri } from "vscode";
 import { findProjectRootForFile } from "../../projects/projectDiscovery";
 
 describe("findProjectRootForFile", () => {

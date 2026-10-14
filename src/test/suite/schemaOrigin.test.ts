@@ -2,7 +2,7 @@ import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { SourceMetaMap } from "../../core/manifest/types";
+import type { SourceMetaMap } from "../../core/manifest/types";
 import { parseDbtProjectYaml } from "../../core/project";
 import {
   effectiveStaticAnalysis,

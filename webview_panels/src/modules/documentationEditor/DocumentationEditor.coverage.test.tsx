@@ -1,13 +1,15 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
+import type userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import {
-  collectControls,
+import type {
   ControlId,
   ControlState,
+  InteractiveRole,
+} from "../../test/controlCoverage";
+import {
+  collectControls,
   expectControlsCovered,
   INTERACTIVE_ROLES,
-  InteractiveRole,
 } from "../../test/controlCoverage";
 // Importing the controls suite registers its tests in this file too (TESTED_CONTROLS lives there).
 import {

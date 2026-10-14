@@ -1,6 +1,6 @@
 import type { Log } from "../log";
-import { ManifestProject } from "./manifestProject";
-import { ManifestResources, MetricMetaMap } from "./types";
+import type { ManifestProject } from "./manifestProject";
+import type { ManifestResources, MetricMetaMap } from "./types";
 
 export class MetricParser {
   constructor(private terminal: Pick<Log, "debug">) {}

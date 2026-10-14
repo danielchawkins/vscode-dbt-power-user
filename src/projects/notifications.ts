@@ -1,5 +1,6 @@
 import { inspect } from "node:util";
-import { commands, Uri, window } from "vscode";
+import type { Uri } from "vscode";
+import { commands, window } from "vscode";
 import { SHOW_OUTPUT, SHOW_OUTPUT_COMMAND } from "./projectErrors";
 
 /** A Declared Project or a loaded `Project`; either names the project and locates its output channel. */

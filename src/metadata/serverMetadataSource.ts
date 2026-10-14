@@ -1,4 +1,5 @@
-import { Disposable, Event, EventEmitter } from "vscode";
+import type { Disposable, Event } from "vscode";
+import { EventEmitter } from "vscode";
 import type { Log } from "../core/log";
 import { FusionCommandError } from "../core/lsp";
 import { serverMetadataFrom, type ServerMetadata } from "../core/metadata";

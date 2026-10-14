@@ -1,6 +1,6 @@
 import { use } from "react";
 import { QueryPanelContext } from "./context/queryPanelContext";
-import { QueryPanelStateProps } from "./context/types";
+import type { QueryPanelStateProps } from "./context/types";
 
 const useQueryPanelState = (): QueryPanelStateProps & {
   hasData: boolean;

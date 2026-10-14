@@ -1,9 +1,11 @@
-import { Row } from "@tanstack/react-table";
-import { MouseEvent } from "react";
+import type { Row } from "@tanstack/react-table";
+import type { MouseEvent } from "react";
 import { cellViewerKind } from "./cellViewer";
-import { formatCell, GridColumnType } from "./columnTypeMapping";
+import type { GridColumnType } from "./columnTypeMapping";
+import { formatCell } from "./columnTypeMapping";
 import classes from "./grid.module.css";
-import { GridSelection, isSelected } from "./gridSelection";
+import type { GridSelection } from "./gridSelection";
+import { isSelected } from "./gridSelection";
 import type { gridFeatures, GridRow } from "./gridTable";
 import OpenIcon from "./openIcon.svg?react";
 

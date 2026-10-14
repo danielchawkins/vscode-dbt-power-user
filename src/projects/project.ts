@@ -1,32 +1,34 @@
-import { Diagnostic, Disposable, Event, EventEmitter, Uri } from "vscode";
+import type { Diagnostic, Event } from "vscode";
+import { Disposable, EventEmitter, Uri } from "vscode";
 import type { Log } from "../core/log";
 import { type ManifestProject } from "../core/manifest";
-import { dbtProjectFilePath, ResolvedDefer } from "../core/project";
-import { ParsedManifest } from "../dbt_integration/domain";
-import {
-  ExecutableLifecycle,
-  FusionCommandIntegrationFactory,
-} from "../fusion/executableLifecycle";
-import { FusionCli } from "../fusion/fusionCli";
+import type { ResolvedDefer } from "../core/project";
+import { dbtProjectFilePath } from "../core/project";
+import type { ParsedManifest } from "../dbt_integration/domain";
+import type { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
+import { ExecutableLifecycle } from "../fusion/executableLifecycle";
+import type { FusionCli } from "../fusion/fusionCli";
 import {
   createFusionCommands,
   type FusionCommands,
 } from "../fusion/fusionCommands";
-import {
+import type {
   FusionExecutableResolver,
   ResolverEnvironment,
 } from "../fusion/fusionExecutable";
 import type { FusionClient } from "../fusion/fusionLanguageClient";
-import { FusionVersion } from "../fusion/fusionVersion";
+import type { FusionVersion } from "../fusion/fusionVersion";
 import { CommandQueue } from "./commandQueue";
-import { ManifestParsers, ManifestTrigger } from "./manifest";
+import type { ManifestParsers } from "./manifest";
+import { ManifestTrigger } from "./manifest";
 import { ManifestRebuild } from "./manifestRebuild";
 import { ManifestState } from "./manifestState";
 import type { Manifest } from "./manifestTypes";
 import { notifyError } from "./notifications";
 import type { ParseDemand } from "./parseDemand";
 import { ParseScheduler } from "./parseScheduler";
-import { ProjectCommandDeps, refreshCliConfig } from "./projectCommands";
+import type { ProjectCommandDeps } from "./projectCommands";
+import { refreshCliConfig } from "./projectCommands";
 import { ProjectDbtCommands } from "./projectDbtCommands";
 import { ProjectDiagnostics } from "./projectDiagnostics";
 import { ProjectErrors } from "./projectErrors";
@@ -38,18 +40,12 @@ import {
 } from "./projectPaths";
 import { ProjectTasks } from "./projectTasks";
 import { readProjectSnapshot } from "./readProjectSnapshot";
-import { RunHistoryService } from "./runHistoryService";
-import {
-  RunResultsHistory,
-  RunResultsReader,
-  withRunResults,
-} from "./runResults";
-import {
-  projectOptIns,
-  projectSchemaOrigin,
-  SchemaOriginStatus,
-} from "./schemaOrigin";
-import { SharedStateService } from "./sharedStateService";
+import type { RunHistoryService } from "./runHistoryService";
+import type { RunResultsHistory } from "./runResults";
+import { RunResultsReader, withRunResults } from "./runResults";
+import type { SchemaOriginStatus } from "./schemaOrigin";
+import { projectOptIns, projectSchemaOrigin } from "./schemaOrigin";
+import type { SharedStateService } from "./sharedStateService";
 
 const LOG_SOURCE = "Project";
 

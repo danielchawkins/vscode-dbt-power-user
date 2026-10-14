@@ -7,7 +7,8 @@ import {
   initialState,
 } from "../../state/documentationReducer";
 import { EntityType } from "../../state/entityType";
-import { DBTDocumentation, Source } from "../../state/types";
+import type { DBTDocumentation } from "../../state/types";
+import { Source } from "../../state/types";
 import DocGeneratorInput from "./DocGeneratorInput";
 
 const orders = (description: string): DBTDocumentation => ({

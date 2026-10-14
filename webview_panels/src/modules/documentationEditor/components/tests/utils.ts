@@ -1,6 +1,6 @@
+import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import {
   DbtGenericTests,
-  DBTModelTest,
   DbtTestTypes,
 } from "@modules/documentationEditor/state/types";
 

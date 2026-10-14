@@ -1,11 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
-import {
-  DiagnosticCollection,
-  DiagnosticSeverity,
-  languages,
-  Uri,
-} from "vscode";
-import { DBTDiagnosticData } from "../../core/diagnostics";
+import type { DiagnosticCollection } from "vscode";
+import { DiagnosticSeverity, languages, Uri } from "vscode";
+import type { DBTDiagnosticData } from "../../core/diagnostics";
 import { ProjectDiagnostics } from "../../projects/projectDiagnostics";
 
 const data = (

@@ -1,4 +1,5 @@
-import { Disposable, EventEmitter } from "vscode";
+import type { Disposable } from "vscode";
+import { EventEmitter } from "vscode";
 import type { ParsedManifest } from "../dbt_integration/domain";
 import type { FusionClient } from "../fusion/fusionLanguageClient";
 import { graphUnavailable } from "./graphAvailability";

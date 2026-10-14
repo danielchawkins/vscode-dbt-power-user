@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { getVsCodeApiMock } from "../../test/setup";
+import type { PanelViewState } from "./viewState";
 import {
   isViewState,
   MAX_VIEW_STATE_LIST,
   MAX_VIEW_STATE_STRING,
-  PanelViewState,
   readViewState,
   VIEW_STATE_FIELDS,
   writeViewState,

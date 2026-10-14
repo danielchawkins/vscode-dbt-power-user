@@ -4,6 +4,7 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { PassThrough } from "node:stream";
 import { describe, expect, it, type Mock, vi } from "vitest";
+import type { WorkspaceFolder } from "vscode";
 import {
   type CancellationToken,
   CodeLens,
@@ -11,15 +12,12 @@ import {
   Range,
   Uri,
   workspace,
-  WorkspaceFolder,
 } from "vscode";
-import {
-  ExecuteCommandRequest,
-  LanguageClientOptions,
-  State,
-} from "vscode-languageclient/node";
+import type { LanguageClientOptions } from "vscode-languageclient/node";
+import { ExecuteCommandRequest, State } from "vscode-languageclient/node";
 import { URI as VsCodeUri } from "vscode-uri";
-import { DBT_LSP_USE_TARGET_LSP, LspLaunch } from "../../core/lsp";
+import type { LspLaunch } from "../../core/lsp";
+import { DBT_LSP_USE_TARGET_LSP } from "../../core/lsp";
 import { parseTraceServerLevel } from "../../core/project";
 import { DbtLineageService } from "../../features/lineage/dbtLineageService";
 import {
@@ -36,12 +34,14 @@ import {
   clearDiagnosticsOnDelete,
   ProjectDiagnosticsFilter,
 } from "../../fusion/fusionDiagnostics";
+import type {
+  FusionClient,
+  FusionClientState,
+} from "../../fusion/fusionLanguageClient";
 import {
   commandPrefixForProject,
   DefaultFusionClientFactory,
   FUSION_LSP_COMMANDS,
-  FusionClient,
-  FusionClientState,
 } from "../../fusion/fusionLanguageClient";
 import {
   buildWorkspaceConfigurationResponse,
@@ -53,12 +53,12 @@ import {
   SpawnedLspProcess,
 } from "../../fusion/lspProcess";
 import type { ChildProcess } from "../../fusion/process";
-import {
+import type {
   ExitingProcess,
   ReverseSocketServer,
   ReverseSocketStreams,
 } from "../../fusion/reverseSocketTransport";
-import { DeclaredProject } from "../../projects/projectRegistry";
+import type { DeclaredProject } from "../../projects/projectRegistry";
 import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";
 

@@ -8,31 +8,25 @@ import {
   type Mocked,
   vi,
 } from "vitest";
-import {
+import type {
   ConfigurationChangeEvent,
-  EventEmitter,
   LogOutputChannel,
-  Uri,
-  workspace,
   WorkspaceFolder,
 } from "vscode";
-import { StaticAnalysisMode } from "../../core/project";
+import { EventEmitter, Uri, workspace } from "vscode";
+import type { StaticAnalysisMode } from "../../core/project";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
-import {
-  DBT_PATH_SETTING,
-  FusionExecutableResolver,
-} from "../../fusion/fusionExecutable";
-import {
+import type { FusionExecutableResolver } from "../../fusion/fusionExecutable";
+import { DBT_PATH_SETTING } from "../../fusion/fusionExecutable";
+import type {
   FusionClient,
   FusionClientFactory,
   FusionClientOptions,
   FusionProjectRef,
 } from "../../fusion/fusionLanguageClient";
-import {
-  FusionClientPoolImpl,
-  onCurrentClientChange,
-} from "../../projects/fusionClientPool";
-import {
+import { onCurrentClientChange } from "../../projects/clientChange";
+import { FusionClientPoolImpl } from "../../projects/fusionClientPool";
+import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/projectRegistry";

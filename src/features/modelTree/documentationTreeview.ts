@@ -1,17 +1,19 @@
 import * as path from "node:path";
-import {
+import type {
   Disposable,
   Event,
-  EventEmitter,
   ProviderResult,
   TreeDataProvider,
+} from "vscode";
+import {
+  EventEmitter,
   TreeItem,
   TreeItemCollapsibleState,
   Uri,
   window,
 } from "vscode";
 import { removeProtocol } from "../../core/text";
-import { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/projects";
 import {
   lookupModelByEditorContent,
   Node,

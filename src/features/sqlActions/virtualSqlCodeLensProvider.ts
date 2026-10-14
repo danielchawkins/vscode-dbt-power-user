@@ -1,13 +1,12 @@
-import {
+import type {
   CancellationToken,
-  CodeLens,
   CodeLensProvider,
   Command,
   Disposable,
-  Range,
   TextDocument,
 } from "vscode";
-import { QueryManifestService } from "../../projects/queryManifestService";
+import { CodeLens, Range } from "vscode";
+import type { QueryManifestService } from "../../projects/queryManifestService";
 
 export class VirtualSqlCodeLensProvider
   implements CodeLensProvider, Disposable

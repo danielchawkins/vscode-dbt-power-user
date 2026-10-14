@@ -1,4 +1,4 @@
-import { Ref, TextareaHTMLAttributes } from "react";
+import type { Ref, TextareaHTMLAttributes } from "react";
 import { cx } from "../../classNames";
 
 const TextArea = ({

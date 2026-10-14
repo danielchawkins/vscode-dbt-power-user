@@ -3,7 +3,7 @@ import {
   isStateDirty,
   mergeCurrentAndIncomingDocumentationColumns,
 } from "../utils";
-import {
+import type {
   DBTDocumentation,
   DBTModelTest,
   DBTUnitTest,

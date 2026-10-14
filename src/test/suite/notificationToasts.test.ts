@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
+import type {
+  NotificationDomDocument,
+  NotificationDomNode,
+} from "../smoke/notificationToasts";
 import {
   aggregateWorkbenchNotificationSnapshots,
   collectWorkbenchNotifications,
   NOTIFICATION_CENTER_ITEM_SELECTOR,
   NOTIFICATION_TOAST_ITEM_SELECTOR,
-  NotificationDomDocument,
-  NotificationDomNode,
 } from "../smoke/notificationToasts";
 
 function item(text: string): NotificationDomNode {

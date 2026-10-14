@@ -1,7 +1,7 @@
 import { statSync } from "node:fs";
 import * as path from "node:path";
+import type { CliCommand, PathKind, ShowPreview } from "../core/cli";
 import {
-  CliCommand,
   compiledOutput,
   DEFERRABLE_KINDS,
   deferState,
@@ -9,22 +9,20 @@ import {
   isConfigError,
   logLocation,
   parseLogEntries,
-  PathKind,
-  ShowPreview,
   showPreview,
   toCliArgs,
   toCliEnvironment,
 } from "../core/cli";
 import { DBTCommand, QueryExecution } from "../core/dbtCommand";
-import { DBTDiagnosticData, DBTDiagnosticResult } from "../core/diagnostics";
+import type {
+  DBTDiagnosticData,
+  DBTDiagnosticResult,
+} from "../core/diagnostics";
 import type { Log } from "../core/log";
-import {
-  dbtProjectFilePath,
-  deferSettingsKey,
-  ProjectSnapshot,
-} from "../core/project";
-import { CommandProcessResult, DBColumn } from "../core/types";
-import { CommandProcessExecutionFactory } from "./commandProcessExecution";
+import type { ProjectSnapshot } from "../core/project";
+import { dbtProjectFilePath, deferSettingsKey } from "../core/project";
+import type { CommandProcessResult, DBColumn } from "../core/types";
+import type { CommandProcessExecutionFactory } from "./commandProcessExecution";
 
 /** The resolved dbt binary and the environment every invocation inherits. */
 export interface FusionCliExecutable {

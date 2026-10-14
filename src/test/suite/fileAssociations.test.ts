@@ -2,18 +2,10 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  commands,
-  ConfigurationTarget,
-  Uri,
-  window,
-  workspace,
-  WorkspaceConfiguration,
-} from "vscode";
-import {
-  AssociationChanges,
-  FileAssociationsCommand,
-} from "../../features/projectSetup/fileAssociations";
+import type { WorkspaceConfiguration } from "vscode";
+import { commands, ConfigurationTarget, Uri, window, workspace } from "vscode";
+import type { AssociationChanges } from "../../features/projectSetup/fileAssociations";
+import { FileAssociationsCommand } from "../../features/projectSetup/fileAssociations";
 
 const originalPlatform = process.platform;
 const setPlatform = (platform: NodeJS.Platform) =>

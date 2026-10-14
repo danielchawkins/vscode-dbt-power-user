@@ -1,12 +1,9 @@
 import * as path from "node:path";
 
 import type { Log } from "../log";
-import { ManifestProject } from "./manifestProject";
-import {
-  ManifestResources,
-  RESOURCE_TYPE_UNIT_TEST,
-  UnitTestMetaMap,
-} from "./types";
+import type { ManifestProject } from "./manifestProject";
+import type { ManifestResources, UnitTestMetaMap } from "./types";
+import { RESOURCE_TYPE_UNIT_TEST } from "./types";
 
 export class UnitTestParser {
   constructor(private terminal: Pick<Log, "debug">) {}

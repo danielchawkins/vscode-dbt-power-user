@@ -1,10 +1,10 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import type { StaticAnalysisMode } from "../../core/project";
 import {
   DEFAULT_STATIC_ANALYSIS_MODE,
   parseStaticAnalysisMode,
-  StaticAnalysisMode,
 } from "../../core/project";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";

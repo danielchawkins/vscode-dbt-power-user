@@ -13,7 +13,7 @@ import type { Log } from "../../core/log";
 import { emptyParsedManifest } from "../../core/metadata";
 import type { ParsedManifest } from "../../dbt_integration/domain";
 import { CompositeMetadataSource } from "../../metadata/compositeMetadataSource";
-import { Project } from "../../projects/project";
+import type { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 
 let epoch = 0;

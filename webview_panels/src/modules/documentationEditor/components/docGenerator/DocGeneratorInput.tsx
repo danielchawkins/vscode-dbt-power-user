@@ -3,7 +3,7 @@ import {
   updateCurrentDocsData,
 } from "@modules/documentationEditor/state/documentationReducer";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
-import {
+import type {
   DBTDocumentation,
   DBTDocumentationColumn,
   DBTModelTest,
@@ -13,7 +13,8 @@ import useDocumentationContext from "@modules/documentationEditor/state/useDocum
 import { isArrayEqual } from "@modules/documentationEditor/utils";
 import { panelLogger } from "@modules/logger";
 import { InputGroup, Stack, Tag, TextArea } from "@uicore";
-import { ChangeEvent, useEffect, useRef, useState } from "react";
+import type { ChangeEvent } from "react";
+import { useEffect, useRef, useState } from "react";
 import DocBlockInserter from "./DocBlockInserter";
 import classes from "./docGenInput.module.css";
 

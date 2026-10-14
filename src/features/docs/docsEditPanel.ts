@@ -1,34 +1,30 @@
 import { documentationEditor } from "@fusion-power-user/webview-contract";
 import * as path from "node:path";
-import {
+import type {
   CancellationToken,
-  commands,
   Disposable,
   TextEditor,
   Uri,
   WebviewView,
   WebviewViewResolveContext,
-  window,
 } from "vscode";
+import { commands, window } from "vscode";
 import type { Log } from "../../core/log";
-import { ExtensionContextStore } from "../../extensionContext";
+import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
 import { notifyError } from "../../projects/notifications";
 import type { ParseDemand } from "../../projects/parseDemand";
 import { activeModelUri } from "../../projects/previewUri";
-import { Project } from "../../projects/project";
-import { Projects } from "../../projects/projects";
-import { QueryManifestService } from "../../projects/queryManifestService";
+import type { Project } from "../../projects/project";
+import type { Projects } from "../../projects/projects";
+import type { QueryManifestService } from "../../projects/queryManifestService";
 import type { SharedStateService } from "../../projects/sharedStateService";
-import {
-  dispatchMessage,
-  Handlers,
-  MessageOf,
-} from "../../webview/messageRouter";
+import type { Handlers, MessageOf } from "../../webview/messageRouter";
+import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
-import { DbtTestService } from "./dbtTestService";
-import { DocGenService } from "./docGenService";
-import { DBTDocumentation, MetadataColumn } from "./docGenTypes";
+import type { DbtTestService } from "./dbtTestService";
+import type { DocGenService } from "./docGenService";
+import type { DBTDocumentation, MetadataColumn } from "./docGenTypes";
 import { DocsEditRequests, withProgress } from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
 import { convertColumnNamesByCaseConfig } from "./docsYaml";

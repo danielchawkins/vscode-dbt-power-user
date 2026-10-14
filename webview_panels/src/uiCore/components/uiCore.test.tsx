@@ -1,10 +1,10 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { act, createRef } from "react";
 import { describe, expect, it, vi } from "vitest";
+import type { DrawerRef } from "..";
 import {
   Button,
   Drawer,
-  DrawerRef,
   Nav,
   NavItem,
   NavLink,

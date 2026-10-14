@@ -1,5 +1,6 @@
-import { ButtonHTMLAttributes } from "react";
-import { ButtonColor, buttonClassName } from "../../classNames";
+import type { ButtonHTMLAttributes } from "react";
+import type { ButtonColor } from "../../classNames";
+import { buttonClassName } from "../../classNames";
 import classes from "./styles.module.css";
 
 interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {

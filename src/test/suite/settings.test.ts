@@ -1,13 +1,9 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import {
-  ConfigurationChangeEvent,
-  ConfigurationTarget,
-  Uri,
-  workspace,
-  WorkspaceConfiguration,
-} from "vscode";
+import type { ConfigurationChangeEvent, WorkspaceConfiguration } from "vscode";
+import { ConfigurationTarget, Uri, workspace } from "vscode";
+import type { SettingsChange } from "../../settings";
 import {
   CONFIGURATION_SECTION,
   inspectSettings,
@@ -15,7 +11,6 @@ import {
   readSetting,
   readUserFileAssociations,
   SETTING_SCOPES,
-  SettingsChange,
   writeDeclaredProjects,
   writeSetting,
   writeUserFileAssociations,

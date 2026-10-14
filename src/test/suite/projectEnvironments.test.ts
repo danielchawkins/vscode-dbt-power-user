@@ -1,11 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  ConfigurationChangeEvent,
-  Uri,
-  window,
-  workspace,
-  WorkspaceFolder,
-} from "vscode";
+import type { ConfigurationChangeEvent, WorkspaceFolder } from "vscode";
+import { Uri, window, workspace } from "vscode";
 import type { ToolEnvironment } from "../../fusion/toolEnvironment";
 import { ProjectEnvironments } from "../../projects/projectEnvironments";
 import { CONFIGURATION_SECTION } from "../../settings";

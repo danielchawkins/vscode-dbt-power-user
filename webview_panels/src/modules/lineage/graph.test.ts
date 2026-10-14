@@ -1,13 +1,12 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it, vi } from "vitest";
+import type { GraphState, GraphStore } from "./graph";
 import {
   collapse,
   drawnGraph,
   emptyGraph,
   expand,
   expandLevels,
-  GraphState,
-  GraphStore,
   hideColumns,
   lineageData,
   parseExpansion,

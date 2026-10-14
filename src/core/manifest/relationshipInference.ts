@@ -1,5 +1,11 @@
 import type { Log } from "../log";
-import { Cardinality, Meta, NodeMetaMap, Ref, SourceMetaMap } from "./types";
+import type {
+  Cardinality,
+  Meta,
+  NodeMetaMap,
+  Ref,
+  SourceMetaMap,
+} from "./types";
 
 const DEFAULT_CARDINALITY: Cardinality = "many-to-one";
 

@@ -1,11 +1,6 @@
-import {
-  ConfigurationTarget,
-  Disposable,
-  Uri,
-  workspace,
-  WorkspaceFolder,
-} from "vscode";
-import { DeferSettingsEntry } from "../core/project";
+import type { Disposable, Uri, WorkspaceFolder } from "vscode";
+import { ConfigurationTarget, workspace } from "vscode";
+import type { DeferSettingsEntry } from "../core/project";
 
 export * from "./environment";
 

@@ -8,11 +8,8 @@ import {
   waitForWebviewPaint,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
-import {
-  DocsState,
-  readDocsState,
-  waitForDocsClean,
-} from "./webviewInteractions";
+import type { DocsState } from "./webviewInteractions";
+import { readDocsState, waitForDocsClean } from "./webviewInteractions";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RENDER_TEST_RESULT = "fusionPowerUser.test.renderQueryResult";

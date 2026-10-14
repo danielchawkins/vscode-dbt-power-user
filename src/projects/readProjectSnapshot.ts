@@ -1,15 +1,13 @@
 import * as os from "node:os";
-import { Uri, workspace } from "vscode";
-import {
-  ProjectSnapshot,
-  readDbtProjectFile,
-  resolveProjectSnapshot,
-} from "../core/project";
+import type { Uri } from "vscode";
+import { workspace } from "vscode";
+import type { ProjectSnapshot } from "../core/project";
+import { readDbtProjectFile, resolveProjectSnapshot } from "../core/project";
+import type { SettingKey } from "../settings";
 import {
   readEnvironment,
   readEnvironmentOverride,
   readSetting,
-  SettingKey,
 } from "../settings";
 
 /** Every setting `readProjectSnapshot` reads; a change to any of them may change a snapshot. */

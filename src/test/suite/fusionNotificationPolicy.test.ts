@@ -7,13 +7,14 @@ import {
   type Mock,
   vi,
 } from "vitest";
-import { extensions, Uri, window, workspace, WorkspaceFolder } from "vscode";
+import type { WorkspaceFolder } from "vscode";
+import { extensions, Uri, window, workspace } from "vscode";
 import { toLspLaunch } from "../../core/lsp";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
 import { DefaultFusionClientFactory } from "../../fusion/fusionLanguageClient";
 import { FusionClientPoolImpl } from "../../projects/fusionClientPool";
-import {
+import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/projectRegistry";

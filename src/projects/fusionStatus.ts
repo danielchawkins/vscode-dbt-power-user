@@ -1,27 +1,24 @@
+import type { Command, Event, LanguageStatusItem, Uri } from "vscode";
 import {
-  Command,
   commands,
   Disposable,
-  Event,
   languages,
-  LanguageStatusItem,
   LanguageStatusSeverity,
-  Uri,
 } from "vscode";
-import { projectRootDigest, StaticAnalysisMode } from "../core/project";
+import type { StaticAnalysisMode } from "../core/project";
+import { projectRootDigest } from "../core/project";
 import { vscodeDocumentSelectorForProject } from "../fusion/documentSelector";
-import {
+import type {
   FusionClient,
   FusionClientState,
 } from "../fusion/fusionLanguageClient";
-import { FusionClientPool } from "./fusionClientPool";
+import type { FusionClientPool } from "./fusionClientPool";
 import { addDeclaredProjectRoot } from "./projectConfiguration";
-import { DeclaredProject } from "./projectRegistry";
+import type { DeclaredProject } from "./projectRegistry";
+import type { FolderScope, SchemaOriginStatus } from "./schemaOrigin";
 import {
   effectiveStaticAnalysis,
-  FolderScope,
   folderScopeOf,
-  SchemaOriginStatus,
   USE_STRICT_ANALYSIS_COMMAND,
   whyNotStrict,
 } from "./schemaOrigin";

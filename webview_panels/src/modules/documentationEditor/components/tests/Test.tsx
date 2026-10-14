@@ -1,4 +1,4 @@
-import { DBTModelTest } from "@modules/documentationEditor/state/types";
+import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import { Tag, Tooltip } from "@uicore";
 
 interface Props {

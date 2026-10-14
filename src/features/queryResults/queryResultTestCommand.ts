@@ -1,7 +1,9 @@
-import { commands, Disposable } from "vscode";
-import { ExecuteSQLResult, QueryExecution } from "../../core/dbtCommand";
+import type { Disposable } from "vscode";
+import { commands } from "vscode";
+import type { ExecuteSQLResult } from "../../core/dbtCommand";
+import { QueryExecution } from "../../core/dbtCommand";
 import { testCommandsEnabled } from "../../settings";
-import { QueryResultPanel } from "./queryResultPanel";
+import type { QueryResultPanel } from "./queryResultPanel";
 
 /**
  * Test-only: shows a synthetic result of `rowCount` rows through the host's query path.

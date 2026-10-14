@@ -1,20 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  commands,
-  env,
-  EventEmitter,
-  LogOutputChannel,
-  Uri,
-  window,
-  WorkspaceFolder,
-} from "vscode";
+import type { LogOutputChannel, WorkspaceFolder } from "vscode";
+import { commands, env, EventEmitter, Uri, window } from "vscode";
 import {
   ChannelLog,
   DIAGNOSTICS_CHANNEL_NAME,
   EXTENSION_CHANNEL_NAME,
   OutputChannels,
 } from "../../projects/outputChannels";
-import { DeclaredProject } from "../../projects/projectRegistry";
+import type { DeclaredProject } from "../../projects/projectRegistry";
 import { declaredProject } from "../projectHarness";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";

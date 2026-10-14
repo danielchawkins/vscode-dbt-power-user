@@ -1,8 +1,8 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
+import type { ControlId } from "../../test/controlCoverage";
 import {
   collectControls,
-  ControlId,
   expectControlsCovered,
   INTERACTIVE_ROLES,
 } from "../../test/controlCoverage";

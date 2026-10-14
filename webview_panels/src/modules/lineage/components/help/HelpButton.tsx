@@ -1,5 +1,6 @@
 import { HelpIcon } from "@assets/icons";
-import { Drawer, DrawerRef } from "@uicore";
+import type { DrawerRef } from "@uicore";
+import { Drawer } from "@uicore";
 import { useRef } from "react";
 import styles from "../../lineageGraph.module.css";
 import HelpContent from "./HelpContent";

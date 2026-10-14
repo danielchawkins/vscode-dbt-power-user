@@ -5,7 +5,8 @@ import {
 } from "@fusion-power-user/webview-contract";
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
-import { Fields, isString, nullish, optional } from "./guards.js";
+import type { Fields } from "./guards.js";
+import { isString, nullish, optional } from "./guards.js";
 
 type Json = null | boolean | number | string | Json[] | { [key: string]: Json };
 

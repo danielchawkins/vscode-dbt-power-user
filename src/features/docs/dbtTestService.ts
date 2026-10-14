@@ -3,7 +3,7 @@ import * as path from "node:path";
 import { parse, stringify } from "yaml";
 import type { Log } from "../../core/log";
 import { getColumnTestConfigFromYml } from "../../core/manifest/testConfig";
-import {
+import type {
   MacroMetaMap,
   TestMetaData,
   TestMetadataAcceptedValues,
@@ -12,7 +12,7 @@ import {
 } from "../../core/manifest/types";
 import { removeProtocol } from "../../core/text";
 import { isColumnNameEqual } from "../../projects/columnNames";
-import { QueryManifestService } from "../../projects/queryManifestService";
+import type { QueryManifestService } from "../../projects/queryManifestService";
 
 export class DbtTestService {
   public constructor(private queryManifestService: QueryManifestService) {}

@@ -3,7 +3,7 @@ import { Uri, window } from "vscode";
 import { resolveProjectSnapshot } from "../../core/project";
 import { ProjectSetupCommands } from "../../features/projectSetup/projectSetupCommands";
 import { FusionCli } from "../../fusion/fusionCli";
-import {
+import type {
   ProjectQuickPick,
   ProjectQuickPickItem,
 } from "../../projects/projectQuickPick";

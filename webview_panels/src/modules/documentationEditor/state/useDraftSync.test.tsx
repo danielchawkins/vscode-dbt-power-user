@@ -8,7 +8,8 @@ import {
   setIncomingDocsData,
   updateCurrentDocsData,
 } from "./documentationReducer";
-import { DBTDocumentation, Source } from "./types";
+import type { DBTDocumentation } from "./types";
+import { Source } from "./types";
 import useDraftSync from "./useDraftSync";
 
 const orders: DBTDocumentation = {

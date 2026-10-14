@@ -1,8 +1,9 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
-import { Handle, NodeProps, Position } from "@xyflow/react";
+import type { NodeProps } from "@xyflow/react";
+import { Handle, Position } from "@xyflow/react";
 import { memo } from "react";
-import { TableNode as TableNodeType } from "./flow";
-import { Direction } from "./graph";
+import type { TableNode as TableNodeType } from "./flow";
+import type { Direction } from "./graph";
 import { columnHandle } from "./layout";
 import styles from "./lineageGraph.module.css";
 import { tableActions } from "./viewModel";

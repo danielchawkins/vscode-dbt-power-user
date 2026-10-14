@@ -1,7 +1,8 @@
-import { Dispatch, use } from "react";
+import type { Dispatch } from "react";
+import { use } from "react";
 import { DocumentationContext } from "../context";
 import type { DocumentationAction } from "./documentationReducer";
-import { DocumentationStateProps } from "./types";
+import type { DocumentationStateProps } from "./types";
 
 const useDocumentationContext = (): {
   state: DocumentationStateProps;

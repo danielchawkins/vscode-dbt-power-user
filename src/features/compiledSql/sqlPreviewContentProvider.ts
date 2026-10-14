@@ -1,15 +1,12 @@
-import {
+import type {
   Disposable,
   Event,
-  EventEmitter,
-  ProgressLocation,
   TextDocumentContentProvider,
   Uri,
-  window,
-  workspace,
 } from "vscode";
+import { EventEmitter, ProgressLocation, window, workspace } from "vscode";
 import { modelUriOf, PREVIEW_SCHEME } from "../../projects/previewUri";
-import { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/projects";
 
 const DIRTY_MARKER = "-- Unsaved changes: showing the last saved version.";
 const WAITING = "Waiting for the first compile";

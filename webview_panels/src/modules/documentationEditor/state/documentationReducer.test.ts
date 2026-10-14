@@ -9,7 +9,8 @@ import {
   updateColumnsInCurrentDocsData,
   updateCurrentDocsData,
 } from "./documentationReducer";
-import { DBTDocumentation, Source } from "./types";
+import type { DBTDocumentation } from "./types";
+import { Source } from "./types";
 
 const docs = (description: string, name = "orders"): DBTDocumentation => ({
   name,

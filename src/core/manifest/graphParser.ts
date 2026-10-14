@@ -1,16 +1,15 @@
 import type { Log } from "../log";
-import { ManifestProject } from "./manifestProject";
-import {
+import type { ManifestProject } from "./manifestProject";
+import type {
   FunctionMetaMap,
   GraphMetaMap,
   NodeData,
   NodeGraphMap,
   NodeMetaMap,
-  RESOURCE_TYPE_METRIC,
-  RESOURCE_TYPE_TEST,
   SourceMetaMap,
   TestMetaMap,
 } from "./types";
+import { RESOURCE_TYPE_METRIC, RESOURCE_TYPE_TEST } from "./types";
 
 const notEmpty = <T>(value: T | null | undefined): value is T => {
   return value !== null && value !== undefined;

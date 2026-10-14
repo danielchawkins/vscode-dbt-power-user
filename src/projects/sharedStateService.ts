@@ -1,4 +1,5 @@
-import { Disposable, EventEmitter } from "vscode";
+import type { Disposable } from "vscode";
+import { EventEmitter } from "vscode";
 
 /** A command broadcast between webview providers. */
 export interface SharedStateEventEmitterProps {

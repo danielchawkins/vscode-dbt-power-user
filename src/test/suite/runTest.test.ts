@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, type Mocked, vi } from "vitest";
 import { Uri, window } from "vscode";
 import { RunTest } from "../../features/run/runTest";
-import { Manifest } from "../../projects/manifestTypes";
-import { Project } from "../../projects/project";
-import { Projects } from "../../projects/projects";
-import { QueryManifestService } from "../../projects/queryManifestService";
+import type { Manifest } from "../../projects/manifestTypes";
+import type { Project } from "../../projects/project";
+import type { Projects } from "../../projects/projects";
+import type { QueryManifestService } from "../../projects/queryManifestService";
 
 /**
  * Regression tests for issue #1720.

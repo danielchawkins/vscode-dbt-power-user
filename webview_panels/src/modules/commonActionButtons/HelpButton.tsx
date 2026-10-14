@@ -1,6 +1,7 @@
 import DocumentationHelpContent from "@modules/documentationEditor/components/help/DocumentationHelpContent";
 import TestsHelpContent from "@modules/documentationEditor/components/help/TestsHelpContent";
-import { Button, ButtonGroup, Drawer, DrawerRef } from "@uicore";
+import type { DrawerRef } from "@uicore";
+import { Button, ButtonGroup, Drawer } from "@uicore";
 import { useEffect, useRef, useState } from "react";
 
 enum Pages {

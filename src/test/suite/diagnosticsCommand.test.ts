@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { commands, extensions, Uri, workspace } from "vscode";
 import { VSCodeCommands } from "../../features/commands";
-import { DiagnosticsOutputChannel } from "../../features/diagnostics/diagnosticsOutputChannel";
+import type { DiagnosticsOutputChannel } from "../../features/diagnostics/diagnosticsOutputChannel";
 
 describe("fusionPowerUser.diagnostics", () => {
   let diagnosticsHandler: (() => Promise<void>) | undefined;

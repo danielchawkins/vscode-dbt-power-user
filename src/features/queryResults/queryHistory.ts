@@ -1,4 +1,4 @@
-import { queryResults } from "@fusion-power-user/webview-contract";
+import type { queryResults } from "@fusion-power-user/webview-contract";
 import type { Log } from "../../core/log";
 import { getStringSizeInMb } from "../../core/text";
 

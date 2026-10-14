@@ -1,5 +1,6 @@
 import { ChevronDownIcon } from "@assets/icons";
-import { Button, ButtonProps } from "../button/Button";
+import type { ButtonProps } from "../button/Button";
+import { Button } from "../button/Button";
 import IconButton from "../iconButton/IconButton";
 import Stack from "../stack/Stack";
 import classes from "./styles.module.css";

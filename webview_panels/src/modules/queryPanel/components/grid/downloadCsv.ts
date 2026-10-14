@@ -1,5 +1,5 @@
 import { panelLogger } from "@modules/logger";
-import { TableData } from "@modules/queryPanel/context/types";
+import type { TableData } from "@modules/queryPanel/context/types";
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import { dataToCsv } from "./csv";
 

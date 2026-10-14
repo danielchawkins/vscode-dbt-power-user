@@ -1,8 +1,9 @@
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { panelLogger } from "@modules/logger";
-import { Label, OptionType, Select } from "@uicore";
+import type { OptionType } from "@uicore";
+import { Label, Select } from "@uicore";
 import { useEffect, useMemo, useState } from "react";
-import { SetTestFormValue } from "../hooks/useTestFormValues";
+import type { SetTestFormValue } from "../hooks/useTestFormValues";
 
 interface Props {
   toValue?: string | undefined;

@@ -13,6 +13,7 @@
     "noImplicitOverride": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
+    "verbatimModuleSyntax": true,
     "skipLibCheck": true,
     "rootDir": "src",
     "outDir": "dist",

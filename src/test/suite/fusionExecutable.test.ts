@@ -1,14 +1,15 @@
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { Uri, window, WorkspaceFolder } from "vscode";
+import type { WorkspaceFolder } from "vscode";
+import { Uri, window } from "vscode";
+import type { FusionExecutable } from "../../fusion/fusionExecutable";
 import {
   ConfiguredFusionExecutableResolver,
   DBT_PATH_SETTING,
   formatFusionExecutableResolutionFailure,
-  FusionExecutable,
 } from "../../fusion/fusionExecutable";
-import { FusionVersionVerdict } from "../../fusion/fusionVersion";
+import type { FusionVersionVerdict } from "../../fusion/fusionVersion";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 

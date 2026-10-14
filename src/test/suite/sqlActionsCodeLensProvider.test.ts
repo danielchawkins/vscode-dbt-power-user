@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { CodeLens, Range } from "vscode";
+import type { CodeLens } from "vscode";
+import { Range } from "vscode";
 import { SqlActionsCodeLensProvider } from "../../features/sqlActions/sqlActionsCodeLensProvider";
 
 function makeDoc(fsPath: string): any {

@@ -1,18 +1,20 @@
-import { CustomExecution, Task } from "vscode";
+import type { Task } from "vscode";
+import { CustomExecution } from "vscode";
 import type { Log } from "../core/log";
 import type { CommandProcessResult } from "../core/types";
 import type { RunModelParams } from "../dbt_integration/domain";
 import type { QueuedCliCommand } from "../fusion/fusionCli";
+import type { DbtTaskDefinition } from "./dbtTask";
 import {
   cliCommandOf,
   dbtTask,
-  DbtTaskDefinition,
   DbtTaskTerminal,
   definitionOf,
   executeTask,
   taskName,
 } from "./dbtTask";
-import { ProjectCommandDeps, queueCli, selection } from "./projectCommands";
+import type { ProjectCommandDeps } from "./projectCommands";
+import { queueCli, selection } from "./projectCommands";
 
 const LOG_SOURCE = "Project";
 

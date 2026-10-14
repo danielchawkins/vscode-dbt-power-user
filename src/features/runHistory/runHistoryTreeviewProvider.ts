@@ -1,16 +1,8 @@
-import {
-  Disposable,
-  Event,
-  EventEmitter,
-  TreeDataProvider,
-  TreeItem,
-} from "vscode";
-import { RunHistoryService } from "../../projects/runHistoryService";
-import {
-  ResultTreeItem,
-  RunHistoryTreeItem,
-  RunTreeItem,
-} from "./runHistoryTreeItems";
+import type { Disposable, Event, TreeDataProvider, TreeItem } from "vscode";
+import { EventEmitter } from "vscode";
+import type { RunHistoryService } from "../../projects/runHistoryService";
+import type { RunHistoryTreeItem } from "./runHistoryTreeItems";
+import { ResultTreeItem, RunTreeItem } from "./runHistoryTreeItems";
 
 export class RunHistoryTreeviewProvider
   implements TreeDataProvider<RunHistoryTreeItem>, Disposable

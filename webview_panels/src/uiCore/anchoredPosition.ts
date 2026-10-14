@@ -1,4 +1,5 @@
-import { RefObject, useLayoutEffect } from "react";
+import type { RefObject } from "react";
+import { useLayoutEffect } from "react";
 
 const MARGIN = 4;
 

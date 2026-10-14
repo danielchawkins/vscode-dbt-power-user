@@ -1,4 +1,4 @@
-import { DbtGenericTests } from "@modules/documentationEditor/state/types";
+import type { DbtGenericTests } from "@modules/documentationEditor/state/types";
 
 export interface SaveRequest {
   to?: string | undefined;

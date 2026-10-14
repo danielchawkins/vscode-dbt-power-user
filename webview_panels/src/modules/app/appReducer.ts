@@ -1,5 +1,6 @@
 import { typedReducer } from "./typedReducer";
-import { AppStateProps, Themes } from "./types";
+import type { AppStateProps } from "./types";
+import { Themes } from "./types";
 
 export const initialState: AppStateProps = {
   theme: Themes.Dark,

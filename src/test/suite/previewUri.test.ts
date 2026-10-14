@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type * as vscodeApi from "vscode";
 import { URI } from "vscode-uri";
 import {
   activeModelUri,
@@ -8,7 +9,7 @@ import {
 } from "../../projects/previewUri";
 
 vi.mock("vscode", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("vscode")>()),
+  ...(await importOriginal<typeof vscodeApi>()),
   Uri: (await import("vscode-uri")).URI,
 }));
 

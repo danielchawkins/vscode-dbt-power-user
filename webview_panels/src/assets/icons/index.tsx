@@ -1,4 +1,4 @@
-import { HTMLAttributes } from "react";
+import type { HTMLAttributes } from "react";
 import LoadingSpinnerUrl from "./spinner.gif";
 import "./styles.css";
 export { default as EditIcon } from "./edit.svg?react";

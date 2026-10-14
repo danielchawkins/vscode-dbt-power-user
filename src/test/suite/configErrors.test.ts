@@ -4,8 +4,8 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, languages, Uri, window, workspace } from "vscode";
 import { firstLogLine } from "../../core/cli";
-import { ProjectSnapshot } from "../../core/project";
-import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
+import type { ProjectSnapshot } from "../../core/project";
+import type { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { formatFusionExecutableResolutionFailure } from "../../fusion/fusionExecutable";
 import {
@@ -13,7 +13,7 @@ import {
   subscribeToCompileComplete,
   type ClientHandle,
 } from "../../fusion/lspClientSupport";
-import { Project } from "../../projects/project";
+import type { Project } from "../../projects/project";
 import {
   errorHint,
   ProjectErrors,

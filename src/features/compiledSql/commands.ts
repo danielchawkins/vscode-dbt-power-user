@@ -1,11 +1,5 @@
-import {
-  commands,
-  TextEditor,
-  Uri,
-  ViewColumn,
-  window,
-  workspace,
-} from "vscode";
+import type { TextEditor, Uri } from "vscode";
+import { commands, ViewColumn, window, workspace } from "vscode";
 import type { RegisterCommand } from "../../commandRegistry";
 import { activeModelUri, previewUriFor } from "../../projects/previewUri";
 

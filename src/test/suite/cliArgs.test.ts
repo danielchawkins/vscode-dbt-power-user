@@ -2,18 +2,13 @@ import { mkdtempSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import {
-  CliCommand,
-  deferState,
-  PathKind,
-  PathProbe,
-  toCliArgs,
-} from "../../core/cli";
-import {
+import type { CliCommand, PathKind, PathProbe } from "../../core/cli";
+import { deferState, toCliArgs } from "../../core/cli";
+import type {
   DeferSettingsEntry,
   ProjectSnapshotSettings,
-  resolveProjectSnapshot,
 } from "../../core/project";
+import { resolveProjectSnapshot } from "../../core/project";
 import { noSettings, snapshotFolder } from "../arbitraries/projectSnapshot";
 
 const root = path.join(snapshotFolder, "proj");

@@ -1,4 +1,4 @@
-import { TableData } from "@modules/queryPanel/context/types";
+import type { TableData } from "@modules/queryPanel/context/types";
 
 /** How the grid renders and sorts a column. */
 export type GridColumnType = "string" | "number";

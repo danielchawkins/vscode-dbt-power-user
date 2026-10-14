@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { Log } from "../../core/log";
+import type { ManifestProject } from "../../core/manifest";
 import {
   DocParser,
   MacroParser,
-  ManifestProject,
   MetricParser,
   NodeParser,
 } from "../../core/manifest";

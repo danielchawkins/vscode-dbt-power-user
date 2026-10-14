@@ -1,7 +1,8 @@
 import { access, constants } from "node:fs/promises";
 import { homedir } from "node:os";
 import * as path from "node:path";
-import { Uri, workspace, WorkspaceFolder } from "vscode";
+import type { Uri, WorkspaceFolder } from "vscode";
+import { workspace } from "vscode";
 import which from "which";
 import { resolveExecutable } from "../core/project";
 import {
@@ -9,10 +10,12 @@ import {
   readEnvironmentVariable,
   readSetting,
 } from "../settings";
-import {
+import type {
   FusionExecutableSource,
   FusionVersion,
   FusionVersionVerdict,
+} from "./fusionVersion";
+import {
   judgeFusionVersion,
   MINIMUM_FUSION,
   parseFusionVersion,

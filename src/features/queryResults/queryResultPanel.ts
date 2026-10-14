@@ -1,40 +1,32 @@
 import { queryResults } from "@fusion-power-user/webview-contract";
-import {
+import type {
   CancellationToken,
-  commands,
   Event,
   Uri,
-  ViewColumn,
   WebviewPanel,
   WebviewView,
   WebviewViewResolveContext,
-  window,
 } from "vscode";
+import { commands, ViewColumn, window } from "vscode";
 
-import {
-  ExecuteSQLError,
-  ExecuteSQLResult,
-  QueryExecution,
-} from "../../core/dbtCommand";
+import type { ExecuteSQLResult, QueryExecution } from "../../core/dbtCommand";
+import { ExecuteSQLError } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import { getFormattedDateTime } from "../../core/text";
-import { ExtensionContextStore } from "../../extensionContext";
+import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
 import {
   notifyError,
   notifyErrorWithoutProject,
 } from "../../projects/notifications";
-import { QueryManifestService } from "../../projects/queryManifestService";
-import {
+import type { QueryManifestService } from "../../projects/queryManifestService";
+import type {
   SharedStateEventEmitterProps,
   SharedStateService,
 } from "../../projects/sharedStateService";
 import { readSetting } from "../../settings";
-import {
-  dispatchMessage,
-  Handlers,
-  MessageOf,
-} from "../../webview/messageRouter";
+import type { Handlers, MessageOf } from "../../webview/messageRouter";
+import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost, postToWebview } from "../../webview/panelHost";
 import { panelWebviewOptions } from "../../webview/panelHtml";
 import { executeActiveEditorQuery } from "./activeEditorQuery";

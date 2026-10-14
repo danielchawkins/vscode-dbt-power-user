@@ -2,13 +2,15 @@ import { ProgressLocation, window } from "vscode";
 import { panelColumns } from "../../core/lineage";
 import type { Log } from "../../core/log";
 import { RelationshipParser } from "../../core/manifest";
-import {
+import type {
   ExposureMetaData,
   FunctionMetaData,
   Ref,
+  SourceTable,
+} from "../../core/manifest/types";
+import {
   RESOURCE_TYPE_FUNCTION,
   RESOURCE_TYPE_SOURCE,
-  SourceTable,
 } from "../../core/manifest/types";
 import type { Manifest } from "../../projects/manifestTypes";
 import { notifyError } from "../../projects/notifications";

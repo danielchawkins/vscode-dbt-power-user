@@ -1,18 +1,14 @@
-import {
+import type {
   DecorationOptions,
   Disposable,
-  OverviewRulerLane,
-  Range,
   TextEditor,
   TextEditorDecorationType,
-  ThemeColor,
-  Uri,
-  window,
 } from "vscode";
+import { OverviewRulerLane, Range, ThemeColor, Uri, window } from "vscode";
 import type { Log } from "../../core/log";
 import { extensionRoot } from "../../extensionRoot";
-import { CteProfilerService } from "./cteProfilerService";
-import { CteProfileEntry } from "./cteProfilerTypes";
+import type { CteProfilerService } from "./cteProfilerService";
+import type { CteProfileEntry } from "./cteProfilerTypes";
 
 export class CteProfilerDecorationProvider implements Disposable {
   private disposables: Disposable[] = [];

@@ -1,25 +1,33 @@
-import { Disposable, Event, EventEmitter, LogOutputChannel, Uri } from "vscode";
+import type { Disposable, Event, LogOutputChannel, Uri } from "vscode";
+import { EventEmitter } from "vscode";
 import type { Log } from "../core/log";
-import { LspLaunch, sameLspLaunch, toLspLaunch } from "../core/lsp";
-import { ProjectSnapshot } from "../core/project";
+import type { LspLaunch } from "../core/lsp";
+import { sameLspLaunch, toLspLaunch } from "../core/lsp";
+import type { ProjectSnapshot } from "../core/project";
 import { FailedFusionClient } from "../fusion/failedFusionClient";
+import type {
+  FusionExecutable,
+  FusionExecutableResolver,
+} from "../fusion/fusionExecutable";
 import {
   ConfiguredFusionExecutableResolver,
   formatFusionExecutableResolutionFailure,
-  FusionExecutable,
-  FusionExecutableResolver,
   isFusionExecutable,
 } from "../fusion/fusionExecutable";
-import {
-  commandPrefixForProject,
-  DefaultFusionClientFactory,
+import type {
   FusionClient,
   FusionClientFactory,
   FusionClientOptions,
 } from "../fusion/fusionLanguageClient";
-import { onDidChangeSettings, SettingsChange } from "../settings";
-import { ProjectEnvironments, sameEnv } from "./projectEnvironments";
-import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
+import {
+  commandPrefixForProject,
+  DefaultFusionClientFactory,
+} from "../fusion/fusionLanguageClient";
+import type { SettingsChange } from "../settings";
+import { onDidChangeSettings } from "../settings";
+import type { ProjectEnvironments } from "./projectEnvironments";
+import { sameEnv } from "./projectEnvironments";
+import type { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 import { PROJECT_SNAPSHOT_SETTINGS } from "./readProjectSnapshot";
 
 export interface FusionClientPool extends Disposable {
@@ -381,54 +389,6 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
 function projectKey(project: DeclaredProject): string {
   return project.root.fsPath;
-}
-
-/** Fires when the project's client is replaced or changes state. */
-export function onClientChange(
-  pool: FusionClientPool,
-  project: DeclaredProject,
-): Event<void> {
-  return (listener) => {
-    let stateSubscription: Disposable | undefined;
-    const follow = () => {
-      stateSubscription?.dispose();
-      stateSubscription = pool.get(project)?.onDidChangeState(() => listener());
-    };
-    follow();
-    const replaced = pool.onDidChangeClients(() => {
-      follow();
-      listener();
-    });
-    return Disposable.from(replaced, {
-      dispose: () => stateSubscription?.dispose(),
-    });
-  };
-}
-
-/** Fires when the Current Project switches, or its client is replaced or changes state. */
-export function onCurrentClientChange(
-  pool: FusionClientPool,
-  current: {
-    readonly current: DeclaredProject | undefined;
-    readonly onDidChangeCurrent: Event<unknown>;
-  },
-): Event<void> {
-  return (listener) => {
-    let clientChange: Disposable | undefined;
-    const follow = () => {
-      clientChange?.dispose();
-      const project = current.current;
-      clientChange = project && onClientChange(pool, project)(listener);
-    };
-    follow();
-    const switched = current.onDidChangeCurrent(() => {
-      follow();
-      listener();
-    });
-    return Disposable.from(switched, {
-      dispose: () => clientChange?.dispose(),
-    });
-  };
 }
 
 export type FusionClientPoolDependencies = FusionLaunchSources & {

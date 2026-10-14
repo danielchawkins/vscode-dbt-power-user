@@ -1,4 +1,5 @@
-import { KeyboardEvent, useState } from "react";
+import type { KeyboardEvent } from "react";
+import { useState } from "react";
 import classes from "./chipInput.module.css";
 
 interface Props {

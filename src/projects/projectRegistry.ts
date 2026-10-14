@@ -1,16 +1,14 @@
 import { realpathSync } from "node:fs";
 import * as path from "node:path";
-import {
+import type {
   Disposable,
   Event,
-  EventEmitter,
   FileSystemWatcher,
-  RelativePattern,
   TextDocument,
   Uri,
-  workspace,
   WorkspaceFolder,
 } from "vscode";
+import { EventEmitter, RelativePattern, workspace } from "vscode";
 import type { Log } from "../core/log";
 import {
   DBT_PROJECT_FILE_GLOB,

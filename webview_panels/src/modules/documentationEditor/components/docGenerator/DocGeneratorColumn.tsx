@@ -1,5 +1,5 @@
 import { EntityType } from "@modules/documentationEditor/state/entityType";
-import {
+import type {
   DBTDocumentationColumn,
   DBTModelTest,
 } from "@modules/documentationEditor/state/types";

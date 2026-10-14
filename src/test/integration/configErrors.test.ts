@@ -5,11 +5,8 @@ import * as path from "node:path";
 import { pathToFileURL } from "node:url";
 import { isConfigError } from "../../core/cli";
 import type { Log } from "../../core/log";
-import {
-  ProjectSnapshotSettings,
-  readDbtProjectFile,
-  resolveProjectSnapshot,
-} from "../../core/project";
+import type { ProjectSnapshotSettings } from "../../core/project";
+import { readDbtProjectFile, resolveProjectSnapshot } from "../../core/project";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import {

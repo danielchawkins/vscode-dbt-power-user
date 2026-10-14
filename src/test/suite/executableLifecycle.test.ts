@@ -9,14 +9,14 @@ import {
   vi,
 } from "vitest";
 import { DiagnosticSeverity, Uri, window } from "vscode";
-import { DBTDiagnosticData } from "../../core/diagnostics";
-import {
-  ExecutableLifecycle,
+import type { DBTDiagnosticData } from "../../core/diagnostics";
+import type {
   ExecutableLifecycleHooks,
   FusionCommandIntegrationFactory,
 } from "../../fusion/executableLifecycle";
+import { ExecutableLifecycle } from "../../fusion/executableLifecycle";
 import { FusionCli } from "../../fusion/fusionCli";
-import { Project } from "../../projects/project";
+import type { Project } from "../../projects/project";
 import { SHOW_OUTPUT } from "../../projects/projectErrors";
 import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
 import { flushAsync, waitFor } from "../async";

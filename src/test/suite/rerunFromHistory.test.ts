@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, type Mocked, vi } from "vitest";
 import { window } from "vscode";
+import type { ReplayProject } from "../../features/runHistory/rerunFromHistory";
 import {
   parseHistoryArgs,
-  ReplayProject,
   rerunFromHistory,
 } from "../../features/runHistory/rerunFromHistory";
 import { parseRunResultsJson } from "../../projects/runResults";

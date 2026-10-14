@@ -2,12 +2,13 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
+import type * as vscodeApi from "vscode";
 import { URI } from "vscode-uri";
 import { FusionCommandError } from "../../core/lsp";
 import { compiledModelSql } from "../../projects/compiledModel";
 
 vi.mock("vscode", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("vscode")>()),
+  ...(await importOriginal<typeof vscodeApi>()),
   Uri: (await import("vscode-uri")).URI,
 }));
 

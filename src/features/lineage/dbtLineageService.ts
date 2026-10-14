@@ -1,42 +1,38 @@
 import * as path from "node:path";
 import { Uri, workspace } from "vscode";
-import {
+import type {
   ColumnEdge,
-  columnEdges,
   ColumnLineage,
-  columnLineageArgs,
   InferredColumn,
+} from "../../core/lineage";
+import {
+  columnEdges,
+  columnLineageArgs,
   inferredColumns,
   toPanelLineage,
 } from "../../core/lineage";
 import { FusionCommandError, type ListNodesResult } from "../../core/lsp";
+import type { GraphMetaMap, NodeGraphMap } from "../../core/manifest/types";
 import {
-  GraphMetaMap,
-  NodeGraphMap,
   RESOURCE_TYPE_EXPOSURE,
   RESOURCE_TYPE_FUNCTION,
   RESOURCE_TYPE_METRIC,
   RESOURCE_TYPE_SOURCE,
 } from "../../core/manifest/types";
-import { Table } from "../../dbt_integration/domain";
+import type { Table } from "../../dbt_integration/domain";
 import {
   createFusionCommands,
   type FusionCommands,
 } from "../../fusion/fusionCommands";
-import {
+import type {
   FusionClient,
   FusionClientState,
 } from "../../fusion/fusionLanguageClient";
 import { failureSummary } from "../../projects/fusionStatus";
 import type { Manifest } from "../../projects/manifestTypes";
-import { QueryManifestService } from "../../projects/queryManifestService";
-import {
-  NeedsStrict,
-  needsStrict,
-  STRICT_FIX,
-  StrictInputs,
-  strictNeededMessage,
-} from "./strictNeeded";
+import type { QueryManifestService } from "../../projects/queryManifestService";
+import type { NeedsStrict, StrictInputs } from "./strictNeeded";
+import { needsStrict, STRICT_FIX, strictNeededMessage } from "./strictNeeded";
 
 /** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */
 export interface ConnectedColumnsRequest {

@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { dispatchMessage, Handlers } from "../../webview/messageRouter";
+import type { Handlers } from "../../webview/messageRouter";
+import { dispatchMessage } from "../../webview/messageRouter";
 
 type Message = { command: "a"; n: number } | { command: "b" | "c" };
 

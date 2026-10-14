@@ -1,4 +1,5 @@
-import { commands, Disposable } from "vscode";
+import type { Disposable } from "vscode";
+import { commands } from "vscode";
 import { readHarnessSwitch } from "../settings";
 
 /** @internal */

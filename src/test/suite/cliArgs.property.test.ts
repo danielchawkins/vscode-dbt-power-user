@@ -1,8 +1,10 @@
 import fc from "fast-check";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
-import { CliCommand, PathKind, toCliArgs } from "../../core/cli";
-import { ProjectSnapshot, resolveProjectSnapshot } from "../../core/project";
+import type { CliCommand, PathKind } from "../../core/cli";
+import { toCliArgs } from "../../core/cli";
+import type { ProjectSnapshot } from "../../core/project";
+import { resolveProjectSnapshot } from "../../core/project";
 import { snapshotInputs } from "../arbitraries/projectSnapshot";
 
 /** Above the shared run count: argv construction is cheap and the input space is wide. */

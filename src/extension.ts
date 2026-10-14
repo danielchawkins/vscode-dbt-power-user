@@ -1,6 +1,6 @@
-import { ExtensionContext } from "vscode";
+import type { ExtensionContext } from "vscode";
 import { compose } from "./compositionRoot";
-import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
+import type { DBTPowerUserExtension } from "./dbtPowerUserExtension";
 
 /** The value `activate` returns, read by test harnesses through `Extension.exports`. */
 export interface FusionPowerUserApi {

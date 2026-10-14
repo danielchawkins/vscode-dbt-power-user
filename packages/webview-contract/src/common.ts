@@ -1,6 +1,6 @@
+import type { Fields } from "./guards.js";
 import {
   arrayOf,
-  Fields,
   isAnything,
   isBoolean,
   isString,

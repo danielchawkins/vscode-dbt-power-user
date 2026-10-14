@@ -1,8 +1,9 @@
 import * as path from "node:path";
 
 import type { Log } from "../log";
-import { ManifestProject } from "./manifestProject";
-import { ManifestResources, RESOURCE_TYPE_TEST, TestMetaMap } from "./types";
+import type { ManifestProject } from "./manifestProject";
+import type { ManifestResources, TestMetaMap } from "./types";
+import { RESOURCE_TYPE_TEST } from "./types";
 
 export class TestParser {
   constructor(private terminal: Pick<Log, "debug">) {}

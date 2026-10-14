@@ -7,7 +7,7 @@ import {
   applyProjectConfigInsertion,
   ProjectConfigCommands,
 } from "../../features/projectSetup/projectConfigCommands";
-import { DeclaredProject } from "../../projects/projectRegistry";
+import type { DeclaredProject } from "../../projects/projectRegistry";
 import { flushAsync } from "../async";
 
 const strict = (name: string) => ({

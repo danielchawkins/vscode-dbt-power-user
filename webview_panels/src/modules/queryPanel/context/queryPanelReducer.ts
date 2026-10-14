@@ -1,6 +1,7 @@
 import { typedReducer } from "@modules/app/typedReducer";
 import { QueryPanelTitleTabState } from "../components/QueryPanelContents/types";
-import { DEFAULT_VIEW_TYPE, QueryPanelStateProps } from "./types";
+import type { QueryPanelStateProps } from "./types";
+import { DEFAULT_VIEW_TYPE } from "./types";
 
 type S = QueryPanelStateProps;
 

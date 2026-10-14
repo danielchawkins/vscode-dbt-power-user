@@ -1,5 +1,6 @@
 import * as path from "node:path";
-import { Uri, WorkspaceFolder } from "vscode";
+import type { WorkspaceFolder } from "vscode";
+import { Uri } from "vscode";
 import { hasDbtProjectFile } from "../core/project";
 import { readSetting, writeDeclaredProjects } from "../settings";
 

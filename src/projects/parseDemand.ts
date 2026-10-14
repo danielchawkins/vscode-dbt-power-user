@@ -1,4 +1,5 @@
-import { Disposable, Event, EventEmitter } from "vscode";
+import type { Disposable, Event } from "vscode";
+import { EventEmitter } from "vscode";
 
 /**
  * Which views currently read parse-owned fields (descriptions, tests, macros, docs). The Parse Producer rebuilds on

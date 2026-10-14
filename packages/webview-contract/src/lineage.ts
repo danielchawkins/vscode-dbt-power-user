@@ -1,18 +1,18 @@
-import {
-  isPanelNotice,
-  isPanelNoticeActionId,
+import type {
   OpenProblemsTab,
   PanelNotice,
   PanelNoticeActionId,
   Response,
-  responseFields,
   WebviewReady,
 } from "./common.js";
 import {
+  isPanelNotice,
+  isPanelNoticeActionId,
+  responseFields,
+} from "./common.js";
+import type { Check, CommandFields, Fields } from "./guards.js";
+import {
   arrayOf,
-  Check,
-  CommandFields,
-  Fields,
   isAnything,
   isBoolean,
   isNumber,

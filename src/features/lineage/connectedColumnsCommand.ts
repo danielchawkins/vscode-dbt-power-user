@@ -1,6 +1,6 @@
 import { commands, Disposable } from "vscode";
 import { readHarnessSwitch } from "../../settings";
-import {
+import type {
   ConnectedColumnsRequest,
   DbtLineageService,
 } from "./dbtLineageService";

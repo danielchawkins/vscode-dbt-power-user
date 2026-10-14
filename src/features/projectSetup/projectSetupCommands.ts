@@ -1,13 +1,13 @@
 import { window } from "vscode";
-import { ExtensionContextStore } from "../../extensionContext";
+import type { ExtensionContextStore } from "../../extensionContext";
 import { notifyError } from "../../projects/notifications";
-import { OutputChannels } from "../../projects/outputChannels";
-import { Project } from "../../projects/project";
-import {
+import type { OutputChannels } from "../../projects/outputChannels";
+import type { Project } from "../../projects/project";
+import type {
   ProjectQuickPick,
   ProjectQuickPickItem,
 } from "../../projects/projectQuickPick";
-import { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/projects";
 
 enum PromptAnswer {
   YES = "Yes",

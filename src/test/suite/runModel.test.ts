@@ -8,18 +8,19 @@ import {
   type Mocked,
   vi,
 } from "vitest";
+import type * as vscodeApi from "vscode";
 import { Uri, window } from "vscode";
 import { RunModelType } from "../../dbt_integration/domain";
 import { RunModel } from "../../features/run/runModel";
-import { CurrentProject } from "../../projects/currentProject";
+import type { CurrentProject } from "../../projects/currentProject";
 import { previewUriFor } from "../../projects/previewUri";
-import { Project } from "../../projects/project";
-import { DeclaredProject } from "../../projects/projectRegistry";
-import { Projects } from "../../projects/projects";
+import type { Project } from "../../projects/project";
+import type { DeclaredProject } from "../../projects/projectRegistry";
+import type { Projects } from "../../projects/projects";
 import { RecordingTasks } from "../recordingTasks";
 
 vi.mock("vscode", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("vscode")>()),
+  ...(await importOriginal<typeof vscodeApi>()),
   Uri: (await import("vscode-uri")).URI,
 }));
 

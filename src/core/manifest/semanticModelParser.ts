@@ -1,6 +1,6 @@
 import type { Log } from "../log";
-import { ManifestProject } from "./manifestProject";
-import {
+import type { ManifestProject } from "./manifestProject";
+import type {
   SemanticEntity,
   SemanticEntityType,
   SemanticModelMetaData,

@@ -1,4 +1,4 @@
-import { ChangeEvent, SelectHTMLAttributes } from "react";
+import type { ChangeEvent, SelectHTMLAttributes } from "react";
 import classes from "./select.module.css";
 
 export interface OptionType {

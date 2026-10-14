@@ -1,13 +1,14 @@
 import * as path from "node:path";
-import { Disposable, Task, TaskProvider, tasks, Uri } from "vscode";
+import type { Disposable, Task, TaskProvider } from "vscode";
+import { tasks, Uri } from "vscode";
+import type { DbtTaskDefinition } from "../../projects/dbtTask";
 import {
   cliCommandOf,
   DBT_TASK_COMMANDS,
   DBT_TASK_TYPE,
-  DbtTaskDefinition,
 } from "../../projects/dbtTask";
-import { Project } from "../../projects/project";
-import { Projects } from "../../projects/projects";
+import type { Project } from "../../projects/project";
+import type { Projects } from "../../projects/projects";
 
 /**
  * Lists each Declared Project's dbt tasks and resolves `dbt` tasks from tasks.json.

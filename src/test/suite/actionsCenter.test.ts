@@ -8,10 +8,10 @@ import {
   vi,
 } from "vitest";
 import { commands, Uri, window } from "vscode";
-import { ExtensionContextStore } from "../../extensionContext";
+import type { ExtensionContextStore } from "../../extensionContext";
 import { DbtPowerUserActionsCenter } from "../../features/projectPicker/actionsCenter";
-import { CurrentProject } from "../../projects/currentProject";
-import { DeclaredProject } from "../../projects/projectRegistry";
+import type { CurrentProject } from "../../projects/currentProject";
+import type { DeclaredProject } from "../../projects/projectRegistry";
 
 describe("DbtPowerUserActionsCenter project picker", () => {
   let context: Mocked<CurrentProject>;
