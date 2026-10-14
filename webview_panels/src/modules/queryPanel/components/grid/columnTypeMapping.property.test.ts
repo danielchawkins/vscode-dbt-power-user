@@ -57,7 +57,7 @@ describe("buildGridInit properties", () => {
     fc.assert(
       fc.property(table, ({ names, types, rows }) => {
         const { schema } = buildGridInit(names, types, rows);
-        expect(Object.keys(schema).sort()).toEqual([...names].sort());
+        expect(Object.keys(schema).sort()).toEqual(names.toSorted());
       }),
       { numRuns: NUM_RUNS },
     );

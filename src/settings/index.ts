@@ -115,9 +115,9 @@ export function inspectSettings(): SettingInspection[] {
   const inspected = workspace
     .getConfiguration()
     .inspect<Record<string, unknown>>(CONFIGURATION_SECTION);
-  const globalValue = inspected?.globalValue || {};
-  const defaultValue = inspected?.defaultValue || {};
-  const workspaceValue = inspected?.workspaceValue || {};
+  const globalValue = inspected?.globalValue ?? {};
+  const defaultValue = inspected?.defaultValue ?? {};
+  const workspaceValue = inspected?.workspaceValue ?? {};
   const section = workspace.getConfiguration(CONFIGURATION_SECTION);
   return [
     ...Object.keys(globalValue),

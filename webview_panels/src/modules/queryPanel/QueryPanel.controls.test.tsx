@@ -137,7 +137,7 @@ export const openQueryPanel = (...messages: object[]) => {
   );
   for (const data of messages) {
     act(() => {
-      window.dispatchEvent(new MessageEvent("message", { data }));
+      globalThis.dispatchEvent(new MessageEvent("message", { data }));
     });
   }
   return { user, container };
@@ -456,6 +456,6 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
 
 describe("Query panel controls", () => {
   it("lists exactly the controls the tests above clicked", () => {
-    expect([...clicked].sort()).toEqual([...TESTED_CONTROLS].sort());
+    expect([...clicked].sort()).toEqual(TESTED_CONTROLS.toSorted());
   });
 });

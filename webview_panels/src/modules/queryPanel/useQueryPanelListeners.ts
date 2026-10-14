@@ -30,9 +30,13 @@ type HostMessage = queryResults.HostMessage;
 const useQueryPanelListeners = (): { loading: boolean } => {
   const dispatch = useQueryPanelDispatch();
   const { loading, hintIndex } = useQueryPanelState();
-  const hintIntervalRef = useRef<number | undefined>(undefined);
+  const hintIntervalRef = useRef<ReturnType<typeof setInterval> | undefined>(
+    undefined,
+  );
   const hintIndexRef = useRef<number>(hintIndex);
-  const queryExecutionTimerRef = useRef<number | undefined>(undefined);
+  const queryExecutionTimerRef = useRef<
+    ReturnType<typeof setInterval> | undefined
+  >(undefined);
   const queryStartRef = useRef(0);
 
   useEffect(() => {
@@ -44,7 +48,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
     HINTS.sort(() => Math.random() - 0.5);
     dispatch(setHintIndex((hintIndexRef.current + 1) % HINTS.length));
 
-    hintIntervalRef.current = window.setInterval(() => {
+    hintIntervalRef.current = globalThis.setInterval(() => {
       dispatch(setHintIndex((hintIndexRef.current + 1) % HINTS.length));
     }, 3500);
   }, [dispatch]);
@@ -55,7 +59,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
   }, [dispatch]);
 
   const endQueryExecutionTimer = useCallback(
-    () => window.clearInterval(queryExecutionTimerRef.current),
+    () => globalThis.clearInterval(queryExecutionTimerRef.current),
     [],
   );
 
@@ -65,7 +69,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
     }
     clearData();
     dispatch(setLoading(true));
-    queryExecutionTimerRef.current = window.setInterval(() => {
+    queryExecutionTimerRef.current = globalThis.setInterval(() => {
       const now = Date.now();
       const elapsedTime = Math.round((now - queryStartRef.current) / 100) / 10;
       const time = isNaN(elapsedTime) ? 0 : elapsedTime;
@@ -75,7 +79,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
   }, [loading, dispatch, clearData, handleHintMessage]);
 
   const clearHintInterval = useCallback(() => {
-    window.clearInterval(hintIntervalRef.current);
+    globalThis.clearInterval(hintIntervalRef.current);
     hintIntervalRef.current = undefined;
   }, []);
 

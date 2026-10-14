@@ -83,7 +83,9 @@ const DocGeneratorInput = ({
     }
     let fontSize = 13; // default font size
     try {
-      fontSize = parseFloat(window.getComputedStyle(inputRef.current).fontSize);
+      fontSize = parseFloat(
+        globalThis.getComputedStyle(inputRef.current).fontSize,
+      );
     } catch (e) {
       panelLogger.error("Error parsing font size", e);
     }

@@ -43,7 +43,7 @@ export class VirtualSqlCodeLensProvider
     const topOfDocument = new Range(0, 0, 0, 0);
     const projectName = this.getProjectName();
     const projectSelectorCommand: Command = {
-      title: `Project: ${projectName || "Select a project"}`,
+      title: `Project: ${(projectName ?? "") || "Select a project"}`,
       command: "fusionPowerUser.pickProject",
       arguments: [document.uri],
     };

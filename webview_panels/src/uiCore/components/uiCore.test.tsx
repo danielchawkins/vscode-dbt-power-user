@@ -61,7 +61,7 @@ describe("uiCore native components", () => {
     expect(screen.queryByText("content")).toBeNull();
     act(() => ref.current?.open());
     expect(screen.getByText("content")).toBeInTheDocument();
-    fireEvent.keyDown(window, { key: "Escape" });
+    fireEvent.keyDown(document, { key: "Escape" });
     expect(screen.queryByText("content")).toBeNull();
     expect(onClose).toHaveBeenCalledOnce();
   });

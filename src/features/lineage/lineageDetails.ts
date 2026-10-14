@@ -226,18 +226,18 @@ export class LineageDetails {
     }
     return {
       id: table,
-      purpose: fn.description || "",
+      purpose: fn.description ?? "",
       columns: (fn.arguments ?? []).map((arg) => ({
         table,
         name: arg.name,
         datatype: arg.data_type || "",
         can_lineage_expand: false,
-        description: arg.description || "",
+        description: arg.description ?? "",
       })),
       returns: fn.returns
         ? {
             datatype: fn.returns.data_type || "",
-            description: fn.returns.description || "",
+            description: fn.returns.description ?? "",
           }
         : undefined,
     };

@@ -18,7 +18,7 @@ export function screenshotDirectory(
   env: NodeJS.ProcessEnv = process.env,
 ): string | undefined {
   const dir = env.FPU_SMOKE_SCREENSHOTS?.trim();
-  return dir ? dir : undefined;
+  return (dir ?? "") || undefined;
 }
 
 /** File-safe checkpoint stem, ordered by capture sequence. */

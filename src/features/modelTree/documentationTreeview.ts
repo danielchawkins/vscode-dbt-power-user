@@ -94,7 +94,7 @@ class DocTreeItem extends TreeItem {
   children?: DocTreeItem[];
   constructor(node: DocNode) {
     super(node.label, TreeItemCollapsibleState.Collapsed);
-    this.description = node.description !== undefined ? node.description : " ";
+    this.description = node.description ?? " ";
     // this. tooltip = "test tooltip" // node.description !== undefined ? node.description : " ";
     if (node.url) {
       this.command = {

@@ -57,7 +57,7 @@ function senderFor(
 ): Sender {
   return async (command, payload, token) => {
     const client = clientOf();
-    if (!client || client.state !== "running") {
+    if (client?.state !== "running") {
       throw new FusionCommandError(
         "notRunning",
         `Fusion LSP client is not running (${client?.state ?? "notRunning"})`,

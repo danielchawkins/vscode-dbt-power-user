@@ -60,7 +60,7 @@ export function serverMetadataFrom(
         node !== undefined && SERVER_RESOURCE_TYPES.has(node.resourceType),
     );
   const signature = JSON.stringify([
-    [...nodes].sort((a, b) => a.uniqueId.localeCompare(b.uniqueId)),
+    nodes.toSorted((a, b) => a.uniqueId.localeCompare(b.uniqueId)),
     info ?? null,
   ]);
   return { nodes, info, rootPackage, signature };

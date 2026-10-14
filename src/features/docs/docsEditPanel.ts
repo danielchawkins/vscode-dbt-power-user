@@ -159,7 +159,8 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       return [];
     }
 
-    return Array.from(manifestEvent.docMetaMap.entries()).map(
+    return Array.from(
+      manifestEvent.docMetaMap.entries(),
       ([name, metaData]) => ({
         name,
         path: metaData.path,

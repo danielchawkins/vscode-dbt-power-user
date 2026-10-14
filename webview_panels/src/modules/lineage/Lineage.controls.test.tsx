@@ -583,6 +583,6 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
 
 describe("Lineage TESTED_CONTROLS", () => {
   it("lists exactly the controls the tests above clicked", () => {
-    expect([...clicked].sort()).toEqual([...TESTED_CONTROLS].sort());
+    expect([...clicked].sort()).toEqual(TESTED_CONTROLS.toSorted());
   });
 });

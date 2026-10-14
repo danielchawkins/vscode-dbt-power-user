@@ -495,8 +495,7 @@ describe("Project Test Suite", () => {
 
       const { results } = (vscode.languages.createDiagnosticCollection as Mock)
         .mock;
-      const collection = results[results.length - 1]
-        .value as vscode.DiagnosticCollection;
+      const collection = results.at(-1)!.value as vscode.DiagnosticCollection;
 
       await dbtProject.dispose();
 
@@ -510,7 +509,7 @@ describe("Project Test Suite", () => {
       dbtProject = await initializedProject();
       const { results } = (vscode.languages.createDiagnosticCollection as Mock)
         .mock;
-      const collection = results[results.length - 1].value;
+      const collection = results.at(-1)!.value;
       let release!: () => void;
       mockFusionCli.rebuildManifest.mockImplementation(
         () => new Promise<void>((resolve) => (release = resolve)),
@@ -1091,7 +1090,7 @@ describe("Project manifest", () => {
     const parses: ParsedManifest[] = [];
     project.onDidParse((parsed) => parses.push(parsed));
     const lastParse = () => {
-      const parse = parses[parses.length - 1];
+      const parse = parses.at(-1);
       if (!parse) {
         throw new Error("Expected a parse event");
       }
@@ -1431,8 +1430,7 @@ describe("Project manifest trigger", () => {
         }),
         { parseDemand },
       );
-      const slowWatcher =
-        createdFileSystemWatchers[createdFileSystemWatchers.length - 1];
+      const slowWatcher = createdFileSystemWatchers.at(-1)!;
       slowRebuild.mockClear();
       slowRebuild.mockImplementationOnce(
         () => new Promise<void>((resolve) => (release = resolve)),

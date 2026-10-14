@@ -307,7 +307,7 @@ export class FusionClientPoolImpl implements FusionClientPool {
 
     for (const [key, project] of nextProjects) {
       const managed = this.clients.get(key);
-      if (managed && managed.project === project) {
+      if (managed?.project === project) {
         continue;
       }
       await this.replaceClient(project, key);

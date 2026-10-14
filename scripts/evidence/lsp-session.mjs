@@ -96,7 +96,8 @@ sock.on("data", (d) => {
     if (m.method === "$/progress" && m.params?.value?.kind === "begin")
       progressTitles.set(
         m.params.token,
-        m.params.value.title || m.params.value.message,
+        [m.params.value.title, m.params.value.message].find(Boolean) ??
+          m.params.value.message,
       );
     seen.push({ at: Date.now(), msg: m });
     current?.serverMessages.push(m);

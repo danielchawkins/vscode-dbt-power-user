@@ -282,8 +282,8 @@ export function resolveProjectSnapshot(
     paths,
     invocation: {
       executable: resolveExecutable(settings.dbtPath, folderScope),
-      target: settings.target?.trim() || undefined,
-      profile: settings.profile?.trim() || undefined,
+      target: (settings.target?.trim() ?? "") || undefined,
+      profile: (settings.profile?.trim() ?? "") || undefined,
       profilesDir: resolveFolderPath(settings.profilesDir, folderScope),
       staticAnalysis: parseStaticAnalysisMode(settings.staticAnalysis),
       compiledOutput: {

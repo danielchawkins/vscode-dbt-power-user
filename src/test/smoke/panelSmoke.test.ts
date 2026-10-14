@@ -1022,7 +1022,7 @@ async function showProjectOutput(
     channel: last?.channel ?? null,
     shown: last?.shown ?? null,
     listed: last?.listed ?? [],
-    text: last?.text || null,
+    text: (last?.text ?? "") || null,
     openedBy,
     clientState,
   };

@@ -96,7 +96,7 @@ export class QueryManifestService {
     }
 
     const sources = event.sourceMetaMap.entries();
-    const items = Array.from(sources).map(([key, source]) => ({
+    const items = Array.from(sources, ([key, source]) => ({
       name: key,
       tables: source.tables.map((t) => t.name),
     }));
@@ -113,7 +113,7 @@ export class QueryManifestService {
     }
 
     // TODO: fix for model versions
-    return Array.from(event.nodeMetaMap.nodes()).map((node) => node.name);
+    return Array.from(event.nodeMetaMap.nodes(), (node) => node.name);
   }
 
   public async getOrPickProjectFromWorkspace() {

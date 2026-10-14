@@ -94,9 +94,9 @@ export class Projects implements Disposable {
   }
 
   adapters(): string[] {
-    return Array.from(
-      new Set<string>(this.all().map((project) => project.getAdapterType())),
-    );
+    return [
+      ...new Set<string>(this.all().map((project) => project.getAdapterType())),
+    ];
   }
 
   dispose() {

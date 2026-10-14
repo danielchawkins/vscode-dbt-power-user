@@ -184,9 +184,7 @@ describe("QueryManifestService.rewire", () => {
       expect(contextDouble.forResource).toHaveBeenCalledWith(file);
 
       vi.clearAllMocks();
-      expect(Array.from(service.getModelsInProject(file) ?? [])).toEqual([
-        "model1",
-      ]);
+      expect([...(service.getModelsInProject(file) ?? [])]).toEqual(["model1"]);
       expect(contextDouble.forResource).toHaveBeenCalledWith(file);
     });
 

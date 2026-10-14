@@ -193,8 +193,8 @@ const watchdog = setTimeout(() => {
   // The busiest processes of the host under test are the likeliest to be spinning; native stacks name the
   // loop. Helper processes retitle themselves, so match the bundle path or a helper title.
   const busiest = hostLines
-    .filter(
-      (line) => line.includes(bundle) || /(Cursor|Code) Helper/.test(line),
+    .filter((line) =>
+      line.includes(bundle) ? true : /(Cursor|Code) Helper/.test(line),
     )
     .map((line) => line.trim().split(/\s+/))
     .sort((a, b) => Number(b[2]) - Number(a[2]))
@@ -202,7 +202,12 @@ const watchdog = setTimeout(() => {
   for (const [pid, , cpu] of process.platform === "darwin" ? busiest : []) {
     const sample = spawnSync("sample", [pid, "3"], { encoding: "utf-8" });
     out(`FPU_SMOKE_SAMPLE pid=${pid} cpu=${cpu}`);
-    out((sample.stdout || sample.stderr).split("\n").slice(0, 150).join("\n"));
+    out(
+      ([sample.stdout, sample.stderr].find(Boolean) ?? sample.stderr)
+        .split("\n")
+        .slice(0, 150)
+        .join("\n"),
+    );
   }
   cleanup();
   process.exit(124);

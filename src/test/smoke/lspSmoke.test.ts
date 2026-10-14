@@ -68,7 +68,7 @@ suite("Multi-root LSP smoke", function () {
 
     assert.deepStrictEqual(
       states.map((state) => state.projectName).sort(),
-      [...EXPECTED_PROJECT_NAMES].sort(),
+      EXPECTED_PROJECT_NAMES.toSorted(),
       "expected one Fusion LSP client per Declared Project",
     );
     for (const state of states) {

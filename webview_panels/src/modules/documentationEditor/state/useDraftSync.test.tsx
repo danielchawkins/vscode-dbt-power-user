@@ -56,7 +56,7 @@ describe("useDraftSync", () => {
       ),
     );
 
-    expect(drafts().slice(-1)[0]).toMatchObject({
+    expect(drafts().at(-1)).toMatchObject({
       model: "/models/orders.sql",
       draft: { docs: { description: "edit" } },
     });
@@ -74,7 +74,7 @@ describe("useDraftSync", () => {
       ),
     );
 
-    const last = drafts().slice(-1)[0];
+    const last = drafts().at(-1);
     expect(last).toMatchObject({ model: "/models/orders.sql" });
     expect(last?.draft).toBeUndefined();
   });

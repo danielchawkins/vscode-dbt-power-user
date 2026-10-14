@@ -268,8 +268,7 @@ export async function waitForWebviewPaint(
         );
         lastValue = value ?? lastValue;
         if (
-          value &&
-          value.bodyText &&
+          value?.bodyText &&
           value.stylesheets.some((href) => href.endsWith(`/${entry}.css`)) &&
           value.stylesheets.some((href) => href.endsWith("/codicon.css")) &&
           value.codiconFont

@@ -244,7 +244,7 @@ export class CteProfilerService implements Disposable {
   private extractModelName(uri: Uri): string {
     const path = uri.fsPath;
     const parts = path.split(/[/\\]/);
-    const fileName = parts[parts.length - 1] ?? "";
+    const fileName = parts.at(-1) ?? "";
     return fileName.replace(/\.sql$/i, "");
   }
 }

@@ -102,7 +102,7 @@ describe("DbtTaskTerminal", () => {
     await expect(
       terminal.run(commandThat(() => Promise.reject(new Error("no dbt")))),
     ).rejects.toThrow("no dbt");
-    expect(written[written.length - 1]).toBe("Error: no dbt\r\n");
+    expect(written.at(-1)).toBe("Error: no dbt\r\n");
     await expect(closed).resolves.toBe(1);
   });
 

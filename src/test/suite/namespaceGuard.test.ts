@@ -10,7 +10,7 @@ const webviewPanelsSrcRoot = path.join(repositoryRoot, "webview_panels", "src");
 const packageJsonPath = path.join(repositoryRoot, "package.json");
 
 /** Extension-owned command, view, context, and submenu IDs use fusionPowerUser.* */
-const LEGACY_NAMESPACE_PATTERN = /dbtPowerUser\./;
+const LEGACY_NAMESPACE = "dbtPowerUser.";
 
 const LEGACY_DBT_CONFIGURATION_PATTERN =
   /getConfiguration\s*\(\s*["']dbt(?:\.|["'])|inspect\s*\(\s*["']dbt["']|affectsConfiguration\s*\(\s*["']dbt(?:\.|["'])/;
@@ -40,7 +40,7 @@ function findLegacyNamespaceHits(
 ): string[] {
   const hits: string[] = [];
   for (const [lineNumber, line] of contents.split("\n").entries()) {
-    if (LEGACY_NAMESPACE_PATTERN.test(line)) {
+    if (line.includes(LEGACY_NAMESPACE)) {
       hits.push(`${relativePath}:${lineNumber + 1}: ${line.trim()}`);
     }
   }

@@ -41,10 +41,10 @@ export function errorHint(
       "or set it in your profile."
     );
   }
-  if (/No profiles\.yml found/.test(message) && invocation.profilesDir) {
+  if (message.includes("No profiles.yml found") && invocation.profilesDir) {
     return `fusionPowerUser.profilesDir is ${invocation.profilesDir}, which has no profiles.yml.`;
   }
-  if (/No profiles\.yml found/.test(message) && search) {
+  if (message.includes("No profiles.yml found") && search) {
     const dir = resolveProfilesDir(
       undefined,
       search.environment,

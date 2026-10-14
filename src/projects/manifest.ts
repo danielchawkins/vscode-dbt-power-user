@@ -153,7 +153,7 @@ export async function buildManifest(
     constraintOnlyParents,
   );
   return {
-    adapterType: manifestJson.metadata?.adapter_type || undefined,
+    adapterType: (manifestJson.metadata?.adapter_type ?? "") || undefined,
     parsed: {
       nodeMetaMap,
       macroMetaMap,

@@ -181,13 +181,13 @@ abstract class ModelTreeviewProvider
     return parentModels.nodes
       .flatMap((nodeData) => {
         const node = this.nodeDataToNode(nodeData);
-        return node && node.displayInModelTree ? [node] : [];
+        return node?.displayInModelTree ? [node] : [];
       })
       .map((node) => {
         const childNodes = graphMetaMap[this.treeType]
           .get(node.key)
           ?.nodes.map((nodeData) => this.nodeDataToNode(nodeData))
-          .filter((node) => node && node.displayInModelTree);
+          .filter((node) => node?.displayInModelTree);
 
         const treeItem = this.getNodeTreeItem(node);
         treeItem.collapsibleState =

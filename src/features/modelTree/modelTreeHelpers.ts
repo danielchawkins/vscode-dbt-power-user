@@ -15,10 +15,7 @@ interface YamlModelItem {
 }
 
 export function getCurrentlySelectedModelNameInYamlConfig(): string {
-  if (
-    window.activeTextEditor === undefined ||
-    window.activeTextEditor.document.languageId !== "yaml"
-  ) {
+  if (window.activeTextEditor?.document.languageId !== "yaml") {
     return "";
   }
 

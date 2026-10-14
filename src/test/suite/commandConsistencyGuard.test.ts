@@ -129,7 +129,7 @@ function scanLanguageStatusCommands(): string[] {
     }
   };
   visitDir(srcRoot);
-  return Array.from(found).sort();
+  return [...found].sort();
 }
 
 type PackageJsonContributes = {
@@ -219,13 +219,13 @@ describe("command contribution consistency", () => {
         "Constant export; conditional registration",
     };
 
-    const orphans = Array.from(contributed).filter((cmd) => !literals.has(cmd));
-    const uncontributed = Array.from(literals)
+    const orphans = [...contributed].filter((cmd) => !literals.has(cmd));
+    const uncontributed = [...literals]
       .filter(
         (cmd) => !contributed.has(cmd) && !literalUncontributedAllowlist[cmd],
       )
       .sort();
-    const discoveredNonLiterals = Array.from(nonLiterals.keys()).sort();
+    const discoveredNonLiterals = [...nonLiterals.keys()].sort();
     const allowedNonLiterals = Object.keys(nonLiteralAllowlist).sort();
 
     expect(orphans.sort()).toEqual([]);
@@ -268,10 +268,10 @@ describe("command contribution consistency", () => {
       }
     }
 
-    const undeclaredReferences = Array.from(referencedSubmenus).filter(
+    const undeclaredReferences = [...referencedSubmenus].filter(
       (id) => !submenuIds.has(id),
     );
-    const menuless = Array.from(submenuIds).filter((id) => !(id in menus));
+    const menuless = [...submenuIds].filter((id) => !(id in menus));
 
     expect(undeclaredReferences).toEqual([]);
     expect(menuless).toEqual([]);
@@ -293,7 +293,7 @@ describe("command contribution consistency", () => {
       referencedCommands.add(keybinding.command);
     }
 
-    const orphanReferences = Array.from(referencedCommands)
+    const orphanReferences = [...referencedCommands]
       .filter((cmd) => !contributed.has(cmd))
       .sort();
 
@@ -438,9 +438,9 @@ describe("semantic token scopes", () => {
 
   it("gates every SQL-language menu and keybinding on a Declared Project", () => {
     const contributes = readContributes();
-    const sqlLanguage = /resourceLangId =~ \/\^sql\$\|\^jinja-sql\$\//;
-    const inProject = /fusionPowerUser\.inProject/;
-    const untitled = /resourceScheme == untitled/;
+    const sqlLanguage = "resourceLangId =~ /^sql$|^jinja-sql$/";
+    const inProject = "fusionPowerUser.inProject";
+    const untitled = "resourceScheme == untitled";
     const whens = [
       ...Object.values(contributes.menus ?? {}).flatMap((entries) =>
         entries.map((entry) => entry.when ?? ""),
@@ -448,10 +448,12 @@ describe("semantic token scopes", () => {
       ...((contributes.keybindings ?? []) as { when?: string }[]).map(
         (binding) => binding.when ?? "",
       ),
-    ].filter((when) => sqlLanguage.test(when));
+    ].filter((when) => when.includes(sqlLanguage));
     expect(whens.length).toBeGreaterThan(0);
     expect(
-      whens.filter((when) => !inProject.test(when) || !untitled.test(when)),
+      whens.filter(
+        (when) => !when.includes(inProject) || !when.includes(untitled),
+      ),
     ).toEqual([]);
   });
 });

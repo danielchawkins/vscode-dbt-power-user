@@ -54,7 +54,7 @@ describe("useListeners", () => {
       error: "",
     };
 
-    window.dispatchEvent(
+    globalThis.dispatchEvent(
       new MessageEvent("message", {
         data: { command: "response", args: response },
       }),

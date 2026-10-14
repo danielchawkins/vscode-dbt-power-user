@@ -1,25 +1,14 @@
 {
-  "src/modules/app/useListeners.test.tsx": {
-    "unicorn/prefer-global-this": {
-      "count": 1
-    }
-  },
   "src/modules/app/useListeners.ts": {
     "react-hooks/exhaustive-deps": {
       "count": 1
     }
   },
   "src/modules/documentationEditor/DocumentationEditor.controls.test.tsx": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
-    },
     "typescript/consistent-type-definitions": {
       "count": 1
     },
     "typescript/explicit-module-boundary-types": {
-      "count": 1
-    },
-    "unicorn/prefer-global-this": {
       "count": 1
     }
   },
@@ -54,9 +43,6 @@
   },
   "src/modules/documentationEditor/components/docGenerator/DocGeneratorInput.tsx": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "unicorn/prefer-global-this": {
       "count": 1
     }
   },
@@ -119,11 +105,6 @@
       "count": 1
     }
   },
-  "src/modules/documentationEditor/components/tests/utils.ts": {
-    "e18e/prefer-spread-syntax": {
-      "count": 1
-    }
-  },
   "src/modules/documentationEditor/state/useDocumentationViewState.test.tsx": {
     "react/globals": {
       "count": 2
@@ -132,9 +113,6 @@
   "src/modules/documentationEditor/state/useDraftSync.test.tsx": {
     "react/globals": {
       "count": 1
-    },
-    "unicorn/prefer-at": {
-      "count": 4
     }
   },
   "src/modules/documentationEditor/utils.ts": {
@@ -142,15 +120,7 @@
       "count": 2
     }
   },
-  "src/modules/lineage/Lineage.controls.test.tsx": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
-    }
-  },
   "src/modules/lineage/Lineage.coverage.test.tsx": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
-    },
     "jsx-a11y/control-has-associated-label": {
       "count": 1
     }
@@ -181,22 +151,13 @@
   "src/modules/lineage/useLineageGraph.test.tsx": {
     "typescript/consistent-type-definitions": {
       "count": 1
-    },
-    "unicorn/prefer-global-this": {
-      "count": 1
     }
   },
   "src/modules/queryPanel/QueryPanel.controls.test.tsx": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
-    },
     "typescript/consistent-type-definitions": {
       "count": 1
     },
     "typescript/explicit-module-boundary-types": {
-      "count": 1
-    },
-    "unicorn/prefer-global-this": {
       "count": 1
     }
   },
@@ -241,16 +202,6 @@
       "count": 1
     }
   },
-  "src/modules/queryPanel/components/grid/columnTypeMapping.property.test.ts": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
-    }
-  },
-  "src/modules/queryPanel/components/grid/downloadCsv.ts": {
-    "unicorn/prefer-global-this": {
-      "count": 2
-    }
-  },
   "src/modules/queryPanel/components/queryLimit/QueryLimit.test.tsx": {
     "react/globals": {
       "count": 1
@@ -274,17 +225,9 @@
       "count": 1
     }
   },
-  "src/modules/queryPanel/useQueryPanelListeners.test.tsx": {
-    "unicorn/prefer-global-this": {
-      "count": 2
-    }
-  },
   "src/modules/queryPanel/useQueryPanelListeners.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "unicorn/prefer-global-this": {
-      "count": 4
     }
   },
   "src/test/controlCoverage.ts": {
@@ -304,9 +247,6 @@
     },
     "typescript/parameter-properties": {
       "count": 2
-    },
-    "unicorn/prefer-global-this": {
-      "count": 4
     }
   },
   "src/uiCore/anchoredPosition.ts": {
@@ -322,16 +262,6 @@
       "count": 1
     }
   },
-  "src/uiCore/components/codeblock/prism.ts": {
-    "unicorn/prefer-at": {
-      "count": 1
-    }
-  },
-  "src/uiCore/components/drawer/index.tsx": {
-    "unicorn/prefer-global-this": {
-      "count": 2
-    }
-  },
   "src/uiCore/components/popoverWithButton/PopoverWithButton.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
       "count": 1
@@ -342,11 +272,6 @@
   },
   "src/uiCore/components/primitives.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    }
-  },
-  "src/uiCore/components/uiCore.test.tsx": {
-    "unicorn/prefer-global-this": {
       "count": 1
     }
   }

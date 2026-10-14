@@ -223,7 +223,7 @@ export class DocGenService {
           description: modelDef.description || "",
           columns: (modelDef.columns || []).map((column) => ({
             name: column.name,
-            description: column.description || "",
+            description: column.description ?? "",
             generated: false,
             source: Source.YAML,
             type: column.data_type?.toLowerCase(),

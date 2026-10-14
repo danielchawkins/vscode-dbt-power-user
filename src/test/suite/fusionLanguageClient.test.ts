@@ -1482,7 +1482,7 @@ function stateListenerFor(
   languageClient: ReturnType<typeof makeLanguageClient>,
 ): ((event: { newState: State }) => void) | undefined {
   const calls = languageClient.onDidChangeState.mock.calls;
-  return calls[calls.length - 1]?.[0];
+  return calls.at(-1)?.[0];
 }
 
 async function waitForState(
@@ -1846,7 +1846,7 @@ describe("clearDiagnosticsOnDelete", () => {
   it("watches only deletions of project files under the root", () => {
     watch([]);
     const { calls } = (workspace.createFileSystemWatcher as Mock).mock;
-    expect(calls[calls.length - 1]).toEqual([
+    expect(calls.at(-1)).toEqual([
       { base: Uri.file("/p"), pattern: "**/*" },
       true,
       true,

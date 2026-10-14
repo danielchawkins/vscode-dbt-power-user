@@ -24,8 +24,7 @@ describe("ProjectDiagnostics", () => {
     diagnostics.setKind("project-config", [data("config", "error")]);
 
     const { results } = vi.mocked(languages.createDiagnosticCollection).mock;
-    const collection = results[results.length - 1]
-      ?.value as DiagnosticCollection;
+    const collection = results.at(-1)?.value as DiagnosticCollection;
     expect(collection.set).toHaveBeenLastCalledWith(file, [
       expect.objectContaining({ message: "parse" }),
       expect.objectContaining({ message: "config" }),

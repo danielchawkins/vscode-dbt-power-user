@@ -211,7 +211,7 @@ export class ProjectRegistry implements Disposable {
       this._projects.length !== next.length ||
       this._projects.some((p, i) => next[i] !== p);
     this._projects = next;
-    this.lookupOrder = [...next].sort((a, b) => {
+    this.lookupOrder = next.toSorted((a, b) => {
       const depth =
         b.root.fsPath.split(path.sep).length -
         a.root.fsPath.split(path.sep).length;

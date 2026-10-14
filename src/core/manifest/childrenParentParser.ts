@@ -50,7 +50,7 @@ export class ChildrenParentParser {
     const relationIndex = buildRelationIndex(nodesMap, sourcesMap);
 
     Object.values(nodesMap).forEach((node) => {
-      const dependsOn: string[] = node.depends_on?.nodes || [];
+      const dependsOn: string[] = node.depends_on?.nodes ?? [];
       // The build-order graph stays complete — no edge is ever removed.
       parentMetaMap[node.unique_id] = dependsOn;
 
@@ -84,7 +84,7 @@ export class ChildrenParentParser {
     // Build child map by reversing relationships (full build-order graph).
     Object.entries(parentMetaMap).forEach(([child, parents]) => {
       parents.forEach((parent) => {
-        childMetaMap[parent] = childMetaMap[parent] || [];
+        childMetaMap[parent] = childMetaMap[parent] ?? [];
         childMetaMap[parent].push(child);
       });
     });
@@ -191,7 +191,7 @@ function collectConstraintTargets(
   const targets = new Set<string>();
 
   const handleConstraint = (constraint: ModelLevelConstraint | undefined) => {
-    if (!constraint || constraint.type !== "foreign_key") {
+    if (constraint?.type !== "foreign_key") {
       return;
     }
     const to = constraint.to;

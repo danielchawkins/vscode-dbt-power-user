@@ -69,7 +69,7 @@ const answerRequests = () =>
 
 const postRender = (start: string, publication = "s:1") =>
   act(() => {
-    window.dispatchEvent(
+    globalThis.dispatchEvent(
       new MessageEvent("message", {
         data: {
           command: "render",

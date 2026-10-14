@@ -26,7 +26,7 @@ const response = (syncRequestId: string, body: unknown) => ({
 function expectRowsCover(rows: Record<string, Row>, contract: string[]) {
   const missing = contract.filter((command) => !(command in rows));
   expect(missing, "panelCommands entries with no row").toEqual([]);
-  expect(Object.keys(rows).sort()).toEqual([...contract].sort());
+  expect(Object.keys(rows).sort()).toEqual(contract.toSorted());
 }
 
 afterEach(() => {
