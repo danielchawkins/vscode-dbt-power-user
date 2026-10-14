@@ -11,6 +11,30 @@ interface Props {
   setValue: SetTestFormValue;
 }
 
+/** The column options of a `ref('m')` or `source('s', 't')` target; undefined when no name parses. */
+async function fetchColumnOptions(
+  model: string,
+): Promise<OptionType[] | undefined> {
+  const matches = Array.from(
+    model.matchAll(/['"]([^'"]*)['"]/g),
+    (m) => m[1] ?? "",
+  );
+  const [first = "", second = ""] = matches;
+  if (!matches.length) {
+    panelLogger.info("No model name parsed", matches);
+    return undefined;
+  }
+  const columnsResult = (
+    matches.length === 1
+      ? await executeRequestInSync("getColumnsOfModel", { model: first })
+      : await executeRequestInSync("getColumnsOfSources", {
+          source: first,
+          table: second,
+        })
+  ) as { columns: string[] };
+  return columnsResult.columns.map((m) => ({ label: m, value: m }));
+}
+
 const Relationships = ({
   toValue,
   fieldValue,
@@ -19,29 +43,6 @@ const Relationships = ({
   const [toFieldOptions, setToFieldOptions] = useState<OptionType[]>([]);
   const [toModelOptions, setToModelOptions] = useState<OptionType[]>([]);
   const [toSourceOptions, setToSourceOptions] = useState<OptionType[]>([]);
-
-  const getColumnsOfModel = async (model: string) => {
-    const matches = Array.from(
-      model.matchAll(/['"]([^'"]*)['"]/g),
-      (m) => m[1] ?? "",
-    );
-    const [first = "", second = ""] = matches;
-    if (!matches.length) {
-      panelLogger.info("No model name parsed", matches);
-      return;
-    }
-    const columnsResult = (
-      matches.length === 1
-        ? await executeRequestInSync("getColumnsOfModel", { model: first })
-        : await executeRequestInSync("getColumnsOfSources", {
-            source: first,
-            table: second,
-          })
-    ) as { columns: string[] };
-    setToFieldOptions(
-      columnsResult.columns.map((m) => ({ label: m, value: m })),
-    );
-  };
 
   useEffect(() => {
     Promise.all([
@@ -72,11 +73,22 @@ const Relationships = ({
   }, []);
 
   useEffect(() => {
-    if (toValue) {
-      getColumnsOfModel(toValue).catch((err) =>
-        panelLogger.error(`error while fetching columns of ${toValue}`, err),
-      );
+    if (!toValue) {
+      return;
     }
+    let current = true;
+    fetchColumnOptions(toValue).then(
+      (options) => {
+        if (current && options) {
+          setToFieldOptions(options);
+        }
+      },
+      (err: unknown) =>
+        panelLogger.error(`error while fetching columns of ${toValue}`, err),
+    );
+    return () => {
+      current = false;
+    };
   }, [toValue]);
 
   const toOptions = useMemo(

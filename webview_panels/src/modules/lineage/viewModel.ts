@@ -1,5 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { LineageViewState } from "@modules/app/viewState";
+import { createContext } from "react";
 import type { Direction, GraphState } from "./graph";
 
 type Settings = lineage.LineageSettings;
@@ -127,13 +128,11 @@ export interface TableActions {
 
 const noop = (): undefined => undefined;
 
-/** The view assigns `current` on every render, so memoized nodes always call its latest handlers. */
-export const tableActions: { current: TableActions } = {
-  current: {
-    toggleExpansion: noop,
-    toggleColumns: noop,
-    selectColumn: noop,
-    openDetails: noop,
-    openFile: noop,
-  },
-};
+/** The view's table actions; memoized nodes read them from context, so they never see a stale handler. */
+export const TableActionsContext = createContext<TableActions>({
+  toggleExpansion: noop,
+  toggleColumns: noop,
+  selectColumn: noop,
+  openDetails: noop,
+  openFile: noop,
+});

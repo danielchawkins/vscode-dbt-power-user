@@ -1,7 +1,6 @@
 import { DEFAULT_VIEW_TYPE } from "@modules/queryPanel/context/types";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import { Nav, NavItem, NavLink } from "@uicore";
-import { useMemo } from "react";
 import { QueryPanelTitleTabState } from "./types";
 
 const QueryPanelTitle = ({
@@ -25,24 +24,19 @@ const QueryPanelTitle = ({
     setTabState(state);
   };
 
-  const commonTabs = useMemo(
-    () =>
-      viewType === DEFAULT_VIEW_TYPE ? (
-        <>
-          <NavItem>
-            <NavLink
-              active={QueryPanelTitleTabState.QueryHistory === tabState}
-              onClick={() =>
-                toggleTabState(QueryPanelTitleTabState.QueryHistory)
-              }
-            >
-              History
-            </NavLink>
-          </NavItem>
-        </>
-      ) : null,
-    [tabState, viewType],
-  );
+  const commonTabs =
+    viewType === DEFAULT_VIEW_TYPE ? (
+      <>
+        <NavItem>
+          <NavLink
+            active={QueryPanelTitleTabState.QueryHistory === tabState}
+            onClick={() => toggleTabState(QueryPanelTitleTabState.QueryHistory)}
+          >
+            History
+          </NavLink>
+        </NavItem>
+      </>
+    ) : null;
 
   if (loading || hasData || hasError) {
     return (

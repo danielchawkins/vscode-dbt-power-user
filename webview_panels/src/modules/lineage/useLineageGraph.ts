@@ -2,7 +2,7 @@ import type { lineage } from "@fusion-power-user/webview-contract";
 import type { LineageViewState } from "@modules/app/viewState";
 import { readViewState, writeViewState } from "@modules/app/viewState";
 import { panelLogger } from "@modules/logger";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ColumnRef, Direction, GraphState, GraphStore } from "./graph";
 import {
   clearColumn,
@@ -217,11 +217,27 @@ export function useLineageGraph(
     const start = graphRef.current.start;
     rebuild(start ? graphRef.current.known[start] : undefined);
   };
-  const select = (table: string | undefined) =>
-    current().update((s) => selectTable(s, table));
-  const actions = actionsFor(current, (table) => {
-    select(table);
-    openDetails(table);
-  });
+  const { select, actions } = useTableActions(current, openDetails);
   return { graph, rendered, drawnKey, actions, select, reset };
+}
+
+/** Selection and the table actions over the current store; stable while `current` and `openDetails` are. */
+function useTableActions(
+  current: () => GraphStore,
+  openDetails: (table: string) => void,
+) {
+  const select = useCallback(
+    (table: string | undefined) =>
+      current().update((s) => selectTable(s, table)),
+    [current],
+  );
+  const actions = useMemo(
+    () =>
+      actionsFor(current, (table) => {
+        select(table);
+        openDetails(table);
+      }),
+    [current, select, openDetails],
+  );
+  return { select, actions };
 }

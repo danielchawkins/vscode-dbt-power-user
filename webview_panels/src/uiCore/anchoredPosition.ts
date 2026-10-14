@@ -34,8 +34,8 @@ export function useAnchoredPosition(
         below + f.height > window.innerHeight
           ? Math.max(MARGIN, a.top - f.height - MARGIN)
           : below;
-      floatingEl.style.top = `${top}px`;
-      floatingEl.style.left = `${left}px`;
+      floatingEl.style.setProperty("top", `${top}px`);
+      floatingEl.style.setProperty("left", `${left}px`);
     };
     place();
     window.addEventListener("resize", place);

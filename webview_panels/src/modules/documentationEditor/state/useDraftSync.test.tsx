@@ -1,5 +1,5 @@
 import { act, render } from "@testing-library/react";
-import { useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { beforeEach, describe, expect, it } from "vitest";
 import { getVsCodeApiMock } from "../../../test/setup";
 import {
@@ -26,7 +26,9 @@ let dispatchRef: React.Dispatch<Parameters<typeof documentationReducer>[1]>;
 
 const Harness = (): null => {
   const [state, dispatch] = useReducer(documentationReducer, initialState);
-  dispatchRef = dispatch;
+  useEffect(() => {
+    dispatchRef = dispatch;
+  }, [dispatch]);
   useDraftSync(state);
   return null;
 };

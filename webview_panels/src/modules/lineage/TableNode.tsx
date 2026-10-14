@@ -1,12 +1,12 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
-import { memo } from "react";
+import { memo, use } from "react";
 import type { TableNode as TableNodeType } from "./flow";
 import type { Direction } from "./graph";
 import { columnHandle } from "./layout";
 import styles from "./lineageGraph.module.css";
-import { tableActions } from "./viewModel";
+import { TableActionsContext } from "./viewModel";
 
 const ExpandButton = ({
   table,
@@ -21,6 +21,7 @@ const ExpandButton = ({
 }) => {
   const title = `${expanded ? "Hide" : "Show"} ${count} ${direction}`;
   const sign = expanded ? "−" : "+";
+  const actions = use(TableActionsContext);
   return (
     <button
       type="button"
@@ -29,7 +30,7 @@ const ExpandButton = ({
       aria-pressed={expanded}
       aria-label={title}
       title={title}
-      onClick={() => tableActions.current.toggleExpansion(table, direction)}
+      onClick={() => actions.toggleExpansion(table, direction)}
     >
       {direction === "parents" ? `${sign}${count}` : `${count}${sign}`}
     </button>
@@ -87,48 +88,51 @@ const Actions = ({
   table: lineage.LineageTable;
   expanded: { parents: boolean; children: boolean };
   listed: boolean;
-}) => (
-  <div className={styles.actions}>
-    <ExpandButton
-      table={table.table}
-      direction="parents"
-      count={table.parentCount}
-      expanded={expanded.parents}
-    />
-    <button
-      type="button"
-      className="nodrag"
-      aria-pressed={listed}
-      onClick={() => tableActions.current.toggleColumns(table.table)}
-    >
-      Columns
-    </button>
-    <button
-      type="button"
-      className="nodrag"
-      onClick={() => tableActions.current.openDetails(table.table)}
-    >
-      Details
-    </button>
-    {table.url ? (
+}) => {
+  const actions = use(TableActionsContext);
+  return (
+    <div className={styles.actions}>
+      <ExpandButton
+        table={table.table}
+        direction="parents"
+        count={table.parentCount}
+        expanded={expanded.parents}
+      />
       <button
         type="button"
         className="nodrag"
-        title="Open file"
-        aria-label="Open file"
-        onClick={() => tableActions.current.openFile(table.url!)}
+        aria-pressed={listed}
+        onClick={() => actions.toggleColumns(table.table)}
       >
-        <span className="codicon codicon-go-to-file" />
+        Columns
       </button>
-    ) : null}
-    <ExpandButton
-      table={table.table}
-      direction="children"
-      count={table.childCount}
-      expanded={expanded.children}
-    />
-  </div>
-);
+      <button
+        type="button"
+        className="nodrag"
+        onClick={() => actions.openDetails(table.table)}
+      >
+        Details
+      </button>
+      {table.url ? (
+        <button
+          type="button"
+          className="nodrag"
+          title="Open file"
+          aria-label="Open file"
+          onClick={() => actions.openFile(table.url!)}
+        >
+          <span className="codicon codicon-go-to-file" />
+        </button>
+      ) : null}
+      <ExpandButton
+        table={table.table}
+        direction="children"
+        count={table.childCount}
+        expanded={expanded.children}
+      />
+    </div>
+  );
+};
 
 const ColumnRow = ({
   table,
@@ -138,32 +142,35 @@ const ColumnRow = ({
   table: string;
   column: lineage.LineageColumn;
   state: string;
-}) => (
-  <button
-    type="button"
-    data-column={column.name}
-    className={`${styles.column} ${state}`}
-    title={column.description ?? column.name}
-    onClick={() => tableActions.current.selectColumn(table, column.name)}
-  >
-    <Handle
-      type="target"
-      position={Position.Left}
-      id={columnHandle("in", column.name)}
-      className={styles.handle}
-      isConnectable={false}
-    />
-    <span className={styles.columnName}>{column.name}</span>
-    <span className={styles.datatype}>{column.datatype}</span>
-    <Handle
-      type="source"
-      position={Position.Right}
-      id={columnHandle("out", column.name)}
-      className={styles.handle}
-      isConnectable={false}
-    />
-  </button>
-);
+}) => {
+  const actions = use(TableActionsContext);
+  return (
+    <button
+      type="button"
+      data-column={column.name}
+      className={`${styles.column} ${state}`}
+      title={column.description ?? column.name}
+      onClick={() => actions.selectColumn(table, column.name)}
+    >
+      <Handle
+        type="target"
+        position={Position.Left}
+        id={columnHandle("in", column.name)}
+        className={styles.handle}
+        isConnectable={false}
+      />
+      <span className={styles.columnName}>{column.name}</span>
+      <span className={styles.datatype}>{column.datatype}</span>
+      <Handle
+        type="source"
+        position={Position.Right}
+        id={columnHandle("out", column.name)}
+        className={styles.handle}
+        isConnectable={false}
+      />
+    </button>
+  );
+};
 
 const STRICT_EMPTY = "Columns need strict static analysis";
 

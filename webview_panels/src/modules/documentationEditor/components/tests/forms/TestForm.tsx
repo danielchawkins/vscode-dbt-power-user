@@ -9,7 +9,7 @@ import {
   Tag,
 } from "@uicore";
 import type { SubmitEvent } from "react";
-import { useEffect } from "react";
+import { useEffect, useEffectEvent } from "react";
 import useTestFormSave, { TestOperation } from "../hooks/useTestFormSave";
 import useTestFormValues from "../hooks/useTestFormValues";
 import AcceptedValues from "./AcceptedValues";
@@ -31,18 +31,20 @@ const TestForm = ({
   const { values, setValue, reset } = useTestFormValues();
   const complete = isTestFormComplete(formType, values);
 
+  // NOT_NULL and UNIQUE take no arguments, so choosing one saves at once.
+  const saveWithoutForm = useEffectEvent((test: DbtGenericTests) => {
+    handleSave({ test }, column, TestOperation.CREATE);
+    onClose();
+  });
+  const savesWithoutForm =
+    formType === DbtGenericTests.NOT_NULL ||
+    formType === DbtGenericTests.UNIQUE;
+
   useEffect(() => {
-    if (!formType || isSaving) {
-      return;
+    if (savesWithoutForm && !isSaving) {
+      saveWithoutForm(formType);
     }
-    if (
-      formType === DbtGenericTests.NOT_NULL ||
-      formType === DbtGenericTests.UNIQUE
-    ) {
-      handleSave({ test: formType }, column, TestOperation.CREATE);
-      onClose();
-    }
-  }, [formType, isSaving]);
+  }, [formType, savesWithoutForm, isSaving]);
 
   const handleCancel = () => {
     reset();

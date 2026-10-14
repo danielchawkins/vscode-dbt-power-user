@@ -23,6 +23,12 @@ const folder: WorkspaceFolder = {
 const makeProject = (name: string, rootPath: string) =>
   declaredProject(name, rootPath, folder);
 
+/** `show` through its current overload; `LogOutputChannel` also declares a deprecated `show(column, …)`. */
+interface Shown {
+  show: (preserveFocus?: boolean) => void;
+}
+const shown = (channel: Shown) => vi.mocked(channel.show);
+
 function created(): LogOutputChannel[] {
   return vi
     .mocked(window.createOutputChannel)
@@ -93,7 +99,7 @@ describe("ChannelLog", () => {
     expect(channel.info).not.toHaveBeenCalled();
     expect(channel.error).not.toHaveBeenCalled();
     expect(channel.appendLine).not.toHaveBeenCalled();
-    expect(channel.show).not.toHaveBeenCalled();
+    expect(shown(channel)).not.toHaveBeenCalled();
     expect(commands.executeCommand).not.toHaveBeenCalled();
   });
 
@@ -104,7 +110,7 @@ describe("ChannelLog", () => {
       log.channel.show(false);
       await settle();
 
-      expect(vi.mocked(channel.show).mock.calls).toEqual([[true], [false]]);
+      expect(shown(channel).mock.calls).toEqual([[true], [false]]);
       expect(commands.getCommands).not.toHaveBeenCalled();
       expect(commands.executeCommand).not.toHaveBeenCalled();
     });
@@ -140,7 +146,7 @@ describe("ChannelLog", () => {
       expect(vi.mocked(commands.executeCommand).mock.calls).toEqual([
         [showGeneral],
       ]);
-      expect(channel.show).not.toHaveBeenCalled();
+      expect(shown(channel)).not.toHaveBeenCalled();
     });
 
     it("matches only the channel's own id, not a name that extends it", async () => {
@@ -152,7 +158,7 @@ describe("ChannelLog", () => {
       await settle();
 
       expect(commands.executeCommand).not.toHaveBeenCalled();
-      expect(vi.mocked(channel.show).mock.calls).toEqual([[true]]);
+      expect(shown(channel).mock.calls).toEqual([[true]]);
     });
 
     it("focuses the Output view after the command unless preserveFocus", async () => {
@@ -186,7 +192,7 @@ describe("ChannelLog", () => {
       await settle();
       await settle();
 
-      expect(vi.mocked(channel.show).mock.calls).toEqual([[true]]);
+      expect(shown(channel).mock.calls).toEqual([[true]]);
 
       log.channel.show(true);
       await settle();
@@ -204,7 +210,7 @@ describe("ChannelLog", () => {
       log.channel.show(false);
       await settle();
 
-      expect(vi.mocked(channel.show).mock.calls).toEqual([[true], [false]]);
+      expect(shown(channel).mock.calls).toEqual([[true], [false]]);
       expect(commands.executeCommand).not.toHaveBeenCalled();
     });
 
@@ -214,7 +220,7 @@ describe("ChannelLog", () => {
       await settle();
 
       expect(commands.executeCommand).not.toHaveBeenCalled();
-      expect(channel.show).not.toHaveBeenCalled();
+      expect(shown(channel)).not.toHaveBeenCalled();
     });
   });
 

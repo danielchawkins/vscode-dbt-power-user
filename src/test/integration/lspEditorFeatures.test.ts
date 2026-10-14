@@ -37,14 +37,16 @@ async function poll<T>(
 function hoverText(hovers: vscode.Hover[]): string {
   return hovers
     .flatMap((hover) => hover.contents)
-    .map((content) =>
-      typeof content === "string"
-        ? content
-        : "value" in content
-          ? content.value
-          : "",
-    )
+    .map((content) => markdownText(content))
     .join("\n");
+}
+
+/** A hover entry's text; servers send `MarkdownString`, and older ones a plain string. */
+function markdownText(content: vscode.Hover["contents"][number]): string {
+  if (typeof content === "string") {
+    return content;
+  }
+  return content instanceof vscode.MarkdownString ? content.value : "";
 }
 
 function locationUri(

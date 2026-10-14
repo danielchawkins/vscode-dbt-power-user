@@ -4,7 +4,7 @@ import type {
 } from "@fusion-power-user/webview-contract";
 import { panelLogger } from "@modules/logger";
 import type { Dispatch } from "react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useEffectEvent } from "react";
 import type { AppAction } from "./appReducer";
 import { updateTheme } from "./appReducer";
 import { handleIncomingResponse, panelRequests } from "./requestExecutor";
@@ -39,9 +39,9 @@ const useListeners = (dispatch: Dispatch<AppAction>): void => {
 
     return false;
   };
-  const setTheme = (element: HTMLElement) => {
+  const setTheme = useEffectEvent((element: HTMLElement) => {
     dispatch(updateTheme(isDark(element) ? Themes.Dark : Themes.Light));
-  };
+  });
 
   useEffect(() => {
     window.addEventListener("message", onMesssage);

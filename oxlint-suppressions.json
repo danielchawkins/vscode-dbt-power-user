@@ -962,11 +962,6 @@
       "count": 3
     }
   },
-  "src/test/integration/lspEditorFeatures.test.ts": {
-    "typescript/no-deprecated": {
-      "count": 1
-    }
-  },
   "src/test/integration/lspFixture.ts": {
     "max-params": {
       "count": 1
@@ -983,11 +978,6 @@
       "count": 2
     }
   },
-  "src/test/integration/nativeEditorFeatures.test.ts": {
-    "typescript/no-deprecated": {
-      "count": 1
-    }
-  },
   "src/test/integration/targetMutationCapture.test.ts": {
     "max-params": {
       "count": 3
@@ -1000,9 +990,6 @@
   },
   "src/test/mock/vscode.ts": {
     "max-params": {
-      "count": 1
-    },
-    "typescript/no-deprecated": {
       "count": 1
     },
     "typescript/no-redundant-type-constituents": {
@@ -1110,14 +1097,11 @@
     "max-params": {
       "count": 1
     },
-    "typescript/no-deprecated": {
-      "count": 2
-    },
     "typescript/parameter-properties": {
       "count": 2
     },
     "typescript/unbound-method": {
-      "count": 5
+      "count": 3
     }
   },
   "src/test/suite/mergeMetadata.test.ts": {
@@ -1131,11 +1115,8 @@
     }
   },
   "src/test/suite/outputChannels.test.ts": {
-    "typescript/no-deprecated": {
-      "count": 7
-    },
     "typescript/unbound-method": {
-      "count": 21
+      "count": 14
     }
   },
   "src/test/suite/panelMessages.test.ts": {
@@ -1911,285 +1892,6 @@
   },
   "vitest.config.ts": {
     "no-restricted-properties": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/app/useListeners.ts": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/DocumentationEditor.controls.test.tsx": {
-    "typescript/consistent-type-definitions": {
-      "count": 1
-    },
-    "typescript/explicit-module-boundary-types": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/DocumentationEditor.coverage.test.tsx": {
-    "jsx-a11y/control-has-associated-label": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/DocumentationProvider.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/docGenerator/DocBlockInserter.tsx": {
-    "jsx-a11y/control-has-associated-label": {
-      "count": 1
-    },
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/docGenerator/DocGeneratorColumnsList.tsx": {
-    "react/preserve-manual-memoization": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/docGenerator/DocGeneratorInput.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/search/SearchColumnsInput.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/tests/DbtTestCode.tsx": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    },
-    "react/set-state-in-effect": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/tests/DisplayTestDetails.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/tests/EntityWithTests.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/tests/EntityWithUnitTests.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/tests/TestDetails.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/tests/forms/Relationships.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "react/set-state-in-effect": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/tests/forms/TestForm.tsx": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/components/tests/hooks/useTestFormSave.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/state/useDocumentationViewState.test.tsx": {
-    "react/globals": {
-      "count": 2
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/state/useDraftSync.test.tsx": {
-    "react/globals": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/documentationEditor/utils.ts": {
-    "no-unsafe-optional-chaining": {
-      "count": 2
-    }
-  },
-  "webview_panels/src/modules/lineage/Lineage.coverage.test.tsx": {
-    "jsx-a11y/control-has-associated-label": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/lineage/LineageView.tsx": {
-    "react/immutability": {
-      "count": 1
-    },
-    "react/refs": {
-      "count": 3
-    }
-  },
-  "webview_panels/src/modules/lineage/TableNode.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/lineage/Toolbar.test.tsx": {
-    "jsx-a11y/no-static-element-interactions": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/lineage/graph.ts": {
-    "max-params": {
-      "count": 3
-    }
-  },
-  "webview_panels/src/modules/lineage/useLineageGraph.test.tsx": {
-    "typescript/consistent-type-definitions": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/QueryPanel.controls.test.tsx": {
-    "typescript/consistent-type-definitions": {
-      "count": 1
-    },
-    "typescript/explicit-module-boundary-types": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/QueryPanel.coverage.test.tsx": {
-    "jsx-a11y/control-has-associated-label": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/QueryPanel.tsx": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/components/QueryPanelContents/QueryPanelTitle.tsx": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/components/filters/Filters.tsx": {
-    "jsx-a11y/no-autofocus": {
-      "count": 2
-    },
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/components/grid/GridBodyRow.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 2
-    }
-  },
-  "webview_panels/src/modules/queryPanel/components/grid/GridHeaderCell.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/components/grid/ResultsGrid.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    },
-    "react/incompatible-library": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/components/queryLimit/QueryLimit.test.tsx": {
-    "react/globals": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/components/queryLimit/QueryLimit.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 2
-    },
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/components/queryPanelQueryHistory/QueryHistoryRow.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/components/queryPanelQueryHistory/QueryPanelHistory.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "typescript/no-meaningless-void-operator": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/modules/queryPanel/useQueryPanelListeners.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/test/controlCoverage.ts": {
-    "typescript/require-array-sort-compare": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/test/lineageHarness.tsx": {
-    "no-empty-function": {
-      "count": 2
-    },
-    "typescript/consistent-type-definitions": {
-      "count": 2
-    },
-    "typescript/explicit-module-boundary-types": {
-      "count": 5
-    },
-    "typescript/require-array-sort-compare": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/uiCore/anchoredPosition.ts": {
-    "max-params": {
-      "count": 1
-    },
-    "react/immutability": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/uiCore/components/PopoverWithButton.test.tsx": {
-    "jsx-a11y/no-static-element-interactions": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/uiCore/components/popoverWithButton/PopoverWithButton.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 1
-    }
-  },
-  "webview_panels/src/uiCore/components/primitives.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
       "count": 1
     }
   }
