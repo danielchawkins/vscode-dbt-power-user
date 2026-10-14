@@ -4,6 +4,7 @@ import {
 } from "@vscode/test-electron";
 import { spawnSync } from "child_process";
 import {
+  chmodSync,
   copyFileSync,
   cpSync,
   existsSync,
@@ -13,6 +14,7 @@ import {
   readFileSync,
   rmSync,
   statSync,
+  symlinkSync,
   writeFileSync,
   writeSync,
 } from "fs";
@@ -20,6 +22,7 @@ import { createServer } from "net";
 import { tmpdir } from "os";
 import path from "path";
 import { fileURLToPath } from "url";
+import { resolveOnPath, TOOL_ENV_FIXTURES } from "./toolEnvFixtures.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.resolve(__dirname, "../..");
@@ -27,6 +30,8 @@ const SURVIVING_PROCESS_TIMEOUT_MS = 5_000;
 const SURVIVING_PROCESS_POLL_MS = 250;
 // Mocha's own timeout runs inside the extension host, so a blocked host never reports it.
 const HOST_WATCHDOG_MS = Number(process.env.FPU_SMOKE_WATCHDOG_MS ?? 240_000);
+// Directories every tool-environment host keeps on PATH: enough for the host's own shell tools, nothing else.
+const SYSTEM_PATH = ["/usr/bin", "/bin", "/usr/sbin", "/sbin"];
 
 // A Cursor-launched shell sets this for its own CLI; inherited, it makes the pinned
 // host run as a Node script against our launch args instead of opening a workbench.
@@ -53,6 +58,14 @@ if (!hostApp || !vsix) {
   console.error("Missing --host-app or --vsix");
   process.exit(2);
 }
+// `--fixture tool-env-<name>` names a table entry, built fresh in a temporary directory.
+const toolEnvFixture = TOOL_ENV_FIXTURES.find(
+  (entry) => `tool-env-${entry.name}` === args.fixture,
+);
+if (args.fixture && !existsSync(args.fixture) && !toolEnvFixture) {
+  console.error(`Unknown fixture ${args.fixture}`);
+  process.exit(2);
+}
 
 if (process.env.FPU_SKIP_INTEGRATION_COMPILE !== "1") {
   const compile = spawnSync("npm", ["run", "compile:integration"], {
@@ -69,6 +82,9 @@ copyFileSync(
   path.join(root, "out/package.json"),
 );
 
+const toolEnv = toolEnvFixture
+  ? buildToolEnvironment(toolEnvFixture)
+  : undefined;
 const userDataDir = mkdtempSync(path.join(tmpdir(), `fpu-smoke-${host}-`));
 const extensionsDir = mkdtempSync(
   path.join(tmpdir(), `fpu-smoke-ext-${host}-`),
@@ -76,8 +92,11 @@ const extensionsDir = mkdtempSync(
 const workspaceParent = mkdtempSync(
   path.join(tmpdir(), `fpu-smoke-workspace-${host}-`),
 );
-const workspaceDir = path.join(workspaceParent, path.basename(fixture));
-cpSync(fixture, workspaceDir, { recursive: true });
+const workspaceDir =
+  toolEnv?.workspace ?? path.join(workspaceParent, path.basename(fixture));
+if (!toolEnv) {
+  cpSync(fixture, workspaceDir, { recursive: true });
+}
 // A fixture with a .code-workspace file is opened as that workspace, so each folder's own settings apply.
 const workspaceFile = readdirSync(workspaceDir).find((name) =>
   name.endsWith(".code-workspace"),
@@ -89,10 +108,14 @@ if (!workspaceFile) {
   configureProfilesThroughSetting(workspaceDir);
 }
 const profilesEnv = conflictingProfilesEnv(workspaceParent);
+const suites = toolEnv?.suites ?? args.suites;
 const cleanup = () => {
   rmSync(userDataDir, { recursive: true, force: true });
   rmSync(extensionsDir, { recursive: true, force: true });
   rmSync(workspaceParent, { recursive: true, force: true });
+  if (toolEnv) {
+    rmSync(toolEnv.tmp, { recursive: true, force: true });
+  }
 };
 process.once("exit", cleanup);
 for (const signal of ["SIGINT", "SIGTERM", "SIGHUP"]) {
@@ -200,16 +223,25 @@ try {
       // A covered or unfocused window otherwise reports hidden and paints nothing until it is raised.
       "--disable-backgrounding-occluded-windows",
       "--disable-renderer-backgrounding",
+      // The host otherwise merges the login shell's environment over this one, putting its PATH ahead of the decoy.
+      ...(toolEnv ? ["--force-disable-user-env"] : []),
       ...(host === "cursor"
         ? ["--skip-onboarding", "--suppress-popups-on-startup"]
         : []),
     ],
     extensionTestsEnv: {
       ...profilesEnv,
+      ...(toolEnv ? toolEnv.env : {}),
+      ...(toolEnv
+        ? {
+            FPU_SMOKE_LOGS_DIR: path.join(userDataDir, "logs"),
+            FPU_SMOKE_TOOLENV_TMP: toolEnv.tmp,
+          }
+        : {}),
       FPU_SMOKE_HOST: host,
       FPU_CDP_PORT: cdpPort,
       FPU_SMOKE_LAUNCH_EPOCH_MS: String(launchEpochMs),
-      ...(args.suites ? { FPU_SMOKE_SUITES: args.suites } : {}),
+      ...(suites ? { FPU_SMOKE_SUITES: suites } : {}),
       ...(process.env.FPU_RUNTIME_BENCHMARK
         ? { FPU_RUNTIME_BENCHMARK: process.env.FPU_RUNTIME_BENCHMARK }
         : {}),
@@ -295,6 +327,94 @@ function conflictingProfilesEnv(parent) {
   const decoy = path.join(parent, "decoy-profiles");
   mkdirSync(decoy, { recursive: true });
   return { DBT_PROFILES_DIR: decoy, DBT_ENGINE_PROFILES_DIR: decoy };
+}
+
+/**
+ * Builds a tool-environment fixture in a fresh temporary directory. The host gets a PATH whose first entry is a
+ * decoy `dbt` reporting 2.0.5, so only a tool-environment resolution can reach the pinned Fusion, which is found
+ * on the original PATH and handed over as FPU_SMOKE_FUSION. Tool lookup is never done through mise.
+ */
+function buildToolEnvironment(entry) {
+  const pinnedFusion = resolveOnPath("dbt", process.env.PATH);
+  if (!pinnedFusion) {
+    console.error("A tool-environment fixture needs dbt on PATH to pin");
+    process.exit(1);
+  }
+  const tmp = mkdtempSync(
+    path.join(tmpdir(), `fpu-smoke-tool-env-${entry.name}-`),
+  );
+  const decoyBin = path.join(tmp, "decoy-bin");
+  mkdirSync(decoyBin);
+  writeFileSync(path.join(decoyBin, "dbt"), "#!/bin/sh\necho 'dbt 2.0.5'\n");
+  chmodSync(path.join(decoyBin, "dbt"), 0o755);
+  const hostDirs = [...SYSTEM_PATH];
+  // Each fixture reaches only the tool managers it needs through a shim directory, so no other host tool, such as
+  // the pinned dbt beside mise in ~/.local/bin, is on its PATH.
+  const tools = { none: [], direnv: ["direnv"] }[entry.name] ?? [
+    "mise",
+    "direnv",
+  ];
+  if (tools.length > 0) {
+    const shim = path.join(tmp, "tool-shim");
+    mkdirSync(shim);
+    for (const tool of tools) {
+      const found = resolveOnPath(tool, process.env.PATH);
+      if (!found) {
+        console.error(`The ${entry.name} fixture needs ${tool} on PATH`);
+        process.exit(1);
+      }
+      symlinkSync(found, path.join(shim, tool));
+    }
+    hostDirs.unshift(shim);
+  }
+  const hostPath = hostDirs.join(path.delimiter);
+  // The mise-free fixtures check that mise, and for none also direnv, really are off PATH.
+  const absent =
+    { none: ["mise", "direnv"], direnv: ["mise"] }[entry.name] ?? [];
+  for (const tool of absent) {
+    const found = resolveOnPath(tool, hostPath);
+    if (found) {
+      console.error(
+        `${tool} is at ${found}; the ${entry.name} fixture needs it absent`,
+      );
+      process.exit(1);
+    }
+  }
+  const built = entry.build(tmp);
+  // Isolates mise and XDG state from the developer's machine; a fixture's own env wins over these.
+  const isolation = {
+    MISE_TRUSTED_CONFIG_PATHS: path.join(tmp, "no-trust"),
+    MISE_DATA_DIR: path.join(tmp, "mise-data"),
+    MISE_CONFIG_DIR: path.join(tmp, "mise-config"),
+    MISE_GLOBAL_CONFIG_FILE: path.join(tmp, "mise-global.toml"),
+    // The smoke image sets MISE_YES=1, which makes mise trust every config, so an untrusted fixture would pass.
+    MISE_YES: "0",
+    // mise trusts every config when it detects CI, and even an empty value counts; spawn drops undefined keys.
+    CI: undefined,
+    CONTINUOUS_INTEGRATION: undefined,
+    BUILD_NUMBER: undefined,
+    RUN_ID: undefined,
+    GITHUB_ACTIONS: undefined,
+    XDG_DATA_HOME: path.join(tmp, "xdg-data"),
+    XDG_CONFIG_HOME: path.join(tmp, "xdg-config"),
+  };
+  const resultName = `tool-env-${entry.name}`;
+  const resultsRoot = process.env.FPU_SMOKE_SCREENSHOTS
+    ? path.resolve(process.env.FPU_SMOKE_SCREENSHOTS)
+    : path.join(root, "out/smoke-results");
+  return {
+    tmp,
+    workspace: built.workspace,
+    suites: entry.suites.join(","),
+    env: {
+      ...isolation,
+      ...built.env,
+      PATH: [decoyBin, hostPath].join(path.delimiter),
+      FPU_SMOKE_FUSION: pinnedFusion,
+      FPU_SMOKE_REQUIRE_FUSION: "1",
+      FPU_SMOKE_RESULTS: path.join(resultsRoot, host, resultName),
+    },
+  };
 }
 
 async function findAvailablePort(start) {

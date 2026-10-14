@@ -31,6 +31,8 @@ import {
   registerFusionClientDiagnostics,
 } from "../../projects/fusionClientDiagnostics";
 import { FusionClientPool } from "../../projects/fusionClientPool";
+import { FusionStatus } from "../../projects/fusionStatus";
+import { ProjectEnvironments } from "../../projects/projectEnvironments";
 import { ProjectRegistry } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
@@ -106,6 +108,8 @@ describe("disposable ownership", () => {
       registerFusionClientDiagnostics(
         {} as ProjectRegistry,
         {} as FusionClientPool,
+        {} as ProjectEnvironments,
+        {} as FusionStatus,
       ),
     ).toBeUndefined();
     expect(
@@ -120,6 +124,8 @@ describe("disposable ownership", () => {
       registerFusionClientDiagnostics(
         {} as ProjectRegistry,
         {} as FusionClientPool,
+        {} as ProjectEnvironments,
+        {} as FusionStatus,
       ),
       registerConnectedColumnsCommand({} as DbtLineageService),
     ];

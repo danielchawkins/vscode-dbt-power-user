@@ -193,6 +193,7 @@ describe("FusionStatus", () => {
   let optIns: ProjectOptIns | undefined;
   let optInsChanged: EventEmitter<void>;
   let projectError: string | undefined;
+  let environmentNote: string | undefined;
 
   beforeEach(() => {
     projects = [];
@@ -201,6 +202,7 @@ describe("FusionStatus", () => {
     poolChanged = new EventEmitter<void>();
     optIns = undefined;
     projectError = undefined;
+    environmentNote = undefined;
     optInsChanged = new EventEmitter<void>();
     vi.mocked(languages.createLanguageStatusItem).mockClear();
     vi.mocked(commands.registerCommand).mockClear();
@@ -223,7 +225,7 @@ describe("FusionStatus", () => {
       clientPool,
       () => optIns,
       optInsChanged.event,
-      () => ({ error: projectError }),
+      () => ({ error: projectError, environment: environmentNote }),
     );
   }
 
@@ -275,6 +277,17 @@ describe("FusionStatus", () => {
     optInsChanged.fire();
     expect(clientItem.text).toBe("$(check) dbt Fusion");
     expect(clientItem.detail).toBe("general");
+    status.dispose();
+  });
+
+  it("returns the client item's detail, with the environment note, for a project's root", () => {
+    const general = makeProject("general", "/workspace/general");
+    add(general, new FakeClient(general));
+    environmentNote = "from mise";
+    const status = createStatus();
+    status.initialize();
+    expect(status.clientDetail(general.root)).toBe("general · from mise");
+    expect(status.clientDetail(Uri.file("/workspace/other"))).toBeUndefined();
     status.dispose();
   });
 

@@ -12,6 +12,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       libxcomposite1 libxdamage1 libxext6 libxfixes3 libxrandr2 libpango-1.0-0 libcairo2 libcurl4 \
       libglib2.0-0 xdg-utils \
     && rm -rf /var/lib/apt/lists/*
+# direnv goes in /usr/local/bin, on PATH for every user; the script verifies its checksum.
+COPY scripts/smoke/pins.env scripts/smoke/common.sh scripts/smoke/fetch-direnv.sh /tmp/smoke-direnv/
+RUN bash /tmp/smoke-direnv/fetch-direnv.sh /usr/local/bin && rm -rf /tmp/smoke-direnv
 USER tester
 
 # Both pinned Linux hosts land in the default cache, so a run downloads nothing.

@@ -46,7 +46,8 @@ base=fpu-integration:$base_hash
 smoke_hash=$(cd "$repo" && {
   echo "$base_hash"
   cat docker/smoke/Dockerfile docker/smoke/Dockerfile.dockerignore scripts/smoke/pins.env scripts/smoke/common.sh \
-    scripts/smoke/fetch-host.sh scripts/smoke/fetch-vscode.sh scripts/smoke/fetch-cursor.sh
+    scripts/smoke/fetch-host.sh scripts/smoke/fetch-vscode.sh scripts/smoke/fetch-cursor.sh \
+    scripts/smoke/fetch-direnv.sh
 } | shasum -a 256 | cut -c1-12)
 smoke_image=fpu-smoke:$smoke_hash
 

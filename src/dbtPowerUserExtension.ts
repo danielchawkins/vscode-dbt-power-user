@@ -111,6 +111,8 @@ export class DBTPowerUserExtension implements Disposable {
       registerFusionClientDiagnostics(
         this.projectRegistry,
         this.fusionClientPool,
+        this.projectEnvironments,
+        this.fusionStatus,
       ),
     );
     this.own(registerConnectedColumnsCommand(this.dbtLineageService));

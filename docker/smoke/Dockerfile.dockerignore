@@ -4,3 +4,4 @@
 !scripts/smoke/fetch-host.sh
 !scripts/smoke/fetch-vscode.sh
 !scripts/smoke/fetch-cursor.sh
+!scripts/smoke/fetch-direnv.sh
