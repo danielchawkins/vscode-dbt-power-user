@@ -157,7 +157,6 @@ lint-mise-lock:
 
 [group("quality")]
 fmt-code:
-    npm run lint:fix
     npm run format
     npm run fix:oxlint
     npm run fix:eslint
