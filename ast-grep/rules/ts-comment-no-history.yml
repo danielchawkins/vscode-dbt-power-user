@@ -1,0 +1,30 @@
+# AGENTS.md: a comment states behaviour, never history. An issue or PR number, a plan step or a plan id
+# (P7, D11, Q18) names a moment that git blame and the PR already record; the reader cannot act on it.
+id: ts-comment-no-history
+language: typescript
+severity: error
+message: >-
+  A comment names an issue, a PR, a plan step or a plan id. State the behaviour instead; git blame and the
+  PR bind the history (AGENTS.md, Comments and prose). For an exception, put
+  `ast-grep-ignore: ts-comment-no-history -- <why>` in a comment above the line and say why in review.
+files:
+  - src/**
+  - packages/**
+  - scripts/**
+  - lint/**
+ignores:
+  # Each experiment is named by its plan id; the id is the experiment's name, not a history pointer.
+  - scripts/evidence/experiments/**
+  - src/test/fixtures/**
+rule:
+  kind: comment
+  any:
+    # `#123`, `PR 12`, `PR #12`, `pre-#1706`
+    - regex: '(^|[^\w&/])#\d{2,}\b'
+    - regex: '\bPR ?#?\d+\b'
+    # `step 1a`, `Step 2.2`
+    - regex: '\b[Ss]tep \d+(\.\d+)?[a-z]?\b'
+    # Plan ids in parentheses or after "from": `(O1)`, `(D11)`, `from P1`, `P9.R2`
+    - regex: '\((?:[ACDOPQR]\d{1,2}(?:\.R\d)?[a-z]?)(?:[,;] ?[ACDOPQR]\d{1,2}[a-z]?)*\)'
+    - regex: '\bfrom [ACDOPQR]\d{1,2}\b'
+    - regex: '\b[P]\d{1,2}\.R\d\b'

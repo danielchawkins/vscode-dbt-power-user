@@ -1,0 +1,10 @@
+id: ts-no-abstract-chain
+valid:
+  - 'export abstract class PanelHost implements Disposable { abstract entry: string; }'
+  - 'export abstract class Node {}'
+  - 'export class Project extends ProjectBase {}'
+  - 'class Leaf extends Base implements Other {}'
+invalid:
+  - 'export abstract class ProjectDbtCommands extends ProjectQueries {}'
+  - 'abstract class Middle extends Base implements Disposable { abstract run(): void; }'
+  - 'export abstract class Generic<T> extends Base<T> {}'

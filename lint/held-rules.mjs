@@ -1,4 +1,4 @@
-// Typed rules with no Oxlint home (D11). Configured nowhere, so none of them is enforced.
+// Typed rules with no Oxlint home. Configured nowhere, so none of them is enforced.
 // Neither engine's config imports this file; only lintRules.test.ts reads it.
 // A rule moves to oxlint.config.ts with its recorded severity and options once Oxlint ships a native port.
 

@@ -1,0 +1,8 @@
+id: tsx-suppression-names-a-rule
+valid:
+  - '// ast-grep-ignore: tsx-comment-no-history -- quoted from a changelog'
+  - 'export const C = () => <div>{/* ast-grep-ignore: tsx-comment-no-history -- a label */}</div>;'
+invalid:
+  - '// ast-grep-ignore'
+  - '// ast-grep-ignore: tsx-comment-no-history'
+  - 'export const C = () => <div>{/* ast-grep-ignore */}</div>;'

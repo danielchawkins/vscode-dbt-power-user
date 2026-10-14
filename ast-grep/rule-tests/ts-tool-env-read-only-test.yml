@@ -1,0 +1,19 @@
+id: ts-tool-env-read-only
+valid:
+  - 'run("mise", ["env", "--json", "-C", root]);'
+  - 'run("mise", ["config", "ls", "--json", "-C", root]);'
+  - 'run("direnv", ["status", "--json"]);'
+  - 'run("direnv", ["export", "json"]);'
+  - 'await deps.which("mise", host.PATH);'
+  - 'join(configHome, "mise");'
+  - 'run("dbt", ["--version"]);'
+  - 'const manager = "mise";'
+invalid:
+  - 'run("mise", ["trust", root]);'
+  - 'run("mise", ["install"]);'
+  - 'run("mise", ["config", "set", "x"]);'
+  - 'run("direnv", ["allow"]);'
+  - 'run("just", ["check"]);'
+  - 'runProcessText("mise", ["use", "node"], { cwd });'
+  - 'run("mise", args);'
+  - 'run("just", recipe);'

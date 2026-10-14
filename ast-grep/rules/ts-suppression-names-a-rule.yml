@@ -1,0 +1,14 @@
+# A bare `ast-grep-ignore` silences every rule on the next line. A suppression names the rules it hides
+# and, after ` -- `, why. `--error=unused-suppression` removes a suppression once it hides nothing.
+id: ts-suppression-names-a-rule
+language: typescript
+severity: error
+message: >-
+  An ast-grep suppression must name its rule ids and a reason: `// ast-grep-ignore: <id>[, <id>] -- <why>`.
+  A bare `ast-grep-ignore` silences every rule.
+rule:
+  kind: comment
+  all:
+    - regex: '^(//|/\*)\s*ast-grep-ignore'
+    - not:
+        regex: '^(//|/\*)\s*ast-grep-ignore:\s*[a-z0-9-]+(,\s*[a-z0-9-]+)*\s+--\s+\S'

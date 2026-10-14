@@ -1,0 +1,10 @@
+id: tsx-comment-no-history
+valid:
+  - 'export const C = () => <div>{/* Lines have no identity beyond their position. */}</div>;'
+  - '// The colour is #393a34 on light themes.'
+  - 'const style = { color: "#d4d4d4" };'
+invalid:
+  - 'export const C = () => <div>{/* Restored in PR 12. */}</div>;'
+  - '// Fixed in #127.'
+  - '// Shared by both configs (O1).'
+  - '// Introduced in step 3.'

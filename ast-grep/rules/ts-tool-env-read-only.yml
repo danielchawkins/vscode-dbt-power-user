@@ -1,0 +1,55 @@
+# The shipped extension reads a project's tool environment and changes nothing (ADR 0008): it may run
+# `mise env`, `mise config ls`, `direnv status` and `direnv export`, and never `just` or a mise or direnv
+# command that trusts, installs or allows. src/fusion/toolEnvironment.ts owns these calls.
+id: ts-tool-env-read-only
+language: typescript
+severity: error
+message: >-
+  The extension runs mise and direnv read-only and never runs just (ADR 0008). Pass a literal argument
+  array that starts with one of `env`, `config ls`, `status` or `export`, as src/fusion/toolEnvironment.ts
+  does. For an exception, put `ast-grep-ignore: ts-tool-env-read-only -- <why>` in a comment above the
+  line and say why in review.
+files:
+  - src/**
+ignores:
+  - src/test/**
+utils:
+  tool-name:
+    kind: string
+    regex: '^"(mise|direnv|just)"$'
+  real-argument:
+    not:
+      regex: '^[(),]$'
+  read-only-subcommand:
+    kind: array
+    any:
+      - regex: '^\[\s*"(env|status|export)"'
+      - regex: '^\[\s*"config",\s*"ls"'
+rule:
+  kind: arguments
+  inside:
+    kind: call_expression
+  all:
+    - has:
+        matches: tool-name
+        nthChild:
+          position: 1
+          ofRule:
+            matches: real-argument
+    # A tool name followed by a string or a property (`which("mise", host.PATH)`, `join(dir, "mise")`) is
+    # not a command; an array or a variable holding one is.
+    - has:
+        nthChild:
+          position: 2
+          ofRule:
+            matches: real-argument
+        any:
+          - kind: array
+          - kind: identifier
+    - not:
+        has:
+          nthChild:
+            position: 2
+            ofRule:
+              matches: real-argument
+          matches: read-only-subcommand

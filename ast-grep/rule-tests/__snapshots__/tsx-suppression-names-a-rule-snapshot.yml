@@ -1,0 +1,20 @@
+id: tsx-suppression-names-a-rule
+snapshots:
+  // ast-grep-ignore:
+    labels:
+    - source: // ast-grep-ignore
+      style: primary
+      start: 0
+      end: 18
+  '// ast-grep-ignore: tsx-comment-no-history':
+    labels:
+    - source: '// ast-grep-ignore: tsx-comment-no-history'
+      style: primary
+      start: 0
+      end: 42
+  export const C = () => <div>{/* ast-grep-ignore */}</div>;:
+    labels:
+    - source: /* ast-grep-ignore */
+      style: primary
+      start: 29
+      end: 50

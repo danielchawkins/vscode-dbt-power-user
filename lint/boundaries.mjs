@@ -1,4 +1,4 @@
-// Boundary lists shared by the root ESLint config and the root Oxlint config (O1).
+// Boundary lists shared by the root ESLint config and the root Oxlint config.
 // Frozen data plus pure builders. A builder returns a whole rule value, so an exemption block
 // re-sets the rule minus the groups it names in `except`; flat config replaces rule options per file.
 

@@ -7,6 +7,7 @@ import { ProjectQueries } from "./projectQueries";
 import type { ProjectTasks } from "./projectTasks";
 
 /** The dbt commands of a project: each starts a task; see {@link ProjectTasks}. */
+// ast-grep-ignore: ts-no-abstract-chain -- Project's three-file split predates the rule; flattening it changes callers
 export abstract class ProjectDbtCommands extends ProjectQueries {
   protected abstract readonly tasks: ProjectTasks;
   protected abstract withRunResults<T>(

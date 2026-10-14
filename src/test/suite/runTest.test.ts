@@ -7,8 +7,6 @@ import type { Projects } from "../../projects/projects";
 import type { QueryManifestService } from "../../projects/queryManifestService";
 
 /**
- * Regression tests for issue #1720.
- *
  * `RunTest` classifies active files using the parsed manifest and runs
  * singular data tests via `dbt test --select <test_name>`. The command
  * registrations in `src/features/commands.ts` consult `RunTest` first and

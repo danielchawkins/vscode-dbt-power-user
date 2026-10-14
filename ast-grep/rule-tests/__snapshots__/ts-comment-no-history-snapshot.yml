@@ -1,0 +1,68 @@
+id: ts-comment-no-history
+snapshots:
+  /* Moved here in P9.R2. */:
+    labels:
+    - source: /* Moved here in P9.R2. */
+      style: primary
+      start: 0
+      end: 26
+  /** Kept for the ratchet (Q18, D5). */:
+    labels:
+    - source: /** Kept for the ratchet (Q18, D5). */
+      style: primary
+      start: 0
+      end: 38
+  // Added in PR 12.:
+    labels:
+    - source: // Added in PR 12.
+      style: primary
+      start: 0
+      end: 18
+  '// Fixed in #127.':
+    labels:
+    - source: '// Fixed in #127.'
+      style: primary
+      start: 0
+      end: 17
+  // Introduced in step 1a.:
+    labels:
+    - source: // Introduced in step 1a.
+      style: primary
+      start: 0
+      end: 25
+  // Resolved as the binary from P1.:
+    labels:
+    - source: // Resolved as the binary from P1.
+      style: primary
+      start: 0
+      end: 34
+  '// See PR #45 for the reason.':
+    labels:
+    - source: '// See PR #45 for the reason.'
+      style: primary
+      start: 0
+      end: 29
+  // Shared by both configs (O1).:
+    labels:
+    - source: // Shared by both configs (O1).
+      style: primary
+      start: 0
+      end: 31
+  // Step 2.2 of the plan.:
+    labels:
+    - source: // Step 2.2 of the plan.
+      style: primary
+      start: 0
+      end: 24
+  // Typed rules with no home (D11).:
+    labels:
+    - source: // Typed rules with no home (D11).
+      style: primary
+      start: 0
+      end: 34
+  // preserves pre-#1706 semantics:
+    labels:
+    - source: // preserves pre-#1706 semantics
+      style: primary
+      start: 0
+      end: 32

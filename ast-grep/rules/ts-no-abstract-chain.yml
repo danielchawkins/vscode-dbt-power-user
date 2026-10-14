@@ -1,0 +1,22 @@
+# An abstract class that extends another class splits one class across files: the bases declare abstract
+# members that the leaf fills in, and behaviour moves through `this` instead of through parameters. Compose
+# instead: hold the collaborator as a field, or take it as a parameter. A single abstract base with concrete
+# leaves (PanelHost, Node) is a template method and stays allowed.
+id: ts-no-abstract-chain
+language: typescript
+severity: error
+message: >-
+  An abstract class extends another class, which makes a chain of three or more. Compose instead: hold the
+  base's behaviour as a field or pass it in. For an exception, put
+  `ast-grep-ignore: ts-no-abstract-chain -- <why>` in a comment above the line and say why in review.
+files:
+  - src/**
+  - packages/**
+ignores:
+  - src/test/**
+rule:
+  kind: abstract_class_declaration
+  has:
+    kind: class_heritage
+    has:
+      kind: extends_clause

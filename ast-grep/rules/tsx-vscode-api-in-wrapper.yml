@@ -1,0 +1,20 @@
+# The webview reaches the host through one wrapper: `vscode` in webview_panels/src/modules/vscode/index.ts calls
+# `acquireVsCodeApi()` once (the API throws on a second call) and is the only file that posts. The lint lists
+# keep every other file off `@vscodeApi` and `postMessage`; this rule closes the remaining path, a second
+# `acquireVsCodeApi()`.
+id: tsx-vscode-api-in-wrapper
+language: tsx
+severity: error
+message: >-
+  `acquireVsCodeApi()` may be called once, in webview_panels/src/modules/vscode/index.ts. Send through the
+  panel's requests module, which posts through that wrapper. For an exception, put
+  `ast-grep-ignore: tsx-vscode-api-in-wrapper -- <why>` in a comment above the line and say why in review.
+files:
+  - webview_panels/src/**
+ignores:
+  - webview_panels/src/modules/vscode/index.ts
+  - webview_panels/src/test/**
+  - webview_panels/src/**/*.test.ts
+  - webview_panels/src/**/*.test.tsx
+rule:
+  pattern: acquireVsCodeApi()

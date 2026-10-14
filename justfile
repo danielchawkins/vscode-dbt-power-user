@@ -54,6 +54,7 @@ verify-setup:
     rumdl --version
     shfmt --version
     shellcheck --version
+    ast-grep --version
     jj --version
     dbt --version
 
@@ -123,6 +124,7 @@ lint:
     just lint-just
     just lint-mise-lock
     just lint-code
+    just lint-ast-grep
     just lint-unused
     just lint-ratchet
     just webviews::lint
@@ -166,6 +168,12 @@ lint-code:
     npm run lint:oxlint
     npm run lint:eslint
     npm run lint:imports
+
+# Call-site and comment rules in ast-grep/rules; a suppression that hides nothing fails the scan.
+[group("quality")]
+lint-ast-grep:
+    ast-grep test
+    ast-grep scan --error=unused-suppression
 
 # Unused files, exports, types, enum members and dependencies, in all code and in production code alone.
 [group("quality")]
