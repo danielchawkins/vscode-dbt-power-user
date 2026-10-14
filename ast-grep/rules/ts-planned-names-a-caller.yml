@@ -1,0 +1,15 @@
+# `@planned` exempts an export from knip's unused-export check because nothing calls it yet. The tag names what
+# will call it, so a reader can tell parked code from forgotten code; scripts/quality/export-tags.mjs fails once a
+# production caller exists, and the plannedTags ratchet holds the count.
+id: ts-planned-names-a-caller
+language: typescript
+severity: error
+message: >-
+  `@planned` needs the code that will call it: `@planned <caller or feature>`. Without one, delete the export or
+  wire it up.
+files:
+  - src/**
+  - packages/**
+rule:
+  kind: comment
+  regex: '@planned(\s*(\*/)?\s*$|\s*\n)'

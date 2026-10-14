@@ -12,15 +12,11 @@ import {
   TestParser,
   type ManifestProject,
 } from "../../core/manifest";
-import {
-  FIELD_OWNERS,
-  fieldsOwnedBy,
-  mergeMetadata,
-  serverMetadataFrom,
-} from "../../core/metadata";
+import { mergeMetadata, serverMetadataFrom } from "../../core/metadata";
 import type { ParsedManifest } from "../../dbt_integration/domain";
 import { NUM_RUNS, nodeDag } from "../arbitraries";
 import { esmDirname } from "../esmDirname";
+import { FIELD_OWNERS, fieldsOwnedBy } from "../fieldOwners";
 
 const log = { debug: () => undefined } as unknown as Log;
 const root = path.resolve(

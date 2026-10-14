@@ -1,7 +1,7 @@
 {
   "suppressions.host": 7,
   "suppressions.webview": 0,
-  "internalTags": 60,
+  "internalTags": 56,
   "coverage.host": {
     "lines": 80,
     "branches": 72,
@@ -28,5 +28,6 @@
   },
   "oxlintSuppressions.host": 380,
   "oxlintSuppressions.webview": 31,
-  "tsFlags.erasableSyntaxOnly": 251
+  "tsFlags.erasableSyntaxOnly": 251,
+  "plannedTags": 0
 }

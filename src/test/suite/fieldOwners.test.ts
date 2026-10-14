@@ -1,8 +1,8 @@
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
-import { fieldsOwnedBy } from "../../core/metadata";
 import { esmDirname } from "../esmDirname";
+import { fieldsOwnedBy } from "../fieldOwners";
 
 const gaps = fs.readFileSync(
   path.resolve(

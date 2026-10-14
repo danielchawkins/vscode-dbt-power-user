@@ -38,13 +38,16 @@ const productionFiles = (dir) =>
     .filter((file) => !file.includes(`${path.sep}node_modules${path.sep}`))
     .filter(isProductionSource);
 
-const internalTagCount = () =>
+const tagCount = (tag) => () =>
   ["src", "packages/webview-contract/src", "webview_panels/src"]
     .flatMap(productionFiles)
     .reduce(
       (total, file) =>
         total +
-        (fs.readFileSync(file, "utf8").match(/@internal\b/g) ?? []).length,
+        (
+          fs.readFileSync(file, "utf8").match(new RegExp(`@${tag}\\b`, "g")) ??
+          []
+        ).length,
       0,
     );
 
@@ -124,7 +127,13 @@ export const METRICS = [
     key: "internalTags",
     kind: "ceiling",
     precision: 0,
-    measure: internalTagCount,
+    measure: tagCount("internal"),
+  },
+  {
+    key: "plannedTags",
+    kind: "ceiling",
+    precision: 0,
+    measure: tagCount("planned"),
   },
   {
     key: "tsFlags.erasableSyntaxOnly",

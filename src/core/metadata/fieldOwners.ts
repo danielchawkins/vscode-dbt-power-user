@@ -1,32 +1,3 @@
-/**
- * Which producer fills a field of the merged manifest at Fusion 2.0.6 (parse rows: `docs/lsp-metadata-gaps.md`).
- * @internal
- */
-export type FieldOwner = "server" | "parse";
-
-/** @internal */
-export const FIELD_OWNERS = {
-  nodes: "server",
-  "graphMetaMap.parents": "server",
-  "graphMetaMap.children": "server",
-  modelDepthMap: "server",
-  nodeMetaMap: "parse",
-  sourceMetaMap: "parse",
-  "graphMetaMap.tests": "parse",
-  "graphMetaMap.metrics": "parse",
-  testMetaMap: "parse",
-  macroMetaMap: "parse",
-  docMetaMap: "parse",
-  metricMetaMap: "parse",
-  semanticModelMetaMap: "parse",
-  exposureMetaMap: "parse",
-  unitTestMetaMap: "parse",
-  functionMetaMap: "parse",
-} as const satisfies Readonly<Record<string, FieldOwner>>;
-
-/** @internal */
-export type Field = keyof typeof FIELD_OWNERS;
-
 /** How the merge treats one server resource type. */
 interface TypePolicy {
   /** The server's listing of the root package is authoritative: unlisted parse nodes of this type are dropped. */
@@ -77,10 +48,3 @@ export const ADDED_TYPES = typesWhere("add");
 export const SERVER_PARENT_KEY_TYPES = typesWhere("parentKey");
 /** Server types that are nodes of the graph. */
 export const SERVER_GRAPH_TYPES = typesWhere("graph");
-
-/** @internal */
-export function fieldsOwnedBy(owner: FieldOwner): Field[] {
-  return (Object.keys(FIELD_OWNERS) as Field[]).filter(
-    (field) => FIELD_OWNERS[field] === owner,
-  );
-}

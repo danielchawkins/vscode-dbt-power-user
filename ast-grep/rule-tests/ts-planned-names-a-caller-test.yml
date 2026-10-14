@@ -1,0 +1,10 @@
+id: ts-planned-names-a-caller
+valid:
+  - "/** @planned the column lineage panel's hover card */"
+  - "/**\n * Resolves a model's owner.\n * @planned ownership badges in the model tree\n */"
+  - '/** @internal */'
+  - '// see the planned work in the plan'
+invalid:
+  - '/** @planned */'
+  - "/**\n * Resolves a model's owner.\n * @planned\n */"
+  - '/** @planned   */'
