@@ -25,14 +25,14 @@ const Harness = ({
 }): React.JSX.Element => {
   const [state, dispatch] = useReducer(documentationReducer, initialState);
   return (
-    <DocumentationContext.Provider value={{ state, dispatch }}>
+    <DocumentationContext value={{ state, dispatch }}>
       <DocGeneratorInput
         entity={entity}
         type={EntityType.COLUMN}
         title="id"
         placeholder="Describe"
       />
-    </DocumentationContext.Provider>
+    </DocumentationContext>
   );
 };
 
@@ -82,14 +82,14 @@ describe("DocGeneratorInput", () => {
         currentDocsData: saved,
       });
       return (
-        <DocumentationContext.Provider value={{ state, dispatch }}>
+        <DocumentationContext value={{ state, dispatch }}>
           <DocGeneratorInput
             entity={edited}
             type={EntityType.COLUMN}
             title="id"
             placeholder="Describe"
           />
-        </DocumentationContext.Provider>
+        </DocumentationContext>
       );
     };
     render(<Dirty />);
