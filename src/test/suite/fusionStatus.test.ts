@@ -379,9 +379,13 @@ describe("FusionStatus", () => {
       .mocked(commands.registerCommand)
       .mock.calls.find(([id]) => id === command.command)!;
     handler(general.root.fsPath);
-    expect(client.outputChannel.show).not.toHaveBeenCalled();
+    const show = vi.mocked<(preserveFocus?: boolean) => void>(
+      (client.outputChannel as { show: (preserveFocus?: boolean) => void })
+        .show,
+    );
+    expect(show).not.toHaveBeenCalled();
     handler(...(command.arguments ?? []));
-    expect(client.outputChannel.show).toHaveBeenCalledWith(true);
+    expect(show).toHaveBeenCalledWith(true);
     status.dispose();
   });
 

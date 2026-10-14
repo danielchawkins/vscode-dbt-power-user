@@ -150,7 +150,7 @@ const DocumentationProvider = (): React.JSX.Element => {
     return () => {
       window.removeEventListener("message", onMessage);
     };
-  }, []);
+  }, [onMessage]);
 
   const values = useMemo(
     () => ({

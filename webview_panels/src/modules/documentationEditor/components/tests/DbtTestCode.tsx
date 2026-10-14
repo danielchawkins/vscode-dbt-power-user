@@ -3,7 +3,7 @@ import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { panelLogger } from "@modules/logger";
 import { CodeBlock } from "@uicore";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 
 interface GetTestCodeResponse {
   sql?: string | undefined;
@@ -22,30 +22,33 @@ const DbtTestCode = ({
   >(null);
 
   panelLogger.info(testCode);
-  const loadTestCode = async () => {
-    if (!currentDocsData?.name) {
-      return;
-    }
-    try {
-      const result = (await executeRequestInSync("getTestCode", {
+  const requestTestCode = useEffectEvent(
+    async (model: string) =>
+      (await executeRequestInSync("getTestCode", {
         test: { ...test },
-        model: currentDocsData.name,
-      })) as GetTestCodeResponse;
-      setTestCode(result);
-    } catch (err) {
-      setTestCode({ error: (err as Error).message });
-    }
-  };
+        model,
+      })) as GetTestCodeResponse,
+  );
 
+  const model = currentDocsData?.name;
   useEffect(() => {
-    if (!currentDocsData?.name) {
+    if (!model) {
       return;
     }
-
-    loadTestCode().catch((err) =>
-      panelLogger.info("error loading test code", err),
+    let current = true;
+    requestTestCode(model).then(
+      (result) => current && setTestCode(result),
+      (err: unknown) => {
+        panelLogger.info("error loading test code", err);
+        if (current) {
+          setTestCode({ error: (err as Error).message });
+        }
+      },
     );
-  }, [currentDocsData?.name]);
+    return () => {
+      current = false;
+    };
+  }, [model]);
 
   if (!testCode) {
     return null;

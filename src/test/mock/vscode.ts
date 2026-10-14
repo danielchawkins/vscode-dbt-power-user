@@ -302,12 +302,14 @@ const mockRegisterProvider = vi.fn(() => mockDisposable);
 export function createMockLogOutputChannel(name?: string): LogOutputChannel {
   const channelName =
     name ?? `mock-channel-${(mockLogOutputChannelCounter += 1)}`;
+  // Spread in, so the literal never names the deprecated `show(column, …)` overload of `LogOutputChannel`.
+  const shows = { show: vi.fn() };
   return {
+    ...shows,
     name: channelName,
     append: vi.fn(),
     appendLine: vi.fn(),
     clear: vi.fn(),
-    show: vi.fn(),
     hide: vi.fn(),
     dispose: vi.fn(),
     debug: vi.fn(),

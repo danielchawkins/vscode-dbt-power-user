@@ -32,13 +32,14 @@ const DocGeneratorColumnsList = (): React.JSX.Element => {
     );
   }, [currentDocsTests]);
 
+  const columns = currentDocsData?.columns;
   const filteredColumns = useMemo(() => {
-    if (!currentDocsData?.columns) return [];
-    if (!searchQuery) return currentDocsData.columns;
-    return currentDocsData.columns.filter((column) =>
+    if (!columns) return [];
+    if (!searchQuery) return columns;
+    return columns.filter((column) =>
       column.name.toLowerCase().includes(searchQuery.toLowerCase()),
     );
-  }, [currentDocsData?.columns, searchQuery]);
+  }, [columns, searchQuery]);
 
   return (
     <div>

@@ -1,5 +1,5 @@
 import { act, render } from "@testing-library/react";
-import { useReducer, useState } from "react";
+import { useEffect, useReducer, useState } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { getVsCodeApiMock } from "../../../test/setup";
 import { DocumentationContext } from "../context";
@@ -34,8 +34,10 @@ const Probe = (): React.JSX.Element => {
 
 const Harness = (): React.JSX.Element => {
   const [state, dispatch] = useReducer(documentationReducer, initialState);
-  dispatchRef = dispatch;
-  stateRef = state;
+  useEffect(() => {
+    dispatchRef = dispatch;
+    stateRef = state;
+  }, [dispatch, state]);
   return (
     <DocumentationContext value={{ state, dispatch }}>
       <Probe />

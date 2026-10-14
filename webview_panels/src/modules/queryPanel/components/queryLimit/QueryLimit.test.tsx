@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from "@testing-library/react";
-import { useReducer } from "react";
+import { useEffect, useReducer } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@modules/queryPanel/requests", () => ({
@@ -23,7 +23,9 @@ const Harness = (): React.JSX.Element => {
     ...initialState,
     limit: 500,
   });
-  dispatchRef = dispatch;
+  useEffect(() => {
+    dispatchRef = dispatch;
+  }, [dispatch]);
   return (
     <QueryPanelContext value={{ state, dispatch }}>
       <QueryLimit />

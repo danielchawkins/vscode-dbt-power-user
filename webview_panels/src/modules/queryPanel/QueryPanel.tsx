@@ -40,7 +40,7 @@ const QueryPanel = (): React.JSX.Element => {
     if (loading) {
       dispatch(setTabState(QueryPanelTitleTabState.Preview));
     }
-  }, [loading]);
+  }, [loading, dispatch]);
 
   const changeTabState = (state: QueryPanelTitleTabState) => {
     dispatch(setTabState(state));

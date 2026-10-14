@@ -62,9 +62,9 @@ function serializeHovers(hovers: vscode.Hover[] | undefined) {
     contents: hover.contents.map((content) =>
       typeof content === "string"
         ? content
-        : "value" in content
+        : content instanceof vscode.MarkdownString
           ? content.value
-          : String(content),
+          : "",
     ),
   }));
 }

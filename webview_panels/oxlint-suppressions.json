@@ -1,9 +1,4 @@
 {
-  "src/modules/app/useListeners.ts": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    }
-  },
   "src/modules/documentationEditor/DocumentationEditor.controls.test.tsx": {
     "typescript/consistent-type-definitions": {
       "count": 1
@@ -20,9 +15,6 @@
   "src/modules/documentationEditor/DocumentationProvider.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "react-hooks/exhaustive-deps": {
-      "count": 1
     }
   },
   "src/modules/documentationEditor/components/docGenerator/DocBlockInserter.tsx": {
@@ -33,11 +25,6 @@
       "count": 1
     },
     "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "src/modules/documentationEditor/components/docGenerator/DocGeneratorColumnsList.tsx": {
-    "react/preserve-manual-memoization": {
       "count": 1
     }
   },
@@ -53,14 +40,6 @@
   },
   "src/modules/documentationEditor/components/search/SearchColumnsInput.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    }
-  },
-  "src/modules/documentationEditor/components/tests/DbtTestCode.tsx": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    },
-    "react/set-state-in-effect": {
       "count": 1
     }
   },
@@ -87,14 +66,6 @@
   "src/modules/documentationEditor/components/tests/forms/Relationships.tsx": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "react/set-state-in-effect": {
-      "count": 1
-    }
-  },
-  "src/modules/documentationEditor/components/tests/forms/TestForm.tsx": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
     }
   },
   "src/modules/documentationEditor/components/tests/hooks/useTestFormSave.ts": {
@@ -102,16 +73,6 @@
       "count": 1
     },
     "max-params": {
-      "count": 1
-    }
-  },
-  "src/modules/documentationEditor/state/useDocumentationViewState.test.tsx": {
-    "react/globals": {
-      "count": 2
-    }
-  },
-  "src/modules/documentationEditor/state/useDraftSync.test.tsx": {
-    "react/globals": {
       "count": 1
     }
   },
@@ -123,14 +84,6 @@
   "src/modules/lineage/Lineage.coverage.test.tsx": {
     "jsx-a11y/control-has-associated-label": {
       "count": 1
-    }
-  },
-  "src/modules/lineage/LineageView.tsx": {
-    "react/immutability": {
-      "count": 1
-    },
-    "react/refs": {
-      "count": 3
     }
   },
   "src/modules/lineage/TableNode.tsx": {
@@ -166,22 +119,9 @@
       "count": 1
     }
   },
-  "src/modules/queryPanel/QueryPanel.tsx": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    }
-  },
-  "src/modules/queryPanel/components/QueryPanelContents/QueryPanelTitle.tsx": {
-    "react-hooks/exhaustive-deps": {
-      "count": 1
-    }
-  },
   "src/modules/queryPanel/components/filters/Filters.tsx": {
     "jsx-a11y/no-autofocus": {
       "count": 2
-    },
-    "react-hooks/exhaustive-deps": {
-      "count": 1
     }
   },
   "src/modules/queryPanel/components/grid/GridBodyRow.tsx": {
@@ -199,11 +139,6 @@
       "count": 1
     },
     "react/incompatible-library": {
-      "count": 1
-    }
-  },
-  "src/modules/queryPanel/components/queryLimit/QueryLimit.test.tsx": {
-    "react/globals": {
       "count": 1
     }
   },
@@ -251,9 +186,6 @@
   },
   "src/uiCore/anchoredPosition.ts": {
     "max-params": {
-      "count": 1
-    },
-    "react/immutability": {
       "count": 1
     }
   },

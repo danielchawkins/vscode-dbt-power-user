@@ -25,7 +25,7 @@ import Toolbar from "./Toolbar";
 import { useHandleMeasurement } from "./useHandleMeasurement";
 import { useLineageGraph } from "./useLineageGraph";
 import type { ResolvedSettings } from "./viewModel";
-import { resolveSettings, tableActions, visibleRefs } from "./viewModel";
+import { resolveSettings, TableActionsContext, visibleRefs } from "./viewModel";
 
 const nodeTypes = { table: TableNode };
 
@@ -53,8 +53,6 @@ const useSettings = () => {
   const [settings, setSettings] = useState<ResolvedSettings>(() =>
     resolveSettings(undefined),
   );
-  const settingsRef = useRef(settings);
-  settingsRef.current = settings;
   useEffect(() => {
     fetchSettings()
       .then((s) => setSettings(resolveSettings(s)))
@@ -66,7 +64,7 @@ const useSettings = () => {
       panelLogger.error("lineage settings", error),
     );
   };
-  return { settings, settingsRef, change };
+  return { settings, change };
 };
 
 /** The relationships of the Current Project, fetched while the overlay is on and again after each redraw. */
@@ -157,12 +155,12 @@ const Canvas = ({
   select: (table: string | undefined) => void;
   drawnKey: number;
 }) => {
-  const canvas = useSize();
-  const minimap = useMinimap(canvas.size);
+  const { ref: canvasRef, size } = useSize();
+  const minimap = useMinimap(size);
   const flow = useReactFlow();
   useHandleMeasurement(nodes);
-  const { width, height } = canvas.size;
-  const mapSize = minimapStyle(canvas.size);
+  const { width, height } = size;
+  const mapSize = minimapStyle(size);
   const mapWidth = mapSize.width;
   const mapHeight = mapSize.height;
   const options = useMemo(
@@ -185,7 +183,7 @@ const Canvas = ({
   }, [drawnKey, flow, options]);
   const label = minimap.shown ? "Hide minimap" : "Show minimap";
   return (
-    <div className={styles.canvas} ref={canvas.ref}>
+    <div className={styles.canvas} ref={canvasRef}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -216,7 +214,7 @@ const Canvas = ({
             pannable
             zoomable
             position="bottom-right"
-            style={minimapStyle(canvas.size)}
+            style={mapSize}
             nodeColor="var(--vscode-editorWidget-border, var(--vscode-disabledForeground))"
             nodeStrokeColor="var(--vscode-focusBorder)"
             nodeStrokeWidth={2}
@@ -232,15 +230,17 @@ const Canvas = ({
 const Graph = (): React.JSX.Element => {
   const drawerRef = useRef<DrawerRef>(null);
   const [detailsTable, setDetailsTable] = useState<string>();
-  const { settings, settingsRef, change } = useSettings();
+  const { settings, change } = useSettings();
   const openDetails = useCallback((table: string) => {
     setDetailsTable(table);
     drawerRef.current?.open();
   }, []);
-  const defaultExpansion = useCallback(
-    () => settingsRef.current.defaultExpansion,
-    [settingsRef],
-  );
+  // Read when a rebuild starts, so it follows the latest settings without re-creating the graph store.
+  const expansionRef = useRef(settings.defaultExpansion);
+  useEffect(() => {
+    expansionRef.current = settings.defaultExpansion;
+  }, [settings.defaultExpansion]);
+  const defaultExpansion = useCallback(() => expansionRef.current, []);
   const { graph, rendered, drawnKey, actions, select, reset } = useLineageGraph(
     defaultExpansion,
     openDetails,
@@ -248,8 +248,6 @@ const Graph = (): React.JSX.Element => {
   const notice = rendered?.missingLineageMessage;
   const columnsNeedStrict = rendered?.columnsNeedStrict === true;
   const refs = useRefs(settings, drawnKey);
-
-  tableActions.current = actions;
 
   const { nodes, edges } = useMemo(() => {
     const data = lineageData(graph, {
@@ -272,16 +270,23 @@ const Graph = (): React.JSX.Element => {
   const details = detailsTable ? graph.known[detailsTable] : undefined;
 
   return (
-    <div className={`${styles.view} lineage-view`}>
-      <div className={styles.topBar}>
-        <MissingLineageMessage missingLineageMessage={notice} />
-        <Toolbar settings={settings} change={change} reset={reset} />
+    <TableActionsContext value={actions}>
+      <div className={`${styles.view} lineage-view`}>
+        <div className={styles.topBar}>
+          <MissingLineageMessage missingLineageMessage={notice} />
+          <Toolbar settings={settings} change={change} reset={reset} />
+        </div>
+        <Canvas
+          nodes={nodes}
+          edges={edges}
+          select={select}
+          drawnKey={drawnKey}
+        />
+        <Drawer ref={drawerRef} title="Details">
+          {details ? <TableDetails table={details} /> : null}
+        </Drawer>
       </div>
-      <Canvas nodes={nodes} edges={edges} select={select} drawnKey={drawnKey} />
-      <Drawer ref={drawerRef} title="Details">
-        {details ? <TableDetails table={details} /> : null}
-      </Drawer>
-    </div>
+    </TableActionsContext>
   );
 };
 

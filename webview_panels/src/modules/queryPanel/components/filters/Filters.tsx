@@ -2,7 +2,7 @@ import { FilterIcon, SearchIcon } from "@assets/icons";
 import { useDebouncedValue } from "@modules/app/useDebouncedValue";
 import { IconButton, Input, MultiSelect, Stack } from "@uicore";
 import type { ChangeEvent, MouseEvent } from "react";
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import styles from "../../querypanel.module.css";
 
 export interface QueryFilters {
@@ -30,11 +30,15 @@ const Filters = ({
     e.preventDefault();
   };
 
-  useEffect(() => {
-    if (value === searchQuery) {
+  const applySearch = useEffectEvent((query: string) => {
+    if (query === searchQuery) {
       return;
     }
-    onFiltersChange({ searchQuery: value });
+    onFiltersChange({ searchQuery: query });
+  });
+
+  useEffect(() => {
+    applySearch(value);
   }, [value]);
 
   const handleSearchQueryChange = (e: ChangeEvent<HTMLInputElement>) => {
