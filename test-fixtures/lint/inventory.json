@@ -1,0 +1,1106 @@
+{
+  "host": {
+    "eslint/complexity": {
+      "engine": "oxlint",
+      "from": "complexity"
+    },
+    "eslint/curly": {
+      "engine": "oxlint",
+      "from": "curly"
+    },
+    "eslint/eqeqeq": {
+      "engine": "oxlint",
+      "from": "eqeqeq"
+    },
+    "eslint/max-depth": {
+      "engine": "oxlint",
+      "from": "max-depth"
+    },
+    "eslint/max-lines": {
+      "engine": "oxlint",
+      "from": "max-lines"
+    },
+    "eslint/max-lines-per-function": {
+      "engine": "oxlint",
+      "from": "max-lines-per-function"
+    },
+    "eslint/max-params": {
+      "engine": "oxlint",
+      "from": "max-params"
+    },
+    "eslint/no-async-promise-executor": {
+      "engine": "oxlint",
+      "from": "no-async-promise-executor"
+    },
+    "eslint/no-console": {
+      "engine": "oxlint",
+      "from": "no-console"
+    },
+    "eslint/no-restricted-imports": {
+      "engine": "oxlint",
+      "from": "no-restricted-imports"
+    },
+    "eslint/no-restricted-properties": {
+      "engine": "oxlint",
+      "from": "no-restricted-properties"
+    },
+    "eslint/no-throw-literal": {
+      "engine": "oxlint",
+      "from": "no-throw-literal"
+    },
+    "eslint/no-unused-vars": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unused-vars"
+    },
+    "eslint/no-var": {
+      "engine": "oxlint",
+      "from": "no-var"
+    },
+    "eslint/prefer-const": {
+      "engine": "oxlint",
+      "from": "prefer-const"
+    },
+    "eslint/prefer-rest-params": {
+      "engine": "oxlint",
+      "from": "prefer-rest-params"
+    },
+    "eslint/prefer-spread": {
+      "engine": "oxlint",
+      "from": "prefer-spread"
+    },
+    "no-restricted-syntax": {
+      "engine": "eslint",
+      "from": "no-restricted-syntax"
+    },
+    "sonarjs/cognitive-complexity": {
+      "engine": "eslint",
+      "from": "sonarjs/cognitive-complexity"
+    },
+    "sonarjs/no-collapsible-if": {
+      "engine": "eslint",
+      "from": "sonarjs/no-collapsible-if"
+    },
+    "sonarjs/no-duplicated-branches": {
+      "engine": "eslint",
+      "from": "sonarjs/no-duplicated-branches"
+    },
+    "sonarjs/no-identical-functions": {
+      "engine": "eslint",
+      "from": "sonarjs/no-identical-functions"
+    },
+    "sonarjs/no-inverted-boolean-check": {
+      "engine": "eslint",
+      "from": "sonarjs/no-inverted-boolean-check"
+    },
+    "sonarjs/prefer-single-boolean-return": {
+      "engine": "eslint",
+      "from": "sonarjs/prefer-single-boolean-return"
+    },
+    "typescript/await-thenable": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/await-thenable"
+    },
+    "typescript/ban-ts-comment": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/ban-ts-comment"
+    },
+    "typescript/no-base-to-string": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-base-to-string"
+    },
+    "typescript/no-explicit-any": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-explicit-any"
+    },
+    "typescript/no-floating-promises": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-floating-promises"
+    },
+    "typescript/no-for-in-array": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-for-in-array"
+    },
+    "typescript/no-misused-promises": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-misused-promises"
+    },
+    "typescript/no-misused-spread": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-misused-spread"
+    },
+    "typescript/no-non-null-asserted-optional-chain": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-non-null-asserted-optional-chain"
+    },
+    "typescript/no-require-imports": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-require-imports"
+    },
+    "typescript/no-unnecessary-type-assertion": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unnecessary-type-assertion"
+    },
+    "typescript/no-unsafe-argument": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-argument"
+    },
+    "typescript/no-unsafe-assignment": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-assignment"
+    },
+    "typescript/no-unsafe-call": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-call"
+    },
+    "typescript/no-unsafe-member-access": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-member-access"
+    },
+    "typescript/no-unsafe-return": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-return"
+    },
+    "typescript/only-throw-error": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/only-throw-error"
+    },
+    "typescript/prefer-promise-reject-errors": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-promise-reject-errors"
+    },
+    "typescript/switch-exhaustiveness-check": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/switch-exhaustiveness-check"
+    }
+  },
+  "webview": {
+    "@eslint-react/dom-no-dangerously-set-innerhtml": {
+      "engine": "eslint",
+      "from": "@eslint-react/dom-no-dangerously-set-innerhtml"
+    },
+    "@eslint-react/dom-no-dangerously-set-innerhtml-with-children": {
+      "engine": "eslint",
+      "from": "@eslint-react/dom-no-dangerously-set-innerhtml-with-children"
+    },
+    "@eslint-react/dom-no-flush-sync": {
+      "engine": "eslint",
+      "from": "@eslint-react/dom-no-flush-sync"
+    },
+    "@eslint-react/dom-no-hydrate": {
+      "engine": "eslint",
+      "from": "@eslint-react/dom-no-hydrate"
+    },
+    "@eslint-react/dom-no-render": {
+      "engine": "eslint",
+      "from": "@eslint-react/dom-no-render"
+    },
+    "@eslint-react/dom-no-script-url": {
+      "engine": "eslint",
+      "from": "@eslint-react/dom-no-script-url"
+    },
+    "@eslint-react/dom-no-unsafe-iframe-sandbox": {
+      "engine": "eslint",
+      "from": "@eslint-react/dom-no-unsafe-iframe-sandbox"
+    },
+    "@eslint-react/dom-no-unsafe-target-blank": {
+      "engine": "eslint",
+      "from": "@eslint-react/dom-no-unsafe-target-blank"
+    },
+    "@eslint-react/dom-no-use-form-state": {
+      "engine": "eslint",
+      "from": "@eslint-react/dom-no-use-form-state"
+    },
+    "@eslint-react/dom-no-void-elements-with-children": {
+      "engine": "eslint",
+      "from": "@eslint-react/dom-no-void-elements-with-children"
+    },
+    "@eslint-react/jsx-no-children-prop-with-children": {
+      "engine": "eslint",
+      "from": "@eslint-react/jsx-no-children-prop-with-children"
+    },
+    "@eslint-react/jsx-no-key-after-spread": {
+      "engine": "eslint",
+      "from": "@eslint-react/jsx-no-key-after-spread"
+    },
+    "@eslint-react/jsx-no-leaked-dollar": {
+      "engine": "eslint",
+      "from": "@eslint-react/jsx-no-leaked-dollar"
+    },
+    "@eslint-react/jsx-no-leaked-semicolon": {
+      "engine": "eslint",
+      "from": "@eslint-react/jsx-no-leaked-semicolon"
+    },
+    "@eslint-react/naming-convention-context-name": {
+      "engine": "eslint",
+      "from": "@eslint-react/naming-convention-context-name"
+    },
+    "@eslint-react/naming-convention-id-name": {
+      "engine": "eslint",
+      "from": "@eslint-react/naming-convention-id-name"
+    },
+    "@eslint-react/naming-convention-ref-name": {
+      "engine": "eslint",
+      "from": "@eslint-react/naming-convention-ref-name"
+    },
+    "@eslint-react/no-access-state-in-setstate": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-access-state-in-setstate"
+    },
+    "@eslint-react/no-children-count": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-children-count"
+    },
+    "@eslint-react/no-children-for-each": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-children-for-each"
+    },
+    "@eslint-react/no-children-map": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-children-map"
+    },
+    "@eslint-react/no-children-only": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-children-only"
+    },
+    "@eslint-react/no-children-to-array": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-children-to-array"
+    },
+    "@eslint-react/no-component-will-mount": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-component-will-mount"
+    },
+    "@eslint-react/no-component-will-receive-props": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-component-will-receive-props"
+    },
+    "@eslint-react/no-component-will-update": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-component-will-update"
+    },
+    "@eslint-react/no-context-provider": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-context-provider"
+    },
+    "@eslint-react/no-create-ref": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-create-ref"
+    },
+    "@eslint-react/no-forward-ref": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-forward-ref"
+    },
+    "@eslint-react/no-missing-key": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-missing-key"
+    },
+    "@eslint-react/no-nested-component-definitions": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-nested-component-definitions"
+    },
+    "@eslint-react/no-nested-lazy-component-declarations": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-nested-lazy-component-declarations"
+    },
+    "@eslint-react/no-set-state-in-component-did-mount": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-set-state-in-component-did-mount"
+    },
+    "@eslint-react/no-set-state-in-component-did-update": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-set-state-in-component-did-update"
+    },
+    "@eslint-react/no-set-state-in-component-will-update": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-set-state-in-component-will-update"
+    },
+    "@eslint-react/no-unnecessary-use-prefix": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-unnecessary-use-prefix"
+    },
+    "@eslint-react/no-unsafe-component-will-mount": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-unsafe-component-will-mount"
+    },
+    "@eslint-react/no-unsafe-component-will-receive-props": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-unsafe-component-will-receive-props"
+    },
+    "@eslint-react/no-unsafe-component-will-update": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-unsafe-component-will-update"
+    },
+    "@eslint-react/no-unused-class-component-members": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-unused-class-component-members"
+    },
+    "@eslint-react/no-use-context": {
+      "engine": "eslint",
+      "from": "@eslint-react/no-use-context"
+    },
+    "@eslint-react/use-state": {
+      "engine": "eslint",
+      "from": "@eslint-react/use-state"
+    },
+    "@eslint-react/web-api-no-leaked-event-listener": {
+      "engine": "eslint",
+      "from": "@eslint-react/web-api-no-leaked-event-listener"
+    },
+    "@eslint-react/web-api-no-leaked-intersection-observer": {
+      "engine": "eslint",
+      "from": "@eslint-react/web-api-no-leaked-intersection-observer"
+    },
+    "@eslint-react/web-api-no-leaked-interval": {
+      "engine": "eslint",
+      "from": "@eslint-react/web-api-no-leaked-interval"
+    },
+    "@eslint-react/web-api-no-leaked-resize-observer": {
+      "engine": "eslint",
+      "from": "@eslint-react/web-api-no-leaked-resize-observer"
+    },
+    "@eslint-react/web-api-no-leaked-timeout": {
+      "engine": "eslint",
+      "from": "@eslint-react/web-api-no-leaked-timeout"
+    },
+    "@typescript-eslint/naming-convention": {
+      "engine": "eslint",
+      "from": "@typescript-eslint/naming-convention"
+    },
+    "@typescript-eslint/no-restricted-types": {
+      "engine": "eslint",
+      "from": "@typescript-eslint/no-restricted-types"
+    },
+    "@typescript-eslint/no-shadow": {
+      "engine": "eslint",
+      "from": "@typescript-eslint/no-shadow"
+    },
+    "eslint/complexity": {
+      "engine": "oxlint",
+      "from": "complexity"
+    },
+    "eslint/for-direction": {
+      "engine": "oxlint",
+      "from": "for-direction"
+    },
+    "eslint/max-depth": {
+      "engine": "oxlint",
+      "from": "max-depth"
+    },
+    "eslint/max-lines": {
+      "engine": "oxlint",
+      "from": "max-lines"
+    },
+    "eslint/max-lines-per-function": {
+      "engine": "oxlint",
+      "from": "max-lines-per-function"
+    },
+    "eslint/max-params": {
+      "engine": "oxlint",
+      "from": "max-params"
+    },
+    "eslint/no-array-constructor": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-array-constructor"
+    },
+    "eslint/no-async-promise-executor": {
+      "engine": "oxlint",
+      "from": "no-async-promise-executor"
+    },
+    "eslint/no-case-declarations": {
+      "engine": "oxlint",
+      "from": "no-case-declarations"
+    },
+    "eslint/no-compare-neg-zero": {
+      "engine": "oxlint",
+      "from": "no-compare-neg-zero"
+    },
+    "eslint/no-cond-assign": {
+      "engine": "oxlint",
+      "from": "no-cond-assign"
+    },
+    "eslint/no-console": {
+      "engine": "oxlint",
+      "from": "no-console"
+    },
+    "eslint/no-constant-binary-expression": {
+      "engine": "oxlint",
+      "from": "no-constant-binary-expression"
+    },
+    "eslint/no-constant-condition": {
+      "engine": "oxlint",
+      "from": "no-constant-condition"
+    },
+    "eslint/no-control-regex": {
+      "engine": "oxlint",
+      "from": "no-control-regex"
+    },
+    "eslint/no-debugger": {
+      "engine": "oxlint",
+      "from": "no-debugger"
+    },
+    "eslint/no-delete-var": {
+      "engine": "oxlint",
+      "from": "no-delete-var"
+    },
+    "eslint/no-dupe-else-if": {
+      "engine": "oxlint",
+      "from": "no-dupe-else-if"
+    },
+    "eslint/no-duplicate-case": {
+      "engine": "oxlint",
+      "from": "no-duplicate-case"
+    },
+    "eslint/no-empty": {
+      "engine": "oxlint",
+      "from": "no-empty"
+    },
+    "eslint/no-empty-character-class": {
+      "engine": "oxlint",
+      "from": "no-empty-character-class"
+    },
+    "eslint/no-empty-function": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-empty-function"
+    },
+    "eslint/no-empty-pattern": {
+      "engine": "oxlint",
+      "from": "no-empty-pattern"
+    },
+    "eslint/no-empty-static-block": {
+      "engine": "oxlint",
+      "from": "no-empty-static-block"
+    },
+    "eslint/no-ex-assign": {
+      "engine": "oxlint",
+      "from": "no-ex-assign"
+    },
+    "eslint/no-extra-boolean-cast": {
+      "engine": "oxlint",
+      "from": "no-extra-boolean-cast"
+    },
+    "eslint/no-fallthrough": {
+      "engine": "oxlint",
+      "from": "no-fallthrough"
+    },
+    "eslint/no-global-assign": {
+      "engine": "oxlint",
+      "from": "no-global-assign"
+    },
+    "eslint/no-invalid-regexp": {
+      "engine": "oxlint",
+      "from": "no-invalid-regexp"
+    },
+    "eslint/no-irregular-whitespace": {
+      "engine": "oxlint",
+      "from": "no-irregular-whitespace"
+    },
+    "eslint/no-loop-func": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-loop-func"
+    },
+    "eslint/no-loss-of-precision": {
+      "engine": "oxlint",
+      "from": "no-loss-of-precision"
+    },
+    "eslint/no-misleading-character-class": {
+      "engine": "oxlint",
+      "from": "no-misleading-character-class"
+    },
+    "eslint/no-nonoctal-decimal-escape": {
+      "engine": "oxlint",
+      "from": "no-nonoctal-decimal-escape"
+    },
+    "eslint/no-param-reassign": {
+      "engine": "oxlint",
+      "from": "no-param-reassign"
+    },
+    "eslint/no-prototype-builtins": {
+      "engine": "oxlint",
+      "from": "no-prototype-builtins"
+    },
+    "eslint/no-regex-spaces": {
+      "engine": "oxlint",
+      "from": "no-regex-spaces"
+    },
+    "eslint/no-restricted-imports": {
+      "engine": "oxlint",
+      "from": "no-restricted-imports"
+    },
+    "eslint/no-self-assign": {
+      "engine": "oxlint",
+      "from": "no-self-assign"
+    },
+    "eslint/no-shadow-restricted-names": {
+      "engine": "oxlint",
+      "from": "no-shadow-restricted-names"
+    },
+    "eslint/no-sparse-arrays": {
+      "engine": "oxlint",
+      "from": "no-sparse-arrays"
+    },
+    "eslint/no-unassigned-vars": {
+      "engine": "oxlint",
+      "from": "no-unassigned-vars"
+    },
+    "eslint/no-underscore-dangle": {
+      "engine": "oxlint",
+      "from": "no-underscore-dangle"
+    },
+    "eslint/no-unsafe-finally": {
+      "engine": "oxlint",
+      "from": "no-unsafe-finally"
+    },
+    "eslint/no-unsafe-optional-chaining": {
+      "engine": "oxlint",
+      "from": "no-unsafe-optional-chaining"
+    },
+    "eslint/no-unused-expressions": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unused-expressions"
+    },
+    "eslint/no-unused-labels": {
+      "engine": "oxlint",
+      "from": "no-unused-labels"
+    },
+    "eslint/no-unused-private-class-members": {
+      "engine": "oxlint",
+      "from": "no-unused-private-class-members"
+    },
+    "eslint/no-unused-vars": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unused-vars"
+    },
+    "eslint/no-useless-assignment": {
+      "engine": "oxlint",
+      "from": "no-useless-assignment"
+    },
+    "eslint/no-useless-backreference": {
+      "engine": "oxlint",
+      "from": "no-useless-backreference"
+    },
+    "eslint/no-useless-catch": {
+      "engine": "oxlint",
+      "from": "no-useless-catch"
+    },
+    "eslint/no-useless-escape": {
+      "engine": "oxlint",
+      "from": "no-useless-escape"
+    },
+    "eslint/no-var": {
+      "engine": "oxlint",
+      "from": "no-var"
+    },
+    "eslint/prefer-const": {
+      "engine": "oxlint",
+      "from": "prefer-const"
+    },
+    "eslint/prefer-rest-params": {
+      "engine": "oxlint",
+      "from": "prefer-rest-params"
+    },
+    "eslint/prefer-spread": {
+      "engine": "oxlint",
+      "from": "prefer-spread"
+    },
+    "eslint/preserve-caught-error": {
+      "engine": "oxlint",
+      "from": "preserve-caught-error"
+    },
+    "eslint/require-yield": {
+      "engine": "oxlint",
+      "from": "require-yield"
+    },
+    "eslint/use-isnan": {
+      "engine": "oxlint",
+      "from": "use-isnan"
+    },
+    "eslint/valid-typeof": {
+      "engine": "oxlint",
+      "from": "valid-typeof"
+    },
+    "jsx_a11y/alt-text": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/alt-text"
+    },
+    "jsx_a11y/anchor-has-content": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/anchor-has-content"
+    },
+    "jsx_a11y/anchor-is-valid": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/anchor-is-valid"
+    },
+    "jsx_a11y/aria-activedescendant-has-tabindex": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/aria-activedescendant-has-tabindex"
+    },
+    "jsx_a11y/aria-props": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/aria-props"
+    },
+    "jsx_a11y/aria-proptypes": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/aria-proptypes"
+    },
+    "jsx_a11y/aria-role": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/aria-role"
+    },
+    "jsx_a11y/aria-unsupported-elements": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/aria-unsupported-elements"
+    },
+    "jsx_a11y/autocomplete-valid": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/autocomplete-valid"
+    },
+    "jsx_a11y/click-events-have-key-events": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/click-events-have-key-events"
+    },
+    "jsx_a11y/heading-has-content": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/heading-has-content"
+    },
+    "jsx_a11y/html-has-lang": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/html-has-lang"
+    },
+    "jsx_a11y/iframe-has-title": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/iframe-has-title"
+    },
+    "jsx_a11y/img-redundant-alt": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/img-redundant-alt"
+    },
+    "jsx_a11y/interactive-supports-focus": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/interactive-supports-focus"
+    },
+    "jsx_a11y/label-has-associated-control": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/label-has-associated-control"
+    },
+    "jsx_a11y/media-has-caption": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/media-has-caption"
+    },
+    "jsx_a11y/mouse-events-have-key-events": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/mouse-events-have-key-events"
+    },
+    "jsx_a11y/no-access-key": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/no-access-key"
+    },
+    "jsx_a11y/no-autofocus": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/no-autofocus"
+    },
+    "jsx_a11y/no-distracting-elements": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/no-distracting-elements"
+    },
+    "jsx_a11y/no-interactive-element-to-noninteractive-role": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/no-interactive-element-to-noninteractive-role"
+    },
+    "jsx_a11y/no-noninteractive-element-interactions": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/no-noninteractive-element-interactions"
+    },
+    "jsx_a11y/no-noninteractive-element-to-interactive-role": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/no-noninteractive-element-to-interactive-role"
+    },
+    "jsx_a11y/no-noninteractive-tabindex": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/no-noninteractive-tabindex"
+    },
+    "jsx_a11y/no-redundant-roles": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/no-redundant-roles"
+    },
+    "jsx_a11y/no-static-element-interactions": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/no-static-element-interactions"
+    },
+    "jsx_a11y/role-has-required-aria-props": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/role-has-required-aria-props"
+    },
+    "jsx_a11y/role-supports-aria-props": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/role-supports-aria-props"
+    },
+    "jsx_a11y/scope": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/scope"
+    },
+    "jsx_a11y/tabindex-no-positive": {
+      "engine": "oxlint",
+      "from": "jsx-a11y-x/tabindex-no-positive"
+    },
+    "no-octal": {
+      "engine": "eslint",
+      "from": "no-octal"
+    },
+    "no-restricted-syntax": {
+      "engine": "eslint",
+      "from": "no-restricted-syntax"
+    },
+    "react/error-boundaries": {
+      "engine": "oxlint",
+      "from": "@eslint-react/error-boundaries"
+    },
+    "react/exhaustive-deps": {
+      "engine": "oxlint",
+      "from": "@eslint-react/exhaustive-deps"
+    },
+    "react/jsx-no-comment-textnodes": {
+      "engine": "oxlint",
+      "from": "@eslint-react/jsx-no-comment-textnodes"
+    },
+    "react/no-array-index-key": {
+      "engine": "oxlint",
+      "from": "@eslint-react/no-array-index-key"
+    },
+    "react/no-children-prop": {
+      "engine": "oxlint",
+      "from": "@eslint-react/jsx-no-children-prop"
+    },
+    "react/no-clone-element": {
+      "engine": "oxlint",
+      "from": "@eslint-react/no-clone-element"
+    },
+    "react/no-direct-mutation-state": {
+      "engine": "oxlint",
+      "from": "@eslint-react/no-direct-mutation-state"
+    },
+    "react/no-find-dom-node": {
+      "engine": "oxlint",
+      "from": "@eslint-react/dom-no-find-dom-node"
+    },
+    "react/no-namespace": {
+      "engine": "oxlint",
+      "from": "@eslint-react/jsx-no-namespace"
+    },
+    "react/no-render-return-value": {
+      "engine": "oxlint",
+      "from": "@eslint-react/dom-no-render-return-value"
+    },
+    "react/only-export-components": {
+      "engine": "oxlint",
+      "from": "react-refresh/only-export-components"
+    },
+    "react/purity": {
+      "engine": "oxlint",
+      "from": "@eslint-react/purity"
+    },
+    "react/rules-of-hooks": {
+      "engine": "oxlint",
+      "from": "@eslint-react/rules-of-hooks"
+    },
+    "react/set-state-in-effect": {
+      "engine": "oxlint",
+      "from": "@eslint-react/set-state-in-effect"
+    },
+    "react/set-state-in-render": {
+      "engine": "oxlint",
+      "from": "@eslint-react/set-state-in-render"
+    },
+    "react/static-components": {
+      "engine": "oxlint",
+      "from": "@eslint-react/static-components"
+    },
+    "react/unsupported-syntax": {
+      "engine": "oxlint",
+      "from": "@eslint-react/unsupported-syntax"
+    },
+    "react/use-memo": {
+      "engine": "oxlint",
+      "from": "@eslint-react/use-memo"
+    },
+    "sonarjs/cognitive-complexity": {
+      "engine": "eslint",
+      "from": "sonarjs/cognitive-complexity"
+    },
+    "sonarjs/no-collapsible-if": {
+      "engine": "eslint",
+      "from": "sonarjs/no-collapsible-if"
+    },
+    "sonarjs/no-duplicated-branches": {
+      "engine": "eslint",
+      "from": "sonarjs/no-duplicated-branches"
+    },
+    "sonarjs/no-identical-functions": {
+      "engine": "eslint",
+      "from": "sonarjs/no-identical-functions"
+    },
+    "sonarjs/no-inverted-boolean-check": {
+      "engine": "eslint",
+      "from": "sonarjs/no-inverted-boolean-check"
+    },
+    "sonarjs/prefer-single-boolean-return": {
+      "engine": "eslint",
+      "from": "sonarjs/prefer-single-boolean-return"
+    },
+    "typescript/adjacent-overload-signatures": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/adjacent-overload-signatures"
+    },
+    "typescript/array-type": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/array-type"
+    },
+    "typescript/await-thenable": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/await-thenable"
+    },
+    "typescript/ban-ts-comment": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/ban-ts-comment"
+    },
+    "typescript/ban-tslint-comment": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/ban-tslint-comment"
+    },
+    "typescript/class-literal-property-style": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/class-literal-property-style"
+    },
+    "typescript/consistent-generic-constructors": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/consistent-generic-constructors"
+    },
+    "typescript/consistent-indexed-object-style": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/consistent-indexed-object-style"
+    },
+    "typescript/consistent-type-assertions": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/consistent-type-assertions"
+    },
+    "typescript/consistent-type-definitions": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/consistent-type-definitions"
+    },
+    "typescript/dot-notation": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/dot-notation"
+    },
+    "typescript/explicit-module-boundary-types": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/explicit-module-boundary-types"
+    },
+    "typescript/no-array-delete": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-array-delete"
+    },
+    "typescript/no-base-to-string": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-base-to-string"
+    },
+    "typescript/no-confusing-non-null-assertion": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-confusing-non-null-assertion"
+    },
+    "typescript/no-duplicate-enum-values": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-duplicate-enum-values"
+    },
+    "typescript/no-duplicate-type-constituents": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-duplicate-type-constituents"
+    },
+    "typescript/no-empty-object-type": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-empty-object-type"
+    },
+    "typescript/no-explicit-any": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-explicit-any"
+    },
+    "typescript/no-extra-non-null-assertion": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-extra-non-null-assertion"
+    },
+    "typescript/no-floating-promises": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-floating-promises"
+    },
+    "typescript/no-for-in-array": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-for-in-array"
+    },
+    "typescript/no-implied-eval": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-implied-eval"
+    },
+    "typescript/no-inferrable-types": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-inferrable-types"
+    },
+    "typescript/no-misused-new": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-misused-new"
+    },
+    "typescript/no-misused-promises": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-misused-promises"
+    },
+    "typescript/no-misused-spread": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-misused-spread"
+    },
+    "typescript/no-namespace": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-namespace"
+    },
+    "typescript/no-non-null-asserted-optional-chain": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-non-null-asserted-optional-chain"
+    },
+    "typescript/no-redundant-type-constituents": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-redundant-type-constituents"
+    },
+    "typescript/no-require-imports": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-require-imports"
+    },
+    "typescript/no-this-alias": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-this-alias"
+    },
+    "typescript/no-unnecessary-type-assertion": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unnecessary-type-assertion"
+    },
+    "typescript/no-unnecessary-type-constraint": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unnecessary-type-constraint"
+    },
+    "typescript/no-unsafe-argument": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-argument"
+    },
+    "typescript/no-unsafe-assignment": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-assignment"
+    },
+    "typescript/no-unsafe-call": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-call"
+    },
+    "typescript/no-unsafe-declaration-merging": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-declaration-merging"
+    },
+    "typescript/no-unsafe-enum-comparison": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-enum-comparison"
+    },
+    "typescript/no-unsafe-function-type": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-function-type"
+    },
+    "typescript/no-unsafe-member-access": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-member-access"
+    },
+    "typescript/no-unsafe-return": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-return"
+    },
+    "typescript/no-unsafe-unary-minus": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-unsafe-unary-minus"
+    },
+    "typescript/no-wrapper-object-types": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-wrapper-object-types"
+    },
+    "typescript/non-nullable-type-assertion-style": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/non-nullable-type-assertion-style"
+    },
+    "typescript/only-throw-error": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/only-throw-error"
+    },
+    "typescript/prefer-as-const": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-as-const"
+    },
+    "typescript/prefer-find": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-find"
+    },
+    "typescript/prefer-for-of": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-for-of"
+    },
+    "typescript/prefer-function-type": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-function-type"
+    },
+    "typescript/prefer-includes": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-includes"
+    },
+    "typescript/prefer-namespace-keyword": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-namespace-keyword"
+    },
+    "typescript/prefer-nullish-coalescing": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-nullish-coalescing"
+    },
+    "typescript/prefer-optional-chain": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-optional-chain"
+    },
+    "typescript/prefer-promise-reject-errors": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-promise-reject-errors"
+    },
+    "typescript/prefer-regexp-exec": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-regexp-exec"
+    },
+    "typescript/prefer-string-starts-ends-with": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/prefer-string-starts-ends-with"
+    },
+    "typescript/require-await": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/require-await"
+    },
+    "typescript/restrict-plus-operands": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/restrict-plus-operands"
+    },
+    "typescript/restrict-template-expressions": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/restrict-template-expressions"
+    },
+    "typescript/return-await": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/return-await"
+    },
+    "typescript/switch-exhaustiveness-check": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/switch-exhaustiveness-check"
+    },
+    "typescript/triple-slash-reference": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/triple-slash-reference"
+    },
+    "typescript/unbound-method": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/unbound-method"
+    }
+  }
+}

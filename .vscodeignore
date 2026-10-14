@@ -10,7 +10,12 @@ src/**
 vsc-extension-quickstart.md
 test-fixtures/**
 **/tsconfig*.json
-eslint.config.cjs
+eslint.config.mjs
+eslint-suppressions.json
+oxlint-suppressions.json
+lint/**
+knip.json
+.dependency-cruiser.cjs
 **/*.map
 **/*.ts
 **/*.py

@@ -71,7 +71,7 @@ The antithesis said the thesis never checked rules by name. I checked them with 
 
 Citations:
 
-- [r2a](../../eslint.config.cjs): ""@typescript-eslint/no-floating-promises": "error","
+- [r2a](../../eslint.config.mjs): ""@typescript-eslint/no-floating-promises": "error","
 - [r2b](../../webview_panels/eslint.config.mjs): "...tseslint.configs.stylisticTypeChecked,"
 - [r2c](https://oxc.rs/docs/guide/usage/linter/type-aware.html): "Type-aware linting currently supports 59 out of 61 type-aware rules from typescript-eslint."
 - [r2d](https://oxc.rs/docs/guide/usage/linter/type-aware.html): "Rule coverage is incomplete (but very close)"
@@ -80,7 +80,7 @@ Thesis (high): Inventory, type-aware. Root `eslint.config.cjs` enables these typ
 
 Thesis citations:
 
-- [c3](../../eslint.config.cjs): ""@typescript-eslint/no-floating-promises": "error","
+- [c3](../../eslint.config.mjs): ""@typescript-eslint/no-floating-promises": "error","
 - [c4](../../webview_panels/eslint.config.mjs): "...tseslint.configs.recommendedTypeChecked,"
 - [c5](../../webview_panels/eslint.config.mjs): "...tseslint.configs.stylisticTypeChecked,"
 
@@ -105,16 +105,16 @@ Citations:
 
 - [r3a](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-properties.html): "This rule was added in v1.63.0."
 - [r3b](../../webview_panels/eslint.config.mjs): ""CallExpression[callee.property.name='postMessage']:not([callee.object.name='window'])","
-- [r3c](../../eslint.config.cjs): ""sonarjs/cognitive-complexity": ["error", 15],"
+- [r3c](../../eslint.config.mjs): ""sonarjs/cognitive-complexity": ["error", 15],"
 - [r3d](https://oxc.rs/docs/guide/usage/linter/js-plugins.html): "JS plugins are currently in alpha, and remain under active development."
 
 Thesis (high): Inventory, syntactic, custom and size rules. Syntactic rules include curly, eqeqeq, no-throw-literal, no-console, no-async-promise-executor, ban-ts-comment, no-explicit-any, no-require-imports and no-unused-vars. The custom restrictions carry the repo's architectural boundaries. These are fs writes (the `FS_WRITES` list), `process.env`, `child_process` imports, `workspace.getConfiguration`, `window.showErrorMessage` and `postMessage` call syntax (an AST selector). In the webview they cover `@vscodeApi` imports. Because flat config replaces rule options per file, each exemption re-lists the whole rule. Size and complexity rules are complexity 15, max-depth 4, max-params 5, max-lines, max-lines-per-function and sonarjs/cognitive-complexity 15, plus five other sonarjs rules. React hooks, React and a11y rules come from `@eslint-react/eslint-plugin` and `eslint-plugin-jsx-a11y-x` in the webview only. These custom restrictions are the highest-value rules to preserve. I did not confirm that Oxlint implements `no-restricted-properties` or `no-restricted-syntax`, though its custom-rule route (JS plugins) supports ESLint selectors.
 
 Thesis citations:
 
-- [c6](../../eslint.config.cjs): "// Flat config replaces rule options per file, so an exemption re-sets the whole rule minus its own entries."
-- [c7](../../eslint.config.cjs): ""CallExpression[callee.type='MemberExpression'][callee.property.name='postMessage']","
-- [c8](../../eslint.config.cjs): "const WRITE_MESSAGE ="
+- [c6](../../eslint.config.mjs): "// Flat config replaces rule options per file, so an exemption re-sets the whole rule minus its own entries."
+- [c7](../../eslint.config.mjs): ""CallExpression[callee.type='MemberExpression'][callee.property.name='postMessage']","
+- [c8](../../eslint.config.mjs): "const WRITE_MESSAGE ="
 
 Antithesis: [confidence: high] The thesis says it 'did not confirm' Oxlint implements `no-restricted-properties`, and gives no view on `no-restricted-imports` or `max-*`. These are checkable. `oxlint --rules` (v1.87.0, run locally) lists native `no-restricted-imports`, `no-restricted-properties`, `complexity`, `max-depth`, `max-lines`, `max-lines-per-function` and `max-params`. The Oxlint docs date `no-restricted-properties` to v1.63.0.
 
@@ -243,7 +243,7 @@ Thesis (low): Oxlint has no baseline or bulk-suppression mechanism that I could 
 
 Thesis citations:
 
-- [c17](../../eslint.config.cjs): "// Violations present when a rule was introduced live in eslint-suppressions.json; new ones fail `just lint`."
+- [c17](../../eslint.config.mjs): "// Violations present when a rule was introduced live in eslint-suppressions.json; new ones fail `just lint`."
 - [c18](https://oxc.rs/docs/guide/usage/linter/js-plugins.html): "Inline disable directives. ( // oxlint-disable )"
 
 Antithesis: [confidence: high] This is the thesis's biggest miss. It says Oxlint has 'no baseline or bulk-suppression mechanism that I could confirm', and itself says 'I did not search Oxlint's changelog'. A search of the oxc repo finds one. Bulk suppressions (`--suppress-all`, `--prune-suppressions`) have shipped since oxlint v1.64.0, and the installed 1.87.0 is well past that. Oxc PR 26057 says so, and the issue tracker lists `--pass-on-unpruned-suppressions` (PR 23468 closed), `--suppress-rule`, and LSP bulk-suppression support (#21199, open).
@@ -484,7 +484,7 @@ Citations:
 
 - [o1](https://oxc.rs/docs/guide/usage/linter/rules/eslint/no-restricted-properties.html): "This rule was added in v1.63.0."
 - [o2](https://oxc.rs/docs/guide/usage/linter/js-plugins.html): "Lint rules that rely on TypeScript type-awareness."
-- [o3](../../eslint.config.cjs): "// Flat config replaces rule options per file, so an exemption re-sets the whole rule minus its own entries."
+- [o3](../../eslint.config.mjs): "// Flat config replaces rule options per file, so an exemption re-sets the whole rule minus its own entries."
 
 [confidence: medium] Use Oxlint's native, still-hidden bulk suppressions (v1.64.0+) as the baseline in a full Oxlint switch, and gate the swap on a spike. The spike would run `oxlint --type-aware --suppress-all`, read the file format, and adapt the two `suppressionTotal` measures in `ratchet.mjs`. The file's stability is explicitly unpromised by the maintainers, so the ratchet should pin the oxlint version and treat the format as an adapter-level detail.
 

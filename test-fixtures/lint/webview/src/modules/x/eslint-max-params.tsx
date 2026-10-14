@@ -1,0 +1,4 @@
+// lint-expect: oxlint eslint/max-params
+export function many(a: number, b: number, c: number, d: number): number {
+  return a + b + c + d;
+}
