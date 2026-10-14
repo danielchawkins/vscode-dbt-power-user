@@ -33,8 +33,7 @@ webview_panels
 .python-dotfiles
 .mcp.json
 .nvmrc
-.prettierrc
-.prettierignore
+.oxfmtrc.json
 mise.toml
 mise.lock
 justfile

@@ -1,0 +1,50 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "printWidth": 80,
+  "sortPackageJson": false,
+  "sortImports": {
+    "groups": [
+      [
+        "builtin",
+        "external",
+        "internal",
+        "subpath",
+        "type-builtin",
+        "type-external",
+        "type-internal",
+        "type-subpath"
+      ],
+      [
+        "parent",
+        "sibling",
+        "index",
+        "type-parent",
+        "type-sibling",
+        "type-index"
+      ]
+    ],
+    "newlinesBetween": false,
+    "partitionByNewline": true
+  },
+  "ignorePatterns": [
+    "node_modules",
+    ".cache",
+    "**/*.md",
+    "**/*.mdx",
+    "**/*.{yml,yaml,toml}",
+    "dist",
+    "out",
+    "coverage",
+    "media",
+    "altimate_packages",
+    "src/lib",
+    "webview_panels/dist",
+    "webview_panels/src/lib",
+    "scripts/spikes",
+    "src/test/suite/fixtures",
+    "test-fixtures/lint",
+    "docs/research/evidence",
+    "eslint-suppressions.json",
+    "oxlint-suppressions.json"
+  ]
+}

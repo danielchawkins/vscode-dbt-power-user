@@ -157,8 +157,8 @@ lint-mise-lock:
 
 [group("quality")]
 fmt-code:
-    npm run format
     npm run lint:fix
+    npm run format
 
 [group("quality")]
 lint-code:
@@ -337,6 +337,10 @@ package:
       exit 1
     fi
     echo "VSIX $vsix contains 0 .py entries"
+    if printf '%s\n' "$entries" | grep -qE '(^|/)\.oxfmtrc\.json$'; then
+      echo "error: VSIX contains .oxfmtrc.json: $vsix" >&2
+      exit 1
+    fi
     if printf '%s\n' "$entries" | grep -qi 'altimate-core'; then
       echo "error: VSIX contains altimate-core entries: $vsix" >&2
       exit 1

@@ -100,7 +100,8 @@ export function convertColumnNamesByCaseConfig<T extends { name: string }>(
     {};
   const model = (
     parsedDocFile.models as
-      { name: string; columns?: { name: string }[] }[] | undefined
+      | { name: string; columns?: { name: string }[] }[]
+      | undefined
   )?.find((candidate) => candidate.name === modelName);
   if (!model) {
     return columns;

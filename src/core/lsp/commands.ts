@@ -6,7 +6,10 @@ export type { CurrentNodeResult, ListNodesResult };
 export const COMMAND_DEADLINE_MS = 5_000;
 
 export type FusionCommandErrorKind =
-  "notRunning" | "cancelled" | "timeout" | "server";
+  | "notRunning"
+  | "cancelled"
+  | "timeout"
+  | "server";
 
 /** How a server command failed; `message` is the server's text for `server`. */
 export class FusionCommandError extends Error {

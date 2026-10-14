@@ -300,7 +300,9 @@ function lookupRef(
 // -----------------------------------------------------------------------------
 
 type Body =
-  { kind: "compiled"; text: string } | { kind: "raw"; text: string } | null;
+  | { kind: "compiled"; text: string }
+  | { kind: "raw"; text: string }
+  | null;
 
 function pickBody(node: ManifestResource): Body {
   const compiled = node?.compiled_code;

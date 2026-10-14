@@ -89,7 +89,9 @@ function serializeCodeLenses(lenses: vscode.CodeLens[] | undefined) {
 
 function serializePrepareRename(
   value:
-    { range: vscode.Range; placeholder: string } | vscode.Range | undefined,
+    | { range: vscode.Range; placeholder: string }
+    | vscode.Range
+    | undefined,
 ) {
   if (value === undefined || value === null) {
     return value;

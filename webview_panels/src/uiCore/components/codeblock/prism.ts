@@ -3,7 +3,11 @@ import Prism from "./prismGlobal";
 import "./prismGrammars";
 
 export type CodeBlockLanguage =
-  "sql" | "yaml" | "markdown" | "json" | "javascript";
+  | "sql"
+  | "yaml"
+  | "markdown"
+  | "json"
+  | "javascript";
 
 /** A run of text with the token classes that apply to it. */
 export interface Span {

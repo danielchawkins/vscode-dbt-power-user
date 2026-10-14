@@ -37,7 +37,9 @@ export interface LineageViewState {
 
 /** What a panel may write through `vscode.setState`: view state only. */
 export type PanelViewState =
-  DocumentationEditorViewState | QueryResultsViewState | LineageViewState;
+  | DocumentationEditorViewState
+  | QueryResultsViewState
+  | LineageViewState;
 
 export type PanelName = PanelViewState["panel"];
 type ViewStateOf<P extends PanelName> = Extract<PanelViewState, { panel: P }>;

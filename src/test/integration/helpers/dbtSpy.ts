@@ -16,7 +16,8 @@ export interface DbtInvocation {
 
 /** One record of the spy log: a start, or the exit that closes the start with the same id. */
 export type SpyRecord =
-  { kind: "start"; invocation: DbtInvocation } | { kind: "exit"; id: string };
+  | { kind: "start"; invocation: DbtInvocation }
+  | { kind: "exit"; id: string };
 
 const START_LINE = /^\d+ start (\S+) (.*)$/;
 const EXIT_LINE = /^\d+ exit (\S+) \d+$/;

@@ -49,7 +49,9 @@ export class OpenDocuments {
 
 /** The first argument of a document hook: a document, a URI, or a change or save event that carries a document. */
 type DocumentArgument =
-  TextDocument | Uri | { readonly document: TextDocument };
+  | TextDocument
+  | Uri
+  | { readonly document: TextDocument };
 
 type Hook = (argument: DocumentArgument, ...rest: unknown[]) => unknown;
 

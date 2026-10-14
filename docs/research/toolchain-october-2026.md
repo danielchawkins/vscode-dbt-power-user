@@ -335,8 +335,8 @@ I read typescript@7.0.2's `exports` in the npm registry metadata myself, and the
 Citations:
 
 - [r10a](https://registry.npmjs.org/typescript/7.0.2): ""exports":{".":"./lib/version.cjs""
-- [r10b](../../node_modules/prettier-plugin-organize-imports/package.json): ""typescript": ">=2.9","
-- [r10c](../../.prettierrc): ""plugins": ["prettier-plugin-organize-imports"]"
+- r10b (`node_modules/prettier-plugin-organize-imports/package.json`, removed in P5): ""typescript": ">=2.9","
+- r10c (`.prettierrc`, removed in P5): ""plugins": ["prettier-plugin-organize-imports"]"
 
 Thesis (medium): Formatting is a separate decision and Prettier does not block TS 7. Prettier is used as `prettier --check` over js/cjs/mjs/ts/tsx/css/html/json plus `prettier-plugin-organize-imports`, and `eslint-config-prettier` exists only to turn off ESLint style rules. The `organize-imports` plugin calls the TypeScript language service, so it is a TS-version-sensitive dependency. Prettier's own latest (3.9.9 on the host) is above the installed 3.9.8. oxfmt is the Prettier-compatible option from the same project, with a 'Migrate from Prettier' guide in its docs. I did not verify oxfmt's import sorting against `organize-imports` or its 0.72.0 stability. Markdown stays with dprint and rumdl, which are mise-managed and unaffected by a JS lint change. Lefthook has a `prettier` job that runs `just lint-format` and `typescript`/`webview` jobs that run `just lint-code` / `webviews::lint`, so each of those commands would be repointed.
 
@@ -356,7 +356,7 @@ Antithesis: The thesis cites `package.json`'s `check:format` as proof that Prett
 
 Counter-evidence:
 
-- [j1](../../node_modules/prettier-plugin-organize-imports/package.json): ""typescript": ">=2.9","
+- j1 (`node_modules/prettier-plugin-organize-imports/package.json`, removed in P5): ""typescript": ">=2.9","
 - [j2](https://oxc.rs/docs/guide/usage/formatter/sorting.html): "Based on eslint-plugin-perfectionist/sort-imports ."
 - [j3](https://devblogs.microsoft.com/typescript/announcing-typescript-7-0-rc/): "we have made it a priority to ensure TypeScript can be run side-by-side with TypeScript 6.0 for the foreseeable future"
 

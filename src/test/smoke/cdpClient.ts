@@ -600,7 +600,8 @@ export async function evaluateWorkbench<T>(
     expression,
   );
   return values.find((value) => value !== undefined && value !== null) as
-    T | undefined;
+    | T
+    | undefined;
 }
 
 /** PNG of the whole workbench window as the user sees it, webviews included. */

@@ -32,11 +32,13 @@ export class SqlActionsCodeLensProvider
         continue;
       }
       for (const item of token.value.items) {
-        if (!(
-          CST.isScalar(item.key) &&
-          item.key.source === "models" &&
-          CST.isCollection(item.value)
-        )) {
+        if (
+          !(
+            CST.isScalar(item.key) &&
+            item.key.source === "models" &&
+            CST.isCollection(item.value)
+          )
+        ) {
           continue;
         }
         for (const modelItem of item.value.items) {
