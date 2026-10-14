@@ -22,7 +22,7 @@ import { createFullPathForNode } from "./utils";
 // called without an explicit `resourceType`. Models take precedence so a
 // collision between `models/orders.sql` and `snapshots/orders.sql` always
 // resolves to the model. Non-colliding non-models remain reachable at the
-// default call site to preserve pre-#1706 semantics for callers that just
+// default call site for callers that just
 // want "whatever resource has this name" (e.g. `ref()` go-to-definition on a
 // seed).
 const RESOURCE_TYPE_FALLBACK_ORDER: readonly NodeResourceType[] = [

@@ -1,0 +1,9 @@
+id: tsx-vscode-api-in-wrapper
+valid:
+  - 'if (typeof acquireVsCodeApi === "function") { start(); }'
+  - 'const api = vscode.getState();'
+  - 'export const acquire = () => wrapper.acquireVsCodeApi;'
+invalid:
+  - 'const api = acquireVsCodeApi();'
+  - 'acquireVsCodeApi().postMessage({ command: "x" });'
+  - 'export const C = () => { const a = acquireVsCodeApi(); return <div>{a ? "y" : "n"}</div>; };'

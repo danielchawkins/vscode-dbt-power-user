@@ -13,6 +13,7 @@ lefthook = "latest"
 "aqua:koalaman/shellcheck" = "latest"
 "aqua:jj-vcs/jj" = "latest"
 "aqua:getdbt.com/dbt-fusion" = "2.0.6"
+"aqua:ast-grep/ast-grep" = "latest"
 
 [settings]
 lockfile = true

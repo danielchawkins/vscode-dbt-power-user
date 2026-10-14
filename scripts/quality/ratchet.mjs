@@ -65,7 +65,7 @@ export const countTscErrors = (output) =>
   (output.replaceAll(/\u001b\[[\d;]*m/g, "").match(/error TS\d+/g) ?? [])
     .length;
 
-// Resolved as the TS 7 binary from P1, not the TS 6 `typescript` alias.
+// The TS 7 binary, not the TS 6 `typescript` alias.
 const TSC7 = path.join(root, "node_modules/typescript-7/bin/tsc");
 const TS_FLAG_PROJECTS = [
   "src/test/tsconfig.json",

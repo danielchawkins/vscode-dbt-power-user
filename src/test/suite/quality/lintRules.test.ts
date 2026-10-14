@@ -14,7 +14,7 @@ import hostConfig from "../../../../oxlint.config";
 import webviewEslintConfig from "../../../../webview_panels/eslint.config.mjs";
 import webviewConfig from "../../../../webview_panels/oxlint.config";
 
-// Must-fire fixtures (C5). Each fixture carries headers that say what it must trigger:
+// Must-fire fixtures. Each fixture carries headers that say what it must trigger:
 //   // lint-expect: <engine> <rule-id> [count]
 //   // lint-expect-none: <engine|any> <rule-id>
 // Each engine checks its own headers, and `any` headers are checked by both.
@@ -125,7 +125,7 @@ function inventoryKey(code: string): string | undefined {
 
 // Runs the pinned Oxlint on the fixtures copied into .cache/lint-fixtures/<workspace>/, next to
 // the generated config and tsconfig. Passing paths explicitly keeps Oxlint from skipping the
-// gitignored .cache directory (Q18).
+// gitignored .cache directory.
 async function lintFixtures(
   ws: Workspace,
   files: string[],
@@ -289,9 +289,9 @@ function resolvedEslint(ws: Workspace): Promise<Map<string, ResolvedEslint>> {
   return cached;
 }
 
-// Type-aware parser options, and rules whose metadata says they need type information (D10).
+// Type-aware parser options, and rules whose metadata says they need type information.
 // naming-convention is marked so, but with the webview's options (no `types` modifiers) it loads and
-// reports untyped; architecture 10 records that as checked on 2026-10-09, so it is the one exception.
+// reports untyped, so it is the one exception.
 const UNTYPED_BY_CHECK: Record<string, string> = {
   "@typescript-eslint/naming-convention":
     "webview options use no types modifiers (checked 2026-10-09)",
@@ -426,7 +426,7 @@ describe("Oxlint must-fire fixtures", () => {
   }
 });
 
-// Held typed rules (D11): configured in neither engine, so each one's fixture must stay silent.
+// Held typed rules: configured in neither engine, so each one's fixture must stay silent.
 interface HeldRule {
   severity: string;
   options: readonly unknown[];

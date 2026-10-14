@@ -1,0 +1,22 @@
+id: ts-comment-no-history
+valid:
+  - '// Models take precedence over snapshots.'
+  - '// Retries twice, then reports the failure.'
+  - 'const colour = "#123456";'
+  - '// The colour is #fff on dark themes.'
+  - '// See https://github.com/org/repo/issues for reports.'
+  - '// Handles P95 latency budgets.'
+  - '// Three steps: parse, merge, publish.'
+  - '/** Returns the latest run (oldest first when `reverse`). */'
+invalid:
+  - '// preserves pre-#1706 semantics'
+  - '// Fixed in #127.'
+  - '// Added in PR 12.'
+  - '// See PR #45 for the reason.'
+  - '// Introduced in step 1a.'
+  - '// Step 2.2 of the plan.'
+  - '// Shared by both configs (O1).'
+  - '// Typed rules with no home (D11).'
+  - '// Resolved as the binary from P1.'
+  - '/* Moved here in P9.R2. */'
+  - '/** Kept for the ratchet (Q18, D5). */'

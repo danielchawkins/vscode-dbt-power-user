@@ -1,0 +1,20 @@
+# The webview copy of ts-comment-no-history: ast-grep binds one language per rule id, and the webview's
+# .tsx files need the TSX grammar.
+id: tsx-comment-no-history
+language: tsx
+severity: error
+message: >-
+  A comment names an issue, a PR, a plan step or a plan id. State the behaviour instead; git blame and the
+  PR bind the history (AGENTS.md, Comments and prose). For an exception, put
+  `ast-grep-ignore: tsx-comment-no-history -- <why>` in a comment above the line and say why in review.
+files:
+  - webview_panels/src/**
+rule:
+  kind: comment
+  any:
+    - regex: '(^|[^\w&/])#\d{2,}\b'
+    - regex: '\bPR ?#?\d+\b'
+    - regex: '\b[Ss]tep \d+(\.\d+)?[a-z]?\b'
+    - regex: '\((?:[ACDOPQR]\d{1,2}(?:\.R\d)?[a-z]?)(?:[,;] ?[ACDOPQR]\d{1,2}[a-z]?)*\)'
+    - regex: '\bfrom [ACDOPQR]\d{1,2}\b'
+    - regex: '\b[P]\d{1,2}\.R\d\b'

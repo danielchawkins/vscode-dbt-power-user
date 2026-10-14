@@ -1,0 +1,11 @@
+id: ts-suppression-names-a-rule
+valid:
+  - '// ast-grep-ignore: ts-tool-env-read-only -- the fixture runs a fake mise'
+  - '// ast-grep-ignore: ts-comment-no-history, ts-tool-env-read-only -- quoted from a dbt log'
+  - '/* ast-grep-ignore: ts-comment-no-history -- the id is a test name */'
+  - '// The scan ignores generated files.'
+invalid:
+  - '// ast-grep-ignore'
+  - '// ast-grep-ignore: ts-tool-env-read-only'
+  - '// ast-grep-ignore -- because'
+  - '/* ast-grep-ignore */'

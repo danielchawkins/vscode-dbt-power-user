@@ -16,6 +16,8 @@ oxlint-suppressions.json
 lint/**
 knip.json
 .dependency-cruiser.cjs
+sgconfig.yml
+ast-grep/**
 **/*.map
 **/*.ts
 **/*.py

@@ -1,0 +1,14 @@
+id: tsx-suppression-names-a-rule
+language: tsx
+severity: error
+message: >-
+  An ast-grep suppression must name its rule ids and a reason: `// ast-grep-ignore: <id>[, <id>] -- <why>`.
+  A bare `ast-grep-ignore` silences every rule.
+files:
+  - webview_panels/src/**
+rule:
+  kind: comment
+  all:
+    - regex: '^(//|/\*)\s*ast-grep-ignore'
+    - not:
+        regex: '^(//|/\*)\s*ast-grep-ignore:\s*[a-z0-9-]+(,\s*[a-z0-9-]+)*\s+--\s+\S'

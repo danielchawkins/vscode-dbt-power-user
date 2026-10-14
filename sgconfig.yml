@@ -1,0 +1,9 @@
+# Call-site and comment rules that the import checker (.dependency-cruiser.cjs) and the lint lists
+# (lint/boundaries.mjs) cannot express. `just lint-ast-grep` runs the rule tests, then the scan.
+ruleDirs:
+  - ast-grep/rules
+testConfigs:
+  - testDir: ast-grep/rule-tests
+# `.ts` keeps the TypeScript grammar, which reads `<T>value` assertions; JavaScript parses as TypeScript too.
+languageGlobs:
+  typescript: ["*.mjs", "*.cjs", "*.js"]
