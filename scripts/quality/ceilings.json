@@ -28,6 +28,5 @@
   },
   "oxlintSuppressions.host": 1234,
   "oxlintSuppressions.webview": 109,
-  "tsFlags.verbatimModuleSyntax": 0,
   "tsFlags.erasableSyntaxOnly": 251
 }
