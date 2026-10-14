@@ -1,4 +1,4 @@
-// Boundary lists for the webview ESLint and Oxlint configs (O1). Frozen data; the vendor-name list
+// Boundary lists for the webview ESLint and Oxlint configs. Frozen data; the vendor-name list
 // is shared with the root module, so both workspaces reject the same strings.
 import { vendorNameSyntax } from "../../lint/boundaries.mjs";
 

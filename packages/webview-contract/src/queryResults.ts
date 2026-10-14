@@ -101,7 +101,7 @@ export type PanelMessage =
   | {
       command: "clearQueryHistory";
       syncRequestId?: string | undefined;
-      error?: unknown | undefined;
+      error?: unknown;
     }
   /** Opens the current results in an editor tab; `queryTabData` is the panel's result state. */
   | { command: "queryResultTab:render"; queryTabData: Record<string, unknown> };

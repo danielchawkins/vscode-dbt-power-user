@@ -1,13 +1,7 @@
 import { SearchIcon } from "@assets/icons";
 import type { DocBlock } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
-import {
-  Button,
-  Input,
-  PopoverWithButton,
-  Stack,
-  activateClickOnKeyDown,
-} from "@uicore";
+import { Button, Input, PopoverWithButton, Stack } from "@uicore";
 import type { HTMLAttributes, RefObject } from "react";
 import { useMemo, useState } from "react";
 import documentationStyles from "../../styles.module.css";
@@ -90,17 +84,11 @@ const DocBlockInserter = ({
           <div className={styles.itemsList}>
             {filteredDocBlocks.length > 0 ? (
               filteredDocBlocks.map((docBlock) => (
-                <div
+                <button
+                  type="button"
                   key={docBlock.name}
-                  className={styles.docBlockItem}
-                  role="button"
-                  tabIndex={0}
+                  className={`btn-plain ${styles.docBlockItem}`}
                   onClick={() => handleInsertDocBlock(docBlock, close)}
-                  onKeyDown={(e) =>
-                    activateClickOnKeyDown(e, () =>
-                      handleInsertDocBlock(docBlock, close),
-                    )
-                  }
                 >
                   <Stack
                     direction="column"
@@ -108,7 +96,7 @@ const DocBlockInserter = ({
                   >
                     <strong className={styles.itemName}>{docBlock.name}</strong>
                   </Stack>
-                </div>
+                </button>
               ))
             ) : (
               <div className={`text-muted text-center ${styles.emptyState}`}>

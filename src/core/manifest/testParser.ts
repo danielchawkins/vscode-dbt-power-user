@@ -64,7 +64,7 @@ export class TestParser {
             parent && cleanColumnName
               ? parent.columns?.[cleanColumnName]?.meta
               : undefined;
-          const meta = { ...(testMeta ?? {}), ...(columnMeta ?? {}) };
+          const meta = { ...testMeta, ...columnMeta };
           testMetaMap.set(name, {
             path: fullPath,
             raw_sql,

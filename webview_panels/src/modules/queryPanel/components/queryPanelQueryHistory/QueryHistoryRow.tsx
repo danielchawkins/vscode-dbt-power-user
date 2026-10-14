@@ -1,6 +1,6 @@
 import { FileCodeIcon } from "@assets/icons";
 import type { QueryHistory } from "@modules/queryPanel/context/types";
-import { activateClickOnKeyDown, ListGroupItem } from "@uicore";
+import { ListGroupItem } from "@uicore";
 import ExecuteQueryButton from "./ExecuteQueryButton";
 
 interface Props {
@@ -17,15 +17,10 @@ const QueryHistoryRow = ({
 
   return (
     <ListGroupItem>
-      <div
-        role="button"
-        tabIndex={0}
-        onClick={handleClick}
-        onKeyDown={(e) => activateClickOnKeyDown(e, handleClick)}
-      >
+      <button type="button" className="btn-plain" onClick={handleClick}>
         <FileCodeIcon />
         {queryHistory.rawSql}
-      </div>
+      </button>
       <div>
         <span>
           {new Date(queryHistory.timestamp).toLocaleString("default", {

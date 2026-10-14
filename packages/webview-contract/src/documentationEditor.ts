@@ -159,7 +159,7 @@ export type PanelMessage =
   /** `updatedTests` is the panel's test metadata for the model and its columns. */
   | (Documentation & {
       command: "saveDocumentation";
-      updatedTests?: unknown | undefined;
+      updatedTests?: unknown;
       dialogType?: SaveDialog | undefined;
       syncRequestId?: string | undefined;
     });

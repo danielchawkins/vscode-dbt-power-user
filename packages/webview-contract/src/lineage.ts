@@ -103,7 +103,7 @@ export interface LineageData {
 
 /** What the lineage panel draws first; absent when no starting node resolves. */
 export interface RenderArgs {
-  node?: unknown | undefined;
+  node?: unknown;
   missingLineageMessage?: PanelNotice | undefined;
   /** True when column lists would stay empty because the project's static analysis is not strict. */
   columnsNeedStrict?: boolean | undefined;

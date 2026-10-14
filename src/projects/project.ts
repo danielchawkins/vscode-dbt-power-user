@@ -195,7 +195,7 @@ export class Project
     );
     this.terminal.debug(
       LOG_SOURCE,
-      `Created fusion dbt project ${this.getProjectName()} at ${this.projectRoot}`,
+      `Created fusion dbt project ${this.getProjectName()} at ${this.projectRoot.toString()}`,
     );
   }
 
@@ -345,7 +345,7 @@ export class Project
     }
     this.terminal.debug(
       LOG_SOURCE,
-      `Initialized dbt project ${this.getProjectName()} at ${this.projectRoot}`,
+      `Initialized dbt project ${this.getProjectName()} at ${this.projectRoot.toString()}`,
     );
   }
 

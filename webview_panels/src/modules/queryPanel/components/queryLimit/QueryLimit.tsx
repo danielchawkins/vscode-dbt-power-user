@@ -3,7 +3,7 @@ import { useQueryPanelDispatch } from "@modules/queryPanel/context/queryPanelCon
 import { setLimit } from "@modules/queryPanel/context/queryPanelReducer";
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
-import { activateClickOnKeyDown, Input, Stack } from "@uicore";
+import { Input, Stack } from "@uicore";
 import { useState } from "react";
 import styles from "./styles.module.css";
 
@@ -79,15 +79,15 @@ const QueryLimit = (): React.JSX.Element => {
             }}
           />
 
-          <div
+          <button
+            type="button"
+            aria-label="Run query"
             className={[
               styles.playButton,
               value && activeEditor?.filepath?.endsWith(".sql")
                 ? styles.active
                 : styles.inactive,
             ].join(" ")}
-            role="button"
-            tabIndex={0}
             onClick={() => {
               if (value && activeEditor?.filepath?.endsWith(".sql")) {
                 executeRequestInAsync("executeQueryFromActiveWindow", {
@@ -95,33 +95,22 @@ const QueryLimit = (): React.JSX.Element => {
                 });
               }
             }}
-            onKeyDown={(e) =>
-              activateClickOnKeyDown(e, () => {
-                if (value && activeEditor?.filepath?.endsWith(".sql")) {
-                  executeRequestInAsync("executeQueryFromActiveWindow", {
-                    limit: parseInt(value),
-                  });
-                }
-              })
-            }
           >
             <PlayIcon />
-          </div>
+          </button>
         </div>
       </Stack>
       {limitSaveState !== LimitSaveState.Default && (
         <Stack className={styles.saveContainer}>
           <div>Set as default</div>
           {limitSaveState === LimitSaveState.Dirty ? (
-            <div
+            <button
+              type="button"
               className={styles.saveButton}
-              role="button"
-              tabIndex={0}
               onClick={saveLimit}
-              onKeyDown={(e) => activateClickOnKeyDown(e, saveLimit)}
             >
               Save
-            </div>
+            </button>
           ) : (
             <div className={styles.saveButton}>Saved</div>
           )}

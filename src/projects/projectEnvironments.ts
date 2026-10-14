@@ -192,7 +192,9 @@ export class ProjectEnvironments implements Disposable {
 
   /** Probes again every cached project `affected` selects, firing `onDidChange` for those whose env changed. */
   private reresolve(affected: (project: DeclaredProject) => boolean): void {
-    for (const [key, entry] of [...this.cache]) {
+    // Snapshot: the loop deletes from the cache.
+    const entries = [...this.cache];
+    for (const [key, entry] of entries) {
       if (!affected(entry.project)) {
         continue;
       }
@@ -214,7 +216,9 @@ export class ProjectEnvironments implements Disposable {
   private syncWatchers(): void {
     const folders = workspace.workspaceFolders ?? [];
     const current = new Set(folders.map((folder) => folder.uri.fsPath));
-    for (const [key, watchers] of [...this.watchers]) {
+    // Snapshot: the loop deletes from the watchers map.
+    const watched = [...this.watchers];
+    for (const [key, watchers] of watched) {
       if (!current.has(key)) {
         watchers.forEach((watcher) => watcher.dispose());
         this.watchers.delete(key);

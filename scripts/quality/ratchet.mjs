@@ -25,7 +25,9 @@ const suppressionTotal = (file) => {
 };
 
 const isProductionSource = (file) =>
-  /\.tsx?$/.test(file) && !/\.d\.ts$/.test(file) && !/\.test\.tsx?$/.test(file);
+  /\.tsx?$/.test(file) &&
+  !file.endsWith(".d.ts") &&
+  !/\.test\.tsx?$/.test(file);
 
 const productionFiles = (dir) =>
   fs

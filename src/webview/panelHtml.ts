@@ -126,7 +126,7 @@ export function panelHtml(
   const nonce = randomBytes(16).toString("hex");
   const policy = contentSecurityPolicy(webview.cspSource, nonce, page.csp);
   const links = [...styles, "assets/codicons/codicon.css"]
-    .map((file) => `<link rel="stylesheet" href="${asset(file)}">`)
+    .map((file) => `<link rel="stylesheet" href="${asset(file).toString()}">`)
     .join("\n    ");
   return `<!DOCTYPE html>
 <html lang="en">
@@ -140,7 +140,7 @@ export function panelHtml(
     <div id="root"></div>
     <div id="sidebar"></div>
     <div id="modal"></div>
-    <script nonce="${nonce}" type="module" src="${asset(script)}"></script>
+    <script nonce="${nonce}" type="module" src="${asset(script).toString()}"></script>
   </body>
 </html>`;
 }

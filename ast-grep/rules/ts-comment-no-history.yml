@@ -12,6 +12,9 @@ files:
   - packages/**
   - scripts/**
   - lint/**
+  - "*.ts"
+  - "*.mjs"
+  - "*.cjs"
 ignores:
   # Each experiment is named by its plan id; the id is the experiment's name, not a history pointer.
   - scripts/evidence/experiments/**

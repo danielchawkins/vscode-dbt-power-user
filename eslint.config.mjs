@@ -4,7 +4,7 @@ import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 import { restrictedSyntax } from "./lint/boundaries.mjs";
 
-// Scoped and untyped (D10): ESLint runs only the rules Oxlint can't host natively.
+// Scoped and untyped: ESLint runs only the rules Oxlint can't host natively.
 // Violations present when a rule was introduced live in eslint-suppressions.json; new ones fail `just lint`.
 // Fixing one requires `just lint-prune` so the baseline only ever shrinks.
 
@@ -69,6 +69,6 @@ export default defineConfig(
       "sonarjs/no-identical-functions": "off",
     },
   },
-  // Turns off every rule Oxlint runs, so nothing is reported twice. It must stay last (O10).
+  // Turns off every rule Oxlint runs, so nothing is reported twice. It must stay last.
   ...oxlint.configs["flat/all"],
 );

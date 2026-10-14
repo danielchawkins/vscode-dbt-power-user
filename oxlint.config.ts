@@ -1,10 +1,17 @@
-// Oxlint config for the root workspace (C4). Report-only in P4a: no script or recipe runs it on the tree.
-// Plain data: nothing is exported as a function, so the fixture harness can serialise it (C5).
+// Oxlint config for the root workspace; `just lint-code` runs it over src, scripts and packages.
+// Plain data: nothing is exported as a function, so the fixture harness can serialise it.
 // Boundary lists come from lint/boundaries.mjs, the same module eslint.config.mjs reads.
 import { restrictedImports, restrictedProperties } from "./lint/boundaries.mjs";
 
 const CORE = ["src/core/**/*.ts", "src/settings/**/*.ts", "src/fusion/**/*.ts"];
 const TESTS = ["src/test/**/*.ts", "packages/*/src/**/*.test.ts"];
+// Repository tooling: it reads the environment and runs processes, which the boundary rules forbid in the extension.
+const TOOLING = [
+  "scripts/**",
+  "*.config.ts",
+  "*.config.mjs",
+  ".vscode-test.mjs",
+];
 
 export default {
   ignorePatterns: [
@@ -15,6 +22,8 @@ export default {
     "src/test/fixtures/**",
     "**/*.d.ts",
     "scripts/spikes/**",
+    // One-off experiments that regenerate docs/research/evidence; not maintained code.
+    "scripts/evidence/**",
   ],
   options: { typeAware: true },
   plugins: ["typescript", "unicorn", "import"],
@@ -138,6 +147,13 @@ export default {
       },
     },
     {
+      files: TOOLING,
+      rules: {
+        "eslint/no-restricted-properties": "off",
+        "eslint/no-restricted-imports": "off",
+      },
+    },
+    {
       files: TESTS,
       rules: {
         "eslint/max-lines": "off",
@@ -146,6 +162,8 @@ export default {
         "typescript/no-require-imports": "off",
         "eslint/no-restricted-properties": "off",
         "eslint/no-restricted-imports": "off",
+        // `expect(mock.method)` and `vi.mocked(obj.fn)` reference methods without calling them.
+        "typescript/unbound-method": "off",
       },
     },
   ],

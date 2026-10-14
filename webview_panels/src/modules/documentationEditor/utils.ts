@@ -63,11 +63,17 @@ const isTestDirty = (
 ): boolean => {
   if (test.test_metadata?.name === DbtGenericTests.ACCEPTED_VALUES) {
     const currentValues =
-      (test.test_metadata?.kwargs as TestMetadataAcceptedValuesKwArgs).values ??
-      [];
+      (
+        test.test_metadata?.kwargs as
+          | TestMetadataAcceptedValuesKwArgs
+          | undefined
+      )?.values ?? [];
     const incomingValues =
-      (incomingTest.test_metadata?.kwargs as TestMetadataAcceptedValuesKwArgs)
-        .values ?? [];
+      (
+        incomingTest.test_metadata?.kwargs as
+          | TestMetadataAcceptedValuesKwArgs
+          | undefined
+      )?.values ?? [];
     if (!isArrayEqual(currentValues, incomingValues)) {
       return true;
     }

@@ -5,7 +5,7 @@ import sonarjs from "eslint-plugin-sonarjs";
 import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 
-// Scoped and untyped (D10, D11): only the rules Oxlint can't host natively. No type-aware parser options.
+// Scoped and untyped: only the rules Oxlint can't host natively. No type-aware parser options.
 // Violations present when a rule was introduced live in eslint-suppressions.json; new ones fail `just lint`.
 // Fixing one requires `just lint-prune` so the baseline only ever shrinks.
 
@@ -151,6 +151,6 @@ export default defineConfig(
     files: ["src/modules/app/requestExecutor.ts"],
     rules: { "no-restricted-syntax": "off" },
   },
-  // Turns off every rule Oxlint runs, so nothing is reported twice. It must stay last (O10).
+  // Turns off every rule Oxlint runs, so nothing is reported twice. It must stay last.
   ...oxlint.configs["flat/all"],
 );

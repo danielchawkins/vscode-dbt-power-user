@@ -1,6 +1,7 @@
 import type { Task } from "vscode";
 import { CustomExecution } from "vscode";
 import type { Log } from "../core/log";
+import { errorText } from "../core/text";
 import type { CommandProcessResult } from "../core/types";
 import type { RunModelParams } from "../dbt_integration/domain";
 import type { QueuedCliCommand } from "../fusion/fusionCli";
@@ -134,7 +135,7 @@ export class ProjectTasks {
     this.warnedTasksUnavailable = true;
     this.deps.terminal.warn(
       LOG_SOURCE,
-      `Running dbt commands without a task terminal: VS Code could not execute the dbt task: ${error}`,
+      `Running dbt commands without a task terminal: VS Code could not execute the dbt task: ${errorText(error)}`,
     );
   }
 

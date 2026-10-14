@@ -64,6 +64,17 @@ code {
   outline: 1px solid var(--vscode-focusBorder);
 }
 
+/* A native button that looks like the content it wraps: rows and list items that act on click. */
+.btn-plain {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: start;
+  cursor: pointer;
+}
+
 .btn {
   display: inline-flex;
   align-items: center;

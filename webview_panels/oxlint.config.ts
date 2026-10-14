@@ -1,5 +1,5 @@
-// Oxlint config for the webview workspace (C4). Report-only in P4a: no script or recipe runs it on the tree.
-// Plain data: nothing is exported as a function, so the fixture harness can serialise it (C5).
+// Oxlint config for the webview workspace; `just webviews::lint` runs it over webview_panels.
+// Plain data: nothing is exported as a function, so the fixture harness can serialise it.
 // Only this workspace's tsconfigs see the sources, so this file is ignored by its ESLint config.
 import { vscodeApiPaths, vscodeApiPatterns } from "./lint/boundaries.mjs";
 
@@ -462,6 +462,12 @@ export default {
         "eslint/max-lines": "off",
         "eslint/max-lines-per-function": "off",
         "eslint/max-params": "off",
+        // Test helpers and harness markup: return types, type style and fake controls are not product surface.
+        "typescript/explicit-module-boundary-types": "off",
+        "typescript/consistent-type-definitions": "off",
+        "eslint/no-empty-function": "off",
+        "jsx-a11y/control-has-associated-label": "off",
+        "jsx-a11y/no-static-element-interactions": "off",
         "react/error-boundaries": "off",
         "react/jsx-no-comment-textnodes": "off",
         "react/no-array-index-key": "off",

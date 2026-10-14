@@ -152,7 +152,7 @@ describe("QueryResultPanel", () => {
       );
       expect(window.showErrorMessage).not.toHaveBeenCalled();
       expect(posted().find((m) => m.command === "renderError")).toMatchObject({
-        error: { message: "Error: boom" },
+        error: { message: "boom" },
       });
     });
   });

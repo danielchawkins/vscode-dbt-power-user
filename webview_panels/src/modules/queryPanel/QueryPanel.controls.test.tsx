@@ -200,6 +200,16 @@ describe("Query panel toolbar", () => {
     expect(screen.getByText("Saved")).toBeInTheDocument();
   });
 
+  it("runs the active SQL file with the limit", async () => {
+    const { user } = openQueryPanel({
+      command: "getContext",
+      limit: 500,
+      activeEditor: { filepath: "/p/a.sql", query: "select 1" },
+    });
+    await press(user, "button", "Run query");
+    await expectPosted("executeQueryFromActiveWindow", { limit: 500 });
+  });
+
   it("runs a new query", async () => {
     const { user } = openQueryPanel();
     await press(user, "button", "open-adhoc-query");
@@ -435,6 +445,7 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:Open in Tab",
   "button:Clear results",
   "spinbutton:Limit",
+  "button:Run query",
   "button:Save",
   "button:Export CSV",
   "button:Resize column id",
