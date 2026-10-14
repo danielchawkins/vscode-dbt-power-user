@@ -14,7 +14,7 @@
       "ignore": ["scripts/spikes/**"],
       "ignoreBinaries": ["dbt", "sample"],
       // oxlint and oxlint-tsgolint run only as binaries: `oxlint --type-aware` spawns tsgolint.
-      "ignoreDependencies": ["type-coverage", "oxlint", "oxlint-tsgolint"]
+      "ignoreDependencies": ["oxlint", "oxlint-tsgolint"]
     },
     "packages/webview-contract": {
       "entry": ["src/**/*.test.ts"],
