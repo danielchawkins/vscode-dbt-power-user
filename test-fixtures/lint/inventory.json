@@ -171,6 +171,82 @@
     "typescript/switch-exhaustiveness-check": {
       "engine": "oxlint",
       "from": "@typescript-eslint/switch-exhaustiveness-check"
+    },
+    "eslint/prefer-object-has-own": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "typescript/consistent-type-imports": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "typescript/no-deprecated": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "typescript/parameter-properties": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "typescript/prefer-includes": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "typescript/prefer-nullish-coalescing": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "typescript/prefer-optional-chain": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-at": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-global-this": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-import-meta-properties": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-node-protocol": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-optional-catch-binding": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-set-has": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-string-replace-all": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "e18e/prefer-array-to-sorted": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "e18e/prefer-array-from-map": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "e18e/prefer-timer-args": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "e18e/prefer-regex-test": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "e18e/prefer-spread-syntax": {
+      "engine": "oxlint",
+      "from": null
     }
   },
   "webview": {
@@ -1105,6 +1181,86 @@
     "typescript/unbound-method": {
       "engine": "oxlint",
       "from": "@typescript-eslint/unbound-method"
+    },
+    "eslint/prefer-object-has-own": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "react/globals": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "react/immutability": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "react/preserve-manual-memoization": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "react/refs": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "typescript/consistent-type-imports": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "typescript/no-deprecated": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "typescript/parameter-properties": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-at": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-global-this": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-import-meta-properties": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-node-protocol": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-optional-catch-binding": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-set-has": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "unicorn/prefer-string-replace-all": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "e18e/prefer-array-to-sorted": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "e18e/prefer-array-from-map": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "e18e/prefer-timer-args": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "e18e/prefer-regex-test": {
+      "engine": "oxlint",
+      "from": null
+    },
+    "e18e/prefer-spread-syntax": {
+      "engine": "oxlint",
+      "from": null
     }
   }
 }

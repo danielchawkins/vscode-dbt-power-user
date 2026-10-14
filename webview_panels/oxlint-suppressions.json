@@ -1,20 +1,104 @@
 {
+  "src/assets/icons/index.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/AutoCollapsingNotification/AutoCollapsingNotification.tsx": {
+    "e18e/prefer-timer-args": {
+      "count": 1
+    }
+  },
+  "src/modules/app/AppProvider.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/app/appReducer.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/app/context.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/modules/app/requestExecutor.test.ts": {
+    "e18e/prefer-array-from-map": {
+      "count": 1
+    },
+    "unicorn/prefer-node-protocol": {
+      "count": 2
+    },
+    "unicorn/prefer-set-has": {
+      "count": 1
+    }
+  },
+  "src/modules/app/typedReducer.ts": {
+    "prefer-object-has-own": {
+      "count": 1
+    }
+  },
+  "src/modules/app/useAppContext.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/app/useDebouncedValue.ts": {
+    "e18e/prefer-timer-args": {
+      "count": 1
+    }
+  },
+  "src/modules/app/useListeners.test.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    },
+    "unicorn/prefer-global-this": {
+      "count": 1
+    }
+  },
   "src/modules/app/useListeners.ts": {
     "react-hooks/exhaustive-deps": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/modules/app/viewState.test.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/commonActionButtons/HelpButton.tsx": {
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
   "src/modules/documentationEditor/DocumentationEditor.controls.test.tsx": {
+    "e18e/prefer-array-to-sorted": {
+      "count": 1
+    },
     "typescript/consistent-type-definitions": {
       "count": 1
     },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    },
     "typescript/explicit-module-boundary-types": {
+      "count": 1
+    },
+    "unicorn/prefer-global-this": {
       "count": 1
     }
   },
   "src/modules/documentationEditor/DocumentationEditor.coverage.test.tsx": {
     "jsx-a11y/control-has-associated-label": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
     }
   },
   "src/modules/documentationEditor/DocumentationProvider.tsx": {
@@ -22,6 +106,9 @@
       "count": 1
     },
     "react-hooks/exhaustive-deps": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
@@ -34,25 +121,60 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/modules/documentationEditor/components/docGenerator/DocGeneratorColumn.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
     }
   },
   "src/modules/documentationEditor/components/docGenerator/DocGeneratorColumnsList.tsx": {
     "react/preserve-manual-memoization": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/docGenerator/DocGeneratorInput.test.tsx": {
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
   "src/modules/documentationEditor/components/docGenerator/DocGeneratorInput.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
+    },
+    "unicorn/prefer-global-this": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.test.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
     }
   },
   "src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 3
     }
   },
   "src/modules/documentationEditor/components/search/SearchColumnsInput.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/AddTest.tsx": {
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
@@ -62,38 +184,82 @@
     },
     "react/set-state-in-effect": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
     }
   },
   "src/modules/documentationEditor/components/tests/DisplayTestDetails.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
     }
   },
   "src/modules/documentationEditor/components/tests/EntityWithTests.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 3
     }
   },
   "src/modules/documentationEditor/components/tests/EntityWithUnitTests.tsx": {
     "max-lines-per-function": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/modules/documentationEditor/components/tests/Test.tsx": {
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
   "src/modules/documentationEditor/components/tests/TestDetails.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/UnitTestDetails.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/forms/AcceptedValues.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
     }
   },
   "src/modules/documentationEditor/components/tests/forms/Relationships.tsx": {
+    "e18e/prefer-array-from-map": {
+      "count": 1
+    },
     "max-lines-per-function": {
       "count": 1
     },
     "react/set-state-in-effect": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
     }
   },
   "src/modules/documentationEditor/components/tests/forms/TestForm.tsx": {
     "react-hooks/exhaustive-deps": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/forms/isTestFormComplete.ts": {
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
@@ -103,6 +269,47 @@
     },
     "max-params": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/modules/documentationEditor/components/tests/hooks/useTestFormValues.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/types.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/components/tests/utils.ts": {
+    "e18e/prefer-spread-syntax": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/context.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/state/documentationReducer.test.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/state/documentationReducer.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/state/useDocumentationContext.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 2
     }
   },
   "src/modules/documentationEditor/state/useDocumentationViewState.test.tsx": {
@@ -113,15 +320,48 @@
   "src/modules/documentationEditor/state/useDraftSync.test.tsx": {
     "react/globals": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    },
+    "unicorn/prefer-at": {
+      "count": 4
+    }
+  },
+  "src/modules/documentationEditor/state/useDraftSync.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/documentationEditor/types.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
     }
   },
   "src/modules/documentationEditor/utils.ts": {
     "no-unsafe-optional-chaining": {
       "count": 2
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/lineage/Lineage.controls.test.tsx": {
+    "e18e/prefer-array-to-sorted": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
     }
   },
   "src/modules/lineage/Lineage.coverage.test.tsx": {
+    "e18e/prefer-array-to-sorted": {
+      "count": 1
+    },
     "jsx-a11y/control-has-associated-label": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
@@ -131,15 +371,36 @@
     },
     "react/refs": {
       "count": 3
+    },
+    "typescript/consistent-type-imports": {
+      "count": 3
     }
   },
   "src/modules/lineage/TableNode.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 3
     }
   },
   "src/modules/lineage/Toolbar.test.tsx": {
     "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/modules/lineage/Toolbar.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/lineage/components/help/HelpButton.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/lineage/graph.test.ts": {
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
@@ -148,22 +409,52 @@
       "count": 3
     }
   },
+  "src/modules/lineage/requests.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
   "src/modules/lineage/useLineageGraph.test.tsx": {
     "typescript/consistent-type-definitions": {
+      "count": 1
+    },
+    "unicorn/prefer-global-this": {
+      "count": 1
+    }
+  },
+  "src/modules/lineage/useLineageGraph.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 3
+    }
+  },
+  "src/modules/markdown/PreTag.tsx": {
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
   "src/modules/queryPanel/QueryPanel.controls.test.tsx": {
+    "e18e/prefer-array-to-sorted": {
+      "count": 1
+    },
     "typescript/consistent-type-definitions": {
       "count": 1
     },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    },
     "typescript/explicit-module-boundary-types": {
+      "count": 1
+    },
+    "unicorn/prefer-global-this": {
       "count": 1
     }
   },
   "src/modules/queryPanel/QueryPanel.coverage.test.tsx": {
     "jsx-a11y/control-has-associated-label": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
     }
   },
   "src/modules/queryPanel/QueryPanel.tsx": {
@@ -182,15 +473,34 @@
     },
     "react-hooks/exhaustive-deps": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
     }
   },
   "src/modules/queryPanel/components/grid/GridBodyRow.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
       "count": 2
+    },
+    "typescript/consistent-type-imports": {
+      "count": 4
+    }
+  },
+  "src/modules/queryPanel/components/grid/GridErrorBoundary.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
     }
   },
   "src/modules/queryPanel/components/grid/GridHeaderCell.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/modules/queryPanel/components/grid/GridToolbar.tsx": {
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
@@ -200,6 +510,50 @@
     },
     "react/incompatible-library": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 3
+    }
+  },
+  "src/modules/queryPanel/components/grid/columnTypeMapping.property.test.ts": {
+    "e18e/prefer-array-to-sorted": {
+      "count": 1
+    },
+    "unicorn/prefer-set-has": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/components/grid/columnTypeMapping.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/components/grid/csv.ts": {
+    "unicorn/prefer-string-replace-all": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/components/grid/downloadCsv.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    },
+    "unicorn/prefer-global-this": {
+      "count": 2
+    }
+  },
+  "src/modules/queryPanel/components/grid/gridSelection.ts": {
+    "unicorn/prefer-string-replace-all": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/components/grid/useGridSelection.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/modules/queryPanel/components/grid/useGridTable.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 4
     }
   },
   "src/modules/queryPanel/components/queryLimit/QueryLimit.test.tsx": {
@@ -213,20 +567,60 @@
     },
     "max-lines-per-function": {
       "count": 1
+    },
+    "unicorn/prefer-string-replace-all": {
+      "count": 1
     }
   },
   "src/modules/queryPanel/components/queryPanelQueryHistory/QueryHistoryRow.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
   "src/modules/queryPanel/components/queryPanelQueryHistory/QueryPanelHistory.tsx": {
     "max-lines-per-function": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/modules/queryPanel/context/queryPanelContext.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/modules/queryPanel/context/queryPanelReducer.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/context/types.ts": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/modules/queryPanel/useQueryPanelListeners.test.tsx": {
+    "unicorn/prefer-global-this": {
+      "count": 2
     }
   },
   "src/modules/queryPanel/useQueryPanelListeners.ts": {
     "max-lines-per-function": {
+      "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    },
+    "unicorn/prefer-global-this": {
+      "count": 4
+    }
+  },
+  "src/modules/queryPanel/useQueryPanelState.ts": {
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
@@ -236,14 +630,26 @@
     }
   },
   "src/test/lineageHarness.tsx": {
+    "e18e/prefer-array-from-map": {
+      "count": 1
+    },
     "no-empty-function": {
       "count": 2
     },
     "typescript/consistent-type-definitions": {
       "count": 2
     },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    },
     "typescript/explicit-module-boundary-types": {
       "count": 5
+    },
+    "typescript/parameter-properties": {
+      "count": 2
+    },
+    "unicorn/prefer-global-this": {
+      "count": 4
     }
   },
   "src/uiCore/anchoredPosition.ts": {
@@ -252,10 +658,66 @@
     },
     "react/immutability": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
     }
   },
   "src/uiCore/components/PopoverWithButton.test.tsx": {
     "jsx-a11y/no-static-element-interactions": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/button/Button.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/uiCore/components/chipInput/ChipInput.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/codeblock/index.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/uiCore/components/codeblock/prism.ts": {
+    "unicorn/prefer-at": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/drawer/index.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    },
+    "unicorn/prefer-global-this": {
+      "count": 2
+    }
+  },
+  "src/uiCore/components/dropdownButton/DropdownButton.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/iconButton/IconButton.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 2
+    }
+  },
+  "src/uiCore/components/input/Input.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/input/TextArea.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/loadingButton/index.tsx": {
+    "typescript/consistent-type-imports": {
       "count": 1
     }
   },
@@ -265,11 +727,55 @@
     },
     "max-params": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
     }
   },
   "src/uiCore/components/primitives.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
       "count": 1
+    },
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/select/index.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/stack/Stack.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/tag/Tag.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/tooltip/Tooltip.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    }
+  },
+  "src/uiCore/components/uiCore.test.tsx": {
+    "typescript/consistent-type-imports": {
+      "count": 1
+    },
+    "unicorn/prefer-global-this": {
+      "count": 1
+    }
+  },
+  "src/uiCore/customProperties.test.ts": {
+    "e18e/prefer-array-from-map": {
+      "count": 3
+    }
+  },
+  "vite.config.ts": {
+    "unicorn/prefer-node-protocol": {
+      "count": 3
     }
   }
 }

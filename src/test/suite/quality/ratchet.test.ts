@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import {
   compareMeasured,
   compareWithBase,
+  countTscErrors,
   METRICS,
   parseTrailers,
   SUPPRESSION_FILES,
@@ -140,6 +141,27 @@ describe("compareWithBase", () => {
     );
 
     expect(result).toEqual({ accepted: [], rejected: [], skipped: [] });
+  });
+});
+
+describe("countTscErrors", () => {
+  it("counts each error TS line in plain output", () => {
+    const output =
+      "src/a.ts(1,1): error TS5097: An import path can only end with a '.ts' extension.\n" +
+      "src/b.ts(2,3): error TS1484: 'X' is a type and must be imported using a type-only import.\n";
+
+    expect(countTscErrors(output)).toBe(2);
+  });
+
+  it("counts pretty output with ANSI colour codes", () => {
+    const output =
+      "\u001b[91merror\u001b[0m\u001b[90m TS5097\u001b[0m: An import path can only end with a '.ts' extension.\n";
+
+    expect(countTscErrors(output)).toBe(1);
+  });
+
+  it("counts nothing in empty output", () => {
+    expect(countTscErrors("")).toBe(0);
   });
 });
 

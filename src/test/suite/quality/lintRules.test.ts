@@ -107,6 +107,8 @@ const OXLINT_NAME_TO_KEY: Record<string, string> = {
 // The test fails if one starts firing, so the entry is removed with the fix.
 const KNOWN_SILENT: Record<string, string> = {
   "jsx_a11y/autocomplete-valid": "Oxlint 1.87 never reports autocomplete-valid",
+  "react/preserve-manual-memoization":
+    "Oxlint 1.87 reports nothing for it on any of about 20 shapes tried (P7.R1.b)",
 };
 
 function inventoryKey(code: string): string | undefined {
