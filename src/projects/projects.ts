@@ -1,11 +1,12 @@
-import { Disposable, Event, EventEmitter, Uri } from "vscode";
+import type { Event, Uri } from "vscode";
+import { Disposable, EventEmitter } from "vscode";
 import type { Log } from "../core/log";
 import { CompositeMetadataSource } from "../metadata/compositeMetadataSource";
-import { ProjectMetadataSource } from "../metadata/projectMetadataSource";
+import type { ProjectMetadataSource } from "../metadata/projectMetadataSource";
 import { ServerMetadataSource } from "../metadata/serverMetadataSource";
 import { onDidChangeSettings } from "../settings";
-import { Project } from "./project";
-import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
+import type { Project } from "./project";
+import type { DeclaredProject, ProjectRegistry } from "./projectRegistry";
 
 interface ProjectEntry {
   project: Project;

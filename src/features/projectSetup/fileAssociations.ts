@@ -1,19 +1,22 @@
-import { commands, Disposable, window } from "vscode";
+import type { Disposable } from "vscode";
+import { commands, window } from "vscode";
 import { readDbtProjectFile, resolveProjectPaths } from "../../core/project";
-import {
-  dbtTemplateAssociations,
-  literalGlobPath,
+import type {
   SkippedDirectory,
   SkipReason,
 } from "../../dbt_integration/dbtAssociations";
-import { notifyErrorWithoutProject } from "../../projects/notifications";
-import { ProjectRegistry } from "../../projects/projectRegistry";
 import {
-  FileAssociations,
+  dbtTemplateAssociations,
+  literalGlobPath,
+} from "../../dbt_integration/dbtAssociations";
+import { notifyErrorWithoutProject } from "../../projects/notifications";
+import type { ProjectRegistry } from "../../projects/projectRegistry";
+import type { FileAssociations } from "../../settings";
+import {
   readUserFileAssociations,
   writeUserFileAssociations,
 } from "../../settings";
-import { StartupGate } from "../../startupGate";
+import type { StartupGate } from "../../startupGate";
 
 /** How many user associations one run added and removed. */
 export interface AssociationChanges {

@@ -1,6 +1,6 @@
 import { ChevronRightIcon, NoHistoryIcon, OpenNewIcon } from "@assets/icons";
 import AutoCollapsingNotification from "@modules/AutoCollapsingNotification/AutoCollapsingNotification";
-import { QueryHistory } from "@modules/queryPanel/context/types";
+import type { QueryHistory } from "@modules/queryPanel/context/types";
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import useQueryPanelState from "@modules/queryPanel/useQueryPanelState";
 import {
@@ -13,7 +13,8 @@ import {
 } from "@uicore";
 import { useEffect, useMemo, useState } from "react";
 import styles from "../../querypanel.module.css";
-import Filters, { QueryFilters } from "../filters/Filters";
+import type { QueryFilters } from "../filters/Filters";
+import Filters from "../filters/Filters";
 import QueryHistoryRow from "./QueryHistoryRow";
 
 const QueryPanelHistory = (): React.JSX.Element => {

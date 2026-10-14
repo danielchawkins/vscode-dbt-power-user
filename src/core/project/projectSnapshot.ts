@@ -1,6 +1,8 @@
 import * as path from "node:path";
-import { DbtProjectFile, declaredProjectName } from "./dbtProjectFile";
-import { ProjectPaths, resolveProjectPaths } from "./projectPaths";
+import type { DbtProjectFile } from "./dbtProjectFile";
+import { declaredProjectName } from "./dbtProjectFile";
+import type { ProjectPaths } from "./projectPaths";
+import { resolveProjectPaths } from "./projectPaths";
 
 /** `project` passes no `--static-analysis`, so the project's own `+static_analysis` model config applies. */
 export type StaticAnalysisMode = "project" | "off" | "baseline" | "strict";

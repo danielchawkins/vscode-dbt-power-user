@@ -2,9 +2,10 @@ import { documentationEditor } from "@fusion-power-user/webview-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter, Uri } from "vscode";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
+import type * as panelHtmlModule from "../../webview/panelHtml";
 
 vi.mock("../../webview/panelHtml", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("../../webview/panelHtml")>()),
+  ...(await importOriginal<typeof panelHtmlModule>()),
   panelHtml: () => "<html>docs</html>",
 }));
 

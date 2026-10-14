@@ -1,15 +1,16 @@
-import {
+import type {
   CancellationToken,
   Disposable,
   TextEditor,
   WebviewView,
   WebviewViewProvider,
   WebviewViewResolveContext,
-  window,
 } from "vscode";
+import { window } from "vscode";
 import type { ParseDemand } from "../../projects/parseDemand";
-import { Projects } from "../../projects/projects";
-import { LINEAGE_VIEW_TYPE, LineagePanel } from "./lineagePanel";
+import type { Projects } from "../../projects/projects";
+import type { LineagePanel } from "./lineagePanel";
+import { LINEAGE_VIEW_TYPE } from "./lineagePanel";
 
 export class LineageViewProvider implements WebviewViewProvider, Disposable {
   public static readonly viewType = LINEAGE_VIEW_TYPE;

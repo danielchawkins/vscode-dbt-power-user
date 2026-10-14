@@ -3,14 +3,14 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { DBTCommand } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
-import { ProjectSnapshot } from "../../core/project";
+import type { ProjectSnapshot } from "../../core/project";
 import { RunModelType } from "../../dbt_integration/domain";
-import { FusionCli } from "../../fusion/fusionCli";
+import type { FusionCli } from "../../fusion/fusionCli";
 import { CommandQueue } from "../../projects/commandQueue";
 import { DbtTaskTerminal } from "../../projects/dbtTask";
+import type { ProjectCommandDeps } from "../../projects/projectCommands";
 import {
   modelParamsFor,
-  ProjectCommandDeps,
   queueCli,
   selection,
 } from "../../projects/projectCommands";

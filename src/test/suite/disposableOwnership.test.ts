@@ -7,13 +7,8 @@ import {
   type Mock,
   vi,
 } from "vitest";
-import {
-  commands,
-  Disposable,
-  ExtensionContext,
-  languages,
-  window,
-} from "vscode";
+import type { Disposable, ExtensionContext } from "vscode";
+import { commands, languages, window } from "vscode";
 import {
   registerRuntimeTimings,
   RUNTIME_TIMINGS_COMMAND,
@@ -25,15 +20,15 @@ import {
   PARENT_TABLES_COMMAND,
   registerConnectedColumnsCommand,
 } from "../../features/lineage/connectedColumnsCommand";
-import { DbtLineageService } from "../../features/lineage/dbtLineageService";
+import type { DbtLineageService } from "../../features/lineage/dbtLineageService";
 import {
   FUSION_CLIENT_STATES_COMMAND,
   registerFusionClientDiagnostics,
 } from "../../projects/fusionClientDiagnostics";
-import { FusionClientPool } from "../../projects/fusionClientPool";
-import { FusionStatus } from "../../projects/fusionStatus";
-import { ProjectEnvironments } from "../../projects/projectEnvironments";
-import { ProjectRegistry } from "../../projects/projectRegistry";
+import type { FusionClientPool } from "../../projects/fusionClientPool";
+import type { FusionStatus } from "../../projects/fusionStatus";
+import type { ProjectEnvironments } from "../../projects/projectEnvironments";
+import type { ProjectRegistry } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
 const SWITCHES = ["FPU_RUNTIME_BENCHMARK", "FPU_INTEGRATION_COMMANDS"] as const;

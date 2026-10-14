@@ -1,7 +1,6 @@
 import { ChevronRightIcon } from "@assets/icons";
+import type { ReactNode, Ref } from "react";
 import {
-  ReactNode,
-  Ref,
   useCallback,
   useEffect,
   useImperativeHandle,

@@ -1,13 +1,13 @@
 import * as path from "node:path";
 
 import type { Log } from "../log";
-import { ManifestProject } from "./manifestProject";
-import {
+import type { ManifestProject } from "./manifestProject";
+import type {
   ExposureMetaMap,
   ExposureResource,
   ManifestResources,
-  RESOURCE_TYPE_EXPOSURE,
 } from "./types";
+import { RESOURCE_TYPE_EXPOSURE } from "./types";
 
 export class ExposureParser {
   constructor(private terminal: Pick<Log, "debug">) {}

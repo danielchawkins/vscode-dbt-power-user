@@ -1,6 +1,7 @@
 import { createContext } from "react";
-import { AppAction, initialState } from "./appReducer";
-import { AppStateProps } from "./types";
+import type { AppAction } from "./appReducer";
+import { initialState } from "./appReducer";
+import type { AppStateProps } from "./types";
 
 export interface ContextProps {
   state: AppStateProps;

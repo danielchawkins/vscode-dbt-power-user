@@ -1,23 +1,16 @@
 import { dirname, isAbsolute, relative } from "node:path";
-import {
-  Disposable,
-  Event,
-  EventEmitter,
-  RelativePattern,
-  Uri,
-  workspace,
-  WorkspaceFolder,
-} from "vscode";
+import type { Disposable, Event, Uri, WorkspaceFolder } from "vscode";
+import { EventEmitter, RelativePattern, workspace } from "vscode";
 import type { Log } from "../core/log";
 import { projectDirVariable } from "../core/project/dbtEnvironment";
+import type { ToolEnvironment } from "../fusion/toolEnvironment";
 import {
   applyOverlay,
   resolveToolEnvironment,
-  ToolEnvironment,
 } from "../fusion/toolEnvironment";
 import { onDidChangeSettings, readEnvironment, readSetting } from "../settings";
 import { notifyWarning } from "./notifications";
-import { DeclaredProject } from "./projectRegistry";
+import type { DeclaredProject } from "./projectRegistry";
 
 /** The environment a Declared Project's dbt processes launch with, and where it came from. */
 export interface ProjectEnvironment {

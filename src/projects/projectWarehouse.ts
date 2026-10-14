@@ -1,20 +1,16 @@
 import { relative as relativePath, sep } from "node:path";
-import { Uri } from "vscode";
-import { QueryExecution } from "../core/dbtCommand";
+import type { Uri } from "vscode";
+import type { QueryExecution } from "../core/dbtCommand";
 import type { Log } from "../core/log";
 import { dbColumnsFrom } from "../core/lsp";
-import { DBColumn } from "../core/types";
-import { QueryExecutionResult } from "../dbt_integration/domain";
+import type { DBColumn } from "../core/types";
+import type { QueryExecutionResult } from "../dbt_integration/domain";
 import type { FusionCli } from "../fusion/fusionCli";
 import type { FusionCommands } from "../fusion/fusionCommands";
 import { compiledModelSql } from "./compiledModel";
 import type { Manifest } from "./manifestTypes";
-import {
-  compileOrReport,
-  executeWithLimit,
-  SqlDeps,
-  SqlProject,
-} from "./projectSql";
+import type { SqlDeps, SqlProject } from "./projectSql";
+import { compileOrReport, executeWithLimit } from "./projectSql";
 
 /** What a project's warehouse and compile operations read from the project. */
 export interface WarehouseProject extends SqlProject {

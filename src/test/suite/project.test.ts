@@ -12,8 +12,9 @@ import {
   vi,
 } from "vitest";
 import * as vscode from "vscode";
-import { DBTCommand, QueryExecution } from "../../core/dbtCommand";
-import { DBTDiagnosticData } from "../../core/diagnostics";
+import type { DBTCommand } from "../../core/dbtCommand";
+import { QueryExecution } from "../../core/dbtCommand";
+import type { DBTDiagnosticData } from "../../core/diagnostics";
 import type { Log } from "../../core/log";
 import {
   ChildrenParentParser,
@@ -35,15 +36,16 @@ import {
   MANIFEST_FILE,
   type ParsedManifest,
 } from "../../dbt_integration/domain";
-import { FusionCli } from "../../fusion/fusionCli";
+import type { FusionCli } from "../../fusion/fusionCli";
 import { DbtTaskTerminal } from "../../projects/dbtTask";
-import { ManifestParsers } from "../../projects/manifest";
+import type { ManifestParsers } from "../../projects/manifest";
 import { ParseDemand } from "../../projects/parseDemand";
 import { Project, type ProjectOptions } from "../../projects/project";
-import { ProjectCommandDeps, queueCli } from "../../projects/projectCommands";
-import { ProjectDiagnostics } from "../../projects/projectDiagnostics";
-import { RunHistoryService } from "../../projects/runHistoryService";
-import { SharedStateService } from "../../projects/sharedStateService";
+import type { ProjectCommandDeps } from "../../projects/projectCommands";
+import { queueCli } from "../../projects/projectCommands";
+import type { ProjectDiagnostics } from "../../projects/projectDiagnostics";
+import type { RunHistoryService } from "../../projects/runHistoryService";
+import type { SharedStateService } from "../../projects/sharedStateService";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 import {

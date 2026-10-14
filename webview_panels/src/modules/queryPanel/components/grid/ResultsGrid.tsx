@@ -1,7 +1,9 @@
-import { TableData } from "@modules/queryPanel/context/types";
+import type { TableData } from "@modules/queryPanel/context/types";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { Drawer, DrawerRef } from "@uicore";
-import { CSSProperties, useRef, useState } from "react";
+import type { DrawerRef } from "@uicore";
+import { Drawer } from "@uicore";
+import type { CSSProperties } from "react";
+import { useRef, useState } from "react";
 import { cellViewerText } from "./cellViewer";
 import classes from "./grid.module.css";
 import GridBodyRow from "./GridBodyRow";

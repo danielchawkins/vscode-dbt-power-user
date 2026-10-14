@@ -1,8 +1,9 @@
 import { InfoCircleIcon, TestsIcon } from "@assets/icons";
-import { EntityType } from "@modules/documentationEditor/state/entityType";
-import { DBTModelTest } from "@modules/documentationEditor/state/types";
+import type { EntityType } from "@modules/documentationEditor/state/entityType";
+import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
-import { Button, Drawer, DrawerRef, Stack, Tooltip } from "@uicore";
+import type { DrawerRef } from "@uicore";
+import { Button, Drawer, Stack, Tooltip } from "@uicore";
 import { useMemo, useRef, useState } from "react";
 import classes from "../../styles.module.css";
 import AddTest from "./AddTest";

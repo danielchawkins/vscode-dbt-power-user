@@ -1,24 +1,26 @@
-import { ChildProcess, spawn } from "node:child_process";
+import type { ChildProcess } from "node:child_process";
+import { spawn } from "node:child_process";
 import * as fs from "node:fs";
-import * as net from "node:net";
+import type * as net from "node:net";
 import * as os from "node:os";
 import * as path from "node:path";
-import type { Disposable } from "../../fusion/reverseSocketTransport";
-import {
-  acceptWithProcessExit,
+import type {
+  Disposable,
   ExitingProcess,
-  listenForServer,
   ReverseSocketServer,
 } from "../../fusion/reverseSocketTransport";
 import {
-  attachLspProtocolClient,
-  CAPTURE_LIMITS,
+  acceptWithProcessExit,
+  listenForServer,
+} from "../../fusion/reverseSocketTransport";
+import type {
   CapturedError,
   ConfigurationDeliveryEntry,
   LspProtocolClient,
   NotificationEntry,
   ServerRequestEntry,
 } from "./lspProtocolClient";
+import { attachLspProtocolClient, CAPTURE_LIMITS } from "./lspProtocolClient";
 
 /**
  * Spawns `dbt lsp` against a fixture and speaks LSP over the reverse socket

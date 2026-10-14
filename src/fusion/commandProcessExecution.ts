@@ -1,7 +1,7 @@
 import { spawnProcess } from "./process";
 
 import type { Log } from "../core/log";
-import { CommandProcessResult, EnvironmentVariables } from "../core/types";
+import type { CommandProcessResult, EnvironmentVariables } from "../core/types";
 
 function isCommandNotFoundError(error: unknown): boolean {
   return (

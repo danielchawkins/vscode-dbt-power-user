@@ -1,7 +1,7 @@
 import { readFileSync } from "node:fs";
 
-import { ManifestProject } from "./manifestProject";
-import { DocMetaMap, ManifestResources } from "./types";
+import type { ManifestProject } from "./manifestProject";
+import type { DocMetaMap, ManifestResources } from "./types";
 
 import type { Log } from "../log";
 import { createFullPathForNode } from "./utils";

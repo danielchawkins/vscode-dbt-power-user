@@ -3,12 +3,12 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import * as vscode from "vscode";
-import {
-  FUSION_CLIENT_STATES_COMMAND,
-  FusionClientStateReport,
-} from "../../projects/fusionClientDiagnostics";
+import type { FusionClientStateReport } from "../../projects/fusionClientDiagnostics";
+import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
-import { ActivationMetric, readActivationMetric } from "./activationReport";
+import type { ActivationMetric } from "./activationReport";
+import { readActivationMetric } from "./activationReport";
+import type { WebviewPaintMetric } from "./cdpClient";
 import {
   assertNoWorkbenchNotifications,
   captureWorkbenchScreenshot,
@@ -20,13 +20,12 @@ import {
   validateSmokeHost,
   waitForWebviewPaint,
   waitForWorkbenchNotificationsToSettle,
-  WebviewPaintMetric,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import type { VisualCheckpoint } from "./visualEvidence";
 import {
   checkpointCount,
   screenshotDirectory,
-  VisualCheckpoint,
   writeCheckpoint,
 } from "./visualEvidence";
 

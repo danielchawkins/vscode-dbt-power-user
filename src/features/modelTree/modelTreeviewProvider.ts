@@ -1,20 +1,18 @@
 import * as path from "node:path";
 
+import type { Disposable, Event, TreeDataProvider } from "vscode";
 import {
-  Disposable,
-  Event,
   EventEmitter,
   MarkdownString,
-  TreeDataProvider,
   TreeItem,
   TreeItemCollapsibleState,
   Uri,
   window,
 } from "vscode";
-import { GraphMetaMap, NodeData } from "../../core/manifest/types";
+import type { GraphMetaMap, NodeData } from "../../core/manifest/types";
 import { extensionRoot } from "../../extensionRoot";
 import type { Manifest } from "../../projects/manifestTypes";
-import { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/projects";
 import { getDepthColor } from "./modelTreeHelpers";
 import {
   lookupModelByEditorContent,

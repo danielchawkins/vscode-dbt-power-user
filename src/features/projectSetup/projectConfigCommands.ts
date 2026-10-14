@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs";
 import * as path from "node:path";
+import type { Disposable } from "vscode";
 import {
   commands,
-  Disposable,
   Position,
   Range,
   Uri,
@@ -17,16 +17,14 @@ import {
   declaredProjectName,
   parseDbtProjectYaml,
 } from "../../core/project";
-import {
-  planProjectConfigInsertion,
-  ProjectConfigInsertion,
-} from "../../fusion/projectConfigEdits";
-import { CurrentProject } from "../../projects/currentProject";
+import type { ProjectConfigInsertion } from "../../fusion/projectConfigEdits";
+import { planProjectConfigInsertion } from "../../fusion/projectConfigEdits";
+import type { CurrentProject } from "../../projects/currentProject";
 import { notifyError } from "../../projects/notifications";
-import { DeclaredProject } from "../../projects/projectRegistry";
+import type { DeclaredProject } from "../../projects/projectRegistry";
 import { SCHEMA_ORIGIN_HOOK } from "../../projects/schemaOrigin";
 import { writeStrictStaticAnalysis } from "../../settings";
-import { StartupGate } from "../../startupGate";
+import type { StartupGate } from "../../startupGate";
 
 const CONFIRM = "Add";
 

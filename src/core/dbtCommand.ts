@@ -1,4 +1,4 @@
-import { CommandProcessResult } from "./types";
+import type { CommandProcessResult } from "./types";
 
 export interface DBTCommandExecutionStrategy {
   execute(

@@ -1,16 +1,10 @@
-import {
-  commands,
-  Disposable,
-  Event,
-  EventEmitter,
-  Uri,
-  window,
-  workspace,
-} from "vscode";
+import type { Disposable, Event, Uri } from "vscode";
+import { commands, EventEmitter, window, workspace } from "vscode";
 import { activeModelUri } from "./previewUri";
-import { ProjectQuickPick } from "./projectQuickPick";
-import { DeclaredProject, ProjectRegistry } from "./projectRegistry";
-import { FolderScope, folderScopeOf } from "./schemaOrigin";
+import type { ProjectQuickPick } from "./projectQuickPick";
+import type { DeclaredProject, ProjectRegistry } from "./projectRegistry";
+import type { FolderScope } from "./schemaOrigin";
+import { folderScopeOf } from "./schemaOrigin";
 
 /** The Declared Project that owns the file or command currently being handled. */
 export class CurrentProject implements Disposable {

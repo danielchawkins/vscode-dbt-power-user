@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { EventEmitter, Uri } from "vscode";
+import type { ManifestProject } from "../../core/manifest";
 import {
   ChildrenParentParser,
   DocParser,
@@ -9,7 +10,6 @@ import {
   FunctionParser,
   GraphParser,
   MacroParser,
-  ManifestProject,
   MetricParser,
   NodeParser,
   SemanticModelParser,
@@ -19,8 +19,8 @@ import {
 } from "../../core/manifest";
 import type { ParsedManifest } from "../../dbt_integration/domain";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
-import { Project } from "../../projects/project";
-import { DeclaredProject } from "../../projects/projectRegistry";
+import type { Project } from "../../projects/project";
+import type { DeclaredProject } from "../../projects/projectRegistry";
 import { esmDirname } from "../esmDirname";
 import { silentLog } from "../testLog";
 

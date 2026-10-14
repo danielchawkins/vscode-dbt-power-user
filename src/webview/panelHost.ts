@@ -1,5 +1,5 @@
 import type { WebviewReady } from "@fusion-power-user/webview-contract";
-import {
+import type {
   CancellationToken,
   Disposable,
   Webview,
@@ -13,19 +13,15 @@ import {
   beginWebviewResolve as recordWebviewResolveStart,
 } from "../benchmark/runtimeTimings";
 import type { Log } from "../core/log";
-import { ExtensionContextStore } from "../extensionContext";
-import { QueryManifestService } from "../projects/queryManifestService";
-import {
+import type { ExtensionContextStore } from "../extensionContext";
+import type { QueryManifestService } from "../projects/queryManifestService";
+import type {
   SharedStateEventEmitterProps,
   SharedStateService,
 } from "../projects/sharedStateService";
-import { Handlers } from "./messageRouter";
-import {
-  PanelCsp,
-  PanelEntry,
-  panelHtml,
-  panelWebviewOptions,
-} from "./panelHtml";
+import type { Handlers } from "./messageRouter";
+import type { PanelCsp, PanelEntry } from "./panelHtml";
+import { panelHtml, panelWebviewOptions } from "./panelHtml";
 
 /** The commands every panel on `PanelHost` sends. */
 export type CommonPanelMessage = WebviewReady;

@@ -1,11 +1,12 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { panelLogger } from "@modules/logger";
-import { Drawer, DrawerRef } from "@uicore";
+import type { DrawerRef } from "@uicore";
+import { Drawer } from "@uicore";
+import type { FitViewOptions } from "@xyflow/react";
 import {
   Background,
   ControlButton,
   Controls,
-  FitViewOptions,
   MiniMap,
   ReactFlow,
   ReactFlowProvider,
@@ -23,12 +24,8 @@ import { TableNode } from "./TableNode";
 import Toolbar from "./Toolbar";
 import { useHandleMeasurement } from "./useHandleMeasurement";
 import { useLineageGraph } from "./useLineageGraph";
-import {
-  ResolvedSettings,
-  resolveSettings,
-  tableActions,
-  visibleRefs,
-} from "./viewModel";
+import type { ResolvedSettings } from "./viewModel";
+import { resolveSettings, tableActions, visibleRefs } from "./viewModel";
 
 const nodeTypes = { table: TableNode };
 

@@ -3,12 +3,14 @@ import { readFile } from "node:fs/promises";
 import * as path from "node:path";
 import { Uri, window } from "vscode";
 import { parse as parseYaml } from "yaml";
-import { NodeMetaData, RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
+import type { NodeMetaData } from "../../core/manifest/types";
+import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
 import { removeProtocol } from "../../core/text";
 import { activeModelUri } from "../../projects/previewUri";
-import { Projects } from "../../projects/projects";
-import { QueryManifestService } from "../../projects/queryManifestService";
-import { DBTDocumentation, Source } from "./docGenTypes";
+import type { Projects } from "../../projects/projects";
+import type { QueryManifestService } from "../../projects/queryManifestService";
+import type { DBTDocumentation } from "./docGenTypes";
+import { Source } from "./docGenTypes";
 
 interface DBTDocumentationMessage {
   documentation: DBTDocumentation | undefined;

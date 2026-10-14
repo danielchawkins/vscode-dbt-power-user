@@ -1,7 +1,8 @@
-import { commands, Disposable, window } from "vscode";
-import { ExtensionContextStore } from "../../extensionContext";
-import { CurrentProject } from "../../projects/currentProject";
-import { ProjectQuickPickItem } from "../../projects/projectQuickPick";
+import type { Disposable } from "vscode";
+import { commands, window } from "vscode";
+import type { ExtensionContextStore } from "../../extensionContext";
+import type { CurrentProject } from "../../projects/currentProject";
+import type { ProjectQuickPickItem } from "../../projects/projectQuickPick";
 
 export class DbtPowerUserActionsCenter implements Disposable {
   private disposables: Disposable[] = [];

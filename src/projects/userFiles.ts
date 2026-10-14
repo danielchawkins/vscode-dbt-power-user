@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
-import { Range, Uri, workspace, WorkspaceEdit } from "vscode";
+import type { Uri } from "vscode";
+import { Range, workspace, WorkspaceEdit } from "vscode";
 
 /**
  * How {@link writeUserFile} left the file: saved to disk, applied to an open document that already had unsaved

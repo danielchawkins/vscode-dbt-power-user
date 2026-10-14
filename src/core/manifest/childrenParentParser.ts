@@ -1,4 +1,4 @@
-import { DBTGraphType } from "./graphParser";
+import type { DBTGraphType } from "./graphParser";
 import type { ModelLevelConstraint } from "./types";
 
 /** What the graph classification reads of a node, source, exposure or function. */

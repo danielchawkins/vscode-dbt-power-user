@@ -22,7 +22,7 @@ import {
   setQueryResultsError,
   setViewType,
 } from "./context/queryPanelReducer";
-import { QueryPanelStateProps, TableData } from "./context/types";
+import type { QueryPanelStateProps, TableData } from "./context/types";
 import useQueryPanelState from "./useQueryPanelState";
 
 type HostMessage = queryResults.HostMessage;

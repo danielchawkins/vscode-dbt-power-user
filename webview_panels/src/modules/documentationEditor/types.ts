@@ -1,5 +1,5 @@
 import type { DocumentationAction } from "./state/documentationReducer";
-import { DocumentationStateProps } from "./state/types";
+import type { DocumentationStateProps } from "./state/types";
 
 export interface ContextProps {
   state: DocumentationStateProps;

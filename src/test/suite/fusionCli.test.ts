@@ -2,13 +2,13 @@ import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { toCliArgs } from "../../core/cli";
 import type { Log } from "../../core/log";
-import {
+import type {
   ProjectSnapshot,
   ProjectSnapshotSettings,
-  resolveProjectSnapshot,
 } from "../../core/project";
-import { CommandProcessResult } from "../../core/types";
-import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
+import { resolveProjectSnapshot } from "../../core/project";
+import type { CommandProcessResult } from "../../core/types";
+import type { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { noSettings, snapshotFolder } from "../arbitraries/projectSnapshot";
 

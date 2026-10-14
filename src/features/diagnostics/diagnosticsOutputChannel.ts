@@ -1,4 +1,4 @@
-import { OutputChannel } from "vscode";
+import type { OutputChannel } from "vscode";
 import { stripANSI } from "../../core/text";
 
 /** Writes the diagnostics report to `outputChannel`, which it disposes. */

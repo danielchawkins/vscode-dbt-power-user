@@ -1,10 +1,13 @@
 import { commands } from "vscode";
+import type { ContextSlot, DispatchedContext } from "./cdpEvaluation";
 import {
   allDispatchedSlotsSettled,
   assembleEvaluationResults,
-  ContextSlot,
-  DispatchedContext,
 } from "./cdpEvaluation";
+import type {
+  NotificationSettleState,
+  WorkbenchNotificationSnapshot,
+} from "./notificationToasts";
 import {
   aggregateWorkbenchNotificationSnapshots,
   collectWorkbenchNotifications,
@@ -12,9 +15,7 @@ import {
   NOTIFICATION_CENTER_ITEM_SELECTOR,
   NOTIFICATION_CLEAR_MS,
   NOTIFICATION_TOAST_ITEM_SELECTOR,
-  NotificationSettleState,
   notificationsSettled,
-  WorkbenchNotificationSnapshot,
 } from "./notificationToasts";
 
 export type SmokeHost = "vscode" | "cursor";

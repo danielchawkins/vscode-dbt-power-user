@@ -1,12 +1,13 @@
-import { Disposable, languages } from "vscode";
+import type { Disposable } from "vscode";
+import { languages } from "vscode";
 import {
   DBT_SQL_SELECTOR,
   DBT_YAML_SELECTOR,
 } from "../fusion/documentSelectors";
-import { Projects } from "../projects/projects";
-import { SourceModelCreationCodeLensProvider } from "./codegen/sourceModelCreationCodeLensProvider";
-import { SqlActionsCodeLensProvider } from "./sqlActions/sqlActionsCodeLensProvider";
-import { VirtualSqlCodeLensProvider } from "./sqlActions/virtualSqlCodeLensProvider";
+import type { Projects } from "../projects/projects";
+import type { SourceModelCreationCodeLensProvider } from "./codegen/sourceModelCreationCodeLensProvider";
+import type { SqlActionsCodeLensProvider } from "./sqlActions/sqlActionsCodeLensProvider";
+import type { VirtualSqlCodeLensProvider } from "./sqlActions/virtualSqlCodeLensProvider";
 
 export class CodeLensProviders implements Disposable {
   private disposables: Disposable[] = [];

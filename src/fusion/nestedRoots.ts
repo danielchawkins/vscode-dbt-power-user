@@ -1,5 +1,5 @@
-import type { Disposable, Event } from "vscode";
-import { TextDocument, Uri } from "vscode";
+import type { Disposable, Event, TextDocument } from "vscode";
+import { Uri } from "vscode";
 import type { Middleware } from "vscode-languageclient/node";
 import { isWithinRoot } from "./fusionDiagnostics";
 

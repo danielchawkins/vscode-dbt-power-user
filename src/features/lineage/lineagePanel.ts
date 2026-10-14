@@ -1,33 +1,30 @@
-import { lineage, PanelNotice } from "@fusion-power-user/webview-contract";
+import type { PanelNotice } from "@fusion-power-user/webview-contract";
+import { lineage } from "@fusion-power-user/webview-contract";
 import * as path from "node:path";
-import {
-  commands,
-  Event,
-  TextEditor,
-  Uri,
-  WebviewViewProvider,
-  window,
-} from "vscode";
+import type { Event, TextEditor, WebviewViewProvider } from "vscode";
+import { commands, Uri, window } from "vscode";
 import type { Log } from "../../core/log";
-import { ExtensionContextStore } from "../../extensionContext";
+import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest";
-import { Project } from "../../projects/project";
-import { QueryManifestService } from "../../projects/queryManifestService";
+import type { Project } from "../../projects/project";
+import type { QueryManifestService } from "../../projects/queryManifestService";
 import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/schemaOrigin";
-import { SharedStateService } from "../../projects/sharedStateService";
-import { dispatchMessage, Handlers } from "../../webview/messageRouter";
+import type { SharedStateService } from "../../projects/sharedStateService";
+import type { Handlers } from "../../webview/messageRouter";
+import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { registerLineageColumnsCommand } from "./connectedColumnsCommand";
-import { DbtLineageService } from "./dbtLineageService";
+import type { DbtLineageService } from "./dbtLineageService";
 import { connectedColumnsBody } from "./lineageBodies";
 import { LineageDetails } from "./lineageDetails";
 import { persistLineageSettings, readLineageSettings } from "./lineageSettings";
+import type { ResolvedSourceTable } from "./lineageSources";
 import {
-  ResolvedSourceTable,
   resolveSourceStartingNode,
   SOURCE_YAML_EXTENSIONS,
 } from "./lineageSources";
-import { NeedsStrict, strictNeededMessage } from "./strictNeeded";
+import type { NeedsStrict } from "./strictNeeded";
+import { strictNeededMessage } from "./strictNeeded";
 
 type HostMessage = lineage.HostMessage;
 type PanelMessage = lineage.PanelMessage;

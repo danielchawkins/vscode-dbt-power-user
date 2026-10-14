@@ -2,7 +2,8 @@ import * as path from "node:path";
 import { beforeEach, describe, expect, it } from "vitest";
 import { EventEmitter } from "vscode";
 import type { Log } from "../../core/log";
-import { ManifestProject, TestParser } from "../../core/manifest";
+import type { ManifestProject } from "../../core/manifest";
+import { TestParser } from "../../core/manifest";
 
 describe("TestParser Test Suite", () => {
   let testParser: TestParser;

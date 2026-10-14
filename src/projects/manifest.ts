@@ -1,22 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
-import {
-  Disposable,
-  FileSystemWatcher,
-  RelativePattern,
-  Uri,
-  workspace,
-} from "vscode";
+import type { Disposable, FileSystemWatcher, Uri } from "vscode";
+import { RelativePattern, workspace } from "vscode";
 import type { Log } from "../core/log";
-import {
+import type {
   ChildrenParentParser,
   DocParser,
   ExposureParser,
   FunctionParser,
   GraphParser,
   MacroParser,
-  type ManifestProject,
   MetricParser,
   NodeParser,
   SemanticModelParser,
@@ -24,6 +18,7 @@ import {
   TestParser,
   UnitTestParser,
 } from "../core/manifest";
+import { type ManifestProject } from "../core/manifest";
 import type {
   ExposureResource,
   FunctionResource,
@@ -32,7 +27,8 @@ import type {
   SemanticModelResource,
 } from "../core/manifest/types";
 import { DBT_PROJECT_FILE, isDbtProjectFilePath } from "../core/project";
-import { MANIFEST_FILE, ParsedManifest } from "../dbt_integration/domain";
+import type { ParsedManifest } from "../dbt_integration/domain";
+import { MANIFEST_FILE } from "../dbt_integration/domain";
 
 /** Delay between the last watched file event and the rebuild it triggers. */
 const MANIFEST_TRIGGER_DEBOUNCE_MS = 500;

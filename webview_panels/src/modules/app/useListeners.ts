@@ -3,8 +3,10 @@ import type {
   WebviewReady,
 } from "@fusion-power-user/webview-contract";
 import { panelLogger } from "@modules/logger";
-import { Dispatch, useCallback, useEffect } from "react";
-import { AppAction, updateTheme } from "./appReducer";
+import type { Dispatch } from "react";
+import { useCallback, useEffect } from "react";
+import type { AppAction } from "./appReducer";
+import { updateTheme } from "./appReducer";
 import { handleIncomingResponse, panelRequests } from "./requestExecutor";
 import { Themes } from "./types";
 

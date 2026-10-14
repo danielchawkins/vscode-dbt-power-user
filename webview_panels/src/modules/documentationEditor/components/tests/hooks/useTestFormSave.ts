@@ -1,14 +1,14 @@
 import { updateCurrentDocsTests } from "@modules/documentationEditor/state/documentationReducer";
-import {
+import type {
   DBTModelTest,
-  DbtGenericTests,
   TestMetadataAcceptedValuesKwArgs,
   TestMetadataRelationshipsKwArgs,
 } from "@modules/documentationEditor/state/types";
+import { DbtGenericTests } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { panelLogger } from "@modules/logger";
 import { useState } from "react";
-import { SaveRequest } from "../types";
+import type { SaveRequest } from "../types";
 import { generateHash } from "../utils";
 
 export enum TestOperation {

@@ -1,21 +1,15 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
-import {
-  LineageViewState,
-  readViewState,
-  writeViewState,
-} from "@modules/app/viewState";
+import type { LineageViewState } from "@modules/app/viewState";
+import { readViewState, writeViewState } from "@modules/app/viewState";
 import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { ColumnRef, Direction, GraphState, GraphStore } from "./graph";
 import {
   clearColumn,
   collapse,
-  ColumnRef,
-  Direction,
   emptyGraph,
   expand,
   expandLevels,
-  GraphState,
-  GraphStore,
   hideColumns,
   isExpanded,
   replayExpansions,
@@ -30,7 +24,8 @@ import {
   fetchNeighbours,
   openFile,
 } from "./requests";
-import { planRender, TableActions, viewStateOf } from "./viewModel";
+import type { TableActions } from "./viewModel";
+import { planRender, viewStateOf } from "./viewModel";
 
 const logError = (what: string) => (error: unknown) =>
   panelLogger.error(`lineage ${what}`, error);

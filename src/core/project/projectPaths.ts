@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import { DbtProjectConfig } from "./dbtProjectFile";
+import type { DbtProjectConfig } from "./dbtProjectFile";
 
 /** Absolute resource directories of one dbt project, from its project file with dbt's defaults filling gaps. */
 export interface ProjectPaths {

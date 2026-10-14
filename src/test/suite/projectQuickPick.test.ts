@@ -1,7 +1,7 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import { Uri, window } from "vscode";
 import { ProjectQuickPick } from "../../projects/projectQuickPick";
-import { DeclaredProject } from "../../projects/projectRegistry";
+import type { DeclaredProject } from "../../projects/projectRegistry";
 
 describe("ProjectQuickPick.declaredProjectPicker", () => {
   const project1: DeclaredProject = {

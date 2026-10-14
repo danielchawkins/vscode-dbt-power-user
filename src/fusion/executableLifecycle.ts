@@ -1,18 +1,22 @@
-import { Disposable, Event, EventEmitter, Uri } from "vscode";
+import type { Disposable, Event } from "vscode";
+import { EventEmitter, Uri } from "vscode";
 import { type DBTDiagnosticData } from "../core/diagnostics";
 import type { Log } from "../core/log";
 import { dbtProjectFilePath } from "../core/project";
-import { onDidChangeSettings, SettingsChange } from "../settings";
-import { FusionCli } from "./fusionCli";
+import type { SettingsChange } from "../settings";
+import { onDidChangeSettings } from "../settings";
+import type { FusionCli } from "./fusionCli";
+import type {
+  FusionExecutable,
+  FusionExecutableResolver,
+  ResolverEnvironment,
+} from "./fusionExecutable";
 import {
   DBT_PATH_SETTING,
   formatFusionExecutableResolutionFailure,
-  FusionExecutable,
-  FusionExecutableResolver,
   isFusionExecutable,
-  ResolverEnvironment,
 } from "./fusionExecutable";
-import { FusionVersion } from "./fusionVersion";
+import type { FusionVersion } from "./fusionVersion";
 
 export type FusionCommandIntegrationFactory = (
   executable: FusionExecutable,

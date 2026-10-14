@@ -3,7 +3,7 @@ import useDocumentationContext from "@modules/documentationEditor/state/useDocum
 import { panelLogger } from "@modules/logger";
 import { ChipInput, LoadingButton, Stack } from "@uicore";
 import { useState } from "react";
-import { SetTestFormValue } from "../hooks/useTestFormValues";
+import type { SetTestFormValue } from "../hooks/useTestFormValues";
 
 interface Props {
   column: string;

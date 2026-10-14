@@ -1,11 +1,11 @@
-import {
+import type {
   CancellationToken,
   Disposable,
   Event,
-  EventEmitter,
   LogOutputChannel,
   Uri,
 } from "vscode";
+import { EventEmitter } from "vscode";
 import {
   State,
   type LanguageClientOptions,
@@ -47,10 +47,10 @@ import {
   terminateProcess,
 } from "./lspProcess";
 import { ClientNestedRoots } from "./nestedRoots";
+import type { ReverseSocketServer } from "./reverseSocketTransport";
 import {
   acceptWithProcessExit,
   listenForServer,
-  ReverseSocketServer,
 } from "./reverseSocketTransport";
 
 export { commandPrefixForProject, FUSION_LSP_COMMANDS } from "./fusionClient";

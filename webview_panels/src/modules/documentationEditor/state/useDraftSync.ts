@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { executeRequestInAsync } from "../requests";
 import { isStateDirty } from "../utils";
-import { DocumentationStateProps } from "./types";
+import type { DocumentationStateProps } from "./types";
 
 /**
  * Keeps the host's copy of the editor's unsaved draft current: the edited documentation and tests while the

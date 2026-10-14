@@ -1,11 +1,13 @@
 import { DeleteIcon, EditIcon } from "@assets/icons";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
-import {
-  DbtGenericTests,
+import type {
   DBTModelTest,
-  DbtTestTypes,
   TestMetadataAcceptedValuesKwArgs,
   TestMetadataRelationshipsKwArgs,
+} from "@modules/documentationEditor/state/types";
+import {
+  DbtGenericTests,
+  DbtTestTypes,
 } from "@modules/documentationEditor/state/types";
 import { panelLogger } from "@modules/logger";
 import {
@@ -18,7 +20,8 @@ import {
   Stack,
   Tag,
 } from "@uicore";
-import { SubmitEvent, useState } from "react";
+import type { SubmitEvent } from "react";
+import { useState } from "react";
 import classes from "../../styles.module.css";
 import AcceptedValues from "./forms/AcceptedValues";
 import { isTestFormComplete } from "./forms/isTestFormComplete";

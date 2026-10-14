@@ -1,4 +1,5 @@
-import { Disposable, workspace } from "vscode";
+import type { Disposable } from "vscode";
+import { workspace } from "vscode";
 import { SqlPreviewContentProvider } from "./compiledSql/sqlPreviewContentProvider";
 
 export class ContentProviders implements Disposable {

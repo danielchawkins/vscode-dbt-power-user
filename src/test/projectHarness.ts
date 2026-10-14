@@ -14,18 +14,19 @@ import type {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
 } from "../fusion/commandProcessExecution";
-import { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
+import type { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
 import type { FusionCli } from "../fusion/fusionCli";
-import {
-  DBT_PATH_SETTING,
+import type {
   FusionExecutable,
   FusionExecutableResolver,
 } from "../fusion/fusionExecutable";
-import { ManifestParsers } from "../projects/manifest";
-import { Project, ProjectOptions } from "../projects/project";
+import { DBT_PATH_SETTING } from "../fusion/fusionExecutable";
+import type { ManifestParsers } from "../projects/manifest";
+import type { ProjectOptions } from "../projects/project";
+import { Project } from "../projects/project";
 import type { DeclaredProject } from "../projects/projectRegistry";
-import { RunHistoryService } from "../projects/runHistoryService";
-import { SharedStateService } from "../projects/sharedStateService";
+import type { RunHistoryService } from "../projects/runHistoryService";
+import type { SharedStateService } from "../projects/sharedStateService";
 import { CONFIGURATION_SECTION } from "../settings";
 import { silentLog } from "./testLog";
 

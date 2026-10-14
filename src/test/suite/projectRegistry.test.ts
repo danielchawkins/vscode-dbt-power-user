@@ -16,7 +16,8 @@ import {
   type Mock,
   vi,
 } from "vitest";
-import { RelativePattern, Uri, workspace, WorkspaceFolder } from "vscode";
+import type { WorkspaceFolder } from "vscode";
+import { RelativePattern, Uri, workspace } from "vscode";
 import type { FusionClientFactory } from "../../fusion/fusionLanguageClient";
 import { FusionClientPoolImpl } from "../../projects/fusionClientPool";
 import {

@@ -1,12 +1,11 @@
-import {
+import type {
   CancellationToken,
-  CodeLens,
   CodeLensProvider,
   Disposable,
   ProviderResult,
-  Range,
   TextDocument,
 } from "vscode";
+import { CodeLens, Range } from "vscode";
 import { CST, LineCounter, Parser } from "yaml";
 
 export class SqlActionsCodeLensProvider

@@ -1,13 +1,11 @@
-import { TableData } from "@modules/queryPanel/context/types";
-import { ReactTable, useTable } from "@tanstack/react-table";
+import type { TableData } from "@modules/queryPanel/context/types";
+import type { ReactTable } from "@tanstack/react-table";
+import { useTable } from "@tanstack/react-table";
 import { useMemo } from "react";
-import { buildGridInit, GridColumnType } from "./columnTypeMapping";
-import {
-  columnHelper,
-  DEFAULT_COLUMN_WIDTH,
-  gridFeatures,
-  GridRow,
-} from "./gridTable";
+import type { GridColumnType } from "./columnTypeMapping";
+import { buildGridInit } from "./columnTypeMapping";
+import type { GridRow } from "./gridTable";
+import { columnHelper, DEFAULT_COLUMN_WIDTH, gridFeatures } from "./gridTable";
 
 /** The query result as a sortable, resizable table; numbers sort numerically and everything else as text. */
 export function useGridTable(

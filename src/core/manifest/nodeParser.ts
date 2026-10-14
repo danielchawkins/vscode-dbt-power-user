@@ -1,12 +1,14 @@
 import * as path from "node:path";
 
-import { ManifestProject } from "./manifestProject";
-import {
-  isResourceNode,
+import type { ManifestProject } from "./manifestProject";
+import type {
   ManifestResources,
   NodeMetaData,
   NodeMetaMap,
   NodeResourceType,
+} from "./types";
+import {
+  isResourceNode,
   RESOURCE_TYPE_ANALYSIS,
   RESOURCE_TYPE_MODEL,
   RESOURCE_TYPE_SEED,

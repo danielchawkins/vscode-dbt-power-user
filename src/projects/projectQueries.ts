@@ -1,8 +1,8 @@
-import { Uri } from "vscode";
-import { QueryExecution } from "../core/dbtCommand";
+import type { Uri } from "vscode";
+import type { QueryExecution } from "../core/dbtCommand";
 import type { Log } from "../core/log";
-import { DBColumn } from "../core/types";
-import { QueryExecutionResult } from "../dbt_integration/domain";
+import type { DBColumn } from "../core/types";
+import type { QueryExecutionResult } from "../dbt_integration/domain";
 import type { FusionCli } from "../fusion/fusionCli";
 import type { FusionCommands } from "../fusion/fusionCommands";
 import type { ModelNode } from "../local/lineageTypes";
@@ -14,7 +14,8 @@ import {
   generateSchemaYML,
   mergeColumnsFromDB,
 } from "./projectCodegen";
-import { getColumnValues, queryPanelPayload, SqlDeps } from "./projectSql";
+import type { SqlDeps } from "./projectSql";
+import { getColumnValues, queryPanelPayload } from "./projectSql";
 import {
   columnsOfModel,
   compiledSql,

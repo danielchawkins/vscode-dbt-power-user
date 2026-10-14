@@ -1,15 +1,17 @@
 import { realpathSync } from "node:fs";
 import { basename } from "node:path";
-import { Uri } from "vscode";
+import type { Uri } from "vscode";
 import { commandParamsFor, fullRefreshArgs } from "../core/cli";
-import { DBTCommand } from "../core/dbtCommand";
+import type { DBTCommand } from "../core/dbtCommand";
 import type { Log } from "../core/log";
-import { ProjectSnapshot } from "../core/project";
-import { CommandProcessResult } from "../core/types";
-import { RunModelParams, RunModelType } from "../dbt_integration/domain";
-import { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
-import { CommandQueue, formatCommandStatus } from "./commandQueue";
-import { DbtTaskTerminal } from "./dbtTask";
+import type { ProjectSnapshot } from "../core/project";
+import type { CommandProcessResult } from "../core/types";
+import type { RunModelParams } from "../dbt_integration/domain";
+import { RunModelType } from "../dbt_integration/domain";
+import type { FusionCli, QueuedCliCommand } from "../fusion/fusionCli";
+import type { CommandQueue } from "./commandQueue";
+import { formatCommandStatus } from "./commandQueue";
+import type { DbtTaskTerminal } from "./dbtTask";
 
 const LOG_SOURCE = "Project";
 

@@ -1,4 +1,5 @@
-import { commands, Disposable } from "vscode";
+import type { Disposable } from "vscode";
+import { commands } from "vscode";
 import type { StartupGate } from "./startupGate";
 
 /** Registers a command whose handler runs once extension startup has settled. */

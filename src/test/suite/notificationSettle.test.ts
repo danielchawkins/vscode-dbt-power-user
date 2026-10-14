@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
+import type { NotificationSettleState } from "../smoke/notificationToasts";
 import {
   NOTIFICATION_CLEAR_MS,
-  NotificationSettleState,
   nextNotificationSettleState,
   notificationsSettled,
 } from "../smoke/notificationToasts";

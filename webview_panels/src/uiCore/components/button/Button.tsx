@@ -1,5 +1,7 @@
-import { ButtonHTMLAttributes, ReactNode, useState } from "react";
-import { ButtonColor, buttonClassName } from "../../classNames";
+import type { ButtonHTMLAttributes, ReactNode } from "react";
+import { useState } from "react";
+import type { ButtonColor } from "../../classNames";
+import { buttonClassName } from "../../classNames";
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   color?: ButtonColor | undefined;

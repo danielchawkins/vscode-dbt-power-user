@@ -3,7 +3,8 @@ import type {
   ShowNotification,
 } from "@fusion-power-user/webview-contract";
 import { existsSync, readFileSync } from "node:fs";
-import { ProgressLocation, Uri, window } from "vscode";
+import type { Uri } from "vscode";
+import { ProgressLocation, window } from "vscode";
 import { parse, stringify } from "yaml";
 import type { Log } from "../../core/log";
 import type { TestMetaData } from "../../core/manifest/types";

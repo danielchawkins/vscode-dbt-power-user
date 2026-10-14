@@ -1,5 +1,5 @@
 import { DbtGenericTests } from "@modules/documentationEditor/state/types";
-import { SaveRequest } from "../types";
+import type { SaveRequest } from "../types";
 
 /** True when `values` fills every field the generic test `test` requires. */
 export const isTestFormComplete = (

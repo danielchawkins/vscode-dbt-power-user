@@ -3,7 +3,8 @@ import { useQueryPanelDispatch } from "@modules/queryPanel/context/queryPanelCon
 import { setLoading } from "@modules/queryPanel/context/queryPanelReducer";
 import { executeRequestInSync } from "@modules/queryPanel/requests";
 import { Button, Stack } from "@uicore";
-import { ReactNode, useState } from "react";
+import type { ReactNode } from "react";
+import { useState } from "react";
 import { ErrorBoundary } from "react-error-boundary";
 
 const GridErrorBoundary = ({

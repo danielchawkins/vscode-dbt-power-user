@@ -1,15 +1,13 @@
-import {
+import type {
   CancellationToken,
-  CodeLens,
   CodeLensProvider,
   Disposable,
   Event,
-  EventEmitter,
-  Range,
   TextDocument,
 } from "vscode";
+import { CodeLens, EventEmitter, Range } from "vscode";
 import { CST, LineCounter, Parser } from "yaml";
-import { GenerateModelFromSourceParams } from "../../projects/projectCodegen";
+import type { GenerateModelFromSourceParams } from "../../projects/projectCodegen";
 
 export class SourceModelCreationCodeLensProvider
   implements CodeLensProvider, Disposable

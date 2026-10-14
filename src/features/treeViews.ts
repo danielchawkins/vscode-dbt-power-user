@@ -1,12 +1,13 @@
-import { Disposable, TreeDataProvider, window } from "vscode";
+import type { Disposable, TreeDataProvider } from "vscode";
+import { window } from "vscode";
 import type { ParseDemand } from "../projects/parseDemand";
-import { DocumentationTreeview } from "./modelTree/documentationTreeview";
-import {
+import type { DocumentationTreeview } from "./modelTree/documentationTreeview";
+import type {
   ChildrenModelTreeview,
   ModelTestTreeview,
   ParentModelTreeview,
 } from "./modelTree/modelTreeviewProvider";
-import { RunHistoryTreeviewProvider } from "./runHistory/runHistoryTreeviewProvider";
+import type { RunHistoryTreeviewProvider } from "./runHistory/runHistoryTreeviewProvider";
 
 export class TreeviewProviders implements Disposable {
   private disposables: Disposable[] = [];

@@ -2,7 +2,8 @@ import type { lineage } from "@fusion-power-user/webview-contract";
 import { PopoverWithButton } from "@uicore";
 import HelpButton from "./components/help/HelpButton";
 import styles from "./lineageGraph.module.css";
-import { REF_SOURCES, ResolvedSettings } from "./viewModel";
+import type { ResolvedSettings } from "./viewModel";
+import { REF_SOURCES } from "./viewModel";
 
 type Change = (settings: Partial<lineage.LineageSettings>) => void;
 

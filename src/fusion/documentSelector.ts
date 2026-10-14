@@ -1,4 +1,5 @@
-import { DocumentFilter, RelativePattern, Uri } from "vscode";
+import type { DocumentFilter, Uri } from "vscode";
+import { RelativePattern } from "vscode";
 
 type LspRelativePattern = {
   baseUri: string;

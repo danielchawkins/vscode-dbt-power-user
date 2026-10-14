@@ -8,7 +8,8 @@ import {
   Stack,
   Tag,
 } from "@uicore";
-import { SubmitEvent, useEffect } from "react";
+import type { SubmitEvent } from "react";
+import { useEffect } from "react";
 import useTestFormSave, { TestOperation } from "../hooks/useTestFormSave";
 import useTestFormValues from "../hooks/useTestFormValues";
 import AcceptedValues from "./AcceptedValues";

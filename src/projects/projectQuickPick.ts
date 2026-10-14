@@ -1,6 +1,7 @@
-import { QuickPickItem, Uri, window } from "vscode";
-import { Project } from "./project";
-import { DeclaredProject } from "./projectRegistry";
+import type { QuickPickItem, Uri } from "vscode";
+import { window } from "vscode";
+import type { Project } from "./project";
+import type { DeclaredProject } from "./projectRegistry";
 
 export interface ProjectQuickPickItem extends QuickPickItem {
   label: string;

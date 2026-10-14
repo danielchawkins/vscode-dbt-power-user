@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { SaveRequest } from "../types";
+import type { SaveRequest } from "../types";
 
 export type SetTestFormValue = <K extends keyof SaveRequest>(
   name: K,

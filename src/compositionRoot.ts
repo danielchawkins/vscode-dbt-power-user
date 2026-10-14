@@ -1,4 +1,5 @@
-import { Disposable, ExtensionContext } from "vscode";
+import type { ExtensionContext } from "vscode";
+import { Disposable } from "vscode";
 import type { Log } from "./core/log";
 import { createProjectParsers } from "./core/manifest/projectParsers";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
@@ -42,14 +43,13 @@ import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution
 import { FusionCli } from "./fusion/fusionCli";
 import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
+import { onClientChange, onCurrentClientChange } from "./projects/clientChange";
 import { CurrentProject } from "./projects/currentProject";
-import {
-  createFusionClientPool,
-  type FusionClientPool,
+import type {
+  FusionClientPool,
   FusionLaunchSources,
-  onClientChange,
-  onCurrentClientChange,
 } from "./projects/fusionClientPool";
+import { createFusionClientPool } from "./projects/fusionClientPool";
 import { FusionStatus } from "./projects/fusionStatus";
 import { bindExtensionOutput } from "./projects/notifications";
 import { OutputChannels } from "./projects/outputChannels";
@@ -57,7 +57,8 @@ import { ParseDemand } from "./projects/parseDemand";
 import { Project } from "./projects/project";
 import { ProjectEnvironments } from "./projects/projectEnvironments";
 import { ProjectQuickPick } from "./projects/projectQuickPick";
-import { DeclaredProject, ProjectRegistry } from "./projects/projectRegistry";
+import type { DeclaredProject } from "./projects/projectRegistry";
+import { ProjectRegistry } from "./projects/projectRegistry";
 import { Projects } from "./projects/projects";
 import { QueryManifestService } from "./projects/queryManifestService";
 import { readProjectSnapshot } from "./projects/readProjectSnapshot";

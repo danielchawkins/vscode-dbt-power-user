@@ -1,13 +1,13 @@
 import * as path from "node:path";
 
 import type { Log } from "../log";
-import { ManifestProject } from "./manifestProject";
-import {
+import type { ManifestProject } from "./manifestProject";
+import type {
   FunctionMetaMap,
   FunctionResource,
   ManifestResources,
-  RESOURCE_TYPE_FUNCTION,
 } from "./types";
+import { RESOURCE_TYPE_FUNCTION } from "./types";
 
 export class FunctionParser {
   constructor(private terminal: Pick<Log, "debug">) {}

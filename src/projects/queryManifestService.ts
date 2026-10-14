@@ -1,10 +1,11 @@
-import { TextDocument, Uri, window } from "vscode";
+import type { TextDocument, Uri } from "vscode";
+import { window } from "vscode";
 import type { Log } from "../core/log";
-import { CurrentProject } from "./currentProject";
+import type { CurrentProject } from "./currentProject";
 import type { Manifest } from "./manifestTypes";
-import { Project } from "./project";
-import { DeclaredProject } from "./projectRegistry";
-import { Projects } from "./projects";
+import type { Project } from "./project";
+import type { DeclaredProject } from "./projectRegistry";
+import type { Projects } from "./projects";
 
 export class QueryManifestService {
   public constructor(

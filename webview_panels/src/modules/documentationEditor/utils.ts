@@ -1,14 +1,13 @@
 import type { documentationEditor } from "@fusion-power-user/webview-contract";
-import {
+import type {
   DBTDocumentation,
   DBTDocumentationColumn,
-  DbtGenericTests,
   DBTModelTest,
   DocumentationStateProps,
-  Source,
   TestMetadataAcceptedValuesKwArgs,
   TestMetadataRelationshipsKwArgs,
 } from "./state/types";
+import { DbtGenericTests, Source } from "./state/types";
 
 /** The editor's copy of the host's documentation, with absent and `null` fields filled in. */
 export const fromHostDocumentation = (

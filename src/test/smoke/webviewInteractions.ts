@@ -2,21 +2,21 @@ import * as assert from "node:assert";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
+import type { SmokeHost } from "./cdpClient";
 import {
   captureWorkbenchScreenshot,
   evaluatePanel,
   readWorkbenchNotificationTexts,
   revealWorkbench,
   sendCommand,
-  SmokeHost,
   validateSmokeHost,
   waitForWebviewPaint,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import type { VisualCheckpoint } from "./visualEvidence";
 import {
   checkpointCount,
   screenshotDirectory,
-  VisualCheckpoint,
   writeCheckpoint,
 } from "./visualEvidence";
 

@@ -5,7 +5,7 @@ import LineageView from "@modules/lineage/LineageView";
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterAll, afterEach, beforeAll, expect, vi } from "vitest";
-import { InteractiveRole } from "./controlCoverage";
+import type { InteractiveRole } from "./controlCoverage";
 import { getVsCodeApiMock } from "./setup";
 
 /**

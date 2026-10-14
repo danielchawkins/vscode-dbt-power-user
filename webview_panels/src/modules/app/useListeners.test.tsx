@@ -1,5 +1,5 @@
 import { render, waitFor } from "@testing-library/react";
-import { Dispatch } from "react";
+import type { Dispatch } from "react";
 import {
   afterEach,
   beforeEach,

@@ -21,7 +21,11 @@ import {
   updateCurrentDocsTests,
   updateCurrentUnitTests,
 } from "./state/documentationReducer";
-import { DBTDocumentation, DBTModelTest, DBTUnitTest } from "./state/types";
+import type {
+  DBTDocumentation,
+  DBTModelTest,
+  DBTUnitTest,
+} from "./state/types";
 import useDraftSync from "./state/useDraftSync";
 import {
   fromFetchedColumns,

@@ -1,11 +1,8 @@
 import * as path from "node:path";
 
-import { ManifestProject } from "./manifestProject";
-import {
-  ManifestResources,
-  RESOURCE_TYPE_SOURCE,
-  SourceMetaMap,
-} from "./types";
+import type { ManifestProject } from "./manifestProject";
+import type { ManifestResources, SourceMetaMap } from "./types";
+import { RESOURCE_TYPE_SOURCE } from "./types";
 
 import type { Log } from "../log";
 

@@ -1,19 +1,21 @@
-import {
+import type {
   CustomExecution,
-  EventEmitter,
   Pseudoterminal,
-  Task,
   TaskDefinition,
   TaskExecution,
+} from "vscode";
+import {
+  EventEmitter,
+  Task,
   TaskRevealKind,
   tasks,
   TaskScope,
   Uri,
   workspace,
 } from "vscode";
-import { DBTCommand } from "../core/dbtCommand";
-import { CommandProcessResult } from "../core/types";
-import { QueuedCliCommand } from "../fusion/fusionCli";
+import type { DBTCommand } from "../core/dbtCommand";
+import type { CommandProcessResult } from "../core/types";
+import type { QueuedCliCommand } from "../fusion/fusionCli";
 
 /** The task type, task source, and `taskDefinitions` entry of dbt tasks. */
 export const DBT_TASK_TYPE = "dbt";

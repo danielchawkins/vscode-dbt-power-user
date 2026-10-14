@@ -1,9 +1,11 @@
-import {
-  DbtGenericTests,
+import type {
   DBTModelTest,
-  DbtTestTypes,
   TestMetadataAcceptedValuesKwArgs,
   TestMetadataRelationshipsKwArgs,
+} from "@modules/documentationEditor/state/types";
+import {
+  DbtGenericTests,
+  DbtTestTypes,
 } from "@modules/documentationEditor/state/types";
 import {
   Card,

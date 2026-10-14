@@ -1,7 +1,8 @@
 import { FilterIcon, SearchIcon } from "@assets/icons";
 import { useDebouncedValue } from "@modules/app/useDebouncedValue";
 import { IconButton, Input, MultiSelect, Stack } from "@uicore";
-import { ChangeEvent, MouseEvent, useEffect, useState } from "react";
+import type { ChangeEvent, MouseEvent } from "react";
+import { useEffect, useState } from "react";
 import styles from "../../querypanel.module.css";
 
 export interface QueryFilters {

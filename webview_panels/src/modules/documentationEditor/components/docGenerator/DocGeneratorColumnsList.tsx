@@ -1,4 +1,4 @@
-import { DBTModelTest } from "@modules/documentationEditor/state/types";
+import type { DBTModelTest } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { Stack } from "@uicore";
 import { useMemo } from "react";

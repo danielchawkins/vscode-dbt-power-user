@@ -1,6 +1,7 @@
 import { createContext, use } from "react";
-import { initialState, QueryPanelAction } from "./queryPanelReducer";
-import { QueryPanelStateProps } from "./types";
+import type { QueryPanelAction } from "./queryPanelReducer";
+import { initialState } from "./queryPanelReducer";
+import type { QueryPanelStateProps } from "./types";
 
 interface ContextProps {
   state: QueryPanelStateProps;

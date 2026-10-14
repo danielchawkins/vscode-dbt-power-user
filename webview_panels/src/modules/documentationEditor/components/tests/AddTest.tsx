@@ -1,13 +1,13 @@
 import { AddIcon, RemoveIcon } from "@assets/icons";
 import { EntityType } from "@modules/documentationEditor/state/entityType";
 import { DbtGenericTests } from "@modules/documentationEditor/state/types";
+import type { DrawerRef } from "@uicore";
 import {
   Button,
   Card,
   CardBody,
   CardTitle,
   Drawer,
-  DrawerRef,
   IconButton,
   Stack,
   Tooltip,

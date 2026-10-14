@@ -1,11 +1,8 @@
 import { describe, expect, it, type Mock, vi } from "vitest";
 import * as vscode from "vscode";
 import { DBTCommand } from "../../core/dbtCommand";
-import {
-  CommandQueue,
-  formatCommandStatus,
-  QueuedCommandFailure,
-} from "../../projects/commandQueue";
+import type { QueuedCommandFailure } from "../../projects/commandQueue";
+import { CommandQueue, formatCommandStatus } from "../../projects/commandQueue";
 
 const settle = () => new Promise((resolve) => setImmediate(resolve));
 

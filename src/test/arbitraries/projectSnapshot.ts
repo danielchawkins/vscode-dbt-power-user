@@ -1,13 +1,12 @@
 import fc from "fast-check";
 import * as path from "node:path";
 import { relativeDir, segment, staticAnalysisMode, traceLevel } from ".";
-import {
+import type {
   DbtProjectFile,
-  deferSettingsKey,
   ProjectSnapshotInputs,
   ProjectSnapshotSettings,
-  resolveProjectSnapshot,
 } from "../../core/project";
+import { deferSettingsKey, resolveProjectSnapshot } from "../../core/project";
 
 export const snapshotFolder = path.join("/", "ws");
 

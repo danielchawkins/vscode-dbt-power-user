@@ -1,6 +1,6 @@
 import { createContext } from "react";
 import { initialState } from "./state/documentationReducer";
-import { ContextProps } from "./types";
+import type { ContextProps } from "./types";
 
 export const DocumentationContext = createContext<ContextProps>({
   state: initialState,

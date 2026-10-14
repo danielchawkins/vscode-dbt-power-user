@@ -1,11 +1,8 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import {
-  ControlId,
-  controlId,
-  expectPosted,
-  InteractiveRole,
-} from "../../test/controlCoverage";
+import type { ControlId, InteractiveRole } from "../../test/controlCoverage";
+import { controlId, expectPosted } from "../../test/controlCoverage";
+import type { Scope, User } from "../../test/lineageHarness";
 import {
   activate,
   commands,
@@ -14,9 +11,7 @@ import {
   nodes,
   openLineage,
   pane,
-  Scope,
   tableIds,
-  User,
 } from "../../test/lineageHarness";
 import { getVsCodeApiMock } from "../../test/setup";
 

@@ -1,4 +1,4 @@
-import { TableData } from "@modules/queryPanel/context/types";
+import type { TableData } from "@modules/queryPanel/context/types";
 import { Button } from "@uicore";
 import { downloadAsCsv } from "./downloadCsv";
 import classes from "./grid.module.css";

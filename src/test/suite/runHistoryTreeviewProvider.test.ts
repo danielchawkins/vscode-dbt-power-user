@@ -1,8 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  ResultTreeItem,
-  RunTreeItem,
-} from "../../features/runHistory/runHistoryTreeItems";
+import type { ResultTreeItem } from "../../features/runHistory/runHistoryTreeItems";
+import { RunTreeItem } from "../../features/runHistory/runHistoryTreeItems";
 import { RunHistoryTreeviewProvider } from "../../features/runHistory/runHistoryTreeviewProvider";
 import { RunHistoryService } from "../../projects/runHistoryService";
 import { createEntry, createResult } from "../fixtures/runHistory";

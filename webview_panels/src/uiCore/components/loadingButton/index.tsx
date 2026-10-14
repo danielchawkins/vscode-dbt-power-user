@@ -1,4 +1,5 @@
-import { Button, ButtonProps } from "../button/Button";
+import type { ButtonProps } from "../button/Button";
+import { Button } from "../button/Button";
 
 interface Props extends ButtonProps {
   loading: boolean;

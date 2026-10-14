@@ -2,7 +2,7 @@ import { type Uri } from "vscode";
 import { QueryExecution, type ExecuteSQLResult } from "../core/dbtCommand";
 import type { Log } from "../core/log";
 import { type QueryExecutionResult } from "../dbt_integration/domain";
-import { FusionCli } from "../fusion/fusionCli";
+import type { FusionCli } from "../fusion/fusionCli";
 import { notifyError, type NotifiableProject } from "./notifications";
 
 type SqlExecutor = Pick<FusionCli, "executeSQL">;

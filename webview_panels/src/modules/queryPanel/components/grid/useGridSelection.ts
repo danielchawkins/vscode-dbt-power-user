@@ -1,6 +1,8 @@
-import { ClipboardEvent, MouseEvent, useRef, useState } from "react";
+import type { ClipboardEvent, MouseEvent } from "react";
+import { useRef, useState } from "react";
 import { formatCell } from "./columnTypeMapping";
-import { GridSelection, selectionToTsv } from "./gridSelection";
+import type { GridSelection } from "./gridSelection";
+import { selectionToTsv } from "./gridSelection";
 
 interface RowLike {
   getAllCells(): { getValue(): unknown }[];

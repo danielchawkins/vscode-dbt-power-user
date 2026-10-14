@@ -1,4 +1,5 @@
-import { Disposable, window } from "vscode";
+import type { Disposable } from "vscode";
+import { window } from "vscode";
 import { DocsEditViewPanel } from "./docs/docsEditPanel";
 import { LineageViewProvider } from "./lineage/lineageViewProvider";
 import { QueryResultPanel } from "./queryResults/queryResultPanel";

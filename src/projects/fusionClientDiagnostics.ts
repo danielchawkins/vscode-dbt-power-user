@@ -1,10 +1,14 @@
-import { commands, type DiagnosticCollection, Disposable } from "vscode";
-import { FusionClientState } from "../fusion/fusionLanguageClient";
+import type { Disposable } from "vscode";
+import { commands, type DiagnosticCollection } from "vscode";
+import type { FusionClientState } from "../fusion/fusionLanguageClient";
 import { testCommandsEnabled } from "../settings";
-import { FusionClientPool } from "./fusionClientPool";
-import { FusionStatus } from "./fusionStatus";
-import { ProjectEnvironment, ProjectEnvironments } from "./projectEnvironments";
-import { DeclaredProjectOrigin, ProjectRegistry } from "./projectRegistry";
+import type { FusionClientPool } from "./fusionClientPool";
+import type { FusionStatus } from "./fusionStatus";
+import type {
+  ProjectEnvironment,
+  ProjectEnvironments,
+} from "./projectEnvironments";
+import type { DeclaredProjectOrigin, ProjectRegistry } from "./projectRegistry";
 
 /**
  * Test-only: reports LSP client state per Declared Project for the smoke and integration suites.

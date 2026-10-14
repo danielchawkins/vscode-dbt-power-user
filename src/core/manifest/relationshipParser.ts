@@ -4,7 +4,7 @@ import {
   inferRefs,
   isIgnoredByMeta,
 } from "./relationshipInference";
-import {
+import type {
   Cardinality,
   ColumnLevelConstraint,
   ConstraintType,
@@ -18,6 +18,7 @@ import {
   TestMetaMap,
   TestMetadataRelationships,
 } from "./types";
+import type { SemanticModelMetaMap } from "./types";
 
 const DEFAULT_CARDINALITY: Cardinality = "many-to-one";
 const RELATIONSHIPS_TEST_NAME = "relationships";
@@ -419,7 +420,7 @@ export class RelationshipParser {
    * skipped — we don't fabricate identifiers.
    */
   fromSemanticEntities(
-    semanticModelMetaMap: import("./types").SemanticModelMetaMap | undefined,
+    semanticModelMetaMap: SemanticModelMetaMap | undefined,
   ): Ref[] {
     if (!semanticModelMetaMap || semanticModelMetaMap.size === 0) {
       return [];

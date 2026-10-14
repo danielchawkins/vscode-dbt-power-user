@@ -1,8 +1,8 @@
-import { StaticAnalysisMode } from "../../core/project";
+import type { StaticAnalysisMode } from "../../core/project";
 import type { FusionClient } from "../../fusion/fusionLanguageClient";
+import type { FolderScope } from "../../projects/schemaOrigin";
 import {
   effectiveStaticAnalysis,
-  FolderScope,
   whyNotStrict,
 } from "../../projects/schemaOrigin";
 

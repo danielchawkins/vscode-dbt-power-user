@@ -1,10 +1,9 @@
-import { SourceMetaMap } from "../core/manifest/types";
+import type { SourceMetaMap } from "../core/manifest/types";
+import type { DbtProjectConfig, StaticAnalysisMode } from "../core/project";
 import {
   DBT_PROJECT_FILE,
-  DbtProjectConfig,
   declaredProjectName,
   readDbtProjectFile,
-  StaticAnalysisMode,
 } from "../core/project";
 
 /** The documented hook (ADR 0006): the extension sets this variable in the language server's environment. */

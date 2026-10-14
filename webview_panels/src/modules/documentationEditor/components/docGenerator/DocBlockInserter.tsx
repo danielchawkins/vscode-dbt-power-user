@@ -1,5 +1,5 @@
 import { SearchIcon } from "@assets/icons";
-import { DocBlock } from "@modules/documentationEditor/state/types";
+import type { DocBlock } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import {
   Button,
@@ -8,7 +8,8 @@ import {
   Stack,
   activateClickOnKeyDown,
 } from "@uicore";
-import { HTMLAttributes, RefObject, useMemo, useState } from "react";
+import type { HTMLAttributes, RefObject } from "react";
+import { useMemo, useState } from "react";
 import documentationStyles from "../../styles.module.css";
 import styles from "./DocBlockInserter.module.css";
 

@@ -13,7 +13,8 @@ import {
   documentationReducer,
   initialState,
 } from "../../state/documentationReducer";
-import { DBTDocumentation, Source } from "../../state/types";
+import type { DBTDocumentation } from "../../state/types";
+import { Source } from "../../state/types";
 import SaveDocumentation from "./SaveDocumentation";
 
 const model = (over: Partial<DBTDocumentation> = {}): DBTDocumentation => ({

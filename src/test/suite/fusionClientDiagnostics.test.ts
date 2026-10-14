@@ -12,10 +12,10 @@ import {
   FUSION_CLIENT_STATES_COMMAND,
   registerFusionClientDiagnostics,
 } from "../../projects/fusionClientDiagnostics";
-import { FusionClientPool } from "../../projects/fusionClientPool";
-import { FusionStatus } from "../../projects/fusionStatus";
-import { ProjectEnvironments } from "../../projects/projectEnvironments";
-import {
+import type { FusionClientPool } from "../../projects/fusionClientPool";
+import type { FusionStatus } from "../../projects/fusionStatus";
+import type { ProjectEnvironments } from "../../projects/projectEnvironments";
+import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../../projects/projectRegistry";

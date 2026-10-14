@@ -1,20 +1,21 @@
 import fc from "fast-check";
 import { describe, expect, it } from "vitest";
+import type { CliCommand } from "../../core/cli";
 import {
   carriesFlag,
-  CliCommand,
   commandParamsFor,
   toCliArgs,
   toCliEnvironment,
 } from "../../core/cli";
+import type { LspRun } from "../../core/lsp";
 import {
   DBT_LSP_USE_TARGET_LSP,
-  LspRun,
   sameLspLaunch,
   toLspArgs,
   toLspLaunch,
 } from "../../core/lsp";
-import { ProjectSnapshot, resolveProjectSnapshot } from "../../core/project";
+import type { ProjectSnapshot } from "../../core/project";
+import { resolveProjectSnapshot } from "../../core/project";
 import { NUM_RUNS, relativeDir, segment } from "../arbitraries";
 import { snapshotInputs } from "../arbitraries/projectSnapshot";
 

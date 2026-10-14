@@ -1,7 +1,8 @@
 import { CheckedIcon, FilesIcon } from "@assets/icons";
 import { panelLogger } from "@modules/logger";
 import { IconButton } from "@uicore";
-import { DetailedHTMLProps, HTMLAttributes, useState } from "react";
+import type { DetailedHTMLProps, HTMLAttributes } from "react";
+import { useState } from "react";
 import classes from "./markdown.module.css";
 
 const PreTag = ({

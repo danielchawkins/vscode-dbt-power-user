@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
-import { ExtensionContext, Uri } from "vscode";
+import type { ExtensionContext } from "vscode";
+import { Uri } from "vscode";
 import { ExtensionContextStore } from "../../extensionContext";
 
 describe("ExtensionContextStore", () => {

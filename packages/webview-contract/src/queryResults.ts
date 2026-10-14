@@ -1,7 +1,8 @@
-import { Response, responseFields, WebviewReady } from "./common.js";
+import type { Response, WebviewReady } from "./common.js";
+import { responseFields } from "./common.js";
+import type { CommandFields } from "./guards.js";
 import {
   arrayOf,
-  CommandFields,
   isAnything,
   isNumber,
   isRecord,

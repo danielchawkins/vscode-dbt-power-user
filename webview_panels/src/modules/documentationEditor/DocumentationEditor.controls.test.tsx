@@ -4,12 +4,8 @@ import DocumentationProvider from "@modules/documentationEditor/DocumentationPro
 import { act, render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import {
-  ControlId,
-  controlId,
-  expectPosted,
-  InteractiveRole,
-} from "../../test/controlCoverage";
+import type { ControlId, InteractiveRole } from "../../test/controlCoverage";
+import { controlId, expectPosted } from "../../test/controlCoverage";
 import { getVsCodeApiMock } from "../../test/setup";
 
 /**

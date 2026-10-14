@@ -1,19 +1,15 @@
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { setIncomingDocsData } from "@modules/documentationEditor/state/documentationReducer";
-import {
+import type {
   DBTDocumentation,
   DBTModelTest,
 } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { isStateDirty } from "@modules/documentationEditor/utils";
-import {
-  Button,
-  DropdownButton,
-  PopoverWithButton,
-  PopoverWithButtonRef,
-  Stack,
-} from "@uicore";
-import { MouseEvent, useRef } from "react";
+import type { PopoverWithButtonRef } from "@uicore";
+import { Button, DropdownButton, PopoverWithButton, Stack } from "@uicore";
+import type { MouseEvent } from "react";
+import { useRef } from "react";
 import classes from "../../styles.module.css";
 
 /**

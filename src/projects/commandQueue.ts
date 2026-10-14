@@ -1,5 +1,6 @@
-import { Disposable, EventEmitter, ProgressLocation, window } from "vscode";
-import { DBTCommand } from "../core/dbtCommand";
+import type { Disposable } from "vscode";
+import { EventEmitter, ProgressLocation, window } from "vscode";
+import type { DBTCommand } from "../core/dbtCommand";
 
 /** How a queued command is presented while it runs. */
 export interface QueuedCommandOptions {

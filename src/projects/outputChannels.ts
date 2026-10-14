@@ -1,20 +1,18 @@
 import { inspect } from "node:util";
-import {
-  commands,
+import type {
   Disposable,
-  env,
   Event,
   LogLevel,
   LogOutputChannel,
   OutputChannel,
   Uri,
   ViewColumn,
-  window,
 } from "vscode";
+import { commands, env, window } from "vscode";
 import type { Log } from "../core/log";
 import { projectRootDigest } from "../core/project";
 import { stripANSI } from "../core/text";
-import { DeclaredProject } from "./projectRegistry";
+import type { DeclaredProject } from "./projectRegistry";
 
 /**
  * The extension log's channel; each Declared Project's channel is this name, a colon and the project name.

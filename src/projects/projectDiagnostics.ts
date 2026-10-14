@@ -1,13 +1,7 @@
 import * as path from "node:path";
-import {
-  Diagnostic,
-  DiagnosticSeverity,
-  Disposable,
-  languages,
-  Range,
-  Uri,
-} from "vscode";
-import { DBTDiagnosticData } from "../core/diagnostics";
+import type { Disposable } from "vscode";
+import { Diagnostic, DiagnosticSeverity, languages, Range, Uri } from "vscode";
+import type { DBTDiagnosticData } from "../core/diagnostics";
 import { EXECUTABLE_DIAGNOSTIC_SOURCE } from "../fusion/executableLifecycle";
 import { isWithinRoot } from "../fusion/fusionDiagnostics";
 

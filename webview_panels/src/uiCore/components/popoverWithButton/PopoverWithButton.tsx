@@ -1,10 +1,12 @@
-import {
-  cloneElement,
+import type {
   ReactElement,
   MouseEvent as ReactMouseEvent,
   ReactNode,
   Ref,
   RefObject,
+} from "react";
+import {
+  cloneElement,
   useEffect,
   useImperativeHandle,
   useRef,

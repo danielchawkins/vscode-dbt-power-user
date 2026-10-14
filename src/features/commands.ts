@@ -1,4 +1,4 @@
-import { Disposable } from "vscode";
+import type { Disposable } from "vscode";
 import { gatedRegister } from "../commandRegistry";
 import type { Log } from "../core/log";
 import type { ExtensionContextStore } from "../extensionContext";

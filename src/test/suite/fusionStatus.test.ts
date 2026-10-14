@@ -1,37 +1,35 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { LanguageStatusItem, WorkspaceFolder } from "vscode";
 import {
   commands,
   EventEmitter,
   languages,
-  LanguageStatusItem,
   LanguageStatusSeverity,
   Uri,
-  WorkspaceFolder,
 } from "vscode";
-import { LspLaunch } from "../../core/lsp";
-import { StaticAnalysisMode } from "../../core/project";
-import {
+import type { LspLaunch } from "../../core/lsp";
+import type { StaticAnalysisMode } from "../../core/project";
+import type {
   FusionClient,
   FusionClientState,
 } from "../../fusion/fusionLanguageClient";
-import { FusionClientPool } from "../../projects/fusionClientPool";
+import type { FusionClientPool } from "../../projects/fusionClientPool";
+import type { ProjectOptIns } from "../../projects/fusionStatus";
 import {
   clientSeverity,
   clientText,
   failureSummary,
   FusionStatus,
   optInLines,
-  ProjectOptIns,
 } from "../../projects/fusionStatus";
 import { addDeclaredProjectRoot } from "../../projects/projectConfiguration";
-import { DeclaredProject } from "../../projects/projectRegistry";
+import type * as projectConfigurationModule from "../../projects/projectConfiguration";
+import type { DeclaredProject } from "../../projects/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
 import { declaredProject } from "../projectHarness";
 
 vi.mock("../../projects/projectConfiguration", async (importOriginal) => ({
-  ...(await importOriginal<
-    typeof import("../../projects/projectConfiguration")
-  >()),
+  ...(await importOriginal<typeof projectConfigurationModule>()),
   addDeclaredProjectRoot: vi.fn(),
 }));
 

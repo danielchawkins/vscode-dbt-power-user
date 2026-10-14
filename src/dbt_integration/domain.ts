@@ -1,4 +1,4 @@
-import {
+import type {
   ColumnMetaData,
   DocMetaMap,
   ExposureMetaMap,

@@ -1,4 +1,4 @@
-import { HTMLAttributes, ReactNode, Ref } from "react";
+import type { HTMLAttributes, ReactNode, Ref } from "react";
 import classes from "./stack.module.css";
 
 const Stack = ({

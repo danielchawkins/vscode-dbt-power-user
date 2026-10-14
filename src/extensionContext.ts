@@ -1,4 +1,4 @@
-import { ExtensionContext, Uri } from "vscode";
+import type { ExtensionContext, Uri } from "vscode";
 
 /** Extension identity and persisted state, read from the activation `ExtensionContext`. */
 export class ExtensionContextStore {

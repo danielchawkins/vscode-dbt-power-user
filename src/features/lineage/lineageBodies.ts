@@ -1,10 +1,10 @@
-import { ColumnLineage } from "../../core/lineage";
-import {
+import type { ColumnLineage } from "../../core/lineage";
+import type {
   ConnectedColumnsResult,
-  describeNoLineage,
   NoLineage,
   TargetFailure,
 } from "./dbtLineageService";
+import { describeNoLineage } from "./dbtLineageService";
 
 /** The lineage component shows `errors[table]` as a tooltip on that table. */
 function noLineageErrors(

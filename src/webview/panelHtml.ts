@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import { readFileSync, statSync } from "node:fs";
-import { Uri, Webview, WebviewOptions } from "vscode";
+import type { Webview, WebviewOptions } from "vscode";
+import { Uri } from "vscode";
 
 /**
  * The Vite entries under `webview_panels/src/entries`, one per panel.

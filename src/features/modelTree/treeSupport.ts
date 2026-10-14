@@ -1,8 +1,9 @@
 import * as path from "node:path";
-import { Disposable, TextDocument, window } from "vscode";
-import { NodeMetaData, NodeMetaMap } from "../../core/manifest/types";
+import type { Disposable, TextDocument } from "vscode";
+import { window } from "vscode";
+import type { NodeMetaData, NodeMetaMap } from "../../core/manifest/types";
 import { extensionRoot } from "../../extensionRoot";
-import { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/projects";
 import { getCurrentlySelectedModelNameInYamlConfig } from "./modelTreeHelpers";
 
 export interface IconPath {

@@ -1,5 +1,6 @@
-import { queryResults } from "@fusion-power-user/webview-contract";
-import { TextEditor, window, workspace } from "vscode";
+import type { queryResults } from "@fusion-power-user/webview-contract";
+import type { TextEditor } from "vscode";
+import { window, workspace } from "vscode";
 import { ExecuteSQLError } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import { activeModelUri } from "../../projects/previewUri";

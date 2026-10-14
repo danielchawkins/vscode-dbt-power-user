@@ -9,14 +9,15 @@ import {
 import { tmpdir } from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
-import { Uri, Webview } from "vscode";
+import type { Webview } from "vscode";
+import { Uri } from "vscode";
+import type { ViteManifest } from "../../webview/panelHtml";
 import {
   contentSecurityPolicy,
   entryAssets,
   panelEntries,
   panelHtml,
   panelWebviewOptions,
-  ViteManifest,
 } from "../../webview/panelHtml";
 
 const extensionUri = Uri.file("/ext");

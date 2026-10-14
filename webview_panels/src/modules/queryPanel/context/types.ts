@@ -1,5 +1,5 @@
 import type { queryResults } from "@fusion-power-user/webview-contract";
-import { QueryPanelTitleTabState } from "../components/QueryPanelContents/types";
+import type { QueryPanelTitleTabState } from "../components/QueryPanelContents/types";
 
 export type TableData = Record<string, unknown>[];
 

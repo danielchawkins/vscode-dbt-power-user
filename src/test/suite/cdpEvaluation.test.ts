@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
+import type { ContextSlot } from "../smoke/cdpEvaluation";
 import {
   allDispatchedSlotsSettled,
   assembleEvaluationResults,
-  ContextSlot,
 } from "../smoke/cdpEvaluation";
 
 describe("CDP evaluation result assembly", () => {

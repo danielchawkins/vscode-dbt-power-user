@@ -1,5 +1,5 @@
-import { Disposable } from "vscode";
-import { DeferToProductionStatusBar } from "./defer/deferToProductionStatusBar";
+import type { Disposable } from "vscode";
+import type { DeferToProductionStatusBar } from "./defer/deferToProductionStatusBar";
 
 export class StatusBars implements Disposable {
   private disposables: Disposable[] = [];
