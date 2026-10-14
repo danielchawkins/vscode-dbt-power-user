@@ -536,7 +536,7 @@ const directions: Direction[] = [
 describe.each(directions)("$name guard", ({ guard, commands, fixtures }) => {
   it("has a fixture for every command", () => {
     expect(fixtures.map((f) => f.message.command).sort()).toEqual(
-      [...commands].sort(),
+      commands.toSorted(),
     );
   });
 
@@ -723,7 +723,7 @@ describe("lineage requestCommands", () => {
         (f) => !lineage.isPanelMessage({ ...f.message, syncRequestId: 7 }),
       )
       .map((f) => f.message.command);
-    expect([...lineage.requestCommands].sort()).toEqual(answered.sort());
+    expect(lineage.requestCommands.toSorted()).toEqual(answered.sort());
     expect(lineage.requestCommands).not.toContain("webview:ready");
     expect(lineage.requestCommands).not.toContain("openProblemsTab");
   });

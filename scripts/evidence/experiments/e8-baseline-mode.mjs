@@ -24,8 +24,8 @@ const runMode = async (mode) => {
   const sample = [
     config.files.model,
     ...config.files.currentNodeAlso.filter((f) => f.endsWith(".sql")),
+    ...models.map((m) => m.original_file_path),
   ]
-    .concat(models.map((m) => m.original_file_path))
     .filter((v, i, a) => a.indexOf(v) === i)
     .slice(0, 5);
   const columnMs = [];

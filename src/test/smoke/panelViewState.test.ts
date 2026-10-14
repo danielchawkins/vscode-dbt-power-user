@@ -275,7 +275,7 @@ suite("Panel view state", function () {
         }
         return state;
       },
-      (g): g is LineageState => g !== undefined && g.columnTables.length === 1,
+      (g): g is LineageState => g?.columnTables.length === 1,
       "the lineage column list never opened",
     )) as LineageState;
     if (before.columns.length > 0 && before.traced.length === 0) {
@@ -333,7 +333,7 @@ suite("Panel view state", function () {
       samples.push(await sampleHeaps(port, rows));
     }
     const growth = (key: "frame" | "host") =>
-      (samples[samples.length - 1][key] - samples[0][key]) / samples[0][key];
+      (samples.at(-1)![key] - samples[0][key]) / samples[0][key];
     console.log(
       `FPU_WEBVIEW_HEAP=${JSON.stringify({
         host,
@@ -391,11 +391,7 @@ async function sampleHeaps(port: string, rows: number) {
   const grid = await waitFor(
     async () =>
       (await evaluatePanel<Grid>(port, RESULTS.entry, READ_GRID))?.value,
-    (value) =>
-      value !== undefined &&
-      value.rows === rows &&
-      value.first === "row 0" &&
-      value.painted,
+    (value) => value?.rows === rows && value.first === "row 0" && value.painted,
     `The grid never reported ${rows} rows and painted the first`,
   );
   await sleep(2_000);

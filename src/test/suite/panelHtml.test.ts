@@ -95,7 +95,7 @@ describe("panelEntries", () => {
     const files = readdirSync(dir)
       .filter((file) => file.endsWith(".tsx"))
       .map((file) => path.basename(file, ".tsx"));
-    expect([...panelEntries].sort()).toEqual(files.sort());
+    expect(panelEntries.toSorted()).toEqual(files.sort());
   });
 });
 

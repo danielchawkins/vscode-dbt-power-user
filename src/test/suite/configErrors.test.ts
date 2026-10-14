@@ -78,7 +78,7 @@ function projectWithParse(
 
 function published(): Map<string, { message: string; range: unknown }[]> {
   const results = vi.mocked(languages.createDiagnosticCollection).mock.results;
-  const collection = results[results.length - 1]?.value as {
+  const collection = results.at(-1)?.value as {
     forEach(
       cb: (uri: Uri, d: { message: string; range: unknown }[]) => void,
     ): void;

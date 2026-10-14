@@ -201,7 +201,7 @@ for (const run of process.argv.slice(2).map((r) => path.resolve(r))) {
         .join("/");
     const logs = `${g((f) => f.endsWith("dbt-lsp.log"))}; ${g((f) => f.endsWith(`${s.label}-otel.jsonl`))}`;
     const results = JSON.parse(
-      read(path.join(s.dir, "lsp-results.json")) || "[]",
+      [read(path.join(s.dir, "lsp-results.json")), "[]"].find(Boolean),
     )
       .filter((r) => r.label !== "initialize")
       .map((r) => `${abbr(r.label)}: ${verdict(r.response)}`)
@@ -219,7 +219,7 @@ for (const run of process.argv.slice(2).map((r) => path.resolve(r))) {
         lineageRead(s.lineage),
         lineageRead(s["lineage-lsp-target"]),
         logs,
-        tag(RESULT_SETS, "R", results || "—"),
+        tag(RESULT_SETS, "R", [results, "—"].find(Boolean)),
       ]
         .map(cell)
         .join(" | ")} |`,

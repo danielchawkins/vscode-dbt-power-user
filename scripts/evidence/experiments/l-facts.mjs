@@ -65,9 +65,11 @@ for (const run of process.argv.slice(2).map((r) => path.resolve(r))) {
       const after = lin(step);
       if (before.length || after.length) {
         console.log(
-          `    lineage files before (${prev}): ${before.join(" ; ") || "none"}`,
+          `    lineage files before (${prev}): ${[before.join(" ; "), "none"].find(Boolean)}`,
         );
-        console.log(`    lineage files after: ${after.join(" ; ") || "none"}`);
+        console.log(
+          `    lineage files after: ${[after.join(" ; "), "none"].find(Boolean)}`,
+        );
       }
     }
     if (/lineage/.test(label) && fs.existsSync(path.join(dir, "result.json"))) {

@@ -68,7 +68,7 @@ describe("useQueryPanelListeners", () => {
       />,
     );
 
-    window.dispatchEvent(
+    globalThis.dispatchEvent(
       new MessageEvent("message", {
         data: {
           command: "queryHistory",
@@ -94,7 +94,7 @@ describe("useQueryPanelListeners", () => {
 
     unmount();
 
-    window.dispatchEvent(
+    globalThis.dispatchEvent(
       new MessageEvent("message", {
         data: {
           command: "queryHistory",

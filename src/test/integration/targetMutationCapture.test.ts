@@ -353,7 +353,7 @@ class TargetSnapshotCollector {
     editSession?: { didChangeSent: boolean; didSaveSent: boolean },
   ): PhaseRecord {
     const startMs = phaseSnapshots[0]?.atMs ?? 0;
-    const endMs = phaseSnapshots[phaseSnapshots.length - 1]?.atMs ?? startMs;
+    const endMs = phaseSnapshots.at(-1)?.atMs ?? startMs;
     return {
       name,
       durationMs: endMs - startMs,
@@ -515,7 +515,7 @@ function countPhaseProgress(
   );
   const ends = entries.filter((entry) => {
     const value = progressValue(entry.params);
-    if (!value || value.kind !== "end") {
+    if (value?.kind !== "end") {
       return false;
     }
     return beginTokens.has(progressToken(entry.params));
@@ -663,9 +663,8 @@ function summarizeCapture(input: {
       creates: input.collector.serverPhaseMutations.creates,
       contentRewrites: input.collector.serverPhaseMutations.contentRewrites,
       mtimeOnlyChanges: input.collector.serverPhaseMutations.mtimeOnlyChanges,
-      changedPaths: [
-        ...input.collector.serverPhaseMutations.changedPaths,
-      ].sort(),
+      changedPaths:
+        input.collector.serverPhaseMutations.changedPaths.toSorted(),
     },
     phaseMutations: input.collector.phaseMutationsSummary(),
     snapshots: input.collector.snapshots.length,

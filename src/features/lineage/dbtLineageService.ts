@@ -267,9 +267,7 @@ export class DbtLineageService {
           tables.set(_node.table, _node);
         }
       });
-    return Array.from(tables.values()).sort((a, b) =>
-      a.table.localeCompare(b.table),
-    );
+    return [...tables.values()].sort((a, b) => a.table.localeCompare(b.table));
   }
 
   createTable(
@@ -308,7 +306,7 @@ export class DbtLineageService {
         childCount,
         parentCount,
         nodeType,
-        tests: (graphMetaMap["tests"].get(key)?.nodes || []).map((n) => {
+        tests: (graphMetaMap["tests"].get(key)?.nodes ?? []).map((n) => {
           const testKey = n.label.split(".")[0] ?? "";
           return { ...testMetaMap.get(testKey), key: testKey };
         }),
@@ -381,7 +379,7 @@ export class DbtLineageService {
       description: node.description,
       columns: node.columns,
       patchPath: node.patch_path ?? "",
-      tests: (graphMetaMap["tests"].get(key)?.nodes || []).map((n) => {
+      tests: (graphMetaMap["tests"].get(key)?.nodes ?? []).map((n) => {
         const testKey = n.label.split(".")[0] ?? "";
         return { ...testMetaMap.get(testKey), key: testKey };
       }),
@@ -393,7 +391,7 @@ export class DbtLineageService {
   private getConnectedNodeCount(g: NodeGraphMap, key: string) {
     // Exclude FK-only edges so the upstream/downstream counts match the
     // data-flow edges actually drawn in the lineage panel.
-    return (g.get(key)?.nodes || []).filter((n) => n.edgeType !== "constraint")
+    return (g.get(key)?.nodes ?? []).filter((n) => n.edgeType !== "constraint")
       .length;
   }
 }

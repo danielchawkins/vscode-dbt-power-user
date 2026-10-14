@@ -27,7 +27,7 @@ const spansOf = (
         lines.push([]);
       }
       if (text) {
-        lines[lines.length - 1]?.push({ text, className: inherited });
+        lines.at(-1)?.push({ text, className: inherited });
       }
     });
     return;

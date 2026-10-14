@@ -125,6 +125,6 @@ export const messageGuard = <M extends { command: string }>(
       return false;
     }
     const check = checks.get(own(value, "command") as string);
-    return check !== undefined && check(value);
+    return check?.(value) ?? false;
   };
 };

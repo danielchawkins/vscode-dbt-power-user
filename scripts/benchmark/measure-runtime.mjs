@@ -145,9 +145,7 @@ const summary = {
       ? null
       : {
           min: Math.min(...extHostStarts),
-          median: median(
-            [...extHostStarts].sort((left, right) => left - right),
-          ),
+          median: median(extHostStarts.toSorted((left, right) => left - right)),
           max: Math.max(...extHostStarts),
           launches: extHostStarts.length,
         },
@@ -155,7 +153,7 @@ const summary = {
 console.log(`FPU_RUNTIME_SUMMARY=${JSON.stringify(summary)}`);
 
 function summarize(values) {
-  const sorted = [...values].sort((left, right) => left - right);
+  const sorted = values.toSorted((left, right) => left - right);
   return {
     raw: values,
     median: median(sorted),

@@ -110,7 +110,8 @@ export function runAudit(run = spawnSync) {
     return JSON.parse(result.stdout ?? "");
   } catch {
     return {
-      message: result.stderr?.trim() || `npm audit exited ${result.status}`,
+      message:
+        (result.stderr?.trim() ?? "") || `npm audit exited ${result.status}`,
     };
   }
 }

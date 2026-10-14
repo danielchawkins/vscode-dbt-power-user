@@ -48,7 +48,7 @@ const sizeGetter = (axis: "width" | "height") =>
 const MOUSE_EVENTS = ["mousedown", "mousemove", "mouseup", "dblclick", "wheel"];
 const giveView = (event: Event) => {
   if (!(event as UIEvent).view) {
-    Object.defineProperty(event, "view", { value: window });
+    Object.defineProperty(event, "view", { value: globalThis });
   }
 };
 
@@ -61,7 +61,7 @@ beforeAll(() => {
   vi.stubGlobal("ResizeObserver", FakeResizeObserver);
   vi.stubGlobal("DOMMatrixReadOnly", FakeDOMMatrix);
   for (const type of MOUSE_EVENTS) {
-    window.addEventListener(type, giveView, true);
+    globalThis.addEventListener(type, giveView, true);
   }
   for (const [name, get] of elementSizes) {
     Object.defineProperty(HTMLElement.prototype, name, {
@@ -74,7 +74,7 @@ beforeAll(() => {
 afterAll(() => {
   vi.unstubAllGlobals();
   for (const type of MOUSE_EVENTS) {
-    window.removeEventListener(type, giveView, true);
+    globalThis.removeEventListener(type, giveView, true);
   }
   for (const [name] of elementSizes) {
     Reflect.deleteProperty(HTMLElement.prototype, name);
@@ -178,7 +178,7 @@ export const openLineage = async (
     </AppProvider>,
   );
   await act(async () => {
-    window.dispatchEvent(
+    globalThis.dispatchEvent(
       new MessageEvent("message", { data: { command: "render", args } }),
     );
   });

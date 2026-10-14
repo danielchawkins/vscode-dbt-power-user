@@ -64,7 +64,7 @@ function findEntity(
       return false;
     },
   );
-  return (found as YAMLMap | undefined) || null;
+  return (found as YAMLMap | undefined) ?? null;
 }
 
 /**
@@ -96,7 +96,7 @@ export function convertColumnNamesByCaseConfig<T extends { name: string }>(
     path.join(projectRoot, removeProtocol(patchPath)),
   ).toString("utf8");
   const parsedDocFile =
-    parse(docFile, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ||
+    parse(docFile, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ??
     {};
   const model = (
     parsedDocFile.models as
@@ -122,7 +122,7 @@ function newColumnEntry(
 ) {
   return {
     name: getColumnNameByCase(column.name, adapterType),
-    description: column.description?.trim() || undefined,
+    description: (column.description?.trim() ?? "") || undefined,
     data_type: column.type?.toLowerCase(),
     // A column without a `tests` key gets `data_tests`.
     ...getTestDataByColumn(message, column.name, { name: column.name }, deps),
@@ -144,7 +144,7 @@ function updateColumnEntry(
   setOrDelete(
     existing,
     "data_type",
-    (rest.data_type || column.type)?.toLowerCase(),
+    [rest.data_type, column.type].find(Boolean)?.toLowerCase(),
   );
   const allTests = getTestDataByColumn(
     message,
@@ -195,7 +195,7 @@ function addModel(
   const { message } = context;
   const newModelData = {
     name: message.name,
-    description: message.description?.trim() || undefined,
+    description: (message.description?.trim() ?? "") || undefined,
     columns: message.columns.length
       ? message.columns.map((column) => newColumnEntry(context, column))
       : undefined,

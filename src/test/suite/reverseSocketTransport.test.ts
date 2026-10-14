@@ -64,7 +64,7 @@ async function connectClientOrReset(
       resolve(socket);
     });
     socket.once("error", (error: Error) => {
-      if (/ECONNRESET/.test(error.message)) {
+      if (error.message.includes("ECONNRESET")) {
         resolve("reset");
         return;
       }

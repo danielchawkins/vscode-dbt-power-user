@@ -179,11 +179,9 @@ export class DbtTestService {
       return this.filterAndStringifyTest(model?.tests, test, log);
     }
 
-    const column =
-      model.columns &&
-      model.columns.find((yamlColumn: { name: string }) =>
-        isColumnNameEqual(yamlColumn.name, columnNameFromTestMetadata),
-      );
+    const column = model.columns?.find((yamlColumn: { name: string }) =>
+      isColumnNameEqual(yamlColumn.name, columnNameFromTestMetadata),
+    );
     log.debug(
       "getDbtTestCode",
       "finding column test from yml",
@@ -262,7 +260,7 @@ export class DbtTestService {
       return;
     }
     const key = _node.unique_id;
-    return (graphMetaMap["tests"].get(key)?.nodes || [])
+    return (graphMetaMap["tests"].get(key)?.nodes ?? [])
       .map((n) => {
         const testKey = n.label.split(".")[0] ?? "";
         const testData = testMetaMap.get(testKey);
@@ -296,7 +294,7 @@ export class DbtTestService {
 
         return {
           ...testData,
-          path: macroFilepath || testData.path,
+          path: (macroFilepath ?? "") || testData.path,
           key: testKey,
         };
       })
@@ -331,7 +329,7 @@ export class DbtTestService {
       return [];
     }
 
-    return Array.from(unitTestMetaMap.values())
+    return [...unitTestMetaMap.values()]
       .filter((ut: UnitTestMetaData) => ut.model === modelName)
       .map((ut: UnitTestMetaData) => ({ name: ut.name, path: ut.path }));
   }

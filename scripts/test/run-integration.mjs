@@ -69,7 +69,7 @@ const signalCode = (signal) => (signal === "SIGINT" ? 130 : 143);
 const onSignal = (signal) => {
   signalled += 1;
   exitSignal = signal;
-  if (!child || child.exitCode !== null || signalled > 1) {
+  if (child?.exitCode !== null || signalled > 1) {
     killGroup(child, "SIGKILL");
     cleanup();
     process.exit(signalCode(signal));

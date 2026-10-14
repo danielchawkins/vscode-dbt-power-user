@@ -199,7 +199,7 @@ describe("Projects", () => {
     it("re-parses only the projects whose target or profilesDir changed", async () => {
       await projects.initialize();
       const calls = vi.mocked(workspace.onDidChangeConfiguration).mock.calls;
-      const listener = calls[calls.length - 1]?.[0];
+      const listener = calls.at(-1)?.[0];
       listener?.({
         affectsConfiguration: (key: string, scope?: Uri) =>
           key === "fusionPowerUser.target" && scope?.fsPath === "/project1",

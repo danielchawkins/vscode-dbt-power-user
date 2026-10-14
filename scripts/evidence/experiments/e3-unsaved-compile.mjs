@@ -52,7 +52,7 @@ const uriSeesMarker =
 server.change(model, original);
 await server.stop();
 
-const anyCompiled = compileReflects || inlineHasCompiled;
+const anyCompiled = compileReflects ? true : inlineHasCompiled;
 const decision = anyCompiled
   ? `the server returns compiled text for the buffer (${compileReflects ? "compileFile" : "show inline"}); E3 replaces D5`
   : "neither compileFile nor an inline show returns compiled text for the buffer: D5 stands";

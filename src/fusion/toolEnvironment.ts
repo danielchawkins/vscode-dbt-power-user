@@ -26,10 +26,10 @@ function globalConfigLocations(host: Readonly<Record<string, string>>): {
   files: string[];
 } {
   const home = host.HOME ?? host.USERPROFILE ?? "";
-  const configHome = host.XDG_CONFIG_HOME || join(home, ".config");
+  const configHome = (host.XDG_CONFIG_HOME ?? "") || join(home, ".config");
   const dirs = [
-    host.MISE_CONFIG_DIR || join(configHome, "mise"),
-    host.MISE_SYSTEM_CONFIG_DIR || "/etc/mise",
+    (host.MISE_CONFIG_DIR ?? "") || join(configHome, "mise"),
+    (host.MISE_SYSTEM_CONFIG_DIR ?? "") || "/etc/mise",
   ];
   const files = [
     host.MISE_GLOBAL_CONFIG_FILE,

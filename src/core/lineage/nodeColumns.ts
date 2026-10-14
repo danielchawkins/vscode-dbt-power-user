@@ -72,7 +72,7 @@ function toPanelColumn(
   return {
     table,
     name,
-    datatype: declared?.data_type?.toLowerCase() || inferredType,
+    datatype: (declared?.data_type?.toLowerCase() ?? "") || inferredType,
     can_lineage_expand: false,
     description: declared?.description ?? "",
   };

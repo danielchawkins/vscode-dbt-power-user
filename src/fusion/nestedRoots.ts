@@ -112,7 +112,7 @@ function forward(inner: Hook | undefined, args: unknown[]): unknown {
   if (inner) {
     return inner(args[0] as DocumentArgument, ...args.slice(1));
   }
-  const next = args[args.length - 1] as (...params: unknown[]) => unknown;
+  const next = args.at(-1) as (...params: unknown[]) => unknown;
   return next(...args.slice(0, -1));
 }
 

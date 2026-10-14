@@ -171,9 +171,7 @@ class FusionLanguageClientImpl implements FusionClient {
   }
 
   stop(): Promise<void> {
-    if (!this.stopPromise) {
-      this.stopPromise = this.doStop();
-    }
+    this.stopPromise ??= this.doStop();
     return this.stopPromise;
   }
 
@@ -428,9 +426,7 @@ class FusionLanguageClientImpl implements FusionClient {
   }
 
   private recordFailure(message: string): void {
-    if (!this._failureReason) {
-      this._failureReason = message;
-    }
+    this._failureReason ??= message;
     this.outputChannel.warn(message);
   }
 

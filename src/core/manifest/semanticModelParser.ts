@@ -59,7 +59,7 @@ export class SemanticModelParser {
 
       for (const key in semanticModels) {
         const sm = semanticModels[key];
-        if (!sm || !sm.unique_id) {
+        if (!sm?.unique_id) {
           continue;
         }
         const modelRef: string | undefined = sm.model;

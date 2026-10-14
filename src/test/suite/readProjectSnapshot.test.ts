@@ -97,7 +97,7 @@ describe("readProjectSnapshot", () => {
 
     expect(read.length).toBeGreaterThan(0);
     expect(source).not.toMatch(/readSetting\(\s*[^"\s]/);
-    expect([...PROJECT_SNAPSHOT_SETTINGS].sort()).toEqual(
+    expect(PROJECT_SNAPSHOT_SETTINGS.toSorted()).toEqual(
       [...new Set(read)].sort(),
     );
   });

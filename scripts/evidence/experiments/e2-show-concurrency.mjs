@@ -40,7 +40,7 @@ solo.longShow = {
   error: longSolo.error ?? longSolo.result?.error ?? null,
 };
 
-const failed = (r) => Boolean(r.error || r.result?.error);
+const failed = (r) => Boolean(r.error) || Boolean(r.result?.error);
 const pairs = {};
 for (const [name, call] of Object.entries(classes)) {
   const long = show(longSql(10, name));

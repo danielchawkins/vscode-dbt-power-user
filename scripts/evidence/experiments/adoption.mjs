@@ -86,7 +86,7 @@ function warehouseNames(root, profilesDir) {
 function makeRedactor(lib, root, profilesDir, warehouse) {
   const base = lib.redactor(root);
   const names = warehouse
-    ? [...warehouseNames(root, profilesDir)].sort((a, b) => b.length - a.length)
+    ? warehouseNames(root, profilesDir).toSorted((a, b) => b.length - a.length)
     : [];
   const patterns = names.map((n) => new RegExp(escapeRegExp(n), "gi"));
   const threePart =
@@ -219,7 +219,7 @@ export async function setup(
 export const p50 = (values) => percentileOf(values, 50);
 export const p95 = (values) => percentileOf(values, 95);
 function percentileOf(values, p) {
-  const sorted = [...values].sort((a, b) => a - b);
+  const sorted = values.toSorted((a, b) => a - b);
   return sorted.length
     ? sorted[Math.min(sorted.length - 1, Math.floor((p / 100) * sorted.length))]
     : null;

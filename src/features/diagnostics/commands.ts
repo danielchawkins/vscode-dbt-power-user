@@ -59,15 +59,15 @@ function projectPaths(project: Project) {
       pathType: "Catalog",
       path: targetPath ? join(targetPath, CATALOG_FILE) : undefined,
     },
-    ...(project.getModelPaths() || []).map((path) => ({
+    ...(project.getModelPaths() ?? []).map((path) => ({
       pathType: "Model",
       path,
     })),
-    ...(project.getSeedPaths() || []).map((path) => ({
+    ...(project.getSeedPaths() ?? []).map((path) => ({
       pathType: "Seed",
       path,
     })),
-    ...(project.getMacroPaths() || []).map((path) => ({
+    ...(project.getMacroPaths() ?? []).map((path) => ({
       pathType: "Macro",
       path,
     })),

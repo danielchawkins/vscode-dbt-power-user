@@ -58,7 +58,7 @@ describe("FileAssociationsCommand", () => {
       .mock.calls.filter(
         ([id]) => id === "fusionPowerUser.configureFileAssociations",
       );
-    const handler = calls[calls.length - 1][1] as () => Promise<
+    const handler = calls.at(-1)![1] as () => Promise<
       AssociationChanges | undefined
     >;
     return handler();

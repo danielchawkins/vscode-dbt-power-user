@@ -9,16 +9,6 @@
       "count": 1
     }
   },
-  "packages/webview-contract/src/guards.test.ts": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 2
-    }
-  },
-  "packages/webview-contract/src/guards.ts": {
-    "typescript/prefer-optional-chain": {
-      "count": 1
-    }
-  },
   "packages/webview-contract/src/lineage.ts": {
     "typescript/no-redundant-type-constituents": {
       "count": 1
@@ -35,9 +25,6 @@
     }
   },
   "scripts/benchmark/measure-runtime.mjs": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 2
-    },
     "no-restricted-imports": {
       "count": 1
     },
@@ -48,9 +35,6 @@
   "scripts/evidence/experiments/adoption.mjs": {
     "curly": {
       "count": 17
-    },
-    "e18e/prefer-array-to-sorted": {
-      "count": 2
     },
     "max-lines-per-function": {
       "count": 1
@@ -88,16 +72,10 @@
     },
     "no-restricted-imports": {
       "count": 1
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 1
     }
   },
   "scripts/evidence/experiments/e3-unsaved-compile.mjs": {
     "no-restricted-imports": {
-      "count": 1
-    },
-    "typescript/prefer-nullish-coalescing": {
       "count": 1
     }
   },
@@ -136,9 +114,6 @@
   "scripts/evidence/experiments/e8-baseline-mode.mjs": {
     "complexity": {
       "count": 1
-    },
-    "e18e/prefer-spread-syntax": {
-      "count": 1
     }
   },
   "scripts/evidence/experiments/e9-compiled-paths.mjs": {
@@ -156,9 +131,6 @@
     "no-restricted-imports": {
       "count": 1
     },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 2
-    },
     "typescript/require-array-sort-compare": {
       "count": 1
     }
@@ -175,9 +147,6 @@
     },
     "no-restricted-imports": {
       "count": 1
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 2
     },
     "typescript/require-array-sort-compare": {
       "count": 1
@@ -203,9 +172,6 @@
     },
     "no-restricted-properties": {
       "count": 13
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 1
     }
   },
   "scripts/evidence/steps/protocol/gen-commands.mjs": {
@@ -260,9 +226,6 @@
       "count": 2
     },
     "no-restricted-properties": {
-      "count": 1
-    },
-    "typescript/prefer-nullish-coalescing": {
       "count": 1
     }
   },
@@ -322,9 +285,6 @@
     },
     "no-restricted-properties": {
       "count": 15
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 2
     }
   },
   "scripts/smoke/toolEnvFixtures.mjs": {
@@ -343,9 +303,6 @@
     },
     "no-restricted-properties": {
       "count": 4
-    },
-    "typescript/prefer-optional-chain": {
-      "count": 1
     }
   },
   "src/core/cli/output.ts": {
@@ -364,9 +321,6 @@
   "src/core/lineage/nodeColumns.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 1
     }
   },
   "src/core/lsp/commands.ts": {
@@ -377,12 +331,6 @@
   "src/core/manifest/childrenParentParser.ts": {
     "max-params": {
       "count": 2
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 2
-    },
-    "typescript/prefer-optional-chain": {
-      "count": 1
     }
   },
   "src/core/manifest/docParser.ts": {
@@ -451,9 +399,6 @@
   "src/core/manifest/semanticModelParser.ts": {
     "typescript/parameter-properties": {
       "count": 1
-    },
-    "typescript/prefer-optional-chain": {
-      "count": 1
     }
   },
   "src/core/manifest/sourceParser.ts": {
@@ -489,19 +434,9 @@
       "count": 2
     }
   },
-  "src/core/metadata/serverMetadata.ts": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
-    }
-  },
   "src/core/project/dbtEnvironment.ts": {
     "max-params": {
       "count": 1
-    }
-  },
-  "src/core/project/projectSnapshot.ts": {
-    "typescript/prefer-nullish-coalescing": {
-      "count": 2
     }
   },
   "src/core/text.ts": {
@@ -556,9 +491,6 @@
     },
     "typescript/parameter-properties": {
       "count": 1
-    },
-    "unicorn/prefer-at": {
-      "count": 1
     }
   },
   "src/features/defer/deferToProductionStatusBar.ts": {
@@ -567,9 +499,6 @@
     }
   },
   "src/features/diagnostics/commands.ts": {
-    "typescript/prefer-nullish-coalescing": {
-      "count": 3
-    },
     "typescript/restrict-template-expressions": {
       "count": 2
     }
@@ -580,19 +509,10 @@
     }
   },
   "src/features/docs/dbtTestService.ts": {
-    "e18e/prefer-spread-syntax": {
-      "count": 1
-    },
     "max-params": {
       "count": 1
     },
     "typescript/parameter-properties": {
-      "count": 1
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 2
-    },
-    "typescript/prefer-optional-chain": {
       "count": 1
     }
   },
@@ -605,9 +525,6 @@
     },
     "typescript/parameter-properties": {
       "count": 2
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 1
     },
     "typescript/restrict-template-expressions": {
       "count": 1
@@ -622,9 +539,6 @@
     }
   },
   "src/features/docs/docsEditPanel.ts": {
-    "e18e/prefer-spread-syntax": {
-      "count": 1
-    },
     "max-params": {
       "count": 1
     },
@@ -640,23 +554,14 @@
   "src/features/docs/docsTestData.ts": {
     "max-params": {
       "count": 2
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 3
     }
   },
   "src/features/docs/docsYaml.ts": {
     "max-params": {
       "count": 2
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 5
     }
   },
   "src/features/lineage/dbtLineageService.ts": {
-    "e18e/prefer-spread-syntax": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -665,9 +570,6 @@
     },
     "typescript/parameter-properties": {
       "count": 4
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 3
     }
   },
   "src/features/lineage/lineageDetails.ts": {
@@ -675,9 +577,6 @@
       "count": 1
     },
     "typescript/parameter-properties": {
-      "count": 3
-    },
-    "typescript/prefer-nullish-coalescing": {
       "count": 3
     }
   },
@@ -700,14 +599,6 @@
     },
     "typescript/parameter-properties": {
       "count": 1
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 1
-    }
-  },
-  "src/features/modelTree/modelTreeHelpers.ts": {
-    "typescript/prefer-optional-chain": {
-      "count": 1
     }
   },
   "src/features/modelTree/modelTreeviewProvider.ts": {
@@ -715,9 +606,6 @@
       "count": 1
     },
     "typescript/parameter-properties": {
-      "count": 2
-    },
-    "typescript/prefer-optional-chain": {
       "count": 2
     }
   },
@@ -768,9 +656,6 @@
     },
     "typescript/parameter-properties": {
       "count": 3
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 1
     }
   },
   "src/features/run/runModel.ts": {
@@ -803,9 +688,6 @@
   },
   "src/features/sqlActions/virtualSqlCodeLensProvider.ts": {
     "typescript/parameter-properties": {
-      "count": 1
-    },
-    "typescript/prefer-nullish-coalescing": {
       "count": 1
     }
   },
@@ -859,11 +741,6 @@
       "count": 5
     }
   },
-  "src/fusion/fusionCommands.ts": {
-    "typescript/prefer-optional-chain": {
-      "count": 1
-    }
-  },
   "src/fusion/fusionDiagnostics.ts": {
     "typescript/parameter-properties": {
       "count": 2
@@ -872,9 +749,6 @@
   "src/fusion/fusionLanguageClient.ts": {
     "typescript/parameter-properties": {
       "count": 3
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 2
     }
   },
   "src/fusion/fusionRequests.ts": {
@@ -901,19 +775,11 @@
     },
     "typescript/parameter-properties": {
       "count": 2
-    },
-    "unicorn/prefer-at": {
-      "count": 1
     }
   },
   "src/fusion/reverseSocketTransport.ts": {
     "typescript/parameter-properties": {
       "count": 2
-    }
-  },
-  "src/fusion/toolEnvironment.ts": {
-    "typescript/prefer-nullish-coalescing": {
-      "count": 3
     }
   },
   "src/metadata/compositeMetadataSource.ts": {
@@ -964,9 +830,6 @@
     "typescript/parameter-properties": {
       "count": 4
     },
-    "typescript/prefer-optional-chain": {
-      "count": 1
-    },
     "unicorn/no-useless-spread": {
       "count": 1
     }
@@ -988,9 +851,6 @@
     },
     "typescript/parameter-properties": {
       "count": 3
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 1
     },
     "unicorn/no-useless-fallback-in-spread": {
       "count": 1
@@ -1056,15 +916,9 @@
     },
     "typescript/parameter-properties": {
       "count": 4
-    },
-    "typescript/prefer-includes": {
-      "count": 2
     }
   },
   "src/projects/projectRegistry.ts": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
-    },
     "max-lines-per-function": {
       "count": 1
     },
@@ -1091,17 +945,11 @@
     }
   },
   "src/projects/projects.ts": {
-    "e18e/prefer-spread-syntax": {
-      "count": 1
-    },
     "typescript/parameter-properties": {
       "count": 3
     }
   },
   "src/projects/queryManifestService.ts": {
-    "e18e/prefer-spread-syntax": {
-      "count": 2
-    },
     "typescript/parameter-properties": {
       "count": 3
     }
@@ -1111,11 +959,6 @@
       "count": 1
     },
     "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
-  "src/settings/index.ts": {
-    "typescript/prefer-nullish-coalescing": {
       "count": 3
     }
   },
@@ -1146,17 +989,8 @@
     }
   },
   "src/test/integration/targetMutationCapture.test.ts": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
-    },
     "max-params": {
       "count": 3
-    },
-    "typescript/prefer-optional-chain": {
-      "count": 1
-    },
-    "unicorn/prefer-at": {
-      "count": 1
     }
   },
   "src/test/mock/vscode-languageclient-node.ts": {
@@ -1189,18 +1023,10 @@
   "src/test/smoke/cdpClient.ts": {
     "max-params": {
       "count": 2
-    },
-    "typescript/prefer-optional-chain": {
-      "count": 1
     }
   },
   "src/test/smoke/documentationEditorInteractions.test.ts": {
     "no-unsafe-finally": {
-      "count": 1
-    }
-  },
-  "src/test/smoke/lspSmoke.test.ts": {
-    "e18e/prefer-array-to-sorted": {
       "count": 1
     }
   },
@@ -1212,24 +1038,10 @@
   "src/test/smoke/panelSmoke.test.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/prefer-nullish-coalescing": {
-      "count": 1
-    }
-  },
-  "src/test/smoke/panelViewState.test.ts": {
-    "typescript/prefer-optional-chain": {
-      "count": 2
-    },
-    "unicorn/prefer-at": {
-      "count": 1
     }
   },
   "src/test/smoke/visualEvidence.ts": {
     "max-params": {
-      "count": 1
-    },
-    "typescript/prefer-nullish-coalescing": {
       "count": 1
     }
   },
@@ -1248,21 +1060,8 @@
       "count": 1
     }
   },
-  "src/test/suite/commandConsistencyGuard.test.ts": {
-    "e18e/prefer-spread-syntax": {
-      "count": 7
-    },
-    "typescript/prefer-includes": {
-      "count": 3
-    }
-  },
   "src/test/suite/commandProcessExecution.test.ts": {
     "typescript/unbound-method": {
-      "count": 1
-    }
-  },
-  "src/test/suite/configErrors.test.ts": {
-    "unicorn/prefer-at": {
       "count": 1
     }
   },
@@ -1271,19 +1070,9 @@
       "count": 1
     }
   },
-  "src/test/suite/dbtTask.test.ts": {
-    "unicorn/prefer-at": {
-      "count": 1
-    }
-  },
   "src/test/suite/diagnosticsCommand.test.ts": {
     "typescript/unbound-method": {
       "count": 2
-    }
-  },
-  "src/test/suite/fileAssociations.test.ts": {
-    "unicorn/prefer-at": {
-      "count": 1
     }
   },
   "src/test/suite/formatRetry.test.ts": {
@@ -1315,9 +1104,6 @@
     },
     "typescript/unbound-method": {
       "count": 6
-    },
-    "unicorn/prefer-at": {
-      "count": 2
     }
   },
   "src/test/suite/fusionStatus.test.ts": {
@@ -1339,11 +1125,6 @@
       "count": 2
     }
   },
-  "src/test/suite/namespaceGuard.test.ts": {
-    "typescript/prefer-includes": {
-      "count": 1
-    }
-  },
   "src/test/suite/nestedRoots.test.ts": {
     "typescript/unbound-method": {
       "count": 3
@@ -1357,30 +1138,14 @@
       "count": 21
     }
   },
-  "src/test/suite/panelHtml.test.ts": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
-    }
-  },
   "src/test/suite/panelMessages.test.ts": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
-    },
     "typescript/unbound-method": {
       "count": 2
-    }
-  },
-  "src/test/suite/panelRetention.test.ts": {
-    "typescript/prefer-includes": {
-      "count": 1
     }
   },
   "src/test/suite/project.test.ts": {
     "typescript/unbound-method": {
       "count": 14
-    },
-    "unicorn/prefer-at": {
-      "count": 4
     }
   },
   "src/test/suite/projectCommands.test.ts": {
@@ -1391,36 +1156,15 @@
   "src/test/suite/projectDiagnostics.test.ts": {
     "typescript/unbound-method": {
       "count": 1
-    },
-    "unicorn/prefer-at": {
-      "count": 1
     }
   },
   "src/test/suite/projects.test.ts": {
     "typescript/unbound-method": {
       "count": 1
-    },
-    "unicorn/prefer-at": {
-      "count": 1
-    }
-  },
-  "src/test/suite/queryManifestService.test.ts": {
-    "e18e/prefer-spread-syntax": {
-      "count": 1
-    }
-  },
-  "src/test/suite/readProjectSnapshot.test.ts": {
-    "e18e/prefer-array-to-sorted": {
-      "count": 1
     }
   },
   "src/test/suite/rerunFromHistory.test.ts": {
     "max-params": {
-      "count": 1
-    }
-  },
-  "src/test/suite/reverseSocketTransport.test.ts": {
-    "typescript/prefer-includes": {
       "count": 1
     }
   },

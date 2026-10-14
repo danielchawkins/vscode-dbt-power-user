@@ -154,7 +154,7 @@ const answerRequests = () =>
 /** Dispatches a host message to the panel. */
 const send = (data: object) =>
   act(() => {
-    window.dispatchEvent(new MessageEvent("message", { data }));
+    globalThis.dispatchEvent(new MessageEvent("message", { data }));
   });
 
 /** Renders the editor inside the app, then dispatches each host message to it. */
@@ -791,6 +791,6 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
 
 describe("Documentation editor controls", () => {
   it("lists exactly the controls the tests above clicked", () => {
-    expect([...clicked].sort()).toEqual([...TESTED_CONTROLS].sort());
+    expect([...clicked].sort()).toEqual(TESTED_CONTROLS.toSorted());
   });
 });

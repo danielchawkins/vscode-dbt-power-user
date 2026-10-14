@@ -66,7 +66,7 @@ describe("Lineage control coverage", () => {
 
 describe("Lineage control coverage gate", () => {
   it("looks for the eleven interactive roles", () => {
-    expect([...INTERACTIVE_ROLES].sort()).toEqual([
+    expect(INTERACTIVE_ROLES.toSorted()).toEqual([
       "button",
       "checkbox",
       "combobox",

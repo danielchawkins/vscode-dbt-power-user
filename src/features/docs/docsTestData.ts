@@ -89,7 +89,7 @@ export function getTestDataByModel(
       }
       // Add extra config from external packages or test macros
       return (
-        getTestMetadataKwArgs(test.test_metadata.kwargs, fullName) || fullName
+        getTestMetadataKwArgs(test.test_metadata.kwargs, fullName) ?? fullName
       );
     })
     .filter((t) => Boolean(t));
@@ -125,7 +125,7 @@ function columnTestEntry(
   if (isAcceptedValues(kwargs)) {
     return { accepted_values: { ...fromYml, values: kwargs.values } };
   }
-  return fromYml || getTestMetadataKwArgs(kwargs, fullName) || fullName;
+  return fromYml ?? getTestMetadataKwArgs(kwargs, fullName) ?? fullName;
 }
 
 /** The tests to write under a column: `data_tests`, or `tests` when the column's YAML already uses that key. */

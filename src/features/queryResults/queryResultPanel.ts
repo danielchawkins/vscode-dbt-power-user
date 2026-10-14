@@ -222,7 +222,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   }: MessageOf<PanelMessage, "viewResultSet">) {
     this._queryTabData = tabDataOf(queryHistory);
     void this.createQueryResultsPanelVirtualDocument(
-      editorName || "Custom query",
+      (editorName ?? "") || "Custom query",
     );
     this.updateViewTypeToWebview(QueryPanelViewType.OPEN_RESULTS_IN_TAB);
   }

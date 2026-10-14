@@ -17,7 +17,7 @@ function productionSources(dir: string): string[] {
 describe("panel view state", () => {
   it("no panel keeps its page alive while hidden", () => {
     const retaining = productionSources(SRC).filter((file) =>
-      /retainContextWhenHidden/.test(fs.readFileSync(file, "utf8")),
+      fs.readFileSync(file, "utf8").includes("retainContextWhenHidden"),
     );
     expect(retaining.map((file) => path.relative(SRC, file))).toEqual([]);
   });
