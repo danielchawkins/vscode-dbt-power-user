@@ -334,6 +334,10 @@
       "engine": "eslint",
       "from": "@eslint-react/no-unused-class-component-members"
     },
+    "@eslint-react/no-unused-props": {
+      "engine": "held",
+      "from": "@eslint-react/no-unused-props"
+    },
     "@eslint-react/no-use-context": {
       "engine": "eslint",
       "from": "@eslint-react/no-use-context"
@@ -365,14 +369,6 @@
     "@typescript-eslint/naming-convention": {
       "engine": "eslint",
       "from": "@typescript-eslint/naming-convention"
-    },
-    "@typescript-eslint/no-restricted-types": {
-      "engine": "eslint",
-      "from": "@typescript-eslint/no-restricted-types"
-    },
-    "@typescript-eslint/no-shadow": {
-      "engine": "eslint",
-      "from": "@typescript-eslint/no-shadow"
     },
     "eslint/complexity": {
       "engine": "oxlint",
@@ -529,6 +525,10 @@
     "eslint/no-self-assign": {
       "engine": "oxlint",
       "from": "no-self-assign"
+    },
+    "eslint/no-shadow": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-shadow"
     },
     "eslint/no-shadow-restricted-names": {
       "engine": "oxlint",
@@ -969,6 +969,10 @@
     "typescript/no-require-imports": {
       "engine": "oxlint",
       "from": "@typescript-eslint/no-require-imports"
+    },
+    "typescript/no-restricted-types": {
+      "engine": "oxlint",
+      "from": "@typescript-eslint/no-restricted-types"
     },
     "typescript/no-this-alias": {
       "engine": "oxlint",

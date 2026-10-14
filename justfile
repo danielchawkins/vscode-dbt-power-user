@@ -159,10 +159,13 @@ lint-mise-lock:
 fmt-code:
     npm run lint:fix
     npm run format
+    npm run fix:oxlint
+    npm run fix:eslint
 
 [group("quality")]
 lint-code:
-    npm run lint
+    npm run lint:oxlint
+    npm run lint:eslint
     npm run lint:imports
 
 # Unused files, exports, types, enum members and dependencies, in all code and in production code alone.
@@ -173,7 +176,8 @@ lint-unused:
 # Drop baseline entries for lint violations that have been fixed, so the baseline only shrinks.
 [group("quality")]
 lint-prune:
-    npm run lint:prune
+    npm run prune:oxlint
+    npm run prune:eslint
     just webviews::lint-prune
 
 # Fail when a ratcheted count or floor differs from scripts/quality/ceilings.json; --write stores the measured values.

@@ -200,7 +200,9 @@ export const pane = (container: HTMLElement) =>
 
 /** The drawn tables, sorted. */
 export const tableIds = (container: HTMLElement) =>
-  [...nodes(container)].map((n) => n.dataset.table).sort();
+  [...nodes(container)]
+    .map((n) => n.dataset.table)
+    .sort((a, b) => (a! < b! ? -1 : a! > b! ? 1 : 0));
 
 export type Scope = { getByRole: typeof screen.getByRole };
 

@@ -123,7 +123,7 @@ export class DBTPowerUserExtension implements Disposable {
     try {
       if (extensions.getExtension(UPSTREAM_EXTENSION_ID)) {
         // A modal with its own action, not a project error.
-        // eslint-disable-next-line no-restricted-properties
+        // oxlint-disable-next-line eslint/no-restricted-properties
         const action = await window.showErrorMessage(
           "Fusion Power User cannot start while dbt Power User is installed.",
           { modal: true },

@@ -163,7 +163,7 @@ const PopoverWithButton = ({
         }
       }}
     >
-      {/* eslint-disable-next-line @eslint-react/no-clone-element -- aria state and toggle go on the caller's button */}
+      {/* oxlint-disable-next-line react/no-clone-element -- aria state and toggle go on the caller's button */}
       {cloneElement(button, {
         "aria-haspopup": "dialog",
         "aria-expanded": open,
