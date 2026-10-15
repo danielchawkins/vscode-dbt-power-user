@@ -29,9 +29,9 @@ export class DbtTaskProvider implements TaskProvider {
           command,
           project: project.projectRoot.fsPath,
         };
-        return project.task(
+        return project.commands.task(
           definition,
-          project.taskName(cliCommandOf(definition)!),
+          project.commands.taskName(cliCommandOf(definition)!),
         );
       }),
     );
@@ -44,7 +44,7 @@ export class DbtTaskProvider implements TaskProvider {
   resolveTask(task: Task): Task | undefined {
     const definition = task.definition as DbtTaskDefinition;
     const project = this.projectOf(definition, task.scope);
-    return project?.task(definition, task.name);
+    return project?.commands.task(definition, task.name);
   }
 
   private projectOf(

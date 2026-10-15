@@ -41,8 +41,10 @@ describe("RunModel SQL execution", () => {
   beforeEach(() => {
     executed = [];
     dbtProject = {
-      executeSQLOnQueryPanel: (query: string, modelName: string) => {
-        executed.push([query, modelName]);
+      queries: {
+        executeSQLOnQueryPanel: (query: string, modelName: string) => {
+          executed.push([query, modelName]);
+        },
       },
     } as unknown as Project;
     project = {
@@ -119,7 +121,9 @@ describe("RunModel SQL execution", () => {
     const preview = previewUriFor(model);
     projects.get.mockImplementation((uri: Uri) =>
       uri.fsPath === model.fsPath
-        ? ({ runModelTest: (name: string) => tested.push(name) } as never)
+        ? ({
+            commands: { runModelTest: (name: string) => tested.push(name) },
+          } as never)
         : undefined,
     );
     (window.activeTextEditor as unknown) = { document: { uri: preview } };
@@ -154,16 +158,21 @@ describe("RunModel project commands", () => {
     other = [];
     owned = true;
     const project = {
-      runModel: (params) => tasks.runModel(params),
-      buildModel: (params) => tasks.buildModel(params),
-      compileModel: (params) => tasks.compileModel(params),
-      runTest: (name) => tasks.runTest(name),
-      runModelTest: (name) => tasks.runModelTest(name),
-      compileQuery: (query, uri) => other.push(`compileQuery ${query} ${uri}`),
-      generateSchemaYML: (uri, name) =>
-        other.push(`generateSchemaYML ${uri} ${name}`),
-      showRunSQL: (uri) => other.push(`showRunSQL ${uri}`),
-    } as Record<string, (...args: never[]) => unknown>;
+      commands: {
+        runModel: (params: never) => tasks.runModel(params),
+        buildModel: (params: never) => tasks.buildModel(params),
+        compileModel: (params: never) => tasks.compileModel(params),
+        runTest: (name: never) => tasks.runTest(name),
+        runModelTest: (name: never) => tasks.runModelTest(name),
+      },
+      queries: {
+        compileQuery: (query: never, uri: never) =>
+          other.push(`compileQuery ${query} ${uri}`),
+        generateSchemaYML: (uri: never, name: never) =>
+          other.push(`generateSchemaYML ${uri} ${name}`),
+        showRunSQL: (uri: never) => other.push(`showRunSQL ${uri}`),
+      },
+    };
     const projects = {
       get: (uri: Uri) => (owned && uri === model ? project : undefined),
     } as unknown as Projects;

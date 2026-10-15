@@ -146,7 +146,7 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.runModel(modelParamsFor(modelPath, type));
+    void project.commands.runModel(modelParamsFor(modelPath, type));
   }
 
   buildDBTModel(modelPath: Uri, type?: RunModelType) {
@@ -154,7 +154,7 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.buildModel(modelParamsFor(modelPath, type));
+    void project.commands.buildModel(modelParamsFor(modelPath, type));
   }
 
   compileDBTModel(modelPath: Uri, type?: RunModelType) {
@@ -162,7 +162,7 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.compileModel(modelParamsFor(modelPath, type));
+    void project.commands.compileModel(modelParamsFor(modelPath, type));
   }
 
   compileDBTQuery(modelPath: Uri, query: string) {
@@ -170,7 +170,7 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.compileQuery(query, modelPath);
+    void project.queries.compileQuery(query, modelPath);
   }
 
   runDBTTest(modelPath: Uri, testName: string) {
@@ -178,7 +178,7 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.runTest(testName);
+    void project.commands.runTest(testName);
   }
 
   runDBTModelTest(modelPath: Uri) {
@@ -186,7 +186,7 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.runModelTest(path.basename(modelPath.fsPath, ".sql"));
+    void project.commands.runModelTest(path.basename(modelPath.fsPath, ".sql"));
   }
 
   async executeSQL(uri: Uri, query: string, modelName: string) {
@@ -198,7 +198,7 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.executeSQLOnQueryPanel(query, modelName);
+    void project.queries.executeSQLOnQueryPanel(query, modelName);
   }
 
   generateSchemaYML(modelPath: Uri) {
@@ -206,7 +206,7 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.generateSchemaYML(
+    void project.queries.generateSchemaYML(
       modelPath,
       path.basename(modelPath.fsPath, ".sql"),
     );
@@ -217,14 +217,14 @@ export class RunModel {
     if (!project) {
       return;
     }
-    project.showRunSQL(modelPath);
+    project.queries.showRunSQL(modelPath);
   }
 
   createModelBasedonSourceConfig(params: GenerateModelFromSourceParams) {
     const project = this.projects.get(params.currentDoc);
     const sourcePath = path.dirname(params.currentDoc.fsPath);
     if (project) {
-      void project.generateModel(
+      void project.queries.generateModel(
         params.sourceName,
         params.tableName,
         sourcePath,

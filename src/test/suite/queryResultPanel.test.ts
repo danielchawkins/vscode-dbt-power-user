@@ -15,8 +15,10 @@ const bottomView = () => ({
 const project = (over: Record<string, unknown> = {}) => ({
   getAdapterType: () => "duckdb",
   getProjectName: () => "jaffle",
-  executeSQLOnQueryPanel: vi.fn(),
-  executeSQLWithLimitOnQueryPanel: vi.fn(),
+  queries: {
+    executeSQLOnQueryPanel: vi.fn(),
+    executeSQLWithLimitOnQueryPanel: vi.fn(),
+  },
   ...over,
 });
 
@@ -205,17 +207,15 @@ describe("QueryResultPanel", () => {
         projectName: "jaffle",
         limit: 50,
       });
-      expect(target.executeSQLWithLimitOnQueryPanel).toHaveBeenCalledWith(
-        "select 2",
-        "",
-        50,
-      );
+      expect(
+        target.queries.executeSQLWithLimitOnQueryPanel,
+      ).toHaveBeenCalledWith("select 2", "", 50);
       await panel.handleCommand({
         command: "executeQuery",
         query: "select 3",
         projectName: "jaffle",
       });
-      expect(target.executeSQLOnQueryPanel).toHaveBeenCalledWith(
+      expect(target.queries.executeSQLOnQueryPanel).toHaveBeenCalledWith(
         "select 3",
         "",
       );
@@ -252,11 +252,9 @@ describe("QueryResultPanel", () => {
         command: "executeQueryFromActiveWindow",
         limit: 7,
       });
-      expect(target.executeSQLWithLimitOnQueryPanel).toHaveBeenCalledWith(
-        "selected",
-        "orders",
-        7,
-      );
+      expect(
+        target.queries.executeSQLWithLimitOnQueryPanel,
+      ).toHaveBeenCalledWith("selected", "orders", 7);
     });
 
     it("reports a missing editor or project", async () => {

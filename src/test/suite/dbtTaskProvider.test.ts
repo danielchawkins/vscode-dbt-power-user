@@ -14,14 +14,17 @@ function project(root: string, name: string) {
   return {
     projectRoot: Uri.file(root),
     getProjectName: () => name,
-    taskName: (_cli: QueuedCliCommand): string => name,
-    task: vi.fn((definition, taskName) => ({ definition, name: taskName })),
+    commands: {
+      taskName: (_cli: QueuedCliCommand): string => name,
+      task: vi.fn((definition, taskName) => ({ definition, name: taskName })),
+    },
   };
 }
 
 function providerOf(...all: ReturnType<typeof project>[]) {
   all.forEach((p) => {
-    p.taskName = (cli) => taskName(cli, p.getProjectName(), all.length);
+    p.commands.taskName = (cli) =>
+      taskName(cli, p.getProjectName(), all.length);
   });
   const projects = {
     all: () => all as unknown as Project[],
@@ -65,8 +68,8 @@ describe("DbtTaskProvider", () => {
       definition,
       name: "nightly",
     } as unknown as Task);
-    expect(beta.task).toHaveBeenCalledWith(definition, "nightly");
-    expect(alpha.task).not.toHaveBeenCalled();
+    expect(beta.commands.task).toHaveBeenCalledWith(definition, "nightly");
+    expect(alpha.commands.task).not.toHaveBeenCalled();
   });
 
   it("resolves a relative project against the task's workspace folder", () => {
@@ -85,9 +88,9 @@ describe("DbtTaskProvider", () => {
       name: "n",
       scope,
     } as unknown as Task);
-    expect(beta.task).toHaveBeenCalledTimes(3);
-    expect(alpha.task).not.toHaveBeenCalled();
-    expect(only.task).toHaveBeenCalledWith(definition, "n");
+    expect(beta.commands.task).toHaveBeenCalledTimes(3);
+    expect(alpha.commands.task).not.toHaveBeenCalled();
+    expect(only.commands.task).toHaveBeenCalledWith(definition, "n");
   });
 
   it("resolves a task without a project only when there is one project", () => {

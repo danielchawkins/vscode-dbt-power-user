@@ -120,8 +120,10 @@ describe("VSCodeCommands", () => {
     const { handler } = build({
       projects: {
         get: () => ({
-          runModel: (params: unknown) => ran.push(["runModel", params]),
-          runModelTest: (name: string) => ran.push(["runModelTest", name]),
+          commands: {
+            runModel: (params: unknown) => ran.push(["runModel", params]),
+            runModelTest: (name: string) => ran.push(["runModelTest", name]),
+          },
         }),
       },
     });
@@ -145,7 +147,9 @@ describe("VSCodeCommands", () => {
 
   it("does not turn a failed YAML lens run into a command error", async () => {
     const runModel = vi.fn().mockRejectedValue(new Error("boom"));
-    const { handler } = build({ projects: { get: () => ({ runModel }) } });
+    const { handler } = build({
+      projects: { get: () => ({ commands: { runModel } }) },
+    });
     await expect(
       handler("fusionPowerUser.yamlRunModel")(Uri.file("/p/s.yml"), "a"),
     ).resolves.toBeUndefined();
@@ -167,8 +171,10 @@ describe("VSCodeCommands", () => {
     const { handler } = build({
       projects: {
         get: () => ({
-          buildProject: () => ran.push("buildProject"),
-          clean: () => ran.push("clean"),
+          commands: {
+            buildProject: () => ran.push("buildProject"),
+            clean: () => ran.push("clean"),
+          },
           getProjectName: () => "p",
         }),
       },

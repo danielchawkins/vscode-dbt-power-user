@@ -5,11 +5,11 @@ import type {
 } from "../../core/dbt/domain";
 import { extractDbtSubcommand } from "../../core/text";
 import { notifyErrorWithoutProject } from "../../projects/output/notifications";
-import type { Project } from "../../projects/project/project";
+import type { ProjectDbtCommands } from "../../projects/project/projectDbtCommands";
 
 /** Project operations a run-history replay can dispatch to. */
 export type ReplayProject = Pick<
-  Project,
+  ProjectDbtCommands,
   "runModel" | "buildModel" | "buildProject" | "runTest" | "compileModel"
 >;
 

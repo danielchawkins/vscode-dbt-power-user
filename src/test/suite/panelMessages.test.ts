@@ -269,8 +269,10 @@ function queryHarness() {
   const project = {
     getAdapterType: () => "duckdb",
     getProjectName: () => "jaffle",
-    executeSQLOnQueryPanel: vi.fn(),
-    executeSQLWithLimitOnQueryPanel: vi.fn(),
+    queries: {
+      executeSQLOnQueryPanel: vi.fn(),
+      executeSQLWithLimitOnQueryPanel: vi.fn(),
+    },
   };
   const service = {
     manifestFor: () => undefined,
@@ -382,7 +384,7 @@ describe("query results panel messages", () => {
         query: "select 1",
         projectName: "jaffle",
       });
-      expect(h.project.executeSQLOnQueryPanel).toHaveBeenCalledWith(
+      expect(h.project.queries.executeSQLOnQueryPanel).toHaveBeenCalledWith(
         "select 1",
         "",
       );
@@ -397,11 +399,9 @@ describe("query results panel messages", () => {
         selection: { isEmpty: true },
       } as never;
       await h.send({ command: "executeQueryFromActiveWindow", limit: 10 });
-      expect(h.project.executeSQLWithLimitOnQueryPanel).toHaveBeenCalledWith(
-        "select 2",
-        "orders",
-        10,
-      );
+      expect(
+        h.project.queries.executeSQLWithLimitOnQueryPanel,
+      ).toHaveBeenCalledWith("select 2", "orders", 10);
     },
     getQueryTabData: async () => {
       const h = queryHarness();
@@ -505,9 +505,13 @@ function docsHarness() {
     projectRoot: Uri.file("/p"),
     getProjectName: () => "jaffle",
     getAdapterType: () => "duckdb",
-    getColumnValues: vi.fn(async () => ["a", "b"]),
-    getColumnsOfSource: vi.fn(async () => [{ column: "id" }]),
-    getColumnsOfModel: vi.fn(async () => [{ column: "id", dtype: "INTEGER" }]),
+    queries: {
+      getColumnValues: vi.fn(async () => ["a", "b"]),
+      getColumnsOfSource: vi.fn(async () => [{ column: "id" }]),
+      getColumnsOfModel: vi.fn(async () => [
+        { column: "id", dtype: "INTEGER" },
+      ]),
+    },
   };
   const projects = {
     onDidChangeManifest: new EventEmitter<unknown>().event,
@@ -653,7 +657,10 @@ describe("documentation editor messages", () => {
         column: "id",
         syncRequestId: "d1",
       });
-      expect(h.project.getColumnValues).toHaveBeenCalledWith("orders", "id");
+      expect(h.project.queries.getColumnValues).toHaveBeenCalledWith(
+        "orders",
+        "id",
+      );
       expect(h.postMessage).toHaveBeenCalledWith(response("d1", ["a", "b"]));
     },
     getColumnsOfSources: async () => {
@@ -664,7 +671,7 @@ describe("documentation editor messages", () => {
         table: "orders",
         syncRequestId: "cs1",
       });
-      expect(h.project.getColumnsOfSource).toHaveBeenCalledWith(
+      expect(h.project.queries.getColumnsOfSource).toHaveBeenCalledWith(
         "raw",
         "orders",
       );
@@ -679,7 +686,9 @@ describe("documentation editor messages", () => {
         model: "orders",
         syncRequestId: "cm1",
       });
-      expect(h.project.getColumnsOfModel).toHaveBeenCalledWith("orders");
+      expect(h.project.queries.getColumnsOfModel).toHaveBeenCalledWith(
+        "orders",
+      );
       expect(h.postMessage).toHaveBeenCalledWith(
         response("cm1", { columns: ["id"] }),
       );
@@ -704,7 +713,9 @@ describe("documentation editor messages", () => {
         command: "fetchMetadataFromDatabase",
         syncRequestId: "f1",
       });
-      expect(h.project.getColumnsOfModel).toHaveBeenCalledWith("orders");
+      expect(h.project.queries.getColumnsOfModel).toHaveBeenCalledWith(
+        "orders",
+      );
       expect(h.postMessage).toHaveBeenCalledWith(
         expect.objectContaining({ command: "renderColumnsFromMetadataFetch" }),
       );

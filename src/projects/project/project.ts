@@ -38,6 +38,7 @@ import { CommandQueue } from "./commandQueue";
 import type { ProjectCommandDeps } from "./projectCommands";
 import { refreshCliConfig } from "./projectCommands";
 import { ProjectDbtCommands } from "./projectDbtCommands";
+import { ProjectQueries } from "./projectQueries";
 import {
   isWithinRoot,
   packageNameOf,
@@ -72,13 +73,14 @@ export interface ProjectOptions {
 }
 
 /** One Declared Project: its Fusion executable, manifest publication, diagnostics, and dbt commands. */
-export class Project
-  extends ProjectDbtCommands
-  implements Disposable, ManifestProject
-{
+export class Project implements Disposable, ManifestProject {
   readonly projectRoot: Uri;
-  protected readonly terminal: Log;
-  protected readonly sharedState: SharedStateService;
+  private readonly terminal: Log;
+  private readonly sharedState: SharedStateService;
+  /** Compile, column and query operations. */
+  readonly queries: ProjectQueries;
+  /** dbt commands, each run as a task. */
+  readonly commands: ProjectDbtCommands;
   private readonly runHistoryService: RunHistoryService;
   private readonly lifecycle: ExecutableLifecycle;
   private readonly manifestRebuild: ManifestRebuild;
@@ -120,7 +122,7 @@ export class Project
 
   private readonly commandQueue = new CommandQueue();
   private readonly commandDeps: ProjectCommandDeps;
-  protected readonly tasks: ProjectTasks;
+  private readonly tasks: ProjectTasks;
   private readonly runResultsReader: RunResultsReader;
   private readonly runHistory: RunResultsHistory = {
     addEntry: (entry) => {
@@ -129,7 +131,6 @@ export class Project
   };
 
   constructor(options: ProjectOptions) {
-    super();
     this.projectRoot = options.projectRoot;
     this.terminal = options.terminal;
     this.sharedState = options.sharedState;
@@ -160,6 +161,8 @@ export class Project
       commandDeps: this.commandDeps,
       terminal: this.terminal,
     });
+    this.queries = new ProjectQueries(this, this.terminal, this.sharedState);
+    this.commands = new ProjectDbtCommands(this, this.tasks);
     this.runResultsReader = new RunResultsReader(
       () => this.getTargetPath(),
       () => this.getProjectName(),
@@ -435,7 +438,7 @@ export class Project
     return isWithinRoot(this.projectRoot.fsPath, uri.fsPath);
   }
 
-  protected withRunResults<T>(
+  withRunResults<T>(
     run: () => Promise<T>,
     launched?: readonly string[],
   ): Promise<T> {

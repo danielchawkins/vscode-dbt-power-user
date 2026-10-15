@@ -258,8 +258,7 @@ describe("LineagePanel", () => {
       }),
       getProject: () => ({
         projectRoot: { fsPath: "/p" },
-        getColumnsOfModel,
-        mergeColumnsFromDB,
+        queries: { getColumnsOfModel, mergeColumnsFromDB },
       }),
     };
     (panel as any).dbtLineageService = {
@@ -301,7 +300,9 @@ describe("LineagePanel", () => {
           sourceMetaMap: new Map([["raw", { name: "raw", tables: [table] }]]),
         },
       }),
-      getProject: () => ({ getColumnsOfSource, mergeColumnsFromDB }),
+      getProject: () => ({
+        queries: { getColumnsOfSource, mergeColumnsFromDB },
+      }),
     };
     (window.withProgress as Mock).mockImplementation(
       async (_opts: any, task: any) => task(),

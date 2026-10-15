@@ -123,7 +123,9 @@ export class SqlPreviewContentProvider
       );
       preview.dirty = document?.isDirty ?? false;
       if (modelUri.scheme === "untitled") {
-        return await project.unsafeCompileQuery(document?.getText() ?? "");
+        return await project.queries.unsafeCompileQuery(
+          document?.getText() ?? "",
+        );
       }
       // `compileFile` on a compiled file sends no report, so a report is never this preview's own echo.
       preview.compileSubscription ??= project.onDidCompile(() => {
@@ -131,7 +133,7 @@ export class SqlPreviewContentProvider
           this._onDidChange.fire(preview.uri);
         }
       });
-      const sql = await project.compiledSql(modelUri);
+      const sql = await project.queries.compiledSql(modelUri);
       if (sql === undefined) {
         // Not compiled yet: the next compile-complete renders again, at most MAX_WAITS times.
         preview.waits = Math.min(preview.waits + 1, MAX_WAITS + 1);

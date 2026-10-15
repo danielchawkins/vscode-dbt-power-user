@@ -59,7 +59,7 @@ export class RunTest {
     if (!project) {
       return;
     }
-    void project.runTest(testName);
+    void project.commands.runTest(testName);
   }
 
   /**

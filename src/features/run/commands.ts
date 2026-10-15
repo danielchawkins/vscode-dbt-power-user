@@ -82,14 +82,14 @@ function registerTestCommands(deps: RunCommandDeps) {
     ),
     register("fusionPowerUser.runParentModels", node(RunModelType.RUN_PARENTS)),
     register("fusionPowerUser.yamlRunModel", (uri, modelName: string) => {
-      void projects.get(uri)?.runModel({
+      void projects.get(uri)?.commands.runModel({
         plusOperatorLeft: "",
         modelName,
         plusOperatorRight: "",
       });
     }),
     register("fusionPowerUser.yamlTestModel", (uri, modelName: string) => {
-      void projects.get(uri)?.runModelTest(modelName);
+      void projects.get(uri)?.commands.runModelTest(modelName);
     }),
     register("fusionPowerUser.executeSQL", () =>
       runModel.executeQueryOnActiveWindow(),
@@ -128,12 +128,16 @@ function registerBuildCommands(deps: RunCommandDeps) {
           deps,
           "buildCurrentProject",
           "building",
-        )?.buildProject(),
+        )?.commands.buildProject(),
     ),
     register(
       "fusionPowerUser.cleanCurrentProject",
       () =>
-        void activeProject(deps, "cleanCurrentProject", "cleaning")?.clean(),
+        void activeProject(
+          deps,
+          "cleanCurrentProject",
+          "cleaning",
+        )?.commands.clean(),
     ),
   ];
 }

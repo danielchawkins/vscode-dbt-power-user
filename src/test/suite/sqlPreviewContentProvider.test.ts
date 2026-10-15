@@ -15,11 +15,14 @@ const model = URI.file("/p/models/stg orders#1.sql");
 
 describe("SqlPreviewContentProvider", () => {
   let compileListener: (() => void) | undefined;
-  const project = {
+  const queries = {
     compiledSql: vi.fn(() => Promise.resolve<string | undefined>("select 1")),
     unsafeCompileQuery: vi.fn((query: string) =>
       Promise.resolve(`cli: ${query}`),
     ),
+  };
+  const project = {
+    queries,
     onDidCompile: vi.fn((listener: () => void) => {
       compileListener = listener;
       return { dispose: vi.fn() };
@@ -34,8 +37,8 @@ describe("SqlPreviewContentProvider", () => {
     documents = [];
     (workspace as unknown as { textDocuments: unknown[] }).textDocuments =
       documents;
-    project.compiledSql.mockClear();
-    project.unsafeCompileQuery.mockClear();
+    queries.compiledSql.mockClear();
+    queries.unsafeCompileQuery.mockClear();
     vi.mocked(workspace.onDidChangeTextDocument).mockClear();
     initialized = new EventEmitter<void>();
     provider = new SqlPreviewContentProvider({
@@ -54,15 +57,15 @@ describe("SqlPreviewContentProvider", () => {
       previewUriFor(model),
     );
     expect(content).toBe("select 1");
-    expect(project.compiledSql).toHaveBeenCalledWith(
+    expect(queries.compiledSql).toHaveBeenCalledWith(
       expect.objectContaining({ path: model.path }),
     );
-    expect(project.unsafeCompileQuery).not.toHaveBeenCalled();
+    expect(queries.unsafeCompileQuery).not.toHaveBeenCalled();
     expect(window.showErrorMessage).not.toHaveBeenCalled();
   });
 
   it("waits for the first compile", async () => {
-    project.compiledSql.mockResolvedValueOnce(undefined);
+    queries.compiledSql.mockResolvedValueOnce(undefined);
     expect(
       await provider.provideTextDocumentContent(previewUriFor(model)),
     ).toBe("Waiting for the first compile");
@@ -85,7 +88,7 @@ describe("SqlPreviewContentProvider", () => {
       previewUriFor(untitled),
     );
     expect(content).toBe("cli: select 3");
-    expect(project.compiledSql).not.toHaveBeenCalled();
+    expect(queries.compiledSql).not.toHaveBeenCalled();
   });
 
   it("refreshes on every compile report, at any delay after a render", async () => {
@@ -126,7 +129,7 @@ describe("SqlPreviewContentProvider", () => {
   });
 
   it("renders again on the next compile after a wait, a bounded number of times", async () => {
-    project.compiledSql.mockResolvedValue(undefined);
+    queries.compiledSql.mockResolvedValue(undefined);
     const preview = previewUriFor(model);
     const fired = vi.fn();
     provider.onDidChange(fired);
@@ -137,7 +140,7 @@ describe("SqlPreviewContentProvider", () => {
     }
     expect(fired.mock.calls.length).toBeGreaterThan(0);
     expect(fired.mock.calls.length).toBeLessThanOrEqual(3);
-    project.compiledSql.mockResolvedValue("select 1");
+    queries.compiledSql.mockResolvedValue("select 1");
   });
 
   it("does not refresh on keystrokes, only when the dirty state flips", async () => {

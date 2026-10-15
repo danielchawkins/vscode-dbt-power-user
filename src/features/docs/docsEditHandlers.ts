@@ -198,7 +198,7 @@ export class DocsEditRequests {
               if (!model) {
                 throw new UserInputError("No model is loaded");
               }
-              return project.getColumnValues(model, column);
+              return project.queries.getColumnValues(model, column);
             },
             "getDistinctColumnValues",
             true,
@@ -210,7 +210,7 @@ export class DocsEditRequests {
             syncRequestId,
             async () => ({
               columns:
-                (await project.getColumnsOfSource(source, table))?.map(
+                (await project.queries.getColumnsOfSource(source, table))?.map(
                   (c) => c.column,
                 ) ?? [],
             }),
@@ -223,8 +223,9 @@ export class DocsEditRequests {
           syncRequestId,
           async () => ({
             columns:
-              (await project.getColumnsOfModel(model))?.map((c) => c.column) ??
-              [],
+              (await project.queries.getColumnsOfModel(model))?.map(
+                (c) => c.column,
+              ) ?? [],
           }),
           "getColumnsOfModel",
           true,
