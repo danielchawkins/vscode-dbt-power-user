@@ -117,7 +117,7 @@
             },
             "default": [],
             "scope": "resource",
-            "description": "Declared Project roots for this workspace folder, relative to the folder or absolute. When unset or empty, the folder root is served if it contains dbt_project.yml. Every configured root must contain dbt_project.yml or no declared roots are served for the folder."
+            "description": "Declared Project roots for this workspace folder: absolute, relative to the folder, or starting with ~. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. When unset or empty, the folder root is served if it contains dbt_project.yml. Every configured root must contain dbt_project.yml or no declared roots are served for the folder."
           },
           "fusionPowerUser.staticAnalysis": {
             "type": "string",
@@ -140,12 +140,12 @@
           "fusionPowerUser.dbtPath": {
             "type": "string",
             "scope": "resource",
-            "description": "Path to the local dbt Fusion executable for this Declared Project. The extension will resolve this path first, then dbt on the extension host PATH. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. An invalid configured path blocks that project's language server and does not fall back to PATH."
+            "description": "Path to the local dbt Fusion executable for this Declared Project. The extension will resolve this path first, then dbt on the extension host PATH. Absolute, relative to the workspace folder, or starting with ~. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. An invalid configured path blocks that project's language server and does not fall back to PATH."
           },
           "fusionPowerUser.profilesDir": {
             "type": "string",
             "scope": "resource",
-            "description": "Profiles directory passed to Fusion when this Declared Project's language server starts. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. Relative paths resolve against the containing workspace folder."
+            "description": "Profiles directory passed to Fusion when this Declared Project's language server starts. Absolute, relative to the workspace folder, or starting with ~. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. When unset, dbt's own search applies: DBT_PROFILES_DIR, then the project directory, then ~/.dbt."
           },
           "fusionPowerUser.toolEnvironment": {
             "type": "string",

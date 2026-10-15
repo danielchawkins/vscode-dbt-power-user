@@ -1,11 +1,28 @@
+import * as os from "node:os";
 import * as path from "node:path";
 import type { WorkspaceFolder } from "vscode";
 import { Uri } from "vscode";
-import { hasDbtProjectFile } from "../../core/snapshot/index";
-import { readSetting, writeDeclaredProjects } from "../../settings/index";
+import {
+  hasDbtProjectFile,
+  resolveSettingPath,
+} from "../../core/snapshot/index";
+import {
+  readEnvironment,
+  readSetting,
+  writeDeclaredProjects,
+} from "../../settings/index";
 
 export const PROJECTS_SETTING = "projects";
 export const ENABLED_SETTING = "enabled";
+
+/** One `projects` entry as a path: `~`, `${userHome}`, `${env:NAME}` and `${workspaceFolder}` expand. */
+function resolveEntry(folder: WorkspaceFolder, entry: string): string {
+  return resolveSettingPath(entry, {
+    folder: folder.uri.fsPath,
+    userHome: os.homedir(),
+    lookup: (name) => readEnvironment()[name],
+  }).path;
+}
 
 type ProjectConfigurationProblem =
   | { reason: "invalidEntry"; entry: string }
@@ -56,7 +73,7 @@ export function resolveDeclaredProjectRoots(
       continue;
     }
 
-    const resolved = path.resolve(folder.uri.fsPath, trimmed);
+    const resolved = resolveEntry(folder, trimmed);
     if (!hasProjectFile(resolved)) {
       problems.push({
         reason: "missingProjectFile",
@@ -104,7 +121,8 @@ export function addDeclaredProjectRoot(
   const resolvesToRoot = current.some(
     (entry) =>
       typeof entry === "string" &&
-      path.resolve(folder.uri.fsPath, entry.trim()) === root.fsPath,
+      entry.trim() !== "" &&
+      resolveEntry(folder, entry) === root.fsPath,
   );
   const relative = path.relative(folder.uri.fsPath, root.fsPath) || ".";
   return writeDeclaredProjects(

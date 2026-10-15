@@ -153,6 +153,21 @@ describe("resolveDeclaredProjectRoots", () => {
     expect(rootPaths(resolveDeclaredProjectRoots(folder))).toEqual([root]);
   });
 
+  it("expands ${workspaceFolder} and ${env:NAME} in an entry", () => {
+    const folder = fixtureFolder("multi-root");
+    const root = fixturePath("multi-root", "projects/sox");
+    mockProjects(["${workspaceFolder}/projects/sox"]);
+    expect(rootPaths(resolveDeclaredProjectRoots(folder))).toEqual([root]);
+
+    vi.stubEnv("FPU_TEST_PROJECTS", fixturePath("multi-root", "projects"));
+    try {
+      mockProjects(["${env:FPU_TEST_PROJECTS}/sox"]);
+      expect(rootPaths(resolveDeclaredProjectRoots(folder))).toEqual([root]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it("preserves first declaration order while deduplicating", () => {
     const folder = fixtureFolder("multi-root");
     const general = fixturePath("multi-root", "projects/general");

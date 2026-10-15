@@ -387,7 +387,10 @@ describe("errorHint", () => {
         none,
         search({ DBT_ENGINE_PROFILES_DIR: "/engine" }, true),
       ),
-    ).toBe("dbt looked for profiles.yml in /engine.");
+    ).toBe(
+      "dbt looked for profiles.yml in /engine. The project's own /ws/proj/profiles.yml is ignored while " +
+        "DBT_ENGINE_PROFILES_DIR is set; unset it to use that file.",
+    );
   });
 
   it("says nothing it cannot attribute", () => {
@@ -395,6 +398,37 @@ describe("errorHint", () => {
     expect(errorHint("[error] something else", none)).toBeUndefined();
     expect(errorHint(TARGET_ERROR, none)).toBe(
       "The profile has no output named nope.",
+    );
+  });
+
+  it("names the profiles.yml read for a missing profile, and a project profiles.yml it shadows", () => {
+    const missing =
+      "[error] [IoError (dbt1001)]: Profile 'fixtures' not found in profiles.yml";
+    const root = path.join("/", "ws", "proj");
+    const home = path.join("/", "home", "me");
+    const local = path.join(root, "profiles.yml");
+    const search = (environment: Record<string, string>) => ({
+      root,
+      environment,
+      home,
+      exists: (file: string) => file === local,
+    });
+    const userDir = path.join(home, ".dbt");
+
+    expect(
+      errorHint(missing, none, search({ DBT_PROFILES_DIR: userDir })),
+    ).toBe(
+      `dbt read ${path.join(userDir, "profiles.yml")}, chosen by DBT_PROFILES_DIR. ` +
+        `The project's own ${local} is ignored while DBT_PROFILES_DIR is set; unset it to use that file.`,
+    );
+    expect(
+      errorHint(missing, { ...none, profilesDir: userDir }, search({})),
+    ).toBe(
+      `dbt read ${path.join(userDir, "profiles.yml")}, chosen by fusionPowerUser.profilesDir. ` +
+        `The project's own ${local} is ignored while fusionPowerUser.profilesDir is set; unset it to use that file.`,
+    );
+    expect(errorHint(missing, none, search({}))).toBe(
+      `dbt read ${local}. Add a profile named fixtures there.`,
     );
   });
 });
