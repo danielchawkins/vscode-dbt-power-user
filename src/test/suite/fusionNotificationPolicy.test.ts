@@ -10,7 +10,10 @@ import {
 import type { WorkspaceFolder } from "vscode";
 import { extensions, Uri, window, workspace } from "vscode";
 import { toLspLaunch } from "../../core/lsp";
-import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
+import {
+  DBTPowerUserExtension,
+  type ExtensionServices,
+} from "../../dbtPowerUserExtension";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
 import { DefaultFusionClientFactory } from "../../languageClient/defaultFusionClientFactory";
 import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
@@ -71,8 +74,7 @@ describe("fusionNotificationPolicy", () => {
 
   it("shows no window messages on enabled extension activation", async () => {
     const fusionClientPoolInitialize = vi.fn();
-    const extension = new (DBTPowerUserExtension as any)();
-    Object.assign(extension, {
+    const services = {
       projects: {
         setContext: vi.fn(),
         initialize: vi.fn(() => Promise.resolve()),
@@ -80,13 +82,16 @@ describe("fusionNotificationPolicy", () => {
       projectRegistry: { initialize: vi.fn(() => Promise.resolve()) },
       fusionClientPool: { initialize: fusionClientPoolInitialize },
       fusionStatus: { initialize: vi.fn() },
-      currentProject: {},
       statusBars: { initialize: vi.fn(() => Promise.resolve()) },
-      dbtTerminal: { error: vi.fn() },
-      runHistoryService: { dispose: vi.fn() },
-      sharedState: { dispose: vi.fn() },
+      log: { error: vi.fn() },
       startupGate: new StartupGate(),
-    });
+      dbtLineageService: {},
+      projectEnvironments: {},
+    };
+    const extension = new DBTPowerUserExtension(
+      services as unknown as ExtensionServices,
+      [],
+    );
 
     await extension.activate();
 
