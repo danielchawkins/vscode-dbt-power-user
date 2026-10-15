@@ -4,6 +4,7 @@ import { cliFactoryFor, createExecutableResolver } from "./composeFusionCli";
 import type { Log } from "./core/log";
 import { createProjectParsers } from "./core/manifest/projectParsers";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
+import type { ConfiguredFusionExecutableResolver } from "./executable/configuredFusionExecutableResolver";
 import { ExtensionContextStore } from "./extensionContext";
 import { SourceModelCreationCodeLensProvider } from "./features/codegen/sourceModelCreationCodeLensProvider";
 import { CodeLensProviders } from "./features/codeLenses";
@@ -40,8 +41,7 @@ import { VirtualSqlCodeLensProvider } from "./features/sqlActions/virtualSqlCode
 import { StatusBars } from "./features/statusBars";
 import { registerDbtTaskProvider } from "./features/tasks/dbtTaskProvider";
 import { TreeviewProviders } from "./features/treeViews";
-import type { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
-import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
+import { DefaultFusionClientFactory } from "./languageClient/defaultFusionClientFactory";
 import { createProjectMetadataSource } from "./metadata/compositeMetadataSource";
 import {
   onClientChange,

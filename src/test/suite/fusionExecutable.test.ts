@@ -3,9 +3,9 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { WorkspaceFolder } from "vscode";
 import { Uri, window } from "vscode";
+import { ConfiguredFusionExecutableResolver } from "../../executable/configuredFusionExecutableResolver";
 import type { FusionExecutable } from "../../fusion/fusionExecutable";
 import {
-  ConfiguredFusionExecutableResolver,
   DBT_PATH_SETTING,
   formatFusionExecutableResolutionFailure,
 } from "../../fusion/fusionExecutable";

@@ -10,25 +10,21 @@ import type {
   FusionExecutableResolver,
 } from "../../fusion/fusionExecutable";
 import {
-  ConfiguredFusionExecutableResolver,
   formatFusionExecutableResolutionFailure,
   isFusionExecutable,
 } from "../../fusion/fusionExecutable";
 import type {
   FusionClient,
-  FusionClientFactory,
   FusionClientOptions,
 } from "../../fusion/fusionLanguageClient";
-import {
-  commandPrefixForProject,
-  DefaultFusionClientFactory,
-} from "../../fusion/fusionLanguageClient";
+import { commandPrefixForProject } from "../../fusion/fusionLanguageClient";
 import type { SettingsChange } from "../../settings/index";
 import { onDidChangeSettings } from "../../settings/index";
 import type {
   DeclaredProject,
   ProjectRegistry,
 } from "../registry/projectRegistry";
+import type { FusionClientFactory } from "./fusionClientFactory";
 import type { ProjectEnvironments } from "./projectEnvironments";
 import { sameEnv } from "./projectEnvironments";
 import { PROJECT_SNAPSHOT_SETTINGS } from "./readProjectSnapshot";
@@ -405,8 +401,8 @@ function projectKey(project: DeclaredProject): string {
 }
 
 export type FusionClientPoolDependencies = FusionLaunchSources & {
-  resolver?: FusionExecutableResolver;
-  factory?: FusionClientFactory;
+  resolver: FusionExecutableResolver;
+  factory: FusionClientFactory;
 };
 
 export function createFusionClientPool(
@@ -414,13 +410,17 @@ export function createFusionClientPool(
   terminal: Log,
   deps: FusionClientPoolDependencies,
 ): FusionClientPoolImpl {
-  const resolver = deps.resolver ?? new ConfiguredFusionExecutableResolver();
-  const factory = deps.factory ?? new DefaultFusionClientFactory();
-  return new FusionClientPoolImpl(registry, terminal, resolver, factory, {
-    readSnapshot: deps.readSnapshot,
-    environments: deps.environments,
-    outputChannel: deps.outputChannel,
-    launchEnv: deps.launchEnv,
-    reportCompileErrors: deps.reportCompileErrors,
-  });
+  return new FusionClientPoolImpl(
+    registry,
+    terminal,
+    deps.resolver,
+    deps.factory,
+    {
+      readSnapshot: deps.readSnapshot,
+      environments: deps.environments,
+      outputChannel: deps.outputChannel,
+      launchEnv: deps.launchEnv,
+      reportCompileErrors: deps.reportCompileErrors,
+    },
+  );
 }

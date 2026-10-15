@@ -68,6 +68,8 @@ src/
 ├── projects/                # Project Registry, Project Context, QueryManifestService, Fusion client pool and status
 ├── fusion/                  # executable resolution, version gate, static-analysis mode, language client, transport
 ├── metadata/                # adapters of the ProjectMetadataSource port, which projects/ declares
+├── executable/              # adapter of fusion/'s FusionExecutableResolver port: dbtPath, PATH, version probe
+├── languageClient/          # adapter of projects/'s FusionClientFactory port, over vscode-languageclient
 ├── webview/                 # PanelHost, the shared webview panel infrastructure
 ├── features/                # commands, trees, panels, lenses; imported only by the roots
 └── test/                    # Vitest suites, hand-written VS Code mocks

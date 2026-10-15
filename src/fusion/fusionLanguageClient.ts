@@ -64,20 +64,12 @@ export type {
 
 export type { FusionLanguageClientDependencies } from "./lspClientSupport";
 
-export interface FusionClientFactory {
-  create(options: FusionClientOptions): FusionClient;
-}
-
-export class DefaultFusionClientFactory implements FusionClientFactory {
-  private readonly deps: FusionLanguageClientDependencies;
-
-  constructor(deps: FusionLanguageClientDependencies = {}) {
-    this.deps = deps;
-  }
-
-  create(options: FusionClientOptions): FusionClient {
-    return new FusionLanguageClientImpl(options, this.deps);
-  }
+/** A Fusion Client over `vscode-languageclient`, which starts `dbt lsp` for one Declared Project. */
+export function createFusionLanguageClient(
+  options: FusionClientOptions,
+  deps: FusionLanguageClientDependencies = {},
+): FusionClient {
+  return new FusionLanguageClientImpl(options, deps);
 }
 
 class FusionLanguageClientImpl implements FusionClient {

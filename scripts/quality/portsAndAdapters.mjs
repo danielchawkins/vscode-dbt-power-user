@@ -4,11 +4,14 @@
 // 1. An `@adapter` class implements a `@port`; an `@adapter` function's declared return type is a `@port`.
 // 2. A class that implements a `@port`, or a function whose declared return type is one, is tagged `@adapter`.
 // 3. An adapter lives outside its port's top-level folder, and no file in that folder imports the adapter's module.
-// 4. An adapter is constructed (`new`, or a call of an adapter function) only in compositionRoot.ts or inside
+// 4. An adapter is constructed (`new`, or a call of an adapter function) only in the composition root or inside
 //    another adapter.
 // 5. Every `@port` has at least one adapter.
 import path from "node:path";
 import ts from "typescript";
+
+/** The composition root, split across files to stay under max-lines. */
+const COMPOSITION_ROOT = new Set(["compositionRoot.ts", "composeFusionCli.ts"]);
 
 const hasTag = (node, name) =>
   ts.getJSDocTags(node).some((t) => t.tagName.text === name);
@@ -155,7 +158,7 @@ export function checkPortsAndAdapters(program, files, root) {
     }
   }
   for (const sf of files) {
-    const isRoot = path.basename(sf.fileName) === "compositionRoot.ts";
+    const isRoot = COMPOSITION_ROOT.has(path.basename(sf.fileName));
     for (const { node, top, symbol } of constructions(checker, adapters, sf)) {
       const inAdapter =
         top.name && adapters.has(checker.getSymbolAtLocation(top.name));

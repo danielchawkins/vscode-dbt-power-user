@@ -4,7 +4,7 @@ import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FusionStatus } from "../../projects/clients/fusionStatus";
 import { Project } from "../../projects/project/project";
 
-import { ConfiguredFusionExecutableResolver } from "../../fusion/fusionExecutable";
+import { ConfiguredFusionExecutableResolver } from "../../executable/configuredFusionExecutableResolver";
 import * as vscodeMock from "../mock/vscode";
 import { createMockLogOutputChannel } from "../mock/vscode";
 const vscodeMockAny = vscodeMock as Record<string, unknown>;
