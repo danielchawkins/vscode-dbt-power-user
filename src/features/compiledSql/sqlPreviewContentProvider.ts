@@ -5,7 +5,18 @@ import type {
   Uri,
 } from "vscode";
 import { EventEmitter, ProgressLocation, window, workspace } from "vscode";
-import type { Projects } from "../../projects/project/projects";
+import type { Project } from "../../projects/project/project";
+import type { ProjectQueries } from "../../projects/project/projectQueries";
+import type { ProjectLookup, Projects } from "../../projects/project/projects";
+
+/** What a compiled-SQL preview reads from a model's project. */
+type PreviewProject = Pick<Project, "onDidCompile"> & {
+  queries: Pick<ProjectQueries, "compiledSql" | "unsafeCompileQuery">;
+};
+
+/** The projects a preview finds models in, and the event that says they are loaded. */
+type PreviewProjects = ProjectLookup<PreviewProject> &
+  Pick<Projects, "onDidInitialize">;
 import { modelUriOf, PREVIEW_SCHEME } from "../../projects/registry/previewUri";
 
 const DIRTY_MARKER = "-- Unsaved changes: showing the last saved version.";
@@ -36,9 +47,9 @@ export class SqlPreviewContentProvider
   private _onDidChange = new EventEmitter<Uri>();
   private previews = new Map<string, Preview>();
   private subscriptions: Disposable[] = [];
-  private projects: Projects;
+  private projects: PreviewProjects;
 
-  constructor(projects: Projects) {
+  constructor(projects: PreviewProjects) {
     this.projects = projects;
     this.subscriptions.push(
       projects.onDidInitialize(() => this.renderLoadingPreviews()),
