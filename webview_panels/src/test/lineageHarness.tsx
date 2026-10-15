@@ -20,7 +20,11 @@ const CANVAS = { width: 600, height: 400 };
 const NODE = { width: 200, height: 100 };
 
 class FakeResizeObserver {
-  constructor(private readonly callback: ResizeObserverCallback) {}
+  private readonly callback: ResizeObserverCallback;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+  }
   observe(target: Element): void {
     const size = target.classList.contains("react-flow__node") ? NODE : CANVAS;
     this.callback([{ target, contentRect: size } as ResizeObserverEntry], this);
@@ -31,7 +35,10 @@ class FakeResizeObserver {
 
 class FakeDOMMatrix {
   m22 = 1;
-  constructor(public readonly transform?: string) {
+  public readonly transform: string | undefined;
+
+  constructor(transform?: string) {
+    this.transform = transform;
     const scale = /scale\(([\d.]+)\)/.exec(transform ?? "");
     this.m22 = scale ? Number(scale[1]) : 1;
   }

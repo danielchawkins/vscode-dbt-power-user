@@ -6,7 +6,10 @@ import ShowInTabButton from "./components/openInTabButton/OpenInTabButton";
 import QueryLimit from "./components/queryLimit/QueryLimit";
 import QueryPanelContent from "./components/QueryPanelContents/QueryPanelContent";
 import QueryPanelTitle from "./components/QueryPanelContents/QueryPanelTitle";
-import { QueryPanelTitleTabState } from "./components/QueryPanelContents/types";
+import {
+  isQueryPanelTitleTabState,
+  QueryPanelTitleTabState,
+} from "./components/QueryPanelContents/types";
 import RunAdhocQueryButton from "./components/runAdhocQueryButton/RunAdhocQueryButton";
 import { useQueryPanelDispatch } from "./context/queryPanelContext";
 import { setTabState } from "./context/queryPanelReducer";
@@ -27,7 +30,7 @@ const QueryPanel = (): React.JSX.Element => {
     }
     restoredRef.current = true;
     const saved = readViewState("queryResults");
-    if (saved && saved.tabState in QueryPanelTitleTabState) {
+    if (saved && isQueryPanelTitleTabState(saved.tabState)) {
       dispatch(setTabState(saved.tabState));
     }
   }, [dispatch]);

@@ -35,10 +35,13 @@ export const Uri = {
 };
 
 export class Position {
-  constructor(
-    public line: number,
-    public character: number,
-  ) {}
+  public line: number;
+  public character: number;
+
+  constructor(line: number, character: number) {
+    this.line = line;
+    this.character = character;
+  }
 
   // Add common Position methods for compatibility
   isEqual(other: Position): boolean {
@@ -106,24 +109,37 @@ export function createMockTextDocument(text: string, isDirty = false) {
 
 export class Location {
   public range: Range | Position;
-  constructor(
-    public uri: typeof Uri | any,
-    rangeOrPosition: Range | Position,
-  ) {
+  public uri: any;
+
+  constructor(uri: any, rangeOrPosition: Range | Position) {
+    this.uri = uri;
     this.range = rangeOrPosition;
   }
 }
 
 export class CodeLens {
+  public range: Range;
+  public command:
+    | {
+        title: string;
+        command: string;
+        tooltip?: string;
+        arguments?: any[];
+      }
+    | undefined;
+
   constructor(
-    public range: Range,
-    public command?: {
+    range: Range,
+    command?: {
       title: string;
       command: string;
       tooltip?: string;
       arguments?: any[];
     },
-  ) {}
+  ) {
+    this.range = range;
+    this.command = command;
+  }
 }
 
 export const DiagnosticSeverity = {
@@ -175,10 +191,13 @@ export const CompletionItemKind = {
 };
 
 export class CompletionItem {
-  constructor(
-    public label: string,
-    public kind?: number,
-  ) {}
+  public label: string;
+  public kind: number | undefined;
+
+  constructor(label: string, kind?: number) {
+    this.label = label;
+    this.kind = kind;
+  }
 }
 
 export const QuickPickItemKind = {
@@ -232,10 +251,13 @@ export class MarkdownString {
 }
 
 export class Hover {
-  constructor(
-    public contents: MarkdownString | string,
-    public range?: Range,
-  ) {}
+  public contents: MarkdownString | string;
+  public range: Range | undefined;
+
+  constructor(contents: MarkdownString | string, range?: Range) {
+    this.contents = contents;
+    this.range = range;
+  }
 }
 
 export const TreeItemCollapsibleState = {
@@ -245,25 +267,35 @@ export const TreeItemCollapsibleState = {
 };
 
 export const TreeItem = class {
-  constructor(
-    public label?: string,
-    public collapsibleState?: number,
-  ) {}
+  public label: string | undefined;
+  public collapsibleState: number | undefined;
+
+  constructor(label?: string, collapsibleState?: number) {
+    this.label = label;
+    this.collapsibleState = collapsibleState;
+  }
 };
 
 export const Diagnostic = class {
-  constructor(
-    public range: any,
-    public message: string,
-    public severity?: number,
-  ) {}
+  public range: any;
+  public message: string;
+  public severity: number | undefined;
+
+  constructor(range: any, message: string, severity?: number) {
+    this.range = range;
+    this.message = message;
+    this.severity = severity;
+  }
 };
 
 export class TextEdit {
-  constructor(
-    public range: Range,
-    public newText: string,
-  ) {}
+  public range: Range;
+  public newText: string;
+
+  constructor(range: Range, newText: string) {
+    this.range = range;
+    this.newText = newText;
+  }
 
   static insert(position: Position, newText: string): TextEdit {
     return new TextEdit(new Range(position, position), newText);
@@ -573,24 +605,44 @@ export const TaskRevealKind = { Always: 1, Silent: 2, Never: 3 };
 export const TaskScope = { Global: 1, Workspace: 2 };
 
 export class CustomExecution {
+  readonly callback: (definition: unknown) => Promise<{
+    open(): void;
+    close(): void;
+    onDidClose?: (listener: (code: number) => void) => unknown;
+  }>;
+
   constructor(
-    readonly callback: (definition: unknown) => Promise<{
+    callback: (definition: unknown) => Promise<{
       open(): void;
       close(): void;
       onDidClose?: (listener: (code: number) => void) => unknown;
     }>,
-  ) {}
+  ) {
+    this.callback = callback;
+  }
 }
 
 export class Task {
   presentationOptions: Record<string, unknown> = {};
+  readonly definition: { type: string };
+  readonly scope: unknown;
+  readonly name: string;
+  readonly source: string;
+  readonly execution: CustomExecution | undefined;
+
   constructor(
-    readonly definition: { type: string },
-    readonly scope: unknown,
-    readonly name: string,
-    readonly source: string,
-    readonly execution?: CustomExecution,
-  ) {}
+    definition: { type: string },
+    scope: unknown,
+    name: string,
+    source: string,
+    execution?: CustomExecution,
+  ) {
+    this.definition = definition;
+    this.scope = scope;
+    this.name = name;
+    this.source = source;
+    this.execution = execution;
+  }
 }
 
 type TaskEndListener = (event: { execution: unknown }) => void;

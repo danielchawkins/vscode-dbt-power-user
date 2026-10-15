@@ -77,15 +77,23 @@ class FakeClient implements FusionClient {
   restart = vi.fn(() => Promise.resolve());
   stop = vi.fn(() => Promise.resolve());
   dispose = vi.fn();
+  readonly project: FusionProjectRef;
+  readonly options: FusionClientOptions | undefined;
+  readonly state: FusionClient["state"];
+
   async request<T>(): Promise<T> {
     return undefined as T;
   }
 
   constructor(
-    readonly project: FusionProjectRef,
-    readonly options: FusionClientOptions | undefined,
-    readonly state: FusionClient["state"] = "running",
-  ) {}
+    project: FusionProjectRef,
+    options: FusionClientOptions | undefined,
+    state: FusionClient["state"] = "running",
+  ) {
+    this.project = project;
+    this.options = options;
+    this.state = state;
+  }
 }
 
 describe("FusionClientPool", () => {

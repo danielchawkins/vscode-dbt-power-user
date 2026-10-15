@@ -9,9 +9,11 @@ import { ProjectTasks } from "../projects/projectTasks";
  */
 export class RecordingTasks extends ProjectTasks {
   readonly commands: QueuedCliCommand[] = [];
+  private readonly result: CommandProcessResult | undefined;
 
-  constructor(private readonly result?: CommandProcessResult) {
+  constructor(result?: CommandProcessResult) {
     super({} as ProjectTaskDeps);
+    this.result = result;
   }
 
   override start(cli: QueuedCliCommand) {

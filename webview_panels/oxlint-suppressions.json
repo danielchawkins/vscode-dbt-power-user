@@ -105,11 +105,6 @@
       "count": 1
     }
   },
-  "src/test/lineageHarness.tsx": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
   "src/uiCore/anchoredPosition.ts": {
     "max-params": {
       "count": 1

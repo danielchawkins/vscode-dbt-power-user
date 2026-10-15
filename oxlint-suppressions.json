@@ -323,27 +323,11 @@
       "count": 3
     }
   },
-  "src/test/mock/vscode-languageclient-node.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
   "src/test/mock/vscode.ts": {
     "max-params": {
       "count": 1
     },
-    "typescript/no-redundant-type-constituents": {
-      "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 22
-    },
     "unicorn/no-useless-spread": {
-      "count": 1
-    }
-  },
-  "src/test/recordingTasks.ts": {
-    "typescript/parameter-properties": {
       "count": 1
     }
   },
@@ -392,11 +376,6 @@
       "count": 1
     }
   },
-  "src/test/suite/fusionClientPool.test.ts": {
-    "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
   "src/test/suite/fusionLanguageClient.test.ts": {
     "max-params": {
       "count": 8
@@ -405,9 +384,6 @@
   "src/test/suite/fusionStatus.test.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 2
     }
   },
   "src/test/suite/mergeMetadata.test.ts": {

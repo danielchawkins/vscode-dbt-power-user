@@ -47,10 +47,11 @@ type RenderMessage = Omit<
     | undefined;
 };
 
-enum ActionState {
-  CANCEL_STAY = "Stay",
-  DISCARD_PROCEED = "Discard",
-}
+const ActionState = {
+  CANCEL_STAY: "Stay",
+  DISCARD_PROCEED: "Discard",
+} as const;
+type ActionState = (typeof ActionState)[keyof typeof ActionState];
 
 const DocumentationProvider = (): React.JSX.Element => {
   const [state, dispatch] = useReducer(documentationReducer, initialState);

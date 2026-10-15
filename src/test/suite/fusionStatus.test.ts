@@ -50,13 +50,17 @@ class FakeClient implements FusionClient {
     "Fusion Power User: general",
   );
   failureReason: string | undefined;
+  readonly project: DeclaredProject;
+  readonly staticAnalysis: StaticAnalysisMode;
 
   constructor(
-    readonly project: DeclaredProject,
+    project: DeclaredProject,
     state: FusionClientState = "running",
-    readonly staticAnalysis: StaticAnalysisMode = "baseline",
+    staticAnalysis: StaticAnalysisMode = "baseline",
     failureReason?: string,
   ) {
+    this.project = project;
+    this.staticAnalysis = staticAnalysis;
     this._state = state;
     this.failureReason = failureReason;
   }

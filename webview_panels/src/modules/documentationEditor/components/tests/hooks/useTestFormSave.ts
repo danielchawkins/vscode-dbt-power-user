@@ -11,11 +11,12 @@ import { useState } from "react";
 import type { SaveRequest } from "../types";
 import { generateHash } from "../utils";
 
-export enum TestOperation {
-  CREATE,
-  UPDATE,
-  DELETE,
-}
+export const TestOperation = {
+  CREATE: 0,
+  UPDATE: 1,
+  DELETE: 2,
+} as const;
+export type TestOperation = (typeof TestOperation)[keyof typeof TestOperation];
 
 const useTestFormSave = (): {
   handleSave: (
