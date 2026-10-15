@@ -350,17 +350,33 @@ export function compose(context: ExtensionContext): Composition {
   const startupGate = new StartupGate();
   const commands = composeCommands(graph, startupGate);
   const editor = composeEditorProviders(graph);
-
-  const extension = new DBTPowerUserExtension(
+  const statusBars = new StatusBars(commands.deferToProductionStatusBar);
+  const services = {
+    projects: graph.projects,
+    statusBars,
+    log: terminal,
+    projectRegistry,
+    fusionClientPool: fusion.fusionClientPool,
+    fusionStatus: fusion.fusionStatus,
+    startupGate,
+    dbtLineageService: fusion.dbtLineageService,
+    projectEnvironments: graph.projectEnvironments,
+  };
+  // Disposed last one first, so shared state and run history outlive everything that reports into them.
+  const owned = [
+    graph.sharedState,
+    graph.runHistoryService,
+    terminal,
     graph.projects,
+    registerDbtTaskProvider(graph.projects),
+    graph.projectEnvironments,
     composeWebviews(graph, fusion.dbtLineageService),
-    commands.vscodeCommands,
     editor.treeviewProviders,
     editor.contentProviders,
     editor.codeLensProviders,
-    new StatusBars(commands.deferToProductionStatusBar),
+    commands.vscodeCommands,
+    statusBars,
     new DbtPowerUserActionsCenter(currentProject, graph.extensionContextStore),
-    terminal,
     projectRegistry,
     currentProject,
     fusion.fusionClientPool,
@@ -369,16 +385,9 @@ export function compose(context: ExtensionContext): Composition {
       graph.outputChannels.logFor(root),
     ),
     new FileAssociationsCommand(startupGate, projectRegistry),
-    startupGate,
-    fusion.dbtLineageService,
-    graph.sharedState,
-    graph.runHistoryService,
-    registerDbtTaskProvider(graph.projects),
-    graph.projectEnvironments,
-  );
-
+  ];
   return {
-    extension,
+    extension: new DBTPowerUserExtension(services, owned),
     extensionContextStore: graph.extensionContextStore,
     fusionStatus: fusion.fusionStatus,
     fusionExecutableResolver: graph.fusionExecutableResolver,

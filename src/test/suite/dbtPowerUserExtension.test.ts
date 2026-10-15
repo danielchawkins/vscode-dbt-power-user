@@ -17,7 +17,10 @@ import {
   vi,
 } from "vitest";
 import { commands, extensions, Uri, window, workspace } from "vscode";
-import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
+import {
+  DBTPowerUserExtension,
+  type ExtensionServices,
+} from "../../dbtPowerUserExtension";
 import {
   CONNECTED_COLUMNS_COMMAND,
   PARENT_TABLES_COMMAND,
@@ -31,6 +34,29 @@ import { createMockLogOutputChannel } from "../mock/vscode";
 const UPSTREAM_EXTENSION = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_ACTION = "Uninstall Power User";
 
+/** An extension built through its constructor from fakes; `services` fields not given are inert. */
+function extensionWith(
+  services: Partial<Record<keyof ExtensionServices, unknown>>,
+  owned: { dispose(): unknown }[] = [],
+): DBTPowerUserExtension {
+  const inert = { dispose: vi.fn() };
+  const defaults: Record<keyof ExtensionServices, unknown> = {
+    projects: inert,
+    statusBars: inert,
+    log: inert,
+    projectRegistry: inert,
+    fusionClientPool: inert,
+    fusionStatus: inert,
+    startupGate: new StartupGate(),
+    dbtLineageService: inert,
+    projectEnvironments: inert,
+  };
+  return new DBTPowerUserExtension(
+    { ...defaults, ...services } as ExtensionServices,
+    owned,
+  );
+}
+
 const activationHarness = (enabled: boolean, registry?: ProjectRegistry) => {
   /** The startup steps that ran, in order. */
   const started: string[] = [];
@@ -42,8 +68,7 @@ const activationHarness = (enabled: boolean, registry?: ProjectRegistry) => {
   const errors: unknown[][] = [];
   const registryProjects: unknown[] = [];
   const listeners: Array<() => void> = [];
-  const extension = new (DBTPowerUserExtension as any)();
-  Object.assign(extension, {
+  const extension = extensionWith({
     projects: {
       setContext: vi.fn(),
       initialize: () => {
@@ -67,18 +92,14 @@ const activationHarness = (enabled: boolean, registry?: ProjectRegistry) => {
     },
     fusionClientPool: { initialize: () => started.push("pool") },
     fusionStatus: { initialize: () => started.push("status") },
-    currentProject: {},
     statusBars: {
       initialize: () => {
         started.push("statusBars");
         return Promise.resolve();
       },
     },
-    dbtTerminal: { error: (...args: unknown[]) => errors.push(args) },
-    runHistoryService: { dispose: vi.fn() },
-    sharedState: { dispose: vi.fn() },
+    log: { error: (...args: unknown[]) => errors.push(args) },
     startupGate: new StartupGate(),
-    disposables: [],
   });
 
   const folder = { uri: Uri.file("/workspace"), name: "workspace", index: 0 };
@@ -225,7 +246,10 @@ describe("DBTPowerUserExtension.activate", () => {
     ]);
     expect(harness.started).toEqual([]);
     expect(harness.errors).toEqual([]);
-    expect(harness.extension.disposables).toHaveLength(0);
+    // Nothing was owned at construction, so any entry would be one activation added after the conflict.
+    expect(
+      (harness.extension as unknown as { disposables: unknown[] }).disposables,
+    ).toHaveLength(0);
   });
 
   it("registers harness commands before the conflict modal is answered", async () => {
@@ -359,13 +383,10 @@ describe("DBTPowerUserExtension.activate", () => {
       },
     };
     const disposable = { dispose: () => order.push("other.dispose") };
-    const extension =
-      new (DBTPowerUserExtension as any)() as DBTPowerUserExtension;
-    Object.assign(extension, {
+    const extension = extensionWith({ fusionClientPool }, [
+      disposable,
       fusionClientPool,
-      startupGate: new StartupGate(),
-      disposables: [disposable, fusionClientPool],
-    });
+    ]);
 
     await extension.deactivate();
 

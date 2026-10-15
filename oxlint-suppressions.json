@@ -99,11 +99,6 @@
       "count": 1
     }
   },
-  "src/dbtPowerUserExtension.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/features/codeLenses.ts": {
     "max-params": {
       "count": 1
