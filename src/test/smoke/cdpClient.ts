@@ -16,6 +16,7 @@ import {
   NOTIFICATION_CLEAR_MS,
   NOTIFICATION_TOAST_ITEM_SELECTOR,
   notificationsSettled,
+  splitHostNotices,
 } from "./notificationToasts";
 
 export type SmokeHost = "vscode" | "cursor";
@@ -124,7 +125,10 @@ export async function readWorkbenchNotificationTexts(
       );
 }
 
-/** Fails when the workbench shows any notification, toast or centered. */
+/**
+ * Fails when the workbench shows any notification, toast or centered, other than the host's slow-start notice,
+ * which is logged instead.
+ */
 export async function assertNoWorkbenchNotifications(
   cdpPort: string,
   smokeHost: string,
@@ -135,9 +139,13 @@ export async function assertNoWorkbenchNotifications(
       cdpPort,
       smokeHost,
     );
-    if (notifications.length > 0) {
+    const { hostNotices, unexpected } = splitHostNotices(notifications);
+    if (hostNotices.length > 0) {
+      console.log(`FPU_SMOKE_HOST_NOTICE=${JSON.stringify(hostNotices)}`);
+    }
+    if (unexpected.length > 0) {
       throw new Error(
-        `Unexpected workbench notifications: ${JSON.stringify(notifications)}`,
+        `Unexpected workbench notifications: ${JSON.stringify(unexpected)}`,
       );
     }
   } finally {
@@ -324,6 +332,30 @@ export async function evaluatePanel<T extends { entry: string }>(
     }
   }
   return undefined;
+}
+
+/**
+ * Waits until no webview frame shows `entry`: the view was hidden and, without `retainContextWhenHidden`, its page
+ * was torn down. Resolves the milliseconds that took; rejects at `timeoutMs` with how many frames still show it.
+ */
+export async function waitForPanelGone(
+  port: string,
+  entry: string,
+  timeoutMs = 15_000,
+): Promise<number> {
+  const started = Date.now();
+  const probe = `({ entry: document.body.dataset.entry })`;
+  for (;;) {
+    if (!(await evaluatePanel(port, entry, probe))) {
+      return Date.now() - started;
+    }
+    if (Date.now() - started > timeoutMs) {
+      throw new Error(
+        `the ${entry} webview was still showing ${timeoutMs}ms after another panel was shown`,
+      );
+    }
+    await sleep(100);
+  }
 }
 
 /**

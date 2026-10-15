@@ -8,6 +8,7 @@ import {
   collectWorkbenchNotifications,
   NOTIFICATION_CENTER_ITEM_SELECTOR,
   NOTIFICATION_TOAST_ITEM_SELECTOR,
+  splitHostNotices,
 } from "../smoke/notificationToasts";
 
 function item(text: string): NotificationDomNode {
@@ -93,5 +94,37 @@ describe("workbench notification aggregation", () => {
         { workbench: false, toasts: ["ignored"] },
       ]),
     ).toThrow(/No CDP context reported a workbench page/);
+  });
+});
+
+describe("splitHostNotices", () => {
+  it("expects the host's slow-start notice, with or without its action labels", () => {
+    expect(
+      splitHostNotices([
+        "Reload Window\nCopy\nExtension host did not start in 10 seconds",
+        "Extension host did not start in 20 seconds",
+      ]),
+    ).toEqual({
+      hostNotices: [
+        "Reload Window\nCopy\nExtension host did not start in 10 seconds",
+        "Extension host did not start in 20 seconds",
+      ],
+      unexpected: [],
+    });
+  });
+
+  it("keeps every other notification unexpected, including one that only mentions the host", () => {
+    expect(
+      splitHostNotices([
+        "Extension host terminated unexpectedly",
+        "Fusion Power User: dbt not found. Extension host did not start in 10 seconds",
+      ]),
+    ).toEqual({
+      hostNotices: [],
+      unexpected: [
+        "Extension host terminated unexpectedly",
+        "Fusion Power User: dbt not found. Extension host did not start in 10 seconds",
+      ],
+    });
   });
 });
