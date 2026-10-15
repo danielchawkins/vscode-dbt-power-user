@@ -1,10 +1,10 @@
 import * as fs from "node:fs";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
+import { RunModelType } from "../../core/dbt/domain";
 import { DBTCommand } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import type { ProjectSnapshot } from "../../core/snapshot";
-import { RunModelType } from "../../dbt_integration/domain";
 import type { FusionCli } from "../../fusion/fusionCli";
 import { CommandQueue } from "../../projects/commandQueue";
 import { DbtTaskTerminal } from "../../projects/dbtTask";

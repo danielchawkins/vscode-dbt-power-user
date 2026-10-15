@@ -1,5 +1,6 @@
 import * as path from "node:path";
 import { Uri, workspace } from "vscode";
+import type { Table } from "../../core/dbt/domain";
 import type {
   ColumnEdge,
   ColumnLineage,
@@ -19,7 +20,6 @@ import {
   RESOURCE_TYPE_METRIC,
   RESOURCE_TYPE_SOURCE,
 } from "../../core/manifest/types";
-import type { Table } from "../../dbt_integration/domain";
 import {
   createFusionCommands,
   type FusionCommands,

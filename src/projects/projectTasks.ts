@@ -1,9 +1,9 @@
 import type { Task } from "vscode";
 import { CustomExecution } from "vscode";
+import type { RunModelParams } from "../core/dbt/domain";
 import type { Log } from "../core/log";
 import { errorText } from "../core/text";
 import type { CommandProcessResult } from "../core/types";
-import type { RunModelParams } from "../dbt_integration/domain";
 import type { QueuedCliCommand } from "../fusion/fusionCli";
 import type { DbtTaskDefinition } from "./dbtTask";
 import {

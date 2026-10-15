@@ -94,6 +94,7 @@ function main() {
     "AGENTS.md",
     "CONTEXT.md",
     "docs/architecture.md",
+    "docs/lsp-metadata-gaps.md",
     ...walk(path.join(root, "docs/adr"))
       .filter((file) => file.endsWith(".md"))
       .map((file) => path.relative(root, file)),

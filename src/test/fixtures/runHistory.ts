@@ -1,7 +1,7 @@
 import type {
   RunResultEntry,
   RunResultsEventData,
-} from "../../dbt_integration/domain";
+} from "../../core/dbt/domain";
 
 export const createResult = (
   overrides: Partial<RunResultEntry> = {},

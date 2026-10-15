@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
+import { dbtTemplateAssociations } from "../../core/dbt/dbtAssociations";
 import type { ProjectPaths } from "../../core/snapshot";
-import { dbtTemplateAssociations } from "../../dbt_integration/dbtAssociations";
 import { match } from "../vscodeGlob";
 
 const slash = (p: string) => p.split(path.sep).join("/");

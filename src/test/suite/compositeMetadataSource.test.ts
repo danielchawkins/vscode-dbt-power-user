@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { EventEmitter, Uri } from "vscode";
+import type { ParsedManifest } from "../../core/dbt/domain";
 import { emptyParsedManifest } from "../../core/metadata";
-import type { ParsedManifest } from "../../dbt_integration/domain";
 import { CompositeMetadataSource } from "../../metadata/compositeMetadataSource";
 import type { ServerMetadataSource } from "../../metadata/serverMetadataSource";
 import type { Manifest } from "../../projects/manifestTypes";

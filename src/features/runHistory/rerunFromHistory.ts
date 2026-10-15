@@ -1,9 +1,9 @@
 import { window } from "vscode";
-import { extractDbtSubcommand } from "../../core/text";
 import type {
   RunModelParams,
   RunResultsEventData,
-} from "../../dbt_integration/domain";
+} from "../../core/dbt/domain";
+import { extractDbtSubcommand } from "../../core/text";
 import { notifyErrorWithoutProject } from "../../projects/notifications";
 import type { Project } from "../../projects/project";
 

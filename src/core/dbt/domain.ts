@@ -11,7 +11,7 @@ import type {
   SourceMetaMap,
   TestMetaMap,
   UnitTestMetaMap,
-} from "../core/manifest/types";
+} from "../manifest/types";
 
 export interface ParsedManifest {
   nodeMetaMap: NodeMetaMap;

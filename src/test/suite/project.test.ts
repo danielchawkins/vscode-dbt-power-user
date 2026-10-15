@@ -12,6 +12,7 @@ import {
   vi,
 } from "vitest";
 import * as vscode from "vscode";
+import { MANIFEST_FILE, type ParsedManifest } from "../../core/dbt/domain";
 import type { DBTCommand } from "../../core/dbtCommand";
 import { QueryExecution } from "../../core/dbtCommand";
 import type { DBTDiagnosticData } from "../../core/diagnostics";
@@ -32,10 +33,6 @@ import {
 } from "../../core/manifest";
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
 import { DBT_PROJECT_FILE } from "../../core/snapshot";
-import {
-  MANIFEST_FILE,
-  type ParsedManifest,
-} from "../../dbt_integration/domain";
 import type { FusionCli } from "../../fusion/fusionCli";
 import { DbtTaskTerminal } from "../../projects/dbtTask";
 import type { ManifestParsers } from "../../projects/manifest";

@@ -1,6 +1,6 @@
 import type { Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
-import type { ParsedManifest } from "../dbt_integration/domain";
+import type { ParsedManifest } from "../core/dbt/domain";
 import type { Project } from "../projects/project";
 import type { DeclaredProject } from "../projects/projectRegistry";
 

@@ -9,10 +9,10 @@ import {
   window,
   workspace,
 } from "vscode";
+import type { ModelNode } from "../core/lineage/modelNode";
 import type { Log } from "../core/log";
 import type { ColumnMetaData } from "../core/manifest/types";
 import type { DBColumn } from "../core/types";
-import type { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
 import { getColumnNameByCase } from "./columnNames";
 import { notifyError, type NotifiableProject } from "./notifications";

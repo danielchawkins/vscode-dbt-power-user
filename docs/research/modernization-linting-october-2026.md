@@ -236,7 +236,7 @@ I installed TS 7.0.2 outside the repo and ran `tsc -p <cfg> --noEmit` with each 
 Citations:
 
 - [r7a](../../src/core/manifest/macroParser.ts): "constructor(private terminal: Pick<Log, "debug">) {}"
-- [r7b](../../src/dbt_integration/domain.ts): "export enum RunModelType {"
+- [r7b](../../src/core/dbt/domain.ts): "export enum RunModelType {"
 - [r7c](../../tsconfig.json): ""esModuleInterop": true,"
 
 Thesis (medium): TypeScript config is already modern. Across tsconfig.json, tsconfig.integration.json, webview_panels/tsconfig*.json and packages/webview-contract/tsconfig.json: all use moduleResolution `bundler`, target ES2024 and lib ES2024; none sets baseUrl, outFile or an ES5 target. The one redundant-looking option is `esModuleInterop: true` in the root tsconfig.json. TS 7 was not installed locally, so I did not run `tsc --noEmit` and cannot list its deprecation diagnostics. TS 7's own deprecation errors are the only check for removed options and have no Oxlint equivalent. For `erasableSyntaxOnly`, grep found 13 `enum` lines in non-test files (for example `enum QueryPanelViewType`, `export enum RunModelType`, `enum Pages`). Oxlint's typescript/prefer-enum-initializers hit 19 times in 6 files, but I found no native no-enum rule, so `erasableSyntaxOnly` in tsconfig is the enforcement.
@@ -244,7 +244,7 @@ Thesis (medium): TypeScript config is already modern. Across tsconfig.json, tsco
 Thesis citations:
 
 - [c12](../../tsconfig.json): ""moduleResolution": "bundler","
-- [c13](../../src/dbt_integration/domain.ts): "export enum RunModelType {"
+- [c13](../../src/core/dbt/domain.ts): "export enum RunModelType {"
 
 Antithesis: 'TS 7 was not installed locally, so I did not run tsc' is the biggest omission. TS 7.0.2 is `latest` on npm. I installed it outside the repo and ran `tsc -p <cfg> --noEmit` on all six tsconfigs (root, integration, webview, webview node, webview test, contract). All six pass with zero diagnostics. The only errors, TS6379 on the two composite projects, came from my own `--incremental false` flag. There are no removed or deprecated option diagnostics today.
 

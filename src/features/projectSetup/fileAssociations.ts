@@ -1,14 +1,14 @@
 import type { Disposable } from "vscode";
 import { commands, window } from "vscode";
-import { readDbtProjectFile, resolveProjectPaths } from "../../core/snapshot";
 import type {
   SkippedDirectory,
   SkipReason,
-} from "../../dbt_integration/dbtAssociations";
+} from "../../core/dbt/dbtAssociations";
 import {
   dbtTemplateAssociations,
   literalGlobPath,
-} from "../../dbt_integration/dbtAssociations";
+} from "../../core/dbt/dbtAssociations";
+import { readDbtProjectFile, resolveProjectPaths } from "../../core/snapshot";
 import { notifyErrorWithoutProject } from "../../projects/notifications";
 import type { ProjectRegistry } from "../../projects/projectRegistry";
 import type { FileAssociations } from "../../settings";

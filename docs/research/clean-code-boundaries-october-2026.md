@@ -50,7 +50,7 @@ Thesis (high): The parsed-manifest shape is declared twice. dbt_integration/doma
 
 Thesis citations:
 
-- [c01](../../src/dbt_integration/domain.ts): "export interface ParsedManifest {"
+- [c01](../../src/core/dbt/domain.ts): "export interface ParsedManifest {"
 - [c02](../../src/core/metadata/mergeMetadata.ts): "The maps consumers read; `ParsedManifest` has the same shape."
 
 Antithesis: The thesis proposes moving the shape into core/manifest/types. It never says that this direction is forced by the layer rules. core-is-pure stops core from importing src/dbt_integration, so MergeableManifest exists because of that rule. The duplicate is a symptom of dbt_integration/domain.ts sitting in the wrong layer. Point 2 is the real cause, and the thesis ranks it separately from point 1.
@@ -76,8 +76,8 @@ Citations:
 
 - [r2a](../../.dependency-cruiser.cjs): ""These modules hold logic that property tests cover without the vscode module.","
 - [r2b](../../AGENTS.md): "shared domain types, `DBTCommand`, `DBTTerminal`"
-- [r2c](../../src/dbt_integration/domain.ts): "export enum RunModelType {"
-- [r2d](../../src/dbt_integration/domain.ts): "export const MANIFEST_FILE = "manifest.json";"
+- [r2c](../../src/core/dbt/domain.ts): "export enum RunModelType {"
+- [r2d](../../src/core/dbt/domain.ts): "export const MANIFEST_FILE = "manifest.json";"
 
 Thesis (high): dbt_integration/ is an unclassified layer. It holds only domain.ts, dbtAssociations.ts and NOTICE.md, yet projects/ imports from it on about 15 edges and 25 modules import it. The layer rules in .dependency-cruiser.cjs never name it, so it escapes every layer check. Principle: a cycle or a misplaced module means a layer is wrong (the depcruise comment says so). Fix: move the types to core/ (pure) or rename the folder to the layer it really is, then add it to the layer rules. Enforcement: a depcruise rule that fails when a new top-level src folder is not listed in a layer.
 
@@ -99,7 +99,7 @@ Antithesis: The thesis cites the core-is-pure comment. That comment says only th
 Counter-evidence:
 
 - [a03](../../AGENTS.md): "shared domain types, `DBTCommand`, `DBTTerminal`"
-- [a04](../../src/dbt_integration/dbtAssociations.ts): "import type { ProjectPaths } from "../core/project";"
+- [a04](../../src/core/dbt/dbtAssociations.ts): "import type { ProjectPaths } from "../core/project";"
 - [a05](https://raw.githubusercontent.com/sverweij/dependency-cruiser/main/doc/rules-reference.md): "A list of rules that describe dependencies that are *allowed*."
 
 ### 3. Project does build its private collaborators in its constructor: ManifestState, ProjectDiagnostics, ProjectErrors, ProjectTasks, RunResultsReader and ManifestTrigger. Those collaborators are wired with closures over `this`. Project's external dependencies are already injected through ProjectOptions, and a test harness builds it with overrides. A factory that takes a typed graph of these private parts would have to rebuild those back-references, and it would break the repo's own rule against abstractions without a second user or a named test seam. Leave the constructor alone. The structural issue in this area is the inheritance chain (point 16)
