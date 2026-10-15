@@ -15,7 +15,21 @@ import {
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import { notifyError } from "../../projects/output/notifications";
 import type { Project } from "../../projects/project/project";
+import type { ProjectQueries } from "../../projects/project/projectQueries";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
+
+/** What the details read from the current project. */
+type DetailsProject = Pick<Project, "projectRoot" | "getProjectName"> & {
+  queries: Pick<ProjectQueries, "getColumnsOfSource" | "mergeColumnsFromDB">;
+};
+
+/** The current project and its manifest, as the details read them. */
+type DetailsManifests = Pick<
+  QueryManifestService,
+  "getEventByCurrentProject"
+> & {
+  getProject(): DetailsProject | undefined;
+};
 import type { DbtLineageService } from "./dbtLineageService";
 
 /** What the lineage panel shows for one node's columns. */
@@ -35,12 +49,12 @@ export interface ColumnsBody {
 
 /** The lineage panel's detail requests: relationships, exposures, functions and columns of a node. */
 export class LineageDetails {
-  private readonly queryManifestService: QueryManifestService;
+  private readonly queryManifestService: DetailsManifests;
   private readonly dbtLineageService: DbtLineageService;
   private readonly terminal: Log;
 
   constructor(
-    queryManifestService: QueryManifestService,
+    queryManifestService: DetailsManifests,
     dbtLineageService: DbtLineageService,
     terminal: Log,
   ) {
@@ -173,7 +187,7 @@ export class LineageDetails {
 
   private async sourceColumns(
     event: Manifest,
-    project: Project,
+    project: DetailsProject,
     table: string,
     splits: string[],
     refresh: boolean,
@@ -209,7 +223,7 @@ export class LineageDetails {
   }
 
   private refreshFromDatabase(
-    project: Project,
+    project: DetailsProject,
     nodeName: string,
     sourceTable: SourceTable,
   ) {
@@ -252,7 +266,7 @@ export class LineageDetails {
   }
 
   private async addSourceColumnsFromDB(
-    project: Project,
+    project: DetailsProject,
     nodeName: string,
     table: SourceTable,
   ) {
