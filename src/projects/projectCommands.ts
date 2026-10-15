@@ -5,6 +5,7 @@ import { commandParamsFor, fullRefreshArgs } from "../core/cli";
 import type { DBTCommand } from "../core/dbtCommand";
 import type { Log } from "../core/log";
 import type { ProjectSnapshot } from "../core/project";
+import { errorText } from "../core/text";
 import type { CommandProcessResult } from "../core/types";
 import type { RunModelParams } from "../dbt_integration/domain";
 import { RunModelType } from "../dbt_integration/domain";
@@ -133,7 +134,7 @@ export async function queueCli(
       `Unable to prepare ${statusMessage}`,
       error,
     );
-    terminal.fail(`Unable to prepare ${statusMessage}: ${error}`);
+    terminal.fail(`Unable to prepare ${statusMessage}: ${errorText(error)}`);
     throw error;
   }
   return enqueueCommand(deps, command, terminal);

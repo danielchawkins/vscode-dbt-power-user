@@ -73,6 +73,7 @@ const Filters = ({
             placeholder="Search query"
             onChange={handleSearchQueryChange}
             onBlur={handleBlur}
+            // oxlint-disable-next-line jsx_a11y/no-autofocus -- the field appears because the user clicked Search
             autoFocus
             style={{ marginBottom: 4.5, maxHeight: 38 }}
             className={styles.searchInput}
@@ -84,6 +85,7 @@ const Filters = ({
         )}
         {showForm ? (
           <MultiSelect
+            // oxlint-disable-next-line jsx_a11y/no-autofocus -- the list appears because the user clicked Filter
             autoFocus
             id="tags"
             style={{ minWidth: 200, marginBottom: "1rem" }}

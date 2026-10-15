@@ -110,7 +110,9 @@ export class FusionStatus implements Disposable {
   }
 
   dispose(): void {
-    for (const key of [...this.statuses.keys()]) {
+    // Snapshot: remove() deletes from statuses.
+    const keys = [...this.statuses.keys()];
+    for (const key of keys) {
       this.remove(key);
     }
     while (this.disposables.length) {

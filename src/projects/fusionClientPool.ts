@@ -259,7 +259,9 @@ export class FusionClientPoolImpl implements FusionClientPool {
       return;
     }
     let changed = false;
-    for (const [key, managed] of [...this.clients]) {
+    // Snapshot: replaceClient replaces entries while the loop runs.
+    const snapshot = [...this.clients];
+    for (const [key, managed] of snapshot) {
       if (
         managed.executable === undefined ||
         sameEnv(managed.env, this.resolveEnv(managed.project))

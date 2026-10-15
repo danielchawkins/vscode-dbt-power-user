@@ -3,6 +3,7 @@ import { dirname, join } from "node:path";
 import { extensions, version } from "vscode";
 import type { RegisterCommand } from "../../commandRegistry";
 import { DBT_PROJECT_FILE, readDbtProjectFile } from "../../core/project";
+import { errorText } from "../../core/text";
 import { CATALOG_FILE, MANIFEST_FILE } from "../../dbt_integration/domain";
 import type { Project } from "../../projects/project";
 import type { Projects } from "../../projects/projects";
@@ -127,7 +128,7 @@ async function printProjects(out: Output, projects: readonly Project[]) {
     } catch (e) {
       out.logNewLine();
       out.logLine("Failed to print all the info for the project...");
-      out.logLine(`Error=${e}`);
+      out.logLine(`Error=${errorText(e)}`);
     } finally {
       out.logHorizontalRule();
     }
@@ -154,7 +155,7 @@ async function runDiagnostics(out: Output, projects: Projects) {
   } catch (e) {
     out.logNewLine();
     out.logLine("Diagnostics ended with error...");
-    out.logLine(`Error=${e}`);
+    out.logLine(`Error=${errorText(e)}`);
   }
 }
 

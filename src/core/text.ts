@@ -1,8 +1,14 @@
 export function stripANSI(src: string): string {
   return src.replaceAll(
+    // oxlint-disable-next-line eslint/no-control-regex -- ANSI escape sequences start with ESC (U+001B) or CSI (U+009B)
     /[\u001b\u009b][[()#;?]*(?:[0-9]{1,4}(?:;[0-9]{0,4})*)?[0-9A-ORZcf-nqry=><]/g,
     "",
   );
+}
+
+/** The message of a thrown value: `Error.message`, or the value itself as a string. */
+export function errorText(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }
 
 export function getFormattedDateTime(): string {

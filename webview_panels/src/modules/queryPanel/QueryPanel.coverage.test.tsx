@@ -26,16 +26,13 @@ const click = async (user: User, role: InteractiveRole, name: string) => {
 };
 
 /**
- * Two icon-only controls have no accessible name at rest or on hover, so the gate cannot read one: the run control in
- * the limit editor (a `div` with `role="button"`) and the close button of the history details (no `title` or label).
- * These are product gaps; the code does not change here. The states leave them out, and the pin test below fails
- * once they have names, so the exclusion goes with the fix.
+ * One icon-only control has no accessible name at rest or on hover, so the gate cannot read it: the close button of
+ * the history details (no `title` or label). It is a product gap; the code does not change here. The states leave it
+ * out, and the pin test below fails once it has a name, so the exclusion goes with the fix.
  */
 const isUnnamedProductControl = (element: Element): boolean =>
   element.textContent?.trim() === "" &&
-  ((element.getAttribute("role") === "button" &&
-    element.querySelector(".codicon-play") !== null) ||
-    element.matches('button[class*="closeBtn"]:not([title])'));
+  element.matches('button[class*="closeBtn"]:not([title])');
 
 /**
  * Hovers each button with no text, the icon-only ones, so that the label a user sees on hover is the name
@@ -100,16 +97,16 @@ describe("Query panel control coverage gate", () => {
       isUnnamedProductControl,
     );
 
-  it("pins the unnamed run control at rest until it has a name", () => {
+  it("has no unnamed control at rest", () => {
     const { container } = openQueryPanel();
-    expect(unnamedAtRest(container)).toHaveLength(1);
+    expect(unnamedAtRest(container)).toHaveLength(0);
   });
 
   it("pins the unnamed history close button once a history row is open", async () => {
     const { user, container } = openQueryPanel(HISTORY);
     await click(user, "button", "History");
     await click(user, "button", "select 1");
-    expect(unnamedAtRest(container)).toHaveLength(2);
+    expect(unnamedAtRest(container)).toHaveLength(1);
   });
 
   it("collectControls throws on a button without an accessible name", () => {

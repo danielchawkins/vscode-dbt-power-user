@@ -214,7 +214,7 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.showRunSQL(modelPath);
+    project.showRunSQL(modelPath);
   }
 
   createModelBasedonSourceConfig(params: GenerateModelFromSourceParams) {

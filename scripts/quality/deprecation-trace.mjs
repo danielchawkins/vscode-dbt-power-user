@@ -114,7 +114,9 @@ export function main(run = spawnSync) {
       exitCode = 1;
     }
   }
-  if (seen.size === 0) console.log("no deprecation warnings");
+  if (seen.size === 0) {
+    console.log("no deprecation warnings");
+  }
   return exitCode;
 }
 

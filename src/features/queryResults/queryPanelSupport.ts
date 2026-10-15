@@ -3,6 +3,7 @@ import type { TextEditor } from "vscode";
 import { window, workspace } from "vscode";
 import { ExecuteSQLError } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
+import { errorText } from "../../core/text";
 import { activeModelUri } from "../../projects/previewUri";
 import type { QueryManifestService } from "../../projects/queryManifestService";
 import { writeSetting } from "../../settings";
@@ -42,7 +43,7 @@ export function failureOf(exc: unknown, query: string) {
     };
   }
   return {
-    error: { code: -1, message: `${exc}`, data: {} },
+    error: { code: -1, message: errorText(exc), data: {} },
     compiledSql: query,
   };
 }

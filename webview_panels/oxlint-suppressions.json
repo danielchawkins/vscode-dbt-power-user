@@ -1,17 +1,4 @@
 {
-  "src/modules/documentationEditor/DocumentationEditor.controls.test.tsx": {
-    "typescript/consistent-type-definitions": {
-      "count": 1
-    },
-    "typescript/explicit-module-boundary-types": {
-      "count": 1
-    }
-  },
-  "src/modules/documentationEditor/DocumentationEditor.coverage.test.tsx": {
-    "jsx-a11y/control-has-associated-label": {
-      "count": 1
-    }
-  },
   "src/modules/documentationEditor/DocumentationProvider.tsx": {
     "max-lines-per-function": {
       "count": 1
@@ -19,9 +6,6 @@
   },
   "src/modules/documentationEditor/components/docGenerator/DocBlockInserter.tsx": {
     "jsx-a11y/control-has-associated-label": {
-      "count": 1
-    },
-    "jsx-a11y/prefer-tag-over-role": {
       "count": 1
     },
     "max-lines-per-function": {
@@ -76,52 +60,14 @@
       "count": 1
     }
   },
-  "src/modules/documentationEditor/utils.ts": {
-    "no-unsafe-optional-chaining": {
-      "count": 2
-    }
-  },
-  "src/modules/lineage/Lineage.coverage.test.tsx": {
-    "jsx-a11y/control-has-associated-label": {
-      "count": 1
-    }
-  },
   "src/modules/lineage/TableNode.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
-      "count": 1
-    }
-  },
-  "src/modules/lineage/Toolbar.test.tsx": {
-    "jsx-a11y/no-static-element-interactions": {
       "count": 1
     }
   },
   "src/modules/lineage/graph.ts": {
     "max-params": {
       "count": 3
-    }
-  },
-  "src/modules/lineage/useLineageGraph.test.tsx": {
-    "typescript/consistent-type-definitions": {
-      "count": 1
-    }
-  },
-  "src/modules/queryPanel/QueryPanel.controls.test.tsx": {
-    "typescript/consistent-type-definitions": {
-      "count": 1
-    },
-    "typescript/explicit-module-boundary-types": {
-      "count": 1
-    }
-  },
-  "src/modules/queryPanel/QueryPanel.coverage.test.tsx": {
-    "jsx-a11y/control-has-associated-label": {
-      "count": 1
-    }
-  },
-  "src/modules/queryPanel/components/filters/Filters.tsx": {
-    "jsx-a11y/no-autofocus": {
-      "count": 2
     }
   },
   "src/modules/queryPanel/components/grid/GridBodyRow.tsx": {
@@ -137,21 +83,10 @@
   "src/modules/queryPanel/components/grid/ResultsGrid.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
       "count": 1
-    },
-    "react/incompatible-library": {
-      "count": 1
     }
   },
   "src/modules/queryPanel/components/queryLimit/QueryLimit.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
-      "count": 2
-    },
     "max-lines-per-function": {
-      "count": 1
-    }
-  },
-  "src/modules/queryPanel/components/queryPanelQueryHistory/QueryHistoryRow.tsx": {
-    "jsx-a11y/prefer-tag-over-role": {
       "count": 1
     }
   },
@@ -171,26 +106,12 @@
     }
   },
   "src/test/lineageHarness.tsx": {
-    "no-empty-function": {
-      "count": 2
-    },
-    "typescript/consistent-type-definitions": {
-      "count": 2
-    },
-    "typescript/explicit-module-boundary-types": {
-      "count": 5
-    },
     "typescript/parameter-properties": {
       "count": 2
     }
   },
   "src/uiCore/anchoredPosition.ts": {
     "max-params": {
-      "count": 1
-    }
-  },
-  "src/uiCore/components/PopoverWithButton.test.tsx": {
-    "jsx-a11y/no-static-element-interactions": {
       "count": 1
     }
   },

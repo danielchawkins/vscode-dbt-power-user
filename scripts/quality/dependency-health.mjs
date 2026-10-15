@@ -36,11 +36,17 @@ export function auditFindings(report) {
  * qualify, and its message must match a connection error, a timeout, or an HTTP 5xx or 429.
  */
 export function auditUnreachable(report) {
-  if (report.vulnerabilities !== undefined) return null;
+  if (report.vulnerabilities !== undefined) {
+    return null;
+  }
   const message = report.message ?? "";
   const code = CONNECTION.exec(message)?.[1];
-  if (code && CONNECTION_CODES.has(code)) return code;
-  if (TIMEOUT.test(message)) return "ETIMEDOUT";
+  if (code && CONNECTION_CODES.has(code)) {
+    return code;
+  }
+  if (TIMEOUT.test(message)) {
+    return "ETIMEDOUT";
+  }
   const status = HTTP_UNAVAILABLE.exec(message)?.[1];
   return status ? `HTTP ${status}` : null;
 }

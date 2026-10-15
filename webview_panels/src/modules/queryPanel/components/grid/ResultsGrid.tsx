@@ -34,6 +34,7 @@ const ResultsGrid = ({
   const drawerRef = useRef<DrawerRef | null>(null);
   const [drawer, setDrawer] = useState({ title: "", text: "" });
   const select = useGridSelection(bodyRows);
+  // oxlint-disable-next-line react/incompatible-library -- the virtualizer re-measures on scroll; the compiler skips this component
   const virtualizer = useVirtualizer({
     count: bodyRows.length,
     getScrollElement: () => scrollRef.current,

@@ -200,7 +200,7 @@ async function parseResourceMaps(
     functionMetaMap,
   ] = await Promise.all([
     parsers.childrenParentParser.createChildrenParentMetaMap(
-      { ...nodes, ...exposures, ...(functionRecords ?? {}) },
+      { ...nodes, ...exposures, ...functionRecords },
       sources,
     ),
     parsers.nodeParser.createNodeMetaMap(nodes, project),

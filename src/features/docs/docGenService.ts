@@ -5,7 +5,7 @@ import { Uri, window } from "vscode";
 import { parse as parseYaml } from "yaml";
 import type { NodeMetaData } from "../../core/manifest/types";
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
-import { removeProtocol } from "../../core/text";
+import { removeProtocol, errorText } from "../../core/text";
 import { activeModelUri } from "../../projects/previewUri";
 import type { Projects } from "../../projects/projects";
 import type { QueryManifestService } from "../../projects/queryManifestService";
@@ -28,7 +28,7 @@ export interface DocumentationSchemaColumn {
 interface DocumentationSchemaModel {
   name: string;
   description: string;
-  tests: any;
+  tests: unknown;
   columns: { name: string; description?: string; data_type?: string }[];
 }
 
@@ -233,7 +233,7 @@ export class DocGenService {
     } catch (error) {
       project.log.error(
         "docGenService:getDocumentationYamlError",
-        `Error reading YAML documentation: ${error}`,
+        `Error reading YAML documentation: ${errorText(error)}`,
         error,
       );
       return this.getDocumentation(filePath, true);

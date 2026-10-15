@@ -65,7 +65,6 @@ abstract class ModelTreeviewProvider
     private projects: Projects,
     private treeType: keyof GraphMetaMap,
   ) {
-    this.treeType = treeType;
     this.disposables.push(
       ...refreshOnProjectChange(this.projects, () =>
         this._onDidChangeTreeData.fire(),

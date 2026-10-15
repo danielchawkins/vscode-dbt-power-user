@@ -191,7 +191,9 @@ export class CompileSignal {
 
   notify(): void {
     this.count += 1;
-    for (const waiter of [...this.waiters]) {
+    // Snapshot: a waiter removes itself when it runs.
+    const waiters = [...this.waiters];
+    for (const waiter of waiters) {
       waiter();
     }
   }

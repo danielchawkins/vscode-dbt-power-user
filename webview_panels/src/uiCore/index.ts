@@ -30,4 +30,3 @@ export type { OptionType } from "./components/select";
 export { default as Stack } from "./components/stack/Stack";
 export { default as Tag } from "./components/tag/Tag";
 export { default as Tooltip } from "./components/tooltip/Tooltip";
-export { activateClickOnKeyDown } from "./keyboardActivation";

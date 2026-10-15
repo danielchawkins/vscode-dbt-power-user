@@ -86,7 +86,7 @@ export function textLogErrors(output: string): string[] {
   let current: string[] | undefined;
   for (const raw of output.split(/\r?\n/)) {
     const line = raw.trimEnd();
-    if (/^\[error\]/.test(line)) {
+    if (line.startsWith("[error]")) {
       current = [line];
       blocks.push("");
     } else if (current && line && !/^[[=]/.test(line)) {

@@ -134,9 +134,8 @@ export abstract class PanelHost<
     protected dbtTerminal: Log,
     protected queryManifestService: QueryManifestService,
   ) {
-    const t = this;
     this._disposables.push(
-      emitterService.eventEmitter.event((d) => t.onEvent(d)),
+      emitterService.eventEmitter.event((d) => this.onEvent(d)),
     );
   }
 
