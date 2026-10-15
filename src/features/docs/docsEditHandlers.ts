@@ -9,10 +9,10 @@ import { parse, stringify } from "yaml";
 import { UserInputError } from "../../core/errors";
 import type { Log } from "../../core/log";
 import type { TestMetaData } from "../../core/manifest/types";
-import { notifyError } from "../../projects/notifications";
-import { activeModelUri } from "../../projects/previewUri";
-import type { Project } from "../../projects/project";
-import type { QueryManifestService } from "../../projects/queryManifestService";
+import { notifyError } from "../../projects/output/notifications";
+import type { Project } from "../../projects/project/project";
+import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import { activeModelUri } from "../../projects/registry/previewUri";
 import type { Handlers } from "../../webview/messageRouter";
 import type { DbtTestService } from "./dbtTestService";
 

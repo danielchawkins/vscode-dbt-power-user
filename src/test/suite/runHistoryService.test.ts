@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { RunHistoryService } from "../../projects/runHistoryService";
+import { RunHistoryService } from "../../projects/output/runHistoryService";
 import { createEntry } from "../fixtures/runHistory";
 
 describe("RunHistoryService", () => {

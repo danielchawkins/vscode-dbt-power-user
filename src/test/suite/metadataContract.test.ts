@@ -19,8 +19,8 @@ import {
   UnitTestParser,
 } from "../../core/manifest";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
-import type { Project } from "../../projects/project";
-import type { DeclaredProject } from "../../projects/projectRegistry";
+import type { Project } from "../../projects/project/project";
+import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 import { esmDirname } from "../esmDirname";
 import { silentLog } from "../testLog";
 

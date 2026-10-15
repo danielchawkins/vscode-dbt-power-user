@@ -6,10 +6,10 @@ import {
   ConfiguredFusionExecutableResolver,
   type FusionExecutable,
 } from "./fusion/fusionExecutable";
-import type { ChannelLog } from "./projects/outputChannels";
-import type { ProjectEnvironments } from "./projects/projectEnvironments";
-import type { DeclaredProject } from "./projects/projectRegistry";
-import { readProjectSnapshot } from "./projects/readProjectSnapshot";
+import type { ProjectEnvironments } from "./projects/clients/projectEnvironments";
+import { readProjectSnapshot } from "./projects/clients/readProjectSnapshot";
+import type { ChannelLog } from "./projects/output/outputChannels";
+import type { DeclaredProject } from "./projects/registry/projectRegistry";
 
 export function cliFactoryFor(
   declared: DeclaredProject,

@@ -1,7 +1,10 @@
 import type { TextEditor, Uri } from "vscode";
 import { commands, ViewColumn, window, workspace } from "vscode";
 import type { RegisterCommand } from "../../commandRegistry";
-import { activeModelUri, previewUriFor } from "../../projects/previewUri";
+import {
+  activeModelUri,
+  previewUriFor,
+} from "../../projects/registry/previewUri";
 
 /**
  * Shows the model's single live compiled preview beside it as SQL, reusing a visible preview's group and

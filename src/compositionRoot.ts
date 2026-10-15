@@ -43,28 +43,31 @@ import { TreeviewProviders } from "./features/treeViews";
 import type { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
 import { createProjectMetadataSource } from "./metadata/compositeMetadataSource";
-import { onClientChange, onCurrentClientChange } from "./projects/clientChange";
-import { CurrentProject } from "./projects/currentProject";
+import {
+  onClientChange,
+  onCurrentClientChange,
+} from "./projects/clients/clientChange";
 import type {
   FusionClientPool,
   FusionLaunchSources,
-} from "./projects/fusionClientPool";
-import { createFusionClientPool } from "./projects/fusionClientPool";
-import { FusionStatus } from "./projects/fusionStatus";
-import { bindExtensionOutput } from "./projects/notifications";
-import { OutputChannels } from "./projects/outputChannels";
-import { ParseDemand } from "./projects/parseDemand";
-import { Project } from "./projects/project";
-import { ProjectEnvironments } from "./projects/projectEnvironments";
-import { ProjectQuickPick } from "./projects/projectQuickPick";
-import type { DeclaredProject } from "./projects/projectRegistry";
-import { ProjectRegistry } from "./projects/projectRegistry";
-import { Projects } from "./projects/projects";
-import { QueryManifestService } from "./projects/queryManifestService";
-import { readProjectSnapshot } from "./projects/readProjectSnapshot";
-import { RunHistoryService } from "./projects/runHistoryService";
-import { schemaOriginLaunchEnv } from "./projects/schemaOrigin";
-import { SharedStateService } from "./projects/sharedStateService";
+} from "./projects/clients/fusionClientPool";
+import { createFusionClientPool } from "./projects/clients/fusionClientPool";
+import { FusionStatus } from "./projects/clients/fusionStatus";
+import { ProjectEnvironments } from "./projects/clients/projectEnvironments";
+import { readProjectSnapshot } from "./projects/clients/readProjectSnapshot";
+import { ParseDemand } from "./projects/manifest/parseDemand";
+import { bindExtensionOutput } from "./projects/output/notifications";
+import { OutputChannels } from "./projects/output/outputChannels";
+import { RunHistoryService } from "./projects/output/runHistoryService";
+import { CurrentProject } from "./projects/project/currentProject";
+import { Project } from "./projects/project/project";
+import { ProjectQuickPick } from "./projects/project/projectQuickPick";
+import { Projects } from "./projects/project/projects";
+import { QueryManifestService } from "./projects/project/queryManifestService";
+import { SharedStateService } from "./projects/project/sharedStateService";
+import type { DeclaredProject } from "./projects/registry/projectRegistry";
+import { ProjectRegistry } from "./projects/registry/projectRegistry";
+import { schemaOriginLaunchEnv } from "./projects/registry/schemaOrigin";
 import { StartupGate } from "./startupGate";
 
 /** Builds the Project of a Declared Project. */

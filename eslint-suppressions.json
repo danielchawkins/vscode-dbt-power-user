@@ -19,7 +19,7 @@
       "count": 1
     }
   },
-  "src/projects/projectRegistry.ts": {
+  "src/projects/registry/projectRegistry.ts": {
     "sonarjs/cognitive-complexity": {
       "count": 1
     }

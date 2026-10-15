@@ -2,12 +2,12 @@ import * as path from "node:path";
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import type { WorkspaceFolder } from "vscode";
 import { EventEmitter, Uri, window, workspace } from "vscode";
-import { CurrentProject } from "../../projects/currentProject";
-import type { ProjectQuickPick } from "../../projects/projectQuickPick";
+import { CurrentProject } from "../../projects/project/currentProject";
+import type { ProjectQuickPick } from "../../projects/project/projectQuickPick";
 import type {
   DeclaredProject,
   ProjectRegistry,
-} from "../../projects/projectRegistry";
+} from "../../projects/registry/projectRegistry";
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace"),

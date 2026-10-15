@@ -6,7 +6,7 @@ import type {
   TextDocument,
 } from "vscode";
 import { CodeLens, Range } from "vscode";
-import type { QueryManifestService } from "../../projects/queryManifestService";
+import type { QueryManifestService } from "../../projects/project/queryManifestService";
 
 export class VirtualSqlCodeLensProvider
   implements CodeLensProvider, Disposable

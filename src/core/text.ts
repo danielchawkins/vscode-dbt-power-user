@@ -53,3 +53,23 @@ export function extractDbtSubcommand(command: string): string {
     ? (command.split(" ")[1] ?? command)
     : command;
 }
+export function failureSummary(
+  reason: string | undefined,
+  maxLength = 240,
+): string | undefined {
+  if (!reason) {
+    return undefined;
+  }
+  const line = reason
+    .split(/\r?\n/)
+    .map((part) => part.trim())
+    .find((part) => part.length > 0);
+  if (!line) {
+    return undefined;
+  }
+  const plain = line.replaceAll(/\$\([^)]*\)/g, "").trim();
+  if (!plain) {
+    return undefined;
+  }
+  return plain.length > maxLength ? `${plain.slice(0, maxLength)}…` : plain;
+}

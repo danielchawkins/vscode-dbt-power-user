@@ -17,7 +17,7 @@ import {
   subscribeToCompileComplete,
   type ClientHandle,
 } from "../../fusion/lspClientSupport";
-import { errorHint } from "../../projects/projectErrors";
+import { errorHint } from "../../projects/output/projectErrors";
 import { checkFusionVersion, fixturePath } from "./helpers/testFixtures";
 import { createLspFixture } from "./lspFixture";
 

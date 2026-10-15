@@ -2,8 +2,8 @@ import * as assert from "node:assert";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
-import type { FusionClientStateReport } from "../../projects/fusionClientDiagnostics";
-import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/fusionClientDiagnostics";
+import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
+import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import {
   captureWorkbenchScreenshot,

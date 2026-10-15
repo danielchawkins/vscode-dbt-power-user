@@ -1,7 +1,7 @@
 import type { CommandProcessResult } from "../core/types";
 import type { QueuedCliCommand } from "../fusion/fusionCli";
-import type { ProjectTaskDeps } from "../projects/projectTasks";
-import { ProjectTasks } from "../projects/projectTasks";
+import type { ProjectTaskDeps } from "../projects/project/projectTasks";
+import { ProjectTasks } from "../projects/project/projectTasks";
 
 /**
  * Project tasks that record the command each task starts instead of launching it. Each started run settles with

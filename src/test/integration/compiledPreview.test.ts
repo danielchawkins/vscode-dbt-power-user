@@ -1,7 +1,7 @@
 import * as assert from "node:assert";
 import * as path from "node:path";
 import * as vscode from "vscode";
-import { previewUriFor } from "../../projects/previewUri";
+import { previewUriFor } from "../../projects/registry/previewUri";
 import { dbtInvocations, dbtInvocationsSince } from "./helpers/dbtSpy";
 
 /**

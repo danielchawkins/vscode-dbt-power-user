@@ -19,10 +19,10 @@ import {
 } from "../../core/snapshot";
 import type { ProjectConfigInsertion } from "../../fusion/projectConfigEdits";
 import { planProjectConfigInsertion } from "../../fusion/projectConfigEdits";
-import type { CurrentProject } from "../../projects/currentProject";
-import { notifyError } from "../../projects/notifications";
-import type { DeclaredProject } from "../../projects/projectRegistry";
-import { SCHEMA_ORIGIN_HOOK } from "../../projects/schemaOrigin";
+import { notifyError } from "../../projects/output/notifications";
+import type { CurrentProject } from "../../projects/project/currentProject";
+import type { DeclaredProject } from "../../projects/registry/projectRegistry";
+import { SCHEMA_ORIGIN_HOOK } from "../../projects/registry/schemaOrigin";
 import { writeStrictStaticAnalysis } from "../../settings";
 import type { StartupGate } from "../../startupGate";
 

@@ -11,14 +11,14 @@ import { commands, Uri } from "vscode";
 import {
   FUSION_CLIENT_STATES_COMMAND,
   registerFusionClientDiagnostics,
-} from "../../projects/fusionClientDiagnostics";
-import type { FusionClientPool } from "../../projects/fusionClientPool";
-import type { FusionStatus } from "../../projects/fusionStatus";
-import type { ProjectEnvironments } from "../../projects/projectEnvironments";
+} from "../../projects/clients/fusionClientDiagnostics";
+import type { FusionClientPool } from "../../projects/clients/fusionClientPool";
+import type { FusionStatus } from "../../projects/clients/fusionStatus";
+import type { ProjectEnvironments } from "../../projects/clients/projectEnvironments";
 import type {
   DeclaredProject,
   ProjectRegistry,
-} from "../../projects/projectRegistry";
+} from "../../projects/registry/projectRegistry";
 
 function project(name: string): DeclaredProject {
   return {

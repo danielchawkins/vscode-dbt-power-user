@@ -13,12 +13,12 @@ import { toLspLaunch } from "../../core/lsp";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
 import { DefaultFusionClientFactory } from "../../fusion/fusionLanguageClient";
-import { FusionClientPoolImpl } from "../../projects/fusionClientPool";
+import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
+import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import type {
   DeclaredProject,
   ProjectRegistry,
-} from "../../projects/projectRegistry";
-import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
+} from "../../projects/registry/projectRegistry";
 import { StartupGate } from "../../startupGate";
 import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";

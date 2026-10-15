@@ -4,10 +4,10 @@ import { EventEmitter } from "vscode";
 import type { ParsedManifest } from "../core/dbt/domain";
 import type { Log } from "../core/log";
 import { mergeMetadata } from "../core/metadata";
-import type { Manifest } from "../projects/manifestTypes";
-import type { Project } from "../projects/project";
-import type { ProjectMetadataSource } from "../projects/projectMetadataSource";
-import type { DeclaredProject } from "../projects/projectRegistry";
+import type { Manifest } from "../projects/manifest/manifestTypes";
+import type { Project } from "../projects/project/project";
+import type { ProjectMetadataSource } from "../projects/project/projectMetadataSource";
+import type { DeclaredProject } from "../projects/registry/projectRegistry";
 import { ManifestMetadataSource } from "./manifestMetadataSource";
 import { ServerMetadataSource } from "./serverMetadataSource";
 

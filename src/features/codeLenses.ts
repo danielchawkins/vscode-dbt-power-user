@@ -4,7 +4,7 @@ import {
   DBT_SQL_SELECTOR,
   DBT_YAML_SELECTOR,
 } from "../fusion/documentSelectors";
-import type { Projects } from "../projects/projects";
+import type { Projects } from "../projects/project/projects";
 import type { SourceModelCreationCodeLensProvider } from "./codegen/sourceModelCreationCodeLensProvider";
 import type { SqlActionsCodeLensProvider } from "./sqlActions/sqlActionsCodeLensProvider";
 import type { VirtualSqlCodeLensProvider } from "./sqlActions/virtualSqlCodeLensProvider";

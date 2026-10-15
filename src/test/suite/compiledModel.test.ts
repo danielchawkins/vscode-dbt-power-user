@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import type * as vscodeApi from "vscode";
 import { URI } from "vscode-uri";
 import { FusionCommandError } from "../../core/lsp";
-import { compiledModelSql } from "../../projects/compiledModel";
+import { compiledModelSql } from "../../projects/project/compiledModel";
 
 vi.mock("vscode", async (importOriginal) => ({
   ...(await importOriginal<typeof vscodeApi>()),

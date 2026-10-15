@@ -10,7 +10,7 @@ import type {
   TestMetadataAcceptedValues,
   TestMetadataRelationships,
 } from "../../core/manifest/types";
-import { isColumnNameEqual } from "../../projects/columnNames";
+import { isColumnNameEqual } from "../../projects/project/columnNames";
 import type { DbtTestService } from "./dbtTestService";
 
 export interface TestDataDeps {

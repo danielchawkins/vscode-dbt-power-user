@@ -9,8 +9,8 @@ import {
   literalGlobPath,
 } from "../../core/dbt/dbtAssociations";
 import { readDbtProjectFile, resolveProjectPaths } from "../../core/snapshot";
-import { notifyErrorWithoutProject } from "../../projects/notifications";
-import type { ProjectRegistry } from "../../projects/projectRegistry";
+import { notifyErrorWithoutProject } from "../../projects/output/notifications";
+import type { ProjectRegistry } from "../../projects/registry/projectRegistry";
 import type { FileAssociations } from "../../settings";
 import {
   readUserFileAssociations,

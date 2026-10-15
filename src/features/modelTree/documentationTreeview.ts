@@ -13,7 +13,7 @@ import {
   window,
 } from "vscode";
 import { removeProtocol } from "../../core/text";
-import type { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/project/projects";
 import {
   lookupModelByEditorContent,
   Node,

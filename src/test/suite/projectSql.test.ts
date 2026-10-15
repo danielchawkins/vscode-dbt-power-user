@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { executeSql, normalizeQueryLimit } from "../../projects/projectSql";
+import {
+  executeSql,
+  normalizeQueryLimit,
+} from "../../projects/project/projectSql";
 
 describe("normalizeQueryLimit", () => {
   it("strips a trailing semicolon", () => {

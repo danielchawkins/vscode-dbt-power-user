@@ -1,6 +1,6 @@
 import type { Disposable, Event, TreeDataProvider, TreeItem } from "vscode";
 import { EventEmitter } from "vscode";
-import type { RunHistoryService } from "../../projects/runHistoryService";
+import type { RunHistoryService } from "../../projects/output/runHistoryService";
 import type { RunHistoryTreeItem } from "./runHistoryTreeItems";
 import { ResultTreeItem, RunTreeItem } from "./runHistoryTreeItems";
 

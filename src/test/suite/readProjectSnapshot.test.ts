@@ -14,12 +14,12 @@ import { Uri, workspace } from "vscode";
 import {
   PROJECT_SNAPSHOT_SETTINGS,
   readProjectSnapshot,
-} from "../../projects/readProjectSnapshot";
+} from "../../projects/clients/readProjectSnapshot";
 import { esmDirname } from "../esmDirname";
 
 const sourcePath = path.resolve(
   esmDirname(import.meta.url),
-  "../../projects/readProjectSnapshot.ts",
+  "../../projects/clients/readProjectSnapshot.ts",
 );
 
 describe("readProjectSnapshot", () => {

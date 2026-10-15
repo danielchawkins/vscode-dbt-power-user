@@ -24,11 +24,11 @@ import type { DbtLineageService } from "../../features/lineage/dbtLineageService
 import {
   FUSION_CLIENT_STATES_COMMAND,
   registerFusionClientDiagnostics,
-} from "../../projects/fusionClientDiagnostics";
-import type { FusionClientPool } from "../../projects/fusionClientPool";
-import type { FusionStatus } from "../../projects/fusionStatus";
-import type { ProjectEnvironments } from "../../projects/projectEnvironments";
-import type { ProjectRegistry } from "../../projects/projectRegistry";
+} from "../../projects/clients/fusionClientDiagnostics";
+import type { FusionClientPool } from "../../projects/clients/fusionClientPool";
+import type { FusionStatus } from "../../projects/clients/fusionStatus";
+import type { ProjectEnvironments } from "../../projects/clients/projectEnvironments";
+import type { ProjectRegistry } from "../../projects/registry/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
 
 const SWITCHES = ["FPU_RUNTIME_BENCHMARK", "FPU_INTEGRATION_COMMANDS"] as const;

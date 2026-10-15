@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { CancellationToken, CodeLens, TextDocument, Uri } from "vscode";
 import { VirtualSqlCodeLensProvider } from "../../features/sqlActions/virtualSqlCodeLensProvider";
-import type { QueryManifestService } from "../../projects/queryManifestService";
+import type { QueryManifestService } from "../../projects/project/queryManifestService";
 
 describe("VirtualSqlCodeLensProvider", () => {
   it.each([

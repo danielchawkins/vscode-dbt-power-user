@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ResultTreeItem } from "../../features/runHistory/runHistoryTreeItems";
 import { RunTreeItem } from "../../features/runHistory/runHistoryTreeItems";
 import { RunHistoryTreeviewProvider } from "../../features/runHistory/runHistoryTreeviewProvider";
-import { RunHistoryService } from "../../projects/runHistoryService";
+import { RunHistoryService } from "../../projects/output/runHistoryService";
 import { createEntry, createResult } from "../fixtures/runHistory";
 
 describe("RunHistoryTreeviewProvider", () => {

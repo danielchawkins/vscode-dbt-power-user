@@ -21,8 +21,8 @@ import {
   getColumnNameByCase,
   isColumnNameEqual,
   isQuotedIdentifier,
-} from "../../projects/columnNames";
-import { getFirstWorkspacePath } from "../../projects/workspacePath";
+} from "../../projects/project/columnNames";
+import { getFirstWorkspacePath } from "../../projects/registry/workspacePath";
 
 describe("text, column name, test config and workspace helpers", () => {
   afterEach(() => {

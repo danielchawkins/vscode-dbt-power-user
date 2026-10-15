@@ -83,7 +83,7 @@ Thesis (high): dbt_integration/ is an unclassified layer. It holds only domain.t
 
 Thesis citations:
 
-- [c03](../../src/projects/manifest.ts): "import type { ParsedManifest } from "../dbt_integration/domain";"
+- [c03](../../src/projects/manifest/manifest.ts): "import type { ParsedManifest } from "../dbt_integration/domain";"
 - [c04](../../.dependency-cruiser.cjs): "A cycle means two modules are one concept or one of them is in the wrong layer."
 
 Antithesis: The claim that the layer rules 'never name' dbt_integration is false. .dependency-cruiser.cjs has a pure-modules-stay-pure rule whose `from` is src/dbt_integration/dbtAssociations.ts. It forbids vscode and every src/ path outside core/. The only logic file in the folder is therefore already guarded.
@@ -110,7 +110,7 @@ I confirmed the `new` calls in the constructor, the closure wiring, the harness 
 
 Citations:
 
-- [r3a](../../src/projects/project.ts): "this.runResultsReader = new RunResultsReader("
+- [r3a](../../src/projects/project/project.ts): "this.runResultsReader = new RunResultsReader("
 - [r3b](../../src/test/projectHarness.ts): "Builds a `Project` with inert collaborators; `overrides` replaces any of them."
 - [r3c](../refactor/rearchitecture-plan.md): "An abstraction is introduced only with its second user or a named test seam."
 
@@ -118,9 +118,9 @@ Thesis (medium): Project builds most of its collaborators inside its constructor
 
 Thesis citations:
 
-- [c05](../../src/projects/project.ts): "this.runResultsReader = new RunResultsReader("
-- [c06](../../src/projects/project.ts): "() => readProjectSnapshot(this.projectRoot),"
-- [c07](../../src/projects/project.ts): "The collaborators a `Project` is built from."
+- [c05](../../src/projects/project/project.ts): "this.runResultsReader = new RunResultsReader("
+- [c06](../../src/projects/project/project.ts): "() => readProjectSnapshot(this.projectRoot),"
+- [c07](../../src/projects/project/project.ts): "The collaborators a `Project` is built from."
 
 Antithesis: Project is already composable and testable. Its ProjectOptions injects the resolver, cliFactory, parsers, sharedState, runHistoryService, fusionClient, clientChanged and parseDemand. The tests build it through buildTestProject with `Partial<ProjectOptions>` overrides. ProjectDiagnostics, ProjectTasks and the other internals have their own unit tests (projectDiagnostics.test.ts constructs ProjectDiagnostics directly).
 
@@ -137,8 +137,8 @@ Antithesis: The thesis cites `() => readProjectSnapshot(this.projectRoot)` as hi
 Counter-evidence:
 
 - [a06](../../src/test/projectHarness.ts): "Builds a `Project` with inert collaborators; `overrides` replaces any of them."
-- [a07](../../src/projects/project.ts): "rebuildOnce: () => this.manifestRebuild.rebuild(this.getFusionCli()),"
-- [a08](../../src/projects/project.ts): "parsers: ManifestParsers;"
+- [a07](../../src/projects/project/project.ts): "rebuildOnce: () => this.manifestRebuild.rebuild(this.getFusionCli()),"
+- [a08](../../src/projects/project/project.ts): "parsers: ManifestParsers;"
 - [a09](../refactor/rearchitecture-plan.md): "An abstraction is introduced only with its second user or a named test seam."
 
 ### 4. DBTPowerUserExtension does take 21 constructor parameters, all of them TypeScript parameter properties. Its suppression entry holds 1 max-params violation and 21 typescript/parameter-properties violations. The class is constructed in exactly one place (compositionRoot.ts:383). A parameter object would clear the single max-params suppression and, if the fields become explicit, the 21 parameter-property suppressions. It would not make the disposal order any more explicit, because that order lives in the push order. Value is low to medium and risk is low. Do it only as part of shrinking the ratchet, using the ratchet that already exists (point 10)
@@ -244,7 +244,7 @@ Antithesis: The thesis cites a jscpd-style check, but no such tool is configured
 
 Counter-evidence:
 
-- [a14](../../src/projects/parseDemand.ts): "/** Keeps a demand while `isVisible` holds, following `onDidChange`. */"
+- [a14](../../src/projects/manifest/parseDemand.ts): "/** Keeps a demand while `isVisible` holds, following `onDidChange`. */"
 - [a15](../../src/features/treeViews.ts): "parseDemand.follow(() => view.visible, view.onDidChangeVisibility),"
 
 ### 7. core/ is free of vscode, not free of I/O. Five core files import node:fs: docParser, macroParser, manifest/utils, dbtProjectFile and dbtEnvironment. docParser and macroParser read files the same way inside their parse loops. The repo only promises 'no vscode', so nothing is broken. Still, 'functional core' should be read as 'vscode-free core'. The honest options are: (a) document that promise exactly; or (b) when a named test seam appears, apply the injected-reader pattern from dbtProjectFile to both parsers together, never to one alone. A depcruise rule against node:fs in core would need a five-file allowlist. As a freeze on new fs importers that is acceptable, but it is weak as a purity rule
@@ -523,9 +523,9 @@ I read the extends declarations and the delegation methods. I did not count the 
 
 Citations:
 
-- [r16a](../../src/projects/projectDbtCommands.ts): "export abstract class ProjectDbtCommands extends ProjectQueries {"
-- [r16b](../../src/projects/projectDbtCommands.ts): "return this.tasks.runModel(params);"
-- [r16c](../../src/projects/projectQueries.ts): "export abstract class ProjectQueries implements WarehouseProject {"
+- [r16a](../../src/projects/project/projectDbtCommands.ts): "export abstract class ProjectDbtCommands extends ProjectQueries {"
+- [r16b](../../src/projects/project/projectDbtCommands.ts): "return this.tasks.runModel(params);"
+- [r16c](../../src/projects/project/projectQueries.ts): "export abstract class ProjectQueries implements WarehouseProject {"
 
 ### 17. Use dependency-cruiser's native features before writing custom rules. An `allowed` section catches new top-level folders that no layer covers. numberOfDependentsMoreThan sets a mechanical fan-in ceiling on hub modules such as settings/index.ts and project.ts, which turns 'god module' from a judgement into a ratcheted number. Today the config uses only `forbidden`
 
@@ -551,9 +551,9 @@ Citations:
 
 The biggest inheritance problem is not PanelHost. It is the Project chain: Project extends ProjectDbtCommands, which extends ProjectQueries. Both bases are abstract classes that declare abstract members (`tasks`, `withRunResults`, `projectRoot`, `terminal`, `sharedState`, `lsp`, `manifest`, `getFusionCli`) which the leaf class fulfils. ProjectDbtCommands is 67 lines of one-line delegations to `this.tasks`. The inheritance is a way to split one class across files. Composition would expose `project.tasks` and `project.queries` directly and remove the pass-through methods. Enforcement: an Oxlint rule or ast-grep rule limiting `extends` depth for project classes, plus tests that already use RecordingTasks (which itself extends ProjectTasks) as the substitution point.
 
-- [m01](../../src/projects/projectDbtCommands.ts): "export abstract class ProjectDbtCommands extends ProjectQueries {"
-- [m02](../../src/projects/projectQueries.ts): "export abstract class ProjectQueries implements WarehouseProject {"
-- [m03](../../src/projects/project.ts): "extends ProjectDbtCommands"
+- [m01](../../src/projects/project/projectDbtCommands.ts): "export abstract class ProjectDbtCommands extends ProjectQueries {"
+- [m02](../../src/projects/project/projectQueries.ts): "export abstract class ProjectQueries implements WarehouseProject {"
+- [m03](../../src/projects/project/project.ts): "extends ProjectDbtCommands"
 
 Use dependency-cruiser's `allowed` whitelist, or its `numberOfDependentsMoreThan` condition, to catch new unclassified folders and fan-in hot spots. This does what the thesis's custom 'unlisted folder' rule would do, and the repo currently uses only `forbidden` rules. It also covers the dbt_integration gap with one entry, and `numberOfDependentsMoreThan` provides a mechanical fan-in ceiling for hub modules such as Project and settings/index.ts.
 

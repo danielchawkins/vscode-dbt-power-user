@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import { EventEmitter } from "vscode";
-import { ParseDemand } from "../../projects/parseDemand";
-import { QueryManifestService } from "../../projects/queryManifestService";
+import { ParseDemand } from "../../projects/manifest/parseDemand";
+import { QueryManifestService } from "../../projects/project/queryManifestService";
 
 describe("ParseDemand", () => {
   it("is active while any consumer holds it and fires when the first appears", () => {

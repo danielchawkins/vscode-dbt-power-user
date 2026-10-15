@@ -16,9 +16,9 @@ import type {
 } from "../../fusion/executableLifecycle";
 import { ExecutableLifecycle } from "../../fusion/executableLifecycle";
 import { FusionCli } from "../../fusion/fusionCli";
-import type { Project } from "../../projects/project";
-import { SHOW_OUTPUT } from "../../projects/projectErrors";
-import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
+import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
+import { SHOW_OUTPUT } from "../../projects/output/projectErrors";
+import type { Project } from "../../projects/project/project";
 import { flushAsync, waitFor } from "../async";
 import { createdFileSystemWatchers } from "../mock/vscode";
 import {

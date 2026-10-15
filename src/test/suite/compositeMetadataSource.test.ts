@@ -4,9 +4,9 @@ import type { ParsedManifest } from "../../core/dbt/domain";
 import { emptyParsedManifest } from "../../core/metadata";
 import { CompositeMetadataSource } from "../../metadata/compositeMetadataSource";
 import type { ServerMetadataSource } from "../../metadata/serverMetadataSource";
-import type { Manifest } from "../../projects/manifestTypes";
-import type { Project } from "../../projects/project";
-import type { DeclaredProject } from "../../projects/projectRegistry";
+import type { Manifest } from "../../projects/manifest/manifestTypes";
+import type { Project } from "../../projects/project/project";
+import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 
 const node = (id: string, deps: string[] = []) => ({
   unique_id: id,

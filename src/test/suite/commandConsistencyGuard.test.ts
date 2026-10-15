@@ -207,7 +207,7 @@ describe("command contribution consistency", () => {
         "`gatedRegister` forwards a literal from its callers",
       "benchmark/runtimeTimings.ts:RUNTIME_TIMINGS_COMMAND":
         "Constant export; conditional registration",
-      "projects/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":
+      "projects/clients/fusionClientDiagnostics.ts:FUSION_CLIENT_STATES_COMMAND":
         "Constant export; conditional registration",
       "features/lineage/connectedColumnsCommand.ts:CONNECTED_COLUMNS_COMMAND":
         "Constant export; conditional registration",

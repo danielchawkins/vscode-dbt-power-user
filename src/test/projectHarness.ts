@@ -21,12 +21,12 @@ import type {
   FusionExecutableResolver,
 } from "../fusion/fusionExecutable";
 import { DBT_PATH_SETTING } from "../fusion/fusionExecutable";
-import type { ManifestParsers } from "../projects/manifest";
-import type { ProjectOptions } from "../projects/project";
-import { Project } from "../projects/project";
-import type { DeclaredProject } from "../projects/projectRegistry";
-import type { RunHistoryService } from "../projects/runHistoryService";
-import type { SharedStateService } from "../projects/sharedStateService";
+import type { ManifestParsers } from "../projects/manifest/manifest";
+import type { RunHistoryService } from "../projects/output/runHistoryService";
+import type { ProjectOptions } from "../projects/project/project";
+import { Project } from "../projects/project/project";
+import type { SharedStateService } from "../projects/project/sharedStateService";
+import type { DeclaredProject } from "../projects/registry/projectRegistry";
 import { CONFIGURATION_SECTION } from "../settings";
 import { silentLog } from "./testLog";
 

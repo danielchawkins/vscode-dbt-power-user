@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import * as vscode from "vscode";
 import { DiagnosticsOutputChannel } from "../../features/diagnostics/diagnosticsOutputChannel";
-import { OutputChannels } from "../../projects/outputChannels";
+import { OutputChannels } from "../../projects/output/outputChannels";
 
 // Set test environment
 process.env.NODE_ENV = "test";

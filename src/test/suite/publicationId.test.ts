@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 const loadManifestModule = async () => {
   vi.resetModules();
-  return import("../../projects/manifest");
+  return import("../../projects/manifest/manifest");
 };
 
 describe("publicationId", () => {

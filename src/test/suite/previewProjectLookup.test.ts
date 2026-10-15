@@ -1,17 +1,17 @@
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type * as vscodeApi from "vscode";
 import type { WorkspaceConfiguration, WorkspaceFolder } from "vscode";
 import { EventEmitter, Uri, window, workspace } from "vscode";
-import type * as vscodeApi from "vscode";
 import type { Log } from "../../core/log";
 import { createProjectMetadataSource } from "../../metadata/compositeMetadataSource";
-import { CurrentProject } from "../../projects/currentProject";
-import { previewUriFor } from "../../projects/previewUri";
-import type { Project } from "../../projects/project";
-import { PROJECTS_SETTING } from "../../projects/projectConfiguration";
-import type { ProjectQuickPick } from "../../projects/projectQuickPick";
-import { ProjectRegistry } from "../../projects/projectRegistry";
-import { Projects } from "../../projects/projects";
+import { CurrentProject } from "../../projects/project/currentProject";
+import type { Project } from "../../projects/project/project";
+import type { ProjectQuickPick } from "../../projects/project/projectQuickPick";
+import { Projects } from "../../projects/project/projects";
+import { previewUriFor } from "../../projects/registry/previewUri";
+import { PROJECTS_SETTING } from "../../projects/registry/projectConfiguration";
+import { ProjectRegistry } from "../../projects/registry/projectRegistry";
 import { esmDirname } from "../esmDirname";
 
 vi.mock("vscode", async (importOriginal) => ({

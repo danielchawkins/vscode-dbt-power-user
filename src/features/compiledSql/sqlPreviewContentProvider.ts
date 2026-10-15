@@ -5,8 +5,8 @@ import type {
   Uri,
 } from "vscode";
 import { EventEmitter, ProgressLocation, window, workspace } from "vscode";
-import { modelUriOf, PREVIEW_SCHEME } from "../../projects/previewUri";
-import type { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/project/projects";
+import { modelUriOf, PREVIEW_SCHEME } from "../../projects/registry/previewUri";
 
 const DIRTY_MARKER = "-- Unsaved changes: showing the last saved version.";
 const WAITING = "Waiting for the first compile";

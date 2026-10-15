@@ -23,8 +23,8 @@ import {
   PARENT_TABLES_COMMAND,
 } from "../../features/lineage/connectedColumnsCommand";
 import { ProjectConfigCommands } from "../../features/projectSetup/projectConfigCommands";
-import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/fusionClientDiagnostics";
-import { ProjectRegistry } from "../../projects/projectRegistry";
+import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
+import { ProjectRegistry } from "../../projects/registry/projectRegistry";
 import { StartupGate } from "../../startupGate";
 import { createMockLogOutputChannel } from "../mock/vscode";
 

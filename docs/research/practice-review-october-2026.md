@@ -28,7 +28,7 @@ Scope: static reading, `rg`, `npx knip --no-progress` and `npx depcruise src --c
    - Keep `compile --inline` only for dirty buffers and untitled SQL, triggered on demand rather than per keystroke.
    - Move the progress to `ProgressLocation.Window` or the language status item's `busy`.
 
-3. **The `fusionPowerUser.query.template` setting is contributed but never read.** It is declared at `package.json:235` and typed at `src/settings/index.ts:31,57`, but no production code reads it (`rg 'query.template' src` shows only the settings schema). Users who set it get no effect. **Fix:** delete the setting, or wire it into `normalizeQueryLimit` in `src/projects/projectSql.ts`.
+3. **The `fusionPowerUser.query.template` setting is contributed but never read.** It is declared at `package.json:235` and typed at `src/settings/index.ts:31,57`, but no production code reads it (`rg 'query.template' src` shows only the settings schema). Users who set it get no effect. **Fix:** delete the setting, or wire it into `normalizeQueryLimit` in `src/projects/project/projectSql.ts`.
 
 4. **`capabilities.hoverProvider: true` is not a VS Code manifest field** (`package.json:24`). It is an upstream leftover. Only `untrustedWorkspaces` and `virtualWorkspaces` are recognised, and hovers come from the LSP. Delete it.
 
@@ -48,7 +48,7 @@ Scope: static reading, `rg`, `npx knip --no-progress` and `npx depcruise src --c
 ### Should-fix (design, convention, user-visible leftovers)
 
 7. **The CLI is used where `dbt.show` over the LSP is available.** Every one of these call sites spawns a separate `dbt show --inline` or `dbt compile --inline` process, and each process re-parses the project:
-   - `executeSQL` (`src/projects/projectSql.ts:97`)
+   - `executeSQL` (`src/projects/project/projectSql.ts:97`)
    - the CTE profiler (`src/features/cte/cteProfilerService.ts:134`, one process per CTE)
    - `getColumnValues` (`projectSql.ts:227`)
    - `getColumnsOfModel` and `getColumnsOfSource` (`src/fusion/fusionCli.ts:342-361`)
@@ -63,7 +63,7 @@ Scope: static reading, `rg`, `npx knip --no-progress` and `npx depcruise src --c
    For model columns, prefer `getCurrentNode` (static types, no warehouse), as the lineage panel already does (`lineagePanel.ts:621`). The docs editor still queries the warehouse (`docsEditPanel.ts:652,745`).
 
 8. **Table lineage and the Parent/Children trees come from the manifest; column lineage comes from the LSP.**
-   - `DbtLineageService.getConnectedTables` (`src/features/lineage/dbtLineageService.ts:211-241`) and the model trees read `graphMetaMap`. That map is rebuilt only after a CLI `dbt parse`, which `ManifestTrigger` runs 500 ms after any `.sql/.yml/.yaml/.csv` change (`src/projects/manifest.ts:313-371`).
+   - `DbtLineageService.getConnectedTables` (`src/features/lineage/dbtLineageService.ts:211-241`) and the model trees read `graphMetaMap`. That map is rebuilt only after a CLI `dbt parse`, which `ManifestTrigger` runs 500 ms after any `.sql/.yml/.yaml/.csv` change (`src/projects/manifest/manifest.ts:313-371`).
    - Column lineage is read live from `dbt.listNodes` (`dbtLineageService.ts:112`).
 
    So one panel mixes two sources with different freshness. On every save, Fusion also parses the project twice: once in the LSP's incremental compile and once in the CLI `dbt parse`. The official extension gets project lineage from `listNodes ["+<unique_id>+"]` (evidence README §10). **Fix:** the decision needs an ADR, because it contradicts the "one producer" rule in `lsp-metadata-gaps.md`. One option is to take graph edges and depth from `listNodes` and keep the manifest for docs, tests, macros and semantic metadata. At minimum, re-measure the cost of the duplicate parse on a finance-pipelines project.

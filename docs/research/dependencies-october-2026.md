@@ -208,7 +208,7 @@ Counter-evidence:
 - [e1](practice-review-october-2026.md): "Valid: types must not exceed the engine."
 - [e2](../../src/test/suite/outputChannels.test.ts): "log.channel.show(2, false);"
 - [e3](../../webview_panels/src/modules/documentationEditor/components/tests/forms/TestForm.tsx): "import { FormEvent, useEffect } from "react";"
-- [e4](../../src/projects/dbtTask.ts): "workspace.getWorkspaceFolder(Uri.file(root)) ?? TaskScope.Workspace,"
+- [e4](../../src/projects/project/dbtTask.ts): "workspace.getWorkspaceFolder(Uri.file(root)) ?? TaskScope.Workspace,"
 
 ### 6. The version survey was too thin: about 4 of the roughly 20 named packages. Its two concerns are also misplaced. On `@vscode/test-cli`, the real problem is not slow releases but the mocha 11 pin, which brings in the deprecated glob. Replacing `which` would just add a dependency to remove one. The antithesis reports several packages behind latest but still within their caret ranges: rsbuild, knip, dependency-cruiser, mocha, happy-dom and @tanstack/react-table. A lockfile refresh (`npm update`) covers those. mocha 12 is a root devDependency used directly by the smoke harness, so the repo runs two test runners: mocha and Vitest
 

@@ -16,7 +16,7 @@ Lineage's lists are a `strings` kind: at most 200 entries of at most 200 charact
 
 `viewState.ts` is the only module under `src/modules/` that imports `@modules/vscode` directly, for `getState` and `setState`; messages still go through each panel's requests module. `webview_panels/eslint.config.mjs` lists it next to `requestExecutor.ts` in the `no-restricted-imports` ignores.
 
-`publication` is `publicationId(manifest)` (`src/projects/manifest.ts`): a random id generated once per extension-host session, joined with the Current Project's `Manifest.publicationEpoch`. It is sent with `renderDocumentation` and query results `getContext`. Epochs restart at 1 in each session, so the epoch alone would match a state saved in an earlier session; the session id makes that state never match. The documentation editor restores scroll and search only when the model and the publication both match what it saved, so a page rebuilt after a manifest rebuild, or in a new session, starts clean.
+`publication` is `publicationId(manifest)` (`src/projects/manifest/manifest.ts`): a random id generated once per extension-host session, joined with the Current Project's `Manifest.publicationEpoch`. It is sent with `renderDocumentation` and query results `getContext`. Epochs restart at 1 in each session, so the epoch alone would match a state saved in an earlier session; the session id makes that state never match. The documentation editor restores scroll and search only when the model and the publication both match what it saved, so a page rebuilt after a manifest rebuild, or in a new session, starts clean.
 
 ## Host memory
 

@@ -10,7 +10,7 @@ import {
   definitionOf,
   executeTask,
   taskName,
-} from "../../projects/dbtTask";
+} from "../../projects/project/dbtTask";
 
 function commandThat(
   execute: (

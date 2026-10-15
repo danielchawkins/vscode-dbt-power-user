@@ -4,8 +4,8 @@ import { window, workspace } from "vscode";
 import { ExecuteSQLError } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import { errorText } from "../../core/text";
-import { activeModelUri } from "../../projects/previewUri";
-import type { QueryManifestService } from "../../projects/queryManifestService";
+import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import { activeModelUri } from "../../projects/registry/previewUri";
 import { writeSetting } from "../../settings";
 import type { QueryHistoryStore } from "./queryHistory";
 

@@ -1,10 +1,10 @@
 import type { StaticAnalysisMode } from "../../core/snapshot";
 import type { FusionClient } from "../../fusion/fusionLanguageClient";
-import type { FolderScope } from "../../projects/schemaOrigin";
+import type { FolderScope } from "../../projects/registry/schemaOrigin";
 import {
   effectiveStaticAnalysis,
   whyNotStrict,
-} from "../../projects/schemaOrigin";
+} from "../../projects/registry/schemaOrigin";
 
 /** The effective mode when it computes no column lineage for a running `client`, else `undefined`. */
 export function needsStrict(

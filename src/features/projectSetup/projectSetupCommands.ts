@@ -1,13 +1,13 @@
 import { window } from "vscode";
 import type { ExtensionContextStore } from "../../extensionContext";
-import { notifyError } from "../../projects/notifications";
-import type { OutputChannels } from "../../projects/outputChannels";
-import type { Project } from "../../projects/project";
+import { notifyError } from "../../projects/output/notifications";
+import type { OutputChannels } from "../../projects/output/outputChannels";
+import type { Project } from "../../projects/project/project";
 import type {
   ProjectQuickPick,
   ProjectQuickPickItem,
-} from "../../projects/projectQuickPick";
-import type { Projects } from "../../projects/projects";
+} from "../../projects/project/projectQuickPick";
+import type { Projects } from "../../projects/project/projects";
 
 const PromptAnswer = {
   YES: "Yes",

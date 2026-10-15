@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
-import { FusionStatus } from "../../projects/fusionStatus";
-import { Project } from "../../projects/project";
+import { FusionStatus } from "../../projects/clients/fusionStatus";
+import { Project } from "../../projects/project/project";
 
 import { ConfiguredFusionExecutableResolver } from "../../fusion/fusionExecutable";
 import * as vscodeMock from "../mock/vscode";

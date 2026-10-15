@@ -131,7 +131,10 @@ export default {
       },
     },
     {
-      files: ["src/projects/notifications.ts", "src/projects/projectErrors.ts"],
+      files: [
+        "src/projects/output/notifications.ts",
+        "src/projects/output/projectErrors.ts",
+      ],
       rules: {
         "eslint/no-restricted-properties": restrictedProperties({
           except: ["errorMessage"],

@@ -3,7 +3,7 @@ import type { Disposable, TextDocument } from "vscode";
 import { window } from "vscode";
 import type { NodeMetaData, NodeMetaMap } from "../../core/manifest/types";
 import { extensionRoot } from "../../extensionRoot";
-import type { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/project/projects";
 import { getCurrentlySelectedModelNameInYamlConfig } from "./modelTreeHelpers";
 
 export interface IconPath {

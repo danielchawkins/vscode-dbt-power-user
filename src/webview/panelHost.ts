@@ -14,11 +14,11 @@ import {
 } from "../benchmark/runtimeTimings";
 import type { Log } from "../core/log";
 import type { ExtensionContextStore } from "../extensionContext";
-import type { QueryManifestService } from "../projects/queryManifestService";
+import type { QueryManifestService } from "../projects/project/queryManifestService";
 import type {
   SharedStateEventEmitterProps,
   SharedStateService,
-} from "../projects/sharedStateService";
+} from "../projects/project/sharedStateService";
 import type { Handlers } from "./messageRouter";
 import type { PanelCsp, PanelEntry } from "./panelHtml";
 import { panelHtml, panelWebviewOptions } from "./panelHtml";

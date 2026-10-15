@@ -9,29 +9,32 @@ import {
 } from "vscode";
 import type { LspLaunch } from "../../core/lsp";
 import type { StaticAnalysisMode } from "../../core/snapshot";
+import { failureSummary } from "../../core/text";
 import type {
   FusionClient,
   FusionClientState,
 } from "../../fusion/fusionLanguageClient";
-import type { FusionClientPool } from "../../projects/fusionClientPool";
-import type { ProjectOptIns } from "../../projects/fusionStatus";
+import type { FusionClientPool } from "../../projects/clients/fusionClientPool";
+import type { ProjectOptIns } from "../../projects/clients/fusionStatus";
 import {
   clientSeverity,
   clientText,
-  failureSummary,
   FusionStatus,
   optInLines,
-} from "../../projects/fusionStatus";
-import { addDeclaredProjectRoot } from "../../projects/projectConfiguration";
-import type * as projectConfigurationModule from "../../projects/projectConfiguration";
-import type { DeclaredProject } from "../../projects/projectRegistry";
+} from "../../projects/clients/fusionStatus";
+import type * as projectConfigurationModule from "../../projects/registry/projectConfiguration";
+import { addDeclaredProjectRoot } from "../../projects/registry/projectConfiguration";
+import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 import { createMockLogOutputChannel } from "../mock/vscode";
 import { declaredProject } from "../projectHarness";
 
-vi.mock("../../projects/projectConfiguration", async (importOriginal) => ({
-  ...(await importOriginal<typeof projectConfigurationModule>()),
-  addDeclaredProjectRoot: vi.fn(),
-}));
+vi.mock(
+  "../../projects/registry/projectConfiguration",
+  async (importOriginal) => ({
+    ...(await importOriginal<typeof projectConfigurationModule>()),
+    addDeclaredProjectRoot: vi.fn(),
+  }),
+);
 
 const folder: WorkspaceFolder = {
   uri: Uri.file("/workspace"),

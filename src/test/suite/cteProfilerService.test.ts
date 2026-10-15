@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { CteProfilerService } from "../../features/cte/cteProfilerService";
-import type { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/project/projects";
 
 describe("CteProfilerService.extractRowCount", () => {
   let svc: CteProfilerService;

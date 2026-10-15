@@ -1,7 +1,7 @@
 import type { Disposable, StatusBarItem, TextEditor } from "vscode";
 import { StatusBarAlignment, window } from "vscode";
 import type { Log } from "../../core/log";
-import type { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/project/projects";
 import { onDidChangeSettings } from "../../settings";
 
 export class DeferToProductionStatusBar implements Disposable {
