@@ -37,11 +37,13 @@ function isCursor(): boolean {
 class ClosableLogChannel implements LogOutputChannel {
   private closed = false;
   private showCommand: string | undefined;
+  private readonly inner: LogOutputChannel;
+  private readonly extensionId: string;
 
-  constructor(
-    private readonly inner: LogOutputChannel,
-    private readonly extensionId: string,
-  ) {}
+  constructor(inner: LogOutputChannel, extensionId: string) {
+    this.inner = inner;
+    this.extensionId = extensionId;
+  }
 
   get name(): string {
     return this.inner.name;
@@ -233,9 +235,11 @@ export class OutputChannels extends ChannelLog implements Disposable {
   private registry: FollowedRegistry | undefined;
   private subscription: Disposable | undefined;
   private disposed = false;
+  private readonly extensionId: string;
 
-  constructor(private readonly extensionId: string) {
+  constructor(extensionId: string) {
     super(EXTENSION_CHANNEL_NAME, extensionId);
+    this.extensionId = extensionId;
   }
 
   /** Disposes each project log when its Declared Project leaves `registry`. */

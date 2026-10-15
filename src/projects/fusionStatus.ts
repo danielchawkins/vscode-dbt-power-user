@@ -57,24 +57,34 @@ interface ProjectNotes {
 export class FusionStatus implements Disposable {
   private readonly statuses = new Map<string, ProjectStatus>();
   private readonly disposables: Disposable[] = [];
+  private readonly registry: {
+    readonly projects: readonly DeclaredProject[];
+  };
+  private readonly clientPool: FusionClientPool;
+  private readonly optIns: (
+    project: DeclaredProject,
+  ) => ProjectOptIns | undefined;
+  /**
+   * The project's current configuration error, in full, and a note on its environment shown beside the client
+   * state; fires `onDidChangeOptIns` when either changes.
+   */
+  private readonly projectNotes: (project: DeclaredProject) => ProjectNotes;
 
   constructor(
-    private readonly registry: {
+    registry: {
       readonly projects: readonly DeclaredProject[];
     },
-    private readonly clientPool: FusionClientPool,
-    private readonly optIns: (
-      project: DeclaredProject,
-    ) => ProjectOptIns | undefined = () => undefined,
+    clientPool: FusionClientPool,
+    optIns: (project: DeclaredProject) => ProjectOptIns | undefined = () =>
+      undefined,
     onDidChangeOptIns?: Event<unknown>,
-    /**
-     * The project's current configuration error, in full, and a note on its environment shown beside the client
-     * state; fires `onDidChangeOptIns` when either changes.
-     */
-    private readonly projectNotes: (
-      project: DeclaredProject,
-    ) => ProjectNotes = () => ({}),
+
+    projectNotes: (project: DeclaredProject) => ProjectNotes = () => ({}),
   ) {
+    this.registry = registry;
+    this.clientPool = clientPool;
+    this.optIns = optIns;
+    this.projectNotes = projectNotes;
     if (onDidChangeOptIns) {
       this.disposables.push(onDidChangeOptIns(() => this.renderAll()));
     }

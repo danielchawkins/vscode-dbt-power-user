@@ -13,11 +13,11 @@ export type FusionCommandErrorKind =
 
 /** How a server command failed; `message` is the server's text for `server`. */
 export class FusionCommandError extends Error {
-  constructor(
-    readonly kind: FusionCommandErrorKind,
-    message: string,
-  ) {
+  readonly kind: FusionCommandErrorKind;
+
+  constructor(kind: FusionCommandErrorKind, message: string) {
     super(message);
+    this.kind = kind;
     this.name = "FusionCommandError";
   }
 }

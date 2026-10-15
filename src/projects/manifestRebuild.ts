@@ -19,14 +19,25 @@ export class ManifestRebuild {
   private parsingCandidate: FusionCli | undefined;
   private readonly readFailures = { count: 0 };
   private _adapterType = "unknown";
+  private readonly lifecycle: ExecutableLifecycle;
+  private readonly parsers: ManifestParsers;
+  private readonly project: ManifestProject;
+  private readonly terminal: Log;
+  private readonly callbacks: ManifestRebuildCallbacks;
 
   constructor(
-    private readonly lifecycle: ExecutableLifecycle,
-    private readonly parsers: ManifestParsers,
-    private readonly project: ManifestProject,
-    private readonly terminal: Log,
-    private readonly callbacks: ManifestRebuildCallbacks,
-  ) {}
+    lifecycle: ExecutableLifecycle,
+    parsers: ManifestParsers,
+    project: ManifestProject,
+    terminal: Log,
+    callbacks: ManifestRebuildCallbacks,
+  ) {
+    this.lifecycle = lifecycle;
+    this.parsers = parsers;
+    this.project = project;
+    this.terminal = terminal;
+    this.callbacks = callbacks;
+  }
 
   /** The last `metadata.adapter_type` a manifest carried; `"unknown"` until one has. */
   get adapterType(): string {

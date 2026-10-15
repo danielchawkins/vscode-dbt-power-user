@@ -41,11 +41,12 @@ class ReverseSocketServerImpl implements ReverseSocketServer {
     reject: (error: Error) => void;
     timer: NodeJS.Timeout;
   } | null = null;
+  private readonly server: net.Server;
+  private readonly boundPort: number;
 
-  constructor(
-    private readonly server: net.Server,
-    private readonly boundPort: number,
-  ) {
+  constructor(server: net.Server, boundPort: number) {
+    this.server = server;
+    this.boundPort = boundPort;
     server.on("connection", (incoming) => this.onConnection(incoming));
     server.on("error", (error) => this.onServerError(error));
   }

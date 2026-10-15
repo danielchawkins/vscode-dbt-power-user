@@ -8,11 +8,19 @@ import type { DeclaredProject } from "./projectRegistry";
 import type { Projects } from "./projects";
 
 export class QueryManifestService {
+  private projects: Projects;
+  private dbtTerminal: Log;
+  private currentProject: CurrentProject;
+
   public constructor(
-    private projects: Projects,
-    private dbtTerminal: Log,
-    private currentProject: CurrentProject,
-  ) {}
+    projects: Projects,
+    dbtTerminal: Log,
+    currentProject: CurrentProject,
+  ) {
+    this.projects = projects;
+    this.dbtTerminal = dbtTerminal;
+    this.currentProject = currentProject;
+  }
 
   /** Maps the Declared Project owning `uri` to the Project the discovery path already built. */
   private resolveProject(uri?: Uri): Project | undefined {

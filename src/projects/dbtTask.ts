@@ -168,8 +168,11 @@ export class DbtTaskTerminal implements Pseudoterminal {
   private readonly abort = new AbortController();
   readonly onDidWrite = this.writeEmitter.event;
   readonly onDidClose = this.closeEmitter.event;
+  private readonly start: (terminal: DbtTaskTerminal) => void;
 
-  constructor(private readonly start: (terminal: DbtTaskTerminal) => void) {}
+  constructor(start: (terminal: DbtTaskTerminal) => void) {
+    this.start = start;
+  }
 
   open(): void {
     this.start(this);

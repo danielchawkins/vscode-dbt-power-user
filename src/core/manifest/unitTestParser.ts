@@ -6,7 +6,11 @@ import type { ManifestResources, UnitTestMetaMap } from "./types";
 import { RESOURCE_TYPE_UNIT_TEST } from "./types";
 
 export class UnitTestParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   createUnitTestMetaMap(
     nodesMap: ManifestResources,

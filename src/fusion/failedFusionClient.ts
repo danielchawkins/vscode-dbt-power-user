@@ -13,14 +13,20 @@ export class FailedFusionClient implements FusionClient {
   readonly state: FusionClientState = "failed";
   readonly staticAnalysis: StaticAnalysisMode;
   readonly failureReason: string;
+  readonly project: FusionProjectRef;
+  private readonly message: string;
+  readonly outputChannel: LogOutputChannel;
 
   /** Writes `message` to `outputChannel`, which it never disposes. */
   constructor(
-    readonly project: FusionProjectRef,
-    private readonly message: string,
+    project: FusionProjectRef,
+    message: string,
     staticAnalysis: StaticAnalysisMode,
-    readonly outputChannel: LogOutputChannel,
+    outputChannel: LogOutputChannel,
   ) {
+    this.project = project;
+    this.message = message;
+    this.outputChannel = outputChannel;
     this.failureReason = message;
     this.staticAnalysis = staticAnalysis;
     this.outputChannel.warn(message);

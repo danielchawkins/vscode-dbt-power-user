@@ -7,7 +7,11 @@ import { RESOURCE_TYPE_SOURCE } from "./types";
 import type { Log } from "../log";
 
 export class SourceParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   createSourceMetaMap(
     sourcesMap: ManifestResources,

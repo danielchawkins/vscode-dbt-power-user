@@ -64,14 +64,25 @@ export class ExecutableLifecycle {
   /** Fires with the diagnostic when resolution fails, and with `undefined` when a later resolution clears it. */
   readonly onDidFailResolution: Event<DBTDiagnosticData | undefined> =
     this.failureEmitter.event;
+  private readonly resolver: FusionExecutableResolver;
+  private readonly factory: FusionCommandIntegrationFactory;
+  private readonly projectRoot: string;
+  private readonly terminal: Log;
+  private readonly hooks: ExecutableLifecycleHooks;
 
   constructor(
-    private readonly resolver: FusionExecutableResolver,
-    private readonly factory: FusionCommandIntegrationFactory,
-    private readonly projectRoot: string,
-    private readonly terminal: Log,
-    private readonly hooks: ExecutableLifecycleHooks,
-  ) {}
+    resolver: FusionExecutableResolver,
+    factory: FusionCommandIntegrationFactory,
+    projectRoot: string,
+    terminal: Log,
+    hooks: ExecutableLifecycleHooks,
+  ) {
+    this.resolver = resolver;
+    this.factory = factory;
+    this.projectRoot = projectRoot;
+    this.terminal = terminal;
+    this.hooks = hooks;
+  }
 
   /** The committed CLI, if any. */
   current(): FusionCli | undefined {

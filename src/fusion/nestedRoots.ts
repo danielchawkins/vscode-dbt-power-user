@@ -8,10 +8,13 @@ import { isWithinRoot } from "./fusionDiagnostics";
  * a nested project's files. Roots are read on each call, so a root declared later applies without a restart.
  */
 export class NestedRootGuard {
-  constructor(
-    private readonly root: Uri,
-    private readonly nestedRoots: () => readonly Uri[],
-  ) {}
+  private readonly root: Uri;
+  private readonly nestedRoots: () => readonly Uri[];
+
+  constructor(root: Uri, nestedRoots: () => readonly Uri[]) {
+    this.root = root;
+    this.nestedRoots = nestedRoots;
+  }
 
   excludes(uri: Uri): boolean {
     return (

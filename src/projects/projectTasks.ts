@@ -37,8 +37,11 @@ export interface StartedTask {
 /** The dbt tasks of one project: VS Code tasks whose terminals queue their command on the project's CLI. */
 export class ProjectTasks {
   private warnedTasksUnavailable = false;
+  private readonly deps: ProjectTaskDeps;
 
-  constructor(private readonly deps: ProjectTaskDeps) {}
+  constructor(deps: ProjectTaskDeps) {
+    this.deps = deps;
+  }
 
   /**
    * Executes the dbt task for `cli` outside the command queue, after any active task with the same definition ends.

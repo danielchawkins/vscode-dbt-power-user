@@ -49,7 +49,11 @@ const SOURCE_PATTERN =
  * the parser knowing about UI.
  */
 export class RelationshipParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   // ─────────────────────────────────────────────────────────────────────────
   // Phase 1 — relationships data tests

@@ -10,11 +10,12 @@ export class ManifestMetadataSource implements Disposable {
   readonly onDidParse: Event<ParsedManifest> = this.emitter.event;
   private readonly subscription: Disposable;
   private latest: ParsedManifest | undefined;
+  readonly project: DeclaredProject;
+  private dbtProject: Project;
 
-  constructor(
-    readonly project: DeclaredProject,
-    private dbtProject: Project,
-  ) {
+  constructor(project: DeclaredProject, dbtProject: Project) {
+    this.project = project;
+    this.dbtProject = dbtProject;
     this.subscription = dbtProject.onDidParse((parsed) => {
       this.latest = parsed;
       this.emitter.fire(parsed);

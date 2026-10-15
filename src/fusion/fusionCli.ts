@@ -122,16 +122,27 @@ export class FusionCli {
   private config: ProjectSnapshot | undefined;
   private rebuildManifestDiagnostics: DBTDiagnosticData[] = [];
   private rebuildAbort: AbortController | undefined;
+  private readonly executable: FusionCliExecutable;
+  private readonly snapshot: () => ProjectSnapshot;
+  private readonly processes: CommandProcessExecutionFactory;
+  private readonly terminal: Log;
+  /** Settles once the project's environment is resolved; every command awaits it before launching. */
+  private readonly environmentReady: () => Promise<unknown>;
 
   constructor(
-    private readonly executable: FusionCliExecutable,
-    private readonly snapshot: () => ProjectSnapshot,
-    private readonly processes: CommandProcessExecutionFactory,
-    private readonly terminal: Log,
-    /** Settles once the project's environment is resolved; every command awaits it before launching. */
-    private readonly environmentReady: () => Promise<unknown> = async () =>
-      undefined,
-  ) {}
+    executable: FusionCliExecutable,
+    snapshot: () => ProjectSnapshot,
+    processes: CommandProcessExecutionFactory,
+    terminal: Log,
+
+    environmentReady: () => Promise<unknown> = async () => undefined,
+  ) {
+    this.executable = executable;
+    this.snapshot = snapshot;
+    this.processes = processes;
+    this.terminal = terminal;
+    this.environmentReady = environmentReady;
+  }
 
   /**
    * Runs `command` in the project root. Warns once when defer is enabled without a state path, and once per

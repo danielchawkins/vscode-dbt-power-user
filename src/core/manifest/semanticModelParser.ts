@@ -30,7 +30,11 @@ const REF_PATTERN =
  * entity data. Adding entities here keeps the change isolated.
  */
 export class SemanticModelParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   /**
    * Walks the manifest's `semantic_models` section and produces a map keyed

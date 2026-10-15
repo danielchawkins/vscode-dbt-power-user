@@ -292,12 +292,19 @@ export class ManifestTrigger implements Disposable {
   private subscriptions: Disposable[] = [];
   private projectFileTimer: ReturnType<typeof setTimeout> | undefined;
   private sourceFileTimer: ReturnType<typeof setTimeout> | undefined;
+  private readonly projectRoot: string;
+  private readonly terminal: Log;
+  private readonly handlers: ManifestTriggerHandlers;
 
   constructor(
-    private readonly projectRoot: string,
-    private readonly terminal: Log,
-    private readonly handlers: ManifestTriggerHandlers,
-  ) {}
+    projectRoot: string,
+    terminal: Log,
+    handlers: ManifestTriggerHandlers,
+  ) {
+    this.projectRoot = projectRoot;
+    this.terminal = terminal;
+    this.handlers = handlers;
+  }
 
   /** Starts watching; a no-op while already watching. */
   start(): void {

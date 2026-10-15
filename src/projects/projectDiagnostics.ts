@@ -67,8 +67,11 @@ export class ProjectDiagnostics implements Disposable {
   ]);
   private config: DBTDiagnosticData[] = [];
   private disposed = false;
+  private readonly file: Uri;
 
-  constructor(private readonly file: Uri) {}
+  constructor(file: Uri) {
+    this.file = file;
+  }
 
   /** Adds a project-config diagnostic; executable-resolution data publishes as `fusion-executable`. */
   addConfig(data: DBTDiagnosticData): void {

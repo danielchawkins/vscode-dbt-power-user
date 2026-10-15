@@ -36,13 +36,19 @@ export class ServerMetadataSource implements Disposable {
   private compiled = false;
   private disposed = false;
   private readonly subscriptions: Disposable[];
+  private readonly lsp: FusionCommands;
+  private readonly projectName: () => string;
+  private readonly log: Pick<Log, "debug" | "warn">;
 
   constructor(
-    private readonly lsp: FusionCommands,
-    private readonly projectName: () => string,
+    lsp: FusionCommands,
+    projectName: () => string,
     triggers: ServerMetadataTriggers,
-    private readonly log: Pick<Log, "debug" | "warn">,
+    log: Pick<Log, "debug" | "warn">,
   ) {
+    this.lsp = lsp;
+    this.projectName = projectName;
+    this.log = log;
     this.subscriptions = [
       triggers.compileComplete(() => {
         this.compiled = true;

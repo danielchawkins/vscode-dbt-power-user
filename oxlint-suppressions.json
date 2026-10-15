@@ -38,9 +38,6 @@
   "src/core/dbtCommand.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 9
     }
   },
   "src/core/lineage/nodeColumns.ts": {
@@ -48,29 +45,9 @@
       "count": 1
     }
   },
-  "src/core/lsp/commands.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
   "src/core/manifest/childrenParentParser.ts": {
     "max-params": {
       "count": 2
-    }
-  },
-  "src/core/manifest/docParser.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/exposureParser.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/functionParser.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
     }
   },
   "src/core/manifest/graphParser.ts": {
@@ -82,27 +59,11 @@
     },
     "max-params": {
       "count": 2
-    },
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/macroParser.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/metricParser.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
     }
   },
   "src/core/manifest/nodeParser.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 4
     }
   },
   "src/core/manifest/relationshipInference.ts": {
@@ -115,29 +76,6 @@
   },
   "src/core/manifest/relationshipParser.ts": {
     "max-params": {
-      "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/semanticModelParser.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/sourceParser.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/testParser.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/core/manifest/unitTestParser.ts": {
-    "typescript/parameter-properties": {
       "count": 1
     }
   },
@@ -262,47 +200,20 @@
   "src/fusion/commandProcessExecution.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 8
     }
   },
   "src/fusion/executableLifecycle.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 5
     }
   },
   "src/fusion/failedFusionClient.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 3
     }
   },
   "src/fusion/fusionCli.ts": {
     "max-params": {
-      "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 5
-    }
-  },
-  "src/fusion/fusionDiagnostics.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
-  "src/fusion/fusionLanguageClient.ts": {
-    "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
-  "src/fusion/fusionRequests.ts": {
-    "typescript/parameter-properties": {
       "count": 1
     }
   },
@@ -311,40 +222,14 @@
       "count": 6
     }
   },
-  "src/fusion/lspProcess.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
   "src/fusion/nestedRoots.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
-  "src/fusion/reverseSocketTransport.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
-  "src/metadata/compositeMetadataSource.ts": {
-    "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
-  "src/metadata/manifestMetadataSource.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
     }
   },
   "src/metadata/serverMetadataSource.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 3
     }
   },
   "src/projects/commandQueue.ts": {
@@ -352,16 +237,8 @@
       "count": 2
     }
   },
-  "src/projects/currentProject.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
   "src/projects/dbtTask.ts": {
     "max-params": {
-      "count": 1
-    },
-    "typescript/parameter-properties": {
       "count": 1
     }
   },
@@ -373,47 +250,20 @@
   "src/projects/fusionClientPool.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 4
     }
   },
   "src/projects/fusionStatus.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 4
     }
   },
   "src/projects/manifest.ts": {
     "max-params": {
       "count": 2
-    },
-    "typescript/parameter-properties": {
-      "count": 3
     }
   },
   "src/projects/manifestRebuild.ts": {
     "max-params": {
-      "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 5
-    }
-  },
-  "src/projects/manifestState.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
-  "src/projects/outputChannels.ts": {
-    "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
-  "src/projects/parseScheduler.ts": {
-    "typescript/parameter-properties": {
       "count": 1
     }
   },
@@ -427,29 +277,13 @@
       "count": 1
     }
   },
-  "src/projects/projectDiagnostics.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/projects/projectEnvironments.ts": {
-    "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
   "src/projects/projectErrors.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 4
     }
   },
   "src/projects/projectRegistry.ts": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "typescript/parameter-properties": {
       "count": 1
     }
   },
@@ -458,32 +292,14 @@
       "count": 9
     }
   },
-  "src/projects/projectTasks.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
   "src/projects/projectWarehouse.ts": {
     "max-params": {
       "count": 2
     }
   },
-  "src/projects/projects.ts": {
-    "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
-  "src/projects/queryManifestService.ts": {
-    "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
   "src/projects/runResults.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 3
     }
   },
   "src/test/integration/lspFixture.ts": {

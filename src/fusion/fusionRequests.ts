@@ -22,8 +22,11 @@ interface RequestTarget {
 /** Sends `workspace/executeCommand` for one client; `listNodes` requests run one at a time. */
 export class FusionRequests {
   private listNodesQueue: Promise<unknown> = Promise.resolve();
+  private readonly target: () => RequestTarget;
 
-  constructor(private readonly target: () => RequestTarget) {}
+  constructor(target: () => RequestTarget) {
+    this.target = target;
+  }
 
   request<T>(
     command: FusionLspCommand,
