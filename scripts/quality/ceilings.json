@@ -28,6 +28,5 @@
   },
   "oxlintSuppressions.host": 146,
   "oxlintSuppressions.webview": 29,
-  "tsFlags.erasableSyntaxOnly": 0,
   "plannedTags": 0
 }

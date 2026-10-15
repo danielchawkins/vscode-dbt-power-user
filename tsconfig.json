@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "erasableSyntaxOnly": true,
     "module": "ESNext",
     "target": "ES2024",
     "outDir": "out",

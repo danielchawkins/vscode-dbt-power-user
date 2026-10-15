@@ -5,7 +5,6 @@
 //   node scripts/quality/ratchet.mjs compare --base <file> --messages <file>
 //                                                    fail when ceilings.json loosens a key relative to <file>
 //                                                    unless <messages> has a `Ratchet-Loosen: <key> <reason>` trailer
-import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
@@ -51,60 +50,6 @@ const tagCount = (tag) => () =>
       0,
     );
 
-/** Runs `command` and resolves with its exit status and combined output; a non-zero exit is data, not an error. */
-const run = (command, args) =>
-  new Promise((resolve, reject) => {
-    const child = spawn(command, args, { cwd: root });
-    const chunks = [];
-    child.stdout.on("data", (chunk) => chunks.push(chunk));
-    child.stderr.on("data", (chunk) => chunks.push(chunk));
-    child.on("error", reject);
-    child.on("close", (status) =>
-      resolve({ status, output: Buffer.concat(chunks).toString("utf8") }),
-    );
-  });
-
-/** Counts `error TS<n>` in tsc output, plain or with the ANSI colour codes of pretty output. */
-export const countTscErrors = (output) =>
-  // oxlint-disable-next-line eslint/no-control-regex -- the ANSI colour codes start with ESC
-  (output.replaceAll(/\u001b\[[\d;]*m/g, "").match(/error TS\d+/g) ?? [])
-    .length;
-
-// The TS 7 binary, not the TS 6 `typescript` alias.
-const TSC7 = path.join(root, "node_modules/typescript-7/bin/tsc");
-const TS_FLAG_PROJECTS = [
-  "src/test/tsconfig.json",
-  "packages/webview-contract/tsconfig.json",
-  "webview_panels/tsconfig.test.json",
-  "webview_panels/tsconfig.node.json",
-];
-
-// Both flags' runs share one contract build, so they never write its output at the same time.
-let contractBuild;
-const buildContract = () => {
-  contractBuild ??= run(process.execPath, [
-    TSC7,
-    "-b",
-    "packages/webview-contract",
-  ]).then(({ status, output }) => {
-    if (status !== 0) {
-      throw new Error(`tsc -b packages/webview-contract failed:\n${output}`);
-    }
-  });
-  return contractBuild;
-};
-
-/** TS 7 errors with `--<flag>` summed over the four projects; `tsconfig.integration.json` is not measured. */
-export const tsFlagErrors = async (flag) => {
-  await buildContract();
-  const runs = await Promise.all(
-    TS_FLAG_PROJECTS.map((project) =>
-      run(process.execPath, [TSC7, "--noEmit", "-p", project, `--${flag}`]),
-    ),
-  );
-  return runs.reduce((total, { output }) => total + countTscErrors(output), 0);
-};
-
 /**
  * Every ratcheted value. A `ceiling` may only fall and a `floor` may only rise. Values are stored and compared
  * at `precision` decimals; floors round down and ceilings round up.
@@ -134,12 +79,6 @@ export const METRICS = [
     kind: "ceiling",
     precision: 0,
     measure: tagCount("planned"),
-  },
-  {
-    key: "tsFlags.erasableSyntaxOnly",
-    kind: "ceiling",
-    precision: 0,
-    measure: () => tsFlagErrors("erasableSyntaxOnly"),
   },
 ];
 

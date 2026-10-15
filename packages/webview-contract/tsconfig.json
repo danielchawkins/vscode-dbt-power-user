@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "erasableSyntaxOnly": true,
     "composite": true,
     "declaration": true,
     "declarationMap": true,
