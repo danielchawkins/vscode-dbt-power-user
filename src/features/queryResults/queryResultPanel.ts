@@ -210,7 +210,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
       this.updateViewTypeToWebview(
         QueryPanelViewType.OPEN_RESULTS_FROM_HISTORY_BOOKMARKS,
       );
-      await runOnQueryPanel(project, message);
+      await runOnQueryPanel(project.queries, message);
     } catch (error) {
       void notifyErrorWithoutProject("Unable to execute query", error);
       this.dbtTerminal.error(
@@ -270,8 +270,11 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
       viewResultSet: (message) => this.viewResultSet(message),
       runAdhocQuery: () => openSqlInEditor(),
       executeQueryFromActiveWindow: ({ limit }) =>
-        executeActiveEditorQuery(limit, () =>
-          this.queryManifestService.getOrPickProjectFromWorkspace(),
+        executeActiveEditorQuery(
+          limit,
+          async () =>
+            (await this.queryManifestService.getOrPickProjectFromWorkspace())
+              ?.queries,
         ),
       executeQuery: (message) => this.executeIncomingQuery(message),
       getQueryHistory: () =>

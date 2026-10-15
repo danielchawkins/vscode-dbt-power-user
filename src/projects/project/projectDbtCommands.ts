@@ -1,19 +1,29 @@
 import type { Task } from "vscode";
 import type { RunModelParams } from "../../core/dbt/domain";
 import type { CommandProcessResult } from "../../core/types";
-import type { QueuedCliCommand } from "../../fusion/fusionCli";
+import type { FusionCli, QueuedCliCommand } from "../../fusion/fusionCli";
 import type { DbtTaskDefinition, DbtTaskTerminal } from "./dbtTask";
-import { ProjectQueries } from "./projectQueries";
 import type { ProjectTasks } from "./projectTasks";
 
-/** The dbt commands of a project: each starts a task; see {@link ProjectTasks}. */
-// ast-grep-ignore: ts-no-abstract-chain -- Project's three-file split predates the rule; flattening it changes callers
-export abstract class ProjectDbtCommands extends ProjectQueries {
-  protected abstract readonly tasks: ProjectTasks;
-  protected abstract withRunResults<T>(
+/** What the commands read from their project. */
+export interface CommandedProject {
+  getFusionCli(): FusionCli;
+  /** Runs `run`, then reads `run_results.json` if the command wrote one. */
+  withRunResults<T>(
     run: () => Promise<T>,
     launched?: readonly string[],
   ): Promise<T>;
+}
+
+/** The dbt commands of a project: each starts a task; see {@link ProjectTasks}. */
+export class ProjectDbtCommands {
+  private readonly project: CommandedProject;
+  private readonly tasks: ProjectTasks;
+
+  constructor(project: CommandedProject, tasks: ProjectTasks) {
+    this.project = project;
+    this.tasks = tasks;
+  }
 
   runModel(params: RunModelParams) {
     return this.tasks.runModel(params);
@@ -35,12 +45,12 @@ export abstract class ProjectDbtCommands extends ProjectQueries {
   }
 
   clean() {
-    return this.withRunResults(() =>
-      this.getFusionCli().run({ kind: "clean" }),
+    return this.project.withRunResults(() =>
+      this.project.getFusionCli().run({ kind: "clean" }),
     );
   }
   debug() {
-    return this.getFusionCli().run({ kind: "debug" });
+    return this.project.getFusionCli().run({ kind: "debug" });
   }
 
   /** Runs `dbt deps` as a task; rejects when it fails or exits non-zero. */

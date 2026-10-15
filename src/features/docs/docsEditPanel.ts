@@ -297,7 +297,8 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       async () => {
         const modelName = path.basename(modelPath.fsPath, ".sql");
         try {
-          const columnsInRelation = await project.getColumnsOfModel(modelName);
+          const columnsInRelation =
+            await project.queries.getColumnsOfModel(modelName);
           const columns = convertColumnNamesByCaseConfig(
             columnsInRelation.map((column) => ({
               name: column.column,

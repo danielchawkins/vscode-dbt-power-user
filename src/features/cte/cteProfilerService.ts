@@ -134,11 +134,12 @@ export class CteProfilerService implements Disposable {
         );
 
         const start = Date.now();
-        const queryResult = await project.immediatelyExecuteSQLWithLimit(
-          query,
-          `cte_profiler_${targetCte.name}`,
-          1,
-        );
+        const queryResult =
+          await project.queries.immediatelyExecuteSQLWithLimit(
+            query,
+            `cte_profiler_${targetCte.name}`,
+            1,
+          );
         const elapsed = Date.now() - start;
 
         const rowCount = this.extractRowCount(queryResult.data);

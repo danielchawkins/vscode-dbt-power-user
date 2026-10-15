@@ -96,8 +96,10 @@ describe("ProjectSetupCommands project resolution", () => {
       },
     );
     const mockProject = {
-      debug: () => cli.run({ kind: "debug" }),
-      installDeps: () => tasks.installDeps(),
+      commands: {
+        debug: () => cli.run({ kind: "debug" }),
+        installDeps: () => tasks.installDeps(),
+      },
     };
     const mockStore = {
       setToWorkspaceState: (_key: string, value: ProjectQuickPickItem) => {

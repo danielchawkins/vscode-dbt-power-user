@@ -108,7 +108,7 @@ export class ProjectSetupCommands {
         "This will run the command 'dbt debug' inside this project. " +
         "Do you want to continue?",
       run: async (project) => {
-        const output = await project.debug();
+        const output = await project.commands.debug();
         if (output.fullOutput.includes("ERROR")) {
           throw new Error(output.fullOutput);
         }
@@ -128,7 +128,7 @@ export class ProjectSetupCommands {
         `Do you want to install packages for the project: ${label}? ` +
         "This will run the command 'dbt deps' inside this project. " +
         "Do you want to continue?",
-      run: (project) => project.installDeps(),
+      run: (project) => project.commands.installDeps(),
       logKey: "ProjectSetupCommands.installDeps",
       logMessage: () => "Could not install deps",
       notice: "Error installing dbt dependencies",

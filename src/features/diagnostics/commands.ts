@@ -115,7 +115,7 @@ async function printProjectInfo(out: Output, project: Project) {
   for (const d of diagnostics) {
     out.logLine(d.message);
   }
-  await project.debug();
+  await project.commands.debug();
 }
 
 async function printProjects(out: Output, projects: readonly Project[]) {

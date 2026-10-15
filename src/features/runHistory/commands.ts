@@ -12,7 +12,7 @@ export function registerRunHistoryCommands(
 ) {
   return [
     register("fusionPowerUser.rerunFromHistory", (item: RunTreeItem) => {
-      rerunFromHistory(item.entry, (name) => projects.byName(name));
+      rerunFromHistory(item.entry, (name) => projects.byName(name)?.commands);
     }),
     register("fusionPowerUser.clearRunHistory", async () => {
       const confirm = await window.showWarningMessage(

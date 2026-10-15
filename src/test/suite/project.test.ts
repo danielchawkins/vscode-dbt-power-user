@@ -355,7 +355,7 @@ describe("Project Test Suite", () => {
       const mockCompiledSQL = "SELECT col1 FROM table";
       mockFusionCli.compileInline.mockResolvedValue(mockCompiledSQL);
 
-      const result = await dbtProject.compileQuery(
+      const result = await dbtProject.queries.compileQuery(
         "SELECT col1 FROM {{ ref('table') }}",
       );
 
@@ -382,7 +382,7 @@ describe("Project Test Suite", () => {
         ),
       );
 
-      const result = await dbtProject.getColumnValues("model", "col");
+      const result = await dbtProject.queries.getColumnValues("model", "col");
 
       expect(result).toEqual(["value1", "value2"]);
       expect(mockFusionCli.executeSQL).toHaveBeenCalledWith(
@@ -407,7 +407,9 @@ describe("Project Test Suite", () => {
         Promise.resolve(mockColumns),
       );
 
-      const result = await dbtProject.getColumnsOfModel("model.test.my_model");
+      const result = await dbtProject.queries.getColumnsOfModel(
+        "model.test.my_model",
+      );
 
       expect(result).toEqual(mockColumns);
       expect(mockFusionCli.getColumnsOfModel).toHaveBeenCalledWith(
@@ -439,7 +441,7 @@ describe("Project Test Suite", () => {
         withNode(getCurrentNode);
         mockFusionCli.getColumnsOfModel.mockClear();
 
-        expect(await dbtProject.getColumnsOfModel("my_model")).toEqual([
+        expect(await dbtProject.queries.getColumnsOfModel("my_model")).toEqual([
           { column: "ORDER_ID", dtype: "integer" },
         ]);
         expect(getCurrentNode).toHaveBeenCalledWith("models/my_model.sql");
@@ -454,7 +456,7 @@ describe("Project Test Suite", () => {
         mockFusionCli.getColumnsOfModel.mockResolvedValueOnce([
           { column: "id", dtype: "int" },
         ]);
-        expect(await dbtProject.getColumnsOfModel("my_model")).toEqual([
+        expect(await dbtProject.queries.getColumnsOfModel("my_model")).toEqual([
           { column: "id", dtype: "int" },
         ]);
       });
@@ -462,7 +464,7 @@ describe("Project Test Suite", () => {
       it("falls back to the CLI when the server command fails", async () => {
         withNode(vi.fn(() => Promise.reject(new Error("timeout"))));
         mockFusionCli.getColumnsOfModel.mockResolvedValueOnce([]);
-        await dbtProject.getColumnsOfModel("my_model");
+        await dbtProject.queries.getColumnsOfModel("my_model");
         expect(mockFusionCli.getColumnsOfModel).toHaveBeenCalled();
       });
     });
@@ -473,7 +475,7 @@ describe("Project Test Suite", () => {
         Promise.resolve(mockColumns),
       );
 
-      const result = await dbtProject.getColumnsOfSource(
+      const result = await dbtProject.queries.getColumnsOfSource(
         "my_source",
         "my_table",
       );
@@ -618,7 +620,7 @@ describe("Project Test Suite", () => {
         getCommandAsString: () => "dbt run --select stg_orders",
       }));
 
-      await dbtProject.runModel({
+      await dbtProject.commands.runModel({
         plusOperatorLeft: "",
         modelName: "stg_orders",
         plusOperatorRight: "",
@@ -741,9 +743,9 @@ describe("Project Test Suite", () => {
           plusOperatorRight,
         };
 
-        await dbtProject.runModel(params);
-        await dbtProject.buildModel(params);
-        await dbtProject.compileModel(params);
+        await dbtProject.commands.runModel(params);
+        await dbtProject.commands.buildModel(params);
+        await dbtProject.commands.compileModel(params);
 
         expect(mockFusionCli.prepare.mock.calls.map(([c]: any) => c)).toEqual([
           { kind: "run", select },
@@ -756,9 +758,9 @@ describe("Project Test Suite", () => {
     it("prepares a whole-project build and test selections", async () => {
       await queued();
 
-      await dbtProject.buildProject();
-      await dbtProject.runTest("my_test");
-      await dbtProject.runModelTest("my_model");
+      await dbtProject.commands.buildProject();
+      await dbtProject.commands.runTest("my_test");
+      await dbtProject.commands.runModelTest("my_model");
 
       expect(mockFusionCli.prepare.mock.calls.map(([c]: any) => c)).toEqual([
         { kind: "build" },
@@ -770,7 +772,7 @@ describe("Project Test Suite", () => {
     it("queues the prepared command for execution", async () => {
       const execute = await queued();
 
-      await dbtProject.compileModel({
+      await dbtProject.commands.compileModel({
         plusOperatorLeft: "",
         modelName: "my_model",
         plusOperatorRight: "",
@@ -787,7 +789,7 @@ describe("Project Test Suite", () => {
       });
 
       await expect(
-        dbtProject.compileModel({
+        dbtProject.commands.compileModel({
           plusOperatorLeft: "",
           modelName: "my_model",
           plusOperatorRight: "",
@@ -818,7 +820,7 @@ describe("Project Test Suite", () => {
         throw new Error("no executable");
       });
 
-      await dbtProject.runModel({
+      await dbtProject.commands.runModel({
         plusOperatorLeft: "+",
         modelName: "my_model",
         plusOperatorRight: "",
@@ -833,8 +835,8 @@ describe("Project Test Suite", () => {
     it("routes clean through the Fusion CLI and queues installDeps", async () => {
       await queued();
 
-      await dbtProject.clean();
-      await dbtProject.installDeps();
+      await dbtProject.commands.clean();
+      await dbtProject.commands.installDeps();
 
       expect(mockFusionCli.run).toHaveBeenCalledWith({ kind: "clean" });
       expect(mockFusionCli.prepare).toHaveBeenCalledWith({ kind: "deps" });
@@ -848,7 +850,7 @@ describe("Project Test Suite", () => {
       );
       execute.mockResolvedValue({ stdout: "", exitCode: 0 } as never);
 
-      await dbtProject.runTask(
+      await dbtProject.commands.runTask(
         { type: "dbt", command: "run", select: "a", fullRefresh: true },
         terminal,
       );
@@ -869,7 +871,7 @@ describe("Project Test Suite", () => {
         terminal.onDidClose(resolve),
       );
 
-      await dbtProject.runTask(
+      await dbtProject.commands.runTask(
         { type: "dbt", command: "seed" as never },
         terminal,
       );
@@ -882,7 +884,7 @@ describe("Project Test Suite", () => {
       const execute = await queued();
       execute.mockResolvedValue({ stdout: "", exitCode: 0 } as never);
 
-      await dbtProject.runModel({
+      await dbtProject.commands.runModel({
         plusOperatorLeft: "",
         modelName: "a",
         plusOperatorRight: "",
@@ -912,10 +914,12 @@ describe("Project Test Suite", () => {
         command: "deps",
         project: dbtProject.projectRoot.fsPath,
       } as const;
-      await vscode.tasks.executeTask(dbtProject.task(definition, "deps"));
+      await vscode.tasks.executeTask(
+        dbtProject.commands.task(definition, "deps"),
+      );
       await flush();
 
-      const installed = dbtProject.installDeps();
+      const installed = dbtProject.commands.installDeps();
       await flush();
       expect(execute).toHaveBeenCalledTimes(1);
 
@@ -929,7 +933,7 @@ describe("Project Test Suite", () => {
     it("rejects installDeps on a non-zero exit or a reported dbt error", async () => {
       const execute = await queued();
       execute.mockResolvedValueOnce({ stdout: "", exitCode: 2 } as never);
-      await expect(dbtProject.installDeps()).rejects.toThrow(
+      await expect(dbtProject.commands.installDeps()).rejects.toThrow(
         "dbt deps exited with code 2",
       );
 
@@ -937,7 +941,7 @@ describe("Project Test Suite", () => {
         stdout: "Encountered an error: no packages",
         exitCode: 0,
       } as never);
-      await expect(dbtProject.installDeps()).rejects.toThrow(
+      await expect(dbtProject.commands.installDeps()).rejects.toThrow(
         "Encountered an error: no packages",
       );
     });
@@ -945,7 +949,7 @@ describe("Project Test Suite", () => {
     it("queues each terminal of one task, so Rerun runs the command again", async () => {
       const execute = await queued();
       execute.mockResolvedValue({ stdout: "", exitCode: 0 } as never);
-      const task = dbtProject.task(
+      const task = dbtProject.commands.task(
         {
           type: "dbt",
           command: "build",
@@ -971,8 +975,8 @@ describe("Project Test Suite", () => {
         .mockRejectedValueOnce(unsupported)
         .mockRejectedValueOnce(unsupported);
 
-      await dbtProject.installDeps();
-      await dbtProject.buildProject();
+      await dbtProject.commands.installDeps();
+      await dbtProject.commands.buildProject();
       await flush();
 
       expect(execute).toHaveBeenCalledTimes(2);
@@ -982,7 +986,7 @@ describe("Project Test Suite", () => {
         expect.stringContaining("tasks unsupported"),
       );
       execute.mockResolvedValueOnce({ stdout: "", exitCode: 2 } as never);
-      await expect(dbtProject.installDeps()).rejects.toThrow(
+      await expect(dbtProject.commands.installDeps()).rejects.toThrow(
         "dbt deps exited with code 2",
       );
     });
@@ -1000,8 +1004,14 @@ describe("Project Test Suite", () => {
       const waiting = new DbtTaskTerminal(() => undefined);
       const written: string[] = [];
       waiting.onDidWrite((text) => written.push(text));
-      void dbtProject.runTask({ type: "dbt", command: "build" }, first);
-      const run = dbtProject.runTask({ type: "dbt", command: "deps" }, waiting);
+      void dbtProject.commands.runTask(
+        { type: "dbt", command: "build" },
+        first,
+      );
+      const run = dbtProject.commands.runTask(
+        { type: "dbt", command: "deps" },
+        waiting,
+      );
       await flush();
 
       waiting.close();
@@ -1208,7 +1218,7 @@ describe("Project manifest", () => {
         stubDelegate(tempRoot, { executeSQL }),
       );
 
-      const execution = await project.executeSQLWithLimit(
+      const execution = await project.queries.executeSQLWithLimit(
         "select 1 as a, 'x' as b",
         "my_model",
         500,
@@ -1230,7 +1240,7 @@ describe("Project manifest", () => {
         stubDelegate(tempRoot, { executeSQL: fabricatedExecuteSQL() }),
       );
 
-      const result = await project.immediatelyExecuteSQLWithLimit(
+      const result = await project.queries.immediatelyExecuteSQLWithLimit(
         "select 1 as a, 'x' as b",
         "my_model",
         500,
@@ -1255,7 +1265,7 @@ describe("Project manifest", () => {
         }),
       );
 
-      const execution = await project.executeSQLWithLimit(
+      const execution = await project.queries.executeSQLWithLimit(
         "select 1",
         "my_model",
         500,

@@ -83,7 +83,9 @@ describe("RunTest — singular test classification and dispatch", () => {
   };
 
   beforeEach(() => {
-    mockProject = { runTest: vi.fn() } as unknown as Mocked<Project>;
+    mockProject = {
+      commands: { runTest: vi.fn() },
+    } as unknown as Mocked<Project>;
     mockProjects = {
       get: vi.fn().mockReturnValue(mockProject),
     } as unknown as Mocked<Projects>;
@@ -137,7 +139,7 @@ describe("RunTest — singular test classification and dispatch", () => {
 
       expect(dispatched).toBe(true);
       expect(mockProjects.get).toHaveBeenCalledWith(expect.anything());
-      expect(mockProject.runTest).toHaveBeenCalledWith(
+      expect(mockProject.commands.runTest).toHaveBeenCalledWith(
         "singular_nonnull_orders",
       );
     });
@@ -166,7 +168,7 @@ describe("RunTest — singular test classification and dispatch", () => {
         await runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(false);
-      expect(mockProject.runTest).not.toHaveBeenCalled();
+      expect(mockProject.commands.runTest).not.toHaveBeenCalled();
     });
 
     it("returns false when there is no active editor", async () => {
@@ -176,7 +178,7 @@ describe("RunTest — singular test classification and dispatch", () => {
         await runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(false);
-      expect(mockProject.runTest).not.toHaveBeenCalled();
+      expect(mockProject.commands.runTest).not.toHaveBeenCalled();
     });
 
     it("returns false when the manifest has no matching test", async () => {
@@ -189,7 +191,7 @@ describe("RunTest — singular test classification and dispatch", () => {
         await runTest.runSingularTestOnActiveWindowIfApplicable();
 
       expect(dispatched).toBe(false);
-      expect(mockProject.runTest).not.toHaveBeenCalled();
+      expect(mockProject.commands.runTest).not.toHaveBeenCalled();
     });
   });
 });

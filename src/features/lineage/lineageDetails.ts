@@ -256,11 +256,11 @@ export class LineageDetails {
     nodeName: string,
     table: SourceTable,
   ) {
-    const columnsFromDB = await project.getColumnsOfSource(
+    const columnsFromDB = await project.queries.getColumnsOfSource(
       nodeName,
       table.name,
     );
     this.terminal.debug("Lineage:addColumnsFromDB", nodeName, columnsFromDB);
-    return project.mergeColumnsFromDB(table, columnsFromDB);
+    return project.queries.mergeColumnsFromDB(table, columnsFromDB);
   }
 }
