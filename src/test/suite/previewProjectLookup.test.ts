@@ -4,6 +4,7 @@ import type { WorkspaceConfiguration, WorkspaceFolder } from "vscode";
 import { EventEmitter, Uri, window, workspace } from "vscode";
 import type * as vscodeApi from "vscode";
 import type { Log } from "../../core/log";
+import { createProjectMetadataSource } from "../../metadata/compositeMetadataSource";
 import { CurrentProject } from "../../projects/currentProject";
 import { previewUriFor } from "../../projects/previewUri";
 import type { Project } from "../../projects/project";
@@ -64,7 +65,15 @@ describe("compiled preview project lookup", () => {
     (workspace.workspaceFolders as unknown) = [folder];
     registry = new ProjectRegistry(terminal);
     await registry.initialize();
-    projects = new Projects(registry, stubProject, terminal);
+    projects = new Projects(
+      registry,
+      {
+        project: stubProject,
+        metadataSource: (declared, project) =>
+          createProjectMetadataSource(declared, project, terminal),
+      },
+      terminal,
+    );
     await projects.initialize();
     currentProject = new CurrentProject(
       registry,

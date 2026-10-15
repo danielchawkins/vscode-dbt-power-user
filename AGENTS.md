@@ -67,7 +67,7 @@ src/
 ├── settings/                # typed `fusionPowerUser.*` settings and environment variables
 ├── projects/                # Project Registry, Project Context, QueryManifestService, Fusion client pool and status
 ├── fusion/                  # executable resolution, version gate, static-analysis mode, language client, transport
-├── metadata/                # ProjectMetadataSource port and its manifest implementation
+├── metadata/                # adapters of the ProjectMetadataSource port, which projects/ declares
 ├── webview/                 # PanelHost, the shared webview panel infrastructure
 ├── features/                # commands, trees, panels, lenses; imported only by the roots
 └── test/                    # Vitest suites, hand-written VS Code mocks
@@ -77,7 +77,7 @@ Unit tests are Vitest (`vitest.config.ts`) against a hand-written VS Code mock (
 
 Two facts dominate change ordering, both detailed in the plan:
 
-- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps, and every panel, tree, lens, and language provider consumes them through `QueryManifestService` via `Projects.onDidChangeManifest`. `ProjectMetadataSource` (`src/metadata/`) is the producer port; the Fusion LSP payload cannot populate the full contract (see `docs/lsp-metadata-gaps.md`), so `CompositeMetadataSource` merges the Server Producer and the manifest-reading Parse Producer. Do not introduce a second consumer seam. Behind the port, a composite producer fills each field from the language server where it can and from the CLI parse for the fields in `docs/lsp-metadata-gaps.md`; consumers see one merged value.
+- The codebase is **manifest-driven**. `dbt parse` produces `manifest.json`, parsers build the metadata maps, and every panel, tree, lens, and language provider consumes them through `QueryManifestService` via `Projects.onDidChangeManifest`. `ProjectMetadataSource` (`src/projects/`) is the producer port, and its adapters live in `src/metadata/`; the Fusion LSP payload cannot populate the full contract (see `docs/lsp-metadata-gaps.md`), so `CompositeMetadataSource` merges the Server Producer and the manifest-reading Parse Producer. Do not introduce a second consumer seam. Behind the port, a composite producer fills each field from the language server where it can and from the CLI parse for the fields in `docs/lsp-metadata-gaps.md`; consumers see one merged value.
 - **The dbt integration layer is owned code in `src/core/`.** `src/core/manifest/` holds the manifest parsers and `src/core/dbt/` the shared domain types, vendored from the MIT-licensed `@altimateai/dbt-integration` with Core, Cloud, Python, and hosted paths removed. Parsers depend on `ManifestProject`, which `Project` implements. Column-level lineage is not implemented. Never patch `node_modules`.
 
 ## Comments and prose
@@ -107,7 +107,7 @@ Known false positives in this repo:
 
 Modernization rules (`e18e`, `unicorn`, the extra `typescript` rules and the React Compiler rules) are ratcheted like the other suppressions: their existing violations sit in the oxlint suppression files, `just lint-prune` only shrinks them, and `just lint-ratchet` fails when a count rises.
 
-Dead code is checked in production terms: knip's `--production` pass ignores tests, so an export that only tests use is reported. Two JSDoc tags exempt an export, and `scripts/quality/export-tags.mjs` (run by `just lint-unused`) keeps each honest. `@internal` means "exported for tests"; production code must still use it. `@planned <caller>` means "not wired yet"; it must name what will call it and must have no production caller. Both counts are ratcheted. A helper that only tests need belongs in `src/test/`, not behind `@internal`.
+Dead code is checked in production terms: knip's `--production` pass ignores tests, so an export that only tests use is reported. Two JSDoc tags exempt an export, and `scripts/quality/export-tags.mjs` (run by `just lint-unused`) keeps each honest. `@port` and `@adapter` mark an interface a folder declares and each class or factory implementing it; the same script checks that the dependency runs from adapter to port (see `docs/architecture.md`). `@internal` means "exported for tests"; production code must still use it. `@planned <caller>` means "not wired yet"; it must name what will call it and must have no production caller. Both counts are ratcheted. A helper that only tests need belongs in `src/test/`, not behind `@internal`.
 
 Unit tests and the integration suite run from source. Anything that claims to show what a user gets (smoke runs, visual evidence, manual emulation in an isolated VS Code) runs against the VSIX `just package` just built. `just package` deletes every other `*.vsix` in the repository root and records the new path in `out/latest-vsix`; a smoke recipe without `--vsix` packages first, and CI passes its checksum-verified artifact with `--vsix`. Each run prints `FPU_SMOKE_VSIX=<path> sha256=<hash>`, and visual evidence stores the same line in `vsix.sha256`, so a result names the build it tested.
 

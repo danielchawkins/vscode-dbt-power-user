@@ -13,6 +13,7 @@ import type { ParsedManifest } from "../../core/dbt/domain";
 import type { Log } from "../../core/log";
 import { emptyParsedManifest } from "../../core/metadata";
 import { CompositeMetadataSource } from "../../metadata/compositeMetadataSource";
+import { createProjectMetadataSource } from "../../metadata/compositeMetadataSource";
 import type { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";
 
@@ -170,7 +171,11 @@ describe("Projects", () => {
 
     projects = new Projects(
       mockProjectRegistry,
-      mockDbtProjectFactory as any,
+      {
+        project: mockDbtProjectFactory as any,
+        metadataSource: (declared, project) =>
+          createProjectMetadataSource(declared, project, mockDbtTerminal),
+      },
       mockDbtTerminal,
     );
   });
@@ -212,7 +217,11 @@ describe("Projects", () => {
       mockProjectRegistry.projects = [];
       const other = new Projects(
         mockProjectRegistry,
-        mockDbtProjectFactory as any,
+        {
+          project: mockDbtProjectFactory as any,
+          metadataSource: (declared, project) =>
+            createProjectMetadataSource(declared, project, mockDbtTerminal),
+        },
         mockDbtTerminal,
       );
 

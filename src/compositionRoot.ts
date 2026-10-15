@@ -1,5 +1,6 @@
 import type { ExtensionContext } from "vscode";
 import { Disposable } from "vscode";
+import { cliFactoryFor, createExecutableResolver } from "./composeFusionCli";
 import type { Log } from "./core/log";
 import { createProjectParsers } from "./core/manifest/projectParsers";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
@@ -39,10 +40,9 @@ import { VirtualSqlCodeLensProvider } from "./features/sqlActions/virtualSqlCode
 import { StatusBars } from "./features/statusBars";
 import { registerDbtTaskProvider } from "./features/tasks/dbtTaskProvider";
 import { TreeviewProviders } from "./features/treeViews";
-import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
-import { FusionCli } from "./fusion/fusionCli";
-import { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
+import type { ConfiguredFusionExecutableResolver } from "./fusion/fusionExecutable";
 import { DefaultFusionClientFactory } from "./fusion/fusionLanguageClient";
+import { createProjectMetadataSource } from "./metadata/compositeMetadataSource";
 import { onClientChange, onCurrentClientChange } from "./projects/clientChange";
 import { CurrentProject } from "./projects/currentProject";
 import type {
@@ -101,19 +101,6 @@ interface ProjectsGraph {
   parseDemand: ParseDemand;
 }
 
-function createExecutableResolver(
-  terminal: Log,
-  store: ExtensionContextStore,
-): ConfiguredFusionExecutableResolver {
-  return new ConfiguredFusionExecutableResolver({
-    logWarning: (message) => terminal.warn("FusionVersion", message),
-    getGlobalState: () => ({
-      get: (key) => store.getFromGlobalState(key),
-      update: (key, value) => store.setToGlobalState(key, value),
-    }),
-  });
-}
-
 function composeProjects(context: ExtensionContext): ProjectsGraph {
   const extensionContextStore = new ExtensionContextStore(context);
   const outputChannels = new OutputChannels(context.extension.id);
@@ -132,26 +119,13 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
   const parseDemand = new ParseDemand();
   const projectFactory: ProjectFactory = (declared) => {
     const log = outputChannels.projectLog(declared);
-    const processes = new CommandProcessExecutionFactory(log);
     return new Project({
       terminal: log,
       sharedState,
       runHistoryService,
       resolver: fusionExecutableResolver,
       environment: () => projectEnvironments.ensure(declared),
-      cliFactory: (executable) => {
-        const source = projectEnvironments.snapshotSource(
-          declared,
-          readProjectSnapshot,
-        );
-        return new FusionCli(
-          executable,
-          source.snapshot,
-          processes,
-          log,
-          source.ready,
-        );
-      },
+      cliFactory: cliFactoryFor(declared, projectEnvironments, log),
       parsers: createProjectParsers(log),
       projectRoot: declared.root,
       projectCount: () => projects.all().length,
@@ -166,7 +140,15 @@ function composeProjects(context: ExtensionContext): ProjectsGraph {
 
   const projectRegistry = new ProjectRegistry(terminal);
   outputChannels.follow(projectRegistry);
-  const projects = new Projects(projectRegistry, projectFactory, terminal);
+  const projects = new Projects(
+    projectRegistry,
+    {
+      project: projectFactory,
+      metadataSource: (declared, project) =>
+        createProjectMetadataSource(declared, project, terminal),
+    },
+    terminal,
+  );
   const projectQuickPick = new ProjectQuickPick();
   const currentProject = new CurrentProject(projectRegistry, projectQuickPick);
   const queryManifestService = new QueryManifestService(

@@ -1,12 +1,16 @@
 import type { Event, Uri } from "vscode";
 import { Disposable, EventEmitter } from "vscode";
 import type { Log } from "../core/log";
-import { CompositeMetadataSource } from "../metadata/compositeMetadataSource";
-import type { ProjectMetadataSource } from "../metadata/projectMetadataSource";
-import { ServerMetadataSource } from "../metadata/serverMetadataSource";
 import { onDidChangeSettings } from "../settings";
 import type { Project } from "./project";
+import type { ProjectMetadataSource } from "./projectMetadataSource";
 import type { DeclaredProject, ProjectRegistry } from "./projectRegistry";
+
+/** Builds the Project Metadata Source for one Declared Project and the `Project` built for it. */
+export type MetadataSourceFactory = (
+  declared: DeclaredProject,
+  project: Project,
+) => ProjectMetadataSource;
 
 interface ProjectEntry {
   project: Project;
@@ -50,15 +54,20 @@ export class Projects implements Disposable {
   private disposed = false;
   private projectRegistry: ProjectRegistry;
   private projectFactory: (project: DeclaredProject) => Project;
+  private metadataSourceFactory: MetadataSourceFactory;
   private dbtTerminal: Log;
 
   constructor(
     projectRegistry: ProjectRegistry,
-    projectFactory: (project: DeclaredProject) => Project,
+    factories: {
+      project: (project: DeclaredProject) => Project;
+      metadataSource: MetadataSourceFactory;
+    },
     dbtTerminal: Log,
   ) {
     this.projectRegistry = projectRegistry;
-    this.projectFactory = projectFactory;
+    this.projectFactory = factories.project;
+    this.metadataSourceFactory = factories.metadataSource;
     this.dbtTerminal = dbtTerminal;
   }
 
@@ -148,20 +157,7 @@ export class Projects implements Disposable {
       }
       if (!this.projectsByRoot.has(rootPath)) {
         const project = this.projectFactory(declared);
-        const metadataSource = new CompositeMetadataSource(
-          declared,
-          project,
-          new ServerMetadataSource(
-            project.lsp,
-            () => project.getProjectName(),
-            {
-              compileComplete: project.onDidCompile,
-              sourceChanged: project.onSourceFileChanged,
-              clientChanged: project.onDidChangeClient,
-            },
-            this.dbtTerminal,
-          ),
-        );
+        const metadataSource = this.metadataSourceFactory(declared, project);
         const subscriptions: Disposable[] = [
           metadataSource.onDidPublish(() =>
             this._onDidChangeManifest.fire(project),

@@ -1,8 +1,11 @@
 import type { Disposable, Event } from "vscode";
-import type { Manifest } from "../projects/manifestTypes";
-import type { DeclaredProject } from "../projects/projectRegistry";
+import type { Manifest } from "./manifestTypes";
+import type { DeclaredProject } from "./projectRegistry";
 
-/** Reads and rebuilds one declared project's manifest. Every publication goes through `onDidPublish`. */
+/**
+ * Reads and rebuilds one declared project's manifest. Every publication goes through `onDidPublish`.
+ * @port
+ */
 export interface ProjectMetadataSource extends Disposable {
   readonly project: DeclaredProject;
   /** Latest snapshot, or undefined before the first successful build. */
