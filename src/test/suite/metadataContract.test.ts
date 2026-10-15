@@ -2,6 +2,7 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { EventEmitter, Uri } from "vscode";
+import type { ParsedManifest } from "../../core/dbt/domain";
 import type { ManifestProject } from "../../core/manifest";
 import {
   ChildrenParentParser,
@@ -17,7 +18,6 @@ import {
   TestParser,
   UnitTestParser,
 } from "../../core/manifest";
-import type { ParsedManifest } from "../../dbt_integration/domain";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import type { Project } from "../../projects/project";
 import type { DeclaredProject } from "../../projects/projectRegistry";

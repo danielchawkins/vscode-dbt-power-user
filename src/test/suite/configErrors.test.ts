@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, languages, Uri, window, workspace } from "vscode";
 import { firstLogLine } from "../../core/cli";
-import type { ProjectSnapshot } from "../../core/project";
+import type { ProjectSnapshot } from "../../core/snapshot";
 import type { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { formatFusionExecutableResolutionFailure } from "../../fusion/fusionExecutable";

@@ -3,7 +3,51 @@
  * projects; features and the roots sit above them.
  * @type {import("dependency-cruiser").IConfiguration}
  */
+const ENTRY_ROOTS =
+  "^src/(extension|compositionRoot|dbtPowerUserExtension)\\.ts$";
+const SUPPORT =
+  "^src/(commandRegistry|startupGate|extensionContext|extensionRoot)\\.ts$";
+const layer = (from, to) => ({
+  from: { path: `^src/${from}/` },
+  to: { path: to },
+});
+
 module.exports = {
+  // A dependency matching no entry is an error, so a new top-level folder has to be placed here before it imports
+  // or is imported by anything.
+  allowedSeverity: "error",
+  allowed: [
+    {
+      comment: "Packages, Node built-ins and the webview contract.",
+      from: {},
+      to: { pathNot: "^src/" },
+    },
+    {
+      comment: "Within one top-level folder.",
+      from: { path: "^src/([^/]+)/" },
+      to: { path: "^src/$1/" },
+    },
+    {
+      comment: "The roots compose everything.",
+      from: { path: ENTRY_ROOTS },
+      to: { path: "^src/" },
+    },
+    {
+      comment: "Root support modules use only each other.",
+      from: { path: SUPPORT },
+      to: { path: SUPPORT },
+    },
+    layer("settings", "^src/core/"),
+    layer("benchmark", "^src/settings/"),
+    layer("fusion", "^src/(core|settings)/"),
+    layer("metadata", "^src/(core|fusion|projects)/"),
+    layer("projects", "^src/(core|settings|fusion|metadata)/"),
+    layer("webview", `^src/(core|benchmark|projects)/|${SUPPORT}`),
+    layer(
+      "features",
+      `^src/(core|settings|fusion|projects|webview|features)/|${SUPPORT}`,
+    ),
+  ],
   forbidden: [
     {
       name: "no-circular",
@@ -18,19 +62,6 @@ module.exports = {
       severity: "error",
       comment: "core/ imports neither vscode nor any other layer.",
       from: { path: "^src/core/" },
-      to: {
-        path: "^vscode$|^node_modules/@types/vscode/|^src/",
-        pathNot: "^src/core/",
-      },
-    },
-    {
-      name: "pure-modules-stay-pure",
-      severity: "error",
-      comment:
-        "These modules hold logic that property tests cover without the vscode module.",
-      from: {
-        path: ["^src/dbt_integration/dbtAssociations\\.ts$"],
-      },
       to: {
         path: "^vscode$|^node_modules/@types/vscode/|^src/",
         pathNot: "^src/core/",

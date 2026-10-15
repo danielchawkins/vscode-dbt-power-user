@@ -1,4 +1,4 @@
-import type { ColumnMetaData } from "../core/manifest/types";
+import type { ColumnMetaData } from "../manifest/types";
 
 export type ModelNode = {
   database: string;

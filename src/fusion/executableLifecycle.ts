@@ -2,7 +2,7 @@ import type { Disposable, Event } from "vscode";
 import { EventEmitter, Uri } from "vscode";
 import { type DBTDiagnosticData } from "../core/diagnostics";
 import type { Log } from "../core/log";
-import { dbtProjectFilePath } from "../core/project";
+import { dbtProjectFilePath } from "../core/snapshot";
 import type { SettingsChange } from "../settings";
 import { onDidChangeSettings } from "../settings";
 import type { FusionCli } from "./fusionCli";

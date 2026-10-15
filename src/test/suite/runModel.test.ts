@@ -10,7 +10,7 @@ import {
 } from "vitest";
 import type * as vscodeApi from "vscode";
 import { Uri, window } from "vscode";
-import { RunModelType } from "../../dbt_integration/domain";
+import { RunModelType } from "../../core/dbt/domain";
 import { RunModel } from "../../features/run/runModel";
 import type { CurrentProject } from "../../projects/currentProject";
 import { previewUriFor } from "../../projects/previewUri";

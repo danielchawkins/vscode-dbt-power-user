@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import type { TreeItem } from "vscode";
 import { Uri, window } from "vscode";
-import { RunModelType } from "../../dbt_integration/domain";
+import { RunModelType } from "../../core/dbt/domain";
 import type { CurrentProject } from "../../projects/currentProject";
 import { notifyErrorWithoutProject } from "../../projects/notifications";
 import { activeModelUri } from "../../projects/previewUri";

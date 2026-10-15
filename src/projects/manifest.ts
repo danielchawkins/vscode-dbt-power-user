@@ -3,6 +3,8 @@ import { readFileSync } from "node:fs";
 import { isAbsolute, join, relative, resolve, sep } from "node:path";
 import type { Disposable, FileSystemWatcher, Uri } from "vscode";
 import { RelativePattern, workspace } from "vscode";
+import type { ParsedManifest } from "../core/dbt/domain";
+import { MANIFEST_FILE } from "../core/dbt/domain";
 import type { Log } from "../core/log";
 import type {
   ChildrenParentParser,
@@ -26,9 +28,7 @@ import type {
   ManifestResources,
   SemanticModelResource,
 } from "../core/manifest/types";
-import { DBT_PROJECT_FILE, isDbtProjectFilePath } from "../core/project";
-import type { ParsedManifest } from "../dbt_integration/domain";
-import { MANIFEST_FILE } from "../dbt_integration/domain";
+import { DBT_PROJECT_FILE, isDbtProjectFilePath } from "../core/snapshot";
 
 /** Delay between the last watched file event and the rebuild it triggers. */
 const MANIFEST_TRIGGER_DEBOUNCE_MS = 500;

@@ -1,8 +1,8 @@
 import * as path from "node:path";
 import type { Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
+import type { ParsedManifest } from "../core/dbt/domain";
 import { mergeMetadata } from "../core/metadata";
-import type { ParsedManifest } from "../dbt_integration/domain";
 import type { Manifest } from "../projects/manifestTypes";
 import type { Project } from "../projects/project";
 import type { DeclaredProject } from "../projects/projectRegistry";

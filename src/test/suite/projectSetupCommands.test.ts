@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Uri, window } from "vscode";
-import { resolveProjectSnapshot } from "../../core/project";
+import { resolveProjectSnapshot } from "../../core/snapshot";
 import { ProjectSetupCommands } from "../../features/projectSetup/projectSetupCommands";
 import { FusionCli } from "../../fusion/fusionCli";
 import type {

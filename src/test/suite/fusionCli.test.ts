@@ -5,8 +5,8 @@ import type { Log } from "../../core/log";
 import type {
   ProjectSnapshot,
   ProjectSnapshotSettings,
-} from "../../core/project";
-import { resolveProjectSnapshot } from "../../core/project";
+} from "../../core/snapshot";
+import { resolveProjectSnapshot } from "../../core/snapshot";
 import type { CommandProcessResult } from "../../core/types";
 import type { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";

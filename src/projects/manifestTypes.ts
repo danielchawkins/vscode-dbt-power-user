@@ -1,4 +1,4 @@
-import type { ParsedManifest } from "../dbt_integration/domain";
+import type { ParsedManifest } from "../core/dbt/domain";
 
 /** One complete manifest publication for a project. */
 export interface Manifest extends ParsedManifest {

@@ -8,7 +8,7 @@ import {
   isDbtProjectFilePath,
   parseDbtProjectYaml,
   readDbtProjectFile,
-} from "../../core/project";
+} from "../../core/snapshot";
 
 describe("readDbtProjectFile", () => {
   const dirs: string[] = [];

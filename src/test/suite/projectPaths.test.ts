@@ -2,7 +2,7 @@ import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { readDbtProjectFile, resolveProjectPaths } from "../../core/project";
+import { readDbtProjectFile, resolveProjectPaths } from "../../core/snapshot";
 
 const pathsOnDisk = (root: string) =>
   resolveProjectPaths(root, readDbtProjectFile(root).config);

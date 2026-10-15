@@ -2,6 +2,7 @@ import fc from "fast-check";
 import * as fs from "node:fs";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
+import type { ParsedManifest } from "../../core/dbt/domain";
 import type { Log } from "../../core/log";
 import {
   ChildrenParentParser,
@@ -13,7 +14,6 @@ import {
   type ManifestProject,
 } from "../../core/manifest";
 import { mergeMetadata, serverMetadataFrom } from "../../core/metadata";
-import type { ParsedManifest } from "../../dbt_integration/domain";
 import { NUM_RUNS, nodeDag } from "../arbitraries";
 import { esmDirname } from "../esmDirname";
 import { FIELD_OWNERS, fieldsOwnedBy } from "../fieldOwners";

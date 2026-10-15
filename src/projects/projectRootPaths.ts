@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import type { Uri } from "vscode";
-import { declaredProjectName, readDbtProjectFile } from "../core/project";
+import { declaredProjectName, readDbtProjectFile } from "../core/snapshot";
 
 /** The name `root`'s project file declares, else the directory name. */
 export function projectNameAt(root: string): string {

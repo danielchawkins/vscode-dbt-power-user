@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   projectDirVariable,
   resolveProfilesDir,
-} from "../../core/project/dbtEnvironment";
+} from "../../core/snapshot/dbtEnvironment";
 import { NUM_RUNS } from "../arbitraries";
 
 const root = path.join("/", "ws", "proj");

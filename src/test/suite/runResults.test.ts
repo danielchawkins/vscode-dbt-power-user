@@ -11,7 +11,7 @@ import {
   type Mock,
   vi,
 } from "vitest";
-import type { RunResultsEventData } from "../../dbt_integration/domain";
+import type { RunResultsEventData } from "../../core/dbt/domain";
 import {
   parseRunResultsJson,
   resolveRunStatus,

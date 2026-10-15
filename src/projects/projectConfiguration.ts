@@ -1,7 +1,7 @@
 import * as path from "node:path";
 import type { WorkspaceFolder } from "vscode";
 import { Uri } from "vscode";
-import { hasDbtProjectFile } from "../core/project";
+import { hasDbtProjectFile } from "../core/snapshot";
 import { readSetting, writeDeclaredProjects } from "../settings";
 
 export const PROJECTS_SETTING = "projects";

@@ -50,7 +50,7 @@ Thesis (high): The parsed-manifest shape is declared twice. dbt_integration/doma
 
 Thesis citations:
 
-- [c01](../../src/dbt_integration/domain.ts): "export interface ParsedManifest {"
+- [c01](../../src/core/dbt/domain.ts): "export interface ParsedManifest {"
 - [c02](../../src/core/metadata/mergeMetadata.ts): "The maps consumers read; `ParsedManifest` has the same shape."
 
 Antithesis: The thesis proposes moving the shape into core/manifest/types. It never says that this direction is forced by the layer rules. core-is-pure stops core from importing src/dbt_integration, so MergeableManifest exists because of that rule. The duplicate is a symptom of dbt_integration/domain.ts sitting in the wrong layer. Point 2 is the real cause, and the thesis ranks it separately from point 1.
@@ -76,8 +76,8 @@ Citations:
 
 - [r2a](../../.dependency-cruiser.cjs): ""These modules hold logic that property tests cover without the vscode module.","
 - [r2b](../../AGENTS.md): "shared domain types, `DBTCommand`, `DBTTerminal`"
-- [r2c](../../src/dbt_integration/domain.ts): "export enum RunModelType {"
-- [r2d](../../src/dbt_integration/domain.ts): "export const MANIFEST_FILE = "manifest.json";"
+- [r2c](../../src/core/dbt/domain.ts): "export enum RunModelType {"
+- [r2d](../../src/core/dbt/domain.ts): "export const MANIFEST_FILE = "manifest.json";"
 
 Thesis (high): dbt_integration/ is an unclassified layer. It holds only domain.ts, dbtAssociations.ts and NOTICE.md, yet projects/ imports from it on about 15 edges and 25 modules import it. The layer rules in .dependency-cruiser.cjs never name it, so it escapes every layer check. Principle: a cycle or a misplaced module means a layer is wrong (the depcruise comment says so). Fix: move the types to core/ (pure) or rename the folder to the layer it really is, then add it to the layer rules. Enforcement: a depcruise rule that fails when a new top-level src folder is not listed in a layer.
 
@@ -99,7 +99,7 @@ Antithesis: The thesis cites the core-is-pure comment. That comment says only th
 Counter-evidence:
 
 - [a03](../../AGENTS.md): "shared domain types, `DBTCommand`, `DBTTerminal`"
-- [a04](../../src/dbt_integration/dbtAssociations.ts): "import type { ProjectPaths } from "../core/project";"
+- [a04](../../src/core/dbt/dbtAssociations.ts): "import type { ProjectPaths } from "../core/project";"
 - [a05](https://raw.githubusercontent.com/sverweij/dependency-cruiser/main/doc/rules-reference.md): "A list of rules that describe dependencies that are *allowed*."
 
 ### 3. Project does build its private collaborators in its constructor: ManifestState, ProjectDiagnostics, ProjectErrors, ProjectTasks, RunResultsReader and ManifestTrigger. Those collaborators are wired with closures over `this`. Project's external dependencies are already injected through ProjectOptions, and a test harness builds it with overrides. A factory that takes a typed graph of these private parts would have to rebuild those back-references, and it would break the repo's own rule against abstractions without a second user or a named test seam. Leave the constructor alone. The structural issue in this area is the inheritance chain (point 16)
@@ -257,7 +257,7 @@ Citations:
 
 - [r7a](../../src/core/manifest/docParser.ts): "const docFile: string = readFileSync(fullPath).toString("utf8");"
 - [r7b](../../src/core/manifest/macroParser.ts): "const macroFile: string = readFileSync(fullPath).toString("utf8");"
-- [r7c](../../src/core/project/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
+- [r7c](../../src/core/snapshot/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
 - [r7d](https://www.destroyallsoftware.com/talks/boundaries): "This talk is about using simple values (as opposed to complex objects) not just for holding data, but also as the boundaries between components and subsystems."
 
 Thesis (medium): core/ is pure with respect to vscode but not with respect to disk. docParser.ts reads each doc file with readFileSync during parsing, and core/project/dbtProjectFile.ts and core/manifest/utils.ts use node:fs. The depcruise rule forbids only vscode and other layers, so the purity claim is weaker than it reads. dbtProjectFile.ts already shows the fix: it injects an exists seam with an existsSync default. Principle: functional core, imperative shell (Bernhardt: values as the boundaries between components). Fix: pass a reader function into docParser, as dbtProjectFile does. Enforcement: a depcruise rule that forbids node:fs from core/ with an explicit allowlist for the injected-default files.
@@ -265,7 +265,7 @@ Thesis (medium): core/ is pure with respect to vscode but not with respect to di
 Thesis citations:
 
 - [c19](../../src/core/manifest/docParser.ts): "const docFile: string = readFileSync(fullPath).toString("utf8");"
-- [c20](../../src/core/project/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
+- [c20](../../src/core/snapshot/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
 - [c21](../../.dependency-cruiser.cjs): "core/ imports neither vscode nor any other layer."
 - [c22](https://www.destroyallsoftware.com/talks/boundaries): "This talk is about using simple values (as opposed to complex objects) not just for holding data, but also as the boundaries between components and subsystems."
 
@@ -282,7 +282,7 @@ Antithesis: dbtProjectFile's `exists` seam is a default parameter that is overri
 Counter-evidence:
 
 - [a16](../../src/core/manifest/macroParser.ts): "const macroFile: string = readFileSync(fullPath).toString("utf8");"
-- [a17](../../src/core/project/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
+- [a17](../../src/core/snapshot/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
 
 ### 8. Seven non-test feature files read the disk: dbtTestService, docsYaml, docGenService, docsEditHandlers, projectConfigCommands, cte/commands and cteProfilerService. At least one of them prefers the open editor buffer and only falls back to disk. The shared lint list restricts fs writes on purpose and leaves reads alone. Banning reads, or adding a reader port owned by projects, would break seven files at once to serve a storage backend that is not planned. Leave reads alone unless one specific project fact, such as dbt_project.yml, turns out to be read in several places. That is the kind of defect the plan counts, and it should be fixed for that fact only
 

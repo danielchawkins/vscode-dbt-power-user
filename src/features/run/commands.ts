@@ -1,7 +1,7 @@
 import { window } from "vscode";
 import type { RegisterCommand } from "../../commandRegistry";
+import { RunModelType } from "../../core/dbt/domain";
 import type { Log } from "../../core/log";
-import { RunModelType } from "../../dbt_integration/domain";
 import type { Projects } from "../../projects/projects";
 import type { RunModel } from "./runModel";
 import type { RunTest } from "./runTest";

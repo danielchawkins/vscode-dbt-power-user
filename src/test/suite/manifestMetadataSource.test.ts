@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter, Uri } from "vscode";
-import type { ParsedManifest } from "../../dbt_integration/domain";
+import type { ParsedManifest } from "../../core/dbt/domain";
 import { ManifestMetadataSource } from "../../metadata/manifestMetadataSource";
 import type { Project } from "../../projects/project";
 import type { DeclaredProject } from "../../projects/projectRegistry";

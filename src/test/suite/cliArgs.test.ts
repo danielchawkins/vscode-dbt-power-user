@@ -7,8 +7,8 @@ import { deferState, toCliArgs } from "../../core/cli";
 import type {
   DeferSettingsEntry,
   ProjectSnapshotSettings,
-} from "../../core/project";
-import { resolveProjectSnapshot } from "../../core/project";
+} from "../../core/snapshot";
+import { resolveProjectSnapshot } from "../../core/snapshot";
 import { noSettings, snapshotFolder } from "../arbitraries/projectSnapshot";
 
 const root = path.join(snapshotFolder, "proj");

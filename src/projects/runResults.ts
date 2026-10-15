@@ -1,10 +1,7 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { RUN_RESULTS_FILE, type RunResultsEventData } from "../core/dbt/domain";
 import type { Log } from "../core/log";
-import {
-  RUN_RESULTS_FILE,
-  type RunResultsEventData,
-} from "../dbt_integration/domain";
 
 /** Snapshot of run_results.json content before a command; null when absent. */
 export type RunResultsObservation = string | null;

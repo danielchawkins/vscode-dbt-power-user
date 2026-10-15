@@ -12,7 +12,7 @@ import {
   type ServerOptions,
 } from "vscode-languageclient/node";
 import { DBT_LSP_USE_TARGET_LSP, toLspArgs } from "../core/lsp";
-import { type StaticAnalysisMode } from "../core/project";
+import { type StaticAnalysisMode } from "../core/snapshot";
 import { errorText } from "../core/text";
 import { documentSelectorForProject } from "./documentSelector";
 import {

@@ -1,5 +1,5 @@
 import * as path from "node:path";
-import type { ProjectSnapshot, ResolvedDefer } from "../project";
+import type { ProjectSnapshot, ResolvedDefer } from "../snapshot";
 
 /** One dbt invocation. Selections and SQL are single argv elements, never split. */
 export type CliCommand =

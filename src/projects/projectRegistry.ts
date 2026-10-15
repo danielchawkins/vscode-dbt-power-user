@@ -14,7 +14,7 @@ import {
   DBT_PROJECT_FILE_GLOB,
   declaredProjectName,
   readDbtProjectFile,
-} from "../core/project";
+} from "../core/snapshot";
 import { onDidChangeSettings, readSetting } from "../settings";
 import { activeModelUri } from "./previewUri";
 import {

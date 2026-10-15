@@ -1,11 +1,11 @@
 import type { Uri } from "vscode";
+import type { QueryExecutionResult } from "../core/dbt/domain";
 import type { QueryExecution } from "../core/dbtCommand";
+import type { ModelNode } from "../core/lineage/modelNode";
 import type { Log } from "../core/log";
 import type { DBColumn } from "../core/types";
-import type { QueryExecutionResult } from "../dbt_integration/domain";
 import type { FusionCli } from "../fusion/fusionCli";
 import type { FusionCommands } from "../fusion/fusionCommands";
-import type { ModelNode } from "../local/lineageTypes";
 import { readSetting } from "../settings";
 import type { Manifest } from "./manifestTypes";
 import {

@@ -1,5 +1,5 @@
 import { parseDocument } from "yaml";
-import { DBT_PROJECT_FILE } from "../core/project";
+import { DBT_PROJECT_FILE } from "../core/snapshot";
 
 /** One key a command may add to a project file. */
 export interface ProjectConfigInsertion {

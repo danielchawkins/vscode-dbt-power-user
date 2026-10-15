@@ -18,7 +18,7 @@ import { ExecuteCommandRequest, State } from "vscode-languageclient/node";
 import { URI as VsCodeUri } from "vscode-uri";
 import type { LspLaunch } from "../../core/lsp";
 import { DBT_LSP_USE_TARGET_LSP } from "../../core/lsp";
-import { parseTraceServerLevel } from "../../core/project";
+import { parseTraceServerLevel } from "../../core/snapshot";
 import { DbtLineageService } from "../../features/lineage/dbtLineageService";
 import {
   documentSelectorForProject,

@@ -1,8 +1,8 @@
 import * as os from "node:os";
 import type { Uri } from "vscode";
 import { workspace } from "vscode";
-import type { ProjectSnapshot } from "../core/project";
-import { readDbtProjectFile, resolveProjectSnapshot } from "../core/project";
+import type { ProjectSnapshot } from "../core/snapshot";
+import { readDbtProjectFile, resolveProjectSnapshot } from "../core/snapshot";
 import type { SettingKey } from "../settings";
 import {
   readEnvironment,

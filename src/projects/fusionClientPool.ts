@@ -3,7 +3,7 @@ import { EventEmitter } from "vscode";
 import type { Log } from "../core/log";
 import type { LspLaunch } from "../core/lsp";
 import { sameLspLaunch, toLspLaunch } from "../core/lsp";
-import type { ProjectSnapshot } from "../core/project";
+import type { ProjectSnapshot } from "../core/snapshot";
 import { FailedFusionClient } from "../fusion/failedFusionClient";
 import type {
   FusionExecutable,

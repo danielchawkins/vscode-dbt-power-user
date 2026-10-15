@@ -19,8 +19,8 @@ import type {
   DBTDiagnosticResult,
 } from "../core/diagnostics";
 import type { Log } from "../core/log";
-import type { ProjectSnapshot } from "../core/project";
-import { dbtProjectFilePath, deferSettingsKey } from "../core/project";
+import type { ProjectSnapshot } from "../core/snapshot";
+import { dbtProjectFilePath, deferSettingsKey } from "../core/snapshot";
 import type { CommandProcessResult, DBColumn } from "../core/types";
 import type { CommandProcessExecutionFactory } from "./commandProcessExecution";
 

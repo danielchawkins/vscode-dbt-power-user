@@ -9,9 +9,9 @@ import {
   vi,
 } from "vitest";
 import { EventEmitter, Uri, workspace } from "vscode";
+import type { ParsedManifest } from "../../core/dbt/domain";
 import type { Log } from "../../core/log";
 import { emptyParsedManifest } from "../../core/metadata";
-import type { ParsedManifest } from "../../dbt_integration/domain";
 import { CompositeMetadataSource } from "../../metadata/compositeMetadataSource";
 import type { Project } from "../../projects/project";
 import { Projects } from "../../projects/projects";

@@ -5,8 +5,8 @@ import {
   languages,
   LanguageStatusSeverity,
 } from "vscode";
-import type { StaticAnalysisMode } from "../core/project";
-import { projectRootDigest } from "../core/project";
+import type { StaticAnalysisMode } from "../core/snapshot";
+import { projectRootDigest } from "../core/snapshot";
 import { vscodeDocumentSelectorForProject } from "../fusion/documentSelector";
 import type {
   FusionClient,

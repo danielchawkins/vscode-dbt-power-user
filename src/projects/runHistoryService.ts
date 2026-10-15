@@ -1,6 +1,6 @@
 import type { Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
-import type { RunResultsEventData } from "../dbt_integration/domain";
+import type { RunResultsEventData } from "../core/dbt/domain";
 
 export interface CommandFailedEvent {
   command: string;
