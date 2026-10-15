@@ -5,11 +5,13 @@
 // - `@planned <reason>` means "not wired yet": it must have no production reference (otherwise it is live and
 //   the tag is stale) and must give a reason on the same line.
 //
-// knip skips both tags (knip.json `tags`), so this check is what keeps them honest.
+// knip skips both tags (knip.json `tags`), so this check is what keeps them honest. It also runs the `@port` and
+// `@adapter` checks in portsAndAdapters.mjs over the host's production files.
 // Usage: node scripts/quality/export-tags.mjs   (exit 1 on any finding)
 import path from "node:path";
 import process from "node:process";
 import ts from "typescript";
+import { checkPortsAndAdapters } from "./portsAndAdapters.mjs";
 
 const root = path.resolve(import.meta.dirname, "../..");
 const PROJECTS = [
@@ -102,6 +104,13 @@ const seen = new Set();
 for (const tsconfig of PROJECTS) {
   const { service, files } = serviceFor(tsconfig);
   const program = service.getProgram();
+  if (tsconfig === "src/test/tsconfig.json") {
+    const production = files
+      .filter((f) => isSource(f) && !isTest(f))
+      .map((f) => program.getSourceFile(f))
+      .filter(Boolean);
+    findings.push(...checkPortsAndAdapters(program, production, root));
+  }
   for (const file of files) {
     if (!isSource(file) || isTest(file) || seen.has(file)) {
       continue;

@@ -4,7 +4,7 @@
  * @type {import("dependency-cruiser").IConfiguration}
  */
 const ENTRY_ROOTS =
-  "^src/(extension|compositionRoot|dbtPowerUserExtension)\\.ts$";
+  "^src/(extension|compositionRoot|composeFusionCli|dbtPowerUserExtension)\\.ts$";
 const SUPPORT =
   "^src/(commandRegistry|startupGate|extensionContext|extensionRoot)\\.ts$";
 const layer = (from, to) => ({
@@ -41,7 +41,7 @@ module.exports = {
     layer("benchmark", "^src/settings/"),
     layer("fusion", "^src/(core|settings)/"),
     layer("metadata", "^src/(core|fusion|projects)/"),
-    layer("projects", "^src/(core|settings|fusion|metadata)/"),
+    layer("projects", "^src/(core|settings|fusion)/"),
     layer("webview", `^src/(core|benchmark|projects)/|${SUPPORT}`),
     layer(
       "features",

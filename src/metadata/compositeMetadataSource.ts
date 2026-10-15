@@ -2,18 +2,21 @@ import * as path from "node:path";
 import type { Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
 import type { ParsedManifest } from "../core/dbt/domain";
+import type { Log } from "../core/log";
 import { mergeMetadata } from "../core/metadata";
 import type { Manifest } from "../projects/manifestTypes";
 import type { Project } from "../projects/project";
+import type { ProjectMetadataSource } from "../projects/projectMetadataSource";
 import type { DeclaredProject } from "../projects/projectRegistry";
 import { ManifestMetadataSource } from "./manifestMetadataSource";
-import type { ProjectMetadataSource } from "./projectMetadataSource";
-import type { ServerMetadataSource } from "./serverMetadataSource";
+import { ServerMetadataSource } from "./serverMetadataSource";
 
 /**
  * The Project Metadata Source consumers see: the Server Producer's fields over the Parse Producer's, published as
  * one merged manifest per producer update. Nothing is published before the first parse, because consumers read a
  * manifest as "the project has been parsed".
+ * @adapter
+ * @internal
  */
 export class CompositeMetadataSource implements ProjectMetadataSource {
   private readonly emitter = new EventEmitter<Manifest>();
@@ -79,4 +82,30 @@ export class CompositeMetadataSource implements ProjectMetadataSource {
     this.server.dispose();
     this.emitter.dispose();
   }
+}
+
+/**
+ * The Project Metadata Source for one Declared Project: the Server Producer over `project`'s language server,
+ * merged with its Parse Producer.
+ * @adapter
+ */
+export function createProjectMetadataSource(
+  declared: DeclaredProject,
+  project: Project,
+  log: Pick<Log, "debug" | "warn">,
+): ProjectMetadataSource {
+  return new CompositeMetadataSource(
+    declared,
+    project,
+    new ServerMetadataSource(
+      project.lsp,
+      () => project.getProjectName(),
+      {
+        compileComplete: project.onDidCompile,
+        sourceChanged: project.onSourceFileChanged,
+        clientChanged: project.onDidChangeClient,
+      },
+      log,
+    ),
+  );
 }
