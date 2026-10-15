@@ -2,12 +2,21 @@ import { window } from "vscode";
 import type { RegisterCommand } from "../../commandRegistry";
 import { RunModelType } from "../../core/dbt/domain";
 import type { Log } from "../../core/log";
-import type { Projects } from "../../projects/project/projects";
+import type { Project } from "../../projects/project/project";
+import type { ProjectDbtCommands } from "../../projects/project/projectDbtCommands";
+import type { ProjectLookup } from "../../projects/project/projects";
 import type { RunModel } from "./runModel";
 import type { RunTest } from "./runTest";
 
 export interface RunCommandDeps {
-  projects: Projects;
+  projects: ProjectLookup<
+    Pick<Project, "getProjectName"> & {
+      commands: Pick<
+        ProjectDbtCommands,
+        "runModel" | "runModelTest" | "buildProject" | "clean"
+      >;
+    }
+  >;
   runModel: RunModel;
   runTest: RunTest;
   log: Log;

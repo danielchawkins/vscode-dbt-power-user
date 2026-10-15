@@ -23,6 +23,11 @@ export interface ProjectLookup<P> {
   get(uri: Uri): P | undefined;
 }
 
+/** A {@link ProjectLookup} that can also list every project, in registry order. */
+export interface ProjectList<P> extends ProjectLookup<P> {
+  all(): P[];
+}
+
 interface ProjectEntry {
   project: Project;
   metadataSource: ProjectMetadataSource;

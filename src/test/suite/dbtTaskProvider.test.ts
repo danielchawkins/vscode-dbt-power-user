@@ -7,8 +7,6 @@ import {
 } from "../../features/tasks/dbtTaskProvider";
 import type { QueuedCliCommand } from "../../fusion/fusionCli";
 import { taskName } from "../../projects/project/dbtTask";
-import type { Project } from "../../projects/project/project";
-import type { Projects } from "../../projects/project/projects";
 
 function project(root: string, name: string) {
   return {
@@ -16,7 +14,10 @@ function project(root: string, name: string) {
     getProjectName: () => name,
     commands: {
       taskName: (_cli: QueuedCliCommand): string => name,
-      task: vi.fn((definition, taskName) => ({ definition, name: taskName })),
+      task: vi.fn(
+        (definition, taskName) =>
+          ({ definition, name: taskName }) as unknown as Task,
+      ),
     },
   };
 }
@@ -27,9 +28,9 @@ function providerOf(...all: ReturnType<typeof project>[]) {
       taskName(cli, p.getProjectName(), all.length);
   });
   const projects = {
-    all: () => all as unknown as Project[],
+    all: () => all,
     get: (uri: Uri) => all.find((p) => p.projectRoot.fsPath === uri.fsPath),
-  } as unknown as Projects;
+  };
   return new DbtTaskProvider(projects);
 }
 
@@ -109,7 +110,10 @@ describe("DbtTaskProvider", () => {
   it("registers under the dbt type and unregisters on dispose", () => {
     const registration = { dispose: vi.fn() };
     vi.mocked(tasks.registerTaskProvider).mockReturnValueOnce(registration);
-    const disposable = registerDbtTaskProvider({} as Projects);
+    const disposable = registerDbtTaskProvider({
+      all: () => [],
+      get: () => undefined,
+    });
     expect(tasks.registerTaskProvider).toHaveBeenCalledWith(
       "dbt",
       expect.any(DbtTaskProvider),
