@@ -15,7 +15,11 @@ import { isColumnNameEqual } from "../../projects/columnNames";
 import type { QueryManifestService } from "../../projects/queryManifestService";
 
 export class DbtTestService {
-  public constructor(private queryManifestService: QueryManifestService) {}
+  private queryManifestService: QueryManifestService;
+
+  public constructor(queryManifestService: QueryManifestService) {
+    this.queryManifestService = queryManifestService;
+  }
 
   // Remove duplicate tests from tests array
   public removeDuplicateTests(

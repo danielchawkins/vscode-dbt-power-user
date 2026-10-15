@@ -13,17 +13,23 @@ export class TreeviewProviders implements Disposable {
   private disposables: Disposable[] = [];
   private readonly testModelTreeview: ModelTestTreeview;
   private readonly documentationTreeView: DocumentationTreeview;
+  private childrenModelTreeview: ChildrenModelTreeview;
+  private parentModelTreeview: ParentModelTreeview;
+  private runHistoryTreeviewProvider: RunHistoryTreeviewProvider;
 
   constructor(
-    private childrenModelTreeview: ChildrenModelTreeview,
-    private parentModelTreeview: ParentModelTreeview,
+    childrenModelTreeview: ChildrenModelTreeview,
+    parentModelTreeview: ParentModelTreeview,
     parseTrees: {
       test: ModelTestTreeview;
       documentation: DocumentationTreeview;
       parseDemand?: ParseDemand;
     },
-    private runHistoryTreeviewProvider: RunHistoryTreeviewProvider,
+    runHistoryTreeviewProvider: RunHistoryTreeviewProvider,
   ) {
+    this.childrenModelTreeview = childrenModelTreeview;
+    this.parentModelTreeview = parentModelTreeview;
+    this.runHistoryTreeviewProvider = runHistoryTreeviewProvider;
     const { parseDemand } = parseTrees;
     this.testModelTreeview = parseTrees.test;
     this.documentationTreeView = parseTrees.documentation;

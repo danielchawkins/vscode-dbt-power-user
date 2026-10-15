@@ -6,11 +6,15 @@ import type { ProjectQuickPickItem } from "../../projects/projectQuickPick";
 
 export class DbtPowerUserActionsCenter implements Disposable {
   private disposables: Disposable[] = [];
+  private currentProject: CurrentProject;
+  private extensionContext: ExtensionContextStore;
 
   constructor(
-    private currentProject: CurrentProject,
-    private extensionContext: ExtensionContextStore,
+    currentProject: CurrentProject,
+    extensionContext: ExtensionContextStore,
   ) {
+    this.currentProject = currentProject;
+    this.extensionContext = extensionContext;
     this.disposables.push(
       commands.registerCommand("fusionPowerUser.pickProject", async () => {
         const project = await this.currentProject.pickForCommand();

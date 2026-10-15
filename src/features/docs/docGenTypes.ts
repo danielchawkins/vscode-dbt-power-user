@@ -1,6 +1,7 @@
-export enum Source {
-  YAML = "YAML",
-}
+export const Source = {
+  YAML: "YAML",
+} as const;
+export type Source = (typeof Source)[keyof typeof Source];
 
 export interface MetadataColumn {
   name: string;

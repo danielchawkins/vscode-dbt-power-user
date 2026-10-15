@@ -164,87 +164,36 @@
   "src/dbtPowerUserExtension.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 21
-    }
-  },
-  "src/extensionContext.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
     }
   },
   "src/features/codeLenses.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 4
-    }
-  },
-  "src/features/compiledSql/sqlPreviewContentProvider.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/features/contentProviders.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/features/cte/cteProfilerDecorationProvider.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
     }
   },
   "src/features/cte/cteProfilerService.ts": {
     "max-lines-per-function": {
-      "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/features/defer/deferToProductionStatusBar.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
-  "src/features/diagnostics/diagnosticsOutputChannel.ts": {
-    "typescript/parameter-properties": {
       "count": 1
     }
   },
   "src/features/docs/dbtTestService.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 1
     }
   },
   "src/features/docs/docGenService.ts": {
     "max-lines-per-function": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 2
     }
   },
   "src/features/docs/docsEditHandlers.ts": {
     "max-params": {
-      "count": 1
-    },
-    "typescript/parameter-properties": {
       "count": 1
     }
   },
   "src/features/docs/docsEditPanel.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 2
     }
   },
   "src/features/docs/docsEditSave.ts": {
@@ -268,75 +217,25 @@
     },
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 4
     }
   },
   "src/features/lineage/lineageDetails.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 3
     }
   },
   "src/features/lineage/lineagePanel.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 4
-    }
-  },
-  "src/features/lineage/lineageViewProvider.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
     }
   },
   "src/features/modelTree/documentationTreeview.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/features/modelTree/modelTreeviewProvider.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
-  "src/features/panels.ts": {
-    "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
-  "src/features/projectPicker/actionsCenter.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
-  "src/features/projectSetup/fileAssociations.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
-  "src/features/projectSetup/projectConfigCommands.ts": {
-    "typescript/parameter-properties": {
-      "count": 3
     }
   },
   "src/features/projectSetup/projectSetupCommands.ts": {
     "max-params": {
-      "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 4
-    }
-  },
-  "src/features/queryResults/queryHistory.ts": {
-    "typescript/parameter-properties": {
       "count": 1
     }
   },
@@ -348,29 +247,6 @@
   "src/features/queryResults/queryResultPanel.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
-  "src/features/run/runModel.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
-  "src/features/run/runTest.ts": {
-    "typescript/parameter-properties": {
-      "count": 2
-    }
-  },
-  "src/features/runHistory/runHistoryTreeItems.ts": {
-    "typescript/parameter-properties": {
-      "count": 3
-    }
-  },
-  "src/features/runHistory/runHistoryTreeviewProvider.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
     }
   },
   "src/features/sqlActions/sqlActionsCodeLensProvider.ts": {
@@ -378,27 +254,9 @@
       "count": 1
     }
   },
-  "src/features/sqlActions/virtualSqlCodeLensProvider.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/features/statusBars.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
-  "src/features/tasks/dbtTaskProvider.ts": {
-    "typescript/parameter-properties": {
-      "count": 1
-    }
-  },
   "src/features/treeViews.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 3
     }
   },
   "src/fusion/commandProcessExecution.ts": {
@@ -759,9 +617,6 @@
   "src/webview/panelHost.ts": {
     "max-params": {
       "count": 1
-    },
-    "typescript/parameter-properties": {
-      "count": 5
     }
   },
   "src/webview/panelHtml.ts": {

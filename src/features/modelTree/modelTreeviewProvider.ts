@@ -60,11 +60,12 @@ abstract class ModelTreeviewProvider
   readonly onDidChangeTreeData: Event<ModelTreeItem | undefined | void> =
     this._onDidChangeTreeData.event;
   private disposables: Disposable[] = [this._onDidChangeTreeData];
+  private projects: Projects;
+  private treeType: keyof GraphMetaMap;
 
-  constructor(
-    private projects: Projects,
-    private treeType: keyof GraphMetaMap,
-  ) {
+  constructor(projects: Projects, treeType: keyof GraphMetaMap) {
+    this.projects = projects;
+    this.treeType = treeType;
     this.disposables.push(
       ...refreshOnProjectChange(this.projects, () =>
         this._onDidChangeTreeData.fire(),

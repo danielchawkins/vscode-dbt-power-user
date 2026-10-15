@@ -17,11 +17,12 @@ export class CteProfilerDecorationProvider implements Disposable {
   private readonly hotDecorationType: TextEditorDecorationType;
   private readonly warmDecorationType: TextEditorDecorationType;
   private readonly coolDecorationType: TextEditorDecorationType;
+  private cteProfilerService: CteProfilerService;
+  private dbtTerminal: Log;
 
-  constructor(
-    private cteProfilerService: CteProfilerService,
-    private dbtTerminal: Log,
-  ) {
+  constructor(cteProfilerService: CteProfilerService, dbtTerminal: Log) {
+    this.cteProfilerService = cteProfilerService;
+    this.dbtTerminal = dbtTerminal;
     this.hotDecorationType = window.createTextEditorDecorationType({
       gutterIconPath: Uri.file(
         `${extensionRoot}/../media/images/profiler-hot.svg`,

@@ -112,11 +112,15 @@ function reconcile(
 /** The "Configure dbt file associations" command. */
 export class FileAssociationsCommand implements Disposable {
   private readonly disposables: Disposable[];
+  private readonly startupGate: Pick<StartupGate, "whenSettled">;
+  private readonly registry: Pick<ProjectRegistry, "projects">;
 
   constructor(
-    private readonly startupGate: Pick<StartupGate, "whenSettled">,
-    private readonly registry: Pick<ProjectRegistry, "projects">,
+    startupGate: Pick<StartupGate, "whenSettled">,
+    registry: Pick<ProjectRegistry, "projects">,
   ) {
+    this.startupGate = startupGate;
+    this.registry = registry;
     this.disposables = [
       commands.registerCommand(
         "fusionPowerUser.configureFileAssociations",

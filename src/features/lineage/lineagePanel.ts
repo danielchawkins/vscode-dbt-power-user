@@ -64,6 +64,10 @@ export class LineagePanel
   protected override panelDescription = "Lineage panel";
   // The source unique_id the panel last rooted at when a source YAML is the
   // active file. Used to avoid redundant re-renders on every cursor move; the
+  declare protected extensionContext: ExtensionContextStore;
+  private terminal: Log;
+  private dbtLineageService: DbtLineageService;
+  declare protected queryManifestService: QueryManifestService;
   // panel only re-roots when the cursor moves onto a different source table.
   private lastRenderedSourceKey: string | undefined;
   // The current project and manifest epoch the panel last saw; a new epoch for the same root means a save.
@@ -72,11 +76,11 @@ export class LineagePanel
     | undefined;
 
   public constructor(
-    protected override extensionContext: ExtensionContextStore,
-    private terminal: Log,
-    private dbtLineageService: DbtLineageService,
+    extensionContext: ExtensionContextStore,
+    terminal: Log,
+    dbtLineageService: DbtLineageService,
     eventEmitterService: SharedStateService,
-    protected override queryManifestService: QueryManifestService,
+    queryManifestService: QueryManifestService,
   ) {
     super(
       extensionContext,
@@ -84,6 +88,8 @@ export class LineagePanel
       terminal,
       queryManifestService,
     );
+    this.terminal = terminal;
+    this.dbtLineageService = dbtLineageService;
     const columnsCommand = registerLineageColumnsCommand((params) =>
       this.getColumns(params),
     );

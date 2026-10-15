@@ -9,18 +9,29 @@ import type {
 } from "../../projects/projectQuickPick";
 import type { Projects } from "../../projects/projects";
 
-enum PromptAnswer {
-  YES = "Yes",
-  NO = "No",
-}
+const PromptAnswer = {
+  YES: "Yes",
+  NO: "No",
+} as const;
+type PromptAnswer = (typeof PromptAnswer)[keyof typeof PromptAnswer];
 
 export class ProjectSetupCommands {
+  private projects: Projects;
+  private extensionContext: ExtensionContextStore;
+  private projectQuickPick: ProjectQuickPick;
+  private outputChannels: Pick<OutputChannels, "logFor">;
+
   constructor(
-    private projects: Projects,
-    private extensionContext: ExtensionContextStore,
-    private projectQuickPick: ProjectQuickPick,
-    private outputChannels: Pick<OutputChannels, "logFor">,
-  ) {}
+    projects: Projects,
+    extensionContext: ExtensionContextStore,
+    projectQuickPick: ProjectQuickPick,
+    outputChannels: Pick<OutputChannels, "logFor">,
+  ) {
+    this.projects = projects;
+    this.extensionContext = extensionContext;
+    this.projectQuickPick = projectQuickPick;
+    this.outputChannels = outputChannels;
+  }
 
   private async resolveProject(
     projectContext: ProjectQuickPickItem | undefined,

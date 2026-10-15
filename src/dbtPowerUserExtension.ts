@@ -31,32 +31,76 @@ const UNINSTALL_POWER_USER = "Uninstall Power User";
 export class DBTPowerUserExtension implements Disposable {
   private disposables: Disposable[] = [];
   private disposed = false;
+  private projects: Projects;
+  private webviewViewProviders: WebviewViewProviders;
+  private vscodeCommands: VSCodeCommands;
+  private treeviewProviders: TreeviewProviders;
+  private contentProviders: ContentProviders;
+  private codeLensProviders: CodeLensProviders;
+  private statusBars: StatusBars;
+  private puStatusBars: DbtPowerUserActionsCenter;
+  private dbtTerminal: Log;
+  private projectRegistry: ProjectRegistry;
+  private currentProject: CurrentProject;
+  private fusionClientPool: FusionClientPool;
+  private fusionStatus: FusionStatus;
+  private projectConfigCommands: ProjectConfigCommands;
+  private fileAssociationsCommand: FileAssociationsCommand;
+  private startupGate: StartupGate;
+  private dbtLineageService: DbtLineageService;
+  /** Disposed after every other collaborator. */
+  private sharedState: SharedStateService;
+  /** Disposed after every other collaborator except `sharedState`. */
+  private runHistoryService: RunHistoryService;
+  private dbtTaskProvider: Disposable;
+  private projectEnvironments: ProjectEnvironments;
 
   constructor(
-    private projects: Projects,
-    private webviewViewProviders: WebviewViewProviders,
-    private vscodeCommands: VSCodeCommands,
-    private treeviewProviders: TreeviewProviders,
-    private contentProviders: ContentProviders,
-    private codeLensProviders: CodeLensProviders,
-    private statusBars: StatusBars,
-    private puStatusBars: DbtPowerUserActionsCenter,
-    private dbtTerminal: Log,
-    private projectRegistry: ProjectRegistry,
-    private currentProject: CurrentProject,
-    private fusionClientPool: FusionClientPool,
-    private fusionStatus: FusionStatus,
-    private projectConfigCommands: ProjectConfigCommands,
-    private fileAssociationsCommand: FileAssociationsCommand,
-    private startupGate: StartupGate,
-    private dbtLineageService: DbtLineageService,
-    /** Disposed after every other collaborator. */
-    private sharedState: SharedStateService,
-    /** Disposed after every other collaborator except `sharedState`. */
-    private runHistoryService: RunHistoryService,
-    private dbtTaskProvider: Disposable,
-    private projectEnvironments: ProjectEnvironments,
+    projects: Projects,
+    webviewViewProviders: WebviewViewProviders,
+    vscodeCommands: VSCodeCommands,
+    treeviewProviders: TreeviewProviders,
+    contentProviders: ContentProviders,
+    codeLensProviders: CodeLensProviders,
+    statusBars: StatusBars,
+    puStatusBars: DbtPowerUserActionsCenter,
+    dbtTerminal: Log,
+    projectRegistry: ProjectRegistry,
+    currentProject: CurrentProject,
+    fusionClientPool: FusionClientPool,
+    fusionStatus: FusionStatus,
+    projectConfigCommands: ProjectConfigCommands,
+    fileAssociationsCommand: FileAssociationsCommand,
+    startupGate: StartupGate,
+    dbtLineageService: DbtLineageService,
+
+    sharedState: SharedStateService,
+
+    runHistoryService: RunHistoryService,
+    dbtTaskProvider: Disposable,
+    projectEnvironments: ProjectEnvironments,
   ) {
+    this.projects = projects;
+    this.webviewViewProviders = webviewViewProviders;
+    this.vscodeCommands = vscodeCommands;
+    this.treeviewProviders = treeviewProviders;
+    this.contentProviders = contentProviders;
+    this.codeLensProviders = codeLensProviders;
+    this.statusBars = statusBars;
+    this.puStatusBars = puStatusBars;
+    this.dbtTerminal = dbtTerminal;
+    this.projectRegistry = projectRegistry;
+    this.currentProject = currentProject;
+    this.fusionClientPool = fusionClientPool;
+    this.fusionStatus = fusionStatus;
+    this.projectConfigCommands = projectConfigCommands;
+    this.fileAssociationsCommand = fileAssociationsCommand;
+    this.startupGate = startupGate;
+    this.dbtLineageService = dbtLineageService;
+    this.sharedState = sharedState;
+    this.runHistoryService = runHistoryService;
+    this.dbtTaskProvider = dbtTaskProvider;
+    this.projectEnvironments = projectEnvironments;
     this.disposables.push(
       this.sharedState,
       this.runHistoryService,

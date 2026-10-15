@@ -32,8 +32,11 @@ export class CteProfilerService implements Disposable {
 
   /** The log of the Project being profiled. */
   private runningLog: Log | undefined;
+  private projects: Projects;
 
-  constructor(private projects: Projects) {}
+  constructor(projects: Projects) {
+    this.projects = projects;
+  }
 
   dispose() {
     this.cancellationTokenSource?.dispose();

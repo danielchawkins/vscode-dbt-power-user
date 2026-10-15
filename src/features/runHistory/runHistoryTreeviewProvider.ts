@@ -14,8 +14,10 @@ export class RunHistoryTreeviewProvider
     this._onDidChangeTreeData.event;
 
   private disposables: Disposable[] = [this._onDidChangeTreeData];
+  private runHistoryService: RunHistoryService;
 
-  constructor(private runHistoryService: RunHistoryService) {
+  constructor(runHistoryService: RunHistoryService) {
+    this.runHistoryService = runHistoryService;
     this.disposables.push(
       this.runHistoryService.onHistoryChanged(() => {
         this._onDidChangeTreeData.fire();

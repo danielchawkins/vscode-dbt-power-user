@@ -47,11 +47,13 @@ import { QUERY_RESULTS_REPLAY } from "./replayRules";
 type HostMessage = queryResults.HostMessage;
 type PanelMessage = queryResults.PanelMessage;
 
-enum QueryPanelViewType {
-  DEFAULT,
-  OPEN_RESULTS_IN_TAB,
-  OPEN_RESULTS_FROM_HISTORY_BOOKMARKS,
-}
+const QueryPanelViewType = {
+  DEFAULT: 0,
+  OPEN_RESULTS_IN_TAB: 1,
+  OPEN_RESULTS_FROM_HISTORY_BOOKMARKS: 2,
+} as const;
+type QueryPanelViewType =
+  (typeof QueryPanelViewType)[keyof typeof QueryPanelViewType];
 
 export class QueryResultPanel extends PanelHost<HostMessage> {
   public static readonly viewType = "fusionPowerUser.PreviewResults";
@@ -69,13 +71,16 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   }
 
   // stored only for current session, if user reloads or opens new workspace, this will be reset
+  declare protected extensionContext: ExtensionContextStore;
+  declare protected dbtTerminal: Log;
+  declare protected queryManifestService: QueryManifestService;
   private readonly history: QueryHistoryStore;
 
   public constructor(
-    protected override extensionContext: ExtensionContextStore,
+    extensionContext: ExtensionContextStore,
     eventEmitterService: SharedStateService,
-    protected override dbtTerminal: Log,
-    protected override queryManifestService: QueryManifestService,
+    dbtTerminal: Log,
+    queryManifestService: QueryManifestService,
     onDidRemoveProject: Event<Uri>,
   ) {
     super(

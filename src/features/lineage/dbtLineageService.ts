@@ -85,17 +85,29 @@ export function describeNoLineage(reason: NoLineage): string {
 }
 
 export class DbtLineageService {
+  private queryManifestService: QueryManifestService;
+  /** The Fusion Client of the Current Project. */
+  private currentClient: () => FusionClient | undefined;
+  /** The Current Project's configuration error, which explains a lineage request that found no nodes. */
+  private currentError: () => string | undefined;
+  /** Whether the Current Project opts into `+static_analysis: strict`, and the folder the strict fix changes. */
+  private currentStrict: () => StrictInputs;
+
   public constructor(
-    private queryManifestService: QueryManifestService,
-    /** The Fusion Client of the Current Project. */
-    private currentClient: () => FusionClient | undefined = () => undefined,
-    /** The Current Project's configuration error, which explains a lineage request that found no nodes. */
-    private currentError: () => string | undefined = () => undefined,
+    queryManifestService: QueryManifestService,
+
+    currentClient: () => FusionClient | undefined = () => undefined,
+
+    currentError: () => string | undefined = () => undefined,
     /** The Current Project's server commands; defaults to commands over `currentClient`. */
     currentLsp?: () => FusionCommands | undefined,
-    /** Whether the Current Project opts into `+static_analysis: strict`, and the folder the strict fix changes. */
-    private currentStrict: () => StrictInputs = () => ({ strict: false }),
+
+    currentStrict: () => StrictInputs = () => ({ strict: false }),
   ) {
+    this.queryManifestService = queryManifestService;
+    this.currentClient = currentClient;
+    this.currentError = currentError;
+    this.currentStrict = currentStrict;
     const fallback = createFusionCommands(() => this.currentClient());
     this.currentLsp = currentLsp ?? (() => fallback);
   }

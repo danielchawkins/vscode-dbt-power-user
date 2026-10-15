@@ -28,8 +28,10 @@ export class DocumentationTreeview
   readonly onDidChangeTreeData: Event<DocTreeItem | undefined | void> =
     this._onDidChangeTreeData.event;
   private disposables: Disposable[] = [this._onDidChangeTreeData];
+  private projects: Projects;
 
-  constructor(private projects: Projects) {
+  constructor(projects: Projects) {
+    this.projects = projects;
     this.disposables.push(
       ...refreshOnProjectChange(this.projects, () =>
         this._onDidChangeTreeData.fire(),

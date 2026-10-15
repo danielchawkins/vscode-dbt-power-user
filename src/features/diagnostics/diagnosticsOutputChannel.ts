@@ -3,7 +3,11 @@ import { stripANSI } from "../../core/text";
 
 /** Writes the diagnostics report to `outputChannel`, which it disposes. */
 export class DiagnosticsOutputChannel {
-  constructor(private readonly outputChannel: OutputChannel) {}
+  private readonly outputChannel: OutputChannel;
+
+  constructor(outputChannel: OutputChannel) {
+    this.outputChannel = outputChannel;
+  }
 
   show(): void {
     this.outputChannel.show(true);

@@ -38,10 +38,16 @@ export interface DocumentationSchema {
 }
 
 export class DocGenService {
+  protected projects: Projects;
+  private queryManifestService: QueryManifestService;
+
   public constructor(
-    protected projects: Projects,
-    private queryManifestService: QueryManifestService,
-  ) {}
+    projects: Projects,
+    queryManifestService: QueryManifestService,
+  ) {
+    this.projects = projects;
+    this.queryManifestService = queryManifestService;
+  }
 
   private getCompiledDocumentationFromNode(
     currentNode: NodeMetaData | undefined,

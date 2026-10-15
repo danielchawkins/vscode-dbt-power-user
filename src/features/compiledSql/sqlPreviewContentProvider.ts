@@ -36,8 +36,10 @@ export class SqlPreviewContentProvider
   private _onDidChange = new EventEmitter<Uri>();
   private previews = new Map<string, Preview>();
   private subscriptions: Disposable[] = [];
+  private projects: Projects;
 
-  constructor(private projects: Projects) {
+  constructor(projects: Projects) {
+    this.projects = projects;
     this.subscriptions.push(
       projects.onDidInitialize(() => this.renderLoadingPreviews()),
       workspace.onDidChangeTextDocument((e) => {
