@@ -5,6 +5,7 @@ import {
   evaluatePanel,
   readWebviewHeap,
   validateSmokeHost,
+  waitForPanelGone,
   waitForWebviewPaint,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
@@ -167,7 +168,7 @@ suite("Panel view state", function () {
     const selected = await waitForTabs(port, (tabs) => tabs.active === "SQL");
 
     await vscode.commands.executeCommand(OTHER_PANEL);
-    await sleep(1_000);
+    const goneMs = await waitForPanelGone(port, RESULTS.entry);
     await showResults(port, host);
     // The rebuilt page paints the default tab before the saved one is restored.
     const after = await waitForTabs(
@@ -178,7 +179,7 @@ suite("Panel view state", function () {
         tabs.tabs.some((tab) => tab.startsWith("Preview")),
     );
     console.log(
-      `FPU_SMOKE_VIEW_STATE=${JSON.stringify({ host, before, selected, after })}`,
+      `FPU_SMOKE_VIEW_STATE=${JSON.stringify({ host, goneMs, before, selected, after })}`,
     );
     assert.notStrictEqual(
       after.timeOrigin,
@@ -225,7 +226,7 @@ suite("Panel view state", function () {
     );
 
     await showPanel(port, host, RESULTS);
-    await sleep(1_000);
+    const goneMs = await waitForPanelGone(port, DOCS.entry);
     await showPanel(port, host, DOCS);
     const after = await waitForDocs(
       port,
@@ -234,7 +235,7 @@ suite("Panel view state", function () {
     );
 
     console.log(
-      `FPU_SMOKE_DOCS_DRAFT=${JSON.stringify({ host, loaded, edited, after })}`,
+      `FPU_SMOKE_DOCS_DRAFT=${JSON.stringify({ host, goneMs, loaded, edited, after })}`,
     );
     assert.strictEqual(after.description, edit, "the draft should survive");
     assert.ok(after.modified && after.save, "the editor should still be dirty");
@@ -284,7 +285,7 @@ suite("Panel view state", function () {
     }
 
     await showPanel(port, host, RESULTS);
-    await sleep(1_000);
+    const goneMs = await waitForPanelGone(port, LINEAGE.entry);
     await showPanel(port, host, LINEAGE);
     const after = await waitForLineage(
       port,
@@ -294,7 +295,7 @@ suite("Panel view state", function () {
         g.traced.length === before.traced.length,
     );
     console.log(
-      `FPU_SMOKE_LINEAGE_STATE=${JSON.stringify({ host, drawn, before, after })}`,
+      `FPU_SMOKE_LINEAGE_STATE=${JSON.stringify({ host, goneMs, drawn, before, after })}`,
     );
     assert.notStrictEqual(
       after.timeOrigin,
@@ -328,7 +329,7 @@ suite("Panel view state", function () {
     const samples = [await sampleHeaps(port, rows)];
     for (let cycle = 0; cycle < 10; cycle += 1) {
       await vscode.commands.executeCommand(OTHER_PANEL);
-      await sleep(1_000);
+      await waitForPanelGone(port, RESULTS.entry);
       await showResults(port, host);
       samples.push(await sampleHeaps(port, rows));
     }

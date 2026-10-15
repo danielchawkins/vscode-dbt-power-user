@@ -90,3 +90,22 @@ export function aggregateWorkbenchNotificationSnapshots(
   }
   return { workbench: true, toasts: [...toasts] };
 }
+
+/**
+ * The host's own notice when its extension host is slow to start on a loaded runner. It names the host, not this
+ * extension, and the tests that follow still check that the extension activated.
+ */
+const SLOW_HOST_START =
+  /^(?:Reload Window\nCopy\n)?Extension host did not start in \d+ seconds$/;
+
+/** Splits notification texts into the host's slow-start notices, which are expected, and everything else. */
+export function splitHostNotices(texts: readonly string[]): {
+  hostNotices: string[];
+  unexpected: string[];
+} {
+  const hostNotices = texts.filter((text) => SLOW_HOST_START.test(text));
+  return {
+    hostNotices,
+    unexpected: texts.filter((text) => !SLOW_HOST_START.test(text)),
+  };
+}

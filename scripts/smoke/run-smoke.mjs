@@ -216,6 +216,7 @@ watchdog.unref();
 
 try {
   const launchEpochMs = Date.now();
+  const passedMarker = path.join(workspaceParent, "fpu-smoke-passed");
   await runTests({
     vscodeExecutablePath: hostApp,
     extensionTestsPath: path.join(root, "out/test/smoke/index.js"),
@@ -245,6 +246,7 @@ try {
       FPU_SMOKE_HOST: host,
       FPU_CDP_PORT: cdpPort,
       FPU_SMOKE_LAUNCH_EPOCH_MS: String(launchEpochMs),
+      FPU_SMOKE_PASSED_MARKER: passedMarker,
       ...(suites ? { FPU_SMOKE_SUITES: suites } : {}),
       ...(process.env.FPU_RUNTIME_BENCHMARK
         ? { FPU_RUNTIME_BENCHMARK: process.env.FPU_RUNTIME_BENCHMARK }
@@ -260,6 +262,16 @@ try {
           }
         : {}),
     },
+  }).catch((error) => {
+    // Cursor can abort in its own native code while quitting, after the tests returned. The marker is written only
+    // when every test passed, so a crash after it is the host's, and any other failure still fails the run.
+    if (error?.signal && existsSync(passedMarker)) {
+      console.warn(
+        `FPU_SMOKE_HOST_EXIT_SIGNAL=${error.signal}: the tests passed; the ${host} host crashed while quitting`,
+      );
+      return;
+    }
+    throw error;
   });
   await assertNoSurvivingFusionLspProcess(workspaceDir);
 } finally {
