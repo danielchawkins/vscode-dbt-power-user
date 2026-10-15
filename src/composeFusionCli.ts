@@ -1,11 +1,9 @@
 import type { Log } from "./core/log";
+import { ConfiguredFusionExecutableResolver } from "./executable/configuredFusionExecutableResolver";
 import type { ExtensionContextStore } from "./extensionContext";
 import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
 import { FusionCli } from "./fusion/fusionCli";
-import {
-  ConfiguredFusionExecutableResolver,
-  type FusionExecutable,
-} from "./fusion/fusionExecutable";
+import { type FusionExecutable } from "./fusion/fusionExecutable";
 import type { ProjectEnvironments } from "./projects/clients/projectEnvironments";
 import { readProjectSnapshot } from "./projects/clients/readProjectSnapshot";
 import type { ChannelLog } from "./projects/output/outputChannels";

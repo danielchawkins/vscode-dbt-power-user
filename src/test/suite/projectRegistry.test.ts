@@ -18,7 +18,7 @@ import {
 } from "vitest";
 import type { WorkspaceFolder } from "vscode";
 import { RelativePattern, Uri, workspace } from "vscode";
-import type { FusionClientFactory } from "../../fusion/fusionLanguageClient";
+import type { FusionClientFactory } from "../../projects/clients/fusionClientFactory";
 import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import {

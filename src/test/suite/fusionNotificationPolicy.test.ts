@@ -12,7 +12,7 @@ import { extensions, Uri, window, workspace } from "vscode";
 import { toLspLaunch } from "../../core/lsp";
 import { DBTPowerUserExtension } from "../../dbtPowerUserExtension";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
-import { DefaultFusionClientFactory } from "../../fusion/fusionLanguageClient";
+import { DefaultFusionClientFactory } from "../../languageClient/defaultFusionClientFactory";
 import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import type {

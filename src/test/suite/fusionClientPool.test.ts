@@ -20,11 +20,11 @@ import type { FusionExecutableResolver } from "../../fusion/fusionExecutable";
 import { DBT_PATH_SETTING } from "../../fusion/fusionExecutable";
 import type {
   FusionClient,
-  FusionClientFactory,
   FusionClientOptions,
   FusionProjectRef,
 } from "../../fusion/fusionLanguageClient";
 import { onCurrentClientChange } from "../../projects/clients/clientChange";
+import type { FusionClientFactory } from "../../projects/clients/fusionClientFactory";
 import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
 import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import type {

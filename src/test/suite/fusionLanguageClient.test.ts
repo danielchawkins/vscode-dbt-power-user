@@ -40,7 +40,6 @@ import type {
 } from "../../fusion/fusionLanguageClient";
 import {
   commandPrefixForProject,
-  DefaultFusionClientFactory,
   FUSION_LSP_COMMANDS,
 } from "../../fusion/fusionLanguageClient";
 import {
@@ -58,6 +57,7 @@ import type {
   ReverseSocketServer,
   ReverseSocketStreams,
 } from "../../fusion/reverseSocketTransport";
+import { DefaultFusionClientFactory } from "../../languageClient/defaultFusionClientFactory";
 import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";

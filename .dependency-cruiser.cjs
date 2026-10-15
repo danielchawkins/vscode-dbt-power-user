@@ -41,7 +41,9 @@ module.exports = {
     layer("settings", "^src/core/"),
     layer("benchmark", "^src/settings/"),
     layer("fusion", "^src/(core|settings)/"),
+    layer("executable", "^src/(core|settings|fusion)/"),
     layer("metadata", "^src/(core|fusion|projects)/"),
+    layer("languageClient", "^src/(fusion|projects/clients)/"),
     layer("projects", "^src/(core|settings|fusion)/"),
     // Inside projects/, lowest first: registry, output, clients, manifest, project.
     {
