@@ -1,10 +1,10 @@
 import type { ExtensionContext } from "vscode";
 import { Disposable } from "vscode";
-import { cliFactoryFor, createExecutableResolver } from "./composeFusionCli";
+import { cliFactoryFor } from "./composeFusionCli";
 import type { Log } from "./core/log";
 import { createProjectParsers } from "./core/manifest/projectParsers";
 import { DBTPowerUserExtension } from "./dbtPowerUserExtension";
-import type { ConfiguredFusionExecutableResolver } from "./executable/configuredFusionExecutableResolver";
+import { ConfiguredFusionExecutableResolver } from "./executable/configuredFusionExecutableResolver";
 import { ExtensionContextStore } from "./extensionContext";
 import { SourceModelCreationCodeLensProvider } from "./features/codegen/sourceModelCreationCodeLensProvider";
 import { CodeLensProviders } from "./features/codeLenses";
@@ -84,37 +84,23 @@ export interface Composition {
   fusionOutputChannel: FusionLaunchSources["outputChannel"];
 }
 
-interface ProjectsGraph {
-  extensionContextStore: ExtensionContextStore;
-  outputChannels: OutputChannels;
-  terminal: Log;
-  sharedState: SharedStateService;
-  runHistoryService: RunHistoryService;
-  fusionExecutableResolver: ConfiguredFusionExecutableResolver;
-  projectEnvironments: ProjectEnvironments;
-  projectFactory: ProjectFactory;
-  projectRegistry: ProjectRegistry;
-  projects: Projects;
-  projectQuickPick: ProjectQuickPick;
-  currentProject: CurrentProject;
-  queryManifestService: QueryManifestService;
-  /** Filled by `composeFusion`; projects read their client through it. */
-  clients: { pool?: FusionClientPool };
-  /** Views reading parse-owned fields; projects parse on a source change only while one is showing. */
-  parseDemand: ParseDemand;
-}
+type ProjectsGraph = ReturnType<typeof composeProjects>;
 
-function composeProjects(context: ExtensionContext): ProjectsGraph {
+function composeProjects(context: ExtensionContext) {
   const extensionContextStore = new ExtensionContextStore(context);
   const outputChannels = new OutputChannels(context.extension.id);
   bindExtensionOutput(() => outputChannels.channel.show(true));
   const terminal: Log = outputChannels;
   const sharedState = new SharedStateService();
   const runHistoryService = new RunHistoryService();
-  const fusionExecutableResolver = createExecutableResolver(
-    terminal,
-    extensionContextStore,
-  );
+  const fusionExecutableResolver = new ConfiguredFusionExecutableResolver({
+    logWarning: (message) => terminal.warn("FusionVersion", message),
+    getGlobalState: () => ({
+      get: (key) => extensionContextStore.getFromGlobalState(key),
+      update: (key, value) =>
+        extensionContextStore.setToGlobalState(key, value),
+    }),
+  });
   const clients: { pool?: FusionClientPool } = {};
   const projectEnvironments = new ProjectEnvironments(
     outputChannels.projectLog.bind(outputChannels),
@@ -364,17 +350,33 @@ export function compose(context: ExtensionContext): Composition {
   const startupGate = new StartupGate();
   const commands = composeCommands(graph, startupGate);
   const editor = composeEditorProviders(graph);
-
-  const extension = new DBTPowerUserExtension(
+  const statusBars = new StatusBars(commands.deferToProductionStatusBar);
+  const services = {
+    projects: graph.projects,
+    statusBars,
+    log: terminal,
+    projectRegistry,
+    fusionClientPool: fusion.fusionClientPool,
+    fusionStatus: fusion.fusionStatus,
+    startupGate,
+    dbtLineageService: fusion.dbtLineageService,
+    projectEnvironments: graph.projectEnvironments,
+  };
+  // Disposed last one first, so shared state and run history outlive everything that reports into them.
+  const owned = [
+    graph.sharedState,
+    graph.runHistoryService,
+    terminal,
     graph.projects,
+    registerDbtTaskProvider(graph.projects),
+    graph.projectEnvironments,
     composeWebviews(graph, fusion.dbtLineageService),
-    commands.vscodeCommands,
     editor.treeviewProviders,
     editor.contentProviders,
     editor.codeLensProviders,
-    new StatusBars(commands.deferToProductionStatusBar),
+    commands.vscodeCommands,
+    statusBars,
     new DbtPowerUserActionsCenter(currentProject, graph.extensionContextStore),
-    terminal,
     projectRegistry,
     currentProject,
     fusion.fusionClientPool,
@@ -383,16 +385,9 @@ export function compose(context: ExtensionContext): Composition {
       graph.outputChannels.logFor(root),
     ),
     new FileAssociationsCommand(startupGate, projectRegistry),
-    startupGate,
-    fusion.dbtLineageService,
-    graph.sharedState,
-    graph.runHistoryService,
-    registerDbtTaskProvider(graph.projects),
-    graph.projectEnvironments,
-  );
-
+  ];
   return {
-    extension,
+    extension: new DBTPowerUserExtension(services, owned),
     extensionContextStore: graph.extensionContextStore,
     fusionStatus: fusion.fusionStatus,
     fusionExecutableResolver: graph.fusionExecutableResolver,

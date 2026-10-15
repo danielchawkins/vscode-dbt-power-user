@@ -7,7 +7,17 @@ import {
   notifyError,
   notifyErrorWithoutProject,
 } from "../../projects/output/notifications";
-import type { Projects } from "../../projects/project/projects";
+import type { Project } from "../../projects/project/project";
+import type { ProjectQueries } from "../../projects/project/projectQueries";
+import type { ProjectLookup } from "../../projects/project/projects";
+
+/** What profiling reads from a file's project. */
+type ProfiledProject = Pick<
+  Project,
+  "log" | "projectRoot" | "getProjectName"
+> & {
+  queries: Pick<ProjectQueries, "immediatelyExecuteSQLWithLimit">;
+};
 import type { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
 
 /** Reads a compiled file once per profiling run, so every CTE is sliced from the same version. */
@@ -32,9 +42,9 @@ export class CteProfilerService implements Disposable {
 
   /** The log of the Project being profiled. */
   private runningLog: Log | undefined;
-  private projects: Projects;
+  private projects: ProjectLookup<ProfiledProject>;
 
-  constructor(projects: Projects) {
+  constructor(projects: ProjectLookup<ProfiledProject>) {
     this.projects = projects;
   }
 

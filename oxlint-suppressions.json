@@ -99,11 +99,6 @@
       "count": 1
     }
   },
-  "src/dbtPowerUserExtension.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/features/codeLenses.ts": {
     "max-params": {
       "count": 1
@@ -232,16 +227,6 @@
       "count": 1
     }
   },
-  "src/projects/project/commandQueue.ts": {
-    "typescript/unbound-method": {
-      "count": 2
-    }
-  },
-  "src/projects/project/dbtTask.ts": {
-    "max-params": {
-      "count": 1
-    }
-  },
   "src/projects/clients/fusionClientDiagnostics.ts": {
     "max-params": {
       "count": 1
@@ -267,12 +252,7 @@
       "count": 1
     }
   },
-  "src/projects/project/projectCodegen.ts": {
-    "max-params": {
-      "count": 2
-    }
-  },
-  "src/projects/project/projectCommands.ts": {
+  "src/projects/manifest/runResults.ts": {
     "max-params": {
       "count": 1
     }
@@ -282,8 +262,23 @@
       "count": 1
     }
   },
-  "src/projects/registry/projectRegistry.ts": {
-    "max-lines-per-function": {
+  "src/projects/project/commandQueue.ts": {
+    "typescript/unbound-method": {
+      "count": 2
+    }
+  },
+  "src/projects/project/dbtTask.ts": {
+    "max-params": {
+      "count": 1
+    }
+  },
+  "src/projects/project/projectCodegen.ts": {
+    "max-params": {
+      "count": 2
+    }
+  },
+  "src/projects/project/projectCommands.ts": {
+    "max-params": {
       "count": 1
     }
   },
@@ -297,8 +292,8 @@
       "count": 2
     }
   },
-  "src/projects/manifest/runResults.ts": {
-    "max-params": {
+  "src/projects/registry/projectRegistry.ts": {
+    "max-lines-per-function": {
       "count": 1
     }
   },
@@ -398,7 +393,7 @@
   },
   "src/test/suite/runModel.test.ts": {
     "typescript/restrict-template-expressions": {
-      "count": 8
+      "count": 6
     }
   },
   "src/webview/messageRouter.ts": {

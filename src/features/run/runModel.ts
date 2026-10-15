@@ -6,7 +6,25 @@ import { notifyErrorWithoutProject } from "../../projects/output/notifications";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { GenerateModelFromSourceParams } from "../../projects/project/projectCodegen";
 import { modelParamsFor } from "../../projects/project/projectCommands";
-import type { Projects } from "../../projects/project/projects";
+import type { ProjectDbtCommands } from "../../projects/project/projectDbtCommands";
+import type { ProjectQueries } from "../../projects/project/projectQueries";
+import type { ProjectLookup } from "../../projects/project/projects";
+
+/** What running, compiling and generating a model read from its project. */
+type ModelProject = {
+  commands: Pick<
+    ProjectDbtCommands,
+    "runModel" | "buildModel" | "compileModel" | "runTest" | "runModelTest"
+  >;
+  queries: Pick<
+    ProjectQueries,
+    | "compileQuery"
+    | "executeSQLOnQueryPanel"
+    | "generateModel"
+    | "generateSchemaYML"
+    | "showRunSQL"
+  >;
+};
 import { activeModelUri } from "../../projects/registry/previewUri";
 
 /** The model tree item fields a run reads. */
@@ -16,10 +34,13 @@ const labelText = (label: NonNullable<TreeItem["label"]>): string =>
   typeof label === "string" ? label : label.label;
 
 export class RunModel {
-  private projects: Projects;
+  private projects: ProjectLookup<ModelProject>;
   private currentProject: CurrentProject;
 
-  constructor(projects: Projects, currentProject: CurrentProject) {
+  constructor(
+    projects: ProjectLookup<ModelProject>,
+    currentProject: CurrentProject,
+  ) {
     this.projects = projects;
     this.currentProject = currentProject;
   }

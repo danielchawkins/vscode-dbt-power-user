@@ -1,6 +1,3 @@
-import type { Log } from "./core/log";
-import { ConfiguredFusionExecutableResolver } from "./executable/configuredFusionExecutableResolver";
-import type { ExtensionContextStore } from "./extensionContext";
 import { CommandProcessExecutionFactory } from "./fusion/commandProcessExecution";
 import { FusionCli } from "./fusion/fusionCli";
 import { type FusionExecutable } from "./fusion/fusionExecutable";
@@ -25,16 +22,4 @@ export function cliFactoryFor(
       source.ready,
     );
   };
-}
-export function createExecutableResolver(
-  terminal: Log,
-  store: ExtensionContextStore,
-): ConfiguredFusionExecutableResolver {
-  return new ConfiguredFusionExecutableResolver({
-    logWarning: (message) => terminal.warn("FusionVersion", message),
-    getGlobalState: () => ({
-      get: (key) => store.getFromGlobalState(key),
-      update: (key, value) => store.setToGlobalState(key, value),
-    }),
-  });
 }

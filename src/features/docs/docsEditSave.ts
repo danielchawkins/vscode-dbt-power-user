@@ -4,7 +4,10 @@ import { Uri, window } from "vscode";
 import type { Log } from "../../core/log";
 import { removeProtocol } from "../../core/text";
 import type { Project } from "../../projects/project/project";
-import type { Projects } from "../../projects/project/projects";
+import type { ProjectLookup } from "../../projects/project/projects";
+
+/** What saving reads from the project that owns the documented file. */
+type SaveProject = Pick<Project, "projectRoot" | "getAdapterType">;
 import { writeUserFile } from "../../projects/project/userFiles";
 import type { MessageOf } from "../../webview/messageRouter";
 import type { TestDataDeps } from "./docsTestData";
@@ -16,7 +19,7 @@ type SaveMessage = MessageOf<
 >;
 
 export interface SaveDeps {
-  projects: Pick<Projects, "get">;
+  projects: ProjectLookup<SaveProject>;
   terminal: Log;
   testData: TestDataDeps;
 }
@@ -24,7 +27,7 @@ export interface SaveDeps {
 /** The schema file to write: the manifest's location, or one the user picks; `undefined` when they cancel. */
 async function chooseSchemaFile(
   message: SaveMessage,
-  project: Project,
+  project: SaveProject,
 ): Promise<string | undefined> {
   if (message.patchPath) {
     // the location comes from the manifest, parse it
@@ -55,7 +58,7 @@ async function chooseSchemaFile(
  */
 export async function saveDocumentation(
   message: SaveMessage,
-  activeProject: Project | undefined,
+  activeProject: unknown,
   deps: SaveDeps,
   onFailure: (error: unknown, patchPath: string | undefined) => void,
 ): Promise<boolean> {

@@ -2,25 +2,14 @@ import type { Disposable } from "vscode";
 import { commands, extensions, window, workspace } from "vscode";
 import { registerRuntimeTimings } from "./benchmark/runtimeTimings";
 import type { Log } from "./core/log";
-import type { CodeLensProviders } from "./features/codeLenses";
-import type { VSCodeCommands } from "./features/commands";
-import type { ContentProviders } from "./features/contentProviders";
 import { registerConnectedColumnsCommand } from "./features/lineage/connectedColumnsCommand";
 import type { DbtLineageService } from "./features/lineage/dbtLineageService";
-import type { WebviewViewProviders } from "./features/panels";
-import type { DbtPowerUserActionsCenter } from "./features/projectPicker/actionsCenter";
-import type { FileAssociationsCommand } from "./features/projectSetup/fileAssociations";
-import type { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
 import type { StatusBars } from "./features/statusBars";
-import type { TreeviewProviders } from "./features/treeViews";
 import { registerFusionClientDiagnostics } from "./projects/clients/fusionClientDiagnostics";
 import type { FusionClientPool } from "./projects/clients/fusionClientPool";
 import type { FusionStatus } from "./projects/clients/fusionStatus";
 import type { ProjectEnvironments } from "./projects/clients/projectEnvironments";
-import type { RunHistoryService } from "./projects/output/runHistoryService";
-import type { CurrentProject } from "./projects/project/currentProject";
 import type { Projects } from "./projects/project/projects";
-import type { SharedStateService } from "./projects/project/sharedStateService";
 import type { ProjectRegistry } from "./projects/registry/projectRegistry";
 import { onDidChangeSettings, readSetting } from "./settings";
 import type { StartupGate } from "./startupGate";
@@ -28,100 +17,47 @@ import type { StartupGate } from "./startupGate";
 const UPSTREAM_EXTENSION_ID = "innoverio.vscode-dbt-power-user";
 const UNINSTALL_POWER_USER = "Uninstall Power User";
 
+/** The collaborators activation starts, watches and stops. */
+export interface ExtensionServices {
+  projects: Projects;
+  statusBars: StatusBars;
+  log: Log;
+  projectRegistry: ProjectRegistry;
+  fusionClientPool: FusionClientPool;
+  fusionStatus: FusionStatus;
+  startupGate: StartupGate;
+  dbtLineageService: DbtLineageService;
+  projectEnvironments: ProjectEnvironments;
+}
+
 export class DBTPowerUserExtension implements Disposable {
   private disposables: Disposable[] = [];
   private disposed = false;
   private projects: Projects;
-  private webviewViewProviders: WebviewViewProviders;
-  private vscodeCommands: VSCodeCommands;
-  private treeviewProviders: TreeviewProviders;
-  private contentProviders: ContentProviders;
-  private codeLensProviders: CodeLensProviders;
   private statusBars: StatusBars;
-  private puStatusBars: DbtPowerUserActionsCenter;
   private dbtTerminal: Log;
   private projectRegistry: ProjectRegistry;
-  private currentProject: CurrentProject;
   private fusionClientPool: FusionClientPool;
   private fusionStatus: FusionStatus;
-  private projectConfigCommands: ProjectConfigCommands;
-  private fileAssociationsCommand: FileAssociationsCommand;
   private startupGate: StartupGate;
   private dbtLineageService: DbtLineageService;
-  /** Disposed after every other collaborator. */
-  private sharedState: SharedStateService;
-  /** Disposed after every other collaborator except `sharedState`. */
-  private runHistoryService: RunHistoryService;
-  private dbtTaskProvider: Disposable;
   private projectEnvironments: ProjectEnvironments;
 
-  constructor(
-    projects: Projects,
-    webviewViewProviders: WebviewViewProviders,
-    vscodeCommands: VSCodeCommands,
-    treeviewProviders: TreeviewProviders,
-    contentProviders: ContentProviders,
-    codeLensProviders: CodeLensProviders,
-    statusBars: StatusBars,
-    puStatusBars: DbtPowerUserActionsCenter,
-    dbtTerminal: Log,
-    projectRegistry: ProjectRegistry,
-    currentProject: CurrentProject,
-    fusionClientPool: FusionClientPool,
-    fusionStatus: FusionStatus,
-    projectConfigCommands: ProjectConfigCommands,
-    fileAssociationsCommand: FileAssociationsCommand,
-    startupGate: StartupGate,
-    dbtLineageService: DbtLineageService,
-
-    sharedState: SharedStateService,
-
-    runHistoryService: RunHistoryService,
-    dbtTaskProvider: Disposable,
-    projectEnvironments: ProjectEnvironments,
-  ) {
-    this.projects = projects;
-    this.webviewViewProviders = webviewViewProviders;
-    this.vscodeCommands = vscodeCommands;
-    this.treeviewProviders = treeviewProviders;
-    this.contentProviders = contentProviders;
-    this.codeLensProviders = codeLensProviders;
-    this.statusBars = statusBars;
-    this.puStatusBars = puStatusBars;
-    this.dbtTerminal = dbtTerminal;
-    this.projectRegistry = projectRegistry;
-    this.currentProject = currentProject;
-    this.fusionClientPool = fusionClientPool;
-    this.fusionStatus = fusionStatus;
-    this.projectConfigCommands = projectConfigCommands;
-    this.fileAssociationsCommand = fileAssociationsCommand;
-    this.startupGate = startupGate;
-    this.dbtLineageService = dbtLineageService;
-    this.sharedState = sharedState;
-    this.runHistoryService = runHistoryService;
-    this.dbtTaskProvider = dbtTaskProvider;
-    this.projectEnvironments = projectEnvironments;
-    this.disposables.push(
-      this.sharedState,
-      this.runHistoryService,
-      this.dbtTerminal,
-      this.projects,
-      this.dbtTaskProvider,
-      this.projectEnvironments,
-      this.webviewViewProviders,
-      this.treeviewProviders,
-      this.contentProviders,
-      this.codeLensProviders,
-      this.vscodeCommands,
-      this.statusBars,
-      this.puStatusBars,
-      this.projectRegistry,
-      this.currentProject,
-      this.fusionClientPool,
-      this.fusionStatus,
-      this.projectConfigCommands,
-      this.fileAssociationsCommand,
-    );
+  /**
+   * `services` are what activation starts, watches and stops. `owned` is everything the extension disposes, in
+   * construction order: disposal runs last one first, so the first entries (shared state, run history) go last.
+   */
+  constructor(services: ExtensionServices, owned: readonly Disposable[]) {
+    this.projects = services.projects;
+    this.statusBars = services.statusBars;
+    this.dbtTerminal = services.log;
+    this.projectRegistry = services.projectRegistry;
+    this.fusionClientPool = services.fusionClientPool;
+    this.fusionStatus = services.fusionStatus;
+    this.startupGate = services.startupGate;
+    this.dbtLineageService = services.dbtLineageService;
+    this.projectEnvironments = services.projectEnvironments;
+    this.disposables.push(...owned);
   }
 
   dispose() {

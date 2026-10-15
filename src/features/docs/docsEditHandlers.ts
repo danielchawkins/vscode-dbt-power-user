@@ -11,7 +11,16 @@ import type { Log } from "../../core/log";
 import type { TestMetaData } from "../../core/manifest/types";
 import { notifyError } from "../../projects/output/notifications";
 import type { Project } from "../../projects/project/project";
+import type { ProjectQueries } from "../../projects/project/projectQueries";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
+
+/** What the handlers read from the active editor's project. */
+export type DocsProject = Pick<Project, "projectRoot" | "getProjectName"> & {
+  queries: Pick<
+    ProjectQueries,
+    "getColumnValues" | "getColumnsOfSource" | "getColumnsOfModel"
+  >;
+};
 import { activeModelUri } from "../../projects/registry/previewUri";
 import type { Handlers } from "../../webview/messageRouter";
 import type { DbtTestService } from "./dbtTestService";
@@ -34,9 +43,12 @@ export type RequestCommand =
 /** What the handlers need from the documentation editor host. */
 export interface DocsEditHost {
   readonly terminal: Log;
-  readonly queryManifestService: QueryManifestService;
+  readonly queryManifestService: Pick<
+    QueryManifestService,
+    "getModelsInProject" | "getSourcesInProject"
+  >;
   readonly dbtTestService: DbtTestService;
-  getProject(): Project | undefined;
+  getProject(): DocsProject | undefined;
   post(message: HostMessage): Thenable<boolean> | undefined;
 }
 
@@ -107,7 +119,7 @@ export class DocsEditRequests {
 
   /** Runs `handler` with the active editor's project, or answers the request with why there is none. */
   withProject<M extends { syncRequestId?: string | undefined }>(
-    handler: (message: M, project: Project, modelPath: Uri) => unknown,
+    handler: (message: M, project: DocsProject, modelPath: Uri) => unknown,
   ): (message: M) => unknown {
     return (message) => {
       if (!window.activeTextEditor) {

@@ -3,11 +3,12 @@ import type { ExtensionContextStore } from "../../extensionContext";
 import { notifyError } from "../../projects/output/notifications";
 import type { OutputChannels } from "../../projects/output/outputChannels";
 import type { Project } from "../../projects/project/project";
+import type { ProjectDbtCommands } from "../../projects/project/projectDbtCommands";
 import type {
   ProjectQuickPick,
   ProjectQuickPickItem,
 } from "../../projects/project/projectQuickPick";
-import type { Projects } from "../../projects/project/projects";
+import type { ProjectList } from "../../projects/project/projects";
 
 const PromptAnswer = {
   YES: "Yes",
@@ -15,14 +16,19 @@ const PromptAnswer = {
 } as const;
 type PromptAnswer = (typeof PromptAnswer)[keyof typeof PromptAnswer];
 
+/** What project setup reads from each project. */
+type SetupProject = Pick<Project, "getProjectName" | "projectRoot"> & {
+  commands: Pick<ProjectDbtCommands, "debug" | "installDeps">;
+};
+
 export class ProjectSetupCommands {
-  private projects: Projects;
+  private projects: ProjectList<SetupProject>;
   private extensionContext: ExtensionContextStore;
   private projectQuickPick: ProjectQuickPick;
   private outputChannels: Pick<OutputChannels, "logFor">;
 
   constructor(
-    projects: Projects,
+    projects: ProjectList<SetupProject>,
     extensionContext: ExtensionContextStore,
     projectQuickPick: ProjectQuickPick,
     outputChannels: Pick<OutputChannels, "logFor">,
@@ -59,7 +65,7 @@ export class ProjectSetupCommands {
     skipConfirmation: boolean,
     step: {
       prompt: (label: string) => string;
-      run: (project: Project) => Promise<void>;
+      run: (project: SetupProject) => Promise<void>;
       logKey: string;
       logMessage: (label: string) => string;
       notice: string;
