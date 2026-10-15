@@ -13,6 +13,7 @@ import {
 } from "vscode-languageclient/node";
 import { DBT_LSP_USE_TARGET_LSP, toLspArgs } from "../core/lsp";
 import { type StaticAnalysisMode } from "../core/project";
+import { errorText } from "../core/text";
 import { documentSelectorForProject } from "./documentSelector";
 import {
   DISPOSAL_GRACE_MS,
@@ -68,7 +69,11 @@ export interface FusionClientFactory {
 }
 
 export class DefaultFusionClientFactory implements FusionClientFactory {
-  constructor(private readonly deps: FusionLanguageClientDependencies = {}) {}
+  private readonly deps: FusionLanguageClientDependencies;
+
+  constructor(deps: FusionLanguageClientDependencies = {}) {
+    this.deps = deps;
+  }
 
   create(options: FusionClientOptions): FusionClient {
     return new FusionLanguageClientImpl(options, this.deps);
@@ -99,11 +104,15 @@ class FusionLanguageClientImpl implements FusionClient {
     uriConverters: this.uriConverters,
   }));
   private readonly nestedRoots: ClientNestedRoots | undefined;
+  private readonly options: FusionClientOptions;
+  private readonly deps: FusionLanguageClientDependencies;
 
   constructor(
-    private readonly options: FusionClientOptions,
-    private readonly deps: FusionLanguageClientDependencies,
+    options: FusionClientOptions,
+    deps: FusionLanguageClientDependencies,
   ) {
+    this.options = options;
+    this.deps = deps;
     this.nestedRoots =
       options.nestedRoots &&
       new ClientNestedRoots(options.project.root, options.nestedRoots, (uri) =>
@@ -219,7 +228,7 @@ class FusionLanguageClientImpl implements FusionClient {
       this._failureReason = undefined;
       this.setState("running");
     } catch (error) {
-      const message = formatError(error);
+      const message = errorText(error);
       if (reason === "unexpected") {
         this.recordFailure(
           `Restart failed for ${this.options.project.name}: ${message}`,
@@ -396,7 +405,7 @@ class FusionLanguageClientImpl implements FusionClient {
       ?.sendNotification("textDocument/didClose", { textDocument })
       .catch((error: unknown) => {
         this.outputChannel.warn(
-          `Could not close a document moved to a nested root: ${formatError(error)}`,
+          `Could not close a document moved to a nested root: ${errorText(error)}`,
         );
       });
   }
@@ -443,11 +452,4 @@ class FusionLanguageClientImpl implements FusionClient {
       this.deps.sleep ?? ((delay) => new Promise((r) => setTimeout(r, delay)));
     return sleepFn(ms);
   }
-}
-
-function formatError(error: unknown): string {
-  if (error instanceof Error) {
-    return error.message;
-  }
-  return String(error);
 }

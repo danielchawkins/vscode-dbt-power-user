@@ -6,7 +6,11 @@ import type { ManifestResources, TestMetaMap } from "./types";
 import { RESOURCE_TYPE_TEST } from "./types";
 
 export class TestParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   private getColumnNameWithoutQuotes(
     columnName: string | undefined,

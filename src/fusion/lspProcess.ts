@@ -58,11 +58,12 @@ export class SpawnedLspProcess implements ExitingProcess {
   private readonly stderrAccumulator = new StderrAccumulator();
   private readonly stdoutBuffer = new ProcessStreamBuffer();
   private readonly stderrStreamBuffer = new ProcessStreamBuffer();
+  private readonly child: ChildProcess;
+  private readonly onChannelLine: ((line: string) => void) | undefined;
 
-  constructor(
-    private readonly child: ChildProcess,
-    private readonly onChannelLine?: (line: string) => void,
-  ) {
+  constructor(child: ChildProcess, onChannelLine?: (line: string) => void) {
+    this.child = child;
+    this.onChannelLine = onChannelLine;
     const appendChannelLine = (line: string): void => {
       this.onChannelLine?.(line);
     };

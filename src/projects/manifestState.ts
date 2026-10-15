@@ -26,11 +26,13 @@ export class ManifestState<
   readonly onDidParse = this.parsed.event;
   /** Fires when the project's language server reports a finished compile. */
   readonly onDidCompile = this.compiled.event;
+  private readonly project: P;
+  private readonly fusionClient: () => FusionClient | undefined;
 
-  constructor(
-    private readonly project: P,
-    private readonly fusionClient: () => FusionClient | undefined,
-  ) {}
+  constructor(project: P, fusionClient: () => FusionClient | undefined) {
+    this.project = project;
+    this.fusionClient = fusionClient;
+  }
 
   /** The latest complete metadata publication. */
   get manifest(): Manifest | undefined {

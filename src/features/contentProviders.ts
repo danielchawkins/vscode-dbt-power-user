@@ -4,8 +4,10 @@ import { SqlPreviewContentProvider } from "./compiledSql/sqlPreviewContentProvid
 
 export class ContentProviders implements Disposable {
   private disposables: Disposable[] = [];
+  private sqlPreviewContentProvider: SqlPreviewContentProvider;
 
-  constructor(private sqlPreviewContentProvider: SqlPreviewContentProvider) {
+  constructor(sqlPreviewContentProvider: SqlPreviewContentProvider) {
+    this.sqlPreviewContentProvider = sqlPreviewContentProvider;
     this.disposables.push(
       this.sqlPreviewContentProvider,
       workspace.registerTextDocumentContentProvider(

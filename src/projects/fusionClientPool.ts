@@ -91,14 +91,22 @@ export class FusionClientPoolImpl implements FusionClientPool {
   ) => LogOutputChannel;
   private readonly launchEnv: FusionLaunchEnvironment | undefined;
   private readonly reportCompileErrors: FusionLaunchSources["reportCompileErrors"];
+  private readonly registry: ProjectRegistry;
+  private readonly terminal: Log;
+  private readonly resolver: FusionExecutableResolver;
+  private readonly factory: FusionClientFactory;
 
   constructor(
-    private readonly registry: ProjectRegistry,
-    private readonly terminal: Log,
-    private readonly resolver: FusionExecutableResolver,
-    private readonly factory: FusionClientFactory,
+    registry: ProjectRegistry,
+    terminal: Log,
+    resolver: FusionExecutableResolver,
+    factory: FusionClientFactory,
     sources: FusionLaunchSources,
   ) {
+    this.registry = registry;
+    this.terminal = terminal;
+    this.resolver = resolver;
+    this.factory = factory;
     this.readSnapshot = sources.readSnapshot;
     this.outputChannel = sources.outputChannel;
     this.environments = sources.environments;

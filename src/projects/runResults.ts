@@ -213,11 +213,19 @@ export function parseRunResultsJson(
 
 /** Reads the run_results.json a command wrote under the current target path. */
 export class RunResultsReader {
+  private readonly targetPath: () => string | undefined;
+  private readonly projectName: () => string;
+  private readonly terminal: Log;
+
   constructor(
-    private readonly targetPath: () => string | undefined,
-    private readonly projectName: () => string,
-    private readonly terminal: Log,
-  ) {}
+    targetPath: () => string | undefined,
+    projectName: () => string,
+    terminal: Log,
+  ) {
+    this.targetPath = targetPath;
+    this.projectName = projectName;
+    this.terminal = terminal;
+  }
 
   observe(): RunResultsObservation {
     const targetPath = this.targetPath();

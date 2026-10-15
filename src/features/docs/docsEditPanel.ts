@@ -49,9 +49,11 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
   private loadedFromManifest = false;
   private onMessageDisposable: Disposable | undefined;
   private demandSubscription: Disposable | undefined;
+  private projects: Projects;
+  private parseDemand: ParseDemand | undefined;
 
   public constructor(
-    private projects: Projects,
+    projects: Projects,
     extensionContext: ExtensionContextStore,
     services: {
       docGenService: DocGenService;
@@ -60,7 +62,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       emitterService: SharedStateService;
     },
     terminal: Log,
-    private parseDemand?: ParseDemand,
+    parseDemand?: ParseDemand,
   ) {
     super(
       extensionContext,
@@ -68,6 +70,8 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       terminal,
       services.queryManifestService,
     );
+    this.projects = projects;
+    this.parseDemand = parseDemand;
     this.docGenService = services.docGenService;
     this.dbtTestService = services.dbtTestService;
     this._disposables.push(

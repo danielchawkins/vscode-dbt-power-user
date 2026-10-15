@@ -35,12 +35,18 @@ const CONFIRM = "Add";
  */
 export class ProjectConfigCommands implements Disposable {
   private readonly disposables: Disposable[];
+  private readonly startupGate: Pick<StartupGate, "whenSettled">;
+  private readonly currentProject: CurrentProject;
+  private readonly logFor: (root: Uri) => Log;
 
   constructor(
-    private readonly startupGate: Pick<StartupGate, "whenSettled">,
-    private readonly currentProject: CurrentProject,
-    private readonly logFor: (root: Uri) => Log,
+    startupGate: Pick<StartupGate, "whenSettled">,
+    currentProject: CurrentProject,
+    logFor: (root: Uri) => Log,
   ) {
+    this.startupGate = startupGate;
+    this.currentProject = currentProject;
+    this.logFor = logFor;
     this.disposables = [
       commands.registerCommand(
         "fusionPowerUser.enableStrictAnalysis",

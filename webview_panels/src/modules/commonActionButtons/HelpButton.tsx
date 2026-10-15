@@ -4,17 +4,18 @@ import type { DrawerRef } from "@uicore";
 import { Button, ButtonGroup, Drawer } from "@uicore";
 import { useEffect, useRef, useState } from "react";
 
-enum Pages {
-  DOCUMENTATION,
-  TESTS,
-}
+const Pages = {
+  DOCUMENTATION: 0,
+  TESTS: 1,
+} as const;
+type Pages = (typeof Pages)[keyof typeof Pages];
 
 interface Props {
   onClose?: (() => void) | undefined;
 }
 
 const HelpButton = ({ onClose }: Props): React.JSX.Element => {
-  const [selectedPage, setSelectedPage] = useState(Pages.DOCUMENTATION);
+  const [selectedPage, setSelectedPage] = useState<Pages>(Pages.DOCUMENTATION);
   const drawerRef = useRef<DrawerRef | null>(null);
 
   useEffect(() => {

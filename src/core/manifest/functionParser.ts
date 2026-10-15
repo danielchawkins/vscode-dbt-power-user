@@ -10,7 +10,11 @@ import type {
 import { RESOURCE_TYPE_FUNCTION } from "./types";
 
 export class FunctionParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   createFunctionMetaMap(
     functionsMap: ManifestResources<FunctionResource>,

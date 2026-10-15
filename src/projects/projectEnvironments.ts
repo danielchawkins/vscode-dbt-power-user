@@ -65,12 +65,18 @@ export class ProjectEnvironments implements Disposable {
   private readonly warned = new Set<string>();
   private readonly reported = new Set<string>();
   private disposed = false;
+  private readonly log: (project: DeclaredProject) => Log;
+  private readonly resolve: Resolve;
+  private readonly host: () => Record<string, string>;
 
   constructor(
-    private readonly log: (project: DeclaredProject) => Log,
-    private readonly resolve: Resolve = resolveToolEnvironment,
-    private readonly host: () => Record<string, string> = readEnvironment,
+    log: (project: DeclaredProject) => Log,
+    resolve: Resolve = resolveToolEnvironment,
+    host: () => Record<string, string> = readEnvironment,
   ) {
+    this.log = log;
+    this.resolve = resolve;
+    this.host = host;
     this.subscriptions.push(
       this._onDidChange,
       onDidChangeSettings(["toolEnvironment"], (change) =>

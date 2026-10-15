@@ -26,8 +26,10 @@ export class ParseScheduler implements Disposable {
   private rebuilding: Promise<void> | undefined;
   private rebuildAgain = false;
   private readonly subscription: Disposable | undefined;
+  private readonly deps: ParseSchedulerDeps;
 
-  constructor(private readonly deps: ParseSchedulerDeps) {
+  constructor(deps: ParseSchedulerDeps) {
+    this.deps = deps;
     this.subscription = deps.demand?.onDidBecomeActive(() => {
       if (this.stale) {
         void this.rebuild();

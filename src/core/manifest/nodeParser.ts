@@ -33,18 +33,26 @@ const RESOURCE_TYPE_FALLBACK_ORDER: readonly NodeResourceType[] = [
 ];
 
 class NodeMetaMapImpl implements NodeMetaMap {
+  private latestVersionLookupMap: Map<string, string>;
+  private nameLookupMapsByType: Map<NodeResourceType, Map<string, string>>;
+  private modelMetadataLookupMap: Map<string, NodeMetaData>;
+
   constructor(
-    private latestVersionLookupMap: Map<string, string> = new Map(),
+    latestVersionLookupMap: Map<string, string> = new Map(),
     // Bare-name lookups are partitioned by resource_type so that a model and a
     // snapshot (or seed, analysis) sharing a filename — e.g. `models/orders.sql`
     // and `snapshots/orders.sql` — occupy separate slots and are each reachable
     // via `lookupByBaseName(name, resourceType)`.
-    private nameLookupMapsByType: Map<
+    nameLookupMapsByType: Map<
       NodeResourceType,
       Map<string, string>
     > = new Map(),
-    private modelMetadataLookupMap: Map<string, NodeMetaData> = new Map(),
-  ) {}
+    modelMetadataLookupMap: Map<string, NodeMetaData> = new Map(),
+  ) {
+    this.latestVersionLookupMap = latestVersionLookupMap;
+    this.nameLookupMapsByType = nameLookupMapsByType;
+    this.modelMetadataLookupMap = modelMetadataLookupMap;
+  }
 
   lookupByBaseName(
     modelBaseName: string,
@@ -91,7 +99,11 @@ class NodeMetaMapImpl implements NodeMetaMap {
 }
 
 export class NodeParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   async createNodeMetaMap(
     nodesMap: ManifestResources | null | undefined,

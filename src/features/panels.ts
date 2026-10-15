@@ -7,12 +7,18 @@ import { registerQueryResultTestCommand } from "./queryResults/queryResultTestCo
 
 export class WebviewViewProviders implements Disposable {
   private disposables: Disposable[] = [];
+  private queryResultPanel: QueryResultPanel;
+  private docsEditPanel: DocsEditViewPanel;
+  private lineageViewProvider: LineageViewProvider;
 
   constructor(
-    private queryResultPanel: QueryResultPanel,
-    private docsEditPanel: DocsEditViewPanel,
-    private lineageViewProvider: LineageViewProvider,
+    queryResultPanel: QueryResultPanel,
+    docsEditPanel: DocsEditViewPanel,
+    lineageViewProvider: LineageViewProvider,
   ) {
+    this.queryResultPanel = queryResultPanel;
+    this.docsEditPanel = docsEditPanel;
+    this.lineageViewProvider = lineageViewProvider;
     this.disposables.push(
       this.docsEditPanel,
       this.queryResultPanel,

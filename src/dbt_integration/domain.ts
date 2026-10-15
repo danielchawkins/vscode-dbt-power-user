@@ -103,14 +103,15 @@ export type Table = {
   packageName?: string;
 };
 
-export enum RunModelType {
-  RUN_PARENTS,
-  RUN_CHILDREN,
-  BUILD_PARENTS,
-  BUILD_CHILDREN,
-  BUILD_CHILDREN_PARENTS,
-  TEST,
-}
+export const RunModelType = {
+  RUN_PARENTS: 0,
+  RUN_CHILDREN: 1,
+  BUILD_PARENTS: 2,
+  BUILD_CHILDREN: 3,
+  BUILD_CHILDREN_PARENTS: 4,
+  TEST: 5,
+} as const;
+export type RunModelType = (typeof RunModelType)[keyof typeof RunModelType];
 
 export const MANIFEST_FILE = "manifest.json";
 export const RUN_RESULTS_FILE = "run_results.json";

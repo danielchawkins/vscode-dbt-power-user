@@ -45,7 +45,11 @@ function graphOfType(
 }
 
 export class GraphParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   /**
    * The parse-owned part of the graph: `tests`, `metrics`, the constraint overlay in `parents`, and the `parents`

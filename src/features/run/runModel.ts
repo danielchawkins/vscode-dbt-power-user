@@ -16,10 +16,13 @@ const labelText = (label: NonNullable<TreeItem["label"]>): string =>
   typeof label === "string" ? label : label.label;
 
 export class RunModel {
-  constructor(
-    private projects: Projects,
-    private currentProject: CurrentProject,
-  ) {}
+  private projects: Projects;
+  private currentProject: CurrentProject;
+
+  constructor(projects: Projects, currentProject: CurrentProject) {
+    this.projects = projects;
+    this.currentProject = currentProject;
+  }
 
   runModelOnActiveWindow(type?: RunModelType) {
     if (!window.activeTextEditor) {

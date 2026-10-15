@@ -59,8 +59,11 @@ export class ProjectRegistry implements Disposable {
   private readonly subscriptions: Disposable[] = [];
   private initialized = false;
   private disposed = false;
+  private terminal: Log;
 
-  constructor(private terminal: Log) {}
+  constructor(terminal: Log) {
+    this.terminal = terminal;
+  }
 
   get projects(): readonly DeclaredProject[] {
     return this._projects;

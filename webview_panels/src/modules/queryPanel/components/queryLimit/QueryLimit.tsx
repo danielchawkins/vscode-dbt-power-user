@@ -7,11 +7,12 @@ import { Input, Stack } from "@uicore";
 import { useState } from "react";
 import styles from "./styles.module.css";
 
-enum LimitSaveState {
-  Default = 1,
-  Dirty,
-  Saved,
-}
+const LimitSaveState = {
+  Default: 1,
+  Dirty: 2,
+  Saved: 3,
+} as const;
+type LimitSaveState = (typeof LimitSaveState)[keyof typeof LimitSaveState];
 
 function saveStateOf(
   value: string,

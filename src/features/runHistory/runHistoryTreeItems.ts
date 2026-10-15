@@ -16,8 +16,11 @@ import type {
  * Each RunTreeItem contains child ResultTreeItems for individual model/test/seed results.
  */
 export class RunTreeItem extends TreeItem {
-  constructor(public readonly entry: RunResultsEventData) {
+  public readonly entry: RunResultsEventData;
+
+  constructor(entry: RunResultsEventData) {
     super(entry.command, RunTreeItem.getCollapsibleState(entry));
+    this.entry = entry;
 
     this.description = RunTreeItem.getDescription(entry);
     this.iconPath = RunTreeItem.getIcon(entry);
@@ -119,11 +122,13 @@ export function getStatusIcon(status: RunStatus): {
  * Displays the resource name, type, execution time, and status icon.
  */
 export class ResultTreeItem extends TreeItem {
-  constructor(
-    public readonly result: RunResultEntry,
-    public readonly parentCommand?: string,
-  ) {
+  public readonly result: RunResultEntry;
+  public readonly parentCommand: string | undefined;
+
+  constructor(result: RunResultEntry, parentCommand?: string) {
     super(ResultTreeItem.getDisplayName(result), TreeItemCollapsibleState.None);
+    this.result = result;
+    this.parentCommand = parentCommand;
 
     this.description = ResultTreeItem.getDescription(result);
     this.iconPath = ResultTreeItem.getIcon(result);

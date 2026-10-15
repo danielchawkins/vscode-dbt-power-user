@@ -3,7 +3,11 @@ import type { ManifestProject } from "./manifestProject";
 import type { ManifestResources, MetricMetaMap } from "./types";
 
 export class MetricParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   async createMetricMetaMap(
     metrics: ManifestResources<{ name: string }> | null | undefined,

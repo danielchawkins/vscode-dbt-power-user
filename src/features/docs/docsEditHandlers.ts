@@ -68,7 +68,11 @@ function getUnitTestCode(filePath?: string, testName?: string) {
 
 /** The documentation editor's request handlers: each answers one panel request with a `response`. */
 export class DocsEditRequests {
-  constructor(private readonly host: DocsEditHost) {}
+  private readonly host: DocsEditHost;
+
+  constructor(host: DocsEditHost) {
+    this.host = host;
+  }
 
   /** Answers a panel request. */
   sendResponse({ data, error, syncRequestId }: Reply): void {

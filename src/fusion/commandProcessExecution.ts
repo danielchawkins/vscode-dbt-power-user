@@ -17,7 +17,11 @@ function createCommandNotFoundError(command: string): Error {
 }
 
 export class CommandProcessExecutionFactory {
-  constructor(private terminal: Log) {}
+  private terminal: Log;
+
+  constructor(terminal: Log) {
+    this.terminal = terminal;
+  }
 
   createCommandProcessExecution({
     command,
@@ -48,15 +52,31 @@ export class CommandProcessExecutionFactory {
 
 /** @internal */
 export class CommandProcessExecution {
+  private terminal: Log;
+  private command: string;
+  private args: string[] | undefined;
+  private stdin: string | undefined;
+  private cwd: string | undefined;
+  private signal: AbortSignal | undefined;
+  private envVars: EnvironmentVariables | undefined;
+
   constructor(
-    private terminal: Log,
-    private command: string,
-    private args?: string[],
-    private stdin?: string,
-    private cwd?: string,
-    private signal?: AbortSignal,
-    private envVars?: EnvironmentVariables,
-  ) {}
+    terminal: Log,
+    command: string,
+    args?: string[],
+    stdin?: string,
+    cwd?: string,
+    signal?: AbortSignal,
+    envVars?: EnvironmentVariables,
+  ) {
+    this.terminal = terminal;
+    this.command = command;
+    this.args = args;
+    this.stdin = stdin;
+    this.cwd = cwd;
+    this.signal = signal;
+    this.envVars = envVars;
+  }
 
   private spawn() {
     const proc = spawnProcess(this.command, this.args ?? [], {

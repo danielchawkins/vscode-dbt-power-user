@@ -21,12 +21,18 @@ export class CompositeMetadataSource implements ProjectMetadataSource {
   private readonly parseProducer: ManifestMetadataSource;
   private readonly subscriptions: Disposable[];
   private parsed: ParsedManifest | undefined;
+  readonly project: DeclaredProject;
+  private readonly dbtProject: Project;
+  private readonly server: ServerMetadataSource;
 
   constructor(
-    readonly project: DeclaredProject,
-    private readonly dbtProject: Project,
-    private readonly server: ServerMetadataSource,
+    project: DeclaredProject,
+    dbtProject: Project,
+    server: ServerMetadataSource,
   ) {
+    this.project = project;
+    this.dbtProject = dbtProject;
+    this.server = server;
     this.parseProducer = new ManifestMetadataSource(project, dbtProject);
     this.subscriptions = [
       this.parseProducer.onDidParse((parsed) => {

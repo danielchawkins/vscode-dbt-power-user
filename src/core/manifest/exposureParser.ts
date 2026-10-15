@@ -10,7 +10,11 @@ import type {
 import { RESOURCE_TYPE_EXPOSURE } from "./types";
 
 export class ExposureParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   createExposureMetaMap(
     exposuresMap: ManifestResources<ExposureResource>,

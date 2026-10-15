@@ -28,11 +28,16 @@ export function isWithinRoot(fsPath: string, root: string): boolean {
  */
 export class ProjectDiagnosticsFilter {
   private readonly forwarded = new Set<string>();
+  private readonly roots: readonly string[];
+  private readonly exists: (fsPath: string) => boolean;
 
   constructor(
-    private readonly roots: readonly string[],
-    private readonly exists: (fsPath: string) => boolean = existsSync,
-  ) {}
+    roots: readonly string[],
+    exists: (fsPath: string) => boolean = existsSync,
+  ) {
+    this.roots = roots;
+    this.exists = exists;
+  }
 
   shouldForward(uri: Uri): boolean {
     const key = uri.toString();

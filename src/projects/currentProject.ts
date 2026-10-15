@@ -14,11 +14,12 @@ export class CurrentProject implements Disposable {
   private lastEmittedCurrent: DeclaredProject | undefined;
   private selectedProject: DeclaredProject | undefined;
   private subscriptions: Disposable[] = [];
+  private registry: ProjectRegistry;
+  private projectQuickPick: ProjectQuickPick;
 
-  constructor(
-    private registry: ProjectRegistry,
-    private projectQuickPick: ProjectQuickPick,
-  ) {
+  constructor(registry: ProjectRegistry, projectQuickPick: ProjectQuickPick) {
+    this.registry = registry;
+    this.projectQuickPick = projectQuickPick;
     this.subscriptions.push(
       window.onDidChangeActiveTextEditor(() => this.updateCurrent()),
       registry.onDidChangeProjects(() => this.updateCurrent()),

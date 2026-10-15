@@ -11,12 +11,22 @@ import type { VirtualSqlCodeLensProvider } from "./sqlActions/virtualSqlCodeLens
 
 export class CodeLensProviders implements Disposable {
   private disposables: Disposable[] = [];
+  private projects: Projects;
+  private sourceModelCreationCodeLensProvider: SourceModelCreationCodeLensProvider;
+  private virtualSqlCodeLensProvider: VirtualSqlCodeLensProvider;
+  private sqlActionsCodeLensProvider: SqlActionsCodeLensProvider;
+
   constructor(
-    private projects: Projects,
-    private sourceModelCreationCodeLensProvider: SourceModelCreationCodeLensProvider,
-    private virtualSqlCodeLensProvider: VirtualSqlCodeLensProvider,
-    private sqlActionsCodeLensProvider: SqlActionsCodeLensProvider,
+    projects: Projects,
+    sourceModelCreationCodeLensProvider: SourceModelCreationCodeLensProvider,
+    virtualSqlCodeLensProvider: VirtualSqlCodeLensProvider,
+    sqlActionsCodeLensProvider: SqlActionsCodeLensProvider,
   ) {
+    this.projects = projects;
+    this.sourceModelCreationCodeLensProvider =
+      sourceModelCreationCodeLensProvider;
+    this.virtualSqlCodeLensProvider = virtualSqlCodeLensProvider;
+    this.sqlActionsCodeLensProvider = sqlActionsCodeLensProvider;
     this.disposables.push(
       this.sourceModelCreationCodeLensProvider,
       this.virtualSqlCodeLensProvider,

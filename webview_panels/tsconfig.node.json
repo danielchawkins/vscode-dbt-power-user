@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "erasableSyntaxOnly": true,
     "composite": true,
     "target": "ES2024",
     "lib": ["ES2024"],

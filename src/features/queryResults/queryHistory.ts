@@ -18,8 +18,11 @@ export interface HistoryProject {
 /** The query results of this session, newest first; kept in host memory only. */
 export class QueryHistoryStore {
   private entries: QueryHistory[] = [];
+  private readonly log: Pick<Log, "info">;
 
-  constructor(private readonly log: Pick<Log, "info">) {}
+  constructor(log: Pick<Log, "info">) {
+    this.log = log;
+  }
 
   all(): QueryHistory[] {
     return this.entries;

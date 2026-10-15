@@ -48,12 +48,19 @@ export class Projects implements Disposable {
   private registrySubscription: Disposable | undefined;
   private syncQueue = Promise.resolve();
   private disposed = false;
+  private projectRegistry: ProjectRegistry;
+  private projectFactory: (project: DeclaredProject) => Project;
+  private dbtTerminal: Log;
 
   constructor(
-    private projectRegistry: ProjectRegistry,
-    private projectFactory: (project: DeclaredProject) => Project,
-    private dbtTerminal: Log,
-  ) {}
+    projectRegistry: ProjectRegistry,
+    projectFactory: (project: DeclaredProject) => Project,
+    dbtTerminal: Log,
+  ) {
+    this.projectRegistry = projectRegistry;
+    this.projectFactory = projectFactory;
+    this.dbtTerminal = dbtTerminal;
+  }
 
   async initialize(): Promise<void> {
     if (this.disposed || this.registrySubscription) {

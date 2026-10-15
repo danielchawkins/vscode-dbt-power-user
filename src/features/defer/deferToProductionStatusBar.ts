@@ -10,11 +10,12 @@ export class DeferToProductionStatusBar implements Disposable {
     9,
   );
   private disposables: Disposable[] = [];
+  private projects: Projects;
+  private dbtTerminal: Log;
 
-  constructor(
-    private projects: Projects,
-    private dbtTerminal: Log,
-  ) {
+  constructor(projects: Projects, dbtTerminal: Log) {
+    this.projects = projects;
+    this.dbtTerminal = dbtTerminal;
     this.disposables.push(
       onDidChangeSettings(["defer.perProject"], (change) => {
         if (change.affects()) {

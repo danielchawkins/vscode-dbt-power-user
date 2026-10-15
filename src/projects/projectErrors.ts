@@ -73,13 +73,22 @@ export class ProjectErrors implements Disposable {
   /** Fires when `current` may have changed. */
   readonly onDidChange = this.changed.event;
   private disposed = false;
+  private readonly root: Uri;
+  private readonly projectName: () => string;
+  private readonly snapshot: () => ProjectSnapshot;
+  private readonly terminal: Log;
 
   constructor(
-    private readonly root: Uri,
-    private readonly projectName: () => string,
-    private readonly snapshot: () => ProjectSnapshot,
-    private readonly terminal: Log,
-  ) {}
+    root: Uri,
+    projectName: () => string,
+    snapshot: () => ProjectSnapshot,
+    terminal: Log,
+  ) {
+    this.root = root;
+    this.projectName = projectName;
+    this.snapshot = snapshot;
+    this.terminal = terminal;
+  }
 
   /** The first line of the first active error, if any. */
   get current(): string | undefined {

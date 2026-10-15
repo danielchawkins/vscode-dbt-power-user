@@ -7,7 +7,11 @@ import type { Log } from "../log";
 import { createFullPathForNode } from "./utils";
 
 export class DocParser {
-  constructor(private terminal: Pick<Log, "debug">) {}
+  private terminal: Pick<Log, "debug">;
+
+  constructor(terminal: Pick<Log, "debug">) {
+    this.terminal = terminal;
+  }
 
   async createDocMetaMap(
     docs: ManifestResources | null | undefined,

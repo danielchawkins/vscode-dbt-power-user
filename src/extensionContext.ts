@@ -2,7 +2,11 @@ import type { ExtensionContext, Uri } from "vscode";
 
 /** Extension identity and persisted state, read from the activation `ExtensionContext`. */
 export class ExtensionContextStore {
-  constructor(private readonly context: ExtensionContext) {}
+  private readonly context: ExtensionContext;
+
+  constructor(context: ExtensionContext) {
+    this.context = context;
+  }
 
   /** Root URI of the installed extension. */
   get extensionUri(): Uri {

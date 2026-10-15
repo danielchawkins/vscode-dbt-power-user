@@ -19,12 +19,16 @@ export class LineageViewProvider implements WebviewViewProvider, Disposable {
   private context: WebviewViewResolveContext<unknown> | undefined;
   private token: CancellationToken | undefined;
   private disposables: Disposable[] = [];
+  private lineagePanel: LineagePanel;
+  private parseDemand: ParseDemand | undefined;
 
   public constructor(
-    private lineagePanel: LineagePanel,
+    lineagePanel: LineagePanel,
     projects: Projects,
-    private parseDemand?: ParseDemand,
+    parseDemand?: ParseDemand,
   ) {
+    this.lineagePanel = lineagePanel;
+    this.parseDemand = parseDemand;
     this.disposables.push(
       lineagePanel,
       projects.onDidChangeManifest((project) =>

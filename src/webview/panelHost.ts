@@ -58,8 +58,11 @@ export class PanelReplay<K, H extends { command: string }> {
     K,
     { slots: Map<string, H>; tabData?: unknown }
   >();
+  private readonly rules: ReplayRules<H>;
 
-  public constructor(private readonly rules: ReplayRules<H>) {}
+  public constructor(rules: ReplayRules<H>) {
+    this.rules = rules;
+  }
 
   private page(key: K) {
     let page = this.pages.get(key);
@@ -126,14 +129,22 @@ export abstract class PanelHost<
   protected _disposables: Disposable[] = [];
   // Flag to know if panel's webview is rendered and ready to receive message
   protected isWebviewReady = false;
+  protected extensionContext: ExtensionContextStore;
+  protected emitterService: SharedStateService;
+  protected dbtTerminal: Log;
+  protected queryManifestService: QueryManifestService;
   private _replay?: PanelReplay<Page, H>;
 
   public constructor(
-    protected extensionContext: ExtensionContextStore,
-    protected emitterService: SharedStateService,
-    protected dbtTerminal: Log,
-    protected queryManifestService: QueryManifestService,
+    extensionContext: ExtensionContextStore,
+    emitterService: SharedStateService,
+    dbtTerminal: Log,
+    queryManifestService: QueryManifestService,
   ) {
+    this.extensionContext = extensionContext;
+    this.emitterService = emitterService;
+    this.dbtTerminal = dbtTerminal;
+    this.queryManifestService = queryManifestService;
     this._disposables.push(
       emitterService.eventEmitter.event((d) => this.onEvent(d)),
     );
@@ -142,7 +153,7 @@ export abstract class PanelHost<
   public isWebviewView(
     panel: WebviewPanel | WebviewView,
   ): panel is WebviewView {
-    return (<WebviewView>panel).show !== undefined;
+    return (panel as WebviewView).show !== undefined;
   }
 
   protected async onEvent({ command }: SharedStateEventEmitterProps) {

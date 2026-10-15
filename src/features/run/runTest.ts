@@ -17,10 +17,13 @@ import type { QueryManifestService } from "../../projects/queryManifestService";
  * test.
  */
 export class RunTest {
-  constructor(
-    private projects: Projects,
-    private queryManifestService: QueryManifestService,
-  ) {}
+  private projects: Projects;
+  private queryManifestService: QueryManifestService;
+
+  constructor(projects: Projects, queryManifestService: QueryManifestService) {
+    this.projects = projects;
+    this.queryManifestService = queryManifestService;
+  }
 
   /**
    * Returns the singular test name for the given file URI, or `undefined` if

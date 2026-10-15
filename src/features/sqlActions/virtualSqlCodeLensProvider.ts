@@ -12,8 +12,11 @@ export class VirtualSqlCodeLensProvider
   implements CodeLensProvider, Disposable
 {
   private disposables: Disposable[] = [];
+  private queryManifestService: QueryManifestService;
 
-  constructor(private queryManifestService: QueryManifestService) {}
+  constructor(queryManifestService: QueryManifestService) {
+    this.queryManifestService = queryManifestService;
+  }
 
   dispose() {
     while (this.disposables.length) {

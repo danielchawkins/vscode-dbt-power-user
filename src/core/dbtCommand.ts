@@ -9,15 +9,31 @@ export interface DBTCommandExecutionStrategy {
 }
 
 export class DBTCommand {
+  public statusMessage: string;
+  public args: string[];
+  public focus: boolean;
+  public showProgress: boolean;
+  public logToTerminal: boolean;
+  public executionStrategy: DBTCommandExecutionStrategy | undefined;
+  public signal: AbortSignal | undefined;
+
   constructor(
-    public statusMessage: string,
-    public args: string[],
-    public focus: boolean = false,
-    public showProgress: boolean = false,
-    public logToTerminal: boolean = false,
-    public executionStrategy?: DBTCommandExecutionStrategy,
-    public signal?: AbortSignal,
-  ) {}
+    statusMessage: string,
+    args: string[],
+    focus: boolean = false,
+    showProgress: boolean = false,
+    logToTerminal: boolean = false,
+    executionStrategy?: DBTCommandExecutionStrategy,
+    signal?: AbortSignal,
+  ) {
+    this.statusMessage = statusMessage;
+    this.args = args;
+    this.focus = focus;
+    this.showProgress = showProgress;
+    this.logToTerminal = logToTerminal;
+    this.executionStrategy = executionStrategy;
+    this.signal = signal;
+  }
 
   getCommandAsString() {
     return "dbt " + this.args.join(" ");
@@ -55,10 +71,16 @@ export class ExecuteSQLError extends Error {
 }
 
 export class QueryExecution {
+  private cancelFunc: () => Promise<void>;
+  private queryResult: () => Promise<ExecuteSQLResult>;
+
   constructor(
-    private cancelFunc: () => Promise<void>,
-    private queryResult: () => Promise<ExecuteSQLResult>,
-  ) {}
+    cancelFunc: () => Promise<void>,
+    queryResult: () => Promise<ExecuteSQLResult>,
+  ) {
+    this.cancelFunc = cancelFunc;
+    this.queryResult = queryResult;
+  }
 
   cancel(): Promise<void> {
     return this.cancelFunc();

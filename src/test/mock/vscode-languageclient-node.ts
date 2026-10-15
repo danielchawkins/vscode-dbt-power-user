@@ -5,20 +5,23 @@ export const ExecuteCommandRequest = {
   type: { method: "workspace/executeCommand" },
 };
 
-export enum State {
-  Stopped = 1,
-  Running = 2,
-  Starting = 3,
-  StartFailed = 4,
-}
+export const State = {
+  Stopped: 1,
+  Running: 2,
+  Starting: 3,
+  StartFailed: 4,
+} as const;
+export type State = (typeof State)[keyof typeof State];
 
 export class LanguageClient {
   private readonly stateEmitter = new EventEmitter();
+  readonly id: string;
+  readonly name: string;
 
-  constructor(
-    readonly id: string,
-    readonly name: string,
-  ) {}
+  constructor(id: string, name: string) {
+    this.id = id;
+    this.name = name;
+  }
 
   start = vi.fn(() => Promise.resolve());
   stop = vi.fn(() => Promise.resolve());

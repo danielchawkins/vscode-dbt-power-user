@@ -35,11 +35,19 @@ export interface ColumnsBody {
 
 /** The lineage panel's detail requests: relationships, exposures, functions and columns of a node. */
 export class LineageDetails {
+  private readonly queryManifestService: QueryManifestService;
+  private readonly dbtLineageService: DbtLineageService;
+  private readonly terminal: Log;
+
   constructor(
-    private readonly queryManifestService: QueryManifestService,
-    private readonly dbtLineageService: DbtLineageService,
-    private readonly terminal: Log,
-  ) {}
+    queryManifestService: QueryManifestService,
+    dbtLineageService: DbtLineageService,
+    terminal: Log,
+  ) {
+    this.queryManifestService = queryManifestService;
+    this.dbtLineageService = dbtLineageService;
+    this.terminal = terminal;
+  }
 
   /**
    * Extract PK/FK relationships from the current project's manifest.

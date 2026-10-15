@@ -15,7 +15,11 @@ import type { Projects } from "../../projects/projects";
  * @internal
  */
 export class DbtTaskProvider implements TaskProvider {
-  constructor(private readonly projects: Projects) {}
+  private readonly projects: Projects;
+
+  constructor(projects: Projects) {
+    this.projects = projects;
+  }
 
   provideTasks(): Task[] {
     return this.projects.all().flatMap((project) =>
