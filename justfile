@@ -175,10 +175,12 @@ lint-ast-grep:
     ast-grep test
     ast-grep scan --error=unused-suppression
 
-# Unused files, exports, types, enum members and dependencies, in all code and in production code alone.
+# Unused files, exports, types, enum members and dependencies, in all code and in production code alone; then
+# every @internal export has a production caller and every @planned export has none.
 [group("quality")]
 lint-unused:
     npm run lint:unused
+    node scripts/quality/export-tags.mjs
 
 # Drop baseline entries for lint violations that have been fixed, so the baseline only shrinks.
 [group("quality")]

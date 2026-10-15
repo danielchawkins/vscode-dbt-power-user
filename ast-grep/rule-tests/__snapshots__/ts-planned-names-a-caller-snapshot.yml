@@ -1,0 +1,28 @@
+id: ts-planned-names-a-caller
+snapshots:
+  ? |-
+    /**
+     * Resolves a model's owner.
+     * @planned
+     */
+  : labels:
+    - source: |-
+        /**
+         * Resolves a model's owner.
+         * @planned
+         */
+      style: primary
+      start: 0
+      end: 48
+  /** @planned   */:
+    labels:
+    - source: /** @planned   */
+      style: primary
+      start: 0
+      end: 17
+  /** @planned */:
+    labels:
+    - source: /** @planned */
+      style: primary
+      start: 0
+      end: 15

@@ -108,6 +108,8 @@ Known false positives in this repo:
 
 Modernization rules (`e18e`, `unicorn`, the extra `typescript` rules and the React Compiler rules) are ratcheted like the other suppressions: their existing violations sit in the oxlint suppression files, `just lint-prune` only shrinks them, and `just lint-ratchet` fails when a count rises.
 
+Dead code is checked in production terms: knip's `--production` pass ignores tests, so an export that only tests use is reported. Two JSDoc tags exempt an export, and `scripts/quality/export-tags.mjs` (run by `just lint-unused`) keeps each honest. `@internal` means "exported for tests"; production code must still use it. `@planned <caller>` means "not wired yet"; it must name what will call it and must have no production caller. Both counts are ratcheted. A helper that only tests need belongs in `src/test/`, not behind `@internal`.
+
 Unit tests and the integration suite run from source. Anything that claims to show what a user gets (smoke runs, visual evidence, manual emulation in an isolated VS Code) runs against the VSIX `just package` just built. `just package` deletes every other `*.vsix` in the repository root and records the new path in `out/latest-vsix`; a smoke recipe without `--vsix` packages first, and CI passes its checksum-verified artifact with `--vsix`. Each run prints `FPU_SMOKE_VSIX=<path> sha256=<hash>`, and visual evidence stores the same line in `vsix.sha256`, so a result names the build it tested.
 
 ## Visual evidence
