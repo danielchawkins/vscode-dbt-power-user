@@ -1,5 +1,5 @@
 import Mocha from "mocha";
-import { globSync } from "node:fs";
+import { globSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { extHostStartMs } from "./extHostStart";
 import { selectSuites } from "./suiteSelection";
@@ -39,6 +39,11 @@ export async function run(): Promise<void> {
       if (failures > 0) {
         reject(new Error(`${failures} smoke test(s) failed.`));
       } else {
+        // The launcher reads this to tell a host that crashed while quitting from one whose tests failed.
+        const marker = process.env.FPU_SMOKE_PASSED_MARKER;
+        if (marker) {
+          writeFileSync(marker, "passed\n");
+        }
         resolve();
       }
     });
