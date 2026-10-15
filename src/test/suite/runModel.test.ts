@@ -5,16 +5,17 @@ import {
   describe,
   expect,
   it,
+  type Mock,
   type Mocked,
   vi,
 } from "vitest";
 import type * as vscodeApi from "vscode";
 import { Uri, window } from "vscode";
+import type { RunModelParams } from "../../core/dbt/domain";
 import { RunModelType } from "../../core/dbt/domain";
 import { RunModel } from "../../features/run/runModel";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
-import type { Projects } from "../../projects/project/projects";
 import { previewUriFor } from "../../projects/registry/previewUri";
 import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 import { RecordingTasks } from "../recordingTasks";
@@ -33,7 +34,7 @@ const untitledUri = {
 describe("RunModel SQL execution", () => {
   let executed: [string, string][];
   let dbtProject: Project;
-  let projects: Mocked<Projects>;
+  let projects: { get: Mock };
   let context: Mocked<CurrentProject>;
   let runModel: RunModel;
   let project: DeclaredProject;
@@ -59,7 +60,7 @@ describe("RunModel SQL execution", () => {
       get: vi.fn((root: Uri) =>
         root === project.root ? dbtProject : undefined,
       ),
-    } as unknown as Mocked<Projects>;
+    };
     context = {
       requireForCommand: vi.fn(),
     } as unknown as Mocked<CurrentProject>;
@@ -159,23 +160,38 @@ describe("RunModel project commands", () => {
     owned = true;
     const project = {
       commands: {
-        runModel: (params: never) => tasks.runModel(params),
-        buildModel: (params: never) => tasks.buildModel(params),
-        compileModel: (params: never) => tasks.compileModel(params),
-        runTest: (name: never) => tasks.runTest(name),
-        runModelTest: (name: never) => tasks.runModelTest(name),
+        runModel: (params: RunModelParams) => tasks.runModel(params),
+        buildModel: (params: RunModelParams) => tasks.buildModel(params),
+        compileModel: (params: RunModelParams) => tasks.compileModel(params),
+        runTest: (name: string) => tasks.runTest(name),
+        runModelTest: (name: string) => tasks.runModelTest(name),
       },
       queries: {
-        compileQuery: (query: never, uri: never) =>
-          other.push(`compileQuery ${query} ${uri}`),
-        generateSchemaYML: (uri: never, name: never) =>
-          other.push(`generateSchemaYML ${uri} ${name}`),
-        showRunSQL: (uri: never) => other.push(`showRunSQL ${uri}`),
+        compileQuery: async (query: string, uri?: Uri) => {
+          other.push(`compileQuery ${query} ${uri}`);
+          return undefined;
+        },
+        generateSchemaYML: async (uri: Uri, name: string) => {
+          other.push(`generateSchemaYML ${uri} ${name}`);
+        },
+        showRunSQL: (uri: Uri) => {
+          other.push(`showRunSQL ${uri}`);
+        },
+        executeSQLOnQueryPanel: async (query: string, modelName: string) => {
+          other.push(`executeSQLOnQueryPanel ${query} ${modelName}`);
+        },
+        generateModel: async (
+          name: string,
+          table: string,
+          sourcePath: string,
+        ) => {
+          other.push(`generateModel ${name} ${table} ${sourcePath}`);
+        },
       },
     };
     const projects = {
       get: (uri: Uri) => (owned && uri === model ? project : undefined),
-    } as unknown as Projects;
+    };
     runModel = new RunModel(projects, {} as CurrentProject);
   });
 

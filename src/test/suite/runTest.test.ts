@@ -1,9 +1,15 @@
-import { beforeEach, describe, expect, it, type Mocked, vi } from "vitest";
+import {
+  beforeEach,
+  describe,
+  expect,
+  it,
+  type Mock,
+  type Mocked,
+  vi,
+} from "vitest";
 import { Uri, window } from "vscode";
 import { RunTest } from "../../features/run/runTest";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
-import type { Project } from "../../projects/project/project";
-import type { Projects } from "../../projects/project/projects";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 
 /**
@@ -15,8 +21,8 @@ import type { QueryManifestService } from "../../projects/project/queryManifestS
  * itself — the command-layer dispatch is exercised by integration testing.
  */
 describe("RunTest — singular test classification and dispatch", () => {
-  let mockProject: Mocked<Project>;
-  let mockProjects: Mocked<Projects>;
+  let mockProject: { commands: { runTest: Mock } };
+  let mockProjects: { get: Mock };
   let mockQueryManifestService: Mocked<QueryManifestService>;
   let runTest: RunTest;
 
@@ -83,12 +89,8 @@ describe("RunTest — singular test classification and dispatch", () => {
   };
 
   beforeEach(() => {
-    mockProject = {
-      commands: { runTest: vi.fn() },
-    } as unknown as Mocked<Project>;
-    mockProjects = {
-      get: vi.fn().mockReturnValue(mockProject),
-    } as unknown as Mocked<Projects>;
+    mockProject = { commands: { runTest: vi.fn() } };
+    mockProjects = { get: vi.fn().mockReturnValue(mockProject) };
 
     mockQueryManifestService = {
       getEventByDocument: vi.fn().mockReturnValue(makeEvent()),

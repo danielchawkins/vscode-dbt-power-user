@@ -96,6 +96,8 @@ describe("ProjectSetupCommands project resolution", () => {
       },
     );
     const mockProject = {
+      projectRoot: pickedProject.uri,
+      getProjectName: () => pickedProject.label,
       commands: {
         debug: () => cli.run({ kind: "debug" }),
         installDeps: () => tasks.installDeps(),
@@ -107,7 +109,7 @@ describe("ProjectSetupCommands project resolution", () => {
       },
     };
     const mockProjects = {
-      all: () => Promise.resolve([mockProject]),
+      all: () => [mockProject],
       get: (uri: Uri) => {
         requested.push(uri);
         return mockProject;
@@ -130,7 +132,7 @@ describe("ProjectSetupCommands project resolution", () => {
     };
 
     const commands = new ProjectSetupCommands(
-      mockProjects as never,
+      mockProjects,
       mockStore as never,
       mockPicker as unknown as ProjectQuickPick,
       outputChannels as never,

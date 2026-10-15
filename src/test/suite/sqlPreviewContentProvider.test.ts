@@ -3,7 +3,6 @@ import type * as vscodeApi from "vscode";
 import { EventEmitter, window, workspace } from "vscode";
 import { URI } from "vscode-uri";
 import { SqlPreviewContentProvider } from "../../features/compiledSql/sqlPreviewContentProvider";
-import type { Projects } from "../../projects/project/projects";
 import { previewUriFor } from "../../projects/registry/previewUri";
 
 vi.mock("vscode", async (importOriginal) => ({
@@ -44,7 +43,7 @@ describe("SqlPreviewContentProvider", () => {
     provider = new SqlPreviewContentProvider({
       get,
       onDidInitialize: initialized.event,
-    } as unknown as Projects);
+    });
   });
 
   afterEach(() => {

@@ -1,6 +1,7 @@
 import type { Uri } from "vscode";
 import { window } from "vscode";
-import type { Projects } from "../../projects/project/projects";
+import type { ProjectDbtCommands } from "../../projects/project/projectDbtCommands";
+import type { ProjectLookup } from "../../projects/project/projects";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import { activeModelUri } from "../../projects/registry/previewUri";
 
@@ -17,10 +18,15 @@ import { activeModelUri } from "../../projects/registry/previewUri";
  * test.
  */
 export class RunTest {
-  private projects: Projects;
+  private projects: ProjectLookup<{
+    commands: Pick<ProjectDbtCommands, "runTest">;
+  }>;
   private queryManifestService: QueryManifestService;
 
-  constructor(projects: Projects, queryManifestService: QueryManifestService) {
+  constructor(
+    projects: ProjectLookup<{ commands: Pick<ProjectDbtCommands, "runTest"> }>,
+    queryManifestService: QueryManifestService,
+  ) {
     this.projects = projects;
     this.queryManifestService = queryManifestService;
   }

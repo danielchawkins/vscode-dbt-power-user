@@ -15,6 +15,19 @@ export type MetadataSourceFactory = (
   project: Project,
 ) => ProjectMetadataSource;
 
+/**
+ * Finds the project that owns a file, seen as only the parts a caller uses. `Projects` satisfies every instance,
+ * so a feature declares `ProjectLookup<{ commands: Pick<ProjectDbtCommands, "runTest"> }>` and receives `Projects`.
+ */
+export interface ProjectLookup<P> {
+  get(uri: Uri): P | undefined;
+}
+
+/** A {@link ProjectLookup} that can also list every project, in registry order. */
+export interface ProjectList<P> extends ProjectLookup<P> {
+  all(): P[];
+}
+
 interface ProjectEntry {
   project: Project;
   metadataSource: ProjectMetadataSource;

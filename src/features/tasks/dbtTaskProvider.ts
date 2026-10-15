@@ -8,16 +8,22 @@ import {
   DBT_TASK_TYPE,
 } from "../../projects/project/dbtTask";
 import type { Project } from "../../projects/project/project";
-import type { Projects } from "../../projects/project/projects";
+import type { ProjectDbtCommands } from "../../projects/project/projectDbtCommands";
+import type { ProjectList } from "../../projects/project/projects";
+
+/** What the task provider reads from each project. */
+type TaskProject = Pick<Project, "projectRoot"> & {
+  commands: Pick<ProjectDbtCommands, "task" | "taskName">;
+};
 
 /**
  * Lists each Declared Project's dbt tasks and resolves `dbt` tasks from tasks.json.
  * @internal
  */
 export class DbtTaskProvider implements TaskProvider {
-  private readonly projects: Projects;
+  private readonly projects: ProjectList<TaskProject>;
 
-  constructor(projects: Projects) {
+  constructor(projects: ProjectList<TaskProject>) {
     this.projects = projects;
   }
 
@@ -50,7 +56,7 @@ export class DbtTaskProvider implements TaskProvider {
   private projectOf(
     { project }: DbtTaskDefinition,
     scope: Task["scope"],
-  ): Project | undefined {
+  ): TaskProject | undefined {
     if (project !== undefined) {
       const folder = typeof scope === "object" ? scope.uri.fsPath : undefined;
       const root =
@@ -65,7 +71,9 @@ export class DbtTaskProvider implements TaskProvider {
 }
 
 /** Registers the `dbt` task provider; disposing unregisters it. */
-export function registerDbtTaskProvider(projects: Projects): Disposable {
+export function registerDbtTaskProvider(
+  projects: ProjectList<TaskProject>,
+): Disposable {
   return tasks.registerTaskProvider(
     DBT_TASK_TYPE,
     new DbtTaskProvider(projects),

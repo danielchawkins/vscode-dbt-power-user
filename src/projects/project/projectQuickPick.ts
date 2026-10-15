@@ -17,7 +17,7 @@ interface DeclaredProjectPickItem extends QuickPickItem {
 
 export class ProjectQuickPick {
   async projectPicker(
-    projects: Project[],
+    projects: Pick<Project, "getProjectName" | "projectRoot">[],
   ): Promise<ProjectQuickPickItem | undefined> {
     const options: ProjectQuickPickItem[] = projects.map((item) => {
       return {

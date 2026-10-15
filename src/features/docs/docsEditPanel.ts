@@ -14,8 +14,7 @@ import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
 import type { ParseDemand } from "../../projects/manifest/parseDemand";
 import { notifyError } from "../../projects/output/notifications";
-import type { Project } from "../../projects/project/project";
-import type { Projects } from "../../projects/project/projects";
+import type { ProjectLookup, Projects } from "../../projects/project/projects";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
 import { activeModelUri } from "../../projects/registry/previewUri";
@@ -25,9 +24,20 @@ import { PanelHost } from "../../webview/panelHost";
 import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 import type { DBTDocumentation, MetadataColumn } from "./docGenTypes";
-import { DocsEditRequests, withProgress } from "./docsEditHandlers";
+import {
+  type DocsProject,
+  DocsEditRequests,
+  withProgress,
+} from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
 import { convertColumnNamesByCaseConfig } from "./docsYaml";
+
+/** The active editor's project as the panel reads it: the handlers' view plus the adapter for saving. */
+type PanelProject = DocsProject & { getAdapterType(): string };
+
+/** The projects the panel resolves editors in, and the manifest events it follows. */
+type PanelProjects = ProjectLookup<PanelProject> &
+  Pick<Projects, "onDidChangeManifest" | "onDidRemoveProject">;
 
 type HostMessage = documentationEditor.HostMessage;
 type PanelMessage = documentationEditor.PanelMessage;
@@ -49,11 +59,11 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
   private loadedFromManifest = false;
   private onMessageDisposable: Disposable | undefined;
   private demandSubscription: Disposable | undefined;
-  private projects: Projects;
+  private projects: PanelProjects;
   private parseDemand: ParseDemand | undefined;
 
   public constructor(
-    projects: Projects,
+    projects: PanelProjects,
     extensionContext: ExtensionContextStore,
     services: {
       docGenService: DocGenService;
@@ -100,7 +110,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     super.dispose();
   }
 
-  private getProject(): Project | undefined {
+  private getProject(): PanelProject | undefined {
     if (!window.activeTextEditor) {
       return undefined;
     }
@@ -288,7 +298,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
   }
 
   private fetchMetadataFromDatabase(
-    project: Project,
+    project: DocsProject,
     modelPath: Uri,
     syncRequestId: string | undefined,
   ) {

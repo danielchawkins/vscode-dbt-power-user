@@ -26,7 +26,7 @@
     "webview_panels/dist/assets/queryResults.js": 102700,
     "webview_panels/dist/assets/shared.css": 12200
   },
-  "oxlintSuppressions.host": 146,
+  "oxlintSuppressions.host": 144,
   "oxlintSuppressions.webview": 29,
   "plannedTags": 0
 }
