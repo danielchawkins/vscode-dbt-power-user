@@ -10,7 +10,7 @@ import type {
 } from "vscode";
 import { commands, env, window } from "vscode";
 import type { Log } from "../core/log";
-import { projectRootDigest } from "../core/project";
+import { projectRootDigest } from "../core/snapshot";
 import { stripANSI } from "../core/text";
 import type { DeclaredProject } from "./projectRegistry";
 

@@ -257,7 +257,7 @@ Citations:
 
 - [r7a](../../src/core/manifest/docParser.ts): "const docFile: string = readFileSync(fullPath).toString("utf8");"
 - [r7b](../../src/core/manifest/macroParser.ts): "const macroFile: string = readFileSync(fullPath).toString("utf8");"
-- [r7c](../../src/core/project/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
+- [r7c](../../src/core/snapshot/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
 - [r7d](https://www.destroyallsoftware.com/talks/boundaries): "This talk is about using simple values (as opposed to complex objects) not just for holding data, but also as the boundaries between components and subsystems."
 
 Thesis (medium): core/ is pure with respect to vscode but not with respect to disk. docParser.ts reads each doc file with readFileSync during parsing, and core/project/dbtProjectFile.ts and core/manifest/utils.ts use node:fs. The depcruise rule forbids only vscode and other layers, so the purity claim is weaker than it reads. dbtProjectFile.ts already shows the fix: it injects an exists seam with an existsSync default. Principle: functional core, imperative shell (Bernhardt: values as the boundaries between components). Fix: pass a reader function into docParser, as dbtProjectFile does. Enforcement: a depcruise rule that forbids node:fs from core/ with an explicit allowlist for the injected-default files.
@@ -265,7 +265,7 @@ Thesis (medium): core/ is pure with respect to vscode but not with respect to di
 Thesis citations:
 
 - [c19](../../src/core/manifest/docParser.ts): "const docFile: string = readFileSync(fullPath).toString("utf8");"
-- [c20](../../src/core/project/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
+- [c20](../../src/core/snapshot/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
 - [c21](../../.dependency-cruiser.cjs): "core/ imports neither vscode nor any other layer."
 - [c22](https://www.destroyallsoftware.com/talks/boundaries): "This talk is about using simple values (as opposed to complex objects) not just for holding data, but also as the boundaries between components and subsystems."
 
@@ -282,7 +282,7 @@ Antithesis: dbtProjectFile's `exists` seam is a default parameter that is overri
 Counter-evidence:
 
 - [a16](../../src/core/manifest/macroParser.ts): "const macroFile: string = readFileSync(fullPath).toString("utf8");"
-- [a17](../../src/core/project/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
+- [a17](../../src/core/snapshot/dbtProjectFile.ts): "exists: (p: string) => boolean = existsSync,"
 
 ### 8. Seven non-test feature files read the disk: dbtTestService, docsYaml, docGenService, docsEditHandlers, projectConfigCommands, cte/commands and cteProfilerService. At least one of them prefers the open editor buffer and only falls back to disk. The shared lint list restricts fs writes on purpose and leaves reads alone. Banning reads, or adding a reader port owned by projects, would break seven files at once to serve a storage backend that is not planned. Leave reads alone unless one specific project fact, such as dbt_project.yml, turns out to be read in several places. That is the kind of defect the plan counts, and it should be fixed for that fact only
 

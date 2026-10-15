@@ -2,7 +2,7 @@ import { dirname, isAbsolute, relative } from "node:path";
 import type { Disposable, Event, Uri, WorkspaceFolder } from "vscode";
 import { EventEmitter, RelativePattern, workspace } from "vscode";
 import type { Log } from "../core/log";
-import { projectDirVariable } from "../core/project/dbtEnvironment";
+import { projectDirVariable } from "../core/snapshot/dbtEnvironment";
 import type { ToolEnvironment } from "../fusion/toolEnvironment";
 import {
   applyOverlay,

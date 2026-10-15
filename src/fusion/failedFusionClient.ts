@@ -1,6 +1,6 @@
 import type { Event, LogOutputChannel } from "vscode";
 import { EventEmitter } from "vscode";
-import type { StaticAnalysisMode } from "../core/project";
+import type { StaticAnalysisMode } from "../core/snapshot";
 import type {
   FusionClient,
   FusionClientState,

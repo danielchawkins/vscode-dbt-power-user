@@ -5,8 +5,8 @@ import type {
   DbtProjectFile,
   ProjectSnapshotInputs,
   ProjectSnapshotSettings,
-} from "../../core/project";
-import { deferSettingsKey, resolveProjectSnapshot } from "../../core/project";
+} from "../../core/snapshot";
+import { deferSettingsKey, resolveProjectSnapshot } from "../../core/snapshot";
 
 export const snapshotFolder = path.join("/", "ws");
 

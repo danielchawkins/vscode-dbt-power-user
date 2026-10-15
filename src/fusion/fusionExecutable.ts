@@ -4,7 +4,7 @@ import * as path from "node:path";
 import type { Uri, WorkspaceFolder } from "vscode";
 import { workspace } from "vscode";
 import which from "which";
-import { resolveExecutable } from "../core/project";
+import { resolveExecutable } from "../core/snapshot";
 import {
   readEnvironment,
   readEnvironmentVariable,

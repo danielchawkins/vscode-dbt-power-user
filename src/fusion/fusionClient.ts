@@ -8,7 +8,7 @@ import type {
   WorkspaceFolder,
 } from "vscode";
 import type { LspLaunch } from "../core/lsp";
-import { projectRootDigest, type StaticAnalysisMode } from "../core/project";
+import { projectRootDigest, type StaticAnalysisMode } from "../core/snapshot";
 import type { FusionExecutable } from "./fusionExecutable";
 import type { NestedRootSource } from "./nestedRoots";
 

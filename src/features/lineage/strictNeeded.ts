@@ -1,4 +1,4 @@
-import type { StaticAnalysisMode } from "../../core/project";
+import type { StaticAnalysisMode } from "../../core/snapshot";
 import type { FusionClient } from "../../fusion/fusionLanguageClient";
 import type { FolderScope } from "../../projects/schemaOrigin";
 import {

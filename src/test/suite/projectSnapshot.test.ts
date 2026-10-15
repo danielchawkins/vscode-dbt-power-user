@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveProjectSnapshot,
   substituteVariables,
-} from "../../core/project";
+} from "../../core/snapshot";
 import {
   baseInputs as base,
   snapshotFolder as folder,

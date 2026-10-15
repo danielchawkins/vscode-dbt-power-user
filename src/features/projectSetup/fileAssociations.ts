@@ -1,6 +1,6 @@
 import type { Disposable } from "vscode";
 import { commands, window } from "vscode";
-import { readDbtProjectFile, resolveProjectPaths } from "../../core/project";
+import { readDbtProjectFile, resolveProjectPaths } from "../../core/snapshot";
 import type {
   SkippedDirectory,
   SkipReason,

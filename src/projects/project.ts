@@ -2,8 +2,8 @@ import type { Diagnostic, Event } from "vscode";
 import { Disposable, EventEmitter, Uri } from "vscode";
 import type { Log } from "../core/log";
 import { type ManifestProject } from "../core/manifest";
-import type { ResolvedDefer } from "../core/project";
-import { dbtProjectFilePath } from "../core/project";
+import type { ResolvedDefer } from "../core/snapshot";
+import { dbtProjectFilePath } from "../core/snapshot";
 import type { ParsedManifest } from "../dbt_integration/domain";
 import type { FusionCommandIntegrationFactory } from "../fusion/executableLifecycle";
 import { ExecutableLifecycle } from "../fusion/executableLifecycle";
@@ -37,7 +37,7 @@ import {
   packageNameOf,
   projectNameAt,
   sourcePathsOf,
-} from "./projectPaths";
+} from "./projectRootPaths";
 import { ProjectTasks } from "./projectTasks";
 import { readProjectSnapshot } from "./readProjectSnapshot";
 import type { RunHistoryService } from "./runHistoryService";

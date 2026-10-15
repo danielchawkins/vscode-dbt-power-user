@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri } from "vscode";
 import { DBTCommand } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
-import type { ProjectSnapshot } from "../../core/project";
+import type { ProjectSnapshot } from "../../core/snapshot";
 import { RunModelType } from "../../dbt_integration/domain";
 import type { FusionCli } from "../../fusion/fusionCli";
 import { CommandQueue } from "../../projects/commandQueue";

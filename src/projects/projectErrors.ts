@@ -5,8 +5,8 @@ import { commands, EventEmitter, window } from "vscode";
 import { firstLogLine, isConfigError, textLogErrors } from "../core/cli";
 import type { DBTDiagnosticData } from "../core/diagnostics";
 import type { Log } from "../core/log";
-import type { ProjectSnapshot } from "../core/project";
-import { resolveProfilesDir } from "../core/project";
+import type { ProjectSnapshot } from "../core/snapshot";
+import { resolveProfilesDir } from "../core/snapshot";
 import type { CommandProcessResult } from "../core/types";
 
 /** Where a project error came from; each source's errors are replaced independently. */

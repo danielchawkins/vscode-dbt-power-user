@@ -3,7 +3,7 @@ import type {
   ProjectSnapshot,
   StaticAnalysisMode,
   TraceServerLevel,
-} from "../project";
+} from "../snapshot";
 
 /** Selects `target/.lsp/` for compiled output; see `LspCompiledOutput`. */
 export const DBT_LSP_USE_TARGET_LSP = "DBT_LSP_USE_TARGET_LSP";

@@ -16,7 +16,7 @@ import {
   dbtProjectFilePath,
   declaredProjectName,
   parseDbtProjectYaml,
-} from "../../core/project";
+} from "../../core/snapshot";
 import type { ProjectConfigInsertion } from "../../fusion/projectConfigEdits";
 import { planProjectConfigInsertion } from "../../fusion/projectConfigEdits";
 import type { CurrentProject } from "../../projects/currentProject";

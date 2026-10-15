@@ -4,7 +4,7 @@ import type { Uri } from "vscode";
 import { commandParamsFor, fullRefreshArgs } from "../core/cli";
 import type { DBTCommand } from "../core/dbtCommand";
 import type { Log } from "../core/log";
-import type { ProjectSnapshot } from "../core/project";
+import type { ProjectSnapshot } from "../core/snapshot";
 import { errorText } from "../core/text";
 import type { CommandProcessResult } from "../core/types";
 import type { RunModelParams } from "../dbt_integration/domain";

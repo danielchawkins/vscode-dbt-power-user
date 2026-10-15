@@ -5,7 +5,10 @@ import * as os from "node:os";
 import * as path from "node:path";
 import { promisify } from "node:util";
 import type { Log } from "../../core/log";
-import { readDbtProjectFile, resolveProjectSnapshot } from "../../core/project";
+import {
+  readDbtProjectFile,
+  resolveProjectSnapshot,
+} from "../../core/snapshot";
 import { CommandProcessExecutionFactory } from "../../fusion/commandProcessExecution";
 import { FusionCli } from "../../fusion/fusionCli";
 import { checkFusionVersion, getExtensionRoot } from "./helpers/testFixtures";

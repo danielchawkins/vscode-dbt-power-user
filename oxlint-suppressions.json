@@ -94,7 +94,7 @@
       "count": 2
     }
   },
-  "src/core/project/dbtEnvironment.ts": {
+  "src/core/snapshot/dbtEnvironment.ts": {
     "max-params": {
       "count": 1
     }

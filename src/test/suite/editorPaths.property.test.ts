@@ -2,7 +2,7 @@ import fc from "fast-check";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
 import { toLspArgs } from "../../core/lsp";
-import type { ProjectPaths } from "../../core/project";
+import type { ProjectPaths } from "../../core/snapshot";
 import { dbtTemplateAssociations } from "../../dbt_integration/dbtAssociations";
 import {
   NUM_RUNS,

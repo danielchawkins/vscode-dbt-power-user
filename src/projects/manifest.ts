@@ -26,7 +26,7 @@ import type {
   ManifestResources,
   SemanticModelResource,
 } from "../core/manifest/types";
-import { DBT_PROJECT_FILE, isDbtProjectFilePath } from "../core/project";
+import { DBT_PROJECT_FILE, isDbtProjectFilePath } from "../core/snapshot";
 import type { ParsedManifest } from "../dbt_integration/domain";
 import { MANIFEST_FILE } from "../dbt_integration/domain";
 

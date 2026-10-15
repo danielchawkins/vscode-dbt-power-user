@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import {
   resolveProjectSnapshot,
   substituteVariables,
-} from "../../core/project";
+} from "../../core/snapshot";
 import { NUM_RUNS } from "../arbitraries";
 import {
   snapshotFolder as folder,

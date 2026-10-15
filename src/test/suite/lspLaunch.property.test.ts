@@ -14,8 +14,8 @@ import {
   toLspArgs,
   toLspLaunch,
 } from "../../core/lsp";
-import type { ProjectSnapshot } from "../../core/project";
-import { resolveProjectSnapshot } from "../../core/project";
+import type { ProjectSnapshot } from "../../core/snapshot";
+import { resolveProjectSnapshot } from "../../core/snapshot";
 import { NUM_RUNS, relativeDir, segment } from "../arbitraries";
 import { snapshotInputs } from "../arbitraries/projectSnapshot";
 

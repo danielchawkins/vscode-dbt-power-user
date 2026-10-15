@@ -31,7 +31,7 @@ import {
   UnitTestParser,
 } from "../../core/manifest";
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
-import { DBT_PROJECT_FILE } from "../../core/project";
+import { DBT_PROJECT_FILE } from "../../core/snapshot";
 import {
   MANIFEST_FILE,
   type ParsedManifest,

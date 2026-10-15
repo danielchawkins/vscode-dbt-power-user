@@ -2,7 +2,7 @@ import { existsSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { extensions, version } from "vscode";
 import type { RegisterCommand } from "../../commandRegistry";
-import { DBT_PROJECT_FILE, readDbtProjectFile } from "../../core/project";
+import { DBT_PROJECT_FILE, readDbtProjectFile } from "../../core/snapshot";
 import { errorText } from "../../core/text";
 import { CATALOG_FILE, MANIFEST_FILE } from "../../dbt_integration/domain";
 import type { Project } from "../../projects/project";

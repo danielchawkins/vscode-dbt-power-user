@@ -14,7 +14,7 @@ import type {
   WorkspaceFolder,
 } from "vscode";
 import { EventEmitter, Uri, workspace } from "vscode";
-import type { StaticAnalysisMode } from "../../core/project";
+import type { StaticAnalysisMode } from "../../core/snapshot";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
 import type { FusionExecutableResolver } from "../../fusion/fusionExecutable";
 import { DBT_PATH_SETTING } from "../../fusion/fusionExecutable";

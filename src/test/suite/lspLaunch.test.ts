@@ -6,7 +6,7 @@ import { sameLspLaunch, toLspArgs, toLspLaunch } from "../../core/lsp";
 import type {
   ProjectSnapshotInputs,
   ProjectSnapshotSettings,
-} from "../../core/project";
+} from "../../core/snapshot";
 import {
   baseInputs,
   snapshotFolder,
