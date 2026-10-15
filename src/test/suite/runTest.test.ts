@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it, type Mocked, vi } from "vitest";
 import { Uri, window } from "vscode";
 import { RunTest } from "../../features/run/runTest";
-import type { Manifest } from "../../projects/manifestTypes";
-import type { Project } from "../../projects/project";
-import type { Projects } from "../../projects/projects";
-import type { QueryManifestService } from "../../projects/queryManifestService";
+import type { Manifest } from "../../projects/manifest/manifestTypes";
+import type { Project } from "../../projects/project/project";
+import type { Projects } from "../../projects/project/projects";
+import type { QueryManifestService } from "../../projects/project/queryManifestService";
 
 /**
  * `RunTest` classifies active files using the parsed manifest and runs

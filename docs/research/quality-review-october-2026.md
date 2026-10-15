@@ -16,7 +16,7 @@ Raw outputs (not preserved): `/tmp/knip-default.txt`, `/tmp/knip-prodflag.txt`, 
 
 ### M1. `ProjectMetadataSource` is a port nothing reads; the docs name a seam that no longer exists
 
-- `src/metadata/projectMetadataSource.ts:6` declares `current()` and `refresh()`. Repo-wide, production code touches `metadataSource` only through `.dispose` and `.project`, in `src/projects/projects.ts:108,136,164`. No production code calls `current()` or `refresh()`; only `manifestMetadataSource.test.ts` and `metadataContract.test.ts` exercise them.
+- `src/metadata/projectMetadataSource.ts:6` declares `current()` and `refresh()`. Repo-wide, production code touches `metadataSource` only through `.dispose` and `.project`, in `src/projects/project/projects.ts:108,136,164`. No production code calls `current()` or `refresh()`; only `manifestMetadataSource.test.ts` and `metadataContract.test.ts` exercise them.
 - Consumers read `project.manifest` directly:
   - `src/features/modelTree/modelTreeviewProvider.ts:131,281`
   - `src/features/lineage/lineagePanel.ts:243,281`
@@ -25,7 +25,7 @@ Raw outputs (not preserved): `/tmp/knip-default.txt`, `/tmp/knip-prodflag.txt`, 
   - `src/fusion/schemaOrigin.ts:34`
 
   Some of these go through `QueryManifestService.getProject()?.manifest`, some through `projects.get(uri)?.manifest`.
-- `ManifestCacheProjectAddedEvent` has **zero** occurrences in `src/`, yet it is the canonical seam in `AGENTS.md:78`, `CONTEXT.md:23` ("Project Metadata Source: the producer behind `ManifestCacheProjectAddedEvent`"), `docs/architecture.md:70`, `docs/lsp-metadata-gaps.md`, and `docs/refactor/rearchitecture-plan.md`. The change event that actually exists is `Projects.onDidChangeManifest` (`src/projects/projects.ts:20-23`).
+- `ManifestCacheProjectAddedEvent` has **zero** occurrences in `src/`, yet it is the canonical seam in `AGENTS.md:78`, `CONTEXT.md:23` ("Project Metadata Source: the producer behind `ManifestCacheProjectAddedEvent`"), `docs/architecture.md:70`, `docs/lsp-metadata-gaps.md`, and `docs/refactor/rearchitecture-plan.md`. The change event that actually exists is `Projects.onDidChangeManifest` (`src/projects/project/projects.ts:20-23`).
 - `AGENTS.md:79` says `FusionProjectIntegration` implements `ManifestProject`. No such class exists in `src/`; `Project` passes itself to the parsers.
 - Rule violated: AGENTS.md says "Do not introduce a second consumer seam", and CONTEXT.md fixes the vocabulary. In practice there are three read paths (`Project.manifest`, `QueryManifestService`, and an unused `ProjectMetadataSource`) and one event (`onDidChangeManifest`).
 - Fix: pick one.
@@ -38,25 +38,25 @@ Raw outputs (not preserved): `/tmp/knip-default.txt`, `/tmp/knip-prodflag.txt`, 
 
 These come from the `strict-type-checked` probe in M5/§6 and are type-confirmed:
 
-- `src/projects/manifest.ts:217`: `{ ...nodes, ...exposures, ...(functionRecords ?? {}) }`. `nodes` and `exposures` are typed `any[]` (`ManifestJson` at `manifest.ts:99-111`, which forwards `NodeParser.createNodeMetaMap(nodesMap: any[])` at `nodeParser.ts:101`). Either the runtime value is an object keyed by `unique_id`, which makes the parser signatures lie, or the spread produces index keys. Correct the types to `Record<string, NodeData>`.
+- `src/projects/manifest/manifest.ts:217`: `{ ...nodes, ...exposures, ...(functionRecords ?? {}) }`. `nodes` and `exposures` are typed `any[]` (`ManifestJson` at `manifest.ts:99-111`, which forwards `NodeParser.createNodeMetaMap(nodesMap: any[])` at `nodeParser.ts:101`). Either the runtime value is an object keyed by `unique_id`, which makes the parser signatures lie, or the spread produces index keys. Correct the types to `Record<string, NodeData>`.
 - `for (const key in …)` over values typed as arrays:
   - `src/core/manifest/macroParser.ts:31`
   - `src/core/manifest/metricParser.ts:23`
   - `src/features/codegen/sourceModelCreationCodeLensProvider.ts:50,58,64,89,92,124`
 
   The codegen lens iterates YAML CST `items`, which are arrays, so `for…in` yields string indices. It also holds 16 `max-depth` suppressions.
-- `no-base-to-string` at `src/features/commands.ts:421`, `src/features/run/runModel.ts:99`, and `src/projects/outputChannels.ts:216` can print `[object Object]`.
+- `no-base-to-string` at `src/features/commands.ts:421`, `src/features/run/runModel.ts:99`, and `src/projects/output/outputChannels.ts:216` can print `[object Object]`.
 - Fix: correct the `any[]` input types and switch these loops to `Object.entries` or `for…of`. Then enable `@typescript-eslint/no-for-in-array`, `no-misused-spread`, and `no-base-to-string` as errors; there are 14 hits in total.
 
 ### M3. Stray `console.*` in production, with no `no-console` rule
 
-- `src/projects/queryManifestService.ts:104`: `console.log(event.sourceMetaMap.size, sources)` runs on every source lookup.
+- `src/projects/project/queryManifestService.ts:104`: `console.log(event.sourceMetaMap.size, sources)` runs on every source lookup.
 - `src/features/lineage/lineagePanel.ts:400`: `console.log("addColumnsFromDB: ", …)`
 - `src/features/modelTree/modelTreeviewProvider.ts:176`
 - `src/utils.ts:142,329`
 - `src/core/manifest/graphParser.ts:216` (commented out) and `:269`
 - `src/core/manifest/utils.ts:28`
-- Canonical logger: `DBTTerminal`, implemented by `ChannelLog`/`OutputChannels` (`src/projects/outputChannels.ts:163,238`). `core/` uses the `ManifestLogger` port (`src/core/manifest/logger.ts:2`).
+- Canonical logger: `DBTTerminal`, implemented by `ChannelLog`/`OutputChannels` (`src/projects/output/outputChannels.ts:163,238`). `core/` uses the `ManifestLogger` port (`src/core/manifest/logger.ts:2`).
 - Fix: route these through the terminal, or delete them. Add `"no-console": "error"` for `src/**` minus `src/test/**`.
 
 ### M4. Tooling hides dead code: knip entries, the legacy mocha harness, and unused devDependencies
@@ -96,7 +96,7 @@ In production mode knip uses only entries suffixed with `!`. `knip.json` marks n
 | `NodeMetaType`, `SourceMetaType`, `ProjectInfo`, `ModelGraphMetaMap`                                 | `src/dbt_integration/domain.ts:20,21,23,147`                                                                |
 | enum member `RunModelType.SNAPSHOT`                                                                  | `src/dbt_integration/domain.ts:156`                                                                         |
 | `ExecuteSQLResult` (re-export)                                                                       | `src/modules.ts:1`                                                                                          |
-| `RunStatus` re-export                                                                                | `src/projects/runHistoryService.ts:12` (the source is `domain.ts:63`)                                       |
+| `RunStatus` re-export                                                                                | `src/projects/output/runHistoryService.ts:12` (the source is `domain.ts:63`)                                |
 | `ProjectParsers`                                                                                     | `src/compositionRoot.ts:83`                                                                                 |
 | `ButtonProps`                                                                                        | `webview_panels/src/uiCore/index.ts:19`                                                                     |
 | `QueryPanelViewType.OPEN_RESULTS_IN_TAB`, `.OPEN_RESULTS_FROM_HISTORY_BOOKMARKS`                     | `webview_panels/src/modules/queryPanel/context/types.ts:10-11`                                              |
@@ -300,17 +300,17 @@ That totals about 2,300 lines in `suite` and about 120 in `integration`, roughly
 
 **Fan-in hubs:**
 
-| Fan-in | Module                            | Notes                                                                                                                     |
-| ------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 42     | `src/dbt_integration/index.ts`    | Barrel; 4 `export *`. The vendored domain package acts as a catch-all type hub, including `DBTTerminal`, the logging port |
-| 26     | `src/core/project/index.ts`       |                                                                                                                           |
-| 21     | `src/settings/index.ts`           |                                                                                                                           |
-| 16     | `src/projects/projects.ts`        |                                                                                                                           |
-| 15     | `src/projects/projectRegistry.ts` |                                                                                                                           |
-| 14     | `src/projects/project.ts`         | also fan-out 29: the god-object node of the graph                                                                         |
-| 14     | `core/manifest/types.ts`          |                                                                                                                           |
-| 14     | `core/manifest/logger.ts`         |                                                                                                                           |
-| 11     | `src/utils.ts`                    | 393 lines, 20 unrelated exports                                                                                           |
+| Fan-in | Module                                     | Notes                                                                                                                     |
+| ------ | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------- |
+| 42     | `src/dbt_integration/index.ts`             | Barrel; 4 `export *`. The vendored domain package acts as a catch-all type hub, including `DBTTerminal`, the logging port |
+| 26     | `src/core/project/index.ts`                |                                                                                                                           |
+| 21     | `src/settings/index.ts`                    |                                                                                                                           |
+| 16     | `src/projects/project/projects.ts`         |                                                                                                                           |
+| 15     | `src/projects/registry/projectRegistry.ts` |                                                                                                                           |
+| 14     | `src/projects/project/project.ts`          | also fan-out 29: the god-object node of the graph                                                                         |
+| 14     | `core/manifest/types.ts`                   |                                                                                                                           |
+| 14     | `core/manifest/logger.ts`                  |                                                                                                                           |
+| 11     | `src/utils.ts`                             | 393 lines, 20 unrelated exports                                                                                           |
 
 **Fan-out hubs:**
 
@@ -328,7 +328,7 @@ That totals about 2,300 lines in `suite` and about 120 in `integration`, roughly
 
 1. `src/dbt_client/event/projectConfigChangedEvent.ts` ↔ `projects/project.ts`. Each event is a 4–8-line class carrying `project: Project`, and `src/dbt_client/` holds nothing else. Move both classes into `project.ts` or `projects/projectEvents.ts` and delete `src/dbt_client/`. AGENTS.md lists `src/dbt_client/` as "dbt integrations, manifest parsing, command execution", which is stale.
 2. `src/dbt_client/event/runResultsEvent.ts` ↔ `projects/project.ts`: same fix.
-3. `src/projects/manifestTypes.ts:2` ↔ `project.ts`: `Manifest.project: Project` (`:6`). Use a `type` import of a narrow interface, or remove the back-reference.
+3. `src/projects/manifest/manifestTypes.ts:2` ↔ `project.ts`: `Manifest.project: Project` (`:6`). Use a `type` import of a narrow interface, or remove the back-reference.
 4. `src/features/codeLenses.ts:2` ↔ `dbtPowerUserExtension.ts`: `codeLenses` reads static `DBTPowerUserExtension.DBT_SQL_SELECTOR` and `DBT_YAML_SELECTOR` (`dbtPowerUserExtension.ts:35,40`). Move the selectors to a small `src/documentSelectors.ts`. This also violates the spirit of `nothing-imports-features` in reverse: a feature imports the root.
 
 **Layer rules missing from `.dependency-cruiser.cjs`:**
@@ -351,7 +351,7 @@ That totals about 2,300 lines in `suite` and about 120 in `integration`, roughly
 | 877   | `src/features/lineage/lineagePanel.ts`          |          |                                                                                       |
 | 815   | `src/features/cte/cteCodeLensProvider.ts`       |          | 8 suppressions; 5 cognitive-complexity                                                |
 | 806   | `src/features/commands.ts`                      | 25%      | 5 `max-lines-per-function`; one `register()` mega-method                              |
-| 702   | `src/projects/project.ts`                       |          |                                                                                       |
+| 702   | `src/projects/project/project.ts`               |          |                                                                                       |
 | 678   | `src/core/manifest/relationshipParser.ts`       | **2.7%** |                                                                                       |
 | 609   | `src/features/queryResults/queryResultPanel.ts` |          | 7 floating promises                                                                   |
 
@@ -362,7 +362,7 @@ That totals about 2,300 lines in `suite` and about 120 in `integration`, roughly
 - Total: 1.56% (1,053 of 67,538 lines, 81 clones). Production: 13 clones, 166 lines. Top production clones:
   - `src/features/cte/cteCodeLensProvider.ts:605-627` ≈ `:766-788` (23 lines)
   - `src/features/projectSetup/projectSetupCommands.ts:55-70` ≈ `:100-116`
-  - `src/projects/queryManifestService.ts:88-103` ≈ `:115-130`: the "resolve project → `manifestAt` → bail" preamble repeated in `getEventByCurrentProject`, `getSourcesInProject`, and `getModelsInProject`. Extract `manifestFor(uri)`.
+  - `src/projects/project/queryManifestService.ts:88-103` ≈ `:115-130`: the "resolve project → `manifestAt` → bail" preamble repeated in `getEventByCurrentProject`, `getSourcesInProject`, and `getModelsInProject`. Extract `manifestFor(uri)`.
   - `src/features/modelTree/modelTreeviewProvider.ts:100-112` ≈ `:252-264`: two tree providers with identical subscription blocks. Use a base class or helper.
   - `src/core/manifest/graphParser.ts:85-140` (3 clones)
   - `src/features/docs/dbtTestService.ts:215-241`
@@ -374,7 +374,7 @@ That totals about 2,300 lines in `suite` and about 120 in `integration`, roughly
 | Concern                      | Canonical                                                                                                                                                                                                                                                                                                       | Redundant / divergent                                                                                                                                                                                                                                                                                                                                | Action                                                                                                                                                                                                                                                       |
 | ---------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | **Manifest read**            | `Projects.onDidChangeManifest` + `Project.manifest` (what the code does)                                                                                                                                                                                                                                        | `QueryManifestService.getEventByCurrentProject` / `manifestAt` (12 production importers), `ProjectMetadataSource.current()` (0 callers), `ManifestCacheProjectAddedEvent` (docs only)                                                                                                                                                                | M1                                                                                                                                                                                                                                                           |
-| **Logging**                  | `DBTTerminal` → `ChannelLog`/`OutputChannels` (`projects/outputChannels.ts:163,238`); `ManifestLogger` port in `core/`                                                                                                                                                                                          | `console.*` (M3); `DiagnosticsOutputChannel` (`features/diagnostics/diagnosticsOutputChannel.ts:5`, a second wrapper writing to a raw `OutputChannel` for the diagnostics report, legitimately a report sink); the two `createOutputChannel` sites at `outputChannels.ts:170,287`                                                                    | Keep `DiagnosticsOutputChannel` as a report writer; ban `console`; move `DBTTerminal` out of the `dbt_integration` barrel into `src/projects/outputChannels.ts` or `src/log.ts`                                                                              |
+| **Logging**                  | `DBTTerminal` → `ChannelLog`/`OutputChannels` (`projects/outputChannels.ts:163,238`); `ManifestLogger` port in `core/`                                                                                                                                                                                          | `console.*` (M3); `DiagnosticsOutputChannel` (`features/diagnostics/diagnosticsOutputChannel.ts:5`, a second wrapper writing to a raw `OutputChannel` for the diagnostics report, legitimately a report sink); the two `createOutputChannel` sites at `outputChannels.ts:170,287`                                                                    | Keep `DiagnosticsOutputChannel` as a report writer; ban `console`; move `DBTTerminal` out of the `dbt_integration` barrel into `src/projects/output/outputChannels.ts` or `src/log.ts`                                                                       |
 | **Settings**                 | `src/settings/index.ts` (`readSetting`), enforced by `no-restricted-properties`                                                                                                                                                                                                                                 | `utils.resolveSettingsVariables` (test-only) vs. `core/project/projectSnapshot.substituteVariables` (canonical)                                                                                                                                                                                                                                      | Delete the `utils` wrapper (§1C)                                                                                                                                                                                                                             |
 | **Running dbt**              | Task → `Project.startTask` (`project.ts:490`) → `executeTask` (`dbtTask.ts:120`) → `DbtTaskTerminal` → `queueCli` / `enqueueCommand` (`projectCommands.ts:118,147`) → `CommandQueue` → `FusionCli.prepare` → `CommandProcessExecution` (spawn confined to `fusion/process.ts` and `commandProcessExecution.ts`) | `FusionCli.run`, `compileInline`, `show`, `executeSQL`, and `getColumnsOf*` (`fusionCli.ts:145-357`) run outside the queue and outside tasks. That is a deliberate split for query and preview, not a duplicate. `enqueueCommand` is exported but only `queueCli` calls it                                                                           | One canonical path, so no action beyond un-exporting `enqueueCommand` and `formatCliStatus`. Document the queue/non-queue split in `docs/architecture.md`                                                                                                    |
 | **Error reporting**          | `ProjectErrors` (`projects/projectErrors.ts`) for parse, compile, and executable errors, keyed by source; `ProjectDiagnostics` (`projects/projectDiagnostics.ts:60`) is the single `DiagnosticCollection`                                                                                                       | `notifyFailed`, which goes to `RunHistoryService.notifyCommandFailed` (`project.ts:181`) for queued command failure, plus **31 direct `window.showErrorMessage` calls across 17 files** (6 in `commands.ts`, 5 in `queryResultPanel.ts`, 4 in `projectCodegen.ts`, 3 in `docsEditPanel.ts`, …) with inconsistent wording and no "Show output" action | Add one `notifyError(source, message, error)` helper, using `ProjectErrors`' `SHOW_OUTPUT` affordance (`projectErrors.ts:10`), and ban bare `window.showErrorMessage` outside it with `no-restricted-properties`, the same pattern already used for settings |

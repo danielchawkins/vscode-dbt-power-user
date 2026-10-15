@@ -14,16 +14,16 @@ import { ExecuteSQLError } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import { getFormattedDateTime } from "../../core/text";
 import type { ExtensionContextStore } from "../../extensionContext";
-import { publicationId } from "../../projects/manifest";
+import { publicationId } from "../../projects/manifest/manifest";
 import {
   notifyError,
   notifyErrorWithoutProject,
-} from "../../projects/notifications";
-import type { QueryManifestService } from "../../projects/queryManifestService";
+} from "../../projects/output/notifications";
+import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type {
   SharedStateEventEmitterProps,
   SharedStateService,
-} from "../../projects/sharedStateService";
+} from "../../projects/project/sharedStateService";
 import { readSetting } from "../../settings";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
 import { dispatchMessage } from "../../webview/messageRouter";

@@ -7,8 +7,8 @@ import type {
   WebviewViewResolveContext,
 } from "vscode";
 import { window } from "vscode";
-import type { ParseDemand } from "../../projects/parseDemand";
-import type { Projects } from "../../projects/projects";
+import type { ParseDemand } from "../../projects/manifest/parseDemand";
+import type { Projects } from "../../projects/project/projects";
 import type { LineagePanel } from "./lineagePanel";
 import { LINEAGE_VIEW_TYPE } from "./lineagePanel";
 

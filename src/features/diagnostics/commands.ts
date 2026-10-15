@@ -5,9 +5,9 @@ import type { RegisterCommand } from "../../commandRegistry";
 import { CATALOG_FILE, MANIFEST_FILE } from "../../core/dbt/domain";
 import { DBT_PROJECT_FILE, readDbtProjectFile } from "../../core/snapshot";
 import { errorText } from "../../core/text";
-import type { Project } from "../../projects/project";
-import type { Projects } from "../../projects/projects";
-import { getFirstWorkspacePath } from "../../projects/workspacePath";
+import type { Project } from "../../projects/project/project";
+import type { Projects } from "../../projects/project/projects";
+import { getFirstWorkspacePath } from "../../projects/registry/workspacePath";
 import { inspectSettings, readEnvironment } from "../../settings";
 import type { DiagnosticsOutputChannel } from "./diagnosticsOutputChannel";
 

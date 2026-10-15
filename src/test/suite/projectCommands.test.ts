@@ -6,14 +6,14 @@ import { DBTCommand } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import type { ProjectSnapshot } from "../../core/snapshot";
 import type { FusionCli } from "../../fusion/fusionCli";
-import { CommandQueue } from "../../projects/commandQueue";
-import { DbtTaskTerminal } from "../../projects/dbtTask";
-import type { ProjectCommandDeps } from "../../projects/projectCommands";
+import { CommandQueue } from "../../projects/project/commandQueue";
+import { DbtTaskTerminal } from "../../projects/project/dbtTask";
+import type { ProjectCommandDeps } from "../../projects/project/projectCommands";
 import {
   modelParamsFor,
   queueCli,
   selection,
-} from "../../projects/projectCommands";
+} from "../../projects/project/projectCommands";
 
 describe("selection", () => {
   it("wraps the model name in its graph operators", () => {

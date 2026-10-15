@@ -9,7 +9,7 @@ import {
 } from "vitest";
 import { Uri, window, workspace } from "vscode";
 import { DeferToProductionStatusBar } from "../../features/defer/deferToProductionStatusBar";
-import { Project } from "../../projects/project";
+import { Project } from "../../projects/project/project";
 
 describe("DeferToProductionStatusBar", () => {
   const root = Uri.file("/workspace/proj");

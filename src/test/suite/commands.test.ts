@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import { commands, env, Uri, window, workspace } from "vscode";
 import { VSCodeCommands } from "../../features/commands";
 
-vi.mock("../../projects/previewUri", () => ({
+vi.mock("../../projects/registry/previewUri", () => ({
   activeModelUri: (uri: unknown) => uri,
   previewUriFor: () => ({ toString: () => "preview:/a.sql" }),
 }));

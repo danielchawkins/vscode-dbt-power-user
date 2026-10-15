@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { Uri, window } from "vscode";
-import { QueryManifestService } from "../../projects/queryManifestService";
+import { QueryManifestService } from "../../projects/project/queryManifestService";
 
 describe("QueryManifestService.rewire", () => {
   let service: QueryManifestService;

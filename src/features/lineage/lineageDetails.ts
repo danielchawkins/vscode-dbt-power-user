@@ -12,10 +12,10 @@ import {
   RESOURCE_TYPE_FUNCTION,
   RESOURCE_TYPE_SOURCE,
 } from "../../core/manifest/types";
-import type { Manifest } from "../../projects/manifestTypes";
-import { notifyError } from "../../projects/notifications";
-import type { Project } from "../../projects/project";
-import type { QueryManifestService } from "../../projects/queryManifestService";
+import type { Manifest } from "../../projects/manifest/manifestTypes";
+import { notifyError } from "../../projects/output/notifications";
+import type { Project } from "../../projects/project/project";
+import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type { DbtLineageService } from "./dbtLineageService";
 
 /** What the lineage panel shows for one node's columns. */

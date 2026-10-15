@@ -7,7 +7,7 @@ import type {
 } from "vscode";
 import { CodeLens, EventEmitter, Range } from "vscode";
 import { CST, LineCounter, Parser } from "yaml";
-import type { GenerateModelFromSourceParams } from "../../projects/projectCodegen";
+import type { GenerateModelFromSourceParams } from "../../projects/project/projectCodegen";
 
 export class SourceModelCreationCodeLensProvider
   implements CodeLensProvider, Disposable

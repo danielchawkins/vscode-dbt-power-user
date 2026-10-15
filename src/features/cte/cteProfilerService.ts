@@ -6,8 +6,8 @@ import type { Log } from "../../core/log";
 import {
   notifyError,
   notifyErrorWithoutProject,
-} from "../../projects/notifications";
-import type { Projects } from "../../projects/projects";
+} from "../../projects/output/notifications";
+import type { Projects } from "../../projects/project/projects";
 import type { CteProfileEntry, CteProfileResult } from "./cteProfilerTypes";
 
 /** Reads a compiled file once per profiling run, so every CTE is sliced from the same version. */

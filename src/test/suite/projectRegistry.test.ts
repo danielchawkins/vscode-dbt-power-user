@@ -19,13 +19,13 @@ import {
 import type { WorkspaceFolder } from "vscode";
 import { RelativePattern, Uri, workspace } from "vscode";
 import type { FusionClientFactory } from "../../fusion/fusionLanguageClient";
-import { FusionClientPoolImpl } from "../../projects/fusionClientPool";
+import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
+import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import {
   ENABLED_SETTING,
   PROJECTS_SETTING,
-} from "../../projects/projectConfiguration";
-import { ProjectRegistry } from "../../projects/projectRegistry";
-import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
+} from "../../projects/registry/projectConfiguration";
+import { ProjectRegistry } from "../../projects/registry/projectRegistry";
 import { waitFor } from "../async";
 import { esmDirname } from "../esmDirname";
 import { createMockLogOutputChannel } from "../mock/vscode";

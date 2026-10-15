@@ -6,7 +6,7 @@ import {
   modelUriOf,
   PREVIEW_SCHEME,
   previewUriFor,
-} from "../../projects/previewUri";
+} from "../../projects/registry/previewUri";
 
 vi.mock("vscode", async (importOriginal) => ({
   ...(await importOriginal<typeof vscodeApi>()),

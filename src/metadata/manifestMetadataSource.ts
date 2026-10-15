@@ -1,8 +1,8 @@
 import type { Disposable, Event } from "vscode";
 import { EventEmitter } from "vscode";
 import type { ParsedManifest } from "../core/dbt/domain";
-import type { Project } from "../projects/project";
-import type { DeclaredProject } from "../projects/projectRegistry";
+import type { Project } from "../projects/project/project";
+import type { DeclaredProject } from "../projects/registry/projectRegistry";
 
 /** The Parse Producer: forwards each `dbt parse` result of a Project. It publishes nothing to consumers itself. */
 export class ManifestMetadataSource implements Disposable {

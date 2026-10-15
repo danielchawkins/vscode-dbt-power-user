@@ -23,8 +23,9 @@ module.exports = {
       to: { pathNot: "^src/" },
     },
     {
-      comment: "Within one top-level folder.",
-      from: { path: "^src/([^/]+)/" },
+      comment:
+        "Within one top-level folder; projects/ has its own sub-layers below.",
+      from: { path: "^src/([^/]+)/", pathNot: "^src/projects/" },
       to: { path: "^src/$1/" },
     },
     {
@@ -42,10 +43,25 @@ module.exports = {
     layer("fusion", "^src/(core|settings)/"),
     layer("metadata", "^src/(core|fusion|projects)/"),
     layer("projects", "^src/(core|settings|fusion)/"),
-    layer("webview", `^src/(core|benchmark|projects)/|${SUPPORT}`),
+    // Inside projects/, lowest first: registry, output, clients, manifest, project.
+    {
+      from: {
+        path: "^src/projects/(registry|output|clients|manifest|project)/",
+      },
+      to: { path: "^src/projects/$1/" },
+    },
+    layer("projects/output", "^src/projects/registry/"),
+    layer("projects/clients", "^src/projects/(registry|output)/"),
+    layer(
+      "projects/project",
+      "^src/projects/(registry|output|clients|manifest)/",
+    ),
+    layer("webview", `^src/(core|benchmark|projects/project)/|${SUPPORT}`),
     layer(
       "features",
-      `^src/(core|settings|fusion|projects|webview|features)/|${SUPPORT}`,
+      // The manifest/ modules a feature reads: the Manifest type, a publication's id, and parse demand.
+      `^src/(core|settings|fusion|projects/(registry|output|project)|webview|features)/|${SUPPORT}|` +
+        "^src/projects/manifest/(manifestTypes|manifest|parseDemand)\\.ts$",
     ),
   ],
   forbidden: [
@@ -72,7 +88,7 @@ module.exports = {
       severity: "error",
       comment:
         "readProjectSnapshot gathers inputs through settings/ and resolves them in core/.",
-      from: { path: "^src/projects/readProjectSnapshot\\.ts$" },
+      from: { path: "^src/projects/clients/readProjectSnapshot\\.ts$" },
       to: {
         path: "^src/|^node_modules/",
         pathNot: "^src/(core|settings)/|^node_modules/@types/vscode/",

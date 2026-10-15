@@ -34,15 +34,15 @@ import {
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
 import { DBT_PROJECT_FILE } from "../../core/snapshot";
 import type { FusionCli } from "../../fusion/fusionCli";
-import { DbtTaskTerminal } from "../../projects/dbtTask";
-import type { ManifestParsers } from "../../projects/manifest";
-import { ParseDemand } from "../../projects/parseDemand";
-import { Project, type ProjectOptions } from "../../projects/project";
-import type { ProjectCommandDeps } from "../../projects/projectCommands";
-import { queueCli } from "../../projects/projectCommands";
-import type { ProjectDiagnostics } from "../../projects/projectDiagnostics";
-import type { RunHistoryService } from "../../projects/runHistoryService";
-import type { SharedStateService } from "../../projects/sharedStateService";
+import type { ManifestParsers } from "../../projects/manifest/manifest";
+import { ParseDemand } from "../../projects/manifest/parseDemand";
+import type { ProjectDiagnostics } from "../../projects/output/projectDiagnostics";
+import type { RunHistoryService } from "../../projects/output/runHistoryService";
+import { DbtTaskTerminal } from "../../projects/project/dbtTask";
+import { Project, type ProjectOptions } from "../../projects/project/project";
+import type { ProjectCommandDeps } from "../../projects/project/projectCommands";
+import { queueCli } from "../../projects/project/projectCommands";
+import type { SharedStateService } from "../../projects/project/sharedStateService";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 import {

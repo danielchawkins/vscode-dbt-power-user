@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { graphUnavailable } from "../../projects/graphAvailability";
+import { graphUnavailable } from "../../projects/manifest/graphAvailability";
 
 describe("graphUnavailable", () => {
   it("is undefined when the manifest carries a server value, whatever the client state", () => {

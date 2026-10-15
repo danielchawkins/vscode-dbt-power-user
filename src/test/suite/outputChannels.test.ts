@@ -6,8 +6,8 @@ import {
   DIAGNOSTICS_CHANNEL_NAME,
   EXTENSION_CHANNEL_NAME,
   OutputChannels,
-} from "../../projects/outputChannels";
-import type { DeclaredProject } from "../../projects/projectRegistry";
+} from "../../projects/output/outputChannels";
+import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 import { declaredProject } from "../projectHarness";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";

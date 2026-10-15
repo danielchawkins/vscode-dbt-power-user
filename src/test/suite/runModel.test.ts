@@ -12,11 +12,11 @@ import type * as vscodeApi from "vscode";
 import { Uri, window } from "vscode";
 import { RunModelType } from "../../core/dbt/domain";
 import { RunModel } from "../../features/run/runModel";
-import type { CurrentProject } from "../../projects/currentProject";
-import { previewUriFor } from "../../projects/previewUri";
-import type { Project } from "../../projects/project";
-import type { DeclaredProject } from "../../projects/projectRegistry";
-import type { Projects } from "../../projects/projects";
+import type { CurrentProject } from "../../projects/project/currentProject";
+import type { Project } from "../../projects/project/project";
+import type { Projects } from "../../projects/project/projects";
+import { previewUriFor } from "../../projects/registry/previewUri";
+import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 import { RecordingTasks } from "../recordingTasks";
 
 vi.mock("vscode", async (importOriginal) => ({

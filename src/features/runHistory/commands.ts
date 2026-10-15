@@ -1,7 +1,7 @@
 import { window } from "vscode";
 import type { RegisterCommand } from "../../commandRegistry";
-import type { Projects } from "../../projects/projects";
-import type { RunHistoryService } from "../../projects/runHistoryService";
+import type { RunHistoryService } from "../../projects/output/runHistoryService";
+import type { Projects } from "../../projects/project/projects";
 import { rerunFromHistory } from "./rerunFromHistory";
 import type { RunTreeItem } from "./runHistoryTreeItems";
 

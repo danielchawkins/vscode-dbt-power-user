@@ -5,7 +5,7 @@ import {
   RunTreeItem,
 } from "../../features/runHistory/runHistoryTreeItems";
 import { RunHistoryTreeviewProvider } from "../../features/runHistory/runHistoryTreeviewProvider";
-import { RunHistoryService } from "../../projects/runHistoryService";
+import { RunHistoryService } from "../../projects/output/runHistoryService";
 import { createEntry } from "../fixtures/runHistory";
 
 suite("Run History TreeView Integration", function () {

@@ -7,7 +7,7 @@ import {
   createYMLContent,
   generateSchemaYML,
   mergeColumnsFromDB,
-} from "../../projects/projectCodegen";
+} from "../../projects/project/projectCodegen";
 import type { WorkspaceEdit } from "../mock/vscode";
 
 describe("projectCodegen", () => {

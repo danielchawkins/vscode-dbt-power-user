@@ -24,14 +24,14 @@ import type {
   FusionClientOptions,
   FusionProjectRef,
 } from "../../fusion/fusionLanguageClient";
-import { onCurrentClientChange } from "../../projects/clientChange";
-import { FusionClientPoolImpl } from "../../projects/fusionClientPool";
+import { onCurrentClientChange } from "../../projects/clients/clientChange";
+import { FusionClientPoolImpl } from "../../projects/clients/fusionClientPool";
+import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import type {
   DeclaredProject,
   ProjectRegistry,
-} from "../../projects/projectRegistry";
-import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
-import { schemaOriginLaunchEnv } from "../../projects/schemaOrigin";
+} from "../../projects/registry/projectRegistry";
+import { schemaOriginLaunchEnv } from "../../projects/registry/schemaOrigin";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";

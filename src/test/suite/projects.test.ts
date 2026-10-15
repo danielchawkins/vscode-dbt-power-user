@@ -12,10 +12,12 @@ import { EventEmitter, Uri, workspace } from "vscode";
 import type { ParsedManifest } from "../../core/dbt/domain";
 import type { Log } from "../../core/log";
 import { emptyParsedManifest } from "../../core/metadata";
-import { CompositeMetadataSource } from "../../metadata/compositeMetadataSource";
-import { createProjectMetadataSource } from "../../metadata/compositeMetadataSource";
-import type { Project } from "../../projects/project";
-import { Projects } from "../../projects/projects";
+import {
+  CompositeMetadataSource,
+  createProjectMetadataSource,
+} from "../../metadata/compositeMetadataSource";
+import type { Project } from "../../projects/project/project";
+import { Projects } from "../../projects/project/projects";
 
 let epoch = 0;
 

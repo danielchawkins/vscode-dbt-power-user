@@ -11,8 +11,8 @@ import type {
   UnitTestMetaData,
 } from "../../core/manifest/types";
 import { removeProtocol } from "../../core/text";
-import { isColumnNameEqual } from "../../projects/columnNames";
-import type { QueryManifestService } from "../../projects/queryManifestService";
+import { isColumnNameEqual } from "../../projects/project/columnNames";
+import type { QueryManifestService } from "../../projects/project/queryManifestService";
 
 export class DbtTestService {
   private queryManifestService: QueryManifestService;

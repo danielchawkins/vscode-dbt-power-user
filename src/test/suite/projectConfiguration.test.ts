@@ -8,7 +8,7 @@ import {
   addDeclaredProjectRoot,
   PROJECTS_SETTING,
   resolveDeclaredProjectRoots,
-} from "../../projects/projectConfiguration";
+} from "../../projects/registry/projectConfiguration";
 import { CONFIGURATION_SECTION } from "../../settings";
 import { esmDirname } from "../esmDirname";
 

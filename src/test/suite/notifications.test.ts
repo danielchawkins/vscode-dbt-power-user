@@ -4,7 +4,7 @@ import {
   bindExtensionOutput,
   notifyError,
   notifyErrorWithoutProject,
-} from "../../projects/notifications";
+} from "../../projects/output/notifications";
 
 const SHOW_OUTPUT = "Show output";
 

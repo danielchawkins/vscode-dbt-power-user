@@ -6,9 +6,9 @@ import {
   registerDbtTaskProvider,
 } from "../../features/tasks/dbtTaskProvider";
 import type { QueuedCliCommand } from "../../fusion/fusionCli";
-import { taskName } from "../../projects/dbtTask";
-import type { Project } from "../../projects/project";
-import type { Projects } from "../../projects/projects";
+import { taskName } from "../../projects/project/dbtTask";
+import type { Project } from "../../projects/project/project";
+import type { Projects } from "../../projects/project/projects";
 
 function project(root: string, name: string) {
   return {

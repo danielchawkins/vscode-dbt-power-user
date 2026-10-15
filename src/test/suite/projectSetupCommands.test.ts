@@ -6,7 +6,7 @@ import { FusionCli } from "../../fusion/fusionCli";
 import type {
   ProjectQuickPick,
   ProjectQuickPickItem,
-} from "../../projects/projectQuickPick";
+} from "../../projects/project/projectQuickPick";
 import { noSettings } from "../arbitraries/projectSnapshot";
 import { RecordingTasks } from "../recordingTasks";
 

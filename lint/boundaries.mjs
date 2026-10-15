@@ -9,7 +9,7 @@ export const WRITE_MESSAGE =
 export const ENVIRONMENT_MESSAGE =
   "Read the environment through src/settings/.";
 export const ERROR_MESSAGE =
-  "Error notifications go through notifyError or notifyErrorWithoutProject (src/projects/notifications.ts).";
+  "Error notifications go through notifyError or notifyErrorWithoutProject (src/projects/output/notifications.ts).";
 export const POST_MESSAGE =
   "Host messages leave through PanelHost.post or postToWebview (src/webview/panelHost.ts).";
 export const REMOVED_MESSAGE =

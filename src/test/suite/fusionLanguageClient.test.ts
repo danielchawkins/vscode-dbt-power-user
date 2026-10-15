@@ -58,7 +58,7 @@ import type {
   ReverseSocketServer,
   ReverseSocketStreams,
 } from "../../fusion/reverseSocketTransport";
-import type { DeclaredProject } from "../../projects/projectRegistry";
+import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 import { flushAsync } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";
 

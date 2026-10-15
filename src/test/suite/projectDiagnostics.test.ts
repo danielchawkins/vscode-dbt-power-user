@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { DiagnosticCollection } from "vscode";
 import { DiagnosticSeverity, languages, Uri } from "vscode";
 import type { DBTDiagnosticData } from "../../core/diagnostics";
-import { ProjectDiagnostics } from "../../projects/projectDiagnostics";
+import { ProjectDiagnostics } from "../../projects/output/projectDiagnostics";
 
 const data = (
   message: string,

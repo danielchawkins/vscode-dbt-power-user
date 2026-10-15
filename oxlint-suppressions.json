@@ -232,72 +232,72 @@
       "count": 1
     }
   },
-  "src/projects/commandQueue.ts": {
+  "src/projects/project/commandQueue.ts": {
     "typescript/unbound-method": {
       "count": 2
     }
   },
-  "src/projects/dbtTask.ts": {
+  "src/projects/project/dbtTask.ts": {
     "max-params": {
       "count": 1
     }
   },
-  "src/projects/fusionClientDiagnostics.ts": {
+  "src/projects/clients/fusionClientDiagnostics.ts": {
     "max-params": {
       "count": 1
     }
   },
-  "src/projects/fusionClientPool.ts": {
+  "src/projects/clients/fusionClientPool.ts": {
     "max-params": {
       "count": 1
     }
   },
-  "src/projects/fusionStatus.ts": {
+  "src/projects/clients/fusionStatus.ts": {
     "max-params": {
       "count": 1
     }
   },
-  "src/projects/manifest.ts": {
+  "src/projects/manifest/manifest.ts": {
     "max-params": {
       "count": 2
     }
   },
-  "src/projects/manifestRebuild.ts": {
+  "src/projects/manifest/manifestRebuild.ts": {
     "max-params": {
       "count": 1
     }
   },
-  "src/projects/projectCodegen.ts": {
+  "src/projects/project/projectCodegen.ts": {
     "max-params": {
       "count": 2
     }
   },
-  "src/projects/projectCommands.ts": {
+  "src/projects/project/projectCommands.ts": {
     "max-params": {
       "count": 1
     }
   },
-  "src/projects/projectErrors.ts": {
+  "src/projects/output/projectErrors.ts": {
     "max-params": {
       "count": 1
     }
   },
-  "src/projects/projectRegistry.ts": {
+  "src/projects/registry/projectRegistry.ts": {
     "max-lines-per-function": {
       "count": 1
     }
   },
-  "src/projects/projectSql.ts": {
+  "src/projects/project/projectSql.ts": {
     "max-params": {
       "count": 9
     }
   },
-  "src/projects/projectWarehouse.ts": {
+  "src/projects/project/projectWarehouse.ts": {
     "max-params": {
       "count": 2
     }
   },
-  "src/projects/runResults.ts": {
+  "src/projects/manifest/runResults.ts": {
     "max-params": {
       "count": 1
     }

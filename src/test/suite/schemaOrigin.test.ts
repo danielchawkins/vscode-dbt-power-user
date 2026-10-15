@@ -12,7 +12,7 @@ import {
   SCHEMA_ORIGIN_HOOK,
   schemaOriginEnv,
   schemaOriginLaunchEnv,
-} from "../../projects/schemaOrigin";
+} from "../../projects/registry/schemaOrigin";
 
 const withHook = `name: p\nsources:\n  +schema_origin: "${SCHEMA_ORIGIN_HOOK}"\n`;
 const config = (yaml: string) => parseDbtProjectYaml(yaml).config;

@@ -7,8 +7,8 @@ import type { Log } from "../../core/log";
 import {
   notifyError,
   notifyErrorWithoutProject,
-} from "../../projects/notifications";
-import type { Projects } from "../../projects/projects";
+} from "../../projects/output/notifications";
+import type { Projects } from "../../projects/project/projects";
 import type { CteProfilerDecorationProvider } from "./cteProfilerDecorationProvider";
 import type { CteProfilerService } from "./cteProfilerService";
 

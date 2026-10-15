@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { EventEmitter, window, workspace } from "vscode";
 import type * as vscodeApi from "vscode";
+import { EventEmitter, window, workspace } from "vscode";
 import { URI } from "vscode-uri";
 import { SqlPreviewContentProvider } from "../../features/compiledSql/sqlPreviewContentProvider";
-import { previewUriFor } from "../../projects/previewUri";
-import type { Projects } from "../../projects/projects";
+import type { Projects } from "../../projects/project/projects";
+import { previewUriFor } from "../../projects/registry/previewUri";
 
 vi.mock("vscode", async (importOriginal) => ({
   ...(await importOriginal<typeof vscodeApi>()),

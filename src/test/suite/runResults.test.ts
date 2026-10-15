@@ -18,7 +18,7 @@ import {
   RunResultsReader,
   selectionFromCliArgs,
   withRunResults,
-} from "../../projects/runResults";
+} from "../../projects/manifest/runResults";
 import { silentLog } from "../testLog";
 
 function sampleRunResultsJson(invocationId = "inv-123") {

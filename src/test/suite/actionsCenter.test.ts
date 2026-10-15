@@ -10,8 +10,8 @@ import {
 import { commands, Uri, window } from "vscode";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { DbtPowerUserActionsCenter } from "../../features/projectPicker/actionsCenter";
-import type { CurrentProject } from "../../projects/currentProject";
-import type { DeclaredProject } from "../../projects/projectRegistry";
+import type { CurrentProject } from "../../projects/project/currentProject";
+import type { DeclaredProject } from "../../projects/registry/projectRegistry";
 
 describe("DbtPowerUserActionsCenter project picker", () => {
   let context: Mocked<CurrentProject>;

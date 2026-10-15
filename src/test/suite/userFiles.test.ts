@@ -3,7 +3,7 @@ import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { Position, Uri, workspace } from "vscode";
-import { writeUserFile } from "../../projects/userFiles";
+import { writeUserFile } from "../../projects/project/userFiles";
 import { createMockTextDocument, type WorkspaceEdit } from "../mock/vscode";
 
 describe("user files", () => {

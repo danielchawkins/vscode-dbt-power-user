@@ -13,7 +13,7 @@ import {
   getColumnNameByCase,
   isColumnNameEqual,
   isQuotedIdentifier,
-} from "../../projects/columnNames";
+} from "../../projects/project/columnNames";
 import type {
   DocumentationSchema,
   DocumentationSchemaColumn,

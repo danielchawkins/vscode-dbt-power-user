@@ -5,10 +5,10 @@ import { Uri, window } from "vscode";
 import { parse as parseYaml } from "yaml";
 import type { NodeMetaData } from "../../core/manifest/types";
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
-import { removeProtocol, errorText } from "../../core/text";
-import { activeModelUri } from "../../projects/previewUri";
-import type { Projects } from "../../projects/projects";
-import type { QueryManifestService } from "../../projects/queryManifestService";
+import { errorText, removeProtocol } from "../../core/text";
+import type { Projects } from "../../projects/project/projects";
+import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import { activeModelUri } from "../../projects/registry/previewUri";
 import type { DBTDocumentation } from "./docGenTypes";
 import { Source } from "./docGenTypes";
 

@@ -4,8 +4,8 @@ import type {
   RunResultsEventData,
 } from "../../core/dbt/domain";
 import { extractDbtSubcommand } from "../../core/text";
-import { notifyErrorWithoutProject } from "../../projects/notifications";
-import type { Project } from "../../projects/project";
+import { notifyErrorWithoutProject } from "../../projects/output/notifications";
+import type { Project } from "../../projects/project/project";
 
 /** Project operations a run-history replay can dispatch to. */
 export type ReplayProject = Pick<

@@ -1,6 +1,6 @@
 import * as path from "node:path";
 import { Range, window } from "vscode";
-import { notifyErrorWithoutProject } from "../../projects/notifications";
+import { notifyErrorWithoutProject } from "../../projects/output/notifications";
 
 /** What running the active editor's query needs from a project. */
 interface QueryProject {

@@ -13,15 +13,15 @@ import type { FileAssociationsCommand } from "./features/projectSetup/fileAssoci
 import type { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
 import type { StatusBars } from "./features/statusBars";
 import type { TreeviewProviders } from "./features/treeViews";
-import type { CurrentProject } from "./projects/currentProject";
-import { registerFusionClientDiagnostics } from "./projects/fusionClientDiagnostics";
-import type { FusionClientPool } from "./projects/fusionClientPool";
-import type { FusionStatus } from "./projects/fusionStatus";
-import type { ProjectEnvironments } from "./projects/projectEnvironments";
-import type { ProjectRegistry } from "./projects/projectRegistry";
-import type { Projects } from "./projects/projects";
-import type { RunHistoryService } from "./projects/runHistoryService";
-import type { SharedStateService } from "./projects/sharedStateService";
+import { registerFusionClientDiagnostics } from "./projects/clients/fusionClientDiagnostics";
+import type { FusionClientPool } from "./projects/clients/fusionClientPool";
+import type { FusionStatus } from "./projects/clients/fusionStatus";
+import type { ProjectEnvironments } from "./projects/clients/projectEnvironments";
+import type { RunHistoryService } from "./projects/output/runHistoryService";
+import type { CurrentProject } from "./projects/project/currentProject";
+import type { Projects } from "./projects/project/projects";
+import type { SharedStateService } from "./projects/project/sharedStateService";
+import type { ProjectRegistry } from "./projects/registry/projectRegistry";
 import { onDidChangeSettings, readSetting } from "./settings";
 import type { StartupGate } from "./startupGate";
 

@@ -13,14 +13,14 @@ import {
   subscribeToCompileComplete,
   type ClientHandle,
 } from "../../fusion/lspClientSupport";
-import type { Project } from "../../projects/project";
+import { readProjectSnapshot } from "../../projects/clients/readProjectSnapshot";
 import {
   errorHint,
   ProjectErrors,
   SHOW_OUTPUT,
-} from "../../projects/projectErrors";
-import { ProjectRegistry } from "../../projects/projectRegistry";
-import { readProjectSnapshot } from "../../projects/readProjectSnapshot";
+} from "../../projects/output/projectErrors";
+import type { Project } from "../../projects/project/project";
+import { ProjectRegistry } from "../../projects/registry/projectRegistry";
 import { resetMocks } from "../mock/vscode";
 import { buildTestProject } from "../projectHarness";
 import { spyLog } from "../testLog";

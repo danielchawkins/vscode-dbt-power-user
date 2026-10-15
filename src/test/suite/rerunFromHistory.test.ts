@@ -5,7 +5,7 @@ import {
   parseHistoryArgs,
   rerunFromHistory,
 } from "../../features/runHistory/rerunFromHistory";
-import { parseRunResultsJson } from "../../projects/runResults";
+import { parseRunResultsJson } from "../../projects/manifest/runResults";
 import { createEntry } from "../fixtures/runHistory";
 
 function createProject(): Mocked<ReplayProject> {

@@ -11,8 +11,8 @@ import {
 } from "vscode";
 import type { GraphMetaMap, NodeData } from "../../core/manifest/types";
 import { extensionRoot } from "../../extensionRoot";
-import type { Manifest } from "../../projects/manifestTypes";
-import type { Projects } from "../../projects/projects";
+import type { Manifest } from "../../projects/manifest/manifestTypes";
+import type { Projects } from "../../projects/project/projects";
 import { getDepthColor } from "./modelTreeHelpers";
 import {
   lookupModelByEditorContent,

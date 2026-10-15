@@ -4,7 +4,7 @@ import * as path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 import type { WorkspaceFolder } from "vscode";
 import { Uri } from "vscode";
-import { findProjectRootForFile } from "../../projects/projectDiscovery";
+import { findProjectRootForFile } from "../../projects/registry/projectDiscovery";
 
 describe("findProjectRootForFile", () => {
   const dirs: string[] = [];

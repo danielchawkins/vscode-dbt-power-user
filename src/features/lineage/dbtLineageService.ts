@@ -20,6 +20,7 @@ import {
   RESOURCE_TYPE_METRIC,
   RESOURCE_TYPE_SOURCE,
 } from "../../core/manifest/types";
+import { failureSummary } from "../../core/text";
 import {
   createFusionCommands,
   type FusionCommands,
@@ -28,9 +29,8 @@ import type {
   FusionClient,
   FusionClientState,
 } from "../../fusion/fusionLanguageClient";
-import { failureSummary } from "../../projects/fusionStatus";
-import type { Manifest } from "../../projects/manifestTypes";
-import type { QueryManifestService } from "../../projects/queryManifestService";
+import type { Manifest } from "../../projects/manifest/manifestTypes";
+import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type { NeedsStrict, StrictInputs } from "./strictNeeded";
 import { needsStrict, STRICT_FIX, strictNeededMessage } from "./strictNeeded";
 
