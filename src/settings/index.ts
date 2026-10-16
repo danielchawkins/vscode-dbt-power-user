@@ -192,6 +192,39 @@ export function writeDeclaredProjects(
     .update("projects", entries, ConfigurationTarget.WorkspaceFolder);
 }
 
+/** The settings layers that set `fusionPowerUser.enabled` to false for `folder`, most specific first. */
+export function disablingLayers(
+  folder: WorkspaceFolder,
+): ("folder" | "workspace" | "user")[] {
+  const inspected = workspace
+    .getConfiguration(CONFIGURATION_SECTION, folder.uri)
+    .inspect<boolean>("enabled");
+  const layers: ("folder" | "workspace" | "user")[] = [];
+  if (inspected?.workspaceFolderValue === false) {
+    layers.push("folder");
+  }
+  if (inspected?.workspaceValue === false) {
+    layers.push("workspace");
+  }
+  if (inspected?.globalValue === false) {
+    layers.push("user");
+  }
+  return layers;
+}
+
+/** Removes every `fusionPowerUser.enabled: false` that applies to `folder`, so the default (enabled) applies. */
+export async function clearDisabled(folder: WorkspaceFolder): Promise<void> {
+  const section = workspace.getConfiguration(CONFIGURATION_SECTION, folder.uri);
+  const targets = {
+    folder: ConfigurationTarget.WorkspaceFolder,
+    workspace: ConfigurationTarget.Workspace,
+    user: ConfigurationTarget.Global,
+  } as const;
+  for (const layer of disablingLayers(folder)) {
+    await section.update("enabled", undefined, targets[layer]);
+  }
+}
+
 /** A configuration change, queried for the keys it was subscribed with. */
 export interface SettingsChange {
   /** Whether a subscribed key changed for `resource`, or in any scope when omitted. */

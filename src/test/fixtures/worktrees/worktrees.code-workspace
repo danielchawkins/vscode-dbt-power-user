@@ -1,0 +1,14 @@
+{
+  "folders": [
+    {
+      "path": "main"
+    },
+    {
+      "path": "staging"
+    },
+    {
+      "name": "repo",
+      "path": "."
+    }
+  ]
+}

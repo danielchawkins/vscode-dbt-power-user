@@ -1,0 +1,4 @@
+{
+  "fusionPowerUser.projects": ["${workspaceFolder}/transformation/dbt/general"],
+  "fusionPowerUser.profilesDir": "${workspaceFolder}/transformation/dbt/general"
+}

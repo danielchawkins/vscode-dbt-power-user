@@ -23,6 +23,8 @@ export const FUSION_CLIENT_STATES_COMMAND =
 /** @internal */
 export interface FusionClientStateReport {
   projectName: string;
+  /** The Declared Project's root; two worktrees can hold projects with the same name. */
+  projectRoot: string;
   state: FusionClientState;
   failureReason: string | undefined;
   /** The `--target` the current client was launched with. */
@@ -71,6 +73,7 @@ export function registerFusionClientDiagnostics(
       const launch = pool.getLaunch(project);
       return {
         projectName: project.name,
+        projectRoot: project.root.fsPath,
         state: client?.state ?? "stopped",
         failureReason: client?.failureReason,
         target: launch?.target,

@@ -452,11 +452,14 @@ describe("DBTPowerUserExtension opened-file call sites", () => {
     nestedDir = path.join(tmpDir, "nested");
     modelPath = path.join(nestedDir, "models", "model.sql");
     mkdirSync(path.dirname(modelPath), { recursive: true });
-    writeFileSync(path.join(nestedDir, "dbt_project.yml"), "name: nested\n");
+    writeFileSync(
+      path.join(nestedDir, "dbt_project.yml"),
+      "name: nested\nprofile: nested\n",
+    );
     writeFileSync(modelPath, "select 1\n");
     folder = { uri: Uri.file(tmpDir), name: "opened", index: 0 };
     (workspace as any).isTrusted = true;
-    (workspace as any).textDocuments = [];
+    (window as any).visibleTextEditors = [];
     getWorkspaceFolder = vi
       .spyOn(workspace, "getWorkspaceFolder")
       .mockImplementation((uri: Uri) =>
@@ -472,13 +475,13 @@ describe("DBTPowerUserExtension opened-file call sites", () => {
   afterEach(() => {
     getWorkspaceFolder.mockRestore();
     (workspace as any).isTrusted = true;
-    (workspace as any).textDocuments = [];
+    (window as any).visibleTextEditors = [];
     rmSync(tmpDir, { recursive: true, force: true });
   });
 
   it("declares the root of a file already open at activation", async () => {
     const { harness, registry, declare } = setUp(true);
-    (workspace as any).textDocuments = [modelIn()];
+    (window as any).visibleTextEditors = [{ document: modelIn() }];
 
     await harness.extension.activate();
 
@@ -490,7 +493,7 @@ describe("DBTPowerUserExtension opened-file call sites", () => {
   it("declares the root once the workspace is trusted", async () => {
     const { harness, registry } = setUp(true);
     (workspace as any).isTrusted = false;
-    (workspace as any).textDocuments = [modelIn()];
+    (window as any).visibleTextEditors = [{ document: modelIn() }];
     await harness.extension.activate();
     expect(roots(registry)).toEqual([]);
 
@@ -502,7 +505,7 @@ describe("DBTPowerUserExtension opened-file call sites", () => {
 
   it("declares the root when fusionPowerUser.enabled turns on", async () => {
     const { harness, registry } = setUp(false);
-    (workspace as any).textDocuments = [modelIn()];
+    (window as any).visibleTextEditors = [{ document: modelIn() }];
     await harness.extension.activate();
     expect(roots(registry)).toEqual([]);
 
@@ -525,7 +528,7 @@ describe("DBTPowerUserExtension opened-file call sites", () => {
   it("declares the root when its folder joins the workspace", async () => {
     const { harness, registry } = setUp(true);
     (workspace as any).workspaceFolders = [];
-    (workspace as any).textDocuments = [modelIn()];
+    (window as any).visibleTextEditors = [{ document: modelIn() }];
     await harness.extension.activate();
     expect(roots(registry)).toEqual([]);
 
@@ -535,9 +538,22 @@ describe("DBTPowerUserExtension opened-file call sites", () => {
     expect(roots(registry)).toEqual([realpathSync(nestedDir)]);
   });
 
+  it("declares nothing for a document opened without an editor", async () => {
+    const { harness, registry } = setUp(true);
+    (workspace as any).textDocuments = [modelIn()];
+
+    await harness.extension.activate();
+
+    expect(roots(registry)).toEqual([]);
+    expect(workspace.onDidOpenTextDocument).not.toHaveBeenCalled();
+  });
+
   it("ignores documents whose scheme is not file, on activation and every rescan", async () => {
     const { harness, registry } = setUp(true);
-    (workspace as any).textDocuments = [modelIn("untitled"), modelIn("git")];
+    (window as any).visibleTextEditors = [
+      { document: modelIn("untitled") },
+      { document: modelIn("git") },
+    ];
 
     await harness.extension.activate();
     expect(roots(registry)).toEqual([]);

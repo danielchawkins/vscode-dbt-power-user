@@ -65,6 +65,31 @@ describe("readProjectSnapshot", () => {
     expect(invocation.profilesDir).toBe(path.join(folder, "profiles"));
   });
 
+  it("points an unconfigured project with its own profiles.yml at that file", () => {
+    const folderUri = Uri.file(folder);
+    vi.spyOn(workspace, "getWorkspaceFolder").mockReturnValue({
+      uri: folderUri,
+      name: "folder",
+      index: 0,
+    });
+    fs.writeFileSync(
+      path.join(root, "dbt_project.yml"),
+      "name: p\nprofile: p\n",
+    );
+    fs.writeFileSync(path.join(root, "profiles.yml"), "p: {}\n");
+    const userDir = path.join("/", "home", "me", ".dbt");
+    const profilesDir = (projects: string[]) => {
+      mockSettings({ profilesDir: userDir, projects });
+      return readProjectSnapshot(Uri.file(root)).invocation.profilesDir;
+    };
+
+    expect(profilesDir(["elsewhere"])).toBe(root);
+    expect(profilesDir(["proj"])).toBe(userDir);
+    fs.rmSync(path.join(root, "profiles.yml"));
+    expect(profilesDir(["elsewhere"])).toBe(userDir);
+    vi.restoreAllMocks();
+  });
+
   it("reads the language server options for the root", () => {
     mockSettings({ "lint.enabled": false, "trace.server": "messages" });
 
