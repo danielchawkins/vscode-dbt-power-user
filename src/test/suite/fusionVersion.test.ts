@@ -31,6 +31,16 @@ describe("Fusion version", () => {
     });
   });
 
+  it.each([
+    ["dbt 2.0.6-preview.3 (a1b2c3d 2026-09-01)\n", "ok"],
+    ["dbt 2.0.8+build.7\n", "ok"],
+    ["dbt-fusion 2.0.7\n", "ok"],
+    ["dbt 2.0.5-preview.1 (abc)\n", "tooOld"],
+    ["dbt-fusion 2.0.0-beta.40\n", "tooOld"],
+  ])("reads a prerelease, build or legacy banner %j", (raw, kind) => {
+    expect(judgeFusionVersion(parseFusionVersion(raw), raw).kind).toBe(kind);
+  });
+
   it("allows an untested major version", () => {
     const raw = "dbt 3.0.0\n";
 

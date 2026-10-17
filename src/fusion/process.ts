@@ -16,7 +16,11 @@ export type SpawnProcessOptions = Pick<
   "cwd" | "env" | "stdio" | "windowsHide"
 >;
 
-export type ExecFileTextOptions = Pick<ExecFileOptions, "env" | "maxBuffer">;
+/** `timeout` kills the process after that many milliseconds; the call then rejects with `killed` set. */
+export type ExecFileTextOptions = Pick<
+  ExecFileOptions,
+  "env" | "maxBuffer" | "timeout"
+>;
 
 /** Spawns `command` directly, never through a shell. */
 export function spawnProcess(
