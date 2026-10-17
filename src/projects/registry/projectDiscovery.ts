@@ -13,13 +13,19 @@ const EXCLUDED_DIRECTORIES: ReadonlySet<string> = new Set([
 
 /**
  * The nearest directory, up to the folder root, that holds `dbt_project.yml`
- * or `dbt_project.yaml`. `undefined` when the file lies outside the folder,
- * under an excluded directory, or has no project above it.
+ * or `dbt_project.yaml` and that `accept` takes. `undefined` when the file lies outside the folder,
+ * under an excluded directory, or has no accepted project above it. `exists` replaces the file check in tests.
  */
 export function findProjectRootForFile(
   file: Uri,
   folder: WorkspaceFolder,
-  exists?: (p: string) => boolean,
+  {
+    exists,
+    accept = () => true,
+  }: {
+    exists?: (p: string) => boolean;
+    accept?: (dir: string) => boolean;
+  } = {},
 ): Uri | undefined {
   const relative = relativeWithin(folder.uri.fsPath, file.fsPath);
   if (relative === undefined) {
@@ -33,7 +39,7 @@ export function findProjectRootForFile(
   const directories = segments.slice(0, -1);
   for (let depth = directories.length; depth >= 0; depth--) {
     const dir = path.join(folder.uri.fsPath, ...directories.slice(0, depth));
-    if (hasDbtProjectFile(dir, exists)) {
+    if (hasDbtProjectFile(dir, exists) && accept(dir)) {
       return Uri.file(dir);
     }
   }

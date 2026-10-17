@@ -177,25 +177,47 @@ export function substituteVariables(
   return result;
 }
 
+/** A path setting after expansion: `absolute` when it resolved, otherwise as far as expansion got. */
+export type SettingPath =
+  | { kind: "absolute"; path: string }
+  | { kind: "unresolvable"; path: string };
+
+/**
+ * Resolves a path-valued setting. A leading `~` is the user's home; `${userHome}`, `${env:NAME}` and
+ * `${workspaceFolder}` expand; an absolute result is used as is, and a relative one resolves against `scope.folder`.
+ * Unresolvable when a placeholder stays or a relative path has no folder. `raw` must be non-blank.
+ */
+export function resolveSettingPath(
+  raw: string,
+  scope: VariableScope,
+): SettingPath {
+  const trimmed = raw.trim();
+  const expanded =
+    trimmed === "~" || trimmed.startsWith("~/") || trimmed.startsWith("~\\")
+      ? scope.userHome + trimmed.slice(1)
+      : trimmed;
+  const substituted = substituteVariables(expanded, scope);
+  if (/\$\{(?:workspaceFolder|env:[^}]*)\}/.test(substituted)) {
+    return { kind: "unresolvable", path: substituted };
+  }
+  if (path.isAbsolute(substituted)) {
+    return { kind: "absolute", path: path.resolve(substituted) };
+  }
+  return scope.folder !== undefined
+    ? { kind: "absolute", path: path.resolve(scope.folder, substituted) }
+    : { kind: "unresolvable", path: substituted };
+}
+
 /** Absolute path for a folder-relative setting, or undefined when it is empty or cannot be resolved. */
 function resolveFolderPath(
   raw: string | undefined,
   scope: VariableScope,
 ): string | undefined {
-  const trimmed = raw?.trim();
-  if (!trimmed) {
+  if (!raw?.trim()) {
     return undefined;
   }
-  const substituted = substituteVariables(trimmed, scope);
-  if (substituted.includes("${workspaceFolder}")) {
-    return undefined;
-  }
-  if (path.isAbsolute(substituted)) {
-    return path.resolve(substituted);
-  }
-  return scope.folder !== undefined
-    ? path.resolve(scope.folder, substituted)
-    : undefined;
+  const resolved = resolveSettingPath(raw, scope);
+  return resolved.kind === "absolute" ? resolved.path : undefined;
 }
 
 /** The `dbtPath` setting resolved against the project's folder; empty selects PATH lookup. */
@@ -203,24 +225,13 @@ export function resolveExecutable(
   raw: string | undefined,
   scope: VariableScope,
 ): ProjectExecutable {
-  const trimmed = raw?.trim();
-  if (!trimmed) {
+  if (!raw?.trim()) {
     return { source: "path" };
   }
-  const substituted = substituteVariables(trimmed, scope);
-  if (substituted.includes("${workspaceFolder}")) {
-    return { source: "unresolvable", path: substituted };
-  }
-  if (path.isAbsolute(substituted)) {
-    return { source: "configured", path: path.resolve(substituted) };
-  }
-  if (scope.folder !== undefined) {
-    return {
-      source: "configured",
-      path: path.resolve(scope.folder, substituted),
-    };
-  }
-  return { source: "unresolvable", path: substituted };
+  const resolved = resolveSettingPath(raw, scope);
+  return resolved.kind === "absolute"
+    ? { source: "configured", path: resolved.path }
+    : { source: "unresolvable", path: resolved.path };
 }
 
 /** The `defer.perProject` key for a project: its path relative to its workspace folder. */
@@ -247,11 +258,8 @@ function resolveDefer(
   return {
     deferToProduction: entry.deferToProduction,
     favorState: entry.favorState,
-    manifestPath: manifest
-      ? path.resolve(
-          root,
-          substituteVariables(manifest, { ...scope, folder: root }),
-        )
+    manifestPath: manifest?.trim()
+      ? resolveSettingPath(manifest, { ...scope, folder: root }).path
       : manifest,
   };
 }

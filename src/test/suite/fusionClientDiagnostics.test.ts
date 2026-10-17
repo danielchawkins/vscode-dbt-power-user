@@ -129,6 +129,7 @@ describe("registerFusionClientDiagnostics", () => {
     expect(commandHandler()()).toEqual([
       {
         projectName: "general",
+        projectRoot: general.root.fsPath,
         state: "running",
         failureReason: undefined,
         target: "ci",
@@ -139,6 +140,7 @@ describe("registerFusionClientDiagnostics", () => {
       },
       {
         projectName: "sox",
+        projectRoot: sox.root.fsPath,
         state: "stopped",
         failureReason: undefined,
         target: undefined,

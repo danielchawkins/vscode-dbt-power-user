@@ -101,6 +101,42 @@ describe("resolveProjectSnapshot", () => {
     ).toBe(path.join(folder, "profiles"));
   });
 
+  it("expands a leading ~ and keeps absolute paths as given", () => {
+    const home = base.userHome;
+    expect(
+      withSettings({ profilesDir: "~/.dbt/" }).invocation.profilesDir,
+    ).toBe(path.join(home, ".dbt"));
+    expect(withSettings({ profilesDir: "~" }).invocation.profilesDir).toBe(
+      home,
+    );
+    expect(
+      withSettings({ profilesDir: "${userHome}/.dbt" }).invocation.profilesDir,
+    ).toBe(path.join(home, ".dbt"));
+    const absolute = path.join("/", "etc", "dbt");
+    expect(withSettings({ profilesDir: absolute }).invocation.profilesDir).toBe(
+      absolute,
+    );
+    expect(
+      withSettings({ dbtPath: "~/bin/dbt" }).invocation.executable,
+    ).toEqual({
+      source: "configured",
+      path: path.join(home, "bin", "dbt"),
+    });
+    expect(withSettings({ profilesDir: "a~/b" }).invocation.profilesDir).toBe(
+      path.join(folder, "a~", "b"),
+    );
+  });
+
+  it("leaves a path with an unknown environment variable unresolved", () => {
+    expect(
+      withSettings({ profilesDir: "${env:NOPE}/profiles" }).invocation
+        .profilesDir,
+    ).toBeUndefined();
+    expect(
+      withSettings({ dbtPath: "${env:NOPE}/dbt" }).invocation.executable,
+    ).toEqual({ source: "unresolvable", path: "${env:NOPE}/dbt" });
+  });
+
   it("leaves the profiles dir unset when it cannot be resolved", () => {
     expect(
       withSettings({ profilesDir: "profiles" }, { folder: undefined })

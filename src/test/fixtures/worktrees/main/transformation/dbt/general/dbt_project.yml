@@ -1,0 +1,6 @@
+name: worktree_general
+version: 1.0.0
+config-version: 2
+profile: worktree_general
+model-paths:
+  - models

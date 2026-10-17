@@ -23,6 +23,8 @@ export const FUSION_CLIENT_STATES_COMMAND =
 /** @internal */
 export interface FusionClientStateReport {
   projectName: string;
+  /** The Declared Project's root; two worktrees can hold projects with the same name. */
+  projectRoot: string;
   state: FusionClientState;
   failureReason: string | undefined;
   /** The `--target` the current client was launched with. */
@@ -40,6 +42,8 @@ export interface FusionClientStateReport {
   executablePath: string | undefined;
   /** The `--project-dir` the current client was launched with. */
   projectDir: string | undefined;
+  /** The static-analysis mode the current client was launched with. */
+  staticAnalysis: string | undefined;
   /** The client item's rendered detail, including the environment note. */
   statusDetail: string | undefined;
 }
@@ -71,6 +75,7 @@ export function registerFusionClientDiagnostics(
       const launch = pool.getLaunch(project);
       return {
         projectName: project.name,
+        projectRoot: project.root.fsPath,
         state: client?.state ?? "stopped",
         failureReason: client?.failureReason,
         target: launch?.target,
@@ -81,6 +86,7 @@ export function registerFusionClientDiagnostics(
         environmentSource: environments.peek(project)?.source,
         executablePath: launch?.resolvedPath,
         projectDir: launch?.projectDir,
+        staticAnalysis: launch?.staticAnalysis,
         statusDetail: status.clientDetail(project.root),
       };
     }),
