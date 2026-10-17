@@ -194,9 +194,10 @@ describe("FusionCli", () => {
     });
     const cli = new FusionCli(executable, () => deferring, factory, terminal);
     await cli.run({ kind: "parse" });
-    await cli.show("select 1", 1);
-    await cli.compileInline("select 1");
+    await cli.run({ kind: "deps" });
     expect(warn).not.toHaveBeenCalled();
+    await cli.show("select 1", 1);
+    expect(warn).toHaveBeenCalledTimes(1);
     await cli.run({ kind: "compile", select: "m" });
     expect(warn).toHaveBeenCalledTimes(1);
   });
