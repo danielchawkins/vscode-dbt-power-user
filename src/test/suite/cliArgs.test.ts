@@ -70,49 +70,37 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
   [
     "run +a+",
     { kind: "run", select: "+a+" },
-    `run --select +a+ ${THREADS} ${P} ${NO_DEFER}`,
+    `run --select +a+ ${THREADS} ${P}`,
   ],
   [
     "build a+",
     { kind: "build", select: "a+" },
-    `build --select a+ --fail-fast ${P} ${NO_DEFER}`,
+    `build --select a+ --fail-fast ${P}`,
   ],
   [
     "build without a selection takes no params",
     { kind: "build" },
-    `build ${P} ${NO_DEFER}`,
+    `build ${P}`,
   ],
-  [
-    "run without a selection",
-    { kind: "run" },
-    `run ${THREADS} ${P} ${NO_DEFER}`,
-  ],
+  ["run without a selection", { kind: "run" }, `run ${THREADS} ${P}`],
   [
     "run full refresh",
     { kind: "run", select: "a", fullRefresh: true },
-    `run --select a --full-refresh ${THREADS} ${P} ${NO_DEFER}`,
+    `run --select a --full-refresh ${THREADS} ${P}`,
   ],
   [
     "build full refresh",
     { kind: "build", fullRefresh: true },
-    `build --full-refresh ${P} ${NO_DEFER}`,
+    `build --full-refresh ${P}`,
   ],
-  [
-    "test",
-    { kind: "test" },
-    `test --indirect-selection cautious ${P} ${NO_DEFER}`,
-  ],
-  ["compile", { kind: "compile" }, `compile ${P} ${NO_DEFER}`],
+  ["test", { kind: "test" }, `test --indirect-selection cautious ${P}`],
+  ["compile", { kind: "compile" }, `compile ${P}`],
   [
     "test a",
     { kind: "test", select: "a" },
-    `test --select a --indirect-selection cautious ${P} ${NO_DEFER}`,
+    `test --select a --indirect-selection cautious ${P}`,
   ],
-  [
-    "compile +a",
-    { kind: "compile", select: "+a" },
-    `compile --select +a ${P} ${NO_DEFER}`,
-  ],
+  ["compile +a", { kind: "compile", select: "+a" }, `compile --select +a ${P}`],
   [
     "inline json",
     { kind: "compileInline", sql: "select 1", output: "json" },
@@ -156,19 +144,19 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
   [
     "--profile in the command params is not duplicated",
     { kind: "run", select: "a" },
-    `run --select a --profile mine ${P} ${NO_DEFER}`,
+    `run --select a --profile mine ${P}`,
     { settings: { profile: "analytics", runParams: ["--profile", "mine"] } },
   ],
   [
     "a --profiles-dir param does not carry --profile",
     { kind: "run", select: "a" },
-    `run --select a --profiles-dir /q ${P} --profile analytics ${NO_DEFER}`,
+    `run --select a --profiles-dir /q ${P} --profile analytics`,
     { settings: { profile: "analytics", runParams: ["--profiles-dir", "/q"] } },
   ],
   [
     "a flag is left out when the command params carry it",
     { kind: "run", select: "a" },
-    `run --select a --profiles-dir /already/set --target dev ${P} ${NO_DEFER}`,
+    `run --select a --profiles-dir /already/set --target dev ${P}`,
     {
       settings: {
         profilesDir: "/p",
@@ -181,14 +169,14 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
     (runParams): [string, CliCommand, string, Golden] => [
       `${runParams.join(" ")} carries --target`,
       { kind: "run", select: "a" },
-      `run --select a ${runParams.join(" ")} ${P} ${NO_DEFER}`,
+      `run --select a ${runParams.join(" ")} ${P}`,
       { settings: { target: "prod", runParams } },
     ],
   ),
   [
     "--profiles-dir= and --project-dir= carry the flag",
     { kind: "run", select: "a" },
-    `run --select a --profiles-dir=/q --project-dir=/r ${NO_DEFER}`,
+    `run --select a --profiles-dir=/q --project-dir=/r`,
     {
       settings: {
         profilesDir: "/p",
@@ -199,18 +187,18 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
   [
     "--target-path is not mistaken for --target",
     { kind: "run", select: "a" },
-    `run --select a --target-path t ${P} --target prod ${NO_DEFER}`,
+    `run --select a --target-path t ${P} --target prod`,
     { settings: { target: "prod", runParams: ["--target-path", "t"] } },
   ],
   // Defer.
   [
-    "defer unset",
+    "no defer entry adds nothing, so DBT_DEFER and DBT_STATE apply",
     { kind: "run", select: "a" },
-    `run --select a ${P} ${NO_DEFER}`,
+    `run --select a ${P}`,
     { settings: { runParams: [] } },
   ],
   [
-    "defer disabled",
+    "an entry with defer disabled passes --no-defer",
     { kind: "run", select: "a" },
     `run --select a ${P} ${NO_DEFER}`,
     { settings: { runParams: [] }, defer: deferEntry("/state", false) },
@@ -262,6 +250,22 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
       defer: deferEntry("/state/notes.txt"),
       probe: "file",
     },
+  ],
+  [
+    "show defers so a preview resolves models that exist only in the state",
+    { kind: "show", sql: "select 1", limit: 500 },
+    [
+      ...argv("show --log-level debug --inline"),
+      SQL,
+      ...argv(`--limit 500 --output json --log-format json ${P} ${DEFER_ON}`),
+    ],
+    { defer: deferEntry("/state") },
+  ],
+  [
+    "inline compile defers",
+    { kind: "compileInline", sql: "select 1", output: "quiet" },
+    [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
+    { defer: deferEntry("/state", false) },
   ],
   [
     "defer flags follow the profiles directory on a queued kind",
@@ -318,9 +322,9 @@ describe("deferState", () => {
     }
   });
 
-  it("is off when defer is unset or disabled, and unset without a path", () => {
+  it("is the default without an entry, off when disabled, and unset without a path", () => {
     const probe = every("directory");
-    expect(deferState(undefined, probe)).toEqual({ kind: "off" });
+    expect(deferState(undefined, probe)).toEqual({ kind: "default" });
     expect(
       deferState({ ...enabled("/state"), deferToProduction: false }, probe),
     ).toEqual({ kind: "off" });
@@ -331,7 +335,7 @@ describe("deferState", () => {
     const probe = () => {
       throw new Error("probed");
     };
-    expect(deferState(undefined, probe)).toEqual({ kind: "off" });
+    expect(deferState(undefined, probe)).toEqual({ kind: "default" });
     expect(deferState(enabled(""), probe)).toEqual({ kind: "unset" });
   });
 

@@ -17,12 +17,17 @@ export type CliCommand =
   | { kind: "clean" }
   | { kind: "debug" };
 
-/** The command kinds that take defer flags. */
+/**
+ * The command kinds that take defer flags: dbt's deferrable commands that the extension runs. `parse` is left out
+ * because the manifest it writes describes this project, which every panel reads.
+ */
 export const DEFERRABLE_KINDS: readonly CliCommand["kind"][] = [
   "run",
   "build",
   "test",
   "compile",
+  "compileInline",
+  "show",
 ];
 
 const JSON_LOGS = ["--output", "json", "--log-format", "json"];
@@ -120,6 +125,9 @@ export type PathProbe = (path: string) => PathKind;
 
 /** The defer flags a snapshot asks for, after checking the state path. */
 export type DeferState =
+  /** No entry for the project: no flags, so dbt's own default (`DBT_DEFER`, `DBT_STATE`, else off) applies. */
+  | { kind: "default" }
+  /** The entry turns deferral off: `--no-defer`, which also overrides `DBT_DEFER`. */
   | { kind: "off" }
   /** Enabled without a manifest path: dbt's own defer default applies. */
   | { kind: "unset" }
@@ -134,7 +142,10 @@ export function deferState(
   defer: ResolvedDefer | undefined,
   probe: PathProbe,
 ): DeferState {
-  if (!defer?.deferToProduction) {
+  if (!defer) {
+    return { kind: "default" };
+  }
+  if (!defer.deferToProduction) {
     return { kind: "off" };
   }
   const { manifestPath, favorState } = defer;
@@ -166,6 +177,7 @@ function deferArgs(state: DeferState): string[] {
         state.stateDirectory,
         ...(state.favorState ? ["--favor-state"] : []),
       ];
+    case "default":
     case "unset":
     case "unusable":
       return [];
