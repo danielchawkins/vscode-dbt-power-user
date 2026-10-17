@@ -255,7 +255,7 @@
           },
           "fusionPowerUser.defer.perProject": {
             "type": "object",
-            "description": "Run subset of models without building their parent models",
+            "description": "Per project, keyed by its path relative to the workspace folder: defer run, build, test, compile, show and inline compile to a production manifest on disk. With no entry for a project the extension passes no defer flags, so dbt's own default applies (DBT_DEFER and DBT_STATE in the environment, else no deferral); an entry with deferToProduction false passes --no-defer.",
             "scope": "resource",
             "patternProperties": {
               ".*": {
