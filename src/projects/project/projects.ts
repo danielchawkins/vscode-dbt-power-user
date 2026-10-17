@@ -54,7 +54,7 @@ export class Projects implements Disposable {
     this._onDidChangeManifest,
     this._onDidRemoveProject,
     this._onDidChangeErrors,
-    onDidChangeSettings(["target", "profilesDir"], (change) => {
+    onDidChangeSettings(["target", "profilesDir", "perProject"], (change) => {
       for (const { project } of this.projectsByRoot.values()) {
         if (change.affects(project.projectRoot)) {
           void project.rebuildManifest();

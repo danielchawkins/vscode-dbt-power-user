@@ -21,7 +21,7 @@ import { execFileText } from "../fusion/process";
 import {
   readEnvironment,
   readEnvironmentVariable,
-  readSetting,
+  readProjectSetting,
 } from "../settings";
 
 /**
@@ -52,7 +52,7 @@ export class ConfiguredFusionExecutableResolver implements FusionExecutableResol
   constructor(deps: FusionExecutableResolverDependencies = {}) {
     this.getConfiguredPath =
       deps.getConfiguredPath ??
-      ((scope) => readSetting(DBT_PATH_SETTING, scope));
+      ((scope) => readProjectSetting(DBT_PATH_SETTING, scope));
     this.getWorkspaceFolder =
       deps.getWorkspaceFolder ??
       ((scope) => workspace.getWorkspaceFolder(scope));

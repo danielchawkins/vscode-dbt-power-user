@@ -279,6 +279,82 @@
                 }
               }
             }
+          },
+          "fusionPowerUser.perProject": {
+            "type": "object",
+            "scope": "resource",
+            "description": "Settings for one Declared Project, keyed by its path relative to the workspace folder (for example `transformation/dbt/finance_general`). Each entry overrides the folder's fusionPowerUser setting of the same name for that project only; a setting the entry omits keeps the folder's value.",
+            "default": {},
+            "patternProperties": {
+              ".*": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "staticAnalysis": {
+                    "type": "string",
+                    "enum": [
+                      "project",
+                      "off",
+                      "baseline",
+                      "strict"
+                    ],
+                    "enumDescriptions": [
+                      "Pass no mode to Fusion, so the project's own `+static_analysis` model config applies. To turn on strict for a project, add `models: <project name>: +static_analysis: strict` to dbt_project.yml.",
+                      "Ask Fusion to skip SQL analysis for the model and its descendants.",
+                      "Ask Fusion for Jinja, YAML, and SQL syntax diagnostics, ref and source navigation, table-level lineage, and ref autocomplete.",
+                      "Ask Fusion for baseline analysis plus SQL type and schema diagnostics, column hover and go-to-definition, column references, and alias rename."
+                    ],
+                    "description": "This project's fusionPowerUser.staticAnalysis; overrides the folder's value."
+                  },
+                  "dbtPath": {
+                    "type": "string",
+                    "description": "This project's fusionPowerUser.dbtPath; overrides the folder's value."
+                  },
+                  "profilesDir": {
+                    "type": "string",
+                    "description": "This project's fusionPowerUser.profilesDir; overrides the folder's value."
+                  },
+                  "profile": {
+                    "type": "string",
+                    "description": "This project's fusionPowerUser.profile; overrides the folder's value."
+                  },
+                  "target": {
+                    "type": "string",
+                    "description": "This project's fusionPowerUser.target; overrides the folder's value."
+                  },
+                  "lint.enabled": {
+                    "type": "boolean",
+                    "description": "This project's fusionPowerUser.lint.enabled; overrides the folder's value."
+                  },
+                  "trace.server": {
+                    "type": "string",
+                    "enum": [
+                      "off",
+                      "messages",
+                      "verbose"
+                    ],
+                    "enumDescriptions": [
+                      "Default Fusion server log level for this project.",
+                      "Pass debug log level to the Fusion server process and increase Fusion project log verbosity (for example logs/dbt.log).",
+                      "Pass trace log level to the Fusion server process and increase Fusion project log verbosity (for example logs/dbt.log)."
+                    ],
+                    "description": "This project's fusionPowerUser.trace.server; overrides the folder's value."
+                  },
+                  "lsp.compiledOutput": {
+                    "type": "string",
+                    "enum": [
+                      "separate",
+                      "shared"
+                    ],
+                    "enumDescriptions": [
+                      "The language server writes compiled SQL to target/.lsp/, so editing never overwrites what a dbt CLI run wrote.",
+                      "The language server writes compiled SQL to the same target/ as the dbt CLI, so each model has one compiled copy. An edit overwrites the last CLI output for that model."
+                    ],
+                    "description": "This project's fusionPowerUser.lsp.compiledOutput; overrides the folder's value."
+                  }
+                }
+              }
+            }
           }
         }
       }

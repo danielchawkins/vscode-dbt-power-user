@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import type { Disposable, Uri, WorkspaceFolder } from "vscode";
 import { ConfigurationTarget, workspace } from "vscode";
 import type { DeferSettingsEntry } from "../core/snapshot";
@@ -34,6 +35,37 @@ export interface SettingsSchema {
   "generateModel.fileNameTemplate": string;
   "generateModel.prefix": string;
   "defer.perProject": Readonly<Record<string, DeferSettingsEntry>> | undefined;
+  perProject: Readonly<Record<string, ProjectSettingsOverride>> | undefined;
+}
+
+/** The settings one `perProject` entry may set for its project; anything unset falls back to the folder's value. */
+export const PROJECT_OVERRIDABLE_SETTINGS = [
+  "staticAnalysis",
+  "dbtPath",
+  "profilesDir",
+  "profile",
+  "target",
+  "lint.enabled",
+  "trace.server",
+  "lsp.compiledOutput",
+] as const;
+
+type ProjectSettingsOverride = Partial<
+  Pick<SettingsSchema, (typeof PROJECT_OVERRIDABLE_SETTINGS)[number]>
+>;
+
+/**
+ * Reads one project setting for the project at `root`: its `perProject` entry, keyed by the path relative to the
+ * workspace folder, wins over the folder's value.
+ */
+export function readProjectSetting<
+  K extends (typeof PROJECT_OVERRIDABLE_SETTINGS)[number],
+>(key: K, root: Uri): SettingsSchema[K] {
+  const folder = workspace.getWorkspaceFolder(root)?.uri.fsPath;
+  const entry = readSetting("perProject", root)?.[
+    path.relative(folder ?? "", root.fsPath)
+  ];
+  return entry?.[key] ?? readSetting(key, root);
 }
 
 export type SettingKey = keyof SettingsSchema;
@@ -63,6 +95,7 @@ export const SETTING_SCOPES = {
   "generateModel.fileNameTemplate": "window",
   "generateModel.prefix": "window",
   "defer.perProject": "resource",
+  perProject: "resource",
 } as const satisfies Record<SettingKey, "resource" | "window">;
 
 type SettingKeyWithScope<S> = {

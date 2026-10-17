@@ -64,6 +64,11 @@ suite("Worktrees smoke", function () {
       report.projectRoot,
       path.join(folder("main").uri.fsPath, "transformation", "dbt", "general"),
     );
+    assert.strictEqual(
+      report.staticAnalysis,
+      "baseline",
+      "the folder's staticAnalysis applies to the configured project",
+    );
   });
 
   test("a model in a disabled folder says the folder is disabled, and Enable starts it", async function () {
@@ -125,6 +130,11 @@ suite("Worktrees smoke", function () {
       "the probe project to run",
     );
     assert.strictEqual(report.origin, "openedFile");
+    assert.strictEqual(
+      report.staticAnalysis,
+      "strict",
+      "the probe project's perProject entry overrides the folder's staticAnalysis",
+    );
     await new Promise((resolve) => setTimeout(resolve, 3000));
     const texts = await readWorkbenchNotificationTexts(cdpPort(), host());
     assert.ok(

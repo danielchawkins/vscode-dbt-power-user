@@ -42,6 +42,8 @@ export interface FusionClientStateReport {
   executablePath: string | undefined;
   /** The `--project-dir` the current client was launched with. */
   projectDir: string | undefined;
+  /** The static-analysis mode the current client was launched with. */
+  staticAnalysis: string | undefined;
   /** The client item's rendered detail, including the environment note. */
   statusDetail: string | undefined;
 }
@@ -84,6 +86,7 @@ export function registerFusionClientDiagnostics(
         environmentSource: environments.peek(project)?.source,
         executablePath: launch?.resolvedPath,
         projectDir: launch?.projectDir,
+        staticAnalysis: launch?.staticAnalysis,
         statusDetail: status.clientDetail(project.root),
       };
     }),

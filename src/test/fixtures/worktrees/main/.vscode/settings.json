@@ -1,4 +1,10 @@
 {
   "fusionPowerUser.projects": ["${workspaceFolder}/transformation/dbt/general"],
-  "fusionPowerUser.profilesDir": "${workspaceFolder}/transformation/dbt/general"
+  "fusionPowerUser.profilesDir": "${workspaceFolder}/transformation/dbt/general",
+  "fusionPowerUser.staticAnalysis": "baseline",
+  "fusionPowerUser.perProject": {
+    "tests/fixtures/probe": {
+      "staticAnalysis": "strict"
+    }
+  }
 }

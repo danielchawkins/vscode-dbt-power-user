@@ -242,7 +242,7 @@ export class ExecutableLifecycle {
       return;
     }
     this.configurationSubscription = onDidChangeSettings(
-      [DBT_PATH_SETTING],
+      [DBT_PATH_SETTING, "perProject"],
       (change) => {
         void this.enqueueExecutableRefresh(change).catch(() => undefined);
       },
