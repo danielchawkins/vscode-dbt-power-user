@@ -103,6 +103,27 @@ describe("Fusion executable resolver", () => {
     expect(findOnPath).not.toHaveBeenCalled();
   });
 
+  it("reports a version probe that timed out as not responding", async () => {
+    const configured = "/opt/dbt-fusion/bin/dbt";
+    const { resolver, isExecutable, runVersion } = createResolver({
+      getConfiguredPath: () => configured,
+    });
+    isExecutable.mockResolvedValue(true);
+    runVersion.mockRejectedValue(
+      Object.assign(new Error("Command failed"), {
+        killed: true,
+        signal: "SIGTERM",
+        stdout: "",
+        stderr: "",
+      }),
+    );
+
+    expect(await resolver.resolve(scope)).toMatchObject({
+      kind: "notFusion",
+      raw: `${configured} --version did not finish within 15 s`,
+    });
+  });
+
   it("resolves ${workspaceFolder}, ${userHome}, and ${env:VAR} in configured paths", async () => {
     const priorDbtBin = process.env.DBT_BIN;
     process.env.DBT_BIN = "fusion-bin";
