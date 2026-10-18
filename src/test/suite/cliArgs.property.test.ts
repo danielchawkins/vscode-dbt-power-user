@@ -65,7 +65,14 @@ const pathKinds = fc.constantFrom<PathKind>("directory", "file", "missing");
 
 const cases = fc.tuple(snapshots, commands, pathKinds);
 
-const DEFERRABLE = new Set(["run", "build", "test", "compile"]);
+const DEFERRABLE = new Set([
+  "run",
+  "build",
+  "test",
+  "compile",
+  "compileInline",
+  "show",
+]);
 const count = (args: readonly string[], value: string) =>
   args.filter((arg) => arg === value).length;
 
@@ -248,7 +255,7 @@ describe("toCliArgs properties", () => {
     });
   });
 
-  it("defers iff enabled with a usable state path, passes --no-defer iff disabled, only on deferrable kinds", () => {
+  it("defers iff enabled with a usable state path, passes --no-defer iff an entry disables it, only on deferrable kinds", () => {
     property((s, c, args, kind) => {
       const params = supplied(s, c);
       const added = (flag: string) => count(args, flag) - count(params, flag);
@@ -264,7 +271,9 @@ describe("toCliArgs properties", () => {
       }
       const stateDir = expectedState(s, kind);
       expect(defer).toBe(stateDir === undefined ? 0 : 1);
-      expect(noDefer).toBe(s.invocation.defer?.deferToProduction ? 0 : 1);
+      expect(noDefer).toBe(
+        s.invocation.defer && !s.invocation.defer.deferToProduction ? 1 : 0,
+      );
       expect(state).toBe(defer);
       expect(favor).toBe(defer && s.invocation.defer?.favorState ? 1 : 0);
       if (stateDir !== undefined) {

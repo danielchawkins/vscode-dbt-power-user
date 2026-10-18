@@ -51,7 +51,8 @@ describe("ctePreview", () => {
       }),
       { numRuns: NUM_RUNS },
     );
-  });
+    // 200 runs over binary strings take about 5 s alone, so the default limit fails whenever the machine is busy.
+  }, 30_000);
 
   it("generates text whose UTF-8 length differs from its UTF-16 length", () => {
     const samples = fc.sample(fc.string({ unit: "binary" }), 200);
