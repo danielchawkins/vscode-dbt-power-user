@@ -823,18 +823,31 @@ describe("ProjectRegistry", () => {
       expect(roots(registry)).toEqual(["general:explicit"]);
     });
 
-    it("ignores documents in an untrusted workspace", async () => {
+    it("ignores documents in an untrusted workspace, and reports the root it found", async () => {
       (workspace as any).isTrusted = false;
       const registry = await start();
+      const unserved = vi.fn();
+      registry.onDidFindUnservedRoot(unserved);
       registry.declareFromDocuments([openedDocument(soxModel)]);
       expect(roots(registry)).toEqual(["general:explicit"]);
+      expect(unserved).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reason: "untrusted",
+          root: Uri.file(path.join(general.uri.fsPath, "projects/sox")),
+        }),
+      );
     });
 
-    it("ignores documents in a folder with enabled false", async () => {
+    it("ignores documents in a folder with enabled false, and reports the root it found", async () => {
       enabled = false;
       const registry = await start();
+      const unserved = vi.fn();
+      registry.onDidFindUnservedRoot(unserved);
       registry.declareFromDocuments([openedDocument(soxModel)]);
       expect(registry.projects).toHaveLength(0);
+      expect(unserved).toHaveBeenCalledWith(
+        expect.objectContaining({ reason: "disabled", folder: general }),
+      );
     });
 
     it("does nothing before initialize or after dispose", async () => {
@@ -868,7 +881,10 @@ describe("ProjectRegistry", () => {
       try {
         writeFileSync(path.join(tmpDir, "dbt_project.yml"), "name: shop\n");
         mkdirSync(nested, { recursive: true });
-        writeFileSync(path.join(nested, "dbt_project.yml"), "name: sox\n");
+        writeFileSync(
+          path.join(nested, "dbt_project.yml"),
+          "name: sox\nprofile: sox\n",
+        );
         projects = ["."];
         (workspace.workspaceFolders as any) = [
           { uri: Uri.file(tmpDir), name: "shop", index: 0 },
@@ -883,6 +899,35 @@ describe("ProjectRegistry", () => {
         ]);
 
         expect(roots(registry)).toEqual(["shop:explicit", "sox:openedFile"]);
+      } finally {
+        rmSync(tmpDir, { recursive: true, force: true });
+      }
+    });
+
+    it("skips a package without a profile and declares the project above it", async () => {
+      const tmpDir = mkdtempSync(path.join(tmpdir(), "fpu-project-registry-"));
+      const pkg = path.join(tmpDir, "local_packages", "temporal");
+      try {
+        mkdirSync(path.join(tmpDir, "outer"), { recursive: true });
+        writeFileSync(
+          path.join(tmpDir, "dbt_project.yml"),
+          "name: shop\nprofile: shop\n",
+        );
+        mkdirSync(pkg, { recursive: true });
+        writeFileSync(path.join(pkg, "dbt_project.yml"), "name: temporal\n");
+        projects = [];
+        (workspace.workspaceFolders as any) = [
+          { uri: Uri.file(tmpDir), name: "repo", index: 0 },
+        ];
+        const registry = await start();
+        registry.declareFromDocuments([
+          {
+            uri: Uri.file(path.join(pkg, "macros", "temporal.sql")),
+            languageId: "jinja-sql",
+          } as any,
+        ]);
+
+        expect(roots(registry)).toEqual(["shop:folderRoot"]);
       } finally {
         rmSync(tmpDir, { recursive: true, force: true });
       }

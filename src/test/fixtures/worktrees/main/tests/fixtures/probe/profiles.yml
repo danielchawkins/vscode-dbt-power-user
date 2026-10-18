@@ -1,0 +1,8 @@
+worktree_probe:
+  target: test
+  outputs:
+    test:
+      type: duckdb
+      path: "target/worktree_probe.duckdb"
+      schema: main
+      threads: 1

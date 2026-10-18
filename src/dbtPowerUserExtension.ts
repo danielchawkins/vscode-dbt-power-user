@@ -152,23 +152,18 @@ export class DBTPowerUserExtension implements Disposable {
     );
   }
 
-  /** Declares projects from open files now, then again when the files, trust, settings or folders change. */
+  /**
+   * Declares projects from files shown in an editor now, then again when the visible editors, trust, settings or
+   * folders change. A document opened without an editor (an agent's edit, a language server, a search) declares
+   * nothing.
+   */
   private watchOpenedFiles(): void {
     const rescan = () =>
-      this.projectRegistry.declareFromDocuments(workspace.textDocuments);
+      this.projectRegistry.declareFromDocuments(
+        window.visibleTextEditors.map((editor) => editor.document),
+      );
     rescan();
-    this.own(
-      workspace.onDidOpenTextDocument((document) =>
-        this.projectRegistry.declareFromDocuments([document]),
-      ),
-    );
-    this.own(
-      window.onDidChangeVisibleTextEditors((editors) =>
-        this.projectRegistry.declareFromDocuments(
-          editors.map((editor) => editor.document),
-        ),
-      ),
-    );
+    this.own(window.onDidChangeVisibleTextEditors(rescan));
     this.own(workspace.onDidGrantWorkspaceTrust(rescan));
     this.own(
       onDidChangeSettings(["enabled"], (change) => {

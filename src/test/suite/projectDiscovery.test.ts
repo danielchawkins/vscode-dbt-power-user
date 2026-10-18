@@ -90,7 +90,8 @@ describe("findProjectRootForFile", () => {
     const file = touch(d, "p", "a.sql");
     const root = path.join(d, "p", "dbt_project.yaml");
     expect(
-      findProjectRootForFile(file, folderOf(d), (p) => p === root)?.fsPath,
+      findProjectRootForFile(file, folderOf(d), { exists: (p) => p === root })
+        ?.fsPath,
     ).toBe(path.join(d, "p"));
   });
 

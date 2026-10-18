@@ -1,5 +1,6 @@
 import { existsSync } from "node:fs";
 import * as os from "node:os";
+import * as path from "node:path";
 import type { Disposable, Uri } from "vscode";
 import { commands, EventEmitter, window } from "vscode";
 import {
@@ -56,7 +57,14 @@ export function errorHint(
       search.home,
       search.exists,
     );
-    return `dbt looked for profiles.yml in ${dir}.`;
+    const shadowed = shadowedProfiles(dir, search);
+    return `dbt looked for profiles.yml in ${dir}.${shadowed ? ` ${shadowed}` : ""}`;
+  }
+  const profile = /Profile '([^']+)' not found in profiles\.yml/.exec(
+    message,
+  )?.[1];
+  if (profile && search) {
+    return profileNotFoundHint(profile, invocation.profilesDir, search);
   }
   const target = /target '([^']+)' not found in profile/.exec(message)?.[1];
   if (target) {
@@ -65,6 +73,48 @@ export function errorHint(
       : `The profile has no output named ${target}.`;
   }
   return undefined;
+}
+
+/** The environment variable that chose the profiles directory, if any. */
+function profilesDirVariable(search: ProfilesSearch): string | undefined {
+  return ["DBT_ENGINE_PROFILES_DIR", "DBT_PROFILES_DIR"].find((name) =>
+    search.environment[name]?.trim(),
+  );
+}
+
+/** Says the project's own `profiles.yml` is ignored when `chosenBy` points dbt at another directory. */
+function shadowedProfiles(
+  dir: string,
+  search: ProfilesSearch,
+  chosenBy = profilesDirVariable(search),
+): string | undefined {
+  const local = path.join(search.root, "profiles.yml");
+  return chosenBy && path.resolve(dir) !== search.root && search.exists(local)
+    ? `The project's own ${local} is ignored while ${chosenBy} is set; unset it to use that file.`
+    : undefined;
+}
+
+/** Names the `profiles.yml` dbt read, what chose it, and the project's own `profiles.yml` when one is shadowed. */
+function profileNotFoundHint(
+  profile: string,
+  profilesDir: string | undefined,
+  search: ProfilesSearch,
+): string {
+  const dir = resolveProfilesDir(
+    profilesDir,
+    search.environment,
+    search.root,
+    search.home,
+    search.exists,
+  );
+  const chosenBy = profilesDir
+    ? "fusionPowerUser.profilesDir"
+    : profilesDirVariable(search);
+  const read = `dbt read ${path.join(dir, "profiles.yml")}${chosenBy ? `, chosen by ${chosenBy}` : ""}.`;
+  const shadowed = shadowedProfiles(dir, search, chosenBy);
+  return shadowed
+    ? `${read} ${shadowed}`
+    : `${read} Add a profile named ${profile} there.`;
 }
 
 /**

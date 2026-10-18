@@ -1,0 +1,5 @@
+{
+  // A folder setting applies in a multi-root window too; this disables the folder there.
+  "fusionPowerUser.enabled": false,
+  "fusionPowerUser.projects": ["transformation/dbt/general"]
+}

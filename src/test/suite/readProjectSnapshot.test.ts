@@ -65,6 +65,75 @@ describe("readProjectSnapshot", () => {
     expect(invocation.profilesDir).toBe(path.join(folder, "profiles"));
   });
 
+  it("lets a perProject entry override the folder's settings for that project only", () => {
+    vi.spyOn(workspace, "getWorkspaceFolder").mockReturnValue({
+      uri: Uri.file(folder),
+      name: "folder",
+      index: 0,
+    });
+    const other = path.join(folder, "other");
+    fs.mkdirSync(other);
+    mockSettings({
+      staticAnalysis: "strict",
+      target: "dev",
+      perProject: {
+        proj: { staticAnalysis: "baseline", "lint.enabled": false },
+      },
+    });
+
+    const own = readProjectSnapshot(Uri.file(root)).invocation;
+    expect(own.staticAnalysis).toBe("baseline");
+    expect(own.lsp.lintEnabled).toBe(false);
+    expect(own.target).toBe("dev");
+    const sibling = readProjectSnapshot(Uri.file(other)).invocation;
+    expect(sibling.staticAnalysis).toBe("strict");
+    expect(sibling.lsp.lintEnabled).toBe(true);
+    vi.restoreAllMocks();
+  });
+
+  it("keeps a perProject profilesDir for an unconfigured project with its own profiles.yml", () => {
+    vi.spyOn(workspace, "getWorkspaceFolder").mockReturnValue({
+      uri: Uri.file(folder),
+      name: "folder",
+      index: 0,
+    });
+    fs.writeFileSync(path.join(root, "profiles.yml"), "p: {}\n");
+    const chosen = path.join("/", "etc", "dbt");
+    mockSettings({
+      projects: ["elsewhere"],
+      perProject: { proj: { profilesDir: chosen } },
+    });
+    expect(readProjectSnapshot(Uri.file(root)).invocation.profilesDir).toBe(
+      chosen,
+    );
+    vi.restoreAllMocks();
+  });
+
+  it("points an unconfigured project with its own profiles.yml at that file", () => {
+    const folderUri = Uri.file(folder);
+    vi.spyOn(workspace, "getWorkspaceFolder").mockReturnValue({
+      uri: folderUri,
+      name: "folder",
+      index: 0,
+    });
+    fs.writeFileSync(
+      path.join(root, "dbt_project.yml"),
+      "name: p\nprofile: p\n",
+    );
+    fs.writeFileSync(path.join(root, "profiles.yml"), "p: {}\n");
+    const userDir = path.join("/", "home", "me", ".dbt");
+    const profilesDir = (projects: string[]) => {
+      mockSettings({ profilesDir: userDir, projects });
+      return readProjectSnapshot(Uri.file(root)).invocation.profilesDir;
+    };
+
+    expect(profilesDir(["elsewhere"])).toBe(root);
+    expect(profilesDir(["proj"])).toBe(userDir);
+    fs.rmSync(path.join(root, "profiles.yml"));
+    expect(profilesDir(["elsewhere"])).toBe(userDir);
+    vi.restoreAllMocks();
+  });
+
   it("reads the language server options for the root", () => {
     mockSettings({ "lint.enabled": false, "trace.server": "messages" });
 
@@ -91,12 +160,12 @@ describe("readProjectSnapshot", () => {
   it("lists every setting it reads in PROJECT_SNAPSHOT_SETTINGS", () => {
     const source = fs.readFileSync(sourcePath, "utf8");
     const read = Array.from(
-      source.matchAll(/readSetting\(\s*"([^"]+)"/g),
+      source.matchAll(/read(?:Project)?Setting\(\s*"([^"]+)"/g),
       ([, key]) => key,
     );
 
     expect(read.length).toBeGreaterThan(0);
-    expect(source).not.toMatch(/readSetting\(\s*[^"\s]/);
+    expect(source).not.toMatch(/read(?:Project)?Setting\(\s*[^"\s]/);
     expect(PROJECT_SNAPSHOT_SETTINGS.toSorted()).toEqual(
       [...new Set(read)].sort(),
     );

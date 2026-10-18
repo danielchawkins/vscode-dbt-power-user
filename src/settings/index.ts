@@ -1,3 +1,4 @@
+import * as path from "node:path";
 import type { Disposable, Uri, WorkspaceFolder } from "vscode";
 import { ConfigurationTarget, workspace } from "vscode";
 import type { DeferSettingsEntry } from "../core/snapshot";
@@ -34,6 +35,37 @@ export interface SettingsSchema {
   "generateModel.fileNameTemplate": string;
   "generateModel.prefix": string;
   "defer.perProject": Readonly<Record<string, DeferSettingsEntry>> | undefined;
+  perProject: Readonly<Record<string, ProjectSettingsOverride>> | undefined;
+}
+
+/** The settings one `perProject` entry may set for its project; anything unset falls back to the folder's value. */
+export const PROJECT_OVERRIDABLE_SETTINGS = [
+  "staticAnalysis",
+  "dbtPath",
+  "profilesDir",
+  "profile",
+  "target",
+  "lint.enabled",
+  "trace.server",
+  "lsp.compiledOutput",
+] as const;
+
+type ProjectSettingsOverride = Partial<
+  Pick<SettingsSchema, (typeof PROJECT_OVERRIDABLE_SETTINGS)[number]>
+>;
+
+/**
+ * Reads one project setting for the project at `root`: its `perProject` entry, keyed by the path relative to the
+ * workspace folder, wins over the folder's value.
+ */
+export function readProjectSetting<
+  K extends (typeof PROJECT_OVERRIDABLE_SETTINGS)[number],
+>(key: K, root: Uri): SettingsSchema[K] {
+  const folder = workspace.getWorkspaceFolder(root)?.uri.fsPath;
+  const entry = readSetting("perProject", root)?.[
+    path.relative(folder ?? "", root.fsPath)
+  ];
+  return entry?.[key] ?? readSetting(key, root);
 }
 
 export type SettingKey = keyof SettingsSchema;
@@ -63,6 +95,7 @@ export const SETTING_SCOPES = {
   "generateModel.fileNameTemplate": "window",
   "generateModel.prefix": "window",
   "defer.perProject": "resource",
+  perProject: "resource",
 } as const satisfies Record<SettingKey, "resource" | "window">;
 
 type SettingKeyWithScope<S> = {
@@ -190,6 +223,39 @@ export function writeDeclaredProjects(
   return workspace
     .getConfiguration(CONFIGURATION_SECTION, folder.uri)
     .update("projects", entries, ConfigurationTarget.WorkspaceFolder);
+}
+
+/** The settings layers that set `fusionPowerUser.enabled` to false for `folder`, most specific first. */
+export function disablingLayers(
+  folder: WorkspaceFolder,
+): ("folder" | "workspace" | "user")[] {
+  const inspected = workspace
+    .getConfiguration(CONFIGURATION_SECTION, folder.uri)
+    .inspect<boolean>("enabled");
+  const layers: ("folder" | "workspace" | "user")[] = [];
+  if (inspected?.workspaceFolderValue === false) {
+    layers.push("folder");
+  }
+  if (inspected?.workspaceValue === false) {
+    layers.push("workspace");
+  }
+  if (inspected?.globalValue === false) {
+    layers.push("user");
+  }
+  return layers;
+}
+
+/** Removes every `fusionPowerUser.enabled: false` that applies to `folder`, so the default (enabled) applies. */
+export async function clearDisabled(folder: WorkspaceFolder): Promise<void> {
+  const section = workspace.getConfiguration(CONFIGURATION_SECTION, folder.uri);
+  const targets = {
+    folder: ConfigurationTarget.WorkspaceFolder,
+    workspace: ConfigurationTarget.Workspace,
+    user: ConfigurationTarget.Global,
+  } as const;
+  for (const layer of disablingLayers(folder)) {
+    await section.update("enabled", undefined, targets[layer]);
+  }
 }
 
 /** A configuration change, queried for the keys it was subscribed with. */
