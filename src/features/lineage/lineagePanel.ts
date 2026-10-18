@@ -236,6 +236,11 @@ export class LineagePanel
           syncRequestId,
           this.dbtLineageService.getParentTables(args.params),
         ),
+      tableEdges: ({ args, syncRequestId }) =>
+        this.respond(
+          syncRequestId,
+          this.dbtLineageService.getTableEdges(args.params),
+        ),
       getColumns: async ({ args, syncRequestId }) =>
         this.respond(
           syncRequestId,

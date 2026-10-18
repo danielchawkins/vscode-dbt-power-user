@@ -2,6 +2,13 @@ import type { lineage } from "@fusion-power-user/webview-contract";
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
 import { memo, use } from "react";
+import {
+  cardBadge,
+  cardSubtitle,
+  cardTooltip,
+  middleEllipsis,
+  TITLE_MAX,
+} from "./card";
 import type { TableNode as TableNodeType } from "./flow";
 import type { Direction } from "./graph";
 import { columnHandle } from "./layout";
@@ -13,13 +20,17 @@ const ExpandButton = ({
   direction,
   count,
   expanded,
+  pending,
 }: {
   table: string;
   direction: Direction;
   count: number;
   expanded: boolean;
+  pending: boolean;
 }) => {
-  const title = `${expanded ? "Hide" : "Show"} ${count} ${direction}`;
+  const title = pending
+    ? `Loading ${count} ${direction}; click to cancel`
+    : `${expanded ? "Hide" : "Show"} ${count} ${direction}`;
   const sign = expanded ? "−" : "+";
   const actions = use(TableActionsContext);
   return (
@@ -28,11 +39,45 @@ const ExpandButton = ({
       className={`nodrag ${styles.expander}`}
       disabled={count === 0}
       aria-pressed={expanded}
+      aria-busy={pending}
       aria-label={title}
       title={title}
       onClick={() => actions.toggleExpansion(table, direction)}
     >
-      {direction === "parents" ? `${sign}${count}` : `${count}${sign}`}
+      {pending ? (
+        <span className="codicon codicon-loading codicon-modifier-spin" />
+      ) : direction === "parents" ? (
+        `${sign}${count}`
+      ) : (
+        `${count}${sign}`
+      )}
+    </button>
+  );
+};
+
+const MoreButton = ({
+  table,
+  direction,
+  hidden,
+}: {
+  table: string;
+  direction: Direction;
+  hidden: number;
+}) => {
+  const actions = use(TableActionsContext);
+  if (hidden <= 0) {
+    return null;
+  }
+  const title = `Show ${hidden} more ${direction}`;
+  return (
+    <button
+      type="button"
+      className={`nodrag ${styles.more}`}
+      aria-label={title}
+      title={title}
+      onClick={() => actions.showMore(table, direction)}
+    >
+      {`+${hidden}`}
     </button>
   );
 };
@@ -52,9 +97,16 @@ const Header = ({
       className={`${styles.handle} ${styles.headerHandle}`}
       isConnectable={false}
     />
-    <span className={styles.type}>{table.nodeType}</span>
-    <span className={styles.label} title={table.table}>
-      {table.label}
+    <span
+      className={table.layer ? styles.layer : styles.type}
+      title={
+        table.layer ? `${table.nodeType}, ${table.layer} layer` : undefined
+      }
+    >
+      {cardBadge(table)}
+    </span>
+    <span className={styles.label} title={cardTooltip(table)}>
+      {middleEllipsis(table.label, TITLE_MAX)}
     </span>
     {errors?.length ? (
       <span
@@ -66,9 +118,8 @@ const Header = ({
     ) : (
       <span />
     )}
-    <span className={styles.subtitle}>
-      {[table.materialization, table.packageName].filter(Boolean).join(" · ") ||
-        "\u00a0"}
+    <span className={styles.subtitle} title={cardSubtitle(table) || undefined}>
+      {cardSubtitle(table) || "\u00a0"}
     </span>
     <Handle
       type="source"
@@ -83,10 +134,14 @@ const Header = ({
 const Actions = ({
   table,
   expanded,
+  pending,
+  hidden,
   listed,
 }: {
   table: lineage.LineageTable;
   expanded: { parents: boolean; children: boolean };
+  pending: { parents: boolean; children: boolean };
+  hidden: { parents: number; children: number };
   listed: boolean;
 }) => {
   const actions = use(TableActionsContext);
@@ -97,6 +152,12 @@ const Actions = ({
         direction="parents"
         count={table.parentCount}
         expanded={expanded.parents}
+        pending={pending.parents}
+      />
+      <MoreButton
+        table={table.table}
+        direction="parents"
+        hidden={hidden.parents}
       />
       <button
         type="button"
@@ -124,11 +185,17 @@ const Actions = ({
           <span className="codicon codicon-go-to-file" />
         </button>
       ) : null}
+      <MoreButton
+        table={table.table}
+        direction="children"
+        hidden={hidden.children}
+      />
       <ExpandButton
         table={table.table}
         direction="children"
         count={table.childCount}
         expanded={expanded.children}
+        pending={pending.children}
       />
     </div>
   );
@@ -228,6 +295,8 @@ const TableNodeView = ({
     <Actions
       table={data.table}
       expanded={data.expanded}
+      pending={data.pending}
+      hidden={data.hidden}
       listed={data.columns !== undefined}
     />
     {data.columns ? (

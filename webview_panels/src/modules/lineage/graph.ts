@@ -30,6 +30,18 @@ export interface GraphState {
   errors: Record<string, string[]>;
   /** Collapse count per expansion key; an expansion whose count changed while fetching is dropped. */
   cancelled: Record<string, number>;
+  /** Expansion keys whose neighbours are being fetched. */
+  pending: string[];
+  /**
+   * Data-flow `[parent, child]` pairs the host reported among drawn tables, keyed `parent\0child`. They draw edges
+   * between tables that are already drawn and never make a table drawn, so collapsing still removes what only an
+   * expansion added.
+   */
+  links: Record<string, [string, string]>;
+  /** How many of an expansion's neighbours are drawn, by key; a key without an entry draws them all. */
+  shown: Record<string, number>;
+  /** The most neighbours a new expansion draws at first; 0 draws all. */
+  cap: number;
   selectedTable?: string | undefined;
   selectedColumn?: ColumnRef | undefined;
 }
@@ -48,11 +60,12 @@ export type FetchColumns = (table: string) => Promise<LineageColumn[]>;
 export type FetchConnected = (
   params: lineage.ConnectedColumnsParams,
 ) => Promise<lineage.ConnectedColumns>;
+/** The data-flow `[parent, child]` pairs among `tables`. */
+export type FetchEdges = (
+  tables: readonly string[],
+) => Promise<[string, string][]>;
 
-/** Most `getConnectedColumns` rounds per direction of one trace. */
-const MAX_TRACE_HOPS = 10;
-
-export const emptyGraph = (start?: LineageTable): GraphState => ({
+export const emptyGraph = (start?: LineageTable, cap = 0): GraphState => ({
   start: start?.table,
   known: start ? { [start.table]: start } : {},
   neighbours: {},
@@ -62,6 +75,10 @@ export const emptyGraph = (start?: LineageTable): GraphState => ({
   columnEdges: [],
   errors: {},
   cancelled: {},
+  pending: [],
+  links: {},
+  shown: {},
+  cap,
 });
 
 export const expansionKey = (direction: Direction, table: string): string =>
@@ -88,8 +105,29 @@ export const isExpanded = (
   table: string,
 ): boolean => state.expansions.includes(expansionKey(direction, table));
 
+/** Whether the `direction` neighbours of `table` are being fetched. */
+export const isPending = (
+  state: GraphState,
+  direction: Direction,
+  table: string,
+): boolean => state.pending.includes(expansionKey(direction, table));
+
 const neighbourCount = (table: LineageTable, direction: Direction): number =>
   direction === "children" ? table.childCount : table.parentCount;
+
+/** The neighbours expansion `key` draws: all it fetched, or the first `shown[key]` of them. */
+export const drawnNeighbours = (state: GraphState, key: string): string[] => {
+  const all = state.neighbours[key] ?? [];
+  const limit = state.shown[key];
+  return limit === undefined ? all : all.slice(0, limit);
+};
+
+/** `state.shown` without `key`, so that expansion draws every neighbour. */
+export const shownWithout = (
+  state: GraphState,
+  key: string,
+): Record<string, number> =>
+  Object.fromEntries(Object.entries(state.shown).filter(([k]) => k !== key));
 
 /**
  * The drawn tables and table edges, each edge `[parent, child]`. Every known parent-child pair between drawn
@@ -107,9 +145,20 @@ export function drawnGraph(state: GraphState): {
   for (const key of state.expansions) {
     const table = parseExpansion(key)?.[1];
     if (table && drawn.has(table)) {
-      state.neighbours[key]?.forEach((other) => drawn.add(other));
+      drawnNeighbours(state, key).forEach((other) => drawn.add(other));
     }
   }
+  return {
+    tables: [...drawn].flatMap((id) => state.known[id] ?? []),
+    edges: edgesAmong(state, drawn),
+  };
+}
+
+/** Every known `[parent, child]` pair with both ends in `drawn`: from expansions, then from host-reported links. */
+function edgesAmong(
+  state: GraphState,
+  drawn: ReadonlySet<string>,
+): [string, string][] {
   const edges = new Map<string, [string, string]>();
   for (const [key, others] of Object.entries(state.neighbours)) {
     const parsed = parseExpansion(key);
@@ -122,13 +171,16 @@ export function drawnGraph(state: GraphState): {
       edges.set(edge.join("\u0000"), edge);
     }
   }
-  return {
-    tables: [...drawn].flatMap((id) => state.known[id] ?? []),
-    edges: [...edges.values()],
-  };
+  for (const [key, edge] of Object.entries(state.links)) {
+    if (drawn.has(edge[0]) && drawn.has(edge[1])) {
+      edges.set(key, edge);
+    }
+  }
+  return [...edges.values()];
 }
 
-const drawnIds = (state: GraphState): Set<string> =>
+/** The IDs of the drawn tables. */
+export const drawnIds = (state: GraphState): Set<string> =>
   new Set(drawnGraph(state).tables.map((t) => t.table));
 
 /** `state` with expansions, column lists, edges and selection outside the drawn graph removed. */
@@ -177,31 +229,49 @@ export function addNeighbours(
   for (const n of neighbours) {
     known[n.table] ??= n;
   }
+  const capped = state.cap > 0 && neighbours.length > state.cap;
+  const shown = shownWithout(state, key);
+  // A capped expansion draws tables already on the canvas first, then the rest by label.
+  const drawn = capped ? drawnIds(state) : new Set<string>();
+  const ordered = capped
+    ? neighbours.toSorted(
+        (a, b) =>
+          Number(drawn.has(b.table)) - Number(drawn.has(a.table)) ||
+          a.label.localeCompare(b.label),
+      )
+    : neighbours;
   return {
     ...state,
     known,
-    neighbours: { ...state.neighbours, [key]: neighbours.map((n) => n.table) },
+    neighbours: { ...state.neighbours, [key]: ordered.map((n) => n.table) },
+    shown: capped ? { ...shown, [key]: state.cap } : shown,
     expansions: state.expansions.includes(key)
       ? state.expansions
       : [...state.expansions, key],
   };
 }
 
-/** Removes the `direction` expansion of `table` and whatever was drawn only through it. */
+/** Removes the `direction` expansion of `table` and whatever was drawn only through it; cancels it if still loading. */
 export function collapse(
   state: GraphState,
   direction: Direction,
   table: string,
 ): GraphState {
   const key = expansionKey(direction, table);
+  const shown = shownWithout(state, key);
   return prune({
     ...state,
+    shown,
     expansions: state.expansions.filter((k) => k !== key),
+    pending: state.pending.filter((k) => k !== key),
     cancelled: { ...state.cancelled, [key]: (state.cancelled[key] ?? 0) + 1 },
   });
 }
 
-/** Fetches and draws the `direction` neighbours of `table`, unless it has none or they are drawn. */
+/**
+ * Fetches and draws the `direction` neighbours of `table`, unless it has none, they are drawn, or they are already
+ * being fetched. The key is pending until the fetch settles, so a collapse meanwhile drops the answer.
+ */
 export async function expand(
   store: GraphStore,
   direction: Direction,
@@ -212,18 +282,47 @@ export async function expand(
   if (
     !known ||
     neighbourCount(known, direction) === 0 ||
-    isExpanded(store.get(), direction, table)
+    isExpanded(store.get(), direction, table) ||
+    isPending(store.get(), direction, table)
   ) {
     return [];
   }
   const key = expansionKey(direction, table);
   const cancelledBefore = store.get().cancelled[key] ?? 0;
-  const neighbours = await fetch(direction, table);
+  store.update((s) => ({ ...s, pending: [...s.pending, key] }));
+  let neighbours: LineageTable[];
+  try {
+    neighbours = await fetch(direction, table);
+  } finally {
+    store.update((s) => ({
+      ...s,
+      pending: s.pending.filter((k) => k !== key),
+    }));
+  }
   if ((store.get().cancelled[key] ?? 0) !== cancelledBefore) {
     return [];
   }
   store.update((s) => addNeighbours(s, direction, table, neighbours));
   return neighbours.map((n) => n.table);
+}
+
+/** Records every data-flow edge among the drawn tables, so a diamond's shortcut edge is drawn too. */
+export async function linkDrawn(
+  store: GraphStore,
+  fetch: FetchEdges,
+): Promise<void> {
+  const tables = [...drawnIds(store.get())];
+  if (tables.length < 2) {
+    return;
+  }
+  const pairs = await fetch(tables);
+  store.update((s) => {
+    const links = { ...s.links };
+    for (const pair of pairs) {
+      links[pair.join("\u0000")] = pair;
+    }
+    return { ...s, links };
+  });
 }
 
 /** Expands the start table `levels` levels of parents and of children. */
@@ -298,12 +397,6 @@ export const selectTable = (
   table: string | undefined,
 ): GraphState => ({ ...state, selectedTable: table });
 
-const columnKey = ([table, column]: readonly [string, string]) =>
-  `${table}\u0000${column.toLowerCase()}`;
-
-const sameColumn = (a?: ColumnRef, b?: ColumnRef) =>
-  !!a && !!b && columnKey(a) === columnKey(b);
-
 /** Clears the column selection and its edges. */
 export const clearColumn = (state: GraphState): GraphState => ({
   ...state,
@@ -311,104 +404,6 @@ export const clearColumn = (state: GraphState): GraphState => ({
   columnEdges: [],
   errors: {},
 });
-
-/**
- * Selects `column` and traces its column lineage through the drawn tables, children then parents, one
- * `getConnectedColumns` round per hop. Returns the tables the traced edges touch. Answers arriving after another
- * column was selected are dropped.
- */
-export async function traceColumn(
-  store: GraphStore,
-  column: ColumnRef,
-  fetch: FetchConnected,
-): Promise<string[]> {
-  store.update((s) => ({
-    ...clearColumn(s),
-    selectedColumn: column,
-    selectedTable: column[0],
-  }));
-  const touched = new Set<string>();
-  for (const upstreamExpansion of [true, false]) {
-    const done = await traceDirection(
-      store,
-      column,
-      upstreamExpansion,
-      fetch,
-      touched,
-    );
-    if (!done) {
-      return [];
-    }
-  }
-  return [...touched];
-}
-
-/** The columns at the far end of `edges` not yet in `seen`, which it then records. */
-function nextFrontier(
-  edges: ColumnLineage[],
-  upstreamExpansion: boolean,
-  seen: Set<string>,
-): ColumnRef[] {
-  const next: ColumnRef[] = [];
-  for (const edge of edges) {
-    const end = upstreamExpansion ? edge.target : edge.source;
-    if (!seen.has(columnKey(end))) {
-      seen.add(columnKey(end));
-      next.push([end[0], end[1]]);
-    }
-  }
-  return next;
-}
-
-/** One direction of `traceColumn`; false when another column was selected meanwhile. */
-async function traceDirection(
-  store: GraphStore,
-  column: ColumnRef,
-  upstreamExpansion: boolean,
-  fetch: FetchConnected,
-  touched: Set<string>,
-): Promise<boolean> {
-  const seen = new Set([columnKey(column)]);
-  let frontier: ColumnRef[] = [column];
-  for (let hop = 0; hop < MAX_TRACE_HOPS && frontier.length > 0; hop++) {
-    const drawn = drawnIds(store.get());
-    const body = await fetch({
-      targets: frontier,
-      upstreamExpansion,
-    });
-    if (!sameColumn(store.get().selectedColumn, column)) {
-      return false;
-    }
-    const edges = body.column_lineage.filter(
-      (e) => drawn.has(e.source[0]) && drawn.has(e.target[0]),
-    );
-    store.update((s) => mergeTrace(s, edges, body.errors));
-    edges.forEach((e) => touched.add(e.source[0]).add(e.target[0]));
-    frontier = nextFrontier(edges, upstreamExpansion, seen);
-  }
-  return true;
-}
-
-function mergeTrace(
-  state: GraphState,
-  edges: ColumnLineage[],
-  errors: Record<string, string[]> | undefined,
-): GraphState {
-  const byKey = new Map(
-    state.columnEdges.map((e) => [
-      `${columnKey(e.source)}\u0000${columnKey(e.target)}`,
-      e,
-    ]),
-  );
-  for (const e of edges) {
-    byKey.set(`${columnKey(e.source)}\u0000${columnKey(e.target)}`, e);
-  }
-  const merged = { ...state.errors };
-  for (const [table, lines] of Object.entries(errors ?? {})) {
-    merged[table] = [...new Set([...(merged[table] ?? []), ...lines])];
-  }
-  return { ...state, columnEdges: [...byKey.values()], errors: merged };
-}
 
 /** The data the renderer draws, with column edges filtered by the edge settings. */
 export function lineageData(

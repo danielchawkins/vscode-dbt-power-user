@@ -20,6 +20,16 @@ export const fetchNeighbours = async (
   return body?.tables ?? [];
 };
 
+/** The data-flow `[parent, child]` pairs among `tables`. */
+export const fetchEdges = async (
+  tables: readonly string[],
+): Promise<[string, string][]> => {
+  const body = (await executeRequestInSync("tableEdges", {
+    args: { params: { tables: [...tables] } },
+  })) as { edges?: [string, string][] } | undefined;
+  return body?.edges ?? [];
+};
+
 /** The `getColumns` body of `table`; `refresh` asks the warehouse for a source's columns. */
 export const fetchTableColumns = async (
   table: string,

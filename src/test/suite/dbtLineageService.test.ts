@@ -4,6 +4,7 @@ import {
   DbtLineageService,
   describeNoLineage,
 } from "../../features/lineage/dbtLineageService";
+import { lineageTable } from "../../features/lineage/lineageTables";
 
 // Minimal NodeData-shaped edge.
 function node(key: string, edgeType?: "data" | "constraint") {
@@ -74,10 +75,10 @@ describe("DbtLineageService — foreign-key-only edge hiding", () => {
     ).toEqual(["model.p.int"]);
   });
 
-  it("getConnectedNodeCount excludes constraint edges", () => {
+  it("counts only data-flow neighbours on a table, leaving out constraint edges", () => {
     const children = new Map([
       [
-        "model.p.fact",
+        "exposure.p.fact",
         {
           nodes: [
             node("model.p.int", "data"),
@@ -86,9 +87,41 @@ describe("DbtLineageService — foreign-key-only edge hiding", () => {
         },
       ],
     ]);
+    const parents = new Map([
+      ["exposure.p.fact", { nodes: [node("model.p.src", "constraint")] }],
+    ]);
+    const table = lineageTable(
+      { graphMetaMap: { children, parents, tests: new Map() } } as any,
+      "exposure.p.fact",
+    );
+    expect(table).toMatchObject({ childCount: 1, parentCount: 0 });
+  });
+
+  it("getTableEdges returns the data-flow pairs among the given tables only", () => {
+    // a -> b, b -> c, a -> c (the diamond shortcut), a -> d (FK only), a -> x (x not asked for).
+    const children = new Map([
+      [
+        "a",
+        {
+          nodes: [
+            node("b", "data"),
+            node("c"),
+            node("d", "constraint"),
+            node("x", "data"),
+          ],
+        },
+      ],
+      ["b", { nodes: [node("c", "data")] }],
+    ]);
     const svc = makeService({ children, parents: new Map() });
-    const count = (svc as any).getConnectedNodeCount(children, "model.p.fact");
-    expect(count).toBe(1);
+
+    expect(svc.getTableEdges({ tables: ["a", "b", "c", "d"] })).toEqual({
+      edges: [
+        ["a", "b"],
+        ["a", "c"],
+        ["b", "c"],
+      ],
+    });
   });
 });
 
@@ -489,8 +522,65 @@ describe("DbtLineageService.getInferredColumns", () => {
 });
 
 describe("DbtLineageService — merged value", () => {
+  it("fills a model card's relation, ref name, layer and package ownership", () => {
+    const node = (over: Record<string, unknown>) => ({
+      unique_id: "model.fg.int__x",
+      name: "int__x",
+      alias: "x",
+      database: "DEV_FG_INTERMEDIATE",
+      schema: "commitment",
+      config: { materialized: "view" },
+      package_name: "fg",
+      original_file_path: "models/21_intermediate/commitments/int__x.sql",
+      tags: ["source_system/grant"],
+      columns: {},
+      meta: {},
+      description: "",
+      ...over,
+    });
+    const event = (n: object): any => ({
+      graphMetaMap: {
+        parents: new Map(),
+        children: new Map(),
+        tests: new Map(),
+      },
+      testMetaMap: new Map(),
+      nodeMetaMap: { lookupByUniqueId: () => n },
+    });
+    const options = {
+      rootPackage: "fg",
+      layer: { tagPrefix: "layer/", fromPath: true },
+    };
+
+    expect(
+      lineageTable(event(node({})), "model.fg.int__x", options),
+    ).toMatchObject({
+      label: "x",
+      refName: "int__x",
+      database: "DEV_FG_INTERMEDIATE",
+      schema: "commitment",
+      layer: "intermediate",
+      rootPackage: true,
+    });
+
+    const eph = lineageTable(
+      event(
+        node({
+          name: "x",
+          package_name: "other",
+          config: { materialized: "ephemeral" },
+        }),
+      ),
+      "model.fg.int__x",
+      options,
+    );
+    expect(eph).toMatchObject({ rootPackage: false });
+    expect(eph).not.toHaveProperty("refName");
+    expect(eph).not.toHaveProperty("schema");
+  });
+
   it("draws a server node the parse lacks with no tests", () => {
-    const svc = new DbtLineageService({} as any);
+    const svc = new DbtLineageService({ getProject: () => undefined } as any);
     const added = {
       unique_id: "model.p.new",
       alias: "new",

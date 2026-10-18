@@ -347,6 +347,7 @@ describe("LineagePanel", () => {
           showSelectEdges: false,
           showNonSelectEdges: true,
           defaultExpansion: 3,
+          maxNeighbours: 3,
         },
         status: true,
       },
@@ -384,6 +385,7 @@ describe("LineagePanel", () => {
         showRefs: false,
         inferenceConfidenceThreshold: threshold > 1 ? 1 : 0,
         defaultExpansion: 3,
+        maxNeighbours: 3,
       });
     }
   });

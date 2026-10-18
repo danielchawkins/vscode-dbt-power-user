@@ -30,6 +30,7 @@ const ANSWERS: Record<string, (params: never) => unknown> = {
   parentTables: ({ table: t }: { table: string }) => ({
     tables: t === "b" ? [TABLES.a] : t === "c" ? [TABLES.b] : [],
   }),
+  tableEdges: () => ({ edges: [] }),
   getColumns: ({ table: t }: { table: string }) => ({
     id: t,
     columns: [{ table: t, name: "id" }],

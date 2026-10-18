@@ -72,6 +72,8 @@ export class SourceParser {
             source.tables.push({
               name,
               identifier,
+              database,
+              schema,
               path: fullPath,
               description: description,
               columns: columns,

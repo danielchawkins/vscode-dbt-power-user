@@ -9,6 +9,10 @@ interface TableNodeData extends Record<string, unknown> {
   columns?: lineage.LineageColumn[] | undefined;
   isStart: boolean;
   expanded: { parents: boolean; children: boolean };
+  /** Expansions still loading; a click on one cancels it. */
+  pending: { parents: boolean; children: boolean };
+  /** Neighbours a capped expansion does not draw yet. */
+  hidden: { parents: number; children: number };
   /** Lower-cased names of this table's columns the traced edges touch. */
   traced: string[];
   /** The selected column's lower-cased name when it belongs to this table. */
@@ -25,6 +29,10 @@ export interface FlowInput {
   columns: Record<string, lineage.LineageColumn[]>;
   columnTables: readonly string[];
   expansions: readonly string[];
+  /** Expansion keys still loading. */
+  pending?: readonly string[] | undefined;
+  /** Neighbours each capped expansion does not draw yet, by expansion key. */
+  hidden?: Record<string, number> | undefined;
   errors: Record<string, string[]>;
   selectedTable?: string | undefined;
   selectedColumn?: [string, string] | undefined;
@@ -102,6 +110,9 @@ export function toFlow(input: FlowInput): {
   edges: Edge[];
 } {
   const { data, columns, columnTables, expansions, errors } = input;
+  const pending = input.pending ?? [];
+  const hidden = (direction: "children" | "parents", table: string) =>
+    input.hidden?.[expansionKey(direction, table)] ?? 0;
   const listed = (table: string) =>
     columnTables.includes(table) ? (columns[table] ?? []) : undefined;
   const traced = tracedColumns(data.columnEdges);
@@ -123,6 +134,14 @@ export function toFlow(input: FlowInput): {
       expanded: {
         parents: expansions.includes(expansionKey("parents", t.table)),
         children: expansions.includes(expansionKey("children", t.table)),
+      },
+      pending: {
+        parents: pending.includes(expansionKey("parents", t.table)),
+        children: pending.includes(expansionKey("children", t.table)),
+      },
+      hidden: {
+        parents: hidden("parents", t.table),
+        children: hidden("children", t.table),
       },
       traced: [...(traced.get(t.table) ?? [])],
       selectedColumn:

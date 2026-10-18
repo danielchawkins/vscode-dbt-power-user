@@ -39,6 +39,7 @@ export const resolveSettings = (
   },
   inferenceConfidenceThreshold: settings?.inferenceConfidenceThreshold ?? 0.8,
   includeSourcesInInference: settings?.includeSourcesInInference ?? false,
+  maxNeighbours: settings?.maxNeighbours ?? 20,
 });
 
 /** The relationships to draw: enabled sources, inferred ones at or above the threshold, both ends drawn. */
@@ -120,6 +121,8 @@ export function planRender(input: {
 /** What a table node asks the view to do. */
 export interface TableActions {
   toggleExpansion: (table: string, direction: Direction) => void;
+  /** Draws the next batch of a capped expansion's neighbours. */
+  showMore: (table: string, direction: Direction) => void;
   toggleColumns: (table: string) => void;
   selectColumn: (table: string, column: string) => void;
   openDetails: (table: string) => void;
@@ -131,6 +134,7 @@ const noop = (): undefined => undefined;
 /** The view's table actions; memoized nodes read them from context, so they never see a stale handler. */
 export const TableActionsContext = createContext<TableActions>({
   toggleExpansion: noop,
+  showMore: noop,
   toggleColumns: noop,
   selectColumn: noop,
   openDetails: noop,

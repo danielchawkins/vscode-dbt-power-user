@@ -145,9 +145,6 @@
     }
   },
   "src/features/lineage/dbtLineageService.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "max-params": {
       "count": 1
     }

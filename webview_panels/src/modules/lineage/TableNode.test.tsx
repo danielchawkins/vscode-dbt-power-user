@@ -18,6 +18,8 @@ const draw = (columnsNeedStrict: boolean) => {
       columns: [],
       isStart: true,
       expanded: { parents: false, children: false },
+      pending: { parents: false, children: false },
+      hidden: { parents: 0, children: 0 },
       traced: [],
       columnsNeedStrict,
     },

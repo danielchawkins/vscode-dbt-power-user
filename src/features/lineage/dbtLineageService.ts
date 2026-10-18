@@ -13,13 +13,7 @@ import {
   toPanelLineage,
 } from "../../core/lineage";
 import { FusionCommandError, type ListNodesResult } from "../../core/lsp";
-import type { GraphMetaMap, NodeGraphMap } from "../../core/manifest/types";
-import {
-  RESOURCE_TYPE_EXPOSURE,
-  RESOURCE_TYPE_FUNCTION,
-  RESOURCE_TYPE_METRIC,
-  RESOURCE_TYPE_SOURCE,
-} from "../../core/manifest/types";
+import type { GraphMetaMap } from "../../core/manifest/types";
 import { failureSummary } from "../../core/text";
 import {
   createFusionCommands,
@@ -31,6 +25,8 @@ import type {
 } from "../../fusion/fusionLanguageClient";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import { readSetting } from "../../settings";
+import { lineageTable } from "./lineageTables";
 import type { NeedsStrict, StrictInputs } from "./strictNeeded";
 import { needsStrict, STRICT_FIX, strictNeededMessage } from "./strictNeeded";
 
@@ -245,6 +241,30 @@ export class DbtLineageService {
     return { tables: this.getConnectedTables("parents", table) };
   }
 
+  /**
+   * Returns every data-flow `[parent, child]` pair among `tables`, so the panel can draw an edge between two drawn
+   * tables whichever expansion drew them. Foreign-key-only edges are left out, as in `getConnectedTables`.
+   */
+  getTableEdges({ tables }: { tables: readonly string[] }): {
+    edges: [string, string][];
+  } {
+    const event = this.queryManifestService.getEventByCurrentProject()?.event;
+    if (!event) {
+      return { edges: [] };
+    }
+    const ids = new Set(tables);
+    const children = event.graphMetaMap.children;
+    const edges: [string, string][] = [];
+    for (const parent of ids) {
+      for (const child of children.get(parent)?.nodes ?? []) {
+        if (child.edgeType !== "constraint" && ids.has(child.key)) {
+          edges.push([parent, child.key]);
+        }
+      }
+    }
+    return { edges };
+  }
+
   private getConnectedTables(
     key: keyof GraphMetaMap,
     table: string,
@@ -282,129 +302,20 @@ export class DbtLineageService {
     return [...tables.values()].sort((a, b) => a.table.localeCompare(b.table));
   }
 
+  /** The lineage table for the node `key`; see {@link lineageTable}. */
   createTable(
     event: Manifest,
     tableUrl: string | undefined,
     key: string,
   ): Table | undefined {
-    const splits = key.split(".");
-    const at = (index: number) => splits[index] ?? "";
-    const nodeType = at(0);
-    const { graphMetaMap, testMetaMap } = event;
-    const childCount = this.getConnectedNodeCount(
-      graphMetaMap["children"],
-      key,
-    );
-    const parentCount = this.getConnectedNodeCount(
-      graphMetaMap["parents"],
-      key,
-    );
-    if (nodeType === RESOURCE_TYPE_SOURCE) {
-      const { sourceMetaMap } = event;
-      const schema = at(2);
-      const table = at(3);
-      const _node = sourceMetaMap.get(schema);
-      if (!_node) {
-        return;
-      }
-      const _table = _node.tables.find((t) => t.name === table);
-      if (!_table) {
-        return;
-      }
-      return {
-        table: key,
-        label: table,
-        url: tableUrl,
-        childCount,
-        parentCount,
-        nodeType,
-        tests: (graphMetaMap["tests"].get(key)?.nodes ?? []).map((n) => {
-          const testKey = n.label.split(".")[0] ?? "";
-          return { ...testMetaMap.get(testKey), key: testKey };
-        }),
-        columns: _table.columns,
-        description: _table?.description,
-        packageName: _node.package_name,
-      };
-    }
-    if (nodeType === RESOURCE_TYPE_METRIC) {
-      return {
-        table: key,
-        label: at(2),
-        url: tableUrl,
-        childCount,
-        parentCount,
-        nodeType,
-        materialization: undefined,
-        tests: [],
-        columns: {},
-      };
-    }
-    const { nodeMetaMap } = event;
-
-    const table = at(2);
-    if (nodeType === RESOURCE_TYPE_EXPOSURE) {
-      return {
-        table: key,
-        label: table,
-        url: tableUrl,
-        childCount,
-        parentCount,
-        nodeType,
-        materialization: undefined,
-        tests: [],
-        columns: {},
-      };
-    }
-
-    if (nodeType === RESOURCE_TYPE_FUNCTION) {
-      const { functionMetaMap } = event;
-      const fn = functionMetaMap.get(table);
-      const fnType = fn?.config?.type;
-      return {
-        table: key,
-        label: table,
-        url: tableUrl,
-        childCount,
-        parentCount,
-        nodeType,
-        materialization: fnType ? `${fnType} function` : "function",
-        tests: [],
-        columns: {},
-      };
-    }
-
-    const node = nodeMetaMap.lookupByUniqueId(key);
-    if (!node) {
-      return;
-    }
-
-    const materialization = node.config.materialized ?? undefined;
-    return {
-      table: key,
-      label: node.alias,
+    return lineageTable(event, key, {
       url: tableUrl,
-      childCount,
-      parentCount,
-      nodeType,
-      materialization,
-      description: node.description,
-      columns: node.columns,
-      patchPath: node.patch_path ?? "",
-      tests: (graphMetaMap["tests"].get(key)?.nodes ?? []).map((n) => {
-        const testKey = n.label.split(".")[0] ?? "";
-        return { ...testMetaMap.get(testKey), key: testKey };
-      }),
-      packageName: node.package_name,
-      meta: node.meta,
-    };
-  }
-
-  private getConnectedNodeCount(g: NodeGraphMap, key: string) {
-    // Exclude FK-only edges so the upstream/downstream counts match the
-    // data-flow edges actually drawn in the lineage panel.
-    return (g.get(key)?.nodes ?? []).filter((n) => n.edgeType !== "constraint")
-      .length;
+      rootPackage: this.queryManifestService.getProject()?.getProjectName(),
+      layer: {
+        tagPrefix: readSetting("lineage.layer.tagPrefix") ?? "layer/",
+        fromPath: readSetting("lineage.layer.inferFromPath") ?? true,
+      },
+    });
   }
 }
 
