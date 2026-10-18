@@ -38,6 +38,10 @@ export interface GraphState {
    * expansion added.
    */
   links: Record<string, [string, string]>;
+  /** How many of an expansion's neighbours are drawn, by key; a key without an entry draws them all. */
+  shown: Record<string, number>;
+  /** The most neighbours a new expansion draws at first; 0 draws all. */
+  cap: number;
   selectedTable?: string | undefined;
   selectedColumn?: ColumnRef | undefined;
 }
@@ -61,7 +65,7 @@ export type FetchEdges = (
   tables: readonly string[],
 ) => Promise<[string, string][]>;
 
-export const emptyGraph = (start?: LineageTable): GraphState => ({
+export const emptyGraph = (start?: LineageTable, cap = 0): GraphState => ({
   start: start?.table,
   known: start ? { [start.table]: start } : {},
   neighbours: {},
@@ -73,6 +77,8 @@ export const emptyGraph = (start?: LineageTable): GraphState => ({
   cancelled: {},
   pending: [],
   links: {},
+  shown: {},
+  cap,
 });
 
 export const expansionKey = (direction: Direction, table: string): string =>
@@ -109,6 +115,20 @@ export const isPending = (
 const neighbourCount = (table: LineageTable, direction: Direction): number =>
   direction === "children" ? table.childCount : table.parentCount;
 
+/** The neighbours expansion `key` draws: all it fetched, or the first `shown[key]` of them. */
+export const drawnNeighbours = (state: GraphState, key: string): string[] => {
+  const all = state.neighbours[key] ?? [];
+  const limit = state.shown[key];
+  return limit === undefined ? all : all.slice(0, limit);
+};
+
+/** `state.shown` without `key`, so that expansion draws every neighbour. */
+export const shownWithout = (
+  state: GraphState,
+  key: string,
+): Record<string, number> =>
+  Object.fromEntries(Object.entries(state.shown).filter(([k]) => k !== key));
+
 /**
  * The drawn tables and table edges, each edge `[parent, child]`. Every known parent-child pair between drawn
  * tables is an edge, whichever expansion fetched it.
@@ -125,7 +145,7 @@ export function drawnGraph(state: GraphState): {
   for (const key of state.expansions) {
     const table = parseExpansion(key)?.[1];
     if (table && drawn.has(table)) {
-      state.neighbours[key]?.forEach((other) => drawn.add(other));
+      drawnNeighbours(state, key).forEach((other) => drawn.add(other));
     }
   }
   return {
@@ -209,10 +229,22 @@ export function addNeighbours(
   for (const n of neighbours) {
     known[n.table] ??= n;
   }
+  const capped = state.cap > 0 && neighbours.length > state.cap;
+  const shown = shownWithout(state, key);
+  // A capped expansion draws tables already on the canvas first, then the rest by label.
+  const drawn = capped ? drawnIds(state) : new Set<string>();
+  const ordered = capped
+    ? neighbours.toSorted(
+        (a, b) =>
+          Number(drawn.has(b.table)) - Number(drawn.has(a.table)) ||
+          a.label.localeCompare(b.label),
+      )
+    : neighbours;
   return {
     ...state,
     known,
-    neighbours: { ...state.neighbours, [key]: neighbours.map((n) => n.table) },
+    neighbours: { ...state.neighbours, [key]: ordered.map((n) => n.table) },
+    shown: capped ? { ...shown, [key]: state.cap } : shown,
     expansions: state.expansions.includes(key)
       ? state.expansions
       : [...state.expansions, key],
@@ -226,8 +258,10 @@ export function collapse(
   table: string,
 ): GraphState {
   const key = expansionKey(direction, table);
+  const shown = shownWithout(state, key);
   return prune({
     ...state,
+    shown,
     expansions: state.expansions.filter((k) => k !== key),
     pending: state.pending.filter((k) => k !== key),
     cancelled: { ...state.cancelled, [key]: (state.cancelled[key] ?? 0) + 1 },

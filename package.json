@@ -98,6 +98,22 @@
             "type": "number",
             "description": "By default how much lineage should expand.",
             "default": 1
+          },
+          "fusionPowerUser.lineage.layer.tagPrefix": {
+            "type": "string",
+            "description": "A node tag starting with this prefix names the node's layer badge on lineage cards, for example `layer/staging`. Empty turns tags off.",
+            "default": "layer/"
+          },
+          "fusionPowerUser.lineage.layer.inferFromPath": {
+            "type": "boolean",
+            "description": "Infer a lineage card's layer badge from a `staging`, `intermediate` or `marts` folder in the node's path, or a `stg_`, `int_`, `fct_` or `dim_` name prefix, when no tag names it.",
+            "default": true
+          },
+          "fusionPowerUser.lineage.maxNeighbours": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "The most nodes one expansion draws; a `+N more` marker draws the rest on request. 0 draws every neighbour.",
+            "default": 20
           }
         }
       },

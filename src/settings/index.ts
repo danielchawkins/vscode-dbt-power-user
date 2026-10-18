@@ -16,6 +16,9 @@ export const CONFIGURATION_SECTION = "fusionPowerUser";
  */
 export interface SettingsSchema {
   "lineage.defaultExpansion": number;
+  "lineage.layer.tagPrefix": string;
+  "lineage.layer.inferFromPath": boolean;
+  "lineage.maxNeighbours": number;
   enabled: boolean;
   projects: readonly string[];
   staticAnalysis: string;
@@ -78,6 +81,9 @@ export type SettingKey = keyof SettingsSchema;
  */
 export const SETTING_SCOPES = {
   "lineage.defaultExpansion": "window",
+  "lineage.layer.tagPrefix": "window",
+  "lineage.layer.inferFromPath": "window",
+  "lineage.maxNeighbours": "window",
   enabled: "resource",
   projects: "resource",
   staticAnalysis: "resource",

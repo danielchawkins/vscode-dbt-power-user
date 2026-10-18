@@ -4,6 +4,7 @@ import { readViewState, writeViewState } from "@modules/app/viewState";
 import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { traceColumn } from "./columnTrace";
+import { showMore } from "./expansionCap";
 import type { ColumnRef, Direction, GraphState, GraphStore } from "./graph";
 import {
   clearColumn,
@@ -74,6 +75,11 @@ const actionsFor = (
       .then(() => linkDrawn(s, fetchEdges))
       .catch(logError("expand"));
   },
+  showMore: (table: string, direction: Direction) => {
+    const s = store();
+    s.update((g) => showMore(g, direction, table));
+    linkDrawn(s, fetchEdges).catch(logError("show more"));
+  },
   toggleColumns: (table: string) => {
     const s = store();
     if (s.get().columnTables.includes(table)) {
@@ -102,7 +108,7 @@ const actionsFor = (
 });
 
 /** The graph state, a store per rebuild generation, and `rebuild`, which bumps `drawnKey` when it settles. */
-function useGraphStore(defaultExpansion: () => number) {
+function useGraphStore(defaultExpansion: () => number, cap: () => number) {
   const [graph, setGraph] = useState<GraphState>(emptyGraph);
   const [drawnKey, setDrawnKey] = useState(0);
   const graphRef = useRef(graph);
@@ -126,7 +132,7 @@ function useGraphStore(defaultExpansion: () => number) {
   const rebuild = useCallback(
     (start: lineage.LineageTable | undefined, saved?: LineageViewState) => {
       const gen = ++generationRef.current;
-      graphRef.current = emptyGraph(start);
+      graphRef.current = emptyGraph(start, cap());
       setGraph(graphRef.current);
       buildingRef.current = !!start;
       if (!start) {
@@ -141,7 +147,7 @@ function useGraphStore(defaultExpansion: () => number) {
           }
         });
     },
-    [storeFor, defaultExpansion],
+    [storeFor, defaultExpansion, cap],
   );
 
   const current = useCallback(
@@ -154,10 +160,12 @@ function useGraphStore(defaultExpansion: () => number) {
 /**
  * The lineage graph driven by the host's `render` and `projectSaved` messages. The first render replays the view
  * state VS Code kept for a rebuilt page; every change after it is written back through `writeViewState`.
+ * `maxNeighbours` caps how many neighbours an expansion draws at first; 0 draws all.
  */
 export function useLineageGraph(
   defaultExpansion: () => number,
   openDetails: (table: string) => void,
+  maxNeighbours: () => number = () => 0,
 ): {
   graph: GraphState;
   /** The latest `render` arguments: the panel notice and whether empty column lists need strict analysis. */
@@ -168,7 +176,7 @@ export function useLineageGraph(
   reset: () => void;
 } {
   const { graph, graphRef, drawnKey, buildingRef, current, rebuild } =
-    useGraphStore(defaultExpansion);
+    useGraphStore(defaultExpansion, maxNeighbours);
   const [rendered, setRendered] = useState<lineage.RenderArgs>();
   const publicationRef = useRef<string | undefined>(undefined);
   const refreshRef = useRef(false);

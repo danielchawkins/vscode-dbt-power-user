@@ -92,7 +92,6 @@ describe("DbtLineageService — foreign-key-only edge hiding", () => {
     ]);
     const table = lineageTable(
       { graphMetaMap: { children, parents, tests: new Map() } } as any,
-      undefined,
       "exposure.p.fact",
     );
     expect(table).toMatchObject({ childCount: 1, parentCount: 0 });
@@ -523,8 +522,65 @@ describe("DbtLineageService.getInferredColumns", () => {
 });
 
 describe("DbtLineageService — merged value", () => {
+  it("fills a model card's relation, ref name, layer and package ownership", () => {
+    const node = (over: Record<string, unknown>) => ({
+      unique_id: "model.fg.int__x",
+      name: "int__x",
+      alias: "x",
+      database: "DEV_FG_INTERMEDIATE",
+      schema: "commitment",
+      config: { materialized: "view" },
+      package_name: "fg",
+      original_file_path: "models/21_intermediate/commitments/int__x.sql",
+      tags: ["source_system/grant"],
+      columns: {},
+      meta: {},
+      description: "",
+      ...over,
+    });
+    const event = (n: object): any => ({
+      graphMetaMap: {
+        parents: new Map(),
+        children: new Map(),
+        tests: new Map(),
+      },
+      testMetaMap: new Map(),
+      nodeMetaMap: { lookupByUniqueId: () => n },
+    });
+    const options = {
+      rootPackage: "fg",
+      layer: { tagPrefix: "layer/", fromPath: true },
+    };
+
+    expect(
+      lineageTable(event(node({})), "model.fg.int__x", options),
+    ).toMatchObject({
+      label: "x",
+      refName: "int__x",
+      database: "DEV_FG_INTERMEDIATE",
+      schema: "commitment",
+      layer: "intermediate",
+      rootPackage: true,
+    });
+
+    const eph = lineageTable(
+      event(
+        node({
+          name: "x",
+          package_name: "other",
+          config: { materialized: "ephemeral" },
+        }),
+      ),
+      "model.fg.int__x",
+      options,
+    );
+    expect(eph).toMatchObject({ rootPackage: false });
+    expect(eph).not.toHaveProperty("refName");
+    expect(eph).not.toHaveProperty("schema");
+  });
+
   it("draws a server node the parse lacks with no tests", () => {
-    const svc = new DbtLineageService({} as any);
+    const svc = new DbtLineageService({ getProject: () => undefined } as any);
     const added = {
       unique_id: "model.p.new",
       alias: "new",

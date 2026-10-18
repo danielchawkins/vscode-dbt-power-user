@@ -18,7 +18,7 @@ dbt rejects two resources with the same database representation ([custom aliases
 ### 2. Card layout A: alias, then a stable second line (Medium)
 
 - **Line 1:** the badge (the layer when known, otherwise the resource type), the alias in 13px weight 600 on one line, and the warning icon.
-- **Line 2,** 11px in `descriptionForeground`: the schema, or `database.schema` when the database is not the project's default; then the materialization; then the package, only when it is not the root project. Nodes without a relation (ephemeral models, tests, macros, functions) keep `materialization · package`.
+- **Line 2,** 11px in `descriptionForeground`: `database.schema` (see the measurements below for why the database is always shown); then the materialization; then the package, only when it is not the root project. Nodes without a relation (ephemeral models, tests, macros, functions) keep `materialization · package`.
 - **Truncation:** the title gets a middle ellipsis computed in script, because dbt names such as `stg_<source>__<entity>` carry what tells them apart at the end, and CSS `text-overflow` can only cut the end. Line 2 is cut at the end, with the schema first so it survives.
 - **Tooltip:** the unique ID, the ref name when it differs from the alias, and the full relation.
 - **Why not show the schema only on a collision:** the card would change when an unrelated node is expanded. A line that never depends on the neighbours is easier to scan.
@@ -58,8 +58,15 @@ Both change click targets and keyboard access, so they need their own pass with 
 - **Sources:** the source parser currently keys groups by `source_name` alone and keeps one database and schema per group, from the first table it meets. It needs per-table database, schema and identifier, looked up by unique ID, before the schema line is right for sources.
 - **Tags and `group`:** cheap to read from the node parser, but whether Fusion's manifest fills them is unverified, so they wait on a check.
 
+## Measured on a real project
+
+The `finance_general` manifest Fusion 2.0.8 wrote (694 models, 2,366 source tables) settled three of the open points:
+
+- **Collisions are common.** 28 aliases are shared by two or more nodes, for example `ach_payments__log` and `card_payments__log`.
+- **The database carries the layer.** Models land in `DEV_FINANCE_GENERAL_STAGING`, `DEV_FINANCE_GENERAL_INTERMEDIATE` or `DEV_FINANCE_GENERAL`, each with a short custom schema such as `dispute`. "Database only when it differs from the default" would hide the part that tells layers apart, so line 2 always shows `database.schema`, cut at the start of the database when it is too long.
+- **One hub dominates.** `function.foundation.normalize_timestamp` has 350 children; the next node has 7, and 99% of nodes have 4 or fewer. A cap of 20 leaves ordinary nodes alone and stops that one from flooding the graph.
+- Fusion fills node `tags` (350 models carry `source_system/<name>`) and per-table source `database`, `schema` and `identifier`. No model sets `config.group`.
+
 ## Open questions
 
 - Can the extension learn the active target schema and default database from Fusion? Without them, `<target_schema>_` cannot be stripped from schema names and "not the default database" cannot be judged.
-- What do real neighbour counts look like? They decide whether 20 is the right cap.
-- Do Fusion manifests fill node `tags` and `config.group`?

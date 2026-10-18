@@ -216,6 +216,16 @@
   text-transform: uppercase;
 }
 
+/* A layer badge sits where the type badge does, outlined so it reads as a different kind of label. */
+.layer {
+  padding: 0 4px;
+  border: 1px solid var(--vscode-badge-background);
+  border-radius: 2px;
+  color: var(--vscode-foreground);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
 .label {
   overflow: hidden;
   font-weight: 600;
@@ -248,6 +258,12 @@
 .node .expander {
   min-width: 36px;
   justify-content: center;
+}
+
+.node .more {
+  justify-content: center;
+  font-style: italic;
+  opacity: 0.85;
 }
 
 .columns {

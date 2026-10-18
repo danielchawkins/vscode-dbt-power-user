@@ -25,6 +25,7 @@ import type {
 } from "../../fusion/fusionLanguageClient";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import { readSetting } from "../../settings";
 import { lineageTable } from "./lineageTables";
 import type { NeedsStrict, StrictInputs } from "./strictNeeded";
 import { needsStrict, STRICT_FIX, strictNeededMessage } from "./strictNeeded";
@@ -307,7 +308,14 @@ export class DbtLineageService {
     tableUrl: string | undefined,
     key: string,
   ): Table | undefined {
-    return lineageTable(event, tableUrl, key);
+    return lineageTable(event, key, {
+      url: tableUrl,
+      rootPackage: this.queryManifestService.getProject()?.getProjectName(),
+      layer: {
+        tagPrefix: readSetting("lineage.layer.tagPrefix") ?? "layer/",
+        fromPath: readSetting("lineage.layer.inferFromPath") ?? true,
+      },
+    });
   }
 }
 

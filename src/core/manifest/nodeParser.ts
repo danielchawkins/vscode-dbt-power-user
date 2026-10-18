@@ -151,6 +151,7 @@ export class NodeParser {
         meta,
         constraints,
         relation_name,
+        tags,
       } = nodesMap;
       const fullPath = createFullPathForNode(
         projectName,
@@ -194,6 +195,8 @@ export class NodeParser {
         meta: meta,
         constraints,
         relation_name,
+        tags: tags ?? [],
+        original_file_path,
       });
     }
     this.terminal.debug(

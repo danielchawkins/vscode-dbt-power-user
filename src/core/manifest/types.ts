@@ -37,6 +37,7 @@ interface ManifestResource {
   latest_version?: string | number | null;
   constraints: ModelLevelConstraint[];
   relation_name?: string | null;
+  tags?: string[] | null;
   raw_sql?: string | null;
   raw_code?: string;
   compiled_code?: string;
@@ -170,6 +171,10 @@ export interface NodeMetaData {
   constraints?: ModelLevelConstraint[];
   /** `relation_name` from manifest (quoted, fully-qualified). Used by FK constraint resolution. */
   relation_name?: string | null | undefined;
+  /** The node's tags; empty when it has none. */
+  tags?: readonly string[] | undefined;
+  /** The node's file path relative to its package root, as the manifest records it. */
+  original_file_path?: string | undefined;
 }
 
 export interface ColumnMetaData {
@@ -227,6 +232,9 @@ interface SourceMetaData {
 export interface SourceTable {
   name: string;
   identifier?: string | null | undefined;
+  /** This table's own database and schema; a source group's first table does not speak for the rest. */
+  database?: string | undefined;
+  schema?: string | undefined;
   path: string | undefined;
   description: string;
   columns: { [columnName: string]: ColumnMetaData };

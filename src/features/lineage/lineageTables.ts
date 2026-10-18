@@ -1,4 +1,5 @@
 import type { Table } from "../../core/dbt/domain";
+import { inferLayer } from "../../core/manifest/modelLayer";
 import type { NodeGraphMap } from "../../core/manifest/types";
 import {
   RESOURCE_TYPE_EXPOSURE,
@@ -22,25 +23,36 @@ function testsOf(event: Manifest, key: string): Table["tests"] {
   });
 }
 
+/** What a card shows beyond the manifest: its file, which package is the project's own, and how layers are named. */
+export interface CardOptions {
+  /** The node's file URL, for the open-file action. */
+  url?: string | undefined;
+  /** The current project's package name; a node in it shows no package. */
+  rootPackage?: string | undefined;
+  layer: { tagPrefix: string; fromPath: boolean };
+}
+
+const NO_LAYERS: CardOptions = { layer: { tagPrefix: "", fromPath: false } };
+
 /** The lineage table for the node `key` (a dbt unique id), or undefined when the manifest does not know it. */
 export function lineageTable(
   event: Manifest,
-  tableUrl: string | undefined,
   key: string,
+  options: CardOptions = NO_LAYERS,
 ): Table | undefined {
   const splits = key.split(".");
   const at = (index: number) => splits[index] ?? "";
   const nodeType = at(0);
   const base = {
     table: key,
-    url: tableUrl,
+    url: options.url,
     childCount: connectedNodeCount(event.graphMetaMap.children, key),
     parentCount: connectedNodeCount(event.graphMetaMap.parents, key),
     nodeType,
   };
   switch (nodeType) {
     case RESOURCE_TYPE_SOURCE:
-      return sourceTable(event, base, [at(2), at(3)]);
+      return sourceTable(event, { ...base, options }, [at(2), at(3)]);
     case RESOURCE_TYPE_METRIC:
     case RESOURCE_TYPE_EXPOSURE:
       return {
@@ -61,18 +73,18 @@ export function lineageTable(
       };
     }
     default:
-      return nodeTable(event, base, key);
+      return nodeTable(event, { ...base, options }, key);
   }
 }
 
 type TableBase = Pick<
   Table,
   "table" | "url" | "childCount" | "parentCount" | "nodeType"
->;
+> & { options: CardOptions };
 
 function sourceTable(
   event: Manifest,
-  base: TableBase,
+  { options, ...base }: TableBase,
   [sourceName, tableName]: [string, string],
 ): Table | undefined {
   const source = event.sourceMetaMap.get(sourceName);
@@ -87,27 +99,44 @@ function sourceTable(
     columns: table.columns,
     description: table.description,
     packageName: source.package_name,
+    rootPackage: source.package_name === options.rootPackage,
+    database: table.database ?? source.database,
+    schema: table.schema ?? source.schema,
+    ...(table.identifier && table.identifier !== tableName
+      ? { refName: `${sourceName}.${tableName}` }
+      : {}),
   };
 }
 
 function nodeTable(
   event: Manifest,
-  base: TableBase,
+  { options, ...base }: TableBase,
   key: string,
 ): Table | undefined {
   const node = event.nodeMetaMap.lookupByUniqueId(key);
   if (!node) {
     return undefined;
   }
+  const materialization = node.config.materialized ?? undefined;
   return {
     ...base,
     label: node.alias,
-    materialization: node.config.materialized ?? undefined,
+    materialization,
     description: node.description,
     columns: node.columns,
     patchPath: node.patch_path ?? "",
     tests: testsOf(event, key),
     packageName: node.package_name,
+    rootPackage: node.package_name === options.rootPackage,
     meta: node.meta,
+    ...(node.name === node.alias ? {} : { refName: node.name }),
+    // An ephemeral model is inlined into its callers and builds no relation.
+    ...(materialization === "ephemeral"
+      ? {}
+      : { database: node.database, schema: node.schema }),
+    layer: inferLayer(
+      { tags: node.tags, path: node.original_file_path, name: node.name },
+      options.layer,
+    ),
   };
 }

@@ -14,6 +14,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { hiddenCounts } from "./expansionCap";
 import { toFlow } from "./flow";
 import { lineageData } from "./graph";
 import styles from "./lineageGraph.module.css";
@@ -237,13 +238,17 @@ const Graph = (): React.JSX.Element => {
   }, []);
   // Read when a rebuild starts, so it follows the latest settings without re-creating the graph store.
   const expansionRef = useRef(settings.defaultExpansion);
+  const capRef = useRef(settings.maxNeighbours);
   useEffect(() => {
     expansionRef.current = settings.defaultExpansion;
-  }, [settings.defaultExpansion]);
+    capRef.current = settings.maxNeighbours;
+  }, [settings.defaultExpansion, settings.maxNeighbours]);
   const defaultExpansion = useCallback(() => expansionRef.current, []);
+  const maxNeighbours = useCallback(() => capRef.current ?? 0, []);
   const { graph, rendered, drawnKey, actions, select, reset } = useLineageGraph(
     defaultExpansion,
     openDetails,
+    maxNeighbours,
   );
   const notice = rendered?.missingLineageMessage;
   const columnsNeedStrict = rendered?.columnsNeedStrict === true;
@@ -260,6 +265,8 @@ const Graph = (): React.JSX.Element => {
       columns: graph.columns,
       columnTables: graph.columnTables,
       expansions: graph.expansions,
+      pending: graph.pending,
+      hidden: hiddenCounts(graph),
       errors: graph.errors,
       selectedTable: graph.selectedTable,
       selectedColumn: graph.selectedColumn,

@@ -101,6 +101,11 @@ export type Table = {
   columns: { [columnName: string]: ColumnMetaData };
   patchPath?: string;
   packageName?: string;
+  refName?: string;
+  database?: string;
+  schema?: string;
+  rootPackage?: boolean;
+  layer?: string | undefined;
 };
 
 export const RunModelType = {
