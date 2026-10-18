@@ -187,6 +187,12 @@
             "default": true,
             "description": "Whether Fusion lint diagnostics are enabled when this Declared Project's language server starts."
           },
+          "fusionPowerUser.lsp.maxErrorReporting": {
+            "type": "integer",
+            "minimum": 1,
+            "scope": "resource",
+            "description": "The number of errors after which Fusion's language server stops analyzing this Declared Project. Unset keeps Fusion's own default."
+          },
           "fusionPowerUser.trace.server": {
             "type": "string",
             "enum": [
@@ -325,6 +331,11 @@
                   "lint.enabled": {
                     "type": "boolean",
                     "description": "This project's fusionPowerUser.lint.enabled; overrides the folder's value."
+                  },
+                  "lsp.maxErrorReporting": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "This project's fusionPowerUser.lsp.maxErrorReporting; overrides the folder's value."
                   },
                   "trace.server": {
                     "type": "string",

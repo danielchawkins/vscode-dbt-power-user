@@ -109,6 +109,7 @@ describe("toLspArgs properties", () => {
         profilesDir: i.profilesDir,
         staticAnalysis: i.staticAnalysis,
         lintEnabled: i.lintEnabled,
+        maxErrorReporting: undefined,
         logLevel: i.logLevel,
         environment: {},
       },

@@ -20,6 +20,7 @@ export interface LspLaunch {
   profilesDir: string | undefined;
   staticAnalysis: StaticAnalysisMode;
   lintEnabled: boolean;
+  maxErrorReporting: number | undefined;
   logLevel: "debug" | "trace" | undefined;
   /** The snapshot environment with `DBT_LSP_USE_TARGET_LSP` set to `"1"` (separate) or removed (shared). */
   environment: Readonly<Record<string, string>>;
@@ -56,6 +57,7 @@ export function toLspLaunch(
     profilesDir: invocation.profilesDir,
     staticAnalysis: invocation.staticAnalysis,
     lintEnabled: invocation.lsp.lintEnabled,
+    maxErrorReporting: invocation.lsp.maxErrorReporting,
     logLevel: logLevelFor(invocation.lsp.traceServer),
     environment:
       invocation.compiledOutput.mode === "separate"
@@ -83,7 +85,10 @@ export function toLspArgs(launch: LspLaunch, run: LspRun): string[] {
     ...(launch.profilesDir ? ["--profiles-dir", launch.profilesDir] : []),
     ...(launch.profile ? ["--profile", launch.profile] : []),
     ...(launch.target ? ["--target", launch.target] : []),
-    ...(launch.logLevel ? ["--log-level", launch.logLevel] : []),
+    // The log file follows the console level; Fusion otherwise keeps its own file default.
+    ...(launch.logLevel
+      ? ["--log-level", launch.logLevel, "--log-level-file", launch.logLevel]
+      : []),
   ];
 }
 
@@ -118,6 +123,7 @@ export function sameLspLaunch(a: LspLaunch, b: LspLaunch): boolean {
     a.profilesDir === b.profilesDir &&
     a.staticAnalysis === b.staticAnalysis &&
     a.lintEnabled === b.lintEnabled &&
+    a.maxErrorReporting === b.maxErrorReporting &&
     a.logLevel === b.logLevel &&
     sameEnvironment(a.environment, b.environment)
   );

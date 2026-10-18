@@ -48,9 +48,18 @@ export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * Starts `dbt lsp` over stdio on `root`. `extraArgs` follow the base argv; `env` is layered over process.env.
- * The client answers progress creation, configuration (linter off, as the extension does) and registration.
+ * The client answers progress creation, configuration (`dbtConfig`, by default the linter off, as the extension does)
+ * and registration.
  */
-export async function startServer({ root, profilesDir = root, extraArgs = [], env = {}, capabilities, commandPrefix = "" } = {}) {
+export async function startServer({
+  root,
+  profilesDir = root,
+  extraArgs = [],
+  env = {},
+  capabilities,
+  commandPrefix = "",
+  dbtConfig = { lsp: { linter: { enabled: false } } },
+} = {}) {
   const args = [
     "lsp",
     "--project-dir", root,
@@ -90,7 +99,7 @@ export async function startServer({ root, profilesDir = root, extraArgs = [], en
   conn.onRequest((method, params) => {
     push({ t: at(), kind: "serverRequest", method, params });
     if (method === "workspace/configuration") {
-      return params.items.map((i) => (i.section === "dbt" ? { lsp: { linter: { enabled: false } } } : null));
+      return params.items.map((i) => (i.section === "dbt" ? dbtConfig : null));
     }
     return null;
   });

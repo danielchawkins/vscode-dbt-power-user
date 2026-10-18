@@ -100,6 +100,7 @@ function makeLaunch(overrides: Partial<LspLaunch> = {}): LspLaunch {
     profilesDir: undefined,
     staticAnalysis: "baseline",
     lintEnabled: true,
+    maxErrorReporting: undefined,
     logLevel: undefined,
     environment: {},
     ...overrides,
@@ -246,6 +247,16 @@ describe("fusionLanguageClient helpers", () => {
     expect(buildWorkspaceConfigurationResponse("dbt", false)).toEqual({
       lsp: { linter: { enabled: false } },
     });
+  });
+
+  it("adds maxErrorReporting to the dbt section only when it is set", () => {
+    expect(buildWorkspaceConfigurationResponse("dbt", true, 250)).toEqual({
+      lsp: { linter: { enabled: true }, maxErrorReporting: 250 },
+    });
+    expect(
+      buildWorkspaceConfigurationResponse("dbt", true, undefined),
+    ).not.toHaveProperty("lsp.maxErrorReporting");
+    expect(buildWorkspaceConfigurationResponse("python", true, 250)).toBeNull();
   });
 
   it("returns null for non-dbt sections", () => {

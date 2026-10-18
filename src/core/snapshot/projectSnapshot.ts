@@ -79,6 +79,8 @@ export interface ProjectSnapshotSettings {
   staticAnalysis: unknown;
   lspCompiledOutput: unknown;
   lintEnabled: boolean | undefined;
+  /** `lsp.maxErrorReporting` for the language server; unset keeps the server's default. */
+  maxErrorReporting?: number | undefined;
   traceServer: unknown;
   deferPerProject: Readonly<Record<string, DeferSettingsEntry>> | undefined;
   runParams: readonly string[];
@@ -128,7 +130,12 @@ interface ProjectInvocation {
   staticAnalysis: StaticAnalysisMode;
   compiledOutput: { mode: LspCompiledOutput; dir: string };
   /** Language-server-only launch options. */
-  lsp: { lintEnabled: boolean; traceServer: TraceServerLevel };
+  lsp: {
+    lintEnabled: boolean;
+    traceServer: TraceServerLevel;
+    /** A positive whole number, or unset. */
+    maxErrorReporting?: number;
+  };
   defer: ResolvedDefer | undefined;
   environment: Readonly<Record<string, string>>;
   commandParams: {
@@ -264,6 +271,13 @@ function resolveDefer(
   };
 }
 
+/** `{ maxErrorReporting }` when `value` is a positive whole number; anything else leaves the server default. */
+function positiveWhole(value: unknown): { maxErrorReporting?: number } {
+  return typeof value === "number" && Number.isInteger(value) && value > 0
+    ? { maxErrorReporting: value }
+    : {};
+}
+
 /** Builds one project's snapshot. Pure: equal inputs give equal snapshots. */
 export function resolveProjectSnapshot(
   inputs: ProjectSnapshotInputs,
@@ -303,6 +317,7 @@ export function resolveProjectSnapshot(
       },
       lsp: {
         lintEnabled: settings.lintEnabled ?? true,
+        ...positiveWhole(settings.maxErrorReporting),
         traceServer: parseTraceServerLevel(settings.traceServer),
       },
       defer: resolveDefer(

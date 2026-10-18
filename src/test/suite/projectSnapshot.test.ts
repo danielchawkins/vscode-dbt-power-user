@@ -59,6 +59,18 @@ describe("resolveProjectSnapshot", () => {
     });
   });
 
+  it("keeps maxErrorReporting only when it is a positive whole number", () => {
+    const max = (value: unknown) =>
+      withSettings({ maxErrorReporting: value as number }).invocation.lsp
+        .maxErrorReporting;
+    expect(max(250)).toBe(250);
+    expect(max(undefined)).toBeUndefined();
+    expect(max(0)).toBeUndefined();
+    expect(max(-5)).toBeUndefined();
+    expect(max(2.5)).toBeUndefined();
+    expect(max("100")).toBeUndefined();
+  });
+
   it("trims the target and leaves a blank one unset", () => {
     expect(withSettings({ target: " prod " }).invocation.target).toBe("prod");
     expect(withSettings({ target: "  " }).invocation.target).toBeUndefined();

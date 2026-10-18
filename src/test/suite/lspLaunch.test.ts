@@ -37,6 +37,7 @@ const launch = (overrides: Partial<LspLaunch> = {}): LspLaunch => ({
   profilesDir: undefined,
   staticAnalysis: "project",
   lintEnabled: true,
+  maxErrorReporting: undefined,
   logLevel: undefined,
   environment: {},
   ...overrides,
@@ -74,6 +75,8 @@ describe("toLspArgs", () => {
       "dev",
       "--log-level",
       "trace",
+      "--log-level-file",
+      "trace",
     ]);
   });
 
@@ -88,6 +91,7 @@ describe("toLspArgs", () => {
   it("omits the log level when there is none", () => {
     const args = toLspArgs(launch({ staticAnalysis: "baseline" }), run);
     expect(args).not.toContain("--log-level");
+    expect(args).not.toContain("--log-level-file");
   });
 
   it("uses the run's project dir, not the launch's", () => {

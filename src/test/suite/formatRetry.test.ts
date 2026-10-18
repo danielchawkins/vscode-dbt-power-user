@@ -53,7 +53,7 @@ function setup() {
     uriConverters: undefined,
     outputChannel: { info },
     diagnosticsFilter: { shouldForward: () => true },
-    lintEnabled: false,
+    config: { lintEnabled: false, maxErrorReporting: undefined },
     compiled,
   } as unknown as Parameters<typeof languageClientOptions>[0]).middleware!;
   const sendRequest = middleware.sendRequest as unknown as SendRequest;

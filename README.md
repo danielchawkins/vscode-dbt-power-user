@@ -48,6 +48,16 @@ Deferral follows dbt's default. With no `fusionPowerUser.defer.perProject` entry
 
 Upgrading from upstream or an earlier fork build requires renaming every extension-owned `dbt.*` key to `fusionPowerUser.*`; see [`docs/settings-migration.md`](docs/settings-migration.md).
 
+Some defaults differ from the official dbt extension (`dbtlabsinc.dbt` 0.117.0), so the same project can behave differently in the two:
+
+| Behaviour                         | Here                                                           | Official extension                |
+| --------------------------------- | -------------------------------------------------------------- | --------------------------------- |
+| Fusion lint diagnostics           | on (`fusionPowerUser.lint.enabled`)                            | off (`dbt.lsp.linter.enabled`)    |
+| Preview row limit                 | 500 (`fusionPowerUser.query.limit`)                            | 1000                              |
+| Language server tracing           | off (`fusionPowerUser.trace.server`)                           | verbose                           |
+| Deferral                          | dbt's default: `DBT_DEFER`/`DBT_STATE`, else off               | on (`dbt.flag.defer`)             |
+| Error limit before analysis stops | Fusion's own default (`fusionPowerUser.lsp.maxErrorReporting`) | 100 (`dbt.lsp.maxErrorReporting`) |
+
 ## Column lineage requirements
 
 Column lineage and the columns Fusion infers for a model come from strict static analysis ([ADR 0006](docs/adr/0006-column-lineage-from-fusion-static-analysis.md)). Fusion defaults to baseline, which computes none, so the lineage panel lists only the columns declared in YAML and shows a notice for the rest. The notice and the language status item offer one fix: set `fusionPowerUser.staticAnalysis` to `"strict"` for the project's folder (the `Use Strict Static Analysis for This Project` command, or the "Use strict analysis" button). Changing the setting restarts that project's language server. The extension never edits `dbt_project.yml` for you here. What keeps a project out of strict is one of:

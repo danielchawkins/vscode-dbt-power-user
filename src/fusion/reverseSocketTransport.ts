@@ -187,6 +187,14 @@ export function listenForServer(): Promise<ReverseSocketServer> {
 
 function processExitError(process: ExitingProcess): Error {
   const stderr = process.getStderr().trim();
+  if (
+    /unrecognized subcommand|unknown command|no such command/i.test(stderr) &&
+    /\blsp\b/.test(stderr)
+  ) {
+    return new Error(
+      `dbt lsp exited before connecting: this dbt has no lsp subcommand, so it is not dbt Fusion 2.0.6 or later (${stderr})`,
+    );
+  }
   if (stderr) {
     return new Error(`dbt lsp exited before connecting: ${stderr}`);
   }
