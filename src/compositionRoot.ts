@@ -32,6 +32,7 @@ import { DbtPowerUserActionsCenter } from "./features/projectPicker/actionsCente
 import { FileAssociationsCommand } from "./features/projectSetup/fileAssociations";
 import { ProjectConfigCommands } from "./features/projectSetup/projectConfigCommands";
 import { ProjectSetupCommands } from "./features/projectSetup/projectSetupCommands";
+import { UnservedProjectsNotice } from "./features/projectSetup/unservedProjects";
 import { QueryResultPanel } from "./features/queryResults/queryResultPanel";
 import { RunModel } from "./features/run/runModel";
 import { RunTest } from "./features/run/runTest";
@@ -385,6 +386,7 @@ export function compose(context: ExtensionContext): Composition {
       graph.outputChannels.logFor(root),
     ),
     new FileAssociationsCommand(startupGate, projectRegistry),
+    new UnservedProjectsNotice(projectRegistry),
   ];
   return {
     extension: new DBTPowerUserExtension(services, owned),

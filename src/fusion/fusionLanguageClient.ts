@@ -294,7 +294,7 @@ class FusionLanguageClientImpl implements FusionClient {
           uriConverters,
           outputChannel: this.outputChannel,
           diagnosticsFilter,
-          lintEnabled: launch.lintEnabled,
+          config: launch,
           compiled: this.compiled,
           nestedRoots: this.nestedRoots,
         }),

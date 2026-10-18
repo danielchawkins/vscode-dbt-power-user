@@ -271,13 +271,14 @@ describe("toLspArgs properties", () => {
     );
   });
 
-  it("passes --log-level exactly when the trace level is not off", () => {
+  it("passes --log-level and --log-level-file exactly when the trace level is not off", () => {
     const expected = { off: undefined, messages: "debug", verbose: "trace" };
     fc.assert(
       fc.property(snapshots, runs, (s, run) => {
-        expect(valueOf(toLspArgs(toLspLaunch(s), run), "--log-level")).toBe(
-          expected[s.invocation.lsp.traceServer],
-        );
+        const args = toLspArgs(toLspLaunch(s), run);
+        const level = expected[s.invocation.lsp.traceServer];
+        expect(valueOf(args, "--log-level")).toBe(level);
+        expect(valueOf(args, "--log-level-file")).toBe(level);
       }),
       { numRuns: NUM_RUNS },
     );

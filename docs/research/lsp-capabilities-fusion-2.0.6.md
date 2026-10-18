@@ -138,6 +138,8 @@ Diagnostics are pushed per file after each compile; pull diagnostics are a stub.
 
 Project-load errors in F (18 on strict load: `dbt0301 ProjectionFailed` for UNION ALL column counts, `dbt1501` from `union_relations`) arrive in `dbt/lspBackgroundCompileComplete.errors` and as pushed diagnostics on the affected files. Configuration errors that stop the project from loading are not reported by the server at all ([`bench/config-errors.json`](evidence/lsp-2.0.6/bench/config-errors.json)).
 
+The server reads `lsp.maxErrorReporting` from its `workspace/configuration` request for section `dbt`. On jaffle with five models that each `ref` a missing model, `scripts/spikes/lsp-capabilities/max-errors.mjs` saw 6 then 5 compile errors and diagnostics on 5 files with no limit; with `maxErrorReporting: 1` it saw 1 then 2 errors and diagnostics on 2 files. The limit is approximate: the server stops analysing after about that many errors rather than reporting exactly that many.
+
 ## Freshness and file watching
 
 [`jaffle/freshness.json`](evidence/lsp-2.0.6/jaffle/freshness.json), [`finance-strict/freshness.json`](evidence/lsp-2.0.6/finance-strict/freshness.json):

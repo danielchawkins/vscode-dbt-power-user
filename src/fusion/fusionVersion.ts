@@ -30,8 +30,16 @@ export type FusionVersionVerdict =
   | ({ kind: "notFusion"; raw: string } & FusionProbedBinary)
   | { kind: "notFound"; path: string; source: FusionExecutableSource };
 
+/**
+ * The version in `dbt --version` output: `dbt X.Y.Z`, optionally with a prerelease or build suffix
+ * (`dbt 2.0.6-preview.3 (a1b2c3d …)`), or the legacy `dbt-fusion X.Y.Z`. A suffix does not change the comparison, so
+ * an old preview build reports as too old rather than as not Fusion.
+ */
 export function parseFusionVersion(stdout: string): FusionVersion | undefined {
-  const match = /^dbt\s+(\d+)\.(\d+)\.(\d+)(?:\s|$)/m.exec(stdout);
+  const match =
+    /^dbt(?:-fusion)?\s+v?(\d+)\.(\d+)\.(\d+)(?:[-+][0-9A-Za-z.-]+)?(?:\s|$)/m.exec(
+      stdout,
+    );
   if (!match) {
     return;
   }

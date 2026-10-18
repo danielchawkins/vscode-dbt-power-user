@@ -48,6 +48,18 @@ interface OpenedRoot {
   root: Uri;
 }
 
+/** A project root an opened file or a `projects` entry points at, which the registry does not serve, and why. */
+export type UnservedRoot =
+  | { reason: "disabled"; folder: WorkspaceFolder; root: Uri }
+  | { reason: "untrusted"; folder: WorkspaceFolder; root: Uri }
+  | {
+      reason: "missingProjectFile";
+      folder: WorkspaceFolder;
+      entry: string;
+      root: string;
+    }
+  | { reason: "invalidEntry"; folder: WorkspaceFolder; entry: string };
+
 /** Resolves and tracks the workspace's Declared Projects. */
 export class ProjectRegistry implements Disposable {
   private _projects: DeclaredProjectImpl[] = [];
@@ -56,6 +68,7 @@ export class ProjectRegistry implements Disposable {
   /** Roots declared from opened files, keyed by canonical path. Held in memory until the window reloads. */
   private openedRoots = new Map<string, OpenedRoot>();
   private readonly _onDidChangeProjects = new EventEmitter<void>();
+  private readonly _onDidFindUnservedRoot = new EventEmitter<UnservedRoot>();
   private readonly subscriptions: Disposable[] = [];
   private initialized = false;
   private disposed = false;
@@ -71,6 +84,11 @@ export class ProjectRegistry implements Disposable {
 
   get onDidChangeProjects(): Event<void> {
     return this._onDidChangeProjects.event;
+  }
+
+  /** Fires for each root that is found but not served; listeners decide how often to tell the user. */
+  get onDidFindUnservedRoot(): Event<UnservedRoot> {
+    return this._onDidFindUnservedRoot.event;
   }
 
   /** Returns the deepest Declared Project containing the resource; a compiled preview resolves through its model. */
@@ -89,10 +107,19 @@ export class ProjectRegistry implements Disposable {
     }
     let added = false;
     for (const document of documents) {
-      const opened = openedRootOf(document);
-      if (!opened) {
+      const found = openedRootOf(document);
+      if (!found) {
         continue;
       }
+      if (found.reason) {
+        this._onDidFindUnservedRoot.fire({
+          reason: found.reason,
+          folder: found.folder,
+          root: found.root,
+        });
+        continue;
+      }
+      const opened = { folder: found.folder, root: found.root };
       const key = canonicalPath(opened.root.fsPath);
       if (
         this.openedRoots.has(key) ||
@@ -140,6 +167,7 @@ export class ProjectRegistry implements Disposable {
               ? `Declared Project entry ${problem.entry} has no dbt_project.yml or dbt_project.yaml at ${problem.root}`
               : `Invalid Declared Project entry: ${problem.entry}`;
           this.terminal.warn("projectRegistry", message);
+          this._onDidFindUnservedRoot.fire({ ...problem, folder });
         });
       }
       for (const root of resolved.roots) {
@@ -281,6 +309,7 @@ export class ProjectRegistry implements Disposable {
     this.watchers.clear();
     this.openedRoots.clear();
     this._onDidChangeProjects.dispose();
+    this._onDidFindUnservedRoot.dispose();
   }
 }
 
@@ -326,21 +355,52 @@ interface DesiredProject extends Candidate {
   aliases: string[];
 }
 
-/** The nearest project root of an eligible document, or undefined when the document cannot declare one. */
-function openedRootOf(document: TextDocument): OpenedRoot | undefined {
+/**
+ * The nearest project root of an eligible document; with a `reason` when the root exists but the folder is disabled
+ * or the workspace is untrusted. Undefined when the document cannot declare one.
+ */
+function openedRootOf(
+  document: TextDocument,
+): (OpenedRoot & { reason?: "disabled" | "untrusted" }) | undefined {
   if (
     document.uri.scheme !== "file" ||
-    !DECLARING_LANGUAGES.has(document.languageId) ||
-    !workspace.isTrusted
+    !DECLARING_LANGUAGES.has(document.languageId)
   ) {
     return undefined;
   }
   const folder = workspace.getWorkspaceFolder(document.uri);
-  if (!folder || readSetting(ENABLED_SETTING, folder.uri) === false) {
+  if (!folder) {
     return undefined;
   }
-  const root = findProjectRootForFile(document.uri, folder);
-  return root ? { folder, root } : undefined;
+  const root = findProjectRootForFile(document.uri, folder, {
+    accept: namesProfile,
+  });
+  if (!root) {
+    return undefined;
+  }
+  if (readSetting(ENABLED_SETTING, folder.uri) === false) {
+    return { folder, root, reason: "disabled" };
+  }
+  if (!workspace.isTrusted) {
+    return { folder, root, reason: "untrusted" };
+  }
+  return { folder, root };
+}
+
+/**
+ * Whether `dir`'s project file can run on its own: it names a `profile`, or it does not parse, so the parse error is
+ * reported. A file with no `profile` is a package, which only the project installing it can run.
+ */
+function namesProfile(dir: string): boolean {
+  const file = readDbtProjectFile(dir);
+  if (file.kind === "missing") {
+    return false;
+  }
+  if (file.kind !== "parsed") {
+    return true;
+  }
+  const profile = file.config.profile;
+  return typeof profile === "string" && profile.trim() !== "";
 }
 
 function canonicalPath(fsPath: string): string {

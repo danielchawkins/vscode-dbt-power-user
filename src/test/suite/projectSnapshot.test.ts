@@ -59,6 +59,18 @@ describe("resolveProjectSnapshot", () => {
     });
   });
 
+  it("keeps maxErrorReporting only when it is a positive whole number", () => {
+    const max = (value: unknown) =>
+      withSettings({ maxErrorReporting: value as number }).invocation.lsp
+        .maxErrorReporting;
+    expect(max(250)).toBe(250);
+    expect(max(undefined)).toBeUndefined();
+    expect(max(0)).toBeUndefined();
+    expect(max(-5)).toBeUndefined();
+    expect(max(2.5)).toBeUndefined();
+    expect(max("100")).toBeUndefined();
+  });
+
   it("trims the target and leaves a blank one unset", () => {
     expect(withSettings({ target: " prod " }).invocation.target).toBe("prod");
     expect(withSettings({ target: "  " }).invocation.target).toBeUndefined();
@@ -99,6 +111,42 @@ describe("resolveProjectSnapshot", () => {
     expect(
       withSettings({ profilesDir: "profiles" }).invocation.profilesDir,
     ).toBe(path.join(folder, "profiles"));
+  });
+
+  it("expands a leading ~ and keeps absolute paths as given", () => {
+    const home = base.userHome;
+    expect(
+      withSettings({ profilesDir: "~/.dbt/" }).invocation.profilesDir,
+    ).toBe(path.join(home, ".dbt"));
+    expect(withSettings({ profilesDir: "~" }).invocation.profilesDir).toBe(
+      home,
+    );
+    expect(
+      withSettings({ profilesDir: "${userHome}/.dbt" }).invocation.profilesDir,
+    ).toBe(path.join(home, ".dbt"));
+    const absolute = path.join("/", "etc", "dbt");
+    expect(withSettings({ profilesDir: absolute }).invocation.profilesDir).toBe(
+      absolute,
+    );
+    expect(
+      withSettings({ dbtPath: "~/bin/dbt" }).invocation.executable,
+    ).toEqual({
+      source: "configured",
+      path: path.join(home, "bin", "dbt"),
+    });
+    expect(withSettings({ profilesDir: "a~/b" }).invocation.profilesDir).toBe(
+      path.join(folder, "a~", "b"),
+    );
+  });
+
+  it("leaves a path with an unknown environment variable unresolved", () => {
+    expect(
+      withSettings({ profilesDir: "${env:NOPE}/profiles" }).invocation
+        .profilesDir,
+    ).toBeUndefined();
+    expect(
+      withSettings({ dbtPath: "${env:NOPE}/dbt" }).invocation.executable,
+    ).toEqual({ source: "unresolvable", path: "${env:NOPE}/dbt" });
   });
 
   it("leaves the profiles dir unset when it cannot be resolved", () => {

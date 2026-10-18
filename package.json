@@ -117,7 +117,7 @@
             },
             "default": [],
             "scope": "resource",
-            "description": "Declared Project roots for this workspace folder, relative to the folder or absolute. When unset or empty, the folder root is served if it contains dbt_project.yml. Every configured root must contain dbt_project.yml or no declared roots are served for the folder."
+            "description": "Declared Project roots for this workspace folder: absolute, relative to the folder, or starting with ~. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. When unset or empty, the folder root is served if it contains dbt_project.yml. Every configured root must contain dbt_project.yml or no declared roots are served for the folder."
           },
           "fusionPowerUser.staticAnalysis": {
             "type": "string",
@@ -140,12 +140,12 @@
           "fusionPowerUser.dbtPath": {
             "type": "string",
             "scope": "resource",
-            "description": "Path to the local dbt Fusion executable for this Declared Project. The extension will resolve this path first, then dbt on the extension host PATH. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. An invalid configured path blocks that project's language server and does not fall back to PATH."
+            "description": "Path to the local dbt Fusion executable for this Declared Project. The extension will resolve this path first, then dbt on the extension host PATH. Absolute, relative to the workspace folder, or starting with ~. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. An invalid configured path blocks that project's language server and does not fall back to PATH."
           },
           "fusionPowerUser.profilesDir": {
             "type": "string",
             "scope": "resource",
-            "description": "Profiles directory passed to Fusion when this Declared Project's language server starts. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. Relative paths resolve against the containing workspace folder."
+            "description": "Profiles directory passed to Fusion when this Declared Project's language server starts. Absolute, relative to the workspace folder, or starting with ~. Supports ${workspaceFolder}, ${userHome}, and ${env:VAR}. When unset, dbt's own search applies: DBT_PROFILES_DIR, then the project directory, then ~/.dbt."
           },
           "fusionPowerUser.toolEnvironment": {
             "type": "string",
@@ -186,6 +186,12 @@
             "scope": "resource",
             "default": true,
             "description": "Whether Fusion lint diagnostics are enabled when this Declared Project's language server starts."
+          },
+          "fusionPowerUser.lsp.maxErrorReporting": {
+            "type": "integer",
+            "minimum": 1,
+            "scope": "resource",
+            "description": "The number of errors after which Fusion's language server stops analyzing this Declared Project. Unset keeps Fusion's own default."
           },
           "fusionPowerUser.trace.server": {
             "type": "string",
@@ -255,7 +261,7 @@
           },
           "fusionPowerUser.defer.perProject": {
             "type": "object",
-            "description": "Run subset of models without building their parent models",
+            "description": "Per project, keyed by its path relative to the workspace folder: defer run, build, test, compile, show and inline compile to a production manifest on disk. With no entry for a project the extension passes no defer flags, so dbt's own default applies (DBT_DEFER and DBT_STATE in the environment, else no deferral); an entry with deferToProduction false passes --no-defer.",
             "scope": "resource",
             "patternProperties": {
               ".*": {
@@ -275,6 +281,87 @@
                     "type": "boolean",
                     "description": "If a given model exists in both the current environment and the defined defer state, turn this flag on to use the latter always",
                     "default": false
+                  }
+                }
+              }
+            }
+          },
+          "fusionPowerUser.perProject": {
+            "type": "object",
+            "scope": "resource",
+            "description": "Settings for one Declared Project, keyed by its path relative to the workspace folder (for example `transformation/dbt/finance_general`). Each entry overrides the folder's fusionPowerUser setting of the same name for that project only; a setting the entry omits keeps the folder's value.",
+            "default": {},
+            "patternProperties": {
+              ".*": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "staticAnalysis": {
+                    "type": "string",
+                    "enum": [
+                      "project",
+                      "off",
+                      "baseline",
+                      "strict"
+                    ],
+                    "enumDescriptions": [
+                      "Pass no mode to Fusion, so the project's own `+static_analysis` model config applies. To turn on strict for a project, add `models: <project name>: +static_analysis: strict` to dbt_project.yml.",
+                      "Ask Fusion to skip SQL analysis for the model and its descendants.",
+                      "Ask Fusion for Jinja, YAML, and SQL syntax diagnostics, ref and source navigation, table-level lineage, and ref autocomplete.",
+                      "Ask Fusion for baseline analysis plus SQL type and schema diagnostics, column hover and go-to-definition, column references, and alias rename."
+                    ],
+                    "description": "This project's fusionPowerUser.staticAnalysis; overrides the folder's value."
+                  },
+                  "dbtPath": {
+                    "type": "string",
+                    "description": "This project's fusionPowerUser.dbtPath; overrides the folder's value."
+                  },
+                  "profilesDir": {
+                    "type": "string",
+                    "description": "This project's fusionPowerUser.profilesDir; overrides the folder's value."
+                  },
+                  "profile": {
+                    "type": "string",
+                    "description": "This project's fusionPowerUser.profile; overrides the folder's value."
+                  },
+                  "target": {
+                    "type": "string",
+                    "description": "This project's fusionPowerUser.target; overrides the folder's value."
+                  },
+                  "lint.enabled": {
+                    "type": "boolean",
+                    "description": "This project's fusionPowerUser.lint.enabled; overrides the folder's value."
+                  },
+                  "lsp.maxErrorReporting": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "This project's fusionPowerUser.lsp.maxErrorReporting; overrides the folder's value."
+                  },
+                  "trace.server": {
+                    "type": "string",
+                    "enum": [
+                      "off",
+                      "messages",
+                      "verbose"
+                    ],
+                    "enumDescriptions": [
+                      "Default Fusion server log level for this project.",
+                      "Pass debug log level to the Fusion server process and increase Fusion project log verbosity (for example logs/dbt.log).",
+                      "Pass trace log level to the Fusion server process and increase Fusion project log verbosity (for example logs/dbt.log)."
+                    ],
+                    "description": "This project's fusionPowerUser.trace.server; overrides the folder's value."
+                  },
+                  "lsp.compiledOutput": {
+                    "type": "string",
+                    "enum": [
+                      "separate",
+                      "shared"
+                    ],
+                    "enumDescriptions": [
+                      "The language server writes compiled SQL to target/.lsp/, so editing never overwrites what a dbt CLI run wrote.",
+                      "The language server writes compiled SQL to the same target/ as the dbt CLI, so each model has one compiled copy. An edit overwrites the last CLI output for that model."
+                    ],
+                    "description": "This project's fusionPowerUser.lsp.compiledOutput; overrides the folder's value."
                   }
                 }
               }

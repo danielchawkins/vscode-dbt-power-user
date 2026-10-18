@@ -25,7 +25,7 @@ function setup() {
     uriConverters: undefined,
     outputChannel: createMockLogOutputChannel("outer"),
     diagnosticsFilter: filter,
-    lintEnabled: false,
+    config: { lintEnabled: false, maxErrorReporting: undefined },
     nestedRoots: {
       guard: new NestedRootGuard(Uri.file(outerRoot), () => [
         Uri.file(innerRoot),

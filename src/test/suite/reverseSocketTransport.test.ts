@@ -189,6 +189,17 @@ describe("reverseSocketTransport", () => {
     expect(internalServer.listening).toBe(false);
   });
 
+  it("names a dbt without the lsp subcommand as not Fusion", async () => {
+    server = await listenForServer();
+    const process = new FakeExitingProcess();
+    process.setStderr("error: unrecognized subcommand 'lsp'");
+    process.exit(2);
+
+    await expect(acceptWithProcessExit(server, process, 5_000)).rejects.toThrow(
+      /has no lsp subcommand, so it is not dbt Fusion 2\.0\.6 or later/,
+    );
+  });
+
   it("rejects pending accept when the listener errors", async () => {
     server = await listenForServer();
     const acceptPromise = server.accept(5_000);
