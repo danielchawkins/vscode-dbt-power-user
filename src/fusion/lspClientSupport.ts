@@ -9,6 +9,7 @@ import type {
   ServerOptions,
 } from "vscode-languageclient/node";
 import { fusionCteFromLens, type FusionCte } from "../core/cte/ctePreview";
+import type { LspLaunch } from "../core/lsp";
 import type { FusionProjectRef } from "./fusionClient";
 import type { ProjectDiagnosticsFilter } from "./fusionDiagnostics";
 import {
@@ -136,12 +137,13 @@ export function mapCteLenses(
 }
 
 /**
- * Returns minimal dbt config: `{lsp:{linter:{enabled:bool}}}`, null for other sections.
+ * Returns minimal dbt config: `{lsp:{linter:{enabled:bool}, maxErrorReporting?}}`, null for other sections.
  * @internal
  */
 export function buildWorkspaceConfigurationResponse(
   section: string,
   lintEnabled: boolean,
+  maxErrorReporting?: number,
 ): unknown {
   if (section === "dbt") {
     return {
@@ -149,6 +151,7 @@ export function buildWorkspaceConfigurationResponse(
         linter: {
           enabled: lintEnabled,
         },
+        ...(maxErrorReporting === undefined ? {} : { maxErrorReporting }),
       },
     };
   }
@@ -316,7 +319,8 @@ export function languageClientOptions(input: {
   uriConverters: LanguageClientOptions["uriConverters"] | undefined;
   outputChannel: LogOutputChannel;
   diagnosticsFilter: ProjectDiagnosticsFilter;
-  lintEnabled: boolean;
+  /** What the client answers `workspace/configuration` for section `dbt` with. */
+  config: Pick<LspLaunch, "lintEnabled" | "maxErrorReporting">;
   compiled?: CompileSignal;
   /** Keeps documents under nested roots away from this client; see {@link guardMiddleware}. */
   nestedRoots?:
@@ -350,7 +354,8 @@ export function languageClientOptions(input: {
         params.items.map((item) =>
           buildWorkspaceConfigurationResponse(
             item.section ?? "",
-            input.lintEnabled,
+            input.config.lintEnabled,
+            input.config.maxErrorReporting,
           ),
         ),
     },

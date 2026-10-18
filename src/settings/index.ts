@@ -26,6 +26,7 @@ export interface SettingsSchema {
   toolEnvironment: string;
   "lsp.compiledOutput": string;
   "lint.enabled": boolean;
+  "lsp.maxErrorReporting": number | undefined;
   "trace.server": string;
   unquotedCaseInsensitiveIdentifierRegex: string | undefined;
   "run.additionalParams": readonly string[];
@@ -46,6 +47,7 @@ export const PROJECT_OVERRIDABLE_SETTINGS = [
   "profile",
   "target",
   "lint.enabled",
+  "lsp.maxErrorReporting",
   "trace.server",
   "lsp.compiledOutput",
 ] as const;
@@ -86,6 +88,7 @@ export const SETTING_SCOPES = {
   toolEnvironment: "resource",
   "lsp.compiledOutput": "resource",
   "lint.enabled": "resource",
+  "lsp.maxErrorReporting": "resource",
   "trace.server": "resource",
   unquotedCaseInsensitiveIdentifierRegex: "window",
   "run.additionalParams": "window",
