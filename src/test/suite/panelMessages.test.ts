@@ -51,6 +51,9 @@ function lineageHarness() {
     columnsNeedStrict: vi.fn().mockReturnValue(undefined),
     getChildTables: vi.fn().mockReturnValue([{ table: "model.p.b" }]),
     getParentTables: vi.fn().mockReturnValue([{ table: "model.p.z" }]),
+    getTableEdges: vi
+      .fn()
+      .mockReturnValue({ edges: [["model.p.z", "model.p.a"]] }),
     getConnectedColumns: vi
       .fn()
       .mockResolvedValue({ kind: "lineage", columnLineage: [] }),
@@ -150,6 +153,20 @@ describe("lineage panel messages", () => {
       });
       expect(h.postMessage).toHaveBeenCalledWith(
         response("p1", [{ table: "model.p.z" }]),
+      );
+    },
+    tableEdges: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "tableEdges",
+        args: { params: { tables: ["model.p.a", "model.p.z"] } },
+        syncRequestId: "e1",
+      });
+      expect(h.panel.dbtLineageService.getTableEdges).toHaveBeenCalledWith({
+        tables: ["model.p.a", "model.p.z"],
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("e1", { edges: [["model.p.z", "model.p.a"]] }),
       );
     },
     getColumns: async () => {

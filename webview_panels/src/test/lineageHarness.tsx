@@ -122,6 +122,7 @@ const ANSWERS: Record<string, (params: Params) => unknown> = {
   parentTables: ({ table: t }) => ({
     tables: t === "b" ? [TABLES.a] : t === "c" ? [TABLES.b] : [],
   }),
+  tableEdges: () => ({ edges: [] }),
   getColumns: ({ table: t }) => ({
     id: t,
     columns: [{ table: t, name: "id" }],

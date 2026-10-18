@@ -438,6 +438,13 @@ const lineagePanel: Fixture[] = [
   },
   {
     message: {
+      command: "tableEdges",
+      ...params({ tables: ["model.a", "model.b"] }),
+    },
+    required: ["args.params.tables"],
+  },
+  {
+    message: {
       command: "getColumns",
       ...params({ table: "model.a", refresh: false }),
     },

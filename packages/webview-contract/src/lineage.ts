@@ -165,6 +165,8 @@ export type PanelMessage =
   | Request<"childTables", { table: string }>
   /** The tables `table` depends on (its dbt parents). */
   | Request<"parentTables", { table: string }>
+  /** The data-flow `[parent, child]` pairs among `tables`. */
+  | Request<"tableEdges", { tables: string[] }>
   | Request<"getColumns", { table: string; refresh?: boolean | undefined }>
   | Request<"getExposureDetails", { name: string }>
   | Request<"getFunctionDetails", { name: string }>
@@ -220,6 +222,7 @@ const panelFields: CommandFields<PanelMessage> = {
   openFile: request({ url: isString }),
   childTables: request({ table: isString }),
   parentTables: request({ table: isString }),
+  tableEdges: request({ tables: arrayOf(isString) }),
   getColumns: request({ table: isString, refresh: optionalBoolean }),
   getExposureDetails: request({ name: isString }),
   getFunctionDetails: request({ name: isString }),

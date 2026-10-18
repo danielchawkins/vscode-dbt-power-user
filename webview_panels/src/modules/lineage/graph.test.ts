@@ -1,5 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it, vi } from "vitest";
+import { traceColumn } from "./columnTrace";
 import type { GraphState, GraphStore } from "./graph";
 import {
   collapse,
@@ -9,10 +10,10 @@ import {
   expandLevels,
   hideColumns,
   lineageData,
+  linkDrawn,
   parseExpansion,
   replayExpansions,
   showColumns,
-  traceColumn,
 } from "./graph";
 import { columnHandle, layout, tableHeight } from "./layout";
 
@@ -146,6 +147,63 @@ describe("lineage graph", () => {
     release([TABLES.b]);
     expect(await pending).toEqual([]);
     expect(ids(store.get())).toEqual(["a"]);
+  });
+
+  it("does not start a second fetch for an expansion still loading, and a collapse clears it", async () => {
+    const store = storeOf(emptyGraph(TABLES.a));
+    let release: (tables: lineage.LineageTable[]) => void = () => undefined;
+    const slow = vi.fn(
+      () => new Promise<lineage.LineageTable[]>((r) => (release = r)),
+    );
+    const first = expand(store, "children", "a", slow);
+    expect(store.get().pending).toEqual(["c:a"]);
+    expect(await expand(store, "children", "a", slow)).toEqual([]);
+    expect(slow).toHaveBeenCalledTimes(1);
+
+    store.update((s) => collapse(s, "children", "a"));
+    expect(store.get().pending).toEqual([]);
+    release([TABLES.b]);
+    expect(await first).toEqual([]);
+    expect(ids(store.get())).toEqual(["a"]);
+  });
+
+  it("applies a re-expand made while the first fetch was still out, and drops the first answer", async () => {
+    const store = storeOf(emptyGraph(TABLES.a));
+    const releases: ((tables: lineage.LineageTable[]) => void)[] = [];
+    const slow = () =>
+      new Promise<lineage.LineageTable[]>((r) => releases.push(r));
+    const first = expand(store, "children", "a", slow);
+    store.update((s) => collapse(s, "children", "a"));
+    const second = expand(store, "children", "a", slow);
+    releases[0]?.([TABLES.c]);
+    releases[1]?.([TABLES.b]);
+    expect(await first).toEqual([]);
+    expect(await second).toEqual(["b"]);
+    expect(ids(store.get())).toEqual(["a", "b"]);
+  });
+
+  it("clears the pending key when the fetch fails", async () => {
+    const store = storeOf(emptyGraph(TABLES.a));
+    await expect(
+      expand(store, "children", "a", () => Promise.reject(new Error("down"))),
+    ).rejects.toThrow("down");
+    expect(store.get().pending).toEqual([]);
+  });
+
+  it("draws a diamond's shortcut edge between drawn tables, which a collapse does not keep alive", async () => {
+    // d -> b, b -> c, and the shortcut d -> c, drawn through b's expansions only.
+    const store = storeOf(emptyGraph(TABLES.b));
+    await expandLevels(store, 1, fetchNeighbours);
+    expect(drawnGraph(store.get()).edges).not.toContainEqual(["d", "c"]);
+
+    const fetchEdges = vi.fn(async () => [["d", "c"]] as [string, string][]);
+    await linkDrawn(store, fetchEdges);
+    expect(fetchEdges).toHaveBeenCalledWith(["b", "a", "d", "c"]);
+    expect(drawnGraph(store.get()).edges).toContainEqual(["d", "c"]);
+
+    store.update((s) => collapse(s, "children", "b"));
+    expect(ids(store.get())).toEqual(["a", "b", "d"]);
+    expect(drawnGraph(store.get()).edges).not.toContainEqual(["d", "c"]);
   });
 
   it("keeps column case in handle IDs", () => {

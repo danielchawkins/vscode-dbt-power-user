@@ -3,6 +3,7 @@ import type { LineageViewState } from "@modules/app/viewState";
 import { readViewState, writeViewState } from "@modules/app/viewState";
 import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { traceColumn } from "./columnTrace";
 import type { ColumnRef, Direction, GraphState, GraphStore } from "./graph";
 import {
   clearColumn,
@@ -12,15 +13,17 @@ import {
   expandLevels,
   hideColumns,
   isExpanded,
+  isPending,
+  linkDrawn,
   replayExpansions,
   selectTable,
   showColumns,
-  traceColumn,
 } from "./graph";
 import {
   executeRequestInAsync,
   fetchColumns,
   fetchConnected,
+  fetchEdges,
   fetchNeighbours,
   openFile,
 } from "./requests";
@@ -38,9 +41,11 @@ async function build(
 ): Promise<void> {
   if (!saved) {
     await expandLevels(store, levels, fetchNeighbours);
+    await linkDrawn(store, fetchEdges);
     return;
   }
   await replayExpansions(store, saved.expansions, fetchNeighbours);
+  await linkDrawn(store, fetchEdges);
   await showColumns(store, saved.columnTables, fetchColumns);
   store.update((s) => selectTable(s, saved.selectedTable));
   const column = saved.selectedColumn;
@@ -57,11 +62,17 @@ const actionsFor = (
 ): TableActions => ({
   toggleExpansion: (table: string, direction: Direction) => {
     const s = store();
-    if (isExpanded(s.get(), direction, table)) {
+    // A click on an expander that is still loading cancels it, as a click on an open one closes it.
+    if (
+      isExpanded(s.get(), direction, table) ||
+      isPending(s.get(), direction, table)
+    ) {
       s.update((g) => collapse(g, direction, table));
       return;
     }
-    expand(s, direction, table, fetchNeighbours).catch(logError("expand"));
+    expand(s, direction, table, fetchNeighbours)
+      .then(() => linkDrawn(s, fetchEdges))
+      .catch(logError("expand"));
   },
   toggleColumns: (table: string) => {
     const s = store();
