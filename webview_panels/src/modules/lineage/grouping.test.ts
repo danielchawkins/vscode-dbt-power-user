@@ -1,6 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
-import { bucketNeighbours, groupedNeighbours } from "./grouping";
+import { bucketNeighbours, groupedNeighbours, groupLabel } from "./grouping";
 
 const table = (
   id: string,
@@ -136,5 +136,21 @@ describe("groupedNeighbours", () => {
       open: { g: true },
     };
     expect(groupedNeighbours(groups)).toEqual(["x", "c", "d"]);
+  });
+});
+
+describe("groupLabel", () => {
+  it("labels a folder by its last segment, with or without the pkg: prefix", () => {
+    expect(groupLabel("models/marts/finance")).toBe("finance");
+    expect(groupLabel("pkg:macros/utils")).toBe("utils");
+    expect(groupLabel("pkg:macros")).toBe("macros");
+  });
+
+  it("labels a node with no path by its resource type", () => {
+    expect(groupLabel("type:seed")).toBe("seed");
+  });
+
+  it("labels a file at the root of a package", () => {
+    expect(groupLabel("")).toBe("(root)");
   });
 });

@@ -261,7 +261,7 @@ describe("lineage graph", () => {
 
   it("lays parents left of children with dagre", () => {
     const positions = layout(
-      [TABLES.a, TABLES.b, TABLES.c],
+      ["a", "b", "c"],
       [
         ["a", "b"],
         ["b", "c"],

@@ -15,8 +15,10 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { hiddenCounts } from "./expansionCap";
+import { collapsedGroups } from "./expansionGroups";
 import { toFlow } from "./flow";
 import { lineageData } from "./graph";
+import { GroupNode } from "./GroupNode";
 import styles from "./lineageGraph.module.css";
 import MissingLineageMessage from "./MissingLineageMessage";
 import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
@@ -24,11 +26,12 @@ import TableDetails from "./TableDetails";
 import { TableNode } from "./TableNode";
 import Toolbar from "./Toolbar";
 import { useHandleMeasurement } from "./useHandleMeasurement";
+import type { ExpansionOptions } from "./useLineageGraph";
 import { useLineageGraph } from "./useLineageGraph";
 import type { ResolvedSettings } from "./viewModel";
 import { resolveSettings, TableActionsContext, visibleRefs } from "./viewModel";
 
-const nodeTypes = { table: TableNode };
+const nodeTypes = { table: TableNode, group: GroupNode };
 
 /** Fit options whose pixel padding keeps the graph clear of the controls, the legend and the minimap when shown. */
 const fitOptions = (minimap?: {
@@ -48,6 +51,15 @@ const fitOptions = (minimap?: {
 const onError = (code: string, message: string) => {
   panelLogger.warn(`[React Flow] ${code}: ${message}`);
 };
+
+/** Selects the table a click lands on; a group card has no table to select. */
+const clickSelects =
+  (select: (table: string | undefined) => void) =>
+  (_event: unknown, node: { id: string; type?: string }) => {
+    if (node.type === "table") {
+      select(node.id);
+    }
+  };
 
 /** The host's view settings; a change is applied at once and persisted through `persistLineageSettings`. */
 const useSettings = () => {
@@ -196,7 +208,7 @@ const Canvas = ({
         fitViewOptions={options}
         proOptions={{ hideAttribution: true }}
         onError={onError}
-        onNodeClick={(_event: unknown, node: { id: string }) => select(node.id)}
+        onNodeClick={clickSelects(select)}
         onPaneClick={() => select(undefined)}
       >
         <Background />
@@ -238,17 +250,21 @@ const Graph = (): React.JSX.Element => {
   }, []);
   // Read when a rebuild starts, so it follows the latest settings without re-creating the graph store.
   const expansionRef = useRef(settings.defaultExpansion);
-  const capRef = useRef(settings.maxNeighbours);
+  // Folder grouping is the default of the `lineage.groupBy` setting, which this build does not read yet.
+  const optionsRef = useRef<ExpansionOptions>({
+    cap: settings.maxNeighbours,
+    groupBy: "folder",
+  });
   useEffect(() => {
     expansionRef.current = settings.defaultExpansion;
-    capRef.current = settings.maxNeighbours;
+    optionsRef.current = { cap: settings.maxNeighbours, groupBy: "folder" };
   }, [settings.defaultExpansion, settings.maxNeighbours]);
   const defaultExpansion = useCallback(() => expansionRef.current, []);
-  const maxNeighbours = useCallback(() => capRef.current ?? 0, []);
+  const expansionOptions = useCallback(() => optionsRef.current, []);
   const { graph, rendered, drawnKey, actions, select, reset } = useLineageGraph(
     defaultExpansion,
     openDetails,
-    maxNeighbours,
+    expansionOptions,
   );
   const notice = rendered?.missingLineageMessage;
   const columnsNeedStrict = rendered?.columnsNeedStrict === true;
@@ -260,6 +276,7 @@ const Graph = (): React.JSX.Element => {
       indirect: settings.showNonSelectEdges,
     });
     const drawn = new Set(data.tables.map((t) => t.table));
+    const groups = collapsedGroups(graph);
     return toFlow({
       data,
       columns: graph.columns,
@@ -267,6 +284,8 @@ const Graph = (): React.JSX.Element => {
       expansions: graph.expansions,
       pending: graph.pending,
       hidden: hiddenCounts(graph),
+      groups,
+      groupEdges: groups.map((g) => g.edge),
       errors: graph.errors,
       selectedTable: graph.selectedTable,
       selectedColumn: graph.selectedColumn,

@@ -21,6 +21,20 @@ export const groupedNeighbours = (groups: NeighbourGroups): string[] => [
     .flatMap((bucket) => bucket.members),
 ];
 
+/** The label of a bucket key: its last folder segment, or the resource type of a `type:` key. */
+export const groupLabel = (key: string): string => {
+  if (key.startsWith("type:")) {
+    return key.slice("type:".length);
+  }
+  const folder = key.startsWith("pkg:") ? key.slice("pkg:".length) : key;
+  const last = folder.split("/").at(-1) ?? "";
+  return last === "" ? "(root)" : last;
+};
+
+/** The node ID of a closed bucket `key` of the expansion `expansion`, so a group never shares a table's ID. */
+export const groupNodeId = (expansion: string, key: string): string =>
+  `group:${expansion}|${key}`;
+
 /**
  * The bucket of a node: its folder, `pkg:<folder>` outside the root package, or `type:<nodeType>` when it has no
  * path. A file at the root of a package has an empty folder.

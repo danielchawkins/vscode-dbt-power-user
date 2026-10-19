@@ -33,6 +33,12 @@ import { planRender, viewStateOf } from "./viewModel";
 const logError = (what: string) => (error: unknown) =>
   panelLogger.error(`lineage ${what}`, error);
 
+/** How an expansion draws its neighbours: at most `cap` at first (0 draws all), and bucketed by `groupBy`. */
+export interface ExpansionOptions {
+  cap: number;
+  groupBy: "none" | "folder";
+}
+
 /** Replays `saved` onto the start table, or expands `levels` levels when nothing is saved. */
 async function build(
   store: GraphStore,
@@ -107,7 +113,10 @@ const actionsFor = (
 });
 
 /** The graph state, a store per rebuild generation, and `rebuild`, which bumps `drawnKey` when it settles. */
-function useGraphStore(defaultExpansion: () => number, cap: () => number) {
+function useGraphStore(
+  defaultExpansion: () => number,
+  expansionOptions: () => ExpansionOptions,
+) {
   const [graph, setGraph] = useState<GraphState>(emptyGraph);
   const [drawnKey, setDrawnKey] = useState(0);
   const graphRef = useRef(graph);
@@ -131,7 +140,8 @@ function useGraphStore(defaultExpansion: () => number, cap: () => number) {
   const rebuild = useCallback(
     (start: lineage.LineageTable | undefined, saved?: LineageViewState) => {
       const gen = ++generationRef.current;
-      graphRef.current = emptyGraph(start, cap());
+      const { cap, groupBy } = expansionOptions();
+      graphRef.current = emptyGraph(start, cap, groupBy);
       setGraph(graphRef.current);
       buildingRef.current = !!start;
       if (!start) {
@@ -146,7 +156,7 @@ function useGraphStore(defaultExpansion: () => number, cap: () => number) {
           }
         });
     },
-    [storeFor, defaultExpansion, cap],
+    [storeFor, defaultExpansion, expansionOptions],
   );
 
   const current = useCallback(
@@ -159,12 +169,15 @@ function useGraphStore(defaultExpansion: () => number, cap: () => number) {
 /**
  * The lineage graph driven by the host's `render` and `projectSaved` messages. The first render replays the view
  * state VS Code kept for a rebuilt page; every change after it is written back through `writeViewState`.
- * `maxNeighbours` caps how many neighbours an expansion draws at first; 0 draws all.
+ * `expansionOptions` gives the cap on neighbours an expansion draws at first (0 draws all) and how they are grouped.
  */
 export function useLineageGraph(
   defaultExpansion: () => number,
   openDetails: (table: string) => void,
-  maxNeighbours: () => number = () => 0,
+  expansionOptions: () => ExpansionOptions = () => ({
+    cap: 0,
+    groupBy: "none",
+  }),
 ): {
   graph: GraphState;
   /** The latest `render` arguments: the panel notice and whether empty column lists need strict analysis. */
@@ -175,7 +188,7 @@ export function useLineageGraph(
   reset: () => void;
 } {
   const { graph, graphRef, drawnKey, buildingRef, current, rebuild } =
-    useGraphStore(defaultExpansion, maxNeighbours);
+    useGraphStore(defaultExpansion, expansionOptions);
   const [rendered, setRendered] = useState<lineage.RenderArgs>();
   const publicationRef = useRef<string | undefined>(undefined);
   const refreshRef = useRef(false);
