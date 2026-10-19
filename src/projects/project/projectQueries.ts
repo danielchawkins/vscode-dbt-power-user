@@ -1,3 +1,4 @@
+import type { queryResults } from "@fusion-power-user/webview-contract";
 import type { Uri } from "vscode";
 import type { QueryExecutionResult } from "../../core/dbt/domain";
 import type { QueryExecution } from "../../core/dbtCommand";
@@ -11,7 +12,7 @@ import {
   generateSchemaYML,
   mergeColumnsFromDB,
 } from "./projectCodegen";
-import type { SqlDeps } from "./projectSql";
+import type { QueryPanelRun, SqlDeps } from "./projectSql";
 import { getColumnValues, queryPanelPayload } from "./projectSql";
 import {
   columnsOfModel,
@@ -98,9 +99,13 @@ export class ProjectQueries {
     return generateModel(this.codegen, this.terminal, name, table, sourcePath);
   }
 
-  executeSQLOnQueryPanel(query: string, modelName: string) {
+  executeSQLOnQueryPanel(
+    query: string,
+    modelName: string,
+    preview?: queryResults.ModelPreview,
+  ) {
     const limit = readSetting("query.limit");
-    return this.executeSQLWithLimitOnQueryPanel(query, modelName, limit);
+    return this.runOnQueryPanel({ query, modelName, limit, preview });
   }
 
   async executeSQLWithLimitOnQueryPanel(
@@ -108,7 +113,11 @@ export class ProjectQueries {
     modelName: string,
     limit: number,
   ) {
-    const payload = queryPanelPayload(this.sqlDeps, query, modelName, limit);
+    await this.runOnQueryPanel({ query, modelName, limit });
+  }
+
+  private async runOnQueryPanel(run: QueryPanelRun) {
+    const payload = queryPanelPayload(this.sqlDeps, run);
     if (payload) {
       this.sharedState.fire({ command: "executeQuery", payload });
     }

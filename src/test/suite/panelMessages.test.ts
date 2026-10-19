@@ -420,6 +420,18 @@ describe("query results panel messages", () => {
         h.project.queries.executeSQLWithLimitOnQueryPanel,
       ).toHaveBeenCalledWith("select 2", "orders", 10);
     },
+    switchPreview: async () => {
+      const h = queryHarness();
+      await h.send({
+        command: "switchPreview",
+        mode: "materialized",
+        model: "/p/models/orders.sql",
+      });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "fusionPowerUser.previewMaterialized",
+        { url: "/p/models/orders.sql" },
+      );
+    },
     getQueryTabData: async () => {
       const h = queryHarness();
       h.panel._queryTabData = { n: 1 };

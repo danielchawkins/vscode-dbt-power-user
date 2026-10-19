@@ -403,7 +403,8 @@ function namesProfile(dir: string): boolean {
   return typeof profile === "string" && profile.trim() !== "";
 }
 
-function canonicalPath(fsPath: string): string {
+/** The realpath of `fsPath`, or `fsPath` itself when it cannot be resolved (for example, the file is missing). */
+export function canonicalPath(fsPath: string): string {
   try {
     return realpathSync.native(fsPath);
   } catch {

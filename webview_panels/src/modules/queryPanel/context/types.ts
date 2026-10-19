@@ -39,6 +39,8 @@ export interface QueryPanelStateProps {
         query: string;
       }
     | undefined;
+  /** The model preview the current result shows, when it previews one model. */
+  preview?: queryResults.ModelPreview | undefined;
   /** The Current Project's manifest publication, from the host's context. */
   publication?: string | undefined;
 }

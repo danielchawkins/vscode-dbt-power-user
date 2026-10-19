@@ -19,6 +19,7 @@ import {
   notifyError,
   notifyErrorWithoutProject,
 } from "../../projects/output/notifications";
+import type { QueryPanelPayload } from "../../projects/project/projectSql";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type {
   SharedStateEventEmitterProps,
@@ -39,6 +40,7 @@ import {
   recordResult,
   resolveQueryProject,
   runOnQueryPanel,
+  switchModelPreview,
   tabDataOf,
   updateQueryConfig,
 } from "./queryPanelSupport";
@@ -146,11 +148,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   }: SharedStateEventEmitterProps) {
     switch (command) {
       case "executeQuery":
-        void this.executeQuery(
-          payload.query as string,
-          payload.fn as Promise<QueryExecution>,
-          payload.projectName as string,
-        );
+        void this.executeQuery(payload as QueryPanelPayload);
         break;
       default:
         void super.onEvent({ command, payload });
@@ -277,6 +275,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
               ?.queries,
         ),
       executeQuery: (message) => this.executeIncomingQuery(message),
+      switchPreview: (message) => switchModelPreview(message),
       getQueryHistory: () =>
         this.post({
           command: "queryHistory",
@@ -335,7 +334,11 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   }
 
   /** Sends a result to the webview, converting the server's row arrays to the objects it expects. */
-  private async transmitDataWrapper(result: ExecuteSQLResult, query: string) {
+  private async transmitDataWrapper(
+    result: ExecuteSQLResult,
+    query: string,
+    preview: queryResults.ModelPreview | undefined,
+  ) {
     const { column_names: columnNames, column_types: columnTypes } =
       result.table;
     const rows = result.table.rows.map((row) =>
@@ -349,16 +352,17 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
       raw_sql: query,
       compiled_sql: result.compiled_sql,
     };
-    await this.post({ command: "renderQuery", ...sent });
+    await this.post({ command: "renderQuery", ...sent, preview });
     return sent;
   }
 
   /** Runs a query transmitting appropriate notifications to webview */
-  public async executeQuery(
-    query: string,
-    queryExecutionPromise: Promise<QueryExecution>,
-    projectName: string,
-  ) {
+  public async executeQuery({
+    query,
+    fn: queryExecutionPromise,
+    projectName,
+    preview,
+  }: QueryPanelPayload) {
     const start = Date.now();
     //using id to focus on the webview is more reliable than using the view title
     await commands.executeCommand("fusionPowerUser.PreviewResults.focus");
@@ -370,7 +374,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
       const queryExecution = (this.queryExecution =
         await queryExecutionPromise);
       const output = await queryExecution.executeQuery();
-      const result = await this.transmitDataWrapper(output, query);
+      const result = await this.transmitDataWrapper(output, query, preview);
       recordResult(this.history, this.queryManifestService, this.dbtTerminal, {
         result,
         projectName,
@@ -393,6 +397,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
         error: failure.error,
         raw_sql: query,
         compiled_sql: failure.compiledSql,
+        preview,
       });
       return undefined;
     } finally {

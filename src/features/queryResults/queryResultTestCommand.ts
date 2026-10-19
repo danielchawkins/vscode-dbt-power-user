@@ -49,11 +49,11 @@ export function registerQueryResultTestCommand(
         async () => undefined,
         async () => syntheticResult(rowCount),
       );
-      await panel.executeQuery(
-        "select synthetic",
-        Promise.resolve(execution),
-        "",
-      );
+      await panel.executeQuery({
+        query: "select synthetic",
+        fn: Promise.resolve(execution),
+        projectName: "",
+      });
     },
   );
 }

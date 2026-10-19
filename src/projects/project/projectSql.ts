@@ -1,3 +1,4 @@
+import type { queryResults } from "@fusion-power-user/webview-contract";
 import { type Uri } from "vscode";
 import { type QueryExecutionResult } from "../../core/dbt/domain";
 import { QueryExecution, type ExecuteSQLResult } from "../../core/dbtCommand";
@@ -27,6 +28,16 @@ export type QueryPanelPayload = {
   query: string;
   fn: Promise<QueryExecution>;
   projectName: string;
+  /** Set when the query previews one model, so the panel can offer the other preview mode. */
+  preview?: queryResults.ModelPreview | undefined;
+};
+
+/** What the query panel runs: the SQL, the model it is named after, the row limit, and any model preview. */
+export type QueryPanelRun = {
+  query: string;
+  modelName: string;
+  limit: number;
+  preview?: queryResults.ModelPreview | undefined;
 };
 
 /**
@@ -145,12 +156,10 @@ function logQuery(deps: SqlDeps, query: string, limit: number): void {
   });
 }
 
-/** The query-panel payload for a deferred run of `query`; undefined, after a message, when `limit` <= 0. */
+/** The query-panel payload for a deferred run; undefined, after a message, when the run's limit is <= 0. */
 export function queryPanelPayload(
   deps: SqlDeps,
-  query: string,
-  modelName: string,
-  limit: number,
+  { query, modelName, limit, preview }: QueryPanelRun,
 ): QueryPanelPayload | undefined {
   if (limit <= 0) {
     void notifyError(
@@ -164,6 +173,7 @@ export function queryPanelPayload(
     query,
     fn: queryExecution(deps.project, query, modelName, limit),
     projectName: deps.project.getProjectName(),
+    preview,
   };
 }
 

@@ -162,6 +162,7 @@ function getContributedCommands(contributes: PackageJsonContributes) {
 const paletteHiddenCommands = [
   "fusionPowerUser.rerunFromHistory",
   "fusionPowerUser.copyModelName",
+  "fusionPowerUser.previewComputed",
 ];
 
 // The complete set of `contributes` keys this extension uses. A key must be
