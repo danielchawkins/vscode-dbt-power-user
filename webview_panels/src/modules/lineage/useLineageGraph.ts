@@ -6,7 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { traceColumn } from "./columnTrace";
 import { expandLevels, replayExpansions } from "./expansionBatch";
 import { showMore } from "./expansionCap";
-import { openGroup } from "./expansionGroups";
+import { closeGroup, openGroup } from "./expansionGroups";
 import type { ColumnRef, Direction, GraphState, GraphStore } from "./graph";
 import {
   clearColumn,
@@ -90,6 +90,10 @@ const actionsFor = (
     const s = store();
     s.update((g) => openGroup(g, id));
     linkDrawn(s, fetchEdges).catch(logError("open group"));
+  },
+  // Closing only removes tables, so there are no new pairs to fetch.
+  closeGroup: (id: string) => {
+    store().update((g) => closeGroup(g, id));
   },
   toggleColumns: (table: string) => {
     const s = store();

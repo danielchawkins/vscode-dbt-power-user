@@ -1,8 +1,13 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
-import { collapsedGroups, openGroup } from "./expansionGroups";
+import {
+  closeGroup,
+  collapsedGroups,
+  groupChips,
+  openGroup,
+} from "./expansionGroups";
 import type { GraphState } from "./graph";
-import { drawnGraph, emptyGraph } from "./graph";
+import { addNeighbours, drawnGraph, emptyGraph } from "./graph";
 import { groupNodeId } from "./grouping";
 
 const table = (id: string): lineage.LineageTable => ({
@@ -30,26 +35,26 @@ const stateWith = (
   groups,
 });
 
-describe("openGroup", () => {
-  // `hub` drawn, with `c:hub` grouped: `models/a` holds x, y1 and y2; `models/b` holds z1 and z2.
-  const grouped = (cap: number): GraphState => ({
-    ...stateWith(["c:hub"], {
-      "c:hub": {
-        buckets: [
-          { key: "models/a", members: ["x", "y1", "y2"] },
-          { key: "models/b", members: ["z1", "z2"] },
-        ],
-        loose: [],
-        open: {},
-      },
-    }),
-    cap,
-  });
-  const drawn = (state: GraphState) =>
-    drawnGraph(state)
-      .tables.map((t) => t.table)
-      .sort();
+// `hub` drawn, with `c:hub` grouped: `models/a` holds x, y1 and y2; `models/b` holds z1 and z2.
+const grouped = (cap: number): GraphState => ({
+  ...stateWith(["c:hub"], {
+    "c:hub": {
+      buckets: [
+        { key: "models/a", members: ["x", "y1", "y2"] },
+        { key: "models/b", members: ["z1", "z2"] },
+      ],
+      loose: [],
+      open: {},
+    },
+  }),
+  cap,
+});
+const drawn = (state: GraphState) =>
+  drawnGraph(state)
+    .tables.map((t) => t.table)
+    .sort();
 
+describe("openGroup", () => {
   it("draws the first cap members of the group as ordinary cards", () => {
     const state = openGroup(grouped(2), groupNodeId("c:hub", "models/a"));
     expect(drawn(state)).toEqual(["hub", "x", "y1"]);
@@ -155,5 +160,81 @@ describe("collapsedGroups", () => {
       ["hub", groupNodeId("c:hub", "models/a")],
       [groupNodeId("p:hub", "pkg:macros"), "hub"],
     ]);
+  });
+});
+
+describe("closeGroup", () => {
+  const id = groupNodeId("c:hub", "models/a");
+  const opened = openGroup(grouped(2), id);
+
+  it("stops drawing the members of the group, which becomes a closed group again", () => {
+    const state = closeGroup(opened, id);
+    expect(drawn(state)).toEqual(["hub"]);
+    expect(collapsedGroups(state).map((g) => g.id)).toEqual([
+      id,
+      groupNodeId("c:hub", "models/b"),
+    ]);
+  });
+
+  it("is idempotent with openGroup: closing then opening again gives the same state", () => {
+    expect(openGroup(closeGroup(opened, id), id)).toEqual(opened);
+    expect(closeGroup(closeGroup(opened, id), id)).toEqual(
+      closeGroup(opened, id),
+    );
+  });
+
+  it("restores the drawn graph, expansions, column lists and selection, including an expanded member", () => {
+    const before = grouped(2);
+    // `x` is drawn from the open group; expanding it adds `w`, and its columns are listed and selected.
+    const expanded: GraphState = {
+      ...addNeighbours(opened, "children", "x", [table("w")]),
+      columnTables: ["x"],
+      columns: { x: [] },
+      selectedTable: "x",
+    };
+    expect(drawn(expanded)).toEqual(["hub", "w", "x", "y1"]);
+
+    const closed = closeGroup(expanded, id);
+    expect(drawnGraph(closed)).toEqual(drawnGraph(before));
+    expect(closed.expansions).toEqual(before.expansions);
+    expect(closed.columnTables).toEqual(before.columnTables);
+    expect(closed.selectedTable).toBeUndefined();
+    expect(closed.groups).toEqual(before.groups);
+  });
+
+  it("leaves the state as it is for an ID that is not an open group", () => {
+    const closed = grouped(2);
+    expect(closeGroup(closed, id)).toBe(closed);
+    expect(closeGroup(opened, "hub")).toBe(opened);
+    expect(closeGroup(opened, groupNodeId("c:other", "models/a"))).toBe(opened);
+  });
+});
+
+describe("groupChips", () => {
+  it("chips each open group of a drawn expansion, with the members it draws and stands for", () => {
+    const id = groupNodeId("c:hub", "models/a");
+    expect(groupChips(grouped(2))).toEqual([]);
+    expect(groupChips(openGroup(grouped(2), id))).toEqual([
+      { id, table: "hub", label: "a", drawn: 2, total: 3 },
+    ]);
+  });
+
+  it("lists parents' chips before children's", () => {
+    const state: GraphState = {
+      ...stateWith(["c:hub", "p:hub"], {
+        "c:hub": {
+          buckets: [{ key: "models/a", members: ["x", "y1"] }],
+          loose: [],
+          open: { "models/a": 2 },
+        },
+        "p:hub": {
+          buckets: [{ key: "models/p", members: ["y2"] }],
+          loose: [],
+          open: { "models/p": 1 },
+        },
+      }),
+      cap: 0,
+    };
+    expect(groupChips(state).map((c) => c.label)).toEqual(["p", "a"]);
   });
 });

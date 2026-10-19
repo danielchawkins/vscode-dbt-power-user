@@ -15,7 +15,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { hiddenCounts } from "./expansionCap";
-import { collapsedGroups } from "./expansionGroups";
+import { collapsedGroups, groupChips } from "./expansionGroups";
 import { toFlow } from "./flow";
 import { lineageData } from "./graph";
 import { combinedEdges } from "./groupEdges";
@@ -287,6 +287,7 @@ const Graph = (): React.JSX.Element => {
       hidden: hiddenCounts(graph),
       groups,
       groupEdges: combinedEdges(graph, groups),
+      chips: groupChips(graph),
       errors: graph.errors,
       selectedTable: graph.selectedTable,
       selectedColumn: graph.selectedColumn,

@@ -20,6 +20,7 @@ const draw = (columnsNeedStrict: boolean) => {
       expanded: { parents: false, children: false },
       pending: { parents: false, children: false },
       hidden: { parents: 0, children: 0 },
+      chips: [],
       traced: [],
       columnsNeedStrict,
     },
@@ -64,6 +65,7 @@ describe("table node hidden cue", () => {
         expanded: { parents: false, children: false },
         pending: { parents: false, children: false },
         hidden: { parents: 0, children: 0 },
+        chips: [],
         traced: [],
       },
     } as unknown as React.ComponentProps<typeof TableNode>;

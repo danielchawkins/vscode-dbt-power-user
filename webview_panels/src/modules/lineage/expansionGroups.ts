@@ -1,4 +1,4 @@
-import { drawnGraph, parseExpansion } from "./graph";
+import { drawnGraph, drawnIds, parseExpansion, prune } from "./graph";
 import type { GraphState } from "./graph";
 import { groupLabel, groupNodeId, parseGroupNodeId } from "./grouping";
 
@@ -26,6 +26,71 @@ export function openGroup(state: GraphState, id: string): GraphState {
       [expansion]: { ...groups, open: { ...groups.open, [key]: drawn } },
     },
   };
+}
+
+/**
+ * Closes the open group `id`: its members are no longer drawn, and `prune` removes what only they drew, such as their
+ * expansions, column lists and selection. An ID that is not an open group leaves the state as it is.
+ */
+export function closeGroup(state: GraphState, id: string): GraphState {
+  const parsed = parseGroupNodeId(id);
+  if (!parsed) {
+    return state;
+  }
+  const [expansion, key] = parsed;
+  const groups = state.groups[expansion];
+  if (groups?.open[key] === undefined) {
+    return state;
+  }
+  const open = Object.fromEntries(
+    Object.entries(groups.open).filter(([k]) => k !== key),
+  );
+  return prune({
+    ...state,
+    groups: { ...state.groups, [expansion]: { ...groups, open } },
+  });
+}
+
+/** An open group of a drawn expansion, shown as a chip on the expanded table so that it can be closed. */
+export interface GroupChip {
+  /** The group's node ID, which `closeGroup` takes. */
+  id: string;
+  /** The expanded table the chip sits on. */
+  table: string;
+  label: string;
+  /** How many of the group's members are drawn. */
+  drawn: number;
+  /** How many neighbours the group stands for. */
+  total: number;
+}
+
+/**
+ * The open groups of applied expansions whose table is drawn. Parents' chips come first, then children's, each in
+ * the order its expansion was applied.
+ */
+export function groupChips(state: GraphState): GroupChip[] {
+  const drawn = drawnIds(state);
+  const rank = (key: string) =>
+    parseExpansion(key)?.[0] === "parents" ? 0 : 1;
+  return state.expansions
+    .toSorted((a, b) => rank(a) - rank(b))
+    .flatMap((key) => {
+      const parsed = parseExpansion(key);
+      const groups = state.groups[key];
+      if (!parsed || !groups || !drawn.has(parsed[1])) {
+        return [];
+      }
+      const [, table] = parsed;
+      return groups.buckets
+        .filter((bucket) => groups.open[bucket.key] !== undefined)
+        .map((bucket): GroupChip => ({
+          id: groupNodeId(key, bucket.key),
+          table,
+          label: groupLabel(bucket.key),
+          drawn: groups.open[bucket.key] ?? 0,
+          total: bucket.members.length,
+        }));
+    });
 }
 
 /** A closed bucket of an applied expansion, drawn as one group card in place of its members. */

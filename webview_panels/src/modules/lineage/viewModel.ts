@@ -125,6 +125,8 @@ export interface TableActions {
   showMore: (table: string, direction: Direction) => void;
   /** Draws a closed group's members as ordinary cards, by the group's node ID. */
   openGroup: (id: string) => void;
+  /** Closes an open group, by its group node ID, and drops what only its members drew. */
+  closeGroup: (id: string) => void;
   toggleColumns: (table: string) => void;
   selectColumn: (table: string, column: string) => void;
   openDetails: (table: string) => void;
@@ -138,6 +140,7 @@ export const TableActionsContext = createContext<TableActions>({
   toggleExpansion: noop,
   showMore: noop,
   openGroup: noop,
+  closeGroup: noop,
   toggleColumns: noop,
   selectColumn: noop,
   openDetails: noop,

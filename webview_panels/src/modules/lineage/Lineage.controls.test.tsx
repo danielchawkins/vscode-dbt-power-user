@@ -555,6 +555,38 @@ describe("Lineage group node", () => {
     expect(container.querySelector("[data-group]")).toBeNull();
   });
 
+  it("closes an opened group from its chip, which draws its group card again", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await press(user, "button", "Open staging");
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "s1", "s2"]),
+    );
+    await press(user, "button", "Close staging", node(container, "hub"));
+    await waitFor(() => expect(tableIds(container)).toEqual(["hub"]));
+    expect(container.querySelector('[data-group="staging"]')).not.toBeNull();
+  });
+
+  it("runs the controls of the members a group draws", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await press(user, "button", "Open staging");
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "s1", "s2"]),
+    );
+    for (const member of ["s1", "s2"]) {
+      await press(user, "button", "Show 1 parents", node(container, member));
+      await press(user, "button", "Show 0 children", node(container, member));
+      await press(user, "button", "Columns", node(container, member));
+      await press(user, "button", "Details", node(container, member));
+      await press(user, "button", "Close", drawer("Details"));
+    }
+  });
+
   it("collapses and expands the hub's children, which draws and removes its groups", async () => {
     const { user, container } = await openLineage(
       { node: HUB, publication: "s:1" },
@@ -628,6 +660,15 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table hub/Show 0 parents",
   "button:table hub/Columns",
   "button:table hub/Details",
+  "button:table hub/Close staging",
+  "button:table s1/Columns",
+  "button:table s1/Details",
+  "button:table s1/Show 0 children",
+  "button:table s1/Show 1 parents",
+  "button:table s2/Columns",
+  "button:table s2/Details",
+  "button:table s2/Show 0 children",
+  "button:table s2/Show 1 parents",
   "button:Details/Open file",
   "button:Details/Sync with database",
   "button:Details/Tests (0)",
