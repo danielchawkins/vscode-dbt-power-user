@@ -1,6 +1,6 @@
 import type { queryResults } from "@fusion-power-user/webview-contract";
 import type { TextEditor } from "vscode";
-import { window, workspace } from "vscode";
+import { commands, window, workspace } from "vscode";
 import { ExecuteSQLError } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import { errorText } from "../../core/text";
@@ -73,7 +73,11 @@ interface QueryPanelProject {
     modelName: string,
     limit: number,
   ): Promise<void>;
-  executeSQLOnQueryPanel(query: string, modelName: string): Promise<void>;
+  executeSQLOnQueryPanel(
+    query: string,
+    modelName: string,
+    preview?: queryResults.ModelPreview,
+  ): Promise<void>;
 }
 
 /** The named project, or the one picked from the workspace when there is no name. */
@@ -88,6 +92,21 @@ export async function resolveQueryProject(
     throw new Error("Unable to find project to execute query");
   }
   return project;
+}
+
+/**
+ * Shows a model's preview in the requested mode by running the command that owns that mode.
+ * The panel never builds a `RunModel`; the commands read the model's text or relation.
+ */
+export function switchModelPreview({
+  mode,
+  model,
+}: queryResults.ModelPreview): Thenable<unknown> {
+  const command =
+    mode === "materialized"
+      ? "fusionPowerUser.previewMaterialized"
+      : "fusionPowerUser.previewComputed";
+  return commands.executeCommand(command, { url: model });
 }
 
 /** Runs a query from history or bookmarks on the query panel, with its own row limit when it has one. */

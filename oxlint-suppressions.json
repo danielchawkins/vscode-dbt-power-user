@@ -281,7 +281,7 @@
   },
   "src/projects/project/projectSql.ts": {
     "max-params": {
-      "count": 9
+      "count": 8
     }
   },
   "src/projects/project/projectWarehouse.ts": {

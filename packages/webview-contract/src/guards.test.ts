@@ -117,6 +117,7 @@ const queryResultsHost: Fixture[] = [
       rows: [{ a: 1 }],
       raw_sql: "select 1",
       compiled_sql: "select 1",
+      preview: { mode: "computed", model: "/project/models/a.sql" },
     },
     required: ["columnNames", "columnTypes", "rows", "raw_sql", "compiled_sql"],
     arrays: {
@@ -131,6 +132,7 @@ const queryResultsHost: Fixture[] = [
       error: { code: -1, message: "boom", data: {} },
       raw_sql: "select",
       compiled_sql: "select",
+      preview: { mode: "materialized", model: "/project/models/a.sql" },
     },
     required: [
       "error",
@@ -202,6 +204,15 @@ const queryResultsPanel: Fixture[] = [
   {
     message: { command: "executeQueryFromActiveWindow", limit: 10 },
     required: ["limit"],
+  },
+  {
+    message: {
+      command: "switchPreview",
+      mode: "computed",
+      model: "/project/models/a.sql",
+    },
+    required: ["mode", "model"],
+    literals: { mode: ["computed", "materialized"] },
   },
   { message: { command: "getQueryTabData", ...sync }, required: [] },
   { message: { command: "runAdhocQuery" }, required: [] },
@@ -798,5 +809,59 @@ describe("documentationEditor null fields", () => {
         }),
       ).toBe(true);
     }
+  });
+});
+
+describe("queryResults model preview", () => {
+  const render = {
+    command: "renderQuery",
+    columnNames: [],
+    columnTypes: [],
+    rows: [],
+    raw_sql: "",
+    compiled_sql: "",
+  };
+
+  it("accepts a preview in either mode and rejects another mode or a missing model", () => {
+    const model = "/project/models/a.sql";
+    expect(
+      queryResults.isHostMessage({
+        ...render,
+        preview: { mode: "computed", model },
+      }),
+    ).toBe(true);
+    expect(
+      queryResults.isHostMessage({
+        ...render,
+        preview: { mode: "materialized", model },
+      }),
+    ).toBe(true);
+    expect(
+      queryResults.isHostMessage({
+        ...render,
+        preview: { mode: "table", model },
+      }),
+    ).toBe(false);
+    expect(
+      queryResults.isHostMessage({ ...render, preview: { mode: "computed" } }),
+    ).toBe(false);
+  });
+
+  it("accepts a switchPreview only to a known mode", () => {
+    const model = "/project/models/a.sql";
+    expect(
+      queryResults.isPanelMessage({
+        command: "switchPreview",
+        mode: "materialized",
+        model,
+      }),
+    ).toBe(true);
+    expect(
+      queryResults.isPanelMessage({
+        command: "switchPreview",
+        mode: "table",
+        model,
+      }),
+    ).toBe(false);
   });
 });

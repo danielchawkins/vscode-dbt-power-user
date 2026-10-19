@@ -69,14 +69,44 @@ describe("QueryResultPanel", () => {
     (window as any).activeTextEditor = undefined;
   });
 
+  describe("switchPreview", () => {
+    const model = "/project/models/orders.sql";
+
+    it("re-runs the model materialized through its materialized preview command", async () => {
+      const { panel } = makePanel({ project: project() });
+      await panel.handleCommand({
+        command: "switchPreview",
+        mode: "materialized",
+        model,
+      });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "fusionPowerUser.previewMaterialized",
+        { url: model },
+      );
+    });
+
+    it("re-runs the model computed through its computed preview command", async () => {
+      const { panel } = makePanel({ project: project() });
+      await panel.handleCommand({
+        command: "switchPreview",
+        mode: "computed",
+        model,
+      });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "fusionPowerUser.previewComputed",
+        { url: model },
+      );
+    });
+  });
+
   describe("executeQuery", () => {
     it("renders loading, then the rows, and records history", async () => {
       const { panel, posted } = makePanel({ project: project() });
-      const result = await panel.executeQuery(
-        "select 1",
-        Promise.resolve({ executeQuery: async () => output(2) }),
-        "jaffle",
-      );
+      const result = await panel.executeQuery({
+        query: "select 1",
+        fn: Promise.resolve({ executeQuery: async () => output(2) }),
+        projectName: "jaffle",
+      });
       expect(commands.executeCommand).toHaveBeenCalledWith(
         "fusionPowerUser.PreviewResults.focus",
       );
@@ -99,14 +129,40 @@ describe("QueryResultPanel", () => {
       });
     });
 
+    it("carries the model preview on a rendered result and on an error", async () => {
+      const { panel, posted } = makePanel({ project: project() });
+      const preview = {
+        mode: "computed" as const,
+        model: "/project/models/orders.sql",
+      };
+      await panel.executeQuery({
+        query: "select 1",
+        fn: Promise.resolve({ executeQuery: async () => output() }),
+        projectName: "jaffle",
+        preview,
+      });
+      await panel.executeQuery({
+        query: "select nope",
+        fn: Promise.reject(new Error("boom")),
+        projectName: "jaffle",
+        preview,
+      });
+      expect(posted().find((m) => m.command === "renderQuery")).toMatchObject({
+        preview,
+      });
+      expect(posted().find((m) => m.command === "renderError")).toMatchObject({
+        preview,
+      });
+    });
+
     it("keeps only the ten most recent history entries", async () => {
       const { panel } = makePanel({ project: project() });
       for (let i = 0; i < 12; i++) {
-        await panel.executeQuery(
-          `select ${i}`,
-          Promise.resolve({ executeQuery: async () => output() }),
-          "jaffle",
-        );
+        await panel.executeQuery({
+          query: `select ${i}`,
+          fn: Promise.resolve({ executeQuery: async () => output() }),
+          projectName: "jaffle",
+        });
       }
       expect(panel.history.all()).toHaveLength(10);
       expect(panel.history.all()[0].rawSql).toBe("select 11");
@@ -114,25 +170,25 @@ describe("QueryResultPanel", () => {
 
     it("skips history when no project is found", async () => {
       const { panel } = makePanel();
-      await panel.executeQuery(
-        "select 1",
-        Promise.resolve({ executeQuery: async () => output() }),
-        "",
-      );
+      await panel.executeQuery({
+        query: "select 1",
+        fn: Promise.resolve({ executeQuery: async () => output() }),
+        projectName: "",
+      });
       expect(panel.history.all()).toEqual([]);
     });
 
     it("renders a server error and notifies", async () => {
       const { panel, posted } = makePanel({ project: project() });
-      await panel.executeQuery(
-        "select nope",
-        Promise.resolve({
+      await panel.executeQuery({
+        query: "select nope",
+        fn: Promise.resolve({
           executeQuery: async () => {
             throw new ExecuteSQLError("bad column", "select compiled nope");
           },
         }),
-        "jaffle",
-      );
+        projectName: "jaffle",
+      });
       expect(window.showErrorMessage).toHaveBeenCalledWith(
         expect.stringContaining("bad column"),
         "Show output",
@@ -147,11 +203,11 @@ describe("QueryResultPanel", () => {
 
     it("renders any other failure as an error without a toast", async () => {
       const { panel, posted } = makePanel();
-      await panel.executeQuery(
-        "select 1",
-        Promise.reject(new Error("boom")),
-        "",
-      );
+      await panel.executeQuery({
+        query: "select 1",
+        fn: Promise.reject(new Error("boom")),
+        projectName: "",
+      });
       expect(window.showErrorMessage).not.toHaveBeenCalled();
       expect(posted().find((m) => m.command === "renderError")).toMatchObject({
         error: { message: "boom" },
@@ -168,11 +224,11 @@ describe("QueryResultPanel", () => {
 
     it("returns and clears the query history", async () => {
       const { panel, posted } = makePanel({ project: project() });
-      await panel.executeQuery(
-        "select 1",
-        Promise.resolve({ executeQuery: async () => output() }),
-        "jaffle",
-      );
+      await panel.executeQuery({
+        query: "select 1",
+        fn: Promise.resolve({ executeQuery: async () => output() }),
+        projectName: "jaffle",
+      });
       await panel.handleCommand({ command: "getQueryHistory" });
       expect(posted().at(-1)).toMatchObject({
         command: "queryHistory",

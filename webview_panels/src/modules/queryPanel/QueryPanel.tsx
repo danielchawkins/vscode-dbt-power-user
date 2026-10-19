@@ -3,6 +3,7 @@ import { Stack } from "@uicore";
 import { useEffect, useRef } from "react";
 import ClearResultsButton from "./components/clearResultsButton/ClearResultsButton";
 import ShowInTabButton from "./components/openInTabButton/OpenInTabButton";
+import PreviewModeToggle from "./components/previewModeToggle/PreviewModeToggle";
 import QueryLimit from "./components/queryLimit/QueryLimit";
 import QueryPanelContent from "./components/QueryPanelContents/QueryPanelContent";
 import QueryPanelTitle from "./components/QueryPanelContents/QueryPanelTitle";
@@ -52,8 +53,9 @@ const QueryPanel = (): React.JSX.Element => {
   return (
     <div className={classes.queryPanel}>
       <Stack className="mb-2 justify-content-between">
-        <Stack direction="column" style={{ flex: 1 }}>
+        <Stack style={{ flex: 1 }}>
           <QueryPanelTitle tabState={tabState} setTabState={changeTabState} />
+          {viewType === DEFAULT_VIEW_TYPE && <PreviewModeToggle />}
         </Stack>
         <Stack className={classes.toolbar}>
           {viewType === DEFAULT_VIEW_TYPE && (

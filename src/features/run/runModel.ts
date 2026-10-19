@@ -1,7 +1,9 @@
+import type { queryResults } from "@fusion-power-user/webview-contract";
 import * as path from "node:path";
-import type { TreeItem } from "vscode";
-import { Uri, window } from "vscode";
+import type { TextEditor, TreeItem } from "vscode";
+import { Uri, window, workspace } from "vscode";
 import { RunModelType } from "../../core/dbt/domain";
+import type { NodeMetaData } from "../../core/manifest/types";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import { notifyErrorWithoutProject } from "../../projects/output/notifications";
 import type { CurrentProject } from "../../projects/project/currentProject";
@@ -27,12 +29,66 @@ type ModelProject = {
   >;
   /** The manifest the materialized preview reads a model's package and materialization from. */
   manifest?: Pick<Manifest, "nodeMetaMap"> | undefined;
+  /** The root the manifest's `original_file_path`s are relative to, when the project has one. */
+  projectRoot?: Uri | undefined;
 };
 import { activeModelUri } from "../../projects/registry/previewUri";
+import { canonicalPath } from "../../projects/registry/projectRegistry";
 import { materializedPreview } from "./materializedPreview";
 
 /** The model tree item fields a run reads. */
 type NodeTreeItem = Pick<TreeItem, "label"> & { url: string | undefined };
+
+/** Where a query's result goes: the model it reports as, and the model preview it shows, if any. */
+type QueryTarget = {
+  modelName: string;
+  preview?: queryResults.ModelPreview | undefined;
+};
+
+/**
+ * Whether manifest `node` is the file at `filePath`: by its own path when the manifest has one, else by its
+ * file relative to the project root. Paths are compared by realpath, so an alias of the file is the same file.
+ * With neither to compare, the node is taken as the file.
+ */
+const isNodeFile = (
+  node: NodeMetaData,
+  filePath: string,
+  projectRoot: Uri | undefined,
+): boolean => {
+  const file = canonicalPath(filePath);
+  if (node.path !== undefined) {
+    return canonicalPath(node.path) === file;
+  }
+  if (node.original_file_path !== undefined && projectRoot !== undefined) {
+    const nodePath = path.join(projectRoot.fsPath, node.original_file_path);
+    return canonicalPath(nodePath) === file;
+  }
+  return true;
+};
+
+/**
+ * Whether the editor shows a whole model file on disk: no selection, a `.sql` file (not untitled, nor a compiled
+ * preview), and a model of `project` that is that file. Analyses, tests, macros and `target/` files are not.
+ */
+const isWholeModelFile = (
+  editor: TextEditor | undefined,
+  project: ModelProject | undefined,
+): boolean => {
+  if (
+    editor === undefined ||
+    !editor.selection.isEmpty ||
+    editor.document.uri.scheme !== "file" ||
+    !editor.document.uri.fsPath.endsWith(".sql")
+  ) {
+    return false;
+  }
+  const filePath = editor.document.uri.fsPath;
+  const node = project?.manifest?.nodeMetaMap.lookupByBaseName(
+    path.basename(filePath, ".sql"),
+    "model",
+  );
+  return node !== undefined && isNodeFile(node, filePath, project?.projectRoot);
+};
 
 const labelText = (label: NonNullable<TreeItem["label"]>): string =>
   typeof label === "string" ? label : label.label;
@@ -113,8 +169,31 @@ export class RunModel {
     if (activeUri) {
       const modelPath = activeModelUri(activeUri);
       const modelName = path.basename(modelPath.fsPath, ".sql");
-      await this.executeSQL(modelPath, query, modelName);
+      const wholeModel = isWholeModelFile(
+        window.activeTextEditor,
+        this.projects.get(modelPath),
+      );
+      await this.executeSQL(modelPath, query, {
+        modelName,
+        preview: wholeModel
+          ? { mode: "computed", model: modelPath.fsPath }
+          : undefined,
+      });
     }
+  }
+
+  /** Previews what a model's SQL computes now, read from its open document or from disk. */
+  async previewComputed(model: NodeTreeItem): Promise<void> {
+    if (!model.url) {
+      return;
+    }
+    const modelUri = Uri.file(model.url);
+    // Returns the open document, unsaved edits included, when the model is open.
+    const document = await workspace.openTextDocument(modelUri);
+    await this.executeSQL(modelUri, document.getText(), {
+      modelName: path.basename(modelUri.fsPath, ".sql"),
+      preview: { mode: "computed", model: modelUri.fsPath },
+    });
   }
 
   /** Previews what a model's relation holds now: the tree item's model, else the active editor's. */
@@ -141,11 +220,14 @@ export class RunModel {
         EXECUTE_SQL,
       );
       if (action === EXECUTE_SQL) {
-        await this.executeQueryOnActiveWindow();
+        await this.previewComputed({ url: modelPath.fsPath });
       }
       return;
     }
-    await project.queries.executeSQLOnQueryPanel(preview.query, preview.label);
+    await project.queries.executeSQLOnQueryPanel(preview.query, preview.label, {
+      mode: "materialized",
+      model: modelPath.fsPath,
+    });
   }
 
   runModelOnNodeTreeItem(type: RunModelType) {
@@ -247,7 +329,7 @@ export class RunModel {
     void project.commands.runModelTest(path.basename(modelPath.fsPath, ".sql"));
   }
 
-  async executeSQL(uri: Uri, query: string, modelName: string) {
+  async executeSQL(uri: Uri, query: string, target: QueryTarget) {
     const declared = await this.currentProject.requireForCommand(uri);
     if (!declared) {
       return;
@@ -256,7 +338,11 @@ export class RunModel {
     if (!project) {
       return;
     }
-    void project.queries.executeSQLOnQueryPanel(query, modelName);
+    void project.queries.executeSQLOnQueryPanel(
+      query,
+      target.modelName,
+      target.preview,
+    );
   }
 
   generateSchemaYML(modelPath: Uri) {

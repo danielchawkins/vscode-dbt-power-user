@@ -16,7 +16,7 @@ export interface CteCommandDeps {
   projects: Projects;
   /** Runs `query` for `uri` on the query panel under `name`. */
   runModel: {
-    executeSQL(uri: Uri, query: string, name: string): unknown;
+    executeSQL(uri: Uri, query: string, target: { modelName: string }): unknown;
   };
   cteProfilerService: CteProfilerService;
   cteProfilerDecorationProvider: CteProfilerDecorationProvider;
@@ -87,7 +87,9 @@ async function runCte(
   try {
     const query = previewSql(readFileSync(cte.compiledPath), cte);
     const hash = Date.now().toString(36).slice(-6);
-    await runModel.executeSQL(uri, query, `cte_${cte.name}_${hash}`);
+    await runModel.executeSQL(uri, query, {
+      modelName: `cte_${cte.name}_${hash}`,
+    });
   } catch (error) {
     log.error("CteExecution", "Unable to execute CTE", error);
     void notifyError(projects.get(uri), "Failed to execute CTE", error);

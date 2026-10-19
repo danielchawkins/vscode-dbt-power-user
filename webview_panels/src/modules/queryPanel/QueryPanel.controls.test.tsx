@@ -244,6 +244,62 @@ describe("Query panel toolbar", () => {
   });
 });
 
+describe("Query panel preview mode", () => {
+  const model = "/project/models/orders.sql";
+  const previewOf = (mode: "computed" | "materialized") => ({
+    ...RESULTS,
+    preview: { mode, model },
+  });
+
+  it("shows a computed preview and asks for the materialized one", async () => {
+    const { user } = openQueryPanel(previewOf("computed"));
+    expect(screen.getByText("Computed")).toBeTruthy();
+    const button = await hoverToName(
+      user,
+      "debug-restart",
+      "Show materialized",
+    );
+    await pressElement(user, "button", "Show materialized", button);
+    await expectPosted("switchPreview", { mode: "materialized", model });
+  });
+
+  it("shows a materialized preview and asks for the computed one", async () => {
+    const { user } = openQueryPanel(previewOf("materialized"));
+    expect(screen.getByText("Materialized")).toBeTruthy();
+    const button = await hoverToName(user, "debug-restart", "Show computed");
+    await pressElement(user, "button", "Show computed", button);
+    await expectPosted("switchPreview", { mode: "computed", model });
+  });
+
+  it("shows no toggle for a result without a model preview", () => {
+    openQueryPanel(RESULTS);
+    expect(screen.queryByText("Computed")).toBeNull();
+    expect(screen.queryByText("Materialized")).toBeNull();
+  });
+
+  it("hides the toggle once the results are cleared", async () => {
+    const { user } = openQueryPanel(previewOf("computed"));
+    expect(screen.getByText("Computed")).toBeTruthy();
+    const button = await hoverToName(user, "close", "Clear results");
+    await pressElement(user, "button", "Clear results", button);
+    expect(screen.queryByText("Computed")).toBeNull();
+  });
+
+  it("hides the toggle while a new query loads", () => {
+    openQueryPanel(previewOf("materialized"), { command: "renderLoading" });
+    expect(screen.queryByText("Materialized")).toBeNull();
+  });
+
+  it("does not show the toggle in a results tab", () => {
+    openQueryPanel(
+      { command: "updateViewType", args: { body: { type: 1 } } },
+      previewOf("computed"),
+    );
+    expect(screen.getByRole("grid")).toBeInTheDocument();
+    expect(screen.queryByText("Computed")).toBeNull();
+  });
+});
+
 describe("Query panel tabs", () => {
   it("shows the welcome tab when there are no results", async () => {
     const { user } = openQueryPanel();
@@ -444,6 +500,8 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:open-adhoc-query",
   "button:Open in Tab",
   "button:Clear results",
+  "button:Show materialized",
+  "button:Show computed",
   "spinbutton:Limit",
   "button:Run query",
   "button:Save",
