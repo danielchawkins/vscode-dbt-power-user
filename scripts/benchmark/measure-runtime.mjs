@@ -5,6 +5,7 @@ import {
   launchRecord,
   readOptionalOutput,
   runtimeSummary,
+  warmUpRecord,
 } from "./runtime-records.mjs";
 
 const root = path.resolve(import.meta.dirname, "../..");
@@ -39,36 +40,23 @@ let hostMetadata;
 let runtime;
 let activationMetadata;
 let nextPort = 10_000 + (process.pid % 20_000);
+// W is the cold baseline: one launch before the timed loop, reported on its own line and kept out of the statistics.
+const warmUpPort = await findAvailablePort(nextPort);
+nextPort = warmUpPort + 1;
+const warmUp = runHostSmoke(warmUpPort, "warm-up", [
+  "--fixture",
+  "src/test/fixtures/single-project",
+  "--suites",
+  "hostWarmUp",
+]);
+console.log(
+  `FPU_RUNTIME_WARMUP=${JSON.stringify(warmUpRecord(warmUp.stdout))}`,
+);
+
 for (let index = 0; index < 10; index += 1) {
   const port = await findAvailablePort(nextPort);
   nextPort = port + 1;
-  const result = spawnSync(
-    "bash",
-    ["scripts/smoke/run-host-smoke.sh", "--host", host, "--vsix", vsix],
-    {
-      cwd: root,
-      encoding: "utf8",
-      env: {
-        ...process.env,
-        FPU_CDP_PORT: String(port),
-        FPU_RUNTIME_BENCHMARK: "1",
-        FPU_SKIP_INTEGRATION_COMPILE: "1",
-      },
-      maxBuffer: 10 * 1024 * 1024,
-      timeout: RUN_TIMEOUT_MS,
-      killSignal: "SIGKILL",
-    },
-  );
-  if (result.status !== 0) {
-    process.stdout.write(result.stdout ?? "");
-    process.stderr.write(result.stderr ?? "");
-    if (result.signal) {
-      console.error(
-        `smoke run ${index + 1} for ${host} killed by ${result.signal} after ${RUN_TIMEOUT_MS} ms`,
-      );
-    }
-    process.exit(result.status ?? 1);
-  }
+  const result = runHostSmoke(port, String(index + 1));
   const match = result.stdout.match(/^FPU_RUNTIME_SAMPLE=(.+)$/m);
   if (!match) {
     process.stderr.write(result.stdout);
@@ -104,6 +92,45 @@ for (let index = 0; index < 10; index += 1) {
 console.log(
   `FPU_RUNTIME_SUMMARY=${JSON.stringify(runtimeSummary(records, { host, hostMetadata, runtime, activationMetadata }))}`,
 );
+
+/** Runs one smoke launch on `port` and returns its result; a non-zero exit or a kill prints the output and exits. */
+function runHostSmoke(port, label, suiteArgs = []) {
+  const result = spawnSync(
+    "bash",
+    [
+      "scripts/smoke/run-host-smoke.sh",
+      "--host",
+      host,
+      "--vsix",
+      vsix,
+      ...suiteArgs,
+    ],
+    {
+      cwd: root,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        FPU_CDP_PORT: String(port),
+        FPU_RUNTIME_BENCHMARK: "1",
+        FPU_SKIP_INTEGRATION_COMPILE: "1",
+      },
+      maxBuffer: 10 * 1024 * 1024,
+      timeout: RUN_TIMEOUT_MS,
+      killSignal: "SIGKILL",
+    },
+  );
+  if (result.status !== 0) {
+    process.stdout.write(result.stdout ?? "");
+    process.stderr.write(result.stderr ?? "");
+    if (result.signal) {
+      console.error(
+        `smoke run ${label} for ${host} killed by ${result.signal} after ${RUN_TIMEOUT_MS} ms`,
+      );
+    }
+    process.exit(result.status ?? 1);
+  }
+  return result;
+}
 
 function readOutput(output, prefix) {
   const value = readOptionalOutput(output, prefix);

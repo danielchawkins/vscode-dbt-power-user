@@ -72,6 +72,19 @@ export function launchRecord(index, stdout, sample) {
   };
 }
 
+/** The warm-up launch W's extension host start, startup phases, host notices and notifications, each null when absent; W is the cold baseline and is left out of the statistics. */
+export function warmUpRecord(stdout) {
+  return {
+    extHostStartMs:
+      readOptionalOutput(stdout, "FPU_SMOKE_EXTHOST_START_MS") ?? null,
+    startupPhases:
+      readOptionalOutput(stdout, "FPU_SMOKE_STARTUP_PHASES") ?? null,
+    hostNotices: readOptionalOutput(stdout, "FPU_SMOKE_HOST_NOTICE") ?? null,
+    notifications:
+      readOptionalOutput(stdout, "FPU_SMOKE_WARMUP_NOTIFICATIONS") ?? null,
+  };
+}
+
 /**
  * The benchmark summary over every launch: activation phases, webview timings and the extension host start.
  * `extHostStartMs` is null when no launch reported a start time, and otherwise summarises only the launches that did.

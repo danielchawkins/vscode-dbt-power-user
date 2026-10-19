@@ -5,6 +5,7 @@ import {
   percentile,
   runtimeSummary,
   summarize,
+  warmUpRecord,
 } from "../../../scripts/benchmark/runtime-records.mjs";
 
 const HOST_METADATA = { app: "Code", version: "1.99.0" };
@@ -233,5 +234,64 @@ describe("runtimeSummary", () => {
       launches: 3,
     });
     expect(summary.activation.loadCode.raw).toHaveLength(10);
+  });
+});
+
+describe("warmUpRecord", () => {
+  const WARM_UP_LINES = [
+    ["extHostStartMs", "FPU_SMOKE_EXTHOST_START_MS", "640", 640],
+    [
+      "startupPhases",
+      "FPU_SMOKE_STARTUP_PHASES",
+      JSON.stringify(PHASES),
+      PHASES,
+    ],
+    ["hostNotices", "FPU_SMOKE_HOST_NOTICE", '["Slow start"]', ["Slow start"]],
+    [
+      "notifications",
+      "FPU_SMOKE_WARMUP_NOTIFICATIONS",
+      '["Unexpected toast"]',
+      ["Unexpected toast"],
+    ],
+  ] as const;
+
+  /** The warm-up stdout with one marker's line left out, or every line when `omit` is absent. */
+  function warmUpStdout(omit?: string): string {
+    return WARM_UP_LINES.filter(([key]) => key !== omit)
+      .map(([, prefix, json]) => `${prefix}=${json}\n`)
+      .join("");
+  }
+
+  it("parses all four keys from the warm-up output, in order", () => {
+    expect(warmUpRecord(warmUpStdout())).toStrictEqual(
+      Object.fromEntries(WARM_UP_LINES.map(([key, , , value]) => [key, value])),
+    );
+    expect(Object.keys(warmUpRecord(warmUpStdout()))).toEqual([
+      "extHostStartMs",
+      "startupPhases",
+      "hostNotices",
+      "notifications",
+    ]);
+  });
+
+  it.each(WARM_UP_LINES.map(([key]) => key))(
+    "gives null for %s when its line is missing",
+    (missing) => {
+      expect(warmUpRecord(warmUpStdout(missing))).toStrictEqual({
+        ...Object.fromEntries(
+          WARM_UP_LINES.map(([key, , , value]) => [key, value]),
+        ),
+        [missing]: null,
+      });
+    },
+  );
+
+  it("gives null for every key when the output has none of them", () => {
+    expect(warmUpRecord("FPU_HOST_METADATA={}\n")).toStrictEqual({
+      extHostStartMs: null,
+      startupPhases: null,
+      hostNotices: null,
+      notifications: null,
+    });
   });
 });
