@@ -57,8 +57,6 @@ describe("parseDescribed", () => {
   });
 
   it("throws on text that is not JSON", () => {
-    expect(() => parseDescribed("Compilation Error: boom")).toThrow(
-      "not JSON",
-    );
+    expect(() => parseDescribed("Compilation Error: boom")).toThrow("not JSON");
   });
 });

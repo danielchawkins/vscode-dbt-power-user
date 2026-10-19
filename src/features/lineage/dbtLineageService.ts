@@ -25,7 +25,10 @@ import type {
 } from "../../fusion/fusionLanguageClient";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
-import type { NeedsStrict, StrictInputs } from "../../projects/registry/strictNeeded";
+import type {
+  NeedsStrict,
+  StrictInputs,
+} from "../../projects/registry/strictNeeded";
 import {
   needsStrict,
   STRICT_FIX,

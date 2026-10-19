@@ -29,17 +29,21 @@ const quote = (text: string) => `\`${text}\``;
 const isText = (value: string | false | undefined): value is string =>
   Boolean(value);
 
-const capitalize = (text: string) => text.charAt(0).toUpperCase() + text.slice(1);
+const capitalize = (text: string) =>
+  text.charAt(0).toUpperCase() + text.slice(1);
 
 /** `a`, `a or b`, or `a, b, or c`. */
 function joinOr(items: string[]): string {
   if (items.length <= 2) {
     return items.join(" or ");
   }
-  return `${items.slice(0, -1).join(", ")}, or ${items.slice(-1)}`;
+  return `${items.slice(0, -1).join(", ")}, or ${items.slice(-1).join("")}`;
 }
 
-function targetClause(model: string, attempt: Attempt | undefined): string | undefined {
+function targetClause(
+  model: string,
+  attempt: Attempt | undefined,
+): string | undefined {
   if (attempt?.result === "missing") {
     const where =
       attempt.target === undefined ? "" : ` in target ${quote(attempt.target)}`;
@@ -60,18 +64,26 @@ function notConfiguredClause(attempt: Attempt): string {
       return "defer is enabled without `manifestPathForDeferral`";
     case "unusable":
       return `${quote(attempt.state ?? "the defer state")} is neither a directory nor a ${quote("manifest.json")}`;
+    case undefined:
+    case "default":
+    case "off":
     default:
       return "no deferred relation is configured";
   }
 }
 
-function deferredClause(model: string, attempt: Attempt | undefined): string | undefined {
+function deferredClause(
+  model: string,
+  attempt: Attempt | undefined,
+): string | undefined {
   switch (attempt?.result) {
     case "missing":
       return [
         "the deferred relation",
         attempt.relation === undefined ? undefined : quote(attempt.relation),
-        attempt.state === undefined ? undefined : `from state ${quote(attempt.state)}`,
+        attempt.state === undefined
+          ? undefined
+          : `from state ${quote(attempt.state)}`,
         "does not exist either",
       ]
         .filter(isText)
@@ -82,7 +94,9 @@ function deferredClause(model: string, attempt: Attempt | undefined): string | u
     }
     case "notConfigured":
       return notConfiguredClause(attempt);
-    default:
+    case "answered":
+    case "unavailable":
+    case undefined:
       return undefined;
   }
 }
@@ -102,10 +116,7 @@ export function typeSourceMessage(
   const target = attempt("target");
   const deferred = attempt("deferred");
   const inferred = attempt("inferred");
-  const subject = [
-    targetClause(model, target),
-    deferredClause(model, deferred),
-  ]
+  const subject = [targetClause(model, target), deferredClause(model, deferred)]
     .filter(isText)
     .join(", and ");
   const actions = [

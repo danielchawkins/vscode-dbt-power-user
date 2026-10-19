@@ -46,7 +46,9 @@ export function typeProposals(
   current: readonly DocColumn[],
   answered: AnsweredTypes,
 ): TypeProposals {
-  const documented = new Map(current.map((column) => [key(column.name), column]));
+  const documented = new Map(
+    current.map((column) => [key(column.name), column]),
+  );
   const relation = new Set(answered.columns.map(({ column }) => key(column)));
   const proposals: TypeProposal[] = [];
   for (const { column, dtype } of answered.columns) {

@@ -163,6 +163,18 @@ module.exports = {
       to: {},
     },
     {
+      name: "column-proposals-never-write",
+      severity: "error",
+      comment:
+        "Type and description proposals are read-only: a file changes only when the user saves the documentation.",
+      from: {
+        path: "^src/(core/columns/|core/lineage/upstreamDescriptions|features/docs/(columnTypeSource|upstreamDescriptionSource|columnProposals))",
+      },
+      to: {
+        path: "^src/projects/project/userFiles\\.ts$|^src/features/docs/(docsEditSave|docsYaml)\\.ts$|^(node:)?fs(/promises)?$",
+      },
+    },
+    {
       name: "no-removed-packages",
       severity: "error",
       comment:

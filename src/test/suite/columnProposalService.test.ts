@@ -1,0 +1,233 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { window } from "vscode";
+import type { ProposalTarget } from "../../features/docs/columnProposals";
+import { ColumnProposalService } from "../../features/docs/columnProposals";
+import type { TypeSourceProject } from "../../features/docs/columnTypeSource";
+import { spyLog } from "../testLog";
+
+const MODEL = { name: "orders", filePath: "/p/models/orders.sql" };
+const COLUMNS = [{ column: "id", dtype: "varchar" }];
+
+interface FakeToken {
+  isCancellationRequested: boolean;
+  onCancellationRequested(listener: () => void): { dispose(): void };
+  cancel(): void;
+}
+
+/** A cancellation token the test cancels by hand. */
+function fakeToken(): FakeToken {
+  const listeners: (() => void)[] = [];
+  return {
+    isCancellationRequested: false,
+    onCancellationRequested(listener) {
+      listeners.push(listener);
+      return { dispose: () => undefined };
+    },
+    cancel() {
+      this.isCancellationRequested = true;
+      for (const listener of listeners) {
+        listener();
+      }
+    },
+  };
+}
+
+/** A project whose CLI answers `describeModel` with `describeModel`, and whose defer is off. The language server answers `currentNode`. */
+function fakeProject(
+  describeModel: (...args: unknown[]) => unknown,
+  currentNode?: unknown,
+) {
+  const spy = vi.fn(describeModel);
+  const project = {
+    projectRoot: { fsPath: "/p" },
+    lsp: {
+      state: "running",
+      getCurrentNode: vi.fn(async () => currentNode),
+    },
+    getFusionCli: () => ({
+      describeModel: spy,
+      deferState: () => ({ kind: "off" }),
+    }),
+  } as unknown as TypeSourceProject;
+  return { project, describeModel: spy };
+}
+
+const target = (
+  project: TypeSourceProject,
+  overrides: Partial<ProposalTarget> = {},
+): ProposalTarget => ({
+  model: MODEL,
+  yaml: [{ name: "id", type: "integer" }],
+  project,
+  ...overrides,
+});
+
+const answer = { target: "dev", relation: "db.s.orders", columns: COLUMNS };
+
+describe("ColumnProposalService", () => {
+  let token: FakeToken;
+
+  beforeEach(() => {
+    token = fakeToken();
+    vi.mocked(window.withProgress).mockImplementation(((
+      _options: unknown,
+      task: (...args: unknown[]) => unknown,
+    ) => task({ report: vi.fn() }, token)) as never);
+  });
+
+  it("proposes from the draft over the YAML", async () => {
+    const { project } = fakeProject(async () => answer);
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const withDraft = await service.propose(
+      "types",
+      target(project, { draft: [{ name: "id", type: "varchar" }] }),
+    );
+    expect(withDraft?.proposals).toEqual([]);
+    expect(withDraft?.model).toBe(MODEL.filePath);
+    expect(withDraft?.source).toEqual({
+      kind: "target",
+      target: "dev",
+      relation: "db.s.orders",
+    });
+
+    const yamlOnly = await service.propose("types", target(project));
+    expect(yamlOnly?.proposals).toEqual([
+      {
+        column: "id",
+        type: "varchar",
+        change: "overwrite",
+        current: "integer",
+      },
+    ]);
+  });
+
+  it("drops a superseded request's result, even when it finishes later", async () => {
+    let release!: (value: typeof answer) => void;
+    const slow = new Promise<typeof answer>((resolve) => {
+      release = resolve;
+    });
+    let calls = 0;
+    const { project, describeModel } = fakeProject(() =>
+      ++calls === 1 ? slow : Promise.resolve(answer),
+    );
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const older = service.propose("types", target(project));
+    const newer = service.propose("types", target(project));
+    release(answer);
+
+    expect(await older).toBeUndefined();
+    expect((await newer)?.source?.kind).toBe("target");
+    expect(describeModel).toHaveBeenCalledTimes(2);
+  });
+
+  it("resolves undefined when the user cancels the progress", async () => {
+    const { project, describeModel } = fakeProject(
+      (_name: unknown, _attempt: unknown, signal: unknown) =>
+        new Promise((_resolve, reject) => {
+          (signal as AbortSignal).addEventListener("abort", () =>
+            reject(new Error("aborted")),
+          );
+        }),
+    );
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const pending = service.propose("types", target(project));
+    await vi.waitFor(() => expect(describeModel).toHaveBeenCalled());
+    token.cancel();
+
+    expect(await pending).toBeUndefined();
+    expect(window.withProgress).toHaveBeenCalledWith(
+      expect.objectContaining({ cancellable: true }),
+      expect.any(Function),
+    );
+  });
+
+  it("names the deferred relation and its state in the source", async () => {
+    const project = {
+      projectRoot: { fsPath: "/p" },
+      lsp: { state: "running", getCurrentNode: vi.fn(async () => undefined) },
+      getFusionCli: () => ({
+        describeModel: vi.fn(async (_name: unknown, attempt: unknown) =>
+          attempt === "target"
+            ? { target: "dev", relation: "db.s.orders", columns: [] }
+            : { target: "prod", relation: "db.s.orders", columns: COLUMNS },
+        ),
+        deferState: () => ({
+          kind: "on",
+          stateDirectory: "/work/state",
+          favorState: true,
+        }),
+      }),
+    } as unknown as TypeSourceProject;
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose("types", target(project));
+
+    expect(payload?.source).toEqual({
+      kind: "deferred",
+      target: "prod",
+      relation: "db.s.orders",
+      state: "/work/state",
+    });
+    expect(payload?.notice).toBeUndefined();
+  });
+
+  it("warns with the inferred types when no warehouse source answered", async () => {
+    const { project } = fakeProject(
+      async () => ({ target: "dev", relation: "db.s.orders", columns: [] }),
+      { node: { columns: { id: { data_type: "INTEGER" } } } },
+    );
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose("types", target(project));
+
+    expect(payload?.source).toEqual({ kind: "inferred" });
+    expect(payload?.notice?.type).toBe("warning");
+    expect(payload?.notice?.actions).toBeUndefined();
+  });
+
+  it("errors when nothing answered and the strict action is offered only when static analysis needs it", async () => {
+    const missing = async () => ({
+      target: "dev",
+      relation: "db.s.orders",
+      columns: [],
+    });
+    const plain = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+    const { project } = fakeProject(missing);
+
+    const withoutStrict = await plain.propose("types", target(project));
+    expect(withoutStrict?.notice?.type).toBe("error");
+    expect(withoutStrict?.notice?.message).toContain("is not built");
+    expect(withoutStrict?.notice?.actions).toBeUndefined();
+
+    const strict = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => ({ mode: "off", setting: "strict" }),
+    });
+    const withStrict = await strict.propose("types", target(project));
+    expect(withStrict?.notice?.type).toBe("error");
+    expect(withStrict?.notice?.actions).toEqual([
+      { title: "Use strict analysis", action: "useStrictAnalysis" },
+    ]);
+  });
+});

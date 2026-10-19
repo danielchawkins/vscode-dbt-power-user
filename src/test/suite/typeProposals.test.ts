@@ -1,10 +1,14 @@
 import { describe, expect, it } from "vitest";
-import type { AnsweredTypes, DocColumn } from "../../core/columns/typeProposals";
+import type {
+  AnsweredTypes,
+  DocColumn,
+} from "../../core/columns/typeProposals";
 import { typeProposals } from "../../core/columns/typeProposals";
 
-const answer = (
-  columns: AnsweredTypes["columns"],
-): AnsweredTypes => ({ source: "target", columns });
+const answer = (columns: AnsweredTypes["columns"]): AnsweredTypes => ({
+  source: "target",
+  columns,
+});
 
 describe("typeProposals", () => {
   it("fills an empty YAML type with the relation's type", () => {
@@ -57,7 +61,11 @@ describe("typeProposals", () => {
   it("reports YAML-only columns in YAML order and edits none of them", () => {
     expect(
       typeProposals(
-        [{ name: "old_b" }, { name: "kept", type: "INTEGER" }, { name: "old_a" }],
+        [
+          { name: "old_b" },
+          { name: "kept", type: "INTEGER" },
+          { name: "old_a" },
+        ],
         answer([{ column: "kept", dtype: "INTEGER" }]),
       ),
     ).toEqual({ proposals: [], notFound: ["old_b", "old_a"] });

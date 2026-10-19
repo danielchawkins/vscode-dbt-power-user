@@ -218,6 +218,8 @@ describe("command contribution consistency", () => {
         "Constant export; conditional registration",
       "features/queryResults/queryResultTestCommand.ts:RENDER_TEST_RESULT_COMMAND":
         "Constant export; conditional registration",
+      "features/docs/docsHarnessCommands.ts:DOCS_COLUMN_PROPOSALS_COMMAND":
+        "Constant export; conditional registration",
       "features/panels.ts:HELD_DRAFTS_TEST_COMMAND":
         "Constant; registered only when a test harness runs",
     };

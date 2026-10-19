@@ -1,7 +1,11 @@
 import type { DBColumn } from "../types";
 
 /** What `describeQuery` compiles to: the target that answered, the relation it resolved to, and its columns. */
-export type Described = { target: string; relation: string; columns: DBColumn[] };
+export type Described = {
+  target: string;
+  relation: string;
+  columns: DBColumn[];
+};
 
 /** Lists the columns of a relation expression into `output`, as `{column, dtype}` objects. */
 const columnsLoop = (relation: string) =>
