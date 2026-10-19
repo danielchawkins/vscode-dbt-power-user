@@ -82,12 +82,16 @@ const MoreButton = ({
   );
 };
 
+const HIDDEN_TITLE = "Hidden from lineage by meta.lineage.hidden";
+
 const Header = ({
   table,
   errors,
+  hiddenFromLineage,
 }: {
   table: lineage.LineageTable;
   errors?: string[] | undefined;
+  hiddenFromLineage: boolean;
 }) => (
   <div className={styles.header}>
     <Handle
@@ -108,13 +112,27 @@ const Header = ({
     <span className={styles.label} title={cardTooltip(table)}>
       {middleEllipsis(table.label, TITLE_MAX)}
     </span>
-    {errors?.length ? (
-      <span
-        role="img"
-        className={`codicon codicon-warning ${styles.error}`}
-        title={errors.join("\n")}
-        aria-label={errors.join("\n")}
-      />
+    {errors?.length || hiddenFromLineage ? (
+      <span className={styles.flags}>
+        {errors?.length ? (
+          <span
+            role="img"
+            className={`codicon codicon-warning ${styles.error}`}
+            title={errors.join("\n")}
+            aria-label={errors.join("\n")}
+          />
+        ) : null}
+        {hiddenFromLineage ? (
+          <>
+            <i
+              className="codicon codicon-eye-closed"
+              title={HIDDEN_TITLE}
+              aria-hidden="true"
+            />
+            <span className={styles.srOnly}>{HIDDEN_TITLE}</span>
+          </>
+        ) : null}
+      </span>
     ) : (
       <span />
     )}
@@ -286,29 +304,39 @@ const ColumnList = ({
 
 const TableNodeView = ({
   data,
-}: NodeProps<TableNodeType>): React.JSX.Element => (
-  <div
-    className={`${styles.node} ${data.isStart ? styles.start : ""}`}
-    data-table={data.table.table}
-  >
-    <Header table={data.table} errors={data.errors} />
-    <Actions
-      table={data.table}
-      expanded={data.expanded}
-      pending={data.pending}
-      hidden={data.hidden}
-      listed={data.columns !== undefined}
-    />
-    {data.columns ? (
-      <ColumnList
-        table={data.table.table}
-        columns={data.columns}
-        traced={data.traced}
-        selectedColumn={data.selectedColumn}
-        columnsNeedStrict={data.columnsNeedStrict}
+}: NodeProps<TableNodeType>): React.JSX.Element => {
+  // The graph never hides the start table, so its card shows no hidden cue either.
+  const hiddenFromLineage = data.table.hidden === true && !data.isStart;
+  return (
+    <div
+      className={`${styles.node} ${data.isStart ? styles.start : ""} ${
+        hiddenFromLineage ? styles.hidden : ""
+      }`}
+      data-table={data.table.table}
+    >
+      <Header
+        table={data.table}
+        errors={data.errors}
+        hiddenFromLineage={hiddenFromLineage}
       />
-    ) : null}
-  </div>
-);
+      <Actions
+        table={data.table}
+        expanded={data.expanded}
+        pending={data.pending}
+        hidden={data.hidden}
+        listed={data.columns !== undefined}
+      />
+      {data.columns ? (
+        <ColumnList
+          table={data.table.table}
+          columns={data.columns}
+          traced={data.traced}
+          selectedColumn={data.selectedColumn}
+          columnsNeedStrict={data.columnsNeedStrict}
+        />
+      ) : null}
+    </div>
+  );
+};
 
 export const TableNode = memo(TableNodeView);

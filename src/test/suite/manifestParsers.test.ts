@@ -6,6 +6,7 @@ import {
   MacroParser,
   MetricParser,
   NodeParser,
+  SourceParser,
 } from "../../core/manifest";
 
 const logger = { debug: () => undefined } as unknown as Pick<Log, "debug">;
@@ -67,5 +68,30 @@ describe("manifest parsers", () => {
       project("/p/dbt_packages"),
     );
     expect([...metrics.keys()]).toEqual(["a", "b"]);
+  });
+
+  it("keep each source table's own meta, so a hidden table stays hidden", async () => {
+    const sources = {
+      "source.p.raw.events": {
+        resource_type: "source",
+        source_name: "raw",
+        name: "events",
+        database: "RAW",
+        schema: "landing",
+        unique_id: "source.p.raw.events",
+        original_file_path: "models/sources.yml",
+        description: "",
+        columns: {},
+        package_name: "p",
+        meta: { lineage: { hidden: true } },
+      },
+    };
+    const map = await new SourceParser(logger).createSourceMetaMap(
+      sources as never,
+      project("/p/dbt_packages"),
+    );
+    expect(map.get("raw")?.tables[0]?.meta).toEqual({
+      lineage: { hidden: true },
+    });
   });
 });

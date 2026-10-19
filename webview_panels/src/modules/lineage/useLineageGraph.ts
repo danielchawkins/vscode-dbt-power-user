@@ -4,6 +4,7 @@ import { readViewState, writeViewState } from "@modules/app/viewState";
 import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { traceColumn } from "./columnTrace";
+import { expandLevels, replayExpansions } from "./expansionBatch";
 import { showMore } from "./expansionCap";
 import type { ColumnRef, Direction, GraphState, GraphStore } from "./graph";
 import {
@@ -11,12 +12,10 @@ import {
   collapse,
   emptyGraph,
   expand,
-  expandLevels,
   hideColumns,
   isExpanded,
   isPending,
   linkDrawn,
-  replayExpansions,
   selectTable,
   showColumns,
 } from "./graph";

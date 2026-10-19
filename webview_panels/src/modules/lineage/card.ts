@@ -19,12 +19,30 @@ export function middleEllipsis(text: string, max: number): string {
   return `${text.slice(0, head)}…${text.slice(text.length - (room - head))}`;
 }
 
-/** Where the node is built, `database.schema`, or undefined when it builds no relation. */
-function relationOf(table: LineageTable): string | undefined {
-  if (!table.schema) {
+/**
+ * The schema a card shows: the custom schema when the node's schema ends with `_<customSchema>` (dbt's default
+ * `generate_schema_name` prefixes the target schema), otherwise the schema unchanged. Case-insensitive, as
+ * Snowflake upper-cases names.
+ */
+function shownSchema(table: LineageTable): string | undefined {
+  const { schema, customSchema } = table;
+  if (!schema || !customSchema) {
+    return schema;
+  }
+  return schema.toLowerCase().endsWith(`_${customSchema.toLowerCase()}`)
+    ? customSchema
+    : schema;
+}
+
+/** Where the node is built: `database.schema`, or undefined when it builds no relation. */
+function relationOf(
+  table: LineageTable,
+  schema: string | undefined,
+): string | undefined {
+  if (!schema) {
     return undefined;
   }
-  return table.database ? `${table.database}.${table.schema}` : table.schema;
+  return table.database ? `${table.database}.${schema}` : schema;
 }
 
 /**
@@ -33,7 +51,7 @@ function relationOf(table: LineageTable): string | undefined {
  */
 export function cardSubtitle(table: LineageTable): string {
   const parts = [
-    relationOf(table),
+    relationOf(table, shownSchema(table)),
     table.materialization,
     table.rootPackage ? undefined : table.packageName,
   ];
@@ -46,7 +64,7 @@ export const cardBadge = (table: LineageTable): string =>
 
 /** The card's hover text: the unique ID, the ref name when it differs, and the relation. */
 export function cardTooltip(table: LineageTable): string {
-  const relation = relationOf(table);
+  const relation = relationOf(table, table.schema);
   return [
     table.table,
     table.refName ? `ref: ${table.refName}` : undefined,

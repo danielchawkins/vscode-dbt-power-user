@@ -44,3 +44,63 @@ describe("table node empty column list", () => {
     expect(screen.getByText("No columns")).toBeTruthy();
   });
 });
+
+describe("table node hidden cue", () => {
+  const drawHidden = (hidden: boolean, isStart = false) => {
+    const props = {
+      id: "model.p.a",
+      data: {
+        table: {
+          table: "model.p.a",
+          label: "a",
+          nodeType: "model",
+          childCount: 0,
+          parentCount: 0,
+          tests: [],
+          hidden,
+        },
+        columns: undefined,
+        isStart,
+        expanded: { parents: false, children: false },
+        pending: { parents: false, children: false },
+        hidden: { parents: 0, children: 0 },
+        traced: [],
+      },
+    } as unknown as React.ComponentProps<typeof TableNode>;
+    return render(
+      <ReactFlowProvider>
+        <TableNode {...props} />
+      </ReactFlowProvider>,
+    );
+  };
+
+  it("marks a hidden card with an eye icon and a title saying why", () => {
+    const { container } = drawHidden(true);
+    expect(
+      screen.getByTitle("Hidden from lineage by meta.lineage.hidden"),
+    ).toBeTruthy();
+    expect(container.querySelector(".codicon-eye-closed")).not.toBeNull();
+    expect(container.querySelector("[data-table]")?.className).toContain(
+      "hidden",
+    );
+  });
+
+  it("shows no cue on a card that is not hidden", () => {
+    const { container } = drawHidden(false);
+    expect(container.querySelector(".codicon-eye-closed")).toBeNull();
+    expect(container.querySelector("[data-table]")?.className).not.toContain(
+      "hidden",
+    );
+  });
+
+  it("shows no cue on a hidden start card, which the graph never hides", () => {
+    const { container } = drawHidden(true, true);
+    expect(container.querySelector(".codicon-eye-closed")).toBeNull();
+    expect(
+      screen.queryByText("Hidden from lineage by meta.lineage.hidden"),
+    ).toBeNull();
+    expect(container.querySelector("[data-table]")?.className).not.toContain(
+      "hidden",
+    );
+  });
+});

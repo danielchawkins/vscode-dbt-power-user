@@ -77,6 +77,7 @@ export class SourceParser {
               path: fullPath,
               description: description,
               columns: columns,
+              meta: meta,
             });
             return previousValue;
           },

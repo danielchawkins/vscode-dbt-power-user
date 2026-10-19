@@ -106,6 +106,10 @@ export type Table = {
   schema?: string;
   rootPackage?: boolean;
   layer?: string | undefined;
+  /** True when the node sets `meta.lineage.hidden: true`. */
+  hidden?: boolean;
+  /** The node's configured `schema`. */
+  customSchema?: string;
 };
 
 export const RunModelType = {

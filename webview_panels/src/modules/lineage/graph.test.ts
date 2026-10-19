@@ -1,18 +1,17 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it, vi } from "vitest";
 import { traceColumn } from "./columnTrace";
+import { expandLevels, replayExpansions } from "./expansionBatch";
 import type { GraphState, GraphStore } from "./graph";
 import {
   collapse,
   drawnGraph,
   emptyGraph,
   expand,
-  expandLevels,
   hideColumns,
   lineageData,
   linkDrawn,
   parseExpansion,
-  replayExpansions,
   showColumns,
 } from "./graph";
 import { columnHandle, layout, tableHeight } from "./layout";

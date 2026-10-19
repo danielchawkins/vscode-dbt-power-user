@@ -62,6 +62,10 @@ export interface LineageTable {
   rootPackage?: boolean | undefined;
   /** The node's layer (staging, intermediate, marts…), from a tag, its folder or its name prefix. */
   layer?: string | undefined;
+  /** True when the node sets `meta.lineage.hidden: true`: its table and column edges are not drawn. */
+  hidden?: boolean | undefined;
+  /** The node's configured `schema`; a card shows it in place of a schema that ends with `_<customSchema>`. */
+  customSchema?: string | undefined;
   /** The node's data tests; `raw_sql` is the test's SQL. */
   tests: {
     key: string;

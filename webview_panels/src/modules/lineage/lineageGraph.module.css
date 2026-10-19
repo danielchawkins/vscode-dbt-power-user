@@ -191,6 +191,12 @@
   border-color: var(--vscode-focusBorder);
 }
 
+/* A hidden node is drawn off to the side with dashed, muted styling; its edges are not drawn. */
+.node.hidden {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
 :global(.react-flow__node.selected) .node {
   outline: 2px solid var(--vscode-focusBorder);
 }
@@ -244,6 +250,22 @@
 
 .error {
   color: var(--vscode-errorForeground);
+}
+
+.flags {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Text for screen readers only; the cue it accompanies is an icon hidden from them. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
 }
 
 .actions {

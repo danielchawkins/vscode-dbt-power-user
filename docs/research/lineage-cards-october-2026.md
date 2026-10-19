@@ -67,6 +67,20 @@ The `finance_general` manifest Fusion 2.0.8 wrote (694 models, 2,366 source tabl
 - **One hub dominates.** `function.foundation.normalize_timestamp` has 350 children; the next node has 7, and 99% of nodes have 4 or fewer. A cap of 20 leaves ordinary nodes alone and stops that one from flooding the graph.
 - Fusion fills node `tags` (350 models carry `source_system/<name>`) and per-table source `database`, `schema` and `identifier`. No model sets `config.group`.
 
+## Hidden nodes and schema shortening
+
+A node is hidden when `meta.lineage.hidden: true` is set on it: a model, seed, snapshot, source table, function or exposure. Fusion may put a model's `meta` under `config`, so the marker is read from both. The node stays drawn, so an expansion that reaches it still shows it and that expansion's neighbours, but no table or column edge into or out of it is drawn, and it sits off to the side. The start node is never hidden. This replaces the `lineage.hiddenNodes` setting proposed in section 6: the marker sits on the node it applies to, so it travels with the project.
+
+```yaml
+models:
+  - name: stg_audit_log
+    meta:
+      lineage:
+        hidden: true
+```
+
+dbt's default `generate_schema_name` builds a custom schema as `<target schema>_<custom schema>`. When a node's schema ends with `_<config.schema>`, the card subtitle shows `database.<config.schema>`, so `DBT_DEV_DANIEL_COMMITMENT` with `schema: commitment` reads `DEV_FG.commitment`. The match ignores case, because Snowflake upper-cases names. A schema that does not end that way shows unchanged, and the tooltip always keeps the full `database.schema`. No setting controls either behaviour.
+
 ## Open questions
 
 - Can the extension learn the active target schema and default database from Fusion? Without them, `<target_schema>_` cannot be stripped from schema names and "not the default database" cannot be judged.

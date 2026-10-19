@@ -217,6 +217,10 @@ export interface ModelLevelConstraint extends ColumnLevelConstraint {
 
 interface Config {
   materialized?: string | null | undefined;
+  /** The custom schema the node is configured with; dbt builds it as `<target schema>_<schema>` by default. */
+  schema?: string | null | undefined;
+  /** Fusion may place a node's `meta` under its config. */
+  meta?: Meta;
 }
 
 interface SourceMetaData {
@@ -238,6 +242,8 @@ export interface SourceTable {
   path: string | undefined;
   description: string;
   columns: { [columnName: string]: ColumnMetaData };
+  /** This table's own `meta`, which the source group's `meta` does not carry. */
+  meta?: Meta;
 }
 
 interface DocMetaData {
@@ -304,7 +310,7 @@ export interface ExposureMetaData {
   tags: [string];
   url?: string;
   type: string;
-  config: { enabled: boolean };
+  config: { enabled: boolean; meta?: Record<string, unknown> };
   path: string | undefined;
   unique_id: string;
   sources?: [string];
@@ -340,6 +346,7 @@ export interface FunctionMetaData {
     volatility?: string;
     runtime_version?: string;
     entry_point?: string;
+    meta?: Record<string, unknown>;
   };
   arguments?: FunctionArgument[];
   returns?: FunctionReturns;

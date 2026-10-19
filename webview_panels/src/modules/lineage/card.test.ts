@@ -64,6 +64,51 @@ describe("lineage card text", () => {
     expect(cardBadge(table())).toBe("model");
   });
 
+  it("shortens a schema ending in the custom schema to that schema, keeping the database", () => {
+    const shortened = table({
+      database: "DEV_FG",
+      schema: "DBT_DEV_DANIEL_COMMITMENT",
+      customSchema: "commitment",
+    });
+    expect(cardSubtitle(shortened)).toBe("DEV_FG.commitment");
+    // Snowflake upper-cases names, so the match ignores case.
+    expect(
+      cardSubtitle({
+        ...shortened,
+        schema: "DBT_DEV_DANIEL_COMMITMENT",
+        customSchema: "COMMITMENT",
+      }),
+    ).toBe("DEV_FG.COMMITMENT");
+  });
+
+  it("leaves the schema alone without a custom schema or when it does not end with one", () => {
+    const base = table({ database: "DEV_FG", schema: "DBT_DEV_DANIEL_KIKOFF" });
+    expect(cardSubtitle(base)).toBe("DEV_FG.DBT_DEV_DANIEL_KIKOFF");
+    expect(cardSubtitle({ ...base, customSchema: "commitment" })).toBe(
+      "DEV_FG.DBT_DEV_DANIEL_KIKOFF",
+    );
+    expect(
+      cardSubtitle({
+        ...base,
+        schema: "commitment",
+        customSchema: "commitment",
+      }),
+    ).toBe("DEV_FG.commitment");
+  });
+
+  it("keeps the full schema in the tooltip", () => {
+    expect(
+      cardTooltip(
+        table({
+          database: "DEV_FG",
+          schema: "DBT_DEV_DANIEL_COMMITMENT",
+          customSchema: "commitment",
+          label: "orders",
+        }),
+      ),
+    ).toContain("relation: DEV_FG.DBT_DEV_DANIEL_COMMITMENT.orders");
+  });
+
   it("puts the unique ID, ref name and full relation in the tooltip", () => {
     expect(
       cardTooltip(
