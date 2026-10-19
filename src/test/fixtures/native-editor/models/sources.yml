@@ -5,11 +5,11 @@ sources:
     tables:
       - name: orders
         columns:
-          - { name: id, data_type: integer }
-          - { name: customer_id, data_type: integer }
-          - { name: amount, data_type: "decimal(10,2)" }
-          - { name: status, data_type: varchar }
-          - { name: note, data_type: varchar }
+          - { name: id, data_type: integer, description: "Order primary key." }
+          - { name: customer_id, data_type: integer, description: "Customer key." }
+          - { name: amount, data_type: "decimal(10,2)", description: "Order amount in dollars." }
+          - { name: status, data_type: varchar, description: "Order status code." }
+          - { name: note, data_type: varchar, description: "Free-text note on the order." }
       - name: customers
         columns:
           - { name: id, data_type: integer }

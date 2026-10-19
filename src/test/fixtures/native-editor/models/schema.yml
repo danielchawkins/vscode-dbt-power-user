@@ -1,0 +1,8 @@
+version: 2
+models:
+  - name: order_totals
+    columns:
+      - name: customer_id
+        description: "Customer key."
+      - name: total
+        description: "Sum of order amounts per customer."

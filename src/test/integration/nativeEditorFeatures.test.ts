@@ -354,12 +354,22 @@ function assertObserved(mode: string, results: Record<string, Recorded>) {
       [{ file: "order_totals.sql", range: "0:20-0:40" }],
     );
     assert.deepStrictEqual(valueOf(results, "references alias total"), [
+      { file: "order_join.sql", range: "1:42-1:47" },
+      { file: "union_orders.sql", range: "4:20-4:25" },
       { file: "order_totals.sql", range: "0:35-0:40" },
       { file: "totals_downstream.sql", range: "0:20-0:25" },
     ]);
     assert.deepStrictEqual(
       valueOf(results, "rename alias total -> total_amount"),
       [
+        {
+          file: "order_join.sql",
+          edits: [{ range: "1:42-1:47", newText: "total_amount" }],
+        },
+        {
+          file: "union_orders.sql",
+          edits: [{ range: "4:20-4:25", newText: "total_amount" }],
+        },
         {
           file: "order_totals.sql",
           edits: [{ range: "0:35-0:40", newText: "total_amount" }],

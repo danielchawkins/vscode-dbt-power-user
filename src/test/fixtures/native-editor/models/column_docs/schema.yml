@@ -1,0 +1,11 @@
+version: 2
+models:
+  - name: built_dev
+    columns:
+      # Overwrite case: the warehouse column is integer.
+      - name: customer_id
+        data_type: varchar
+        description: "Customer key."
+      # Not-found case: the relation has no such column.
+      - name: ghost
+        data_type: integer
