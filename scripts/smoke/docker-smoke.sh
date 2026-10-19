@@ -119,6 +119,6 @@ if [[ "$status" -ne 0 ]]; then
   exit 1
 fi
 echo "$(shasum -a 256 "$vsix" | awk '{print $1}')  $vsix" > "$out/vsix.sha256"
-cat "$work"/*.log | grep -E 'FPU_HOST_METADATA|FPU_SMOKE_SUITES_SELECTED|FPU_SMOKE_EXTHOST_START_MS|passing|failing' || true
+cat "$work"/*.log | grep -E 'FPU_HOST_METADATA|FPU_SMOKE_SUITES_SELECTED|FPU_SMOKE_EXTHOST_START_MS|FPU_SMOKE_HOST_NOTICE|FPU_SMOKE_WARMUP_NOTIFICATIONS|FPU_SMOKE_STARTUP_PHASES|passing|failing' || true
 echo "docker-smoke: evidence in $final/<host>/<fixture>/index.json"
 rm -rf "$work"

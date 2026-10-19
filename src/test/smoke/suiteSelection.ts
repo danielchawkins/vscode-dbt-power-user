@@ -3,6 +3,7 @@ export const OPT_IN_SUITES = [
   "queryResultsInteractions",
   "documentationEditorInteractions",
   "toolEnvironment",
+  "hostWarmUp",
 ] as const;
 
 const optIn: readonly string[] = OPT_IN_SUITES;

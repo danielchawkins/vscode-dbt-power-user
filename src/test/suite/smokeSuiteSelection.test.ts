@@ -6,12 +6,18 @@ const all = [
   "lspSmoke",
   "lineageInteractions",
   "toolEnvironment",
+  "hostWarmUp",
 ];
 
 describe("selectSuites", () => {
   it("returns the sorted default set when unset or empty", () => {
     expect(selectSuites(all, undefined)).toEqual(["lspSmoke", "panelSmoke"]);
     expect(selectSuites(all, "")).toEqual(["lspSmoke", "panelSmoke"]);
+  });
+
+  it("leaves the warm-up out of the default set and selects only it when named", () => {
+    expect(selectSuites(all, undefined)).not.toContain("hostWarmUp");
+    expect(selectSuites(all, "hostWarmUp")).toEqual(["hostWarmUp"]);
   });
 
   it("treats default alone as the unset set and adds a named opt-in", () => {

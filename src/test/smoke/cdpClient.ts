@@ -21,8 +21,8 @@ import {
 
 export type SmokeHost = "vscode" | "cursor";
 
-const SHOW_NOTIFICATIONS = "notifications.showList";
-const HIDE_NOTIFICATIONS = "notifications.hideList";
+export const SHOW_NOTIFICATIONS = "notifications.showList";
+export const HIDE_NOTIFICATIONS = "notifications.hideList";
 
 interface CdpTarget {
   type: string;

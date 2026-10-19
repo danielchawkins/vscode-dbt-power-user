@@ -3,13 +3,14 @@ set -euo pipefail
 
 usage() {
   cat << 'EOF'
-usage: run-host-smoke.sh --host <vscode|cursor> [--vsix PATH] [--fixture PATH] [--force] [--tool-env]
+usage: run-host-smoke.sh --host <vscode|cursor> [--vsix PATH] [--fixture PATH] [--suites LIST] [--force] [--tool-env]
 
 Install the packaged VSIX into a disposable profile and run panel smoke tests.
 Unless --fixture is given, also runs the multi-root and nested-project Fusion LSP smoke suites once each,
 skipped when FPU_RUNTIME_BENCHMARK=1 selects the tight single-fixture timing loop.
 Unless --fixture is given, the tool-environment fixtures also run after nested-roots, under the same guard.
 
+--suites LIST runs only the listed suites (comma-separated, "default" allowed); it requires --fixture.
 --tool-env runs only the tool-environment fixtures, then checks their evidence for this host.
 --force re-acquires the pinned host even if a cached copy already verifies.
 EOF
@@ -23,6 +24,7 @@ source "$smoke_root/common.sh"
 host=""
 vsix=""
 fixture=""
+suite_list=""
 force=0
 tool_env=0
 original_args=("$@")
@@ -38,6 +40,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --fixture)
       fixture=$2
+      shift 2
+      ;;
+    --suites)
+      suite_list=$2
       shift 2
       ;;
     --force)
@@ -67,6 +73,20 @@ fi
 if [[ "$tool_env" -eq 1 && -n "$fixture" ]]; then
   echo "--tool-env and --fixture are exclusive" >&2
   exit 2
+fi
+if [[ -n "$suite_list" ]]; then
+  if [[ -z "$fixture" ]]; then
+    echo "--suites requires --fixture" >&2
+    exit 2
+  fi
+  # Shape only: a name that matches no suite is refused by the host's selectSuites, which lists the known ones.
+  IFS=, read -ra suite_names <<< "$suite_list"
+  for name in "${suite_names[@]}"; do
+    if [[ ! "$name" =~ ^[A-Za-z][A-Za-z0-9]*$ ]]; then
+      echo "--suites takes comma-separated suite names, got: $suite_list" >&2
+      exit 2
+    fi
+  done
 fi
 
 # Electron needs a display; a headless Linux run gets a virtual one.
@@ -116,7 +136,7 @@ suites_for() {
 
 run_fixture() {
   local suites
-  suites="$(suites_for "$1")"
+  suites="${suite_list:-$(suites_for "$1")}"
   node "$smoke_root/run-smoke.mjs" \
     --host "$host" \
     --host-app "$executable" \
