@@ -10,7 +10,13 @@ export type CliCommand =
   | { kind: "test"; select?: string }
   /** The queued model compile. */
   | { kind: "compile"; select?: string }
-  | { kind: "compileInline"; sql: string; output: "json" | "quiet" }
+  /** `defer: "off"` passes `--no-defer` whatever the snapshot's defer says. */
+  | {
+      kind: "compileInline";
+      sql: string;
+      output: "json" | "quiet";
+      defer?: "off";
+    }
   | { kind: "show"; sql: string; limit: number }
   | { kind: "parse" }
   | { kind: "deps" }
@@ -166,6 +172,21 @@ export function deferState(
   return { kind: "unusable", manifestPath };
 }
 
+/** The defer flags of a deferrable command; an inline compile with `defer: "off"` skips the snapshot's state. */
+function deferFlags(
+  command: CliCommand,
+  defer: ResolvedDefer | undefined,
+  probe: PathProbe,
+): string[] {
+  if (!DEFERRABLE_KINDS.includes(command.kind)) {
+    return [];
+  }
+  if (command.kind === "compileInline" && command.defer === "off") {
+    return ["--no-defer"];
+  }
+  return deferArgs(deferState(defer, probe));
+}
+
 function deferArgs(state: DeferState): string[] {
   switch (state.kind) {
     case "off":
@@ -231,8 +252,6 @@ export function toCliArgs(
     ...flag("--project-dir", snapshot.root),
     ...flag("--profile", invocation.profile),
     ...flag("--target", invocation.target, "-t"),
-    ...(DEFERRABLE_KINDS.includes(command.kind)
-      ? deferArgs(deferState(invocation.defer, probe))
-      : []),
+    ...deferFlags(command, invocation.defer, probe),
   ];
 }
