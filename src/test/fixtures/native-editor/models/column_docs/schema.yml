@@ -9,3 +9,12 @@ models:
       # Not-found case: the relation has no such column.
       - name: ghost
         data_type: integer
+  # Inferred case: built in neither target, so the columns carry no data_type.
+  - name: never_built
+    columns:
+      - name: id
+  # Deferred case: built only in prod, so the columns carry no data_type.
+  - name: prod_only
+    columns:
+      - name: customer_id
+      - name: total_amount
