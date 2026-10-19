@@ -216,6 +216,6 @@ Still true: no command returns macro metadata (`MacroMetaMap`), doc blocks (`Doc
 
 - Whether `dbt.show` can be cancelled with `$/cancelRequest`, and how a long Snowflake query behaves when cancelled.
 - Why column lineage returns no nodes for finance models built by `kikoff.union_relations` and `temporalize.reconcile` while their columns are typed.
-- Why formatting and `source.fixAll` fail with `exit code 1` on the finance model.
+- Why formatting and `source.fixAll` fail with `exit code 1` on the finance model. Settled in [`lsp-coverage.md`](../lsp-coverage.md): a macro raised while the server rendered the model.
 - Behaviour with several Declared Projects in one window, and with `--command-prefix` set, on 2.0.6.
 - Whether the background disk watch covers files outside model paths (macros, `dbt_project.yml`, `packages.yml`).
