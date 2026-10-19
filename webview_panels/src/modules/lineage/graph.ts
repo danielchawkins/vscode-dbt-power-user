@@ -1,4 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
+import type { NeighbourGroups } from "./grouping";
+import { bucketNeighbours, groupedNeighbours } from "./grouping";
 import { hiddenTables } from "./hiddenNodes";
 
 type LineageTable = lineage.LineageTable;
@@ -43,6 +45,10 @@ export interface GraphState {
   shown: Record<string, number>;
   /** The most neighbours a new expansion draws at first; 0 draws all. */
   cap: number;
+  /** How neighbours are bucketed once they outnumber `cap`. */
+  groupBy: "none" | "folder";
+  /** The buckets of each grouped expansion, by key; a grouped key has no `shown` entry. */
+  groups: Record<string, NeighbourGroups>;
   selectedTable?: string | undefined;
   selectedColumn?: ColumnRef | undefined;
 }
@@ -66,7 +72,11 @@ export type FetchEdges = (
   tables: readonly string[],
 ) => Promise<[string, string][]>;
 
-export const emptyGraph = (start?: LineageTable, cap = 0): GraphState => ({
+export const emptyGraph = (
+  start?: LineageTable,
+  cap = 0,
+  groupBy: "none" | "folder" = "none",
+): GraphState => ({
   start: start?.table,
   known: start ? { [start.table]: start } : {},
   neighbours: {},
@@ -80,6 +90,8 @@ export const emptyGraph = (start?: LineageTable, cap = 0): GraphState => ({
   links: {},
   shown: {},
   cap,
+  groupBy,
+  groups: {},
 });
 
 export const expansionKey = (direction: Direction, table: string): string =>
@@ -116,8 +128,12 @@ export const isPending = (
 const neighbourCount = (table: LineageTable, direction: Direction): number =>
   direction === "children" ? table.childCount : table.parentCount;
 
-/** The neighbours expansion `key` draws: all it fetched, or the first `shown[key]` of them. */
+/** The neighbours expansion `key` draws: all it fetched, or the first `shown[key]` of them, or its open buckets. */
 export const drawnNeighbours = (state: GraphState, key: string): string[] => {
+  const group = state.groups[key];
+  if (group) {
+    return groupedNeighbours(group);
+  }
   const all = state.neighbours[key] ?? [];
   const limit = state.shown[key];
   return limit === undefined ? all : all.slice(0, limit);
@@ -202,8 +218,12 @@ function prune(state: GraphState): GraphState {
         next.selectedColumn && drawn.has(next.selectedColumn[0])
           ? next.selectedColumn
           : undefined;
+      const groups = Object.fromEntries(
+        Object.entries(next.groups).filter(([key]) => expansions.includes(key)),
+      );
       return {
         ...next,
+        groups,
         columnTables: next.columnTables.filter((t) => drawn.has(t)),
         columnEdges: selectedColumn ? columnEdges : [],
         selectedTable:
@@ -232,7 +252,14 @@ export function addNeighbours(
   for (const n of neighbours) {
     known[n.table] ??= n;
   }
+  const expansions = state.expansions.includes(key)
+    ? state.expansions
+    : [...state.expansions, key];
   const capped = state.cap > 0 && neighbours.length > state.cap;
+  const groups =
+    capped && state.groupBy === "folder"
+      ? bucketNeighbours(neighbours, drawnIds(state), state.cap)
+      : undefined;
   const shown = shownWithout(state, key);
   // A capped expansion draws tables already on the canvas first, then the rest by label.
   const drawn = capped ? drawnIds(state) : new Set<string>();
@@ -246,11 +273,12 @@ export function addNeighbours(
   return {
     ...state,
     known,
+    expansions,
     neighbours: { ...state.neighbours, [key]: ordered.map((n) => n.table) },
-    shown: capped ? { ...shown, [key]: state.cap } : shown,
-    expansions: state.expansions.includes(key)
-      ? state.expansions
-      : [...state.expansions, key],
+    groups: groups
+      ? { ...state.groups, [key]: { ...groups, open: {} } }
+      : state.groups,
+    shown: capped && !groups ? { ...shown, [key]: state.cap } : shown,
   };
 }
 
@@ -314,7 +342,13 @@ export async function linkDrawn(
   store: GraphStore,
   fetch: FetchEdges,
 ): Promise<void> {
-  const tables = [...drawnIds(store.get())];
+  const { expansions, neighbours } = store.get();
+  const drawn = drawnIds(store.get());
+  // A closed bucket's members are not drawn, but their links are fetched so they show when it opens.
+  const members = expansions
+    .filter((key) => drawn.has(parseExpansion(key)?.[1] ?? ""))
+    .flatMap((key) => neighbours[key] ?? []);
+  const tables = [...new Set([...drawn, ...members])];
   if (tables.length < 2) {
     return;
   }
