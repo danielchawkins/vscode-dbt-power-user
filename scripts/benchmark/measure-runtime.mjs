@@ -1,6 +1,11 @@
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:net";
 import path from "node:path";
+import {
+  launchRecord,
+  readOptionalOutput,
+  runtimeSummary,
+} from "./runtime-records.mjs";
 
 const root = path.resolve(import.meta.dirname, "../..");
 const args = Object.fromEntries(
@@ -29,8 +34,7 @@ if (compile.status !== 0) {
 
 // One smoke run takes seconds; a hung host would otherwise hold the job until its own timeout with no output.
 const RUN_TIMEOUT_MS = 5 * 60_000;
-const samples = [];
-const extHostStarts = [];
+const records = [];
 let hostMetadata;
 let runtime;
 let activationMetadata;
@@ -85,92 +89,21 @@ for (let index = 0; index < 10; index += 1) {
   }
   hostMetadata ??= readOutput(result.stdout, "FPU_HOST_METADATA");
   runtime ??= readOutput(result.stdout, "FPU_SMOKE_RUNTIME");
-  // The smoke prints no start time when it cannot measure one, for example after a wall-clock step back.
-  const extHostStartMs = readOptionalOutput(
-    result.stdout,
-    "FPU_SMOKE_EXTHOST_START_MS",
-  );
   if (index === 0) {
     console.log(`FPU_HOST_METADATA=${JSON.stringify(hostMetadata)}`);
     console.log(`FPU_SMOKE_RUNTIME=${JSON.stringify(runtime)}`);
   }
-  samples.push(sample);
-  if (extHostStartMs !== undefined) {
-    extHostStarts.push(extHostStartMs);
-  }
-  // One record per launch: the runtime sample, its launch index, and extHostStartMs, the milliseconds from the
-  // launcher's runTests call to the extension host's first test-runner callback (FPU_SMOKE_EXTHOST_START_MS).
-  console.log(
-    `FPU_RUNTIME_RAW=${JSON.stringify({ index: index + 1, extHostStartMs, ...sample })}`,
-  );
+  const record = launchRecord(index + 1, result.stdout, sample);
+  records.push(record);
+  // One record per launch: the runtime sample, its launch index, extHostStartMs (the milliseconds from the
+  // launcher's runTests call to the extension host's first test-runner callback, FPU_SMOKE_EXTHOST_START_MS, absent
+  // when the smoke cannot measure one), and startupPhases (per-phase milliseconds from the launch, null when absent).
+  console.log(`FPU_RUNTIME_RAW=${JSON.stringify(record)}`);
 }
 
-const entries = ["documentationEditor", "queryResults", "lineage"];
-const summary = {
-  host,
-  hostMetadata,
-  runtime,
-  activationMetadata,
-  activation: Object.fromEntries(
-    ["loadCode", "callActivate", "finishActivate", "startupReady"].map(
-      (phase) => [
-        phase,
-        summarize(samples.map((sample) => sample.activation[phase])),
-      ],
-    ),
-  ),
-  webviews: Object.fromEntries(
-    entries.map((entry) => [
-      entry,
-      {
-        firstContentfulPaint: summarize(
-          samples.map(
-            (sample) =>
-              sample.webviews.find((webview) => webview.entry === entry)
-                .firstContentfulPaint,
-          ),
-        ),
-        resolveToReady: summarize(
-          samples.map(
-            (sample) =>
-              sample.hostTimings.find((timing) => timing.entry === entry)
-                .duration,
-          ),
-        ),
-      },
-    ]),
-  ),
-  extHostStartMs:
-    extHostStarts.length === 0
-      ? null
-      : {
-          min: Math.min(...extHostStarts),
-          median: median(extHostStarts.toSorted((left, right) => left - right)),
-          max: Math.max(...extHostStarts),
-          launches: extHostStarts.length,
-        },
-};
-console.log(`FPU_RUNTIME_SUMMARY=${JSON.stringify(summary)}`);
-
-function summarize(values) {
-  const sorted = values.toSorted((left, right) => left - right);
-  return {
-    raw: values,
-    median: median(sorted),
-    p90: percentile(sorted, 0.9),
-  };
-}
-
-function median(sorted) {
-  const middle = Math.floor(sorted.length / 2);
-  return sorted.length % 2
-    ? sorted[middle]
-    : (sorted[middle - 1] + sorted[middle]) / 2;
-}
-
-function percentile(sorted, quantile) {
-  return sorted[Math.max(0, Math.ceil(quantile * sorted.length) - 1)];
-}
+console.log(
+  `FPU_RUNTIME_SUMMARY=${JSON.stringify(runtimeSummary(records, { host, hostMetadata, runtime, activationMetadata }))}`,
+);
 
 function readOutput(output, prefix) {
   const value = readOptionalOutput(output, prefix);
@@ -178,11 +111,6 @@ function readOutput(output, prefix) {
     throw new Error(`${prefix} missing for ${host}`);
   }
   return value;
-}
-
-function readOptionalOutput(output, prefix) {
-  const match = output.match(new RegExp(`^${prefix}=(.+)$`, "m"));
-  return match ? JSON.parse(match[1]) : undefined;
 }
 
 async function findAvailablePort(start) {
