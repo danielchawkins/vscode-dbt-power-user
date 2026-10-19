@@ -142,6 +142,48 @@ describe("RunModel SQL execution", () => {
 
     expect(executed).toEqual([]);
   });
+
+  it("previews the active model's materialized relation, and offers the SQL preview for an ephemeral one", async () => {
+    const model = Uri.file("/project/models/orders.sql");
+    let materialized = "table";
+    projects.get.mockImplementation((uri: Uri) =>
+      uri.fsPath === model.fsPath
+        ? {
+            queries: dbtProject.queries,
+            manifest: {
+              nodeMetaMap: {
+                lookupByBaseName: () => ({
+                  name: "orders",
+                  package_name: "jaffle",
+                  config: { materialized },
+                }),
+              },
+            },
+          }
+        : undefined,
+    );
+    (window.activeTextEditor as unknown) = {
+      document: { uri: model, getText: () => "select 1" },
+      selection: { isEmpty: true },
+    };
+
+    await runModel.previewMaterializedOnActiveWindow();
+    expect(executed).toEqual([
+      ["select * from {{ ref('jaffle', 'orders') }}", "orders (materialized)"],
+    ]);
+
+    materialized = "ephemeral";
+    vi.mocked(window.showInformationMessage).mockResolvedValue(
+      "Execute dbt SQL" as never,
+    );
+    context.requireForCommand.mockResolvedValue(project);
+    projects.get.mockClear();
+    await runModel.previewMaterializedOnActiveWindow();
+    expect(window.showInformationMessage).toHaveBeenCalledWith(
+      "orders is ephemeral, so it has no table to preview.",
+      "Execute dbt SQL",
+    );
+  });
 });
 
 describe("RunModel project commands", () => {
