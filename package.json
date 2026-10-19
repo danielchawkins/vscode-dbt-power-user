@@ -630,6 +630,12 @@
         "icon": "$(play)"
       },
       {
+        "command": "fusionPowerUser.previewMaterialized",
+        "title": "Preview Materialized Model",
+        "category": "Fusion Power User",
+        "icon": "$(database)"
+      },
+      {
         "command": "fusionPowerUser.buildCurrentModel",
         "title": "Build dbt Model",
         "category": "Fusion Power User",
@@ -719,6 +725,11 @@
           "group": "navigation@1"
         },
         {
+          "command": "fusionPowerUser.previewMaterialized",
+          "when": "fusionPowerUser.inProject && resourceScheme == file && resourceExtname == .sql",
+          "group": "navigation@2"
+        },
+        {
           "command": "fusionPowerUser.runCurrentModel",
           "when": "resourceScheme == query-preview || (fusionPowerUser.inProject || resourceScheme == untitled) && resourceLangId =~ /^sql$|^jinja-sql$/",
           "group": "navigation@3"
@@ -761,6 +772,11 @@
         {
           "command": "fusionPowerUser.showCompiledSQL",
           "group": "2_compile@2"
+        },
+        {
+          "command": "fusionPowerUser.previewMaterialized",
+          "when": "fusionPowerUser.inProject && resourceScheme == file",
+          "group": "2_compile@3"
         },
         {
           "command": "fusionPowerUser.goToDocumentationEditor",

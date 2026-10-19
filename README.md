@@ -46,6 +46,8 @@ Per Declared Project, resource-scoped settings `fusionPowerUser.profilesDir`, `f
 
 Deferral follows dbt's default. With no `fusionPowerUser.defer.perProject` entry for a project, the extension passes no defer flags, so `DBT_DEFER` and `DBT_STATE` in the project's environment decide, as in a terminal. An entry with `deferToProduction` and a `manifestPathForDeferral` adds `--defer --state <dir>` (and `--favor-state` when set) to run, build, test, compile, previews and inline compiles; an entry with `deferToProduction` false adds `--no-defer`.
 
+*Execute dbt SQL* previews what a model's SQL would compute now. *Preview Materialized Model*, on a model's editor title bar and context menu, reads the table the model already built with `select * from {{ ref('<package>', '<model>') }}`. Because `ref()` follows the defer flags, it shows the relation the rest of the project would read. The results are labelled `<model> (materialized)`. An ephemeral model has no table, so the command offers *Execute dbt SQL* instead. A model that was never built fails with the warehouse's "does not exist" error.
+
 Upgrading from upstream or an earlier fork build requires renaming every extension-owned `dbt.*` key to `fusionPowerUser.*`; see [`docs/settings-migration.md`](docs/settings-migration.md).
 
 Some defaults differ from the official dbt extension (`dbtlabsinc.dbt` 0.117.0), so the same project can behave differently in the two:

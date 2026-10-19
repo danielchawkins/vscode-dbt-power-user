@@ -2,6 +2,7 @@ import * as path from "node:path";
 import type { TreeItem } from "vscode";
 import { Uri, window } from "vscode";
 import { RunModelType } from "../../core/dbt/domain";
+import type { Manifest } from "../../projects/manifest/manifestTypes";
 import { notifyErrorWithoutProject } from "../../projects/output/notifications";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { GenerateModelFromSourceParams } from "../../projects/project/projectCodegen";
@@ -24,14 +25,19 @@ type ModelProject = {
     | "generateSchemaYML"
     | "showRunSQL"
   >;
+  /** The manifest the materialized preview reads a model's package and materialization from. */
+  manifest?: Pick<Manifest, "nodeMetaMap"> | undefined;
 };
 import { activeModelUri } from "../../projects/registry/previewUri";
+import { materializedPreview } from "./materializedPreview";
 
 /** The model tree item fields a run reads. */
 type NodeTreeItem = Pick<TreeItem, "label"> & { url: string | undefined };
 
 const labelText = (label: NonNullable<TreeItem["label"]>): string =>
   typeof label === "string" ? label : label.label;
+
+const EXECUTE_SQL = "Execute dbt SQL";
 
 export class RunModel {
   private projects: ProjectLookup<ModelProject>;
@@ -109,6 +115,35 @@ export class RunModel {
       const modelName = path.basename(modelPath.fsPath, ".sql");
       await this.executeSQL(modelPath, query, modelName);
     }
+  }
+
+  /** Previews what the active model's relation holds now, rather than what its SQL would compute. */
+  async previewMaterializedOnActiveWindow(): Promise<void> {
+    const activeUri = window.activeTextEditor?.document.uri;
+    if (!activeUri) {
+      return;
+    }
+    const modelPath = activeModelUri(activeUri);
+    const project = this.projects.get(modelPath);
+    if (!project) {
+      return;
+    }
+    const name = path.basename(modelPath.fsPath, ".sql");
+    const preview = materializedPreview(
+      name,
+      project.manifest?.nodeMetaMap.lookupByBaseName(name, "model"),
+    );
+    if (preview.kind === "ephemeral") {
+      const action = await window.showInformationMessage(
+        `${name} is ephemeral, so it has no table to preview.`,
+        EXECUTE_SQL,
+      );
+      if (action === EXECUTE_SQL) {
+        await this.executeQueryOnActiveWindow();
+      }
+      return;
+    }
+    await project.queries.executeSQLOnQueryPanel(preview.query, preview.label);
   }
 
   runModelOnNodeTreeItem(type: RunModelType) {
