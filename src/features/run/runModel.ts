@@ -117,9 +117,11 @@ export class RunModel {
     }
   }
 
-  /** Previews what the active model's relation holds now, rather than what its SQL would compute. */
-  async previewMaterializedOnActiveWindow(): Promise<void> {
-    const activeUri = window.activeTextEditor?.document.uri;
+  /** Previews what a model's relation holds now: the tree item's model, else the active editor's. */
+  async previewMaterialized(model?: NodeTreeItem): Promise<void> {
+    const activeUri = model?.url
+      ? Uri.file(model.url)
+      : window.activeTextEditor?.document.uri;
     if (!activeUri) {
       return;
     }

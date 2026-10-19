@@ -167,10 +167,15 @@ describe("RunModel SQL execution", () => {
       selection: { isEmpty: true },
     };
 
-    await runModel.previewMaterializedOnActiveWindow();
+    await runModel.previewMaterialized();
     expect(executed).toEqual([
       ["select * from {{ ref('jaffle', 'orders') }}", "orders (materialized)"],
     ]);
+
+    // A model tree item names its file, so the preview needs no open editor.
+    (window.activeTextEditor as unknown) = undefined;
+    await runModel.previewMaterialized({ label: "orders", url: model.fsPath });
+    expect(executed).toHaveLength(2);
 
     materialized = "ephemeral";
     vi.mocked(window.showInformationMessage).mockResolvedValue(
@@ -178,7 +183,7 @@ describe("RunModel SQL execution", () => {
     );
     context.requireForCommand.mockResolvedValue(project);
     projects.get.mockClear();
-    await runModel.previewMaterializedOnActiveWindow();
+    await runModel.previewMaterialized({ label: "orders", url: model.fsPath });
     expect(window.showInformationMessage).toHaveBeenCalledWith(
       "orders is ephemeral, so it has no table to preview.",
       "Execute dbt SQL",

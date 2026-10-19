@@ -869,6 +869,11 @@
           "group": "navigation"
         },
         {
+          "command": "fusionPowerUser.previewMaterialized",
+          "when": "(view == parent_model_treeview || view == children_model_treeview) && viewItem == model",
+          "group": "navigation"
+        },
+        {
           "command": "fusionPowerUser.goToDocumentationEditor",
           "when": "view == documentation_treeview",
           "group": "inline"
