@@ -6,8 +6,7 @@ import * as vscode from "vscode";
 import type { FusionClientStateReport } from "../../projects/clients/fusionClientDiagnostics";
 import { FUSION_CLIENT_STATES_COMMAND } from "../../projects/clients/fusionClientDiagnostics";
 import { HARNESS_SWITCHES } from "../../settings/environment";
-import type { ActivationMetric } from "./activationReport";
-import { readActivationMetric } from "./activationReport";
+import { readStartupMetrics } from "./activationReport";
 import type { WebviewPaintMetric } from "./cdpClient";
 import {
   assertNoWorkbenchNotifications,
@@ -230,7 +229,7 @@ suite("Pinned-host VSIX smoke", function () {
 
     if (runtimeEnabled) {
       const hostTimings = await waitForHostRuntimeTimings();
-      const activation: ActivationMetric = await readActivationMetric();
+      const { activation, phases } = await readStartupMetrics();
       assert.ok(
         typeof api.readyMs === "number",
         "extension API should report readyMs after ready settles",
@@ -239,6 +238,7 @@ suite("Pinned-host VSIX smoke", function () {
         `FPU_RUNTIME_SAMPLE=${JSON.stringify({
           host: smokeHost,
           activation: { ...activation, startupReady: api.readyMs },
+          startupPhases: phases,
           webviews: webviews.map(
             ({ entry, timeOrigin, firstContentfulPaint, openAttempts }) => ({
               entry,
