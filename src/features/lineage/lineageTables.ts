@@ -1,6 +1,6 @@
 import type { Table } from "../../core/dbt/domain";
 import { inferLayer } from "../../core/manifest/modelLayer";
-import type { NodeGraphMap } from "../../core/manifest/types";
+import type { Meta, NodeGraphMap } from "../../core/manifest/types";
 import {
   RESOURCE_TYPE_EXPOSURE,
   RESOURCE_TYPE_FUNCTION,
@@ -21,6 +21,23 @@ function testsOf(event: Manifest, key: string): Table["tests"] {
     const testKey = n.label.split(".")[0] ?? "";
     return { ...event.testMetaMap.get(testKey), key: testKey };
   });
+}
+
+/**
+ * `{ hidden: true }` when `meta.lineage.hidden: true` is set in any of `metas`, else nothing, so most tables
+ * carry no flag.
+ */
+function hiddenPart(...metas: Meta[]): { hidden?: true } {
+  const hidden = metas.some((meta) => {
+    const lineage = meta?.lineage;
+    return (
+      typeof lineage === "object" &&
+      lineage !== null &&
+      "hidden" in lineage &&
+      lineage.hidden === true
+    );
+  });
+  return hidden ? { hidden: true } : {};
 }
 
 /** What a card shows beyond the manifest: its file, which package is the project's own, and how layers are named. */
@@ -54,7 +71,6 @@ export function lineageTable(
     case RESOURCE_TYPE_SOURCE:
       return sourceTable(event, { ...base, options }, [at(2), at(3)]);
     case RESOURCE_TYPE_METRIC:
-    case RESOURCE_TYPE_EXPOSURE:
       return {
         ...base,
         label: at(2),
@@ -62,14 +78,27 @@ export function lineageTable(
         tests: [],
         columns: {},
       };
+    case RESOURCE_TYPE_EXPOSURE: {
+      const exposure = event.exposureMetaMap.get(at(2));
+      return {
+        ...base,
+        label: at(2),
+        materialization: undefined,
+        tests: [],
+        columns: {},
+        ...hiddenPart(exposure?.meta, exposure?.config?.meta),
+      };
+    }
     case RESOURCE_TYPE_FUNCTION: {
-      const fnType = event.functionMetaMap.get(at(2))?.config?.type;
+      const fn = event.functionMetaMap.get(at(2));
+      const fnType = fn?.config?.type;
       return {
         ...base,
         label: at(2),
         materialization: fnType ? `${fnType} function` : "function",
         tests: [],
         columns: {},
+        ...hiddenPart(fn?.meta, fn?.config?.meta),
       };
     }
     default:
@@ -102,6 +131,7 @@ function sourceTable(
     rootPackage: source.package_name === options.rootPackage,
     database: table.database ?? source.database,
     schema: table.schema ?? source.schema,
+    ...hiddenPart(table.meta),
     ...(table.identifier && table.identifier !== tableName
       ? { refName: `${sourceName}.${tableName}` }
       : {}),
@@ -129,6 +159,8 @@ function nodeTable(
     packageName: node.package_name,
     rootPackage: node.package_name === options.rootPackage,
     meta: node.meta,
+    ...hiddenPart(node.meta, node.config.meta),
+    ...(node.config.schema ? { customSchema: node.config.schema } : {}),
     ...(node.name === node.alias ? {} : { refName: node.name }),
     // An ephemeral model is inlined into its callers and builds no relation.
     ...(materialization === "ephemeral"

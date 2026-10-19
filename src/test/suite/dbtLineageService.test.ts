@@ -91,7 +91,10 @@ describe("DbtLineageService — foreign-key-only edge hiding", () => {
       ["exposure.p.fact", { nodes: [node("model.p.src", "constraint")] }],
     ]);
     const table = lineageTable(
-      { graphMetaMap: { children, parents, tests: new Map() } } as any,
+      {
+        graphMetaMap: { children, parents, tests: new Map() },
+        exposureMetaMap: new Map(),
+      } as any,
       "exposure.p.fact",
     );
     expect(table).toMatchObject({ childCount: 1, parentCount: 0 });

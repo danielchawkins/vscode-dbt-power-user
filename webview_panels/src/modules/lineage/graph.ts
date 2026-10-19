@@ -1,4 +1,5 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
+import { hiddenTables } from "./hiddenNodes";
 
 type LineageTable = lineage.LineageTable;
 type LineageColumn = lineage.LineageColumn;
@@ -154,25 +155,27 @@ export function drawnGraph(state: GraphState): {
   };
 }
 
-/** Every known `[parent, child]` pair with both ends in `drawn`: from expansions, then from host-reported links. */
+/** Every known `[parent, child]` pair with both ends drawn and neither hidden: from expansions, then from links. */
 function edgesAmong(
   state: GraphState,
   drawn: ReadonlySet<string>,
 ): [string, string][] {
+  const hidden = hiddenTables(state);
+  const edgeable = (id: string) => drawn.has(id) && !hidden.has(id);
   const edges = new Map<string, [string, string]>();
   for (const [key, others] of Object.entries(state.neighbours)) {
     const parsed = parseExpansion(key);
-    if (!parsed || !drawn.has(parsed[1])) {
+    if (!parsed || !edgeable(parsed[1])) {
       continue;
     }
-    for (const other of others.filter((o) => drawn.has(o))) {
+    for (const other of others.filter((o) => edgeable(o))) {
       const edge: [string, string] =
         parsed[0] === "children" ? [parsed[1], other] : [other, parsed[1]];
       edges.set(edge.join("\u0000"), edge);
     }
   }
   for (const [key, edge] of Object.entries(state.links)) {
-    if (drawn.has(edge[0]) && drawn.has(edge[1])) {
+    if (edgeable(edge[0]) && edgeable(edge[1])) {
       edges.set(key, edge);
     }
   }
@@ -325,41 +328,6 @@ export async function linkDrawn(
   });
 }
 
-/** Expands the start table `levels` levels of parents and of children. */
-export async function expandLevels(
-  store: GraphStore,
-  levels: number,
-  fetch: FetchNeighbours,
-): Promise<void> {
-  const start = store.get().start;
-  if (!start) {
-    return;
-  }
-  for (const direction of ["parents", "children"] as const) {
-    let frontier = [start];
-    for (let level = 0; level < levels && frontier.length > 0; level++) {
-      const added = await Promise.all(
-        frontier.map((table) => expand(store, direction, table, fetch)),
-      );
-      frontier = [...new Set(added.flat())];
-    }
-  }
-}
-
-/** Applies saved expansion keys in order; a key whose table is not drawn by then is skipped. */
-export async function replayExpansions(
-  store: GraphStore,
-  keys: readonly string[],
-  fetch: FetchNeighbours,
-): Promise<void> {
-  for (const key of keys) {
-    const parsed = parseExpansion(key);
-    if (parsed && drawnIds(store.get()).has(parsed[1])) {
-      await expand(store, parsed[0], parsed[1], fetch);
-    }
-  }
-}
-
 /** Lists the columns of each of `tables` that is drawn, fetching the ones not cached. */
 export async function showColumns(
   store: GraphStore,
@@ -411,12 +379,16 @@ export function lineageData(
   show: { direct: boolean; indirect: boolean },
 ): lineage.LineageData {
   const { tables, edges } = drawnGraph(state);
+  const hidden = hiddenTables(state);
   return {
     start: state.start,
     tables,
     edges,
-    columnEdges: state.columnEdges.filter((e) =>
-      e.type === "indirect" ? show.indirect : show.direct,
+    columnEdges: state.columnEdges.filter(
+      (e) =>
+        !hidden.has(e.source[0]) &&
+        !hidden.has(e.target[0]) &&
+        (e.type === "indirect" ? show.indirect : show.direct),
     ),
   };
 }
