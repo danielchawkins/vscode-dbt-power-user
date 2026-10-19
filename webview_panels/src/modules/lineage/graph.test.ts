@@ -310,7 +310,7 @@ describe("folder grouping", () => {
       ...state,
       groups: {
         ...state.groups,
-        "c:hub": { ...group, open: { "models/finance/f3": true } },
+        "c:hub": { ...group, open: { "models/finance/f3": 24 } },
       },
     };
     expect(ids(opened)).toHaveLength(25);

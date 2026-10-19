@@ -10,6 +10,7 @@ import {
 import {
   activate,
   EMPTY_STATE,
+  HUB,
   node,
   openLineage,
 } from "../../test/lineageHarness";
@@ -38,6 +39,13 @@ describe("Lineage control coverage", () => {
         default: stateOf(async () => undefined),
         empty: async () => {
           await openLineage(EMPTY_STATE);
+          return page();
+        },
+        grouped: async () => {
+          await openLineage(
+            { node: HUB, publication: "s:1" },
+            { settings: { maxNeighbours: 2 } },
+          );
           return page();
         },
         "Settings open": stateOf(({ user }) =>

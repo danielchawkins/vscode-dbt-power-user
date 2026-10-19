@@ -113,15 +113,46 @@ const TABLES = {
   c: table("c", "model", 1, 0),
 };
 
+/** A model in `folder` of the root package, so the webview buckets it by that folder. */
+const inFolder = (id: string, folder: string): lineage.LineageTable => ({
+  ...table(id, "model", 1, 0),
+  path: `${folder}/${id}.sql`,
+  rootPackage: true,
+});
+
+/** The six children of `hub`, three in each of two folders. */
+const HUB_CHILDREN = [
+  inFolder("s1", "models/staging"),
+  inFolder("s2", "models/staging"),
+  inFolder("s3", "models/staging"),
+  inFolder("m1", "models/marts"),
+  inFolder("m2", "models/marts"),
+  inFolder("m3", "models/marts"),
+];
+
+/** `hub` feeds `HUB_CHILDREN`; capped at two neighbours, its expansion draws them as one group per folder. */
+export const HUB = table("hub", "model", 0, HUB_CHILDREN.length);
+
+const CHILDREN: Record<string, lineage.LineageTable[]> = {
+  a: [TABLES.b],
+  b: [TABLES.c],
+  hub: HUB_CHILDREN,
+};
+
+const PARENTS: Record<string, lineage.LineageTable[]> = {
+  b: [TABLES.a],
+  c: [TABLES.b],
+  ...Object.fromEntries(HUB_CHILDREN.map((child) => [child.table, [HUB]])),
+};
+
 type Params = Record<string, unknown>;
 
+/** The settings the host answers `getLineageSettings` with, as `openLineage` sets them. */
+let hostSettings: Partial<lineage.LineageSettings> = {};
+
 const ANSWERS: Record<string, (params: Params) => unknown> = {
-  childTables: ({ table: t }) => ({
-    tables: t === "a" ? [TABLES.b] : t === "b" ? [TABLES.c] : [],
-  }),
-  parentTables: ({ table: t }) => ({
-    tables: t === "b" ? [TABLES.a] : t === "c" ? [TABLES.b] : [],
-  }),
+  childTables: ({ table: t }) => ({ tables: CHILDREN[String(t)] ?? [] }),
+  parentTables: ({ table: t }) => ({ tables: PARENTS[String(t)] ?? [] }),
   tableEdges: () => ({ edges: [] }),
   getColumns: ({ table: t }) => ({
     id: t,
@@ -132,7 +163,7 @@ const ANSWERS: Record<string, (params: Params) => unknown> = {
       { source: ["b", "id"], target: ["c", "id"], type: "direct" },
     ],
   }),
-  getLineageSettings: () => ({}),
+  getLineageSettings: () => hostSettings,
   persistLineageSettings: () => true,
   getRelationships: () => ({ refs: [] }),
 };
@@ -174,27 +205,39 @@ export const EMPTY_STATE: lineage.RenderArgs = {
 
 export type User = ReturnType<typeof userEvent.setup>;
 
-/** Renders the panel inside the app, and pushes `args` as the host's `render` message. */
+/**
+ * Renders the panel inside the app, and pushes `args` as the host's `render` message. `options.settings` is what the
+ * host answers `getLineageSettings` with.
+ */
 export const openLineage = async (
   args: lineage.RenderArgs = { node: TABLES.b, publication: "s:1" },
+  options: { settings?: Partial<lineage.LineageSettings> } = {},
 ): Promise<{ user: User; container: HTMLElement }> => {
   answerRequests();
+  hostSettings = options.settings ?? {};
   const user = userEvent.setup();
   const { container } = render(
     <AppProvider>
       <LineageView />
     </AppProvider>,
   );
+  // Lets the settings answer land first, so the graph is built with the cap the host sets.
+  await act(async () => undefined);
   await act(async () => {
     globalThis.dispatchEvent(
       new MessageEvent("message", { data: { command: "render", args } }),
     );
   });
   if (args.node) {
-    await waitFor(() => expect(nodes(container)).toHaveLength(3));
+    // Table cards and group cards are both React Flow nodes.
+    await waitFor(() => expect(flowNodes(container)).toHaveLength(3));
   }
   return { user, container };
 };
+
+/** The drawn nodes, table cards and group cards alike. */
+export const flowNodes = (container: HTMLElement) =>
+  container.querySelectorAll<HTMLElement>(".react-flow__node");
 
 export const nodes = (container: HTMLElement) =>
   container.querySelectorAll<HTMLElement>("[data-table]");

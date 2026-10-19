@@ -1,8 +1,8 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
-import { collapsedGroups } from "./expansionGroups";
+import { collapsedGroups, openGroup } from "./expansionGroups";
 import type { GraphState } from "./graph";
-import { emptyGraph } from "./graph";
+import { drawnGraph, emptyGraph } from "./graph";
 import { groupNodeId } from "./grouping";
 
 const table = (id: string): lineage.LineageTable => ({
@@ -21,10 +21,53 @@ const stateWith = (
 ): GraphState => ({
   ...emptyGraph(table("hub")),
   known: Object.fromEntries(
-    ["hub", "other", "x", "y1", "y2", "y3", "z"].map((id) => [id, table(id)]),
+    ["hub", "other", "x", "y1", "y2", "y3", "z", "z1", "z2"].map((id) => [
+      id,
+      table(id),
+    ]),
   ),
   expansions,
   groups,
+});
+
+describe("openGroup", () => {
+  // `hub` drawn, with `c:hub` grouped: `models/a` holds x, y1 and y2; `models/b` holds z1 and z2.
+  const grouped = (cap: number): GraphState => ({
+    ...stateWith(["c:hub"], {
+      "c:hub": {
+        buckets: [
+          { key: "models/a", members: ["x", "y1", "y2"] },
+          { key: "models/b", members: ["z1", "z2"] },
+        ],
+        loose: [],
+        open: {},
+      },
+    }),
+    cap,
+  });
+  const drawn = (state: GraphState) =>
+    drawnGraph(state)
+      .tables.map((t) => t.table)
+      .sort();
+
+  it("draws the first cap members of the group as ordinary cards", () => {
+    const state = openGroup(grouped(2), groupNodeId("c:hub", "models/a"));
+    expect(drawn(state)).toEqual(["hub", "x", "y1"]);
+    expect(collapsedGroups(state).map((g) => g.label)).toEqual(["b"]);
+  });
+
+  it("draws every member when there is no cap, or the cap is not smaller", () => {
+    const id = groupNodeId("c:hub", "models/a");
+    expect(drawn(openGroup(grouped(0), id))).toEqual(["hub", "x", "y1", "y2"]);
+    expect(drawn(openGroup(grouped(5), id))).toEqual(["hub", "x", "y1", "y2"]);
+  });
+
+  it("leaves the state as it is for an ID that is not a closed bucket of an applied expansion", () => {
+    const state = grouped(2);
+    expect(openGroup(state, "hub")).toBe(state);
+    expect(openGroup(state, groupNodeId("c:other", "models/a"))).toBe(state);
+    expect(openGroup(state, groupNodeId("c:hub", "models/none"))).toBe(state);
+  });
 });
 
 describe("collapsedGroups", () => {
@@ -63,7 +106,7 @@ describe("collapsedGroups", () => {
           { key: "models/b", members: ["y2", "y3"] },
         ],
         loose: ["z"],
-        open: { "models/b": true },
+        open: { "models/b": 2 },
       },
     });
     expect(collapsedGroups(state).map((g) => g.label)).toEqual(["a"]);

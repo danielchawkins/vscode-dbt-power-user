@@ -10,15 +10,18 @@ export interface Buckets {
   loose: string[];
 }
 
-/** An expansion's buckets, and which of them are open; an open bucket's members are drawn. */
-export type NeighbourGroups = Buckets & { open: Record<string, boolean> };
+/**
+ * An expansion's buckets, and how many members of each are drawn: `open[key]` is the count, and a bucket without an
+ * entry (or with 0) is closed.
+ */
+export type NeighbourGroups = Buckets & { open: Record<string, number> };
 
-/** The IDs a grouped expansion draws: its loose neighbours, then the members of each open bucket. */
+/** The IDs a grouped expansion draws: its loose neighbours, then the first `open` members of each open bucket. */
 export const groupedNeighbours = (groups: NeighbourGroups): string[] => [
   ...groups.loose,
-  ...groups.buckets
-    .filter((bucket) => groups.open[bucket.key])
-    .flatMap((bucket) => bucket.members),
+  ...groups.buckets.flatMap((bucket) =>
+    bucket.members.slice(0, groups.open[bucket.key] ?? 0),
+  ),
 ];
 
 /** The label of a bucket key: its last folder segment, or the resource type of a `type:` key. */
@@ -34,6 +37,24 @@ export const groupLabel = (key: string): string => {
 /** The node ID of a closed bucket `key` of the expansion `expansion`, so a group never shares a table's ID. */
 export const groupNodeId = (expansion: string, key: string): string =>
   `group:${expansion}|${key}`;
+
+/**
+ * The expansion key and bucket key a group node ID was made from, or undefined for any other ID. An expansion key
+ * has no `|`, so the first one ends it; a bucket key may hold any other character.
+ */
+export function parseGroupNodeId(
+  id: string,
+): [expansion: string, key: string] | undefined {
+  if (!id.startsWith("group:")) {
+    return undefined;
+  }
+  const body = id.slice("group:".length);
+  const bar = body.indexOf("|");
+  if (bar <= 0) {
+    return undefined;
+  }
+  return [body.slice(0, bar), body.slice(bar + 1)];
+}
 
 /**
  * The bucket of a node: its folder, `pkg:<folder>` outside the root package, or `type:<nodeType>` when it has no
