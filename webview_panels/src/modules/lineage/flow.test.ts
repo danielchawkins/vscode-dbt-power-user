@@ -1,6 +1,10 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
+import { collapsedGroups } from "./expansionGroups";
 import { toFlow } from "./flow";
+import { addNeighbours, emptyGraph, lineageData } from "./graph";
+import { combinedEdges } from "./groupEdges";
+import { groupNodeId } from "./grouping";
 import { geometry } from "./layout";
 
 const table = (id: string): lineage.LineageTable => ({
@@ -61,5 +65,53 @@ describe("toFlow with groups", () => {
     const { nodes, edges } = toFlow(input([]));
     expect(nodes.map((n) => n.id)).toEqual(["hub", "g:1"]);
     expect(edges.some((e) => e.target === "g:1")).toBe(false);
+  });
+});
+
+describe("toFlow with combined edges from a real state", () => {
+  it("draws the combined edges to the group nodes they join", () => {
+    const child = (folder: string, id: string) => ({
+      ...table(id),
+      path: `${folder}/${id}.sql`,
+      rootPackage: true,
+    });
+    let state = addNeighbours(
+      emptyGraph(table("hub"), 3, "folder"),
+      "children",
+      "hub",
+      [
+        child("models/a", "a1"),
+        child("models/a", "a2"),
+        child("models/b", "b1"),
+        child("models/b", "b2"),
+        child("models/c", "c1"),
+      ],
+    );
+    state = { ...state, links: { "a1\u0000b1": ["a1", "b1"] } };
+    const groups = collapsedGroups(state);
+    const groupEdges = combinedEdges(state, groups);
+    const { nodes, edges } = toFlow({
+      data: lineageData(state, { direct: true, indirect: true }),
+      columns: {},
+      columnTables: [],
+      expansions: state.expansions,
+      groups,
+      groupEdges,
+      errors: {},
+      refs: [],
+    });
+    const groupA = groupNodeId("c:hub", "models/a");
+    const groupB = groupNodeId("c:hub", "models/b");
+    expect(nodes.filter((n) => n.type === "group").map((n) => n.id)).toEqual([
+      groupA,
+      groupB,
+    ]);
+    expect(edges).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ source: "hub", target: groupA }),
+        expect.objectContaining({ source: "hub", target: groupB }),
+        expect.objectContaining({ source: groupA, target: groupB }),
+      ]),
+    );
   });
 });

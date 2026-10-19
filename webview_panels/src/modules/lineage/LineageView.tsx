@@ -18,6 +18,7 @@ import { hiddenCounts } from "./expansionCap";
 import { collapsedGroups } from "./expansionGroups";
 import { toFlow } from "./flow";
 import { lineageData } from "./graph";
+import { combinedEdges } from "./groupEdges";
 import { GroupNode } from "./GroupNode";
 import styles from "./lineageGraph.module.css";
 import MissingLineageMessage from "./MissingLineageMessage";
@@ -285,7 +286,7 @@ const Graph = (): React.JSX.Element => {
       pending: graph.pending,
       hidden: hiddenCounts(graph),
       groups,
-      groupEdges: groups.map((g) => g.edge),
+      groupEdges: combinedEdges(graph, groups),
       errors: graph.errors,
       selectedTable: graph.selectedTable,
       selectedColumn: graph.selectedColumn,
