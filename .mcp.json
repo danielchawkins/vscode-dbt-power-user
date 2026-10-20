@@ -1,9 +1,3 @@
 {
-  "mcpServers": {
-    "playwright": {
-      "command": "npx",
-      "args": ["-y", "@playwright/mcp"],
-      "env": { "BROWSER_NAME": "chromium" }
-    }
-  }
+  "mcpServers": {}
 }
