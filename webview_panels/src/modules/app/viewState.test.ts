@@ -102,6 +102,22 @@ describe("panel view state", () => {
     expect(isViewState("lineage", { ...lineage, start: ["t"] })).toBe(false);
   });
 
+  it("accepts open group IDs and refuses an over-long one", () => {
+    const lineage = samples[2];
+    expect(
+      isViewState("lineage", {
+        ...lineage,
+        openGroups: ["group:c:model.p.orders|pkg:models/marts"],
+      }),
+    ).toBe(true);
+    expect(
+      isViewState("lineage", {
+        ...lineage,
+        openGroups: ["x".repeat(MAX_VIEW_STATE_STRING + 1)],
+      }),
+    ).toBe(false);
+  });
+
   it("refuses a field of the wrong kind or another panel's state", () => {
     expect(
       isViewState("queryResults", { panel: "queryResults", tabState: "1" }),

@@ -1,6 +1,8 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { LineageViewState } from "@modules/app/viewState";
+import { MAX_VIEW_STATE_STRING } from "@modules/app/viewState";
 import { createContext } from "react";
+import { groupChips } from "./expansionGroups";
 import type { Direction, GraphState } from "./graph";
 
 type Settings = lineage.LineageSettings;
@@ -60,7 +62,10 @@ export const visibleRefs = (
       )
     : [];
 
-/** The persisted view state of `graph`; `undefined` until a start table is drawn. */
+/**
+ * The persisted view state of `graph`; `undefined` until a start table is drawn. An open group whose ID is longer
+ * than a view state string is left out, since the whole state would be refused; that group comes back closed.
+ */
 export const viewStateOf = (
   graph: GraphState,
   publication: string | undefined,
@@ -74,6 +79,9 @@ export const viewStateOf = (
         columnTables: graph.columnTables,
         selectedTable: graph.selectedTable,
         selectedColumn: graph.selectedColumn,
+        openGroups: groupChips(graph)
+          .map((chip) => chip.id)
+          .filter((id) => id.length <= MAX_VIEW_STATE_STRING),
       }
     : undefined;
 

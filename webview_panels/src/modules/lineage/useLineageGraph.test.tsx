@@ -3,6 +3,7 @@ import { handleIncomingResponse } from "@modules/app/requestExecutor";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getVsCodeApiMock } from "../../test/setup";
+import { groupNodeId } from "./grouping";
 import { useLineageGraph } from "./useLineageGraph";
 
 const table = (
@@ -53,10 +54,12 @@ type Posted = {
 };
 
 /** Answers each request the hook posts as the host would. */
-const answerRequests = () =>
+const answerRequests = (
+  answers: Record<string, (params: never) => unknown> = ANSWERS,
+) =>
   getVsCodeApiMock().postMessage.mockImplementation((message: unknown) => {
     const { command, syncRequestId, args } = message as Posted;
-    const answer = ANSWERS[command];
+    const answer = answers[command];
     if (answer && syncRequestId) {
       queueMicrotask(() =>
         handleIncomingResponse({
@@ -145,5 +148,56 @@ describe("useLineageGraph", () => {
     act(() => result.current.actions.toggleExpansion("a", "children"));
     expect(result.current.graph.expansions).toEqual([]);
     expect(result.current.graph.columnTables).toEqual([]);
+  });
+
+  it("keeps an open group open after a project save", async () => {
+    // `a` has four children in two folders; with a cap of 2 they bucket into two closed groups.
+    const folderChildren = [
+      { ...table("m1", 0, 1), path: "models/x/m1.sql" },
+      { ...table("m2", 0, 1), path: "models/x/m2.sql" },
+      { ...table("m3", 0, 1), path: "models/y/m3.sql" },
+      { ...table("m4", 0, 1), path: "models/y/m4.sql" },
+    ];
+    answerRequests({
+      ...ANSWERS,
+      childTables: ({ table: t }: { table: string }) => ({
+        tables: t === "a" ? folderChildren : [],
+      }),
+    });
+    const { result } = renderHook(() =>
+      useLineageGraph(
+        () => 1,
+        vi.fn(),
+        () => ({ cap: 2, groupBy: "folder" }),
+      ),
+    );
+    await postRender("a");
+    await waitFor(() => expect(result.current.drawnKey).toBe(1));
+    expect(result.current.graph.groups["c:a"]?.open).toEqual({});
+
+    act(() =>
+      result.current.actions.openGroup(groupNodeId("c:a", "pkg:models/x")),
+    );
+    await waitFor(() =>
+      expect(result.current.graph.groups["c:a"]?.open).toEqual({
+        "pkg:models/x": 2,
+      }),
+    );
+
+    act(() => {
+      globalThis.dispatchEvent(
+        new MessageEvent("message", { data: { command: "projectSaved" } }),
+      );
+    });
+    await postRender("a");
+    await waitFor(() => expect(result.current.drawnKey).toBe(2));
+    expect(result.current.graph.groups["c:a"]?.open).toEqual({
+      "pkg:models/x": 2,
+    });
+    expect(getVsCodeApiMock().setState).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        openGroups: [groupNodeId("c:a", "pkg:models/x")],
+      }),
+    );
   });
 });
