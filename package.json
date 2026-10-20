@@ -477,6 +477,16 @@
         "category": "Fusion Power User"
       },
       {
+        "command": "fusionPowerUser.recordColumnTypes",
+        "title": "Record column types",
+        "category": "Fusion Power User"
+      },
+      {
+        "command": "fusionPowerUser.pullUpstreamDescriptions",
+        "title": "Pull upstream descriptions",
+        "category": "Fusion Power User"
+      },
+      {
         "command": "fusionPowerUser.runCurrentModel",
         "title": "Run dbt Model",
         "category": "Fusion Power User",
@@ -786,6 +796,14 @@
         {
           "command": "fusionPowerUser.goToDocumentationEditor",
           "group": "3_docs@1"
+        },
+        {
+          "command": "fusionPowerUser.recordColumnTypes",
+          "group": "3_docs@2"
+        },
+        {
+          "command": "fusionPowerUser.pullUpstreamDescriptions",
+          "group": "3_docs@3"
         }
       ],
       "editor/title/run": [
@@ -922,6 +940,14 @@
         {
           "command": "fusionPowerUser.previewComputed",
           "when": "false"
+        },
+        {
+          "command": "fusionPowerUser.recordColumnTypes",
+          "when": "fusionPowerUser.inProject"
+        },
+        {
+          "command": "fusionPowerUser.pullUpstreamDescriptions",
+          "when": "fusionPowerUser.inProject"
         }
       ]
     },

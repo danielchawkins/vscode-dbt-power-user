@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, EventEmitter, Uri, window, workspace } from "vscode";
+import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import { LineagePanel } from "../../features/lineage/lineagePanel";
 import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
@@ -576,6 +577,7 @@ function docsHarness() {
     getSourcesInProject: vi.fn(() => ["raw.orders"]),
     getModelsInProject: vi.fn(() => ["orders"]),
   };
+  const columnProposalRequests = new ColumnProposalRequests();
   const panel = new DocsEditViewPanel(
     projects,
     {} as any,
@@ -585,6 +587,7 @@ function docsHarness() {
       queryManifestService,
       emitterService: { eventEmitter: { event: vi.fn() } },
       columnProposals,
+      columnProposalRequests,
     } as any,
     silentLog(),
   ) as any;
@@ -600,6 +603,7 @@ function docsHarness() {
     docs,
     payload,
     columnProposals,
+    columnProposalRequests,
     dbtTestService,
     queryManifestService,
     send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
@@ -810,5 +814,38 @@ describe("documentation editor messages", () => {
 
   it.each(Object.entries(rows))("%s", async (_command, row) => {
     await row();
+  });
+});
+
+describe("column proposal requests", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("waits for the page, then posts the proposals", async () => {
+    vi.useFakeTimers();
+    const h = docsHarness();
+    h.columnProposalRequests.request("types");
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(h.postMessage).not.toHaveBeenCalled();
+
+    await h.send({ command: "webview:ready" });
+    await vi.advanceTimersByTimeAsync(500);
+    expect(h.postMessage).toHaveBeenCalledWith({
+      command: "renderColumnProposals",
+      payload: h.payload,
+    });
+  });
+
+  it("shows a warning and posts nothing when the page does not load by the deadline", async () => {
+    vi.useFakeTimers();
+    const h = docsHarness();
+    h.columnProposalRequests.request("descriptions");
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(window.showWarningMessage).toHaveBeenCalledWith(
+      "The documentation editor did not load; try again",
+    );
+    expect(h.columnProposals.propose).not.toHaveBeenCalled();
+    expect(h.postMessage).not.toHaveBeenCalled();
   });
 });

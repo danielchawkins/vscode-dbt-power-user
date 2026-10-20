@@ -13,6 +13,7 @@ import { registerDeferCommands } from "./defer/commands";
 import type { DeferToProductionStatusBar } from "./defer/deferToProductionStatusBar";
 import { registerDiagnosticsCommands } from "./diagnostics/commands";
 import type { DiagnosticsOutputChannel } from "./diagnostics/diagnosticsOutputChannel";
+import type { ColumnProposalRequests } from "./docs/columnProposals";
 import { registerDocsCommands } from "./docs/commands";
 import { registerModelTreeCommands } from "./modelTree/commands";
 import { registerProjectSetupCommands } from "./projectSetup/commands";
@@ -36,6 +37,7 @@ export interface CommandDeps {
   cteProfilerDecorationProvider: CteProfilerDecorationProvider;
   deferToProductionStatusBar: DeferToProductionStatusBar;
   startupGate: Pick<StartupGate, "whenSettled">;
+  columnProposals: ColumnProposalRequests;
 }
 
 /** Composes the commands each feature registers; owns their disposal. */
@@ -61,7 +63,7 @@ export class VSCodeCommands implements Disposable {
         register,
       }),
       ...registerCompiledSqlCommands(register),
-      ...registerDocsCommands(register),
+      ...registerDocsCommands(register, deps.columnProposals),
       ...registerModelTreeCommands(register),
       ...registerProjectSetupCommands(
         deps.extensionContext,

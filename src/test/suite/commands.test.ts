@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, type Mock, vi } from "vitest";
 import { commands, env, Uri, window, workspace } from "vscode";
 import { VSCodeCommands } from "../../features/commands";
+import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 
 vi.mock("../../projects/registry/previewUri", () => ({
   activeModelUri: (uri: unknown) => uri,
@@ -41,6 +42,7 @@ const build = (over: { projects?: unknown; runTest?: unknown } = {}) => {
     getFromWorkspaceState: (key: string) => (calls.push([key]), "picked"),
   };
   const log = { error: record("error"), debug: record("debug") };
+  const columnProposals = new ColumnProposalRequests();
   new VSCodeCommands({
     projects: (over.projects ?? {
       get: () => undefined,
@@ -57,6 +59,7 @@ const build = (over: { projects?: unknown; runTest?: unknown } = {}) => {
     cteProfilerDecorationProvider: { toggle: vi.fn() } as never,
     deferToProductionStatusBar: deferBar as never,
     startupGate: { whenSettled: async () => undefined },
+    columnProposals,
   });
   const handler = (id: string): Handler => {
     const call = (commands.registerCommand as Mock).mock.calls.find(
@@ -65,7 +68,7 @@ const build = (over: { projects?: unknown; runTest?: unknown } = {}) => {
     expect(call, `${id} is registered`).toBeDefined();
     return call![1] as Handler;
   };
-  return { handler, calls, state };
+  return { handler, calls, state, columnProposals };
 };
 
 const lastCall = (mock: Mock) => mock.mock.calls.at(-1);
@@ -255,5 +258,42 @@ describe("VSCodeCommands", () => {
       await handler("fusionPowerUser.showCompiledSQL")();
       expect((workspace.openTextDocument as Mock).mock.calls).toEqual([]);
     });
+  });
+
+  describe("column proposal commands", () => {
+    const cases = [
+      ["fusionPowerUser.recordColumnTypes", "types"],
+      ["fusionPowerUser.pullUpstreamDescriptions", "descriptions"],
+    ] as const;
+
+    for (const [id, kind] of cases) {
+      it(`${id} shows an inactive uri, focuses the view and requests ${kind}`, async () => {
+        const { handler, columnProposals } = build();
+        const request = vi.spyOn(columnProposals, "request");
+        (window as any).activeTextEditor = {
+          document: { uri: Uri.file("/p/models/a.sql") },
+        };
+        (window as any).showTextDocument = vi.fn();
+        const uri = Uri.file("/p/models/b.sql");
+        await handler(id)(uri);
+        expect(window.showTextDocument).toHaveBeenCalledWith(uri);
+        expect(commands.executeCommand).toHaveBeenCalledWith(
+          "fusionPowerUser.DocsEdit.focus",
+        );
+        expect(request).toHaveBeenCalledWith(kind);
+      });
+
+      it(`${id} does not show the active uri again`, async () => {
+        const { handler, columnProposals } = build();
+        const request = vi.spyOn(columnProposals, "request");
+        (window as any).activeTextEditor = {
+          document: { uri: Uri.file("/p/models/a.sql") },
+        };
+        (window as any).showTextDocument = vi.fn();
+        await handler(id)(Uri.file("/p/models/a.sql"));
+        expect(window.showTextDocument).not.toHaveBeenCalled();
+        expect(request).toHaveBeenCalledWith(kind);
+      });
+    }
   });
 });
