@@ -135,6 +135,32 @@ describe("resolveUpstreamDescriptions", () => {
     ]);
   });
 
+  it("stops asking Fusion once the signal is aborted", async () => {
+    const controller = new AbortController();
+    const calls: (readonly string[])[] = [];
+    const lsp = {
+      state: "running" as const,
+      listNodes: async (selectors: readonly string[]) => {
+        calls.push(selectors);
+        controller.abort();
+        return FUSION_2_0_6_TOTAL;
+      },
+    };
+    const outcome = await resolveUpstreamDescriptions({
+      lsp,
+      strict: true,
+      uniqueId: TOTALS_DOWNSTREAM,
+      columns: [
+        { name: "total", description: "" },
+        { name: "grand_total", description: "" },
+      ],
+      manifest,
+      signal: controller.signal,
+    });
+    expect(calls).toEqual([columnLineageArgs(TOTALS_DOWNSTREAM, "total")]);
+    expect(outcome.kind).toBe("found");
+  });
+
   it("omits a column whose ancestors have no description", async () => {
     const { lsp } = fakeLsp();
     const outcome = await resolveUpstreamDescriptions({

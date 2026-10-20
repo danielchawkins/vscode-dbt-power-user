@@ -21,7 +21,7 @@ const NEVER_BUILT = "never_built";
 const NOT_BUILT_NOTICE =
   "`never_built` is not built in target `dev`, and no deferred relation is configured. Build it with `dbt run -s never_built`, set up defer, or use the inferred types.";
 
-type Payload = columnProposals.ColumnProposalsPayload;
+type Payload = columnProposals.TypeProposalsPayload;
 
 function modelFile(projectDir: string, model: string): string {
   return path.join(projectDir, "models", "column_docs", `${model}.sql`);

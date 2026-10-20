@@ -25,6 +25,8 @@ export interface UpstreamDescriptionRequest {
   uniqueId: string;
   columns: readonly EditorColumn[];
   manifest: { nodeMetaMap: NodeMetaMap; sourceMetaMap: SourceMetaMap };
+  /** Aborts the column loop before the next `listNodes` call; an answer already asked for still arrives. */
+  signal?: AbortSignal;
 }
 
 interface ColumnDescriptionProposal {
@@ -47,6 +49,7 @@ export async function resolveUpstreamDescriptions({
   uniqueId,
   columns,
   manifest,
+  signal,
 }: UpstreamDescriptionRequest): Promise<UpstreamDescriptionOutcome> {
   if (lsp.state !== "running") {
     return { kind: "notRunning", state: lsp.state };
@@ -57,6 +60,9 @@ export async function resolveUpstreamDescriptions({
   const describe = (ref: ColumnRef) => declaredDescription(manifest, ref);
   const proposals: ColumnDescriptionProposal[] = [];
   for (const { name } of columns.filter((c) => c.description.trim() === "")) {
+    if (signal?.aborted) {
+      break;
+    }
     const edges = columnEdges(
       await lsp.listNodes(columnLineageArgs(uniqueId, name)),
     );
