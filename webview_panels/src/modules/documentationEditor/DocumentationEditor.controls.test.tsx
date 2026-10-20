@@ -59,22 +59,6 @@ const selectInto = async (user: User, name: string, option: string) => {
 };
 
 /**
- * The Sync button shows its label only on hover, so it has no name at rest. Finds the button by its icon, hovers it,
- * and records the press by the name the hover shows.
- */
-const hoverToName = async (
-  user: User,
-  icon: string,
-  name: string,
-): Promise<HTMLElement> => {
-  const element = document
-    .querySelector(`.codicon-${icon}`)!
-    .closest<HTMLElement>("button")!;
-  await user.hover(element);
-  return screen.getByRole("button", { name });
-};
-
-/**
  * The save chevron is an icon-only button with no title, label or text, so it has no name at all. The tests click it
  * without recording it; the coverage gate leaves it out (see the pins there).
  */
@@ -333,27 +317,6 @@ describe("Documentation editor descriptions", () => {
     await user.clear(search);
     expect(
       screen.getByPlaceholderText("Describe order_id"),
-    ).toBeInTheDocument();
-  });
-
-  it("syncs the columns with the database", async () => {
-    const { user } = openDocumentation(DOCUMENTATION);
-    const sync = await hoverToName(
-      user,
-      "debug-restart",
-      "Sync with the Database",
-    );
-    await pressElement(user, "button", "Sync with the Database", sync);
-    await expectPosted("fetchMetadataFromDatabase");
-    send({
-      command: "renderColumnsFromMetadataFetch",
-      columns: [
-        { name: "order_id", type: "integer" },
-        { name: "shipped_at", type: "timestamp" },
-      ],
-    });
-    expect(
-      await screen.findByPlaceholderText("Describe shipped_at"),
     ).toBeInTheDocument();
   });
 });
@@ -766,7 +729,6 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:Remove placed",
   "button:Remove shipped",
   "button:Save",
-  "button:Sync with the Database",
   "button:Update",
   "button:accepted_values",
   "button:amount_positive",

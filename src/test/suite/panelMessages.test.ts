@@ -527,8 +527,22 @@ function docsHarness() {
   const docs = {
     name: "orders",
     description: "saved",
-    columns: [],
+    columns: [{ name: "id", type: "int" }],
     filePath: "/p/models/orders.sql",
+  };
+  const payload = {
+    kind: "types",
+    model: "/p/models/orders.sql",
+    proposals: [{ column: "id", type: "integer", change: "fill" }],
+    notFound: [],
+  };
+  const columnProposals = {
+    propose: vi.fn(
+      async (
+        _kind: string,
+        _target: unknown,
+      ): Promise<typeof payload | undefined> => payload,
+    ),
   };
   const project = {
     projectRoot: Uri.file("/p"),
@@ -570,6 +584,7 @@ function docsHarness() {
       dbtTestService,
       queryManifestService,
       emitterService: { eventEmitter: { event: vi.fn() } },
+      columnProposals,
     } as any,
     silentLog(),
   ) as any;
@@ -583,6 +598,8 @@ function docsHarness() {
     postMessage,
     project,
     docs,
+    payload,
+    columnProposals,
     dbtTestService,
     queryManifestService,
     send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
@@ -736,25 +753,39 @@ describe("documentation editor messages", () => {
         response("m1", { models: ["orders"] }),
       );
     },
-    fetchMetadataFromDatabase: async () => {
+    proposeColumns: async () => {
       const h = docsHarness();
-      await h.send({
-        command: "fetchMetadataFromDatabase",
-        syncRequestId: "f1",
+      const draft = {
+        docs: { ...h.docs, columns: [{ name: "id", type: "text" }] },
+        tests: [],
+      };
+      await h.send({ command: "saveDraft", model: h.docs.filePath, draft });
+      await h.send({ command: "proposeColumns", kind: "types" });
+      const [kind, target] = h.columnProposals.propose.mock.calls[0] as [
+        string,
+        { yaml: unknown; draft: unknown },
+      ];
+      expect(kind).toBe("types");
+      expect(target.draft).toEqual([{ name: "id", type: "text" }]);
+      expect(target.yaml).toEqual([{ name: "id", type: "int" }]);
+      expect(h.postMessage).toHaveBeenCalledWith({
+        command: "renderColumnProposals",
+        payload: h.payload,
       });
-      expect(h.project.queries.getColumnsOfModel).toHaveBeenCalledWith(
-        "orders",
-      );
-      expect(h.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ command: "renderColumnsFromMetadataFetch" }),
-      );
-      expect(h.postMessage).toHaveBeenCalledWith(
-        response(
-          "f1",
-          expect.objectContaining({
-            columns: [expect.objectContaining({ name: "id" })],
-          }),
-        ),
+      expect(
+        documentationEditor.isHostMessage(h.postMessage.mock.calls[0][0]),
+      ).toBe(true);
+      h.columnProposals.propose.mockResolvedValueOnce(undefined);
+      h.postMessage.mockClear();
+      await h.send({ command: "proposeColumns", kind: "descriptions" });
+      expect(h.postMessage).not.toHaveBeenCalled();
+    },
+    runNoticeAction: async () => {
+      const h = docsHarness();
+      await h.send({ command: "runNoticeAction", action: "useStrictAnalysis" });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "fusionPowerUser.useStrictAnalysis",
+        Uri.file("/p"),
       );
     },
     saveDocumentation: async () => {

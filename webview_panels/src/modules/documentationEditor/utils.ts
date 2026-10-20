@@ -30,33 +30,6 @@ export const fromHostDocumentation = (
     resource_type: docs.resource_type,
   };
 
-/** Columns a warehouse metadata fetch returned, as editor columns that are not yet in YAML. */
-export const fromFetchedColumns = (
-  columns: { name: string; type?: string | undefined }[],
-): DBTDocumentationColumn[] =>
-  columns.map((column) => ({
-    name: column.name,
-    type: column.type,
-    generated: false,
-    source: Source.DATABASE,
-  }));
-
-export const mergeCurrentAndIncomingDocumentationColumns = (
-  current: DBTDocumentation["columns"] | undefined,
-  incoming: DBTDocumentation["columns"],
-): DBTDocumentation["columns"] => {
-  return incoming.map((column) => {
-    const existingColumn = current?.find((c) => column.name === c.name);
-    return {
-      name: column.name ?? "",
-      type: column.type,
-      description: existingColumn?.description ?? "",
-      generated: existingColumn?.generated ?? false,
-      source: existingColumn !== undefined ? Source.YAML : Source.DATABASE,
-    };
-  });
-};
-
 const isTestDirty = (
   test: DBTModelTest,
   incomingTest: DBTModelTest,

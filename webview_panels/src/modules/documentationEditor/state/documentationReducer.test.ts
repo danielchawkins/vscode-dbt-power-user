@@ -5,7 +5,6 @@ import {
   setDocBlocks,
   setIncomingDocsData,
   setProject,
-  updateColumnsAfterSync,
   updateColumnsInCurrentDocsData,
   updateCurrentDocsData,
 } from "./documentationReducer";
@@ -88,22 +87,6 @@ describe("documentationReducer", () => {
       { ...docs("first").columns[0], description: "new" },
     ]);
     expect(loaded.currentDocsData?.columns[0].description).toBe("key");
-  });
-
-  it("merges synced columns, marking new ones as from the database", () => {
-    const next = documentationReducer(
-      loaded,
-      updateColumnsAfterSync({
-        columns: [
-          { name: "id", generated: false, source: Source.DATABASE },
-          { name: "amount", generated: false, source: Source.DATABASE },
-        ],
-      }),
-    );
-    expect(next.currentDocsData?.columns.map((c) => c.source)).toEqual([
-      Source.YAML,
-      Source.DATABASE,
-    ]);
   });
 
   it("clears doc blocks when the project changes", () => {

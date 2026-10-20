@@ -16,7 +16,6 @@ import {
   setMissingDocumentationMessage,
   setProject,
   setPublication,
-  updateColumnsAfterSync,
   updateCurrentDocsData,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
@@ -27,11 +26,7 @@ import type {
   DBTUnitTest,
 } from "./state/types";
 import useDraftSync from "./state/useDraftSync";
-import {
-  fromFetchedColumns,
-  fromHostDocumentation,
-  isStateDirty,
-} from "./utils";
+import { fromHostDocumentation, isStateDirty } from "./utils";
 
 type HostMessage = documentationEditor.HostMessage;
 /** `renderDocumentation` with `docs` mapped by `fromHostDocumentation`; the test types are the contract's own. */
@@ -127,18 +122,12 @@ const DocumentationProvider = (): React.JSX.Element => {
           });
         break;
       }
-      case "renderColumnsFromMetadataFetch":
-        if (event.data.columns) {
-          dispatch(
-            updateColumnsAfterSync({
-              columns: fromFetchedColumns(event.data.columns),
-            }),
-          );
-        }
-        break;
       // The app listener settles responses; this panel shows no error state.
       case "response":
       case "renderError":
+        break;
+      // Column proposals are not shown in this panel yet.
+      case "renderColumnProposals":
         break;
     }
   }, []);

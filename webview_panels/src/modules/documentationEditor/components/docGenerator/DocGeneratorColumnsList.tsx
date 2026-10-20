@@ -5,7 +5,6 @@ import { useMemo } from "react";
 import classes from "../../styles.module.css";
 import SearchColumnsInput from "../search/SearchColumnsInput";
 import DocGeneratorColumn from "./DocGeneratorColumn";
-import SyncWithDatabase from "./SyncWithDatabase";
 
 const DocGeneratorColumnsList = (): React.JSX.Element => {
   const {
@@ -47,7 +46,7 @@ const DocGeneratorColumnsList = (): React.JSX.Element => {
         <Stack className={classes.columnHeader}>
           <Stack>
             <h3>Columns</h3>
-            <SyncWithDatabase />
+            {/* Column actions mount here. */}
           </Stack>
           <SearchColumnsInput />
         </Stack>

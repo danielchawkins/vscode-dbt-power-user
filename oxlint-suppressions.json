@@ -141,7 +141,7 @@
   },
   "src/features/docs/docsYaml.ts": {
     "max-params": {
-      "count": 2
+      "count": 1
     }
   },
   "src/features/lineage/dbtLineageService.ts": {

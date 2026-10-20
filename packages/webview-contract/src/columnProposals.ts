@@ -1,6 +1,6 @@
 import type { PanelNotice } from "./common.js";
 import { isPanelNotice } from "./common.js";
-import type { DocumentationColumn } from "./documentationEditor.js";
+import type { DocumentationColumn } from "./documentationColumn.js";
 import { arrayOf, isString, optional, oneOf, shape } from "./guards.js";
 
 /** Where a proposal's types came from: the target or the deferred state's relation, or the language server. */

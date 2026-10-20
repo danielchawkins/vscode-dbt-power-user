@@ -126,10 +126,6 @@
 .doc-generator .body-wrap .body .column-header {
   justify-content: space-between;
 }
-.doc-generator .body-wrap .body .column-header .sync-btn svg {
-  width: 14px;
-  vertical-align: bottom;
-}
 .doc-generator .body-wrap .body .columns {
   gap: 16px;
 }

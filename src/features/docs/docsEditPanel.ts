@@ -18,15 +18,20 @@ import type { ProjectLookup, Projects } from "../../projects/project/projects";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
 import { activeModelUri } from "../../projects/registry/previewUri";
+import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
 import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
-import type { ColumnProposalService, ProposalTarget } from "./columnProposals";
+import type {
+  ColumnProposalService,
+  ProposalKind,
+  ProposalTarget,
+} from "./columnProposals";
 import { proposalTargetOf } from "./columnProposals";
 import type { TypeSourceProject } from "./columnTypeSource";
 import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
-import type { DBTDocumentation, MetadataColumn } from "./docGenTypes";
+import type { DBTDocumentation } from "./docGenTypes";
 import {
   type DocsProject,
   DocsEditRequests,
@@ -34,7 +39,6 @@ import {
 } from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
 import { registerDocsHarnessCommands } from "./docsHarnessCommands";
-import { convertColumnNamesByCaseConfig } from "./docsYaml";
 
 /** The active editor's project as the panel reads it: the handlers' view plus the adapter for saving. */
 type PanelProject = DocsProject &
@@ -220,10 +224,6 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     );
   }
 
-  private async transmitColumns(columns: MetadataColumn[]) {
-    await this.post({ command: "renderColumnsFromMetadataFetch", columns });
-  }
-
   public override async resolveWebviewView(
     panel: WebviewView,
     context: WebviewViewResolveContext,
@@ -291,10 +291,12 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       saveDraft: (message) => this.saveDraft(message),
       openProblemsTab: () =>
         commands.executeCommand("workbench.action.problems.focus"),
-      fetchMetadataFromDatabase: requests.withProject(
-        ({ syncRequestId }, project, modelPath) =>
-          this.fetchMetadataFromDatabase(project, modelPath, syncRequestId),
-      ),
+      proposeColumns: ({ kind }) => this.propose(kind),
+      runNoticeAction: () =>
+        commands.executeCommand(
+          USE_STRICT_ANALYSIS_COMMAND,
+          this.getProject()?.projectRoot,
+        ),
       saveDocumentation: requests.withProject((message) =>
         withProgress("Saving documentation", () => this.saveAndReply(message)),
       ),
@@ -335,55 +337,14 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     });
   }
 
-  private fetchMetadataFromDatabase(
-    project: DocsProject,
-    modelPath: Uri,
-    syncRequestId: string | undefined,
-  ) {
-    return withProgress(
-      "Syncing columns with metadata from database",
-      async () => {
-        const modelName = path.basename(modelPath.fsPath, ".sql");
-        try {
-          const columnsInRelation =
-            await project.queries.getColumnsOfModel(modelName);
-          const columns = convertColumnNamesByCaseConfig(
-            columnsInRelation.map((column) => ({
-              name: column.column,
-              type: column.dtype.toLowerCase(),
-            })),
-            modelName,
-            this.documentation?.patchPath,
-            project.projectRoot.fsPath,
-          );
-          await this.transmitColumns(columns);
-          if (syncRequestId) {
-            await this.post({
-              command: "response",
-              args: { syncRequestId, body: { columns }, status: true },
-            });
-          }
-        } catch (exc) {
-          await this.transmitError();
-          void notifyError(
-            project,
-            `Could not fetch metadata for ${modelName} from the database`,
-            exc,
-          );
-          this.dbtTerminal.error(
-            "docsEditPanelLoadError",
-            `An error occured while fetching metadata for ${modelName} from the database`,
-            exc,
-          );
-          if (syncRequestId) {
-            await this.post({
-              command: "response",
-              args: { syncRequestId, body: {}, status: false },
-            });
-          }
-        }
-      },
-    );
+  /** Posts the proposals of `kind` for the active model; a superseded or cancelled request posts nothing. */
+  private async propose(kind: ProposalKind) {
+    const target = await this.proposalTarget();
+    const payload =
+      target && (await this.columnProposals.propose(kind, target));
+    if (payload) {
+      await this.post({ command: "renderColumnProposals", payload });
+    }
   }
 
   private async reloadDocumentationFromManifest() {

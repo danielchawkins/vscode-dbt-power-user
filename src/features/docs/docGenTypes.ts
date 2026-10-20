@@ -3,7 +3,7 @@ export const Source = {
 } as const;
 export type Source = (typeof Source)[keyof typeof Source];
 
-export interface MetadataColumn {
+interface MetadataColumn {
   name: string;
   type?: string | undefined;
 }

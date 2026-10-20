@@ -1,8 +1,5 @@
 import { typedReducer } from "@modules/app/typedReducer";
-import {
-  isStateDirty,
-  mergeCurrentAndIncomingDocumentationColumns,
-} from "../utils";
+import { isStateDirty } from "../utils";
 import type {
   DBTDocumentation,
   DBTModelTest,
@@ -103,7 +100,6 @@ const documentation = typedReducer<
     updateCurrentUnitTests: S["currentUnitTests"];
     setIncomingDocsData: Parameters<typeof takeIncomingDocs>[1];
     updateCurrentDocsData: Parameters<typeof mergeCurrentDocs>[1];
-    updateColumnsAfterSync: { columns: DBTDocumentation["columns"] };
     updateColumnsInCurrentDocsData: {
       columns: Partial<MetadataColumn & { description?: string }>[];
     };
@@ -118,10 +114,6 @@ const documentation = typedReducer<
   updateCurrentUnitTests: set("currentUnitTests"),
   setIncomingDocsData: takeIncomingDocs,
   updateCurrentDocsData: mergeCurrentDocs,
-  updateColumnsAfterSync: (state, { columns }) =>
-    withColumns(state, (current) =>
-      mergeCurrentAndIncomingDocumentationColumns(current, columns),
-    ),
   updateColumnsInCurrentDocsData: (state, { columns }) =>
     withColumns(state, (current) =>
       current.map((c) => {
@@ -137,7 +129,6 @@ export const {
   setIncomingDocsData,
   updateCurrentDocsData,
   updateColumnsInCurrentDocsData,
-  updateColumnsAfterSync,
   setProject,
   setDocBlocks,
   setPublication,
