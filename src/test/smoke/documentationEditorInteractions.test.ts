@@ -294,8 +294,8 @@ suite("Documentation editor interactions", function () {
     await evidence?.capture(DOCS, {
       name: "documentation-type-proposals-recorded",
       expect:
-        "Summary after Record column types shows a source label or a notice; the label names the types source.",
-      measured: { sourceLabel: types.sourceLabel, notice: types.notice },
+        "Summary after Record column types shows the types source label, or the notice when no source answered.",
+      measured: { read: types.sourceLabel ?? types.notice },
     });
     // Dismiss clears the type proposals, so the descriptions summary reads on its own.
     await clickInWebview(DOCS, { role: "button", name: "Dismiss" });
@@ -308,11 +308,8 @@ suite("Documentation editor interactions", function () {
     await evidence?.capture(DOCS, {
       name: "documentation-description-proposals-pulled",
       expect:
-        "Summary after Pull upstream descriptions shows a notice, since the descriptions have no source label.",
-      measured: {
-        sourceLabel: descriptions.sourceLabel,
-        notice: descriptions.notice,
-      },
+        "Summary after Pull upstream descriptions shows its notice; descriptions carry no source label.",
+      measured: { read: descriptions.notice ?? descriptions.sourceLabel },
     });
     await clickInWebview(DOCS, { role: "button", name: "Dismiss" });
   });

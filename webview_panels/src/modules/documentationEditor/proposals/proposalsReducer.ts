@@ -36,39 +36,22 @@ export const choicesOf = (state: ProposalsState): ProposalChoices => ({
 
 const keyOf = (column: string): string => column.toLowerCase();
 
-const filterTypes = (
-  state: ProposalsState,
-  keep: (proposal: columnProposals.TypeProposal) => boolean,
-): ProposalsState => {
-  const entry = state.byKind.types;
-  return entry
-    ? {
-        ...state,
-        byKind: {
-          ...state.byKind,
-          types: {
-            ...entry,
-            payload: {
-              ...entry.payload,
-              proposals: entry.payload.proposals.filter(keep),
-            },
-          },
-        },
-      }
-    : state;
-};
+type ProposalOf<K extends ProposalKind> =
+  ProposalsEntries[K]["payload"]["proposals"][number];
 
-const filterDescriptions = (
+/** Keeps the proposals of `kind` that `keep` accepts; the kind's other fields are unchanged. */
+const filterKind = <K extends ProposalKind>(
   state: ProposalsState,
-  keep: (proposal: columnProposals.DescriptionProposal) => boolean,
+  kind: K,
+  keep: (proposal: ProposalOf<K>) => boolean,
 ): ProposalsState => {
-  const entry = state.byKind.descriptions;
+  const entry = state.byKind[kind];
   return entry
     ? {
         ...state,
         byKind: {
           ...state.byKind,
-          descriptions: {
+          [kind]: {
             ...entry,
             payload: {
               ...entry.payload,
@@ -84,10 +67,7 @@ const filterDescriptions = (
 const removeOne = (
   state: ProposalsState,
   { kind, column }: { kind: ProposalKind; column: string },
-): ProposalsState =>
-  kind === "types"
-    ? filterTypes(state, (proposal) => proposal.column !== column)
-    : filterDescriptions(state, (proposal) => proposal.column !== column);
+): ProposalsState => filterKind(state, kind, (p) => p.column !== column);
 
 const proposals = typedReducer<
   ProposalsState,
@@ -119,17 +99,19 @@ const proposals = typedReducer<
   // predicate for this, so the rule is stated here.
   acceptedAll: (state) => {
     const choices = choicesOf(state);
-    const typesPending = filterTypes(
+    const typesPending = filterKind(
       state,
-      (proposal) =>
-        proposal.change === "overwrite" &&
-        choices.types[keyOf(proposal.column)]?.overwrite !== true,
+      "types",
+      (p) =>
+        p.change === "overwrite" &&
+        choices.types[keyOf(p.column)]?.overwrite !== true,
     );
-    return filterDescriptions(
+    return filterKind(
       typesPending,
-      (proposal) =>
-        proposal.candidates.length > 1 &&
-        choices.descriptions[keyOf(proposal.column)] === undefined,
+      "descriptions",
+      (p) =>
+        p.candidates.length > 1 &&
+        choices.descriptions[keyOf(p.column)] === undefined,
     );
   },
   chose: (state, { column, candidate }) => {

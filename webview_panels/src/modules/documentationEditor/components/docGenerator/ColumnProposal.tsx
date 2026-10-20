@@ -10,9 +10,6 @@ import { useProposalActions } from "@modules/documentationEditor/proposals/usePr
 import type { DBTDocumentationColumn } from "@modules/documentationEditor/state/types";
 import { Button, Stack } from "@uicore";
 
-const sameColumn = (proposed: string, column: string): boolean =>
-  proposed.toLowerCase() === column.toLowerCase();
-
 const sourcesOf = (candidate: columnProposals.DescriptionCandidate): string =>
   candidate.sources.map((s) => `${s.uniqueId}.${s.column}`).join(", ");
 
@@ -53,15 +50,13 @@ const TypeRow = ({
           Replace data_type of {name}
         </label>
       ) : null}
-      <Stack>
-        <Button
-          color="primary"
-          disabled={overwriting && !ticked}
-          onClick={() => actions.accept("types", proposal.column)}
-        >
-          Accept
-        </Button>
-      </Stack>
+      <Button
+        color="primary"
+        disabled={overwriting && !ticked}
+        onClick={() => actions.accept("types", proposal.column)}
+      >
+        Accept
+      </Button>
     </Stack>
   );
 };
@@ -77,27 +72,22 @@ const DescriptionRow = ({
   const { state, dispatch } = useProposals();
   const actions = useProposalActions();
   const pick = choicesOf(state).descriptions[name.toLowerCase()]?.candidate;
-  const [only] = proposal.candidates;
   const several = proposal.candidates.length > 1;
+  const [only] = proposal.candidates;
 
   return (
     <Stack direction="column">
       {several ? (
         <fieldset>
           <legend className="h6 mb-1">Upstream descriptions</legend>
-          {proposal.candidates.map((candidate) => (
+          {proposal.candidates.map((candidate, index) => (
             <label key={sourcesOf(candidate)} className="d-block">
               <input
                 type="radio"
                 name={`description-${name}`}
-                checked={pick === proposal.candidates.indexOf(candidate)}
+                checked={pick === index}
                 onChange={() =>
-                  dispatch(
-                    chose({
-                      column: proposal.column,
-                      candidate: proposal.candidates.indexOf(candidate),
-                    }),
-                  )
+                  dispatch(chose({ column: proposal.column, candidate: index }))
                 }
               />{" "}
               {candidate.description} <small>from {sourcesOf(candidate)}</small>
@@ -139,11 +129,13 @@ const ColumnProposal = ({
   column: DBTDocumentationColumn;
 }): React.JSX.Element | null => {
   const { state } = useProposals();
+  const same = (proposed: string): boolean =>
+    proposed.toLowerCase() === column.name.toLowerCase();
   const typeProposal = state.byKind.types?.payload.proposals.find(
-    (p) => p.change !== "add" && sameColumn(p.column, column.name),
+    (p) => p.change !== "add" && same(p.column),
   );
   const descriptionProposal = state.byKind.descriptions?.payload.proposals.find(
-    (p) => sameColumn(p.column, column.name),
+    (p) => same(p.column),
   );
   if (!typeProposal && !descriptionProposal) {
     return null;
