@@ -6,13 +6,15 @@ import { typedReducer } from "@modules/app/typedReducer";
  * overwrite tick of a types proposal, and `applyDescriptionProposals` reads the candidate index of a descriptions
  * proposal. A column with no pick has no entry. Keys are the lower-cased column name.
  */
-interface ProposalChoices {
+export interface ProposalChoices {
   types: Record<string, { overwrite?: boolean }>;
   descriptions: Record<string, { candidate: number }>;
 }
 
+export type ProposalKind = keyof ProposalChoices;
+
 type ProposalsEntries = {
-  [K in keyof ProposalChoices]: {
+  [K in ProposalKind]: {
     payload: Extract<columnProposals.ColumnProposalsPayload, { kind: K }>;
     choices: ProposalChoices[K];
   };
@@ -26,11 +28,78 @@ export interface ProposalsState {
 
 export const initialProposalsState: ProposalsState = { byKind: {} };
 
+/** The choices of both kinds, with a kind that has no proposals as empty. */
+export const choicesOf = (state: ProposalsState): ProposalChoices => ({
+  types: state.byKind.types?.choices ?? {},
+  descriptions: state.byKind.descriptions?.choices ?? {},
+});
+
+const keyOf = (column: string): string => column.toLowerCase();
+
+const filterTypes = (
+  state: ProposalsState,
+  keep: (proposal: columnProposals.TypeProposal) => boolean,
+): ProposalsState => {
+  const entry = state.byKind.types;
+  return entry
+    ? {
+        ...state,
+        byKind: {
+          ...state.byKind,
+          types: {
+            ...entry,
+            payload: {
+              ...entry.payload,
+              proposals: entry.payload.proposals.filter(keep),
+            },
+          },
+        },
+      }
+    : state;
+};
+
+const filterDescriptions = (
+  state: ProposalsState,
+  keep: (proposal: columnProposals.DescriptionProposal) => boolean,
+): ProposalsState => {
+  const entry = state.byKind.descriptions;
+  return entry
+    ? {
+        ...state,
+        byKind: {
+          ...state.byKind,
+          descriptions: {
+            ...entry,
+            payload: {
+              ...entry.payload,
+              proposals: entry.payload.proposals.filter(keep),
+            },
+          },
+        },
+      }
+    : state;
+};
+
+/** Removes the one proposal of `column` from `kind`'s pending list. */
+const removeOne = (
+  state: ProposalsState,
+  { kind, column }: { kind: ProposalKind; column: string },
+): ProposalsState =>
+  kind === "types"
+    ? filterTypes(state, (proposal) => proposal.column !== column)
+    : filterDescriptions(state, (proposal) => proposal.column !== column);
+
 const proposals = typedReducer<
   ProposalsState,
   {
     received: columnProposals.ColumnProposalsPayload;
     cleared: void;
+    accepted: { kind: ProposalKind; column: string };
+    skipped: { kind: ProposalKind; column: string };
+    acceptedAll: void;
+    chose: { column: string; candidate: number };
+    toggledOverwrite: { column: string };
+    dismissed: { kind: ProposalKind };
   }
 >({
   // Replaces the proposals of the payload's kind only; no candidate or overwrite is chosen yet.
@@ -42,8 +111,85 @@ const proposals = typedReducer<
         : { ...state.byKind, descriptions: { payload, choices: {} } },
   }),
   cleared: () => initialProposalsState,
+  // Applying a proposal and skipping one both take it out of the pending list; only the apply changes the editor.
+  accepted: removeOne,
+  skipped: removeOne,
+  // Leaves pending what accept-all does not apply: an overwrite without its tick, and a description with several
+  // candidates and no pick. `applyProposals` and `applyDescriptionProposals` apply the rest. The contract exports no
+  // predicate for this, so the rule is stated here.
+  acceptedAll: (state) => {
+    const choices = choicesOf(state);
+    const typesPending = filterTypes(
+      state,
+      (proposal) =>
+        proposal.change === "overwrite" &&
+        choices.types[keyOf(proposal.column)]?.overwrite !== true,
+    );
+    return filterDescriptions(
+      typesPending,
+      (proposal) =>
+        proposal.candidates.length > 1 &&
+        choices.descriptions[keyOf(proposal.column)] === undefined,
+    );
+  },
+  chose: (state, { column, candidate }) => {
+    const entry = state.byKind.descriptions;
+    return entry
+      ? {
+          ...state,
+          byKind: {
+            ...state.byKind,
+            descriptions: {
+              ...entry,
+              choices: {
+                ...entry.choices,
+                [keyOf(column)]: { candidate },
+              },
+            },
+          },
+        }
+      : state;
+  },
+  toggledOverwrite: (state, { column }) => {
+    const entry = state.byKind.types;
+    const key = keyOf(column);
+    return entry
+      ? {
+          ...state,
+          byKind: {
+            ...state.byKind,
+            types: {
+              ...entry,
+              choices: {
+                ...entry.choices,
+                [key]: { overwrite: !entry.choices[key]?.overwrite },
+              },
+            },
+          },
+        }
+      : state;
+  },
+  // Drops the kind's whole entry, its proposals and its picks.
+  dismissed: (state, { kind }) => {
+    const byKind = { ...state.byKind };
+    if (kind === "types") {
+      delete byKind.types;
+    } else {
+      delete byKind.descriptions;
+    }
+    return { ...state, byKind };
+  },
 });
 
 export const proposalsReducer = proposals.reducer;
 export type ProposalsAction = Parameters<typeof proposalsReducer>[1];
-export const { received, cleared } = proposals.actions;
+export const {
+  received,
+  cleared,
+  accepted,
+  skipped,
+  acceptedAll,
+  chose,
+  toggledOverwrite,
+  dismissed,
+} = proposals.actions;

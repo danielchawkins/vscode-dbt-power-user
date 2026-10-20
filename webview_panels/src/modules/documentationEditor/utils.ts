@@ -9,6 +9,18 @@ import type {
 } from "./state/types";
 import { DbtGenericTests, Source } from "./state/types";
 
+/** One of the host's columns as the editor keeps it, with absent and `null` fields filled in. */
+export const fromHostColumn = (
+  column: documentationEditor.Documentation["columns"][number],
+): DBTDocumentationColumn => ({
+  name: column.name,
+  type: column.type ?? undefined,
+  description: column.description ?? undefined,
+  generated: column.generated ?? false,
+  source: column.source === "DATABASE" ? Source.DATABASE : Source.YAML,
+  replaceType: column.replaceType,
+});
+
 /** The editor's copy of the host's documentation, with absent and `null` fields filled in. */
 export const fromHostDocumentation = (
   docs: documentationEditor.Documentation | undefined,
@@ -16,14 +28,7 @@ export const fromHostDocumentation = (
   docs && {
     name: docs.name,
     description: docs.description ?? "",
-    columns: docs.columns.map((column): DBTDocumentationColumn => ({
-      name: column.name,
-      type: column.type ?? undefined,
-      description: column.description ?? undefined,
-      generated: column.generated ?? false,
-      source: column.source === "DATABASE" ? Source.DATABASE : Source.YAML,
-      replaceType: column.replaceType,
-    })),
+    columns: docs.columns.map(fromHostColumn),
     generated: docs.generated ?? false,
     filePath: docs.filePath,
     patchPath: docs.patchPath ?? undefined,

@@ -1,5 +1,7 @@
+import * as columnProposals from "@fusion-power-user/webview-contract/columnProposals";
 import { typedReducer } from "@modules/app/typedReducer";
-import { isStateDirty } from "../utils";
+import type { ProposalChoices } from "../proposals/proposalsReducer";
+import { fromHostColumn, isStateDirty } from "../utils";
 import type {
   DBTDocumentation,
   DBTModelTest,
@@ -103,6 +105,13 @@ const documentation = typedReducer<
     updateColumnsInCurrentDocsData: {
       columns: Partial<MetadataColumn & { description?: string }>[];
     };
+    applyColumnProposals: {
+      proposals: {
+        types: columnProposals.TypeProposal[];
+        descriptions: columnProposals.DescriptionProposal[];
+      };
+      choices: ProposalChoices;
+    };
   }
 >({
   setSearchQuery: set("searchQuery"),
@@ -121,6 +130,21 @@ const documentation = typedReducer<
         return updatedColumn ? { ...c, ...updatedColumn } : c;
       }),
     ),
+  // Types first, then descriptions; the contract skips what its choices do not pick.
+  applyColumnProposals: (state, { proposals, choices }) =>
+    withColumns(state, (current) =>
+      columnProposals
+        .applyDescriptionProposals(
+          columnProposals.applyProposals(
+            current,
+            proposals.types,
+            choices.types,
+          ),
+          proposals.descriptions,
+          choices.descriptions,
+        )
+        .map(fromHostColumn),
+    ),
 });
 
 export const documentationReducer = documentation.reducer;
@@ -129,6 +153,7 @@ export const {
   setIncomingDocsData,
   updateCurrentDocsData,
   updateColumnsInCurrentDocsData,
+  applyColumnProposals,
   setProject,
   setDocBlocks,
   setPublication,

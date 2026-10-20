@@ -1,6 +1,9 @@
+import type { columnProposals } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
+import type { ProposalChoices } from "../proposals/proposalsReducer";
 import { isStateDirty } from "../utils";
 import {
+  applyColumnProposals,
   documentationReducer,
   initialState,
   setDocBlocks,
@@ -138,5 +141,85 @@ describe("isStateDirty", () => {
       columns: [{ ...current.columns[0]!, replaceType: true }],
     });
     expect(isStateDirty(next)).toBe(false);
+  });
+});
+
+describe("applyColumnProposals", () => {
+  const noChoices: ProposalChoices = { types: {}, descriptions: {} };
+  const typed = (type: string | undefined) =>
+    documentationReducer(
+      initialState,
+      setIncomingDocsData({
+        docs: {
+          ...docs("first"),
+          columns: [{ ...docs("first").columns[0]!, type }],
+        },
+      }),
+    );
+  const applyTypes = (
+    state: typeof loaded,
+    types: columnProposals.TypeProposal[],
+    choices: ProposalChoices = noChoices,
+  ) =>
+    documentationReducer(
+      state,
+      applyColumnProposals({
+        proposals: { types, descriptions: [] },
+        choices,
+      }),
+    );
+
+  it("fills an empty type and keeps the column's shape", () => {
+    const next = applyTypes(typed(undefined), [
+      { column: "id", type: "integer", change: "fill" },
+    ]);
+    expect(next.currentDocsData?.columns).toEqual([
+      {
+        name: "id",
+        type: "integer",
+        description: "key",
+        generated: false,
+        source: Source.YAML,
+        replaceType: undefined,
+      },
+    ]);
+  });
+
+  it("appends an added column as a database column", () => {
+    const next = applyTypes(loaded, [
+      { column: "amount", type: "numeric", change: "add" },
+    ]);
+    expect(next.currentDocsData?.columns.map((c) => c.name)).toEqual([
+      "id",
+      "amount",
+    ]);
+    expect(next.currentDocsData?.columns[1]).toEqual({
+      name: "amount",
+      type: "numeric",
+      generated: false,
+      source: Source.DATABASE,
+    });
+  });
+
+  it("sets replaceType only for an overwrite that is ticked", () => {
+    const state = typed("varchar");
+    const overwrite: columnProposals.TypeProposal = {
+      column: "id",
+      type: "integer",
+      change: "overwrite",
+      current: "varchar",
+    };
+    const unticked = applyTypes(state, [overwrite]);
+    expect(unticked.currentDocsData?.columns[0]?.type).toBe("varchar");
+    expect(unticked.currentDocsData?.columns[0]?.replaceType).toBeFalsy();
+
+    const ticked = applyTypes(state, [overwrite], {
+      types: { id: { overwrite: true } },
+      descriptions: {},
+    });
+    expect(ticked.currentDocsData?.columns[0]).toMatchObject({
+      type: "integer",
+      replaceType: true,
+    });
   });
 });

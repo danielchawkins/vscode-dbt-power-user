@@ -702,10 +702,163 @@ describe("Documentation editor help", () => {
   });
 });
 
+/** Type proposals for `DOCUMENTATION`: a fill, an overwrite, an added column and a column the target does not list. */
+export const TYPE_PROPOSALS = {
+  command: "renderColumnProposals",
+  payload: {
+    kind: "types",
+    model: "/project/models/orders.sql",
+    source: { kind: "target", target: "dev", relation: "orders" },
+    proposals: [
+      { column: "status", type: "varchar", change: "fill" },
+      {
+        column: "customer_id",
+        type: "bigint",
+        change: "overwrite",
+        current: "integer",
+      },
+      { column: "discount", type: "numeric", change: "add" },
+    ],
+    notFound: ["legacy_id"],
+  },
+};
+
+/** Description proposals for `DOCUMENTATION`: one candidate for customer_id, two disagreeing ones for status. */
+export const DESCRIPTION_PROPOSALS = {
+  command: "renderColumnProposals",
+  payload: {
+    kind: "descriptions",
+    model: "/project/models/orders.sql",
+    proposals: [
+      {
+        column: "customer_id",
+        candidates: [
+          {
+            description: "Customer key",
+            sources: [{ uniqueId: "model.demo.raw", column: "customer_id" }],
+          },
+        ],
+      },
+      {
+        column: "status",
+        candidates: [
+          {
+            description: "Order status",
+            sources: [{ uniqueId: "model.demo.raw", column: "status" }],
+          },
+          {
+            description: "Fulfilment state",
+            sources: [{ uniqueId: "model.demo.ship", column: "state" }],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+/** A notice that offers the strict analysis action. */
+const STRICT_NOTICE = {
+  command: "renderColumnProposals",
+  payload: {
+    kind: "types",
+    model: "/project/models/orders.sql",
+    proposals: [],
+    notFound: [],
+    notice: {
+      message: "Inferred types need strict analysis.",
+      type: "warning",
+      actions: [{ title: "Use strict analysis", action: "useStrictAnalysis" }],
+    },
+  },
+};
+
+describe("Column proposal controls", () => {
+  it("records the column types and pulls the upstream descriptions", async () => {
+    const { user } = openDocumentation(DOCUMENTATION);
+    await press(user, "button", "Record column types");
+    await press(user, "button", "Pull upstream descriptions");
+    await expectPosted("proposeColumns", { kind: "types" });
+    await expectPosted("proposeColumns", { kind: "descriptions" });
+  });
+
+  it("ticks the overwrite and accepts it, then accepts the added column", async () => {
+    const { user } = openDocumentation(DOCUMENTATION, TYPE_PROPOSALS);
+    const tick = await press(
+      user,
+      "checkbox",
+      "Replace data_type of customer_id",
+    );
+    await press(
+      user,
+      "button",
+      "Accept",
+      within(tick.closest("label")!.parentElement!),
+    );
+    await press(
+      user,
+      "button",
+      "Accept",
+      within(screen.getByText(/Add column discount/).parentElement!),
+    );
+  });
+
+  it("accepts all the type proposals", async () => {
+    const { user } = openDocumentation(DOCUMENTATION, TYPE_PROPOSALS);
+    await press(user, "button", "Accept all");
+  });
+
+  it("dismisses the type proposals", async () => {
+    const { user } = openDocumentation(DOCUMENTATION, TYPE_PROPOSALS);
+    await press(user, "button", "Dismiss");
+  });
+
+  it("uses the strict analysis action a notice carries", async () => {
+    const { user } = openDocumentation(DOCUMENTATION, STRICT_NOTICE);
+    await press(user, "button", "Use strict analysis");
+    await expectPosted("runNoticeAction", { action: "useStrictAnalysis" });
+  });
+
+  it("accepts a single description, and picks one of two before accepting the other", async () => {
+    const { user } = openDocumentation(DOCUMENTATION, DESCRIPTION_PROPOSALS);
+    await press(
+      user,
+      "button",
+      "Accept",
+      within(screen.getByText(/Customer key/).parentElement!),
+    );
+    await press(user, "radio", "Order status from model.demo.raw.status");
+    await press(user, "radio", "Fulfilment state from model.demo.ship.state");
+    await press(
+      user,
+      "button",
+      "Accept",
+      within(
+        screen
+          .getByRole("radio", {
+            name: "Fulfilment state from model.demo.ship.state",
+          })
+          .closest("fieldset")!.parentElement!,
+      ),
+    );
+  });
+
+  it("skips a description", async () => {
+    const { user } = openDocumentation(DOCUMENTATION, DESCRIPTION_PROPOSALS);
+    await press(
+      user,
+      "button",
+      "Skip",
+      within(screen.getByText(/Customer key/).parentElement!),
+    );
+  });
+});
+
 /** Every control a test above clicked. */
 export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:1 test +",
   "button:2 tests +",
+  "button:Accept",
+  "button:Accept all",
   "button:Add",
   "button:Add test for customer_id",
   "button:Add test for order_id",
@@ -715,6 +868,7 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:Click here",
   "button:Close",
   "button:Delete test",
+  "button:Dismiss",
   "button:Edit test",
   "button:Existing file",
   "button:Get distinct column values",
@@ -726,10 +880,14 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:Insert doc block reference",
   "button:Minimize",
   "button:New file",
+  "button:Pull upstream descriptions",
+  "button:Record column types",
   "button:Remove placed",
   "button:Remove shipped",
   "button:Save",
+  "button:Skip",
   "button:Update",
+  "button:Use strict analysis",
   "button:accepted_values",
   "button:amount_positive",
   "button:intro",
@@ -744,11 +902,14 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:unit_refunds",
   "button:unit_status",
   "button:unit_totals",
+  "checkbox:Replace data_type of customer_id",
   "combobox:Field",
   "combobox:To",
   "link:Help/documentation",
   "link:dbt docs ↗",
   "link:documentation",
+  "radio:Fulfilment state from model.demo.ship.state",
+  "radio:Order status from model.demo.raw.status",
 ];
 
 describe("Documentation editor controls", () => {

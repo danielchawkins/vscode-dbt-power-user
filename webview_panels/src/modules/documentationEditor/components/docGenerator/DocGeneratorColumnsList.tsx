@@ -4,7 +4,9 @@ import { Stack } from "@uicore";
 import { useMemo } from "react";
 import classes from "../../styles.module.css";
 import SearchColumnsInput from "../search/SearchColumnsInput";
+import ColumnProposalActions from "./ColumnProposalActions";
 import DocGeneratorColumn from "./DocGeneratorColumn";
+import ProposalSummary from "./ProposalSummary";
 
 const DocGeneratorColumnsList = (): React.JSX.Element => {
   const {
@@ -46,11 +48,12 @@ const DocGeneratorColumnsList = (): React.JSX.Element => {
         <Stack className={classes.columnHeader}>
           <Stack>
             <h3>Columns</h3>
-            {/* Column actions mount here. */}
+            <ColumnProposalActions />
           </Stack>
           <SearchColumnsInput />
         </Stack>
       </div>
+      <ProposalSummary />
       {!currentDocsData?.columns ? (
         <Stack>
           No columns found in the dbt manifest for {currentDocsData?.name}.
@@ -59,7 +62,7 @@ const DocGeneratorColumnsList = (): React.JSX.Element => {
       <Stack direction="column" className={classes.columns}>
         {filteredColumns.map((column) => (
           <DocGeneratorColumn
-            key={`${column.name}-${column.type}`}
+            key={column.name}
             column={column}
             tests={testsPerColumns[column.name] ?? []}
           />
