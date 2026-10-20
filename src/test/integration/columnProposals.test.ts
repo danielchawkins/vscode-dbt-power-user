@@ -1,15 +1,16 @@
 import type { columnProposals } from "@fusion-power-user/webview-contract";
 import * as assert from "node:assert";
 import { spawnSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { readFileSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
 import { parse } from "yaml";
 
 /**
- * Column type proposals on the native labels, through the test-only `fusionPowerUser.test.columnProposals` command.
- * `strict` runs the built, deferred and never-built cases; `baseline` runs the never-built case without strict
- * analysis. Each model is in `models/column_docs` of the native-editor fixture, whose schema.yml declares its columns.
+ * Column type and description proposals on the native labels, through the test-only
+ * `fusionPowerUser.test.columnProposals` command. `strict` runs the built, deferred, never-built and description
+ * cases; `baseline` runs the never-built case and the description notice without strict analysis. Each model is in
+ * `models/column_docs` of the native-editor fixture, whose schema.yml declares its columns.
  */
 
 const MODE = process.env.FPU_NATIVE_EDITOR_MODE;
@@ -18,26 +19,44 @@ const ACCEPT_ALL_COMMAND = "fusionPowerUser.test.acceptAllColumnProposals";
 const BUILT = "built_dev";
 const PROD_ONLY = "prod_only";
 const NEVER_BUILT = "never_built";
+const UNION = "union_orders";
+const JOIN = "order_join";
 const NOT_BUILT_NOTICE =
   "`never_built` is not built in target `dev`, and no deferred relation is configured. Build it with `dbt run -s never_built`, set up defer, or use the inferred types.";
+const NOT_IN_MANIFEST = "is not in the manifest";
+const SOURCE = "source.lineage_probe.raw.orders";
+const ORDER_TOTALS = "model.lineage_probe.order_totals";
 
 type Payload = columnProposals.TypeProposalsPayload;
+type DescriptionPayload = columnProposals.DescriptionProposalsPayload;
+type ProposalKind = "types" | "descriptions";
 
 function modelFile(projectDir: string, model: string): string {
   return path.join(projectDir, "models", "column_docs", `${model}.sql`);
 }
 
+/** The SQL file of a model in the fixture's `models` folder, outside `column_docs`. */
+function rootModelFile(projectDir: string, model: string): string {
+  return path.join(projectDir, "models", `${model}.sql`);
+}
+
+/** Whether the payload only says the parse has not published the model yet. */
+function isNotInManifest(payload: { notice?: { message: string } }): boolean {
+  return payload.notice?.message.includes(NOT_IN_MANIFEST) ?? false;
+}
+
 /** Retries until `done` holds, for the client start and the reanalysis after a settings change. */
-async function until(
+async function until<T extends Payload | DescriptionPayload = Payload>(
   file: string,
-  done: (payload: Payload) => boolean,
-): Promise<Payload> {
+  done: (payload: T) => boolean,
+  kind: ProposalKind = "types",
+): Promise<T> {
   const deadline = Date.now() + 120_000;
-  let last: Payload | undefined;
+  let last: T | undefined;
   while (Date.now() < deadline) {
-    last = await vscode.commands.executeCommand<Payload | undefined>(
+    last = await vscode.commands.executeCommand<T | undefined>(
       COMMAND,
-      "types",
+      kind,
       file,
     );
     if (last && done(last)) {
@@ -180,6 +199,161 @@ suite("Column type proposals from the language server, strict", function () {
       { name: "last_status", data_type: "varchar" },
     ]);
   });
+
+  test("stg_orders takes the source descriptions of the columns it passes through", async () => {
+    const payload = await until<DescriptionPayload>(
+      rootModelFile(projectDir, "stg_orders"),
+      (found) => !isNotInManifest(found),
+      "descriptions",
+    );
+    const source = (column: string) => [{ uniqueId: SOURCE, column }];
+    assert.deepStrictEqual(payload.proposals, [
+      {
+        column: "id",
+        candidates: [
+          { description: "Order primary key.", sources: source("id") },
+        ],
+      },
+      {
+        column: "customer_id",
+        candidates: [
+          { description: "Customer key.", sources: source("customer_id") },
+        ],
+      },
+      {
+        column: "amount",
+        candidates: [
+          {
+            description: "Order amount in dollars.",
+            sources: source("amount"),
+          },
+        ],
+      },
+      {
+        column: "status",
+        candidates: [
+          { description: "Order status code.", sources: source("status") },
+        ],
+      },
+      {
+        column: "note",
+        candidates: [
+          {
+            description: "Free-text note on the order.",
+            sources: source("note"),
+          },
+        ],
+      },
+    ]);
+  });
+
+  test("totals_downstream.grand_total takes the description of order_totals.total", async () => {
+    const payload = await until<DescriptionPayload>(
+      rootModelFile(projectDir, "totals_downstream"),
+      (found) => !isNotInManifest(found),
+      "descriptions",
+    );
+    assert.deepStrictEqual(payload.proposals, [
+      {
+        column: "grand_total",
+        candidates: [
+          {
+            description: "Sum of order amounts per customer.",
+            sources: [{ uniqueId: ORDER_TOTALS, column: "total" }],
+          },
+        ],
+      },
+    ]);
+  });
+
+  test("order_totals: total is described and gets nothing, and last_status (max(status)) is a copy of status", async () => {
+    const payload = await until<DescriptionPayload>(
+      rootModelFile(projectDir, "order_totals"),
+      (found) => !isNotInManifest(found),
+      "descriptions",
+    );
+    assert.deepStrictEqual(payload.proposals, [
+      {
+        column: "last_status",
+        candidates: [
+          {
+            description: "Order status code.",
+            sources: [{ uniqueId: SOURCE, column: "status" }],
+          },
+        ],
+      },
+    ]);
+  });
+
+  test("the UNION column whose branches agree gets one candidate, and value, a mod in Fusion, gets none", async () => {
+    const payload = await until<DescriptionPayload>(
+      modelFile(projectDir, UNION),
+      (found) => !isNotInManifest(found),
+      "descriptions",
+    );
+    const candidatesOf = (column: string) =>
+      payload.proposals
+        .find((proposal) => proposal.column === column)
+        ?.candidates.map((candidate) => candidate.description);
+    assert.deepStrictEqual(candidatesOf("customer_id"), ["Customer key."]);
+    assert.strictEqual(candidatesOf("value"), undefined);
+  });
+
+  test("the join's passthrough columns take the description of their copy ancestors", async () => {
+    const payload = await until<DescriptionPayload>(
+      modelFile(projectDir, JOIN),
+      (found) => !isNotInManifest(found),
+      "descriptions",
+    );
+    const source = (column: string) => [{ uniqueId: SOURCE, column }];
+    assert.deepStrictEqual(payload.proposals, [
+      {
+        column: "order_id",
+        candidates: [
+          { description: "Order primary key.", sources: source("id") },
+        ],
+      },
+      {
+        column: "customer_id",
+        candidates: [
+          { description: "Customer key.", sources: source("customer_id") },
+        ],
+      },
+      {
+        column: "total",
+        candidates: [
+          {
+            description: "Sum of order amounts per customer.",
+            sources: [{ uniqueId: ORDER_TOTALS, column: "total" }],
+          },
+        ],
+      },
+    ]);
+  });
+
+  test("accept-all on the UNION model writes only the single-candidate description", async () => {
+    const schema = path.join(projectDir, "models", "column_docs", "schema.yml");
+    const original = readFileSync(schema, "utf-8");
+    try {
+      await vscode.commands.executeCommand(
+        ACCEPT_ALL_COMMAND,
+        "descriptions",
+        modelFile(projectDir, UNION),
+      );
+
+      const models = parse(readFileSync(schema, "utf-8")).models as {
+        name: string;
+        columns: { name: string; data_type?: string; description?: string }[];
+      }[];
+      const union = models.find((model) => model.name === UNION);
+      assert.deepStrictEqual(union?.columns, [
+        { name: "customer_id", description: "Customer key." },
+        { name: "value" },
+      ]);
+    } finally {
+      writeFileSync(schema, original);
+    }
+  });
 });
 
 suite("Column type proposals from the language server, baseline", function () {
@@ -206,5 +380,25 @@ suite("Column type proposals from the language server, baseline", function () {
       payload.notice?.message.includes("fusionPowerUser.staticAnalysis"),
       payload.notice?.message,
     );
+  });
+
+  test("upstream descriptions need strict analysis, with the useStrictAnalysis action", async () => {
+    const payload = await until<DescriptionPayload>(
+      modelFile(projectDir, UNION),
+      (found) => !isNotInManifest(found),
+      "descriptions",
+    );
+    assert.deepStrictEqual(payload.proposals, []);
+    assert.ok(
+      payload.notice?.message.includes("strict static analysis"),
+      payload.notice?.message,
+    );
+    assert.ok(
+      payload.notice?.message.includes("fusionPowerUser.staticAnalysis"),
+      payload.notice?.message,
+    );
+    assert.deepStrictEqual(payload.notice?.actions, [
+      { title: "Use strict analysis", action: "useStrictAnalysis" },
+    ]);
   });
 });

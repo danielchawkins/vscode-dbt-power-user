@@ -6,3 +6,17 @@ models:
         description: "Customer key."
       - name: total
         description: "Sum of order amounts per customer."
+      # Undescribed: the order_totals case of columnProposals.test.ts checks what its walk proposes.
+      - name: last_status
+  # Passthrough columns with no description: the source descriptions are proposed.
+  - name: stg_orders
+    columns:
+      - name: id
+      - name: customer_id
+      - name: amount
+      - name: status
+      - name: note
+  # A rename of a described column: grand_total is proposed order_totals.total's description.
+  - name: totals_downstream
+    columns:
+      - name: grand_total

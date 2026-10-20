@@ -6,9 +6,9 @@
   ],
   "trusted": { "passing": 95, "pending": 8 },
   "symlinked": { "passing": 3, "pending": 0 },
-  "native-strict": { "passing": 13, "pending": 1 },
-  "native-baseline": { "passing": 5, "pending": 9 },
-  "native-project": { "passing": 4, "pending": 10 },
+  "native-strict": { "passing": 19, "pending": 2 },
+  "native-baseline": { "passing": 6, "pending": 15 },
+  "native-project": { "passing": 4, "pending": 17 },
   "untrusted": { "passing": 2, "pending": 2 },
   "trusted-vsix": { "passing": 2, "pending": 2 }
 }
