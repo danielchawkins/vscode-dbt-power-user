@@ -5,6 +5,7 @@ import {
   collapsedGroups,
   groupChips,
   openGroup,
+  showMoreInGroup,
 } from "./expansionGroups";
 import type { GraphState } from "./graph";
 import { addNeighbours, drawnGraph, emptyGraph } from "./graph";
@@ -236,5 +237,46 @@ describe("groupChips", () => {
       cap: 0,
     };
     expect(groupChips(state).map((c) => c.label)).toEqual(["p", "a"]);
+  });
+});
+
+describe("showMoreInGroup", () => {
+  const members = Array.from({ length: 88 }, (_, i) => `m${i}`);
+  const big = (cap: number): GraphState => ({
+    ...stateWith(["c:hub"], {
+      "c:hub": {
+        buckets: [{ key: "models/big", members }],
+        loose: [],
+        open: {},
+      },
+    }),
+    known: Object.fromEntries(["hub", ...members].map((id) => [id, table(id)])),
+    cap,
+  });
+  const id = groupNodeId("c:hub", "models/big");
+
+  it("draws the next cap members at each click, ending with all 88 of an 88-member group", () => {
+    const drawnIn = (state: GraphState) =>
+      groupChips(state).find((chip) => chip.id === id)?.drawn;
+    let state = openGroup(big(20), id);
+    const shown = [drawnIn(state)];
+    for (let click = 0; click < 4; click += 1) {
+      state = showMoreInGroup(state, id);
+      shown.push(drawnIn(state));
+    }
+    expect(shown).toEqual([20, 40, 60, 80, 88]);
+    expect(drawn(state)).toHaveLength(89);
+  });
+
+  it("draws every remaining member when there is no cap", () => {
+    const state = showMoreInGroup(openGroup(big(0), id), id);
+    expect(groupChips(state)[0]).toMatchObject({ drawn: 88, total: 88 });
+  });
+
+  it("leaves the state as it is for an ID that is not an open group", () => {
+    const closed = big(20);
+    const open = openGroup(closed, id);
+    expect(showMoreInGroup(closed, id)).toBe(closed);
+    expect(showMoreInGroup(open, "hub")).toBe(open);
   });
 });

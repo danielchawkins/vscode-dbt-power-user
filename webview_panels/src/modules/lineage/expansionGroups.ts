@@ -29,6 +29,33 @@ export function openGroup(state: GraphState, id: string): GraphState {
 }
 
 /**
+ * Draws the next `cap` members of the open group `id`, or all the rest when there is no cap. An ID that is not an
+ * open group leaves the state as it is.
+ */
+export function showMoreInGroup(state: GraphState, id: string): GraphState {
+  const parsed = parseGroupNodeId(id);
+  if (!parsed) {
+    return state;
+  }
+  const [expansion, key] = parsed;
+  const groups = state.groups[expansion];
+  const bucket = groups?.buckets.find((b) => b.key === key);
+  const drawn = groups?.open[key];
+  if (!groups || !bucket || drawn === undefined) {
+    return state;
+  }
+  const size = bucket.members.length;
+  const next = Math.min(size, drawn + (state.cap || size));
+  return {
+    ...state,
+    groups: {
+      ...state.groups,
+      [expansion]: { ...groups, open: { ...groups.open, [key]: next } },
+    },
+  };
+}
+
+/**
  * Closes the open group `id`: its members are no longer drawn, and `prune` removes what only they drew, such as their
  * expansions, column lists and selection. An ID that is not an open group leaves the state as it is.
  */

@@ -569,6 +569,29 @@ describe("Lineage group node", () => {
     expect(container.querySelector('[data-group="staging"]')).not.toBeNull();
   });
 
+  it("shows the next members of an open group from its +K button", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await press(user, "button", "Open staging");
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "s1", "s2"]),
+    );
+    await press(
+      user,
+      "button",
+      "Show 1 more in staging",
+      node(container, "hub"),
+    );
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "s1", "s2", "s3"]),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Show 1 more in staging" }),
+    ).toBeNull();
+  });
+
   it("runs the controls of the members a group draws", async () => {
     const { user, container } = await openLineage(
       { node: HUB, publication: "s:1" },
@@ -660,6 +683,7 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table hub/Show 0 parents",
   "button:table hub/Columns",
   "button:table hub/Details",
+  "button:table hub/Show 1 more in staging",
   "button:table hub/Close staging",
   "button:table s1/Columns",
   "button:table s1/Details",
