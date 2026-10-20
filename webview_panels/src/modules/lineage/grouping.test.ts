@@ -1,0 +1,140 @@
+import type { lineage } from "@fusion-power-user/webview-contract";
+import { describe, expect, it } from "vitest";
+import { bucketNeighbours, groupedNeighbours } from "./grouping";
+
+const table = (
+  id: string,
+  over: Partial<lineage.LineageTable> = {},
+): lineage.LineageTable => ({
+  table: id,
+  label: id,
+  nodeType: "model",
+  childCount: 0,
+  parentCount: 0,
+  tests: [],
+  ...over,
+});
+
+const inFolder = (id: string, folder: string) =>
+  table(id, { path: `${folder}/${id}.sql`, rootPackage: true });
+
+describe("bucketNeighbours", () => {
+  it("buckets by the full folder of each path", () => {
+    expect(
+      bucketNeighbours(
+        [
+          inFolder("a", "models/marts/finance"),
+          inFolder("b", "models/marts/finance"),
+          inFolder("c", "models/marts/finance/nested"),
+          inFolder("d", "models/marts/finance/nested"),
+        ],
+        new Set(),
+        10,
+      ),
+    ).toEqual({
+      buckets: [
+        { key: "models/marts/finance", members: ["a", "b"] },
+        { key: "models/marts/finance/nested", members: ["c", "d"] },
+      ],
+      loose: [],
+    });
+  });
+
+  it("prefixes a folder outside the root package with pkg:, and buckets a node with no path by type", () => {
+    const grouped = bucketNeighbours(
+      [
+        table("u1", { path: "macros/u1.sql" }),
+        table("u2", { path: "macros/u2.sql" }),
+        table("s1", { nodeType: "seed" }),
+        table("s2", { nodeType: "seed" }),
+      ],
+      new Set(),
+      10,
+    );
+    expect(grouped).toEqual({
+      buckets: [
+        { key: "type:seed", members: ["s1", "s2"] },
+        { key: "pkg:macros", members: ["u1", "u2"] },
+      ],
+      loose: [],
+    });
+  });
+
+  it("leaves out drawn neighbours", () => {
+    expect(
+      bucketNeighbours(
+        [inFolder("a", "models/x"), inFolder("b", "models/x")],
+        new Set(["a"]),
+        10,
+      ),
+    ).toEqual({ buckets: [], loose: ["b"] });
+  });
+
+  it("sends a folder with a single member to loose", () => {
+    expect(
+      bucketNeighbours(
+        [
+          inFolder("x", "models/a"),
+          inFolder("y", "models/b"),
+          inFolder("z", "models/b"),
+        ],
+        new Set(),
+        10,
+      ),
+    ).toEqual({
+      buckets: [{ key: "models/b", members: ["y", "z"] }],
+      loose: ["x"],
+    });
+  });
+
+  it("orders members by layer, then by refName or label", () => {
+    const layered = (id: string, over: Partial<lineage.LineageTable>) =>
+      table(id, { path: "models/m/x.sql", rootPackage: true, ...over });
+    const grouped = bucketNeighbours(
+      [
+        layered("m1", { layer: "marts", label: "m1" }),
+        layered("s2", { layer: "staging", label: "zzz", refName: "aaa" }),
+        layered("s3", { layer: "staging", label: "bbb" }),
+        layered("n4", { label: "a0" }),
+        layered("o5", { layer: "snapshots", label: "a1" }),
+        layered("i6", { layer: "intermediate", label: "i" }),
+      ],
+      new Set(),
+      10,
+    );
+    expect(grouped?.buckets[0]?.members).toEqual([
+      "s2",
+      "s3",
+      "i6",
+      "m1",
+      "o5",
+      "n4",
+    ]);
+  });
+
+  it("is undefined when the buckets and loose neighbours would not fit the cap", () => {
+    const neighbours = [
+      inFolder("a", "models/a"),
+      inFolder("b", "models/a"),
+      inFolder("c", "models/b"),
+      inFolder("d", "models/b"),
+      inFolder("e", "models/c"),
+    ];
+    expect(bucketNeighbours(neighbours, new Set(), 3)).toBeDefined();
+    expect(bucketNeighbours(neighbours, new Set(), 2)).toBeUndefined();
+  });
+});
+
+describe("groupedNeighbours", () => {
+  it("draws the loose neighbours and the members of each open bucket", () => {
+    const groups = {
+      buckets: [
+        { key: "f", members: ["a", "b"] },
+        { key: "g", members: ["c", "d"] },
+      ],
+      loose: ["x"],
+      open: { g: true },
+    };
+    expect(groupedNeighbours(groups)).toEqual(["x", "c", "d"]);
+  });
+});

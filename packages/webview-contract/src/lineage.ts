@@ -66,6 +66,8 @@ export interface LineageTable {
   hidden?: boolean | undefined;
   /** The node's configured `schema`; a card shows it in place of a schema that ends with `_<customSchema>`. */
   customSchema?: string | undefined;
+  /** The node's file path, `/`-separated; folder grouping reads it. */
+  path?: string | undefined;
   /** The node's data tests; `raw_sql` is the test's SQL. */
   tests: {
     key: string;

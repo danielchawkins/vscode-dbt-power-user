@@ -4,6 +4,7 @@ import { traceColumn } from "./columnTrace";
 import { expandLevels, replayExpansions } from "./expansionBatch";
 import type { GraphState, GraphStore } from "./graph";
 import {
+  addNeighbours,
   collapse,
   drawnGraph,
   emptyGraph,
@@ -270,5 +271,87 @@ describe("lineage graph", () => {
     const x = (id: string) => positions.get(id)!.x;
     expect(x("a")).toBeLessThan(x("b"));
     expect(x("b")).toBeLessThan(x("c"));
+  });
+});
+
+describe("folder grouping", () => {
+  // A finance-shaped hub: 350 children over 15 folders.
+  const HUB_CHILDREN = Array.from({ length: 350 }, (_, i) => ({
+    ...table(`t${i}`),
+    path: `models/finance/f${i % 15}/t${i}.sql`,
+    rootPackage: true,
+  }));
+  const hub = (cap: number, groupBy: "none" | "folder" = "folder") =>
+    addNeighbours(
+      emptyGraph(table("hub", 350), cap, groupBy),
+      "children",
+      "hub",
+      HUB_CHILDREN,
+    );
+  const bucketsOf = (state: GraphState) => state.groups["c:hub"];
+
+  it("buckets a hub's children by folder once they outnumber the cap, and keeps them all", () => {
+    const state = hub(20);
+    expect(bucketsOf(state)?.buckets).toHaveLength(15);
+    expect(bucketsOf(state)?.loose).toEqual([]);
+    expect(state.neighbours["c:hub"]).toHaveLength(350);
+    expect(state.shown).toEqual({});
+    expect(ids(state)).toEqual(["hub"]);
+  });
+
+  it("draws the members of an open bucket only", () => {
+    const state = hub(20);
+    const group = bucketsOf(state);
+    expect(group).toBeDefined();
+    if (!group) {
+      return;
+    }
+    const opened: GraphState = {
+      ...state,
+      groups: {
+        ...state.groups,
+        "c:hub": { ...group, open: { "models/finance/f3": true } },
+      },
+    };
+    expect(ids(opened)).toHaveLength(25);
+    expect(ids(opened)).toContain("t3");
+    expect(ids(opened)).not.toContain("t4");
+  });
+
+  it("falls back to the capped path when the buckets would not fit the cap", () => {
+    const five = ["a", "b", "c", "d", "e"].map((id) => ({
+      ...table(id),
+      path: `models/${id}/${id}.sql`,
+      rootPackage: true,
+    }));
+    const state = addNeighbours(
+      emptyGraph(table("hub", 5), 2, "folder"),
+      "children",
+      "hub",
+      five,
+    );
+    expect(state.groups).toEqual({});
+    expect(state.shown).toEqual({ "c:hub": 2 });
+  });
+
+  it("never buckets when groupBy is none", () => {
+    const state = hub(20, "none");
+    expect(state.groups).toEqual({});
+    expect(state.shown).toEqual({ "c:hub": 20 });
+  });
+
+  it("a collapse drops the buckets", () => {
+    expect(collapse(hub(20), "children", "hub").groups).toEqual({});
+  });
+
+  it("asks for the links of closed members as well as the drawn tables", async () => {
+    const store = storeOf(hub(20));
+    const fetchEdges = vi.fn(
+      async (_tables: readonly string[]) => [] as [string, string][],
+    );
+    await linkDrawn(store, fetchEdges);
+    const asked = fetchEdges.mock.calls[0]?.[0] ?? [];
+    expect(asked).toHaveLength(351);
+    expect(asked[0]).toBe("hub");
   });
 });
