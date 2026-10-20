@@ -151,3 +151,16 @@ describe("lineage table custom schema", () => {
     expect(lineageTable(event, ORDERS)?.customSchema).toBeUndefined();
   });
 });
+
+describe("lineage table file path", () => {
+  it("passes the node's original file path through as path, for folder grouping", () => {
+    const event = manifest({
+      nodes: {
+        [ORDERS]: model({ original_file_path: "models/staging/a/orders.sql" }),
+      },
+    });
+    expect(lineageTable(event, ORDERS)?.path).toBe(
+      "models/staging/a/orders.sql",
+    );
+  });
+});
