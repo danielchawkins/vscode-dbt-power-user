@@ -5,6 +5,7 @@ export const STUBBED_WINDOW_FUNCTIONS = [
   "showQuickPick",
   "showInputBox",
   "showOpenDialog",
+  "showSaveDialog",
   "showWarningMessage",
   "showInformationMessage",
 ] as const;
