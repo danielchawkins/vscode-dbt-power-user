@@ -1,8 +1,10 @@
 import type { columnProposals } from "@fusion-power-user/webview-contract";
 import * as assert from "node:assert";
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import * as path from "node:path";
 import * as vscode from "vscode";
+import { parse } from "yaml";
 
 /**
  * Column type proposals on the native labels, through the test-only `fusionPowerUser.test.columnProposals` command.
@@ -12,6 +14,7 @@ import * as vscode from "vscode";
 
 const MODE = process.env.FPU_NATIVE_EDITOR_MODE;
 const COMMAND = "fusionPowerUser.test.columnProposals";
+const ACCEPT_ALL_COMMAND = "fusionPowerUser.test.acceptAllColumnProposals";
 const BUILT = "built_dev";
 const PROD_ONLY = "prod_only";
 const NEVER_BUILT = "never_built";
@@ -150,6 +153,32 @@ suite("Column type proposals from the language server, strict", function () {
     );
     assert.strictEqual(payload.source?.kind, "inferred");
     assert.strictEqual(payload.notice?.message, NOT_BUILT_NOTICE);
+  });
+
+  test("accept-all writes the built model's proposals to its schema.yml", async () => {
+    const schema = path.join(projectDir, "models", "column_docs", "schema.yml");
+
+    await vscode.commands.executeCommand(
+      ACCEPT_ALL_COMMAND,
+      "types",
+      modelFile(projectDir, BUILT),
+    );
+
+    const models = parse(readFileSync(schema, "utf-8")).models as {
+      name: string;
+      columns: { name: string; data_type?: string; description?: string }[];
+    }[];
+    const built = models.find((model) => model.name === BUILT);
+    assert.deepStrictEqual(built?.columns, [
+      {
+        name: "customer_id",
+        data_type: "integer",
+        description: "Customer key.",
+      },
+      { name: "ghost", data_type: "integer" },
+      { name: "order_count", data_type: "bigint" },
+      { name: "last_status", data_type: "varchar" },
+    ]);
   });
 });
 
