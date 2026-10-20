@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { isStateDirty } from "../utils";
 import {
   documentationReducer,
   initialState,
@@ -97,5 +98,45 @@ describe("documentationReducer", () => {
     const next = documentationReducer(withBlocks, setProject("other"));
     expect(next.project).toBe("other");
     expect(next.docBlocks).toEqual([]);
+  });
+});
+
+describe("isStateDirty", () => {
+  const withCurrent = (current: DBTDocumentation) =>
+    documentationReducer(loaded, updateCurrentDocsData(current));
+
+  it("is true after a type change", () => {
+    const next = documentationReducer(
+      loaded,
+      updateColumnsInCurrentDocsData({
+        columns: [{ name: "id", type: "integer" }],
+      }),
+    );
+    expect(isStateDirty(next)).toBe(true);
+  });
+
+  it("is true after a column is added", () => {
+    const current = docs("first");
+    const next = withCurrent({
+      ...current,
+      columns: [
+        ...current.columns,
+        { name: "amount", generated: false, source: Source.DATABASE },
+      ],
+    });
+    expect(isStateDirty(next)).toBe(true);
+  });
+
+  it("is false for identical documentation", () => {
+    expect(isStateDirty(loaded)).toBe(false);
+  });
+
+  it("is false when only replaceType differs and the type is unchanged", () => {
+    const current = docs("first");
+    const next = withCurrent({
+      ...current,
+      columns: [{ ...current.columns[0]!, replaceType: true }],
+    });
+    expect(isStateDirty(next)).toBe(false);
   });
 });

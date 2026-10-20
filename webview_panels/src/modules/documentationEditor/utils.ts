@@ -22,6 +22,7 @@ export const fromHostDocumentation = (
       description: column.description ?? undefined,
       generated: column.generated ?? false,
       source: column.source === "DATABASE" ? Source.DATABASE : Source.YAML,
+      replaceType: column.replaceType,
     })),
     generated: docs.generated ?? false,
     filePath: docs.filePath,
@@ -75,13 +76,21 @@ const areTestsDirty = (state: DocumentationStateProps): boolean => {
   });
 };
 
-const areColumnsDirty = (state: DocumentationStateProps): boolean =>
-  (state.currentDocsData?.columns ?? []).some(
-    (column) =>
-      column.description !==
-      state.incomingDocsData?.docs?.columns?.find((c) => c.name === column.name)
-        ?.description,
-  );
+const areColumnsDirty = (state: DocumentationStateProps): boolean => {
+  const currentColumns = state.currentDocsData?.columns ?? [];
+  const incomingColumns = state.incomingDocsData?.docs?.columns ?? [];
+  if (currentColumns.length !== incomingColumns.length) {
+    return true;
+  }
+  return currentColumns.some((column) => {
+    const incomingColumn = incomingColumns.find((c) => c.name === column.name);
+    return (
+      !incomingColumn ||
+      column.description !== incomingColumn.description ||
+      column.type !== incomingColumn.type
+    );
+  });
+};
 
 export const isStateDirty = (state: DocumentationStateProps): boolean => {
   if (!state.currentDocsData && !state.currentDocsTests) return false;

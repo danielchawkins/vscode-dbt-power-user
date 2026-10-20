@@ -8,6 +8,13 @@ import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useMemo, useReducer, useRef } from "react";
 import { DocumentationContext } from "./context";
 import DocumentationEditor from "./DocumentationEditor";
+import { ProposalsContext } from "./proposals/ProposalsContext";
+import {
+  cleared,
+  initialProposalsState,
+  proposalsReducer,
+  received,
+} from "./proposals/proposalsReducer";
 import {
   documentationReducer,
   initialState,
@@ -51,6 +58,10 @@ type ActionState = (typeof ActionState)[keyof typeof ActionState];
 const DocumentationProvider = (): React.JSX.Element => {
   const [state, dispatch] = useReducer(documentationReducer, initialState);
   const stateRef = useRef(state);
+  const [proposalsState, proposalsDispatch] = useReducer(
+    proposalsReducer,
+    initialProposalsState,
+  );
 
   const renderDocumentation = (message: RenderMessage) => {
     dispatch(
@@ -126,9 +137,16 @@ const DocumentationProvider = (): React.JSX.Element => {
       case "response":
       case "renderError":
         break;
-      // Column proposals are not shown in this panel yet.
-      case "renderColumnProposals":
+      // Column proposals for another model are dropped: they describe a file that is no longer open.
+      case "renderColumnProposals": {
+        if (
+          event.data.payload.model ===
+          stateRef.current.currentDocsData?.filePath
+        ) {
+          proposalsDispatch(received(event.data.payload));
+        }
         break;
+      }
     }
   }, []);
 
@@ -150,16 +168,32 @@ const DocumentationProvider = (): React.JSX.Element => {
     [state, dispatch],
   );
 
+  const proposalValues = useMemo(
+    () => ({
+      state: proposalsState,
+      dispatch: proposalsDispatch,
+    }),
+    [proposalsState, proposalsDispatch],
+  );
+
   // hack to get latest state in onMessage
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
 
+  // Proposals describe the model they were computed for, so a different model drops them.
+  const filePath = state.currentDocsData?.filePath;
+  useEffect(() => {
+    proposalsDispatch(cleared());
+  }, [filePath]);
+
   useDraftSync(state);
 
   return (
     <DocumentationContext value={values}>
-      <DocumentationEditor />
+      <ProposalsContext value={proposalValues}>
+        <DocumentationEditor />
+      </ProposalsContext>
     </DocumentationContext>
   );
 };

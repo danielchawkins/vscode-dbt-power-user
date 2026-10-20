@@ -1,4 +1,10 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { useReducer } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,6 +15,15 @@ vi.mock("@modules/documentationEditor/requests", () => ({
 
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { DocumentationContext } from "../../context";
+import {
+  ProposalsContext,
+  useProposals,
+} from "../../proposals/ProposalsContext";
+import {
+  initialProposalsState,
+  proposalsReducer,
+  received,
+} from "../../proposals/proposalsReducer";
 import {
   documentationReducer,
   initialState,
@@ -28,6 +43,12 @@ const model = (over: Partial<DBTDocumentation> = {}): DBTDocumentation => ({
   ...over,
 });
 
+/** Shows the model whose proposals are still pending, or `none` once they are cleared. */
+const ProposalsModel = (): React.JSX.Element => {
+  const { state } = useProposals();
+  return <div data-testid="proposals-model">{state.model ?? "none"}</div>;
+};
+
 const Harness = ({
   current,
   incoming,
@@ -40,9 +61,28 @@ const Harness = ({
     incomingDocsData: { docs: incoming },
     currentDocsData: current,
   });
+  const [proposals, dispatchProposals] = useReducer(
+    proposalsReducer,
+    initialProposalsState,
+    (initial) =>
+      proposalsReducer(
+        initial,
+        received({
+          kind: "types",
+          model: current.filePath,
+          proposals: [],
+          notFound: [],
+        }),
+      ),
+  );
   return (
     <DocumentationContext value={{ state, dispatch }}>
-      <SaveDocumentation />
+      <ProposalsContext
+        value={{ state: proposals, dispatch: dispatchProposals }}
+      >
+        <SaveDocumentation />
+        <ProposalsModel />
+      </ProposalsContext>
     </DocumentationContext>
   );
 };
@@ -134,5 +174,40 @@ describe("SaveDocumentation", () => {
         expect.objectContaining({ patchPath: "", dialogType: "New file" }),
       );
     });
+  });
+
+  it("clears the proposals after a saved result", async () => {
+    render(
+      <Harness current={model({ description: "edited" })} incoming={model()} />,
+    );
+    expect(screen.getByTestId("proposals-model")).toHaveTextContent(
+      "/models/orders.sql",
+    );
+    fireEvent.click(screen.getByText("Save"));
+    fireEvent.click(await screen.findByText("New file"));
+
+    await waitFor(() => {
+      expect(screen.getByTestId("proposals-model")).toHaveTextContent("none");
+    });
+  });
+
+  it("keeps the proposals after an unsaved result", async () => {
+    vi.mocked(executeRequestInSync).mockResolvedValueOnce({ saved: false });
+    render(
+      <Harness current={model({ description: "edited" })} incoming={model()} />,
+    );
+    fireEvent.click(screen.getByText("Save"));
+    fireEvent.click(await screen.findByText("New file"));
+
+    await waitFor(() => {
+      expect(executeRequestInSync).toHaveBeenCalledWith(
+        "saveDocumentation",
+        expect.anything(),
+      );
+    });
+    await act(async () => {});
+    expect(screen.getByTestId("proposals-model")).toHaveTextContent(
+      "/models/orders.sql",
+    );
   });
 });

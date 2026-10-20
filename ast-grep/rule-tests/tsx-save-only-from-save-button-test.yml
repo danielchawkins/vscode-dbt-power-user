@@ -1,0 +1,10 @@
+id: tsx-save-only-from-save-button
+valid:
+  - 'executeRequestInSync("showWarningMessage", { infoMessage: "x" });'
+  - 'executeRequestInAsync("saveDraft", { model: "m" });'
+  - 'const result = executeRequestInSync("getCurrentModelDocumentation", {});'
+invalid:
+  - 'const r = executeRequestInSync("saveDocumentation", { name: "orders" });'
+  - 'export const useSave = () => { executeRequestInSync("saveDocumentation", docs); };'
+  - 'export const C = () => { const onClick = () => executeRequestInSync("saveDocumentation", {}); return <button onClick={onClick} />; };'
+  - 'export const useAutoSave = () => { executeRequestInAsync("saveDocumentation", docs); };'

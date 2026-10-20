@@ -1,3 +1,5 @@
+import { useProposals } from "@modules/documentationEditor/proposals/ProposalsContext";
+import { cleared } from "@modules/documentationEditor/proposals/proposalsReducer";
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { setIncomingDocsData } from "@modules/documentationEditor/state/documentationReducer";
 import type {
@@ -23,6 +25,7 @@ import classes from "../../styles.module.css";
 const SaveDocumentation = (): React.JSX.Element | null => {
   const popoverRef = useRef<PopoverWithButtonRef | null>(null);
   const { state, dispatch } = useDocumentationContext();
+  const { dispatch: dispatchProposals } = useProposals();
   const { currentDocsData, currentDocsTests } = state;
   const patchPath = currentDocsData?.patchPath ?? "";
 
@@ -49,6 +52,7 @@ const SaveDocumentation = (): React.JSX.Element | null => {
           tests: currentDocsTests,
         }),
       );
+      dispatchProposals(cleared());
     }
   };
 

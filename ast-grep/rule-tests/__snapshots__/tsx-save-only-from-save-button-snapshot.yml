@@ -1,0 +1,26 @@
+id: tsx-save-only-from-save-button
+snapshots:
+  'const r = executeRequestInSync("saveDocumentation", { name: "orders" });':
+    labels:
+    - source: 'executeRequestInSync("saveDocumentation", { name: "orders" })'
+      style: primary
+      start: 10
+      end: 71
+  ? export const C = () => { const onClick = () => executeRequestInSync("saveDocumentation", {}); return <button onClick={onClick} />; };
+  : labels:
+    - source: executeRequestInSync("saveDocumentation", {})
+      style: primary
+      start: 47
+      end: 92
+  export const useAutoSave = () => { executeRequestInAsync("saveDocumentation", docs); };:
+    labels:
+    - source: executeRequestInAsync("saveDocumentation", docs)
+      style: primary
+      start: 35
+      end: 83
+  export const useSave = () => { executeRequestInSync("saveDocumentation", docs); };:
+    labels:
+    - source: executeRequestInSync("saveDocumentation", docs)
+      style: primary
+      start: 31
+      end: 78
