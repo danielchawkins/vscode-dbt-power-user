@@ -95,7 +95,7 @@ for host in "${hosts[@]}"; do
   # Separate containers have separate network namespaces, so neither needs its own FPU_CDP_PORT.
   docker run --rm --init --name "$name" --platform "$platform" --security-opt seccomp=unconfined --shm-size=1g \
     -v "$repo:/src:ro" -v "$vsix:/vsix/smoke.vsix:ro" -v "$out:/out" \
-    -e FPU_SMOKE_HOST="$host" -e FPU_SMOKE_SCREENSHOTS=/out \
+    -e FPU_SMOKE_HOST="$host" -e FPU_SMOKE_SCREENSHOTS=/out -e FPU_SMOKE_DIAGNOSTICS=/out/diagnostics \
     ${FPU_SMOKE_REQUIRE_FUSION:+-e FPU_SMOKE_REQUIRE_FUSION="$FPU_SMOKE_REQUIRE_FUSION"} \
     "$smoke_image" bash -euc "$container_script" bash "$@" > "$work/$host.log" 2>&1 &
   pids+=("$!")
@@ -105,17 +105,22 @@ status=0
 for i in "${!hosts[@]}"; do
   host_status=0
   wait "${pids[$i]}" || host_status=$?
+  # The full host log is kept with the evidence, pass or fail.
+  cp "$work/${hosts[$i]}.log" "$out/${hosts[$i]}/host.log" 2> /dev/null || true
   if [[ "$host_status" -eq 0 ]]; then
     echo "docker-smoke: ${hosts[$i]} ok"
   else
     echo "docker-smoke: ${hosts[$i]} FAILED (exit $host_status)" >&2
-    tail -60 "$work/${hosts[$i]}.log" >&2
+    # Each failing test's title and stack, then Mocha's summary from its first "failing" line.
+    grep -A 40 'FPU_SMOKE_FAIL ' "$work/${hosts[$i]}.log" >&2 || true
+    sed -n '/[0-9] failing/,$p' "$work/${hosts[$i]}.log" >&2
+    grep 'FPU_SMOKE_FAILURE_BUNDLE=' "$work/${hosts[$i]}.log" >&2 || true
     status=1
   fi
 done
 pids=()
 if [[ "$status" -ne 0 ]]; then
-  echo "docker-smoke: FAIL (full logs in $work)" >&2
+  echo "docker-smoke: FAIL (host logs and failure bundles in $final/<host>/host.log and $final/diagnostics)" >&2
   exit 1
 fi
 echo "$(shasum -a 256 "$vsix" | awk '{print $1}')  $vsix" > "$out/vsix.sha256"

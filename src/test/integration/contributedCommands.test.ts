@@ -438,6 +438,20 @@ const rows: Record<string, Row> = {
     await showModel("with_ctes.sql");
     await expectDbt("show", () => executeCommand("fusionPowerUser.executeSQL"));
   },
+  "fusionPowerUser.previewMaterialized": async () => {
+    await showModel("child.sql");
+    await expectDbt("show", () =>
+      executeCommand("fusionPowerUser.previewMaterialized"),
+    );
+  },
+  "fusionPowerUser.previewComputed": async () => {
+    await showModel("child.sql");
+    await expectDbt("show", () =>
+      executeCommand("fusionPowerUser.previewComputed", {
+        url: modelPath("child.sql"),
+      }),
+    );
+  },
   "fusionPowerUser.buildCurrentModel": async () => {
     await showModel("child.sql");
     await expectDbt("build", () =>

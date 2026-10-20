@@ -100,6 +100,19 @@ jobs:
         run: |
           just smoke-vscode --vsix fusion-power-user-*.vsix --tool-env
 
+      - name: Summarize smoke failures
+        if: failure()
+        run: node scripts/smoke/failure-summary.mjs out/smoke-diagnostics >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload smoke diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: smoke-diagnostics-vscode
+          path: out/smoke-diagnostics
+          retention-days: 7
+          if-no-files-found: ignore
+
   smoke-cursor:
     needs: check
     runs-on: macos-latest
@@ -181,3 +194,16 @@ jobs:
           FPU_SKIP_INTEGRATION_COMPILE: "1"
         run: |
           just smoke-cursor --vsix fusion-power-user-*.vsix --tool-env
+
+      - name: Summarize smoke failures
+        if: failure()
+        run: node scripts/smoke/failure-summary.mjs out/smoke-diagnostics >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload smoke diagnostics
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: smoke-diagnostics-cursor
+          path: out/smoke-diagnostics
+          retention-days: 7
+          if-no-files-found: ignore

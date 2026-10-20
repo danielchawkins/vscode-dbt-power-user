@@ -143,6 +143,11 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     }
   }
 
+  /** Model paths with an unsaved draft in host memory; the smoke suites check that none leak between them. */
+  heldDrafts(): string[] {
+    return [...this.drafts.keys()];
+  }
+
   private async transmitData() {
     const { documentation, message } =
       await this.docGenService.getUncompiledDocumentationForCurrentActiveFile();
