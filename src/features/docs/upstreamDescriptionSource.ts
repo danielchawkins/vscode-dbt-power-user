@@ -9,6 +9,7 @@ import {
   descriptionCandidates,
   toDescriptionProposal,
 } from "../../core/lineage/upstreamDescriptions";
+import type { ListNodesResult } from "../../core/lsp";
 import type { NodeMetaMap, SourceMetaMap } from "../../core/manifest/types";
 import type { FusionCommands } from "../../fusion/fusionCommands";
 
@@ -37,6 +38,8 @@ interface ColumnDescriptionProposal {
 export type UpstreamDescriptionOutcome =
   | { kind: "notRunning"; state: FusionCommands["state"] }
   | { kind: "needsStrict" }
+  /** A `listNodes` request was rejected; the walk stops there and no proposals are returned. */
+  | { kind: "failed"; message: string }
   | { kind: "found"; proposals: ColumnDescriptionProposal[] };
 
 /**
@@ -63,9 +66,13 @@ export async function resolveUpstreamDescriptions({
     if (signal?.aborted) {
       break;
     }
-    const edges = columnEdges(
-      await lsp.listNodes(columnLineageArgs(uniqueId, name)),
-    );
+    let answer: ListNodesResult;
+    try {
+      answer = await lsp.listNodes(columnLineageArgs(uniqueId, name));
+    } catch (error) {
+      return { kind: "failed", message: errorMessage(error) };
+    }
+    const edges = columnEdges(answer);
     const candidates = toDescriptionProposal(
       descriptionCandidates(edges, { uniqueId, column: name }, describe),
     );
@@ -74,4 +81,8 @@ export async function resolveUpstreamDescriptions({
     }
   }
   return { kind: "found", proposals };
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error);
 }

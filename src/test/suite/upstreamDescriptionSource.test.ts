@@ -80,6 +80,32 @@ describe("resolveUpstreamDescriptions", () => {
     expect(calls).toEqual([]);
   });
 
+  it("reports failed with the message when a request is rejected, and asks no later column", async () => {
+    const calls: (readonly string[])[] = [];
+    const lsp = {
+      state: "running" as const,
+      listNodes: async (selectors: readonly string[]) => {
+        calls.push(selectors);
+        throw new Error("listNodes timed out");
+      },
+    };
+    const outcome = await resolveUpstreamDescriptions({
+      lsp,
+      strict: true,
+      uniqueId: TOTALS_DOWNSTREAM,
+      columns: [
+        { name: "total", description: "" },
+        { name: "grand_total", description: "" },
+      ],
+      manifest,
+    });
+    expect(outcome).toEqual({
+      kind: "failed",
+      message: "listNodes timed out",
+    });
+    expect(calls).toEqual([columnLineageArgs(TOTALS_DOWNSTREAM, "total")]);
+  });
+
   it("proposes the first described copy ancestor for each column without a description", async () => {
     const { lsp, calls } = fakeLsp();
     const columns: EditorColumn[] = [

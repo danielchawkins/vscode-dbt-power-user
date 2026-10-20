@@ -243,8 +243,9 @@ function payloadOf(
 }
 
 /**
- * The payload for an upstream-description outcome. A stopped client and a non-strict mode each give a notice, and the
- * non-strict notice carries the button that turns strict analysis on, as the type notice does.
+ * The payload for an upstream-description outcome. A stopped client, a non-strict mode and a failed request each give a
+ * notice, and so does a walk that finds no proposal. The non-strict notice carries the button that turns strict analysis
+ * on, as the type notice does.
  */
 function descriptionPayloadOf(
   model: ModelRef,
@@ -277,11 +278,30 @@ function descriptionPayloadOf(
           ],
         },
       };
+    case "failed":
+      return {
+        kind: "descriptions",
+        model: model.filePath,
+        proposals: [],
+        notice: {
+          message: `Upstream descriptions could not be read: ${outcome.message}`,
+          type: "error",
+        },
+      };
     case "found":
       return {
         kind: "descriptions",
         model: model.filePath,
         proposals: outcome.proposals,
+        ...(outcome.proposals.length > 0
+          ? {}
+          : {
+              notice: {
+                message:
+                  "No upstream copy has a description for the columns without one.",
+                type: "warning",
+              },
+            }),
       };
   }
 }

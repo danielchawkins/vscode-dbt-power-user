@@ -25,6 +25,11 @@ const MANIFEST = {
   sourceMetaMap: new Map() as SourceMetaMap,
 };
 
+/** The node metadata of a manifest with no described node. */
+const UNDESCRIBED_NODES = {
+  lookupByUniqueId: () => undefined,
+} as unknown as NodeMetaMap;
+
 interface FakeToken {
   isCancellationRequested: boolean;
   onCancellationRequested(listener: () => void): { dispose(): void };
@@ -262,9 +267,12 @@ const LINEAGE = {
   ],
 };
 
-/** A project whose language server answers `listNodes` with `LINEAGE`, in the given state. */
-function describingProject(state: "running" | "stopped" = "running") {
-  const listNodes = vi.fn(async () => LINEAGE);
+/** A project whose language server answers `listNodes` with `answer` (`LINEAGE` by default), in the given state. */
+function describingProject(
+  state: "running" | "stopped" = "running",
+  answer: () => Promise<unknown> = async () => LINEAGE,
+) {
+  const listNodes = vi.fn(answer);
   const project = {
     projectRoot: { fsPath: "/p" },
     lsp: { state, getCurrentNode: vi.fn(async () => undefined), listNodes },
@@ -324,6 +332,55 @@ describe("ColumnProposalService descriptions", () => {
           ],
         },
       ],
+    });
+  });
+
+  it("reports a failed request as an error and proposes nothing", async () => {
+    const { project } = describingProject("running", async () => {
+      throw new Error("listNodes timed out");
+    });
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose(
+      "descriptions",
+      describedTarget(project),
+    );
+
+    expect(payload?.proposals).toEqual([]);
+    expect(payload?.notice?.type).toBe("error");
+    expect(payload?.notice?.message).toContain("listNodes timed out");
+  });
+
+  it("warns when no copy ancestor has a description", async () => {
+    const { project, listNodes } = describingProject();
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose(
+      "descriptions",
+      describedTarget(project, {
+        node: {
+          uniqueId: GRAND_TOTALS,
+          manifest: { ...MANIFEST, nodeMetaMap: UNDESCRIBED_NODES },
+        },
+      }),
+    );
+
+    expect(listNodes).toHaveBeenCalled();
+    expect(payload).toEqual({
+      kind: "descriptions",
+      model: MODEL.filePath,
+      proposals: [],
+      notice: {
+        message:
+          "No upstream copy has a description for the columns without one.",
+        type: "warning",
+      },
     });
   });
 
