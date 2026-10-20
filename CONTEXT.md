@@ -25,3 +25,5 @@ Fusion Power User is a local-first editor for dbt Fusion projects. It provides d
 **Server Producer**: The Project Metadata Source half that reads `dbt.listNodes` and `dbt.getProjectInfo`. *Avoid*: LSP cache, graph source
 
 **Parse Producer**: The Project Metadata Source half that reads `manifest.json` from `dbt parse`, for the fields in `docs/lsp-metadata-gaps.md`. *Avoid*: Manifest fallback
+
+**Column Proposal**: A pending `data_type` or description for one column, labelled with its source (target, deferred, inferred or an upstream column), that the user accepts in the documentation editor before Save writes it. *Avoid*: Suggestion, sync result
