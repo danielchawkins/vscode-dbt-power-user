@@ -43,6 +43,7 @@ export const resolveSettings = (
   includeSourcesInInference: settings?.includeSourcesInInference ?? false,
   maxNeighbours: settings?.maxNeighbours ?? 20,
   groupBy: settings?.groupBy ?? "folder",
+  semanticZoom: settings?.semanticZoom ?? true,
 });
 
 /** The relationships to draw: enabled sources, inferred ones at or above the threshold, both ends drawn. */

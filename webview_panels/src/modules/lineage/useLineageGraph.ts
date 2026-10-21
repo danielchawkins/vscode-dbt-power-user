@@ -189,14 +189,15 @@ function useGraphStore(
  * The lineage graph driven by the host's `render` and `projectSaved` messages. The first render replays the view
  * state VS Code kept for a rebuilt page; every change after it is written back through `writeViewState`.
  * `expansionOptions` gives the cap on neighbours an expansion draws at first (0 draws all) and how they are grouped.
+ * While `ready` is false, the latest render is held and drawn once it turns true, so the cap is the host's.
  */
 export function useLineageGraph(
   defaultExpansion: () => number,
   openDetails: (table: string) => void,
-  expansionOptions: () => ExpansionOptions = () => ({
-    cap: 0,
-    groupBy: "none",
-  }),
+  {
+    expansionOptions = () => ({ cap: 0, groupBy: "none" }),
+    ready = true,
+  }: { expansionOptions?: () => ExpansionOptions; ready?: boolean } = {},
 ): {
   graph: GraphState;
   /** The latest `render` arguments: the panel notice and whether empty column lists need strict analysis. */
@@ -213,26 +214,29 @@ export function useLineageGraph(
   const refreshRef = useRef(false);
   const restoredRef = useRef(false);
 
-  const onRender = useCallback(
-    (args: lineage.RenderArgs | undefined) => {
-      setRendered(args);
-      const plan = planRender({
-        args,
-        graph: graphRef.current,
-        publication: publicationRef.current,
-        refresh: refreshRef.current,
-        stored: () =>
-          restoredRef.current ? undefined : readViewState("lineage"),
-      });
-      if (!plan) {
-        return;
-      }
-      restoredRef.current = true;
-      refreshRef.current = false;
-      publicationRef.current = args?.publication;
-      rebuild(plan.start, plan.saved);
-    },
-    [graphRef, rebuild],
+  const onRender = useHeldUntil(
+    ready,
+    useCallback(
+      (args: lineage.RenderArgs | undefined) => {
+        setRendered(args);
+        const plan = planRender({
+          args,
+          graph: graphRef.current,
+          publication: publicationRef.current,
+          refresh: refreshRef.current,
+          stored: () =>
+            restoredRef.current ? undefined : readViewState("lineage"),
+        });
+        if (!plan) {
+          return;
+        }
+        restoredRef.current = true;
+        refreshRef.current = false;
+        publicationRef.current = args?.publication;
+        rebuild(plan.start, plan.saved);
+      },
+      [graphRef, rebuild],
+    ),
   );
 
   useEffect(() => {
@@ -269,6 +273,30 @@ export function useLineageGraph(
   };
   const { select, actions } = useTableActions(current, openDetails);
   return { graph, rendered, drawnKey, actions, select, reset };
+}
+
+/** `handle`, except that while `ready` is false the latest call is held, and replayed once `ready` turns true. */
+function useHeldUntil<T>(ready: boolean, handle: (value: T) => void) {
+  const readyRef = useRef(ready);
+  const heldRef = useRef<{ value: T }>(undefined);
+  useEffect(() => {
+    readyRef.current = ready;
+    const held = heldRef.current;
+    if (ready && held) {
+      heldRef.current = undefined;
+      handle(held.value);
+    }
+  }, [ready, handle]);
+  return useCallback(
+    (value: T) => {
+      if (readyRef.current) {
+        handle(value);
+      } else {
+        heldRef.current = { value };
+      }
+    },
+    [handle],
+  );
 }
 
 /** Selection and the table actions over the current store; stable while `current` and `openDetails` are. */

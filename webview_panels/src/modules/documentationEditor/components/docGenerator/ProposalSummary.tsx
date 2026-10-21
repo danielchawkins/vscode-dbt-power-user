@@ -5,21 +5,28 @@ import { useProposalActions } from "@modules/documentationEditor/proposals/usePr
 import { executeRequestInAsync } from "@modules/documentationEditor/requests";
 import { Alert, Button, Stack } from "@uicore";
 
-const Notice = ({ notice }: { notice: PanelNotice }): React.JSX.Element => (
-  <Alert color="warning" className="p-2 mb-0">
-    {notice.message}{" "}
-    {(notice.actions ?? []).map(({ title, action }) => (
-      <Button
-        key={action}
-        color="link"
-        className="pt-0 pb-0"
-        onClick={() => executeRequestInAsync("runNoticeAction", { action })}
-      >
-        {title}
-      </Button>
-    ))}
-  </Alert>
-);
+const Notice = ({
+  payload,
+}: {
+  payload: { notice?: PanelNotice | undefined } | undefined;
+}): React.JSX.Element | null => {
+  const notice = payload?.notice;
+  return notice ? (
+    <Alert color="warning" className="p-2 mb-0">
+      {notice.message}{" "}
+      {(notice.actions ?? []).map(({ title, action }) => (
+        <Button
+          key={action}
+          color="link"
+          className="pt-0 pb-0"
+          onClick={() => executeRequestInAsync("runNoticeAction", { action })}
+        >
+          {title}
+        </Button>
+      ))}
+    </Alert>
+  ) : null;
+};
 
 /** The pending column proposals of the model: where the types came from, what was not found, and the actions. */
 const ProposalSummary = (): React.JSX.Element | null => {
@@ -38,8 +45,8 @@ const ProposalSummary = (): React.JSX.Element | null => {
   return (
     <Stack direction="column" className="mb-2">
       {label ? <p className="mb-1">{label}</p> : null}
-      {types?.notice ? <Notice notice={types.notice} /> : null}
-      {descriptions?.notice ? <Notice notice={descriptions.notice} /> : null}
+      <Notice payload={types} />
+      <Notice payload={descriptions} />
       {types && types.notFound.length > 0 ? (
         <div>
           <p className="mb-1">

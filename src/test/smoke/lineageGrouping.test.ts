@@ -147,6 +147,66 @@ async function waitForChildrenExpander(): Promise<string> {
   );
 }
 
+/**
+ * The canvas zoom and, per table card, its unscaled size, the header's badge and title font sizes, the subtitle's
+ * display, and the visibility of every other row under the header.
+ */
+interface ZoomState {
+  entry: string;
+  zoom: number;
+  cards: {
+    width: number;
+    height: number;
+    badge: number;
+    title: number;
+    subtitle: string;
+    rows: string[];
+  }[];
+}
+
+const ZOOM_STATE = `(() => document.body.dataset.entry === "lineage" ? {
+  entry: "lineage",
+  zoom: Number(
+    /scale\\(([\\d.]+)\\)/.exec(document.querySelector(".react-flow__viewport")?.style.transform ?? "")?.[1],
+  ),
+  cards: [...document.querySelectorAll("[data-table]")].map((card) => {
+    const [badge, title, , subtitle] = card.querySelectorAll(":scope > div:first-child > span");
+    return {
+      width: card.offsetWidth,
+      height: card.offsetHeight,
+      badge: parseFloat(getComputedStyle(badge).fontSize),
+      title: parseFloat(getComputedStyle(title).fontSize),
+      subtitle: getComputedStyle(subtitle).display,
+      rows: [...card.querySelectorAll(":scope > :not(:first-child)")].map((row) => getComputedStyle(row).visibility),
+    };
+  }),
+} : null)()`;
+
+async function zoomState(): Promise<ZoomState> {
+  const match = await evaluatePanel<ZoomState>(
+    process.env.FPU_CDP_PORT!,
+    LINEAGE.entry,
+    ZOOM_STATE,
+  );
+  assert.ok(match, "the lineage webview is not showing");
+  return match.value;
+}
+
+/** Presses Zoom Out until the canvas zoom is below 50%, and returns the state then. */
+async function zoomOutBelowHalf(): Promise<ZoomState> {
+  const deadline = Date.now() + 20_000;
+  let last = await zoomState();
+  while (last.zoom >= 0.5 || Number.isNaN(last.zoom)) {
+    if (Date.now() >= deadline) {
+      throw new Error(`the zoom stayed at ${last.zoom}`);
+    }
+    await clickInWebview(LINEAGE, { role: "button", name: "Zoom Out" });
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    last = await zoomState();
+  }
+  return last;
+}
+
 suite("Lineage grouping", function () {
   this.timeout(300_000);
 
@@ -217,6 +277,37 @@ suite("Lineage grouping", function () {
         groups: opened.groups,
         chips: opened.chips,
         more: opened.more,
+      },
+    });
+
+    // Checkpoint 3: zoomed out, cards keep their size and show a larger badge and title only.
+    const before = await zoomState();
+    const zoomed = await zoomOutBelowHalf();
+    assert.ok(zoomed.zoom < 0.5, `the zoom was ${zoomed.zoom}`);
+    assert.ok(zoomed.cards.length > 0, "the zoomed-out canvas draws cards");
+    assert.deepStrictEqual(
+      zoomed.cards.map(({ width, height }) => [width, height]),
+      before.cards.map(({ width, height }) => [width, height]),
+      "each card keeps its size",
+    );
+    for (const card of zoomed.cards) {
+      assert.ok(card.title >= 26, `title was ${card.title}px`);
+      assert.ok(card.badge >= 20, `badge was ${card.badge}px`);
+      assert.strictEqual(card.subtitle, "none");
+      assert.ok(
+        card.rows.every((visibility) => visibility === "hidden"),
+        `rows under the header were ${card.rows.join(",")}`,
+      );
+    }
+    await evidence?.capture(LINEAGE, {
+      name: "lineage-groups-zoomed-out",
+      expect:
+        "The same graph zoomed out below 50%: every card keeps its size and shows only a larger badge and title, " +
+        "with no subtitle line, action row or columns.",
+      measured: {
+        zoom: zoomed.zoom,
+        sizesBefore: before.cards.map(({ width, height }) => [width, height]),
+        cards: zoomed.cards,
       },
     });
   });

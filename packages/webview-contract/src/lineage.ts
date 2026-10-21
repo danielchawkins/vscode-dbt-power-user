@@ -162,11 +162,16 @@ export interface LineageSettings {
   maxNeighbours?: number | undefined;
   /** How an over-cap expansion's new neighbours are drawn: by folder as group nodes, or `none`. A user setting. */
   groupBy?: "none" | "folder" | undefined;
+  /** Below 50% zoom, cards keep their size and show only a larger badge and title. A user setting. */
+  semanticZoom?: boolean | undefined;
 }
 
-/** The settings `persistLineageSettings` may change; `maxNeighbours` and `groupBy` are user settings the panel reads. */
+/**
+ * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy` and `semanticZoom` are user settings
+ * the panel only reads.
+ */
 export type PersistedLineageSettings = Partial<
-  Omit<LineageSettings, "maxNeighbours" | "groupBy">
+  Omit<LineageSettings, "maxNeighbours" | "groupBy" | "semanticZoom">
 >;
 
 /** The `getConnectedColumns` request; the host reads `targets` and `upstreamExpansion`. */
