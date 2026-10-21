@@ -19,6 +19,9 @@ jobs:
     uses: ./.github/workflows/check-and-package.yml
 
   smoke-vscode:
+    # Off until macOS runners start jobs reliably; `just smoke-docker` runs the same smoke on both hosts locally.
+    # Run it on demand from the Actions tab with `workflow_dispatch`.
+    if: github.event_name == 'workflow_dispatch'
     needs: check
     runs-on: macos-latest
     timeout-minutes: 45
@@ -114,6 +117,9 @@ jobs:
           if-no-files-found: ignore
 
   smoke-cursor:
+    # Off until macOS runners start jobs reliably; `just smoke-docker` runs the same smoke on both hosts locally.
+    # Run it on demand from the Actions tab with `workflow_dispatch`.
+    if: github.event_name == 'workflow_dispatch'
     needs: check
     runs-on: macos-latest
     timeout-minutes: 45

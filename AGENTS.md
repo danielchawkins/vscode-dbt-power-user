@@ -105,7 +105,7 @@ Known false positives in this repo:
 
 ## Gates
 
-`just check` and `just package` must pass on every PR bookmark tip. `just smoke` runs the packaged-VSIX smoke assertions locally; CI runs the same assertions through `smoke-vscode` and `smoke-cursor`.
+`just check` and `just package` must pass on every PR bookmark tip. `just smoke` runs the packaged-VSIX smoke assertions locally. CI's `check` job runs on Linux; its macOS `smoke-vscode` and `smoke-cursor` jobs run only when started by hand, because macOS runners kept failing to start, so run `just smoke-docker` before merging a change a user can see.
 
 Modernization rules (`e18e`, `unicorn`, the extra `typescript` rules and the React Compiler rules) are ratcheted like the other suppressions: their existing violations sit in the oxlint suppression files, `just lint-prune` only shrinks them, and `just lint-ratchet` fails when a count rises.
 
@@ -117,7 +117,7 @@ Unit tests and the integration suite run from source. Anything that claims to sh
 
 For any change a user sees (panels, editor language, highlighting, lenses, menus), run `just smoke-visual` after `just package` and include the result in the review. Each checkpoint under `<out>/<host>/<fixture>/` is a workbench PNG plus a JSON record: `expect` (what should be visible), `measured` (text and state the test read at the same moment), and `notifications`. Open every PNG and confirm it agrees with its `measured` and `expect`; report any disagreement as a finding, since text alone missed a model opening as plain SQL and a legend covering the graph.
 
-`just smoke-docker` gives the same evidence without opening windows, while CI still smokes on macOS.
+`just smoke-docker` gives the same evidence without opening windows.
 
 ## Jujutsu
 
