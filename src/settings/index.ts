@@ -21,6 +21,7 @@ export interface SettingsSchema {
   "lineage.maxNeighbours": number;
   "lineage.groupBy": string;
   "lineage.semanticZoom": boolean;
+  "lineage.title": string;
   enabled: boolean;
   projects: readonly string[];
   staticAnalysis: string;
@@ -88,6 +89,7 @@ export const SETTING_SCOPES = {
   "lineage.maxNeighbours": "window",
   "lineage.groupBy": "window",
   "lineage.semanticZoom": "window",
+  "lineage.title": "window",
   enabled: "resource",
   projects: "resource",
   staticAnalysis: "resource",

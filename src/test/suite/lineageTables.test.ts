@@ -164,3 +164,45 @@ describe("lineage table file path", () => {
     );
   });
 });
+
+describe("lineage table identifier", () => {
+  const sources = {
+    raw: {
+      name: "raw",
+      package_name: "shop",
+      database: "RAW",
+      schema: "landing",
+      tables: [
+        {
+          name: "events",
+          identifier: "EVENTS_V2",
+          columns: {},
+          description: "",
+          path: "",
+        },
+        {
+          name: "users",
+          identifier: "users",
+          columns: {},
+          description: "",
+          path: "",
+        },
+      ],
+    },
+  };
+
+  it("is set on a source whose identifier differs from its name", () => {
+    const event = manifest({ sources });
+    const table = lineageTable(event, "source.shop.raw.events");
+    expect(table?.identifier).toBe("EVENTS_V2");
+    expect(table?.refName).toBe("raw.events");
+  });
+
+  it("is absent on a source that keeps its name, and on a model", () => {
+    const event = manifest({ sources, nodes: { [ORDERS]: model() } });
+    expect(lineageTable(event, "source.shop.raw.users")).not.toHaveProperty(
+      "identifier",
+    );
+    expect(lineageTable(event, ORDERS)).not.toHaveProperty("identifier");
+  });
+});

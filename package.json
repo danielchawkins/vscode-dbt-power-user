@@ -132,6 +132,19 @@
             "type": "boolean",
             "description": "Below 50% zoom, lineage cards keep their size and show only a larger badge and title.",
             "default": true
+          },
+          "fusionPowerUser.lineage.title": {
+            "type": "string",
+            "enum": [
+              "alias",
+              "name"
+            ],
+            "enumDescriptions": [
+              "Cards are titled by the name of the built relation: the model's alias when it has one.",
+              "Cards are titled by the dbt name that `ref()` uses; the subtitle shows the alias when it differs."
+            ],
+            "description": "How lineage cards are titled.",
+            "default": "alias"
           }
         }
       },

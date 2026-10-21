@@ -133,7 +133,10 @@ function sourceTable(
     schema: table.schema ?? source.schema,
     ...hiddenPart(table.meta),
     ...(table.identifier && table.identifier !== tableName
-      ? { refName: `${sourceName}.${tableName}` }
+      ? {
+          refName: `${sourceName}.${tableName}`,
+          identifier: table.identifier,
+        }
       : {}),
   };
 }

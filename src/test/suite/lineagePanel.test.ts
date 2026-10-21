@@ -350,6 +350,7 @@ describe("LineagePanel", () => {
           maxNeighbours: 3,
           groupBy: "folder",
           semanticZoom: true,
+          title: "alias",
         },
         status: true,
       },
@@ -408,6 +409,31 @@ describe("LineagePanel", () => {
     expect(mockPostMessage.mock.lastCall![0].args.body.semanticZoom).toBe(true);
   });
 
+  it("reads lineage.title, name only when exactly name, and never persists it", async () => {
+    const values: Record<string, unknown> = { "lineage.title": "name" };
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: (key: string) => values[key] ?? 3,
+      update: vi.fn(),
+    });
+    await (panel as any).handleCommand({
+      command: "persistLineageSettings",
+      args: { params: { title: "alias" } },
+      syncRequestId: "p",
+    });
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.title).toBe("name");
+
+    values["lineage.title"] = "typo";
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g2",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.title).toBe("alias");
+  });
+
   it("persists only known settings and clamps the confidence threshold", async () => {
     (workspace.getConfiguration as Mock).mockReturnValue({
       get: () => 3,
@@ -442,6 +468,7 @@ describe("LineagePanel", () => {
         maxNeighbours: 3,
         groupBy: "folder",
         semanticZoom: true,
+        title: "alias",
       });
     }
   });
