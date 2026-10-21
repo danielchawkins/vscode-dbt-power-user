@@ -18,3 +18,14 @@ models:
     columns:
       - name: customer_id
       - name: total_amount
+  # UNION case: customer_id agrees across the branches, value differs.
+  - name: union_orders
+    columns:
+      - name: customer_id
+      - name: value
+  # Join case: customer_id is a passthrough key on both sides of the join.
+  - name: order_join
+    columns:
+      - name: order_id
+      - name: customer_id
+      - name: total

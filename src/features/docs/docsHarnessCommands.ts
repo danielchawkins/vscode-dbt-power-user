@@ -4,7 +4,11 @@ import type { Disposable } from "vscode";
 import { commands, Uri, window } from "vscode";
 import { readHarnessSwitch } from "../../settings";
 import type { MessageOf } from "../../webview/messageRouter";
-import type { ColumnProposalService, ProposalTarget } from "./columnProposals";
+import type {
+  ColumnProposalService,
+  ProposalKind,
+  ProposalTarget,
+} from "./columnProposals";
 import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 
@@ -34,12 +38,12 @@ export interface DocsHarnessDeps {
 }
 
 /**
- * Applies every type proposal for the active model, ticking each overwrite, and saves the result. The model's tests
- * go with it: a save without them would delete the column tests from the YAML.
+ * Applies every proposal of `kind` for the active model, ticking each type overwrite, and saves the result. The model's
+ * tests go with it: a save without them would delete the column tests from the YAML.
  */
 async function acceptAllProposals(
   deps: DocsHarnessDeps,
-  kind: "types",
+  kind: ProposalKind,
 ): Promise<void> {
   const { documentation } =
     await deps.docGenService.getUncompiledDocumentationForCurrentActiveFile();
@@ -49,19 +53,25 @@ async function acceptAllProposals(
     return;
   }
   const draft = deps.drafts.get(documentation.filePath);
-  const choices = Object.fromEntries(
-    payload.proposals
-      .filter((proposal) => proposal.change === "overwrite")
-      .map((proposal) => [proposal.column.toLowerCase(), { overwrite: true }]),
-  );
+  const columns = draft?.docs.columns ?? documentation.columns;
   await deps.save({
     ...(draft?.docs ?? documentation),
     command: "saveDocumentation",
-    columns: columnProposals.applyProposals(
-      draft?.docs.columns ?? documentation.columns,
-      payload.proposals,
-      choices,
-    ),
+    columns:
+      payload.kind === "types"
+        ? columnProposals.applyProposals(
+            columns,
+            payload.proposals,
+            Object.fromEntries(
+              payload.proposals
+                .filter((proposal) => proposal.change === "overwrite")
+                .map((proposal) => [
+                  proposal.column.toLowerCase(),
+                  { overwrite: true },
+                ]),
+            ),
+          )
+        : columnProposals.applyDescriptionProposals(columns, payload.proposals),
     updatedTests:
       draft?.tests ?? (await deps.dbtTestService.getTestsForCurrentModel()),
   });
@@ -77,7 +87,7 @@ export function registerDocsHarnessCommands(
   return [
     commands.registerCommand(
       DOCS_COLUMN_PROPOSALS_COMMAND,
-      async (kind: "types", file: string) => {
+      async (kind: ProposalKind, file: string) => {
         await window.showTextDocument(Uri.file(file));
         const target = await deps.proposalTarget();
         return target && deps.columnProposals.propose(kind, target);
@@ -85,7 +95,7 @@ export function registerDocsHarnessCommands(
     ),
     commands.registerCommand(
       DOCS_ACCEPT_ALL_PROPOSALS_COMMAND,
-      async (kind: "types", file: string) => {
+      async (kind: ProposalKind, file: string) => {
         await window.showTextDocument(Uri.file(file));
         await acceptAllProposals(deps, kind);
       },

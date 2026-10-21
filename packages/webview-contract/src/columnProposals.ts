@@ -31,8 +31,37 @@ export interface TypeProposalsPayload {
   notice?: PanelNotice | undefined;
 }
 
-/** What `ColumnProposalService` answers with. Only the `types` kind exists so far. */
-export type ColumnProposalsPayload = TypeProposalsPayload;
+/** One column of one node: `uniqueId` is the node's unique id and `column` its column name. */
+export interface ColumnRef {
+  uniqueId: string;
+  column: string;
+}
+
+/** Ancestors that share one description. Several candidates mean the upstream descriptions disagree. */
+export interface DescriptionCandidate {
+  description: string;
+  sources: ColumnRef[];
+}
+
+/** The candidate descriptions for one column of the model that has none. */
+export interface DescriptionProposal {
+  column: string;
+  candidates: DescriptionCandidate[];
+}
+
+/** The description proposals for one model, with a notice when Fusion could not answer. */
+export interface DescriptionProposalsPayload {
+  kind: "descriptions";
+  /** The model's file path, which is how the panel keys its drafts. */
+  model: string;
+  proposals: DescriptionProposal[];
+  notice?: PanelNotice | undefined;
+}
+
+/** What `ColumnProposalService` answers with: type proposals or description proposals. */
+export type ColumnProposalsPayload =
+  | TypeProposalsPayload
+  | DescriptionProposalsPayload;
 
 const isTargetSource = shape<Extract<ProposalSource, { kind: "target" }>>({
   kind: oneOf("target"),
@@ -61,7 +90,7 @@ const isTypeProposal = shape<TypeProposal>({
   current: optional(isString),
 });
 
-export const isColumnProposalsPayload = shape<ColumnProposalsPayload>({
+const isTypeProposalsPayload = shape<TypeProposalsPayload>({
   kind: oneOf("types"),
   model: isString,
   source: optional(isProposalSource),
@@ -69,6 +98,33 @@ export const isColumnProposalsPayload = shape<ColumnProposalsPayload>({
   notFound: arrayOf(isString),
   notice: optional(isPanelNotice),
 });
+
+const isColumnRef = shape<ColumnRef>({
+  uniqueId: isString,
+  column: isString,
+});
+
+const isDescriptionCandidate = shape<DescriptionCandidate>({
+  description: isString,
+  sources: arrayOf(isColumnRef),
+});
+
+const isDescriptionProposal = shape<DescriptionProposal>({
+  column: isString,
+  candidates: arrayOf(isDescriptionCandidate),
+});
+
+const isDescriptionProposalsPayload = shape<DescriptionProposalsPayload>({
+  kind: oneOf("descriptions"),
+  model: isString,
+  proposals: arrayOf(isDescriptionProposal),
+  notice: optional(isPanelNotice),
+});
+
+export const isColumnProposalsPayload = (
+  value: unknown,
+): value is ColumnProposalsPayload =>
+  isTypeProposalsPayload(value) || isDescriptionProposalsPayload(value);
 
 const isBlank = (value: string | null | undefined) =>
   (value ?? "").trim() === "";
@@ -112,6 +168,40 @@ export function applyProposals(
     ) {
       column.type = proposal.type;
       column.replaceType = true;
+    }
+  }
+  return result;
+}
+
+/**
+ * `columns` with description proposals applied. A proposal applies when it has exactly one candidate, or when `choices`
+ * names one of its candidates by index (keyed by the lower-cased column name). Any other proposal is skipped, so an
+ * accept-all without choices never picks between disagreeing ancestors. A description is set only where the column's
+ * description is blank, so one typed since the proposals arrived is kept.
+ */
+export function applyDescriptionProposals(
+  columns: readonly DocumentationColumn[],
+  proposals: readonly DescriptionProposal[],
+  choices: Readonly<Record<string, { candidate: number }>> = {},
+): DocumentationColumn[] {
+  const result = columns.map((column) => ({ ...column }));
+  for (const proposal of proposals) {
+    const column = result.find((candidate) =>
+      sameName(candidate.name, proposal.column),
+    );
+    const picked =
+      choices[proposal.column.toLowerCase()]?.candidate ??
+      (proposal.candidates.length === 1 ? 0 : undefined);
+    const description =
+      picked === undefined
+        ? undefined
+        : proposal.candidates[picked]?.description;
+    if (
+      column !== undefined &&
+      description !== undefined &&
+      isBlank(column.description)
+    ) {
+      column.description = description;
     }
   }
   return result;

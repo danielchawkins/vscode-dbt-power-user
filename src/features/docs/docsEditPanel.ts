@@ -22,7 +22,7 @@ import type { Handlers, MessageOf } from "../../webview/messageRouter";
 import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import type { ColumnProposalService, ProposalTarget } from "./columnProposals";
-import { docColumns } from "./columnProposals";
+import { proposalTargetOf } from "./columnProposals";
 import type { TypeSourceProject } from "./columnTypeSource";
 import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
@@ -173,13 +173,12 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     if (!documentation || !project) {
       return undefined;
     }
-    const draft = this.drafts.get(documentation.filePath)?.docs.columns;
-    return {
-      model: { name: documentation.name, filePath: documentation.filePath },
-      yaml: docColumns(documentation.columns),
-      draft: draft && docColumns(draft),
+    return proposalTargetOf({
+      documentation,
+      draft: this.drafts.get(documentation.filePath)?.docs.columns,
       project,
-    };
+      manifest: this.queryManifestService.manifestFor(),
+    });
   }
 
   private async transmitData() {

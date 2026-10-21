@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { window } from "vscode";
+import { columnLineageArgs } from "../../core/lineage/columnLineage";
+import type { NodeMetaMap, SourceMetaMap } from "../../core/manifest/types";
 import type { ProposalTarget } from "../../features/docs/columnProposals";
 import { ColumnProposalService } from "../../features/docs/columnProposals";
 import type { TypeSourceProject } from "../../features/docs/columnTypeSource";
@@ -7,6 +9,26 @@ import { spyLog } from "../testLog";
 
 const MODEL = { name: "orders", filePath: "/p/models/orders.sql" };
 const COLUMNS = [{ column: "id", dtype: "varchar" }];
+const ORDER_TOTALS = "model.lineage.order_totals";
+const ORDER_TOTAL = `${ORDER_TOTALS}.total`;
+const GRAND_TOTALS = "model.lineage.grand_totals";
+const GRAND_TOTAL = `${GRAND_TOTALS}.grand_total`;
+
+/** The manifest of the descriptions test: `order_totals.total` is described, nothing else is. */
+const MANIFEST = {
+  nodeMetaMap: {
+    lookupByUniqueId: (id: string) =>
+      id === ORDER_TOTALS
+        ? { columns: { total: { description: "Order total" } } }
+        : undefined,
+  } as unknown as NodeMetaMap,
+  sourceMetaMap: new Map() as SourceMetaMap,
+};
+
+/** The node metadata of a manifest with no described node. */
+const UNDESCRIBED_NODES = {
+  lookupByUniqueId: () => undefined,
+} as unknown as NodeMetaMap;
 
 interface FakeToken {
   isCancellationRequested: boolean;
@@ -58,6 +80,7 @@ const target = (
 ): ProposalTarget => ({
   model: MODEL,
   yaml: [{ name: "id", type: "integer" }],
+  described: [],
   project,
   ...overrides,
 });
@@ -229,5 +252,192 @@ describe("ColumnProposalService", () => {
     expect(withStrict?.notice?.actions).toEqual([
       { title: "Use strict analysis", action: "useStrictAnalysis" },
     ]);
+  });
+});
+
+/** A `dbt.listNodes` column result: `grand_total` is a copy of `order_totals.total`. */
+const LINEAGE = {
+  nodes: [
+    {
+      unique_id: GRAND_TOTAL,
+      name: "grand_total",
+      op: "copy",
+      parents: [ORDER_TOTAL],
+    },
+  ],
+};
+
+/** A project whose language server answers `listNodes` with `answer` (`LINEAGE` by default), in the given state. */
+function describingProject(
+  state: "running" | "stopped" = "running",
+  answer: () => Promise<unknown> = async () => LINEAGE,
+) {
+  const listNodes = vi.fn(answer);
+  const project = {
+    projectRoot: { fsPath: "/p" },
+    lsp: { state, getCurrentNode: vi.fn(async () => undefined), listNodes },
+    getFusionCli: () => ({
+      describeModel: vi.fn(),
+      deferState: () => ({ kind: "off" }),
+    }),
+  } as unknown as TypeSourceProject;
+  return { project, listNodes };
+}
+
+/** A target for the descriptions of `grand_total`, a model whose manifest describes `order_totals.total`. */
+const describedTarget = (
+  project: TypeSourceProject,
+  overrides: Partial<ProposalTarget> = {},
+): ProposalTarget =>
+  target(project, {
+    described: [{ name: "grand_total", description: "" }],
+    node: { uniqueId: GRAND_TOTALS, manifest: MANIFEST },
+    ...overrides,
+  });
+
+describe("ColumnProposalService descriptions", () => {
+  beforeEach(() => {
+    vi.mocked(window.withProgress).mockImplementation(((
+      _options: unknown,
+      task: (...args: unknown[]) => unknown,
+    ) => task({ report: vi.fn() }, fakeToken())) as never);
+  });
+
+  it("proposes the first described copy ancestor's description for each column without one", async () => {
+    const { project, listNodes } = describingProject();
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose(
+      "descriptions",
+      describedTarget(project),
+    );
+
+    expect(listNodes).toHaveBeenCalledWith(
+      columnLineageArgs(GRAND_TOTALS, "grand_total"),
+    );
+    expect(payload).toEqual({
+      kind: "descriptions",
+      model: MODEL.filePath,
+      proposals: [
+        {
+          column: "grand_total",
+          candidates: [
+            {
+              description: "Order total",
+              sources: [{ uniqueId: ORDER_TOTALS, column: "total" }],
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("reports a failed request as an error and proposes nothing", async () => {
+    const { project } = describingProject("running", async () => {
+      throw new Error("listNodes timed out");
+    });
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose(
+      "descriptions",
+      describedTarget(project),
+    );
+
+    expect(payload?.proposals).toEqual([]);
+    expect(payload?.notice?.type).toBe("error");
+    expect(payload?.notice?.message).toContain("listNodes timed out");
+  });
+
+  it("warns when no copy ancestor has a description", async () => {
+    const { project, listNodes } = describingProject();
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose(
+      "descriptions",
+      describedTarget(project, {
+        node: {
+          uniqueId: GRAND_TOTALS,
+          manifest: { ...MANIFEST, nodeMetaMap: UNDESCRIBED_NODES },
+        },
+      }),
+    );
+
+    expect(listNodes).toHaveBeenCalled();
+    expect(payload).toEqual({
+      kind: "descriptions",
+      model: MODEL.filePath,
+      proposals: [],
+      notice: {
+        message:
+          "No upstream copy has a description for the columns without one.",
+        type: "warning",
+      },
+    });
+  });
+
+  it("reports a stopped language server as an error and asks it nothing", async () => {
+    const { project, listNodes } = describingProject("stopped");
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose(
+      "descriptions",
+      describedTarget(project),
+    );
+
+    expect(listNodes).not.toHaveBeenCalled();
+    expect(payload?.proposals).toEqual([]);
+    expect(payload?.notice?.type).toBe("error");
+    expect(payload?.notice?.message).toContain("it is stopped");
+  });
+
+  it("offers the strict action and asks nothing when the mode computes no column lineage", async () => {
+    const { project, listNodes } = describingProject();
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => ({ mode: "off", setting: "strict" }),
+    });
+
+    const payload = await service.propose(
+      "descriptions",
+      describedTarget(project),
+    );
+
+    expect(listNodes).not.toHaveBeenCalled();
+    expect(payload?.proposals).toEqual([]);
+    expect(payload?.notice?.type).toBe("warning");
+    expect(payload?.notice?.message).toContain("needs strict");
+    expect(payload?.notice?.actions).toEqual([
+      { title: "Use strict analysis", action: "useStrictAnalysis" },
+    ]);
+  });
+
+  it("reports a model whose metadata has not loaded as an error and asks nothing", async () => {
+    const { project, listNodes } = describingProject();
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose(
+      "descriptions",
+      describedTarget(project, { node: undefined }),
+    );
+
+    expect(listNodes).not.toHaveBeenCalled();
+    expect(payload?.proposals).toEqual([]);
+    expect(payload?.notice?.type).toBe("error");
+    expect(payload?.notice?.message).toContain("has not loaded yet");
   });
 });
