@@ -182,8 +182,10 @@ suite("Column lineage from the language server", function () {
       assert.deepStrictEqual(
         downstream.map((edge) => edge.split(" ").slice(2, 4).join(".")).sort(),
         [
+          "model.lineage_probe.order_join.total",
           "model.lineage_probe.totals_downstream.grand_total",
           `${TOTALS_STAR}.total`,
+          "model.lineage_probe.union_orders.value",
         ],
       );
     } finally {
