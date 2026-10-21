@@ -6,9 +6,8 @@ import {
   cardBadge,
   cardSubtitle,
   cardTooltip,
-  middleEllipsis,
-  TITLE_MAX,
-  ZOOMED_TITLE_MAX,
+  cardTitle,
+  type TitleMode,
 } from "./card";
 import type { TableNode as TableNodeType } from "./flow";
 import type { Direction } from "./graph";
@@ -92,7 +91,9 @@ const Header = ({
   errors,
   hiddenFromLineage,
   zoomedOut,
+  mode,
 }: {
+  mode: TitleMode;
   table: lineage.LineageTable;
   errors?: string[] | undefined;
   hiddenFromLineage: boolean;
@@ -114,8 +115,8 @@ const Header = ({
     >
       {cardBadge(table)}
     </span>
-    <span className={styles.label} title={cardTooltip(table)}>
-      {middleEllipsis(table.label, zoomedOut ? ZOOMED_TITLE_MAX : TITLE_MAX)}
+    <span className={styles.label} title={cardTooltip(table, mode)}>
+      {cardTitle(table, mode, zoomedOut)}
     </span>
     {errors?.length || hiddenFromLineage ? (
       <span className={styles.flags}>
@@ -141,8 +142,11 @@ const Header = ({
     ) : (
       <span />
     )}
-    <span className={styles.subtitle} title={cardSubtitle(table) || undefined}>
-      {cardSubtitle(table) || "\u00a0"}
+    <span
+      className={styles.subtitle}
+      title={cardSubtitle(table, mode) || undefined}
+    >
+      {cardSubtitle(table, mode) || "\u00a0"}
     </span>
     <Handle
       type="source"
@@ -325,6 +329,7 @@ const TableNodeView = ({
         errors={data.errors}
         hiddenFromLineage={hiddenFromLineage}
         zoomedOut={zoomedOut}
+        mode={data.title}
       />
       <Actions
         table={data.table}

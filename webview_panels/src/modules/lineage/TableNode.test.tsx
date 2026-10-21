@@ -2,8 +2,17 @@ import { render, screen } from "@testing-library/react";
 import { ReactFlowProvider, useStoreApi } from "@xyflow/react";
 import { useLayoutEffect } from "react";
 import { describe, expect, it } from "vitest";
-import { ZOOMED_TITLE_MAX } from "./card";
+import { cardTitle } from "./card";
 import { TableNode } from "./TableNode";
+
+/** The length `cardTitle` shortens a long zoomed-out title to. */
+const ZOOMED_TITLE_MAX = cardTitle(
+  { table: "t", label: "x".repeat(100), nodeType: "model" } as Parameters<
+    typeof cardTitle
+  >[0],
+  "alias",
+  true,
+).length;
 
 const draw = (columnsNeedStrict: boolean) => {
   const props = {

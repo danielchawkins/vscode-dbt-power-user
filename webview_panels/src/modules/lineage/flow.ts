@@ -1,5 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { Edge, Node } from "@xyflow/react";
+import type { TitleMode } from "./card";
 import type { GroupChip, GroupView } from "./expansionGroups";
 import { expansionKey } from "./graph";
 import { columnHandle, geometry, layout, tableHeight } from "./layout";
@@ -9,6 +10,8 @@ interface TableNodeData extends Record<string, unknown> {
   table: lineage.LineageTable;
   columns?: lineage.LineageColumn[] | undefined;
   isStart: boolean;
+  /** Whether the card is titled by alias or by dbt name. */
+  title: TitleMode;
   expanded: { parents: boolean; children: boolean };
   /** Expansions still loading; a click on one cancels it. */
   pending: { parents: boolean; children: boolean };
@@ -36,6 +39,8 @@ export type GroupNode = Node<GroupNodeData, "group">;
 
 /** What `toFlow` reads besides the drawn data. */
 export interface FlowInput {
+  /** How cards are titled; absent means by alias. */
+  title?: TitleMode | undefined;
   data: lineage.LineageData;
   columns: Record<string, lineage.LineageColumn[]>;
   columnTables: readonly string[];
@@ -165,6 +170,7 @@ export function toFlow(input: FlowInput): {
       table: t,
       columns: listed(t.table),
       isStart: t.table === data.start,
+      title: input.title ?? "alias",
       expanded: {
         parents: expansions.includes(expansionKey("parents", t.table)),
         children: expansions.includes(expansionKey("children", t.table)),

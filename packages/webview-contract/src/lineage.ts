@@ -55,6 +55,8 @@ export interface LineageTable {
   packageName?: string | undefined;
   /** The name `ref()` uses, when it differs from `label`. */
   refName?: string | undefined;
+  /** The source table's own name, when it differs from `label`. */
+  identifier?: string | undefined;
   /** Where the node is built: its database and schema; unset for nodes with no relation. */
   database?: string | undefined;
   schema?: string | undefined;
@@ -164,14 +166,16 @@ export interface LineageSettings {
   groupBy?: "none" | "folder" | undefined;
   /** Below 50% zoom, cards keep their size and show only a larger badge and title. A user setting. */
   semanticZoom?: boolean | undefined;
+  /** Titles cards by alias (`label`, the default) or by dbt name (`refName`). A user setting. */
+  title?: "alias" | "name" | undefined;
 }
 
 /**
- * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy` and `semanticZoom` are user settings
- * the panel only reads.
+ * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom` and `title` are user
+ * settings the panel only reads.
  */
 export type PersistedLineageSettings = Partial<
-  Omit<LineageSettings, "maxNeighbours" | "groupBy" | "semanticZoom">
+  Omit<LineageSettings, "maxNeighbours" | "groupBy" | "semanticZoom" | "title">
 >;
 
 /** The `getConnectedColumns` request; the host reads `targets` and `upstreamExpansion`. */

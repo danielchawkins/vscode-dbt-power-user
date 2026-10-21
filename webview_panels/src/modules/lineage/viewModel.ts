@@ -25,6 +25,19 @@ export type ResolvedSettings = {
   enabledRefSources: Record<RefSource, boolean>;
 };
 
+/** The user settings the panel only reads, each resolved to its default. */
+const resolveUserSettings = (
+  settings: Partial<Settings> | undefined,
+): Pick<
+  ResolvedSettings,
+  "maxNeighbours" | "groupBy" | "semanticZoom" | "title"
+> => ({
+  maxNeighbours: settings?.maxNeighbours ?? 20,
+  groupBy: settings?.groupBy ?? "folder",
+  semanticZoom: settings?.semanticZoom ?? true,
+  title: settings?.title ?? "alias",
+});
+
 export const resolveSettings = (
   settings: Partial<Settings> | undefined,
 ): ResolvedSettings => ({
@@ -41,9 +54,7 @@ export const resolveSettings = (
   },
   inferenceConfidenceThreshold: settings?.inferenceConfidenceThreshold ?? 0.8,
   includeSourcesInInference: settings?.includeSourcesInInference ?? false,
-  maxNeighbours: settings?.maxNeighbours ?? 20,
-  groupBy: settings?.groupBy ?? "folder",
-  semanticZoom: settings?.semanticZoom ?? true,
+  ...resolveUserSettings(settings),
 });
 
 /** The relationships to draw: enabled sources, inferred ones at or above the threshold, both ends drawn. */

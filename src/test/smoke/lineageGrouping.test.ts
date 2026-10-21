@@ -1,7 +1,11 @@
 import * as assert from "node:assert";
 import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
-import { evaluatePanel, validateSmokeHost } from "./cdpClient";
+import {
+  evaluatePanel,
+  validateSmokeHost,
+  waitForPanelGone,
+} from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
 import type { PanelEntry } from "./webviewInteractions";
 import {
@@ -207,6 +211,31 @@ async function zoomOutBelowHalf(): Promise<ZoomState> {
   return last;
 }
 
+/** Each card's id (its last segment) with the title text its header shows. */
+const CARD_TITLES = `(() => document.body.dataset.entry === "lineage" ? {
+  entry: "lineage",
+  titles: Object.fromEntries([...document.querySelectorAll("[data-table]")].map((el) => [
+    el.dataset.table.split(".").at(-1),
+    el.querySelector('span[title^="' + el.dataset.table + '"]')?.textContent ?? "",
+  ])),
+} : null)()`;
+
+async function cardTitles(): Promise<Record<string, string>> {
+  const match = await evaluatePanel<{
+    entry: string;
+    titles: Record<string, string>;
+  }>(process.env.FPU_CDP_PORT!, LINEAGE.entry, CARD_TITLES);
+  assert.ok(match, "the lineage webview is not showing");
+  return match.value.titles;
+}
+
+/** Hides the lineage panel so its page is rebuilt, which reads the settings again, then shows it from the hub. */
+async function reopenHub(): Promise<void> {
+  await vscode.commands.executeCommand("workbench.action.closePanel");
+  await waitForPanelGone(process.env.FPU_CDP_PORT!, LINEAGE.entry);
+  await openHub();
+}
+
 suite("Lineage grouping", function () {
   this.timeout(300_000);
 
@@ -310,5 +339,72 @@ suite("Lineage grouping", function () {
         cards: zoomed.cards,
       },
     });
+  });
+
+  // Checkpoint 4: with lineage.title set to name, cards show the dbt name, not the alias.
+  test("titles cards by dbt name when lineage.title is name", async function () {
+    if (!runsHere()) {
+      this.skip();
+      return;
+    }
+    const evidence = interactionEvidence(host());
+    const config = vscode.workspace.getConfiguration("fusionPowerUser");
+    // In alias mode, the default, the fixture's aliased marts model is titled by its alias.
+    await reopenHub();
+    if ((await waitForChildrenExpander()) === "Show 7 children") {
+      await clickInWebview(LINEAGE, CHILDREN_EXPANDER);
+    }
+    await waitForSnapshot(
+      "the hub's children should draw the marts card",
+      (current) => current.cards.includes("mart_summary"),
+    );
+    const aliasTitles = await cardTitles();
+    assert.strictEqual(
+      aliasTitles.mart_summary,
+      "summary_mart",
+      `in alias mode the titles were ${JSON.stringify(aliasTitles)}`,
+    );
+    try {
+      await config.update(
+        "lineage.title",
+        "name",
+        vscode.ConfigurationTarget.Workspace,
+      );
+      await reopenHub();
+      if ((await waitForChildrenExpander()) === "Show 7 children") {
+        await clickInWebview(LINEAGE, CHILDREN_EXPANDER);
+      }
+      await waitForSnapshot(
+        "the hub's children should draw the marts card",
+        (current) => current.cards.includes("mart_summary"),
+      );
+      const deadline = Date.now() + 10_000;
+      let titles = await cardTitles();
+      while (titles.mart_summary !== "mart_summary") {
+        if (Date.now() >= deadline) {
+          throw new Error(`the titles were ${JSON.stringify(titles)}`);
+        }
+        await new Promise((resolve) => setTimeout(resolve, 250));
+        titles = await cardTitles();
+      }
+      assert.ok(
+        !Object.values(titles).includes("summary_mart"),
+        `the alias still titled a card: ${JSON.stringify(titles)}`,
+      );
+      await clickInWebview(LINEAGE, { role: "button", name: "Fit View" });
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-groups-name-mode",
+        expect:
+          "The hub's children expanded with lineage.title set to name: the marts card is titled mart_summary, " +
+          "not its alias summary_mart.",
+        measured: { aliasTitles, titles },
+      });
+    } finally {
+      await config.update(
+        "lineage.title",
+        undefined,
+        vscode.ConfigurationTarget.Workspace,
+      );
+    }
   });
 });

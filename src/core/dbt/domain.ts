@@ -102,6 +102,7 @@ export type Table = {
   patchPath?: string;
   packageName?: string;
   refName?: string;
+  identifier?: string;
   database?: string;
   schema?: string;
   rootPackage?: boolean;

@@ -321,6 +321,7 @@ const Graph = (): React.JSX.Element => {
     const groups = collapsedGroups(graph);
     return toFlow({
       data,
+      title: settings.title,
       columns: graph.columns,
       columnTables: graph.columnTables,
       expansions: graph.expansions,

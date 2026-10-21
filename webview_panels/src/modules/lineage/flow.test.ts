@@ -156,3 +156,16 @@ describe("toFlow with group chips", () => {
     expect(hubNode([chip(1)])?.data).toMatchObject({ chips: [chip(1)] });
   });
 });
+
+describe("toFlow title mode", () => {
+  const titleOf = (title?: "alias" | "name") =>
+    toFlow({ ...input([]), groups: [], title }).nodes.find(
+      (n) => n.id === "hub",
+    )?.data;
+
+  it("passes the title mode to the table node, by alias when absent", () => {
+    expect(titleOf("name")).toMatchObject({ title: "name" });
+    expect(titleOf("alias")).toMatchObject({ title: "alias" });
+    expect(titleOf()).toMatchObject({ title: "alias" });
+  });
+});
