@@ -593,6 +593,9 @@ function docsHarness() {
   ) as any;
   const postMessage = vi.fn();
   panel._panel = { webview: { postMessage } };
+  // The page setup needs a real extension URI, which these tests do not depend on.
+  panel.setupWebviewOptions = vi.fn();
+  panel.renderWebviewView = vi.fn();
   window.activeTextEditor = {
     document: { uri: Uri.file("/p/models/orders.sql") },
   } as never;
@@ -600,6 +603,7 @@ function docsHarness() {
     panel,
     postMessage,
     project,
+    projects,
     docs,
     payload,
     columnProposals,
@@ -609,6 +613,38 @@ function docsHarness() {
     send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
   };
 }
+
+/** A WebviewView whose visibility the test flips; its webview posts to `postMessage`. */
+function fakeWebviewView(postMessage: ReturnType<typeof vi.fn>) {
+  const visibility = new EventEmitter<void>();
+  const view = {
+    title: "",
+    description: "",
+    visible: true,
+    webview: {
+      options: {},
+      html: "",
+      postMessage,
+      cspSource: "",
+      asWebviewUri: (uri: unknown) => uri,
+      onDidReceiveMessage: new EventEmitter<unknown>().event,
+    },
+    onDidChangeVisibility: visibility.event,
+    onDidDispose: new EventEmitter<void>().event,
+  };
+  return {
+    view: view as never,
+    setVisible(visible: boolean) {
+      view.visible = visible;
+      visibility.fire();
+    },
+  };
+}
+
+const cancellation = () => ({
+  isCancellationRequested: false,
+  onCancellationRequested: new EventEmitter<void>().event,
+});
 
 describe("documentation editor messages", () => {
   const rows: Record<string, Row> = {
@@ -822,7 +858,7 @@ describe("column proposal requests", () => {
     vi.useRealTimers();
   });
 
-  it("waits for the page, then posts the proposals", async () => {
+  it("waits for the page, then posts the documentation and the proposals in that order", async () => {
     vi.useFakeTimers();
     const h = docsHarness();
     h.columnProposalRequests.request("types");
@@ -831,10 +867,70 @@ describe("column proposal requests", () => {
 
     await h.send({ command: "webview:ready" });
     await vi.advanceTimersByTimeAsync(500);
+    expect(
+      h.postMessage.mock.calls.map(([message]) => message.command),
+    ).toEqual(["renderDocumentation", "renderColumnProposals"]);
     expect(h.postMessage).toHaveBeenCalledWith({
       command: "renderColumnProposals",
       payload: h.payload,
     });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("warns and posts no proposals when the active model has no project", async () => {
+    vi.useFakeTimers();
+    const h = docsHarness();
+    h.projects.get.mockReturnValue(undefined);
+    await h.send({ command: "webview:ready" });
+    h.columnProposalRequests.request("types");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(window.showWarningMessage).toHaveBeenCalledWith(
+      "No dbt project for the model orders",
+    );
+    expect(h.columnProposals.propose).not.toHaveBeenCalled();
+    expect(
+      h.postMessage.mock.calls.some(
+        ([message]) => message.command === "renderColumnProposals",
+      ),
+    ).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("waits for the new page's webview:ready after the view is hidden", async () => {
+    vi.useFakeTimers();
+    const h = docsHarness();
+    const view = fakeWebviewView(h.postMessage);
+    await h.panel.resolveWebviewView(view.view, {}, cancellation());
+    await h.send({ command: "webview:ready" });
+
+    view.setVisible(false);
+    h.columnProposalRequests.request("types");
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(
+      h.postMessage.mock.calls.some(
+        ([message]) => message.command === "renderColumnProposals",
+      ),
+    ).toBe(false);
+
+    view.setVisible(true);
+    await h.send({ command: "webview:ready" });
+    await vi.advanceTimersByTimeAsync(500);
+    expect(h.postMessage).toHaveBeenCalledWith({
+      command: "renderColumnProposals",
+      payload: h.payload,
+    });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("waits for webview:ready again when the view is resolved again", async () => {
+    vi.useFakeTimers();
+    const h = docsHarness();
+    const view = fakeWebviewView(h.postMessage);
+    await h.panel.resolveWebviewView(view.view, {}, cancellation());
+    await h.send({ command: "webview:ready" });
+
+    await h.panel.resolveWebviewView(view.view, {}, cancellation());
+    expect(h.panel.isWebviewReady).toBe(false);
   });
 
   it("shows a warning and posts nothing when the page does not load by the deadline", async () => {

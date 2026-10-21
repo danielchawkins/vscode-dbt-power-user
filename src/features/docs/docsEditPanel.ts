@@ -235,6 +235,8 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     context: WebviewViewResolveContext,
     token: CancellationToken,
   ) {
+    // A rebuilt page has not reported ready yet, so a request waits for its webview:ready.
+    this.isWebviewReady = false;
     super.resolveWebviewView(panel, context, token);
     panel.title = "";
     this.setupWebviewHooks();
@@ -250,6 +252,14 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       panel.onDidChangeVisibility,
     );
     panel.onDidDispose(() => this.demandSubscription?.dispose());
+    this._disposables.push(
+      panel.onDidChangeVisibility(() => {
+        if (!panel.visible) {
+          // A hidden view's page is discarded, so the page shown next must report ready again.
+          this.isWebviewReady = false;
+        }
+      }),
+    );
   }
 
   private setupWebviewHooks() {

@@ -23,6 +23,11 @@ models:
     columns:
       - name: customer_id
       - name: value
+  # UNION case with two candidates: label is status in one branch and note in the other.
+  - name: union_labels
+    columns:
+      - name: customer_id
+      - name: label
   # Join case: customer_id is a passthrough key on both sides of the join.
   - name: order_join
     columns:

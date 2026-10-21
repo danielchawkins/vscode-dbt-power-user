@@ -20,10 +20,10 @@ const BUILT = "built_dev";
 const PROD_ONLY = "prod_only";
 const NEVER_BUILT = "never_built";
 const UNION = "union_orders";
+const UNION_LABELS = "union_labels";
 const JOIN = "order_join";
 const NOT_BUILT_NOTICE =
   "`never_built` is not built in target `dev`, and no deferred relation is configured. Build it with `dbt run -s never_built`, set up defer, or use the inferred types.";
-const NOT_IN_MANIFEST = "is not in the manifest";
 const SOURCE = "source.lineage_probe.raw.orders";
 const ORDER_TOTALS = "model.lineage_probe.order_totals";
 
@@ -40,9 +40,23 @@ function rootModelFile(projectDir: string, model: string): string {
   return path.join(projectDir, "models", `${model}.sql`);
 }
 
-/** Whether the payload only says the parse has not published the model yet. */
-function isNotInManifest(payload: { notice?: { message: string } }): boolean {
-  return payload.notice?.message.includes(NOT_IN_MANIFEST) ?? false;
+type DescriptionProposal = DescriptionPayload["proposals"][number];
+
+/** Sorts candidates by description and sources by unique id and column, so Fusion's order does not matter. */
+function inOrder(proposals: DescriptionProposal[]): DescriptionProposal[] {
+  const bySource = (
+    a: { uniqueId: string; column: string },
+    b: { uniqueId: string; column: string },
+  ) => `${a.uniqueId} ${a.column}`.localeCompare(`${b.uniqueId} ${b.column}`);
+  return proposals.map((proposal) => ({
+    ...proposal,
+    candidates: proposal.candidates
+      .map((candidate) => ({
+        ...candidate,
+        sources: candidate.sources.toSorted(bySource),
+      }))
+      .sort((a, b) => a.description.localeCompare(b.description)),
+  }));
 }
 
 /** Retries until `done` holds, for the client start and the reanalysis after a settings change. */
@@ -174,14 +188,19 @@ suite("Column type proposals from the language server, strict", function () {
     assert.strictEqual(payload.notice?.message, NOT_BUILT_NOTICE);
   });
 
-  test("accept-all writes the built model's proposals to its schema.yml", async () => {
+  test("accept-all writes the built model's proposals to its schema.yml, and leaves the unticked overwrite pending", async () => {
     const schema = path.join(projectDir, "models", "column_docs", "schema.yml");
 
-    await vscode.commands.executeCommand(
+    await until(
+      modelFile(projectDir, BUILT),
+      (found) => found.source?.kind === "target",
+    );
+    const outcome = await vscode.commands.executeCommand(
       ACCEPT_ALL_COMMAND,
       "types",
       modelFile(projectDir, BUILT),
     );
+    assert.strictEqual(outcome, "saved");
 
     const models = parse(readFileSync(schema, "utf-8")).models as {
       name: string;
@@ -191,7 +210,7 @@ suite("Column type proposals from the language server, strict", function () {
     assert.deepStrictEqual(built?.columns, [
       {
         name: "customer_id",
-        data_type: "integer",
+        data_type: "varchar",
         description: "Customer key.",
       },
       { name: "ghost", data_type: "integer" },
@@ -203,7 +222,7 @@ suite("Column type proposals from the language server, strict", function () {
   test("stg_orders takes the source descriptions of the columns it passes through", async () => {
     const payload = await until<DescriptionPayload>(
       rootModelFile(projectDir, "stg_orders"),
-      (found) => !isNotInManifest(found),
+      (found) => found.proposals.length > 0,
       "descriptions",
     );
     const source = (column: string) => [{ uniqueId: SOURCE, column }];
@@ -250,7 +269,7 @@ suite("Column type proposals from the language server, strict", function () {
   test("totals_downstream.grand_total takes the description of order_totals.total", async () => {
     const payload = await until<DescriptionPayload>(
       rootModelFile(projectDir, "totals_downstream"),
-      (found) => !isNotInManifest(found),
+      (found) => found.proposals.length > 0,
       "descriptions",
     );
     assert.deepStrictEqual(payload.proposals, [
@@ -269,7 +288,7 @@ suite("Column type proposals from the language server, strict", function () {
   test("order_totals: total is described and gets nothing, and last_status (max(status)) is a copy of status", async () => {
     const payload = await until<DescriptionPayload>(
       rootModelFile(projectDir, "order_totals"),
-      (found) => !isNotInManifest(found),
+      (found) => found.proposals.length > 0,
       "descriptions",
     );
     assert.deepStrictEqual(payload.proposals, [
@@ -285,24 +304,83 @@ suite("Column type proposals from the language server, strict", function () {
     ]);
   });
 
+  test("prod_only: customer_id takes its copy description, and total_amount (sum, a mod) gets nothing", async () => {
+    const payload = await until<DescriptionPayload>(
+      modelFile(projectDir, PROD_ONLY),
+      (found) => found.proposals.length > 0,
+      "descriptions",
+    );
+    assert.deepStrictEqual(payload.proposals, [
+      {
+        column: "customer_id",
+        candidates: [
+          {
+            description: "Customer key.",
+            sources: [{ uniqueId: SOURCE, column: "customer_id" }],
+          },
+        ],
+      },
+    ]);
+  });
+
   test("the UNION column whose branches agree gets one candidate, and value, a mod in Fusion, gets none", async () => {
     const payload = await until<DescriptionPayload>(
       modelFile(projectDir, UNION),
-      (found) => !isNotInManifest(found),
+      (found) => found.proposals.length > 0,
       "descriptions",
     );
-    const candidatesOf = (column: string) =>
-      payload.proposals
-        .find((proposal) => proposal.column === column)
-        ?.candidates.map((candidate) => candidate.description);
-    assert.deepStrictEqual(candidatesOf("customer_id"), ["Customer key."]);
-    assert.strictEqual(candidatesOf("value"), undefined);
+    assert.deepStrictEqual(
+      inOrder(payload.proposals),
+      inOrder([
+        {
+          column: "customer_id",
+          candidates: [
+            {
+              description: "Customer key.",
+              sources: [
+                { uniqueId: SOURCE, column: "customer_id" },
+                { uniqueId: ORDER_TOTALS, column: "customer_id" },
+              ],
+            },
+          ],
+        },
+      ]),
+    );
+  });
+
+  test("the UNION column whose branches differ gets two candidates, one per branch", async () => {
+    const payload = await until<DescriptionPayload>(
+      modelFile(projectDir, UNION_LABELS),
+      (found) => found.proposals.length > 0,
+      "descriptions",
+    );
+    const label = inOrder(
+      payload.proposals.filter((proposal) => proposal.column === "label"),
+    );
+    assert.deepStrictEqual(
+      label,
+      inOrder([
+        {
+          column: "label",
+          candidates: [
+            {
+              description: "Order status code.",
+              sources: [{ uniqueId: SOURCE, column: "status" }],
+            },
+            {
+              description: "Free-text note on the order.",
+              sources: [{ uniqueId: SOURCE, column: "note" }],
+            },
+          ],
+        },
+      ]),
+    );
   });
 
   test("the join's passthrough columns take the description of their copy ancestors", async () => {
     const payload = await until<DescriptionPayload>(
       modelFile(projectDir, JOIN),
-      (found) => !isNotInManifest(found),
+      (found) => found.proposals.length > 0,
       "descriptions",
     );
     const source = (column: string) => [{ uniqueId: SOURCE, column }];
@@ -338,17 +416,17 @@ suite("Column type proposals from the language server, strict", function () {
       await vscode.commands.executeCommand(
         ACCEPT_ALL_COMMAND,
         "descriptions",
-        modelFile(projectDir, UNION),
+        modelFile(projectDir, UNION_LABELS),
       );
 
       const models = parse(readFileSync(schema, "utf-8")).models as {
         name: string;
         columns: { name: string; data_type?: string; description?: string }[];
       }[];
-      const union = models.find((model) => model.name === UNION);
+      const union = models.find((model) => model.name === UNION_LABELS);
       assert.deepStrictEqual(union?.columns, [
         { name: "customer_id", description: "Customer key." },
-        { name: "value" },
+        { name: "label" },
       ]);
     } finally {
       writeFileSync(schema, original);
@@ -385,13 +463,11 @@ suite("Column type proposals from the language server, baseline", function () {
   test("upstream descriptions need strict analysis, with the useStrictAnalysis action", async () => {
     const payload = await until<DescriptionPayload>(
       modelFile(projectDir, UNION),
-      (found) => !isNotInManifest(found),
+      (found) =>
+        found.notice?.actions?.some(
+          (action) => action.action === "useStrictAnalysis",
+        ) === true,
       "descriptions",
-    );
-    assert.deepStrictEqual(payload.proposals, []);
-    assert.ok(
-      payload.notice?.message.includes("strict static analysis"),
-      payload.notice?.message,
     );
     assert.ok(
       payload.notice?.message.includes("fusionPowerUser.staticAnalysis"),

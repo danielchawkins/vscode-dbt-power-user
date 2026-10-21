@@ -15,7 +15,7 @@ import type { DocGenService } from "./docGenService";
 /** Test-only: answers with the column proposals for the active documentation after opening `file`. */
 const DOCS_COLUMN_PROPOSALS_COMMAND = "fusionPowerUser.test.columnProposals";
 
-/** Test-only: applies every column proposal of `kind` for the model in `file` and saves it through the panel's save. */
+/** Test-only: applies every column proposal of `kind` for the model in `file` and saves it through the panel's save; answers the outcome. */
 const DOCS_ACCEPT_ALL_PROPOSALS_COMMAND =
   "fusionPowerUser.test.acceptAllColumnProposals";
 
@@ -37,20 +37,27 @@ export interface DocsHarnessDeps {
   save(message: SaveMessage): Promise<void>;
 }
 
+/** What accept-all did: `saved`, or the reason it wrote nothing. */
+type AcceptAllOutcome = "saved" | "noDocumentation" | "noPayload";
+
 /**
- * Applies every proposal of `kind` for the active model, ticking each type overwrite, and saves the result. The model's
- * tests go with it: a save without them would delete the column tests from the YAML.
+ * Applies every proposal of `kind` for the active model and saves the result. No choices are passed, so an unticked
+ * overwrite stays pending and keeps its YAML type. The model's tests go with the save: a save without them would delete
+ * the column tests from the YAML.
  */
 async function acceptAllProposals(
   deps: DocsHarnessDeps,
   kind: ProposalKind,
-): Promise<void> {
+): Promise<AcceptAllOutcome> {
   const { documentation } =
     await deps.docGenService.getUncompiledDocumentationForCurrentActiveFile();
+  if (!documentation) {
+    return "noDocumentation";
+  }
   const target = await deps.proposalTarget();
   const payload = target && (await deps.columnProposals.propose(kind, target));
-  if (!documentation || !payload) {
-    return;
+  if (!payload) {
+    return "noPayload";
   }
   const draft = deps.drafts.get(documentation.filePath);
   const columns = draft?.docs.columns ?? documentation.columns;
@@ -59,22 +66,12 @@ async function acceptAllProposals(
     command: "saveDocumentation",
     columns:
       payload.kind === "types"
-        ? columnProposals.applyProposals(
-            columns,
-            payload.proposals,
-            Object.fromEntries(
-              payload.proposals
-                .filter((proposal) => proposal.change === "overwrite")
-                .map((proposal) => [
-                  proposal.column.toLowerCase(),
-                  { overwrite: true },
-                ]),
-            ),
-          )
+        ? columnProposals.applyProposals(columns, payload.proposals)
         : columnProposals.applyDescriptionProposals(columns, payload.proposals),
     updatedTests:
       draft?.tests ?? (await deps.dbtTestService.getTestsForCurrentModel()),
   });
+  return "saved";
 }
 
 /** Registers the docs harness commands when the integration harness asks for them. */
@@ -97,7 +94,7 @@ export function registerDocsHarnessCommands(
       DOCS_ACCEPT_ALL_PROPOSALS_COMMAND,
       async (kind: ProposalKind, file: string) => {
         await window.showTextDocument(Uri.file(file));
-        await acceptAllProposals(deps, kind);
+        return acceptAllProposals(deps, kind);
       },
     ),
   ];

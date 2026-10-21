@@ -108,6 +108,37 @@ describe("applyProposals", () => {
     expect(applied).toEqual([{ name: "id", type: "integer" }]);
     expect(columns).toEqual([{ name: "id", type: "integer" }]);
   });
+
+  it("fills a blank type from an unticked overwrite, without marking it replaceType", () => {
+    const proposals: Proposal[] = [
+      {
+        column: "customer_id",
+        type: "integer",
+        change: "overwrite",
+        current: "varchar",
+      },
+    ];
+
+    const applied = columnProposals.applyProposals(
+      [{ name: "customer_id", type: "" }],
+      proposals,
+    );
+
+    expect(applied).toEqual([{ name: "customer_id", type: "integer" }]);
+  });
+
+  it("fills a blank type on a column the user added by hand, without appending a second one", () => {
+    const proposals: Proposal[] = [
+      { column: "order_count", type: "bigint", change: "add" },
+    ];
+
+    const applied = columnProposals.applyProposals(
+      [{ name: "Order_Count", type: null }],
+      proposals,
+    );
+
+    expect(applied).toEqual([{ name: "Order_Count", type: "bigint" }]);
+  });
 });
 
 describe("applyDescriptionProposals", () => {

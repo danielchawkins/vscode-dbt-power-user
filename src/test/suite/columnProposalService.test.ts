@@ -338,12 +338,14 @@ describe("ColumnProposalService descriptions", () => {
     });
   });
 
-  it("reports a failed request as an error and proposes nothing", async () => {
+  it("reports a failed request as an error, logs it, and proposes nothing when no earlier column answered", async () => {
+    const failure = new Error("listNodes timed out");
     const { project } = describingProject("running", async () => {
-      throw new Error("listNodes timed out");
+      throw failure;
     });
+    const log = spyLog();
     const service = new ColumnProposalService({
-      log: spyLog(),
+      log,
       columnsNeedStrict: () => undefined,
     });
 
@@ -355,6 +357,72 @@ describe("ColumnProposalService descriptions", () => {
     expect(payload?.proposals).toEqual([]);
     expect(payload?.notice?.type).toBe("error");
     expect(payload?.notice?.message).toContain("listNodes timed out");
+    expect(log.error).toHaveBeenCalledWith(
+      "Docs",
+      expect.stringContaining("upstream descriptions failed"),
+      failure,
+    );
+  });
+
+  it("keeps the proposals found before a failed request, with the error notice", async () => {
+    let calls = 0;
+    const { project } = describingProject("running", async () => {
+      calls += 1;
+      if (calls === 1) {
+        return LINEAGE;
+      }
+      throw new Error("listNodes timed out");
+    });
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose(
+      "descriptions",
+      describedTarget(project, {
+        described: [
+          { name: "grand_total", description: "" },
+          { name: "other", description: "" },
+        ],
+      }),
+    );
+
+    expect(payload?.proposals).toEqual([
+      {
+        column: "grand_total",
+        candidates: [
+          {
+            description: "Order total",
+            sources: [{ uniqueId: ORDER_TOTALS, column: "total" }],
+          },
+        ],
+      },
+    ]);
+    expect(payload?.notice?.type).toBe("error");
+    expect(payload?.notice?.message).toContain("listNodes timed out");
+  });
+
+  it("shows no notice when every column already has a description", async () => {
+    const { project, listNodes } = describingProject();
+    const service = new ColumnProposalService({
+      log: spyLog(),
+      columnsNeedStrict: () => undefined,
+    });
+
+    const payload = await service.propose(
+      "descriptions",
+      describedTarget(project, {
+        described: [{ name: "grand_total", description: "Already set" }],
+      }),
+    );
+
+    expect(listNodes).not.toHaveBeenCalled();
+    expect(payload).toEqual({
+      kind: "descriptions",
+      model: MODEL.filePath,
+      proposals: [],
+    });
   });
 
   it("warns when no copy ancestor has a description", async () => {
