@@ -80,13 +80,17 @@ describe("resolveUpstreamDescriptions", () => {
     expect(calls).toEqual([]);
   });
 
-  it("reports failed with the message when a request is rejected, and asks no later column", async () => {
+  it("reports failed with the message and the proposals found so far when a request is rejected, and asks no later column", async () => {
     const calls: (readonly string[])[] = [];
+    const failure = new Error("listNodes timed out");
     const lsp = {
       state: "running" as const,
       listNodes: async (selectors: readonly string[]) => {
         calls.push(selectors);
-        throw new Error("listNodes timed out");
+        if (calls.length === 1) {
+          return FUSION_2_0_6_TOTAL;
+        }
+        throw failure;
       },
     };
     const outcome = await resolveUpstreamDescriptions({
@@ -94,16 +98,37 @@ describe("resolveUpstreamDescriptions", () => {
       strict: true,
       uniqueId: TOTALS_DOWNSTREAM,
       columns: [
-        { name: "total", description: "" },
         { name: "grand_total", description: "" },
+        { name: "total", description: "" },
+        { name: "unused", description: "" },
       ],
       manifest,
     });
     expect(outcome).toEqual({
       kind: "failed",
       message: "listNodes timed out",
+      error: failure,
+      proposals: [
+        {
+          column: "grand_total",
+          candidates: [
+            {
+              description: "Order total",
+              sources: [
+                {
+                  uniqueId: "model.lineage_probe.order_totals",
+                  column: "total",
+                },
+              ],
+            },
+          ],
+        },
+      ],
     });
-    expect(calls).toEqual([columnLineageArgs(TOTALS_DOWNSTREAM, "total")]);
+    expect(calls).toEqual([
+      columnLineageArgs(TOTALS_DOWNSTREAM, "grand_total"),
+      columnLineageArgs(TOTALS_DOWNSTREAM, "total"),
+    ]);
   });
 
   it("proposes the first described copy ancestor for each column without a description", async () => {
@@ -124,6 +149,7 @@ describe("resolveUpstreamDescriptions", () => {
     ]);
     expect(outcome).toEqual({
       kind: "found",
+      asked: 1,
       proposals: [
         {
           column: "grand_total",
@@ -196,6 +222,6 @@ describe("resolveUpstreamDescriptions", () => {
       columns: [{ name: "amount", description: "" }],
       manifest,
     });
-    expect(outcome).toEqual({ kind: "found", proposals: [] });
+    expect(outcome).toEqual({ kind: "found", asked: 1, proposals: [] });
   });
 });

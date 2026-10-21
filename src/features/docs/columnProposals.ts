@@ -207,6 +207,13 @@ export class ColumnProposalService {
       manifest: node.manifest,
       signal,
     });
+    if (outcome.kind === "failed") {
+      this.deps.log.error(
+        "Docs",
+        `Describing ${model.name} from upstream descriptions failed`,
+        outcome.error,
+      );
+    }
     return descriptionPayloadOf(model, outcome, needs);
   }
 }
@@ -301,7 +308,7 @@ function descriptionPayloadOf(
       return {
         kind: "descriptions",
         model: model.filePath,
-        proposals: [],
+        proposals: outcome.proposals,
         notice: {
           message: `Upstream descriptions could not be read: ${outcome.message}`,
           type: "error",
@@ -312,15 +319,15 @@ function descriptionPayloadOf(
         kind: "descriptions",
         model: model.filePath,
         proposals: outcome.proposals,
-        ...(outcome.proposals.length > 0
-          ? {}
-          : {
+        ...(outcome.asked > 0 && outcome.proposals.length === 0
+          ? {
               notice: {
                 message:
                   "No upstream copy has a description for the columns without one.",
                 type: "warning",
               },
-            }),
+            }
+          : {}),
       };
   }
 }

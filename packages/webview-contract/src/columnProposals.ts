@@ -133,10 +133,11 @@ const sameName = (left: string, right: string) =>
   left.toLowerCase() === right.toLowerCase();
 
 /**
- * `columns` with `proposals` applied, checked against the columns as they are now. A `fill` sets only an empty type.
- * An `overwrite` sets the type, and marks it `replaceType`, only when `choices` ticks that column (keyed by its
- * lower-cased name) and the type still reads as the proposal's `current`. An `add` appends a DATABASE column unless the
- * name is taken. A value typed since the proposals arrived is therefore kept.
+ * `columns` with `proposals` applied, checked against the columns as they are now. A column whose type is blank takes
+ * the proposal's type whatever the change, ticked or not. An `overwrite` replaces a non-empty type, and marks it
+ * `replaceType`, only when `choices` ticks that column (keyed by its lower-cased name) and the type still reads as the
+ * proposal's `current`. An `add` appends a DATABASE column unless the name is taken. A value typed since the proposals
+ * arrived is therefore kept.
  */
 export function applyProposals(
   columns: readonly DocumentationColumn[],
@@ -148,7 +149,9 @@ export function applyProposals(
     const column = result.find((candidate) =>
       sameName(candidate.name, proposal.column),
     );
-    if (proposal.change === "add") {
+    if (column !== undefined && isBlank(column.type)) {
+      column.type = proposal.type;
+    } else if (proposal.change === "add") {
       if (column === undefined) {
         result.push({
           name: proposal.column,
@@ -156,13 +159,9 @@ export function applyProposals(
           source: "DATABASE",
         });
       }
-    } else if (column === undefined) {
-      continue;
-    } else if (proposal.change === "fill") {
-      if (isBlank(column.type)) {
-        column.type = proposal.type;
-      }
     } else if (
+      column !== undefined &&
+      proposal.change === "overwrite" &&
       choices[proposal.column.toLowerCase()]?.overwrite === true &&
       sameName(column.type ?? "", proposal.current ?? "")
     ) {

@@ -38,9 +38,15 @@ interface ColumnDescriptionProposal {
 export type UpstreamDescriptionOutcome =
   | { kind: "notRunning"; state: FusionCommands["state"] }
   | { kind: "needsStrict" }
-  /** A `listNodes` request was rejected; the walk stops there and no proposals are returned. */
-  | { kind: "failed"; message: string }
-  | { kind: "found"; proposals: ColumnDescriptionProposal[] };
+  /** A `listNodes` request was rejected; the walk stops there and keeps the proposals found for the columns before it. */
+  | {
+      kind: "failed";
+      message: string;
+      error: unknown;
+      proposals: ColumnDescriptionProposal[];
+    }
+  /** `asked` is how many columns without a description Fusion was asked about; 0 when every column is described. */
+  | { kind: "found"; asked: number; proposals: ColumnDescriptionProposal[] };
 
 /**
  * Proposes descriptions for the editor's columns that have none, from the first described copy ancestor of
@@ -62,7 +68,8 @@ export async function resolveUpstreamDescriptions({
   }
   const describe = (ref: ColumnRef) => declaredDescription(manifest, ref);
   const proposals: ColumnDescriptionProposal[] = [];
-  for (const { name } of columns.filter((c) => c.description.trim() === "")) {
+  const blank = columns.filter((c) => c.description.trim() === "");
+  for (const { name } of blank) {
     if (signal?.aborted) {
       break;
     }
@@ -70,7 +77,12 @@ export async function resolveUpstreamDescriptions({
     try {
       answer = await lsp.listNodes(columnLineageArgs(uniqueId, name));
     } catch (error) {
-      return { kind: "failed", message: errorMessage(error) };
+      return {
+        kind: "failed",
+        message: errorMessage(error),
+        error,
+        proposals,
+      };
     }
     const edges = columnEdges(answer);
     const candidates = toDescriptionProposal(
@@ -80,7 +92,7 @@ export async function resolveUpstreamDescriptions({
       proposals.push({ column: name, candidates });
     }
   }
-  return { kind: "found", proposals };
+  return { kind: "found", asked: blank.length, proposals };
 }
 
 function errorMessage(error: unknown): string {
