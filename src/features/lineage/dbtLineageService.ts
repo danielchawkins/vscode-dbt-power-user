@@ -25,10 +25,17 @@ import type {
 } from "../../fusion/fusionLanguageClient";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
+import type {
+  NeedsStrict,
+  StrictInputs,
+} from "../../projects/registry/strictNeeded";
+import {
+  needsStrict,
+  STRICT_FIX,
+  strictNeededMessage,
+} from "../../projects/registry/strictNeeded";
 import { readSetting } from "../../settings";
 import { lineageTable } from "./lineageTables";
-import type { NeedsStrict, StrictInputs } from "./strictNeeded";
-import { needsStrict, STRICT_FIX, strictNeededMessage } from "./strictNeeded";
 
 /** The lineage component's `getConnectedColumns` body, restricted to the fields this service reads. */
 export interface ConnectedColumnsRequest {

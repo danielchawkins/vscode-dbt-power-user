@@ -1,13 +1,22 @@
 import { statSync } from "node:fs";
 import * as path from "node:path";
-import type { CliCommand, PathKind, ShowPreview } from "../core/cli";
+import type {
+  CliCommand,
+  DeferState,
+  Described,
+  PathKind,
+  ShowPreview,
+} from "../core/cli";
 import {
+  columnsQuery,
   compiledOutput,
   DEFERRABLE_KINDS,
   deferState,
+  describeQuery,
   firstLogLine,
   isConfigError,
   logLocation,
+  parseDescribed,
   parseLogEntries,
   showPreview,
   toCliArgs,
@@ -109,10 +118,6 @@ const REBUILD_RANGE = {
   endColumn: 999,
 };
 
-const columnsQuery = (relation: string) =>
-  `{% set output = [] %}{% for result in adapter.get_columns_in_relation(${relation}) %} ` +
-  `{% do output.append({"column": result.name, "dtype": result.dtype}) %} {% endfor %} {{ tojson(output) }}`;
-
 /**
  * Runs dbt Fusion commands for one project. Every command reads the snapshot afresh; the name and path getters read
  * one cached snapshot that `refreshProjectConfig` replaces.
@@ -212,6 +217,11 @@ export class FusionCli {
   dispose(): void {
     this.rebuildAbort?.abort();
     this.rebuildAbort = undefined;
+  }
+
+  /** The defer flags the snapshot asks for, after checking its state path on disk. */
+  deferState(): DeferState {
+    return deferState(this.snapshot().invocation.defer, diskProbe);
   }
 
   /** Rereads the snapshot behind the name and path getters. */
@@ -361,6 +371,26 @@ export class FusionCli {
     return JSON.parse(
       await this.compileInline(columnsQuery(`ref('${modelName}')`)),
     ) as DBColumn[];
+  }
+
+  /**
+   * The relation `modelName` resolves to and its columns. `target` runs with defer off, so it answers only from
+   * the target; `deferred` runs with the configured defer flags. Throws the stderr errors, as `compileInline` does.
+   */
+  async describeModel(
+    modelName: string,
+    attempt: "target" | "deferred",
+    signal?: AbortSignal,
+  ): Promise<Described> {
+    const command: CliCommand = {
+      kind: "compileInline",
+      sql: describeQuery(`ref('${modelName}')`),
+      output: "json",
+      ...(attempt === "target" ? { defer: "off" } : {}),
+    };
+    const { stdout, stderr } = await this.run(command, { signal });
+    throwLogErrors(stderr);
+    return parseDescribed(compiledOutput(stdout));
   }
 
   // -------- queued commands --------

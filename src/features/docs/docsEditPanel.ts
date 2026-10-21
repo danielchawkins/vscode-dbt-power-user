@@ -21,6 +21,9 @@ import { activeModelUri } from "../../projects/registry/previewUri";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
 import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
+import type { ColumnProposalService, ProposalTarget } from "./columnProposals";
+import { docColumns } from "./columnProposals";
+import type { TypeSourceProject } from "./columnTypeSource";
 import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 import type { DBTDocumentation, MetadataColumn } from "./docGenTypes";
@@ -30,10 +33,12 @@ import {
   withProgress,
 } from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
+import { registerDocsHarnessCommands } from "./docsHarnessCommands";
 import { convertColumnNamesByCaseConfig } from "./docsYaml";
 
 /** The active editor's project as the panel reads it: the handlers' view plus the adapter for saving. */
-type PanelProject = DocsProject & { getAdapterType(): string };
+type PanelProject = DocsProject &
+  TypeSourceProject & { getAdapterType(): string };
 
 /** The projects the panel resolves editors in, and the manifest events it follows. */
 type PanelProjects = ProjectLookup<PanelProject> &
@@ -56,6 +61,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
   >();
   private readonly docGenService: DocGenService;
   private readonly dbtTestService: DbtTestService;
+  private readonly columnProposals: ColumnProposalService;
   private loadedFromManifest = false;
   private onMessageDisposable: Disposable | undefined;
   private demandSubscription: Disposable | undefined;
@@ -70,6 +76,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       dbtTestService: DbtTestService;
       queryManifestService: QueryManifestService;
       emitterService: SharedStateService;
+      columnProposals: ColumnProposalService;
     },
     terminal: Log,
     parseDemand?: ParseDemand,
@@ -84,6 +91,14 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     this.parseDemand = parseDemand;
     this.docGenService = services.docGenService;
     this.dbtTestService = services.dbtTestService;
+    this.columnProposals = services.columnProposals;
+    const harness = registerDocsHarnessCommands({
+      columnProposals: this.columnProposals,
+      proposalTarget: () => this.proposalTarget(),
+    });
+    if (harness) {
+      this._disposables.push(harness);
+    }
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
       projects.onDidRemoveProject((root) => {
@@ -146,6 +161,23 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
   /** Model paths with an unsaved draft in host memory; the smoke suites check that none leak between them. */
   heldDrafts(): string[] {
     return [...this.drafts.keys()];
+  }
+
+  /** The active model's columns for a proposal: the draft's and the YAML's, with the project that answers. */
+  private async proposalTarget(): Promise<ProposalTarget | undefined> {
+    const { documentation } =
+      await this.docGenService.getUncompiledDocumentationForCurrentActiveFile();
+    const project = this.getProject();
+    if (!documentation || !project) {
+      return undefined;
+    }
+    const draft = this.drafts.get(documentation.filePath)?.docs.columns;
+    return {
+      model: { name: documentation.name, filePath: documentation.filePath },
+      yaml: docColumns(documentation.columns),
+      draft: draft && docColumns(draft),
+      project,
+    };
   }
 
   private async transmitData() {

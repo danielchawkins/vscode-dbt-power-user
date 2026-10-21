@@ -15,6 +15,7 @@ import { CteProfilerDecorationProvider } from "./features/cte/cteProfilerDecorat
 import { CteProfilerService } from "./features/cte/cteProfilerService";
 import { DeferToProductionStatusBar } from "./features/defer/deferToProductionStatusBar";
 import { DiagnosticsOutputChannel } from "./features/diagnostics/diagnosticsOutputChannel";
+import { ColumnProposalService } from "./features/docs/columnProposals";
 import { DbtTestService } from "./features/docs/dbtTestService";
 import { DocGenService } from "./features/docs/docGenService";
 import { DocsEditViewPanel } from "./features/docs/docsEditPanel";
@@ -276,6 +277,10 @@ function composeWebviews(
         dbtTestService: new DbtTestService(queryManifestService),
         queryManifestService,
         emitterService: sharedState,
+        columnProposals: new ColumnProposalService({
+          log: terminal,
+          columnsNeedStrict: () => dbtLineageService.columnsNeedStrict(),
+        }),
       },
       terminal,
       graph.parseDemand,

@@ -1,3 +1,4 @@
+import { tmpdir } from "node:os";
 import * as path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 import { toCliArgs } from "../../core/cli";
@@ -591,5 +592,79 @@ describe("FusionCli project state and commands", () => {
     const model = cliWith({ stdout: compiled(columns) });
     await expect(model.cli.getColumnsOfModel("m")).resolves.toEqual(columns);
     expect(model.calls[0].args?.[2]).toContain("ref('m')");
+  });
+});
+
+describe("FusionCli describeModel and deferState", () => {
+  const described = {
+    target: "dev",
+    relation: '"probe"."main"."m"',
+    columns: [{ column: "id", dtype: "INTEGER" }],
+  };
+  /** Defer enabled on a state directory that exists, so the probe reads it as a directory. */
+  const deferred = {
+    deferPerProject: {
+      proj: {
+        deferToProduction: true,
+        favorState: true,
+        manifestPathForDeferral: tmpdir(),
+      },
+    },
+  };
+
+  it("runs the target with --no-defer and the deferred attempt with the configured flags", async () => {
+    const { cli, calls } = cliWith({ stdout: compiled(described) }, () =>
+      snapshot(deferred),
+    );
+    await expect(cli.describeModel("m", "target")).resolves.toEqual(described);
+    await expect(cli.describeModel("m", "deferred")).resolves.toEqual(
+      described,
+    );
+
+    const [target, defer] = calls.map((call) => call.args ?? []);
+    expect(target?.[2]).toContain("ref('m')");
+    expect(target).toContain("--no-defer");
+    expect(target).not.toContain("--defer");
+    expect(defer).not.toContain("--no-defer");
+    expect(defer).toEqual(
+      expect.arrayContaining(["--defer", "--state", tmpdir(), "--favor-state"]),
+    );
+  });
+
+  it("passes the abort signal on to the process", async () => {
+    const { cli, calls } = cliWith({ stdout: compiled(described) });
+    const controller = new AbortController();
+    await cli.describeModel("m", "target", controller.signal);
+    expect(calls[0].signal).toBe(controller.signal);
+  });
+
+  it("throws the stderr errors instead of parsing the output", async () => {
+    const { cli } = cliWith({
+      stdout: compiled(described),
+      stderr: JSON.stringify({ info: { level: "error", msg: "no model" } }),
+    });
+    await expect(cli.describeModel("m", "target")).rejects.toThrow("no model");
+  });
+
+  it("reports the defer state the snapshot asks for", () => {
+    const stateOf = (settings: Partial<ProjectSnapshotSettings>) =>
+      cliWith({}, () => snapshot(settings)).cli.deferState();
+    expect(stateOf({})).toEqual({ kind: "default" });
+    expect(
+      stateOf({
+        deferPerProject: {
+          proj: {
+            deferToProduction: false,
+            favorState: true,
+            manifestPathForDeferral: undefined,
+          },
+        },
+      }),
+    ).toEqual({ kind: "off" });
+    expect(stateOf(deferred)).toEqual({
+      kind: "on",
+      stateDirectory: tmpdir(),
+      favorState: true,
+    });
   });
 });

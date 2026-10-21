@@ -1,4 +1,5 @@
 import {
+  columnProposals,
   documentationEditor,
   lineage,
   queryResults,
@@ -863,5 +864,131 @@ describe("queryResults model preview", () => {
         model,
       }),
     ).toBe(false);
+  });
+});
+
+describe("columnProposals payload", () => {
+  const types = {
+    kind: "types",
+    model: "orders",
+    source: { kind: "target", target: "dev", relation: "db.orders" },
+    proposals: [
+      { column: "id", type: "integer", change: "fill" },
+      {
+        column: "total",
+        type: "decimal",
+        change: "overwrite",
+        current: "text",
+      },
+    ],
+    notFound: ["legacy"],
+  };
+
+  it("accepts each structured source, the notice and no source", () => {
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: {
+          kind: "deferred",
+          target: "prod",
+          relation: "db.orders",
+          state: "/work/state",
+        },
+      }),
+    ).toBe(true);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: { kind: "inferred" },
+      }),
+    ).toBe(true);
+    expect(
+      columnProposals.isColumnProposalsPayload({ ...types, source: undefined }),
+    ).toBe(true);
+  });
+
+  it("accepts a types payload, with or without its source and notice", () => {
+    expect(columnProposals.isColumnProposalsPayload(types)).toBe(true);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        kind: "types",
+        model: "orders",
+        proposals: [],
+        notFound: [],
+        notice: {
+          message: "`orders` is not built in target `dev`.",
+          type: "error",
+          actions: [
+            { title: "Use strict analysis", action: "useStrictAnalysis" },
+          ],
+        },
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects a notice that is a string, has no type, or names an unknown action", () => {
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        notice: "`orders` is not built in target `dev`.",
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        notice: { message: "x", type: "info" },
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        notice: {
+          message: "x",
+          type: "warning",
+          actions: [{ title: "Run", action: "dbtRun" }],
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects an unknown kind, a bad source or change, and a missing field", () => {
+    expect(
+      columnProposals.isColumnProposalsPayload({ ...types, kind: "docs" }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: { kind: "cache", target: "dev", relation: "db.orders" },
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: { source: "target", label: "target `dev`" },
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: { kind: "target", target: "dev" },
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: { kind: "deferred", target: "dev", relation: "db.orders" },
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        proposals: [{ column: "id", type: "integer", change: "rename" }],
+      }),
+    ).toBe(false);
+    for (const field of ["model", "proposals", "notFound"] as const) {
+      const copy: Record<string, unknown> = { ...types };
+      delete copy[field];
+      expect(columnProposals.isColumnProposalsPayload(copy)).toBe(false);
+    }
   });
 });

@@ -1,8 +1,8 @@
 import fc from "fast-check";
 import * as path from "node:path";
 import { describe, expect, it } from "vitest";
-import type { CliCommand, PathKind } from "../../core/cli";
-import { toCliArgs } from "../../core/cli";
+import type { CliCommand, DeferState, PathKind } from "../../core/cli";
+import { deferState, toCliArgs } from "../../core/cli";
 import type { ProjectSnapshot } from "../../core/snapshot";
 import { resolveProjectSnapshot } from "../../core/snapshot";
 import { snapshotInputs } from "../arbitraries/projectSnapshot";
@@ -280,6 +280,29 @@ describe("toCliArgs properties", () => {
         expect(args[args.lastIndexOf("--state") + 1]).toBe(stateDir);
       }
     });
+  });
+
+  it("passes exactly one --no-defer for an inline compile with defer off, whatever the DeferState", () => {
+    const off: CliCommand = {
+      kind: "compileInline",
+      sql: "select 1",
+      output: "quiet",
+      defer: "off",
+    };
+    const reached = new Set<DeferState["kind"]>();
+    fc.assert(
+      fc.property(snapshots, pathKinds, (s, kind) => {
+        reached.add(deferState(s.invocation.defer, () => kind).kind);
+        const args = toCliArgs(s, off, () => kind);
+        expect(count(args, "--no-defer")).toBe(1);
+        expect(count(args, "--defer")).toBe(0);
+        expect(count(args, "--state")).toBe(0);
+      }),
+      { numRuns: CLI_ARGS_RUNS },
+    );
+    expect([...reached].sort()).toEqual(
+      ["default", "off", "on", "unset", "unusable"].sort(),
+    );
   });
 
   it("never adds --static-analysis or --generate-info-schema", () => {
