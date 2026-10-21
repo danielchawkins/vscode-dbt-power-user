@@ -171,6 +171,18 @@ describe("lineage graph", () => {
     });
   });
 
+  it("replays a saved parent expansion even when the start table's render count is zero", async () => {
+    // A render sent while the manifest briefly lacked c's parent carries parentCount 0, yet the parent exists.
+    const parentsOnlyOf = vi.fn(async (direction: string, id: string) =>
+      direction === "parents" && id === "c" ? [TABLES.b] : [],
+    );
+    const store = storeOf(emptyGraph({ ...TABLES.c, parentCount: 0 }));
+    await replayExpansions(store, { expansions: ["p:c"] }, parentsOnlyOf);
+    expect(parentsOnlyOf).toHaveBeenCalledWith("parents", "c");
+    expect(store.get().expansions).toEqual(["p:c"]);
+    expect(ids(store.get())).toEqual(["b", "c"]);
+  });
+
   it("lists columns only for drawn tables and caches them", async () => {
     const fetchColumns = vi.fn(async (id: string) => [
       { table: id, name: "id" },

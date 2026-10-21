@@ -260,6 +260,15 @@ export function addNeighbours(
   for (const n of neighbours) {
     known[n.table] ??= n;
   }
+  const own = known[table];
+  // A stale render count can undercount a replayed expansion; its button must still collapse it.
+  if (own && neighbourCount(own, direction) < neighbours.length) {
+    known[table] = {
+      ...own,
+      [direction === "children" ? "childCount" : "parentCount"]:
+        neighbours.length,
+    };
+  }
   const expansions = state.expansions.includes(key)
     ? state.expansions
     : [...state.expansions, key];
@@ -308,8 +317,8 @@ export function collapse(
 }
 
 /**
- * Fetches and draws the `direction` neighbours of `table`, unless it has none, they are drawn, or they are already
- * being fetched. The key is pending until the fetch settles, so a collapse meanwhile drops the answer.
+ * Fetches and draws the `direction` neighbours of `table`, unless its count says it has none. A click goes through
+ * here, so a zero count is a no-op for the user.
  */
 export async function expand(
   store: GraphStore,
@@ -318,15 +327,33 @@ export async function expand(
   fetch: FetchNeighbours,
 ): Promise<string[]> {
   const known = store.get().known[table];
+  if (!known || neighbourCount(known, direction) === 0) {
+    return [];
+  }
+  return fetchExpansion(store, expansionKey(direction, table), fetch);
+}
+
+/**
+ * Fetches and draws the `direction` neighbours of `table`, unless they are drawn or already being fetched. It does not
+ * consult the table's count: a replayed expansion is recorded whatever the fetch answers, `[]` included. The key is
+ * pending until the fetch settles, so a collapse meanwhile drops the answer.
+ */
+export async function fetchExpansion(
+  store: GraphStore,
+  key: string,
+  fetch: FetchNeighbours,
+): Promise<string[]> {
+  const parsed = parseExpansion(key);
+  if (!parsed) {
+    return [];
+  }
+  const [direction, table] = parsed;
   if (
-    !known ||
-    neighbourCount(known, direction) === 0 ||
     isExpanded(store.get(), direction, table) ||
     isPending(store.get(), direction, table)
   ) {
     return [];
   }
-  const key = expansionKey(direction, table);
   const cancelledBefore = store.get().cancelled[key] ?? 0;
   store.update((s) => ({ ...s, pending: [...s.pending, key] }));
   let neighbours: LineageTable[];

@@ -1,6 +1,6 @@
 import { openGroup } from "./expansionGroups";
 import type { FetchNeighbours, GraphStore } from "./graph";
-import { drawnIds, expand, parseExpansion } from "./graph";
+import { drawnIds, expand, fetchExpansion, parseExpansion } from "./graph";
 import { parseGroupNodeId } from "./grouping";
 
 /** Expands the start table `levels` levels of parents and of children. */
@@ -40,7 +40,7 @@ export async function replayExpansions(
   for (const key of expansions) {
     const parsed = parseExpansion(key);
     if (parsed && drawnIds(store.get()).has(parsed[1])) {
-      await expand(store, parsed[0], parsed[1], fetch);
+      await fetchExpansion(store, key, fetch);
       for (const id of openGroups) {
         if (parseGroupNodeId(id)?.[0] === key) {
           store.update((s) => openGroup(s, id));

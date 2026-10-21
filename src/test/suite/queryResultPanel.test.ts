@@ -345,4 +345,18 @@ describe("QueryResultPanel", () => {
       expect(posted()).toEqual([{ command: "renderLoading" }]);
     });
   });
+
+  describe("disposed view", () => {
+    it("ignores a context update posted to a view VS Code has disposed", async () => {
+      const { panel } = makePanel();
+      panel._panel = {
+        get webview(): never {
+          throw new Error("Webview is disposed");
+        },
+      };
+      await expect(
+        panel.sendUpdatedContextToWebview(),
+      ).resolves.toBeUndefined();
+    });
+  });
 });

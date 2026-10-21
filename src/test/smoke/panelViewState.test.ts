@@ -311,6 +311,7 @@ suite("Panel view state", function () {
       "rebuilt page restores columns",
       (g) =>
         g.timeOrigin !== before.timeOrigin &&
+        JSON.stringify(g.tables) === JSON.stringify(before.tables) &&
         g.columnTables.length === before.columnTables.length &&
         g.traced.length === before.traced.length,
     );
