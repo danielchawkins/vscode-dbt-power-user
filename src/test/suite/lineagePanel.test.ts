@@ -548,7 +548,7 @@ describe("LineagePanel — after a save", () => {
     const panel = Object.create(LineagePanel.prototype);
     const postMessage = vi.fn();
     panel._panel = { webview: { postMessage } };
-    panel.dbtTerminal = { info: vi.fn(), error: vi.fn() };
+    panel.dbtTerminal = { info: vi.fn(), debug: vi.fn(), error: vi.fn() };
     panel.dbtLineageService = { columnsNeedStrict: () => undefined };
     const current = {
       projectRoot: { fsPath: "/p" },
@@ -586,7 +586,7 @@ describe("LineagePanel — after a save", () => {
       const panel = Object.create(LineagePanel.prototype);
       const postMessage = vi.fn();
       panel._panel = { webview: { postMessage } };
-      panel.dbtTerminal = { info: vi.fn(), error: vi.fn() };
+      panel.dbtTerminal = { info: vi.fn(), debug: vi.fn(), error: vi.fn() };
       panel.dbtLineageService = { columnsNeedStrict: () => undefined };
       const project = (root: string, publicationEpoch: number) => ({
         projectRoot: { fsPath: root },

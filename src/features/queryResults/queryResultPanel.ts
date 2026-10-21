@@ -411,7 +411,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     const replay = this.replay.messagesFor(this.pageOf(panel));
     this.onWebviewReady();
     for (const message of replay) {
-      void postToWebview(panel, message);
+      void postToWebview(panel, message, this.dbtTerminal);
     }
   }
 

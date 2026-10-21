@@ -63,8 +63,10 @@ export const visibleRefs = (
     : [];
 
 /**
- * The persisted view state of `graph`; `undefined` until a start table is drawn. An open group whose ID is longer
- * than a view state string is left out, since the whole state would be refused; that group comes back closed.
+ * The persisted view state of `graph`; `undefined` until a start table is drawn. An expansion still being fetched is
+ * saved too, so hiding the view mid-fetch keeps it; a replay applies it like any other saved expansion. An open group
+ * whose ID is longer than a view state string is left out, since the whole state would be refused; that group comes
+ * back closed.
  */
 export const viewStateOf = (
   graph: GraphState,
@@ -75,7 +77,10 @@ export const viewStateOf = (
         panel: "lineage",
         publication,
         start: graph.start,
-        expansions: graph.expansions,
+        expansions: [
+          ...graph.expansions,
+          ...graph.pending.filter((key) => !graph.expansions.includes(key)),
+        ],
         columnTables: graph.columnTables,
         selectedTable: graph.selectedTable,
         selectedColumn: graph.selectedColumn,
