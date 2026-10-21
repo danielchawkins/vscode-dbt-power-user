@@ -1,6 +1,12 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
-import { bucketNeighbours, groupedNeighbours } from "./grouping";
+import {
+  bucketNeighbours,
+  groupedNeighbours,
+  groupLabel,
+  groupNodeId,
+  parseGroupNodeId,
+} from "./grouping";
 
 const table = (
   id: string,
@@ -133,8 +139,57 @@ describe("groupedNeighbours", () => {
         { key: "g", members: ["c", "d"] },
       ],
       loose: ["x"],
-      open: { g: true },
+      open: { g: 2 },
     };
     expect(groupedNeighbours(groups)).toEqual(["x", "c", "d"]);
+  });
+
+  it("draws only the first members of an open bucket that its count names", () => {
+    const groups = {
+      buckets: [{ key: "g", members: ["c", "d", "e"] }],
+      loose: [],
+      open: { g: 2 },
+    };
+    expect(groupedNeighbours(groups)).toEqual(["c", "d"]);
+  });
+});
+
+describe("parseGroupNodeId", () => {
+  it("reads back the expansion and bucket a group node ID was made from", () => {
+    for (const [expansion, key] of [
+      ["c:hub", "models/a"],
+      ["p:hub", "pkg:macros"],
+      ["c:hub", "type:seed"],
+      ["c:hub", ""],
+      ["c:hub", "a|b"],
+    ]) {
+      expect(parseGroupNodeId(groupNodeId(expansion, key))).toEqual([
+        expansion,
+        key,
+      ]);
+    }
+  });
+
+  it("rejects an ID that is not a group node ID", () => {
+    expect(parseGroupNodeId("hub")).toBeUndefined();
+    expect(parseGroupNodeId("group:")).toBeUndefined();
+    expect(parseGroupNodeId("group:|models/a")).toBeUndefined();
+    expect(parseGroupNodeId("group:c:hub")).toBeUndefined();
+  });
+});
+
+describe("groupLabel", () => {
+  it("labels a folder by its last segment, with or without the pkg: prefix", () => {
+    expect(groupLabel("models/marts/finance")).toBe("finance");
+    expect(groupLabel("pkg:macros/utils")).toBe("utils");
+    expect(groupLabel("pkg:macros")).toBe("macros");
+  });
+
+  it("labels a node with no path by its resource type", () => {
+    expect(groupLabel("type:seed")).toBe("seed");
+  });
+
+  it("labels a file at the root of a package", () => {
+    expect(groupLabel("")).toBe("(root)");
   });
 });

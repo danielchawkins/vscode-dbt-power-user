@@ -171,31 +171,39 @@ export function drawnGraph(state: GraphState): {
   };
 }
 
-/** Every known `[parent, child]` pair with both ends drawn and neither hidden: from expansions, then from links. */
+/**
+ * Every known `[parent, child]` pair, whatever its ends' state: each neighbour of an expansion, then each link. A pair
+ * from a link and from an expansion is listed once.
+ */
+export function knownPairs(state: GraphState): [string, string][] {
+  const pairs = new Map<string, [string, string]>();
+  for (const [key, others] of Object.entries(state.neighbours)) {
+    const parsed = parseExpansion(key);
+    if (!parsed) {
+      continue;
+    }
+    for (const other of others) {
+      const edge: [string, string] =
+        parsed[0] === "children" ? [parsed[1], other] : [other, parsed[1]];
+      pairs.set(edge.join("\u0000"), edge);
+    }
+  }
+  for (const [key, edge] of Object.entries(state.links)) {
+    pairs.set(key, edge);
+  }
+  return [...pairs.values()];
+}
+
+/** Every known `[parent, child]` pair with both ends drawn and neither hidden. */
 function edgesAmong(
   state: GraphState,
   drawn: ReadonlySet<string>,
 ): [string, string][] {
   const hidden = hiddenTables(state);
   const edgeable = (id: string) => drawn.has(id) && !hidden.has(id);
-  const edges = new Map<string, [string, string]>();
-  for (const [key, others] of Object.entries(state.neighbours)) {
-    const parsed = parseExpansion(key);
-    if (!parsed || !edgeable(parsed[1])) {
-      continue;
-    }
-    for (const other of others.filter((o) => edgeable(o))) {
-      const edge: [string, string] =
-        parsed[0] === "children" ? [parsed[1], other] : [other, parsed[1]];
-      edges.set(edge.join("\u0000"), edge);
-    }
-  }
-  for (const [key, edge] of Object.entries(state.links)) {
-    if (edgeable(edge[0]) && edgeable(edge[1])) {
-      edges.set(key, edge);
-    }
-  }
-  return [...edges.values()];
+  return knownPairs(state).filter(
+    ([parent, child]) => edgeable(parent) && edgeable(child),
+  );
 }
 
 /** The IDs of the drawn tables. */

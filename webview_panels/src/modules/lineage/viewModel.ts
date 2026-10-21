@@ -123,6 +123,8 @@ export interface TableActions {
   toggleExpansion: (table: string, direction: Direction) => void;
   /** Draws the next batch of a capped expansion's neighbours. */
   showMore: (table: string, direction: Direction) => void;
+  /** Draws a closed group's members as ordinary cards, by the group's node ID. */
+  openGroup: (id: string) => void;
   toggleColumns: (table: string) => void;
   selectColumn: (table: string, column: string) => void;
   openDetails: (table: string) => void;
@@ -135,6 +137,7 @@ const noop = (): undefined => undefined;
 export const TableActionsContext = createContext<TableActions>({
   toggleExpansion: noop,
   showMore: noop,
+  openGroup: noop,
   toggleColumns: noop,
   selectColumn: noop,
   openDetails: noop,

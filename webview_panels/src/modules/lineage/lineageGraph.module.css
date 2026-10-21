@@ -197,6 +197,42 @@
   opacity: 0.6;
 }
 
+/* A closed group is a card with two more cards stacked behind it, drawn by offset box shadows. */
+.group {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 56px;
+  padding: 0 12px;
+  box-shadow:
+    4px 4px 0 -1px var(--vscode-editorWidget-background),
+    4px 4px 0 0
+      var(
+        --vscode-editorWidget-border,
+        var(--vscode-contrastBorder, transparent)
+      ),
+    8px 8px 0 -2px var(--vscode-editorWidget-background),
+    8px 8px 0 -1px
+      var(
+        --vscode-editorWidget-border,
+        var(--vscode-contrastBorder, transparent)
+      );
+}
+
+.groupLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.groupCount {
+  flex: none;
+  color: var(--vscode-descriptionForeground);
+}
+
 :global(.react-flow__node.selected) .node {
   outline: 2px solid var(--vscode-focusBorder);
 }

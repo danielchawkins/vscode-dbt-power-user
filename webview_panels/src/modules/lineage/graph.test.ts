@@ -261,7 +261,7 @@ describe("lineage graph", () => {
 
   it("lays parents left of children with dagre", () => {
     const positions = layout(
-      [TABLES.a, TABLES.b, TABLES.c],
+      ["a", "b", "c"],
       [
         ["a", "b"],
         ["b", "c"],
@@ -310,7 +310,7 @@ describe("folder grouping", () => {
       ...state,
       groups: {
         ...state.groups,
-        "c:hub": { ...group, open: { "models/finance/f3": true } },
+        "c:hub": { ...group, open: { "models/finance/f3": 24 } },
       },
     };
     expect(ids(opened)).toHaveLength(25);

@@ -7,6 +7,8 @@ import {
   activate,
   commands,
   EMPTY_STATE,
+  flowNodes,
+  HUB,
   node,
   nodes,
   openLineage,
@@ -529,6 +531,55 @@ describe("Lineage notice", () => {
   });
 });
 
+describe("Lineage group node", () => {
+  it("opens a group, drawing its first cap members as ordinary cards", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    expect(tableIds(container)).toEqual(["hub"]);
+    expect(container.querySelector('[data-group="staging"]')).not.toBeNull();
+
+    await press(user, "button", "Open staging");
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "s1", "s2"]),
+    );
+    expect(container.querySelector('[data-group="staging"]')).toBeNull();
+    expect(container.querySelector('[data-group="marts"]')).not.toBeNull();
+    expect(flowNodes(container)).toHaveLength(4);
+
+    await press(user, "button", "Open marts");
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "m1", "m2", "s1", "s2"]),
+    );
+    expect(container.querySelector("[data-group]")).toBeNull();
+  });
+
+  it("collapses and expands the hub's children, which draws and removes its groups", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await press(user, "button", "Hide 6 children", node(container, "hub"));
+    await waitFor(() => expect(flowNodes(container)).toHaveLength(1));
+    await press(user, "button", "Show 6 children", node(container, "hub"));
+    await waitFor(() => expect(flowNodes(container)).toHaveLength(3));
+  });
+
+  it("runs the hub's other controls", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await press(user, "button", "Show 0 parents", node(container, "hub"));
+    await press(user, "button", "Columns", node(container, "hub"));
+    await screen.findByRole("button", { name: "id" });
+    await press(user, "button", "Details", node(container, "hub"));
+    await press(user, "button", "Close", drawer("Details"));
+    expect(screen.queryByRole("complementary", { name: "Details" })).toBeNull();
+  });
+});
+
 /** The controls the tests above click. Each is the id `collectControls` gives it. */
 export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:Settings",
@@ -570,6 +621,13 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table c/Show 0 children",
   "button:table c/Columns",
   "button:table c/Details",
+  "button:Open staging",
+  "button:Open marts",
+  "button:table hub/Hide 6 children",
+  "button:table hub/Show 6 children",
+  "button:table hub/Show 0 parents",
+  "button:table hub/Columns",
+  "button:table hub/Details",
   "button:Details/Open file",
   "button:Details/Sync with database",
   "button:Details/Tests (0)",

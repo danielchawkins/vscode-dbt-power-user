@@ -1,5 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { Edge, Node } from "@xyflow/react";
+import type { GroupView } from "./expansionGroups";
 import { expansionKey } from "./graph";
 import { columnHandle, geometry, layout, tableHeight } from "./layout";
 
@@ -23,6 +24,14 @@ interface TableNodeData extends Record<string, unknown> {
 
 export type TableNode = Node<TableNodeData, "table">;
 
+/** What a group node draws: the bucket's label and how many neighbours it stands for. */
+interface GroupNodeData extends Record<string, unknown> {
+  label: string;
+  count: number;
+}
+
+export type GroupNode = Node<GroupNodeData, "group">;
+
 /** What `toFlow` reads besides the drawn data. */
 export interface FlowInput {
   data: lineage.LineageData;
@@ -33,6 +42,10 @@ export interface FlowInput {
   pending?: readonly string[] | undefined;
   /** Neighbours each capped expansion does not draw yet, by expansion key. */
   hidden?: Record<string, number> | undefined;
+  /** Closed groups of applied expansions, each drawn as one card. */
+  groups?: readonly GroupView[] | undefined;
+  /** The `[parent, child]` pairs joining each group to its table. */
+  groupEdges?: readonly [string, string][] | undefined;
   errors: Record<string, string[]>;
   selectedTable?: string | undefined;
   selectedColumn?: [string, string] | undefined;
@@ -81,6 +94,14 @@ function toEdges(
         ? "lineage-table-edge lineage-table-edge-selected"
         : "lineage-table-edge",
     })),
+    ...(input.groupEdges ?? []).map(([parent, child]) => ({
+      id: `g:${parent}->${child}`,
+      source: parent,
+      target: child,
+      sourceHandle: "out",
+      targetHandle: "in",
+      className: "lineage-table-edge",
+    })),
     ...data.columnEdges.map((e) => ({
       id: `c:${e.source.join(".")}->${e.target.join(".")}`,
       source: e.source[0],
@@ -104,22 +125,26 @@ function toEdges(
   ];
 }
 
-/** React Flow nodes and edges for the drawn lineage, laid out by dagre. */
+/** React Flow nodes and edges for the drawn lineage and its groups, laid out by dagre. */
 export function toFlow(input: FlowInput): {
-  nodes: TableNode[];
+  nodes: (TableNode | GroupNode)[];
   edges: Edge[];
 } {
   const { data, columns, columnTables, expansions, errors } = input;
   const pending = input.pending ?? [];
+  const groups = input.groups ?? [];
+  const groupIds = new Set(groups.map((g) => g.id));
   const hidden = (direction: "children" | "parents", table: string) =>
     input.hidden?.[expansionKey(direction, table)] ?? 0;
   const listed = (table: string) =>
     columnTables.includes(table) ? (columns[table] ?? []) : undefined;
   const traced = tracedColumns(data.columnEdges);
-  const positions = layout(data.tables, data.edges, (table) =>
-    tableHeight(listed(table)),
+  const positions = layout(
+    [...data.tables.map((t) => t.table), ...groups.map((g) => g.id)],
+    [...data.edges, ...(input.groupEdges ?? [])],
+    (id) => (groupIds.has(id) ? geometry.groupHeight : tableHeight(listed(id))),
   );
-  const nodes: TableNode[] = data.tables.map((t) => ({
+  const tableNodes: TableNode[] = data.tables.map((t) => ({
     id: t.table,
     type: "table",
     position: positions.get(t.table) ?? { x: 0, y: 0 },
@@ -152,5 +177,16 @@ export function toFlow(input: FlowInput): {
       columnsNeedStrict: input.columnsNeedStrict,
     },
   }));
-  return { nodes, edges: toEdges(input, listed) };
+  const groupNodes: GroupNode[] = groups.map((g) => ({
+    id: g.id,
+    type: "group",
+    position: positions.get(g.id) ?? { x: 0, y: 0 },
+    initialWidth: geometry.tableWidth,
+    initialHeight: geometry.groupHeight,
+    data: { label: g.label, count: g.count },
+  }));
+  return {
+    nodes: [...tableNodes, ...groupNodes],
+    edges: toEdges(input, listed),
+  };
 }
