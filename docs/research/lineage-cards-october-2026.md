@@ -37,20 +37,42 @@ Resolve a node's layer from, in order: a tag with the configured prefix (`layer/
 - **Hide list:** an opt-in list of unique-ID globs leaves matching nodes out of expansions and shows their count on the neighbour's expander.
 - **No bridge edges:** no edge is drawn through a hidden node, because that would invent a data-flow pair.
 
-### 5. Defer grouping (Medium)
+### 5. Group an over-cap expansion by folder (Medium)
 
-This panel draws a neighbourhood that grows by expansion, not a whole-project graph like [Dagster's asset graph](https://docs.dagster.io/guides/build/assets/metadata-and-tags/groups), so a group would usually hold only a few drawn nodes. If grouping is built later, copy Dagster's collapse-to-a-node model: a collapsed group is one ordinary node with a member count and aggregated edges. Avoid compound boxes: dagre lays out sub-flows wrongly when their members connect to nodes outside them ([React Flow layouting](https://reactflow.dev/learn/layouting/layouting)), which always happens across packages.
+The first version of this note deferred grouping. The finance hub changed that: capping `normalize_timestamp`'s 350 children at 20 shows an arbitrary 20 with nothing to say what the rest are. What was built:
+
+- **Key:** the node's full parent folder, relative to its package root. `11_sources/backend/backend_kikoff` and `13_staging/backend/backend_kikoff` are different groups; the label is the last folder name. A node outside the root package is keyed `package:folder`, and a node without a path by its resource type. On finance the folders split the hub into about 15 source-system groups, the largest with 88 members. Grouping by layer would give one group of 350, and no model sets `config.group`.
+- **When:** only an expansion that would add more than `maxNeighbours` new nodes is grouped, and only its new neighbours; a neighbour already on the canvas stays an ordinary card. With `maxNeighbours: 0` nothing is grouped. Most expansions look as before, because 99% of nodes have 4 or fewer neighbours.
+- **Drawing:** a closed group is one ordinary dagre node showing the label, the member count and the key, as [Dagster's asset graph](https://docs.dagster.io/guides/build/assets/metadata-and-tags/groups) collapses a group. A folder with one member is drawn as its card. No compound boxes: dagre lays out sub-flows wrongly when their members connect to nodes outside them ([React Flow layouting](https://reactflow.dev/learn/layouting/layouting)), which in lineage they always do.
+- **Opening and closing:** opening a group draws its members as ordinary cards and adds a chip, `label drawn/total`, to the expanded card. The chip's close button returns the view to exactly what it was before the group opened. A group with more than `maxNeighbours` members opens to the first ones, by layer and then name, and the chip's `+K` draws the next batch, so no click draws an unbounded number of cards.
+- **Edges:** a closed group draws one edge to the expanded card, and one to each other drawn card that any visible member has a data-flow pair with (from `tableEdges`), plus group-to-group edges between closed groups. No edge passes through a member that is not drawn, and members hidden with `meta.lineage.hidden` add none.
+- **Persistence:** open groups are part of the panel's view state, so a file save or a rebuilt page reopens them.
 
 ### 6. Settings
 
-Project conventions are VS Code settings, so a workspace can share them: `fusionPowerUser.lineage.layer.tagPrefix` (`"layer/"`), `lineage.layer.inferFromPath` (`true`), `lineage.maxNeighbours` (`20`, `0` for no cap) and `lineage.hiddenNodes` (`[]`). View preferences join the lineage settings stored in global state and toggled from the panel menu, as the existing ones are: `title` (`"alias"` or `"name"`). With these defaults the schema line, the layer badge and the cap are on, and the hide list is off.
+Project conventions are VS Code settings, so a workspace can share them. The panel reads each one and never writes it:
 
-### 7. Later, after layout A (Low)
+| Setting                                       | Default    | Does                                                                      |
+| --------------------------------------------- | ---------- | ------------------------------------------------------------------------- |
+| `fusionPowerUser.lineage.layer.tagPrefix`     | `"layer/"` | the tag prefix the layer badge reads first                                |
+| `fusionPowerUser.lineage.layer.inferFromPath` | `true`     | infer the layer from the folder and name prefix                           |
+| `fusionPowerUser.lineage.maxNeighbours`       | `20`       | the expansion cap; `0` draws every neighbour                              |
+| `fusionPowerUser.lineage.groupBy`             | `"folder"` | `"none"` draws the first `maxNeighbours` cards and `+K` instead of groups |
+| `fusionPowerUser.lineage.semanticZoom`        | `true`     | `false` keeps full cards at every zoom                                    |
+| `fusionPowerUser.lineage.title`               | `"alias"`  | `"name"` titles cards by their `ref()` name                               |
 
-- **Shorter cards:** move the 28px actions row (a third of every collapsed card) into header buttons and a toolbar shown on hover or selection.
-- **Semantic zoom:** below about half zoom, hide line 2.
+`groupBy` is an enum so that `layer` or a tag prefix can be added later without renaming it. The hide list proposed here first became the `meta.lineage.hidden` marker below.
 
-Both change click targets and keyboard access, so they need their own pass with the panel's click and visual tests.
+### 7. Semantic zoom and the title setting (Medium)
+
+- **Semantic zoom.** Below 50% zoom, each card keeps the size it was laid out at, hides line 2, and makes its action row, group chips and columns invisible. The badge (20px) and title (26px, middle-shortened to 15 characters) grow so they stay readable. The hidden rows stay mounted, so edge handles stay put and nothing is laid out again; changing card sizes at the threshold would make dagre move every node. The expand buttons are too small to click at that zoom, so a click on a card opens its Details drawer instead of only selecting it. Group nodes follow the same rule.
+- **Title.** Alternative B from section 2 is the `lineage.title` setting, a VS Code setting rather than a panel toggle, because whether a project aliases heavily is a convention its workspace shares. In `name` mode the title is the `ref()` name (`refName`, falling back to the label), and line 2 reads `database.schema.alias · materialization` when the alias differs from the name, so the relation stays complete without repeating the title. A source's line 2 and tooltip use its `identifier`.
+- **Shorter cards** (moving the 28px actions row into header buttons) is still open; it changes click targets and keyboard access and needs its own pass.
+
+### Accepted risk and follow-ups
+
+- At a default expansion of 2 or more levels, `expandLevels` fetches each level's tables in parallel, so which tables a group gets can differ between two fresh draws of the same start node. Replaying a saved view is sequential, so a restored view is stable.
+- Follow-ups: hide column edges while zoomed out; an overflow for a card with many group chips; open-group IDs longer than 200 characters are dropped from the view state, so that group comes back closed.
 
 ## New data
 
