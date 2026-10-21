@@ -128,7 +128,9 @@ export function typeSourceMessage(
   return [
     subject && `${capitalize(subject)}.`,
     actions.length > 0 && `${capitalize(joinOr(actions))}.`,
-    inferred?.result !== "answered" && inferredReason,
+    inferred?.result !== "answered" &&
+      inferredReason &&
+      capitalize(inferredReason),
   ]
     .filter(isText)
     .join(" ");

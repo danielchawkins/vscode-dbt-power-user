@@ -155,6 +155,18 @@ describe("compiledOutput", () => {
     expect(() => compiledOutput(JSON.stringify({ data: {} }))).toThrow();
     expect(() => compiledOutput(TEXT_STDERR)).toThrow();
   });
+
+  it("throws stdout's error records when the compile wrote no record", () => {
+    const record = (level: string, msg: string) =>
+      JSON.stringify({ data: {}, info: { level, msg } });
+    const stdout = [
+      record("info", "Running with dbt=2.0.6"),
+      record("error", "[error] Ref 'missing_model' not found"),
+    ].join("\n");
+    expect(() => compiledOutput(stdout)).toThrow(
+      /^\[error\] Ref 'missing_model' not found$/,
+    );
+  });
 });
 
 describe("showPreview", () => {
