@@ -110,6 +110,8 @@ export type Table = {
   hidden?: boolean;
   /** The node's configured `schema`. */
   customSchema?: string;
+  /** The node's file path, `/`-separated; the lineage panel groups neighbours by their folder. */
+  path?: string | undefined;
 };
 
 export const RunModelType = {

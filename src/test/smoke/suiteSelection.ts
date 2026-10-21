@@ -1,5 +1,6 @@
 export const OPT_IN_SUITES = [
   "lineageInteractions",
+  "lineageGrouping",
   "queryResultsInteractions",
   "documentationEditorInteractions",
   "toolEnvironment",

@@ -5,6 +5,7 @@ const all = [
   "panelSmoke",
   "lspSmoke",
   "lineageInteractions",
+  "lineageGrouping",
   "toolEnvironment",
 ];
 
@@ -12,6 +13,16 @@ describe("selectSuites", () => {
   it("returns the sorted default set when unset or empty", () => {
     expect(selectSuites(all, undefined)).toEqual(["lspSmoke", "panelSmoke"]);
     expect(selectSuites(all, "")).toEqual(["lspSmoke", "panelSmoke"]);
+  });
+
+  it("keeps lineageGrouping out of the default set until it is named", () => {
+    expect(selectSuites(all, "default")).not.toContain("lineageGrouping");
+    expect(selectSuites(all, "lineageGrouping")).toEqual(["lineageGrouping"]);
+    expect(selectSuites(all, "default,lineageGrouping")).toEqual([
+      "lineageGrouping",
+      "lspSmoke",
+      "panelSmoke",
+    ]);
   });
 
   it("treats default alone as the unset set and adds a named opt-in", () => {

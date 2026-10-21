@@ -155,6 +155,7 @@ function nodeTable(
     description: node.description,
     columns: node.columns,
     patchPath: node.patch_path ?? "",
+    path: node.original_file_path,
     tests: testsOf(event, key),
     packageName: node.package_name,
     rootPackage: node.package_name === options.rootPackage,
