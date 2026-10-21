@@ -48,6 +48,15 @@ describe("Lineage control coverage", () => {
           );
           return page();
         },
+        "group open": async () => {
+          const { user } = await openLineage(
+            { node: HUB, publication: "s:1" },
+            { settings: { maxNeighbours: 2 } },
+          );
+          await activate(user, "button", "Open staging");
+          await screen.findByRole("button", { name: "Close staging" });
+          return page();
+        },
         "Settings open": stateOf(({ user }) =>
           activate(user, "button", "Settings"),
         ),

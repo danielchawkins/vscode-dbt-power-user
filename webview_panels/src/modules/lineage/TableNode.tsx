@@ -11,6 +11,7 @@ import {
 } from "./card";
 import type { TableNode as TableNodeType } from "./flow";
 import type { Direction } from "./graph";
+import { GroupChips } from "./GroupChips";
 import { columnHandle } from "./layout";
 import styles from "./lineageGraph.module.css";
 import { TableActionsContext } from "./viewModel";
@@ -326,6 +327,7 @@ const TableNodeView = ({
         hidden={data.hidden}
         listed={data.columns !== undefined}
       />
+      <GroupChips chips={data.chips} />
       {data.columns ? (
         <ColumnList
           table={data.table.table}

@@ -211,7 +211,7 @@ export const drawnIds = (state: GraphState): Set<string> =>
   new Set(drawnGraph(state).tables.map((t) => t.table));
 
 /** `state` with expansions, column lists, edges and selection outside the drawn graph removed. */
-function prune(state: GraphState): GraphState {
+export function prune(state: GraphState): GraphState {
   let next = state;
   for (;;) {
     const drawn = drawnIds(next);

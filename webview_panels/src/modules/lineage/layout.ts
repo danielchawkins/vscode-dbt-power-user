@@ -6,16 +6,24 @@ export const geometry = {
   headerHeight: 56,
   groupHeight: 56,
   actionsHeight: 28,
+  chipRowHeight: 24,
   columnHeight: 24,
   listPadding: 8,
   rankGap: 160,
   nodeGap: 40,
 };
 
-/** The height of a table node, listing `columns` when given; an empty list keeps one row for its message. */
-export const tableHeight = (columns?: readonly unknown[]): number =>
+/**
+ * The height of a table node: its header, its actions row, `chips` group chips two to a row, and `columns` when
+ * listed. An empty list keeps one row for its message.
+ */
+export const tableHeight = (
+  columns: readonly unknown[] | undefined,
+  chips: number,
+): number =>
   geometry.headerHeight +
   geometry.actionsHeight +
+  Math.ceil(chips / 2) * geometry.chipRowHeight +
   (columns
     ? geometry.listPadding + Math.max(columns.length, 1) * geometry.columnHeight
     : 0);

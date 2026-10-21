@@ -1,6 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { Edge, Node } from "@xyflow/react";
-import type { GroupView } from "./expansionGroups";
+import type { GroupChip, GroupView } from "./expansionGroups";
 import { expansionKey } from "./graph";
 import { columnHandle, geometry, layout, tableHeight } from "./layout";
 
@@ -14,6 +14,8 @@ interface TableNodeData extends Record<string, unknown> {
   pending: { parents: boolean; children: boolean };
   /** Neighbours a capped expansion does not draw yet. */
   hidden: { parents: number; children: number };
+  /** The open groups this table's expansions drew, each with a chip to close it. */
+  chips: GroupChip[];
   /** Lower-cased names of this table's columns the traced edges touch. */
   traced: string[];
   /** The selected column's lower-cased name when it belongs to this table. */
@@ -46,6 +48,8 @@ export interface FlowInput {
   groups?: readonly GroupView[] | undefined;
   /** The `[parent, child]` pairs joining each group to its table. */
   groupEdges?: readonly [string, string][] | undefined;
+  /** The open groups to chip on their expanded tables. */
+  chips?: readonly GroupChip[] | undefined;
   errors: Record<string, string[]>;
   selectedTable?: string | undefined;
   selectedColumn?: [string, string] | undefined;
@@ -134,6 +138,8 @@ export function toFlow(input: FlowInput): {
   const pending = input.pending ?? [];
   const groups = input.groups ?? [];
   const groupIds = new Set(groups.map((g) => g.id));
+  const chipsByTable = Map.groupBy(input.chips ?? [], (chip) => chip.table);
+  const chipsOf = (table: string) => chipsByTable.get(table) ?? [];
   const hidden = (direction: "children" | "parents", table: string) =>
     input.hidden?.[expansionKey(direction, table)] ?? 0;
   const listed = (table: string) =>
@@ -142,7 +148,10 @@ export function toFlow(input: FlowInput): {
   const positions = layout(
     [...data.tables.map((t) => t.table), ...groups.map((g) => g.id)],
     [...data.edges, ...(input.groupEdges ?? [])],
-    (id) => (groupIds.has(id) ? geometry.groupHeight : tableHeight(listed(id))),
+    (id) =>
+      groupIds.has(id)
+        ? geometry.groupHeight
+        : tableHeight(listed(id), chipsOf(id).length),
   );
   const tableNodes: TableNode[] = data.tables.map((t) => ({
     id: t.table,
@@ -150,7 +159,7 @@ export function toFlow(input: FlowInput): {
     position: positions.get(t.table) ?? { x: 0, y: 0 },
     // A size before React Flow measures the node, so the minimap draws it at once; measurement still sets handles.
     initialWidth: geometry.tableWidth,
-    initialHeight: tableHeight(listed(t.table)),
+    initialHeight: tableHeight(listed(t.table), chipsOf(t.table).length),
     selected: t.table === input.selectedTable,
     data: {
       table: t,
@@ -168,6 +177,7 @@ export function toFlow(input: FlowInput): {
         parents: hidden("parents", t.table),
         children: hidden("children", t.table),
       },
+      chips: chipsOf(t.table),
       traced: [...(traced.get(t.table) ?? [])],
       selectedColumn:
         input.selectedColumn?.[0] === t.table

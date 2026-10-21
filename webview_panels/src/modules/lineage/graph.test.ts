@@ -266,7 +266,7 @@ describe("lineage graph", () => {
         ["a", "b"],
         ["b", "c"],
       ],
-      () => tableHeight([1, 2]),
+      () => tableHeight([1, 2], 0),
     );
     const x = (id: string) => positions.get(id)!.x;
     expect(x("a")).toBeLessThan(x("b"));

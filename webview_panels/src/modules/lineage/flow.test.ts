@@ -1,11 +1,12 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
+import type { GroupChip } from "./expansionGroups";
 import { collapsedGroups } from "./expansionGroups";
 import { toFlow } from "./flow";
 import { addNeighbours, emptyGraph, lineageData } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { groupNodeId } from "./grouping";
-import { geometry } from "./layout";
+import { geometry, tableHeight } from "./layout";
 
 const table = (id: string): lineage.LineageTable => ({
   table: id,
@@ -113,5 +114,45 @@ describe("toFlow with combined edges from a real state", () => {
         expect.objectContaining({ source: groupA, target: groupB }),
       ]),
     );
+  });
+});
+
+describe("toFlow with group chips", () => {
+  const chip = (n: number): GroupChip => ({
+    id: groupNodeId("c:hub", `models/m${n}`),
+    table: "hub",
+    label: `m${n}`,
+    drawn: 1,
+    total: 2,
+  });
+  const hubNode = (chips: GroupChip[]) =>
+    toFlow({
+      data: {
+        start: "hub",
+        tables: [table("hub")],
+        edges: [],
+        columnEdges: [],
+      },
+      columns: {},
+      columnTables: [],
+      expansions: ["c:hub"],
+      errors: {},
+      refs: [],
+      chips,
+    }).nodes.find((n) => n.id === "hub");
+
+  it("grows the card by one chip row for every two chips", () => {
+    const base = tableHeight(undefined, 0);
+    const height = (count: number) =>
+      hubNode(Array.from({ length: count }, (_, i) => chip(i)))?.initialHeight;
+    expect(height(0)).toBe(base);
+    expect(height(1)).toBe(base + geometry.chipRowHeight);
+    expect(height(2)).toBe(base + geometry.chipRowHeight);
+    expect(height(3)).toBe(base + 2 * geometry.chipRowHeight);
+    expect(height(4)).toBe(base + 2 * geometry.chipRowHeight);
+  });
+
+  it("gives the table node the chips it is passed", () => {
+    expect(hubNode([chip(1)])?.data).toMatchObject({ chips: [chip(1)] });
   });
 });
