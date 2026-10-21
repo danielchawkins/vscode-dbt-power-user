@@ -1,9 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { window } from "vscode";
+import { Uri, window } from "vscode";
 import { columnLineageArgs } from "../../core/lineage/columnLineage";
 import type { NodeMetaMap, SourceMetaMap } from "../../core/manifest/types";
 import type { ProposalTarget } from "../../features/docs/columnProposals";
-import { ColumnProposalService } from "../../features/docs/columnProposals";
+import {
+  ColumnProposalRequests,
+  ColumnProposalService,
+} from "../../features/docs/columnProposals";
 import type { TypeSourceProject } from "../../features/docs/columnTypeSource";
 import { spyLog } from "../testLog";
 
@@ -439,5 +442,17 @@ describe("ColumnProposalService descriptions", () => {
     expect(payload?.proposals).toEqual([]);
     expect(payload?.notice?.type).toBe("error");
     expect(payload?.notice?.message).toContain("has not loaded yet");
+  });
+});
+
+describe("ColumnProposalRequests", () => {
+  it("fires { kind, uri } to its listeners", () => {
+    const requests = new ColumnProposalRequests();
+    const listener = vi.fn();
+    requests.onDidRequest(listener);
+    const uri = Uri.file("/p/models/orders.sql");
+    requests.request("types", uri);
+    expect(listener).toHaveBeenCalledWith({ kind: "types", uri });
+    requests.dispose();
   });
 });

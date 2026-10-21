@@ -95,6 +95,7 @@ describe("fusionPowerUser.diagnostics", () => {
       cteProfilerDecorationProvider: {} as never,
       deferToProductionStatusBar: {} as never,
       startupGate: { whenSettled: () => initialized },
+      columnProposals: {} as never,
     });
 
     const registration = (commands.registerCommand as Mock).mock.calls.find(

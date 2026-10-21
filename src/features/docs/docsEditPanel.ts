@@ -23,6 +23,7 @@ import type { Handlers, MessageOf } from "../../webview/messageRouter";
 import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import type {
+  ColumnProposalRequests,
   ColumnProposalService,
   ProposalKind,
   ProposalTarget,
@@ -81,6 +82,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       queryManifestService: QueryManifestService;
       emitterService: SharedStateService;
       columnProposals: ColumnProposalService;
+      columnProposalRequests: ColumnProposalRequests;
     },
     terminal: Log,
     parseDemand?: ParseDemand,
@@ -111,6 +113,9 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
         this.forgetDrafts(root);
         void this.onManifestChanged();
       }),
+      services.columnProposalRequests.onDidRequest(
+        ({ kind }) => void this.onProposalRequest(kind),
+      ),
       window.onDidChangeActiveTextEditor(
         async (event: TextEditor | undefined) => {
           this.documentation = undefined;
@@ -170,10 +175,11 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
   }
 
   /** The active model's columns for a proposal: the draft's and the YAML's, with the project that answers. */
-  private async proposalTarget(): Promise<ProposalTarget | undefined> {
+  private async proposalTarget(
+    project = this.getProject(),
+  ): Promise<ProposalTarget | undefined> {
     const { documentation } =
       await this.docGenService.getUncompiledDocumentationForCurrentActiveFile();
-    const project = this.getProject();
     if (!documentation || !project) {
       return undefined;
     }
@@ -291,7 +297,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       saveDraft: (message) => this.saveDraft(message),
       openProblemsTab: () =>
         commands.executeCommand("workbench.action.problems.focus"),
-      proposeColumns: ({ kind }) => this.propose(kind),
+      proposeColumns: ({ kind }) => this.propose(kind, this.getProject()),
       runNoticeAction: () =>
         commands.executeCommand(
           USE_STRICT_ANALYSIS_COMMAND,
@@ -338,13 +344,36 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
   }
 
   /** Posts the proposals of `kind` for the active model; a superseded or cancelled request posts nothing. */
-  private async propose(kind: ProposalKind) {
-    const target = await this.proposalTarget();
+  private async propose(kind: ProposalKind, project: PanelProject | undefined) {
+    const target = await this.proposalTarget(project);
     const payload =
       target && (await this.columnProposals.propose(kind, target));
     if (payload) {
       await this.post({ command: "renderColumnProposals", payload });
     }
+  }
+
+  /** A command asked for proposals: waits for the page, makes the active model's documentation current, then proposes. */
+  private async onProposalRequest(kind: ProposalKind) {
+    if (!(await this.checkIfWebviewReady(10_000))) {
+      void window.showWarningMessage(
+        "The documentation editor did not load; try again",
+      );
+      return;
+    }
+    const activeFile =
+      window.activeTextEditor &&
+      activeModelUri(window.activeTextEditor.document.uri).fsPath;
+    if (!this.documentation || this.documentation.filePath !== activeFile) {
+      await this.transmitData();
+    }
+    const project = this.getProject();
+    if (!project) {
+      const model = activeFile ? path.basename(activeFile, ".sql") : "(none)";
+      void window.showWarningMessage(`No dbt project for the model ${model}`);
+      return;
+    }
+    await this.propose(kind, project);
   }
 
   private async reloadDocumentationFromManifest() {

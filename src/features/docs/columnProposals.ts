@@ -2,6 +2,8 @@ import type {
   columnProposals,
   documentationEditor,
 } from "@fusion-power-user/webview-contract";
+import type { Disposable, Uri } from "vscode";
+import { EventEmitter } from "vscode";
 import type {
   AnsweredTypes,
   DocColumn,
@@ -24,6 +26,23 @@ import { resolveUpstreamDescriptions } from "./upstreamDescriptionSource";
 
 /** The proposal kinds the service answers. */
 export type ProposalKind = "types" | "descriptions";
+
+/** Lets a command ask the documentation editor for proposals; the panel answers when it is ready. */
+export class ColumnProposalRequests implements Disposable {
+  private readonly emitter = new EventEmitter<{
+    kind: ProposalKind;
+    uri?: Uri | undefined;
+  }>();
+  readonly onDidRequest = this.emitter.event;
+
+  request(kind: ProposalKind, uri?: Uri) {
+    this.emitter.fire({ kind, uri });
+  }
+
+  dispose() {
+    this.emitter.dispose();
+  }
+}
 
 /** The documentation a proposal is made for: the draft's columns when one is unsaved, else the YAML's. */
 export interface ProposalTarget {

@@ -222,14 +222,23 @@ export abstract class PanelHost<
     };
   }
 
-  protected async checkIfWebviewReady() {
-    return new Promise<void>((resolve) => {
+  /** Resolves true once the page is ready, or false after `deadlineMs` when one is given. */
+  protected async checkIfWebviewReady(deadlineMs?: number): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      const finish = (ready: boolean) => {
+        clearInterval(interval);
+        clearTimeout(deadline);
+        resolve(ready);
+      };
       const interval = setInterval(() => {
         if (this.isWebviewReady) {
-          clearInterval(interval);
-          resolve();
+          finish(true);
         }
       }, 500);
+      const deadline =
+        deadlineMs === undefined
+          ? undefined
+          : setTimeout(finish, deadlineMs, false);
     });
   }
 
