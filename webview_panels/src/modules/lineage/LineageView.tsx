@@ -251,15 +251,17 @@ const Graph = (): React.JSX.Element => {
   }, []);
   // Read when a rebuild starts, so it follows the latest settings without re-creating the graph store.
   const expansionRef = useRef(settings.defaultExpansion);
-  // Folder grouping is the default of the `lineage.groupBy` setting, which this build does not read yet.
   const optionsRef = useRef<ExpansionOptions>({
     cap: settings.maxNeighbours,
-    groupBy: "folder",
+    groupBy: settings.groupBy,
   });
   useEffect(() => {
     expansionRef.current = settings.defaultExpansion;
-    optionsRef.current = { cap: settings.maxNeighbours, groupBy: "folder" };
-  }, [settings.defaultExpansion, settings.maxNeighbours]);
+    optionsRef.current = {
+      cap: settings.maxNeighbours,
+      groupBy: settings.groupBy,
+    };
+  }, [settings.defaultExpansion, settings.maxNeighbours, settings.groupBy]);
   const defaultExpansion = useCallback(() => expansionRef.current, []);
   const expansionOptions = useCallback(() => optionsRef.current, []);
   const { graph, rendered, drawnKey, actions, select, reset } = useLineageGraph(

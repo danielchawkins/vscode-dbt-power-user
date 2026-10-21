@@ -19,6 +19,7 @@ export interface SettingsSchema {
   "lineage.layer.tagPrefix": string;
   "lineage.layer.inferFromPath": boolean;
   "lineage.maxNeighbours": number;
+  "lineage.groupBy": string;
   enabled: boolean;
   projects: readonly string[];
   staticAnalysis: string;
@@ -84,6 +85,7 @@ export const SETTING_SCOPES = {
   "lineage.layer.tagPrefix": "window",
   "lineage.layer.inferFromPath": "window",
   "lineage.maxNeighbours": "window",
+  "lineage.groupBy": "window",
   enabled: "resource",
   projects: "resource",
   staticAnalysis: "resource",
