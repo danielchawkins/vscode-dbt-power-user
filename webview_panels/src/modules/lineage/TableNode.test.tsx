@@ -1,6 +1,8 @@
 import { render, screen } from "@testing-library/react";
-import { ReactFlowProvider } from "@xyflow/react";
+import { ReactFlowProvider, useStoreApi } from "@xyflow/react";
+import { useLayoutEffect } from "react";
 import { describe, expect, it } from "vitest";
+import { ZOOMED_TITLE_MAX } from "./card";
 import { TableNode } from "./TableNode";
 
 const draw = (columnsNeedStrict: boolean) => {
@@ -104,5 +106,65 @@ describe("table node hidden cue", () => {
     expect(container.querySelector("[data-table]")?.className).not.toContain(
       "hidden",
     );
+  });
+});
+
+describe("table node semantic zoom", () => {
+  const ZoomTo = ({ zoom }: { zoom: number }) => {
+    const store = useStoreApi();
+    useLayoutEffect(() => {
+      store.setState({ transform: [0, 0, zoom] });
+    }, [store, zoom]);
+    return null;
+  };
+
+  const drawAt = (zoom: number) => {
+    const props = {
+      id: "model.p.a",
+      data: {
+        table: {
+          table: "model.p.a",
+          label: "stg_a_long_table_name__with_a_long_suffix",
+          nodeType: "model",
+          childCount: 0,
+          parentCount: 0,
+          tests: [],
+        },
+        columns: [{ name: "id", datatype: "int" }],
+        isStart: false,
+        expanded: { parents: false, children: false },
+        pending: { parents: false, children: false },
+        hidden: { parents: 0, children: 0 },
+        chips: [],
+        traced: [],
+      },
+    } as unknown as React.ComponentProps<typeof TableNode>;
+    return render(
+      <ReactFlowProvider>
+        <ZoomTo zoom={zoom} />
+        <TableNode {...props} />
+      </ReactFlowProvider>,
+    );
+  };
+
+  it("below 50% zoom keeps the columns mounted and shortens the title", () => {
+    const { container } = drawAt(0.3);
+    expect(container.querySelector("[data-table]")?.className).toContain(
+      "zoomedOut",
+    );
+    expect(screen.getByTestId("lineage-columns")).toBeTruthy();
+    expect(container.querySelectorAll(".react-flow__handle").length).toBe(4);
+    const title = container.querySelector("span[title]:not([class*=type])");
+    expect(title?.textContent?.length).toBe(ZOOMED_TITLE_MAX);
+  });
+
+  it("at zoom 1 renders the full card", () => {
+    const { container } = drawAt(1);
+    expect(container.querySelector("[data-table]")?.className).not.toContain(
+      "zoomedOut",
+    );
+    expect(
+      screen.getByText(/^stg_a_long.*suffix$/).textContent?.length,
+    ).toBeGreaterThan(ZOOMED_TITLE_MAX);
   });
 });

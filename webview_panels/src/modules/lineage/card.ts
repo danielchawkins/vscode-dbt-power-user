@@ -5,6 +5,9 @@ type LineageTable = lineage.LineageTable;
 /** Characters a card title shows before it is shortened; a 280px card fits about this many at 13px. */
 export const TITLE_MAX = 30;
 
+/** Characters a zoomed-out card title shows; the larger type fits fewer in the same 280px. */
+export const ZOOMED_TITLE_MAX = 15;
+
 /**
  * `text` shortened to `max` characters with an ellipsis in the middle, keeping about a third of the room for the
  * start and the rest for the end. dbt names put what tells them apart at the end (`stg_<source>__<entity>`), and

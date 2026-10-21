@@ -11,9 +11,18 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useStoreApi,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  use,
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { hiddenCounts } from "./expansionCap";
 import { collapsedGroups, groupChips } from "./expansionGroups";
 import { toFlow } from "./flow";
@@ -23,6 +32,7 @@ import { GroupNode } from "./GroupNode";
 import styles from "./lineageGraph.module.css";
 import MissingLineageMessage from "./MissingLineageMessage";
 import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
+import { isZoomedOut, SemanticZoomContext } from "./semanticZoom";
 import TableDetails from "./TableDetails";
 import { TableNode } from "./TableNode";
 import Toolbar from "./Toolbar";
@@ -53,24 +63,37 @@ const onError = (code: string, message: string) => {
   panelLogger.warn(`[React Flow] ${code}: ${message}`);
 };
 
-/** Selects the table a click lands on; a group card has no table to select. */
-const clickSelects =
-  (select: (table: string | undefined) => void) =>
-  (_event: unknown, node: { id: string; type?: string }) => {
+/**
+ * Selects the table a click lands on, and opens its Details while zoomed out hides the card's own button. A group
+ * card has no table to select.
+ */
+const useNodeClick = (
+  select: (table: string | undefined) => void,
+  openDetails: (table: string) => void,
+) => {
+  const enabled = use(SemanticZoomContext);
+  const store = useStoreApi();
+  return (_event: unknown, node: { id: string; type?: string }) => {
     if (node.type === "table") {
       select(node.id);
+      if (isZoomedOut(store.getState().transform[2], enabled)) {
+        openDetails(node.id);
+      }
     }
   };
+};
 
-/** The host's view settings; a change is applied at once and persisted through `persistLineageSettings`. */
+/** The host's view settings, with `loaded` false until they arrive; a change is applied at once and persisted. */
 const useSettings = () => {
   const [settings, setSettings] = useState<ResolvedSettings>(() =>
     resolveSettings(undefined),
   );
+  const [loaded, setLoaded] = useState(false);
   useEffect(() => {
     fetchSettings()
       .then((s) => setSettings(resolveSettings(s)))
-      .catch((error) => panelLogger.error("lineage settings", error));
+      .catch((error) => panelLogger.error("lineage settings", error))
+      .finally(() => setLoaded(true));
   }, []);
   const change = (part: Partial<lineage.LineageSettings>) => {
     setSettings((s) => resolveSettings({ ...s, ...part }));
@@ -78,7 +101,7 @@ const useSettings = () => {
       panelLogger.error("lineage settings", error),
     );
   };
-  return { settings, change };
+  return { settings, loaded, change };
 };
 
 /** The relationships of the Current Project, fetched while the overlay is on and again after each redraw. */
@@ -157,34 +180,26 @@ const minimapStyle = (size: { width: number; height: number }) => ({
   height: Math.round(Math.min(150, Math.max(80, size.height / 5))),
 });
 
-type FlowGraph = ReturnType<typeof toFlow>;
-
-/** The graph canvas with its zoom controls, a minimap that fits the canvas, and the edge legend. */
-const Canvas = ({
-  nodes,
-  edges,
-  select,
-  drawnKey,
-}: FlowGraph & {
-  select: (table: string | undefined) => void;
-  drawnKey: number;
-}) => {
-  const { ref: canvasRef, size } = useSize();
-  const minimap = useMinimap(size);
+/**
+ * The fit options for the canvas `size`, applied again when the panel is resized, so a shrunk panel still shows the
+ * whole graph, and when a new graph is drawn.
+ */
+const useFit = (
+  size: { width: number; height: number },
+  minimapShown: boolean,
+  drawnKey: number,
+): FitViewOptions => {
   const flow = useReactFlow();
-  useHandleMeasurement(nodes);
   const { width, height } = size;
-  const mapSize = minimapStyle(size);
-  const mapWidth = mapSize.width;
-  const mapHeight = mapSize.height;
+  const mapWidth = minimapStyle(size).width;
+  const mapHeight = minimapStyle(size).height;
   const options = useMemo(
     () =>
       fitOptions(
-        minimap.shown ? { width: mapWidth, height: mapHeight } : undefined,
+        minimapShown ? { width: mapWidth, height: mapHeight } : undefined,
       ),
-    [minimap.shown, mapWidth, mapHeight],
+    [minimapShown, mapWidth, mapHeight],
   );
-  // Re-fit after the panel is resized, so a shrunk panel still shows the whole graph.
   useEffect(() => {
     if (width > 0 && height > 0) {
       void flow.fitView(options);
@@ -195,6 +210,29 @@ const Canvas = ({
       requestAnimationFrame(() => void flow.fitView(options));
     }
   }, [drawnKey, flow, options]);
+  return options;
+};
+
+type FlowGraph = ReturnType<typeof toFlow>;
+
+/** The graph canvas with its zoom controls, a minimap that fits the canvas, and the edge legend. */
+const Canvas = ({
+  nodes,
+  edges,
+  select,
+  openDetails,
+  drawnKey,
+}: FlowGraph & {
+  select: (table: string | undefined) => void;
+  openDetails: (table: string) => void;
+  drawnKey: number;
+}) => {
+  const { ref: canvasRef, size } = useSize();
+  const minimap = useMinimap(size);
+  const onNodeClick = useNodeClick(select, openDetails);
+  useHandleMeasurement(nodes);
+  const mapSize = minimapStyle(size);
+  const options = useFit(size, minimap.shown, drawnKey);
   const label = minimap.shown ? "Hide minimap" : "Show minimap";
   return (
     <div className={styles.canvas} ref={canvasRef}>
@@ -209,7 +247,7 @@ const Canvas = ({
         fitViewOptions={options}
         proOptions={{ hideAttribution: true }}
         onError={onError}
-        onNodeClick={clickSelects(select)}
+        onNodeClick={onNodeClick}
         onPaneClick={() => select(undefined)}
       >
         <Background />
@@ -244,18 +282,19 @@ const Canvas = ({
 const Graph = (): React.JSX.Element => {
   const drawerRef = useRef<DrawerRef>(null);
   const [detailsTable, setDetailsTable] = useState<string>();
-  const { settings, change } = useSettings();
+  const { settings, loaded, change } = useSettings();
   const openDetails = useCallback((table: string) => {
     setDetailsTable(table);
     drawerRef.current?.open();
   }, []);
-  // Read when a rebuild starts, so it follows the latest settings without re-creating the graph store.
+  // Read when a rebuild starts, so it follows the latest settings without re-creating the graph store. A layout
+  // effect runs before the graph's effects, so a render held until the settings load is drawn with them.
   const expansionRef = useRef(settings.defaultExpansion);
   const optionsRef = useRef<ExpansionOptions>({
     cap: settings.maxNeighbours,
     groupBy: settings.groupBy,
   });
-  useEffect(() => {
+  useLayoutEffect(() => {
     expansionRef.current = settings.defaultExpansion;
     optionsRef.current = {
       cap: settings.maxNeighbours,
@@ -267,7 +306,7 @@ const Graph = (): React.JSX.Element => {
   const { graph, rendered, drawnKey, actions, select, reset } = useLineageGraph(
     defaultExpansion,
     openDetails,
-    expansionOptions,
+    { expansionOptions, ready: loaded },
   );
   const notice = rendered?.missingLineageMessage;
   const columnsNeedStrict = rendered?.columnsNeedStrict === true;
@@ -306,12 +345,15 @@ const Graph = (): React.JSX.Element => {
           <MissingLineageMessage missingLineageMessage={notice} />
           <Toolbar settings={settings} change={change} reset={reset} />
         </div>
-        <Canvas
-          nodes={nodes}
-          edges={edges}
-          select={select}
-          drawnKey={drawnKey}
-        />
+        <SemanticZoomContext value={settings.semanticZoom}>
+          <Canvas
+            nodes={nodes}
+            edges={edges}
+            select={select}
+            openDetails={openDetails}
+            drawnKey={drawnKey}
+          />
+        </SemanticZoomContext>
         <Drawer ref={drawerRef} title="Details">
           {details ? <TableDetails table={details} /> : null}
         </Drawer>

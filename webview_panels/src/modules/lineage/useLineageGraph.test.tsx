@@ -188,11 +188,9 @@ describe("useLineageGraph", () => {
       }),
     });
     const { result } = renderHook(() =>
-      useLineageGraph(
-        () => 1,
-        vi.fn(),
-        () => ({ cap: 2, groupBy: "folder" }),
-      ),
+      useLineageGraph(() => 1, vi.fn(), {
+        expansionOptions: () => ({ cap: 2, groupBy: "folder" }),
+      }),
     );
     await postRender("a");
     await waitFor(() => expect(result.current.drawnKey).toBe(1));

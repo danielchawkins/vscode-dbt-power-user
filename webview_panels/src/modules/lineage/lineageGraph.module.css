@@ -549,3 +549,24 @@
   display: flex;
   gap: 4px;
 }
+
+/* Zoomed out: the card keeps its size; detail hides but stays mounted, so handles hold and nothing re-lays out. */
+.zoomedOut .subtitle {
+  display: none;
+}
+
+.zoomedOut .actions,
+.zoomedOut .groupChips,
+.zoomedOut .columns {
+  visibility: hidden;
+}
+
+.zoomedOut .label,
+.zoomedOut .groupLabel {
+  font-size: 26px;
+}
+
+.zoomedOut .type,
+.zoomedOut .layer {
+  font-size: 20px;
+}

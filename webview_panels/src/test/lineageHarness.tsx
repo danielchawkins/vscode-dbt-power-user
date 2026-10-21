@@ -174,20 +174,27 @@ type Posted = {
   args?: { params?: Params };
 };
 
-/** Answers each sync request the panel posts as the host would. */
-const answerRequests = () =>
+/** Answers each sync request the panel posts as the host would; `held` requests wait until `release` is called. */
+const answerRequests = (held: readonly string[] = []) => {
+  const waiting: (() => void)[] = [];
   getVsCodeApiMock().postMessage.mockImplementation((message: unknown) => {
     const { command, syncRequestId, args } = message as Posted;
     if (syncRequestId) {
-      queueMicrotask(() =>
+      const answer = () =>
         handleIncomingResponse({
           syncRequestId,
           status: true,
           body: ANSWERS[command]?.(args?.params ?? {}),
-        }),
-      );
+        });
+      if (held.includes(command)) {
+        waiting.push(answer);
+      } else {
+        queueMicrotask(answer);
+      }
     }
   });
+  return () => waiting.splice(0).forEach((answer) => answer());
+};
 
 export const commands = (name: string) =>
   getVsCodeApiMock().postMessage.mock.calls.filter(
@@ -207,13 +214,19 @@ export type User = ReturnType<typeof userEvent.setup>;
 
 /**
  * Renders the panel inside the app, and pushes `args` as the host's `render` message. `options.settings` is what the
- * host answers `getLineageSettings` with.
+ * host answers `getLineageSettings` with. `options.renderFirst` pushes the render before that answer lands, as a
+ * slow host does.
  */
 export const openLineage = async (
   args: lineage.RenderArgs = { node: TABLES.b, publication: "s:1" },
-  options: { settings?: Partial<lineage.LineageSettings> } = {},
+  options: {
+    settings?: Partial<lineage.LineageSettings>;
+    renderFirst?: boolean;
+  } = {},
 ): Promise<{ user: User; container: HTMLElement }> => {
-  answerRequests();
+  const release = answerRequests(
+    options.renderFirst ? ["getLineageSettings"] : [],
+  );
   hostSettings = options.settings ?? {};
   const user = userEvent.setup();
   const { container } = render(
@@ -228,6 +241,7 @@ export const openLineage = async (
       new MessageEvent("message", { data: { command: "render", args } }),
     );
   });
+  await act(async () => release());
   if (args.node) {
     // Table cards and group cards are both React Flow nodes.
     await waitFor(() => expect(flowNodes(container)).toHaveLength(3));
@@ -267,6 +281,34 @@ export const activate = async (
   const element = scope.getByRole(role, { name });
   await user.click(element);
   return element;
+};
+
+/** The viewport's zoom, read from the React Flow transform. */
+const viewportScale = (container: HTMLElement) =>
+  Number(
+    /scale\(([\d.]+)\)/.exec(
+      container.querySelector<HTMLElement>(".react-flow__viewport")!.style
+        .transform,
+    )?.[1],
+  );
+
+/** Presses Zoom In or Zoom Out until the zoom is on the wanted side of 50%, where cards show only a badge and title. */
+export const zoomPast = async (
+  user: User,
+  container: HTMLElement,
+  direction: "In" | "Out",
+): Promise<void> => {
+  const done = () =>
+    direction === "Out"
+      ? viewportScale(container) < 0.5
+      : viewportScale(container) >= 0.5;
+  for (let step = 0; step < 12 && !done(); step++) {
+    await activate(user, "button", `Zoom ${direction}`);
+    await waitFor(() =>
+      expect(Number.isFinite(viewportScale(container))).toBe(true),
+    );
+  }
+  await waitFor(() => expect(done()).toBe(true));
 };
 
 afterEach(() => {

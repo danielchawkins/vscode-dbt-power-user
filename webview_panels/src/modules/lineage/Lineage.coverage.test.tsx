@@ -13,6 +13,7 @@ import {
   HUB,
   node,
   openLineage,
+  zoomPast,
 } from "../../test/lineageHarness";
 import { TESTED_CONTROLS } from "./Lineage.controls.test";
 
@@ -72,6 +73,9 @@ describe("Lineage control coverage", () => {
           await activate(user, "button", "Details", node(container, "a"));
           await screen.findByRole("button", { name: "Columns (1)" });
         }),
+        "zoomed out": stateOf(({ user, container }) =>
+          zoomPast(user, container, "Out"),
+        ),
         "minimap shown": stateOf(({ user }) =>
           activate(user, "button", "Show minimap"),
         ),

@@ -127,6 +127,11 @@
             ],
             "description": "How an expansion with more new neighbours than `maxNeighbours` is drawn.",
             "default": "folder"
+          },
+          "fusionPowerUser.lineage.semanticZoom": {
+            "type": "boolean",
+            "description": "Below 50% zoom, lineage cards keep their size and show only a larger badge and title.",
+            "default": true
           }
         }
       },

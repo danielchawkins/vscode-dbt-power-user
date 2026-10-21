@@ -3,6 +3,7 @@ import { Handle, Position } from "@xyflow/react";
 import { memo, use } from "react";
 import type { GroupNode as GroupNodeType } from "./flow";
 import styles from "./lineageGraph.module.css";
+import { useZoomedOut } from "./semanticZoom";
 import { TableActionsContext } from "./viewModel";
 
 /** A closed group: a stacked card standing for the neighbours of one folder that are not drawn. */
@@ -11,8 +12,12 @@ const GroupNodeView = ({
   data,
 }: NodeProps<GroupNodeType>): React.JSX.Element => {
   const actions = use(TableActionsContext);
+  const zoomedOut = useZoomedOut();
   return (
-    <div className={`${styles.node} ${styles.group}`} data-group={data.label}>
+    <div
+      className={`${styles.node} ${styles.group} ${zoomedOut ? styles.zoomedOut : ""}`}
+      data-group={data.label}
+    >
       <Handle
         type="target"
         position={Position.Left}

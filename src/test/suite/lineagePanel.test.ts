@@ -349,6 +349,7 @@ describe("LineagePanel", () => {
           defaultExpansion: 3,
           maxNeighbours: 3,
           groupBy: "folder",
+          semanticZoom: true,
         },
         status: true,
       },
@@ -378,6 +379,33 @@ describe("LineagePanel", () => {
       syncRequestId: "g2",
     });
     expect(mockPostMessage.mock.lastCall![0].args.body.groupBy).toBe("folder");
+  });
+
+  it("reads lineage.semanticZoom, false only when exactly false, and never persists it", async () => {
+    const values: Record<string, unknown> = { "lineage.semanticZoom": false };
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: (key: string) => values[key] ?? 3,
+      update: vi.fn(),
+    });
+    await (panel as any).handleCommand({
+      command: "persistLineageSettings",
+      args: { params: { semanticZoom: true } },
+      syncRequestId: "p",
+    });
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.semanticZoom).toBe(
+      false,
+    );
+
+    values["lineage.semanticZoom"] = "typo";
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g2",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.semanticZoom).toBe(true);
   });
 
   it("persists only known settings and clamps the confidence threshold", async () => {
@@ -413,6 +441,7 @@ describe("LineagePanel", () => {
         defaultExpansion: 3,
         maxNeighbours: 3,
         groupBy: "folder",
+        semanticZoom: true,
       });
     }
   });

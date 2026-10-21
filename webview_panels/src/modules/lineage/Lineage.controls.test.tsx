@@ -14,6 +14,7 @@ import {
   openLineage,
   pane,
   tableIds,
+  zoomPast,
 } from "../../test/lineageHarness";
 import { getVsCodeApiMock } from "../../test/setup";
 
@@ -509,6 +510,48 @@ describe("Lineage details drawer", () => {
   });
 });
 
+describe("Lineage card click", () => {
+  it("only selects at normal zoom", async () => {
+    const { user, container } = await openLineage();
+    await zoomPast(user, container, "In");
+    await user.click(node(container, "b").getByText("b"));
+    await waitFor(() =>
+      expect(
+        container.querySelector('.react-flow__node[data-id="b"]'),
+      ).toHaveClass("selected"),
+    );
+    expect(screen.queryByRole("complementary", { name: "Details" })).toBeNull();
+  });
+
+  it("opens the Details drawer when zoomed out", async () => {
+    const { user, container } = await openLineage();
+    await zoomPast(user, container, "Out");
+    await user.click(node(container, "b").getByText("b"));
+    await waitFor(() =>
+      expect(
+        drawer("Details").getByRole("heading", { name: "b" }),
+      ).toBeTruthy(),
+    );
+  });
+
+  it("with lineage.semanticZoom off, keeps the full card and only selects when zoomed out", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { semanticZoom: false },
+    });
+    await zoomPast(user, container, "Out");
+    expect(container.querySelector("[data-table]")?.className).not.toContain(
+      "zoomedOut",
+    );
+    await user.click(node(container, "b").getByText("b"));
+    await waitFor(() =>
+      expect(
+        container.querySelector('.react-flow__node[data-id="b"]'),
+      ).toHaveClass("selected"),
+    );
+    expect(screen.queryByRole("complementary", { name: "Details" })).toBeNull();
+  });
+});
+
 describe("Lineage notice", () => {
   it("shows the notice in place of a graph, with its buttons", async () => {
     const { container } = await openLineage(EMPTY_STATE);
@@ -532,6 +575,15 @@ describe("Lineage notice", () => {
 });
 
 describe("Lineage group node", () => {
+  it("groups by the host's cap even when the render arrives before the settings answer", async () => {
+    const { container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 }, renderFirst: true },
+    );
+    expect(tableIds(container)).toEqual(["hub"]);
+    expect(container.querySelector('[data-group="staging"]')).not.toBeNull();
+  });
+
   it("opens a group, drawing its first cap members as ordinary cards", async () => {
     const { user, container } = await openLineage(
       { node: HUB, publication: "s:1" },

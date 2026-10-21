@@ -8,12 +8,14 @@ import {
   cardTooltip,
   middleEllipsis,
   TITLE_MAX,
+  ZOOMED_TITLE_MAX,
 } from "./card";
 import type { TableNode as TableNodeType } from "./flow";
 import type { Direction } from "./graph";
 import { GroupChips } from "./GroupChips";
 import { columnHandle } from "./layout";
 import styles from "./lineageGraph.module.css";
+import { useZoomedOut } from "./semanticZoom";
 import { TableActionsContext } from "./viewModel";
 
 const ExpandButton = ({
@@ -89,10 +91,12 @@ const Header = ({
   table,
   errors,
   hiddenFromLineage,
+  zoomedOut,
 }: {
   table: lineage.LineageTable;
   errors?: string[] | undefined;
   hiddenFromLineage: boolean;
+  zoomedOut: boolean;
 }) => (
   <div className={styles.header}>
     <Handle
@@ -111,7 +115,7 @@ const Header = ({
       {cardBadge(table)}
     </span>
     <span className={styles.label} title={cardTooltip(table)}>
-      {middleEllipsis(table.label, TITLE_MAX)}
+      {middleEllipsis(table.label, zoomedOut ? ZOOMED_TITLE_MAX : TITLE_MAX)}
     </span>
     {errors?.length || hiddenFromLineage ? (
       <span className={styles.flags}>
@@ -308,17 +312,19 @@ const TableNodeView = ({
 }: NodeProps<TableNodeType>): React.JSX.Element => {
   // The graph never hides the start table, so its card shows no hidden cue either.
   const hiddenFromLineage = data.table.hidden === true && !data.isStart;
+  const zoomedOut = useZoomedOut();
   return (
     <div
       className={`${styles.node} ${data.isStart ? styles.start : ""} ${
         hiddenFromLineage ? styles.hidden : ""
-      }`}
+      } ${zoomedOut ? styles.zoomedOut : ""}`}
       data-table={data.table.table}
     >
       <Header
         table={data.table}
         errors={data.errors}
         hiddenFromLineage={hiddenFromLineage}
+        zoomedOut={zoomedOut}
       />
       <Actions
         table={data.table}
