@@ -51,7 +51,11 @@ async function build(
     await linkDrawn(store, fetchEdges);
     return;
   }
-  await replayExpansions(store, saved.expansions, fetchNeighbours);
+  await replayExpansions(
+    store,
+    { expansions: saved.expansions, openGroups: saved.openGroups ?? [] },
+    fetchNeighbours,
+  );
   await linkDrawn(store, fetchEdges);
   await showColumns(store, saved.columnTables, fetchColumns);
   store.update((s) => selectTable(s, saved.selectedTable));

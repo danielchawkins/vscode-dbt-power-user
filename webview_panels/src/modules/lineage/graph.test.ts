@@ -15,6 +15,7 @@ import {
   parseExpansion,
   showColumns,
 } from "./graph";
+import { groupNodeId } from "./grouping";
 import { columnHandle, layout, tableHeight } from "./layout";
 
 const table = (
@@ -108,12 +109,66 @@ describe("lineage graph", () => {
     const store = storeOf(emptyGraph(TABLES.a));
     await replayExpansions(
       store,
-      ["c:b", "c:a", "c:b", "x:a"],
+      { expansions: ["c:b", "c:a", "c:b", "x:a"], openGroups: [] },
       fetchNeighbours,
     );
     expect(store.get().expansions).toEqual(["c:a", "c:b"]);
     expect(ids(store.get())).toEqual(["a", "b", "c"]);
     expect(parseExpansion("x:a")).toBeUndefined();
+  });
+
+  describe("replay of open groups", () => {
+    // `hub` has four children in two folders, so with a cap of 2 they bucket into two closed groups. `m1` has child `z`.
+    const member = (id: string, path: string, childCount = 0) => ({
+      ...table(id, childCount, 1),
+      path,
+    });
+    const GROUPED: Record<string, lineage.LineageTable[]> = {
+      hub: [
+        member("m1", "models/x/m1.sql", 1),
+        member("m2", "models/x/m2.sql"),
+        member("m3", "models/y/m3.sql"),
+        member("m4", "models/y/m4.sql"),
+      ],
+      m1: [table("z")],
+    };
+    const fetchGrouped = vi.fn(
+      async (direction: "children" | "parents", id: string) =>
+        direction === "children" ? (GROUPED[id] ?? []) : [],
+    );
+    const hubStore = () => storeOf(emptyGraph(table("hub", 4, 0), 2, "folder"));
+
+    it("reopens a group right after its expansion, so a member's saved expansion replays", async () => {
+      const store = hubStore();
+      await replayExpansions(
+        store,
+        {
+          expansions: ["c:hub", "c:m1"],
+          openGroups: [groupNodeId("c:hub", "pkg:models/x")],
+        },
+        fetchGrouped,
+      );
+      expect(store.get().groups["c:hub"]?.open).toEqual({ "pkg:models/x": 2 });
+      expect(store.get().expansions).toEqual(["c:hub", "c:m1"]);
+      expect(ids(store.get())).toEqual(["hub", "m1", "m2", "z"]);
+    });
+
+    it("ignores a saved group ID whose group no longer exists", async () => {
+      const store = hubStore();
+      await replayExpansions(
+        store,
+        {
+          expansions: ["c:hub"],
+          openGroups: [
+            groupNodeId("c:hub", "pkg:models/gone"),
+            groupNodeId("c:other", "pkg:models/x"),
+          ],
+        },
+        fetchGrouped,
+      );
+      expect(store.get().groups["c:hub"]?.open).toEqual({});
+      expect(ids(store.get())).toEqual(["hub"]);
+    });
   });
 
   it("lists columns only for drawn tables and caches them", async () => {
