@@ -160,11 +160,13 @@ export interface LineageSettings {
   includeSourcesInInference?: boolean | undefined;
   /** The most nodes one expansion draws before a `+N more` marker; 0 draws all. A user setting, read-only here. */
   maxNeighbours?: number | undefined;
+  /** How an over-cap expansion's new neighbours are drawn: by folder as group nodes, or `none`. A user setting. */
+  groupBy?: "none" | "folder" | undefined;
 }
 
-/** The settings `persistLineageSettings` may change; `maxNeighbours` is a user setting the panel only reads. */
+/** The settings `persistLineageSettings` may change; `maxNeighbours` and `groupBy` are user settings the panel reads. */
 export type PersistedLineageSettings = Partial<
-  Omit<LineageSettings, "maxNeighbours">
+  Omit<LineageSettings, "maxNeighbours" | "groupBy">
 >;
 
 /** The `getConnectedColumns` request; the host reads `targets` and `upstreamExpansion`. */

@@ -348,10 +348,36 @@ describe("LineagePanel", () => {
           showNonSelectEdges: true,
           defaultExpansion: 3,
           maxNeighbours: 3,
+          groupBy: "folder",
         },
         status: true,
       },
     });
+  });
+
+  it("reads lineage.groupBy, treating any value but none as folder, and never persists it", async () => {
+    const values: Record<string, unknown> = { "lineage.groupBy": "none" };
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: (key: string) => values[key] ?? 3,
+      update: vi.fn(),
+    });
+    await (panel as any).handleCommand({
+      command: "persistLineageSettings",
+      args: { params: { groupBy: "folder" } },
+      syncRequestId: "p",
+    });
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.groupBy).toBe("none");
+
+    values["lineage.groupBy"] = "typo";
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g2",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.groupBy).toBe("folder");
   });
 
   it("persists only known settings and clamps the confidence threshold", async () => {
@@ -386,6 +412,7 @@ describe("LineagePanel", () => {
         inferenceConfidenceThreshold: threshold > 1 ? 1 : 0,
         defaultExpansion: 3,
         maxNeighbours: 3,
+        groupBy: "folder",
       });
     }
   });

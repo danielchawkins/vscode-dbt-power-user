@@ -42,6 +42,7 @@ export const resolveSettings = (
   inferenceConfidenceThreshold: settings?.inferenceConfidenceThreshold ?? 0.8,
   includeSourcesInInference: settings?.includeSourcesInInference ?? false,
   maxNeighbours: settings?.maxNeighbours ?? 20,
+  groupBy: settings?.groupBy ?? "folder",
 });
 
 /** The relationships to draw: enabled sources, inferred ones at or above the threshold, both ends drawn. */

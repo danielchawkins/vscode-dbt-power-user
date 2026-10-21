@@ -114,6 +114,19 @@
             "minimum": 0,
             "description": "The most nodes one expansion draws; a `+N more` marker draws the rest on request. 0 draws every neighbour.",
             "default": 20
+          },
+          "fusionPowerUser.lineage.groupBy": {
+            "type": "string",
+            "enum": [
+              "folder",
+              "none"
+            ],
+            "enumDescriptions": [
+              "An expansion with more new neighbours than `maxNeighbours` draws each folder of two or more as one group node.",
+              "An over-cap expansion draws the first `maxNeighbours` cards and a `+N more` marker."
+            ],
+            "description": "How an expansion with more new neighbours than `maxNeighbours` is drawn.",
+            "default": "folder"
           }
         }
       },
