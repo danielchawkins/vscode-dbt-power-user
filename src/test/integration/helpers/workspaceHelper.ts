@@ -101,9 +101,18 @@ export async function openDocument(
 }
 
 /**
- * Closes all editor tabs and returns to a clean state.
+ * Discards every unsaved document, shown or not, then closes all editor tabs, so neither the test nor the
+ * window's shutdown waits on a save prompt.
  */
 export async function closeAllEditors(): Promise<void> {
+  for (const document of vscode.workspace.textDocuments.filter(
+    (d) => d.isDirty,
+  )) {
+    await vscode.window.showTextDocument(document);
+    await vscode.commands.executeCommand(
+      "workbench.action.revertAndCloseActiveEditor",
+    );
+  }
   await vscode.commands.executeCommand("workbench.action.closeAllEditors");
   await new Promise((resolve) => setTimeout(resolve, 500));
 }
