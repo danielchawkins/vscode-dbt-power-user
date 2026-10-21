@@ -296,7 +296,7 @@ function descriptionPayloadOf(
         proposals: [],
         notice: {
           message: needs
-            ? strictNeededMessage(needs)
+            ? strictNeededMessage(needs, "Proposing upstream descriptions")
             : "Upstream descriptions need strict static analysis.",
           type: "warning",
           actions: [

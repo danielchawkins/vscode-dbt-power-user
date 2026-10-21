@@ -50,13 +50,18 @@ const typeDescription = (text: string) => `(() => {
   return { entry: "documentationEditor" };
 })()`;
 
-/** The summary's source label and its notice, each as the webview renders them; null when not shown. */
+/**
+ * The summary's source label and its notice, each as the webview renders them; null when not shown. What it reads is
+ * scrolled into view, so the screenshot taken next shows it.
+ */
 const READ_SUMMARY = `(() => {
   if (document.body.dataset.entry !== "documentationEditor") return null;
-  const sourceLabel = Array.from(document.querySelectorAll("p"))
-    .map((p) => p.textContent.trim())
-    .find((text) => /^Types (from|inferred)/.test(text)) ?? null;
-  const notice = document.querySelector('[role="alert"]')?.textContent.trim() ?? null;
+  const label = Array.from(document.querySelectorAll("p"))
+    .find((p) => /^Types (from|inferred)/.test(p.textContent.trim()));
+  const alert = document.querySelector('[role="alert"]');
+  (label ?? alert)?.scrollIntoView({ block: "start" });
+  const sourceLabel = label?.textContent.trim() ?? null;
+  const notice = alert?.textContent.trim() ?? null;
   return { entry: "documentationEditor", sourceLabel, notice };
 })()`;
 

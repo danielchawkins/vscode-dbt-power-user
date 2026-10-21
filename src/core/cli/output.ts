@@ -140,7 +140,8 @@ export function parseLogEntries(stderr: string): LogEntry[] {
 
 /**
  * `data.compiled` of the first compile record in JSON stdout. With `prefer: "model"`, the model's record wins over
- * the test nodes compiled with it. Throws when stdout is not JSON lines or holds no compile record.
+ * the test nodes compiled with it. Throws when stdout is not JSON lines or holds no compile record; in the latter
+ * case the error is stdout's `error` records when it has any.
  */
 export function compiledOutput(stdout: string, prefer?: "model"): string {
   const lines = jsonLines(stdout).filter((line) => dataWith(line, "compiled"));
@@ -156,7 +157,14 @@ export function compiledOutput(stdout: string, prefer?: "model"): string {
       : lines[0];
   const data = dataWith(chosen, "compiled");
   if (!data) {
-    throw new Error("Could not find compiled output in " + stdout);
+    const errors = parseLogEntries(stdout)
+      .filter((entry) => entry.level === "error")
+      .map((entry) => entry.message);
+    throw new Error(
+      errors.length > 0
+        ? errors.join("\n")
+        : "Could not find compiled output in " + stdout,
+    );
   }
   return String(data.compiled);
 }

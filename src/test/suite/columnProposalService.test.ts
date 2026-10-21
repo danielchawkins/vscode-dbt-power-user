@@ -488,7 +488,9 @@ describe("ColumnProposalService descriptions", () => {
     expect(listNodes).not.toHaveBeenCalled();
     expect(payload?.proposals).toEqual([]);
     expect(payload?.notice?.type).toBe("warning");
-    expect(payload?.notice?.message).toContain("needs strict");
+    expect(payload?.notice?.message).toMatch(
+      /^Proposing upstream descriptions needs strict static analysis, but this project runs off\./,
+    );
     expect(payload?.notice?.actions).toEqual([
       { title: "Use strict analysis", action: "useStrictAnalysis" },
     ]);

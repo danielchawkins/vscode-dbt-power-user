@@ -32,6 +32,8 @@ const ProposalSummary = (): React.JSX.Element | null => {
   }
   const label = sourceLabel(types?.source);
   const added = types?.proposals.filter((p) => p.change === "add") ?? [];
+  const anyProposal =
+    (types?.proposals.length ?? 0) + (descriptions?.proposals.length ?? 0) > 0;
 
   return (
     <Stack direction="column" className="mb-2">
@@ -72,9 +74,11 @@ const ProposalSummary = (): React.JSX.Element | null => {
         </Stack>
       ))}
       <Stack className="align-items-center">
-        <Button color="primary" onClick={actions.acceptAll}>
-          Accept all
-        </Button>
+        {anyProposal ? (
+          <Button color="primary" onClick={actions.acceptAll}>
+            Accept all
+          </Button>
+        ) : null}
         <Button color="link" className="pt-0 pb-0" onClick={actions.dismiss}>
           Dismiss
         </Button>

@@ -130,6 +130,21 @@ describe("typeSourceMessage", () => {
     );
   });
 
+  it("starts a lower-case reason as a sentence", () => {
+    expect(
+      typeSourceMessage(
+        "m",
+        attempts(
+          { source: "deferred", result: "notConfigured", detail: "off" },
+          { source: "inferred", result: "unavailable" },
+        ),
+        "static analysis is baseline, not strict.",
+      ),
+    ).toBe(
+      "No deferred relation is configured. Set up defer. Static analysis is baseline, not strict.",
+    );
+  });
+
   it("leaves the reason out once inferred types are offered", () => {
     expect(
       typeSourceMessage(

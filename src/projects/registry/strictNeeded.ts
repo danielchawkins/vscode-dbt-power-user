@@ -35,14 +35,13 @@ export interface NeedsStrict {
 /** The one fix, as a sentence: the extension setting. */
 export const STRICT_FIX = 'Set fusionPowerUser.staticAnalysis to "strict".';
 
-/** Why column lineage needs strict, naming what decided the mode. */
-export function strictNeededMessage({
-  mode,
-  setting,
-  folder,
-}: NeedsStrict): string {
+/** Why `feature` needs strict, naming what decided the mode. */
+export function strictNeededMessage(
+  { mode, setting, folder }: NeedsStrict,
+  feature = "Column lineage",
+): string {
   return (
-    `Column lineage needs strict static analysis, but this project runs ${mode}. ` +
+    `${feature} needs strict static analysis, but this project runs ${mode}. ` +
     whyNotStrict(setting, folder)
   );
 }

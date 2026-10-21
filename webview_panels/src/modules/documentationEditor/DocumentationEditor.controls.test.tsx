@@ -816,6 +816,8 @@ describe("Column proposal controls", () => {
     const { user } = openDocumentation(DOCUMENTATION, STRICT_NOTICE);
     await press(user, "button", "Use strict analysis");
     await expectPosted("runNoticeAction", { action: "useStrictAnalysis" });
+    // With no proposal, the summary offers nothing to accept.
+    expect(screen.queryByRole("button", { name: "Accept all" })).toBeNull();
   });
 
   it("accepts a single description, and picks one of two before accepting the other", async () => {
