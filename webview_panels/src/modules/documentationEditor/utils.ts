@@ -9,6 +9,18 @@ import type {
 } from "./state/types";
 import { DbtGenericTests, Source } from "./state/types";
 
+/** One of the host's columns as the editor keeps it, with absent and `null` fields filled in. */
+export const fromHostColumn = (
+  column: documentationEditor.Documentation["columns"][number],
+): DBTDocumentationColumn => ({
+  name: column.name,
+  type: column.type ?? undefined,
+  description: column.description ?? undefined,
+  generated: column.generated ?? false,
+  source: column.source === "DATABASE" ? Source.DATABASE : Source.YAML,
+  replaceType: column.replaceType,
+});
+
 /** The editor's copy of the host's documentation, with absent and `null` fields filled in. */
 export const fromHostDocumentation = (
   docs: documentationEditor.Documentation | undefined,
@@ -16,46 +28,13 @@ export const fromHostDocumentation = (
   docs && {
     name: docs.name,
     description: docs.description ?? "",
-    columns: docs.columns.map((column): DBTDocumentationColumn => ({
-      name: column.name,
-      type: column.type ?? undefined,
-      description: column.description ?? undefined,
-      generated: column.generated ?? false,
-      source: column.source === "DATABASE" ? Source.DATABASE : Source.YAML,
-    })),
+    columns: docs.columns.map(fromHostColumn),
     generated: docs.generated ?? false,
     filePath: docs.filePath,
     patchPath: docs.patchPath ?? undefined,
     uniqueId: docs.uniqueId,
     resource_type: docs.resource_type,
   };
-
-/** Columns a warehouse metadata fetch returned, as editor columns that are not yet in YAML. */
-export const fromFetchedColumns = (
-  columns: { name: string; type?: string | undefined }[],
-): DBTDocumentationColumn[] =>
-  columns.map((column) => ({
-    name: column.name,
-    type: column.type,
-    generated: false,
-    source: Source.DATABASE,
-  }));
-
-export const mergeCurrentAndIncomingDocumentationColumns = (
-  current: DBTDocumentation["columns"] | undefined,
-  incoming: DBTDocumentation["columns"],
-): DBTDocumentation["columns"] => {
-  return incoming.map((column) => {
-    const existingColumn = current?.find((c) => column.name === c.name);
-    return {
-      name: column.name ?? "",
-      type: column.type,
-      description: existingColumn?.description ?? "",
-      generated: existingColumn?.generated ?? false,
-      source: existingColumn !== undefined ? Source.YAML : Source.DATABASE,
-    };
-  });
-};
 
 const isTestDirty = (
   test: DBTModelTest,
@@ -102,13 +81,21 @@ const areTestsDirty = (state: DocumentationStateProps): boolean => {
   });
 };
 
-const areColumnsDirty = (state: DocumentationStateProps): boolean =>
-  (state.currentDocsData?.columns ?? []).some(
-    (column) =>
-      column.description !==
-      state.incomingDocsData?.docs?.columns?.find((c) => c.name === column.name)
-        ?.description,
-  );
+const areColumnsDirty = (state: DocumentationStateProps): boolean => {
+  const currentColumns = state.currentDocsData?.columns ?? [];
+  const incomingColumns = state.incomingDocsData?.docs?.columns ?? [];
+  if (currentColumns.length !== incomingColumns.length) {
+    return true;
+  }
+  return currentColumns.some((column) => {
+    const incomingColumn = incomingColumns.find((c) => c.name === column.name);
+    return (
+      !incomingColumn ||
+      column.description !== incomingColumn.description ||
+      column.type !== incomingColumn.type
+    );
+  });
+};
 
 export const isStateDirty = (state: DocumentationStateProps): boolean => {
   if (!state.currentDocsData && !state.currentDocsTests) return false;

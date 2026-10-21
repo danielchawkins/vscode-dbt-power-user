@@ -4,6 +4,7 @@ import type {
   DBTModelTest,
 } from "@modules/documentationEditor/state/types";
 import EntityWithTests from "../tests/EntityWithTests";
+import ColumnProposal from "./ColumnProposal";
 import DocGeneratorInput from "./DocGeneratorInput";
 
 interface Props {
@@ -20,6 +21,7 @@ const DocGeneratorColumn = ({ column, tests }: Props): React.JSX.Element => {
         title={column.name}
         tests={tests}
       />
+      <ColumnProposal column={column} />
       <EntityWithTests
         title={column.name}
         tests={tests}

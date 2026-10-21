@@ -1,0 +1,21 @@
+# Only the Save button writes the documentation. Proposal components and hooks send through `requests.ts`, and a
+# `saveDocumentation` sent from anywhere else would write without the user clicking Save.
+id: tsx-save-only-from-save-button
+language: tsx
+severity: error
+message: >-
+  `saveDocumentation` may be sent only from
+  webview_panels/src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx, the Save button.
+  Put the save in that component. For an exception, put
+  `ast-grep-ignore: tsx-save-only-from-save-button -- <why>` in a comment above the line and say why in review.
+files:
+  - webview_panels/src/**
+ignores:
+  - webview_panels/src/modules/documentationEditor/components/saveDocumentation/SaveDocumentation.tsx
+  - webview_panels/src/test/**
+  - webview_panels/src/**/*.test.ts
+  - webview_panels/src/**/*.test.tsx
+rule:
+  any:
+    - pattern: executeRequestInSync("saveDocumentation", $$$)
+    - pattern: executeRequestInAsync("saveDocumentation", $$$)

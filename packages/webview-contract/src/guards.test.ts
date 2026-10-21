@@ -303,11 +303,21 @@ const documentationHost: Fixture[] = [
   },
   {
     message: {
-      command: "renderColumnsFromMetadataFetch",
-      columns: [{ name: "id", type: "int" }],
+      command: "renderColumnProposals",
+      payload: { kind: "types", model: "orders", proposals: [], notFound: [] },
     },
-    required: ["columns", "columns.0.name"],
-    arrays: { columns: ["object"] },
+    required: [
+      "payload",
+      "payload.kind",
+      "payload.model",
+      "payload.proposals",
+      "payload.notFound",
+    ],
+    literals: { "payload.kind": ["types", "descriptions"] },
+    arrays: {
+      "payload.proposals": ["object"],
+      "payload.notFound": ["string"],
+    },
   },
 ];
 
@@ -381,7 +391,16 @@ const documentationPanel: Fixture[] = [
   },
   { message: { command: "getSourcesInProject", ...sync }, required: [] },
   { message: { command: "getModelsInProject", ...sync }, required: [] },
-  { message: { command: "fetchMetadataFromDatabase", ...sync }, required: [] },
+  {
+    message: { command: "proposeColumns", kind: "types" },
+    required: ["kind"],
+    literals: { kind: ["types", "descriptions"] },
+  },
+  {
+    message: { command: "runNoticeAction", action: "useStrictAnalysis" },
+    required: ["action"],
+    literals: { action: ["useStrictAnalysis"] },
+  },
   {
     message: {
       command: "saveDocumentation",

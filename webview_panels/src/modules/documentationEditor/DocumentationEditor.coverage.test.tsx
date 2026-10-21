@@ -13,10 +13,12 @@ import {
 } from "../../test/controlCoverage";
 // Importing the controls suite registers its tests in this file too (TESTED_CONTROLS lives there).
 import {
+  DESCRIPTION_PROPOSALS,
   DOCUMENTATION,
   NO_DOCS,
   openDocumentation,
   TESTED_CONTROLS,
+  TYPE_PROPOSALS,
   WITHOUT_SCHEMA,
 } from "./DocumentationEditor.controls.test";
 
@@ -131,6 +133,11 @@ describe("Documentation editor control coverage", () => {
         "help open": stateOf([DOCUMENTATION], (user) =>
           click(user, "button", "Help"),
         ),
+        "type proposals pending": stateOf([DOCUMENTATION, TYPE_PROPOSALS]),
+        "description proposals pending": stateOf([
+          DOCUMENTATION,
+          DESCRIPTION_PROPOSALS,
+        ]),
         "no documented model": stateOf([NO_DOCS]),
       },
       TESTED_CONTROLS,

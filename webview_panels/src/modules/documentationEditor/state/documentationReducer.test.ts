@@ -1,11 +1,14 @@
+import type { columnProposals } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
+import type { ProposalChoices } from "../proposals/proposalsReducer";
+import { isStateDirty } from "../utils";
 import {
+  applyColumnProposals,
   documentationReducer,
   initialState,
   setDocBlocks,
   setIncomingDocsData,
   setProject,
-  updateColumnsAfterSync,
   updateColumnsInCurrentDocsData,
   updateCurrentDocsData,
 } from "./documentationReducer";
@@ -90,22 +93,6 @@ describe("documentationReducer", () => {
     expect(loaded.currentDocsData?.columns[0].description).toBe("key");
   });
 
-  it("merges synced columns, marking new ones as from the database", () => {
-    const next = documentationReducer(
-      loaded,
-      updateColumnsAfterSync({
-        columns: [
-          { name: "id", generated: false, source: Source.DATABASE },
-          { name: "amount", generated: false, source: Source.DATABASE },
-        ],
-      }),
-    );
-    expect(next.currentDocsData?.columns.map((c) => c.source)).toEqual([
-      Source.YAML,
-      Source.DATABASE,
-    ]);
-  });
-
   it("clears doc blocks when the project changes", () => {
     const withBlocks = documentationReducer(
       loaded,
@@ -114,5 +101,125 @@ describe("documentationReducer", () => {
     const next = documentationReducer(withBlocks, setProject("other"));
     expect(next.project).toBe("other");
     expect(next.docBlocks).toEqual([]);
+  });
+});
+
+describe("isStateDirty", () => {
+  const withCurrent = (current: DBTDocumentation) =>
+    documentationReducer(loaded, updateCurrentDocsData(current));
+
+  it("is true after a type change", () => {
+    const next = documentationReducer(
+      loaded,
+      updateColumnsInCurrentDocsData({
+        columns: [{ name: "id", type: "integer" }],
+      }),
+    );
+    expect(isStateDirty(next)).toBe(true);
+  });
+
+  it("is true after a column is added", () => {
+    const current = docs("first");
+    const next = withCurrent({
+      ...current,
+      columns: [
+        ...current.columns,
+        { name: "amount", generated: false, source: Source.DATABASE },
+      ],
+    });
+    expect(isStateDirty(next)).toBe(true);
+  });
+
+  it("is false for identical documentation", () => {
+    expect(isStateDirty(loaded)).toBe(false);
+  });
+
+  it("is false when only replaceType differs and the type is unchanged", () => {
+    const current = docs("first");
+    const next = withCurrent({
+      ...current,
+      columns: [{ ...current.columns[0]!, replaceType: true }],
+    });
+    expect(isStateDirty(next)).toBe(false);
+  });
+});
+
+describe("applyColumnProposals", () => {
+  const noChoices: ProposalChoices = { types: {}, descriptions: {} };
+  const typed = (type: string | undefined) =>
+    documentationReducer(
+      initialState,
+      setIncomingDocsData({
+        docs: {
+          ...docs("first"),
+          columns: [{ ...docs("first").columns[0]!, type }],
+        },
+      }),
+    );
+  const applyTypes = (
+    state: typeof loaded,
+    types: columnProposals.TypeProposal[],
+    choices: ProposalChoices = noChoices,
+  ) =>
+    documentationReducer(
+      state,
+      applyColumnProposals({
+        proposals: { types, descriptions: [] },
+        choices,
+      }),
+    );
+
+  it("fills an empty type and keeps the column's shape", () => {
+    const next = applyTypes(typed(undefined), [
+      { column: "id", type: "integer", change: "fill" },
+    ]);
+    expect(next.currentDocsData?.columns).toEqual([
+      {
+        name: "id",
+        type: "integer",
+        description: "key",
+        generated: false,
+        source: Source.YAML,
+        replaceType: undefined,
+      },
+    ]);
+  });
+
+  it("appends an added column as a database column", () => {
+    const next = applyTypes(loaded, [
+      { column: "amount", type: "numeric", change: "add" },
+    ]);
+    expect(next.currentDocsData?.columns.map((c) => c.name)).toEqual([
+      "id",
+      "amount",
+    ]);
+    expect(next.currentDocsData?.columns[1]).toEqual({
+      name: "amount",
+      type: "numeric",
+      generated: false,
+      source: Source.DATABASE,
+    });
+  });
+
+  it("sets replaceType only for an overwrite that is ticked", () => {
+    const state = typed("varchar");
+    const overwrite: columnProposals.TypeProposal = {
+      column: "id",
+      type: "integer",
+      change: "overwrite",
+      current: "varchar",
+    };
+    const unticked = applyTypes(state, [overwrite]);
+    expect(unticked.currentDocsData?.columns[0]?.type).toBe("varchar");
+    expect(unticked.currentDocsData?.columns[0]?.replaceType).toBeFalsy();
+
+    const ticked = applyTypes(state, [overwrite], {
+      types: { id: { overwrite: true } },
+      descriptions: {},
+    });
+    expect(ticked.currentDocsData?.columns[0]).toMatchObject({
+      type: "integer",
+      replaceType: true,
+    });
   });
 });

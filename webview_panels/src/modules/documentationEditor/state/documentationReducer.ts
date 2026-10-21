@@ -1,8 +1,7 @@
+import * as columnProposals from "@fusion-power-user/webview-contract/columnProposals";
 import { typedReducer } from "@modules/app/typedReducer";
-import {
-  isStateDirty,
-  mergeCurrentAndIncomingDocumentationColumns,
-} from "../utils";
+import type { ProposalChoices } from "../proposals/proposalsReducer";
+import { fromHostColumn, isStateDirty } from "../utils";
 import type {
   DBTDocumentation,
   DBTModelTest,
@@ -103,9 +102,15 @@ const documentation = typedReducer<
     updateCurrentUnitTests: S["currentUnitTests"];
     setIncomingDocsData: Parameters<typeof takeIncomingDocs>[1];
     updateCurrentDocsData: Parameters<typeof mergeCurrentDocs>[1];
-    updateColumnsAfterSync: { columns: DBTDocumentation["columns"] };
     updateColumnsInCurrentDocsData: {
       columns: Partial<MetadataColumn & { description?: string }>[];
+    };
+    applyColumnProposals: {
+      proposals: {
+        types: columnProposals.TypeProposal[];
+        descriptions: columnProposals.DescriptionProposal[];
+      };
+      choices: ProposalChoices;
     };
   }
 >({
@@ -118,16 +123,27 @@ const documentation = typedReducer<
   updateCurrentUnitTests: set("currentUnitTests"),
   setIncomingDocsData: takeIncomingDocs,
   updateCurrentDocsData: mergeCurrentDocs,
-  updateColumnsAfterSync: (state, { columns }) =>
-    withColumns(state, (current) =>
-      mergeCurrentAndIncomingDocumentationColumns(current, columns),
-    ),
   updateColumnsInCurrentDocsData: (state, { columns }) =>
     withColumns(state, (current) =>
       current.map((c) => {
         const updatedColumn = columns.find((column) => c.name === column.name);
         return updatedColumn ? { ...c, ...updatedColumn } : c;
       }),
+    ),
+  // Types first, then descriptions; the contract skips what its choices do not pick.
+  applyColumnProposals: (state, { proposals, choices }) =>
+    withColumns(state, (current) =>
+      columnProposals
+        .applyDescriptionProposals(
+          columnProposals.applyProposals(
+            current,
+            proposals.types,
+            choices.types,
+          ),
+          proposals.descriptions,
+          choices.descriptions,
+        )
+        .map(fromHostColumn),
     ),
 });
 
@@ -137,7 +153,7 @@ export const {
   setIncomingDocsData,
   updateCurrentDocsData,
   updateColumnsInCurrentDocsData,
-  updateColumnsAfterSync,
+  applyColumnProposals,
   setProject,
   setDocBlocks,
   setPublication,

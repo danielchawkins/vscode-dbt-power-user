@@ -15,6 +15,8 @@ export interface DBTDocumentationColumn extends MetadataColumn {
   description?: string | undefined;
   generated: boolean;
   source: Source;
+  /** An accepted type proposal that overwrites the YAML `data_type` on save. */
+  replaceType?: boolean | undefined;
 }
 
 /** The editor's copy of the host's `Documentation`, with absent and `null` fields filled in. */

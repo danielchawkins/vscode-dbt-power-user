@@ -50,7 +50,44 @@ const typeDescription = (text: string) => `(() => {
   return { entry: "documentationEditor" };
 })()`;
 
+/** The summary's source label and its notice, each as the webview renders them; null when not shown. */
+const READ_SUMMARY = `(() => {
+  if (document.body.dataset.entry !== "documentationEditor") return null;
+  const sourceLabel = Array.from(document.querySelectorAll("p"))
+    .map((p) => p.textContent.trim())
+    .find((text) => /^Types (from|inferred)/.test(text)) ?? null;
+  const notice = document.querySelector('[role="alert"]')?.textContent.trim() ?? null;
+  return { entry: "documentationEditor", sourceLabel, notice };
+})()`;
+
 const runsHere = () => currentFixtureName() === "single-project";
+interface SummaryReading {
+  entry: string;
+  sourceLabel: string | null;
+  notice: string | null;
+}
+
+/** Polls the summary until its source label or its notice is shown, then returns both as read. */
+async function waitForSummary(): Promise<SummaryReading> {
+  const deadline = Date.now() + 60_000;
+  let last: SummaryReading | undefined;
+  do {
+    const match = await evaluatePanel<SummaryReading>(
+      process.env.FPU_CDP_PORT!,
+      DOCS.entry,
+      READ_SUMMARY,
+    );
+    last = match?.value ?? undefined;
+    if (last?.sourceLabel || last?.notice) {
+      return last;
+    }
+    await sleep(250);
+  } while (Date.now() < deadline);
+  throw new Error(
+    `the summary never showed a source label or a notice: ${JSON.stringify(last)}`,
+  );
+}
+
 const host = () =>
   validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -232,5 +269,48 @@ suite("Documentation editor interactions", function () {
         );
       }
     }
+  });
+
+  test("records the column types, then pulls the upstream descriptions, and checks each summary", async function () {
+    if (!runsHere()) {
+      this.skip();
+      return;
+    }
+    const evidence = interactionEvidence(host());
+
+    const api = await vscode.extensions.getExtension(EXTENSION_ID)!.activate();
+    await api.ready;
+    await vscode.window.showTextDocument(
+      vscode.Uri.joinPath(
+        vscode.workspace.workspaceFolders![0].uri,
+        "models/child.sql",
+      ),
+    );
+    await showPanel(DOCS);
+    await waitForDescription(() => true);
+
+    await clickInWebview(DOCS, { role: "button", name: "Record column types" });
+    const types = await waitForSummary();
+    await evidence?.capture(DOCS, {
+      name: "documentation-type-proposals-recorded",
+      expect:
+        "Summary after Record column types shows the types source label, or the notice when no source answered.",
+      measured: { read: types.sourceLabel ?? types.notice },
+    });
+    // Dismiss clears the type proposals, so the descriptions summary reads on its own.
+    await clickInWebview(DOCS, { role: "button", name: "Dismiss" });
+
+    await clickInWebview(DOCS, {
+      role: "button",
+      name: "Pull upstream descriptions",
+    });
+    const descriptions = await waitForSummary();
+    await evidence?.capture(DOCS, {
+      name: "documentation-description-proposals-pulled",
+      expect:
+        "Summary after Pull upstream descriptions shows its notice; descriptions carry no source label.",
+      measured: { read: descriptions.notice ?? descriptions.sourceLabel },
+    });
+    await clickInWebview(DOCS, { role: "button", name: "Dismiss" });
   });
 });

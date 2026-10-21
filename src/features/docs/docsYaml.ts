@@ -1,14 +1,10 @@
-import { readFileSync } from "node:fs";
-import * as path from "node:path";
 import {
-  parse,
   parseDocument,
   stringify,
   YAMLMap,
   YAMLSeq,
   type Document,
 } from "yaml";
-import { removeProtocol } from "../../core/text";
 import {
   getColumnNameByCase,
   isColumnNameEqual,
@@ -66,48 +62,6 @@ function findEntity(
     },
   );
   return (found as YAMLMap | undefined) ?? null;
-}
-
-/**
- * `columns` with the spelling of the same column in `existingColumnNames`, matched ignoring case.
- */
-function modifyColumnNames<T extends { name: string }>(
-  columns: T[],
-  existingColumnNames: string[],
-): T[] {
-  return columns.map((column) => {
-    const existing = existingColumnNames.find(
-      (name) => name.toLowerCase() === column.name.toLowerCase(),
-    );
-    return existing ? { ...column, name: existing } : column;
-  });
-}
-
-/** `columns` spelled as the model's schema YAML spells them; unchanged for a new model or without a schema file. */
-export function convertColumnNamesByCaseConfig<T extends { name: string }>(
-  columns: T[],
-  modelName: string,
-  patchPath: string | undefined,
-  projectRoot: string,
-): T[] {
-  if (!columns.length || !patchPath) {
-    return columns;
-  }
-  const docFile = readFileSync(
-    path.join(projectRoot, removeProtocol(patchPath)),
-  ).toString("utf8");
-  const parsedDocFile =
-    parse(docFile, { strict: false, uniqueKeys: false, maxAliasCount: -1 }) ??
-    {};
-  const model = (
-    parsedDocFile.models as
-      | { name: string; columns?: { name: string }[] }[]
-      | undefined
-  )?.find((candidate) => candidate.name === modelName);
-  if (!model) {
-    return columns;
-  }
-  return modifyColumnNames(columns, model.columns?.map((c) => c.name) ?? []);
 }
 
 interface WriteContext {
