@@ -33,6 +33,7 @@ export interface SaveInput extends UpdatedTests {
     name: string;
     description?: string | null | undefined;
     type?: string | null | undefined;
+    replaceType?: boolean | undefined;
   }[];
 }
 
@@ -141,10 +142,13 @@ function updateColumnEntry(
   // Tests are recreated from the panel's tests below, so the existing ones are not read as a base.
   const { tests: _tests, data_tests: _dataTests, ...rest } = existing.toJSON();
   setOrDelete(existing, "description", column.description?.trim());
+  // A `replaceType` column takes its new type over the YAML's; otherwise an existing `data_type` is kept.
   setOrDelete(
     existing,
     "data_type",
-    [rest.data_type, column.type].find(Boolean)?.toLowerCase(),
+    [column.replaceType ? column.type : undefined, rest.data_type, column.type]
+      .find(Boolean)
+      ?.toLowerCase(),
   );
   const allTests = getTestDataByColumn(
     message,

@@ -94,11 +94,13 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     this.columnProposals = services.columnProposals;
     const harness = registerDocsHarnessCommands({
       columnProposals: this.columnProposals,
+      docGenService: this.docGenService,
+      dbtTestService: this.dbtTestService,
+      drafts: this.drafts,
       proposalTarget: () => this.proposalTarget(),
+      save: (message) => this.saveAndReply(message),
     });
-    if (harness) {
-      this._disposables.push(harness);
-    }
+    this._disposables.push(...harness);
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
       projects.onDidRemoveProject((root) => {

@@ -110,6 +110,12 @@ const panels: Panel[] = [
       {
         command: "saveDocumentation",
         name: "orders",
+        columns: [{ name: "id", replaceType: "yes" }],
+        filePath: "/m.sql",
+      },
+      {
+        command: "saveDocumentation",
+        name: "orders",
         columns: [],
         filePath: "/m.sql",
         dialogType: "Other file",
@@ -297,6 +303,17 @@ describe("documentation editor handlers", () => {
     });
     expect(
       documentationEditor.isHostMessage(postMessage.mock.calls[0][0]),
+    ).toBe(true);
+  });
+
+  it("accepts a save whose column carries a boolean replaceType", () => {
+    expect(
+      documentationEditor.isPanelMessage({
+        command: "saveDocumentation",
+        name: "orders",
+        columns: [{ name: "id", replaceType: true }],
+        filePath: "/m.sql",
+      }),
     ).toBe(true);
   });
 

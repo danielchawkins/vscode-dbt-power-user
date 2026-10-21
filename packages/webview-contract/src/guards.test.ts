@@ -813,6 +813,37 @@ describe("documentationEditor null fields", () => {
   });
 });
 
+describe("documentationEditor replaceType", () => {
+  const withReplaceType = (replaceType: unknown) => ({
+    ...docs,
+    columns: [{ ...docs.columns[0], replaceType }],
+  });
+
+  it("accepts a boolean replaceType on a column, or none", () => {
+    for (const replaceType of [true, false, undefined]) {
+      expect(
+        documentationEditor.isPanelMessage({
+          command: "saveDocumentation",
+          ...withReplaceType(replaceType),
+          ...sync,
+        }),
+      ).toBe(true);
+    }
+  });
+
+  it("rejects a replaceType that is not a boolean", () => {
+    for (const replaceType of ["yes", 1, null]) {
+      expect(
+        documentationEditor.isPanelMessage({
+          command: "saveDocumentation",
+          ...withReplaceType(replaceType),
+          ...sync,
+        }),
+      ).toBe(false);
+    }
+  });
+});
+
 describe("queryResults model preview", () => {
   const render = {
     command: "renderQuery",

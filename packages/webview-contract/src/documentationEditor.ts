@@ -32,6 +32,8 @@ export interface DocumentationColumn {
   description?: string | null | undefined;
   generated?: boolean | undefined;
   source?: "YAML" | "DATABASE" | undefined;
+  /** On save, overwrite the column's YAML `data_type` with `type`; otherwise an existing `data_type` is kept. */
+  replaceType?: boolean | undefined;
 }
 
 /** The documentation of the model in the active editor; manifest-derived fields may be `null`. */
@@ -170,6 +172,7 @@ const isColumn = shape<DocumentationColumn>({
   description: nullish(isString),
   generated: optional(isBoolean),
   source: optional(oneOf("YAML", "DATABASE")),
+  replaceType: optional(isBoolean),
 });
 
 const documentationFields: Fields<Documentation> = {

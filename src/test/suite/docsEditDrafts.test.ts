@@ -78,6 +78,24 @@ describe("documentation editor drafts", () => {
     expect(message.draft).toEqual(draft);
   });
 
+  it("keeps a column's replaceType in the draft unchanged", async () => {
+    const { send, rendered } = draftPanel();
+    const replacing = {
+      docs: {
+        ...docs("/p/models/orders.sql", "unsaved edit"),
+        columns: [{ name: "id", type: "integer", replaceType: true }],
+      },
+    };
+
+    await send({
+      command: "saveDraft",
+      model: "/p/models/orders.sql",
+      draft: replacing,
+    });
+
+    expect((await rendered()).draft).toEqual(replacing);
+  });
+
   it("forgets a draft the page clears, after a save, discard or revert", async () => {
     const { send, rendered } = draftPanel();
     await send({ command: "saveDraft", model: "/p/models/orders.sql", draft });
