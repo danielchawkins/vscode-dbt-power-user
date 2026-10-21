@@ -1,4 +1,5 @@
 import {
+  columnProposals,
   documentationEditor,
   lineage,
   queryResults,
@@ -117,6 +118,7 @@ const queryResultsHost: Fixture[] = [
       rows: [{ a: 1 }],
       raw_sql: "select 1",
       compiled_sql: "select 1",
+      preview: { mode: "computed", model: "/project/models/a.sql" },
     },
     required: ["columnNames", "columnTypes", "rows", "raw_sql", "compiled_sql"],
     arrays: {
@@ -131,6 +133,7 @@ const queryResultsHost: Fixture[] = [
       error: { code: -1, message: "boom", data: {} },
       raw_sql: "select",
       compiled_sql: "select",
+      preview: { mode: "materialized", model: "/project/models/a.sql" },
     },
     required: [
       "error",
@@ -202,6 +205,15 @@ const queryResultsPanel: Fixture[] = [
   {
     message: { command: "executeQueryFromActiveWindow", limit: 10 },
     required: ["limit"],
+  },
+  {
+    message: {
+      command: "switchPreview",
+      mode: "computed",
+      model: "/project/models/a.sql",
+    },
+    required: ["mode", "model"],
+    literals: { mode: ["computed", "materialized"] },
   },
   { message: { command: "getQueryTabData", ...sync }, required: [] },
   { message: { command: "runAdhocQuery" }, required: [] },
@@ -291,11 +303,21 @@ const documentationHost: Fixture[] = [
   },
   {
     message: {
-      command: "renderColumnsFromMetadataFetch",
-      columns: [{ name: "id", type: "int" }],
+      command: "renderColumnProposals",
+      payload: { kind: "types", model: "orders", proposals: [], notFound: [] },
     },
-    required: ["columns", "columns.0.name"],
-    arrays: { columns: ["object"] },
+    required: [
+      "payload",
+      "payload.kind",
+      "payload.model",
+      "payload.proposals",
+      "payload.notFound",
+    ],
+    literals: { "payload.kind": ["types", "descriptions"] },
+    arrays: {
+      "payload.proposals": ["object"],
+      "payload.notFound": ["string"],
+    },
   },
 ];
 
@@ -369,7 +391,16 @@ const documentationPanel: Fixture[] = [
   },
   { message: { command: "getSourcesInProject", ...sync }, required: [] },
   { message: { command: "getModelsInProject", ...sync }, required: [] },
-  { message: { command: "fetchMetadataFromDatabase", ...sync }, required: [] },
+  {
+    message: { command: "proposeColumns", kind: "types" },
+    required: ["kind"],
+    literals: { kind: ["types", "descriptions"] },
+  },
+  {
+    message: { command: "runNoticeAction", action: "useStrictAnalysis" },
+    required: ["action"],
+    literals: { action: ["useStrictAnalysis"] },
+  },
   {
     message: {
       command: "saveDocumentation",
@@ -435,6 +466,13 @@ const lineagePanel: Fixture[] = [
   {
     message: { command: "parentTables", ...params({ table: "model.a" }) },
     required: ["args.params.table"],
+  },
+  {
+    message: {
+      command: "tableEdges",
+      ...params({ tables: ["model.a", "model.b"] }),
+    },
+    required: ["args.params.tables"],
   },
   {
     message: {
@@ -790,6 +828,217 @@ describe("documentationEditor null fields", () => {
           ...sync,
         }),
       ).toBe(true);
+    }
+  });
+});
+
+describe("documentationEditor replaceType", () => {
+  const withReplaceType = (replaceType: unknown) => ({
+    ...docs,
+    columns: [{ ...docs.columns[0], replaceType }],
+  });
+
+  it("accepts a boolean replaceType on a column, or none", () => {
+    for (const replaceType of [true, false, undefined]) {
+      expect(
+        documentationEditor.isPanelMessage({
+          command: "saveDocumentation",
+          ...withReplaceType(replaceType),
+          ...sync,
+        }),
+      ).toBe(true);
+    }
+  });
+
+  it("rejects a replaceType that is not a boolean", () => {
+    for (const replaceType of ["yes", 1, null]) {
+      expect(
+        documentationEditor.isPanelMessage({
+          command: "saveDocumentation",
+          ...withReplaceType(replaceType),
+          ...sync,
+        }),
+      ).toBe(false);
+    }
+  });
+});
+
+describe("queryResults model preview", () => {
+  const render = {
+    command: "renderQuery",
+    columnNames: [],
+    columnTypes: [],
+    rows: [],
+    raw_sql: "",
+    compiled_sql: "",
+  };
+
+  it("accepts a preview in either mode and rejects another mode or a missing model", () => {
+    const model = "/project/models/a.sql";
+    expect(
+      queryResults.isHostMessage({
+        ...render,
+        preview: { mode: "computed", model },
+      }),
+    ).toBe(true);
+    expect(
+      queryResults.isHostMessage({
+        ...render,
+        preview: { mode: "materialized", model },
+      }),
+    ).toBe(true);
+    expect(
+      queryResults.isHostMessage({
+        ...render,
+        preview: { mode: "table", model },
+      }),
+    ).toBe(false);
+    expect(
+      queryResults.isHostMessage({ ...render, preview: { mode: "computed" } }),
+    ).toBe(false);
+  });
+
+  it("accepts a switchPreview only to a known mode", () => {
+    const model = "/project/models/a.sql";
+    expect(
+      queryResults.isPanelMessage({
+        command: "switchPreview",
+        mode: "materialized",
+        model,
+      }),
+    ).toBe(true);
+    expect(
+      queryResults.isPanelMessage({
+        command: "switchPreview",
+        mode: "table",
+        model,
+      }),
+    ).toBe(false);
+  });
+});
+
+describe("columnProposals payload", () => {
+  const types = {
+    kind: "types",
+    model: "orders",
+    source: { kind: "target", target: "dev", relation: "db.orders" },
+    proposals: [
+      { column: "id", type: "integer", change: "fill" },
+      {
+        column: "total",
+        type: "decimal",
+        change: "overwrite",
+        current: "text",
+      },
+    ],
+    notFound: ["legacy"],
+  };
+
+  it("accepts each structured source, the notice and no source", () => {
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: {
+          kind: "deferred",
+          target: "prod",
+          relation: "db.orders",
+          state: "/work/state",
+        },
+      }),
+    ).toBe(true);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: { kind: "inferred" },
+      }),
+    ).toBe(true);
+    expect(
+      columnProposals.isColumnProposalsPayload({ ...types, source: undefined }),
+    ).toBe(true);
+  });
+
+  it("accepts a types payload, with or without its source and notice", () => {
+    expect(columnProposals.isColumnProposalsPayload(types)).toBe(true);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        kind: "types",
+        model: "orders",
+        proposals: [],
+        notFound: [],
+        notice: {
+          message: "`orders` is not built in target `dev`.",
+          type: "error",
+          actions: [
+            { title: "Use strict analysis", action: "useStrictAnalysis" },
+          ],
+        },
+      }),
+    ).toBe(true);
+  });
+
+  it("rejects a notice that is a string, has no type, or names an unknown action", () => {
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        notice: "`orders` is not built in target `dev`.",
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        notice: { message: "x", type: "info" },
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        notice: {
+          message: "x",
+          type: "warning",
+          actions: [{ title: "Run", action: "dbtRun" }],
+        },
+      }),
+    ).toBe(false);
+  });
+
+  it("rejects an unknown kind, a bad source or change, and a missing field", () => {
+    expect(
+      columnProposals.isColumnProposalsPayload({ ...types, kind: "docs" }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: { kind: "cache", target: "dev", relation: "db.orders" },
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: { source: "target", label: "target `dev`" },
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: { kind: "target", target: "dev" },
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        source: { kind: "deferred", target: "dev", relation: "db.orders" },
+      }),
+    ).toBe(false);
+    expect(
+      columnProposals.isColumnProposalsPayload({
+        ...types,
+        proposals: [{ column: "id", type: "integer", change: "rename" }],
+      }),
+    ).toBe(false);
+    for (const field of ["model", "proposals", "notFound"] as const) {
+      const copy: Record<string, unknown> = { ...types };
+      delete copy[field];
+      expect(columnProposals.isColumnProposalsPayload(copy)).toBe(false);
     }
   });
 });

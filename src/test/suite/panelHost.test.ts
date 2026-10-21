@@ -1,6 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { PanelHost } from "../../webview/panelHost";
+import { PanelHost, postToWebview } from "../../webview/panelHost";
 
 class TestPanel extends PanelHost<lineage.HostMessage> {
   protected readonly entry = "lineage" as never;
@@ -109,5 +109,29 @@ describe("PanelHost", () => {
     panel.dispose();
     expect(extra.dispose).toHaveBeenCalledTimes(1);
     expect(panel.disposables).toEqual([]);
+  });
+
+  it("resolves false when postMessage rejects", async () => {
+    const postMessage = vi.fn().mockRejectedValue(new Error("gone"));
+    const result = postToWebview(
+      { webview: { postMessage } as never },
+      {
+        command: "x",
+      },
+    );
+    await expect(result).resolves.toBe(false);
+  });
+
+  it("logs and returns undefined when the view is disposed", () => {
+    const log = { debug: vi.fn() };
+    const target = {
+      get webview(): never {
+        throw new Error("Webview is disposed");
+      },
+    };
+    expect(postToWebview(target, { command: "x" }, log as never)).toBe(
+      undefined,
+    );
+    expect(log.debug).toHaveBeenCalledOnce();
   });
 });

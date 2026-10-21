@@ -101,6 +101,18 @@ export type Table = {
   columns: { [columnName: string]: ColumnMetaData };
   patchPath?: string;
   packageName?: string;
+  refName?: string;
+  identifier?: string;
+  database?: string;
+  schema?: string;
+  rootPackage?: boolean;
+  layer?: string | undefined;
+  /** True when the node sets `meta.lineage.hidden: true`. */
+  hidden?: boolean;
+  /** The node's configured `schema`. */
+  customSchema?: string;
+  /** The node's file path, `/`-separated; the lineage panel groups neighbours by their folder. */
+  path?: string | undefined;
 };
 
 export const RunModelType = {

@@ -15,6 +15,13 @@ import {
   syncRequestId,
 } from "./guards.js";
 
+/** Which preview of a model a result shows: what its SQL computes now, or what its relation holds. */
+export interface ModelPreview {
+  mode: "computed" | "materialized";
+  /** The model file's path, so the panel can ask for the other mode. */
+  model: string;
+}
+
 /** A query result as the host renders it; row values are what the warehouse returned. */
 export interface RenderQuery {
   command: "renderQuery";
@@ -23,6 +30,8 @@ export interface RenderQuery {
   rows: Record<string, unknown>[];
   raw_sql: string;
   compiled_sql: string;
+  /** Set when the query previews one model. */
+  preview?: ModelPreview | undefined;
 }
 
 /** A failed query; `data` is diagnostic detail the panel shows verbatim. */
@@ -31,6 +40,7 @@ export interface RenderError {
   error: { code: number; message: string; data?: unknown };
   raw_sql: string;
   compiled_sql: string;
+  preview?: ModelPreview | undefined;
 }
 
 /** The editor context the panel shows beside its results. */
@@ -89,6 +99,8 @@ export type PanelMessage =
       limit?: number | undefined;
     }
   | { command: "executeQueryFromActiveWindow"; limit: number }
+  /** Re-runs the model a result previewed, in the other mode. */
+  | ({ command: "switchPreview" } & ModelPreview)
   | { command: "getQueryTabData"; syncRequestId?: string | undefined }
   | { command: "runAdhocQuery" }
   | {
@@ -107,6 +119,12 @@ export type PanelMessage =
   | { command: "queryResultTab:render"; queryTabData: Record<string, unknown> };
 
 const columnTypes = arrayOf(nullable(isString));
+
+const previewFields = {
+  mode: oneOf("computed", "materialized"),
+  model: isString,
+};
+const preview = optional(shape<ModelPreview>(previewFields));
 
 const isHistoryEntry = shape<QueryHistoryEntry>({
   rawSql: isString,
@@ -129,11 +147,13 @@ const hostFields: CommandFields<HostMessage> = {
     rows: arrayOf(isRecord),
     raw_sql: isString,
     compiled_sql: isString,
+    preview,
   },
   renderError: {
     error: shape({ code: isNumber, message: isString, data: isAnything }),
     raw_sql: isString,
     compiled_sql: isString,
+    preview,
   },
   renderLoading: {},
   resetState: {},
@@ -165,6 +185,7 @@ const panelFields: CommandFields<PanelMessage> = {
     limit: optional(isNumber),
   },
   executeQueryFromActiveWindow: { limit: isNumber },
+  switchPreview: previewFields,
   getQueryTabData: { syncRequestId },
   runAdhocQuery: {},
   viewResultSet: {

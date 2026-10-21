@@ -8,6 +8,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, EventEmitter, Uri, window, workspace } from "vscode";
+import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import { LineagePanel } from "../../features/lineage/lineagePanel";
 import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
@@ -51,6 +52,9 @@ function lineageHarness() {
     columnsNeedStrict: vi.fn().mockReturnValue(undefined),
     getChildTables: vi.fn().mockReturnValue([{ table: "model.p.b" }]),
     getParentTables: vi.fn().mockReturnValue([{ table: "model.p.z" }]),
+    getTableEdges: vi
+      .fn()
+      .mockReturnValue({ edges: [["model.p.z", "model.p.a"]] }),
     getConnectedColumns: vi
       .fn()
       .mockResolvedValue({ kind: "lineage", columnLineage: [] }),
@@ -150,6 +154,20 @@ describe("lineage panel messages", () => {
       });
       expect(h.postMessage).toHaveBeenCalledWith(
         response("p1", [{ table: "model.p.z" }]),
+      );
+    },
+    tableEdges: async () => {
+      const h = lineageHarness();
+      await h.send({
+        command: "tableEdges",
+        args: { params: { tables: ["model.p.a", "model.p.z"] } },
+        syncRequestId: "e1",
+      });
+      expect(h.panel.dbtLineageService.getTableEdges).toHaveBeenCalledWith({
+        tables: ["model.p.a", "model.p.z"],
+      });
+      expect(h.postMessage).toHaveBeenCalledWith(
+        response("e1", { edges: [["model.p.z", "model.p.a"]] }),
       );
     },
     getColumns: async () => {
@@ -403,6 +421,18 @@ describe("query results panel messages", () => {
         h.project.queries.executeSQLWithLimitOnQueryPanel,
       ).toHaveBeenCalledWith("select 2", "orders", 10);
     },
+    switchPreview: async () => {
+      const h = queryHarness();
+      await h.send({
+        command: "switchPreview",
+        mode: "materialized",
+        model: "/p/models/orders.sql",
+      });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "fusionPowerUser.previewMaterialized",
+        { url: "/p/models/orders.sql" },
+      );
+    },
     getQueryTabData: async () => {
       const h = queryHarness();
       h.panel._queryTabData = { n: 1 };
@@ -498,8 +528,22 @@ function docsHarness() {
   const docs = {
     name: "orders",
     description: "saved",
-    columns: [],
+    columns: [{ name: "id", type: "int" }],
     filePath: "/p/models/orders.sql",
+  };
+  const payload = {
+    kind: "types",
+    model: "/p/models/orders.sql",
+    proposals: [{ column: "id", type: "integer", change: "fill" }],
+    notFound: [],
+  };
+  const columnProposals = {
+    propose: vi.fn(
+      async (
+        _kind: string,
+        _target: unknown,
+      ): Promise<typeof payload | undefined> => payload,
+    ),
   };
   const project = {
     projectRoot: Uri.file("/p"),
@@ -533,6 +577,7 @@ function docsHarness() {
     getSourcesInProject: vi.fn(() => ["raw.orders"]),
     getModelsInProject: vi.fn(() => ["orders"]),
   };
+  const columnProposalRequests = new ColumnProposalRequests();
   const panel = new DocsEditViewPanel(
     projects,
     {} as any,
@@ -541,11 +586,16 @@ function docsHarness() {
       dbtTestService,
       queryManifestService,
       emitterService: { eventEmitter: { event: vi.fn() } },
+      columnProposals,
+      columnProposalRequests,
     } as any,
     silentLog(),
   ) as any;
   const postMessage = vi.fn();
   panel._panel = { webview: { postMessage } };
+  // The page setup needs a real extension URI, which these tests do not depend on.
+  panel.setupWebviewOptions = vi.fn();
+  panel.renderWebviewView = vi.fn();
   window.activeTextEditor = {
     document: { uri: Uri.file("/p/models/orders.sql") },
   } as never;
@@ -553,12 +603,48 @@ function docsHarness() {
     panel,
     postMessage,
     project,
+    projects,
     docs,
+    payload,
+    columnProposals,
+    columnProposalRequests,
     dbtTestService,
     queryManifestService,
     send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
   };
 }
+
+/** A WebviewView whose visibility the test flips; its webview posts to `postMessage`. */
+function fakeWebviewView(postMessage: ReturnType<typeof vi.fn>) {
+  const visibility = new EventEmitter<void>();
+  const view = {
+    title: "",
+    description: "",
+    visible: true,
+    webview: {
+      options: {},
+      html: "",
+      postMessage,
+      cspSource: "",
+      asWebviewUri: (uri: unknown) => uri,
+      onDidReceiveMessage: new EventEmitter<unknown>().event,
+    },
+    onDidChangeVisibility: visibility.event,
+    onDidDispose: new EventEmitter<void>().event,
+  };
+  return {
+    view: view as never,
+    setVisible(visible: boolean) {
+      view.visible = visible;
+      visibility.fire();
+    },
+  };
+}
+
+const cancellation = () => ({
+  isCancellationRequested: false,
+  onCancellationRequested: new EventEmitter<void>().event,
+});
 
 describe("documentation editor messages", () => {
   const rows: Record<string, Row> = {
@@ -707,25 +793,39 @@ describe("documentation editor messages", () => {
         response("m1", { models: ["orders"] }),
       );
     },
-    fetchMetadataFromDatabase: async () => {
+    proposeColumns: async () => {
       const h = docsHarness();
-      await h.send({
-        command: "fetchMetadataFromDatabase",
-        syncRequestId: "f1",
+      const draft = {
+        docs: { ...h.docs, columns: [{ name: "id", type: "text" }] },
+        tests: [],
+      };
+      await h.send({ command: "saveDraft", model: h.docs.filePath, draft });
+      await h.send({ command: "proposeColumns", kind: "types" });
+      const [kind, target] = h.columnProposals.propose.mock.calls[0] as [
+        string,
+        { yaml: unknown; draft: unknown },
+      ];
+      expect(kind).toBe("types");
+      expect(target.draft).toEqual([{ name: "id", type: "text" }]);
+      expect(target.yaml).toEqual([{ name: "id", type: "int" }]);
+      expect(h.postMessage).toHaveBeenCalledWith({
+        command: "renderColumnProposals",
+        payload: h.payload,
       });
-      expect(h.project.queries.getColumnsOfModel).toHaveBeenCalledWith(
-        "orders",
-      );
-      expect(h.postMessage).toHaveBeenCalledWith(
-        expect.objectContaining({ command: "renderColumnsFromMetadataFetch" }),
-      );
-      expect(h.postMessage).toHaveBeenCalledWith(
-        response(
-          "f1",
-          expect.objectContaining({
-            columns: [expect.objectContaining({ name: "id" })],
-          }),
-        ),
+      expect(
+        documentationEditor.isHostMessage(h.postMessage.mock.calls[0][0]),
+      ).toBe(true);
+      h.columnProposals.propose.mockResolvedValueOnce(undefined);
+      h.postMessage.mockClear();
+      await h.send({ command: "proposeColumns", kind: "descriptions" });
+      expect(h.postMessage).not.toHaveBeenCalled();
+    },
+    runNoticeAction: async () => {
+      const h = docsHarness();
+      await h.send({ command: "runNoticeAction", action: "useStrictAnalysis" });
+      expect(commands.executeCommand).toHaveBeenCalledWith(
+        "fusionPowerUser.useStrictAnalysis",
+        Uri.file("/p"),
       );
     },
     saveDocumentation: async () => {
@@ -750,5 +850,98 @@ describe("documentation editor messages", () => {
 
   it.each(Object.entries(rows))("%s", async (_command, row) => {
     await row();
+  });
+});
+
+describe("column proposal requests", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("waits for the page, then posts the documentation and the proposals in that order", async () => {
+    vi.useFakeTimers();
+    const h = docsHarness();
+    h.columnProposalRequests.request("types");
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(h.postMessage).not.toHaveBeenCalled();
+
+    await h.send({ command: "webview:ready" });
+    await vi.advanceTimersByTimeAsync(500);
+    expect(
+      h.postMessage.mock.calls.map(([message]) => message.command),
+    ).toEqual(["renderDocumentation", "renderColumnProposals"]);
+    expect(h.postMessage).toHaveBeenCalledWith({
+      command: "renderColumnProposals",
+      payload: h.payload,
+    });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("warns and posts no proposals when the active model has no project", async () => {
+    vi.useFakeTimers();
+    const h = docsHarness();
+    h.projects.get.mockReturnValue(undefined);
+    await h.send({ command: "webview:ready" });
+    h.columnProposalRequests.request("types");
+    await vi.advanceTimersByTimeAsync(500);
+    expect(window.showWarningMessage).toHaveBeenCalledWith(
+      "No dbt project for the model orders",
+    );
+    expect(h.columnProposals.propose).not.toHaveBeenCalled();
+    expect(
+      h.postMessage.mock.calls.some(
+        ([message]) => message.command === "renderColumnProposals",
+      ),
+    ).toBe(false);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("waits for the new page's webview:ready after the view is hidden", async () => {
+    vi.useFakeTimers();
+    const h = docsHarness();
+    const view = fakeWebviewView(h.postMessage);
+    await h.panel.resolveWebviewView(view.view, {}, cancellation());
+    await h.send({ command: "webview:ready" });
+
+    view.setVisible(false);
+    h.columnProposalRequests.request("types");
+    await vi.advanceTimersByTimeAsync(1_000);
+    expect(
+      h.postMessage.mock.calls.some(
+        ([message]) => message.command === "renderColumnProposals",
+      ),
+    ).toBe(false);
+
+    view.setVisible(true);
+    await h.send({ command: "webview:ready" });
+    await vi.advanceTimersByTimeAsync(500);
+    expect(h.postMessage).toHaveBeenCalledWith({
+      command: "renderColumnProposals",
+      payload: h.payload,
+    });
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("waits for webview:ready again when the view is resolved again", async () => {
+    vi.useFakeTimers();
+    const h = docsHarness();
+    const view = fakeWebviewView(h.postMessage);
+    await h.panel.resolveWebviewView(view.view, {}, cancellation());
+    await h.send({ command: "webview:ready" });
+
+    await h.panel.resolveWebviewView(view.view, {}, cancellation());
+    expect(h.panel.isWebviewReady).toBe(false);
+  });
+
+  it("shows a warning and posts nothing when the page does not load by the deadline", async () => {
+    vi.useFakeTimers();
+    const h = docsHarness();
+    h.columnProposalRequests.request("descriptions");
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(window.showWarningMessage).toHaveBeenCalledWith(
+      "The documentation editor did not load; try again",
+    );
+    expect(h.columnProposals.propose).not.toHaveBeenCalled();
+    expect(h.postMessage).not.toHaveBeenCalled();
   });
 });

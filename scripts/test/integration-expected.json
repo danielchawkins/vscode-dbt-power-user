@@ -4,11 +4,11 @@
     "Update this file whenever a test is added, removed or newly skipped.",
     "A label fails on a non-zero exit, a failing test, a different passing count or more pending."
   ],
-  "trusted": { "passing": 93, "pending": 8 },
+  "trusted": { "passing": 97, "pending": 8 },
   "symlinked": { "passing": 3, "pending": 0 },
-  "native-strict": { "passing": 9, "pending": 0 },
-  "native-baseline": { "passing": 4, "pending": 5 },
-  "native-project": { "passing": 4, "pending": 5 },
+  "native-strict": { "passing": 21, "pending": 2 },
+  "native-baseline": { "passing": 6, "pending": 17 },
+  "native-project": { "passing": 4, "pending": 19 },
   "untrusted": { "passing": 2, "pending": 2 },
   "trusted-vsix": { "passing": 2, "pending": 2 }
 }

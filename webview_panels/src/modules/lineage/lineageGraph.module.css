@@ -191,6 +191,48 @@
   border-color: var(--vscode-focusBorder);
 }
 
+/* A hidden node is drawn off to the side with dashed, muted styling; its edges are not drawn. */
+.node.hidden {
+  border-style: dashed;
+  opacity: 0.6;
+}
+
+/* A closed group is a card with two more cards stacked behind it, drawn by offset box shadows. */
+.group {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  height: 56px;
+  padding: 0 12px;
+  box-shadow:
+    4px 4px 0 -1px var(--vscode-editorWidget-background),
+    4px 4px 0 0
+      var(
+        --vscode-editorWidget-border,
+        var(--vscode-contrastBorder, transparent)
+      ),
+    8px 8px 0 -2px var(--vscode-editorWidget-background),
+    8px 8px 0 -1px
+      var(
+        --vscode-editorWidget-border,
+        var(--vscode-contrastBorder, transparent)
+      );
+}
+
+.groupLabel {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+.groupCount {
+  flex: none;
+  color: var(--vscode-descriptionForeground);
+}
+
 :global(.react-flow__node.selected) .node {
   outline: 2px solid var(--vscode-focusBorder);
 }
@@ -216,6 +258,16 @@
   text-transform: uppercase;
 }
 
+/* A layer badge sits where the type badge does, outlined so it reads as a different kind of label. */
+.layer {
+  padding: 0 4px;
+  border: 1px solid var(--vscode-badge-background);
+  border-radius: 2px;
+  color: var(--vscode-foreground);
+  font-size: 10px;
+  text-transform: uppercase;
+}
+
 .label {
   overflow: hidden;
   font-weight: 600;
@@ -236,6 +288,22 @@
   color: var(--vscode-errorForeground);
 }
 
+.flags {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* Text for screen readers only; the cue it accompanies is an icon hidden from them. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
 .actions {
   display: flex;
   gap: 4px;
@@ -245,9 +313,52 @@
   padding: 2px 4px;
 }
 
+/* Group chips sit under the actions row, two to a row; each row is 24px tall, as `geometry.chipRowHeight` is. */
+.groupChips {
+  display: grid;
+  grid-auto-rows: 24px;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 4px;
+  padding: 0 4px;
+}
+
+.chip {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-width: 0;
+  height: 20px;
+  padding: 0 2px 0 6px;
+  border-radius: 10px;
+  background: var(--vscode-badge-background);
+  color: var(--vscode-badge-foreground);
+  font-size: 11px;
+}
+
+.chipLabel {
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip button {
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+  color: inherit;
+}
+
 .node .expander {
   min-width: 36px;
   justify-content: center;
+}
+
+.node .more {
+  justify-content: center;
+  font-style: italic;
+  opacity: 0.85;
 }
 
 .columns {
@@ -437,4 +548,25 @@
 .tabs {
   display: flex;
   gap: 4px;
+}
+
+/* Zoomed out: the card keeps its size; detail hides but stays mounted, so handles hold and nothing re-lays out. */
+.zoomedOut .subtitle {
+  display: none;
+}
+
+.zoomedOut .actions,
+.zoomedOut .groupChips,
+.zoomedOut .columns {
+  visibility: hidden;
+}
+
+.zoomedOut .label,
+.zoomedOut .groupLabel {
+  font-size: 26px;
+}
+
+.zoomedOut .type,
+.zoomedOut .layer {
+  font-size: 20px;
 }

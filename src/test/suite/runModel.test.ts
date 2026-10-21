@@ -1,3 +1,4 @@
+import type { queryResults } from "@fusion-power-user/webview-contract";
 import * as fs from "node:fs";
 import {
   afterEach,
@@ -10,9 +11,10 @@ import {
   vi,
 } from "vitest";
 import type * as vscodeApi from "vscode";
-import { Uri, window } from "vscode";
+import { Uri, window, workspace } from "vscode";
 import type { RunModelParams } from "../../core/dbt/domain";
 import { RunModelType } from "../../core/dbt/domain";
+import type { NodeMetaData } from "../../core/manifest/types";
 import { RunModel } from "../../features/run/runModel";
 import type { CurrentProject } from "../../projects/project/currentProject";
 import type { Project } from "../../projects/project/project";
@@ -32,19 +34,47 @@ const untitledUri = {
 } as Uri;
 
 describe("RunModel SQL execution", () => {
-  let executed: [string, string][];
+  let executed: {
+    query: string;
+    modelName: string;
+    preview?: queryResults.ModelPreview | undefined;
+  }[];
   let dbtProject: Project;
   let projects: { get: Mock };
   let context: Mocked<CurrentProject>;
   let runModel: RunModel;
   let project: DeclaredProject;
 
+  /** A project whose manifest records `nodes`, looked up by base name and resource type as the real map is. */
+  const projectWithNodes = (nodes: Partial<NodeMetaData>[]) => ({
+    queries: dbtProject.queries,
+    manifest: {
+      nodeMetaMap: {
+        lookupByBaseName: (name: string, type?: string) =>
+          nodes.find(
+            (node) =>
+              node.name === name &&
+              (type === undefined || node.resource_type === type),
+          ) as NodeMetaData | undefined,
+      },
+    },
+    projectRoot: Uri.file("/project"),
+  });
+
   beforeEach(() => {
+    // Paths resolve to themselves unless a test maps an alias, so no case reads the real filesystem.
+    vi.spyOn(fs.realpathSync, "native").mockImplementation(
+      (value) => value as string,
+    );
     executed = [];
     dbtProject = {
       queries: {
-        executeSQLOnQueryPanel: (query: string, modelName: string) => {
-          executed.push([query, modelName]);
+        executeSQLOnQueryPanel: (
+          query: string,
+          modelName: string,
+          preview?: queryResults.ModelPreview,
+        ) => {
+          executed.push({ query, modelName, preview });
         },
       },
     } as unknown as Project;
@@ -69,7 +99,7 @@ describe("RunModel SQL execution", () => {
 
   afterEach(() => {
     (window.activeTextEditor as unknown) = undefined;
-    vi.clearAllMocks();
+    vi.restoreAllMocks();
   });
 
   it.each([Uri.file("/project/models/model.sql"), untitledUri])(
@@ -79,16 +109,16 @@ describe("RunModel SQL execution", () => {
         Promise.resolve(requested === uri ? project : undefined),
       );
 
-      await runModel.executeSQL(uri, "select 1", "model");
+      await runModel.executeSQL(uri, "select 1", { modelName: "model" });
 
-      expect(executed).toEqual([["select 1", "model"]]);
+      expect(executed).toEqual([{ query: "select 1", modelName: "model" }]);
     },
   );
 
   it("returns without execution when project selection is cancelled", async () => {
     context.requireForCommand.mockResolvedValue(undefined);
 
-    await runModel.executeSQL(untitledUri, "select 1", "model");
+    await runModel.executeSQL(untitledUri, "select 1", { modelName: "model" });
 
     expect(executed).toEqual([]);
   });
@@ -113,7 +143,8 @@ describe("RunModel SQL execution", () => {
     resolveProject(project);
     await execution;
 
-    expect(executed).toEqual([["select 1", "Untitled-1"]]);
+    expect(executed).toEqual([{ query: "select 1", modelName: "Untitled-1" }]);
+    expect(executed[0]?.preview).toBeUndefined();
   });
 
   it("tests the model an active compiled preview resolves to", () => {
@@ -134,13 +165,276 @@ describe("RunModel SQL execution", () => {
     expect(tested).toEqual(["orders"]);
   });
 
+  it("previews a whole model file computed, and a selection with no preview", async () => {
+    const model = Uri.file("/project/models/orders.sql");
+    projects.get.mockReturnValue(
+      projectWithNodes([
+        { name: "orders", resource_type: "model", path: model.fsPath },
+      ]),
+    );
+    context.requireForCommand.mockResolvedValue(project);
+    (window.activeTextEditor as unknown) = {
+      document: { uri: model, getText: () => "select 1" },
+      selection: { isEmpty: true },
+    };
+    await runModel.executeQueryOnActiveWindow();
+    expect(executed).toEqual([
+      {
+        query: "select 1",
+        modelName: "orders",
+        preview: { mode: "computed", model: model.fsPath },
+      },
+    ]);
+
+    executed = [];
+    (window.activeTextEditor as unknown) = {
+      document: { uri: model, getText: () => "select 2" },
+      selection: { isEmpty: false },
+    };
+    await runModel.executeQueryOnActiveWindow();
+    expect(executed).toEqual([{ query: "select 2", modelName: "orders" }]);
+    expect(executed[0]?.preview).toBeUndefined();
+  });
+
+  it.each([
+    ["a model", "/project/models/orders.sql", true],
+    ["an analysis", "/project/analyses/adhoc.sql", false],
+    ["an analysis named like a model", "/project/analyses/orders.sql", false],
+    [
+      "a compiled model under target/",
+      "/project/target/compiled/jaffle/models/orders.sql",
+      false,
+    ],
+  ])(
+    "previews %s computed only when the manifest records that file as a model",
+    async (_kind, filePath, previewed) => {
+      projects.get.mockReturnValue(
+        projectWithNodes([
+          {
+            name: "orders",
+            resource_type: "model",
+            path: "/project/models/orders.sql",
+          },
+        ]),
+      );
+      context.requireForCommand.mockResolvedValue(project);
+      (window.activeTextEditor as unknown) = {
+        document: { uri: Uri.file(filePath), getText: () => "select 1" },
+        selection: { isEmpty: true },
+      };
+
+      await runModel.executeQueryOnActiveWindow();
+
+      expect(executed).toHaveLength(1);
+      expect(executed[0]?.preview).toEqual(
+        previewed ? { mode: "computed", model: filePath } : undefined,
+      );
+    },
+  );
+
+  it.each([
+    ["the file under the project root", "/project/models/orders.sql", true],
+    ["a file of the same name elsewhere", "/elsewhere/orders.sql", false],
+  ])(
+    "previews computed by original_file_path when the node has no path, for %s",
+    async (_kind, filePath, previewed) => {
+      projects.get.mockReturnValue(
+        projectWithNodes([
+          {
+            name: "orders",
+            resource_type: "model",
+            original_file_path: "models/orders.sql",
+          },
+        ]),
+      );
+      context.requireForCommand.mockResolvedValue(project);
+      (window.activeTextEditor as unknown) = {
+        document: { uri: Uri.file(filePath), getText: () => "select 1" },
+        selection: { isEmpty: true },
+      };
+
+      await runModel.executeQueryOnActiveWindow();
+
+      expect(executed).toHaveLength(1);
+      expect(executed[0]?.preview).toEqual(
+        previewed ? { mode: "computed", model: filePath } : undefined,
+      );
+    },
+  );
+
+  it("previews computed a node with neither path nor original_file_path as the file", async () => {
+    const model = Uri.file("/project/models/orders.sql");
+    projects.get.mockReturnValue(
+      projectWithNodes([{ name: "orders", resource_type: "model" }]),
+    );
+    context.requireForCommand.mockResolvedValue(project);
+    (window.activeTextEditor as unknown) = {
+      document: { uri: model, getText: () => "select 1" },
+      selection: { isEmpty: true },
+    };
+
+    await runModel.executeQueryOnActiveWindow();
+
+    expect(executed).toEqual([
+      {
+        query: "select 1",
+        modelName: "orders",
+        preview: { mode: "computed", model: model.fsPath },
+      },
+    ]);
+  });
+
+  it("previews a model opened through an alias that resolves to the node's path", async () => {
+    const alias = "/alias/models/orders.sql";
+    vi.spyOn(fs.realpathSync, "native").mockImplementation((value) =>
+      value === alias ? "/project/models/orders.sql" : (value as string),
+    );
+    projects.get.mockReturnValue(
+      projectWithNodes([
+        {
+          name: "orders",
+          resource_type: "model",
+          path: "/project/models/orders.sql",
+        },
+      ]),
+    );
+    context.requireForCommand.mockResolvedValue(project);
+    (window.activeTextEditor as unknown) = {
+      document: { uri: Uri.file(alias), getText: () => "select 1" },
+      selection: { isEmpty: true },
+    };
+
+    await runModel.executeQueryOnActiveWindow();
+
+    expect(executed).toEqual([
+      {
+        query: "select 1",
+        modelName: "orders",
+        preview: { mode: "computed", model: alias },
+      },
+    ]);
+  });
+
+  it("previews a model's computed SQL from its open document, unsaved edits included", async () => {
+    const model = Uri.file("/project/models/orders.sql");
+    context.requireForCommand.mockResolvedValue(project);
+    vi.mocked(workspace.openTextDocument).mockResolvedValue({
+      getText: () => "select edited",
+    } as never);
+
+    await runModel.previewComputed({ label: "orders", url: model.fsPath });
+
+    expect(workspace.openTextDocument).toHaveBeenCalledWith(model);
+    expect(executed).toEqual([
+      {
+        query: "select edited",
+        modelName: "orders",
+        preview: { mode: "computed", model: model.fsPath },
+      },
+    ]);
+  });
+
   it("does nothing when no project owns the resolved root", async () => {
     context.requireForCommand.mockResolvedValue(project);
     projects.get.mockReturnValue(undefined);
 
-    await runModel.executeSQL(untitledUri, "select 1", "model");
+    await runModel.executeSQL(untitledUri, "select 1", { modelName: "model" });
 
     expect(executed).toEqual([]);
+  });
+
+  it("previews the active model's materialized relation, and offers the SQL preview for an ephemeral one", async () => {
+    const model = Uri.file("/project/models/orders.sql");
+    let materialized = "table";
+    projects.get.mockImplementation((uri: Uri) =>
+      uri.fsPath === model.fsPath
+        ? {
+            queries: dbtProject.queries,
+            manifest: {
+              nodeMetaMap: {
+                lookupByBaseName: () => ({
+                  name: "orders",
+                  package_name: "jaffle",
+                  config: { materialized },
+                }),
+              },
+            },
+          }
+        : undefined,
+    );
+    (window.activeTextEditor as unknown) = {
+      document: { uri: model, getText: () => "select 1" },
+      selection: { isEmpty: true },
+    };
+
+    await runModel.previewMaterialized();
+    expect(executed).toEqual([
+      {
+        query: "select * from {{ ref('jaffle', 'orders') }}",
+        modelName: "orders (materialized)",
+        preview: { mode: "materialized", model: model.fsPath },
+      },
+    ]);
+
+    // A model tree item names its file, so the preview needs no open editor.
+    (window.activeTextEditor as unknown) = undefined;
+    await runModel.previewMaterialized({ label: "orders", url: model.fsPath });
+    expect(executed).toHaveLength(2);
+
+    materialized = "ephemeral";
+    vi.mocked(window.showInformationMessage).mockResolvedValue(
+      "Execute dbt SQL" as never,
+    );
+    context.requireForCommand.mockResolvedValue(project);
+    projects.get.mockClear();
+    vi.mocked(workspace.openTextDocument).mockResolvedValue({
+      getText: () => "select 1",
+    } as never);
+    await runModel.previewMaterialized({ label: "orders", url: model.fsPath });
+    expect(window.showInformationMessage).toHaveBeenCalledWith(
+      "orders is ephemeral, so it has no table to preview.",
+      "Execute dbt SQL",
+    );
+  });
+
+  it("runs the ephemeral model's computed preview, not the active editor's SQL", async () => {
+    const model = Uri.file("/project/models/ephemeral_orders.sql");
+    const other = Uri.file("/project/models/other.sql");
+    projects.get.mockReturnValue(
+      projectWithNodes([
+        {
+          name: "ephemeral_orders",
+          resource_type: "model",
+          path: model.fsPath,
+          config: { materialized: "ephemeral" },
+        },
+      ]),
+    );
+    context.requireForCommand.mockResolvedValue(project);
+    vi.mocked(window.showInformationMessage).mockResolvedValue(
+      "Execute dbt SQL" as never,
+    );
+    vi.mocked(workspace.openTextDocument).mockResolvedValue({
+      getText: () => "select ephemeral",
+    } as never);
+    (window.activeTextEditor as unknown) = {
+      document: { uri: other, getText: () => "select other" },
+      selection: { isEmpty: true },
+    };
+
+    await runModel.previewMaterialized({
+      label: "ephemeral_orders",
+      url: model.fsPath,
+    });
+
+    expect(workspace.openTextDocument).toHaveBeenCalledWith(model);
+    expect(executed).toEqual([
+      {
+        query: "select ephemeral",
+        modelName: "ephemeral_orders",
+        preview: { mode: "computed", model: model.fsPath },
+      },
+    ]);
   });
 });
 

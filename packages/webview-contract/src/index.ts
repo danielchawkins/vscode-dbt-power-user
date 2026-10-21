@@ -8,6 +8,7 @@ export type {
   ShowNotification,
   WebviewReady,
 } from "./common.js";
+export * as columnProposals from "./columnProposals.js";
 export * as documentationEditor from "./documentationEditor.js";
 export * as lineage from "./lineage.js";
 export * as queryResults from "./queryResults.js";

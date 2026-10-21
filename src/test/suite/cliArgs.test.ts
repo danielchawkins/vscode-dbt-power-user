@@ -267,6 +267,36 @@ const golden: [string, CliCommand, string | string[], Golden?][] = [
     [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
     { defer: deferEntry("/state", false) },
   ],
+  // `defer: "off"` on an inline compile: one --no-defer, whatever the DeferState.
+  [
+    "defer off with no entry (default)",
+    { kind: "compileInline", sql: "select 1", output: "quiet", defer: "off" },
+    [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
+  ],
+  [
+    "defer off with an entry that disables defer (off)",
+    { kind: "compileInline", sql: "select 1", output: "quiet", defer: "off" },
+    [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
+    { defer: deferEntry("/state", false) },
+  ],
+  [
+    "defer off with defer enabled and no path (unset)",
+    { kind: "compileInline", sql: "select 1", output: "quiet", defer: "off" },
+    [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
+    { defer: deferEntry(undefined, true, false) },
+  ],
+  [
+    "defer off with defer enabled on a state directory (on)",
+    { kind: "compileInline", sql: "select 1", output: "quiet", defer: "off" },
+    [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
+    { defer: deferEntry("/state") },
+  ],
+  [
+    "defer off with defer enabled on a path that is unusable",
+    { kind: "compileInline", sql: "select 1", output: "quiet", defer: "off" },
+    [...argv("compile --inline"), SQL, ...argv(`--quiet ${P} ${NO_DEFER}`)],
+    { defer: deferEntry("/state/notes.txt"), probe: "missing" },
+  ],
   [
     "defer flags follow the profiles directory on a queued kind",
     { kind: "compile", select: "+a" },

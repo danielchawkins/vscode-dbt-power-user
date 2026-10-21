@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter, Uri } from "vscode";
+import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import { LineageViewProvider } from "../../features/lineage/lineageViewProvider";
 
@@ -46,7 +47,10 @@ describe("webview panels on project removal", () => {
     const panel = new DocsEditViewPanel(
       value,
       {} as any,
-      { emitterService: { eventEmitter: { event: vi.fn() } } } as any,
+      {
+        emitterService: { eventEmitter: { event: vi.fn() } },
+        columnProposalRequests: new ColumnProposalRequests(),
+      } as any,
       terminal,
     );
     (panel as any)._panel = {};

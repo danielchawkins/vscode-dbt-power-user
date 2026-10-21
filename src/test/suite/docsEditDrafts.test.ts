@@ -1,6 +1,7 @@
 import { documentationEditor } from "@fusion-power-user/webview-contract";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { EventEmitter, Uri } from "vscode";
+import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import type * as panelHtmlModule from "../../webview/panelHtml";
 
@@ -42,6 +43,7 @@ function draftPanel() {
       dbtTestService,
       queryManifestService: { manifestFor: () => undefined },
       emitterService: { eventEmitter: { event: vi.fn() } },
+      columnProposalRequests: new ColumnProposalRequests(),
     } as any,
     terminal,
   );
@@ -76,6 +78,24 @@ describe("documentation editor drafts", () => {
     const message = await rendered();
     expect(message.docs.description).toBe("saved");
     expect(message.draft).toEqual(draft);
+  });
+
+  it("keeps a column's replaceType in the draft unchanged", async () => {
+    const { send, rendered } = draftPanel();
+    const replacing = {
+      docs: {
+        ...docs("/p/models/orders.sql", "unsaved edit"),
+        columns: [{ name: "id", type: "integer", replaceType: true }],
+      },
+    };
+
+    await send({
+      command: "saveDraft",
+      model: "/p/models/orders.sql",
+      draft: replacing,
+    });
+
+    expect((await rendered()).draft).toEqual(replacing);
   });
 
   it("forgets a draft the page clears, after a save, discard or revert", async () => {
@@ -129,6 +149,7 @@ describe("documentation editor view resolution", () => {
         dbtTestService: {},
         queryManifestService: { manifestFor: () => undefined },
         emitterService: { eventEmitter: { event: vi.fn() } },
+        columnProposalRequests: new ColumnProposalRequests(),
       } as any,
       terminal,
     );

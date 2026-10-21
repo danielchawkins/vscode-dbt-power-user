@@ -141,13 +141,10 @@
   },
   "src/features/docs/docsYaml.ts": {
     "max-params": {
-      "count": 2
+      "count": 1
     }
   },
   "src/features/lineage/dbtLineageService.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
     "max-params": {
       "count": 1
     }
@@ -284,7 +281,7 @@
   },
   "src/projects/project/projectSql.ts": {
     "max-params": {
-      "count": 9
+      "count": 8
     }
   },
   "src/projects/project/projectWarehouse.ts": {

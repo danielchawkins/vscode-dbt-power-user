@@ -2,10 +2,19 @@ import type { lineage } from "@fusion-power-user/webview-contract";
 import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
 import { memo, use } from "react";
+import {
+  cardBadge,
+  cardSubtitle,
+  cardTooltip,
+  cardTitle,
+  type TitleMode,
+} from "./card";
 import type { TableNode as TableNodeType } from "./flow";
 import type { Direction } from "./graph";
+import { GroupChips } from "./GroupChips";
 import { columnHandle } from "./layout";
 import styles from "./lineageGraph.module.css";
+import { useZoomedOut } from "./semanticZoom";
 import { TableActionsContext } from "./viewModel";
 
 const ExpandButton = ({
@@ -13,13 +22,17 @@ const ExpandButton = ({
   direction,
   count,
   expanded,
+  pending,
 }: {
   table: string;
   direction: Direction;
   count: number;
   expanded: boolean;
+  pending: boolean;
 }) => {
-  const title = `${expanded ? "Hide" : "Show"} ${count} ${direction}`;
+  const title = pending
+    ? `Loading ${count} ${direction}; click to cancel`
+    : `${expanded ? "Hide" : "Show"} ${count} ${direction}`;
   const sign = expanded ? "−" : "+";
   const actions = use(TableActionsContext);
   return (
@@ -28,21 +41,63 @@ const ExpandButton = ({
       className={`nodrag ${styles.expander}`}
       disabled={count === 0}
       aria-pressed={expanded}
+      aria-busy={pending}
       aria-label={title}
       title={title}
       onClick={() => actions.toggleExpansion(table, direction)}
     >
-      {direction === "parents" ? `${sign}${count}` : `${count}${sign}`}
+      {pending ? (
+        <span className="codicon codicon-loading codicon-modifier-spin" />
+      ) : direction === "parents" ? (
+        `${sign}${count}`
+      ) : (
+        `${count}${sign}`
+      )}
     </button>
   );
 };
 
+const MoreButton = ({
+  table,
+  direction,
+  hidden,
+}: {
+  table: string;
+  direction: Direction;
+  hidden: number;
+}) => {
+  const actions = use(TableActionsContext);
+  if (hidden <= 0) {
+    return null;
+  }
+  const title = `Show ${hidden} more ${direction}`;
+  return (
+    <button
+      type="button"
+      className={`nodrag ${styles.more}`}
+      aria-label={title}
+      title={title}
+      onClick={() => actions.showMore(table, direction)}
+    >
+      {`+${hidden}`}
+    </button>
+  );
+};
+
+const HIDDEN_TITLE = "Hidden from lineage by meta.lineage.hidden";
+
 const Header = ({
   table,
   errors,
+  hiddenFromLineage,
+  zoomedOut,
+  mode,
 }: {
+  mode: TitleMode;
   table: lineage.LineageTable;
   errors?: string[] | undefined;
+  hiddenFromLineage: boolean;
+  zoomedOut: boolean;
 }) => (
   <div className={styles.header}>
     <Handle
@@ -52,23 +107,46 @@ const Header = ({
       className={`${styles.handle} ${styles.headerHandle}`}
       isConnectable={false}
     />
-    <span className={styles.type}>{table.nodeType}</span>
-    <span className={styles.label} title={table.table}>
-      {table.label}
+    <span
+      className={table.layer ? styles.layer : styles.type}
+      title={
+        table.layer ? `${table.nodeType}, ${table.layer} layer` : undefined
+      }
+    >
+      {cardBadge(table)}
     </span>
-    {errors?.length ? (
-      <span
-        role="img"
-        className={`codicon codicon-warning ${styles.error}`}
-        title={errors.join("\n")}
-        aria-label={errors.join("\n")}
-      />
+    <span className={styles.label} title={cardTooltip(table, mode)}>
+      {cardTitle(table, mode, zoomedOut)}
+    </span>
+    {errors?.length || hiddenFromLineage ? (
+      <span className={styles.flags}>
+        {errors?.length ? (
+          <span
+            role="img"
+            className={`codicon codicon-warning ${styles.error}`}
+            title={errors.join("\n")}
+            aria-label={errors.join("\n")}
+          />
+        ) : null}
+        {hiddenFromLineage ? (
+          <>
+            <i
+              className="codicon codicon-eye-closed"
+              title={HIDDEN_TITLE}
+              aria-hidden="true"
+            />
+            <span className={styles.srOnly}>{HIDDEN_TITLE}</span>
+          </>
+        ) : null}
+      </span>
     ) : (
       <span />
     )}
-    <span className={styles.subtitle}>
-      {[table.materialization, table.packageName].filter(Boolean).join(" · ") ||
-        "\u00a0"}
+    <span
+      className={styles.subtitle}
+      title={cardSubtitle(table, mode) || undefined}
+    >
+      {cardSubtitle(table, mode) || "\u00a0"}
     </span>
     <Handle
       type="source"
@@ -83,10 +161,14 @@ const Header = ({
 const Actions = ({
   table,
   expanded,
+  pending,
+  hidden,
   listed,
 }: {
   table: lineage.LineageTable;
   expanded: { parents: boolean; children: boolean };
+  pending: { parents: boolean; children: boolean };
+  hidden: { parents: number; children: number };
   listed: boolean;
 }) => {
   const actions = use(TableActionsContext);
@@ -97,6 +179,12 @@ const Actions = ({
         direction="parents"
         count={table.parentCount}
         expanded={expanded.parents}
+        pending={pending.parents}
+      />
+      <MoreButton
+        table={table.table}
+        direction="parents"
+        hidden={hidden.parents}
       />
       <button
         type="button"
@@ -124,11 +212,17 @@ const Actions = ({
           <span className="codicon codicon-go-to-file" />
         </button>
       ) : null}
+      <MoreButton
+        table={table.table}
+        direction="children"
+        hidden={hidden.children}
+      />
       <ExpandButton
         table={table.table}
         direction="children"
         count={table.childCount}
         expanded={expanded.children}
+        pending={pending.children}
       />
     </div>
   );
@@ -219,27 +313,43 @@ const ColumnList = ({
 
 const TableNodeView = ({
   data,
-}: NodeProps<TableNodeType>): React.JSX.Element => (
-  <div
-    className={`${styles.node} ${data.isStart ? styles.start : ""}`}
-    data-table={data.table.table}
-  >
-    <Header table={data.table} errors={data.errors} />
-    <Actions
-      table={data.table}
-      expanded={data.expanded}
-      listed={data.columns !== undefined}
-    />
-    {data.columns ? (
-      <ColumnList
-        table={data.table.table}
-        columns={data.columns}
-        traced={data.traced}
-        selectedColumn={data.selectedColumn}
-        columnsNeedStrict={data.columnsNeedStrict}
+}: NodeProps<TableNodeType>): React.JSX.Element => {
+  // The graph never hides the start table, so its card shows no hidden cue either.
+  const hiddenFromLineage = data.table.hidden === true && !data.isStart;
+  const zoomedOut = useZoomedOut();
+  return (
+    <div
+      className={`${styles.node} ${data.isStart ? styles.start : ""} ${
+        hiddenFromLineage ? styles.hidden : ""
+      } ${zoomedOut ? styles.zoomedOut : ""}`}
+      data-table={data.table.table}
+    >
+      <Header
+        table={data.table}
+        errors={data.errors}
+        hiddenFromLineage={hiddenFromLineage}
+        zoomedOut={zoomedOut}
+        mode={data.title}
       />
-    ) : null}
-  </div>
-);
+      <Actions
+        table={data.table}
+        expanded={data.expanded}
+        pending={data.pending}
+        hidden={data.hidden}
+        listed={data.columns !== undefined}
+      />
+      <GroupChips chips={data.chips} />
+      {data.columns ? (
+        <ColumnList
+          table={data.table.table}
+          columns={data.columns}
+          traced={data.traced}
+          selectedColumn={data.selectedColumn}
+          columnsNeedStrict={data.columnsNeedStrict}
+        />
+      ) : null}
+    </div>
+  );
+};
 
 export const TableNode = memo(TableNodeView);

@@ -40,6 +40,13 @@ const sentCommands = (files: string[]) =>
 /** Commands every panel sends through a shared module rather than its own source. */
 const SHARED_COMMANDS: ReadonlySet<string> = new Set(["webview:ready"]);
 
+/**
+ * Commands whose senders land in a later step. Remove each entry once its sender exists.
+ * `proposeColumns` and `runNoticeAction` now have senders (`ColumnProposalActions.tsx`,
+ * `ProposalSummary.tsx`), so no entries are pending.
+ */
+const PENDING_SENDERS: Readonly<Record<string, ReadonlySet<string>>> = {};
+
 const panels = [
   {
     dir: "documentationEditor",
@@ -72,7 +79,22 @@ describe("panel senders", () => {
         commands.filter(
           (command) =>
             !SHARED_COMMANDS.has(command) &&
+            !PENDING_SENDERS[dir]?.has(command) &&
             !text.includes(JSON.stringify(command)),
+        ),
+      ).toEqual([]);
+    },
+  );
+
+  it.each(panels)(
+    "$dir has no pending sender that already exists",
+    ({ dir }) => {
+      const text = sources(path.join(modules, dir))
+        .map((file) => readFileSync(file, "utf8"))
+        .join("\n");
+      expect(
+        [...(PENDING_SENDERS[dir] ?? [])].filter((command) =>
+          text.includes(JSON.stringify(command)),
         ),
       ).toEqual([]);
     },

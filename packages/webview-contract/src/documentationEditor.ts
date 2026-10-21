@@ -1,15 +1,20 @@
+import type { ColumnProposalsPayload } from "./columnProposals.js";
+import { isColumnProposalsPayload } from "./columnProposals.js";
 import type {
   OpenProblemsTab,
   PanelNotice,
+  PanelNoticeActionId,
   Response,
   ShowNotification,
   WebviewReady,
 } from "./common.js";
 import {
   isPanelNotice,
+  isPanelNoticeActionId,
   responseFields,
   showNotificationFields,
 } from "./common.js";
+import type { DocumentationColumn } from "./documentationColumn.js";
 import type { CommandFields, Fields } from "./guards.js";
 import {
   arrayOf,
@@ -25,14 +30,7 @@ import {
   syncRequestId,
 } from "./guards.js";
 
-/** A column of the model being documented; `source` says whether it came from YAML or a database fetch. */
-export interface DocumentationColumn {
-  name: string;
-  type?: string | null | undefined;
-  description?: string | null | undefined;
-  generated?: boolean | undefined;
-  source?: "YAML" | "DATABASE" | undefined;
-}
+export type { DocumentationColumn } from "./documentationColumn.js";
 
 /** The documentation of the model in the active editor; manifest-derived fields may be `null`. */
 export interface Documentation {
@@ -88,6 +86,7 @@ export interface DocumentationDraft {
 export type HostMessage =
   | Response
   | { command: "renderError" }
+  | { command: "renderColumnProposals"; payload: ColumnProposalsPayload }
   /** `docs` is absent when the active editor has no documented model. */
   | {
       command: "renderDocumentation";
@@ -101,10 +100,6 @@ export type HostMessage =
       publication?: string | undefined;
       /** The unsaved draft the host holds for this model; the editor shows it over `docs` and `tests`. */
       draft?: DocumentationDraft | undefined;
-    }
-  | {
-      command: "renderColumnsFromMetadataFetch";
-      columns: { name: string; type?: string | undefined }[];
     };
 
 /** Where `saveDocumentation` writes when the model has no `patchPath`. */
@@ -155,7 +150,9 @@ export type PanelMessage =
     }
   | { command: "getSourcesInProject"; syncRequestId?: string | undefined }
   | { command: "getModelsInProject"; syncRequestId?: string | undefined }
-  | { command: "fetchMetadataFromDatabase"; syncRequestId?: string | undefined }
+  /** Asks for the proposals of `kind` for the active model, answered by `renderColumnProposals`. */
+  | { command: "proposeColumns"; kind: ColumnProposalsPayload["kind"] }
+  | { command: "runNoticeAction"; action: PanelNoticeActionId }
   /** `updatedTests` is the panel's test metadata for the model and its columns. */
   | (Documentation & {
       command: "saveDocumentation";
@@ -170,6 +167,7 @@ const isColumn = shape<DocumentationColumn>({
   description: nullish(isString),
   generated: optional(isBoolean),
   source: optional(oneOf("YAML", "DATABASE")),
+  replaceType: optional(isBoolean),
 });
 
 const documentationFields: Fields<Documentation> = {
@@ -227,9 +225,7 @@ const hostFields: CommandFields<HostMessage> = {
     publication: optional(isString),
     draft: optional(isDraft),
   },
-  renderColumnsFromMetadataFetch: {
-    columns: arrayOf(shape({ name: isString, type: optional(isString) })),
-  },
+  renderColumnProposals: { payload: isColumnProposalsPayload },
 };
 
 const panelFields: CommandFields<PanelMessage> = {
@@ -255,7 +251,8 @@ const panelFields: CommandFields<PanelMessage> = {
   getColumnsOfModel: { model: isString, syncRequestId },
   getSourcesInProject: { syncRequestId },
   getModelsInProject: { syncRequestId },
-  fetchMetadataFromDatabase: { syncRequestId },
+  proposeColumns: { kind: oneOf("types", "descriptions") },
+  runNoticeAction: { action: isPanelNoticeActionId },
   saveDocumentation: {
     ...documentationFields,
     updatedTests: isAnything,

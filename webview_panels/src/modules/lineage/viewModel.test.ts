@@ -1,7 +1,9 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { LineageViewState } from "@modules/app/viewState";
+import { MAX_VIEW_STATE_STRING } from "@modules/app/viewState";
 import { describe, expect, it } from "vitest";
 import { addNeighbours, emptyGraph } from "./graph";
+import { groupNodeId } from "./grouping";
 import {
   planRender,
   resolveSettings,
@@ -97,7 +99,7 @@ describe("lineage view model", () => {
     ).toEqual({});
   });
 
-  it("persists only expansion, column lists and selection", () => {
+  it("persists only expansion, column lists, selection and open groups", () => {
     const state = viewStateOf(
       { ...emptyGraph(table("a")), selectedColumn: ["a", "id"] },
       "s:1",
@@ -105,6 +107,7 @@ describe("lineage view model", () => {
     expect(Object.keys(state!).sort()).toEqual([
       "columnTables",
       "expansions",
+      "openGroups",
       "panel",
       "publication",
       "selectedColumn",
@@ -112,6 +115,35 @@ describe("lineage view model", () => {
       "start",
     ]);
     expect(viewStateOf(emptyGraph(), "s:1")).toBeUndefined();
+  });
+
+  it("persists the open groups, leaving out an ID too long to keep", () => {
+    const drawn = addNeighbours(emptyGraph(table("a")), "children", "a", [
+      table("b"),
+      table("c"),
+    ]);
+    const kept = groupNodeId("c:a", "pkg:models/marts");
+    const longKey = "k".repeat(
+      MAX_VIEW_STATE_STRING + 1 - groupNodeId("c:a", "").length,
+    );
+    expect(groupNodeId("c:a", longKey)).toHaveLength(MAX_VIEW_STATE_STRING + 1);
+    const state = viewStateOf(
+      {
+        ...drawn,
+        groups: {
+          "c:a": {
+            buckets: [
+              { key: longKey, members: ["b"] },
+              { key: "pkg:models/marts", members: ["c"] },
+            ],
+            loose: [],
+            open: { [longKey]: 1, "pkg:models/marts": 1 },
+          },
+        },
+      },
+      "s:1",
+    );
+    expect(state?.openGroups).toEqual([kept]);
   });
 
   it("filters relationships by source, confidence and drawn ends", () => {

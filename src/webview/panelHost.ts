@@ -30,9 +30,16 @@ export type CommonPanelMessage = WebviewReady;
 export function postToWebview<H extends { command: string }>(
   target: { readonly webview: Webview } | undefined,
   message: H,
+  log?: Log,
 ): Thenable<boolean> | undefined {
-  // eslint-disable-next-line no-restricted-syntax -- the one outbound path
-  return target?.webview.postMessage(message);
+  try {
+    // eslint-disable-next-line no-restricted-syntax -- the one outbound path
+    return target?.webview.postMessage(message).then(undefined, () => false);
+  } catch (error) {
+    // The view was disposed (reading `webview` throws then): nothing is left to deliver to.
+    log?.debug("postToWebview", "dropped a post to a disposed view", error);
+    return undefined;
+  }
 }
 
 /** Which posted commands a panel replays to a rebuilt page. */
@@ -181,9 +188,9 @@ export abstract class PanelHost<
   protected postTo(
     panel: WebviewView | WebviewPanel,
     message: H,
-  ): Thenable<boolean> {
+  ): Thenable<boolean> | undefined {
     this.replay.record(this.pageOf(panel), message);
-    return postToWebview(panel, message) as Thenable<boolean>;
+    return postToWebview(panel, message, this.dbtTerminal);
   }
 
   /** A panel that replays state to rebuilt pages overrides this. */
@@ -215,14 +222,23 @@ export abstract class PanelHost<
     };
   }
 
-  protected async checkIfWebviewReady() {
-    return new Promise<void>((resolve) => {
+  /** Resolves true once the page is ready, or false after `deadlineMs` when one is given. */
+  protected async checkIfWebviewReady(deadlineMs?: number): Promise<boolean> {
+    return new Promise<boolean>((resolve) => {
+      const finish = (ready: boolean) => {
+        clearInterval(interval);
+        clearTimeout(deadline);
+        resolve(ready);
+      };
       const interval = setInterval(() => {
         if (this.isWebviewReady) {
-          clearInterval(interval);
-          resolve();
+          finish(true);
         }
       }, 500);
+      const deadline =
+        deadlineMs === undefined
+          ? undefined
+          : setTimeout(finish, deadlineMs, false);
     });
   }
 

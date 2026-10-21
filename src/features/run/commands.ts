@@ -103,6 +103,12 @@ function registerTestCommands(deps: RunCommandDeps) {
     register("fusionPowerUser.executeSQL", () =>
       runModel.executeQueryOnActiveWindow(),
     ),
+    register("fusionPowerUser.previewMaterialized", (model) =>
+      runModel.previewMaterialized(model),
+    ),
+    register("fusionPowerUser.previewComputed", (model) =>
+      runModel.previewComputed(model),
+    ),
     register("fusionPowerUser.createModelBasedonSourceConfig", (params) => {
       runModel.createModelBasedonSourceConfig(params);
     }),

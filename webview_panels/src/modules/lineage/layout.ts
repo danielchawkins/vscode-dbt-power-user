@@ -1,32 +1,38 @@
 import dagre from "@dagrejs/dagre";
-import type { lineage } from "@fusion-power-user/webview-contract";
-
-type LineageTable = lineage.LineageTable;
 
 /** Node geometry the layout and the stylesheet share, in pixels. */
 export const geometry = {
   tableWidth: 280,
   headerHeight: 56,
+  groupHeight: 56,
   actionsHeight: 28,
+  chipRowHeight: 24,
   columnHeight: 24,
   listPadding: 8,
   rankGap: 160,
   nodeGap: 40,
 };
 
-/** The height of a table node, listing `columns` when given; an empty list keeps one row for its message. */
-export const tableHeight = (columns?: readonly unknown[]): number =>
+/**
+ * The height of a table node: its header, its actions row, `chips` group chips two to a row, and `columns` when
+ * listed. An empty list keeps one row for its message.
+ */
+export const tableHeight = (
+  columns: readonly unknown[] | undefined,
+  chips: number,
+): number =>
   geometry.headerHeight +
   geometry.actionsHeight +
+  Math.ceil(chips / 2) * geometry.chipRowHeight +
   (columns
     ? geometry.listPadding + Math.max(columns.length, 1) * geometry.columnHeight
     : 0);
 
-/** Top-left corner of each table, laid out left to right from parents to children by dagre. */
+/** Top-left corner of each node `ids`, laid out left to right from parents to children by dagre. */
 export function layout(
-  tables: readonly LineageTable[],
+  ids: readonly string[],
   edges: readonly [string, string][],
-  heightOf: (table: string) => number,
+  heightOf: (id: string) => number,
 ): Map<string, { x: number; y: number }> {
   const g = new dagre.graphlib.Graph();
   g.setGraph({
@@ -35,10 +41,10 @@ export function layout(
     nodesep: geometry.nodeGap,
   });
   g.setDefaultEdgeLabel(() => ({}));
-  for (const t of tables) {
-    g.setNode(t.table, {
+  for (const id of ids) {
+    g.setNode(id, {
       width: geometry.tableWidth,
-      height: heightOf(t.table),
+      height: heightOf(id),
     });
   }
   for (const [parent, child] of edges) {
@@ -47,14 +53,14 @@ export function layout(
   dagre.layout(g);
   // dagre positions node centres.
   return new Map(
-    tables.map((t) => {
-      const n = g.node(t.table) as {
+    ids.map((id) => {
+      const n = g.node(id) as {
         x: number;
         y: number;
         width: number;
         height: number;
       };
-      return [t.table, { x: n.x - n.width / 2, y: n.y - n.height / 2 }];
+      return [id, { x: n.x - n.width / 2, y: n.y - n.height / 2 }];
     }),
   );
 }

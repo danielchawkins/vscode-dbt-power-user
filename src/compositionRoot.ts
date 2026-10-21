@@ -15,6 +15,8 @@ import { CteProfilerDecorationProvider } from "./features/cte/cteProfilerDecorat
 import { CteProfilerService } from "./features/cte/cteProfilerService";
 import { DeferToProductionStatusBar } from "./features/defer/deferToProductionStatusBar";
 import { DiagnosticsOutputChannel } from "./features/diagnostics/diagnosticsOutputChannel";
+import { ColumnProposalRequests } from "./features/docs/columnProposals";
+import { ColumnProposalService } from "./features/docs/columnProposals";
 import { DbtTestService } from "./features/docs/dbtTestService";
 import { DocGenService } from "./features/docs/docGenService";
 import { DocsEditViewPanel } from "./features/docs/docsEditPanel";
@@ -240,6 +242,7 @@ function composeFusion(graph: ProjectsGraph) {
 function composeWebviews(
   graph: ProjectsGraph,
   dbtLineageService: DbtLineageService,
+  columnProposalRequests: ColumnProposalRequests,
 ): WebviewViewProviders {
   const {
     extensionContextStore,
@@ -276,6 +279,11 @@ function composeWebviews(
         dbtTestService: new DbtTestService(queryManifestService),
         queryManifestService,
         emitterService: sharedState,
+        columnProposals: new ColumnProposalService({
+          log: terminal,
+          columnsNeedStrict: () => dbtLineageService.columnsNeedStrict(),
+        }),
+        columnProposalRequests,
       },
       terminal,
       graph.parseDemand,
@@ -284,7 +292,11 @@ function composeWebviews(
   );
 }
 
-function composeCommands(graph: ProjectsGraph, startupGate: StartupGate) {
+function composeCommands(
+  graph: ProjectsGraph,
+  startupGate: StartupGate,
+  columnProposals: ColumnProposalRequests,
+) {
   const { projects, terminal, extensionContextStore } = graph;
   const cteProfilerService = new CteProfilerService(projects);
   const deferToProductionStatusBar = new DeferToProductionStatusBar(
@@ -314,6 +326,7 @@ function composeCommands(graph: ProjectsGraph, startupGate: StartupGate) {
     ),
     deferToProductionStatusBar,
     startupGate,
+    columnProposals,
   });
   return { vscodeCommands, deferToProductionStatusBar };
 }
@@ -349,7 +362,8 @@ export function compose(context: ExtensionContext): Composition {
   const { terminal, projectRegistry, currentProject } = graph;
   const fusion = composeFusion(graph);
   const startupGate = new StartupGate();
-  const commands = composeCommands(graph, startupGate);
+  const columnProposalRequests = new ColumnProposalRequests();
+  const commands = composeCommands(graph, startupGate, columnProposalRequests);
   const editor = composeEditorProviders(graph);
   const statusBars = new StatusBars(commands.deferToProductionStatusBar);
   const services = {
@@ -371,7 +385,8 @@ export function compose(context: ExtensionContext): Composition {
     graph.projects,
     registerDbtTaskProvider(graph.projects),
     graph.projectEnvironments,
-    composeWebviews(graph, fusion.dbtLineageService),
+    columnProposalRequests,
+    composeWebviews(graph, fusion.dbtLineageService, columnProposalRequests),
     editor.treeviewProviders,
     editor.contentProviders,
     editor.codeLensProviders,

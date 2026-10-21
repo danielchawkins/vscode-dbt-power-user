@@ -17,6 +17,7 @@ export const initialState: S = {
   queryHistory: [],
   tabState: QueryPanelTitleTabState.Preview,
   activeEditor: undefined,
+  preview: undefined,
 };
 
 /** Returns a handler that sets `key` to its payload. */
@@ -40,6 +41,7 @@ const queryPanel = typedReducer<
     setQueryResults: S["queryResults"];
     setLoading: S["loading"];
     setPublication: S["publication"];
+    setPreview: S["preview"];
   }
 >({
   setActiveEditor: set("activeEditor"),
@@ -49,6 +51,7 @@ const queryPanel = typedReducer<
     queryExecutionInfo: undefined,
     queryResultsError: undefined,
     compiledCodeMarkup: undefined,
+    preview: undefined,
     loading: false,
   }),
   setViewType: set("viewType"),
@@ -66,6 +69,7 @@ const queryPanel = typedReducer<
   setQueryResults: set("queryResults"),
   setLoading: set("loading"),
   setPublication: set("publication"),
+  setPreview: set("preview"),
 });
 
 export const queryPanelReducer = queryPanel.reducer;
@@ -86,4 +90,5 @@ export const {
   setTabState,
   setActiveEditor,
   setPublication,
+  setPreview,
 } = setters;

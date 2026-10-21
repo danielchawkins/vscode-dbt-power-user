@@ -162,6 +162,7 @@ function getContributedCommands(contributes: PackageJsonContributes) {
 const paletteHiddenCommands = [
   "fusionPowerUser.rerunFromHistory",
   "fusionPowerUser.copyModelName",
+  "fusionPowerUser.previewComputed",
 ];
 
 // The complete set of `contributes` keys this extension uses. A key must be
@@ -217,6 +218,12 @@ describe("command contribution consistency", () => {
         "Constant export; conditional registration",
       "features/queryResults/queryResultTestCommand.ts:RENDER_TEST_RESULT_COMMAND":
         "Constant export; conditional registration",
+      "features/docs/docsHarnessCommands.ts:DOCS_COLUMN_PROPOSALS_COMMAND":
+        "Constant export; conditional registration",
+      "features/docs/docsHarnessCommands.ts:DOCS_ACCEPT_ALL_PROPOSALS_COMMAND":
+        "Constant export; conditional registration",
+      "features/panels.ts:HELD_DRAFTS_TEST_COMMAND":
+        "Constant; registered only when a test harness runs",
     };
 
     const orphans = [...contributed].filter((cmd) => !literals.has(cmd));

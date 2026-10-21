@@ -111,6 +111,9 @@ suites_for() {
         echo "default,lineageInteractions,queryResultsInteractions,documentationEditorInteractions"
       fi
       ;;
+    lineage-groups)
+      echo "default,lineageGrouping"
+      ;;
   esac
 }
 

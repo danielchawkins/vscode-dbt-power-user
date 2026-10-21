@@ -1,0 +1,36 @@
+version: 2
+models:
+  - name: built_dev
+    columns:
+      # Overwrite case: the warehouse column is integer.
+      - name: customer_id
+        data_type: varchar
+        description: "Customer key."
+      # Not-found case: the relation has no such column.
+      - name: ghost
+        data_type: integer
+  # Inferred case: built in neither target, so the columns carry no data_type.
+  - name: never_built
+    columns:
+      - name: id
+  # Deferred case: built only in prod, so the columns carry no data_type.
+  - name: prod_only
+    columns:
+      - name: customer_id
+      - name: total_amount
+  # UNION case: customer_id agrees across the branches, value differs.
+  - name: union_orders
+    columns:
+      - name: customer_id
+      - name: value
+  # UNION case with two candidates: label is status in one branch and note in the other.
+  - name: union_labels
+    columns:
+      - name: customer_id
+      - name: label
+  # Join case: customer_id is a passthrough key on both sides of the join.
+  - name: order_join
+    columns:
+      - name: order_id
+      - name: customer_id
+      - name: total

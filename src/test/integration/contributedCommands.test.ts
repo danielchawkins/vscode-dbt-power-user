@@ -253,6 +253,18 @@ const rows: Record<string, Row> = {
   "fusionPowerUser.viewInDocEditor": async () => {
     await executeCommand("fusionPowerUser.viewInDocEditor");
   },
+  // The docs panel may warn once the request is answered; script the dismissal so that warning does not
+  // throw from the stub after the row has finished.
+  "fusionPowerUser.recordColumnTypes": async (ui) => {
+    ui.script("showWarningMessage", undefined);
+    await showModel("child.sql");
+    await executeCommand("fusionPowerUser.recordColumnTypes");
+  },
+  "fusionPowerUser.pullUpstreamDescriptions": async (ui) => {
+    ui.script("showWarningMessage", undefined);
+    await showModel("child.sql");
+    await executeCommand("fusionPowerUser.pullUpstreamDescriptions");
+  },
   "fusionPowerUser.runCurrentModel": async () => {
     await showModel("child.sql");
     await expectDbt("run", () =>
@@ -437,6 +449,20 @@ const rows: Record<string, Row> = {
   "fusionPowerUser.executeSQL": async () => {
     await showModel("with_ctes.sql");
     await expectDbt("show", () => executeCommand("fusionPowerUser.executeSQL"));
+  },
+  "fusionPowerUser.previewMaterialized": async () => {
+    await showModel("child.sql");
+    await expectDbt("show", () =>
+      executeCommand("fusionPowerUser.previewMaterialized"),
+    );
+  },
+  "fusionPowerUser.previewComputed": async () => {
+    await showModel("child.sql");
+    await expectDbt("show", () =>
+      executeCommand("fusionPowerUser.previewComputed", {
+        url: modelPath("child.sql"),
+      }),
+    );
   },
   "fusionPowerUser.buildCurrentModel": async () => {
     await showModel("child.sql");

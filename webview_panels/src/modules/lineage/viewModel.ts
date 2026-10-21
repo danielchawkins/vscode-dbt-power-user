@@ -1,6 +1,8 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import type { LineageViewState } from "@modules/app/viewState";
+import { MAX_VIEW_STATE_STRING } from "@modules/app/viewState";
 import { createContext } from "react";
+import { groupChips } from "./expansionGroups";
 import type { Direction, GraphState } from "./graph";
 
 type Settings = lineage.LineageSettings;
@@ -23,6 +25,19 @@ export type ResolvedSettings = {
   enabledRefSources: Record<RefSource, boolean>;
 };
 
+/** The user settings the panel only reads, each resolved to its default. */
+const resolveUserSettings = (
+  settings: Partial<Settings> | undefined,
+): Pick<
+  ResolvedSettings,
+  "maxNeighbours" | "groupBy" | "semanticZoom" | "title"
+> => ({
+  maxNeighbours: settings?.maxNeighbours ?? 20,
+  groupBy: settings?.groupBy ?? "folder",
+  semanticZoom: settings?.semanticZoom ?? true,
+  title: settings?.title ?? "alias",
+});
+
 export const resolveSettings = (
   settings: Partial<Settings> | undefined,
 ): ResolvedSettings => ({
@@ -39,6 +54,7 @@ export const resolveSettings = (
   },
   inferenceConfidenceThreshold: settings?.inferenceConfidenceThreshold ?? 0.8,
   includeSourcesInInference: settings?.includeSourcesInInference ?? false,
+  ...resolveUserSettings(settings),
 });
 
 /** The relationships to draw: enabled sources, inferred ones at or above the threshold, both ends drawn. */
@@ -59,7 +75,12 @@ export const visibleRefs = (
       )
     : [];
 
-/** The persisted view state of `graph`; `undefined` until a start table is drawn. */
+/**
+ * The persisted view state of `graph`; `undefined` until a start table is drawn. An expansion still being fetched is
+ * saved too, so hiding the view mid-fetch keeps it; a replay applies it like any other saved expansion. An open group
+ * whose ID is longer than a view state string is left out, since the whole state would be refused; that group comes
+ * back closed.
+ */
 export const viewStateOf = (
   graph: GraphState,
   publication: string | undefined,
@@ -69,10 +90,16 @@ export const viewStateOf = (
         panel: "lineage",
         publication,
         start: graph.start,
-        expansions: graph.expansions,
+        expansions: [
+          ...graph.expansions,
+          ...graph.pending.filter((key) => !graph.expansions.includes(key)),
+        ],
         columnTables: graph.columnTables,
         selectedTable: graph.selectedTable,
         selectedColumn: graph.selectedColumn,
+        openGroups: groupChips(graph)
+          .map((chip) => chip.id)
+          .filter((id) => id.length <= MAX_VIEW_STATE_STRING),
       }
     : undefined;
 
@@ -120,6 +147,14 @@ export function planRender(input: {
 /** What a table node asks the view to do. */
 export interface TableActions {
   toggleExpansion: (table: string, direction: Direction) => void;
+  /** Draws the next batch of a capped expansion's neighbours. */
+  showMore: (table: string, direction: Direction) => void;
+  /** Draws a closed group's members as ordinary cards, by the group's node ID. */
+  openGroup: (id: string) => void;
+  /** Draws the next batch of an open group's members, by the group's node ID. */
+  showMoreInGroup: (id: string) => void;
+  /** Closes an open group, by its group node ID, and drops what only its members drew. */
+  closeGroup: (id: string) => void;
   toggleColumns: (table: string) => void;
   selectColumn: (table: string, column: string) => void;
   openDetails: (table: string) => void;
@@ -131,6 +166,10 @@ const noop = (): undefined => undefined;
 /** The view's table actions; memoized nodes read them from context, so they never see a stale handler. */
 export const TableActionsContext = createContext<TableActions>({
   toggleExpansion: noop,
+  showMore: noop,
+  openGroup: noop,
+  showMoreInGroup: noop,
+  closeGroup: noop,
   toggleColumns: noop,
   selectColumn: noop,
   openDetails: noop,

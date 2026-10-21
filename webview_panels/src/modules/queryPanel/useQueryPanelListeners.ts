@@ -15,6 +15,7 @@ import {
   setHintIndex,
   setLimit,
   setLoading,
+  setPreview,
   setPublication,
   setQueryExecutionInfo,
   setQueryHistory,
@@ -90,6 +91,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
           message.error as QueryPanelStateProps["queryResultsError"],
         ),
       );
+      dispatch(setPreview(message.preview));
       dispatch(setCompiledCodeMarkup(message.compiled_sql));
       clearHintInterval();
       endQueryExecutionTimer();
@@ -104,6 +106,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
       columnTypes?: (string | null)[] | undefined;
       raw_sql?: string | undefined;
       compiled_sql?: string | undefined;
+      preview?: queryResults.ModelPreview | undefined;
     }) => {
       dispatch(setLoading(false));
       dispatch(
@@ -114,6 +117,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
           raw_sql: result.raw_sql,
         } as QueryPanelStateProps["queryResults"]),
       );
+      dispatch(setPreview(result.preview));
       dispatch(setCompiledCodeMarkup(result.compiled_sql));
       clearHintInterval();
       endQueryExecutionTimer();
@@ -194,6 +198,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
           columnNames: typedData?.queryResults?.columnNames,
           columnTypes: typedData?.queryResults?.columnTypes,
           compiled_sql: typedData.compiledCodeMarkup,
+          preview: typedData.preview,
         });
         dispatch(
           setQueryExecutionInfo({

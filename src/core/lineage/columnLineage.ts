@@ -1,7 +1,8 @@
 /** How a child column derives from a parent column in Fusion's static analysis; `unknown` for any other `op`. */
 type LineageEvolution = "copy" | "mod" | "scan" | "unknown";
 
-interface ColumnRef {
+/** One column of one node: `uniqueId` is the node's unique id and `column` its column name. */
+export interface ColumnRef {
   uniqueId: string;
   column: string;
 }

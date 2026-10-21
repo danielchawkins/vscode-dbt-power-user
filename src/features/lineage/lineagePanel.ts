@@ -10,6 +10,8 @@ import type { Project } from "../../projects/project/project";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
 import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
+import type { NeedsStrict } from "../../projects/registry/strictNeeded";
+import { strictNeededMessage } from "../../projects/registry/strictNeeded";
 import type { Handlers } from "../../webview/messageRouter";
 import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
@@ -23,8 +25,6 @@ import {
   resolveSourceStartingNode,
   SOURCE_YAML_EXTENSIONS,
 } from "./lineageSources";
-import type { NeedsStrict } from "./strictNeeded";
-import { strictNeededMessage } from "./strictNeeded";
 
 type HostMessage = lineage.HostMessage;
 type PanelMessage = lineage.PanelMessage;
@@ -235,6 +235,11 @@ export class LineagePanel
         this.respond(
           syncRequestId,
           this.dbtLineageService.getParentTables(args.params),
+        ),
+      tableEdges: ({ args, syncRequestId }) =>
+        this.respond(
+          syncRequestId,
+          this.dbtLineageService.getTableEdges(args.params),
         ),
       getColumns: async ({ args, syncRequestId }) =>
         this.respond(

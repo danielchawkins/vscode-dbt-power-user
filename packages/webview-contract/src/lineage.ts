@@ -53,6 +53,23 @@ export interface LineageTable {
   /** Number of dbt parents. */
   parentCount: number;
   packageName?: string | undefined;
+  /** The name `ref()` uses, when it differs from `label`. */
+  refName?: string | undefined;
+  /** The source table's own name, when it differs from `label`. */
+  identifier?: string | undefined;
+  /** Where the node is built: its database and schema; unset for nodes with no relation. */
+  database?: string | undefined;
+  schema?: string | undefined;
+  /** True when the node's package is the project's own, so the card can leave the package out. */
+  rootPackage?: boolean | undefined;
+  /** The node's layer (staging, intermediate, marts…), from a tag, its folder or its name prefix. */
+  layer?: string | undefined;
+  /** True when the node sets `meta.lineage.hidden: true`: its table and column edges are not drawn. */
+  hidden?: boolean | undefined;
+  /** The node's configured `schema`; a card shows it in place of a schema that ends with `_<customSchema>`. */
+  customSchema?: string | undefined;
+  /** The node's file path, `/`-separated; folder grouping reads it. */
+  path?: string | undefined;
   /** The node's data tests; `raw_sql` is the test's SQL. */
   tests: {
     key: string;
@@ -143,7 +160,23 @@ export interface LineageSettings {
   /** The inferred-relationship confidence floor, 0 to 1. */
   inferenceConfidenceThreshold?: number | undefined;
   includeSourcesInInference?: boolean | undefined;
+  /** The most nodes one expansion draws before a `+N more` marker; 0 draws all. A user setting, read-only here. */
+  maxNeighbours?: number | undefined;
+  /** How an over-cap expansion's new neighbours are drawn: by folder as group nodes, or `none`. A user setting. */
+  groupBy?: "none" | "folder" | undefined;
+  /** Below 50% zoom, cards keep their size and show only a larger badge and title. A user setting. */
+  semanticZoom?: boolean | undefined;
+  /** Titles cards by alias (`label`, the default) or by dbt name (`refName`). A user setting. */
+  title?: "alias" | "name" | undefined;
 }
+
+/**
+ * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom` and `title` are user
+ * settings the panel only reads.
+ */
+export type PersistedLineageSettings = Partial<
+  Omit<LineageSettings, "maxNeighbours" | "groupBy" | "semanticZoom" | "title">
+>;
 
 /** The `getConnectedColumns` request; the host reads `targets` and `upstreamExpansion`. */
 export interface ConnectedColumnsParams {
@@ -165,6 +198,8 @@ export type PanelMessage =
   | Request<"childTables", { table: string }>
   /** The tables `table` depends on (its dbt parents). */
   | Request<"parentTables", { table: string }>
+  /** The data-flow `[parent, child]` pairs among `tables`. */
+  | Request<"tableEdges", { tables: string[] }>
   | Request<"getColumns", { table: string; refresh?: boolean | undefined }>
   | Request<"getExposureDetails", { name: string }>
   | Request<"getFunctionDetails", { name: string }>
@@ -174,7 +209,7 @@ export type PanelMessage =
     >
   | Request<"getConnectedColumns", ConnectedColumnsParams>
   | OptionalRequest<"getLineageSettings">
-  | Request<"persistLineageSettings", Partial<LineageSettings>>;
+  | Request<"persistLineageSettings", PersistedLineageSettings>;
 
 const request = <P>(params: Fields<NoInfer<P>>) => ({
   args: shape<{ params: P }>({ params: shape<P>(params) }),
@@ -220,6 +255,7 @@ const panelFields: CommandFields<PanelMessage> = {
   openFile: request({ url: isString }),
   childTables: request({ table: isString }),
   parentTables: request({ table: isString }),
+  tableEdges: request({ tables: arrayOf(isString) }),
   getColumns: request({ table: isString, refresh: optionalBoolean }),
   getExposureDetails: request({ name: isString }),
   getFunctionDetails: request({ name: isString }),
@@ -231,7 +267,7 @@ const panelFields: CommandFields<PanelMessage> = {
     upstreamExpansion: isBoolean,
   }),
   getLineageSettings: optionalRequest({}),
-  persistLineageSettings: request<Partial<LineageSettings>>({
+  persistLineageSettings: request<PersistedLineageSettings>({
     showSelectEdges: optionalBoolean,
     showNonSelectEdges: optionalBoolean,
     defaultExpansion: optional(isNumber),

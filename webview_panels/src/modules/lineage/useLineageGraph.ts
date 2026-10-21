@@ -3,24 +3,28 @@ import type { LineageViewState } from "@modules/app/viewState";
 import { readViewState, writeViewState } from "@modules/app/viewState";
 import { panelLogger } from "@modules/logger";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { traceColumn } from "./columnTrace";
+import { expandLevels, replayExpansions } from "./expansionBatch";
+import { showMore } from "./expansionCap";
+import { closeGroup, openGroup, showMoreInGroup } from "./expansionGroups";
 import type { ColumnRef, Direction, GraphState, GraphStore } from "./graph";
 import {
   clearColumn,
   collapse,
   emptyGraph,
   expand,
-  expandLevels,
   hideColumns,
   isExpanded,
-  replayExpansions,
+  isPending,
+  linkDrawn,
   selectTable,
   showColumns,
-  traceColumn,
 } from "./graph";
 import {
   executeRequestInAsync,
   fetchColumns,
   fetchConnected,
+  fetchEdges,
   fetchNeighbours,
   openFile,
 } from "./requests";
@@ -30,6 +34,12 @@ import { planRender, viewStateOf } from "./viewModel";
 const logError = (what: string) => (error: unknown) =>
   panelLogger.error(`lineage ${what}`, error);
 
+/** How an expansion draws its neighbours: at most `cap` at first (0 draws all), and bucketed by `groupBy`. */
+export interface ExpansionOptions {
+  cap: number;
+  groupBy: "none" | "folder";
+}
+
 /** Replays `saved` onto the start table, or expands `levels` levels when nothing is saved. */
 async function build(
   store: GraphStore,
@@ -38,9 +48,15 @@ async function build(
 ): Promise<void> {
   if (!saved) {
     await expandLevels(store, levels, fetchNeighbours);
+    await linkDrawn(store, fetchEdges);
     return;
   }
-  await replayExpansions(store, saved.expansions, fetchNeighbours);
+  await replayExpansions(
+    store,
+    { expansions: saved.expansions, openGroups: saved.openGroups ?? [] },
+    fetchNeighbours,
+  );
+  await linkDrawn(store, fetchEdges);
   await showColumns(store, saved.columnTables, fetchColumns);
   store.update((s) => selectTable(s, saved.selectedTable));
   const column = saved.selectedColumn;
@@ -57,11 +73,36 @@ const actionsFor = (
 ): TableActions => ({
   toggleExpansion: (table: string, direction: Direction) => {
     const s = store();
-    if (isExpanded(s.get(), direction, table)) {
+    // A click on an expander that is still loading cancels it, as a click on an open one closes it.
+    if (
+      isExpanded(s.get(), direction, table) ||
+      isPending(s.get(), direction, table)
+    ) {
       s.update((g) => collapse(g, direction, table));
       return;
     }
-    expand(s, direction, table, fetchNeighbours).catch(logError("expand"));
+    expand(s, direction, table, fetchNeighbours)
+      .then(() => linkDrawn(s, fetchEdges))
+      .catch(logError("expand"));
+  },
+  showMore: (table: string, direction: Direction) => {
+    const s = store();
+    s.update((g) => showMore(g, direction, table));
+    linkDrawn(s, fetchEdges).catch(logError("show more"));
+  },
+  openGroup: (id: string) => {
+    const s = store();
+    s.update((g) => openGroup(g, id));
+    linkDrawn(s, fetchEdges).catch(logError("open group"));
+  },
+  showMoreInGroup: (id: string) => {
+    const s = store();
+    s.update((g) => showMoreInGroup(g, id));
+    linkDrawn(s, fetchEdges).catch(logError("show more in group"));
+  },
+  // Closing only removes tables, so there are no new pairs to fetch.
+  closeGroup: (id: string) => {
+    store().update((g) => closeGroup(g, id));
   },
   toggleColumns: (table: string) => {
     const s = store();
@@ -91,7 +132,10 @@ const actionsFor = (
 });
 
 /** The graph state, a store per rebuild generation, and `rebuild`, which bumps `drawnKey` when it settles. */
-function useGraphStore(defaultExpansion: () => number) {
+function useGraphStore(
+  defaultExpansion: () => number,
+  expansionOptions: () => ExpansionOptions,
+) {
   const [graph, setGraph] = useState<GraphState>(emptyGraph);
   const [drawnKey, setDrawnKey] = useState(0);
   const graphRef = useRef(graph);
@@ -115,7 +159,8 @@ function useGraphStore(defaultExpansion: () => number) {
   const rebuild = useCallback(
     (start: lineage.LineageTable | undefined, saved?: LineageViewState) => {
       const gen = ++generationRef.current;
-      graphRef.current = emptyGraph(start);
+      const { cap, groupBy } = expansionOptions();
+      graphRef.current = emptyGraph(start, cap, groupBy);
       setGraph(graphRef.current);
       buildingRef.current = !!start;
       if (!start) {
@@ -130,7 +175,7 @@ function useGraphStore(defaultExpansion: () => number) {
           }
         });
     },
-    [storeFor, defaultExpansion],
+    [storeFor, defaultExpansion, expansionOptions],
   );
 
   const current = useCallback(
@@ -143,10 +188,16 @@ function useGraphStore(defaultExpansion: () => number) {
 /**
  * The lineage graph driven by the host's `render` and `projectSaved` messages. The first render replays the view
  * state VS Code kept for a rebuilt page; every change after it is written back through `writeViewState`.
+ * `expansionOptions` gives the cap on neighbours an expansion draws at first (0 draws all) and how they are grouped.
+ * While `ready` is false, the latest render is held and drawn once it turns true, so the cap is the host's.
  */
 export function useLineageGraph(
   defaultExpansion: () => number,
   openDetails: (table: string) => void,
+  {
+    expansionOptions = () => ({ cap: 0, groupBy: "none" }),
+    ready = true,
+  }: { expansionOptions?: () => ExpansionOptions; ready?: boolean } = {},
 ): {
   graph: GraphState;
   /** The latest `render` arguments: the panel notice and whether empty column lists need strict analysis. */
@@ -157,32 +208,35 @@ export function useLineageGraph(
   reset: () => void;
 } {
   const { graph, graphRef, drawnKey, buildingRef, current, rebuild } =
-    useGraphStore(defaultExpansion);
+    useGraphStore(defaultExpansion, expansionOptions);
   const [rendered, setRendered] = useState<lineage.RenderArgs>();
   const publicationRef = useRef<string | undefined>(undefined);
   const refreshRef = useRef(false);
   const restoredRef = useRef(false);
 
-  const onRender = useCallback(
-    (args: lineage.RenderArgs | undefined) => {
-      setRendered(args);
-      const plan = planRender({
-        args,
-        graph: graphRef.current,
-        publication: publicationRef.current,
-        refresh: refreshRef.current,
-        stored: () =>
-          restoredRef.current ? undefined : readViewState("lineage"),
-      });
-      if (!plan) {
-        return;
-      }
-      restoredRef.current = true;
-      refreshRef.current = false;
-      publicationRef.current = args?.publication;
-      rebuild(plan.start, plan.saved);
-    },
-    [graphRef, rebuild],
+  const onRender = useHeldUntil(
+    ready,
+    useCallback(
+      (args: lineage.RenderArgs | undefined) => {
+        setRendered(args);
+        const plan = planRender({
+          args,
+          graph: graphRef.current,
+          publication: publicationRef.current,
+          refresh: refreshRef.current,
+          stored: () =>
+            restoredRef.current ? undefined : readViewState("lineage"),
+        });
+        if (!plan) {
+          return;
+        }
+        restoredRef.current = true;
+        refreshRef.current = false;
+        publicationRef.current = args?.publication;
+        rebuild(plan.start, plan.saved);
+      },
+      [graphRef, rebuild],
+    ),
   );
 
   useEffect(() => {
@@ -219,6 +273,30 @@ export function useLineageGraph(
   };
   const { select, actions } = useTableActions(current, openDetails);
   return { graph, rendered, drawnKey, actions, select, reset };
+}
+
+/** `handle`, except that while `ready` is false the latest call is held, and replayed once `ready` turns true. */
+function useHeldUntil<T>(ready: boolean, handle: (value: T) => void) {
+  const readyRef = useRef(ready);
+  const heldRef = useRef<{ value: T }>(undefined);
+  useEffect(() => {
+    readyRef.current = ready;
+    const held = heldRef.current;
+    if (ready && held) {
+      heldRef.current = undefined;
+      handle(held.value);
+    }
+  }, [ready, handle]);
+  return useCallback(
+    (value: T) => {
+      if (readyRef.current) {
+        handle(value);
+      } else {
+        heldRef.current = { value };
+      }
+    },
+    [handle],
+  );
 }
 
 /** Selection and the table actions over the current store; stable while `current` and `openDetails` are. */

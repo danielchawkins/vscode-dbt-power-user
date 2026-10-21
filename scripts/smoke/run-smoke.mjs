@@ -13,14 +13,17 @@ import {
   readdirSync,
   readFileSync,
   rmSync,
-  statSync,
   symlinkSync,
   writeFileSync,
   writeSync,
 } from "node:fs";
-import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import path from "node:path";
+import {
+  createTimestampedLog,
+  findAvailablePort,
+  listLogs,
+} from "./launchSupport.mjs";
 import { resolveOnPath, TOOL_ENV_FIXTURES } from "./toolEnvFixtures.mjs";
 
 const __dirname = import.meta.dirname;
@@ -108,6 +111,16 @@ if (!workspaceFile) {
 }
 const profilesEnv = conflictingProfilesEnv(workspaceParent);
 const suites = toolEnv?.suites ?? args.suites;
+// Logs, crash dumps, host output and failure bundles outlive the run: cleanup removes only the directories above.
+const diagnosticsDir = path.resolve(
+  process.env.FPU_SMOKE_DIAGNOSTICS ?? path.join(root, "out/smoke-diagnostics"),
+  host,
+  toolEnv ? `tool-env-${toolEnvFixture.name}` : path.basename(fixture),
+);
+rmSync(diagnosticsDir, { recursive: true, force: true });
+mkdirSync(diagnosticsDir, { recursive: true });
+const hostLog = createTimestampedLog(path.join(diagnosticsDir, "host.log"));
+console.log(`FPU_SMOKE_DIAGNOSTICS_DIR=${diagnosticsDir}`);
 const cleanup = () => {
   rmSync(userDataDir, { recursive: true, force: true });
   rmSync(extensionsDir, { recursive: true, force: true });
@@ -180,14 +193,14 @@ const watchdog = setTimeout(() => {
         : /Cursor|Code|dbt|Electron/.test(line),
     );
   out(hostLines.join("\n"));
-  const logs = listLogs(path.join(userDataDir, "logs")).sort(
+  const logs = listLogs(path.join(diagnosticsDir, "logs")).sort(
     (a, b) =>
       Number(/renderer|exthost\.log|Fusion|dbt/i.test(b)) -
       Number(/renderer|exthost\.log|Fusion|dbt/i.test(a)),
   );
   for (const file of logs) {
     const lines = readFileSync(file, "utf-8").split("\n");
-    out(`FPU_SMOKE_LOG ${path.relative(userDataDir, file)}`);
+    out(`FPU_SMOKE_LOG ${path.relative(diagnosticsDir, file)}`);
     out(lines.slice(-80).join("\n"));
   }
   // The busiest processes of the host under test are the likeliest to be spinning; native stacks name the
@@ -220,11 +233,17 @@ try {
   await runTests({
     vscodeExecutablePath: hostApp,
     extensionTestsPath: path.join(root, "out/test/smoke/index.js"),
+    stdout: hostLog.tee(process.stdout),
+    stderr: hostLog.tee(process.stderr),
     launchArgs: [
       openTarget,
       `--user-data-dir=${userDataDir}`,
       `--extensions-dir=${extensionsDir}`,
       `--remote-debugging-port=${cdpPort}`,
+      `--logsPath=${path.join(diagnosticsDir, "logs")}`,
+      `--crash-reporter-directory=${path.join(diagnosticsDir, "crashes")}`,
+      // Trace for this extension only; the workbench's own trace would bury it.
+      "--log=danielchawkins.fusion-power-user:trace",
       // A covered or unfocused window otherwise reports hidden and paints nothing until it is raised.
       "--disable-backgrounding-occluded-windows",
       "--disable-renderer-backgrounding",
@@ -239,12 +258,13 @@ try {
       ...(toolEnv ? toolEnv.env : {}),
       ...(toolEnv
         ? {
-            FPU_SMOKE_LOGS_DIR: path.join(userDataDir, "logs"),
+            FPU_SMOKE_LOGS_DIR: path.join(diagnosticsDir, "logs"),
             FPU_SMOKE_TOOLENV_TMP: toolEnv.tmp,
           }
         : {}),
       FPU_SMOKE_HOST: host,
       FPU_CDP_PORT: cdpPort,
+      FPU_SMOKE_DIAGNOSTICS: diagnosticsDir,
       FPU_SMOKE_LAUNCH_EPOCH_MS: String(launchEpochMs),
       FPU_SMOKE_PASSED_MARKER: passedMarker,
       ...(suites ? { FPU_SMOKE_SUITES: suites } : {}),
@@ -273,6 +293,12 @@ try {
     }
     throw error;
   });
+  // Cursor on Linux can exit 0 after a failed run, so a clean exit without the marker is still a failure.
+  if (!existsSync(passedMarker)) {
+    throw new Error(
+      `${host} exited cleanly but its tests did not all pass (no ${passedMarker})`,
+    );
+  }
   await assertNoSurvivingFusionLspProcess(workspaceDir);
 } finally {
   clearTimeout(watchdog);
@@ -301,22 +327,6 @@ async function assertNoSurvivingFusionLspProcess(scopedWorkspaceDir) {
   throw new Error(
     `Surviving dbt lsp process after host exit:\n${leaked.join("\n")}`,
   );
-}
-
-function listLogs(dir) {
-  let entries;
-  try {
-    entries = readdirSync(dir);
-  } catch {
-    return [];
-  }
-  return entries.flatMap((entry) => {
-    const file = path.join(dir, entry);
-    if (statSync(file).isDirectory()) {
-      return listLogs(file);
-    }
-    return file.endsWith(".log") ? [file] : [];
-  });
 }
 
 /**
@@ -431,23 +441,4 @@ function buildToolEnvironment(entry) {
       FPU_SMOKE_RESULTS: path.join(resultsRoot, host, resultName),
     },
   };
-}
-
-async function findAvailablePort(start) {
-  for (let port = start; port < 32_000; port += 1) {
-    if (await canBind(port)) {
-      return port;
-    }
-  }
-  throw new Error("No CDP port available below the ephemeral range");
-}
-
-function canBind(port) {
-  return new Promise((resolve) => {
-    const server = createServer();
-    server.once("error", () => resolve(false));
-    server.listen(port, "127.0.0.1", () => {
-      server.close(() => resolve(true));
-    });
-  });
 }

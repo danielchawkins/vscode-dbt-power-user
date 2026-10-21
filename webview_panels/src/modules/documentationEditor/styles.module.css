@@ -116,8 +116,8 @@
 }
 .doc-generator .body-wrap .body {
   width: 100%;
-  min-width: 768px;
-  overflow: overlay;
+  min-width: 0;
+  overflow: auto;
   padding-right: 1rem;
 }
 .doc-generator .body-wrap .body :global .alert {
@@ -125,10 +125,6 @@
 }
 .doc-generator .body-wrap .body .column-header {
   justify-content: space-between;
-}
-.doc-generator .body-wrap .body .column-header .sync-btn svg {
-  width: 14px;
-  vertical-align: bottom;
 }
 .doc-generator .body-wrap .body .columns {
   gap: 16px;

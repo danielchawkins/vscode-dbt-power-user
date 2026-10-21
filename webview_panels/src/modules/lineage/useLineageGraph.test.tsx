@@ -3,6 +3,8 @@ import { handleIncomingResponse } from "@modules/app/requestExecutor";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getVsCodeApiMock } from "../../test/setup";
+import { drawnIds } from "./graph";
+import { groupNodeId } from "./grouping";
 import { useLineageGraph } from "./useLineageGraph";
 
 const table = (
@@ -30,6 +32,7 @@ const ANSWERS: Record<string, (params: never) => unknown> = {
   parentTables: ({ table: t }: { table: string }) => ({
     tables: t === "b" ? [TABLES.a] : t === "c" ? [TABLES.b] : [],
   }),
+  tableEdges: () => ({ edges: [] }),
   getColumns: ({ table: t }: { table: string }) => ({
     id: t,
     columns: [{ table: t, name: "id" }],
@@ -52,10 +55,12 @@ type Posted = {
 };
 
 /** Answers each request the hook posts as the host would. */
-const answerRequests = () =>
+const answerRequests = (
+  answers: Record<string, (params: never) => unknown> = ANSWERS,
+) =>
   getVsCodeApiMock().postMessage.mockImplementation((message: unknown) => {
     const { command, syncRequestId, args } = message as Posted;
-    const answer = ANSWERS[command];
+    const answer = answers[command];
     if (answer && syncRequestId) {
       queueMicrotask(() =>
         handleIncomingResponse({
@@ -67,13 +72,17 @@ const answerRequests = () =>
     }
   });
 
-const postRender = (start: string, publication = "s:1") =>
+const postRender = (
+  start: string,
+  publication = "s:1",
+  node: lineage.LineageTable = TABLES[start as "a"],
+) =>
   act(() => {
     globalThis.dispatchEvent(
       new MessageEvent("message", {
         data: {
           command: "render",
-          args: { node: TABLES[start as "a"], publication },
+          args: { node, publication },
         },
       }),
     );
@@ -132,6 +141,24 @@ describe("useLineageGraph", () => {
     ]);
   });
 
+  it("restores a saved parent expansion and column list when the start table's render count is zero", async () => {
+    answerRequests();
+    getVsCodeApiMock().getState.mockReturnValue({
+      panel: "lineage",
+      publication: "s:1",
+      start: "c",
+      expansions: ["p:c"],
+      columnTables: ["c"],
+    } as never);
+    const { result } = renderHook(() => useLineageGraph(() => 0, vi.fn()));
+    await postRender("c", "s:1", { ...TABLES.c, parentCount: 0 });
+    await waitFor(() => expect(result.current.drawnKey).toBe(1));
+    expect(result.current.graph.expansions).toEqual(["p:c"]);
+    expect([...drawnIds(result.current.graph)].toSorted()).toEqual(["b", "c"]);
+    expect(result.current.graph.known.c?.parentCount).toBe(1);
+    expect(result.current.graph.columnTables).toEqual(["c"]);
+  });
+
   it("collapses an expansion and lists columns through the table actions", async () => {
     answerRequests();
     const { result } = renderHook(() => useLineageGraph(() => 1, vi.fn()));
@@ -144,5 +171,91 @@ describe("useLineageGraph", () => {
     act(() => result.current.actions.toggleExpansion("a", "children"));
     expect(result.current.graph.expansions).toEqual([]);
     expect(result.current.graph.columnTables).toEqual([]);
+  });
+
+  it("keeps an open group open after a project save", async () => {
+    // `a` has four children in two folders; with a cap of 2 they bucket into two closed groups.
+    const folderChildren = [
+      { ...table("m1", 0, 1), path: "models/x/m1.sql" },
+      { ...table("m2", 0, 1), path: "models/x/m2.sql" },
+      { ...table("m3", 0, 1), path: "models/y/m3.sql" },
+      { ...table("m4", 0, 1), path: "models/y/m4.sql" },
+    ];
+    answerRequests({
+      ...ANSWERS,
+      childTables: ({ table: t }: { table: string }) => ({
+        tables: t === "a" ? folderChildren : [],
+      }),
+    });
+    const { result } = renderHook(() =>
+      useLineageGraph(() => 1, vi.fn(), {
+        expansionOptions: () => ({ cap: 2, groupBy: "folder" }),
+      }),
+    );
+    await postRender("a");
+    await waitFor(() => expect(result.current.drawnKey).toBe(1));
+    expect(result.current.graph.groups["c:a"]?.open).toEqual({});
+
+    act(() =>
+      result.current.actions.openGroup(groupNodeId("c:a", "pkg:models/x")),
+    );
+    await waitFor(() =>
+      expect(result.current.graph.groups["c:a"]?.open).toEqual({
+        "pkg:models/x": 2,
+      }),
+    );
+
+    act(() => {
+      globalThis.dispatchEvent(
+        new MessageEvent("message", { data: { command: "projectSaved" } }),
+      );
+    });
+    await postRender("a");
+    await waitFor(() => expect(result.current.drawnKey).toBe(2));
+    expect(result.current.graph.groups["c:a"]?.open).toEqual({
+      "pkg:models/x": 2,
+    });
+    expect(getVsCodeApiMock().setState).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        openGroups: [groupNodeId("c:a", "pkg:models/x")],
+      }),
+    );
+  });
+
+  it("saves an expansion that is still pending when the view is hidden", async () => {
+    answerRequests();
+    const { result } = renderHook(() => useLineageGraph(() => 1, vi.fn()));
+    await postRender("b");
+    await waitFor(() => expect(result.current.drawnKey).toBe(1));
+    // Collapse the parents, then hold the answer to the next expansion of them.
+    act(() => result.current.actions.toggleExpansion("b", "parents"));
+    const held: (() => void)[] = [];
+    const answer = getVsCodeApiMock().postMessage.getMockImplementation()!;
+    getVsCodeApiMock().postMessage.mockImplementation((message: unknown) => {
+      const { command, syncRequestId, args } = message as Posted;
+      if (command === "parentTables" && syncRequestId) {
+        held.push(() =>
+          handleIncomingResponse({
+            syncRequestId,
+            status: true,
+            body: ANSWERS.parentTables(args!.params),
+          }),
+        );
+        return;
+      }
+      answer(message);
+    });
+    act(() => result.current.actions.toggleExpansion("b", "parents"));
+    await waitFor(() => expect(result.current.graph.pending).toEqual(["p:b"]));
+    // The view is hidden here: the last state VS Code keeps must already name the pending expansion.
+    expect(getVsCodeApiMock().setState).toHaveBeenLastCalledWith(
+      expect.objectContaining({ expansions: expect.arrayContaining(["p:b"]) }),
+    );
+    await act(async () => held.forEach((release) => release()));
+    await waitFor(() =>
+      expect(result.current.graph.expansions).toEqual(
+        expect.arrayContaining(["p:b"]),
+      ),
+    );
   });
 });

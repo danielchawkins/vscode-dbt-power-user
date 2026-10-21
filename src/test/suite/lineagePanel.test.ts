@@ -347,10 +347,91 @@ describe("LineagePanel", () => {
           showSelectEdges: false,
           showNonSelectEdges: true,
           defaultExpansion: 3,
+          maxNeighbours: 3,
+          groupBy: "folder",
+          semanticZoom: true,
+          title: "alias",
         },
         status: true,
       },
     });
+  });
+
+  it("reads lineage.groupBy, treating any value but none as folder, and never persists it", async () => {
+    const values: Record<string, unknown> = { "lineage.groupBy": "none" };
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: (key: string) => values[key] ?? 3,
+      update: vi.fn(),
+    });
+    await (panel as any).handleCommand({
+      command: "persistLineageSettings",
+      args: { params: { groupBy: "folder" } },
+      syncRequestId: "p",
+    });
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.groupBy).toBe("none");
+
+    values["lineage.groupBy"] = "typo";
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g2",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.groupBy).toBe("folder");
+  });
+
+  it("reads lineage.semanticZoom, false only when exactly false, and never persists it", async () => {
+    const values: Record<string, unknown> = { "lineage.semanticZoom": false };
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: (key: string) => values[key] ?? 3,
+      update: vi.fn(),
+    });
+    await (panel as any).handleCommand({
+      command: "persistLineageSettings",
+      args: { params: { semanticZoom: true } },
+      syncRequestId: "p",
+    });
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.semanticZoom).toBe(
+      false,
+    );
+
+    values["lineage.semanticZoom"] = "typo";
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g2",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.semanticZoom).toBe(true);
+  });
+
+  it("reads lineage.title, name only when exactly name, and never persists it", async () => {
+    const values: Record<string, unknown> = { "lineage.title": "name" };
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: (key: string) => values[key] ?? 3,
+      update: vi.fn(),
+    });
+    await (panel as any).handleCommand({
+      command: "persistLineageSettings",
+      args: { params: { title: "alias" } },
+      syncRequestId: "p",
+    });
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.title).toBe("name");
+
+    values["lineage.title"] = "typo";
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g2",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.title).toBe("alias");
   });
 
   it("persists only known settings and clamps the confidence threshold", async () => {
@@ -384,6 +465,10 @@ describe("LineagePanel", () => {
         showRefs: false,
         inferenceConfidenceThreshold: threshold > 1 ? 1 : 0,
         defaultExpansion: 3,
+        maxNeighbours: 3,
+        groupBy: "folder",
+        semanticZoom: true,
+        title: "alias",
       });
     }
   });
@@ -546,7 +631,7 @@ describe("LineagePanel — after a save", () => {
     const panel = Object.create(LineagePanel.prototype);
     const postMessage = vi.fn();
     panel._panel = { webview: { postMessage } };
-    panel.dbtTerminal = { info: vi.fn(), error: vi.fn() };
+    panel.dbtTerminal = { info: vi.fn(), debug: vi.fn(), error: vi.fn() };
     panel.dbtLineageService = { columnsNeedStrict: () => undefined };
     const current = {
       projectRoot: { fsPath: "/p" },
@@ -584,7 +669,7 @@ describe("LineagePanel — after a save", () => {
       const panel = Object.create(LineagePanel.prototype);
       const postMessage = vi.fn();
       panel._panel = { webview: { postMessage } };
-      panel.dbtTerminal = { info: vi.fn(), error: vi.fn() };
+      panel.dbtTerminal = { info: vi.fn(), debug: vi.fn(), error: vi.fn() };
       panel.dbtLineageService = { columnsNeedStrict: () => undefined };
       const project = (root: string, publicationEpoch: number) => ({
         projectRoot: { fsPath: root },

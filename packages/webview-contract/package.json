@@ -8,6 +8,11 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
+    },
+    "./columnProposals": {
+      "types": "./dist/columnProposals.d.ts",
+      "import": "./dist/columnProposals.js",
+      "default": "./dist/columnProposals.js"
     }
   },
   "files": [

@@ -10,8 +10,10 @@ import {
 import {
   activate,
   EMPTY_STATE,
+  HUB,
   node,
   openLineage,
+  zoomPast,
 } from "../../test/lineageHarness";
 import { TESTED_CONTROLS } from "./Lineage.controls.test";
 
@@ -40,6 +42,22 @@ describe("Lineage control coverage", () => {
           await openLineage(EMPTY_STATE);
           return page();
         },
+        grouped: async () => {
+          await openLineage(
+            { node: HUB, publication: "s:1" },
+            { settings: { maxNeighbours: 2 } },
+          );
+          return page();
+        },
+        "group open": async () => {
+          const { user } = await openLineage(
+            { node: HUB, publication: "s:1" },
+            { settings: { maxNeighbours: 2 } },
+          );
+          await activate(user, "button", "Open staging");
+          await screen.findByRole("button", { name: "Close staging" });
+          return page();
+        },
         "Settings open": stateOf(({ user }) =>
           activate(user, "button", "Settings"),
         ),
@@ -55,6 +73,9 @@ describe("Lineage control coverage", () => {
           await activate(user, "button", "Details", node(container, "a"));
           await screen.findByRole("button", { name: "Columns (1)" });
         }),
+        "zoomed out": stateOf(({ user, container }) =>
+          zoomPast(user, container, "Out"),
+        ),
         "minimap shown": stateOf(({ user }) =>
           activate(user, "button", "Show minimap"),
         ),

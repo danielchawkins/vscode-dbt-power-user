@@ -18,22 +18,32 @@ import type { ProjectLookup, Projects } from "../../projects/project/projects";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
 import { activeModelUri } from "../../projects/registry/previewUri";
+import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
 import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
+import type {
+  ColumnProposalRequests,
+  ColumnProposalService,
+  ProposalKind,
+  ProposalTarget,
+} from "./columnProposals";
+import { proposalTargetOf } from "./columnProposals";
+import type { TypeSourceProject } from "./columnTypeSource";
 import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
-import type { DBTDocumentation, MetadataColumn } from "./docGenTypes";
+import type { DBTDocumentation } from "./docGenTypes";
 import {
   type DocsProject,
   DocsEditRequests,
   withProgress,
 } from "./docsEditHandlers";
 import { saveDocumentation } from "./docsEditSave";
-import { convertColumnNamesByCaseConfig } from "./docsYaml";
+import { registerDocsHarnessCommands } from "./docsHarnessCommands";
 
 /** The active editor's project as the panel reads it: the handlers' view plus the adapter for saving. */
-type PanelProject = DocsProject & { getAdapterType(): string };
+type PanelProject = DocsProject &
+  TypeSourceProject & { getAdapterType(): string };
 
 /** The projects the panel resolves editors in, and the manifest events it follows. */
 type PanelProjects = ProjectLookup<PanelProject> &
@@ -56,6 +66,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
   >();
   private readonly docGenService: DocGenService;
   private readonly dbtTestService: DbtTestService;
+  private readonly columnProposals: ColumnProposalService;
   private loadedFromManifest = false;
   private onMessageDisposable: Disposable | undefined;
   private demandSubscription: Disposable | undefined;
@@ -70,6 +81,8 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       dbtTestService: DbtTestService;
       queryManifestService: QueryManifestService;
       emitterService: SharedStateService;
+      columnProposals: ColumnProposalService;
+      columnProposalRequests: ColumnProposalRequests;
     },
     terminal: Log,
     parseDemand?: ParseDemand,
@@ -84,12 +97,25 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     this.parseDemand = parseDemand;
     this.docGenService = services.docGenService;
     this.dbtTestService = services.dbtTestService;
+    this.columnProposals = services.columnProposals;
+    const harness = registerDocsHarnessCommands({
+      columnProposals: this.columnProposals,
+      docGenService: this.docGenService,
+      dbtTestService: this.dbtTestService,
+      drafts: this.drafts,
+      proposalTarget: () => this.proposalTarget(),
+      save: (message) => this.saveAndReply(message),
+    });
+    this._disposables.push(...harness);
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
       projects.onDidRemoveProject((root) => {
         this.forgetDrafts(root);
         void this.onManifestChanged();
       }),
+      services.columnProposalRequests.onDidRequest(
+        ({ kind }) => void this.onProposalRequest(kind),
+      ),
       window.onDidChangeActiveTextEditor(
         async (event: TextEditor | undefined) => {
           this.documentation = undefined;
@@ -143,6 +169,28 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     }
   }
 
+  /** Model paths with an unsaved draft in host memory; the smoke suites check that none leak between them. */
+  heldDrafts(): string[] {
+    return [...this.drafts.keys()];
+  }
+
+  /** The active model's columns for a proposal: the draft's and the YAML's, with the project that answers. */
+  private async proposalTarget(
+    project = this.getProject(),
+  ): Promise<ProposalTarget | undefined> {
+    const { documentation } =
+      await this.docGenService.getUncompiledDocumentationForCurrentActiveFile();
+    if (!documentation || !project) {
+      return undefined;
+    }
+    return proposalTargetOf({
+      documentation,
+      draft: this.drafts.get(documentation.filePath)?.docs.columns,
+      project,
+      manifest: this.queryManifestService.manifestFor(),
+    });
+  }
+
   private async transmitData() {
     const { documentation, message } =
       await this.docGenService.getUncompiledDocumentationForCurrentActiveFile();
@@ -182,15 +230,13 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     );
   }
 
-  private async transmitColumns(columns: MetadataColumn[]) {
-    await this.post({ command: "renderColumnsFromMetadataFetch", columns });
-  }
-
   public override async resolveWebviewView(
     panel: WebviewView,
     context: WebviewViewResolveContext,
     token: CancellationToken,
   ) {
+    // A rebuilt page has not reported ready yet, so a request waits for its webview:ready.
+    this.isWebviewReady = false;
     super.resolveWebviewView(panel, context, token);
     panel.title = "";
     this.setupWebviewHooks();
@@ -206,6 +252,14 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       panel.onDidChangeVisibility,
     );
     panel.onDidDispose(() => this.demandSubscription?.dispose());
+    this._disposables.push(
+      panel.onDidChangeVisibility(() => {
+        if (!panel.visible) {
+          // A hidden view's page is discarded, so the page shown next must report ready again.
+          this.isWebviewReady = false;
+        }
+      }),
+    );
   }
 
   private setupWebviewHooks() {
@@ -253,10 +307,12 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
       saveDraft: (message) => this.saveDraft(message),
       openProblemsTab: () =>
         commands.executeCommand("workbench.action.problems.focus"),
-      fetchMetadataFromDatabase: requests.withProject(
-        ({ syncRequestId }, project, modelPath) =>
-          this.fetchMetadataFromDatabase(project, modelPath, syncRequestId),
-      ),
+      proposeColumns: ({ kind }) => this.propose(kind, this.getProject()),
+      runNoticeAction: () =>
+        commands.executeCommand(
+          USE_STRICT_ANALYSIS_COMMAND,
+          this.getProject()?.projectRoot,
+        ),
       saveDocumentation: requests.withProject((message) =>
         withProgress("Saving documentation", () => this.saveAndReply(message)),
       ),
@@ -297,55 +353,37 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     });
   }
 
-  private fetchMetadataFromDatabase(
-    project: DocsProject,
-    modelPath: Uri,
-    syncRequestId: string | undefined,
-  ) {
-    return withProgress(
-      "Syncing columns with metadata from database",
-      async () => {
-        const modelName = path.basename(modelPath.fsPath, ".sql");
-        try {
-          const columnsInRelation =
-            await project.queries.getColumnsOfModel(modelName);
-          const columns = convertColumnNamesByCaseConfig(
-            columnsInRelation.map((column) => ({
-              name: column.column,
-              type: column.dtype.toLowerCase(),
-            })),
-            modelName,
-            this.documentation?.patchPath,
-            project.projectRoot.fsPath,
-          );
-          await this.transmitColumns(columns);
-          if (syncRequestId) {
-            await this.post({
-              command: "response",
-              args: { syncRequestId, body: { columns }, status: true },
-            });
-          }
-        } catch (exc) {
-          await this.transmitError();
-          void notifyError(
-            project,
-            `Could not fetch metadata for ${modelName} from the database`,
-            exc,
-          );
-          this.dbtTerminal.error(
-            "docsEditPanelLoadError",
-            `An error occured while fetching metadata for ${modelName} from the database`,
-            exc,
-          );
-          if (syncRequestId) {
-            await this.post({
-              command: "response",
-              args: { syncRequestId, body: {}, status: false },
-            });
-          }
-        }
-      },
-    );
+  /** Posts the proposals of `kind` for the active model; a superseded or cancelled request posts nothing. */
+  private async propose(kind: ProposalKind, project: PanelProject | undefined) {
+    const target = await this.proposalTarget(project);
+    const payload =
+      target && (await this.columnProposals.propose(kind, target));
+    if (payload) {
+      await this.post({ command: "renderColumnProposals", payload });
+    }
+  }
+
+  /** A command asked for proposals: waits for the page, makes the active model's documentation current, then proposes. */
+  private async onProposalRequest(kind: ProposalKind) {
+    if (!(await this.checkIfWebviewReady(10_000))) {
+      void window.showWarningMessage(
+        "The documentation editor did not load; try again",
+      );
+      return;
+    }
+    const activeFile =
+      window.activeTextEditor &&
+      activeModelUri(window.activeTextEditor.document.uri).fsPath;
+    if (!this.documentation || this.documentation.filePath !== activeFile) {
+      await this.transmitData();
+    }
+    const project = this.getProject();
+    if (!project) {
+      const model = activeFile ? path.basename(activeFile, ".sql") : "(none)";
+      void window.showWarningMessage(`No dbt project for the model ${model}`);
+      return;
+    }
+    await this.propose(kind, project);
   }
 
   private async reloadDocumentationFromManifest() {

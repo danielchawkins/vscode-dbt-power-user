@@ -67,7 +67,7 @@
   },
   "src/modules/lineage/graph.ts": {
     "max-params": {
-      "count": 3
+      "count": 2
     }
   },
   "src/modules/queryPanel/components/grid/GridBodyRow.tsx": {

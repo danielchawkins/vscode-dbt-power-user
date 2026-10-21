@@ -8,7 +8,8 @@ permissions:
 
 jobs:
   check:
-    runs-on: macos-latest
+    # Linux runners are plentiful; macOS runners have repeatedly failed to start a job.
+    runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
       - name: Checkout
@@ -48,7 +49,7 @@ jobs:
         run: just package
 
       - name: Checksum
-        run: shasum -a 256 ./*.vsix | tee vsix.sha256
+        run: sha256sum ./*.vsix | tee vsix.sha256
 
       - name: Upload VSIX
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

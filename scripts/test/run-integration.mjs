@@ -283,6 +283,9 @@ function prepareLabel(label) {
   }[label];
   const userSettings = {
     ...trustSettings,
+    // Local history copies each saved file with uv_fs_copyfile. A test that rewrites a file shorter during that
+    // copy leaves libuv's sendfile loop retrying a zero-byte copy forever on Linux, so the host never quits.
+    "workbench.localHistory.enabled": false,
     ...(dbtSpy && label !== UNTRUSTED_LABEL
       ? { "fusionPowerUser.dbtPath": dbtSpy }
       : {}),
@@ -337,19 +340,41 @@ function prepareNativeEditor(dir, mode) {
     );
   }
   // A second output for the target-change suite; its database is never set up.
+  // The prod output shares probe.duckdb in its own schema, so a prod-only relation can exist next to a dev one.
   appendFileSync(
     path.join(dir, "profiles.yml"),
-    "    ci:\n      type: duckdb\n      path: probe_ci.duckdb\n",
+    "    ci:\n      type: duckdb\n      path: probe_ci.duckdb\n" +
+      "    prod:\n      type: duckdb\n      path: probe.duckdb\n      schema: prod\n",
   );
   const dbt = fusionPath ?? "dbt";
-  const setupArgs = ["run-operation", "setup_raw", "--profiles-dir", dir];
-  const setup = spawnSync(dbt, setupArgs, {
-    cwd: dir,
-    encoding: "utf-8",
-    timeout: 120_000,
-  });
+  // The prod build runs only if setup_raw succeeds; the first failing step is the one recorded.
+  const steps = [
+    ["run-operation", "setup_raw", "--profiles-dir", dir],
+    ["run", "--target", "prod", "-s", "+prod_only", "--profiles-dir", dir],
+  ];
+  let command = "";
+  let setup;
+  for (const args of steps) {
+    command = `${dbt} ${args.join(" ")}`;
+    setup = spawnSync(dbt, args, {
+      cwd: dir,
+      encoding: "utf-8",
+      timeout: 120_000,
+    });
+    if (setup.status !== 0) {
+      break;
+    }
+  }
+  if (setup.status === 0) {
+    // defer reads the manifest of the prod build from here.
+    mkdirSync(path.join(dir, "state"), { recursive: true });
+    cpSync(
+      path.join(dir, "target", "manifest.json"),
+      path.join(dir, "state", "manifest.json"),
+    );
+  }
   writeJson(path.join(dir, ".native-editor-setup.json"), {
-    command: `${dbt} ${setupArgs.join(" ")}`,
+    command,
     cwd: dir,
     exitCode: setup.status,
     error: setup.error?.message,

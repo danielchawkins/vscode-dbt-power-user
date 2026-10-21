@@ -7,11 +7,14 @@ import {
   activate,
   commands,
   EMPTY_STATE,
+  flowNodes,
+  HUB,
   node,
   nodes,
   openLineage,
   pane,
   tableIds,
+  zoomPast,
 } from "../../test/lineageHarness";
 import { getVsCodeApiMock } from "../../test/setup";
 
@@ -507,6 +510,48 @@ describe("Lineage details drawer", () => {
   });
 });
 
+describe("Lineage card click", () => {
+  it("only selects at normal zoom", async () => {
+    const { user, container } = await openLineage();
+    await zoomPast(user, container, "In");
+    await user.click(node(container, "b").getByText("b"));
+    await waitFor(() =>
+      expect(
+        container.querySelector('.react-flow__node[data-id="b"]'),
+      ).toHaveClass("selected"),
+    );
+    expect(screen.queryByRole("complementary", { name: "Details" })).toBeNull();
+  });
+
+  it("opens the Details drawer when zoomed out", async () => {
+    const { user, container } = await openLineage();
+    await zoomPast(user, container, "Out");
+    await user.click(node(container, "b").getByText("b"));
+    await waitFor(() =>
+      expect(
+        drawer("Details").getByRole("heading", { name: "b" }),
+      ).toBeTruthy(),
+    );
+  });
+
+  it("with lineage.semanticZoom off, keeps the full card and only selects when zoomed out", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { semanticZoom: false },
+    });
+    await zoomPast(user, container, "Out");
+    expect(container.querySelector("[data-table]")?.className).not.toContain(
+      "zoomedOut",
+    );
+    await user.click(node(container, "b").getByText("b"));
+    await waitFor(() =>
+      expect(
+        container.querySelector('.react-flow__node[data-id="b"]'),
+      ).toHaveClass("selected"),
+    );
+    expect(screen.queryByRole("complementary", { name: "Details" })).toBeNull();
+  });
+});
+
 describe("Lineage notice", () => {
   it("shows the notice in place of a graph, with its buttons", async () => {
     const { container } = await openLineage(EMPTY_STATE);
@@ -526,6 +571,119 @@ describe("Lineage notice", () => {
     const { user } = await openLineage(EMPTY_STATE);
     await press(user, "button", "Use strict analysis");
     await expectPosted("runNoticeAction", { action: "useStrictAnalysis" });
+  });
+});
+
+describe("Lineage group node", () => {
+  it("groups by the host's cap even when the render arrives before the settings answer", async () => {
+    const { container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 }, renderFirst: true },
+    );
+    expect(tableIds(container)).toEqual(["hub"]);
+    expect(container.querySelector('[data-group="staging"]')).not.toBeNull();
+  });
+
+  it("opens a group, drawing its first cap members as ordinary cards", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    expect(tableIds(container)).toEqual(["hub"]);
+    expect(container.querySelector('[data-group="staging"]')).not.toBeNull();
+
+    await press(user, "button", "Open staging");
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "s1", "s2"]),
+    );
+    expect(container.querySelector('[data-group="staging"]')).toBeNull();
+    expect(container.querySelector('[data-group="marts"]')).not.toBeNull();
+    expect(flowNodes(container)).toHaveLength(4);
+
+    await press(user, "button", "Open marts");
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "m1", "m2", "s1", "s2"]),
+    );
+    expect(container.querySelector("[data-group]")).toBeNull();
+  });
+
+  it("closes an opened group from its chip, which draws its group card again", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await press(user, "button", "Open staging");
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "s1", "s2"]),
+    );
+    await press(user, "button", "Close staging", node(container, "hub"));
+    await waitFor(() => expect(tableIds(container)).toEqual(["hub"]));
+    expect(container.querySelector('[data-group="staging"]')).not.toBeNull();
+  });
+
+  it("shows the next members of an open group from its +K button", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await press(user, "button", "Open staging");
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "s1", "s2"]),
+    );
+    await press(
+      user,
+      "button",
+      "Show 1 more in staging",
+      node(container, "hub"),
+    );
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "s1", "s2", "s3"]),
+    );
+    expect(
+      screen.queryByRole("button", { name: "Show 1 more in staging" }),
+    ).toBeNull();
+  });
+
+  it("runs the controls of the members a group draws", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await press(user, "button", "Open staging");
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual(["hub", "s1", "s2"]),
+    );
+    for (const member of ["s1", "s2"]) {
+      await press(user, "button", "Show 1 parents", node(container, member));
+      await press(user, "button", "Show 0 children", node(container, member));
+      await press(user, "button", "Columns", node(container, member));
+      await press(user, "button", "Details", node(container, member));
+      await press(user, "button", "Close", drawer("Details"));
+    }
+  });
+
+  it("collapses and expands the hub's children, which draws and removes its groups", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await press(user, "button", "Hide 6 children", node(container, "hub"));
+    await waitFor(() => expect(flowNodes(container)).toHaveLength(1));
+    await press(user, "button", "Show 6 children", node(container, "hub"));
+    await waitFor(() => expect(flowNodes(container)).toHaveLength(3));
+  });
+
+  it("runs the hub's other controls", async () => {
+    const { user, container } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    await press(user, "button", "Show 0 parents", node(container, "hub"));
+    await press(user, "button", "Columns", node(container, "hub"));
+    await screen.findByRole("button", { name: "id" });
+    await press(user, "button", "Details", node(container, "hub"));
+    await press(user, "button", "Close", drawer("Details"));
+    expect(screen.queryByRole("complementary", { name: "Details" })).toBeNull();
   });
 });
 
@@ -570,6 +728,23 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table c/Show 0 children",
   "button:table c/Columns",
   "button:table c/Details",
+  "button:Open staging",
+  "button:Open marts",
+  "button:table hub/Hide 6 children",
+  "button:table hub/Show 6 children",
+  "button:table hub/Show 0 parents",
+  "button:table hub/Columns",
+  "button:table hub/Details",
+  "button:table hub/Show 1 more in staging",
+  "button:table hub/Close staging",
+  "button:table s1/Columns",
+  "button:table s1/Details",
+  "button:table s1/Show 0 children",
+  "button:table s1/Show 1 parents",
+  "button:table s2/Columns",
+  "button:table s2/Details",
+  "button:table s2/Show 0 children",
+  "button:table s2/Show 1 parents",
   "button:Details/Open file",
   "button:Details/Sync with database",
   "button:Details/Tests (0)",
