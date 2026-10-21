@@ -1,9 +1,13 @@
 import type { Disposable } from "vscode";
-import { window } from "vscode";
+import { commands, window } from "vscode";
+import { testCommandsEnabled } from "../settings";
 import { DocsEditViewPanel } from "./docs/docsEditPanel";
 import { LineageViewProvider } from "./lineage/lineageViewProvider";
 import { QueryResultPanel } from "./queryResults/queryResultPanel";
 import { registerQueryResultTestCommand } from "./queryResults/queryResultTestCommand";
+
+/** Test-only: the model paths the documentation editor holds an unsaved draft for. */
+const HELD_DRAFTS_TEST_COMMAND = "fusionPowerUser.test.heldDocDrafts";
 
 export class WebviewViewProviders implements Disposable {
   private disposables: Disposable[] = [];
@@ -39,6 +43,13 @@ export class WebviewViewProviders implements Disposable {
     const testCommand = registerQueryResultTestCommand(this.queryResultPanel);
     if (testCommand) {
       this.disposables.push(testCommand);
+    }
+    if (testCommandsEnabled()) {
+      this.disposables.push(
+        commands.registerCommand(HELD_DRAFTS_TEST_COMMAND, () =>
+          this.docsEditPanel.heldDrafts(),
+        ),
+      );
     }
   }
 

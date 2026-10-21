@@ -18,6 +18,7 @@ import {
   notificationsSettled,
   splitHostNotices,
 } from "./notificationToasts";
+import { recordProbe } from "./probeLog";
 
 export type SmokeHost = "vscode" | "cursor";
 
@@ -314,11 +315,30 @@ export async function evaluatePanel<T extends { entry: string }>(
   entry: string,
   expression: string,
 ): Promise<{ value: T; target: string } | undefined> {
-  for (const frame of await panelFrames(port)) {
+  return (await scanPanels<T>(port, entry, expression)).match;
+}
+
+/** What one pass over the webview frames saw: the match, how many frames it read and the errors it skipped. */
+interface PanelScan<T> {
+  match?: { value: T; target: string };
+  frames: number;
+  skipped: string[];
+}
+
+async function scanPanels<T extends { entry: string }>(
+  port: string,
+  entry: string,
+  expression: string,
+): Promise<PanelScan<T>> {
+  const frames = await panelFrames(port);
+  const skipped: string[] = [];
+  for (const frame of frames) {
     let values: unknown[];
     try {
       values = await evaluateContexts(frame, expression);
-    } catch {
+    } catch (error) {
+      // A frame torn down mid-call is expected during a hide; keep the reason so a false "gone" is visible.
+      skipped.push(error instanceof Error ? error.message : String(error));
       continue;
     }
     const value = values.find(
@@ -328,26 +348,59 @@ export async function evaluatePanel<T extends { entry: string }>(
         (candidate as { entry?: unknown }).entry === entry,
     );
     if (value) {
-      return { value, target: frame };
+      return {
+        match: { value, target: frame },
+        frames: frames.length,
+        skipped,
+      };
     }
   }
-  return undefined;
+  return { frames: frames.length, skipped };
 }
+
+/** Why {@link waitForPanelGone} returned: no frames at all, frames none of which answered, or frames showing others. */
+export type GoneReason = "no-frames" | "frames-errored" | "other-entries";
 
 /**
  * Waits until no webview frame shows `entry`: the view was hidden and, without `retainContextWhenHidden`, its page
- * was torn down. Resolves the milliseconds that took; rejects at `timeoutMs` with how many frames still show it.
+ * was torn down. Resolves the milliseconds that took and why it decided the page was gone; rejects at `timeoutMs`.
  */
 export async function waitForPanelGone(
   port: string,
   entry: string,
   timeoutMs = 15_000,
-): Promise<number> {
+): Promise<{
+  ms: number;
+  reason: GoneReason;
+  frames: number;
+  skipped: string[];
+}> {
   const started = Date.now();
-  const probe = `({ entry: document.body.dataset.entry })`;
-  for (;;) {
-    if (!(await evaluatePanel(port, entry, probe))) {
-      return Date.now() - started;
+  const probe = `({ entry: document.body.dataset.entry, timeOrigin: performance.timeOrigin })`;
+  for (let attempt = 0; ; attempt += 1) {
+    const scan = await scanPanels<{ entry: string }>(port, entry, probe);
+    recordProbe({
+      at: Date.now(),
+      label: `${entry} gone`,
+      attempt,
+      value: scan.match?.value,
+      frames: scan.frames,
+      skipped: scan.skipped,
+      outcome: scan.match ? "polling" : "matched",
+    });
+    if (!scan.match) {
+      const reason: GoneReason =
+        scan.frames === 0
+          ? "no-frames"
+          : scan.skipped.length === scan.frames
+            ? "frames-errored"
+            : "other-entries";
+      return {
+        ms: Date.now() - started,
+        reason,
+        frames: scan.frames,
+        skipped: scan.skipped,
+      };
     }
     if (Date.now() - started > timeoutMs) {
       throw new Error(

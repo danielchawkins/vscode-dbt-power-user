@@ -64,7 +64,15 @@ shard_script='
     echo
     echo "FPU-LABEL-END $label $status $(($(date +%s) - start))"
   done
+  # Logs, crash dumps, failures.jsonl and shutdown.json leave the container with the run, pass or fail.
+  if [ -d out/integration-diagnostics ]; then cp -R out/integration-diagnostics/. /diag/; fi
 '
+
+# Each shard's diagnostics land here; Docker VMs such as Colima share only the home directory, so it is in the repo.
+diag_root="$repo/out/integration-diagnostics"
+rm -rf "$diag_root"
+mkdir -p "$diag_root"
+chmod 777 "$diag_root"
 
 index=0
 for shard in $(printf '%s\n' "$shards" | tr ' ' ','); do
@@ -73,7 +81,7 @@ for shard in $(printf '%s\n' "$shards" | tr ' ' ','); do
   names="$names $name"
   # Docker's default seccomp profile blocks the user namespaces Chromium's sandbox needs as a non-root user.
   docker run --rm --init --name "$name" --platform "$platform" --security-opt seccomp=unconfined \
-    -v "$repo:/src:ro" \
+    -v "$repo:/src:ro" -v "$diag_root:/diag" \
     -e FPU_LABELS="$(echo "$shard" | tr ',' ' ')" \
     "$image" sh -euc "$shard_script" > "$work/shard-$index.log" 2>&1 &
   pids="$pids $!"
@@ -86,10 +94,16 @@ status=0
 node "$scripts/integration-summary.mjs" "$labels" "$work"/shard-*.log || status=$?
 if [ "$status" -ne 0 ]; then
   for log in "$work"/shard-*.log; do
-    echo "--- $log (tail)" >&2
-    tail -60 "$log" >&2
+    echo "--- $log (failures)" >&2
+    # Mocha's summary and every failure from its first "N failing" line; a run that died before Mocha reported
+    # has no such line, so fall back to the label's last 60 lines.
+    if grep -q '[0-9] failing' "$log"; then
+      sed -n '/[0-9] failing/,/FPU-LABEL-END/p' "$log" >&2
+    else
+      tail -60 "$log" >&2
+    fi
   done
-  echo "docker-integration: FAIL (full logs in $work)" >&2
+  echo "docker-integration: FAIL (full logs in $work, diagnostics in $diag_root)" >&2
   exit 1
 fi
 rm -rf "$work"

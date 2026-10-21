@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { waitFor } from "./probeLog";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -210,6 +211,16 @@ suite("Documentation editor interactions", function () {
         await setDescription(original);
         await waitForDescription((text) => text === original);
         await waitForDocsClean(process.env.FPU_CDP_PORT!);
+        // A clean page is not enough: the host keeps drafts in memory and sends one with the next render, so a
+        // draft it still holds would open the next suite's editor dirty.
+        await waitFor(
+          "host holds no documentation drafts",
+          async () =>
+            (await vscode.commands.executeCommand<string[]>(
+              "fusionPowerUser.test.heldDocDrafts",
+            )) ?? [],
+          { until: (held) => held.length === 0, attempts: 40 },
+        );
       } catch (restoreError) {
         // A body failure is the one to report, so a restore failure after it is logged, not thrown.
         if (bodyPassed) {

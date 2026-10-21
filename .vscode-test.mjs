@@ -51,22 +51,36 @@ export default defineConfig(
           },
         }
       : selection[label];
+    const diagnostics = path.join(
+      process.env.FPU_INTEGRATION_DIAGNOSTICS ?? "out/integration-diagnostics",
+      label,
+    );
     return {
       label,
       version: VSCODE_VERSION,
       files,
-      mocha: { ui: "tdd", timeout: 30_000, color: true },
+      mocha: {
+        ui: "tdd",
+        timeout: 30_000,
+        color: true,
+        // Writes failures.jsonl and, after the last test, the dirty documents and tabs left open.
+        require: [path.resolve("out/test/integration/diagnosticsHooks.js")],
+      },
       launchArgs: [
         layout.workspace,
         `--user-data-dir=${layout.userData}`,
         `--extensions-dir=${layout.extensions}`,
         "--use-inmemory-secretstorage",
+        `--logsPath=${path.resolve(diagnostics, "logs")}`,
+        `--crash-reporter-directory=${path.resolve(diagnostics, "crashes")}`,
+        "--log=danielchawkins.fusion-power-user:trace",
       ],
       // Both variables dbt reads point at an empty directory, so only the setting can resolve the fixture profile.
       env: {
         DBT_PROFILES_DIR: layout.decoyProfiles,
         DBT_ENGINE_PROFILES_DIR: layout.decoyProfiles,
         FPU_DBT_SPY_LOG: path.join(root, "spy", SPY_LOG_FILE),
+        FPU_INTEGRATION_DIAGNOSTICS_DIR: path.resolve(diagnostics),
         ...env,
       },
     };

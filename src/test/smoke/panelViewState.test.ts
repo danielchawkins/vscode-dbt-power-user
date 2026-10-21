@@ -9,6 +9,7 @@ import {
   waitForWebviewPaint,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { waitFor } from "./probeLog";
 import type { DocsState } from "./webviewInteractions";
 import { readDocsState, waitForDocsClean } from "./webviewInteractions";
 
@@ -161,25 +162,30 @@ suite("Panel view state", function () {
 
     await showResults(port, host);
     await vscode.commands.executeCommand(RENDER_TEST_RESULT, 3);
-    const before = await waitForTabs(port, (tabs) =>
+    const before = await waitForTabs(port, "SQL tab offered", (tabs) =>
       tabs.tabs.some((tab) => tab.startsWith("SQL")),
     );
     await evaluatePanel(port, RESULTS.entry, clickTab("SQL"));
-    const selected = await waitForTabs(port, (tabs) => tabs.active === "SQL");
+    const selected = await waitForTabs(
+      port,
+      "SQL selected",
+      (tabs) => tabs.active === "SQL",
+    );
 
     await vscode.commands.executeCommand(OTHER_PANEL);
-    const goneMs = await waitForPanelGone(port, RESULTS.entry);
+    const gone = await waitForPanelGone(port, RESULTS.entry);
     await showResults(port, host);
     // The rebuilt page paints the default tab before the saved one is restored.
     const after = await waitForTabs(
       port,
+      "rebuilt page restores SQL",
       (tabs) =>
         tabs.timeOrigin !== selected.timeOrigin &&
         tabs.active === "SQL" &&
         tabs.tabs.some((tab) => tab.startsWith("Preview")),
     );
     console.log(
-      `FPU_SMOKE_VIEW_STATE=${JSON.stringify({ host, goneMs, before, selected, after })}`,
+      `FPU_SMOKE_VIEW_STATE=${JSON.stringify({ host, gone, before, selected, after })}`,
     );
     assert.notStrictEqual(
       after.timeOrigin,
@@ -196,7 +202,9 @@ suite("Panel view state", function () {
       `the host should replay the last result: ${JSON.stringify(after.tabs)}`,
     );
     await evaluatePanel(port, RESULTS.entry, clickTab("Preview"));
-    await waitForTabs(port, (tabs) => tabs.active.startsWith("Preview"));
+    await waitForTabs(port, "Preview reselected", (tabs) =>
+      tabs.active.startsWith("Preview"),
+    );
   });
 
   test("keeps an unsaved documentation edit after the editor is hidden and shown", async function () {
@@ -215,6 +223,7 @@ suite("Panel view state", function () {
     await showPanel(port, host, DOCS);
     const loaded = await waitForDocs(
       port,
+      "loaded clean",
       (docs) => docs.description !== null && !docs.modified,
     );
     const base = loaded.description!;
@@ -222,20 +231,22 @@ suite("Panel view state", function () {
     await evaluatePanel(port, DOCS.entry, typeDescription(edit));
     const edited = await waitForDocs(
       port,
+      "draft typed",
       (docs) => docs.description === edit && docs.modified,
     );
 
     await showPanel(port, host, RESULTS);
-    const goneMs = await waitForPanelGone(port, DOCS.entry);
+    const gone = await waitForPanelGone(port, DOCS.entry);
     await showPanel(port, host, DOCS);
     const after = await waitForDocs(
       port,
+      "rebuilt page keeps draft",
       (docs) =>
         docs.timeOrigin !== edited.timeOrigin && docs.description === edit,
     );
 
     console.log(
-      `FPU_SMOKE_DOCS_DRAFT=${JSON.stringify({ host, goneMs, loaded, edited, after })}`,
+      `FPU_SMOKE_DOCS_DRAFT=${JSON.stringify({ host, gone, loaded, edited, after })}`,
     );
     assert.strictEqual(after.description, edit, "the draft should survive");
     assert.ok(after.modified && after.save, "the editor should still be dirty");
@@ -258,15 +269,20 @@ suite("Panel view state", function () {
       vscode.Uri.joinPath(folder.uri, "models/child.sql"),
     );
     await showPanel(port, host, LINEAGE);
-    const drawn = await waitForLineage(port, (g) => g.tables.length === 2);
+    const drawn = await waitForLineage(
+      port,
+      "drawn",
+      (g) => g.tables.length === 2,
+    );
     await evaluatePanel(port, LINEAGE.entry, clickOnChild("Hide 1 parents"));
-    await waitForLineage(port, (g) => g.tables.length === 1);
+    await waitForLineage(port, "parents hidden", (g) => g.tables.length === 1);
     await evaluatePanel(port, LINEAGE.entry, clickOnChild("Show 1 parents"));
-    await waitForLineage(port, (g) => g.tables.length === 2);
+    await waitForLineage(port, "parents shown", (g) => g.tables.length === 2);
     // An earlier suite may leave the column list open, and the view state restores it after the graph is drawn.
     // "Columns" toggles, so click only on a closed list, then read again: a restore landing after a blind click
     // would close the list it had just opened.
     let before = (await waitFor(
+      "lineage column list opened",
       async () => {
         const state = await readLineage(port);
         if (state?.columnTables.length === 0) {
@@ -277,25 +293,29 @@ suite("Panel view state", function () {
         return state;
       },
       (g): g is LineageState => g?.columnTables.length === 1,
-      "the lineage column list never opened",
     )) as LineageState;
     if (before.columns.length > 0 && before.traced.length === 0) {
       await evaluatePanel(port, LINEAGE.entry, CLICK_FIRST_COLUMN);
-      before = await waitForLineage(port, (g) => g.traced.length > 0);
+      before = await waitForLineage(
+        port,
+        "column traced",
+        (g) => g.traced.length > 0,
+      );
     }
 
     await showPanel(port, host, RESULTS);
-    const goneMs = await waitForPanelGone(port, LINEAGE.entry);
+    const gone = await waitForPanelGone(port, LINEAGE.entry);
     await showPanel(port, host, LINEAGE);
     const after = await waitForLineage(
       port,
+      "rebuilt page restores columns",
       (g) =>
         g.timeOrigin !== before.timeOrigin &&
         g.columnTables.length === before.columnTables.length &&
         g.traced.length === before.traced.length,
     );
     console.log(
-      `FPU_SMOKE_LINEAGE_STATE=${JSON.stringify({ host, goneMs, drawn, before, after })}`,
+      `FPU_SMOKE_LINEAGE_STATE=${JSON.stringify({ host, gone, drawn, before, after })}`,
     );
     assert.notStrictEqual(
       after.timeOrigin,
@@ -311,7 +331,11 @@ suite("Panel view state", function () {
     assert.deepStrictEqual(after.traced, before.traced, "same traced edges");
 
     await evaluatePanel(port, LINEAGE.entry, clickOnChild("Columns"));
-    await waitForLineage(port, (g) => g.columnTables.length === 0);
+    await waitForLineage(
+      port,
+      "column list closed",
+      (g) => g.columnTables.length === 0,
+    );
   });
 
   test("records webview heap across hide/show cycles with a large result", async function () {
@@ -356,14 +380,15 @@ async function readLineage(port: string): Promise<LineageState | undefined> {
 
 async function waitForLineage(
   port: string,
+  label: string,
   done: (graph: LineageState) => boolean,
 ): Promise<LineageState> {
   return waitFor(
+    `lineage graph: ${label}`,
     async () =>
       (await evaluatePanel<LineageState>(port, LINEAGE.entry, READ_LINEAGE))
         ?.value,
     (graph): graph is LineageState => graph !== undefined && done(graph),
-    "the lineage graph never matched",
   ) as Promise<LineageState>;
 }
 
@@ -386,14 +411,14 @@ async function showPanel(
  * extension host.
  */
 async function sampleHeaps(port: string, rows: number) {
-  await waitForTabs(port, (tabs) =>
+  await waitForTabs(port, `Preview ${rows} rows`, (tabs) =>
     tabs.tabs.some((tab) => tab.startsWith(`Preview ${rows} rows`)),
   );
   const grid = await waitFor(
+    `grid painted ${rows} rows`,
     async () =>
       (await evaluatePanel<Grid>(port, RESULTS.entry, READ_GRID))?.value,
     (value) => value?.rows === rows && value.first === "row 0" && value.painted,
-    `The grid never reported ${rows} rows and painted the first`,
   );
   await sleep(2_000);
   return {
@@ -405,44 +430,27 @@ async function sampleHeaps(port: string, rows: number) {
 
 async function waitForDocs(
   port: string,
+  label: string,
   done: (docs: DocsState) => boolean,
 ): Promise<DocsState> {
   return waitFor(
+    `documentation editor: ${label}`,
     () => readDocsState(port),
     (docs): docs is DocsState => docs !== undefined && done(docs),
-    "the documentation editor never matched",
   ) as Promise<DocsState>;
-}
-
-async function waitFor<T>(
-  read: () => Promise<T>,
-  done: (value: T) => boolean,
-  message: string,
-): Promise<T> {
-  let last: T | undefined;
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    last = await read();
-    if (done(last)) {
-      return last;
-    }
-    await sleep(250);
-  }
-  throw new Error(`${message}: ${JSON.stringify(last)}`);
 }
 
 async function waitForTabs(
   port: string,
+  label: string,
   done: (tabs: Tabs) => boolean,
 ): Promise<Tabs> {
-  let last: Tabs | undefined;
-  for (let attempt = 0; attempt < 120; attempt += 1) {
-    last = (await evaluatePanel<Tabs>(port, RESULTS.entry, READ_TABS))?.value;
-    if (last && done(last)) {
-      return last;
-    }
-    await sleep(250);
-  }
-  throw new Error(`query results tabs never matched: ${JSON.stringify(last)}`);
+  return waitFor(
+    `query results tabs: ${label}`,
+    async () =>
+      (await evaluatePanel<Tabs>(port, RESULTS.entry, READ_TABS))?.value,
+    (tabs): tabs is Tabs => tabs !== undefined && done(tabs),
+  ) as Promise<Tabs>;
 }
 
 function sleep(ms: number): Promise<void> {

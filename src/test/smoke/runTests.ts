@@ -2,6 +2,8 @@ import Mocha from "mocha";
 import { globSync, writeFileSync } from "node:fs";
 import * as path from "node:path";
 import { extHostStartMs } from "./extHostStart";
+import { writeFailureBundle } from "./failureBundle";
+import { takeProbes } from "./probeLog";
 import { selectSuites } from "./suiteSelection";
 
 export async function run(): Promise<void> {
@@ -35,17 +37,28 @@ export async function run(): Promise<void> {
   }
 
   return new Promise<void>((resolve, reject) => {
-    mocha.run((failures) => {
-      if (failures > 0) {
-        reject(new Error(`${failures} smoke test(s) failed.`));
-      } else {
-        // The launcher reads this to tell a host that crashed while quitting from one whose tests failed.
-        const marker = process.env.FPU_SMOKE_PASSED_MARKER;
-        if (marker) {
-          writeFileSync(marker, "passed\n");
+    const bundles: Promise<void>[] = [];
+    const runner = mocha.run((failures) => {
+      void Promise.allSettled(bundles).then(() => {
+        if (failures > 0) {
+          reject(new Error(`${failures} smoke test(s) failed.`));
+        } else {
+          // The launcher reads this to tell a host that crashed while quitting from one whose tests failed.
+          const marker = process.env.FPU_SMOKE_PASSED_MARKER;
+          if (marker) {
+            writeFileSync(marker, "passed\n");
+          }
+          resolve();
         }
-        resolve();
-      }
+      });
     });
+    runner.on("fail", (test, error) => {
+      console.error(
+        `FPU_SMOKE_FAIL ${test.fullTitle()}\n${(error as Error)?.stack ?? String(error)}`,
+      );
+      bundles.push(writeFailureBundle(test, error));
+    });
+    // Probes from a passing test are not evidence for the next one.
+    runner.on("test end", () => void takeProbes());
   });
 }

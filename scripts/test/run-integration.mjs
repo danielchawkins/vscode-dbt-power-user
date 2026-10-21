@@ -283,6 +283,9 @@ function prepareLabel(label) {
   }[label];
   const userSettings = {
     ...trustSettings,
+    // Local history copies each saved file with uv_fs_copyfile. A test that rewrites a file shorter during that
+    // copy leaves libuv's sendfile loop retrying a zero-byte copy forever on Linux, so the host never quits.
+    "workbench.localHistory.enabled": false,
     ...(dbtSpy && label !== UNTRUSTED_LABEL
       ? { "fusionPowerUser.dbtPath": dbtSpy }
       : {}),
