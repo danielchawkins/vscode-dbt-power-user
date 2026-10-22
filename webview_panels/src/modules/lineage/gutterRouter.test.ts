@@ -77,12 +77,13 @@ describe("layeredFlow on a mixed-layer fixture", () => {
     ]);
   });
 
-  it("counts a skip edge that interlaces a same-row edge as one crossing, drawn as one hop", () => {
+  it("counts a skip edge that interlaces a same-row edge as one crossing", () => {
     // seed -> fct_2 leaves the row above the start node by the right-hand outer channel, and src_b -> stg_b runs
     // left through the same gutter: their spans interlace, so no channel order removes the crossing.
+    // Its crossing sits within a corner's reach of the bubble channel, so the router counts it but draws no hop.
     const result = flow("start", nodes, [...pairs, ["seed", "fct_2"]]);
     expect(result.crossings).toBe(1);
-    expect(result.hops).toBe(1);
+    expect(result.hops).toBe(0);
   });
 });
 

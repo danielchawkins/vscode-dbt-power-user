@@ -295,6 +295,14 @@ describe("table node name block", () => {
     expect(header(false, true)).toContain("headerRelation");
   });
 
+  it("pins the start and selected cards, whose actions row always shows", () => {
+    const pinned = (props: { isStart?: boolean; selected?: boolean }) =>
+      drawCard({}, props).container.querySelector("[data-table]")?.className;
+    expect(pinned({ isStart: true })).toContain("pinned");
+    expect(pinned({ selected: true })).toContain("pinned");
+    expect(pinned({})).not.toContain("pinned");
+  });
+
   it("marks a card with no column list, which takes the header clearance", () => {
     const node = (columns?: lineage.LineageColumn[]) =>
       drawCard({}, { columns }).container.querySelector("[data-table]")
@@ -343,5 +351,80 @@ describe("table node header geometry", () => {
     expect(
       px(rule(".node.noColumns .header"), "padding-bottom") - padding,
     ).toBe(geometry.headerClearance);
+  });
+
+  it("keeps the actions row's CSS heights in step with geometry", () => {
+    expect(px(rule(".actions"), "height")).toBe(geometry.actionsHeight);
+    // An unpinned card takes no room for the row: it is taken out of the flow and hidden, and hovering it or focus
+    // inside it shows the row over the card's bottom edge, so the card's size never changes.
+    const unpinned = rule(".node:not(.pinned) .actions");
+    expect(unpinned).toContain("position: absolute;");
+    expect(unpinned).toContain("visibility: hidden;");
+    expect(
+      rule(
+        ".node:not(.pinned):hover .actions,\n.node:not(.pinned):focus-within .actions",
+      ),
+    ).toContain("visibility: visible;");
+  });
+
+  it("keeps the expander bubbles' CSS size in step with geometry", () => {
+    const bubble = rule(".node .bubble");
+    expect(px(bubble, "min-width")).toBe(geometry.bubbleWidth);
+    expect(px(bubble, "height")).toBe(2 * geometry.bubbleOverhang);
+  });
+});
+
+describe("table node expander bubbles", () => {
+  const drawLayered = (layered: boolean) => {
+    const props = {
+      id: "model.p.b",
+      data: {
+        table: {
+          table: "model.p.b",
+          label: "b",
+          nodeType: "model",
+          childCount: 7,
+          parentCount: 1,
+          tests: [],
+        },
+        columns: undefined,
+        isStart: false,
+        expanded: { parents: false, children: false },
+        pending: { parents: false, children: false },
+        hidden: { parents: 0, children: 0 },
+        chips: [],
+        traced: [],
+        layered,
+      },
+    } as unknown as React.ComponentProps<typeof TableNode>;
+    return render(
+      <ReactFlowProvider>
+        <TableNode {...props} />
+      </ReactFlowProvider>,
+    );
+  };
+
+  it("sits the parents bubble on the top edge and the children bubble on the bottom edge", () => {
+    const { container } = drawLayered(true);
+    const card = container.querySelector("[data-table]");
+    const parents = screen.getByRole("button", { name: "Show 1 parents" });
+    const children = screen.getByRole("button", { name: "Show 7 children" });
+    expect(parents.parentElement).toBe(card);
+    expect(parents.className).toContain("bubbleTop");
+    expect(children.parentElement).toBe(card);
+    expect(children.className).toContain("bubbleBottom");
+    expect(parents.textContent).toBe("1");
+    expect(children.textContent).toBe("7");
+    expect(parents.querySelector(".codicon-arrow-up")).not.toBeNull();
+    expect(children.querySelector(".codicon-arrow-down")).not.toBeNull();
+  });
+
+  it("keeps the expanders in the actions row, with their +/- labels, when not layered", () => {
+    const { container } = drawLayered(false);
+    const parents = screen.getByRole("button", { name: "Show 1 parents" });
+    expect(parents.className).not.toContain("bubble");
+    expect(parents.textContent).toBe("+1");
+    expect(parents.closest("[class*=actions]")).not.toBeNull();
+    expect(container.querySelector("[class*=bubble]")).toBeNull();
   });
 });

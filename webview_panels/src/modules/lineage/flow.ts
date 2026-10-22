@@ -19,6 +19,7 @@ import {
   layout,
   tableHeight,
 } from "./layout";
+import { relationshipPath } from "./relationshipRoute";
 
 /** What a table node draws; `columns` is undefined while the list is hidden. */
 interface TableNodeData extends Record<string, unknown> {
@@ -54,7 +55,7 @@ interface GroupNodeData extends Record<string, unknown> {
   layered?: boolean | undefined;
 }
 
-export type GroupNode = Node<GroupNodeData, "group">;
+export type GroupNode = Node<GroupNodeData, "folderGroup">;
 
 /** A layer band drawn behind the cards: the layer's tag, its label and its colour. */
 interface BandNodeData extends Record<string, unknown> {
@@ -68,6 +69,8 @@ export type BandNode = Node<BandNodeData, "band">;
 export interface RoutedEdgeData extends Record<string, unknown> {
   d: string;
   labelAt: Point;
+  start: Point;
+  end: Point;
 }
 
 /** What `toFlow` reads besides the drawn data. */
@@ -238,11 +241,11 @@ function placeLayered(
     if (index < 0) {
       return geometry.headerHeight / 2;
     }
-    const relation = table === data.start || table === input.selectedTable;
+    const pinned = table === data.start || table === input.selectedTable;
     return columnRowOffset(
       index,
       input.chips?.filter((c) => c.table === table).length ?? 0,
-      relation,
+      pinned,
     );
   };
   const tableEdges = drawsTableEdges(input);
@@ -301,7 +304,13 @@ function placeLayered(
   }));
   const paths = new Map<string, RoutedEdgeData>();
   for (const [id, path] of flow.paths) {
-    paths.set(id, { d: path.d, labelAt: path.labelAt });
+    paths.set(id, {
+      d: path.d,
+      labelAt: path.labelAt,
+      start: path.start,
+      end: path.end,
+      startsAt: path.startsAt,
+    });
   }
   return { positions: flow.positions, bands, paths };
 }
@@ -343,7 +352,8 @@ export function toFlow(input: FlowInput): {
     columnTables.includes(table) ? (columns[table] ?? []) : undefined;
   const traced = tracedColumns(data.columnEdges);
   const layered = (input.layout ?? "layered") === "layered";
-  // One height per table, for the layout and for the initial size: the start card and the selected card show a relation line.
+  // One height per table, for the layout and for the initial size: the start card and the selected card show their
+  // relation line and actions row.
   const heightOfTable = (table: string) =>
     tableHeight(
       listed(table),
@@ -398,7 +408,7 @@ export function toFlow(input: FlowInput): {
   }));
   const groupNodes: GroupNode[] = groups.map((g) => ({
     id: g.id,
-    type: "group",
+    type: "folderGroup",
     position: positions.get(g.id) ?? { x: 0, y: 0 },
     initialWidth: geometry.tableWidth,
     initialHeight: geometry.groupHeight,
@@ -413,6 +423,18 @@ export function toFlow(input: FlowInput): {
     const path = placed.paths.get(edge.id);
     if (!path) {
       return [];
+    }
+    if (edge.type === "relationship") {
+      // A relationship keeps its type, so its dotted line, marks and tooltip are drawn as they are off the layout.
+      return [
+        {
+          ...edge,
+          data: {
+            ...edge.data,
+            routed: relationshipPath(edge, path, placed.positions),
+          },
+        },
+      ];
     }
     const colour = arrowColour(edge);
     return [

@@ -9,7 +9,9 @@ import {
   expectWebviewDom,
   interactionEvidence,
   isWebviewChecked,
+  maximizePanelFor,
   pressKeyInWebview,
+  restorePanelSize,
   showPanel,
 } from "./webviewInteractions";
 
@@ -24,7 +26,10 @@ const SETTINGS_CHECKBOXES = [
   "Show non-select (indirect) column edges",
 ];
 const RELATIONSHIP_CHECKBOXES = [
-  "Show relationships",
+  "test",
+  "contract",
+  "meta",
+  "semantic",
   "Infer relationships for sources",
 ];
 
@@ -32,21 +37,10 @@ const runsHere = () => currentFixtureName() === "single-project";
 const host = () =>
   validateSmokeHost(process.env[HARNESS_SWITCHES.smokeHost] ?? "");
 
-/** Tall enough for the Relationships popover and its last checkbox; the default bottom panel is shorter. */
-const MIN_WEBVIEW_HEIGHT = 480;
 /** A table card React Flow draws; the view has drawn the graph once one is present. */
 const TABLE_CARD = ".react-flow__node-table";
 /** The parents expander of the start node while its parents are shown, e.g. title "Hide 1 parents". */
 const SHOWN_PARENTS = `.react-flow__node button[title^="Hide "][title$="parents"]`;
-
-async function webviewHeight(): Promise<number> {
-  const match = await evaluatePanel<{ entry: string; height: number }>(
-    process.env.FPU_CDP_PORT!,
-    LINEAGE.entry,
-    `(() => document.body.dataset.entry === "lineage" ? { entry: "lineage", height: innerHeight } : null)()`,
-  );
-  return match?.value.height ?? 0;
-}
 
 async function nodeCount(): Promise<number> {
   const match = await evaluatePanel<{ entry: string; nodes: number }>(
@@ -59,25 +53,12 @@ async function nodeCount(): Promise<number> {
   return match?.value.nodes ?? -1;
 }
 
-/** Whether this suite has changed the bottom panel's maximized state, so the teardown can put it back. */
-let panelToggled = false;
-
-async function toggleMaximizedPanel(): Promise<void> {
-  await vscode.commands.executeCommand("workbench.action.toggleMaximizedPanel");
-  panelToggled = !panelToggled;
-  await new Promise((resolve) => setTimeout(resolve, 1_000));
-}
-
 async function openLineage(): Promise<void> {
   const api = await vscode.extensions.getExtension(EXTENSION_ID)!.activate();
   await api.ready;
   await showPanel(LINEAGE);
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if ((await webviewHeight()) >= MIN_WEBVIEW_HEIGHT) {
-      break;
-    }
-    await toggleMaximizedPanel();
-  }
+  // Tall enough for the Connections popover and its last checkbox; the default bottom panel is shorter.
+  await maximizePanelFor(LINEAGE.entry);
   try {
     await expectWebviewDom(LINEAGE, { present: TABLE_CARD });
   } catch (error) {
@@ -134,9 +115,7 @@ suite("Lineage interactions", function () {
 
   // The suite's teardown runs when this suite ends, so later suites start with the default bottom panel.
   suiteTeardown(async function () {
-    if (panelToggled) {
-      await toggleMaximizedPanel();
-    }
+    await restorePanelSize();
   });
 
   test("clicks every toolbar control and each popover's main controls", async function () {
@@ -165,12 +144,22 @@ suite("Lineage interactions", function () {
     await clickInWebview(LINEAGE, gear);
     await expectSettingsClosed();
 
-    await clickInWebview(LINEAGE, { role: "button", name: "Relationships" });
+    await clickInWebview(LINEAGE, { role: "button", name: "Connections" });
     await expectWebviewDom(LINEAGE, { role: "dialog" });
+    await expectWebviewDom(LINEAGE, {
+      role: "radiogroup",
+      name: "Connections",
+    });
+    for (const value of ["dbt", "declared", "both"]) {
+      await expectWebviewDom(LINEAGE, {
+        present: `input[type=radio][name=connections][value=${value}]`,
+      });
+    }
     await evidence?.capture(LINEAGE, {
       name: "lineage-relationships-open",
       expect:
-        "Relationships popover open under its toolbar button; relationship and inference checkboxes listed.",
+        "Connections popover open under its toolbar button; the dbt dependencies, Declared relationships and Both " +
+        "radios listed, with the relationship and inference checkboxes.",
       measured: { popover: "relationships" },
     });
     for (const name of RELATIONSHIP_CHECKBOXES) {

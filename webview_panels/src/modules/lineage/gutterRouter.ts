@@ -9,6 +9,7 @@
  * Pure functions: boxes in, SVG path strings out.
  */
 import { BAND_PAD, CARD_GAP, CORRIDOR, GUTTER, type Point } from "./layered";
+import { geometry as cardGeometry } from "./layout";
 
 interface RouteBox {
   x: number;
@@ -60,6 +61,11 @@ export interface RoutedPath {
   d: string;
   /** The middle of the path's longest run, where a label sits. */
   labelAt: Point;
+  /** The first and last points of the path: the card edges it leaves and enters. */
+  start: Point;
+  end: Point;
+  /** A relationship's path: the card it starts at, which is its upper card, or `from` when both share a row. */
+  startsAt?: string | undefined;
 }
 
 export interface RouteResult {
@@ -82,6 +88,8 @@ interface Route {
   /** Position in the order the routes were added; the search keys its per-route tables by it. */
   index: number;
   stops: readonly Stop[];
+  /** A relationship route's first card, which its path starts at. */
+  startsAt?: string;
 }
 
 type RouteSpec = Omit<Route, "stops" | "index">;
@@ -653,17 +661,20 @@ class GutterPlan {
     return this.channels.channel(`h${index}`, lo, hi);
   }
 
-  // A card's bubble channel spans the middle of its top or bottom edge; the start node's bubbles share the corridor.
+  // A card's bubble channel is the bubble's width, centred on the card, so table edges meet the bubble.
+  // The start node's bubbles share the corridor.
   private port(id: string, side: "t" | "b"): { name: string; y: number } {
     const box = this.boxOf(id);
     const y = side === "t" ? box.y : box.y + box.height;
     if (id === this.focus) {
       return { name: this.corridor, y };
     }
+    const centre = box.x + box.width / 2;
+    const half = cardGeometry.bubbleWidth / 2;
     const name = this.channels.channel(
       `p${id}${side}`,
-      box.x + box.width * 0.12,
-      box.x + box.width * 0.88,
+      centre - half,
+      centre + half,
     );
     return { name, y };
   }
@@ -784,7 +795,12 @@ class GutterPlan {
         ? this.sameRowStops(upper, lower, iu)
         : this.spanStops(upper, lower, iu, il);
     this.channels.add(
-      { id: relationship.id, kind: "rel", other: this.boxOf(lower).x },
+      {
+        id: relationship.id,
+        kind: "rel",
+        other: this.boxOf(lower).x,
+        startsAt: upper,
+      },
       stops,
     );
   }
@@ -901,9 +917,14 @@ export function routeGutters(input: RouteInput): RouteResult {
   routes.forEach((route, index) => {
     const drawn = drawPath(index, routes, resolved, verticals, traceOn);
     hops += drawn.hops;
+    // Every route has at least two stops, so its first and last points are both set.
+    const points = resolved[index] ?? [];
     paths.set(route.id, {
       d: drawn.d,
-      labelAt: labelPoint(resolved[index] ?? []),
+      labelAt: labelPoint(points),
+      start: points[0] ?? { x: 0, y: 0 },
+      end: points[points.length - 1] ?? { x: 0, y: 0 },
+      startsAt: route.startsAt,
     });
   });
   return { paths, crossings, hops };

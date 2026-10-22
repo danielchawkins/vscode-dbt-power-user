@@ -26,10 +26,13 @@ const GroupNodeView = ({
         className={`${styles.handle} ${styles.headerHandle}`}
         isConnectable={false}
       />
+      <span className={`codicon codicon-folder ${styles.groupIcon}`} />
       <span className={styles.groupLabel} title={data.label}>
         {data.label}
       </span>
-      <span className={styles.groupCount}>{data.count}</span>
+      <span className={styles.groupCount} data-group-count>
+        {data.count}
+      </span>
       <button
         type="button"
         className="nodrag"

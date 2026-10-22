@@ -1,0 +1,8 @@
+version: 2
+
+models:
+  - name: stg_shop__orders
+    description: Shop orders with their order key and amount.
+    columns:
+      - name: order_id
+      - name: amount

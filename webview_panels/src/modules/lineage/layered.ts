@@ -458,6 +458,33 @@ function splitSides(sorted: readonly (readonly [string, number])[]): {
   return { left, right };
 }
 
+/**
+ * Moves the focused card so its centre is midway between the outer edges of the layered cards on either side, the
+ * centre of the corridor between the left and right groups. The row stacks are laid out from the corridor, so a
+ * group wider on one side pulls the focus off the middle; the focus alone moves. A focus with other layered cards in
+ * its row keeps its place, since they would overlap it.
+ */
+function centreFocus(
+  focus: string,
+  focusRowIds: readonly string[],
+  positions: Map<string, Point>,
+  width: (id: string) => number,
+  isOtherNode: (id: string) => boolean,
+): void {
+  const others = focusRowIds.filter((id) => id !== focus && !isOtherNode(id));
+  const sides = [...positions.keys()].filter(
+    (id) => id !== focus && !isOtherNode(id),
+  );
+  if (others.length > 0 || sides.length === 0) {
+    return;
+  }
+  const left = Math.min(...sides.map((id) => positions.get(id)?.x ?? 0));
+  const right = Math.max(
+    ...sides.map((id) => (positions.get(id)?.x ?? 0) + width(id)),
+  );
+  positions.set(focus, { x: (left + right - width(focus)) / 2, y: 0 });
+}
+
 /** The left x of every card on one side pair, stacked outwards from the corridor in placement order. */
 function sideXs(
   sides: { left: string[]; right: string[] },
@@ -685,6 +712,14 @@ export function layoutLayered(
       place(id, x);
     }
   }
+
+  centreFocus(
+    focus,
+    rowsInfo[focusRow]?.ids ?? [],
+    positions,
+    width,
+    isOtherNode,
+  );
 
   // The Other column: a side stack per sub-row, beyond the layered cards on the chosen side.
   const layeredIds = [...positions.keys()].filter((id) => !isOtherNode(id));

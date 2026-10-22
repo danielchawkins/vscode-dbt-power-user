@@ -149,5 +149,7 @@ describe("layeredFlow at scale", () => {
     expect(result.paths.size).toBe(pairs.length);
     expect(result.positions.size).toBe(nodes.length);
     expect(Number.isFinite(result.crossings)).toBe(true);
-  });
+    // The test checks correctness, not speed (gutterRouter.test.ts times the router); a loaded machine under
+    // coverage can run past vitest's 5 s default.
+  }, 30_000);
 });

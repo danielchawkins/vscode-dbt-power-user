@@ -689,11 +689,54 @@ export async function evaluateWorkbench<T>(
     | undefined;
 }
 
+/** The smallest workbench window a screenshot is taken in, so a panel's content is large enough to judge. */
+export const EVIDENCE_WINDOW = { width: 1600, height: 1100 };
+
+/** The window sizing the first screenshot of the run starts; later screenshots reuse its result. */
+let evidenceWindow: Promise<WindowSize | undefined> | undefined;
+
+/** The workbench window's outer size from the run's first screenshot, for a checkpoint's record. */
+export const evidenceWindowSize = (): Promise<WindowSize | undefined> =>
+  evidenceWindow ?? Promise.resolve(undefined);
+
+/** The workbench window's outer size in CSS pixels after `ensureEvidenceWindow`, for a checkpoint's record. */
+export interface WindowSize {
+  width: number;
+  height: number;
+}
+
+/**
+ * The workbench window's outer size, for a checkpoint's record. VS Code serves no CDP Browser domain to resize it,
+ * so the window is as large as `window.newWindowDimensions: "maximized"` makes it on the display (Xvfb runs a
+ * 1920x1200 screen). Warns when it is smaller than `EVIDENCE_WINDOW`, so an undersized run is visible in the log.
+ */
+export async function ensureEvidenceWindow(
+  port: string,
+  host: string,
+): Promise<WindowSize | undefined> {
+  const size = await evaluateWorkbench<WindowSize>(
+    port,
+    host,
+    "({ width: window.outerWidth, height: window.outerHeight })",
+  );
+  if (
+    size &&
+    (size.width < EVIDENCE_WINDOW.width || size.height < EVIDENCE_WINDOW.height)
+  ) {
+    console.warn(
+      `FPU_SMOKE_WINDOW ${size.width}x${size.height} is below ${EVIDENCE_WINDOW.width}x${EVIDENCE_WINDOW.height}`,
+    );
+  }
+  return size;
+}
+
 /** PNG of the whole workbench window as the user sees it, webviews included. */
 export async function captureWorkbenchScreenshot(
   port: string,
   host: string,
 ): Promise<Buffer> {
+  evidenceWindow ??= ensureEvidenceWindow(port, host);
+  await evidenceWindow;
   const target = await findWorkbenchPageTarget(port, validateSmokeHost(host));
   const result = await sendCommand(
     target.webSocketDebuggerUrl!,

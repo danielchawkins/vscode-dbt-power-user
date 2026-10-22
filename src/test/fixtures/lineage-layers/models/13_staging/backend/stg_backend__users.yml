@@ -1,0 +1,8 @@
+version: 2
+
+models:
+  - name: stg_backend__users
+    description: Backend users, one row per user.
+    columns:
+      - name: user_id
+      - name: country_code

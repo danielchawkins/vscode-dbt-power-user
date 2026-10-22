@@ -9,10 +9,14 @@ import {
 import { useState } from "react";
 import styles from "./relationshipEdges.module.css";
 import { endMark, relationEnds, relationTitle } from "./relationshipMarks";
+import type { RoutedRelationshipData } from "./relationshipRoute";
 
-/** A declared relationship edge: the ref it draws, and its React Flow type. */
+/**
+ * A declared relationship edge: the ref it draws, its routed path in the layered layout, and its React Flow type.
+ * Without a routed path the edge is a bezier between the handles.
+ */
 export type RelationshipEdge = Edge<
-  { ref: lineage.LineageRef },
+  { ref: lineage.LineageRef; routed?: RoutedRelationshipData | undefined },
   "relationship"
 >;
 
@@ -34,19 +38,27 @@ export const RelationshipEdgeView = ({
   if (!data) {
     return null;
   }
-  const { ref } = data;
-  const [path, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    sourcePosition,
-    targetX,
-    targetY,
-    targetPosition,
-  });
+  const { ref, routed } = data;
+  const [path, labelX, labelY] = routed
+    ? [routed.d, routed.labelAt.x, routed.labelAt.y]
+    : getBezierPath({
+        sourceX,
+        sourceY,
+        sourcePosition,
+        targetX,
+        targetY,
+        targetPosition,
+      });
+  const [sourceEnd, targetEnd] = routed
+    ? [routed.source, routed.target]
+    : [
+        { x: sourceX, y: sourceY, position: sourcePosition },
+        { x: targetX, y: targetY, position: targetPosition },
+      ];
   const ends = relationEnds(ref.cardinality);
   const marks = [
-    endMark(ends.to, sourceX, sourceY, sourcePosition),
-    endMark(ends.from, targetX, targetY, targetPosition),
+    endMark(ends.to, sourceEnd.x, sourceEnd.y, sourceEnd.position),
+    endMark(ends.from, targetEnd.x, targetEnd.y, targetEnd.position),
   ].join(" ");
   const title = relationTitle(ref);
   return (

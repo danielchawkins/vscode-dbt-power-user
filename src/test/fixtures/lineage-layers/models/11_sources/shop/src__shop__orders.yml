@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: shop
+    tables:
+      - name: orders
+        description: Raw orders from the shop application.
+        columns:
+          - name: order_id
+          - name: customer_id
+          - name: amount
+        config:
+          meta:
+            relationships:
+              - from_columns: [customer_id]
+                to_columns: [user_id]
+                to: "ref('stg_backend__users')"

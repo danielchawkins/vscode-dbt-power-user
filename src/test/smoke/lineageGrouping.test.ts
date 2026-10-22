@@ -12,6 +12,8 @@ import {
   clickInWebview,
   expectWebviewDom,
   interactionEvidence,
+  maximizePanelFor,
+  restorePanelSize,
   showPanel,
 } from "./webviewInteractions";
 
@@ -22,7 +24,6 @@ const LINEAGE: PanelEntry = {
   entry: "lineage",
 };
 const HUB = "hub";
-const MIN_WEBVIEW_HEIGHT = 480;
 
 const runsHere = () => currentFixtureName() === "lineage-groups";
 const host = () =>
@@ -39,10 +40,10 @@ interface Snapshot {
 
 const SNAPSHOT = `(() => document.body.dataset.entry === "lineage" ? {
   entry: "lineage",
-  groups: [...document.querySelectorAll("[data-group]")].map((el) => {
-    const spans = el.querySelectorAll("span");
-    return { label: el.dataset.group, count: spans[1]?.textContent ?? "" };
-  }),
+  groups: [...document.querySelectorAll("[data-group]")].map((el) => ({
+    label: el.dataset.group,
+    count: el.querySelector("[data-group-count]")?.textContent ?? "",
+  })),
   cards: [...document.querySelectorAll("[data-table]")].map((el) => el.dataset.table.split(".").at(-1)),
   chips: [...document.querySelectorAll('button[aria-label^="Close "]')].map((button) => ({
     label: button.getAttribute("aria-label").slice("Close ".length),
@@ -80,24 +81,6 @@ async function waitForSnapshot(
   return last;
 }
 
-async function webviewHeight(): Promise<number> {
-  const match = await evaluatePanel<{ entry: string; height: number }>(
-    process.env.FPU_CDP_PORT!,
-    LINEAGE.entry,
-    `(() => document.body.dataset.entry === "lineage" ? { entry: "lineage", height: innerHeight } : null)()`,
-  );
-  return match?.value.height ?? 0;
-}
-
-/** Whether this suite has changed the bottom panel's maximized state, so the teardown can put it back. */
-let panelToggled = false;
-
-async function toggleMaximizedPanel(): Promise<void> {
-  await vscode.commands.executeCommand("workbench.action.toggleMaximizedPanel");
-  panelToggled = !panelToggled;
-  await new Promise((resolve) => setTimeout(resolve, 1_000));
-}
-
 /** Opens the hub model, so the lineage view starts from it, and shows the tall lineage panel. */
 async function openHub(): Promise<void> {
   const root = vscode.workspace.workspaceFolders?.[0]?.uri;
@@ -110,12 +93,7 @@ async function openHub(): Promise<void> {
   const api = await vscode.extensions.getExtension(EXTENSION_ID)!.activate();
   await api.ready;
   await showPanel(LINEAGE);
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if ((await webviewHeight()) >= MIN_WEBVIEW_HEIGHT) {
-      return;
-    }
-    await toggleMaximizedPanel();
-  }
+  await maximizePanelFor(LINEAGE.entry);
 }
 
 const CHILDREN_EXPANDER = { role: "button", name: "Show 7 children" };
@@ -153,7 +131,7 @@ async function waitForChildrenExpander(): Promise<string> {
 
 /**
  * The canvas zoom and, per table card, its unscaled size, the header's badge and title font sizes, the subtitle's
- * display, and the visibility of every other row under the header.
+ * visibility (or "absent" where the card draws none), and the visibility of every other row under the header.
  */
 interface ZoomState {
   entry: string;
@@ -174,14 +152,20 @@ const ZOOM_STATE = `(() => document.body.dataset.entry === "lineage" ? {
     /scale\\(([\\d.]+)\\)/.exec(document.querySelector(".react-flow__viewport")?.style.transform ?? "")?.[1],
   ),
   cards: [...document.querySelectorAll("[data-table]")].map((card) => {
-    const [badge, title, , subtitle] = card.querySelectorAll(":scope > div:first-child > span");
+    const badge = card.querySelector(":scope > div:first-child > span");
+    const title = card.querySelector("[class*=label]");
+    const subtitle = card.querySelector(":scope > div:first-child > [class*=subtitle]");
     return {
       width: card.offsetWidth,
       height: card.offsetHeight,
       badge: parseFloat(getComputedStyle(badge).fontSize),
       title: parseFloat(getComputedStyle(title).fontSize),
-      subtitle: getComputedStyle(subtitle).display,
-      rows: [...card.querySelectorAll(":scope > :not(:first-child)")].map((row) => getComputedStyle(row).visibility),
+      subtitle: subtitle ? getComputedStyle(subtitle).visibility : "absent",
+      rows: [
+        ...card.querySelectorAll(
+          ":scope > :not(:first-child):not(.react-flow__handle)",
+        ),
+      ].map((row) => getComputedStyle(row).visibility),
     };
   }),
 } : null)()`;
@@ -216,7 +200,7 @@ const CARD_TITLES = `(() => document.body.dataset.entry === "lineage" ? {
   entry: "lineage",
   titles: Object.fromEntries([...document.querySelectorAll("[data-table]")].map((el) => [
     el.dataset.table.split(".").at(-1),
-    el.querySelector('span[title^="' + el.dataset.table + '"]')?.textContent ?? "",
+    el.querySelector('span[title^="' + el.dataset.table + '"] > span:first-child')?.textContent ?? "",
   ])),
 } : null)()`;
 
@@ -252,14 +236,52 @@ async function reopenHub(): Promise<void> {
   await openHub();
 }
 
+/**
+ * Each group card's computed border and fill, and the layer band whose rectangle holds the card's centre,
+ * with that band's own colour behind the card.
+ */
+const GROUP_STYLES = `(() => document.body.dataset.entry === "lineage" ? {
+  entry: "lineage",
+  groups: [...document.querySelectorAll("[data-group]")].map((card) => {
+    const style = getComputedStyle(card);
+    const box = card.getBoundingClientRect();
+    const x = box.left + box.width / 2;
+    const y = box.top + box.height / 2;
+    const band = [...document.querySelectorAll("[data-layer]")].find((candidate) => {
+      const edge = candidate.getBoundingClientRect();
+      return x >= edge.left && x <= edge.right && y >= edge.top && y <= edge.bottom;
+    });
+    return {
+      label: card.getAttribute("data-group"),
+      borderColor: style.borderTopColor,
+      borderStyle: style.borderTopStyle,
+      background: style.backgroundColor,
+      band: band
+        ? {
+            layer: band.getAttribute("data-layer"),
+            colour: getComputedStyle(band).getPropertyValue("--band-colour").trim(),
+            background: getComputedStyle(band).backgroundColor,
+          }
+        : null,
+    };
+  }),
+} : null)()`;
+
+async function groupStyles(): Promise<unknown> {
+  const match = await evaluatePanel<{ entry: string; groups: unknown[] }>(
+    process.env.FPU_CDP_PORT!,
+    LINEAGE.entry,
+    GROUP_STYLES,
+  );
+  return match?.value.groups ?? [];
+}
+
 suite("Lineage grouping", function () {
   this.timeout(300_000);
 
   // The suite's teardown runs when this suite ends, so later suites start with the default bottom panel.
   suiteTeardown(async function () {
-    if (panelToggled) {
-      await toggleMaximizedPanel();
-    }
+    await restorePanelSize();
   });
 
   test("groups the hub's children by folder, then opens a group into cards and a chip", async function () {
@@ -286,14 +308,16 @@ suite("Lineage grouping", function () {
     assert.deepStrictEqual(grouped.chips, []);
     // After the expansion the group nodes can sit past the right edge of the narrow panel; Fit View brings them into view.
     await clickInWebview(LINEAGE, { role: "button", name: "Fit View" });
+    const styles = await groupStyles();
     await evidence?.capture(LINEAGE, {
       name: "lineage-groups-closed",
       expect:
-        "Hub with its children expanded: two closed group nodes, 'a' with 3 and 'b' with 3, and one marts card; no +K button anywhere.",
+        "Hub with its children expanded: two closed group nodes, 'a' with 3 and 'b' with 3, and one marts card; no +K button anywhere. Each group's border, fill and the band behind it are recorded.",
       measured: {
         groups: grouped.groups,
         cards: grouped.cards,
         more: grouped.more,
+        groupStyles: styles,
       },
     });
 
@@ -348,7 +372,10 @@ suite("Lineage grouping", function () {
     for (const card of zoomed.cards) {
       assert.ok(card.title >= 26, `title was ${card.title}px`);
       assert.ok(card.badge >= 20, `badge was ${card.badge}px`);
-      assert.strictEqual(card.subtitle, "none");
+      assert.ok(
+        card.subtitle === "hidden" || card.subtitle === "absent",
+        `the subtitle was ${card.subtitle}`,
+      );
       assert.ok(
         card.rows.every((visibility) => visibility === "hidden"),
         `rows under the header were ${card.rows.join(",")}`,
@@ -358,7 +385,7 @@ suite("Lineage grouping", function () {
       name: "lineage-groups-zoomed-out",
       expect:
         "The same graph zoomed out below 50%: every card keeps its size and shows only a larger badge and title, " +
-        "with no subtitle line, action row or columns.",
+        "with no subtitle line, action row, expander bubble or columns.",
       measured: {
         zoom: zoomed.zoom,
         sizesBefore: before.cards.map(({ width, height }) => [width, height]),

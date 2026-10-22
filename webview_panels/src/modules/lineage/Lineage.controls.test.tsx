@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { ControlId, InteractiveRole } from "../../test/controlCoverage";
 import { controlId, expectPosted } from "../../test/controlCoverage";
+import { fits } from "../../test/fitRecorder";
 import type { Scope, User } from "../../test/lineageHarness";
 import {
   activate,
@@ -18,6 +19,10 @@ import {
   zoomPast,
 } from "../../test/lineageHarness";
 import { getVsCodeApiMock } from "../../test/setup";
+
+vi.mock("./fit", async (importOriginal) =>
+  (await import("../../test/fitRecorder")).recordingFit(importOriginal),
+);
 
 /** Every control a test below clicked. */
 const clicked = new Set<ControlId>();
@@ -332,6 +337,16 @@ describe("Lineage canvas controls", () => {
       expect(Number(scale(container))).toBeGreaterThan(zoomedOut),
     );
   });
+  it("runs the panel's fit from Fit View, centred on the start card", async () => {
+    const { user } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    fits.length = 0;
+    await press(user, "button", "Fit View");
+    await waitFor(() => expect(fits.length).toBeGreaterThan(0));
+    expect(fits.at(-1)).toEqual({ focusId: HUB.table, layered: true });
+  });
 });
 
 describe("Lineage table node", () => {
@@ -612,10 +627,14 @@ describe("Lineage group node", () => {
     expect(tableIds(container)).toEqual(["hub"]);
     expect(container.querySelector('[data-group="staging"]')).not.toBeNull();
 
+    fits.length = 0;
     await press(user, "button", "Open staging");
     await waitFor(() =>
       expect(tableIds(container)).toEqual(["hub", "s1", "s2"]),
     );
+    // Opening a group changes the drawn nodes, so the panel refits, centred on the start card.
+    await waitFor(() => expect(fits.length).toBeGreaterThan(0));
+    expect(fits.at(-1)).toEqual({ focusId: HUB.table, layered: true });
     expect(container.querySelector('[data-group="staging"]')).toBeNull();
     expect(container.querySelector('[data-group="marts"]')).not.toBeNull();
     expect(flowNodes(container)).toHaveLength(4);

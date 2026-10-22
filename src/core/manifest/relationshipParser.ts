@@ -395,8 +395,8 @@ export class RelationshipParser {
    *
    * - `to` is `ref('name')` (one argument, matched by model name across the project and its packages) or
    *   `source('source_name', 'table')`. A `ref` name resolves as `resolveBaseName` does (in `relationIndex.ts`): the
-   *   declaring package's own node, then the latest version. A `source_name.table` that more than one source table claims
-   *   does not resolve.
+   *   declaring package's own node, then the latest version. A `source_name.table` that more than one source table
+   *   claims does not resolve.
    * - `config.meta.relationships` is read when `meta` has no `relationships`
    *   key, because Fusion places a node's `meta` under its config.
    * - `meta.ignore_in_erd: true` on the declaring node or table drops all of

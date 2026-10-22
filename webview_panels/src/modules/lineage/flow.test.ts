@@ -1,4 +1,5 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
+import { Position } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
 import type { GroupChip } from "./expansionGroups";
 import { collapsedGroups } from "./expansionGroups";
@@ -8,6 +9,7 @@ import { addNeighbours, emptyGraph, lineageData } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { groupNodeId } from "./grouping";
 import { geometry, tableHeight } from "./layout";
+import type { RoutedRelationshipData } from "./relationshipRoute";
 
 const table = (id: string): lineage.LineageTable => ({
   table: id,
@@ -49,7 +51,7 @@ describe("toFlow with groups", () => {
     });
     const hub = nodes.find((n) => n.id === "hub");
     const group = nodes.find((n) => n.id === "g:1");
-    expect(group?.type).toBe("group");
+    expect(group?.type).toBe("folderGroup");
     expect(group?.data).toEqual({ label: "finance", count: 3, layered: false });
     expect(group?.initialHeight).toBe(geometry.groupHeight);
     expect(group?.initialWidth).toBe(geometry.tableWidth);
@@ -57,6 +59,14 @@ describe("toFlow with groups", () => {
     expect(Number.isFinite(group?.position.y)).toBe(true);
     // Children sit to the right of their parent in the left-to-right layout.
     expect(group!.position.x).toBeGreaterThan(hub!.position.x);
+  });
+
+  it("gives a group node the card's width, not React Flow's built-in 150px group type", () => {
+    const { nodes } = toFlow(input([["hub", "g:1"]]));
+    const group = nodes.find((n) => n.id === "g:1");
+    expect(group?.type).not.toBe("group");
+    // React Flow measures a node from its wrapper's width, which is the size given before measurement.
+    expect(group?.initialWidth).toBe(geometry.tableWidth);
   });
 
   it("draws the given group edges to the group nodes", () => {
@@ -110,10 +120,9 @@ describe("toFlow with combined edges from a real state", () => {
     });
     const groupA = groupNodeId("c:hub", "models/a");
     const groupB = groupNodeId("c:hub", "models/b");
-    expect(nodes.filter((n) => n.type === "group").map((n) => n.id)).toEqual([
-      groupA,
-      groupB,
-    ]);
+    expect(
+      nodes.filter((n) => n.type === "folderGroup").map((n) => n.id),
+    ).toEqual([groupA, groupB]);
     expect(edges).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ source: "hub", target: groupA }),
@@ -159,7 +168,7 @@ describe("toFlow with group chips", () => {
     expect(height(4)).toBe(base + 2 * geometry.chipRowHeight);
   });
 
-  it("reserves the relation line only on the start card", () => {
+  it("reserves the relation line and actions row only on the start card", () => {
     const hub = toFlow({
       data: {
         start: "other",
@@ -175,7 +184,9 @@ describe("toFlow with group chips", () => {
     }).nodes.find((n) => n.id === "hub");
     expect(hub?.initialHeight).toBe(tableHeight(undefined, 0));
     expect(tableHeight(undefined, 0, true)).toBe(
-      tableHeight(undefined, 0) + geometry.relationHeight,
+      tableHeight(undefined, 0) +
+        geometry.relationHeight +
+        geometry.actionsHeight,
     );
   });
 
@@ -362,6 +373,100 @@ describe("toFlow layered layout", () => {
     }
   });
 
+  it("keeps a routed relationship's type, ref and card ends, with no arrowhead", () => {
+    const base = layeredInput();
+    const { edges } = toFlow({
+      ...base,
+      refs: [
+        {
+          id: "ref1",
+          from: { table: "mart", columns: ["id"] },
+          to: { table: "src", columns: ["id"] },
+          cardinality: "many-to-one",
+          source: "test",
+        },
+      ],
+    });
+    const rel = edges.find((e) => e.id === "r:ref1");
+    expect(rel?.type).toBe("relationship");
+    expect(rel?.markerEnd).toBeUndefined();
+    const data = rel?.data as {
+      ref: lineage.LineageRef;
+      routed: RoutedRelationshipData;
+    };
+    expect(data.ref.id).toBe("ref1");
+    expect(data.routed.d).toMatch(/^M\d/);
+    // `src` sits above `mart`, so the referenced end leaves `src`'s bottom and the declaring end enters `mart`'s top.
+    expect(data.routed.source.position).toBe(Position.Bottom);
+    expect(data.routed.target.position).toBe(Position.Top);
+  });
+
+  it(
+    "ends a same-row relationship on its referenced card and its declaring card " +
+      "when the referenced card is selected and taller",
+    () => {
+      const base = layeredInput();
+      const { nodes, edges } = toFlow({
+        ...base,
+        data: {
+          ...base.data,
+          start: "stg",
+          tables: [
+            { ...table("stg"), layer: "staging" },
+            { ...table("ref"), layer: "marts" },
+            { ...table("decl"), layer: "marts" },
+          ],
+          edges: [],
+        },
+        selectedTable: "ref",
+        refs: [
+          {
+            id: "ref1",
+            from: { table: "decl", columns: ["id"] },
+            to: { table: "ref", columns: ["id"] },
+            cardinality: "many-to-one",
+            source: "test",
+          },
+        ],
+      });
+      const box = (id: string) => {
+        const node = nodes.find((n) => n.id === id);
+        if (node?.type !== "table") {
+          throw new Error(`${id} is not drawn as a table card`);
+        }
+        return {
+          left: node.position.x,
+          right: node.position.x + geometry.tableWidth,
+          top: node.position.y,
+          bottom: node.position.y + (node.initialHeight ?? 0),
+        };
+      };
+      const ref = box("ref");
+      const decl = box("decl");
+      // The cards share a row. The selected card is taller and centred on that row, so the two centres are level.
+      const centre = (b: { top: number; bottom: number }) =>
+        (b.top + b.bottom) / 2;
+      expect(ref.bottom - ref.top).toBeGreaterThan(decl.bottom - decl.top);
+      expect(centre(ref)).toBe(centre(decl));
+      const rel = edges.find((e) => e.id === "r:ref1");
+      const { routed } = rel?.data as { routed: RoutedRelationshipData };
+      // The source is the referenced card's bar and the target the declaring card's crow's foot: each ends on one of
+      // its own card's edges, not on the other card's.
+      expect([ref.top, ref.bottom]).toContain(routed.source.y);
+      expect([decl.top, decl.bottom]).toContain(routed.target.y);
+      expect(routed.source.x).toBeGreaterThanOrEqual(ref.left);
+      expect(routed.source.x).toBeLessThanOrEqual(ref.right);
+      expect(routed.target.x).toBeGreaterThanOrEqual(decl.left);
+      expect(routed.target.x).toBeLessThanOrEqual(decl.right);
+      expect(routed.source.position).toBe(
+        routed.source.y === ref.top ? Position.Top : Position.Bottom,
+      );
+      expect(routed.target.position).toBe(
+        routed.target.y === decl.top ? Position.Top : Position.Bottom,
+      );
+    },
+  );
+
   it("with leftToRight keeps dagre's placement, bezier edges and no bands", () => {
     const { nodes, edges } = toFlow(layeredInput("leftToRight"));
     expect(nodes.some((n) => n.type === "band")).toBe(false);
@@ -466,10 +571,10 @@ describe("toFlow connections", () => {
     expect(hub!.position.x).toBeLessThan(child!.position.x);
   });
 
-  it("routes each relationship edge in the layered layout, with no arrowhead", () => {
+  it("routes each relationship edge in the layered layout, keeping its relationship type, with no arrowhead", () => {
     const rel = toFlow(mixed("both")).edges.find((e) => e.id === "r:ref1");
     expect(rel).toMatchObject({
-      type: "routed",
+      type: "relationship",
       source: "hub",
       target: "child",
     });
@@ -482,7 +587,7 @@ describe("toFlow connections", () => {
       "c:hub.id->child.hub_id",
       "r:ref1",
     ]);
-    expect(edges.every((e) => e.type === "routed")).toBe(true);
+    expect(edges.filter((e) => e.type === "routed").length).toBe(1);
     const y = (id: string) => nodes.find((n) => n.id === id)?.position.y ?? NaN;
     expect(y("hub")).toBeLessThan(y("child"));
   });
@@ -495,7 +600,8 @@ describe("toFlow connections", () => {
       "r:ref1",
       "t:hub->child",
     ]);
-    expect(edges.every((e) => e.type === "routed")).toBe(true);
+    expect(edges.find((e) => e.id === "r:ref1")?.type).toBe("relationship");
+    expect(edges.filter((e) => e.type === "routed").length).toBe(3);
     expect(edges.find((e) => e.id === "r:ref1")?.markerEnd).toBeUndefined();
   });
 });

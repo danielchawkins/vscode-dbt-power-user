@@ -65,6 +65,28 @@ describe("relationship edge", () => {
     );
   });
 
+  it("draws a routed relationship along its path, with the marks at the path's card ends", () => {
+    const routed = {
+      d: "M10,20 L10,50 L200,50 L200,80",
+      labelAt: { x: 105, y: 50 },
+      source: { x: 10, y: 20, position: Position.Bottom },
+      target: { x: 200, y: 80, position: Position.Top },
+    };
+    const { container } = render(
+      <svg>
+        <RelationshipEdgeView {...props} data={{ ref, routed }} />
+      </svg>,
+    );
+    const line = container.querySelector('path[class*="line"]');
+    expect(line?.getAttribute("d")).toBe(routed.d);
+    const mark = container.querySelector('path[class*="mark"]');
+    expect(mark?.getAttribute("d")).toBe(
+      endMark("one", 10, 20, Position.Bottom) +
+        " " +
+        endMark("many", 200, 80, Position.Top),
+    );
+  });
+
   it("shows its columns and declaring source when hovered", () => {
     const { container } = render(
       <svg>

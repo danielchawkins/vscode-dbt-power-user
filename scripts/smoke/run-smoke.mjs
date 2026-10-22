@@ -230,6 +230,12 @@ watchdog.unref();
 try {
   const launchEpochMs = Date.now();
   const passedMarker = path.join(workspaceParent, "fpu-smoke-passed");
+  // New windows open maximized, so the lineage checkpoints get most of the display; VS Code has no size flag.
+  mkdirSync(path.join(userDataDir, "User"), { recursive: true });
+  writeFileSync(
+    path.join(userDataDir, "User", "settings.json"),
+    `${JSON.stringify({ "window.newWindowDimensions": "maximized" }, null, 2)}\n`,
+  );
   await runTests({
     vscodeExecutablePath: hostApp,
     extensionTestsPath: path.join(root, "out/test/smoke/index.js"),

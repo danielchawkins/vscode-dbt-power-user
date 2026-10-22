@@ -5,7 +5,9 @@ import { HARNESS_SWITCHES } from "../../settings/environment";
 import type { SmokeHost } from "./cdpClient";
 import {
   captureWorkbenchScreenshot,
+  evidenceWindowSize,
   evaluatePanel,
+  evaluateWorkbench,
   readWorkbenchNotificationTexts,
   revealWorkbench,
   sendCommand,
@@ -400,7 +402,9 @@ export function interactionEvidence(host: SmokeHost) {
         dialogs: string[];
         focused: string | null;
       }>(cdpPort(), panel.entry, readFrameState(panel.entry));
+      const webview = await webviewSize(panel.entry);
       const png = await captureWorkbenchScreenshot(cdpPort(), host);
+      const window = await evidenceWindowSize();
       const notifications = await readWorkbenchNotificationTexts(
         cdpPort(),
         host,
@@ -413,6 +417,8 @@ export function interactionEvidence(host: SmokeHost) {
           ...checkpoint,
           measured: {
             ...checkpoint.measured,
+            window,
+            webview,
             dialogs: shown?.value.dialogs ?? [],
             focused: shown?.value.focused ?? null,
             notifications,
@@ -428,4 +434,72 @@ export function interactionEvidence(host: SmokeHost) {
       console.log(`FPU_SMOKE_SCREENSHOT=${file}`);
     },
   };
+}
+
+/** The panel's inner size in CSS pixels, or undefined while its frame is not showing. */
+export async function webviewSize(
+  entry: string,
+): Promise<{ width: number; height: number } | undefined> {
+  const shown = await evaluatePanel<{
+    entry: string;
+    width: number;
+    height: number;
+  }>(
+    cdpPort(),
+    entry,
+    inFrame(entry, "return { width: innerWidth, height: innerHeight };"),
+  );
+  const size = shown?.value;
+  return size && { width: size.width, height: size.height };
+}
+
+/** Share of the workbench height the panel must fill, so its graph gets most of the window. */
+const MAXIMIZED_SHARE = 0.6;
+
+/** Whether `maximizePanelFor` has changed the bottom panel's maximized state, so `restorePanelSize` can undo it. */
+let panelMaximized = false;
+
+/** Maximizes the bottom panel unless the panel already fills most of the workbench. */
+export async function maximizePanelFor(entry: string): Promise<void> {
+  // The side bar and the secondary side bar (chat) share the window's width with the panel; closing them gives the
+  // graph the full width. The smoke host is a throwaway window, so they are not restored.
+  await vscode.commands.executeCommand("workbench.action.closeSidebar");
+  await vscode.commands.executeCommand("workbench.action.closeAuxiliaryBar");
+  const windowHeight = async () =>
+    (await evaluateWorkbench<number>(
+      cdpPort(),
+      smokeHost(),
+      "window.innerHeight",
+    )) ?? 0;
+  const filled = async () => {
+    const size = await webviewSize(entry);
+    return !!size && size.height >= (await windowHeight()) * MAXIMIZED_SHARE;
+  };
+  // The command toggles, and a theme switch or a reopened panel can leave the state other than this module last set,
+  // so each toggle is checked against the drawn height, and one that shrank the panel is toggled back.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (await filled()) {
+      return;
+    }
+    await vscode.commands.executeCommand(
+      "workbench.action.toggleMaximizedPanel",
+    );
+    panelMaximized = !panelMaximized;
+    await sleep(1_000);
+  }
+  if (!(await filled())) {
+    console.warn(
+      `FPU_SMOKE_PANEL ${entry} did not fill the window after maximizing`,
+    );
+  }
+}
+
+/** Restores the bottom panel if `maximizePanelFor` maximized it, so later suites start from the default layout. */
+export async function restorePanelSize(): Promise<void> {
+  if (!panelMaximized) {
+    return;
+  }
+  await vscode.commands.executeCommand("workbench.action.toggleMaximizedPanel");
+  panelMaximized = false;
+  await sleep(1_000);
 }

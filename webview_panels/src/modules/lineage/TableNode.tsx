@@ -11,80 +11,13 @@ import {
   packageNameOf,
   type TitleMode,
 } from "./card";
+import { ExpandButton, MoreButton } from "./Expanders";
 import type { TableNode as TableNodeType } from "./flow";
-import type { Direction } from "./graph";
 import { GroupChips } from "./GroupChips";
 import { columnHandle } from "./layout";
 import styles from "./lineageGraph.module.css";
 import { useZoomedOut } from "./semanticZoom";
 import { TableActionsContext } from "./viewModel";
-
-const ExpandButton = ({
-  table,
-  direction,
-  count,
-  expanded,
-  pending,
-}: {
-  table: string;
-  direction: Direction;
-  count: number;
-  expanded: boolean;
-  pending: boolean;
-}) => {
-  const title = pending
-    ? `Loading ${count} ${direction}; click to cancel`
-    : `${expanded ? "Hide" : "Show"} ${count} ${direction}`;
-  const sign = expanded ? "−" : "+";
-  const actions = use(TableActionsContext);
-  return (
-    <button
-      type="button"
-      className={`nodrag ${styles.expander}`}
-      disabled={count === 0}
-      aria-pressed={expanded}
-      aria-busy={pending}
-      aria-label={title}
-      title={title}
-      onClick={() => actions.toggleExpansion(table, direction)}
-    >
-      {pending ? (
-        <span className="codicon codicon-loading codicon-modifier-spin" />
-      ) : direction === "parents" ? (
-        `${sign}${count}`
-      ) : (
-        `${count}${sign}`
-      )}
-    </button>
-  );
-};
-
-const MoreButton = ({
-  table,
-  direction,
-  hidden,
-}: {
-  table: string;
-  direction: Direction;
-  hidden: number;
-}) => {
-  const actions = use(TableActionsContext);
-  if (hidden <= 0) {
-    return null;
-  }
-  const title = `Show ${hidden} more ${direction}`;
-  return (
-    <button
-      type="button"
-      className={`nodrag ${styles.more}`}
-      aria-label={title}
-      title={title}
-      onClick={() => actions.showMore(table, direction)}
-    >
-      {`+${hidden}`}
-    </button>
-  );
-};
 
 const HIDDEN_TITLE = "Hidden from lineage by meta.lineage.hidden";
 
@@ -196,34 +129,16 @@ const Header = ({
   </div>
 );
 
-const Actions = ({
+const Tools = ({
   table,
-  expanded,
-  pending,
-  hidden,
   listed,
 }: {
   table: lineage.LineageTable;
-  expanded: { parents: boolean; children: boolean };
-  pending: { parents: boolean; children: boolean };
-  hidden: { parents: number; children: number };
   listed: boolean;
 }) => {
   const actions = use(TableActionsContext);
   return (
-    <div className={styles.actions}>
-      <ExpandButton
-        table={table.table}
-        direction="parents"
-        count={table.parentCount}
-        expanded={expanded.parents}
-        pending={pending.parents}
-      />
-      <MoreButton
-        table={table.table}
-        direction="parents"
-        hidden={hidden.parents}
-      />
+    <>
       <button
         type="button"
         className="nodrag"
@@ -250,19 +165,68 @@ const Actions = ({
           <span className="codicon codicon-go-to-file" />
         </button>
       ) : null}
-      <MoreButton
-        table={table.table}
-        direction="children"
-        hidden={hidden.children}
-      />
-      <ExpandButton
-        table={table.table}
-        direction="children"
-        count={table.childCount}
-        expanded={expanded.children}
-        pending={pending.children}
-      />
-    </div>
+    </>
+  );
+};
+
+const Actions = ({
+  table,
+  expanded,
+  pending,
+  hidden,
+  listed,
+  layered,
+}: {
+  table: lineage.LineageTable;
+  expanded: { parents: boolean; children: boolean };
+  pending: { parents: boolean; children: boolean };
+  hidden: { parents: number; children: number };
+  listed: boolean;
+  layered: boolean;
+}) => {
+  // A layered card shows its expanders as bubbles on its edges, outside the actions row.
+  const parents = (
+    <ExpandButton
+      table={table}
+      direction="parents"
+      expanded={expanded.parents}
+      pending={pending.parents}
+      layered={layered}
+    />
+  );
+  const children = (
+    <ExpandButton
+      table={table}
+      direction="children"
+      expanded={expanded.children}
+      pending={pending.children}
+      layered={layered}
+    />
+  );
+  return (
+    <>
+      <div className={styles.actions}>
+        {layered ? null : parents}
+        <MoreButton
+          table={table.table}
+          direction="parents"
+          hidden={hidden.parents}
+        />
+        <Tools table={table} listed={listed} />
+        <MoreButton
+          table={table.table}
+          direction="children"
+          hidden={hidden.children}
+        />
+        {layered ? null : children}
+      </div>
+      {layered ? (
+        <>
+          {parents}
+          {children}
+        </>
+      ) : null}
+    </>
   );
 };
 
@@ -357,13 +321,15 @@ const TableNodeView = ({
   const hiddenFromLineage = data.table.hidden === true && !data.isStart;
   const zoomedOut = useZoomedOut();
   const layered = data.layered === true;
+  // The start and selected cards keep their relation line and actions row; other cards show the row on hover.
+  const pinned = data.isStart || selected;
   return (
     <div
       className={`${styles.node} ${data.isStart ? styles.start : ""} ${
         hiddenFromLineage ? styles.hidden : ""
       } ${zoomedOut ? styles.zoomedOut : ""} ${
         data.columns === undefined ? styles.noColumns : ""
-      } ${layered ? styles.layered : ""}`}
+      } ${layered ? styles.layered : ""} ${pinned ? styles.pinned : ""}`}
       data-table={data.table.table}
     >
       <Header
@@ -373,7 +339,7 @@ const TableNodeView = ({
         hiddenFromLineage={hiddenFromLineage}
         zoomedOut={zoomedOut}
         mode={data.title}
-        showRelation={data.isStart || selected}
+        showRelation={pinned}
         layered={layered}
       />
       <Actions
@@ -382,6 +348,7 @@ const TableNodeView = ({
         pending={data.pending}
         hidden={data.hidden}
         listed={data.columns !== undefined}
+        layered={layered}
       />
       <GroupChips chips={data.chips} />
       {data.columns ? (
