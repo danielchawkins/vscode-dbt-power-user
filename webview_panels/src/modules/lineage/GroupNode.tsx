@@ -13,22 +13,26 @@ const GroupNodeView = ({
 }: NodeProps<GroupNodeType>): React.JSX.Element => {
   const actions = use(TableActionsContext);
   const zoomedOut = useZoomedOut();
+  const layered = data.layered === true;
   return (
     <div
-      className={`${styles.node} ${styles.group} ${zoomedOut ? styles.zoomedOut : ""}`}
+      className={`${styles.node} ${styles.group} ${zoomedOut ? styles.zoomedOut : ""} ${layered ? styles.layered : ""}`}
       data-group={data.label}
     >
       <Handle
         type="target"
-        position={Position.Left}
+        position={layered ? Position.Top : Position.Left}
         id="in"
         className={`${styles.handle} ${styles.headerHandle}`}
         isConnectable={false}
       />
+      <span className={`codicon codicon-folder ${styles.groupIcon}`} />
       <span className={styles.groupLabel} title={data.label}>
         {data.label}
       </span>
-      <span className={styles.groupCount}>{data.count}</span>
+      <span className={styles.groupCount} data-group-count>
+        {data.count}
+      </span>
       <button
         type="button"
         className="nodrag"
@@ -38,13 +42,24 @@ const GroupNodeView = ({
       >
         Open
       </button>
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="out"
-        className={`${styles.handle} ${styles.headerHandle}`}
-        isConnectable={false}
-      />
+      {layered ? null : (
+        <Handle
+          type="source"
+          position={Position.Right}
+          id="out"
+          className={`${styles.handle} ${styles.headerHandle}`}
+          isConnectable={false}
+        />
+      )}
+      {layered ? (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="out"
+          className={`${styles.handle} ${styles.headerHandle}`}
+          isConnectable={false}
+        />
+      ) : null}
     </div>
   );
 };

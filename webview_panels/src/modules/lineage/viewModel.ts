@@ -11,6 +11,7 @@ type RefSource = lineage.RefSource;
 export const REF_SOURCES: RefSource[] = [
   "test",
   "contract",
+  "meta",
   "semantic",
   "inferred",
 ];
@@ -30,12 +31,13 @@ const resolveUserSettings = (
   settings: Partial<Settings> | undefined,
 ): Pick<
   ResolvedSettings,
-  "maxNeighbours" | "groupBy" | "semanticZoom" | "title"
+  "maxNeighbours" | "groupBy" | "semanticZoom" | "title" | "layout"
 > => ({
   maxNeighbours: settings?.maxNeighbours ?? 20,
   groupBy: settings?.groupBy ?? "folder",
   semanticZoom: settings?.semanticZoom ?? true,
   title: settings?.title ?? "alias",
+  layout: settings?.layout ?? "layered",
 });
 
 export const resolveSettings = (
@@ -44,10 +46,11 @@ export const resolveSettings = (
   showSelectEdges: settings?.showSelectEdges ?? true,
   showNonSelectEdges: settings?.showNonSelectEdges ?? false,
   defaultExpansion: settings?.defaultExpansion ?? 1,
-  showRefs: settings?.showRefs ?? true,
+  connections: settings?.connections ?? "dbt",
   enabledRefSources: {
     test: true,
     contract: true,
+    meta: true,
     semantic: true,
     inferred: true,
     ...settings?.enabledRefSources,
@@ -57,13 +60,16 @@ export const resolveSettings = (
   ...resolveUserSettings(settings),
 });
 
-/** The relationships to draw: enabled sources, inferred ones at or above the threshold, both ends drawn. */
+/**
+ * The relationships to draw: none under dbt dependencies; otherwise the enabled sources, inferred ones at or above
+ * the threshold, with both ends drawn.
+ */
 export const visibleRefs = (
   refs: readonly lineage.LineageRef[],
   settings: ResolvedSettings,
   drawn: ReadonlySet<string>,
 ): lineage.LineageRef[] =>
-  settings.showRefs
+  settings.connections !== "dbt"
     ? refs.filter(
         (ref) =>
           settings.enabledRefSources[ref.source] &&

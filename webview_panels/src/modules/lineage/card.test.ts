@@ -1,6 +1,13 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
-import { cardBadge, cardSubtitle, cardTitle, cardTooltip } from "./card";
+import {
+  cardBadge,
+  cardFile,
+  cardSubtitle,
+  cardTitle,
+  cardTooltip,
+  packageNameOf,
+} from "./card";
 
 const table = (
   over: Partial<lineage.LineageTable> = {},
@@ -109,11 +116,14 @@ describe("lineage card text", () => {
     ).toContain("relation: DEV_FG.DBT_DEV_DANIEL_COMMITMENT.orders");
   });
 
-  it("puts the unique ID, ref name and full relation in the tooltip", () => {
+  it("puts the unique ID, alias, file, package, ref and relation in the tooltip", () => {
     expect(
       cardTooltip(
         table({
+          label: "grant_cash_advance_commitments",
           refName: "int__grant_cash_advance_commitments",
+          path: "models/int__grant_cash_advance_commitments.sql",
+          packageName: "fg",
           database: "DEV_FG",
           schema: "commitment",
           layer: "intermediate",
@@ -121,21 +131,34 @@ describe("lineage card text", () => {
       ).split("\n"),
     ).toEqual([
       "model.fg.int__grant_cash_advance_commitments",
-      "ref: int__grant_cash_advance_commitments",
+      "alias: grant_cash_advance_commitments",
+      "models/int__grant_cash_advance_commitments.sql",
+      "fg.model",
+      "ref('int__grant_cash_advance_commitments')",
       "relation: DEV_FG.commitment.grant_cash_advance_commitments",
-      "model, intermediate layer",
+      "intermediate layer",
     ]);
+  });
+
+  it("leaves the alias out of the tooltip when it is the file name", () => {
+    const lines = cardTooltip(
+      table({ label: "orders", path: "models/orders.sql" }),
+    ).split("\n");
+    expect(lines.some((line) => line.startsWith("alias:"))).toBe(false);
+    expect(lines).toContain("ref('orders')");
   });
 
   describe("title modes", () => {
     const aliased = table({
       label: "summary_mart",
       refName: "mart_summary",
+      path: "models/mart_summary.sql",
       database: "DEV",
       schema: "marts",
       materialization: "table",
     });
     const source = table({
+      table: "source.fg.raw.orders",
       label: "orders",
       refName: "raw.orders",
       identifier: "ORDERS_V2",
@@ -148,8 +171,36 @@ describe("lineage card text", () => {
       expect(cardTitle(aliased, "alias")).toBe("summary_mart");
       expect(cardTitle(aliased, "name")).toBe("mart_summary");
       expect(cardTitle(table(), "name")).toBe("grant_cash_advance_commitments");
-      expect(cardTitle(source, "alias")).toBe("orders");
+      expect(cardTitle(source, "alias")).toBe("raw.orders");
       expect(cardTitle(source, "name")).toBe("raw.orders");
+    });
+
+    it("leads a source title with its source name and table name", () => {
+      const other = table({
+        table: "source.fg.stripe.payments",
+        label: "payments",
+        nodeType: "source",
+      });
+      expect(cardTitle(other, "alias")).toBe("stripe.payments");
+      expect(cardTitle(other, "name")).toBe("stripe.payments");
+    });
+
+    it("shows the file line only when the title is not the file name", () => {
+      expect(cardFile(aliased, "alias")).toBe("mart_summary");
+      expect(cardFile(aliased, "name")).toBeUndefined();
+      expect(
+        cardFile(table({ label: "orders", path: "models/orders.sql" })),
+      ).toBeUndefined();
+      expect(cardFile(source)).toBeUndefined();
+    });
+
+    it("keeps a dotted file name's stem, dropping only the extension", () => {
+      expect(
+        cardFile(
+          table({ label: "orders_v2", path: "models/a/orders.v1.sql" }),
+          "alias",
+        ),
+      ).toBe("orders.v1");
     });
 
     it("shortens to the zoomed length when zoomed", () => {
@@ -181,18 +232,32 @@ describe("lineage card text", () => {
       expect(cardSubtitle(ephemeral, "name")).toBe("table");
     });
 
-    it("shows ref in alias mode and alias in name mode in the tooltip", () => {
+    it("puts the ref or source call, the path and the relation in the tooltip", () => {
       expect(cardTooltip(aliased).split("\n")).toEqual([
         "model.fg.int__grant_cash_advance_commitments",
-        "ref: mart_summary",
+        "alias: summary_mart",
+        "models/mart_summary.sql",
+        "fg.model",
+        "ref('mart_summary')",
         "relation: DEV.marts.summary_mart",
       ]);
-      expect(cardTooltip(aliased, "name")).toContain("alias: summary_mart");
-      expect(cardTooltip(aliased, "name")).not.toContain("ref:");
-      expect(cardTooltip(source, "name")).toContain(
+      expect(cardTooltip(source).split("\n")).toEqual([
+        "source.fg.raw.orders",
+        "fg.source",
+        "source('raw', 'orders')",
         "relation: RAW.shop.ORDERS_V2",
-      );
-      expect(cardTooltip(source, "name")).toContain("alias: ORDERS_V2");
+      ]);
     });
+  });
+
+  it("falls back to the unique ID's package for a node with no package name", () => {
+    const metric = table({
+      table: "metric.fg.revenue",
+      label: "revenue",
+      nodeType: "metric",
+    });
+    expect(packageNameOf(metric)).toBe("fg");
+    expect(packageNameOf(table({ packageName: "other" }))).toBe("other");
+    expect(cardTooltip(metric).split("\n")).toContain("fg.metric");
   });
 });

@@ -1,8 +1,12 @@
+import type { lineage } from "@fusion-power-user/webview-contract";
 import { render, screen } from "@testing-library/react";
 import { ReactFlowProvider, useStoreApi } from "@xyflow/react";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import { useLayoutEffect } from "react";
 import { describe, expect, it } from "vitest";
 import { cardTitle } from "./card";
+import { geometry } from "./layout";
 import { TableNode } from "./TableNode";
 
 /** The length `cardTitle` shortens a long zoomed-out title to. */
@@ -163,7 +167,7 @@ describe("table node semantic zoom", () => {
     );
     expect(screen.getByTestId("lineage-columns")).toBeTruthy();
     expect(container.querySelectorAll(".react-flow__handle").length).toBe(4);
-    const title = container.querySelector("span[title]:not([class*=type])");
+    const title = container.querySelector("[class*=label]");
     expect(title?.textContent?.length).toBe(ZOOMED_TITLE_MAX);
   });
 
@@ -175,5 +179,252 @@ describe("table node semantic zoom", () => {
     expect(
       screen.getByText(/^stg_a_long.*suffix$/).textContent?.length,
     ).toBeGreaterThan(ZOOMED_TITLE_MAX);
+  });
+});
+
+describe("table node name block", () => {
+  const drawCard = (
+    table: Partial<lineage.LineageTable>,
+    {
+      isStart = false,
+      selected = false,
+      columns,
+    }: {
+      isStart?: boolean;
+      selected?: boolean;
+      columns?: lineage.LineageColumn[];
+    } = {},
+  ) => {
+    const props = {
+      id: "model.fg.summary_mart",
+      selected,
+      data: {
+        table: {
+          table: "model.fg.summary_mart",
+          label: "summary_mart",
+          nodeType: "model",
+          childCount: 0,
+          parentCount: 0,
+          tests: [],
+          path: "models/mart_summary.sql",
+          packageName: "fg",
+          refName: "mart_summary",
+          database: "DEV",
+          schema: "marts",
+          ...table,
+        },
+        columns,
+        isStart,
+        title: "alias",
+        expanded: { parents: false, children: false },
+        pending: { parents: false, children: false },
+        hidden: { parents: 0, children: 0 },
+        chips: [],
+        traced: [],
+      },
+    } as unknown as React.ComponentProps<typeof TableNode>;
+    return render(
+      <ReactFlowProvider>
+        <TableNode {...props} />
+      </ReactFlowProvider>,
+    );
+  };
+
+  it("titles the card with the alias, then the file and the package and type chips", () => {
+    const { container } = drawCard({});
+    expect(container.querySelector("[class*=label]")?.textContent).toBe(
+      "summary_mart",
+    );
+    expect(container.querySelector("[class*=file]")?.textContent).toBe(
+      "mart_summary",
+    );
+    expect(screen.getByText("fg")).toBeTruthy();
+    expect(container.querySelector("[class*=typeTag]")?.textContent).toBe(
+      "model",
+    );
+  });
+
+  it("puts the path, the ref call and the relation in the tooltip", () => {
+    const { container } = drawCard({});
+    const title = container
+      .querySelector("[class*=names]")
+      ?.getAttribute("title");
+    expect(title).toContain("models/mart_summary.sql");
+    expect(title).toContain("ref('mart_summary')");
+    expect(title).toContain("relation: DEV.marts.summary_mart");
+  });
+
+  it("takes the package from the unique ID when no package name is set", () => {
+    const { container } = drawCard({
+      table: "metric.fg.revenue",
+      label: "revenue",
+      nodeType: "metric",
+      packageName: undefined,
+    });
+    expect(container.querySelector("[class*=tags]")?.textContent).toBe(
+      "fgmetric",
+    );
+  });
+
+  it("leaves the file line out when the title is the file name", () => {
+    const { container } = drawCard({
+      label: "orders",
+      path: "models/orders.sql",
+      refName: undefined,
+    });
+    expect(container.querySelector("[class*=file]")).toBeNull();
+  });
+
+  it("shows the relation line only on the start card and a selected card", () => {
+    const relation = (isStart: boolean, selected: boolean) =>
+      drawCard({}, { isStart, selected }).container.querySelector(
+        "[class*=subtitle]",
+      );
+    expect(relation(false, false)).toBeNull();
+    expect(relation(true, false)).not.toBeNull();
+    expect(relation(false, true)).not.toBeNull();
+  });
+
+  it("grows the header by the relation line only on the start card and a selected card", () => {
+    const header = (isStart: boolean, selected: boolean) =>
+      drawCard({}, { isStart, selected }).container.querySelector(
+        "[data-table] > [class*=header]",
+      )?.className;
+    expect(header(false, false)).not.toContain("headerRelation");
+    expect(header(true, false)).toContain("headerRelation");
+    expect(header(false, true)).toContain("headerRelation");
+  });
+
+  it("pins the start and selected cards, whose actions row always shows", () => {
+    const pinned = (props: { isStart?: boolean; selected?: boolean }) =>
+      drawCard({}, props).container.querySelector("[data-table]")?.className;
+    expect(pinned({ isStart: true })).toContain("pinned");
+    expect(pinned({ selected: true })).toContain("pinned");
+    expect(pinned({})).not.toContain("pinned");
+  });
+
+  it("marks a card with no column list, which takes the header clearance", () => {
+    const node = (columns?: lineage.LineageColumn[]) =>
+      drawCard({}, { columns }).container.querySelector("[data-table]")
+        ?.className;
+    expect(node()).toContain("noColumns");
+    expect(node([])).not.toContain("noColumns");
+  });
+});
+
+/** The stylesheet's declarations for the rule whose selector starts a line. */
+const rule = (selector: string): string => {
+  const css = readFileSync(
+    join(import.meta.dirname, "lineageGraph.module.css"),
+    "utf8",
+  );
+  const start = css.indexOf(`\n${selector} {`);
+  expect(start).toBeGreaterThanOrEqual(0);
+  return css.slice(start, css.indexOf("}", start));
+};
+
+/** The pixel value of `property` in a rule's declarations. */
+const px = (declarations: string, property: string): number => {
+  const match = new RegExp(`(?:^|[\\s;{])${property}:\\s*(\\d+)px`).exec(
+    declarations,
+  );
+  expect(match, `${property} in ${declarations}`).not.toBeNull();
+  return Number(match?.[1]);
+};
+
+describe("table node header geometry", () => {
+  it("keeps the header's CSS heights in step with geometry", () => {
+    const header = rule(".header");
+    const nameBlock = px(rule(".names"), "height");
+    const padding = px(header, "padding");
+    const border = px(header, "border-bottom");
+    // The header is a content box: the name block, its padding and its border.
+    expect(px(header, "height")).toBe(nameBlock);
+    expect(nameBlock + 2 * padding + border).toBe(geometry.headerHeight);
+    // The relation line is a row gap and the subtitle's line.
+    const relationLine =
+      px(rule(".subtitle"), "line-height") + px(header, "gap");
+    expect(relationLine).toBe(geometry.relationHeight);
+    expect(px(rule(".headerRelation"), "height")).toBe(
+      nameBlock + relationLine,
+    );
+    expect(
+      px(rule(".node.noColumns .header"), "padding-bottom") - padding,
+    ).toBe(geometry.headerClearance);
+  });
+
+  it("keeps the actions row's CSS heights in step with geometry", () => {
+    expect(px(rule(".actions"), "height")).toBe(geometry.actionsHeight);
+    // An unpinned card takes no room for the row: it is taken out of the flow and hidden, and hovering it or focus
+    // inside it shows the row over the card's bottom edge, so the card's size never changes.
+    const unpinned = rule(".node:not(.pinned) .actions");
+    expect(unpinned).toContain("position: absolute;");
+    expect(unpinned).toContain("visibility: hidden;");
+    expect(
+      rule(
+        ".node:not(.pinned):hover .actions,\n.node:not(.pinned):focus-within .actions",
+      ),
+    ).toContain("visibility: visible;");
+  });
+
+  it("keeps the expander bubbles' CSS size in step with geometry", () => {
+    const bubble = rule(".node .bubble");
+    expect(px(bubble, "min-width")).toBe(geometry.bubbleWidth);
+    expect(px(bubble, "height")).toBe(2 * geometry.bubbleOverhang);
+  });
+});
+
+describe("table node expander bubbles", () => {
+  const drawLayered = (layered: boolean) => {
+    const props = {
+      id: "model.p.b",
+      data: {
+        table: {
+          table: "model.p.b",
+          label: "b",
+          nodeType: "model",
+          childCount: 7,
+          parentCount: 1,
+          tests: [],
+        },
+        columns: undefined,
+        isStart: false,
+        expanded: { parents: false, children: false },
+        pending: { parents: false, children: false },
+        hidden: { parents: 0, children: 0 },
+        chips: [],
+        traced: [],
+        layered,
+      },
+    } as unknown as React.ComponentProps<typeof TableNode>;
+    return render(
+      <ReactFlowProvider>
+        <TableNode {...props} />
+      </ReactFlowProvider>,
+    );
+  };
+
+  it("sits the parents bubble on the top edge and the children bubble on the bottom edge", () => {
+    const { container } = drawLayered(true);
+    const card = container.querySelector("[data-table]");
+    const parents = screen.getByRole("button", { name: "Show 1 parents" });
+    const children = screen.getByRole("button", { name: "Show 7 children" });
+    expect(parents.parentElement).toBe(card);
+    expect(parents.className).toContain("bubbleTop");
+    expect(children.parentElement).toBe(card);
+    expect(children.className).toContain("bubbleBottom");
+    expect(parents.textContent).toBe("1");
+    expect(children.textContent).toBe("7");
+    expect(parents.querySelector(".codicon-arrow-up")).not.toBeNull();
+    expect(children.querySelector(".codicon-arrow-down")).not.toBeNull();
+  });
+
+  it("keeps the expanders in the actions row, with their +/- labels, when not layered", () => {
+    const { container } = drawLayered(false);
+    const parents = screen.getByRole("button", { name: "Show 1 parents" });
+    expect(parents.className).not.toContain("bubble");
+    expect(parents.textContent).toBe("+1");
+    expect(parents.closest("[class*=actions]")).not.toBeNull();
+    expect(container.querySelector("[class*=bubble]")).toBeNull();
   });
 });

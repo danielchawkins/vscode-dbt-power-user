@@ -522,7 +522,7 @@ const lineagePanel: Fixture[] = [
         showSelectEdges: true,
         showNonSelectEdges: false,
         defaultExpansion: 2,
-        showRefs: true,
+        connections: "both",
         enabledRefSources: { test: true, inferred: false },
         inferenceConfidenceThreshold: 0.6,
         includeSourcesInInference: false,

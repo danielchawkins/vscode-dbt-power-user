@@ -50,6 +50,7 @@ export class SourceParser {
               identifier,
               package_name,
               meta,
+              config,
             },
           ) => {
             if (!source_name) {
@@ -70,6 +71,7 @@ export class SourceParser {
             }
             const fullPath = path.join(projectRoot, original_file_path);
             source.tables.push({
+              unique_id,
               name,
               identifier,
               database,
@@ -78,6 +80,7 @@ export class SourceParser {
               description: description,
               columns: columns,
               meta: meta,
+              configMeta: config?.meta,
             });
             return previousValue;
           },

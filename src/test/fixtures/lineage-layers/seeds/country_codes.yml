@@ -1,0 +1,10 @@
+version: 2
+
+seeds:
+  - name: country_codes
+    description: Country codes that users and revenue regions use.
+    columns:
+      - name: code
+        description: Two-letter ISO country code.
+      - name: name
+        description: Country name.

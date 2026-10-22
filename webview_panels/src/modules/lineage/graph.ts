@@ -97,7 +97,6 @@ export const emptyGraph = (
 export const expansionKey = (direction: Direction, table: string): string =>
   `${direction === "children" ? "c" : "p"}:${table}`;
 
-/** @internal */
 export const parseExpansion = (
   key: string,
 ): [Direction, string] | undefined => {
@@ -149,7 +148,6 @@ export const shownWithout = (
 /**
  * The drawn tables and table edges, each edge `[parent, child]`. Every known parent-child pair between drawn
  * tables is an edge, whichever expansion fetched it.
- * @internal
  */
 export function drawnGraph(state: GraphState): {
   tables: LineageTable[];

@@ -1,7 +1,9 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { ControlId, InteractiveRole } from "../../test/controlCoverage";
 import { controlId, expectPosted } from "../../test/controlCoverage";
+import { fits } from "../../test/fitRecorder";
 import type { Scope, User } from "../../test/lineageHarness";
 import {
   activate,
@@ -17,6 +19,10 @@ import {
   zoomPast,
 } from "../../test/lineageHarness";
 import { getVsCodeApiMock } from "../../test/setup";
+
+vi.mock("./fit", async (importOriginal) =>
+  (await import("../../test/fitRecorder")).recordingFit(importOriginal),
+);
 
 /** Every control a test below clicked. */
 const clicked = new Set<ControlId>();
@@ -106,6 +112,22 @@ describe("Lineage Settings popover", () => {
     expect(gear).toHaveAttribute("aria-expanded", "false");
   });
 
+  it("closes on a click on a layer band, which takes no pointer events", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { layout: "layered" },
+    });
+    const gear = await activate(user, "button", "Settings");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    const band = container.querySelector<HTMLElement>(".react-flow__node-band");
+    expect(band).not.toBeNull();
+    expect(band?.style.pointerEvents).toBe("none");
+    // user-event refuses to click an element with pointer-events: none, which a band is by design. This user skips
+    // that check; the press still reaches the document, where the popover's outside-press listener closes it.
+    await userEvent.setup({ pointerEventsCheck: 0 }).click(band!);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(gear).toHaveAttribute("aria-expanded", "false");
+  });
+
   it("closes on a second click on the gear and leaves it collapsed", async () => {
     const { user } = await openLineage();
     const gear = await activate(user, "button", "Settings");
@@ -140,27 +162,30 @@ describe("Lineage Settings popover", () => {
   });
 });
 
-describe("Lineage Relationships popover", () => {
+describe("Lineage Connections popover", () => {
   const openRelationships = async () => {
     const opened = await openLineage();
-    const button = await activate(opened.user, "button", "Relationships");
+    const button = await press(opened.user, "button", "Connections");
+    await press(opened.user, "radio", "Declared relationships");
     return { ...opened, button };
   };
 
-  it("opens and hides the overlay with Show relationships", async () => {
-    const { user } = await openLineage();
-    const button = await press(user, "button", "Relationships");
+  it("picks each connections choice and posts it", async () => {
+    const { user, button } = await openRelationships();
     expect(button).toHaveAttribute("aria-expanded", "true");
     expect(button).toHaveAttribute("aria-pressed", "true");
-    const show = await press(user, "checkbox", "Show relationships");
-    expect(show).not.toBeChecked();
+    await press(user, "radio", "Both");
+    await expectPosted("persistLineageSettings", {
+      args: { params: { connections: "both" } },
+    });
+    await press(user, "radio", "dbt dependencies");
     expect(button).toHaveAttribute("aria-pressed", "false");
     await expectPosted("persistLineageSettings", {
-      args: { params: { showRefs: false } },
+      args: { params: { connections: "dbt" } },
     });
   });
 
-  it.each(["test", "contract", "semantic", "inferred"])(
+  it.each(["test", "contract", "meta", "semantic", "inferred"])(
     "toggles the %s source off",
     async (source) => {
       const { user } = await openRelationships();
@@ -311,6 +336,16 @@ describe("Lineage canvas controls", () => {
     await waitFor(() =>
       expect(Number(scale(container))).toBeGreaterThan(zoomedOut),
     );
+  });
+  it("runs the panel's fit from Fit View, centred on the start card", async () => {
+    const { user } = await openLineage(
+      { node: HUB, publication: "s:1" },
+      { settings: { maxNeighbours: 2 } },
+    );
+    fits.length = 0;
+    await press(user, "button", "Fit View");
+    await waitFor(() => expect(fits.length).toBeGreaterThan(0));
+    expect(fits.at(-1)).toEqual({ focusId: HUB.table, layered: true });
   });
 });
 
@@ -592,10 +627,14 @@ describe("Lineage group node", () => {
     expect(tableIds(container)).toEqual(["hub"]);
     expect(container.querySelector('[data-group="staging"]')).not.toBeNull();
 
+    fits.length = 0;
     await press(user, "button", "Open staging");
     await waitFor(() =>
       expect(tableIds(container)).toEqual(["hub", "s1", "s2"]),
     );
+    // Opening a group changes the drawn nodes, so the panel refits, centred on the start card.
+    await waitFor(() => expect(fits.length).toBeGreaterThan(0));
+    expect(fits.at(-1)).toEqual({ focusId: HUB.table, layered: true });
     expect(container.querySelector('[data-group="staging"]')).toBeNull();
     expect(container.querySelector('[data-group="marts"]')).not.toBeNull();
     expect(flowNodes(container)).toHaveLength(4);
@@ -693,10 +732,13 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "spinbutton:Default expansion",
   "checkbox:Show select (direct) column edges",
   "checkbox:Show non-select (indirect) column edges",
-  "button:Relationships",
-  "checkbox:Show relationships",
+  "button:Connections",
+  "radio:dbt dependencies",
+  "radio:Declared relationships",
+  "radio:Both",
   "checkbox:test",
   "checkbox:contract",
+  "checkbox:meta",
   "checkbox:semantic",
   "checkbox:inferred",
   "slider:Inferred confidence ≥ 0.80",

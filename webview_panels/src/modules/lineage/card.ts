@@ -51,14 +51,62 @@ function relationOf(
 /** What titles a card: the built relation's name (`alias`) or the dbt name `ref()` uses (`name`). */
 export type TitleMode = "alias" | "name";
 
+/** A file name without its directory and extension. */
+function stem(path: string): string {
+  const name = path.split("/").pop() ?? path;
+  return name.replace(/\.[^.]+$/, "");
+}
+
+/** The source name in a source table's unique ID: `source.<package>.<source_name>.<table_name>`. */
+function sourceNameOf(table: LineageTable): string | undefined {
+  return table.nodeType === "source" ? table.table.split(".")[2] : undefined;
+}
+
+/**
+ * The package a node belongs to: the package it reports, else the second segment of its unique ID
+ * (`<resource_type>.<package>.<name>`), which metrics, exposures and functions carry without a package name.
+ */
+export function packageNameOf(table: LineageTable): string | undefined {
+  return table.packageName ?? table.table.split(".")[1];
+}
+
+/**
+ * The title in full. A model's label is its alias, which dbt sets to the file name when none is configured; a
+ * source leads with its source name. Name mode titles by the dbt ref name where there is one.
+ */
+function cardName(table: LineageTable, mode: TitleMode): string {
+  if (mode === "name" && table.refName) {
+    return table.refName;
+  }
+  const source = sourceNameOf(table);
+  return source ? `${source}.${table.label}` : table.label;
+}
+
 /** The card title for `mode`, shortened to fit: tighter when `zoomed`. */
 export function cardTitle(
   table: LineageTable,
   mode: TitleMode,
   zoomed = false,
 ): string {
-  const title = mode === "name" ? (table.refName ?? table.label) : table.label;
-  return middleEllipsis(title, zoomed ? ZOOMED_TITLE_MAX : TITLE_MAX);
+  return middleEllipsis(
+    cardName(table, mode),
+    zoomed ? ZOOMED_TITLE_MAX : TITLE_MAX,
+  );
+}
+
+/**
+ * The card's file line: the file name without its extension, or undefined when the node has no file or the file
+ * name is already the title.
+ */
+export function cardFile(
+  table: LineageTable,
+  mode: TitleMode = "alias",
+): string | undefined {
+  if (!table.path) {
+    return undefined;
+  }
+  const file = stem(table.path);
+  return file === cardName(table, mode) ? undefined : file;
 }
 
 /**
@@ -87,24 +135,30 @@ export const cardBadge = (table: LineageTable): string =>
   table.layer ?? table.nodeType;
 
 /**
- * The card's hover text: the unique ID, the ref name (the alias in name mode) when it differs, and the relation.
+ * The card's hover text. It carries what an unselected card leaves out: the alias when it differs from the file
+ * name, the file path, the package and type, the `ref()` or `source()` call, and the relation.
  */
-export function cardTooltip(
-  table: LineageTable,
-  mode: TitleMode = "alias",
-): string {
+export function cardTooltip(table: LineageTable): string {
+  const file = table.path ? stem(table.path) : undefined;
+  const source = sourceNameOf(table);
   const relation = relationOf(table, table.schema);
-  const other =
-    mode === "name"
-      ? `alias: ${table.identifier ?? table.label}`
-      : `ref: ${table.refName}`;
+  const pkg = packageNameOf(table);
   return [
     table.table,
-    table.refName ? other : undefined,
+    file !== undefined && table.label !== file
+      ? `alias: ${table.label}`
+      : undefined,
+    table.path,
+    pkg ? `${pkg}.${table.nodeType}` : table.nodeType,
+    source
+      ? `source('${source}', '${table.label}')`
+      : table.path
+        ? `ref('${table.refName ?? table.label}')`
+        : undefined,
     relation
       ? `relation: ${relation}.${table.identifier ?? table.label}`
       : undefined,
-    table.layer ? `${table.nodeType}, ${table.layer} layer` : undefined,
+    table.layer ? `${table.layer} layer` : undefined,
   ]
     .filter(Boolean)
     .join("\n");

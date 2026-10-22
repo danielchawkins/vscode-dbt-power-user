@@ -1,5 +1,5 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { ControlId } from "../../test/controlCoverage";
 import {
   collectControls,
@@ -16,6 +16,11 @@ import {
   zoomPast,
 } from "../../test/lineageHarness";
 import { TESTED_CONTROLS } from "./Lineage.controls.test";
+
+// The controls suite runs here too, and its fit assertions need the same recording mock.
+vi.mock("./fit", async (importOriginal) =>
+  (await import("../../test/fitRecorder")).recordingFit(importOriginal),
+);
 
 /** Popovers render in a portal, so the controls are collected from the whole page. */
 const page = () => document.body;
@@ -61,8 +66,8 @@ describe("Lineage control coverage", () => {
         "Settings open": stateOf(({ user }) =>
           activate(user, "button", "Settings"),
         ),
-        "Relationships open": stateOf(({ user }) =>
-          activate(user, "button", "Relationships"),
+        "Connections open": stateOf(({ user }) =>
+          activate(user, "button", "Connections"),
         ),
         "Help open": stateOf(({ user }) => activate(user, "button", "Help")),
         "node expanded": stateOf(async ({ user, container }) => {

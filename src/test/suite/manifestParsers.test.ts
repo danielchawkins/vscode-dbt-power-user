@@ -8,6 +8,7 @@ import {
   NodeParser,
   SourceParser,
 } from "../../core/manifest";
+import { RelationshipParser } from "../../core/manifest/relationshipParser";
 
 const logger = { debug: () => undefined } as unknown as Pick<Log, "debug">;
 
@@ -93,5 +94,56 @@ describe("manifest parsers", () => {
     expect(map.get("raw")?.tables[0]?.meta).toEqual({
       lineage: { hidden: true },
     });
+  });
+
+  it("read a source table's meta.relationships from config.meta into a declared ref", async () => {
+    const relationships = [
+      { from_columns: ["hub_id"], to: "ref('hub')", to_columns: ["id"] },
+    ];
+    const sources = {
+      "source.p.raw.events": {
+        resource_type: "source",
+        source_name: "raw",
+        name: "events",
+        unique_id: "source.p.raw.events",
+        original_file_path: "models/sources.yml",
+        description: "",
+        columns: {},
+        package_name: "p",
+        config: { meta: { relationships } },
+      },
+    };
+    const nodes = {
+      "model.p.hub": {
+        resource_type: "model",
+        name: "hub",
+        unique_id: "model.p.hub",
+        original_file_path: "models/hub.sql",
+        package_name: "p",
+      },
+    };
+    const p = project("/p/dbt_packages");
+    const nodeMetaMap = await new NodeParser(logger).createNodeMetaMap(
+      nodes as never,
+      p,
+    );
+    const map = await new SourceParser(logger).createSourceMetaMap(
+      sources as never,
+      p,
+    );
+
+    const table = map.get("raw")?.tables[0];
+    expect(table?.configMeta).toEqual({ relationships });
+    expect(table?.unique_id).toBe("source.p.raw.events");
+
+    expect(new RelationshipParser(logger).fromMeta(nodeMetaMap, map)).toEqual([
+      {
+        id: "meta:source.p.raw.events[0]",
+        from: { table: "source.p.raw.events", columns: ["hub_id"] },
+        to: { table: "model.p.hub", columns: ["id"] },
+        cardinality: "many-to-one",
+        source: "meta",
+      },
+    ]);
   });
 });

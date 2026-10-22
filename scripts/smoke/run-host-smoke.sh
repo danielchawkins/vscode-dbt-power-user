@@ -75,7 +75,7 @@ if [[ "$smoke_platform" == linux-arm64 && -z "${DISPLAY:-}" ]]; then
     echo "Linux smoke needs DISPLAY or xvfb-run" >&2
     exit 1
   fi
-  exec xvfb-run -a -s "-screen 0 1920x1080x24" "$0" "${original_args[@]}"
+  exec xvfb-run -a -s "-screen 0 1920x1200x24" "$0" "${original_args[@]}"
 fi
 if [[ "$force" -eq 1 ]]; then
   "$smoke_root/fetch-host.sh" "$host" --force
@@ -113,6 +113,9 @@ suites_for() {
       ;;
     lineage-groups)
       echo "default,lineageGrouping"
+      ;;
+    lineage-layers)
+      echo "default,lineageLayers"
       ;;
   esac
 }
@@ -161,6 +164,8 @@ else
     run_fixture "$repo_root/src/test/fixtures/nested-project"
     run_fixture "$repo_root/src/test/fixtures/nested-roots"
     run_fixture "$repo_root/src/test/fixtures/worktrees"
+    run_fixture "$repo_root/src/test/fixtures/lineage-groups"
+    run_fixture "$repo_root/src/test/fixtures/lineage-layers"
     run_tool_env
   fi
 fi

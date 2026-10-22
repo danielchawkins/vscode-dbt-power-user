@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: fct_finance__daily_revenue_by_region_and_channel
+    description: Revenue per region. Its region is a declared key to country_codes, not a data flow.
+    columns:
+      - name: region
+      - name: revenue_usd
+    config:
+      meta:
+        relationships:
+          - from_columns: [region]
+            to_columns: [code]
+            to: "ref('country_codes')"

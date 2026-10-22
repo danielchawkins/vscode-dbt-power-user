@@ -65,11 +65,11 @@ export class LineageDetails {
 
   /**
    * Extract PK/FK relationships from the current project's manifest.
-   * Chains all four sources — `relationships` data tests, model contract
-   * foreign keys, naming-convention inference, and semantic-layer entity
-   * pairings. Each ref carries a `source` discriminator so the frontend can
-   * filter and style per-source. Sources are excluded by default — opt-in via
-   * params.
+   * Chains the `relationships` data tests, model contract foreign keys,
+   * `meta.relationships` declarations, naming-convention inference and
+   * semantic-layer entity pairings. Each ref carries a `source` discriminator
+   * so the frontend can filter and style per-source. Sources are excluded by
+   * default — opt-in via params.
    */
   getRelationships(params?: { includeSources?: boolean | undefined }): {
     refs: Ref[];
@@ -84,6 +84,7 @@ export class LineageDetails {
 
     const fromTests = parser.fromTests(testMetaMap);
     const fromContracts = parser.fromContracts(nodeMetaMap, sourceMetaMap);
+    const fromMeta = parser.fromMeta(nodeMetaMap, sourceMetaMap);
     const fromInference = parser.fromInference(nodeMetaMap, sourceMetaMap, {
       // Emit at the parser's lowest acceptable confidence; UI applies the
       // user-controlled threshold via the popover slider.
@@ -95,6 +96,7 @@ export class LineageDetails {
     const refs = [
       ...fromTests,
       ...fromContracts,
+      ...fromMeta,
       ...fromInference,
       ...fromSemantic,
     ];
@@ -102,7 +104,8 @@ export class LineageDetails {
       "LineagePanel",
       `getRelationships returning ${refs.length} refs (` +
         `tests=${fromTests.length}, contracts=${fromContracts.length}, ` +
-        `inferred=${fromInference.length}, semantic=${fromSemantic.length})`,
+        `meta=${fromMeta.length}, inferred=${fromInference.length}, ` +
+        `semantic=${fromSemantic.length})`,
     );
     return { refs };
   }

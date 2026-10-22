@@ -12,6 +12,7 @@ import type { WebviewPaintMetric } from "./cdpClient";
 import {
   assertNoWorkbenchNotifications,
   captureWorkbenchScreenshot,
+  evidenceWindowSize,
   evaluatePanel,
   evaluateWorkbench,
   readCspViolations,
@@ -28,6 +29,11 @@ import {
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
+import {
+  maximizePanelFor,
+  restorePanelSize,
+  webviewSize,
+} from "./webviewInteractions";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
@@ -174,20 +180,23 @@ suite("Pinned-host VSIX smoke", function () {
           smokeHost,
           panel.entry,
         );
-        await evidence.capture(
-          {
-            name: `panel ${panel.entry}`,
-            expect: `The ${panel.entry} panel is visible and its text matches measured.bodyText`,
-            measured: {
-              bodyText: paint.bodyText,
-              stylesheets: paint.stylesheets,
-              cspViolations: await readCspViolations(cdpPort, panel.entry),
+        await withPanelSize(panel.entry, async () =>
+          evidence.capture(
+            {
+              name: `panel ${panel.entry}`,
+              expect: `The ${panel.entry} panel is visible and its text matches measured.bodyText`,
+              measured: {
+                bodyText: paint.bodyText,
+                stylesheets: paint.stylesheets,
+                cspViolations: await readCspViolations(cdpPort, panel.entry),
+                webview: await webviewSize(panel.entry),
+              },
             },
-          },
-          async () => {
-            const now = await waitForPanelTheme(cdpPort, panel.entry);
-            return now ? { bodyText: now.bodyText, ready: now.ready } : {};
-          },
+            async () => {
+              const now = await waitForPanelTheme(cdpPort, panel.entry);
+              return now ? { bodyText: now.bodyText, ready: now.ready } : {};
+            },
+          ),
         );
       }
       if (panel.entry === "queryResults") {
@@ -300,11 +309,15 @@ suite("Pinned-host VSIX smoke", function () {
         const activeKind = await waitForColorThemeKind(theme.kind);
         for (const panel of PANELS) {
           await openPanel(panel);
+          if (evidence && panel.entry === "lineage") {
+            await maximizePanelFor(panel.entry);
+          }
           const read = (): Promise<PanelTheme | undefined> =>
             waitForPanelTheme(cdpPort, panel.entry, theme.bodyClass);
           const measure = async () => ({
             theme: theme.name,
             activeKind: vscode.ColorThemeKind[activeKind],
+            webview: await webviewSize(panel.entry),
             ...(await read()),
           });
           const styles = await read();
@@ -343,6 +356,7 @@ suite("Pinned-host VSIX smoke", function () {
         }
       }
     } finally {
+      await restorePanelSize();
       await workbench.update(
         "colorTheme",
         original,
@@ -500,6 +514,22 @@ async function readLineageGraph(
   return (
     await evaluatePanel<LineageGraph>(cdpPort, "lineage", READ_LINEAGE_GRAPH)
   )?.value;
+}
+
+/** Runs `capture` with the lineage panel maximized, so its graph gets most of the window; other panels run as they are. */
+async function withPanelSize<T>(
+  entry: string,
+  capture: () => Promise<T>,
+): Promise<T> {
+  if (entry !== "lineage") {
+    return capture();
+  }
+  await maximizePanelFor(entry);
+  try {
+    return await capture();
+  } finally {
+    await restorePanelSize();
+  }
 }
 
 /** Opens a column list in the lineage graph and waits until it and an edge are drawn; undefined for other panels. */
@@ -1077,12 +1107,13 @@ function visualEvidence(cdpPort: string, host: string) {
         ...(await remeasure?.()),
       };
       const png = await captureWorkbenchScreenshot(cdpPort, host);
+      const window = await evidenceWindowSize();
       const notifications = await readWorkbenchNotificationTexts(cdpPort, host);
       sequence += 1;
       const file = writeCheckpoint(
         fixtureDir,
         sequence,
-        { ...checkpoint, measured: { ...measured, notifications } },
+        { ...checkpoint, measured: { ...measured, window, notifications } },
         png,
         {
           host,
