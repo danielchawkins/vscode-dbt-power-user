@@ -122,6 +122,7 @@ const Header = ({
   zoomedOut,
   mode,
   showRelation,
+  layered,
 }: {
   mode: TitleMode;
   table: lineage.LineageTable;
@@ -130,13 +131,14 @@ const Header = ({
   hiddenFromLineage: boolean;
   zoomedOut: boolean;
   showRelation: boolean;
+  layered: boolean;
 }) => (
   <div
     className={`${styles.header} ${showRelation ? styles.headerRelation : ""}`}
   >
     <Handle
       type="target"
-      position={Position.Left}
+      position={layered ? Position.Top : Position.Left}
       id="in"
       className={`${styles.handle} ${styles.headerHandle}`}
       isConnectable={false}
@@ -182,13 +184,15 @@ const Header = ({
         {cardSubtitle(table, mode) || "\u00a0"}
       </span>
     ) : null}
-    <Handle
-      type="source"
-      position={Position.Right}
-      id="out"
-      className={`${styles.handle} ${styles.headerHandle}`}
-      isConnectable={false}
-    />
+    {layered ? null : (
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="out"
+        className={`${styles.handle} ${styles.headerHandle}`}
+        isConnectable={false}
+      />
+    )}
   </div>
 );
 
@@ -352,13 +356,14 @@ const TableNodeView = ({
   // The graph never hides the start table, so its card shows no hidden cue either.
   const hiddenFromLineage = data.table.hidden === true && !data.isStart;
   const zoomedOut = useZoomedOut();
+  const layered = data.layered === true;
   return (
     <div
       className={`${styles.node} ${data.isStart ? styles.start : ""} ${
         hiddenFromLineage ? styles.hidden : ""
       } ${zoomedOut ? styles.zoomedOut : ""} ${
         data.columns === undefined ? styles.noColumns : ""
-      }`}
+      } ${layered ? styles.layered : ""}`}
       data-table={data.table.table}
     >
       <Header
@@ -369,6 +374,7 @@ const TableNodeView = ({
         zoomedOut={zoomedOut}
         mode={data.title}
         showRelation={data.isStart || selected}
+        layered={layered}
       />
       <Actions
         table={data.table}
@@ -385,6 +391,15 @@ const TableNodeView = ({
           traced={data.traced}
           selectedColumn={data.selectedColumn}
           columnsNeedStrict={data.columnsNeedStrict}
+        />
+      ) : null}
+      {layered ? (
+        <Handle
+          type="source"
+          position={Position.Bottom}
+          id="out"
+          className={`${styles.handle} ${styles.headerHandle}`}
+          isConnectable={false}
         />
       ) : null}
     </div>

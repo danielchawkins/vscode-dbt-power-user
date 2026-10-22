@@ -249,9 +249,11 @@ export const openLineage = async (
   return { user, container };
 };
 
-/** The drawn nodes, table cards and group cards alike. */
+/** The drawn nodes, table cards and group cards alike; the layer bands of the layered layout are not cards. */
 export const flowNodes = (container: HTMLElement) =>
-  container.querySelectorAll<HTMLElement>(".react-flow__node");
+  container.querySelectorAll<HTMLElement>(
+    ".react-flow__node:not(.react-flow__node-band)",
+  );
 
 export const nodes = (container: HTMLElement) =>
   container.querySelectorAll<HTMLElement>("[data-table]");

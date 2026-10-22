@@ -7,7 +7,12 @@ const LINEAGE_SETTINGS_KEY = "lineage.viewSettings";
 
 type StoredLineageSettings = Omit<
   Partial<lineage.LineageSettings>,
-  "defaultExpansion" | "maxNeighbours" | "groupBy" | "semanticZoom" | "title"
+  | "defaultExpansion"
+  | "maxNeighbours"
+  | "groupBy"
+  | "layout"
+  | "semanticZoom"
+  | "title"
 >;
 
 /** Every key `storedLineageSettings` keeps; the record type makes a new `LineageSettings` key a compile error here. */
@@ -64,6 +69,10 @@ export function readLineageSettings(store: Store): lineage.LineageSettings {
       Math.trunc(readSetting("lineage.maxNeighbours") ?? 20),
     ),
     groupBy: readSetting("lineage.groupBy") === "none" ? "none" : "folder",
+    layout:
+      readSetting("lineage.layout") === "leftToRight"
+        ? "leftToRight"
+        : "layered",
     semanticZoom: readSetting("lineage.semanticZoom") !== false,
     title: readSetting("lineage.title") === "name" ? "name" : "alias",
   };

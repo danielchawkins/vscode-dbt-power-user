@@ -8,6 +8,7 @@ import {
   ControlButton,
   Controls,
   MiniMap,
+  type Node,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
@@ -29,9 +30,11 @@ import { toFlow } from "./flow";
 import { lineageData } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { GroupNode } from "./GroupNode";
+import { LayerBand } from "./LayerBand";
 import styles from "./lineageGraph.module.css";
 import MissingLineageMessage from "./MissingLineageMessage";
 import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
+import { RoutedEdge } from "./RoutedEdge";
 import { isZoomedOut, SemanticZoomContext } from "./semanticZoom";
 import TableDetails from "./TableDetails";
 import { TableNode } from "./TableNode";
@@ -42,7 +45,8 @@ import { useLineageGraph } from "./useLineageGraph";
 import type { ResolvedSettings } from "./viewModel";
 import { resolveSettings, TableActionsContext, visibleRefs } from "./viewModel";
 
-const nodeTypes = { table: TableNode, group: GroupNode };
+const nodeTypes = { table: TableNode, group: GroupNode, band: LayerBand };
+const edgeTypes = { routed: RoutedEdge };
 
 /** Fit options whose pixel padding keeps the graph clear of the controls, the legend and the minimap when shown. */
 const fitOptions = (minimap?: {
@@ -142,6 +146,14 @@ const Legend = () => (
 /** Below this canvas size the minimap starts hidden; it would cover most of the graph. */
 const MINIMAP_MIN = { width: 720, height: 360 };
 
+/** Band nodes are the layer backdrop rather than cards, so the minimap leaves them out. */
+const minimapColour = (node: Node): string =>
+  node.type === "band"
+    ? "transparent"
+    : "var(--vscode-editorWidget-border, var(--vscode-disabledForeground))";
+const minimapStroke = (node: Node): string =>
+  node.type === "band" ? "transparent" : "var(--vscode-focusBorder)";
+
 /** The canvas size, tracked with a `ResizeObserver`. */
 const useSize = () => {
   const ref = useRef<HTMLDivElement>(null);
@@ -222,10 +234,13 @@ const Canvas = ({
   select,
   openDetails,
   drawnKey,
+  layered,
 }: FlowGraph & {
   select: (table: string | undefined) => void;
   openDetails: (table: string) => void;
   drawnKey: number;
+  /** The layered layout draws its bands instead of the dotted background. */
+  layered: boolean;
 }) => {
   const { ref: canvasRef, size } = useSize();
   const minimap = useMinimap(size);
@@ -240,6 +255,7 @@ const Canvas = ({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         nodesConnectable={false}
         nodesDraggable={false}
         minZoom={0.05}
@@ -250,7 +266,7 @@ const Canvas = ({
         onNodeClick={onNodeClick}
         onPaneClick={() => select(undefined)}
       >
-        <Background />
+        {layered ? null : <Background />}
         <Controls showInteractive={false}>
           <ControlButton
             onClick={minimap.toggle}
@@ -267,8 +283,8 @@ const Canvas = ({
             zoomable
             position="bottom-right"
             style={mapSize}
-            nodeColor="var(--vscode-editorWidget-border, var(--vscode-disabledForeground))"
-            nodeStrokeColor="var(--vscode-focusBorder)"
+            nodeColor={minimapColour}
+            nodeStrokeColor={minimapStroke}
             nodeStrokeWidth={2}
             nodeBorderRadius={4}
           />
@@ -335,6 +351,7 @@ const Graph = (): React.JSX.Element => {
       selectedColumn: graph.selectedColumn,
       columnsNeedStrict,
       refs: visibleRefs(refs, settings, drawn),
+      layout: settings.layout,
     });
   }, [graph, settings, refs, columnsNeedStrict]);
   const details = detailsTable ? graph.known[detailsTable] : undefined;
@@ -353,6 +370,7 @@ const Graph = (): React.JSX.Element => {
             select={select}
             openDetails={openDetails}
             drawnKey={drawnKey}
+            layered={settings.layout === "layered"}
           />
         </SemanticZoomContext>
         <Drawer ref={drawerRef} title="Details">

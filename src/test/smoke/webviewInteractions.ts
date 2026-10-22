@@ -36,7 +36,8 @@ export type DomQuery =
       checked?: boolean;
       focused?: boolean;
     }
-  | { absent: string };
+  | { absent: string }
+  | { present: string };
 
 const POLL_TIMEOUT_MS = 10_000;
 const POLL_INTERVAL_MS = 100;
@@ -285,7 +286,10 @@ export async function expectWebviewDom(
     "absent" in query
       ? `const node = document.querySelector(${JSON.stringify(query.absent)});
          return { ok: node === null, html: (node ?? document.body).outerHTML.slice(0, ${HTML_LIMIT}) };`
-      : `const node = findByRole(${JSON.stringify(query.role)}, ${JSON.stringify(query.name)});
+      : "present" in query
+        ? `const node = document.querySelector(${JSON.stringify(query.present)});
+         return { ok: node !== null, html: (node ?? document.body).outerHTML.slice(0, ${HTML_LIMIT}) };`
+        : `const node = findByRole(${JSON.stringify(query.role)}, ${JSON.stringify(query.name)});
          const q = ${JSON.stringify(query)};
          const ok = node !== null &&
            (q.expanded === undefined || node.getAttribute("aria-expanded") === String(q.expanded)) &&

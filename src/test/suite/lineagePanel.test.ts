@@ -349,12 +349,40 @@ describe("LineagePanel", () => {
           defaultExpansion: 3,
           maxNeighbours: 3,
           groupBy: "folder",
+          layout: "layered",
           semanticZoom: true,
           title: "alias",
         },
         status: true,
       },
     });
+  });
+
+  it("reads lineage.layout, treating any value but leftToRight as layered, and never persists it", async () => {
+    const values: Record<string, unknown> = { "lineage.layout": "leftToRight" };
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: (key: string) => values[key] ?? 3,
+      update: vi.fn(),
+    });
+    await (panel as any).handleCommand({
+      command: "persistLineageSettings",
+      args: { params: { layout: "layered" } },
+      syncRequestId: "p",
+    });
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.layout).toBe(
+      "leftToRight",
+    );
+
+    values["lineage.layout"] = "typo";
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g2",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.layout).toBe("layered");
   });
 
   it("reads lineage.groupBy, treating any value but none as folder, and never persists it", async () => {
@@ -467,6 +495,7 @@ describe("LineagePanel", () => {
         defaultExpansion: 3,
         maxNeighbours: 3,
         groupBy: "folder",
+        layout: "layered",
         semanticZoom: true,
         title: "alias",
       });

@@ -151,6 +151,13 @@
     var(--vscode-disabledForeground)
   );
   --xy-edge-stroke-selected: var(--vscode-focusBorder);
+  /* Column and table edges: the stroke rules below and the arrowheads (flow.ts) both read these. */
+  --lineage-column-stroke: var(--vscode-charts-blue, var(--vscode-focusBorder));
+  --lineage-indirect-stroke: var(
+    --vscode-charts-purple,
+    var(--vscode-descriptionForeground)
+  );
+  --lineage-selected-stroke: var(--vscode-focusBorder);
   --xy-edge-label-background-color: var(--vscode-editorWidget-background);
   --xy-edge-label-color: var(--vscode-foreground);
   --xy-node-color: var(--vscode-foreground);
@@ -480,6 +487,48 @@
   line-height: 24px;
 }
 
+/* A layered card is positioned for its top and bottom bubbles, which sit on its border. */
+.node.layered {
+  position: relative;
+}
+
+/* A layer band is washed with its colour behind the cards; high-contrast themes get a dashed outline instead. */
+.band {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--band-colour) 10%, transparent);
+  pointer-events: none;
+}
+
+:global(.vscode-high-contrast) .band,
+:global(.vscode-high-contrast-light) .band {
+  background: none;
+  border: 1px dashed var(--band-colour);
+}
+
+.bandLabel {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--band-colour);
+}
+
+.edgeLabel {
+  fill: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--vscode-editor-background);
+  stroke-width: 3px;
+}
+
 .handle {
   width: 6px;
   min-width: 0;
@@ -498,17 +547,17 @@
 }
 
 .canvas :global(.lineage-table-edge-selected) path {
-  stroke: var(--vscode-focusBorder);
+  stroke: var(--lineage-selected-stroke);
   stroke-width: 2;
 }
 
 .canvas :global(.lineage-column-edge) path {
-  stroke: var(--vscode-charts-blue, var(--vscode-focusBorder));
+  stroke: var(--lineage-column-stroke);
   stroke-width: 1.5;
 }
 
 .canvas :global(.lineage-column-edge.indirect) path {
-  stroke: var(--vscode-charts-purple, var(--vscode-descriptionForeground));
+  stroke: var(--lineage-indirect-stroke);
   stroke-dasharray: 6 4;
 }
 

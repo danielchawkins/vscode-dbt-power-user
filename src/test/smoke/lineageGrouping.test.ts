@@ -229,6 +229,22 @@ async function cardTitles(): Promise<Record<string, string>> {
   return match.value.titles;
 }
 
+/** The layer name of every layer band the layered layout draws, in draw order. */
+const BAND_LABELS = `(() => document.body.dataset.entry === "lineage" ? {
+  entry: "lineage",
+  bands: [...document.querySelectorAll(".react-flow__node-band [data-layer]")].map((el) => el.dataset.layer),
+} : null)()`;
+
+async function bandLabels(): Promise<string[]> {
+  const match = await evaluatePanel<{ entry: string; bands: string[] }>(
+    process.env.FPU_CDP_PORT!,
+    LINEAGE.entry,
+    BAND_LABELS,
+  );
+  assert.ok(match, "the lineage webview is not showing");
+  return match.value.bands;
+}
+
 /** Hides the lineage panel so its page is rebuilt, which reads the settings again, then shows it from the hub. */
 async function reopenHub(): Promise<void> {
   await vscode.commands.executeCommand("workbench.action.closePanel");
@@ -307,6 +323,16 @@ suite("Lineage grouping", function () {
         chips: opened.chips,
         more: opened.more,
       },
+    });
+
+    // The layered layout draws a band per layer run behind the cards; the checkpoint records the band labels and titles.
+    const bands = await bandLabels();
+    assert.ok(bands.length > 0, "the layered layout should draw layer bands");
+    await evidence?.capture(LINEAGE, {
+      name: "lineage-groups-layered",
+      expect:
+        "The opened graph in layered mode: a layer band behind each layer run, labelled with its layer name, and every card titled.",
+      measured: { bands, titles: await cardTitles() },
     });
 
     // Checkpoint 3: zoomed out, cards keep their size and show a larger badge and title only.

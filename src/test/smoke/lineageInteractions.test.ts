@@ -34,6 +34,8 @@ const host = () =>
 
 /** Tall enough for the Relationships popover and its last checkbox; the default bottom panel is shorter. */
 const MIN_WEBVIEW_HEIGHT = 480;
+/** A table card React Flow draws; the view has drawn the graph once one is present. */
+const TABLE_CARD = ".react-flow__node-table";
 /** The parents expander of the start node while its parents are shown, e.g. title "Hide 1 parents". */
 const SHOWN_PARENTS = `.react-flow__node button[title^="Hide "][title$="parents"]`;
 
@@ -72,9 +74,16 @@ async function openLineage(): Promise<void> {
   await showPanel(LINEAGE);
   for (let attempt = 0; attempt < 2; attempt++) {
     if ((await webviewHeight()) >= MIN_WEBVIEW_HEIGHT) {
-      return;
+      break;
     }
     await toggleMaximizedPanel();
+  }
+  try {
+    await expectWebviewDom(LINEAGE, { present: TABLE_CARD });
+  } catch (error) {
+    throw new Error(
+      `the lineage view drew no table card before the test acted: ${(error as Error).message}`,
+    );
   }
 }
 

@@ -1,6 +1,7 @@
 import { drawnGraph, drawnIds, parseExpansion, prune } from "./graph";
 import type { GraphState } from "./graph";
 import { groupLabel, groupNodeId, parseGroupNodeId } from "./grouping";
+import { layerTagOf } from "./layered";
 
 /**
  * Opens the closed group `id`, so that its first `cap` members are drawn as ordinary cards (all of them when `cap`
@@ -128,6 +129,8 @@ export interface GroupView {
   count: number;
   /** The `[parent, child]` pair joining the group to the expansion's table. */
   edge: [string, string];
+  /** The layer tag of each member, which places the group by its dominant layer in the layered layout. */
+  layerTags?: readonly string[] | undefined;
 }
 
 /**
@@ -153,6 +156,10 @@ export function collapsedGroups(state: GraphState): GroupView[] {
             label: groupLabel(bucket.key),
             count: bucket.members.length,
             edge: direction === "children" ? [table, id] : [id, table],
+            layerTags: bucket.members.map((member) => {
+              const known = state.known[member];
+              return layerTagOf(known?.nodeType ?? "", known?.layer);
+            }),
           };
         });
     })

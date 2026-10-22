@@ -2,6 +2,7 @@ import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
 import type { GroupChip } from "./expansionGroups";
 import { collapsedGroups } from "./expansionGroups";
+import type { FlowInput } from "./flow";
 import { toFlow } from "./flow";
 import { addNeighbours, emptyGraph, lineageData } from "./graph";
 import { combinedEdges } from "./groupEdges";
@@ -42,11 +43,14 @@ const input = (groupEdges: [string, string][]) => ({
 
 describe("toFlow with groups", () => {
   it("lays group nodes out with the tables, and gives them the group size", () => {
-    const { nodes } = toFlow(input([["hub", "g:1"]]));
+    const { nodes } = toFlow({
+      ...input([["hub", "g:1"]]),
+      layout: "leftToRight",
+    });
     const hub = nodes.find((n) => n.id === "hub");
     const group = nodes.find((n) => n.id === "g:1");
     expect(group?.type).toBe("group");
-    expect(group?.data).toEqual({ label: "finance", count: 3 });
+    expect(group?.data).toEqual({ label: "finance", count: 3, layered: false });
     expect(group?.initialHeight).toBe(geometry.groupHeight);
     expect(group?.initialWidth).toBe(geometry.tableWidth);
     expect(Number.isFinite(group?.position.x)).toBe(true);
@@ -64,7 +68,10 @@ describe("toFlow with groups", () => {
 
   it("draws no group edges when none are given", () => {
     const { nodes, edges } = toFlow(input([]));
-    expect(nodes.map((n) => n.id)).toEqual(["hub", "g:1"]);
+    expect(nodes.filter((n) => n.type !== "band").map((n) => n.id)).toEqual([
+      "hub",
+      "g:1",
+    ]);
     expect(edges.some((e) => e.target === "g:1")).toBe(false);
   });
 });
@@ -175,6 +182,7 @@ describe("toFlow with group chips", () => {
   it("spaces a selected card by the height it is drawn at, relation line included", () => {
     for (const selectedTable of ["a", "b"]) {
       const { nodes } = toFlow({
+        layout: "leftToRight",
         data: {
           start: "hub",
           tables: [table("hub"), table("a"), table("b")],
@@ -217,5 +225,150 @@ describe("toFlow title mode", () => {
     expect(titleOf("name")).toMatchObject({ title: "name" });
     expect(titleOf("alias")).toMatchObject({ title: "alias" });
     expect(titleOf()).toMatchObject({ title: "alias" });
+  });
+});
+
+describe("toFlow layered layout", () => {
+  const tables: lineage.LineageTable[] = [
+    { ...table("src"), nodeType: "source" },
+    { ...table("stg"), layer: "staging" },
+    { ...table("mart"), layer: "marts" },
+  ];
+  const layeredInput = (layout?: lineage.LineageLayout): FlowInput => ({
+    layout,
+    data: {
+      start: "stg",
+      tables,
+      edges: [
+        ["src", "stg"],
+        ["stg", "mart"],
+      ],
+      columnEdges: [],
+    },
+    columns: {},
+    columnTables: [],
+    expansions: [],
+    errors: {},
+    refs: [],
+  });
+  const at = (nodes: ReturnType<typeof toFlow>["nodes"], id: string) =>
+    nodes.find((n) => n.id === id);
+
+  it("is the default: parents above their children, and cards keep the top and bottom bubbles", () => {
+    const { nodes } = toFlow(layeredInput());
+    const y = (id: string) => at(nodes, id)?.position.y ?? NaN;
+    expect(y("src")).toBeLessThan(y("stg"));
+    expect(y("stg")).toBeLessThan(y("mart"));
+    expect(at(nodes, "stg")?.data).toMatchObject({ layered: true });
+  });
+
+  it("draws one band per layer behind the cards, and bands take no selection or drag", () => {
+    const { nodes } = toFlow(layeredInput());
+    const bands = nodes.filter((n) => n.type === "band");
+    expect(bands.map((b) => b.data.tag).sort()).toEqual([
+      "marts",
+      "source",
+      "staging",
+    ]);
+    expect(nodes.slice(0, bands.length).every((n) => n.type === "band")).toBe(
+      true,
+    );
+    expect(
+      bands.every((b) => b.selectable === false && b.draggable === false),
+    ).toBe(true);
+    // React Flow sets pointer events on any node with a click handler; a band must not take the click.
+    expect(bands.every((b) => b.style?.pointerEvents === "none")).toBe(true);
+    expect(bands[0]?.data.colour).toMatch(/^var\(--vscode-charts-/);
+  });
+
+  it("colours each arrowhead with its edge's stroke, and draws none on relationships", () => {
+    const base = layeredInput();
+    const { edges } = toFlow({
+      ...base,
+      data: {
+        ...base.data,
+        columnEdges: [
+          { source: ["src", "id"], target: ["stg", "id"], type: "direct" },
+        ],
+      },
+      selectedTable: "stg",
+      refs: [
+        {
+          id: "ref1",
+          from: { table: "mart", columns: ["id"] },
+          to: { table: "src", columns: ["id"] },
+          cardinality: "many-to-one",
+          source: "test",
+        },
+      ],
+    });
+    const colour = (id: string) =>
+      (edges.find((e) => e.id === id)?.markerEnd as { color?: string })?.color;
+    expect(colour("t:src->stg")).toBe("var(--lineage-selected-stroke)");
+    expect(colour("t:stg->mart")).toBe("var(--lineage-selected-stroke)");
+    expect(colour("c:src.id->stg.id")).toBe("var(--lineage-column-stroke)");
+    expect(edges.find((e) => e.id === "r:ref1")).toBeDefined();
+    expect(edges.find((e) => e.id === "r:ref1")?.markerEnd).toBeUndefined();
+  });
+
+  it("colours an unselected table edge's arrowhead with the table edge stroke", () => {
+    const { edges } = toFlow(layeredInput());
+    const edge = edges.find((e) => e.id === "t:src->stg");
+    expect(edge?.markerEnd).toEqual({
+      type: "arrowclosed",
+      color: "var(--xy-edge-stroke)",
+    });
+  });
+
+  it("places a group node in the band of its dominant layer, not its anchor's", () => {
+    const { nodes } = toFlow({
+      ...layeredInput(),
+      groups: [
+        {
+          id: "g:1",
+          label: "mixed",
+          count: 3,
+          edge: ["stg", "g:1"],
+          layerTags: ["marts", "marts", "staging"],
+        },
+      ],
+      groupEdges: [["stg", "g:1"]],
+    });
+    const group = at(nodes, "g:1");
+    const band = (tag: string) =>
+      nodes.find((n) => n.type === "band" && n.data.tag === tag);
+    const within = (tag: string) => {
+      const b = band(tag);
+      return (
+        b !== undefined &&
+        group!.position.y >= b.position.y &&
+        group!.position.y < b.position.y + (b.height ?? 0)
+      );
+    };
+    expect(within("marts")).toBe(true);
+    expect(within("staging")).toBe(false);
+  });
+
+  it("draws every edge along its routed path, with an arrowhead", () => {
+    const { edges } = toFlow(layeredInput());
+    expect(edges.map((e) => e.id).sort()).toEqual([
+      "t:src->stg",
+      "t:stg->mart",
+    ]);
+    for (const edge of edges) {
+      expect(edge.type).toBe("routed");
+      expect(String(edge.data?.d)).toMatch(/^M\d/);
+      expect(edge.markerEnd).toBeDefined();
+    }
+  });
+
+  it("with leftToRight keeps dagre's placement, bezier edges and no bands", () => {
+    const { nodes, edges } = toFlow(layeredInput("leftToRight"));
+    expect(nodes.some((n) => n.type === "band")).toBe(false);
+    expect(at(nodes, "stg")?.data).toMatchObject({ layered: false });
+    expect(edges.every((e) => e.type === undefined)).toBe(true);
+    expect(at(nodes, "mart")!.position.x).toBeGreaterThan(
+      at(nodes, "stg")!.position.x,
+    );
   });
 });

@@ -161,6 +161,7 @@ else
     run_fixture "$repo_root/src/test/fixtures/nested-project"
     run_fixture "$repo_root/src/test/fixtures/nested-roots"
     run_fixture "$repo_root/src/test/fixtures/worktrees"
+    run_fixture "$repo_root/src/test/fixtures/lineage-groups"
     run_tool_env
   fi
 fi

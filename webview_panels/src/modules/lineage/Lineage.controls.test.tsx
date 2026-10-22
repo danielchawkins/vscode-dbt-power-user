@@ -1,4 +1,5 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { ControlId, InteractiveRole } from "../../test/controlCoverage";
 import { controlId, expectPosted } from "../../test/controlCoverage";
@@ -102,6 +103,22 @@ describe("Lineage Settings popover", () => {
     const gear = await activate(user, "button", "Settings");
     expect(screen.getByRole("dialog")).toBeInTheDocument();
     await user.click(pane(container));
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(gear).toHaveAttribute("aria-expanded", "false");
+  });
+
+  it("closes on a click on a layer band, which takes no pointer events", async () => {
+    const { user, container } = await openLineage(undefined, {
+      settings: { layout: "layered" },
+    });
+    const gear = await activate(user, "button", "Settings");
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    const band = container.querySelector<HTMLElement>(".react-flow__node-band");
+    expect(band).not.toBeNull();
+    expect(band?.style.pointerEvents).toBe("none");
+    // user-event refuses to click an element with pointer-events: none, which a band is by design. This user skips
+    // that check; the press still reaches the document, where the popover's outside-press listener closes it.
+    await userEvent.setup({ pointerEventsCheck: 0 }).click(band!);
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(gear).toHaveAttribute("aria-expanded", "false");
   });

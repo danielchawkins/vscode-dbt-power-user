@@ -149,6 +149,12 @@ export interface LineageRef {
   confidence?: number | undefined;
 }
 
+/**
+ * How cards are placed: `layered` puts parents above and children below in layer bands with routed edges;
+ * `leftToRight` is the dagre layout the panel used before.
+ */
+export type LineageLayout = "layered" | "leftToRight";
+
 /** The lineage component's view settings; `getLineageSettings` answers with them. */
 export interface LineageSettings {
   showSelectEdges: boolean;
@@ -168,14 +174,19 @@ export interface LineageSettings {
   semanticZoom?: boolean | undefined;
   /** Titles cards by alias (`label`, the default) or by dbt name (`refName`). A user setting. */
   title?: "alias" | "name" | undefined;
+  /** The card placement; absent means `layered`. A user setting, read-only here. */
+  layout?: LineageLayout | undefined;
 }
 
 /**
- * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom` and `title` are user
- * settings the panel only reads.
+ * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom`, `title` and `layout` are
+ * user settings the panel only reads.
  */
 export type PersistedLineageSettings = Partial<
-  Omit<LineageSettings, "maxNeighbours" | "groupBy" | "semanticZoom" | "title">
+  Omit<
+    LineageSettings,
+    "maxNeighbours" | "groupBy" | "semanticZoom" | "title" | "layout"
+  >
 >;
 
 /** The `getConnectedColumns` request; the host reads `targets` and `upstreamExpansion`. */

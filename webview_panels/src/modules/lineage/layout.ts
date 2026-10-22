@@ -35,6 +35,23 @@ export const tableHeight = (
     ? geometry.listPadding + Math.max(columns.length, 1) * geometry.columnHeight
     : geometry.headerClearance);
 
+/**
+ * The distance from a layered card's top to the centre of its `index`th column row: the same stack `tableHeight` sums
+ * before the column list.
+ */
+export const columnRowOffset = (
+  index: number,
+  chips: number,
+  relation: boolean,
+): number =>
+  geometry.headerHeight +
+  (relation ? geometry.relationHeight : 0) +
+  geometry.actionsHeight +
+  Math.ceil(chips / 2) * geometry.chipRowHeight +
+  geometry.listPadding +
+  index * geometry.columnHeight +
+  geometry.columnHeight / 2;
+
 /** Top-left corner of each node `ids`, laid out left to right from parents to children by dagre. */
 export function layout(
   ids: readonly string[],

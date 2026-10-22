@@ -94,12 +94,14 @@ describe("collapsedGroups", () => {
         label: "a",
         count: 2,
         edge: ["hub", groupNodeId("c:hub", "models/a")],
+        layerTags: ["other", "other"],
       },
       {
         id: groupNodeId("c:hub", "models/b"),
         label: "b",
         count: 2,
         edge: ["hub", groupNodeId("c:hub", "models/b")],
+        layerTags: ["other", "other"],
       },
     ]);
   });
