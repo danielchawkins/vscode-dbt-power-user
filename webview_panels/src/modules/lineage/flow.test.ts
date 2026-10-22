@@ -142,7 +142,7 @@ describe("toFlow with group chips", () => {
     }).nodes.find((n) => n.id === "hub");
 
   it("grows the card by one chip row for every two chips", () => {
-    const base = tableHeight(undefined, 0);
+    const base = tableHeight(undefined, 0, true);
     const height = (count: number) =>
       hubNode(Array.from({ length: count }, (_, i) => chip(i)))?.initialHeight;
     expect(height(0)).toBe(base);
@@ -150,6 +150,56 @@ describe("toFlow with group chips", () => {
     expect(height(2)).toBe(base + geometry.chipRowHeight);
     expect(height(3)).toBe(base + 2 * geometry.chipRowHeight);
     expect(height(4)).toBe(base + 2 * geometry.chipRowHeight);
+  });
+
+  it("reserves the relation line only on the start card", () => {
+    const hub = toFlow({
+      data: {
+        start: "other",
+        tables: [table("hub")],
+        edges: [],
+        columnEdges: [],
+      },
+      columns: {},
+      columnTables: [],
+      expansions: [],
+      errors: {},
+      refs: [],
+    }).nodes.find((n) => n.id === "hub");
+    expect(hub?.initialHeight).toBe(tableHeight(undefined, 0));
+    expect(tableHeight(undefined, 0, true)).toBe(
+      tableHeight(undefined, 0) + geometry.relationHeight,
+    );
+  });
+
+  it("spaces a selected card by the height it is drawn at, relation line included", () => {
+    for (const selectedTable of ["a", "b"]) {
+      const { nodes } = toFlow({
+        data: {
+          start: "hub",
+          tables: [table("hub"), table("a"), table("b")],
+          edges: [
+            ["hub", "a"],
+            ["hub", "b"],
+          ],
+          columnEdges: [],
+        },
+        columns: {},
+        columnTables: [],
+        expansions: [],
+        errors: {},
+        refs: [],
+        selectedTable,
+      });
+      const [upper, lower] = nodes
+        .filter((n) => n.id === "a" || n.id === "b")
+        .sort((x, y) => x.position.y - y.position.y);
+      expect(lower?.position.y ?? 0).toBe(
+        (upper?.position.y ?? 0) +
+          (upper?.initialHeight ?? 0) +
+          geometry.nodeGap,
+      );
+    }
   });
 
   it("gives the table node the chips it is passed", () => {

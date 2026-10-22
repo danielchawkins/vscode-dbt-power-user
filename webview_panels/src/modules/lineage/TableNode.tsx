@@ -4,9 +4,11 @@ import { Handle, Position } from "@xyflow/react";
 import { memo, use } from "react";
 import {
   cardBadge,
+  cardFile,
   cardSubtitle,
   cardTooltip,
   cardTitle,
+  packageNameOf,
   type TitleMode,
 } from "./card";
 import type { TableNode as TableNodeType } from "./flow";
@@ -86,20 +88,52 @@ const MoreButton = ({
 
 const HIDDEN_TITLE = "Hidden from lineage by meta.lineage.hidden";
 
+const NameBlock = ({
+  table,
+  mode,
+  file,
+  zoomedOut,
+}: {
+  table: lineage.LineageTable;
+  mode: TitleMode;
+  file: string | undefined;
+  zoomedOut: boolean;
+}) => {
+  const pkg = packageNameOf(table);
+  return (
+    <span className={styles.names} title={cardTooltip(table)}>
+      <span className={styles.label}>{cardTitle(table, mode, zoomedOut)}</span>
+      {file ? <span className={styles.file}>{file}</span> : null}
+      <span className={styles.tags}>
+        {pkg ? <span className={styles.tag}>{pkg}</span> : null}
+        <span className={`${styles.tag} ${styles.typeTag}`}>
+          {table.nodeType}
+        </span>
+      </span>
+    </span>
+  );
+};
+
 const Header = ({
   table,
+  file,
   errors,
   hiddenFromLineage,
   zoomedOut,
   mode,
+  showRelation,
 }: {
   mode: TitleMode;
   table: lineage.LineageTable;
+  file: string | undefined;
   errors?: string[] | undefined;
   hiddenFromLineage: boolean;
   zoomedOut: boolean;
+  showRelation: boolean;
 }) => (
-  <div className={styles.header}>
+  <div
+    className={`${styles.header} ${showRelation ? styles.headerRelation : ""}`}
+  >
     <Handle
       type="target"
       position={Position.Left}
@@ -115,9 +149,7 @@ const Header = ({
     >
       {cardBadge(table)}
     </span>
-    <span className={styles.label} title={cardTooltip(table, mode)}>
-      {cardTitle(table, mode, zoomedOut)}
-    </span>
+    <NameBlock table={table} mode={mode} file={file} zoomedOut={zoomedOut} />
     {errors?.length || hiddenFromLineage ? (
       <span className={styles.flags}>
         {errors?.length ? (
@@ -142,12 +174,14 @@ const Header = ({
     ) : (
       <span />
     )}
-    <span
-      className={styles.subtitle}
-      title={cardSubtitle(table, mode) || undefined}
-    >
-      {cardSubtitle(table, mode) || "\u00a0"}
-    </span>
+    {showRelation ? (
+      <span
+        className={styles.subtitle}
+        title={cardSubtitle(table, mode) || undefined}
+      >
+        {cardSubtitle(table, mode) || "\u00a0"}
+      </span>
+    ) : null}
     <Handle
       type="source"
       position={Position.Right}
@@ -313,6 +347,7 @@ const ColumnList = ({
 
 const TableNodeView = ({
   data,
+  selected,
 }: NodeProps<TableNodeType>): React.JSX.Element => {
   // The graph never hides the start table, so its card shows no hidden cue either.
   const hiddenFromLineage = data.table.hidden === true && !data.isStart;
@@ -321,15 +356,19 @@ const TableNodeView = ({
     <div
       className={`${styles.node} ${data.isStart ? styles.start : ""} ${
         hiddenFromLineage ? styles.hidden : ""
-      } ${zoomedOut ? styles.zoomedOut : ""}`}
+      } ${zoomedOut ? styles.zoomedOut : ""} ${
+        data.columns === undefined ? styles.noColumns : ""
+      }`}
       data-table={data.table.table}
     >
       <Header
         table={data.table}
+        file={cardFile(data.table, data.title)}
         errors={data.errors}
         hiddenFromLineage={hiddenFromLineage}
         zoomedOut={zoomedOut}
         mode={data.title}
+        showRelation={data.isStart || selected}
       />
       <Actions
         table={data.table}

@@ -150,13 +150,17 @@ export function toFlow(input: FlowInput): {
   const listed = (table: string) =>
     columnTables.includes(table) ? (columns[table] ?? []) : undefined;
   const traced = tracedColumns(data.columnEdges);
+  // One height per table, for dagre and for the initial size: the start card and the selected card show a relation line.
+  const heightOfTable = (table: string) =>
+    tableHeight(
+      listed(table),
+      chipsOf(table).length,
+      table === data.start || table === input.selectedTable,
+    );
   const positions = layout(
     [...data.tables.map((t) => t.table), ...groups.map((g) => g.id)],
     [...data.edges, ...(input.groupEdges ?? [])],
-    (id) =>
-      groupIds.has(id)
-        ? geometry.groupHeight
-        : tableHeight(listed(id), chipsOf(id).length),
+    (id) => (groupIds.has(id) ? geometry.groupHeight : heightOfTable(id)),
   );
   const tableNodes: TableNode[] = data.tables.map((t) => ({
     id: t.table,
@@ -164,7 +168,7 @@ export function toFlow(input: FlowInput): {
     position: positions.get(t.table) ?? { x: 0, y: 0 },
     // A size before React Flow measures the node, so the minimap draws it at once; measurement still sets handles.
     initialWidth: geometry.tableWidth,
-    initialHeight: tableHeight(listed(t.table), chipsOf(t.table).length),
+    initialHeight: heightOfTable(t.table),
     selected: t.table === input.selectedTable,
     data: {
       table: t,
