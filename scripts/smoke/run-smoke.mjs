@@ -247,6 +247,9 @@ try {
       // A covered or unfocused window otherwise reports hidden and paints nothing until it is raised.
       "--disable-backgrounding-occluded-windows",
       "--disable-renderer-backgrounding",
+      // Secrets go to a plain file and a mock keychain; a throwaway home otherwise makes macOS offer to create one.
+      "--password-store=basic",
+      "--use-mock-keychain",
       // The host otherwise merges the login shell's environment over this one, putting its PATH ahead of the decoy.
       ...(toolEnv ? ["--force-disable-user-env"] : []),
       ...(host === "cursor"
