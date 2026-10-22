@@ -18,6 +18,7 @@ import {
   isNumber,
   isString,
   messageGuard,
+  oneOf,
   optional,
   requestCommandsOf,
   shape,
@@ -136,7 +137,13 @@ export type HostMessage =
   | { command: "projectSaved" };
 
 /** The relationship sources the ERD overlay can show. */
-export type RefSource = "test" | "contract" | "semantic" | "inferred";
+export type RefSource = "test" | "contract" | "meta" | "semantic" | "inferred";
+
+/**
+ * Which connections the lineage canvas draws: dbt table and column edges (`dbt`), declared relationship edges
+ * (`declared`, with column edges only while a column trace is active), or both.
+ */
+export type Connections = "dbt" | "declared" | "both";
 
 /** A primary/foreign key relationship from `getRelationships`; `confidence` is set for inferred ones. */
 export interface LineageRef {
@@ -149,13 +156,19 @@ export interface LineageRef {
   confidence?: number | undefined;
 }
 
+/**
+ * How cards are placed: `layered` puts parents above and children below in layer bands with routed edges;
+ * `leftToRight` is the dagre layout the panel used before.
+ */
+export type LineageLayout = "layered" | "leftToRight";
+
 /** The lineage component's view settings; `getLineageSettings` answers with them. */
 export interface LineageSettings {
   showSelectEdges: boolean;
   showNonSelectEdges: boolean;
   defaultExpansion: number;
-  /** The ERD overlay toggle; absent means on. */
-  showRefs?: boolean | undefined;
+  /** Which connections are drawn; absent means dbt dependencies. */
+  connections?: Connections | undefined;
   enabledRefSources?: Partial<Record<RefSource, boolean>> | undefined;
   /** The inferred-relationship confidence floor, 0 to 1. */
   inferenceConfidenceThreshold?: number | undefined;
@@ -168,14 +181,19 @@ export interface LineageSettings {
   semanticZoom?: boolean | undefined;
   /** Titles cards by alias (`label`, the default) or by dbt name (`refName`). A user setting. */
   title?: "alias" | "name" | undefined;
+  /** The card placement; absent means `layered`. A user setting, read-only here. */
+  layout?: LineageLayout | undefined;
 }
 
 /**
- * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom` and `title` are user
- * settings the panel only reads.
+ * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom`, `title` and `layout` are
+ * user settings the panel only reads.
  */
 export type PersistedLineageSettings = Partial<
-  Omit<LineageSettings, "maxNeighbours" | "groupBy" | "semanticZoom" | "title">
+  Omit<
+    LineageSettings,
+    "maxNeighbours" | "groupBy" | "semanticZoom" | "title" | "layout"
+  >
 >;
 
 /** The `getConnectedColumns` request; the host reads `targets` and `upstreamExpansion`. */
@@ -225,9 +243,12 @@ const optionalRequest = <P>(params: Fields<NoInfer<P>>) => ({
 
 const optionalBoolean = optional(isBoolean);
 
+const isConnections = oneOf("dbt", "declared", "both");
+
 const isRefSources: Check<Partial<Record<RefSource, boolean>>> = shape({
   test: optionalBoolean,
   contract: optionalBoolean,
+  meta: optionalBoolean,
   semantic: optionalBoolean,
   inferred: optionalBoolean,
 });
@@ -271,7 +292,7 @@ const panelFields: CommandFields<PanelMessage> = {
     showSelectEdges: optionalBoolean,
     showNonSelectEdges: optionalBoolean,
     defaultExpansion: optional(isNumber),
-    showRefs: optionalBoolean,
+    connections: optional(isConnections),
     enabledRefSources: optional(isRefSources),
     inferenceConfidenceThreshold: optional(isNumber),
     includeSourcesInInference: optionalBoolean,

@@ -246,3 +246,273 @@ describe("RelationshipParser.fromSemanticEntities", () => {
     expect(parser.fromSemanticEntities(new Map())).toEqual([]);
   });
 });
+
+describe("RelationshipParser.fromMeta", () => {
+  const declared = (entries: unknown[]) => ({ relationships: entries });
+  const nodes = nodeMap([
+    {
+      unique_id: "model.proj.orders",
+      name: "orders",
+      package_name: "proj",
+      meta: declared([
+        {
+          from_columns: ["customer_id"],
+          to: "ref('customers')",
+          to_columns: ["id"],
+        },
+        {
+          from_columns: ["region", "country"],
+          to: "ref('nope')",
+          to_columns: ["code", "iso"],
+        },
+        {
+          from_columns: ["a"],
+          to: "ref('customers')",
+          to_columns: ["id"],
+          cases: [{ when: "x", to: "ref('customers')" }],
+        },
+        {
+          from_columns: ["b"],
+          to_schema: "x",
+          to_columns: ["id"],
+        },
+      ]),
+    },
+    {
+      unique_id: "model.proj.customers",
+      name: "customers",
+      package_name: "proj",
+    },
+    {
+      unique_id: "model.proj.invoices",
+      name: "invoices",
+      package_name: "proj",
+      config: {
+        meta: declared([
+          {
+            from_columns: ["payment_id"],
+            to: "source('raw', 'payments')",
+            to_columns: ["id"],
+          },
+        ]),
+      },
+    },
+    {
+      unique_id: "model.third.ambiguous",
+      name: "ambiguous",
+      package_name: "third",
+      meta: declared([
+        { from_columns: ["x"], to: "ref('dup')", to_columns: ["id"] },
+      ]),
+    },
+    { unique_id: "model.proj.dup", name: "dup", package_name: "proj" },
+    { unique_id: "model.other.dup", name: "dup", package_name: "other" },
+  ]);
+  const sources = loose<SourceMetaMap>(
+    new Map([
+      [
+        "source.proj.raw",
+        {
+          unique_id: "source.proj.raw",
+          name: "raw",
+          package_name: "proj",
+          tables: [
+            {
+              unique_id: "source.proj.raw.payments",
+              name: "payments",
+              meta: declared([
+                {
+                  from_columns: ["customer_id"],
+                  to: "ref('customers')",
+                  to_columns: ["id"],
+                },
+              ]),
+            },
+            {
+              unique_id: "source.proj.raw.refunds",
+              name: "refunds",
+              configMeta: declared([
+                {
+                  from_columns: ["customer_id"],
+                  to: "ref('customers')",
+                  to_columns: ["id"],
+                },
+              ]),
+            },
+          ],
+        },
+      ],
+    ]),
+  );
+
+  it("draws each resolvable declaration from the declaring side", () => {
+    const refs = parser.fromMeta(nodes, sources);
+    expect(refs).toEqual([
+      {
+        id: "meta:model.proj.orders[0]",
+        from: { table: "model.proj.orders", columns: ["customer_id"] },
+        to: { table: "model.proj.customers", columns: ["id"] },
+        cardinality: "many-to-one",
+        source: "meta",
+      },
+      {
+        id: "meta:model.proj.invoices[0]",
+        from: { table: "model.proj.invoices", columns: ["payment_id"] },
+        to: { table: "source.proj.raw.payments", columns: ["id"] },
+        cardinality: "many-to-one",
+        source: "meta",
+      },
+      {
+        id: "meta:source.proj.raw.payments[0]",
+        from: { table: "source.proj.raw.payments", columns: ["customer_id"] },
+        to: { table: "model.proj.customers", columns: ["id"] },
+        cardinality: "many-to-one",
+        source: "meta",
+      },
+      {
+        id: "meta:source.proj.raw.refunds[0]",
+        from: { table: "source.proj.raw.refunds", columns: ["customer_id"] },
+        to: { table: "model.proj.customers", columns: ["id"] },
+        cardinality: "many-to-one",
+        source: "meta",
+      },
+    ]);
+  });
+
+  it("skips and debug-logs what does not resolve or is not supported", () => {
+    const messages: string[] = [];
+    const logging = new RelationshipParser({
+      debug: (_category: string, message: string) => messages.push(message),
+    });
+    logging.fromMeta(nodes, sources);
+    expect(messages).toContain(
+      "Skipping meta.relationships[1] on model.proj.orders: cannot resolve ref('nope') to one node or source table",
+    );
+    expect(messages).toContain(
+      "Skipping meta.relationships[2] on model.proj.orders: cases and to_schema are not supported",
+    );
+    expect(messages).toContain(
+      "Skipping meta.relationships[3] on model.proj.orders: cases and to_schema are not supported",
+    );
+    expect(messages).toContain(
+      "Skipping meta.relationships[0] on model.third.ambiguous: cannot resolve ref('dup') to one node or source table",
+    );
+    expect(messages).toContain("Derived 4 refs from meta.relationships");
+  });
+
+  it("prefers the declaring package when a model name is claimed by several packages", () => {
+    const refs = parser.fromMeta(
+      nodeMap([
+        {
+          unique_id: "model.proj.a",
+          name: "a",
+          package_name: "proj",
+          meta: declared([
+            { from_columns: ["x"], to: "ref('dup')", to_columns: ["id"] },
+          ]),
+        },
+        { unique_id: "model.proj.dup", name: "dup", package_name: "proj" },
+        { unique_id: "model.other.dup", name: "dup", package_name: "other" },
+      ]),
+    );
+    expect(refs).toEqual([
+      expect.objectContaining({
+        id: "meta:model.proj.a[0]",
+        to: { table: "model.proj.dup", columns: ["id"] },
+      }),
+    ]);
+  });
+
+  it("prefers the latest version of a versioned model among same-package claimants", () => {
+    const version = (v: number, latest: number) => ({
+      name: "orders",
+      package_name: "proj",
+      version: v,
+      latest_version: latest,
+    });
+    const refs = parser.fromMeta(
+      nodeMap([
+        {
+          unique_id: "model.proj.billing",
+          name: "billing",
+          package_name: "proj",
+          meta: declared([
+            {
+              from_columns: ["order_id"],
+              to: "ref('orders')",
+              to_columns: ["id"],
+            },
+          ]),
+        },
+        { unique_id: "model.proj.orders.v1", ...version(1, 2) },
+        { unique_id: "model.proj.orders.v2", ...version(2, 2) },
+      ]),
+    );
+    expect(refs).toEqual([
+      expect.objectContaining({
+        from: { table: "model.proj.billing", columns: ["order_id"] },
+        to: { table: "model.proj.orders.v2", columns: ["id"] },
+      }),
+    ]);
+  });
+
+  it("treats a name claimed by several packages as ambiguous when the declaring package claims none", () => {
+    const refs = parser.fromMeta(
+      nodeMap([
+        {
+          unique_id: "model.third.a",
+          name: "a",
+          package_name: "third",
+          meta: declared([
+            { from_columns: ["x"], to: "ref('dup')", to_columns: ["id"] },
+          ]),
+        },
+        { unique_id: "model.proj.dup", name: "dup", package_name: "proj" },
+        { unique_id: "model.other.dup", name: "dup", package_name: "other" },
+      ]),
+    );
+    expect(refs).toEqual([]);
+  });
+
+  it("honours ignore_in_erd on the declaring node and skips malformed lists", () => {
+    const refs = parser.fromMeta(
+      nodeMap([
+        {
+          unique_id: "model.proj.ignored",
+          name: "ignored",
+          package_name: "proj",
+          meta: {
+            ignore_in_erd: true,
+            relationships: [
+              { from_columns: ["x"], to: "ref('c')", to_columns: ["id"] },
+            ],
+          },
+        },
+        {
+          unique_id: "model.proj.bad",
+          name: "bad",
+          package_name: "proj",
+          meta: declared([
+            { from_columns: ["x", "y"], to: "ref('c')", to_columns: ["id"] },
+          ]),
+        },
+        {
+          unique_id: "model.proj.c",
+          name: "c",
+          package_name: "proj",
+        },
+        {
+          unique_id: "model.proj.notalist",
+          name: "notalist",
+          package_name: "proj",
+          meta: { relationships: "ref('c')" },
+        },
+      ]),
+    );
+    expect(refs).toEqual([]);
+  });
+
+  it("returns nothing for an absent node map", () => {
+    expect(parser.fromMeta(undefined as unknown as NodeMetaMap)).toEqual([]);
+  });
+});

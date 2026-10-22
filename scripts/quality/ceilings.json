@@ -1,7 +1,7 @@
 {
   "suppressions.host": 7,
   "suppressions.webview": 0,
-  "internalTags": 57,
+  "internalTags": 55,
   "coverage.host": {
     "lines": 80,
     "branches": 72,
@@ -20,8 +20,8 @@
     "webview_panels/dist/assets/chunk-shared.js": 282300,
     "webview_panels/dist/assets/documentationEditor.css": 8760,
     "webview_panels/dist/assets/documentationEditor.js": 39572,
-    "webview_panels/dist/assets/lineage.css": 26040,
-    "webview_panels/dist/assets/lineage.js": 275000,
+    "webview_panels/dist/assets/lineage.css": 30195,
+    "webview_panels/dist/assets/lineage.js": 295637,
     "webview_panels/dist/assets/queryResults.css": 9800,
     "webview_panels/dist/assets/queryResults.js": 102700,
     "webview_panels/dist/assets/shared.css": 12200

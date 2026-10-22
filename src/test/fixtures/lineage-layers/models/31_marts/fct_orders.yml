@@ -1,0 +1,16 @@
+version: 2
+
+models:
+  - name: fct_orders
+    description: One row per order, with its amount in USD.
+    columns:
+      - name: order_id
+      - name: customer_id
+      - name: amount_usd
+      - name: ordered_at
+    config:
+      meta:
+        relationships:
+          - from_columns: [customer_id]
+            to_columns: [customer_id]
+            to: "ref('dim_customers')"

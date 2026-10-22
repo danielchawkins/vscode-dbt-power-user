@@ -11,6 +11,7 @@ const workspaces = [
   "nested-project",
   "nested-roots",
   "lineage-groups",
+  "lineage-layers",
 ];
 
 /** The fixture workspace a project file belongs to, named by its first path segment under the fixtures directory. */
@@ -35,7 +36,7 @@ describe("fixture workspaces", () => {
       findProjectFiles(path.join(fixtures, workspace)),
     );
 
-    expect(projectFiles).toHaveLength(8);
+    expect(projectFiles).toHaveLength(9);
     for (const projectFile of projectFiles) {
       const parsed = parse(readFileSync(projectFile, "utf8")) as {
         name?: string;

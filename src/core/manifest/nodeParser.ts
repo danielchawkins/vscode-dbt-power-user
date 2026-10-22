@@ -197,6 +197,8 @@ export class NodeParser {
         relation_name,
         tags: tags ?? [],
         original_file_path,
+        version,
+        latest_version,
       });
     }
     this.terminal.debug(

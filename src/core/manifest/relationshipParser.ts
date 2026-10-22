@@ -1,4 +1,6 @@
 import type { Log } from "../log";
+import { declaredRefs, SOURCE_PATTERN } from "./declaredRelationships";
+import { buildRelationIndex, type RelationIndex } from "./relationIndex";
 import {
   type InferenceOptions,
   inferRefs,
@@ -33,18 +35,17 @@ const VALID_CARDINALITIES: ReadonlySet<Cardinality> = new Set([
 
 const REF_PATTERN =
   /^ref\(\s*['"]([^'"]+)['"]\s*(?:,\s*['"]([^'"]+)['"]\s*)?\)$/;
-const SOURCE_PATTERN =
-  /^source\(\s*['"]([^'"]+)['"]\s*,\s*['"]([^'"]+)['"]\s*\)$/;
 
 /**
  * Builds `Ref[]` records that describe PK/FK relationships between dbt nodes.
  *
  * - `fromTests` — relationships data tests (Phase 1)
  * - `fromContracts` — model contract foreign_key constraints (Phase 2)
+ * - `fromMeta` — relationships declared in `meta.relationships` (declared)
  * - `fromInference` — naming-convention inference (Phase 3)
  * - `fromSemanticEntities` — semantic-layer entity pairings (Phase 4)
  *
- * All four return uniformly-shaped `Ref` records distinguished by the
+ * All of them return uniformly-shaped `Ref` records distinguished by the
  * `source` discriminator so downstream consumers can style/filter without
  * the parser knowing about UI.
  */
@@ -221,7 +222,7 @@ export class RelationshipParser {
       return [];
     }
     const refs: Ref[] = [];
-    const index = this.buildRelationIndex(nodeMetaMap, sourceMetaMap);
+    const index = buildRelationIndex(nodeMetaMap, sourceMetaMap);
 
     for (const node of nodeMetaMap.nodes()) {
       // Column-level FK constraints
@@ -373,29 +374,46 @@ export class RelationshipParser {
     );
   }
 
-  /** Build node/source lookup indices once per `fromContracts` call. */
-  private buildRelationIndex(
-    nodeMetaMap: NodeMetaMap,
-    sourceMetaMap?: SourceMetaMap,
-  ): RelationIndex {
-    const byBaseName = new Map<string, string>();
-    const byRelationName = new Map<string, string>();
-    for (const node of nodeMetaMap.nodes()) {
-      byBaseName.set(node.name, node.unique_id);
-      if (node.relation_name) {
-        byRelationName.set(node.relation_name, node.unique_id);
-        byRelationName.set(node.relation_name.toLowerCase(), node.unique_id);
-      }
+  // ─────────────────────────────────────────────────────────────────────────
+  // Declared — meta.relationships
+  // ─────────────────────────────────────────────────────────────────────────
+
+  /**
+   * Extract refs declared by hand in `meta.relationships` on a node or a source
+   * table. The declaring side is the `from` side, so every ref is
+   * `many-to-one`, and its id is `meta:<declaring unique_id>[<index>]`.
+   *
+   * ```yaml
+   * models:
+   *   - name: orders
+   *     meta:
+   *       relationships:
+   *         - from_columns: [customer_id]
+   *           to: "ref('customers')"
+   *           to_columns: [id]
+   * ```
+   *
+   * - `to` is `ref('name')` (one argument, matched by model name across the project and its packages) or
+   *   `source('source_name', 'table')`. A `ref` name resolves as `resolveBaseName` does (in `relationIndex.ts`): the
+   *   declaring package's own node, then the latest version. A `source_name.table` that more than one source table
+   *   claims does not resolve.
+   * - `config.meta.relationships` is read when `meta` has no `relationships`
+   *   key, because Fusion places a node's `meta` under its config.
+   * - `meta.ignore_in_erd: true` on the declaring node or table drops all of
+   *   its declared relationships.
+   * - An entry that is malformed, does not resolve, or carries `cases` or
+   *   `to_schema` (a consumer-specific registration DSL this parser does not
+   *   support) is skipped and logged at debug level.
+   */
+  fromMeta(nodeMetaMap: NodeMetaMap, sourceMetaMap?: SourceMetaMap): Ref[] {
+    if (!nodeMetaMap) {
+      return [];
     }
-    const bySourceKey = new Map<string, string>();
-    if (sourceMetaMap) {
-      for (const source of sourceMetaMap.values()) {
-        for (const tbl of source.tables ?? []) {
-          bySourceKey.set(`${source.name}.${tbl.name}`, source.unique_id);
-        }
-      }
-    }
-    return { byBaseName, byRelationName, bySourceKey };
+    const index = buildRelationIndex(nodeMetaMap, sourceMetaMap);
+    return declaredRefs(nodeMetaMap, sourceMetaMap, {
+      index,
+      terminal: this.terminal,
+    });
   }
 
   // ─────────────────────────────────────────────────────────────────────────
@@ -512,10 +530,4 @@ export class RelationshipParser {
     const raw = meta?.relationship_label;
     return typeof raw === "string" && raw.length > 0 ? raw : undefined;
   }
-}
-
-interface RelationIndex {
-  byBaseName: Map<string, string>;
-  byRelationName: Map<string, string>;
-  bySourceKey: Map<string, string>;
 }

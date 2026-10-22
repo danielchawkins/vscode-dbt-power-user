@@ -1,0 +1,15 @@
+version: 2
+
+models:
+  - name: int_orders__enriched
+    description: Orders joined to their account, user and country. The model the lineage panel starts from.
+    columns:
+      - name: order_id
+      - name: customer_id
+      - name: amount
+    config:
+      meta:
+        relationships:
+          - from_columns: [customer_id]
+            to_columns: [customer_id]
+            to: "ref('dim_customers')"

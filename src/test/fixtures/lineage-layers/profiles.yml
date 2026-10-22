@@ -1,0 +1,8 @@
+lineage_layers:
+  target: test
+  outputs:
+    test:
+      type: duckdb
+      path: "target/lineage_layers.duckdb"
+      schema: main
+      threads: 1

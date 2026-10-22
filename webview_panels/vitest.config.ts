@@ -22,6 +22,9 @@ export default mergeConfig(
           : "--throw-deprecation",
       ],
       setupFiles: [`${import.meta.dirname}/src/test/setup.ts`],
+      // `npm test` passes --coverage, which slows the code enough to break timing assertions. Those tests read
+      // FPU_V8_COVERAGE and skip only the timing check.
+      env: process.argv.includes("--coverage") ? { FPU_V8_COVERAGE: "1" } : {},
       include: ["src/**/*.test.{ts,tsx}"],
       coverage: {
         provider: "v8",

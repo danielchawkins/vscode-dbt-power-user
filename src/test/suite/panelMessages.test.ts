@@ -259,7 +259,7 @@ describe("lineage panel messages", () => {
       const h = lineageHarness();
       await h.send({
         command: "persistLineageSettings",
-        args: { params: { defaultExpansion: 3, showRefs: true } },
+        args: { params: { defaultExpansion: 3, connections: "both" } },
         syncRequestId: "s1",
       });
       expect(workspace.getConfiguration().update).toHaveBeenCalledWith(
@@ -267,7 +267,7 @@ describe("lineage panel messages", () => {
         3,
       );
       expect([...h.globalState.values()]).toContainEqual(
-        expect.objectContaining({ showRefs: true }),
+        expect.objectContaining({ connections: "both" }),
       );
       expect(h.postMessage).toHaveBeenCalledWith(response("s1", { ok: true }));
     },

@@ -71,6 +71,10 @@ Fusion LSP wire commands (`dbt.listNodes`, `dbt.previewCte`, and the rest) are u
 | `dbt.altimate*` / `dbt.mcp*` / `dbt.enableCollaboration` / `dbt.enableNotebooks` / `dbt.disableQueryHistory` / `dbt.conversationsPollingInterval` / `dbt.enableMcpDataSourceQueryTools` / `dbt.dbtCustomRunnerImport` | Hosted Altimate and MCP features removed                            |
 | `altimate.*`                                                                                                                                                                                                          | Hosted Altimate settings removed                                    |
 
+### Lineage layout
+
+`fusionPowerUser.lineage.layout` sets how lineage cards are placed. `"layered"` places parents above their children in layer bands (source, staging, intermediate, marts), with edges routed through the gaps between cards. `"leftToRight"` lays cards out left to right with dagre, parents to the left of their children, with bezier edges and no layer bands. The setting is read-only in the panel, like the other lineage settings.
+
 ## Consumer manual migration
 
 1. Replace every Fusion Power User `dbt.*` key in `.vscode/settings.json`, `.code-workspace` files, and user settings using the table above.

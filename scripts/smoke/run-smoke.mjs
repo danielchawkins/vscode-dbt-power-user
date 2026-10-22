@@ -230,6 +230,12 @@ watchdog.unref();
 try {
   const launchEpochMs = Date.now();
   const passedMarker = path.join(workspaceParent, "fpu-smoke-passed");
+  // New windows open maximized, so the lineage checkpoints get most of the display; VS Code has no size flag.
+  mkdirSync(path.join(userDataDir, "User"), { recursive: true });
+  writeFileSync(
+    path.join(userDataDir, "User", "settings.json"),
+    `${JSON.stringify({ "window.newWindowDimensions": "maximized" }, null, 2)}\n`,
+  );
   await runTests({
     vscodeExecutablePath: hostApp,
     extensionTestsPath: path.join(root, "out/test/smoke/index.js"),
@@ -247,6 +253,9 @@ try {
       // A covered or unfocused window otherwise reports hidden and paints nothing until it is raised.
       "--disable-backgrounding-occluded-windows",
       "--disable-renderer-backgrounding",
+      // Secrets go to a plain file and a mock keychain; a throwaway home otherwise makes macOS offer to create one.
+      "--password-store=basic",
+      "--use-mock-keychain",
       // The host otherwise merges the login shell's environment over this one, putting its PATH ahead of the decoy.
       ...(toolEnv ? ["--force-disable-user-env"] : []),
       ...(host === "cursor"

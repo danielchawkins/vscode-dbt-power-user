@@ -8,6 +8,7 @@ import {
   ControlButton,
   Controls,
   MiniMap,
+  type Node,
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
@@ -15,6 +16,7 @@ import {
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import {
+  type RefObject,
   use,
   useCallback,
   useEffect,
@@ -25,13 +27,26 @@ import {
 } from "react";
 import { hiddenCounts } from "./expansionCap";
 import { collapsedGroups, groupChips } from "./expansionGroups";
+import type { Fitted } from "./fit";
+import {
+  fitGraph,
+  fitOptions,
+  fitPadding,
+  MIN_ZOOM,
+  noticeOverlap,
+  refitsGraph,
+} from "./fit";
 import { toFlow } from "./flow";
 import { lineageData } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { GroupNode } from "./GroupNode";
+import { LayerBand } from "./LayerBand";
 import styles from "./lineageGraph.module.css";
 import MissingLineageMessage from "./MissingLineageMessage";
+import { RelationshipEdgeView } from "./RelationshipEdge";
+import relationStyles from "./relationshipEdges.module.css";
 import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
+import { RoutedEdge } from "./RoutedEdge";
 import { isZoomedOut, SemanticZoomContext } from "./semanticZoom";
 import TableDetails from "./TableDetails";
 import { TableNode } from "./TableNode";
@@ -42,21 +57,11 @@ import { useLineageGraph } from "./useLineageGraph";
 import type { ResolvedSettings } from "./viewModel";
 import { resolveSettings, TableActionsContext, visibleRefs } from "./viewModel";
 
-const nodeTypes = { table: TableNode, group: GroupNode };
-
-/** Fit options whose pixel padding keeps the graph clear of the controls, the legend and the minimap when shown. */
-const fitOptions = (minimap?: {
-  width: number;
-  height: number;
-}): FitViewOptions => ({
-  maxZoom: 1,
-  padding: {
-    top: "16px",
-    right: `${(minimap?.width ?? 0) + 16}px`,
-    bottom: `${Math.max(40, (minimap?.height ?? 0) + 16)}px`,
-    left: "56px",
-  },
-});
+const nodeTypes = { table: TableNode, folderGroup: GroupNode, band: LayerBand };
+const edgeTypes = {
+  routed: RoutedEdge,
+  relationship: RelationshipEdgeView,
+};
 
 /** Logs React Flow's warnings to the webview devtools console. */
 const onError = (code: string, message: string) => {
@@ -104,11 +109,15 @@ const useSettings = () => {
   return { settings, loaded, change };
 };
 
-/** The relationships of the Current Project, fetched while the overlay is on and again after each redraw. */
+/**
+ * The relationships of the Current Project, fetched while declared relationships are drawn and
+ * again after each redraw.
+ */
 const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
   const [refs, setRefs] = useState<lineage.LineageRef[]>([]);
+  const declared = settings.connections !== "dbt";
   useEffect(() => {
-    if (!settings.showRefs) {
+    if (!declared) {
       return;
     }
     let live = true;
@@ -118,7 +127,7 @@ const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
     return () => {
       live = false;
     };
-  }, [settings.showRefs, settings.includeSourcesInInference, drawnKey]);
+  }, [declared, settings.includeSourcesInInference, drawnKey]);
   return refs;
 };
 
@@ -133,7 +142,7 @@ const Legend = () => (
       Non-select
     </span>
     <span>
-      <span className={`${styles.swatch} ${styles.ref}`} />
+      <span className={relationStyles.legendLine} />
       Relationship
     </span>
   </div>
@@ -141,6 +150,14 @@ const Legend = () => (
 
 /** Below this canvas size the minimap starts hidden; it would cover most of the graph. */
 const MINIMAP_MIN = { width: 720, height: 360 };
+
+/** Band nodes are the layer backdrop rather than cards, so the minimap leaves them out. */
+const minimapColour = (node: Node): string =>
+  node.type === "band"
+    ? "transparent"
+    : "var(--vscode-editorWidget-border, var(--vscode-disabledForeground))";
+const minimapStroke = (node: Node): string =>
+  node.type === "band" ? "transparent" : "var(--vscode-focusBorder)";
 
 /** The canvas size, tracked with a `ResizeObserver`. */
 const useSize = () => {
@@ -165,6 +182,41 @@ const useSize = () => {
   return { ref, size };
 };
 
+/**
+ * How far the notice above the canvas reaches over the canvas's top edge, in pixels: zero when it sits above the
+ * canvas, as it does in the top bar. Both elements are tracked with a `ResizeObserver`, as the canvas size is.
+ */
+const useNoticeOverlap = (
+  topBar: RefObject<HTMLElement | null>,
+  canvas: RefObject<HTMLElement | null>,
+  shown: boolean,
+): number => {
+  const [overlap, setOverlap] = useState(0);
+  useLayoutEffect(() => {
+    const notice = shown
+      ? topBar.current?.querySelector<HTMLElement>('[role="alert"]')
+      : null;
+    const element = canvas.current;
+    if (!notice || !element) {
+      setOverlap(0);
+      return;
+    }
+    const measure = () =>
+      setOverlap(
+        noticeOverlap(
+          notice.getBoundingClientRect(),
+          element.getBoundingClientRect(),
+        ),
+      );
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(notice);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [topBar, canvas, shown]);
+  return overlap;
+};
+
 /** The minimap's visibility: the user's choice once made, otherwise whether the canvas has room for it. */
 const useMinimap = (size: { width: number; height: number }) => {
   const [choice, setChoice] = useState<boolean>();
@@ -181,36 +233,88 @@ const minimapStyle = (size: { width: number; height: number }) => ({
 });
 
 /**
- * The fit options for the canvas `size`, applied again when the panel is resized, so a shrunk panel still shows the
- * whole graph, and when a new graph is drawn.
+ * The fit options for the canvas, and the fits that frame the graph. The canvas is fitted when it is resized or its
+ * padding changes, and on each redraw. A change of the drawn nodes, the layout or Connections refits too, unless the
+ * user has panned or zoomed since the last fit and the nodes are the same (see `refitsGraph`).
  */
-const useFit = (
-  size: { width: number; height: number },
-  minimapShown: boolean,
-  drawnKey: number,
-): FitViewOptions => {
+const useFit = ({
+  size,
+  minimapShown,
+  notice,
+  drawnKey,
+  layered,
+  focusId,
+  nodeKey,
+  shapeKey,
+}: {
+  size: { width: number; height: number };
+  minimapShown: boolean;
+  notice: number;
+  drawnKey: number;
+  layered: boolean;
+  focusId: string | undefined;
+  /** The drawn nodes, by id: a change of them is a change of the graph. */
+  nodeKey: string;
+  /** The layout and Connections: a change of either is a change of the graph's shape. */
+  shapeKey: string;
+}): { options: FitViewOptions; refit: () => void } => {
   const flow = useReactFlow();
   const { width, height } = size;
-  const mapWidth = minimapStyle(size).width;
-  const mapHeight = minimapStyle(size).height;
-  const options = useMemo(
-    () =>
-      fitOptions(
-        minimapShown ? { width: mapWidth, height: mapHeight } : undefined,
-      ),
-    [minimapShown, mapWidth, mapHeight],
+  const ready = width > 0 && height > 0;
+  const map = minimapStyle(size);
+  const minimap = useMemo(
+    () => (minimapShown ? { width: map.width, height: map.height } : undefined),
+    [minimapShown, map.width, map.height],
   );
+  const options = useMemo(() => fitOptions(minimap, notice), [minimap, notice]);
+  const padding = useMemo(() => fitPadding(minimap, notice), [minimap, notice]);
+  const fittedRef = useRef<Fitted | undefined>(undefined);
+  const fit = useCallback(
+    async (key: string) => {
+      await fitGraph({
+        flow,
+        options,
+        padding,
+        width,
+        height,
+        layered,
+        focusId,
+      });
+      fittedRef.current = { nodeKey: key, viewport: flow.getViewport() };
+    },
+    [flow, options, padding, width, height, layered, focusId],
+  );
+  // The effects below read the latest fit and node key through these refs, so that only their own changes run them.
+  const fitRef = useRef(fit);
+  const keyRef = useRef(nodeKey);
+  useLayoutEffect(() => {
+    fitRef.current = fit;
+    keyRef.current = nodeKey;
+  });
   useEffect(() => {
-    if (width > 0 && height > 0) {
-      void flow.fitView(options);
+    if (ready) {
+      void fitRef.current(keyRef.current);
     }
-  }, [width, height, flow, options]);
+  }, [ready, width, height, options, padding]);
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+    // Waits a frame, so React Flow has measured the nodes that were just drawn.
+    requestAnimationFrame(() => {
+      if (refitsGraph(fittedRef.current, nodeKey, flow.getViewport())) {
+        void fitRef.current(nodeKey);
+      }
+    });
+  }, [flow, ready, nodeKey, shapeKey]);
   useEffect(() => {
     if (drawnKey > 0) {
-      requestAnimationFrame(() => void flow.fitView(options));
+      requestAnimationFrame(() => void fitRef.current(keyRef.current));
     }
-  }, [drawnKey, flow, options]);
-  return options;
+  }, [drawnKey]);
+  // The Fit View control runs the same fit as the automatic one, with the same focus and padding.
+  const refit = useCallback(() => void fitRef.current(keyRef.current), []);
+  return { options, refit };
 };
 
 type FlowGraph = ReturnType<typeof toFlow>;
@@ -222,17 +326,40 @@ const Canvas = ({
   select,
   openDetails,
   drawnKey,
+  layered,
+  nodeKey,
+  shapeKey,
+  overlap,
+  canvasRef,
+  size,
 }: FlowGraph & {
   select: (table: string | undefined) => void;
   openDetails: (table: string) => void;
   drawnKey: number;
+  /** The layered layout draws its bands instead of the dotted background. */
+  layered: boolean;
+  nodeKey: string;
+  shapeKey: string;
+  /** How far the notice covers the canvas's top edge, which the fit keeps clear of. */
+  overlap: number;
+  canvasRef: RefObject<HTMLDivElement | null>;
+  size: { width: number; height: number };
 }) => {
-  const { ref: canvasRef, size } = useSize();
   const minimap = useMinimap(size);
   const onNodeClick = useNodeClick(select, openDetails);
   useHandleMeasurement(nodes);
   const mapSize = minimapStyle(size);
-  const options = useFit(size, minimap.shown, drawnKey);
+  const focusId = nodes.find((n) => n.type === "table" && n.data.isStart)?.id;
+  const { options, refit } = useFit({
+    size,
+    minimapShown: minimap.shown,
+    notice: overlap,
+    drawnKey,
+    layered,
+    focusId,
+    nodeKey,
+    shapeKey,
+  });
   const label = minimap.shown ? "Hide minimap" : "Show minimap";
   return (
     <div className={styles.canvas} ref={canvasRef}>
@@ -240,9 +367,10 @@ const Canvas = ({
         nodes={nodes}
         edges={edges}
         nodeTypes={nodeTypes}
+        edgeTypes={edgeTypes}
         nodesConnectable={false}
         nodesDraggable={false}
-        minZoom={0.05}
+        minZoom={MIN_ZOOM}
         fitView
         fitViewOptions={options}
         proOptions={{ hideAttribution: true }}
@@ -250,8 +378,12 @@ const Canvas = ({
         onNodeClick={onNodeClick}
         onPaneClick={() => select(undefined)}
       >
-        <Background />
-        <Controls showInteractive={false}>
+        {layered ? null : <Background />}
+        <Controls
+          showInteractive={false}
+          fitViewOptions={options}
+          onFitView={refit}
+        >
           <ControlButton
             onClick={minimap.toggle}
             title={label}
@@ -267,8 +399,8 @@ const Canvas = ({
             zoomable
             position="bottom-right"
             style={mapSize}
-            nodeColor="var(--vscode-editorWidget-border, var(--vscode-disabledForeground))"
-            nodeStrokeColor="var(--vscode-focusBorder)"
+            nodeColor={minimapColour}
+            nodeStrokeColor={minimapStroke}
             nodeStrokeWidth={2}
             nodeBorderRadius={4}
           />
@@ -334,15 +466,31 @@ const Graph = (): React.JSX.Element => {
       selectedTable: graph.selectedTable,
       selectedColumn: graph.selectedColumn,
       columnsNeedStrict,
+      connections: settings.connections,
       refs: visibleRefs(refs, settings, drawn),
+      layout: settings.layout,
     });
   }, [graph, settings, refs, columnsNeedStrict]);
   const details = detailsTable ? graph.known[detailsTable] : undefined;
+  // The drawn nodes by id, and the layout and Connections: the fit refits when either changes.
+  const nodeKey = useMemo(
+    () =>
+      nodes
+        .filter((node) => node.type !== "band")
+        .map((node) => node.id)
+        .sort()
+        .join("\n"),
+    [nodes],
+  );
+  const shapeKey = `${settings.layout}|${settings.connections}`;
+  const topBarRef = useRef<HTMLDivElement>(null);
+  const { ref: canvasRef, size } = useSize();
+  const overlap = useNoticeOverlap(topBarRef, canvasRef, notice !== undefined);
 
   return (
     <TableActionsContext value={actions}>
       <div className={`${styles.view} lineage-view`}>
-        <div className={styles.topBar}>
+        <div className={styles.topBar} ref={topBarRef}>
           <MissingLineageMessage missingLineageMessage={notice} />
           <Toolbar settings={settings} change={change} reset={reset} />
         </div>
@@ -353,6 +501,12 @@ const Graph = (): React.JSX.Element => {
             select={select}
             openDetails={openDetails}
             drawnKey={drawnKey}
+            layered={settings.layout === "layered"}
+            nodeKey={nodeKey}
+            shapeKey={shapeKey}
+            overlap={overlap}
+            canvasRef={canvasRef}
+            size={size}
           />
         </SemanticZoomContext>
         <Drawer ref={drawerRef} title="Details">

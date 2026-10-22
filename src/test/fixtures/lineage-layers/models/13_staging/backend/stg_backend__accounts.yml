@@ -1,0 +1,14 @@
+version: 2
+
+models:
+  - name: stg_backend__accounts
+    description: Backend accounts, one row per account.
+    columns:
+      - name: account_id
+      - name: user_id
+    config:
+      meta:
+        relationships:
+          - from_columns: [user_id]
+            to_columns: [user_id]
+            to: "ref('stg_backend__users')"

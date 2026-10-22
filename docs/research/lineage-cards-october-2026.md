@@ -52,14 +52,15 @@ The first version of this note deferred grouping. The finance hub changed that: 
 
 Project conventions are VS Code settings, so a workspace can share them. The panel reads each one and never writes it:
 
-| Setting                                       | Default    | Does                                                                      |
-| --------------------------------------------- | ---------- | ------------------------------------------------------------------------- |
-| `fusionPowerUser.lineage.layer.tagPrefix`     | `"layer/"` | the tag prefix the layer badge reads first                                |
-| `fusionPowerUser.lineage.layer.inferFromPath` | `true`     | infer the layer from the folder and name prefix                           |
-| `fusionPowerUser.lineage.maxNeighbours`       | `20`       | the expansion cap; `0` draws every neighbour                              |
-| `fusionPowerUser.lineage.groupBy`             | `"folder"` | `"none"` draws the first `maxNeighbours` cards and `+K` instead of groups |
-| `fusionPowerUser.lineage.semanticZoom`        | `true`     | `false` keeps full cards at every zoom                                    |
-| `fusionPowerUser.lineage.title`               | `"alias"`  | `"name"` titles cards by their `ref()` name                               |
+| Setting                                       | Default     | Does                                                                      |
+| --------------------------------------------- | ----------- | ------------------------------------------------------------------------- |
+| `fusionPowerUser.lineage.layer.tagPrefix`     | `"layer/"`  | the tag prefix the layer badge reads first                                |
+| `fusionPowerUser.lineage.layer.inferFromPath` | `true`      | infer the layer from the folder and name prefix                           |
+| `fusionPowerUser.lineage.maxNeighbours`       | `20`        | the expansion cap; `0` draws every neighbour                              |
+| `fusionPowerUser.lineage.groupBy`             | `"folder"`  | `"none"` draws the first `maxNeighbours` cards and `+K` instead of groups |
+| `fusionPowerUser.lineage.layout`              | `"layered"` | `"leftToRight"` places cards with the dagre left-to-right layout          |
+| `fusionPowerUser.lineage.semanticZoom`        | `true`      | `false` keeps full cards at every zoom                                    |
+| `fusionPowerUser.lineage.title`               | `"alias"`   | `"name"` titles cards by their `ref()` name                               |
 
 `groupBy` is an enum so that `layer` or a tag prefix can be added later without renaming it. The hide list proposed here first became the `meta.lineage.hidden` marker below.
 

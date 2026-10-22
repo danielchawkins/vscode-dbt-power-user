@@ -19,7 +19,7 @@ const setup = () =>
     </div>,
   );
 
-describe.each(["Settings", "Relationships"])("Toolbar %s popover", (name) => {
+describe.each(["Settings", "Connections"])("Toolbar %s popover", (name) => {
   const button = () => screen.getByRole("button", { name });
 
   it("toggles on the button and reflects aria-expanded", () => {
@@ -52,10 +52,10 @@ describe.each(["Settings", "Relationships"])("Toolbar %s popover", (name) => {
 });
 
 describe("Toolbar popovers together", () => {
-  it("opening Relationships closes Settings", () => {
+  it("opening Connections closes Settings", () => {
     setup();
     fireEvent.click(screen.getByRole("button", { name: "Settings" }));
-    fireEvent.click(screen.getByRole("button", { name: "Relationships" }));
+    fireEvent.click(screen.getByRole("button", { name: "Connections" }));
     expect(screen.getAllByRole("dialog")).toHaveLength(1);
     expect(screen.getByRole("button", { name: "Settings" })).toHaveAttribute(
       "aria-expanded",

@@ -128,6 +128,19 @@
             "description": "How an expansion with more new neighbours than `maxNeighbours` is drawn.",
             "default": "folder"
           },
+          "fusionPowerUser.lineage.layout": {
+            "type": "string",
+            "enum": [
+              "layered",
+              "leftToRight"
+            ],
+            "enumDescriptions": [
+              "Parents above their children in layer bands (source, staging, intermediate, marts), with edges routed through the gaps between cards.",
+              "Cards laid out left to right by dagre, with parents to the left of their children, bezier edges and no layer bands."
+            ],
+            "description": "How lineage cards are placed. Read-only in the panel, like the other lineage settings.",
+            "default": "layered"
+          },
           "fusionPowerUser.lineage.semanticZoom": {
             "type": "boolean",
             "description": "Below 50% zoom, lineage cards keep their size and show only a larger badge and title.",

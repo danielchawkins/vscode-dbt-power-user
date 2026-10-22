@@ -344,17 +344,46 @@ describe("LineagePanel", () => {
       args: {
         syncRequestId: "g",
         body: {
+          connections: "dbt",
           showSelectEdges: false,
           showNonSelectEdges: true,
           defaultExpansion: 3,
           maxNeighbours: 3,
           groupBy: "folder",
+          layout: "layered",
           semanticZoom: true,
           title: "alias",
         },
         status: true,
       },
     });
+  });
+
+  it("reads lineage.layout, treating any value but leftToRight as layered, and never persists it", async () => {
+    const values: Record<string, unknown> = { "lineage.layout": "leftToRight" };
+    (workspace.getConfiguration as Mock).mockReturnValue({
+      get: (key: string) => values[key] ?? 3,
+      update: vi.fn(),
+    });
+    await (panel as any).handleCommand({
+      command: "persistLineageSettings",
+      args: { params: { layout: "layered" } },
+      syncRequestId: "p",
+    });
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.layout).toBe(
+      "leftToRight",
+    );
+
+    values["lineage.layout"] = "typo";
+    await (panel as any).handleCommand({
+      command: "getLineageSettings",
+      syncRequestId: "g2",
+    });
+    expect(mockPostMessage.mock.lastCall![0].args.body.layout).toBe("layered");
   });
 
   it("reads lineage.groupBy, treating any value but none as folder, and never persists it", async () => {
@@ -448,7 +477,7 @@ describe("LineagePanel", () => {
         command: "persistLineageSettings",
         args: {
           params: {
-            showRefs: false,
+            connections: "dbt",
             inferenceConfidenceThreshold: threshold,
             sqlText: "select secret",
           },
@@ -462,11 +491,12 @@ describe("LineagePanel", () => {
       expect(mockPostMessage.mock.lastCall![0].args.body).toEqual({
         showSelectEdges: true,
         showNonSelectEdges: false,
-        showRefs: false,
+        connections: "dbt",
         inferenceConfidenceThreshold: threshold > 1 ? 1 : 0,
         defaultExpansion: 3,
         maxNeighbours: 3,
         groupBy: "folder",
+        layout: "layered",
         semanticZoom: true,
         title: "alias",
       });
@@ -717,7 +747,8 @@ describe("LineagePanel — source YAML rooting", () => {
     };
   };
 
-  const sourceTable = (name: string, filePath: string) => ({
+  const sourceTable = (source: string, name: string, filePath: string) => ({
+    unique_id: `source.proj.${source}.${name}`,
     name,
     identifier: name,
     path: filePath,
@@ -762,7 +793,9 @@ describe("LineagePanel — source YAML rooting", () => {
         {
           package_name: "proj",
           name: "segment_website_production",
-          tables: [sourceTable("identifies", filePath)],
+          tables: [
+            sourceTable("segment_website_production", "identifies", filePath),
+          ],
         },
       ],
     ]);
@@ -783,7 +816,9 @@ describe("LineagePanel — source YAML rooting", () => {
         {
           package_name: "proj",
           name: "segment_website_production",
-          tables: [sourceTable("identifies", filePath)],
+          tables: [
+            sourceTable("segment_website_production", "identifies", filePath),
+          ],
         },
       ],
     ]);
@@ -819,7 +854,9 @@ describe("LineagePanel — source YAML rooting", () => {
         {
           package_name: "proj",
           name: "segment_website_production",
-          tables: [sourceTable("identifies", filePath)],
+          tables: [
+            sourceTable("segment_website_production", "identifies", filePath),
+          ],
         },
       ],
     ]);
@@ -864,9 +901,9 @@ describe("LineagePanel — source YAML rooting", () => {
           package_name: "proj",
           name: "seg",
           tables: [
-            sourceTable("identifies", filePath),
-            sourceTable("tracks", filePath),
-            sourceTable("pages", filePath),
+            sourceTable("seg", "identifies", filePath),
+            sourceTable("seg", "tracks", filePath),
+            sourceTable("seg", "pages", filePath),
           ],
         },
       ],
@@ -902,8 +939,8 @@ describe("LineagePanel — source YAML rooting", () => {
           package_name: "proj",
           name: "seg",
           tables: [
-            sourceTable("identifies", filePath),
-            sourceTable("tracks", filePath),
+            sourceTable("seg", "identifies", filePath),
+            sourceTable("seg", "tracks", filePath),
           ],
         },
       ],
@@ -945,8 +982,8 @@ describe("LineagePanel — source YAML rooting", () => {
           package_name: "proj",
           name: "pages",
           tables: [
-            sourceTable("identifies", filePath),
-            sourceTable("pages", filePath),
+            sourceTable("pages", "identifies", filePath),
+            sourceTable("pages", "pages", filePath),
           ],
         },
       ],
@@ -982,7 +1019,7 @@ describe("LineagePanel — source YAML rooting", () => {
         {
           package_name: "proj",
           name: "seg",
-          tables: [sourceTable("events", filePath)],
+          tables: [sourceTable("seg", "events", filePath)],
         },
       ],
       [
@@ -990,7 +1027,7 @@ describe("LineagePanel — source YAML rooting", () => {
         {
           package_name: "proj",
           name: "ga",
-          tables: [sourceTable("events", filePath)],
+          tables: [sourceTable("ga", "events", filePath)],
         },
       ],
     ]);
@@ -1018,7 +1055,7 @@ describe("LineagePanel — source YAML rooting", () => {
         {
           package_name: "proj",
           name: "seg",
-          tables: [sourceTable("identifies", filePath)],
+          tables: [sourceTable("seg", "identifies", filePath)],
         },
       ],
     ]);
@@ -1055,7 +1092,7 @@ describe("LineagePanel — source YAML rooting", () => {
         {
           package_name: "proj",
           name: "seg",
-          tables: [sourceTable("identifies", filePath)],
+          tables: [sourceTable("seg", "identifies", filePath)],
         },
       ],
     ]);
@@ -1099,7 +1136,9 @@ describe("LineagePanel — source YAML rooting", () => {
         {
           package_name: "proj",
           name: "seg",
-          tables: [sourceTable("identifies", "/proj/models/sources/other.yml")],
+          tables: [
+            sourceTable("seg", "identifies", "/proj/models/sources/other.yml"),
+          ],
         },
       ],
     ]);

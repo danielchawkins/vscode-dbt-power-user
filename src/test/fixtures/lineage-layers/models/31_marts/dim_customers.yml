@@ -1,0 +1,7 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: One row per customer.
+    columns:
+      - name: customer_id

@@ -51,6 +51,7 @@ function sources(
         package_name: "p",
         meta: {},
         tables: Object.entries(tables).map(([name, columns]) => ({
+          unique_id: `source.p.raw.${name}`,
           name,
           identifier: name,
           path: undefined,

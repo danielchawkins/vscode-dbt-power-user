@@ -151,6 +151,13 @@
     var(--vscode-disabledForeground)
   );
   --xy-edge-stroke-selected: var(--vscode-focusBorder);
+  /* Column and table edges: the stroke rules below and the arrowheads (flow.ts) both read these. */
+  --lineage-column-stroke: var(--vscode-charts-blue, var(--vscode-focusBorder));
+  --lineage-indirect-stroke: var(
+    --vscode-charts-purple,
+    var(--vscode-descriptionForeground)
+  );
+  --lineage-selected-stroke: var(--vscode-focusBorder);
   --xy-edge-label-background-color: var(--vscode-editorWidget-background);
   --xy-edge-label-color: var(--vscode-foreground);
   --xy-node-color: var(--vscode-foreground);
@@ -178,6 +185,7 @@
 }
 
 .node {
+  position: relative;
   width: 280px;
   border: 1px solid
     var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent));
@@ -197,8 +205,15 @@
   opacity: 0.6;
 }
 
-/* A closed group is a card with two more cards stacked behind it, drawn by offset box shadows. */
+/*
+ * A closed group is a dashed card with two more cards stacked behind it, drawn by offset box shadows. Its border falls
+ * back to the disabled foreground, so it still shows where the theme gives the card border no colour.
+ */
 .group {
+  --lineage-group-border: var(
+    --vscode-editorWidget-border,
+    var(--vscode-contrastBorder, var(--vscode-disabledForeground))
+  );
   box-sizing: border-box;
   display: flex;
   align-items: center;
@@ -206,22 +221,23 @@
   gap: 8px;
   height: 56px;
   padding: 0 12px;
+  border-color: var(--lineage-group-border);
+  border-style: dashed;
   box-shadow:
     4px 4px 0 -1px var(--vscode-editorWidget-background),
-    4px 4px 0 0
-      var(
-        --vscode-editorWidget-border,
-        var(--vscode-contrastBorder, transparent)
-      ),
+    4px 4px 0 0 var(--lineage-group-border),
     8px 8px 0 -2px var(--vscode-editorWidget-background),
-    8px 8px 0 -1px
-      var(
-        --vscode-editorWidget-border,
-        var(--vscode-contrastBorder, transparent)
-      );
+    8px 8px 0 -1px var(--lineage-group-border);
+}
+
+.groupIcon {
+  flex: none;
+  color: var(--vscode-descriptionForeground);
 }
 
 .groupLabel {
+  flex: 1 1 auto;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -237,16 +253,28 @@
   outline: 2px solid var(--vscode-focusBorder);
 }
 
+/* The header is 60px (geometry.headerHeight): the 47px name block, 6px padding above and below, and a 1px border. Its height is the content box, so padding adds to it. */
 .header {
   position: relative;
   display: grid;
+  box-sizing: content-box;
   grid-template-columns: auto 1fr auto;
   gap: 2px 6px;
   align-items: center;
-  height: 56px;
+  height: 47px;
   padding: 6px 8px;
   border-bottom: 1px solid
     var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent));
+}
+
+/* A start or selected card adds its relation line (geometry.relationHeight, 16px: a 2px row gap and a 14px line): 76px in all. */
+.headerRelation {
+  height: 63px;
+}
+
+/* A card with no column list gets geometry.headerClearance (5px) more padding under the header, which keeps the expander bubbles clear of the text. */
+.node.noColumns .header {
+  padding-bottom: 11px;
 }
 
 .type {
@@ -268,11 +296,61 @@
   text-transform: uppercase;
 }
 
+/* The name block is a fixed 47px: title, file line and chips. Without a file line, the title and chips centre. */
+.names {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-width: 0;
+  height: 47px;
+}
+
 .label {
   overflow: hidden;
   font-weight: 600;
+  line-height: 16px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* The file name, muted and monospace, under the title. */
+.file {
+  overflow: hidden;
+  color: var(--vscode-descriptionForeground);
+  font-family: var(--vscode-editor-font-family);
+  font-size: 10px;
+  line-height: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Package and resource type as quiet chips: a theme-coloured outline and muted text, legible in every theme. */
+.tags {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+  margin-top: 3px;
+}
+
+.tag {
+  overflow: hidden;
+  min-width: 0;
+  padding: 0 5px;
+  border: 1px solid
+    color-mix(in srgb, var(--vscode-foreground) 22%, transparent);
+  border-radius: 3px;
+  color: var(--vscode-descriptionForeground);
+  font-size: 10px;
+  line-height: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.typeTag {
+  flex: none;
+  font-size: 9px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
 }
 
 .subtitle {
@@ -280,6 +358,7 @@
   overflow: hidden;
   color: var(--vscode-descriptionForeground);
   font-size: 11px;
+  line-height: 14px;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -311,6 +390,29 @@
   justify-content: space-between;
   height: 28px;
   padding: 2px 4px;
+}
+
+/*
+ * An unpinned card (not the start or selected card) keeps its actions row out of the layout, so it takes no space;
+ * geometry.tableHeight leaves the row out of it. Hovering it, or focus inside it, shows the row as a strip over the
+ * card's bottom edge, so the card keeps its size and the routed edges stay attached.
+ */
+.node:not(.pinned) .actions {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 2;
+  visibility: hidden;
+  border-top: 1px solid
+    var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent));
+  border-radius: 0 0 4px 4px;
+  background: var(--vscode-editorWidget-background);
+}
+
+.node:not(.pinned):hover .actions,
+.node:not(.pinned):focus-within .actions {
+  visibility: visible;
 }
 
 /* Group chips sit under the actions row, two to a row; each row is 24px tall, as `geometry.chipRowHeight` is. */
@@ -417,6 +519,75 @@
   line-height: 24px;
 }
 
+/* A layered card is positioned for its top and bottom bubbles, which sit on its border. */
+.node.layered {
+  position: relative;
+}
+
+/* The expander bubbles: centred on the top or bottom border, sticking out by half their height. */
+.node .bubble {
+  position: absolute;
+  left: 50%;
+  z-index: 1;
+  box-sizing: border-box;
+  min-width: 40px;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: 9px;
+  line-height: 16px;
+  transform: translateX(-50%);
+}
+
+.node .bubbleTop {
+  top: -9px;
+}
+
+.node .bubbleBottom {
+  bottom: -9px;
+}
+
+.node .bubble[aria-pressed="true"] {
+  background: var(--vscode-button-background);
+  color: var(--vscode-button-foreground);
+}
+
+/* A layer band is washed with its colour behind the cards; high-contrast themes get a dashed outline instead. */
+.band {
+  position: relative;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--band-colour) 10%, transparent);
+  pointer-events: none;
+}
+
+:global(.vscode-high-contrast) .band,
+:global(.vscode-high-contrast-light) .band {
+  background: none;
+  border: 1px dashed var(--band-colour);
+}
+
+.bandLabel {
+  position: absolute;
+  top: 4px;
+  left: 8px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--band-colour);
+}
+
+.edgeLabel {
+  fill: var(--vscode-descriptionForeground);
+  font-size: 11px;
+  text-anchor: middle;
+  paint-order: stroke;
+  stroke: var(--vscode-editor-background);
+  stroke-width: 3px;
+}
+
 .handle {
   width: 6px;
   min-width: 0;
@@ -435,23 +606,18 @@
 }
 
 .canvas :global(.lineage-table-edge-selected) path {
-  stroke: var(--vscode-focusBorder);
+  stroke: var(--lineage-selected-stroke);
   stroke-width: 2;
 }
 
 .canvas :global(.lineage-column-edge) path {
-  stroke: var(--vscode-charts-blue, var(--vscode-focusBorder));
+  stroke: var(--lineage-column-stroke);
   stroke-width: 1.5;
 }
 
 .canvas :global(.lineage-column-edge.indirect) path {
-  stroke: var(--vscode-charts-purple, var(--vscode-descriptionForeground));
+  stroke: var(--lineage-indirect-stroke);
   stroke-dasharray: 6 4;
-}
-
-.canvas :global(.lineage-ref-edge) path {
-  stroke: var(--vscode-charts-orange, var(--vscode-descriptionForeground));
-  stroke-dasharray: 2 3;
 }
 
 .legend {
@@ -491,14 +657,6 @@
   border-top-style: dashed;
   border-top-color: var(
     --vscode-charts-purple,
-    var(--vscode-descriptionForeground)
-  );
-}
-
-.swatch.ref {
-  border-top-style: dotted;
-  border-top-color: var(
-    --vscode-charts-orange,
     var(--vscode-descriptionForeground)
   );
 }
@@ -552,16 +710,26 @@
 
 /* Zoomed out: the card keeps its size; detail hides but stays mounted, so handles hold and nothing re-lays out. */
 .zoomedOut .subtitle {
+  visibility: hidden;
+}
+
+.zoomedOut .file,
+.zoomedOut .tags {
   display: none;
 }
 
 .zoomedOut .actions,
+.zoomedOut .bubble,
 .zoomedOut .groupChips,
 .zoomedOut .columns {
   visibility: hidden;
 }
 
-.zoomedOut .label,
+.zoomedOut .label {
+  font-size: 26px;
+  line-height: 32px;
+}
+
 .zoomedOut .groupLabel {
   font-size: 26px;
 }

@@ -1,0 +1,19 @@
+name: lineage_layers
+version: 1.0.0
+config-version: 2
+profile: lineage_layers
+model-paths:
+  - models
+seed-paths:
+  - seeds
+models:
+  lineage_layers:
+    13_staging:
+      +materialized: view
+      +schema: staging
+    21_intermediate:
+      +materialized: table
+      +schema: intermediate
+    31_marts:
+      +materialized: table
+      +schema: marts

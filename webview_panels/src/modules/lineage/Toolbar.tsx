@@ -62,6 +62,12 @@ const EdgeSettings = ({
   </div>
 );
 
+const CONNECTIONS: { value: lineage.Connections; label: string }[] = [
+  { value: "dbt", label: "dbt dependencies" },
+  { value: "declared", label: "Declared relationships" },
+  { value: "both", label: "Both" },
+];
+
 const RefSettings = ({
   settings,
   change,
@@ -70,11 +76,20 @@ const RefSettings = ({
   change: Change;
 }) => (
   <div className={styles.menu}>
-    <Check
-      label="Show relationships"
-      checked={settings.showRefs}
-      onChange={(showRefs) => change({ showRefs })}
-    />
+    <div role="radiogroup" aria-label="Connections">
+      {CONNECTIONS.map(({ value, label }) => (
+        <label key={value}>
+          <input
+            type="radio"
+            name="connections"
+            value={value}
+            checked={settings.connections === value}
+            onChange={() => change({ connections: value })}
+          />
+          {label}
+        </label>
+      ))}
+    </div>
     {REF_SOURCES.map((source) => (
       <Check
         key={source}
@@ -113,7 +128,7 @@ const RefSettings = ({
   </div>
 );
 
-/** The toolbar: edge settings, the relationship overlay, help and reset. */
+/** The toolbar: edge settings, the connections choice, help and reset. */
 const Toolbar = ({
   settings,
   change,
@@ -140,11 +155,11 @@ const Toolbar = ({
       button={
         <button
           type="button"
-          aria-pressed={settings.showRefs}
-          title="Relationships"
+          aria-pressed={settings.connections !== "dbt"}
+          title="Connections"
         >
           <span className="codicon codicon-references" />
-          <span className={styles.buttonLabel}>Relationships</span>
+          <span className={styles.buttonLabel}>Connections</span>
         </button>
       }
     >

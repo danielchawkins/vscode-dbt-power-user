@@ -2,7 +2,6 @@ import * as path from "node:path";
 import type { TextDocument, TextEditor } from "vscode";
 import { isMap, isScalar, isSeq, parseDocument, type YAMLMap } from "yaml";
 import type { SourceMetaMap, SourceTable } from "../../core/manifest/types";
-import { RESOURCE_TYPE_SOURCE } from "../../core/manifest/types";
 import type { Manifest } from "../../projects/manifest/manifestTypes";
 
 /** A source table resolved to the dbt unique_id key the lineage should root at (`source.<pkg>.<source>.<table>`). */
@@ -42,7 +41,7 @@ function getSourceTablesForFile(
         continue;
       }
       matches.push({
-        key: `${RESOURCE_TYPE_SOURCE}.${source.package_name}.${source.name}.${table.name}`,
+        key: table.unique_id,
         sourceName: source.name,
         table,
       });

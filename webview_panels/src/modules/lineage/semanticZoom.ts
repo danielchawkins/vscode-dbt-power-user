@@ -2,7 +2,7 @@ import { useStore } from "@xyflow/react";
 import { createContext, use } from "react";
 
 /** Below this zoom, cards keep their size and show only a larger badge and title. */
-const ZOOM_OUT_BELOW = 0.5;
+export const ZOOM_OUT_BELOW = 0.5;
 
 /** True when semantic zoom is `enabled` and `zoom` is below `ZOOM_OUT_BELOW`. */
 export const isZoomedOut = (zoom: number, enabled: boolean): boolean =>

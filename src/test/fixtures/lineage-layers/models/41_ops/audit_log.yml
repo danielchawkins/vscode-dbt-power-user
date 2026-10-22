@@ -1,0 +1,9 @@
+version: 2
+
+models:
+  - name: audit_log
+    description: Ops audit trail. Hidden from lineage, so its edges are not drawn.
+    config:
+      meta:
+        lineage:
+          hidden: true
