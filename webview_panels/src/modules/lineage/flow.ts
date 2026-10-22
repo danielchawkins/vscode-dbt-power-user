@@ -91,6 +91,9 @@ export interface FlowInput {
   errors: Record<string, string[]>;
   selectedTable?: string | undefined;
   selectedColumn?: [string, string] | undefined;
+  /** Which connections are drawn: table and group edges under `dbt` and `both`; absent means dbt dependencies. */
+  connections?: lineage.Connections | undefined;
+  /** The relationships to draw, already filtered for the connections and the sources. */
   refs: readonly lineage.LineageRef[];
   /** Empty column lists explain that strict static analysis is missing. */
   columnsNeedStrict?: boolean | undefined;
@@ -113,12 +116,28 @@ function tracedColumns(
   return traced;
 }
 
+/** Table and group edges are drawn under `dbt` and `both`; under `declared` only relationships and column edges are. */
+const drawsTableEdges = (input: FlowInput): boolean =>
+  input.connections !== "declared";
+
+/**
+ * The `[parent, child]` pairs that rank the cards top-down or left to right. Under `declared` no table edge is drawn,
+ * so the relationships rank the cards, the referenced table upstream of the declaring one.
+ */
+function rankingEdges(input: FlowInput): [string, string][] {
+  return drawsTableEdges(input)
+    ? [...input.data.edges, ...(input.groupEdges ?? [])]
+    : input.refs.map((ref) => [ref.to.table, ref.from.table]);
+}
+
 /** React Flow edges: table edges, column edges anchored to listed columns, and relationships. */
 function toEdges(
   input: FlowInput,
   listed: (table: string) => lineage.LineageColumn[] | undefined,
 ): Edge[] {
   const { data, selectedTable } = input;
+  // Declared-only drawing shows no dbt table or group edges; column edges remain, present only under a column trace.
+  const tableEdges = drawsTableEdges(input);
   const handle = (side: "in" | "out", [table, column]: [string, string]) => {
     const match = listed(table)?.find(
       (c) => c.name.toLowerCase() === column.toLowerCase(),
@@ -128,7 +147,7 @@ function toEdges(
   const touchesSelection = (a: string, b: string) =>
     selectedTable !== undefined && (a === selectedTable || b === selectedTable);
   return [
-    ...data.edges.map(([parent, child]) => ({
+    ...(tableEdges ? data.edges : []).map(([parent, child]) => ({
       id: `t:${parent}->${child}`,
       source: parent,
       target: child,
@@ -138,7 +157,7 @@ function toEdges(
         ? "lineage-table-edge lineage-table-edge-selected"
         : "lineage-table-edge",
     })),
-    ...(input.groupEdges ?? []).map(([parent, child]) => ({
+    ...(tableEdges ? (input.groupEdges ?? []) : []).map(([parent, child]) => ({
       id: `g:${parent}->${child}`,
       source: parent,
       target: child,
@@ -157,14 +176,15 @@ function toEdges(
           ? "lineage-column-edge indirect"
           : "lineage-column-edge",
     })),
+    // The referenced (one) side is the source, so it sits upstream of the declaring (many) side, as in the dbt view.
     ...input.refs.map((ref) => ({
       id: `r:${ref.id}`,
-      source: ref.from.table,
-      target: ref.to.table,
+      type: "relationship",
+      source: ref.to.table,
+      target: ref.from.table,
       sourceHandle: "out",
       targetHandle: "in",
-      className: "lineage-ref-edge",
-      label: `${ref.from.columns.join(", ")} → ${ref.to.columns.join(", ")}`,
+      data: { ref },
     })),
   ];
 }
@@ -225,13 +245,14 @@ function placeLayered(
       relation,
     );
   };
+  const tableEdges = drawsTableEdges(input);
   const tableRoutes = [
-    ...data.edges.map(([parent, child]) => ({
+    ...(tableEdges ? data.edges : []).map(([parent, child]) => ({
       id: `t:${parent}->${child}`,
       parent,
       child,
     })),
-    ...(input.groupEdges ?? []).map(([parent, child]) => ({
+    ...(tableEdges ? (input.groupEdges ?? []) : []).map(([parent, child]) => ({
       id: `g:${parent}->${child}`,
       parent,
       child,
@@ -257,6 +278,9 @@ function placeLayered(
     start: data.start ?? "",
     nodes,
     tableRoutes,
+    rankEdges: rankingEdges(input).filter(([parent, child]) =>
+      both(parent, child),
+    ),
     columnRoutes,
     relationshipRoutes,
     traceOn: data.columnEdges.length > 0,
@@ -287,10 +311,10 @@ function placeLayered(
  * relationship edge has no arrowhead.
  */
 function arrowColour(edge: Edge): string | undefined {
-  const classes = edge.className ?? "";
-  if (classes.includes("lineage-ref-edge")) {
+  if (edge.type === "relationship") {
     return undefined;
   }
+  const classes = edge.className ?? "";
   if (classes.includes("lineage-column-edge")) {
     return classes.includes("indirect")
       ? "var(--lineage-indirect-stroke)"
@@ -333,7 +357,7 @@ export function toFlow(input: FlowInput): {
     placed?.positions ??
     layout(
       [...data.tables.map((t) => t.table), ...groups.map((g) => g.id)],
-      [...data.edges, ...(input.groupEdges ?? [])],
+      rankingEdges(input),
       heightOf,
     );
   const tableNodes: TableNode[] = data.tables.map((t) => ({

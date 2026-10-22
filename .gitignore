@@ -70,3 +70,6 @@ mcp.json
 .agents/plans
 .agents/sessions
 .agents/strands.toml
+
+# Agent scratch: build and test logs, never committed.
+scratch/

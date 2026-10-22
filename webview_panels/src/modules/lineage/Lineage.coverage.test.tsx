@@ -61,8 +61,8 @@ describe("Lineage control coverage", () => {
         "Settings open": stateOf(({ user }) =>
           activate(user, "button", "Settings"),
         ),
-        "Relationships open": stateOf(({ user }) =>
-          activate(user, "button", "Relationships"),
+        "Connections open": stateOf(({ user }) =>
+          activate(user, "button", "Connections"),
         ),
         "Help open": stateOf(({ user }) => activate(user, "button", "Help")),
         "node expanded": stateOf(async ({ user, container }) => {

@@ -33,6 +33,8 @@ import { GroupNode } from "./GroupNode";
 import { LayerBand } from "./LayerBand";
 import styles from "./lineageGraph.module.css";
 import MissingLineageMessage from "./MissingLineageMessage";
+import { RelationshipEdgeView } from "./RelationshipEdge";
+import relationStyles from "./relationshipEdges.module.css";
 import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
 import { RoutedEdge } from "./RoutedEdge";
 import { isZoomedOut, SemanticZoomContext } from "./semanticZoom";
@@ -46,7 +48,10 @@ import type { ResolvedSettings } from "./viewModel";
 import { resolveSettings, TableActionsContext, visibleRefs } from "./viewModel";
 
 const nodeTypes = { table: TableNode, group: GroupNode, band: LayerBand };
-const edgeTypes = { routed: RoutedEdge };
+const edgeTypes = {
+  routed: RoutedEdge,
+  relationship: RelationshipEdgeView,
+};
 
 /** Fit options whose pixel padding keeps the graph clear of the controls, the legend and the minimap when shown. */
 const fitOptions = (minimap?: {
@@ -108,11 +113,15 @@ const useSettings = () => {
   return { settings, loaded, change };
 };
 
-/** The relationships of the Current Project, fetched while the overlay is on and again after each redraw. */
+/**
+ * The relationships of the Current Project, fetched while declared relationships are drawn and
+ * again after each redraw.
+ */
 const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
   const [refs, setRefs] = useState<lineage.LineageRef[]>([]);
+  const declared = settings.connections !== "dbt";
   useEffect(() => {
-    if (!settings.showRefs) {
+    if (!declared) {
       return;
     }
     let live = true;
@@ -122,7 +131,7 @@ const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
     return () => {
       live = false;
     };
-  }, [settings.showRefs, settings.includeSourcesInInference, drawnKey]);
+  }, [declared, settings.includeSourcesInInference, drawnKey]);
   return refs;
 };
 
@@ -137,7 +146,7 @@ const Legend = () => (
       Non-select
     </span>
     <span>
-      <span className={`${styles.swatch} ${styles.ref}`} />
+      <span className={relationStyles.legendLine} />
       Relationship
     </span>
   </div>
@@ -350,6 +359,7 @@ const Graph = (): React.JSX.Element => {
       selectedTable: graph.selectedTable,
       selectedColumn: graph.selectedColumn,
       columnsNeedStrict,
+      connections: settings.connections,
       refs: visibleRefs(refs, settings, drawn),
       layout: settings.layout,
     });

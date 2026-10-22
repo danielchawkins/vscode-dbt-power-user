@@ -18,6 +18,7 @@ import {
   isNumber,
   isString,
   messageGuard,
+  oneOf,
   optional,
   requestCommandsOf,
   shape,
@@ -136,7 +137,13 @@ export type HostMessage =
   | { command: "projectSaved" };
 
 /** The relationship sources the ERD overlay can show. */
-export type RefSource = "test" | "contract" | "semantic" | "inferred";
+export type RefSource = "test" | "contract" | "meta" | "semantic" | "inferred";
+
+/**
+ * Which connections the lineage canvas draws: dbt table and column edges (`dbt`), declared relationship edges
+ * (`declared`, with column edges only while a column trace is active), or both.
+ */
+export type Connections = "dbt" | "declared" | "both";
 
 /** A primary/foreign key relationship from `getRelationships`; `confidence` is set for inferred ones. */
 export interface LineageRef {
@@ -160,8 +167,8 @@ export interface LineageSettings {
   showSelectEdges: boolean;
   showNonSelectEdges: boolean;
   defaultExpansion: number;
-  /** The ERD overlay toggle; absent means on. */
-  showRefs?: boolean | undefined;
+  /** Which connections are drawn; absent means dbt dependencies. */
+  connections?: Connections | undefined;
   enabledRefSources?: Partial<Record<RefSource, boolean>> | undefined;
   /** The inferred-relationship confidence floor, 0 to 1. */
   inferenceConfidenceThreshold?: number | undefined;
@@ -236,9 +243,12 @@ const optionalRequest = <P>(params: Fields<NoInfer<P>>) => ({
 
 const optionalBoolean = optional(isBoolean);
 
+const isConnections = oneOf("dbt", "declared", "both");
+
 const isRefSources: Check<Partial<Record<RefSource, boolean>>> = shape({
   test: optionalBoolean,
   contract: optionalBoolean,
+  meta: optionalBoolean,
   semantic: optionalBoolean,
   inferred: optionalBoolean,
 });
@@ -282,7 +292,7 @@ const panelFields: CommandFields<PanelMessage> = {
     showSelectEdges: optionalBoolean,
     showNonSelectEdges: optionalBoolean,
     defaultExpansion: optional(isNumber),
-    showRefs: optionalBoolean,
+    connections: optional(isConnections),
     enabledRefSources: optional(isRefSources),
     inferenceConfidenceThreshold: optional(isNumber),
     includeSourcesInInference: optionalBoolean,

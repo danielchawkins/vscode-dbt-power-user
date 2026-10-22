@@ -15,11 +15,14 @@ type StoredLineageSettings = Omit<
   | "title"
 >;
 
+/** What global state may hold: `showRefs` is the overlay toggle that `connections` replaced, kept for old stores. */
+type StoredView = Partial<lineage.LineageSettings> & { showRefs?: boolean };
+
 /** Every key `storedLineageSettings` keeps; the record type makes a new `LineageSettings` key a compile error here. */
 const STORED_KEYS: Record<keyof StoredLineageSettings, true> = {
   showSelectEdges: true,
   showNonSelectEdges: true,
-  showRefs: true,
+  connections: true,
   enabledRefSources: true,
   inferenceConfidenceThreshold: true,
   includeSourcesInInference: true,
@@ -55,14 +58,14 @@ type Store = Pick<
 
 /** The lineage view settings: the stored view settings over the defaults, and the capped user setting. */
 export function readLineageSettings(store: Store): lineage.LineageSettings {
-  const stored =
-    store.getFromGlobalState<Partial<lineage.LineageSettings>>(
-      LINEAGE_SETTINGS_KEY,
-    ) ?? {};
+  const { showRefs, ...stored } =
+    store.getFromGlobalState<StoredView>(LINEAGE_SETTINGS_KEY) ?? {};
   return {
     showSelectEdges: true,
     showNonSelectEdges: false,
     ...stored,
+    // A store written before `connections` carries only the old overlay toggle: on means both, off means dbt.
+    connections: stored.connections ?? (showRefs === true ? "both" : "dbt"),
     defaultExpansion: Math.min(readSetting("lineage.defaultExpansion"), 5),
     maxNeighbours: Math.max(
       0,

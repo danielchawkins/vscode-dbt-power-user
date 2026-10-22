@@ -30,6 +30,8 @@ export interface LayeredFlowInput {
   start: string;
   nodes: readonly LayeredNode[];
   tableRoutes: readonly TableRoute[];
+  /** The `[parent, child]` pairs that rank the cards; absent means the table routes' pairs. */
+  rankEdges?: readonly (readonly [string, string])[] | undefined;
   columnRoutes: readonly LayeredColumnEdge[];
   relationshipRoutes: readonly RelationshipRoute[];
   traceOn: boolean;
@@ -44,9 +46,9 @@ export interface LayeredFlow {
 }
 
 export function layeredFlow(input: LayeredFlowInput): LayeredFlow {
-  const edges = input.tableRoutes.map(
-    (edge) => [edge.parent, edge.child] as const,
-  );
+  const edges =
+    input.rankEdges ??
+    input.tableRoutes.map((edge) => [edge.parent, edge.child] as const);
   const attempt = (otherSide: Side) => {
     const plan = layoutLayered(input.start, input.nodes, edges, otherSide);
     const boxes = new Map(

@@ -30,7 +30,7 @@ interface ManifestResource {
   identifier?: string | null;
   source_name?: string | null;
   columns: { [columnName: string]: ColumnMetaData };
-  config: { materialized?: string | null };
+  config: { materialized?: string | null; meta?: Record<string, unknown> };
   depends_on: DependsOn;
   meta: Meta;
   version?: string | number | null;
@@ -175,6 +175,9 @@ export interface NodeMetaData {
   tags?: readonly string[] | undefined;
   /** The node's file path relative to its package root, as the manifest records it. */
   original_file_path?: string | undefined;
+  /** The model version, and the latest version of the same model; both absent for an unversioned node. */
+  version?: string | number | null | undefined;
+  latest_version?: string | number | null | undefined;
 }
 
 export interface ColumnMetaData {
@@ -234,6 +237,8 @@ interface SourceMetaData {
 }
 
 export interface SourceTable {
+  /** The table's real unique_id, e.g. `source.pkg.group.table`. */
+  unique_id: string;
   name: string;
   identifier?: string | null | undefined;
   /** This table's own database and schema; a source group's first table does not speak for the rest. */
@@ -244,6 +249,8 @@ export interface SourceTable {
   columns: { [columnName: string]: ColumnMetaData };
   /** This table's own `meta`, which the source group's `meta` does not carry. */
   meta?: Meta;
+  /** This table's `config.meta`, which Fusion may place instead of `meta`. */
+  configMeta?: Meta;
 }
 
 interface DocMetaData {
@@ -387,10 +394,11 @@ export interface GraphMetaMap {
  * Source of a relationship ref.
  * - `test`: derived from a dbt `relationships` data test
  * - `contract`: derived from a `foreign_key` model contract constraint
+ * - `meta`: declared in `meta.relationships` on a node or source table
  * - `semantic`: derived from paired semantic-layer primary/foreign entities
  * - `inferred`: derived from naming-convention inference
  */
-type RefSource = "test" | "contract" | "semantic" | "inferred";
+type RefSource = "test" | "contract" | "meta" | "semantic" | "inferred";
 
 export type Cardinality =
   | "one-to-one"

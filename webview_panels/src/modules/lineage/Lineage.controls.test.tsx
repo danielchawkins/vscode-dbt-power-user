@@ -157,27 +157,30 @@ describe("Lineage Settings popover", () => {
   });
 });
 
-describe("Lineage Relationships popover", () => {
+describe("Lineage Connections popover", () => {
   const openRelationships = async () => {
     const opened = await openLineage();
-    const button = await activate(opened.user, "button", "Relationships");
+    const button = await press(opened.user, "button", "Connections");
+    await press(opened.user, "radio", "Declared relationships");
     return { ...opened, button };
   };
 
-  it("opens and hides the overlay with Show relationships", async () => {
-    const { user } = await openLineage();
-    const button = await press(user, "button", "Relationships");
+  it("picks each connections choice and posts it", async () => {
+    const { user, button } = await openRelationships();
     expect(button).toHaveAttribute("aria-expanded", "true");
     expect(button).toHaveAttribute("aria-pressed", "true");
-    const show = await press(user, "checkbox", "Show relationships");
-    expect(show).not.toBeChecked();
+    await press(user, "radio", "Both");
+    await expectPosted("persistLineageSettings", {
+      args: { params: { connections: "both" } },
+    });
+    await press(user, "radio", "dbt dependencies");
     expect(button).toHaveAttribute("aria-pressed", "false");
     await expectPosted("persistLineageSettings", {
-      args: { params: { showRefs: false } },
+      args: { params: { connections: "dbt" } },
     });
   });
 
-  it.each(["test", "contract", "semantic", "inferred"])(
+  it.each(["test", "contract", "meta", "semantic", "inferred"])(
     "toggles the %s source off",
     async (source) => {
       const { user } = await openRelationships();
@@ -710,10 +713,13 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "spinbutton:Default expansion",
   "checkbox:Show select (direct) column edges",
   "checkbox:Show non-select (indirect) column edges",
-  "button:Relationships",
-  "checkbox:Show relationships",
+  "button:Connections",
+  "radio:dbt dependencies",
+  "radio:Declared relationships",
+  "radio:Both",
   "checkbox:test",
   "checkbox:contract",
+  "checkbox:meta",
   "checkbox:semantic",
   "checkbox:inferred",
   "slider:Inferred confidence ≥ 0.80",

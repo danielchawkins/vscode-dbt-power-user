@@ -372,3 +372,130 @@ describe("toFlow layered layout", () => {
     );
   });
 });
+
+describe("toFlow connections", () => {
+  const ref: lineage.LineageRef = {
+    id: "ref1",
+    from: { table: "child", columns: ["hub_id"] },
+    to: { table: "hub", columns: ["id"] },
+    cardinality: "many-to-one",
+    source: "meta",
+  };
+  const mixed = (
+    connections?: lineage.Connections,
+    layout?: lineage.LineageLayout,
+  ) => ({
+    data: {
+      start: "hub",
+      tables: [table("hub"), table("child")],
+      edges: [["hub", "child"]] as [string, string][],
+      columnEdges: [
+        {
+          source: ["hub", "id"] as [string, string],
+          target: ["child", "hub_id"] as [string, string],
+          type: "direct" as const,
+        },
+      ],
+    },
+    columns: {},
+    columnTables: [],
+    expansions: [],
+    errors: {},
+    // The caller filters refs by connections; under dbt none reach toFlow.
+    refs: connections === "dbt" || connections === undefined ? [] : [ref],
+    groups: [
+      {
+        id: "g:1",
+        label: "finance",
+        count: 1,
+        edge: ["hub", "g:1"] as [string, string],
+      },
+    ],
+    groupEdges: [["hub", "g:1"]] as [string, string][],
+    connections,
+    layout,
+  });
+  const edgeIds = (connections?: lineage.Connections) =>
+    toFlow(mixed(connections))
+      .edges.map((e) => e.id)
+      .sort();
+
+  it("draws only dbt table, group and column edges under dbt", () => {
+    expect(edgeIds("dbt")).toEqual([
+      "c:hub.id->child.hub_id",
+      "g:hub->g:1",
+      "t:hub->child",
+    ]);
+  });
+
+  it("treats an absent connections as dbt", () => {
+    expect(edgeIds(undefined)).toEqual(edgeIds("dbt"));
+  });
+
+  it("draws only the relationship and column edges under declared", () => {
+    expect(edgeIds("declared")).toEqual(["c:hub.id->child.hub_id", "r:ref1"]);
+  });
+
+  it("draws every kind under both", () => {
+    expect(edgeIds("both")).toEqual([
+      "c:hub.id->child.hub_id",
+      "g:hub->g:1",
+      "r:ref1",
+      "t:hub->child",
+    ]);
+  });
+
+  it("gives each relationship edge type relationship, from the referenced side, left to right", () => {
+    for (const connections of ["declared", "both"] as const) {
+      const rel = toFlow(mixed(connections, "leftToRight")).edges.find(
+        (e) => e.id === "r:ref1",
+      );
+      expect(rel).toMatchObject({
+        type: "relationship",
+        source: "hub",
+        target: "child",
+        data: { ref },
+      });
+    }
+  });
+
+  it("ranks the referenced table upstream of the declaring table under declared, left to right", () => {
+    const { nodes } = toFlow(mixed("declared", "leftToRight"));
+    const hub = nodes.find((n) => n.id === "hub");
+    const child = nodes.find((n) => n.id === "child");
+    expect(hub!.position.x).toBeLessThan(child!.position.x);
+  });
+
+  it("routes each relationship edge in the layered layout, with no arrowhead", () => {
+    const rel = toFlow(mixed("both")).edges.find((e) => e.id === "r:ref1");
+    expect(rel).toMatchObject({
+      type: "routed",
+      source: "hub",
+      target: "child",
+    });
+    expect(rel?.markerEnd).toBeUndefined();
+  });
+
+  it("under layered and declared, draws only relationship and column edges, with the referenced table above", () => {
+    const { nodes, edges } = toFlow(mixed("declared"));
+    expect(edges.map((e) => e.id).sort()).toEqual([
+      "c:hub.id->child.hub_id",
+      "r:ref1",
+    ]);
+    expect(edges.every((e) => e.type === "routed")).toBe(true);
+    const y = (id: string) => nodes.find((n) => n.id === id)?.position.y ?? NaN;
+    expect(y("hub")).toBeLessThan(y("child"));
+  });
+
+  it("under layered and both, routes every kind of edge", () => {
+    const { edges } = toFlow(mixed("both"));
+    expect(edges.map((e) => e.id).sort()).toEqual([
+      "c:hub.id->child.hub_id",
+      "g:hub->g:1",
+      "r:ref1",
+      "t:hub->child",
+    ]);
+    expect(edges.every((e) => e.type === "routed")).toBe(true);
+    expect(edges.find((e) => e.id === "r:ref1")?.markerEnd).toBeUndefined();
+  });
+});

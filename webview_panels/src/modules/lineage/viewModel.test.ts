@@ -169,12 +169,17 @@ describe("lineage view model", () => {
     ];
     const settings = resolveSettings({
       enabledRefSources: { semantic: false },
+      connections: "both",
     });
     expect(
       visibleRefs(refs, settings, new Set(["a", "b"])).map((r) => r.id),
     ).toEqual(["t", "high"]);
     expect(
-      visibleRefs(refs, { ...settings, showRefs: false }, new Set(["a", "b"])),
+      visibleRefs(
+        refs,
+        { ...settings, connections: "dbt" },
+        new Set(["a", "b"]),
+      ),
     ).toEqual([]);
   });
 });
