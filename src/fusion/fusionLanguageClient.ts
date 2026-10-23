@@ -221,6 +221,11 @@ class FusionLanguageClientImpl implements FusionClient {
       if (this.disposed) {
         return;
       }
+      // The checkout may have gone during the backoff.
+      if (!projectFileAvailable(this.options, this.deps.rootExists)) {
+        this.setState("stopped");
+        return;
+      }
     }
 
     try {

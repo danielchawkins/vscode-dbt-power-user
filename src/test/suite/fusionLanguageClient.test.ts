@@ -1092,6 +1092,45 @@ describe("FusionLanguageClient lifecycle", () => {
     client.dispose();
   });
 
+  it("does not restart when the project file goes during the restart backoff", async () => {
+    const streams = makeStreams();
+    const server = new FakeReverseSocketServer(streams);
+    const processAdapter = new FakeExitingProcess();
+    const spawnProcess = vi.fn(() => processAdapter as any);
+    let rootPresent = true;
+
+    const factory = new DefaultFusionClientFactory({
+      rootExists: () => rootPresent,
+      listenForServer: async () => server,
+      acceptWithProcessExit: async () => streams,
+      spawnProcess,
+      createLanguageClient: async () => makeLanguageClient() as any,
+      sleep: async () => {
+        rootPresent = false;
+      },
+    });
+    const client = factory.create({
+      project: makeProject(),
+      executable: {
+        path: "/opt/dbt",
+        version: { major: 2, minor: 0, patch: 6, raw: "dbt 2.0.6" },
+        env: {},
+      },
+      launch: makeLaunch(),
+      commandPrefix: "fusionPowerUser:test:",
+      outputChannel: channel(),
+    });
+    await waitForState(client, "running");
+
+    processAdapter.exit();
+    await waitForState(client, "stopped");
+    await flushAsync();
+
+    expect(spawnProcess).toHaveBeenCalledTimes(1);
+
+    client.dispose();
+  });
+
   it("does not start a client whose project file is already gone", async () => {
     const streams = makeStreams();
     const server = new FakeReverseSocketServer(streams);

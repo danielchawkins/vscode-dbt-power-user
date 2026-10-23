@@ -27,10 +27,10 @@ import { findProjectRootForFile } from "./projectDiscovery";
 /** How a Declared Project came to be declared. */
 export type DeclaredProjectOrigin = "explicit" | "folderRoot" | "openedFile";
 
-/** Languages whose open documents can declare a project. */
 /** Both project file names; a simple, non-recursive glob, so VS Code does not filter it with `files.watcherExclude`. */
 const PROJECT_FILE_GLOB = "dbt_project.{yml,yaml}";
 
+/** Languages whose open documents can declare a project. */
 const DECLARING_LANGUAGES: ReadonlySet<string> = new Set([
   "jinja-sql",
   "sql",
