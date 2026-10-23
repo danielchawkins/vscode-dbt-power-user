@@ -200,10 +200,6 @@ class FusionLanguageClientImpl implements FusionClient {
     if (this.disposed) {
       return;
     }
-    if (!projectFileAvailable(this.options, this.deps.rootExists)) {
-      this.setState("stopped");
-      return this.teardownTransport();
-    }
 
     this.setState(reason === "initial" ? "starting" : "restarting");
     await this.teardownTransport();
@@ -221,11 +217,11 @@ class FusionLanguageClientImpl implements FusionClient {
       if (this.disposed) {
         return;
       }
-      // The checkout may have gone during the backoff.
-      if (!projectFileAvailable(this.options, this.deps.rootExists)) {
-        this.setState("stopped");
-        return;
-      }
+    }
+    // After the backoff, since the checkout may have gone during it.
+    if (!projectFileAvailable(this.options, this.deps.rootExists)) {
+      this.setState("stopped");
+      return;
     }
 
     try {
