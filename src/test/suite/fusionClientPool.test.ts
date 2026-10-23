@@ -33,7 +33,7 @@ import type {
 } from "../../projects/registry/projectRegistry";
 import { schemaOriginLaunchEnv } from "../../projects/registry/schemaOrigin";
 import { CONFIGURATION_SECTION } from "../../settings";
-import { flushAsync } from "../async";
+import { flushAsync as flushMicrotasks } from "../async";
 import { createMockLogOutputChannel } from "../mock/vscode";
 import { declaredProject, fakeProjectEnvironments } from "../projectHarness";
 
@@ -42,6 +42,15 @@ const folder: WorkspaceFolder = {
   name: "general",
   index: 0,
 };
+
+/** The pool's reconcile debounce; registry changes apply once this much time passes without another. */
+const RECONCILE_DEBOUNCE_MS = 500;
+
+/** Runs the debounced reconcile, then the work it queues. Call after a registry change. */
+async function flushAsync(): Promise<void> {
+  await vi.advanceTimersByTimeAsync(RECONCILE_DEBOUNCE_MS);
+  await flushMicrotasks();
+}
 
 const makeProject = (name: string, rootPath: string) =>
   declaredProject(name, rootPath, folder);
@@ -106,6 +115,8 @@ describe("FusionClientPool", () => {
   let channels: Map<string, LogOutputChannel>;
   let pools: FusionClientPoolImpl[];
   let environments: ReturnType<typeof fakeProjectEnvironments>;
+  /** Whether a root still holds its project file; tests remove a root to model a deleted checkout. */
+  let rootExists: (root: Uri) => boolean;
 
   /** One channel per Declared Project root, as `OutputChannels.projectLog` keeps one per Declared Project. */
   function channelFor(project: DeclaredProject): LogOutputChannel {
@@ -132,6 +143,8 @@ describe("FusionClientPool", () => {
   }
 
   beforeEach(() => {
+    vi.useFakeTimers();
+    rootExists = () => true;
     terminal = { warn: vi.fn(), error: vi.fn() };
     channels = new Map();
     pools = [];
@@ -165,6 +178,7 @@ describe("FusionClientPool", () => {
 
   afterEach(async () => {
     await Promise.all(pools.splice(0).map((pool) => pool.stop()));
+    vi.useRealTimers();
     vi.mocked(workspace.onDidChangeConfiguration).mockRestore();
     vi.mocked(workspace.getConfiguration).mockRestore();
   });
@@ -179,6 +193,7 @@ describe("FusionClientPool", () => {
         readSnapshot: readProjectSnapshot,
         environments,
         outputChannel: channelFor,
+        rootExists: (root) => rootExists(root),
       },
     );
     pools.push(pool);
@@ -604,7 +619,12 @@ describe("FusionClientPool", () => {
       terminal as any,
       resolver,
       factory,
-      { readSnapshot, environments, outputChannel: channelFor },
+      {
+        readSnapshot,
+        environments,
+        outputChannel: channelFor,
+        rootExists: () => true,
+      },
     );
     pools.push(pool);
     pool.initialize();
@@ -725,6 +745,76 @@ describe("FusionClientPool", () => {
     await pool.stop();
   });
 
+  it("stops a deleted root's client exactly once and starts no client for it", async () => {
+    const general = makeProject("general", "/workspace/general");
+    const sox = makeProject("sox", "/workspace/sox");
+    const { pool, clients } = await startPool(general, sox);
+    const [, soxClient] = clients;
+    const creates = factory.create.mock.calls.length;
+
+    rootExists = (root) => root.fsPath !== sox.root.fsPath;
+    registry.setProjects([general]);
+    await flushAsync();
+    registry.setProjects([general]);
+    await flushAsync();
+
+    expect(soxClient.stop).toHaveBeenCalledTimes(1);
+    expect(pool.get(sox)).toBeUndefined();
+    expect(factory.create).toHaveBeenCalledTimes(creates);
+  });
+
+  it("stops a client whose root lost its project file while the registry still lists it", async () => {
+    const general = makeProject("general", "/workspace/general");
+    const sox = makeProject("sox", "/workspace/sox");
+    const { pool, clients } = await startPool(general, sox);
+    const [, soxClient] = clients;
+
+    rootExists = (root) => root.fsPath !== sox.root.fsPath;
+    registry.setProjects([general, sox]);
+    await flushAsync();
+
+    expect(soxClient.stop).toHaveBeenCalledTimes(1);
+    expect(pool.get(sox)).toBeUndefined();
+    expect(pool.get(general)).toBeDefined();
+  });
+
+  it("does not start a client for a root whose project file is gone when the debounce fires", async () => {
+    const general = makeProject("general", "/workspace/general");
+    const sox = makeProject("sox", "/workspace/sox");
+    const pool = createPool();
+    pool.initialize();
+    registry.setProjects([general]);
+    await flushAsync();
+
+    registry.setProjects([general, sox]);
+    rootExists = (root) => root.fsPath !== sox.root.fsPath;
+    await flushAsync();
+
+    expect(factory.create).toHaveBeenCalledTimes(1);
+    expect(pool.get(sox)).toBeUndefined();
+  });
+
+  it("applies a burst of registry changes in one reconcile, starting each new client once", async () => {
+    const general = makeProject("general", "/workspace/general");
+    const sox = makeProject("sox", "/workspace/sox");
+    const other = makeProject("other", "/workspace/other");
+    const pool = createPool();
+    pool.initialize();
+    registry.setProjects([general]);
+    await flushAsync();
+
+    registry.setProjects([general, sox]);
+    registry.setProjects([general, sox, other]);
+    registry.setProjects([general, sox]);
+    await vi.advanceTimersByTimeAsync(RECONCILE_DEBOUNCE_MS - 1);
+    expect(factory.create).toHaveBeenCalledTimes(1);
+
+    await flushAsync();
+    expect(factory.create).toHaveBeenCalledTimes(2);
+    expect(pool.get(sox)).toBeDefined();
+    expect(pool.get(other)).toBeUndefined();
+  });
+
   it("stop awaits every managed client", async () => {
     const general = makeProject("general", "/workspace/general");
     const sox = makeProject("sox", "/workspace/sox");
@@ -767,6 +857,7 @@ describe("FusionClientPool", () => {
         environments,
         outputChannel: channelFor,
         launchEnv: { resolve, onDidChange: changed.event },
+        rootExists: () => true,
       },
     );
     const project = makeProject("general", "/workspace/general");
