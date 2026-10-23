@@ -1,6 +1,11 @@
 import { drawnGraph, drawnIds, parseExpansion, prune } from "./graph";
 import type { GraphState } from "./graph";
-import { groupLabel, groupNodeId, parseGroupNodeId } from "./grouping";
+import {
+  groupLabel,
+  groupNodeId,
+  parseGroupNodeId,
+  shortGroupKey,
+} from "./grouping";
 import { layerTagOf } from "./layered";
 
 /**
@@ -27,6 +32,25 @@ export function openGroup(state: GraphState, id: string): GraphState {
       [expansion]: { ...groups, open: { ...groups.open, [key]: drawn } },
     },
   };
+}
+
+/**
+ * Reopens the saved open group `id` if it is a bucket of the applied expansion `expansion`, as `openGroup` does. `id` is
+ * a group node ID or the short key `savedGroupKey` gives it. A saved ID of another expansion, or one that is no longer a
+ * closed bucket, leaves the state as it is.
+ */
+export function restoreGroupId(
+  state: GraphState,
+  expansion: string,
+  id: string,
+): GraphState {
+  if (parseGroupNodeId(id)?.[0] === expansion) {
+    return openGroup(state, id);
+  }
+  const bucket = state.groups[expansion]?.buckets.find(
+    (b) => shortGroupKey(expansion, b.key) === id,
+  );
+  return bucket ? openGroup(state, groupNodeId(expansion, bucket.key)) : state;
 }
 
 /**

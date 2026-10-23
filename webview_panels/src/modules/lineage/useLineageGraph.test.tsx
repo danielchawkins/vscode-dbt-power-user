@@ -1,10 +1,11 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { handleIncomingResponse } from "@modules/app/requestExecutor";
+import { MAX_VIEW_STATE_STRING } from "@modules/app/viewState";
 import { act, renderHook, waitFor } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { getVsCodeApiMock } from "../../test/setup";
 import { drawnIds } from "./graph";
-import { groupNodeId } from "./grouping";
+import { groupNodeId, shortGroupKey } from "./grouping";
 import { useLineageGraph } from "./useLineageGraph";
 
 const table = (
@@ -95,6 +96,17 @@ afterEach(() => {
   getVsCodeApiMock().postMessage.mockReset();
   getVsCodeApiMock().getState.mockReset();
 });
+
+/** Four children of `a` in two folders; the first folder's name is too long for its group ID to be saved whole. */
+const LONG_FOLDER = `models/${"x".repeat(MAX_VIEW_STATE_STRING)}`;
+const LONG_GROUP_KEY = `pkg:${LONG_FOLDER}`;
+const LONG_GROUP_ID = groupNodeId("c:a", LONG_GROUP_KEY);
+const longFolderChildren = [
+  { ...table("m1", 0, 1), path: `${LONG_FOLDER}/m1.sql` },
+  { ...table("m2", 0, 1), path: `${LONG_FOLDER}/m2.sql` },
+  { ...table("m3", 0, 1), path: "models/y/m3.sql" },
+  { ...table("m4", 0, 1), path: "models/y/m4.sql" },
+];
 
 describe("useLineageGraph", () => {
   it("asks for init, expands the default levels through childTables and parentTables, and saves view state", async () => {
@@ -220,6 +232,72 @@ describe("useLineageGraph", () => {
         openGroups: [groupNodeId("c:a", "pkg:models/x")],
       }),
     );
+  });
+
+  it("keeps a group with a long ID open after a project save, saved by its short key", async () => {
+    answerRequests({
+      ...ANSWERS,
+      childTables: ({ table: t }: { table: string }) => ({
+        tables: t === "a" ? longFolderChildren : [],
+      }),
+    });
+    const { result } = renderHook(() =>
+      useLineageGraph(() => 1, vi.fn(), {
+        expansionOptions: () => ({ cap: 2, groupBy: "folder" }),
+      }),
+    );
+    await postRender("a");
+    await waitFor(() => expect(result.current.drawnKey).toBe(1));
+
+    act(() => result.current.actions.openGroup(LONG_GROUP_ID));
+    await waitFor(() =>
+      expect(result.current.graph.groups["c:a"]?.open).toEqual({
+        [LONG_GROUP_KEY]: 2,
+      }),
+    );
+
+    act(() => {
+      globalThis.dispatchEvent(
+        new MessageEvent("message", { data: { command: "projectSaved" } }),
+      );
+    });
+    await postRender("a");
+    await waitFor(() => expect(result.current.drawnKey).toBe(2));
+    expect(result.current.graph.groups["c:a"]?.open).toEqual({
+      [LONG_GROUP_KEY]: 2,
+    });
+    expect(getVsCodeApiMock().setState).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        openGroups: [shortGroupKey("c:a", LONG_GROUP_KEY)],
+      }),
+    );
+  });
+
+  it("restores a group with a long ID open on the first render from stored state", async () => {
+    answerRequests({
+      ...ANSWERS,
+      childTables: ({ table: t }: { table: string }) => ({
+        tables: t === "a" ? longFolderChildren : [],
+      }),
+    });
+    getVsCodeApiMock().getState.mockReturnValue({
+      panel: "lineage",
+      publication: "s:1",
+      start: "a",
+      expansions: ["c:a"],
+      columnTables: [],
+      openGroups: [shortGroupKey("c:a", LONG_GROUP_KEY)],
+    } as never);
+    const { result } = renderHook(() =>
+      useLineageGraph(() => 1, vi.fn(), {
+        expansionOptions: () => ({ cap: 2, groupBy: "folder" }),
+      }),
+    );
+    await postRender("a");
+    await waitFor(() => expect(result.current.drawnKey).toBe(1));
+    expect(result.current.graph.groups["c:a"]?.open).toEqual({
+      [LONG_GROUP_KEY]: 2,
+    });
   });
 
   it("saves an expansion that is still pending when the view is hidden", async () => {
