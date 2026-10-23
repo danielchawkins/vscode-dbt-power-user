@@ -149,6 +149,7 @@ describe("fusionNotificationPolicy", () => {
         readSnapshot: readProjectSnapshot,
         environments: fakeProjectEnvironments(),
         outputChannel: () => createMockLogOutputChannel("project"),
+        rootExists: () => true,
       },
     );
     pool.initialize();

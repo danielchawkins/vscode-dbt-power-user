@@ -13,6 +13,9 @@ export const State = {
 } as const;
 export type State = (typeof State)[keyof typeof State];
 
+export const ErrorAction = { Continue: 1, Shutdown: 2 } as const;
+export const CloseAction = { DoNotRestart: 1, Restart: 2 } as const;
+
 export class LanguageClient {
   private readonly stateEmitter = new EventEmitter();
   readonly id: string;

@@ -11,8 +11,9 @@ import type {
 import { EventEmitter, RelativePattern, workspace } from "vscode";
 import type { Log } from "../../core/log";
 import {
-  DBT_PROJECT_FILE_GLOB,
   declaredProjectName,
+  hasDbtProjectFile,
+  isDbtProjectFilePath,
   readDbtProjectFile,
 } from "../../core/snapshot/index";
 import { onDidChangeSettings, readSetting } from "../../settings/index";
@@ -217,12 +218,18 @@ export class ProjectRegistry implements Disposable {
       }
       let watcher = this.watchers.get(d.realpathKey);
       if (!watcher) {
+        // A folder delete fires one event for the folder path, which a project-file glob would miss.
         watcher = workspace.createFileSystemWatcher(
-          new RelativePattern(d.root, DBT_PROJECT_FILE_GLOB),
+          new RelativePattern(d.root, "**/*"),
         );
-        watcher.onDidCreate(() => this.reconcile());
-        watcher.onDidChange(() => this.reconcile());
-        watcher.onDidDelete(() => this.reconcile());
+        const onRootEvent = (uri: Uri) => {
+          if (isRootOrProjectFile(d.root.fsPath, uri.fsPath)) {
+            this.reconcile();
+          }
+        };
+        watcher.onDidCreate(onRootEvent);
+        watcher.onDidChange(onRootEvent);
+        watcher.onDidDelete(onRootEvent);
       }
       nextWatchers.set(d.realpathKey, watcher);
     }
@@ -278,15 +285,19 @@ export class ProjectRegistry implements Disposable {
     });
   }
 
-  /** Drops opened-file roots whose folder left the workspace or was disabled; re-enabling does not restore them. */
+  /**
+   * Drops opened-file roots whose folder left the workspace, was disabled, or lost its project file. Re-enabling
+   * does not restore them, and a root whose file returns is declared again by an opened document.
+   */
   private pruneOpenedRoots(): void {
     const folders = new Set(
       (workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath),
     );
-    for (const [key, { folder }] of this.openedRoots) {
+    for (const [key, { folder, root }] of this.openedRoots) {
       if (
         !folders.has(folder.uri.fsPath) ||
-        readSetting(ENABLED_SETTING, folder.uri) === false
+        readSetting(ENABLED_SETTING, folder.uri) === false ||
+        !hasDbtProjectFile(root.fsPath)
       ) {
         this.openedRoots.delete(key);
       }
@@ -401,6 +412,11 @@ function namesProfile(dir: string): boolean {
   }
   const profile = file.config.profile;
   return typeof profile === "string" && profile.trim() !== "";
+}
+
+/** Whether a watched path is the root itself, which a folder delete reports, or one of its project files. */
+function isRootOrProjectFile(root: string, fsPath: string): boolean {
+  return fsPath === root || isDbtProjectFilePath(root, fsPath);
 }
 
 /** The realpath of `fsPath`, or `fsPath` itself when it cannot be resolved (for example, the file is missing). */

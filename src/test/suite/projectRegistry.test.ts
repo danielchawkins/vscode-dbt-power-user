@@ -532,11 +532,8 @@ describe("ProjectRegistry", () => {
         pattern,
       ]),
     ).toEqual([
-      [
-        path.join(general.uri.fsPath, "projects/general"),
-        "dbt_project.{yml,yaml}",
-      ],
-      [path.join(general.uri.fsPath, "projects/sox"), "dbt_project.{yml,yaml}"],
+      [path.join(general.uri.fsPath, "projects/general"), "**/*"],
+      [path.join(general.uri.fsPath, "projects/sox"), "**/*"],
     ]);
   });
 
@@ -601,7 +598,7 @@ describe("ProjectRegistry", () => {
   it("reconciles from a project-file watcher", async () => {
     const general = makeFolder("multi-root");
     let projects = ["projects/general"];
-    let onDelete: (() => void) | undefined;
+    let onDelete: ((uri: Uri) => void) | undefined;
     vi.spyOn(workspace, "getConfiguration").mockImplementation(() =>
       makeConfig(projects),
     );
@@ -618,7 +615,11 @@ describe("ProjectRegistry", () => {
     await registry.initialize();
 
     projects = ["projects/typo"];
-    onDelete?.();
+    onDelete?.(
+      Uri.file(
+        path.join(general.uri.fsPath, "projects/general", "dbt_project.yml"),
+      ),
+    );
 
     expect(registry.projects).toEqual([]);
   });
@@ -660,7 +661,7 @@ describe("ProjectRegistry", () => {
   it("reuses the watcher when project metadata changes", async () => {
     const tmpDir = mkdtempSync(path.join(tmpdir(), "fpu-project-registry-"));
     const projectFile = path.join(tmpDir, "dbt_project.yml");
-    let onChange: (() => void) | undefined;
+    let onChange: ((uri: Uri) => void) | undefined;
     const watcherDispose = vi.fn();
     try {
       writeFileSync(projectFile, "name: first\nversion: '1.0'\n");
@@ -675,7 +676,7 @@ describe("ProjectRegistry", () => {
         .mockReturnValue({
           onDidCreate: vi.fn(),
           onDidChange: vi.fn((listener) => {
-            onChange = listener as () => void;
+            onChange = listener as (uri: Uri) => void;
           }),
           onDidDelete: vi.fn(),
           dispose: watcherDispose,
@@ -685,13 +686,13 @@ describe("ProjectRegistry", () => {
       await registry.initialize();
 
       writeFileSync(projectFile, "name: second\nversion: '1.0'\n");
-      onChange?.();
+      onChange?.(Uri.file(projectFile));
       expect(registry.projects[0].name).toBe("second");
       expect(createWatcher).toHaveBeenCalledTimes(1);
       expect(watcherDispose).not.toHaveBeenCalled();
 
       registry.dispose();
-      onChange?.();
+      onChange?.(Uri.file(projectFile));
       expect(watcherDispose).toHaveBeenCalledTimes(1);
       expect(createWatcher).toHaveBeenCalledTimes(1);
       expect(registry.projects).toEqual([]);
