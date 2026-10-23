@@ -25,8 +25,6 @@ import type {
 /** Client command in Fusion's CTE code lenses; not advertised by initialize, and no command here handles it. */
 const FUSION_LSP_PREVIEW_CTE = "dbt.previewCte" as const;
 
-export { canonicalProjectRoot } from "./canonicalProjectRoot";
-
 /**
  * Maps Fusion's `dbt.previewCte` lenses, which carry a client command this extension does not register, to the
  * extension's own CTE actions: "Execute CTE: <name>" on each CTE and one "Profile CTEs" on the first. Other lenses
@@ -399,6 +397,8 @@ export type FusionLanguageClientDependencies = {
     clientOptions: LanguageClientOptions,
   ) => Promise<ClientHandle>;
   sleep?: (ms: number) => Promise<void>;
+  /** Whether a project root still has its project file; defaults to the file system. Tests stand in for it. */
+  rootExists?: (root: Uri) => boolean;
 };
 
 export type ClientHandle = Pick<

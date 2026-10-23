@@ -110,3 +110,59 @@ describe("languageClientOptions nested-root guard", () => {
     expect(next).toHaveBeenCalledWith(outerModel, []);
   });
 });
+
+describe("languageClientOptions inactive gate", () => {
+  function inactiveSetup(isInactive: () => boolean) {
+    const outputChannel = createMockLogOutputChannel("outer");
+    const options = languageClientOptions({
+      project: declaredProject("outer", outerRoot, folder),
+      selector: undefined,
+      uriConverters: undefined,
+      outputChannel,
+      diagnosticsFilter: new ProjectDiagnosticsFilter([outerRoot], () => true),
+      config: { lintEnabled: false, maxErrorReporting: undefined },
+      isInactive,
+    });
+    return { middleware: options.middleware as Middleware, outputChannel };
+  }
+
+  it("skips next for document and watched-file notifications while the client is inactive", async () => {
+    const { middleware } = inactiveSetup(() => true);
+    const next = vi.fn();
+    const change = {} as never;
+
+    await middleware.didOpen?.(documentAt(outerModel), next);
+    await middleware.didChange?.(change, next);
+    await middleware.didSave?.(documentAt(outerModel), next);
+    await middleware.didClose?.(documentAt(outerModel), next);
+    await middleware.workspace?.didChangeWatchedFile?.(change, next);
+
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("logs one debug line for a burst of dropped notifications", async () => {
+    const { middleware, outputChannel } = inactiveSetup(() => true);
+    const next = vi.fn();
+    const change = {} as never;
+
+    await middleware.didOpen?.(documentAt(outerModel), next);
+    await middleware.workspace?.didChangeWatchedFile?.(change, next);
+    await middleware.didClose?.(documentAt(outerModel), next);
+
+    expect(outputChannel.debug).toHaveBeenCalledTimes(1);
+    expect(outputChannel.debug).toHaveBeenCalledWith(
+      "Dropped textDocument/didOpen and later notifications: the client is stopping or stopped",
+    );
+  });
+
+  it("forwards notifications and logs nothing while the client is active", async () => {
+    const { middleware, outputChannel } = inactiveSetup(() => false);
+    const next = vi.fn();
+
+    await middleware.didOpen?.(documentAt(outerModel), next);
+    await middleware.workspace?.didChangeWatchedFile?.({} as never, next);
+
+    expect(next).toHaveBeenCalledTimes(2);
+    expect(outputChannel.debug).not.toHaveBeenCalled();
+  });
+});

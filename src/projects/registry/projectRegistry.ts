@@ -13,7 +13,6 @@ import type { Log } from "../../core/log";
 import {
   declaredProjectName,
   hasDbtProjectFile,
-  isDbtProjectFilePath,
   readDbtProjectFile,
 } from "../../core/snapshot/index";
 import { onDidChangeSettings, readSetting } from "../../settings/index";
@@ -29,6 +28,9 @@ import { findProjectRootForFile } from "./projectDiscovery";
 export type DeclaredProjectOrigin = "explicit" | "folderRoot" | "openedFile";
 
 /** Languages whose open documents can declare a project. */
+/** Both project file names; a simple, non-recursive glob, so VS Code does not filter it with `files.watcherExclude`. */
+const PROJECT_FILE_GLOB = "dbt_project.{yml,yaml}";
+
 const DECLARING_LANGUAGES: ReadonlySet<string> = new Set([
   "jinja-sql",
   "sql",
@@ -200,7 +202,6 @@ export class ProjectRegistry implements Disposable {
     }
 
     const next: DeclaredProjectImpl[] = [];
-    const nextWatchers = new Map<string, FileSystemWatcher>();
     for (const d of byRealpath.values()) {
       const existing = this._projects.find(
         (p) =>
@@ -216,24 +217,11 @@ export class ProjectRegistry implements Disposable {
       } else {
         next.push(new DeclaredProjectImpl(d));
       }
-      let watcher = this.watchers.get(d.realpathKey);
-      if (!watcher) {
-        // A folder delete fires one event for the folder path, which a project-file glob would miss.
-        watcher = workspace.createFileSystemWatcher(
-          new RelativePattern(d.root, "**/*"),
-        );
-        const onRootEvent = (uri: Uri) => {
-          if (isRootOrProjectFile(d.root.fsPath, uri.fsPath)) {
-            this.reconcile();
-          }
-        };
-        watcher.onDidCreate(onRootEvent);
-        watcher.onDidChange(onRootEvent);
-        watcher.onDidDelete(onRootEvent);
-      }
-      nextWatchers.set(d.realpathKey, watcher);
     }
 
+    const nextWatchers = this.watchRoots(
+      Array.from(byRealpath.values(), (d) => d.root.fsPath),
+    );
     for (const p of this._projects) {
       if (!next.includes(p)) {
         p.dispose();
@@ -259,6 +247,48 @@ export class ProjectRegistry implements Disposable {
     if (changed) {
       this._onDidChangeProjects.fire();
     }
+  }
+
+  /**
+   * Watches each root's project file and every ancestor folder of each root, up to the filesystem root. Each
+   * watcher is a simple, non-recursive pattern, which VS Code does not filter with `files.watcherExclude`, so a
+   * window that hides `.strands-*` still reports a checkout's delete. The delete arrives as one event for the
+   * topmost folder removed, which is one of these ancestors, and reconciling on any of them is enough.
+   * Roots outside their workspace folder (an absolute `projects` entry) are covered the same way.
+   */
+  private watchRoots(roots: string[]): Map<string, FileSystemWatcher> {
+    const targets = new Map<string, RelativePattern>();
+    for (const root of roots) {
+      targets.set(
+        `${root}${path.sep}${PROJECT_FILE_GLOB}`,
+        new RelativePattern(root, PROJECT_FILE_GLOB),
+      );
+      for (let dir = root; path.dirname(dir) !== dir; dir = path.dirname(dir)) {
+        targets.set(
+          dir,
+          new RelativePattern(path.dirname(dir), path.basename(dir)),
+        );
+      }
+    }
+    const watchers = new Map<string, FileSystemWatcher>();
+    for (const [key, pattern] of targets) {
+      watchers.set(
+        key,
+        this.watchers.get(key) ?? this.createReconcilingWatcher(pattern),
+      );
+    }
+    return watchers;
+  }
+
+  private createReconcilingWatcher(
+    pattern: RelativePattern,
+  ): FileSystemWatcher {
+    const watcher = workspace.createFileSystemWatcher(pattern);
+    const reconcile = () => this.reconcile();
+    watcher.onDidCreate(reconcile);
+    watcher.onDidChange(reconcile);
+    watcher.onDidDelete(reconcile);
+    return watcher;
   }
 
   /** Adds the root as a candidate unless its project file cannot be parsed. */
@@ -412,11 +442,6 @@ function namesProfile(dir: string): boolean {
   }
   const profile = file.config.profile;
   return typeof profile === "string" && profile.trim() !== "";
-}
-
-/** Whether a watched path is the root itself, which a folder delete reports, or one of its project files. */
-function isRootOrProjectFile(root: string, fsPath: string): boolean {
-  return fsPath === root || isDbtProjectFilePath(root, fsPath);
 }
 
 /** The realpath of `fsPath`, or `fsPath` itself when it cannot be resolved (for example, the file is missing). */

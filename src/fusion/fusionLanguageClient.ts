@@ -14,6 +14,8 @@ import {
 import { DBT_LSP_USE_TARGET_LSP, toLspArgs } from "../core/lsp";
 import { type StaticAnalysisMode } from "../core/snapshot";
 import { errorText } from "../core/text";
+import { canonicalProjectRoot } from "./canonicalProjectRoot";
+import { projectFileAvailable } from "./clientLifecycle";
 import { documentSelectorForProject } from "./documentSelector";
 import {
   DISPOSAL_GRACE_MS,
@@ -31,7 +33,6 @@ import {
 } from "./fusionDiagnostics";
 import { FusionRequests } from "./fusionRequests";
 import {
-  canonicalProjectRoot,
   CompileSignal,
   defaultCreateLanguageClient,
   defaultSpawn,
@@ -198,6 +199,10 @@ class FusionLanguageClientImpl implements FusionClient {
   ): Promise<void> {
     if (this.disposed) {
       return;
+    }
+    if (!projectFileAvailable(this.options, this.deps.rootExists)) {
+      this.setState("stopped");
+      return this.teardownTransport();
     }
 
     this.setState(reason === "initial" ? "starting" : "restarting");

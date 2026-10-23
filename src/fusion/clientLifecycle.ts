@@ -1,8 +1,8 @@
-import type { LogOutputChannel } from "vscode";
+import type { LogOutputChannel, Uri } from "vscode";
 import type { ErrorHandler } from "vscode-languageclient/node";
 import { CloseAction, ErrorAction } from "vscode-languageclient/node";
 import { hasDbtProjectFile } from "../core/snapshot/index";
-import type { FusionProjectRef } from "./fusionClient";
+import type { FusionClientOptions, FusionProjectRef } from "./fusionClient";
 
 /**
  * The error handler of one Declared Project's client. A connection error or close while the client is stopping or
@@ -19,13 +19,21 @@ export function clientErrorHandler(input: {
     isInactive() || !hasDbtProjectFile(project.root.fsPath);
   const who = (): string =>
     `Fusion client ${project.name} (${project.root.fsPath})`;
+  // `handled` stops the library from notifying. It still writes `message` to the output channel, so the message is
+  // this line rather than the library's default text.
+  const silenced = (detail: string): string => {
+    const message = `${who()} is stopped or its project root is gone; ${detail}`;
+    outputChannel.debug(message);
+    return message;
+  };
   return {
     error: (error, _message, count) => {
       if (inactive()) {
-        outputChannel.debug(
-          `Connection error after the client stopped or its project was removed: ${error.message}`,
-        );
-        return { action: ErrorAction.Shutdown, handled: true };
+        return {
+          action: ErrorAction.Shutdown,
+          handled: true,
+          message: silenced(`connection error: ${error.message}`),
+        };
       }
       return {
         action:
@@ -35,10 +43,11 @@ export function clientErrorHandler(input: {
     },
     closed: () => {
       if (inactive()) {
-        outputChannel.debug(
-          "Connection closed after the client stopped or its project was removed.",
-        );
-        return { action: CloseAction.DoNotRestart, handled: true };
+        return {
+          action: CloseAction.DoNotRestart,
+          handled: true,
+          message: silenced("connection closed"),
+        };
       }
       return {
         action: CloseAction.DoNotRestart,
@@ -46,6 +55,26 @@ export function clientErrorHandler(input: {
       };
     },
   };
+}
+
+/**
+ * Whether a client may start or restart: its project file must still be on disk. Otherwise logs one debug line, and
+ * the caller stops the client for good; the registry drops the project. `exists` defaults to the file system.
+ */
+export function projectFileAvailable(
+  {
+    project,
+    outputChannel,
+  }: Pick<FusionClientOptions, "project" | "outputChannel">,
+  exists: (root: Uri) => boolean = (root) => hasDbtProjectFile(root.fsPath),
+): boolean {
+  if (exists(project.root)) {
+    return true;
+  }
+  outputChannel.debug(
+    `Not starting Fusion LSP for ${project.name}: ${project.root.fsPath} has no dbt_project file`,
+  );
+  return false;
 }
 
 /**

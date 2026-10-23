@@ -100,6 +100,7 @@ describe("fusionNotificationPolicy", () => {
 
   it("shows no window messages when Fusion LSP start fails", async () => {
     const factory = new DefaultFusionClientFactory({
+      rootExists: () => true,
       listenForServer: async () => {
         throw new Error("listen failed");
       },
