@@ -6,6 +6,9 @@ model-paths:
   - models
 seed-paths:
   - seeds
+# The extension's schema-origin hook: with every source column typed, strict analysis needs no warehouse.
+sources:
+  +schema_origin: "{{ env_var('FUSION_POWER_USER_SCHEMA_ORIGIN', 'remote') }}"
 models:
   lineage_layers:
     13_staging:

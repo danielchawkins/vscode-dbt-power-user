@@ -15,6 +15,8 @@ import {
   maximizePanelFor,
   restorePanelSize,
   showPanel,
+  zoomPastHalf,
+  zoomState,
 } from "./webviewInteractions";
 
 const EXTENSION_ID = "danielchawkins.fusion-power-user";
@@ -129,72 +131,6 @@ async function waitForChildrenExpander(): Promise<string> {
   );
 }
 
-/**
- * The canvas zoom and, per table card, its unscaled size, the header's badge and title font sizes, the subtitle's
- * visibility (or "absent" where the card draws none), and the visibility of every other row under the header.
- */
-interface ZoomState {
-  entry: string;
-  zoom: number;
-  cards: {
-    width: number;
-    height: number;
-    badge: number;
-    title: number;
-    subtitle: string;
-    rows: string[];
-  }[];
-}
-
-const ZOOM_STATE = `(() => document.body.dataset.entry === "lineage" ? {
-  entry: "lineage",
-  zoom: Number(
-    /scale\\(([\\d.]+)\\)/.exec(document.querySelector(".react-flow__viewport")?.style.transform ?? "")?.[1],
-  ),
-  cards: [...document.querySelectorAll("[data-table]")].map((card) => {
-    const badge = card.querySelector(":scope > div:first-child > span");
-    const title = card.querySelector("[class*=label]");
-    const subtitle = card.querySelector(":scope > div:first-child > [class*=subtitle]");
-    return {
-      width: card.offsetWidth,
-      height: card.offsetHeight,
-      badge: parseFloat(getComputedStyle(badge).fontSize),
-      title: parseFloat(getComputedStyle(title).fontSize),
-      subtitle: subtitle ? getComputedStyle(subtitle).visibility : "absent",
-      rows: [
-        ...card.querySelectorAll(
-          ":scope > :not(:first-child):not(.react-flow__handle)",
-        ),
-      ].map((row) => getComputedStyle(row).visibility),
-    };
-  }),
-} : null)()`;
-
-async function zoomState(): Promise<ZoomState> {
-  const match = await evaluatePanel<ZoomState>(
-    process.env.FPU_CDP_PORT!,
-    LINEAGE.entry,
-    ZOOM_STATE,
-  );
-  assert.ok(match, "the lineage webview is not showing");
-  return match.value;
-}
-
-/** Presses Zoom Out until the canvas zoom is below 50%, and returns the state then. */
-async function zoomOutBelowHalf(): Promise<ZoomState> {
-  const deadline = Date.now() + 20_000;
-  let last = await zoomState();
-  while (last.zoom >= 0.5 || Number.isNaN(last.zoom)) {
-    if (Date.now() >= deadline) {
-      throw new Error(`the zoom stayed at ${last.zoom}`);
-    }
-    await clickInWebview(LINEAGE, { role: "button", name: "Zoom Out" });
-    await new Promise((resolve) => setTimeout(resolve, 400));
-    last = await zoomState();
-  }
-  return last;
-}
-
 /** Each card's id (its last segment) with the title text its header shows. */
 const CARD_TITLES = `(() => document.body.dataset.entry === "lineage" ? {
   entry: "lineage",
@@ -234,6 +170,120 @@ async function reopenHub(): Promise<void> {
   await vscode.commands.executeCommand("workbench.action.closePanel");
   await waitForPanelGone(process.env.FPU_CDP_PORT!, LINEAGE.entry);
   await openHub();
+}
+
+/** The hub card's column list, the column edges traced from it, and the table edges' paths. */
+interface ColumnState {
+  entry: string;
+  columnTables: string[];
+  hubColumns: number;
+  traced: string[];
+  tableD: string[];
+}
+
+const COLUMN_STATE = `(() => document.body.dataset.entry === "lineage" ? {
+  entry: "lineage",
+  columnTables: [...document.querySelectorAll("[data-table]")]
+    .filter((n) => n.querySelector("[data-testid=lineage-columns]"))
+    .map((n) => n.dataset.table.split(".").at(-1)),
+  hubColumns: document.querySelectorAll("[data-table$='.${HUB}'] [data-column]").length,
+  traced: [...document.querySelectorAll(".react-flow__edge.lineage-column-edge")]
+    .map((e) => e.getAttribute("data-id"))
+    .sort(),
+  tableD: [...document.querySelectorAll(".react-flow__edge.lineage-table-edge path")]
+    .map((p) => p.getAttribute("d"))
+    .sort(),
+} : null)()`;
+
+/** Clicks the hub card's "Columns" button. */
+const CLICK_HUB_COLUMNS = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const node = document.querySelector("[data-table$='.${HUB}']");
+  const button = [...(node?.querySelectorAll("button") ?? [])].find(
+    (b) => b.textContent.trim() === "Columns" || b.getAttribute("aria-label") === "Columns",
+  );
+  button?.click();
+  return { entry: "lineage", clicked: Boolean(button) };
+})()`;
+
+/** Clicks the hub card's first column row. */
+const CLICK_HUB_COLUMN = `(() => {
+  if (document.body.dataset.entry !== "lineage") return null;
+  const column = document.querySelector("[data-table$='.${HUB}'] [data-column]");
+  column?.click();
+  return { entry: "lineage", clicked: Boolean(column) };
+})()`;
+
+async function readColumns(): Promise<ColumnState> {
+  const match = await evaluatePanel<ColumnState>(
+    process.env.FPU_CDP_PORT!,
+    LINEAGE.entry,
+    COLUMN_STATE,
+  );
+  assert.ok(match, "the lineage webview is not showing");
+  return match.value;
+}
+
+/** Polls the column state until `done` holds, and fails with the last state otherwise. */
+async function waitForColumns(
+  what: string,
+  done: (current: ColumnState) => boolean,
+): Promise<ColumnState> {
+  const deadline = Date.now() + 10_000;
+  let last = await readColumns();
+  while (!done(last)) {
+    if (Date.now() >= deadline) {
+      throw new Error(`${what}; the last state was ${JSON.stringify(last)}`);
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    last = await readColumns();
+  }
+  return last;
+}
+
+/**
+ * Opens the hub card's column list, clicking "Columns" only while the list is closed, then clicks its first column.
+ * Returns the column state once the click has traced an edge.
+ */
+async function traceHubColumn(): Promise<ColumnState> {
+  const deadline = Date.now() + 10_000;
+  let state = await readColumns();
+  while (!state.columnTables.includes(HUB)) {
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `the hub card's column list did not open; the last state was ${JSON.stringify(state)}`,
+      );
+    }
+    await evaluatePanel(
+      process.env.FPU_CDP_PORT!,
+      LINEAGE.entry,
+      CLICK_HUB_COLUMNS,
+    );
+    await new Promise((resolve) => setTimeout(resolve, 500));
+    state = await readColumns();
+  }
+  await waitForColumns(
+    "the hub card should list its columns",
+    (current) => current.hubColumns > 0,
+  );
+  const clicked = await evaluatePanel<{ entry: string; clicked: boolean }>(
+    process.env.FPU_CDP_PORT!,
+    LINEAGE.entry,
+    CLICK_HUB_COLUMN,
+  );
+  assert.ok(clicked?.value.clicked, "the hub card has a column row to click");
+  // Edges arrive in parts and the cards relayout after them, so the first traced read is not a baseline: wait until
+  // two consecutive reads agree.
+  let previous: string | undefined;
+  return waitForColumns(
+    "clicking a hub column should trace column edges that hold still",
+    (current) => {
+      const key = JSON.stringify([current.traced, current.tableD]);
+      const stable = current.traced.length > 0 && key === previous;
+      previous = key;
+      return stable;
+    },
+  );
 }
 
 /**
@@ -360,8 +410,8 @@ suite("Lineage grouping", function () {
     });
 
     // Checkpoint 3: zoomed out, cards keep their size and show a larger badge and title only.
-    const before = await zoomState();
-    const zoomed = await zoomOutBelowHalf();
+    const before = await zoomState(LINEAGE);
+    const zoomed = await zoomPastHalf(LINEAGE, "out");
     assert.ok(zoomed.zoom < 0.5, `the zoom was ${zoomed.zoom}`);
     assert.ok(zoomed.cards.length > 0, "the zoomed-out canvas draws cards");
     assert.deepStrictEqual(
@@ -455,6 +505,88 @@ suite("Lineage grouping", function () {
     } finally {
       await config.update(
         "lineage.title",
+        undefined,
+        vscode.ConfigurationTarget.Workspace,
+      );
+    }
+  });
+
+  // Checkpoints 5 to 7: in the leftToRight layout, a traced column's edges follow the zoom, the table edges do not.
+  test("traces hub.id to mart_summary in leftToRight, drops the column edges zoomed out, and redraws them zoomed in", async function () {
+    if (!runsHere()) {
+      this.skip();
+      return;
+    }
+    const evidence = interactionEvidence(host());
+    const config = vscode.workspace.getConfiguration("fusionPowerUser");
+    try {
+      await config.update(
+        "lineage.layout",
+        "leftToRight",
+        vscode.ConfigurationTarget.Workspace,
+      );
+      await reopenHub();
+      if ((await waitForChildrenExpander()) === "Show 7 children") {
+        await clickInWebview(LINEAGE, CHILDREN_EXPANDER);
+      }
+      await waitForSnapshot(
+        "the hub's children should draw the marts card",
+        (current) => current.cards.includes("mart_summary"),
+      );
+      // Column edges are only drawn from 50% zoom up, so start there.
+      await zoomPastHalf(LINEAGE, "in");
+      const traced = await traceHubColumn();
+      assert.ok(
+        traced.traced.some((id) => id.includes("mart_summary")),
+        `no traced edge reaches mart_summary: ${JSON.stringify(traced.traced)}`,
+      );
+      const tracedBefore = traced.traced.length;
+      const tableDBefore = traced.tableD;
+      assert.ok(tableDBefore.length > 0, "the canvas draws table edges");
+
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-groups-ltr-trace",
+        expect:
+          "The leftToRight layout with the hub's Columns list open and its id column clicked: column edges run from " +
+          "that column to the marts card, alongside the table edges. The traced edge ids and table edge paths are in " +
+          "measured.",
+        measured: { traced: traced.traced, tableD: traced.tableD },
+      });
+
+      await zoomPastHalf(LINEAGE, "out");
+      const zoomedOut = await readColumns();
+      assert.strictEqual(
+        zoomedOut.traced.length,
+        0,
+        `the zoomed-out canvas still draws column edges: ${JSON.stringify(zoomedOut.traced)}`,
+      );
+      assert.deepStrictEqual(zoomedOut.tableD, tableDBefore);
+
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-groups-ltr-trace-zoomed-out",
+        expect:
+          "The same leftToRight graph zoomed out below 50%: the column edges are gone, and the table edges keep " +
+          "their paths, the same as before the zoom.",
+        measured: { traced: zoomedOut.traced, tableD: zoomedOut.tableD },
+      });
+
+      await zoomPastHalf(LINEAGE, "in");
+      const zoomedIn = await waitForColumns(
+        "zooming back in should draw the column edges again",
+        (current) => current.traced.length === tracedBefore,
+      );
+      assert.deepStrictEqual(zoomedIn.tableD, tableDBefore);
+
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-groups-ltr-trace-zoomed-in",
+        expect:
+          "Zoomed back to 50% or more: the column edges come back, the same number as before the zoom out, and the " +
+          "table edges still keep their paths.",
+        measured: { traced: zoomedIn.traced, tableD: zoomedIn.tableD },
+      });
+    } finally {
+      await config.update(
+        "lineage.layout",
         undefined,
         vscode.ConfigurationTarget.Workspace,
       );

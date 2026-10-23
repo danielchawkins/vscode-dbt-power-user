@@ -1,5 +1,7 @@
+import type { Edge } from "@xyflow/react";
 import { useStore } from "@xyflow/react";
-import { createContext, use } from "react";
+import { createContext, use, useMemo } from "react";
+import { drawnEdges } from "./flow";
 
 /** Below this zoom, cards keep their size and show only a larger badge and title. */
 export const ZOOM_OUT_BELOW = 0.5;
@@ -18,4 +20,13 @@ export const SemanticZoomContext = createContext(true);
 export const useZoomedOut = (): boolean => {
   const enabled = use(SemanticZoomContext);
   return useStore((s) => isZoomedOut(s.transform[2], enabled));
+};
+
+/**
+ * The edges React Flow draws at the current zoom. The memo keeps the array stable while the zoom stays on the same side
+ * of the threshold.
+ */
+export const useDrawnEdges = (edges: Edge[]): Edge[] => {
+  const zoomedOut = useZoomedOut();
+  return useMemo(() => drawnEdges(edges, zoomedOut), [edges, zoomedOut]);
 };

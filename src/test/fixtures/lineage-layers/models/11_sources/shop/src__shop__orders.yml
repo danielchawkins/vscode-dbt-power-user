@@ -7,8 +7,11 @@ sources:
         description: Raw orders from the shop application.
         columns:
           - name: order_id
+            data_type: integer
           - name: customer_id
+            data_type: integer
           - name: amount
+            data_type: decimal(10,2)
         config:
           meta:
             relationships:

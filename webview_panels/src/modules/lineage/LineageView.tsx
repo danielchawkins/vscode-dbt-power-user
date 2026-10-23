@@ -47,7 +47,11 @@ import { RelationshipEdgeView } from "./RelationshipEdge";
 import relationStyles from "./relationshipEdges.module.css";
 import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
 import { RoutedEdge } from "./RoutedEdge";
-import { isZoomedOut, SemanticZoomContext } from "./semanticZoom";
+import {
+  isZoomedOut,
+  SemanticZoomContext,
+  useDrawnEdges,
+} from "./semanticZoom";
 import TableDetails from "./TableDetails";
 import { TableNode } from "./TableNode";
 import Toolbar from "./Toolbar";
@@ -360,12 +364,13 @@ const Canvas = ({
     nodeKey,
     shapeKey,
   });
+  const drawn = useDrawnEdges(edges);
   const label = minimap.shown ? "Hide minimap" : "Show minimap";
   return (
     <div className={styles.canvas} ref={canvasRef}>
       <ReactFlow
         nodes={nodes}
-        edges={edges}
+        edges={drawn}
         nodeTypes={nodeTypes}
         edgeTypes={edgeTypes}
         nodesConnectable={false}
