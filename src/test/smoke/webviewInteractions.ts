@@ -281,8 +281,9 @@ export async function isWebviewChecked(
 }
 
 /**
- * The canvas zoom and, per table card, its unscaled size, the header's badge and title font sizes, the subtitle's
- * visibility (or "absent" where the card draws none), and the visibility of every other row under the header.
+ * The canvas zoom and, per table card, its unscaled size, the title font size, the layer stripe's width (0 where the
+ * card has no layer), the subtitle's visibility (or "absent" where the card draws none), and the visibility of every
+ * other row under the header.
  */
 export interface ZoomState {
   entry: string;
@@ -290,7 +291,7 @@ export interface ZoomState {
   cards: {
     width: number;
     height: number;
-    badge: number;
+    stripe: number;
     title: number;
     subtitle: string;
     rows: string[];
@@ -303,13 +304,12 @@ const ZOOM_STATE = `(() => document.body.dataset.entry === "lineage" ? {
     /scale\\(([\\d.]+)\\)/.exec(document.querySelector(".react-flow__viewport")?.style.transform ?? "")?.[1],
   ),
   cards: [...document.querySelectorAll("[data-table]")].map((card) => {
-    const badge = card.querySelector(":scope > div:first-child > span");
     const title = card.querySelector("[class*=label]");
     const subtitle = card.querySelector(":scope > div:first-child > [class*=subtitle]");
     return {
       width: card.offsetWidth,
       height: card.offsetHeight,
-      badge: parseFloat(getComputedStyle(badge).fontSize),
+      stripe: card.dataset.layer ? parseFloat(getComputedStyle(card, "::before").width) : 0,
       title: parseFloat(getComputedStyle(title).fontSize),
       subtitle: subtitle ? getComputedStyle(subtitle).visibility : "absent",
       rows: [

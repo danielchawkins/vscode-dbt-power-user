@@ -1,7 +1,6 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { describe, expect, it } from "vitest";
 import {
-  cardBadge,
   cardFile,
   cardSubtitle,
   cardTitle,
@@ -64,11 +63,6 @@ describe("lineage card text", () => {
         }),
       ),
     ).toBe("scalar function · foundation");
-  });
-
-  it("badges the layer when known, else the resource type", () => {
-    expect(cardBadge(table({ layer: "intermediate" }))).toBe("intermediate");
-    expect(cardBadge(table())).toBe("model");
   });
 
   it("shortens a schema ending in the custom schema to that schema, keeping the database", () => {

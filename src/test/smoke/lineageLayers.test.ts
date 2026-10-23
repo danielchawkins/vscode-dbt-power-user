@@ -71,13 +71,12 @@ const SNAPSHOT = `(() => document.body.dataset.entry === "lineage" ? {
   cards: [...document.querySelectorAll("[data-table]")].map((card) => {
     const names = card.querySelector('span[title^="' + card.dataset.table + '"]');
     const parts = [...(names?.children ?? [])];
-    const header = [...card.querySelectorAll(":scope > div:first-child > span")];
     const box = card.getBoundingClientRect();
     return {
       id: card.dataset.table.split(".").at(-1),
       title: parts[0]?.textContent ?? "",
       file: parts.length === 3 ? parts[1].textContent : undefined,
-      subtitle: header[3]?.textContent,
+      subtitle: card.querySelector(":scope > div:first-child > [class*=subtitle]")?.textContent,
       top: Math.round(box.top),
       left: Math.round(box.left),
     };

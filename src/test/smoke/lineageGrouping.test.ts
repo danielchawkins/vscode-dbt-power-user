@@ -474,7 +474,7 @@ suite("Lineage grouping", function () {
       measured: { bands, titles: await cardTitles() },
     });
 
-    // Checkpoint 3: zoomed out, cards keep their size and show a larger badge and title only.
+    // Checkpoint 3: zoomed out, cards keep their size and show a larger title and a wider layer stripe only.
     const before = await zoomState(LINEAGE);
     const zoomed = await zoomPastHalf(LINEAGE, "out");
     assert.ok(zoomed.zoom < 0.5, `the zoom was ${zoomed.zoom}`);
@@ -486,7 +486,10 @@ suite("Lineage grouping", function () {
     );
     for (const card of zoomed.cards) {
       assert.ok(card.title >= 26, `title was ${card.title}px`);
-      assert.ok(card.badge >= 20, `badge was ${card.badge}px`);
+      assert.ok(
+        card.stripe === 0 || card.stripe >= 12,
+        `the layer stripe was ${card.stripe}px`,
+      );
       assert.ok(
         card.subtitle === "hidden" || card.subtitle === "absent",
         `the subtitle was ${card.subtitle}`,
@@ -499,8 +502,8 @@ suite("Lineage grouping", function () {
     await evidence?.capture(LINEAGE, {
       name: "lineage-groups-zoomed-out",
       expect:
-        "The same graph zoomed out below 50%: every card keeps its size and shows only a larger badge and title, " +
-        "with no subtitle line, action row, expander bubble or columns.",
+        "The same graph zoomed out below 50%: every card keeps its size and shows only a larger title and a wider " +
+        "layer stripe, with no subtitle line, action row, expander bubble or columns.",
       measured: {
         zoom: zoomed.zoom,
         sizesBefore: before.cards.map(({ width, height }) => [width, height]),

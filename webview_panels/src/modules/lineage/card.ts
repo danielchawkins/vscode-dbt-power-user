@@ -130,10 +130,6 @@ export function cardSubtitle(
   return parts.filter(Boolean).join(" · ");
 }
 
-/** The card badge: the node's layer when known, otherwise its resource type. */
-export const cardBadge = (table: LineageTable): string =>
-  table.layer ?? table.nodeType;
-
 /**
  * The card's hover text. It carries what an unselected card leaves out: the alias when it differs from the file
  * name, the file path, the package and type, the `ref()` or `source()` call, and the relation.

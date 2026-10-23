@@ -353,6 +353,7 @@ describe("LineagePanel", () => {
           layout: "layered",
           semanticZoom: true,
           title: "alias",
+          layerColors: {},
         },
         status: true,
       },
@@ -499,6 +500,7 @@ describe("LineagePanel", () => {
         layout: "layered",
         semanticZoom: true,
         title: "alias",
+        layerColors: {},
       });
     }
   });

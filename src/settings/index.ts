@@ -23,6 +23,7 @@ export interface SettingsSchema {
   "lineage.layout": string;
   "lineage.semanticZoom": boolean;
   "lineage.title": string;
+  "lineage.layerColors": Readonly<Record<string, string>> | undefined;
   enabled: boolean;
   projects: readonly string[];
   staticAnalysis: string;
@@ -92,6 +93,7 @@ export const SETTING_SCOPES = {
   "lineage.layout": "window",
   "lineage.semanticZoom": "window",
   "lineage.title": "window",
+  "lineage.layerColors": "window",
   enabled: "resource",
   projects: "resource",
   staticAnalysis: "resource",
