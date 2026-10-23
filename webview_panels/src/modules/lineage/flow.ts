@@ -133,6 +133,9 @@ function rankingEdges(input: FlowInput): [string, string][] {
     : input.refs.map((ref) => [ref.to.table, ref.from.table]);
 }
 
+/** The ID prefix of column edges. */
+const COLUMN_EDGE = "c:";
+
 /** React Flow edges: table edges, column edges anchored to listed columns, and relationships. */
 function toEdges(
   input: FlowInput,
@@ -169,7 +172,7 @@ function toEdges(
       className: "lineage-table-edge",
     })),
     ...data.columnEdges.map((e) => ({
-      id: `c:${e.source.join(".")}->${e.target.join(".")}`,
+      id: `${COLUMN_EDGE}${e.source.join(".")}->${e.target.join(".")}`,
       source: e.source[0],
       target: e.target[0],
       sourceHandle: handle("out", e.source),
@@ -452,4 +455,9 @@ export function toFlow(input: FlowInput): {
     nodes: [...placed.bands, ...tableNodes, ...groupNodes],
     edges: routed,
   };
+}
+
+/** The edges React Flow draws: below the semantic-zoom threshold, column edges are left out; the layout still routes them. */
+export function drawnEdges(edges: Edge[], zoomedOut: boolean): Edge[] {
+  return zoomedOut ? edges.filter((e) => !e.id.startsWith(COLUMN_EDGE)) : edges;
 }

@@ -1,3 +1,4 @@
 {
-  "fusionPowerUser.lineage.maxNeighbours": 3
+  "fusionPowerUser.lineage.maxNeighbours": 3,
+  "fusionPowerUser.staticAnalysis": "strict"
 }
