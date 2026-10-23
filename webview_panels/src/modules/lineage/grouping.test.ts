@@ -200,7 +200,9 @@ describe("savedGroupKey", () => {
 
   it("shortens an ID of 201 characters to its short key", () => {
     const id = idOf(201);
-    expect(savedGroupKey(id, 200)).toBe(shortGroupKey("c:hub", "k".repeat(189)));
+    expect(savedGroupKey(id, 200)).toBe(
+      shortGroupKey("c:hub", "k".repeat(189)),
+    );
   });
 
   it("is undefined when the expansion alone makes the short key too long", () => {

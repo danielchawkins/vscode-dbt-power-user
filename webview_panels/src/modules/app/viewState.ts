@@ -23,8 +23,9 @@ interface QueryResultsViewState {
 /**
  * View state the lineage panel restores for the same starting table at the same publication. `expansions` replays
  * in order, each `c:<table>` (children) or `p:<table>` (parents); `columnTables` lists tables showing their columns;
- * `selectedColumn` is `[table, column]`. `openGroups` lists the group node IDs that are open, each replayed right after
- * the expansion that owns it.
+ * `selectedColumn` is `[table, column]`. `openGroups` lists the open groups, each by its group node ID or, when that
+ * is longer than a view state string, by its short key (`savedGroupKey`); each replays right after the expansion
+ * that owns it.
  */
 export interface LineageViewState {
   panel: "lineage";
