@@ -415,7 +415,8 @@
   visibility: visible;
 }
 
-/* Group chips sit under the actions row, two to a row; each row is 24px tall, as `geometry.chipRowHeight` is. */
+/* Group chips sit under the actions row, two to a row, the +N button taking the last slot when groups
+   are left out; each row is 24px tall, as `geometry.chipRowHeight` is. */
 .groupChips {
   display: grid;
   grid-auto-rows: 24px;
@@ -457,10 +458,25 @@
   justify-content: center;
 }
 
-.node .more {
+.node .more,
+.moreGroups .more {
   justify-content: center;
   font-style: italic;
   opacity: 0.85;
+}
+
+/* The +N popover is portaled out of the node, so its list is styled by its own classes. */
+.moreGroups {
+  font-size: 11px;
+}
+
+.moreGroupsList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
 }
 
 .columns {

@@ -21,10 +21,21 @@ export const geometry = {
   nodeGap: 40,
 };
 
+/** Group chips per row on a table node. */
+const CHIPS_PER_ROW = 2;
+
+/** Most chip rows a table node draws inline; the rest go in its +N popover. */
+const MAX_CHIP_ROWS = 2;
+
+/** Rows a table node's `chips` group chips take: two to a row, and no more than `MAX_CHIP_ROWS` rows. */
+const chipRows = (chips: number): number =>
+  Math.min(Math.ceil(chips / CHIPS_PER_ROW), MAX_CHIP_ROWS);
+
 /**
- * The height of a table node: its header, `chips` group chips two to a row, and `columns` when listed. A `pinned`
- * card (the start or selected card) adds its relation line and its actions row; an unpinned card's actions row shows
- * only on hover or focus, so it takes no space. An empty list keeps one row for its message.
+ * The height of a table node: its header, its group chips two to a row, capped at `MAX_CHIP_ROWS` rows with the rest
+ * in the +N popover, and `columns` when listed. A `pinned` card (the start or selected card) adds its relation line
+ * and its actions row; an unpinned card's actions row shows only on hover or focus, so it takes no space. An empty
+ * list keeps one row for its message.
  */
 export const tableHeight = (
   columns: readonly unknown[] | undefined,
@@ -33,7 +44,7 @@ export const tableHeight = (
 ): number =>
   geometry.headerHeight +
   (pinned ? geometry.relationHeight + geometry.actionsHeight : 0) +
-  Math.ceil(chips / 2) * geometry.chipRowHeight +
+  chipRows(chips) * geometry.chipRowHeight +
   (columns
     ? geometry.listPadding + Math.max(columns.length, 1) * geometry.columnHeight
     : geometry.headerClearance);
@@ -49,10 +60,19 @@ export const columnRowOffset = (
 ): number =>
   geometry.headerHeight +
   (pinned ? geometry.relationHeight + geometry.actionsHeight : 0) +
-  Math.ceil(chips / 2) * geometry.chipRowHeight +
+  chipRows(chips) * geometry.chipRowHeight +
   geometry.listPadding +
   index * geometry.columnHeight +
   geometry.columnHeight / 2;
+
+/**
+ * How many of a table node's `count` group chips it draws inline: all of them up to a full set of rows, else one slot
+ * fewer, since the +N button takes one.
+ */
+export const inlineChips = (count: number): number =>
+  count <= CHIPS_PER_ROW * MAX_CHIP_ROWS
+    ? count
+    : CHIPS_PER_ROW * MAX_CHIP_ROWS - 1;
 
 /** Top-left corner of each node `ids`, laid out left to right from parents to children by dagre. */
 export function layout(

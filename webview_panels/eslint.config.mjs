@@ -147,6 +147,19 @@ export default defineConfig(
     rules: ESLINT_RULES,
   },
   {
+    // Shared test helpers stay out of the source rules. This block only matches them so ESLint can parse them;
+    // Oxlint lints them.
+    files: ["src/test/**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: tseslint.parser,
+      parserOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        ecmaFeatures: { jsx: true },
+      },
+    },
+  },
+  {
     // The request executor is the one file that posts to the host.
     files: ["src/modules/app/requestExecutor.ts"],
     rules: { "no-restricted-syntax": "off" },
