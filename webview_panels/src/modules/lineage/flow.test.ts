@@ -157,7 +157,7 @@ describe("toFlow with group chips", () => {
       chips,
     }).nodes.find((n) => n.id === "hub");
 
-  it("grows the card by one chip row for every two chips", () => {
+  it("grows the card by one chip row per two chips, up to the two-row cap", () => {
     const base = tableHeight(undefined, 0, true);
     const height = (count: number) =>
       hubNode(Array.from({ length: count }, (_, i) => chip(i)))?.initialHeight;
@@ -166,6 +166,8 @@ describe("toFlow with group chips", () => {
     expect(height(2)).toBe(base + geometry.chipRowHeight);
     expect(height(3)).toBe(base + 2 * geometry.chipRowHeight);
     expect(height(4)).toBe(base + 2 * geometry.chipRowHeight);
+    expect(height(5)).toBe(base + 2 * geometry.chipRowHeight);
+    expect(height(8)).toBe(base + 2 * geometry.chipRowHeight);
   });
 
   it("reserves the relation line and actions row only on the start card", () => {

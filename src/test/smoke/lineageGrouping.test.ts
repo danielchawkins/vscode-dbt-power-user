@@ -26,6 +26,7 @@ const LINEAGE: PanelEntry = {
   entry: "lineage",
 };
 const HUB = "hub";
+const HUB_CHILDREN = 7;
 
 const runsHere = () => currentFixtureName() === "lineage-groups";
 const host = () =>
@@ -83,13 +84,13 @@ async function waitForSnapshot(
   return last;
 }
 
-/** Opens the hub model, so the lineage view starts from it, and shows the tall lineage panel. */
-async function openHub(): Promise<void> {
+/** Opens the named model, so the lineage view starts from it, and shows the tall lineage panel. */
+async function openModel(name: string): Promise<void> {
   const root = vscode.workspace.workspaceFolders?.[0]?.uri;
   assert.ok(root, "the fixture folder is open");
   await vscode.window.showTextDocument(
     await vscode.workspace.openTextDocument(
-      vscode.Uri.joinPath(root, "models", `${HUB}.sql`),
+      vscode.Uri.joinPath(root, "models", `${name}.sql`),
     ),
   );
   const api = await vscode.extensions.getExtension(EXTENSION_ID)!.activate();
@@ -98,11 +99,14 @@ async function openHub(): Promise<void> {
   await maximizePanelFor(LINEAGE.entry);
 }
 
-const CHILDREN_EXPANDER = { role: "button", name: "Show 7 children" };
+const childrenExpander = (count: number) => ({
+  role: "button",
+  name: `Show ${count} children`,
+});
 
 /**
- * Waits for the hub's children expander and returns its label. The view may expand the children on its own once the
- * graph loads ("Hide 7 children"), or leave them for a click ("Show 7 children"); either way the view reports it.
+ * Waits for the children expander with `count` children and returns its label. The view may expand the children on its own
+ * once the graph loads ("Hide N children"), or leave them for a click ("Show N children"); either way the view reports it.
  */
 const CHILDREN_STATE = `(() => document.body.dataset.entry === "lineage" ? {
   entry: "lineage",
@@ -110,7 +114,7 @@ const CHILDREN_STATE = `(() => document.body.dataset.entry === "lineage" ? {
   text: document.body.innerText.slice(0, 400),
 } : null)()`;
 
-async function waitForChildrenExpander(): Promise<string> {
+async function waitForChildrenExpander(count: number): Promise<string> {
   const deadline = Date.now() + 60_000;
   let last: { labels: string[]; text: string } | undefined;
   while (Date.now() < deadline) {
@@ -120,14 +124,16 @@ async function waitForChildrenExpander(): Promise<string> {
       text: string;
     }>(process.env.FPU_CDP_PORT!, LINEAGE.entry, CHILDREN_STATE);
     last = match?.value;
-    const label = last?.labels.find((l) => /^(Show|Hide) 7 children$/.test(l));
+    const label = last?.labels.find(
+      (l) => l === `Show ${count} children` || l === `Hide ${count} children`,
+    );
     if (label) {
       return label;
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }
   throw new Error(
-    `the hub's children expander never appeared in the lineage view; the view showed ${JSON.stringify(last ?? null)}`,
+    `the children expander with ${count} children never appeared in the lineage view; the view showed ${JSON.stringify(last ?? null)}`,
   );
 }
 
@@ -165,11 +171,67 @@ async function bandLabels(): Promise<string[]> {
   return match.value.bands;
 }
 
-/** Hides the lineage panel so its page is rebuilt, which reads the settings again, then shows it from the hub. */
-async function reopenHub(): Promise<void> {
+/** Hides the lineage panel so its page is rebuilt, which reads the settings again, then shows it from the named model. */
+async function reopenModel(name: string): Promise<void> {
   await vscode.commands.executeCommand("workbench.action.closePanel");
   await waitForPanelGone(process.env.FPU_CDP_PORT!, LINEAGE.entry);
-  await openHub();
+  await openModel(name);
+}
+
+const FANOUT = "fanout";
+const FANOUT_CHILDREN = 10;
+/** The fixture's `fusionPowerUser.lineage.maxNeighbours`: how many children a capped expansion draws at first. */
+const DRAWN_CHILDREN = 3;
+
+/**
+ * The fanout card's children expander label, its "+N" overflow buttons, and how many children cards the view draws
+ * outside it.
+ */
+interface FanoutCard {
+  entry: string;
+  expander: string | null;
+  overflow: string[];
+  children: number;
+}
+
+const FANOUT_CARD = `(() => document.body.dataset.entry === "lineage" ? {
+  entry: "lineage",
+  expander: document
+    .querySelector('[data-table$=".${FANOUT}"] button[aria-label$=" children"]:not([aria-label*=" more "])')
+    ?.getAttribute("aria-label") ?? null,
+  overflow: [...document.querySelectorAll('[data-table$=".${FANOUT}"] button[aria-label*=" more children"]')].map(
+    (button) => button.getAttribute("aria-label"),
+  ),
+  children: document.querySelectorAll('[data-table]:not([data-table$=".${FANOUT}"])').length,
+} : null)()`;
+
+async function fanoutCard(): Promise<FanoutCard> {
+  const match = await evaluatePanel<FanoutCard>(
+    process.env.FPU_CDP_PORT!,
+    LINEAGE.entry,
+    FANOUT_CARD,
+  );
+  assert.ok(match, "the lineage webview is not showing");
+  return match.value;
+}
+
+/** Polls the fanout card until `done` holds, and fails with the last reading otherwise. */
+async function waitForFanoutCard(
+  what: string,
+  done: (current: FanoutCard) => boolean,
+): Promise<FanoutCard> {
+  const deadline = Date.now() + 10_000;
+  let last = await fanoutCard();
+  while (!done(last)) {
+    if (Date.now() >= deadline) {
+      throw new Error(
+        `${what}; the last fanout card was ${JSON.stringify(last)}`,
+      );
+    }
+    await new Promise((resolve) => setTimeout(resolve, 250));
+    last = await fanoutCard();
+  }
+  return last;
 }
 
 /** The hub card's column list, the column edges traced from it, and the table edges' paths. */
@@ -341,9 +403,12 @@ suite("Lineage grouping", function () {
     }
     const evidence = interactionEvidence(host());
 
-    await openHub();
-    if ((await waitForChildrenExpander()) === "Show 7 children") {
-      await clickInWebview(LINEAGE, CHILDREN_EXPANDER);
+    await openModel(HUB);
+    if (
+      (await waitForChildrenExpander(HUB_CHILDREN)) ===
+      `Show ${HUB_CHILDREN} children`
+    ) {
+      await clickInWebview(LINEAGE, childrenExpander(HUB_CHILDREN));
     }
     const grouped = await waitForSnapshot(
       "the hub's children should draw two group nodes and the marts card, with no +N button",
@@ -453,9 +518,12 @@ suite("Lineage grouping", function () {
     const evidence = interactionEvidence(host());
     const config = vscode.workspace.getConfiguration("fusionPowerUser");
     // In alias mode, the default, the fixture's aliased marts model is titled by its alias.
-    await reopenHub();
-    if ((await waitForChildrenExpander()) === "Show 7 children") {
-      await clickInWebview(LINEAGE, CHILDREN_EXPANDER);
+    await reopenModel(HUB);
+    if (
+      (await waitForChildrenExpander(HUB_CHILDREN)) ===
+      `Show ${HUB_CHILDREN} children`
+    ) {
+      await clickInWebview(LINEAGE, childrenExpander(HUB_CHILDREN));
     }
     await waitForSnapshot(
       "the hub's children should draw the marts card",
@@ -473,9 +541,12 @@ suite("Lineage grouping", function () {
         "name",
         vscode.ConfigurationTarget.Workspace,
       );
-      await reopenHub();
-      if ((await waitForChildrenExpander()) === "Show 7 children") {
-        await clickInWebview(LINEAGE, CHILDREN_EXPANDER);
+      await reopenModel(HUB);
+      if (
+        (await waitForChildrenExpander(HUB_CHILDREN)) ===
+        `Show ${HUB_CHILDREN} children`
+      ) {
+        await clickInWebview(LINEAGE, childrenExpander(HUB_CHILDREN));
       }
       await waitForSnapshot(
         "the hub's children should draw the marts card",
@@ -525,9 +596,12 @@ suite("Lineage grouping", function () {
         "leftToRight",
         vscode.ConfigurationTarget.Workspace,
       );
-      await reopenHub();
-      if ((await waitForChildrenExpander()) === "Show 7 children") {
-        await clickInWebview(LINEAGE, CHILDREN_EXPANDER);
+      await reopenModel(HUB);
+      if (
+        (await waitForChildrenExpander(HUB_CHILDREN)) ===
+        `Show ${HUB_CHILDREN} children`
+      ) {
+        await clickInWebview(LINEAGE, childrenExpander(HUB_CHILDREN));
       }
       await waitForSnapshot(
         "the hub's children should draw the marts card",
@@ -587,6 +661,87 @@ suite("Lineage grouping", function () {
     } finally {
       await config.update(
         "lineage.layout",
+        undefined,
+        vscode.ConfigurationTarget.Workspace,
+      );
+    }
+  });
+
+  // Checkpoints 8 to 10: without folder groups a capped expansion draws its first maxNeighbours children and a "+N" button.
+  test("caps a fanout card's children and opens and closes the overflow", async function () {
+    if (!runsHere()) {
+      this.skip();
+      return;
+    }
+    const evidence = interactionEvidence(host());
+    const config = vscode.workspace.getConfiguration("fusionPowerUser");
+    const overflow = FANOUT_CHILDREN - DRAWN_CHILDREN;
+    try {
+      await config.update(
+        "lineage.groupBy",
+        "none",
+        vscode.ConfigurationTarget.Workspace,
+      );
+      await reopenModel(FANOUT);
+      if (
+        (await waitForChildrenExpander(FANOUT_CHILDREN)) ===
+        `Show ${FANOUT_CHILDREN} children`
+      ) {
+        await clickInWebview(LINEAGE, childrenExpander(FANOUT_CHILDREN));
+      }
+      const closed = await waitForFanoutCard(
+        `the fanout card should draw ${DRAWN_CHILDREN} children and a "+${overflow}" overflow button`,
+        (card) =>
+          card.children === DRAWN_CHILDREN &&
+          card.overflow.length === 1 &&
+          card.expander === `Hide ${FANOUT_CHILDREN} children`,
+      );
+      assert.deepStrictEqual(closed.overflow, [
+        `Show ${overflow} more children`,
+      ]);
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-groups-overflow",
+        expect: `The fanout card with ${FANOUT_CHILDREN} children and maxNeighbours ${DRAWN_CHILDREN}: ${DRAWN_CHILDREN} child cards and a "+${overflow}" button.`,
+        measured: { ...closed },
+      });
+
+      await clickInWebview(LINEAGE, {
+        role: "button",
+        name: `Show ${overflow} more children`,
+      });
+      const open = await waitForFanoutCard(
+        `opening the overflow should draw ${2 * DRAWN_CHILDREN} children and a "+${overflow - DRAWN_CHILDREN}" button`,
+        (card) =>
+          card.children === 2 * DRAWN_CHILDREN && card.overflow.length === 1,
+      );
+      assert.deepStrictEqual(open.overflow, [
+        `Show ${overflow - DRAWN_CHILDREN} more children`,
+      ]);
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-groups-overflow-open",
+        expect: `After one overflow press: ${2 * DRAWN_CHILDREN} child cards and a "+${overflow - DRAWN_CHILDREN}" button.`,
+        measured: { ...open },
+      });
+
+      await clickInWebview(LINEAGE, {
+        role: "button",
+        name: `Hide ${FANOUT_CHILDREN} children`,
+      });
+      const collapsed = await waitForFanoutCard(
+        "collapsing the children should draw no child cards and no overflow button",
+        (card) =>
+          card.children === 0 &&
+          card.overflow.length === 0 &&
+          card.expander === `Show ${FANOUT_CHILDREN} children`,
+      );
+      await evidence?.capture(LINEAGE, {
+        name: "lineage-groups-overflow-closed",
+        expect: `After collapsing the children: no child cards, no "+N" button, and the expander reads "Show ${FANOUT_CHILDREN} children".`,
+        measured: { ...collapsed },
+      });
+    } finally {
+      await config.update(
+        "lineage.groupBy",
         undefined,
         vscode.ConfigurationTarget.Workspace,
       );

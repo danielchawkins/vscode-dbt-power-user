@@ -9,6 +9,9 @@ import {
   activate,
   commands,
   EMPTY_STATE,
+  FANOUT,
+  FANOUT_GROUPS,
+  FANOUT_MEMBERS,
   flowNodes,
   HUB,
   node,
@@ -726,6 +729,72 @@ describe("Lineage group node", () => {
   });
 });
 
+/** Opens every group of `FANOUT`, drawing its ten children: its chip row then draws three chips and a +2 more button. */
+const openOverflowGroups = async () => {
+  const opened = await openLineage(
+    { node: FANOUT, publication: "s:1" },
+    { settings: { maxNeighbours: 5 }, flowNodes: 6 },
+  );
+  for (const folder of FANOUT_GROUPS) {
+    await press(opened.user, "button", `Open ${folder}`);
+  }
+  await waitFor(() => expect(tableIds(opened.container)).toHaveLength(11));
+  return opened;
+};
+
+describe("Lineage overflow groups", () => {
+  it.each(["epsilon", "gamma"])(
+    "closes the %s group from the +N popover, which then has no +N button",
+    async (folder) => {
+      const { user, container } = await openOverflowGroups();
+      await press(user, "button", "+2 more", node(container, "fanout"));
+      await press(user, "button", `Close ${folder}`);
+      await waitFor(() =>
+        expect(tableIds(container)).not.toContain(`${folder}1`),
+      );
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(
+        node(container, "fanout").queryByRole("button", { name: /more$/ }),
+      ).toBeNull();
+    },
+  );
+
+  it("closes the groups the chip row draws inline", async () => {
+    const { user, container } = await openOverflowGroups();
+    for (const folder of ["alpha", "beta", "delta"]) {
+      await press(user, "button", `Close ${folder}`, node(container, "fanout"));
+    }
+    await waitFor(() =>
+      expect(tableIds(container)).toEqual([
+        "epsilon1",
+        "epsilon2",
+        "fanout",
+        "gamma1",
+        "gamma2",
+      ]),
+    );
+  });
+
+  it("runs the controls of the members of the overflow groups and of the hub", async () => {
+    const { user, container } = await openOverflowGroups();
+    for (const member of FANOUT_MEMBERS) {
+      await press(user, "button", "Show 1 parents", node(container, member));
+      await press(user, "button", "Show 0 children", node(container, member));
+      await press(user, "button", "Columns", node(container, member));
+      await press(user, "button", "Details", node(container, member));
+      await press(user, "button", "Close", drawer("Details"));
+    }
+    await press(user, "button", "Show 0 parents", node(container, "fanout"));
+    await press(user, "button", "Columns", node(container, "fanout"));
+    await press(user, "button", "Details", node(container, "fanout"));
+    await press(user, "button", "Close", drawer("Details"));
+    await press(user, "button", "Hide 10 children", node(container, "fanout"));
+    await waitFor(() => expect(flowNodes(container)).toHaveLength(1));
+    await press(user, "button", "Show 10 children", node(container, "fanout"));
+    await waitFor(() => expect(flowNodes(container)).toHaveLength(6));
+  }, 30_000);
+});
+
 /** The controls the tests above click. Each is the id `collectControls` gives it. */
 export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:Settings",
@@ -772,6 +841,62 @@ export const TESTED_CONTROLS: readonly ControlId[] = [
   "button:table c/Details",
   "button:Open staging",
   "button:Open marts",
+  "button:Open alpha",
+  "button:Open beta",
+  "button:Open gamma",
+  "button:Open delta",
+  "button:Open epsilon",
+  "button:table fanout/Hide 10 children",
+  "button:table fanout/Show 10 children",
+  "button:table fanout/Show 0 parents",
+  "button:table fanout/Columns",
+  "button:table fanout/Details",
+  "button:table fanout/+2 more",
+  "button:table fanout/Close alpha",
+  "button:table fanout/Close beta",
+  "button:table fanout/Close delta",
+  "button:Close epsilon",
+  "button:Close gamma",
+  "button:table alpha1/Show 1 parents",
+  "button:table alpha1/Show 0 children",
+  "button:table alpha1/Columns",
+  "button:table alpha1/Details",
+  "button:table alpha2/Show 1 parents",
+  "button:table alpha2/Show 0 children",
+  "button:table alpha2/Columns",
+  "button:table alpha2/Details",
+  "button:table beta1/Show 1 parents",
+  "button:table beta1/Show 0 children",
+  "button:table beta1/Columns",
+  "button:table beta1/Details",
+  "button:table beta2/Show 1 parents",
+  "button:table beta2/Show 0 children",
+  "button:table beta2/Columns",
+  "button:table beta2/Details",
+  "button:table gamma1/Show 1 parents",
+  "button:table gamma1/Show 0 children",
+  "button:table gamma1/Columns",
+  "button:table gamma1/Details",
+  "button:table gamma2/Show 1 parents",
+  "button:table gamma2/Show 0 children",
+  "button:table gamma2/Columns",
+  "button:table gamma2/Details",
+  "button:table delta1/Show 1 parents",
+  "button:table delta1/Show 0 children",
+  "button:table delta1/Columns",
+  "button:table delta1/Details",
+  "button:table delta2/Show 1 parents",
+  "button:table delta2/Show 0 children",
+  "button:table delta2/Columns",
+  "button:table delta2/Details",
+  "button:table epsilon1/Show 1 parents",
+  "button:table epsilon1/Show 0 children",
+  "button:table epsilon1/Columns",
+  "button:table epsilon1/Details",
+  "button:table epsilon2/Show 1 parents",
+  "button:table epsilon2/Show 0 children",
+  "button:table epsilon2/Columns",
+  "button:table epsilon2/Details",
   "button:table hub/Hide 6 children",
   "button:table hub/Show 6 children",
   "button:table hub/Show 0 parents",

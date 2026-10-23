@@ -10,6 +10,8 @@ import {
 import {
   activate,
   EMPTY_STATE,
+  FANOUT,
+  FANOUT_GROUPS,
   HUB,
   node,
   openLineage,
@@ -24,6 +26,19 @@ vi.mock("./fit", async (importOriginal) =>
 
 /** Popovers render in a portal, so the controls are collected from the whole page. */
 const page = () => document.body;
+
+/** Opens every group of `FANOUT`: its chip row draws three chips and a +2 more button. */
+const openOverflow = async () => {
+  const opened = await openLineage(
+    { node: FANOUT, publication: "s:1" },
+    { settings: { maxNeighbours: 5 }, flowNodes: 6 },
+  );
+  for (const folder of FANOUT_GROUPS) {
+    await activate(opened.user, "button", `Open ${folder}`);
+  }
+  await screen.findByRole("button", { name: "+2 more" });
+  return opened;
+};
 
 /** Renders the panel, then does what a user does to reach the state. */
 const stateOf =
@@ -61,6 +76,15 @@ describe("Lineage control coverage", () => {
           );
           await activate(user, "button", "Open staging");
           await screen.findByRole("button", { name: "Close staging" });
+          return page();
+        },
+        overflow: async () => {
+          await openOverflow();
+          return page();
+        },
+        "overflow open": async () => {
+          const { user, container } = await openOverflow();
+          await activate(user, "button", "+2 more", node(container, "fanout"));
           return page();
         },
         "Settings open": stateOf(({ user }) =>
