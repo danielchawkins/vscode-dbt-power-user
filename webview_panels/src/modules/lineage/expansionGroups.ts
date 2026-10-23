@@ -30,6 +30,18 @@ export function openGroup(state: GraphState, id: string): GraphState {
 }
 
 /**
+ * Reopens the saved open group `id` if it is a bucket of the applied expansion `expansion`, as `openGroup` does. A saved
+ * ID of another expansion, or one that is no longer a closed bucket, leaves the state as it is.
+ */
+export function restoreGroupId(
+  state: GraphState,
+  expansion: string,
+  id: string,
+): GraphState {
+  return parseGroupNodeId(id)?.[0] === expansion ? openGroup(state, id) : state;
+}
+
+/**
  * Draws the next `cap` members of the open group `id`, or all the rest when there is no cap. An ID that is not an
  * open group leaves the state as it is.
  */

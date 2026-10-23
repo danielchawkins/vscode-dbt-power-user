@@ -1,7 +1,6 @@
-import { openGroup } from "./expansionGroups";
+import { restoreGroupId } from "./expansionGroups";
 import type { FetchNeighbours, GraphStore } from "./graph";
 import { drawnIds, expand, fetchExpansion, parseExpansion } from "./graph";
-import { parseGroupNodeId } from "./grouping";
 
 /** Expands the start table `levels` levels of parents and of children. */
 export async function expandLevels(
@@ -25,9 +24,10 @@ export async function expandLevels(
 }
 
 /**
- * Applies saved expansion keys in order; a key whose table is not drawn by then is skipped. Each applied key's saved
- * groups open right after it, so that a member's own saved expansion, which comes later, finds its table drawn.
- * A saved group ID that is not an applied group leaves the state as it is.
+ * Applies saved expansion keys in order; a key whose table is not drawn by then is skipped. Right after each applied
+ * key, every saved open group ID goes through `restoreGroupId` with that key, in a single `store.update`, so only the
+ * closed buckets of that key reopen and any other ID leaves the state as it is. A member's own saved expansion, which
+ * comes later, then finds its table drawn.
  */
 export async function replayExpansions(
   store: GraphStore,
@@ -41,11 +41,9 @@ export async function replayExpansions(
     const parsed = parseExpansion(key);
     if (parsed && drawnIds(store.get()).has(parsed[1])) {
       await fetchExpansion(store, key, fetch);
-      for (const id of openGroups) {
-        if (parseGroupNodeId(id)?.[0] === key) {
-          store.update((s) => openGroup(s, id));
-        }
-      }
+      store.update((s) =>
+        openGroups.reduce((state, id) => restoreGroupId(state, key, id), s),
+      );
     }
   }
 }
