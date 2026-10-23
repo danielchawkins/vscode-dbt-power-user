@@ -56,6 +56,35 @@ export function parseGroupNodeId(
   return [body.slice(0, bar), body.slice(bar + 1)];
 }
 
+/** 32-bit FNV-1a of the UTF-16 code units of `text`, in base 36. */
+const fnv1a36 = (text: string): string => {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash = Math.imul(hash ^ text.charCodeAt(i), 0x01000193);
+  }
+  return (hash >>> 0).toString(36);
+};
+
+/** A short ID for the closed bucket `key` of `expansion`: the expansion, then a hash of the key. */
+export const shortGroupKey = (expansion: string, key: string): string =>
+  `${expansion}|#${fnv1a36(key)}`;
+
+/**
+ * The form of a group node `id` that fits in `max` characters: the ID itself when it fits, else its short key, or
+ * undefined when neither fits.
+ */
+export function savedGroupKey(id: string, max: number): string | undefined {
+  if (id.length <= max) {
+    return id;
+  }
+  const parsed = parseGroupNodeId(id);
+  if (!parsed) {
+    return undefined;
+  }
+  const short = shortGroupKey(parsed[0], parsed[1]);
+  return short.length <= max ? short : undefined;
+}
+
 /**
  * The bucket of a node: its folder, `pkg:<folder>` outside the root package, or `type:<nodeType>` when it has no
  * path. A file at the root of a package has an empty folder.

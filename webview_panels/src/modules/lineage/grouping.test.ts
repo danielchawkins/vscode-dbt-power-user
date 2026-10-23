@@ -6,6 +6,8 @@ import {
   groupLabel,
   groupNodeId,
   parseGroupNodeId,
+  savedGroupKey,
+  shortGroupKey,
 } from "./grouping";
 
 const table = (
@@ -175,6 +177,40 @@ describe("parseGroupNodeId", () => {
     expect(parseGroupNodeId("group:")).toBeUndefined();
     expect(parseGroupNodeId("group:|models/a")).toBeUndefined();
     expect(parseGroupNodeId("group:c:hub")).toBeUndefined();
+  });
+});
+
+describe("shortGroupKey", () => {
+  it("matches the pinned vectors", () => {
+    expect(shortGroupKey("c:a", "a")).toBe("c:a|#1r9wi7g");
+    expect(shortGroupKey("c:a", "foobar")).toBe("c:a|#1h5yxyg");
+  });
+});
+
+describe("savedGroupKey", () => {
+  // "group:c:hub|" is 12 characters, so a key of length n - 12 makes an ID of length n.
+  const idOf = (length: number) =>
+    groupNodeId("c:hub", "k".repeat(length - "group:c:hub|".length));
+
+  it("keeps an ID of 200 characters", () => {
+    const id = idOf(200);
+    expect(id).toHaveLength(200);
+    expect(savedGroupKey(id, 200)).toBe(id);
+  });
+
+  it("shortens an ID of 201 characters to its short key", () => {
+    const id = idOf(201);
+    expect(savedGroupKey(id, 200)).toBe(shortGroupKey("c:hub", "k".repeat(189)));
+  });
+
+  it("is undefined when the expansion alone makes the short key too long", () => {
+    const id = groupNodeId("e".repeat(195), "a");
+    expect(id.length).toBeGreaterThan(200);
+    expect(savedGroupKey(id, 200)).toBeUndefined();
+  });
+
+  it("is undefined for a long string that is not a group node ID", () => {
+    expect(savedGroupKey("x".repeat(201), 200)).toBeUndefined();
   });
 });
 
