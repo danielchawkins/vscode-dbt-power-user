@@ -83,31 +83,41 @@ const historyRow = (rawSql: string) =>
 const shownCode = () => document.querySelector("code")?.textContent;
 
 /**
- * happy-dom lays nothing out, so the virtualizer would draw no rows: it reads `offsetHeight`, and only the grid's
- * scroller gets a height here.
+ * happy-dom lays nothing out, so the virtualizer would draw no rows. It sizes its scroll element from
+ * `clientHeight` (`offsetHeight` before virtual-core 3.19.7), so both read a height on the grid's scroller and 0
+ * elsewhere.
  */
 const GRID_HEIGHT = 400;
-const originalOffsetHeight = Object.getOwnPropertyDescriptor(
-  HTMLElement.prototype,
-  "offsetHeight",
+const SIZE_PROPERTIES = ["offsetHeight", "clientHeight"] as const;
+const originalSizes = SIZE_PROPERTIES.map(
+  (name) =>
+    [
+      name,
+      Object.getOwnPropertyDescriptor(HTMLElement.prototype, name) ??
+        Object.getOwnPropertyDescriptor(Element.prototype, name),
+    ] as const,
 );
 
 beforeAll(() => {
-  Object.defineProperty(HTMLElement.prototype, "offsetHeight", {
-    configurable: true,
-    get(this: HTMLElement) {
-      return this.getAttribute("role") === "grid" ? GRID_HEIGHT : 0;
-    },
-  });
+  for (const name of SIZE_PROPERTIES) {
+    Object.defineProperty(HTMLElement.prototype, name, {
+      configurable: true,
+      get(this: HTMLElement) {
+        return this.getAttribute("role") === "grid" ? GRID_HEIGHT : 0;
+      },
+    });
+  }
 });
 
 afterAll(() => {
-  if (originalOffsetHeight) {
-    Object.defineProperty(
-      HTMLElement.prototype,
-      "offsetHeight",
-      originalOffsetHeight,
-    );
+  for (const [name, original] of originalSizes) {
+    if (original) {
+      Object.defineProperty(HTMLElement.prototype, name, original);
+    } else {
+      delete (HTMLElement.prototype as unknown as Record<string, unknown>)[
+        name
+      ];
+    }
   }
 });
 
