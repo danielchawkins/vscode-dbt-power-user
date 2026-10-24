@@ -691,15 +691,60 @@ class GutterPlan {
     return this.channels.channel(`l${id}l`, box.x - CARD_GAP + 6, box.x - 16);
   }
 
-  // The vertical channel for a span: the corridor, unless the span passes the start node's row.
+  // The vertical channel for a span: the corridor when no card between the two rows sits over it; else the clear
+  // gap between those cards nearest `targetX`; else the outer channel on `targetX`'s side. A span past the start
+  // node's row always takes the outer channel.
   private spine(first: number, second: number, targetX: number): string {
-    if (
-      this.focusRow > Math.min(first, second) &&
-      this.focusRow < Math.max(first, second)
-    ) {
-      return targetX < this.focusCentre ? this.outerLeft : this.outerRight;
+    const outer = targetX < this.focusCentre ? this.outerLeft : this.outerRight;
+    const lo = Math.min(first, second);
+    const hi = Math.max(first, second);
+    if (this.focusRow > lo && this.focusRow < hi) {
+      return outer;
     }
-    return this.corridor;
+    if (this.clearIn(this.corridor, lo, hi, 0)) {
+      return this.corridor;
+    }
+    return this.gapChannel(lo, hi, targetX) ?? outer;
+  }
+
+  /**
+   * A channel through the widest-enough clear x range between the cards of rows strictly between `first` and
+   * `second`, within the layered cards' extent, choosing the one nearest `targetX`. `undefined` when there is none.
+   */
+  private gapChannel(
+    first: number,
+    second: number,
+    targetX: number,
+  ): string | undefined {
+    const margin = 16;
+    const blocked = this.ids
+      .filter((id) => this.rowIndex(id) > first && this.rowIndex(id) < second)
+      .map((id) => this.boxOf(id))
+      .map((box) => [box.x - margin, box.x + box.width + margin] as const)
+      .sort(([a], [b]) => a - b);
+    const { left, right } = this.input.layeredBounds;
+    const gaps: [number, number][] = [];
+    let from = left;
+    for (const [start, end] of blocked) {
+      if (start > from) {
+        gaps.push([from, start]);
+      }
+      from = Math.max(from, end);
+    }
+    if (right > from) {
+      gaps.push([from, right]);
+    }
+    const nearest = gaps
+      .filter(([a, b]) => b - a >= 12)
+      .sort(
+        ([a1, b1], [a2, b2]) =>
+          Math.abs((a1 + b1) / 2 - targetX) - Math.abs((a2 + b2) / 2 - targetX),
+      )[0];
+    if (!nearest) {
+      return undefined;
+    }
+    const [a, b] = nearest;
+    return this.channels.channel(`gap${first}-${second}:${a}`, a, b);
   }
 
   private relationshipPort(
@@ -716,13 +761,18 @@ class GutterPlan {
     return { name, y };
   }
 
-  // A span is clear in a channel when no card outside its rows crosses the channel's x range.
-  private clearIn(name: string, first: number, second: number): boolean {
+  // A span is clear in a channel when no card outside its rows comes within `margin` of the channel's x range.
+  private clearIn(
+    name: string,
+    first: number,
+    second: number,
+    margin = 10,
+  ): boolean {
     const { lo, hi } = this.channels.bounds(name);
     return this.ids.every((id) => {
       const box = this.boxOf(id);
       const outside = this.rowIndex(id) <= first || this.rowIndex(id) >= second;
-      return outside || box.x + box.width + 10 < lo || box.x - 10 > hi;
+      return outside || box.x + box.width + margin < lo || box.x - margin > hi;
     });
   }
 

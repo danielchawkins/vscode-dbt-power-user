@@ -34,6 +34,47 @@ const input = (
 const xOf = (flow: ReturnType<typeof layeredFlow>, id: string): number =>
   flow.positions.get(id)?.x ?? NaN;
 
+describe("layeredFlow skip edges", () => {
+  it("routes an edge that skips a row around the card in between, not under it", () => {
+    // s -> m -> d and s -> d: each row holds one card, centred under the start, so the corridor runs through m.
+    const flow = layeredFlow(
+      input(
+        [
+          node("s", "intermediate"),
+          node("m", "intermediate"),
+          node("d", "marts"),
+        ],
+        [
+          ["s", "m"],
+          ["m", "d"],
+          ["s", "d"],
+        ],
+      ),
+    );
+    const m = flow.positions.get("m")!;
+    const points = [
+      ...(flow.paths.get("t:s->d")?.d.matchAll(/[MLQ]\s*([\d.]+),([\d.]+)/g) ??
+        []),
+    ].map((match) => ({
+      x: Number(match[1]),
+      y: Number(match[2]),
+    }));
+    // No vertical run of the skip edge passes through m's box.
+    const through = points.slice(1).filter((q, i) => {
+      const p = points[i]!;
+      return (
+        p.x === q.x &&
+        p.x > m.x &&
+        p.x < m.x + 280 &&
+        Math.min(p.y, q.y) < m.y + 100 &&
+        Math.max(p.y, q.y) > m.y
+      );
+    });
+    expect(points.length).toBeGreaterThan(0);
+    expect(through).toEqual([]);
+  });
+});
+
 describe("layeredFlow Other column side", () => {
   it("puts the Other column on the left when the left side crosses less", () => {
     // n1 feeds both o and n2, so the right-hand column has to cross n1's edge to n2.
