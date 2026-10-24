@@ -8,7 +8,13 @@
  *
  * Pure functions: boxes in, SVG path strings out.
  */
-import { BAND_PAD, CARD_GAP, CORRIDOR, GUTTER, type Point } from "./layered";
+import {
+  BAND_PAD,
+  CARD_GAP,
+  CORRIDOR,
+  GUTTER,
+  type Point,
+} from "./layeredMetrics";
 import { geometry as cardGeometry } from "./layout";
 
 interface RouteBox {

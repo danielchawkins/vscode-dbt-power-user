@@ -1,17 +1,11 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
-import { type Edge, MarkerType, type Node } from "@xyflow/react";
+import { MarkerType, type Edge, type Node } from "@xyflow/react";
 import type { TitleMode } from "./card";
 import type { GroupChip, GroupView } from "./expansionGroups";
 import { expansionKey } from "./graph";
-import {
-  bandColour,
-  dominantTag,
-  layerTagOf,
-  type LayeredNode,
-  OTHER_TAG,
-  type Point,
-} from "./layered";
 import { layeredFlow, type LayeredColumnEdge } from "./layeredFlow";
+import { type LayeredNode, type Point } from "./layeredMetrics";
+import { bandColour, dominantTag, layerTagOf, OTHER_TAG } from "./layerTags";
 import {
   columnHandle,
   columnRowOffset,
