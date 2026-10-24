@@ -9,18 +9,19 @@ import {
   sameColumnName,
   tableEdgeId,
 } from "./edgeIds";
-import type { GroupChip, GroupView } from "./expansionGroups";
+import type { GroupChip } from "./expansionGroups";
 import { expansionKey } from "./graph";
-import { layeredFlow, type LayeredColumnEdge } from "./layeredFlow";
-import { type LayeredNode, type Point } from "./layeredMetrics";
-import { bandColour, dominantTag, layerTagOf, OTHER_TAG } from "./layerTags";
+import type { LayerBand } from "./layered";
+import { layeredFlow } from "./layeredFlow";
 import {
-  columnHandle,
-  columnRowOffset,
-  geometry,
-  layout,
-  tableHeight,
-} from "./layout";
+  drawsTableEdges,
+  layeredInput,
+  rankingEdges,
+  type FlowInput,
+} from "./layeredInput";
+import { type Point } from "./layeredMetrics";
+import { bandColour, layerTagOf } from "./layerTags";
+import { columnHandle, geometry, layout, tableHeight } from "./layout";
 import { relationshipPath } from "./relationshipRoute";
 
 /** What a table node draws; `columns` is undefined while the list is hidden. */
@@ -77,39 +78,6 @@ export interface RoutedEdgeData extends Record<string, unknown> {
   end: Point;
 }
 
-/** What `toFlow` reads besides the drawn data. */
-export interface FlowInput {
-  /** How cards are titled; absent means by alias. */
-  title?: TitleMode | undefined;
-  data: lineage.LineageData;
-  columns: Record<string, lineage.LineageColumn[]>;
-  columnTables: readonly string[];
-  expansions: readonly string[];
-  /** Expansion keys still loading. */
-  pending?: readonly string[] | undefined;
-  /** Neighbours each capped expansion does not draw yet, by expansion key. */
-  hidden?: Record<string, number> | undefined;
-  /** Closed groups of applied expansions, each drawn as one card. */
-  groups?: readonly GroupView[] | undefined;
-  /** The `[parent, child]` pairs joining each group to its table. */
-  groupEdges?: readonly [string, string][] | undefined;
-  /** The open groups to chip on their expanded tables. */
-  chips?: readonly GroupChip[] | undefined;
-  errors: Record<string, string[]>;
-  selectedTable?: string | undefined;
-  selectedColumn?: [string, string] | undefined;
-  /** Which connections are drawn: table and group edges under `dbt` and `both`; absent means dbt dependencies. */
-  connections?: lineage.Connections | undefined;
-  /** The relationships to draw, already filtered for the connections and the sources. */
-  refs: readonly lineage.LineageRef[];
-  /** Empty column lists explain that strict static analysis is missing. */
-  columnsNeedStrict?: boolean | undefined;
-  /** Card placement; absent means `layered`. */
-  layout?: lineage.LineageLayout | undefined;
-  /** `lineage.layerColors`: a colour per layer tag over the theme palette. */
-  layerColors?: Readonly<Record<string, string>> | undefined;
-}
-
 /** Lower-cased column names per table that `columnEdges` touch. */
 function tracedColumns(
   columnEdges: readonly lineage.ColumnLineage[],
@@ -123,20 +91,6 @@ function tracedColumns(
     }
   }
   return traced;
-}
-
-/** Table and group edges are drawn under `dbt` and `both`; under `declared` only relationships and column edges are. */
-const drawsTableEdges = (input: FlowInput): boolean =>
-  input.connections !== "declared";
-
-/**
- * The `[parent, child]` pairs that rank the cards top-down or left to right. Under `declared` no table edge is drawn,
- * so the relationships rank the cards, the referenced table upstream of the declaring one.
- */
-function rankingEdges(input: FlowInput): [string, string][] {
-  return drawsTableEdges(input)
-    ? [...input.data.edges, ...(input.groupEdges ?? [])]
-    : input.refs.map((ref) => [ref.to.table, ref.from.table]);
 }
 
 /** React Flow edges: table edges, column edges anchored to listed columns, and relationships. */
@@ -196,6 +150,27 @@ function toEdges(
   ];
 }
 
+/** The React Flow band nodes: one per layer band; a band lets clicks pass through to the pane. */
+function bandNodes(
+  bands: LayerBand[],
+  layerColors: FlowInput["layerColors"],
+): BandNode[] {
+  return bands.map((band, index) => ({
+    id: `band:${index}`,
+    type: "band",
+    position: { x: band.x, y: band.y },
+    width: band.width,
+    height: band.height,
+    selectable: false,
+    draggable: false,
+    connectable: false,
+    focusable: false,
+    // React Flow sets pointer events on a node that has a click handler; a band must let clicks reach the pane.
+    style: { pointerEvents: "none" },
+    data: { tag: band.tag, colour: bandColour(band.tag, layerColors) },
+  }));
+}
+
 /**
  * The layered placement: every card and band position, and the routed path of every edge. The edge ids are the ones
  * `toEdges` gives, so each edge finds its path by id.
@@ -209,103 +184,7 @@ function placeLayered(
   bands: BandNode[];
   paths: Map<string, RoutedEdgeData>;
 } {
-  const { data } = input;
-  const groupsOf = input.groups ?? [];
-  const tagOf = new Map(
-    data.tables.map((t) => [t.table, layerTagOf(t.nodeType, t.layer)] as const),
-  );
-  const anchorTag = (group: GroupView) => {
-    const anchor = group.edge[0] === group.id ? group.edge[1] : group.edge[0];
-    return tagOf.get(anchor) ?? OTHER_TAG;
-  };
-  const nodes: LayeredNode[] = [
-    ...data.tables.map((t) => ({
-      id: t.table,
-      width: geometry.tableWidth,
-      height: heightOf(t.table),
-      tag: layerTagOf(t.nodeType, t.layer),
-    })),
-    ...groupsOf.map((g) => ({
-      id: g.id,
-      width: geometry.tableWidth,
-      height: geometry.groupHeight,
-      tag:
-        g.layerTags && g.layerTags.length > 0
-          ? dominantTag(g.layerTags)
-          : anchorTag(g),
-    })),
-  ];
-  const known = new Set(nodes.map((node) => node.id));
-  const both = (parent: string, child: string) =>
-    known.has(parent) && known.has(child);
-  const offsetOf = (table: string, column: [string, string]) => {
-    const index = (listed(table) ?? []).findIndex((c) =>
-      sameColumnName(c, column[1]),
-    );
-    if (index < 0) {
-      return geometry.headerHeight / 2;
-    }
-    const pinned = table === data.start || table === input.selectedTable;
-    return columnRowOffset(
-      index,
-      input.chips?.filter((c) => c.table === table).length ?? 0,
-      pinned,
-    );
-  };
-  const tableEdges = drawsTableEdges(input);
-  const tableRoutes = [
-    ...(tableEdges ? data.edges : []).map(([parent, child]) => ({
-      id: tableEdgeId(parent, child),
-      parent,
-      child,
-    })),
-    ...(tableEdges ? (input.groupEdges ?? []) : []).map(([parent, child]) => ({
-      id: groupEdgeId(parent, child),
-      parent,
-      child,
-    })),
-  ].filter((route) => both(route.parent, route.child));
-  const columnRoutes: LayeredColumnEdge[] = data.columnEdges
-    .filter((e) => known.has(e.source[0]) && known.has(e.target[0]))
-    .map((e) => ({
-      id: columnEdgeId(e.source, e.target),
-      from: e.source[0],
-      fromOffset: offsetOf(e.source[0], e.source),
-      to: e.target[0],
-      toOffset: offsetOf(e.target[0], e.target),
-    }));
-  const relationshipRoutes = input.refs
-    .filter((ref) => both(ref.from.table, ref.to.table))
-    .map((ref) => ({
-      id: relationshipEdgeId(ref.id),
-      from: ref.from.table,
-      to: ref.to.table,
-    }));
-  const flow = layeredFlow({
-    start: data.start ?? "",
-    nodes,
-    tableRoutes,
-    rankEdges: rankingEdges(input).filter(([parent, child]) =>
-      both(parent, child),
-    ),
-    columnRoutes,
-    relationshipRoutes,
-    traceOn: data.columnEdges.length > 0,
-  });
-  const bands: BandNode[] = flow.bands.map((band, index) => ({
-    id: `band:${index}`,
-    type: "band",
-    position: { x: band.x, y: band.y },
-    width: band.width,
-    height: band.height,
-    selectable: false,
-    draggable: false,
-    connectable: false,
-    focusable: false,
-    // React Flow sets pointer events on a node that has a click handler; a band must let clicks reach the pane.
-    style: { pointerEvents: "none" },
-    data: { tag: band.tag, colour: bandColour(band.tag, input.layerColors) },
-  }));
+  const flow = layeredFlow(layeredInput(input, listed, heightOf));
   const paths = new Map<string, RoutedEdgeData>();
   for (const [id, path] of flow.paths) {
     paths.set(id, {
@@ -316,7 +195,11 @@ function placeLayered(
       startsAt: path.startsAt,
     });
   }
-  return { positions: flow.positions, bands, paths };
+  return {
+    positions: flow.positions,
+    bands: bandNodes(flow.bands, input.layerColors),
+    paths,
+  };
 }
 
 /**

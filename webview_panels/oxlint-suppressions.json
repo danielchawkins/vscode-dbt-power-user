@@ -78,7 +78,7 @@
   },
   "src/modules/lineage/flow.ts": {
     "max-lines-per-function": {
-      "count": 2
+      "count": 1
     }
   },
   "src/modules/lineage/graph.ts": {
