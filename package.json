@@ -1144,7 +1144,8 @@
     "shell-quote": "^1.12.0",
     "@vscode/test-cli": {
       "mocha": "$mocha"
-    }
+    },
+    "@azure/msal-node": "^7.1.1"
   },
   "packageManager": "npm@11.19.0",
   "allowScripts": {
