@@ -123,7 +123,7 @@ function placementOf(flow: LayeredFlow): Record<string, Placement> {
     }),
   );
   const rows = [
-    ...new Set([...centres.values()].map((c) => Math.round(c.y))),
+    ...new Set(Array.from(centres.values(), (c) => Math.round(c.y))),
   ].sort((a, b) => a - b);
   const startX = centres.get(INT_ORDERS)?.x ?? Number.NaN;
   return Object.fromEntries(
@@ -413,7 +413,9 @@ describe("lineage-layers fixture, edges and cards", () => {
     const hits: string[] = [];
     for (const [id, path] of flow.paths) {
       const points = (path.d.match(/[MLQA][^MLQA]*/g) ?? []).map((command) => {
-        const n = [...command.matchAll(/-?[\d.]+/g)].map((m) => Number(m[0]));
+        const n = Array.from(command.matchAll(/-?[\d.]+/g), (m) =>
+          Number(m[0]),
+        );
         return { x: n.at(-2) ?? 0, y: n.at(-1) ?? 0 };
       });
       for (let i = 1; i < points.length; i++) {

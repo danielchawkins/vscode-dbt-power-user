@@ -60,14 +60,60 @@
       "count": 1
     }
   },
+  "src/modules/lineage/LineageView.tsx": {
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    },
+    "react/set-state-in-effect": {
+      "count": 1
+    }
+  },
   "src/modules/lineage/TableNode.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
       "count": 1
     }
   },
+  "src/modules/lineage/flow.ts": {
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 2
+    }
+  },
   "src/modules/lineage/graph.ts": {
     "max-params": {
       "count": 2
+    }
+  },
+  "src/modules/lineage/gutterRouter.ts": {
+    "max-lines": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 7
+    },
+    "no-param-reassign": {
+      "count": 5
+    }
+  },
+  "src/modules/lineage/layered.ts": {
+    "max-lines": {
+      "count": 1
+    },
+    "max-lines-per-function": {
+      "count": 1
+    },
+    "max-params": {
+      "count": 13
+    }
+  },
+  "src/modules/lineage/relationshipMarks.ts": {
+    "max-params": {
+      "count": 1
     }
   },
   "src/modules/queryPanel/components/grid/GridBodyRow.tsx": {

@@ -33,7 +33,7 @@ const outward = (position: Position): [number, number] => {
       return [1, 0];
     case Position.Top:
       return [0, -1];
-    default:
+    case Position.Bottom:
       return [0, 1];
   }
 };
