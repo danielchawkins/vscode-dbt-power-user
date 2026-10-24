@@ -227,17 +227,13 @@ export function toFlow(input: FlowInput): {
   nodes: (TableNode | GroupNode | BandNode)[];
   edges: Edge[];
 } {
-  const { data, columns, columnTables, expansions, errors } = input;
-  const pending = input.pending ?? [];
+  const { data, columns, columnTables } = input;
   const groups = input.groups ?? [];
   const groupIds = new Set(groups.map((g) => g.id));
   const chipsByTable = Map.groupBy(input.chips ?? [], (chip) => chip.table);
   const chipsOf = (table: string) => chipsByTable.get(table) ?? [];
-  const hidden = (direction: "children" | "parents", table: string) =>
-    input.hidden?.[expansionKey(direction, table)] ?? 0;
   const listed = (table: string) =>
     columnTables.includes(table) ? (columns[table] ?? []) : undefined;
-  const traced = tracedColumns(data.columnEdges);
   const layered = (input.layout ?? "layered") === "layered";
   // One height per table, for the layout and for the initial size: the start card and the selected card show their
   // relation line and actions row.
@@ -257,6 +253,38 @@ export function toFlow(input: FlowInput): {
       rankingEdges(input),
       heightOf,
     );
+  const nodes = cardNodes(input, { positions, listed, heightOfTable, layered });
+  const edges = toEdges(input, listed);
+  if (!placed) {
+    return { nodes, edges };
+  }
+  return {
+    nodes: [...placed.bands, ...nodes],
+    edges: routedEdges(edges, placed),
+  };
+}
+
+/** Where `toFlow` placed the cards and how it sizes them, for `cardNodes`. */
+interface CardPlacement {
+  positions: Map<string, Point>;
+  listed: (table: string) => lineage.LineageColumn[] | undefined;
+  heightOfTable: (table: string) => number;
+  layered: boolean;
+}
+
+/** The table and group nodes at their positions, each with the data its card draws. */
+function cardNodes(
+  input: FlowInput,
+  { positions, listed, heightOfTable, layered }: CardPlacement,
+): (TableNode | GroupNode)[] {
+  const { data, expansions, errors } = input;
+  const pending = input.pending ?? [];
+  const groups = input.groups ?? [];
+  const chipsByTable = Map.groupBy(input.chips ?? [], (chip) => chip.table);
+  const chipsOf = (table: string) => chipsByTable.get(table) ?? [];
+  const hidden = (direction: "children" | "parents", table: string) =>
+    input.hidden?.[expansionKey(direction, table)] ?? 0;
+  const traced = tracedColumns(data.columnEdges);
   const tableNodes: TableNode[] = data.tables.map((t) => ({
     id: t.table,
     type: "table",
@@ -305,12 +333,16 @@ export function toFlow(input: FlowInput): {
     initialHeight: geometry.groupHeight,
     data: { label: g.label, count: g.count, layered },
   }));
-  const edges = toEdges(input, listed);
-  if (!placed) {
-    return { nodes: [...tableNodes, ...groupNodes], edges };
-  }
+  return [...tableNodes, ...groupNodes];
+}
+
+/** The routed edges: each is drawn on the path the router gave it, so the edges the router did not route are left out. */
+function routedEdges(
+  edges: Edge[],
+  placed: ReturnType<typeof placeLayered>,
+): Edge[] {
   // Layered edges are drawn from the router's paths; an edge the router did not route is not drawn.
-  const routed = edges.flatMap((edge): Edge[] => {
+  return edges.flatMap((edge): Edge[] => {
     const path = placed.paths.get(edge.id);
     if (!path) {
       return [];
@@ -339,10 +371,6 @@ export function toFlow(input: FlowInput): {
       },
     ];
   });
-  return {
-    nodes: [...placed.bands, ...tableNodes, ...groupNodes],
-    edges: routed,
-  };
 }
 
 /** The edges React Flow draws: below the semantic-zoom threshold, column edges are left out; the layout still routes them. */
