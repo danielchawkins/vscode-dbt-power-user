@@ -38,21 +38,23 @@ function adjacency(
   return map;
 }
 
+/** The start node and the longest paths above and down from it, the seeds every node's generation starts from. */
+interface Seeds {
+  start: string;
+  up: ReadonlyMap<string, number>;
+  down: ReadonlyMap<string, number>;
+}
+
 /** The generation a node starts with from its longest paths: the start itself, above, below, or none yet. */
-function seededGeneration(
-  id: string,
-  start: string,
-  up: ReadonlyMap<string, number>,
-  down: ReadonlyMap<string, number>,
-): number | undefined {
-  if (id === start) {
+function seededGeneration(id: string, seeds: Seeds): number | undefined {
+  if (id === seeds.start) {
     return 0;
   }
-  if (up.has(id)) {
-    return -(up.get(id) ?? 0);
+  if (seeds.up.has(id)) {
+    return -(seeds.up.get(id) ?? 0);
   }
-  if (down.has(id)) {
-    return down.get(id) ?? 0;
+  if (seeds.down.has(id)) {
+    return seeds.down.get(id) ?? 0;
   }
   return undefined;
 }
@@ -109,8 +111,9 @@ export function generations(
   const down = longestPaths(start, children, limit);
 
   const gen = new Map<string, number>();
+  const seeds: Seeds = { start, up, down };
   for (const id of ids) {
-    const seeded = seededGeneration(id, start, up, down);
+    const seeded = seededGeneration(id, seeds);
     if (seeded !== undefined) {
       gen.set(id, seeded);
     }
