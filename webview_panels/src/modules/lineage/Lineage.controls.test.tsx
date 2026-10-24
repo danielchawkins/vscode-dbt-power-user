@@ -1,10 +1,9 @@
 import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
-import type { ControlId, InteractiveRole } from "../../test/controlCoverage";
-import { controlId, expectPosted } from "../../test/controlCoverage";
+import { expectPosted } from "../../test/controlCoverage";
+import { controlRecorder } from "../../test/controlRecorder";
 import { fits } from "../../test/fitRecorder";
-import type { Scope, User } from "../../test/lineageHarness";
 import {
   activate,
   commands,
@@ -19,6 +18,7 @@ import {
   openLineage,
   pane,
   tableIds,
+  TESTED_CONTROLS,
   zoomPast,
 } from "../../test/lineageHarness";
 import { getVsCodeApiMock } from "../../test/setup";
@@ -27,42 +27,7 @@ vi.mock("./fit", async (importOriginal) =>
   (await import("../../test/fitRecorder")).recordingFit(importOriginal),
 );
 
-/** Every control a test below clicked. */
-const clicked = new Set<ControlId>();
-
-/** Clicks `element`, a control with `role` and `name`, and records it as tested. */
-const pressElement = async (
-  user: User,
-  role: InteractiveRole,
-  name: string,
-  element: HTMLElement,
-) => {
-  clicked.add(controlId(role, name, element));
-  await user.click(element);
-  return element;
-};
-
-/** Clicks the control and records it as tested. */
-const press = (
-  user: User,
-  role: InteractiveRole,
-  name: string,
-  scope: Scope = screen,
-) => pressElement(user, role, name, scope.getByRole(role, { name }));
-
-/** Replaces the value of the input, a control with `role` and `name`, and records it as tested. */
-const typeInto = async (
-  user: User,
-  role: InteractiveRole,
-  name: string,
-  value: string,
-) => {
-  const element = screen.getByRole(role, { name });
-  clicked.add(controlId(role, name, element));
-  await user.clear(element);
-  await user.type(element, value);
-  return element;
-};
+const { clicked, press, pressElement, typeInto } = controlRecorder();
 
 /** The backdrop of the drawer labelled `label`: the button the drawer renders just before its `aside`. */
 const backdropOf = (label: string) =>
@@ -795,136 +760,8 @@ describe("Lineage overflow groups", () => {
   }, 30_000);
 });
 
-/** The controls the tests above click. Each is the id `collectControls` gives it. */
-export const TESTED_CONTROLS: readonly ControlId[] = [
-  "button:Settings",
-  "spinbutton:Default expansion",
-  "checkbox:Show select (direct) column edges",
-  "checkbox:Show non-select (indirect) column edges",
-  "button:Connections",
-  "radio:dbt dependencies",
-  "radio:Declared relationships",
-  "radio:Both",
-  "checkbox:test",
-  "checkbox:contract",
-  "checkbox:meta",
-  "checkbox:semantic",
-  "checkbox:inferred",
-  "slider:Inferred confidence ≥ 0.80",
-  "checkbox:Infer relationships for sources",
-  "button:Reset",
-  "button:Help",
-  "link:Help/Documentation",
-  "button:Help/Close",
-  "button:Help/backdrop Close",
-  "button:Show minimap",
-  "button:Hide minimap",
-  "button:Zoom In",
-  "button:Zoom Out",
-  "button:Fit View",
-  "button:table a/Show 0 parents",
-  "button:table a/Show 1 children",
-  "button:table a/Open file",
-  "button:table a/Columns",
-  "button:table a/Details",
-  "button:table b/Hide 1 parents",
-  "button:table b/Show 1 parents",
-  "button:table b/Hide 1 children",
-  "button:table b/Show 1 children",
-  "button:table b/Open file",
-  "button:table b/Columns",
-  "button:table b/id",
-  "button:table b/Details",
-  "button:table c/Show 1 parents",
-  "button:table c/Show 0 children",
-  "button:table c/Columns",
-  "button:table c/Details",
-  "button:Open staging",
-  "button:Open marts",
-  "button:Open alpha",
-  "button:Open beta",
-  "button:Open gamma",
-  "button:Open delta",
-  "button:Open epsilon",
-  "button:table fanout/Hide 10 children",
-  "button:table fanout/Show 10 children",
-  "button:table fanout/Show 0 parents",
-  "button:table fanout/Columns",
-  "button:table fanout/Details",
-  "button:table fanout/+2 more",
-  "button:table fanout/Close alpha",
-  "button:table fanout/Close beta",
-  "button:table fanout/Close delta",
-  "button:Close epsilon",
-  "button:Close gamma",
-  "button:table alpha1/Show 1 parents",
-  "button:table alpha1/Show 0 children",
-  "button:table alpha1/Columns",
-  "button:table alpha1/Details",
-  "button:table alpha2/Show 1 parents",
-  "button:table alpha2/Show 0 children",
-  "button:table alpha2/Columns",
-  "button:table alpha2/Details",
-  "button:table beta1/Show 1 parents",
-  "button:table beta1/Show 0 children",
-  "button:table beta1/Columns",
-  "button:table beta1/Details",
-  "button:table beta2/Show 1 parents",
-  "button:table beta2/Show 0 children",
-  "button:table beta2/Columns",
-  "button:table beta2/Details",
-  "button:table gamma1/Show 1 parents",
-  "button:table gamma1/Show 0 children",
-  "button:table gamma1/Columns",
-  "button:table gamma1/Details",
-  "button:table gamma2/Show 1 parents",
-  "button:table gamma2/Show 0 children",
-  "button:table gamma2/Columns",
-  "button:table gamma2/Details",
-  "button:table delta1/Show 1 parents",
-  "button:table delta1/Show 0 children",
-  "button:table delta1/Columns",
-  "button:table delta1/Details",
-  "button:table delta2/Show 1 parents",
-  "button:table delta2/Show 0 children",
-  "button:table delta2/Columns",
-  "button:table delta2/Details",
-  "button:table epsilon1/Show 1 parents",
-  "button:table epsilon1/Show 0 children",
-  "button:table epsilon1/Columns",
-  "button:table epsilon1/Details",
-  "button:table epsilon2/Show 1 parents",
-  "button:table epsilon2/Show 0 children",
-  "button:table epsilon2/Columns",
-  "button:table epsilon2/Details",
-  "button:table hub/Hide 6 children",
-  "button:table hub/Show 6 children",
-  "button:table hub/Show 0 parents",
-  "button:table hub/Columns",
-  "button:table hub/Details",
-  "button:table hub/Show 1 more in staging",
-  "button:table hub/Close staging",
-  "button:table s1/Columns",
-  "button:table s1/Details",
-  "button:table s1/Show 0 children",
-  "button:table s1/Show 1 parents",
-  "button:table s2/Columns",
-  "button:table s2/Details",
-  "button:table s2/Show 0 children",
-  "button:table s2/Show 1 parents",
-  "button:Details/Open file",
-  "button:Details/Sync with database",
-  "button:Details/Tests (0)",
-  "button:Details/Meta",
-  "button:Details/Columns (1)",
-  "button:Details/Close",
-  "button:Details/backdrop Close",
-  "button:Click here",
-  "button:Use strict analysis",
-];
-
 describe("Lineage TESTED_CONTROLS", () => {
   it("lists exactly the controls the tests above clicked", () => {
-    expect([...clicked].sort()).toEqual(TESTED_CONTROLS.toSorted());
+    expect([...clicked].toSorted()).toEqual(TESTED_CONTROLS.toSorted());
   });
 });

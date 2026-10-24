@@ -1,12 +1,16 @@
-import AppProvider from "@modules/app/AppProvider";
-import { handleIncomingResponse } from "@modules/app/requestExecutor";
-import QueryPanelProvider from "@modules/queryPanel/QueryPanelProvider";
-import { act, render, screen, waitFor, within } from "@testing-library/react";
-import userEvent from "@testing-library/user-event";
-import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
-import type { ControlId, InteractiveRole } from "../../test/controlCoverage";
-import { controlId, expectPosted } from "../../test/controlCoverage";
-import { getVsCodeApiMock } from "../../test/setup";
+import { screen, waitFor, within } from "@testing-library/react";
+import type userEvent from "@testing-library/user-event";
+import { describe, expect, it, vi } from "vitest";
+import { expectPosted } from "../../test/controlCoverage";
+import { controlRecorder } from "../../test/controlRecorder";
+import {
+  ERROR,
+  HISTORY,
+  openQueryPanel,
+  RESULTS,
+  sizeGridsForVirtualizer,
+  TESTED_CONTROLS,
+} from "../../test/queryPanelControls";
 
 /**
  * The Query panel controls suite. The coverage gate imports this file, so its tests and `TESTED_CONTROLS`
@@ -14,44 +18,8 @@ import { getVsCodeApiMock } from "../../test/setup";
  */
 
 type User = ReturnType<typeof userEvent.setup>;
-type Scope = { getByRole: typeof screen.getByRole };
 
-/** Every control a test below clicked. */
-const clicked = new Set<ControlId>();
-
-/** Clicks `element`, a control with `role` and `name`, and records it as tested. */
-const pressElement = async (
-  user: User,
-  role: InteractiveRole,
-  name: string,
-  element: HTMLElement,
-) => {
-  clicked.add(controlId(role, name, element));
-  await user.click(element);
-  return element;
-};
-
-/** Clicks the control with `role` and `name`, and records it as tested. */
-const press = (
-  user: User,
-  role: InteractiveRole,
-  name: string,
-  scope: Scope = screen,
-) => pressElement(user, role, name, scope.getByRole(role, { name }));
-
-/** Replaces the value of the input, a control with `role` and `name`, and records it as tested. */
-const typeInto = async (
-  user: User,
-  role: InteractiveRole,
-  name: string,
-  value: string,
-) => {
-  const element = screen.getByRole(role, { name });
-  clicked.add(controlId(role, name, element));
-  await user.clear(element);
-  await user.type(element, value);
-  return element;
-};
+const { clicked, press, pressElement, typeInto } = controlRecorder();
 
 /**
  * An icon-only button shows its label only on hover, so it has no name at rest. Finds the button by its icon,
@@ -82,122 +50,7 @@ const historyRow = (rawSql: string) =>
 /** The text of the SQL block on screen, with its line numbers. */
 const shownCode = () => document.querySelector("code")?.textContent;
 
-/**
- * happy-dom lays nothing out, so the virtualizer would draw no rows. It sizes its scroll element from
- * `clientHeight` (`offsetHeight` before virtual-core 3.19.7), so both read a height on the grid's scroller and 0
- * elsewhere.
- */
-const GRID_HEIGHT = 400;
-const SIZE_PROPERTIES = ["offsetHeight", "clientHeight"] as const;
-const originalSizes = SIZE_PROPERTIES.map(
-  (name) =>
-    [
-      name,
-      Object.getOwnPropertyDescriptor(HTMLElement.prototype, name) ??
-        Object.getOwnPropertyDescriptor(Element.prototype, name),
-    ] as const,
-);
-
-beforeAll(() => {
-  for (const name of SIZE_PROPERTIES) {
-    Object.defineProperty(HTMLElement.prototype, name, {
-      configurable: true,
-      get(this: HTMLElement) {
-        return this.getAttribute("role") === "grid" ? GRID_HEIGHT : 0;
-      },
-    });
-  }
-});
-
-afterAll(() => {
-  for (const [name, original] of originalSizes) {
-    if (original) {
-      Object.defineProperty(HTMLElement.prototype, name, original);
-    } else {
-      delete (HTMLElement.prototype as unknown as Record<string, unknown>)[
-        name
-      ];
-    }
-  }
-});
-
-/** Answers the sync requests the panel makes with no data, as the host does when it has none to give. */
-const answerRequests = () =>
-  getVsCodeApiMock().postMessage.mockImplementation((message: unknown) => {
-    const { syncRequestId } = message as { syncRequestId?: string };
-    if (syncRequestId) {
-      queueMicrotask(() =>
-        handleIncomingResponse({
-          syncRequestId,
-          status: true,
-          body: undefined,
-        }),
-      );
-    }
-  });
-
-/** Renders the panel inside the app, then dispatches each host message to it. */
-export const openQueryPanel = (...messages: object[]) => {
-  answerRequests();
-  const user = userEvent.setup();
-  const { container } = render(
-    <AppProvider>
-      <QueryPanelProvider />
-    </AppProvider>,
-  );
-  for (const data of messages) {
-    act(() => {
-      globalThis.dispatchEvent(new MessageEvent("message", { data }));
-    });
-  }
-  return { user, container };
-};
-
-/** Results with two rows, one of them JSON, so its cell gets the viewer button. */
-export const RESULTS = {
-  command: "renderQuery",
-  columnNames: ["id", "name", "payload"],
-  columnTypes: ["number", "string", "string"],
-  rows: [
-    { id: 1, name: "alpha", payload: '{"a": 1}' },
-    { id: 2, name: "beta", payload: "short" },
-  ],
-  raw_sql: "select * from orders",
-  compiled_sql: "select * from orders",
-};
-
-export const ERROR = {
-  command: "renderError",
-  error: {
-    message: "Syntax error\nnear 'from'",
-    code: 1,
-    data: "compiler output",
-  },
-};
-
-const entry = (rawSql: string, timestamp: number) => ({
-  rawSql,
-  compiledSql: rawSql,
-  timestamp,
-  duration: 12,
-  adapter: "snowflake",
-  projectName: "demo",
-  modelName: "stg_orders",
-  columnNames: ["id"],
-  columnTypes: ["number"],
-  data: [{ id: 1 }],
-});
-
-/** Two history entries, `select 1` first. */
-export const HISTORY = {
-  command: "queryHistory",
-  args: {
-    body: [
-      entry("select 1", 1_728_000_000_000),
-      entry("select * from orders", 1_728_000_000_001),
-    ],
-  },
-};
+sizeGridsForVirtualizer();
 
 // ---- the tests ----
 
@@ -500,41 +353,8 @@ describe("Query panel history", () => {
   });
 });
 
-/** Every control a test above clicked. */
-export const TESTED_CONTROLS: readonly ControlId[] = [
-  "button:History",
-  "button:Welcome 🚀",
-  "button:SQL",
-  "button:Preview 0 rows in s",
-  "button:Preview 2 rows in s",
-  "button:open-adhoc-query",
-  "button:Open in Tab",
-  "button:Clear results",
-  "button:Show materialized",
-  "button:Show computed",
-  "spinbutton:Limit",
-  "button:Run query",
-  "button:Save",
-  "button:Export CSV",
-  "button:Resize column id",
-  "button:Resize column name",
-  "button:Resize column payload",
-  "button:View complete value",
-  "button:payload/Close",
-  "button:Cancel query",
-  "link:Docs",
-  "button:Copy to clipboard",
-  "button:Search query",
-  "button:select 1",
-  "button:select * from orders",
-  "button:Execute query",
-  "button:Show results",
-  "button:Open in editor",
-  "button:+ New query",
-];
-
 describe("Query panel controls", () => {
   it("lists exactly the controls the tests above clicked", () => {
-    expect([...clicked].sort()).toEqual(TESTED_CONTROLS.toSorted());
+    expect([...clicked].toSorted()).toEqual(TESTED_CONTROLS.toSorted());
   });
 });
