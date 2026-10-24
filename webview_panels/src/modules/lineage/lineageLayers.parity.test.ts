@@ -6,6 +6,7 @@ import {
   lineageLayersRefs,
   lineageLayersTables,
 } from "../../test/fixtures/lineageLayers";
+import { relationshipEdgeId, tableEdgeId } from "./edgeIds";
 import { fitGraph, fitPadding } from "./fit";
 import type { TableRoute } from "./gutterRouter";
 import { hiddenTables } from "./hiddenNodes";
@@ -56,7 +57,7 @@ function layout(
   const declared = connections !== "dbt";
   const tableRoutes: TableRoute[] = dbt
     ? dbtEdges.map(([parent, child]) => ({
-        id: `t:${parent}->${child}`,
+        id: tableEdgeId(parent, child),
         parent,
         child,
       }))
@@ -74,7 +75,7 @@ function layout(
     columnRoutes: [],
     relationshipRoutes: declared
       ? lineageLayersRefs.map((ref) => ({
-          id: `r:${ref.id}`,
+          id: relationshipEdgeId(ref.id),
           from: ref.from.table,
           to: ref.to.table,
         }))
@@ -406,8 +407,10 @@ describe("lineage-layers fixture, edges and cards", () => {
   function edgesUnderCards(flow: LayeredFlow): string[] {
     const size = new Map(nodes.map((node) => [node.id, node]));
     const ends = (id: string): string[] => {
-      const route = drawnDbtEdges.find(([p, c]) => id === `t:${p}->${c}`);
-      const ref = lineageLayersRefs.find((r) => id === `r:${r.id}`);
+      const route = drawnDbtEdges.find(([p, c]) => id === tableEdgeId(p, c));
+      const ref = lineageLayersRefs.find(
+        (r) => id === relationshipEdgeId(r.id),
+      );
       return route ? [...route] : ref ? [ref.from.table, ref.to.table] : [];
     };
     const hits: string[] = [];

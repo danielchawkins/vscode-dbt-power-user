@@ -2,7 +2,7 @@ import type { lineage } from "@fusion-power-user/webview-contract";
 import type { LineageViewState } from "@modules/app/viewState";
 import { MAX_VIEW_STATE_STRING } from "@modules/app/viewState";
 import { describe, expect, it } from "vitest";
-import { addNeighbours, emptyGraph } from "./graph";
+import { addNeighbours, emptyGraph, expansionKey } from "./graph";
 import { groupNodeId, shortGroupKey } from "./grouping";
 import {
   planRender,
@@ -157,7 +157,7 @@ describe("lineage view model", () => {
       {
         ...drawn,
         groups: {
-          [`c:${start}`]: {
+          [expansionKey("children", start)]: {
             buckets: [{ key, members: ["b"] }],
             loose: [],
             open: { [key]: 1 },

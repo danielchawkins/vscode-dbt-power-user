@@ -1,6 +1,14 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { MarkerType, type Edge, type Node } from "@xyflow/react";
 import type { TitleMode } from "./card";
+import {
+  columnEdgeId,
+  groupEdgeId,
+  isColumnEdgeId,
+  relationshipEdgeId,
+  sameColumnName,
+  tableEdgeId,
+} from "./edgeIds";
 import type { GroupChip, GroupView } from "./expansionGroups";
 import { expansionKey } from "./graph";
 import { layeredFlow, type LayeredColumnEdge } from "./layeredFlow";
@@ -131,9 +139,6 @@ function rankingEdges(input: FlowInput): [string, string][] {
     : input.refs.map((ref) => [ref.to.table, ref.from.table]);
 }
 
-/** The ID prefix of column edges. */
-const COLUMN_EDGE = "c:";
-
 /** React Flow edges: table edges, column edges anchored to listed columns, and relationships. */
 function toEdges(
   input: FlowInput,
@@ -143,16 +148,14 @@ function toEdges(
   // Declared-only drawing shows no dbt table or group edges; column edges remain, present only under a column trace.
   const tableEdges = drawsTableEdges(input);
   const handle = (side: "in" | "out", [table, column]: [string, string]) => {
-    const match = listed(table)?.find(
-      (c) => c.name.toLowerCase() === column.toLowerCase(),
-    );
+    const match = listed(table)?.find((c) => sameColumnName(c, column));
     return match ? columnHandle(side, match.name) : side;
   };
   const touchesSelection = (a: string, b: string) =>
     selectedTable !== undefined && (a === selectedTable || b === selectedTable);
   return [
     ...(tableEdges ? data.edges : []).map(([parent, child]) => ({
-      id: `t:${parent}->${child}`,
+      id: tableEdgeId(parent, child),
       source: parent,
       target: child,
       sourceHandle: "out",
@@ -162,7 +165,7 @@ function toEdges(
         : "lineage-table-edge",
     })),
     ...(tableEdges ? (input.groupEdges ?? []) : []).map(([parent, child]) => ({
-      id: `g:${parent}->${child}`,
+      id: groupEdgeId(parent, child),
       source: parent,
       target: child,
       sourceHandle: "out",
@@ -170,7 +173,7 @@ function toEdges(
       className: "lineage-table-edge",
     })),
     ...data.columnEdges.map((e) => ({
-      id: `${COLUMN_EDGE}${e.source.join(".")}->${e.target.join(".")}`,
+      id: columnEdgeId(e.source, e.target),
       source: e.source[0],
       target: e.target[0],
       sourceHandle: handle("out", e.source),
@@ -182,7 +185,7 @@ function toEdges(
     })),
     // The referenced (one) side is the source, so it sits upstream of the declaring (many) side, as in the dbt view.
     ...input.refs.map((ref) => ({
-      id: `r:${ref.id}`,
+      id: relationshipEdgeId(ref.id),
       type: "relationship",
       source: ref.to.table,
       target: ref.from.table,
@@ -236,8 +239,8 @@ function placeLayered(
   const both = (parent: string, child: string) =>
     known.has(parent) && known.has(child);
   const offsetOf = (table: string, column: [string, string]) => {
-    const index = (listed(table) ?? []).findIndex(
-      (c) => c.name.toLowerCase() === column[1].toLowerCase(),
+    const index = (listed(table) ?? []).findIndex((c) =>
+      sameColumnName(c, column[1]),
     );
     if (index < 0) {
       return geometry.headerHeight / 2;
@@ -252,12 +255,12 @@ function placeLayered(
   const tableEdges = drawsTableEdges(input);
   const tableRoutes = [
     ...(tableEdges ? data.edges : []).map(([parent, child]) => ({
-      id: `t:${parent}->${child}`,
+      id: tableEdgeId(parent, child),
       parent,
       child,
     })),
     ...(tableEdges ? (input.groupEdges ?? []) : []).map(([parent, child]) => ({
-      id: `g:${parent}->${child}`,
+      id: groupEdgeId(parent, child),
       parent,
       child,
     })),
@@ -265,7 +268,7 @@ function placeLayered(
   const columnRoutes: LayeredColumnEdge[] = data.columnEdges
     .filter((e) => known.has(e.source[0]) && known.has(e.target[0]))
     .map((e) => ({
-      id: `c:${e.source.join(".")}->${e.target.join(".")}`,
+      id: columnEdgeId(e.source, e.target),
       from: e.source[0],
       fromOffset: offsetOf(e.source[0], e.source),
       to: e.target[0],
@@ -274,7 +277,7 @@ function placeLayered(
   const relationshipRoutes = input.refs
     .filter((ref) => both(ref.from.table, ref.to.table))
     .map((ref) => ({
-      id: `r:${ref.id}`,
+      id: relationshipEdgeId(ref.id),
       from: ref.from.table,
       to: ref.to.table,
     }));
@@ -461,5 +464,5 @@ export function toFlow(input: FlowInput): {
 
 /** The edges React Flow draws: below the semantic-zoom threshold, column edges are left out; the layout still routes them. */
 export function drawnEdges(edges: Edge[], zoomedOut: boolean): Edge[] {
-  return zoomedOut ? edges.filter((e) => !e.id.startsWith(COLUMN_EDGE)) : edges;
+  return zoomedOut ? edges.filter((e) => !isColumnEdgeId(e.id)) : edges;
 }

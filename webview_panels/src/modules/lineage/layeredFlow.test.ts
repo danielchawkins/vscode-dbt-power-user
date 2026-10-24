@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { tableEdgeId } from "./edgeIds";
 import * as layered from "./layered";
 import type * as LayeredModule from "./layered";
 import type { LayeredNode } from "./layered";
@@ -23,7 +24,7 @@ const input = (
   start: "s",
   nodes,
   tableRoutes: pairs.map(([parent, child]) => ({
-    id: `t:${parent}->${child}`,
+    id: tableEdgeId(parent, child),
     parent,
     child,
   })),
