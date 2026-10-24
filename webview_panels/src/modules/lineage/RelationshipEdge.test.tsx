@@ -1,6 +1,7 @@
 import type { lineage } from "@fusion-power-user/webview-contract";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { EdgeProps } from "@xyflow/react";
+import type * as XyflowReact from "@xyflow/react";
 import { Position } from "@xyflow/react";
 import { describe, expect, it, vi } from "vitest";
 import {
@@ -12,7 +13,7 @@ import { endMark } from "./relationshipMarks";
 // xyflow portals the tooltip into its label layer, which only exists inside a laid-out flow. happy-dom
 // lays nothing out, so the label renders in place.
 vi.mock("@xyflow/react", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@xyflow/react")>()),
+  ...(await importOriginal<typeof XyflowReact>()),
   EdgeLabelRenderer: ({ children }: { children: React.ReactNode }) => children,
 }));
 
@@ -96,8 +97,7 @@ describe("relationship edge", () => {
     expect(screen.queryByText("hub_id -> id")).toBeNull();
 
     // The hit path is drawn last, above the line and marks.
-    const paths = container.querySelectorAll("path");
-    const hit = paths[paths.length - 1];
+    const hit = [...container.querySelectorAll("path")].at(-1);
     expect(hit).toBeTruthy();
     fireEvent.pointerEnter(hit!);
 

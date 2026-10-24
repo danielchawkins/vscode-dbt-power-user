@@ -46,10 +46,14 @@ typecheck:
 
 [group("quality")]
 fmt:
+    npm run build:contract
+    npm run fix:oxlint
     npm run fix:eslint
 
 [group("quality")]
 lint:
+    npm run build:contract
+    npm run lint:oxlint
     npm run lint:eslint
     npm run lint:imports
 

@@ -300,7 +300,7 @@ class Channels {
   /** The weighted crossings between every pair of routes, in tenths, at `i * routes + j`. */
   private pairCosts(geometry: readonly Geometry[], traceOn: boolean): number[] {
     const size = this.routes.length;
-    const costs = new Array<number>(size * size).fill(0);
+    const costs = Array.from({ length: size * size }, () => 0);
     for (const first of this.routes) {
       for (const second of this.routes) {
         if (second.index <= first.index) {
@@ -973,7 +973,7 @@ export function routeGutters(input: RouteInput): RouteResult {
       d: drawn.d,
       labelAt: labelPoint(points),
       start: points[0] ?? { x: 0, y: 0 },
-      end: points[points.length - 1] ?? { x: 0, y: 0 },
+      end: points.at(-1) ?? { x: 0, y: 0 },
       startsAt: route.startsAt,
     });
   });

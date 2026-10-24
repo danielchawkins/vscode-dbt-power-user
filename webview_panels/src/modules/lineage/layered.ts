@@ -246,10 +246,8 @@ function generations(
       gen.set(id, 1);
     }
   }
-  // Every edge points down: push a child below its parent, or a parent above its child.
-  for (let pass = 0; pass < ids.length; pass++) {
-    orientEdges(start, edges, gen);
-  }
+  // Every edge points down: push a child below its parent, or a parent above its child. One pass per node is enough.
+  ids.forEach(() => orientEdges(start, edges, gen));
   return gen;
 }
 
@@ -596,11 +594,11 @@ function shiftToMargins(
   positions: Map<string, Point>,
   width: (id: string) => number,
 ): number {
-  const xs = [...positions.values()].map((p) => p.x);
-  const rights = [...positions.entries()].map(([id, p]) => p.x + width(id));
+  const xs = Array.from(positions.values(), (p) => p.x);
+  const rights = Array.from(positions.entries(), ([id, p]) => p.x + width(id));
   const reach = Math.max(-Math.min(...xs), Math.max(...rights));
   const shiftX = reach + SIDE_MARGIN;
-  const minY = Math.min(...[...positions.values()].map((p) => p.y));
+  const minY = Math.min(...Array.from(positions.values(), (p) => p.y));
   const shiftY = TOP_MARGIN - minY;
   for (const [id, p] of positions) {
     positions.set(id, { x: p.x + shiftX, y: p.y + shiftY });
