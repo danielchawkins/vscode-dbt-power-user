@@ -32,11 +32,6 @@ sync:
     npm ci --strict-allow-scripts
 
 [group("setup")]
-update:
-    npm update --strict-allow-scripts
-    npm install-scripts prune
-
-[group("setup")]
 install-mise-tools *args:
     mise install "$@"
 
