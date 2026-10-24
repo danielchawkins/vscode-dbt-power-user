@@ -133,16 +133,34 @@ const HUB_CHILDREN = [
 /** `hub` feeds `HUB_CHILDREN`; capped at two neighbours, its expansion draws them as one group per folder. */
 export const HUB = table("hub", "model", 0, HUB_CHILDREN.length);
 
+/** The folders of `FANOUT`, each holding two children, so that its expansion draws one group per folder. Name order, which is the order its chip row draws them in. */
+export const FANOUT_GROUPS = ["alpha", "beta", "delta", "epsilon", "gamma"];
+
+/** Two children in each of `FANOUT_GROUPS`; capped at five neighbours, its expansion draws five groups. */
+const FANOUT_CHILDREN = FANOUT_GROUPS.flatMap((folder) =>
+  [1, 2].map((n) => inFolder(`${folder}${n}`, `models/${folder}`)),
+);
+
+/** `fanout` feeds `FANOUT_CHILDREN`, more groups than the chip row draws inline. */
+export const FANOUT = table("fanout", "model", 0, FANOUT_CHILDREN.length);
+
+/** The ids of the children of `FANOUT`, in folder order. */
+export const FANOUT_MEMBERS = FANOUT_CHILDREN.map((child) => child.table);
+
 const CHILDREN: Record<string, lineage.LineageTable[]> = {
   a: [TABLES.b],
   b: [TABLES.c],
   hub: HUB_CHILDREN,
+  fanout: FANOUT_CHILDREN,
 };
 
 const PARENTS: Record<string, lineage.LineageTable[]> = {
   b: [TABLES.a],
   c: [TABLES.b],
   ...Object.fromEntries(HUB_CHILDREN.map((child) => [child.table, [HUB]])),
+  ...Object.fromEntries(
+    FANOUT_CHILDREN.map((child) => [child.table, [FANOUT]]),
+  ),
 };
 
 type Params = Record<string, unknown>;
@@ -222,6 +240,8 @@ export const openLineage = async (
   options: {
     settings?: Partial<lineage.LineageSettings>;
     renderFirst?: boolean;
+    /** How many flow nodes the start table draws, its group cards included; 3 unless it has more groups. */
+    flowNodes?: number;
   } = {},
 ): Promise<{ user: User; container: HTMLElement }> => {
   const release = answerRequests(
@@ -244,7 +264,9 @@ export const openLineage = async (
   await act(async () => release());
   if (args.node) {
     // Table cards and group cards are both React Flow nodes.
-    await waitFor(() => expect(flowNodes(container)).toHaveLength(3));
+    await waitFor(() =>
+      expect(flowNodes(container)).toHaveLength(options.flowNodes ?? 3),
+    );
   }
   return { user, container };
 };

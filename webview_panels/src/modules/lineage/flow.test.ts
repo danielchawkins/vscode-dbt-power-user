@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 import type { GroupChip } from "./expansionGroups";
 import { collapsedGroups } from "./expansionGroups";
 import type { FlowInput } from "./flow";
-import { toFlow } from "./flow";
+import { drawnEdges, toFlow } from "./flow";
 import { addNeighbours, emptyGraph, lineageData } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { groupNodeId } from "./grouping";
@@ -157,7 +157,7 @@ describe("toFlow with group chips", () => {
       chips,
     }).nodes.find((n) => n.id === "hub");
 
-  it("grows the card by one chip row for every two chips", () => {
+  it("grows the card by one chip row per two chips, up to the two-row cap", () => {
     const base = tableHeight(undefined, 0, true);
     const height = (count: number) =>
       hubNode(Array.from({ length: count }, (_, i) => chip(i)))?.initialHeight;
@@ -166,6 +166,8 @@ describe("toFlow with group chips", () => {
     expect(height(2)).toBe(base + geometry.chipRowHeight);
     expect(height(3)).toBe(base + 2 * geometry.chipRowHeight);
     expect(height(4)).toBe(base + 2 * geometry.chipRowHeight);
+    expect(height(5)).toBe(base + 2 * geometry.chipRowHeight);
+    expect(height(8)).toBe(base + 2 * geometry.chipRowHeight);
   });
 
   it("reserves the relation line and actions row only on the start card", () => {
@@ -603,5 +605,63 @@ describe("toFlow connections", () => {
     expect(edges.find((e) => e.id === "r:ref1")?.type).toBe("relationship");
     expect(edges.filter((e) => e.type === "routed").length).toBe(3);
     expect(edges.find((e) => e.id === "r:ref1")?.markerEnd).toBeUndefined();
+  });
+});
+
+describe("drawnEdges", () => {
+  const { edges } = toFlow({
+    data: {
+      start: "hub",
+      tables: [table("hub"), table("x")],
+      edges: [["hub", "x"]],
+      columnEdges: [
+        {
+          source: ["hub", "id"],
+          target: ["x", "id"],
+          type: "direct",
+        },
+      ],
+    },
+    columns: {},
+    columnTables: [],
+    expansions: [],
+    errors: {},
+    refs: [
+      {
+        id: "r1",
+        from: { table: "hub", columns: ["id"] },
+        to: { table: "x", columns: ["id"] },
+        cardinality: "1:N",
+        source: "contract",
+      },
+    ],
+    groups: [
+      {
+        id: "g:1",
+        label: "finance",
+        count: 3,
+        edge: ["hub", "g:1"],
+      },
+    ],
+    groupEdges: [["hub", "g:1"]],
+  });
+
+  it("leaves out column edges below the threshold and keeps the other edges as the same objects, in order", () => {
+    const [tableEdge, groupEdge, columnEdge, refEdge] = edges;
+    expect(edges.map((e) => e.id.split(":")[0])).toEqual(["t", "g", "c", "r"]);
+    expect(columnEdge?.className).toContain("lineage-column-edge");
+
+    const kept = drawnEdges(edges, true);
+    expect(kept.some((e) => e.className?.includes("lineage-column-edge"))).toBe(
+      false,
+    );
+    expect(kept).toHaveLength(3);
+    expect(kept[0]).toBe(tableEdge);
+    expect(kept[1]).toBe(groupEdge);
+    expect(kept[2]).toBe(refEdge);
+  });
+
+  it("returns the edges themselves when they are not zoomed out", () => {
+    expect(drawnEdges(edges, false)).toBe(edges);
   });
 });

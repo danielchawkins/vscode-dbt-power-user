@@ -47,6 +47,57 @@ const makeConfig = (projects: string[] = []) =>
     inspect: vi.fn(),
   }) as any;
 
+/** A watcher whose listeners a test fires by hand, as VS Code fires them for file events. */
+function manualWatcher() {
+  const listeners = {
+    create: [] as ((uri: Uri) => void)[],
+    change: [] as ((uri: Uri) => void)[],
+    delete: [] as ((uri: Uri) => void)[],
+  };
+  const emit = (kind: keyof typeof listeners) => (uri: Uri) => {
+    for (const listener of listeners[kind]) {
+      listener(uri);
+    }
+  };
+  return {
+    watcher: {
+      onDidCreate: vi.fn((listener) => listeners.create.push(listener)),
+      onDidChange: vi.fn((listener) => listeners.change.push(listener)),
+      onDidDelete: vi.fn((listener) => listeners.delete.push(listener)),
+      dispose: vi.fn(),
+    } as any,
+    created: emit("create"),
+    changed: emit("change"),
+    deleted: emit("delete"),
+  };
+}
+
+/**
+ * Watchers, one per pattern, that a test fires by hand as VS Code fires them for file events. Each event reaches
+ * only the watcher whose base and pattern match, as with the non-recursive watchers the registry creates.
+ */
+function patternWatchers() {
+  const byPattern = new Map<string, ReturnType<typeof manualWatcher>>();
+  const key = (base: string, pattern: string) => `${base}|${pattern}`;
+  return {
+    create: (pattern: { base: string; pattern: string }) => {
+      const watch = manualWatcher();
+      byPattern.set(key(pattern.base, pattern.pattern), watch);
+      return watch.watcher;
+    },
+    at(base: string, pattern: string): ReturnType<typeof manualWatcher> {
+      const watch = byPattern.get(key(base, pattern));
+      if (!watch) {
+        throw new Error(`no watcher for ${base} ${pattern}`);
+      }
+      return watch;
+    },
+    keys: () => [...byPattern.keys()],
+  };
+}
+
+const PROJECT_FILE_GLOB = "dbt_project.{yml,yaml}";
+
 describe("ProjectRegistry", () => {
   let terminal: any;
 
@@ -502,7 +553,7 @@ describe("ProjectRegistry", () => {
     expect(registry.projects[1].root.fsPath).toContain("projects/general");
   });
 
-  it("creates watchers for each registered project", async () => {
+  it("watches each root's project file and each ancestor folder, never recursively", async () => {
     const general = makeFolder("multi-root");
     vi.spyOn(workspace, "getConfiguration").mockImplementation((_s, scope) =>
       scope === general.uri
@@ -511,33 +562,55 @@ describe("ProjectRegistry", () => {
     );
     (workspace.workspaceFolders as any) = [general];
 
-    let watcherCount = 0;
-    vi.spyOn(workspace, "createFileSystemWatcher").mockImplementation(() => {
-      watcherCount++;
-      return {
-        onDidCreate: vi.fn(),
-        onDidChange: vi.fn(),
-        onDidDelete: vi.fn(),
-        dispose: vi.fn(),
-      } as any;
-    });
-
     const registry = new ProjectRegistry(terminal);
     await registry.initialize();
 
-    expect(watcherCount).toBe(2);
-    expect(
-      (RelativePattern as unknown as Mock).mock.calls.map(([root, pattern]) => [
-        (root as Uri).fsPath,
-        pattern,
-      ]),
-    ).toEqual([
-      [
-        path.join(general.uri.fsPath, "projects/general"),
-        "dbt_project.{yml,yaml}",
-      ],
-      [path.join(general.uri.fsPath, "projects/sox"), "dbt_project.{yml,yaml}"],
-    ]);
+    const watched = (RelativePattern as unknown as Mock).mock.calls.map(
+      ([base, pattern]) => [base, pattern],
+    );
+    expect(registry.projects.map((p) => p.root.fsPath)).toHaveLength(2);
+    for (const project of registry.projects) {
+      const root = project.root.fsPath;
+      expect(watched).toContainEqual([root, PROJECT_FILE_GLOB]);
+      for (let dir = root; path.dirname(dir) !== dir; dir = path.dirname(dir)) {
+        expect(watched).toContainEqual([path.dirname(dir), path.basename(dir)]);
+      }
+    }
+    expect(watched.some(([, pattern]) => String(pattern).includes("**"))).toBe(
+      false,
+    );
+  });
+
+  it("watches an explicit root outside its workspace folder", async () => {
+    const general = makeFolder("multi-root");
+    const outside = mkdtempSync(path.join(tmpdir(), "fpu-registry-outside-"));
+    try {
+      const outsideRoot = path.join(outside, "shared", "finance");
+      mkdirSync(outsideRoot, { recursive: true });
+      writeFileSync(
+        path.join(outsideRoot, "dbt_project.yml"),
+        "name: finance\nprofile: default\n",
+      );
+      vi.spyOn(workspace, "getConfiguration").mockImplementation((_s, scope) =>
+        scope === general.uri ? makeConfig([outsideRoot]) : makeConfig([]),
+      );
+      (workspace.workspaceFolders as any) = [general];
+
+      const registry = new ProjectRegistry(terminal);
+      await registry.initialize();
+
+      expect(registry.projects.map((p) => p.root.fsPath)).toEqual([
+        outsideRoot,
+      ]);
+      expect(
+        (RelativePattern as unknown as Mock).mock.calls.map((call) => [
+          call[0],
+          call[1],
+        ]),
+      ).toContainEqual([outsideRoot, PROJECT_FILE_GLOB]);
+    } finally {
+      rmSync(outside, { recursive: true, force: true });
+    }
   });
 
   it("reconciles relevant configuration changes without replacing survivors", async () => {
@@ -601,7 +674,7 @@ describe("ProjectRegistry", () => {
   it("reconciles from a project-file watcher", async () => {
     const general = makeFolder("multi-root");
     let projects = ["projects/general"];
-    let onDelete: (() => void) | undefined;
+    let onDelete: ((uri: Uri) => void) | undefined;
     vi.spyOn(workspace, "getConfiguration").mockImplementation(() =>
       makeConfig(projects),
     );
@@ -618,9 +691,198 @@ describe("ProjectRegistry", () => {
     await registry.initialize();
 
     projects = ["projects/typo"];
-    onDelete?.();
+    onDelete?.(
+      Uri.file(
+        path.join(general.uri.fsPath, "projects/general", "dbt_project.yml"),
+      ),
+    );
 
     expect(registry.projects).toEqual([]);
+  });
+
+  describe("delete events under a declared root", () => {
+    let tmp: string;
+    let checkout: string;
+    let root: string;
+    let folder: WorkspaceFolder;
+    let watch: ReturnType<typeof patternWatchers>;
+
+    beforeEach(() => {
+      tmp = mkdtempSync(path.join(tmpdir(), "fpu-registry-delete-"));
+      checkout = path.join(tmp, ".strands-20261022T231323-96ce53");
+      root = path.join(checkout, "transformation/dbt/finance_general");
+      mkdirSync(root, { recursive: true });
+      writeFileSync(
+        path.join(root, "dbt_project.yml"),
+        "name: finance_general\nprofile: default\n",
+      );
+      folder = { uri: Uri.file(tmp), name: "repo", index: 0 };
+      vi.spyOn(workspace, "getConfiguration").mockReturnValue(
+        makeConfig([path.relative(tmp, root)]),
+      );
+      watch = patternWatchers();
+      vi.spyOn(workspace, "createFileSystemWatcher").mockImplementation(
+        (pattern) => watch.create(pattern as any),
+      );
+      (workspace.workspaceFolders as any) = [folder];
+    });
+
+    afterEach(() => {
+      rmSync(tmp, { recursive: true, force: true });
+    });
+
+    it("drops a declared root when a delete reports its checkout, an ancestor folder", async () => {
+      const registry = new ProjectRegistry(terminal);
+      await registry.initialize();
+      expect(registry.projects.map((p) => p.root.fsPath)).toEqual([root]);
+
+      rmSync(checkout, { recursive: true, force: true });
+      watch.at(tmp, path.basename(checkout)).deleted(Uri.file(checkout));
+
+      expect(registry.projects).toEqual([]);
+    });
+
+    it("drops a declared root when its own folder is deleted", async () => {
+      const registry = new ProjectRegistry(terminal);
+      await registry.initialize();
+
+      rmSync(root, { recursive: true, force: true });
+      watch.at(path.dirname(root), path.basename(root)).deleted(Uri.file(root));
+
+      expect(registry.projects).toEqual([]);
+    });
+
+    it("drops a root outside its folder when one of its ancestors is deleted", async () => {
+      const outside = mkdtempSync(path.join(tmpdir(), "fpu-registry-far-"));
+      try {
+        const farRoot = path.join(outside, "shared", "finance");
+        mkdirSync(farRoot, { recursive: true });
+        writeFileSync(
+          path.join(farRoot, "dbt_project.yml"),
+          "name: finance\nprofile: default\n",
+        );
+        vi.spyOn(workspace, "getConfiguration").mockReturnValue(
+          makeConfig([farRoot]),
+        );
+        const registry = new ProjectRegistry(terminal);
+        await registry.initialize();
+        expect(registry.projects.map((p) => p.root.fsPath)).toEqual([farRoot]);
+
+        rmSync(path.join(outside, "shared"), { recursive: true, force: true });
+        watch
+          .at(outside, "shared")
+          .deleted(Uri.file(path.join(outside, "shared")));
+
+        expect(registry.projects).toEqual([]);
+      } finally {
+        rmSync(outside, { recursive: true, force: true });
+      }
+    });
+
+    it("watches no path outside the declared root and its ancestors", async () => {
+      const registry = new ProjectRegistry(terminal);
+      await registry.initialize();
+      const changed = vi.fn();
+      registry.onDidChangeProjects(changed);
+
+      expect(watch.keys()).not.toContain(`${tmp}|.strands-other`);
+      expect(registry.projects.map((p) => p.root.fsPath)).toEqual([root]);
+      expect(changed).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("opened-file roots whose project file leaves the disk", () => {
+    let tmp: string;
+    let soxRoot: string;
+    let soxProjectFile: string;
+    let watch: ReturnType<typeof patternWatchers>;
+
+    const openedSoxModel = () =>
+      ({
+        uri: Uri.file(path.join(soxRoot, "models", "sox_model.sql")),
+        languageId: "sql",
+      }) as any;
+    const roots = (registry: ProjectRegistry) =>
+      registry.projects.map((project) => project.root.fsPath);
+
+    beforeEach(() => {
+      tmp = mkdtempSync(path.join(tmpdir(), "fpu-registry-opened-"));
+      soxRoot = path.join(tmp, "projects", "sox");
+      soxProjectFile = path.join(soxRoot, "dbt_project.yml");
+      mkdirSync(path.join(soxRoot, "models"), { recursive: true });
+      writeFileSync(soxProjectFile, "name: sox\nprofile: default\n");
+      const folder: WorkspaceFolder = {
+        uri: Uri.file(tmp),
+        name: "repo",
+        index: 0,
+      };
+      (workspace as any).isTrusted = true;
+      vi.spyOn(workspace, "getConfiguration").mockReturnValue(makeConfig([]));
+      watch = patternWatchers();
+      vi.spyOn(workspace, "createFileSystemWatcher").mockImplementation(
+        (pattern) => watch.create(pattern as any),
+      );
+
+      (workspace.workspaceFolders as any) = [folder];
+    });
+
+    afterEach(() => {
+      (workspace as any).isTrusted = true;
+      rmSync(tmp, { recursive: true, force: true });
+    });
+
+    it("prunes and drops the opened root when its project file is deleted", async () => {
+      const registry = new ProjectRegistry(terminal);
+      await registry.initialize();
+      registry.declareFromDocuments([openedSoxModel()]);
+      expect(roots(registry)).toEqual([soxRoot]);
+
+      rmSync(soxProjectFile);
+      watch.at(soxRoot, PROJECT_FILE_GLOB).deleted(Uri.file(soxProjectFile));
+
+      expect(registry.projects).toEqual([]);
+    });
+
+    it("does not re-declare the opened root while its project file is gone", async () => {
+      const registry = new ProjectRegistry(terminal);
+      await registry.initialize();
+      registry.declareFromDocuments([openedSoxModel()]);
+      rmSync(soxProjectFile);
+      watch.at(soxRoot, PROJECT_FILE_GLOB).deleted(Uri.file(soxProjectFile));
+
+      registry.declareFromDocuments([openedSoxModel()]);
+
+      expect(registry.projects).toEqual([]);
+    });
+
+    it("declares the root again once its project file returns and a document is opened", async () => {
+      const registry = new ProjectRegistry(terminal);
+      await registry.initialize();
+      registry.declareFromDocuments([openedSoxModel()]);
+      rmSync(soxProjectFile);
+      watch.at(soxRoot, PROJECT_FILE_GLOB).deleted(Uri.file(soxProjectFile));
+      writeFileSync(soxProjectFile, "name: sox\nprofile: default\n");
+
+      // The return alone does not declare it: the pruned root needs an opened document.
+      watch.at(soxRoot, PROJECT_FILE_GLOB).created(Uri.file(soxProjectFile));
+      expect(registry.projects).toEqual([]);
+
+      registry.declareFromDocuments([openedSoxModel()]);
+
+      expect(roots(registry)).toEqual([soxRoot]);
+      expect(registry.projects[0].origin).toBe("openedFile");
+    });
+
+    it("drops the opened root when its whole folder is deleted", async () => {
+      const registry = new ProjectRegistry(terminal);
+      await registry.initialize();
+      registry.declareFromDocuments([openedSoxModel()]);
+
+      rmSync(path.join(tmp, "projects"), { recursive: true, force: true });
+      watch.at(tmp, "projects").deleted(Uri.file(path.join(tmp, "projects")));
+
+      expect(registry.projects).toEqual([]);
+    });
   });
 
   it("initializes once and disposes watchers and listeners", async () => {
@@ -648,10 +910,12 @@ describe("ProjectRegistry", () => {
     await registry.initialize();
     registry.dispose();
 
-    expect(workspace.createFileSystemWatcher).toHaveBeenCalledTimes(1);
+    const created = vi.mocked(workspace.createFileSystemWatcher).mock.calls
+      .length;
+    expect(created).toBeGreaterThan(0);
     expect(workspace.onDidChangeConfiguration).toHaveBeenCalledTimes(1);
     expect(workspace.onDidChangeWorkspaceFolders).toHaveBeenCalledTimes(1);
-    expect(watcherDispose).toHaveBeenCalledTimes(1);
+    expect(watcherDispose).toHaveBeenCalledTimes(created);
     expect(configurationDispose).toHaveBeenCalledTimes(1);
     expect(foldersDispose).toHaveBeenCalledTimes(1);
     expect(registry.projects).toEqual([]);
@@ -660,7 +924,7 @@ describe("ProjectRegistry", () => {
   it("reuses the watcher when project metadata changes", async () => {
     const tmpDir = mkdtempSync(path.join(tmpdir(), "fpu-project-registry-"));
     const projectFile = path.join(tmpDir, "dbt_project.yml");
-    let onChange: (() => void) | undefined;
+    let onChange: ((uri: Uri) => void) | undefined;
     const watcherDispose = vi.fn();
     try {
       writeFileSync(projectFile, "name: first\nversion: '1.0'\n");
@@ -675,7 +939,7 @@ describe("ProjectRegistry", () => {
         .mockReturnValue({
           onDidCreate: vi.fn(),
           onDidChange: vi.fn((listener) => {
-            onChange = listener as () => void;
+            onChange = listener as (uri: Uri) => void;
           }),
           onDidDelete: vi.fn(),
           dispose: watcherDispose,
@@ -683,17 +947,18 @@ describe("ProjectRegistry", () => {
       (workspace.workspaceFolders as any) = [folder];
       const registry = new ProjectRegistry(terminal);
       await registry.initialize();
+      const created = createWatcher.mock.calls.length;
 
       writeFileSync(projectFile, "name: second\nversion: '1.0'\n");
-      onChange?.();
+      onChange?.(Uri.file(projectFile));
       expect(registry.projects[0].name).toBe("second");
-      expect(createWatcher).toHaveBeenCalledTimes(1);
+      expect(createWatcher).toHaveBeenCalledTimes(created);
       expect(watcherDispose).not.toHaveBeenCalled();
 
       registry.dispose();
-      onChange?.();
-      expect(watcherDispose).toHaveBeenCalledTimes(1);
-      expect(createWatcher).toHaveBeenCalledTimes(1);
+      onChange?.(Uri.file(projectFile));
+      expect(watcherDispose).toHaveBeenCalledTimes(created);
+      expect(createWatcher).toHaveBeenCalledTimes(created);
       expect(registry.projects).toEqual([]);
     } finally {
       rmSync(tmpDir, { recursive: true });

@@ -5,6 +5,7 @@ import {
   collapsedGroups,
   groupChips,
   openGroup,
+  restoreGroupId,
   showMoreInGroup,
 } from "./expansionGroups";
 import type { GraphState } from "./graph";
@@ -73,6 +74,38 @@ describe("openGroup", () => {
     expect(openGroup(state, "hub")).toBe(state);
     expect(openGroup(state, groupNodeId("c:other", "models/a"))).toBe(state);
     expect(openGroup(state, groupNodeId("c:hub", "models/none"))).toBe(state);
+  });
+});
+
+describe("restoreGroupId", () => {
+  it("reopens a closed bucket of the given applied expansion, as openGroup does", () => {
+    const id = groupNodeId("c:hub", "models/b");
+    expect(drawn(restoreGroupId(grouped(2), "c:hub", id))).toEqual([
+      "hub",
+      "z1",
+      "z2",
+    ]);
+    expect(restoreGroupId(grouped(2), "c:hub", id)).toEqual(
+      openGroup(grouped(2), id),
+    );
+  });
+
+  it("leaves the state as it is for a group of another expansion", () => {
+    const state = grouped(2);
+    expect(
+      restoreGroupId(state, "c:other", groupNodeId("c:hub", "models/a")),
+    ).toBe(state);
+    expect(
+      restoreGroupId(state, "c:hub", groupNodeId("c:other", "models/a")),
+    ).toBe(state);
+  });
+
+  it("leaves the state as it is for an ID that is not a closed bucket", () => {
+    const state = grouped(2);
+    expect(restoreGroupId(state, "c:hub", "hub")).toBe(state);
+    expect(
+      restoreGroupId(state, "c:hub", groupNodeId("c:hub", "models/none")),
+    ).toBe(state);
   });
 });
 

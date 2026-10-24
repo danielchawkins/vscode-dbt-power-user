@@ -13,6 +13,7 @@ type StoredLineageSettings = Omit<
   | "layout"
   | "semanticZoom"
   | "title"
+  | "layerColors"
 >;
 
 /** What global state may hold: `showRefs` is the overlay toggle that `connections` replaced, kept for old stores. */
@@ -78,7 +79,22 @@ export function readLineageSettings(store: Store): lineage.LineageSettings {
         : "layered",
     semanticZoom: readSetting("lineage.semanticZoom") !== false,
     title: readSetting("lineage.title") === "name" ? "name" : "alias",
+    layerColors: layerColorsSetting(),
   };
+}
+
+/** The `lineage.layerColors` entries whose key and value are both non-empty strings; the panel validates colours. */
+function layerColorsSetting(): Record<string, string> {
+  const raw: unknown = readSetting("lineage.layerColors");
+  if (typeof raw !== "object" || raw === null) {
+    return {};
+  }
+  return Object.fromEntries(
+    Object.entries(raw).filter(
+      (entry): entry is [string, string] =>
+        entry[0] !== "" && typeof entry[1] === "string" && entry[1] !== "",
+    ),
+  );
 }
 
 /** Saves `defaultExpansion` as the user setting and every other known key in global state. */

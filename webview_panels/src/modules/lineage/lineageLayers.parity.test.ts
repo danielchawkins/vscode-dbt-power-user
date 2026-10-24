@@ -179,10 +179,14 @@ describe("lineage-layers fixture, table mode", () => {
     expect(yOf(flow, REV_DAILY)).toBeGreaterThan(yOf(flow, INT_ORDERS));
   });
 
-  it("has no gutter crossings and no hops for dbt dependency edges", () => {
+  it("counts the crossings and hops of dbt dependency edges", () => {
+    // Three edges skip a row whose card sits over the corridor, so they go round it and cross other edges; drawn
+    // through the corridor they would run under that card.
     const flow = layout("dbt");
-    expect(flow.crossings).toBe(0);
-    expect(flow.hops).toBe(0);
+    expect({ crossings: flow.crossings, hops: flow.hops }).toEqual({
+      crossings: 3,
+      hops: 3,
+    });
   });
 
   it("puts each card inside the band of its layer, and the untagged audit_log in Other", () => {
@@ -242,7 +246,7 @@ describe("lineage-layers fixture, declared and both", () => {
   // The gallery's counts, measured in a live Chromium run of designs.html (design M, round 2, table mode; see
   // docs/lineage-layout.md): dbt 12 edges, 0 crossings, 0 hops; declared 5 edges, 1 crossing, 1 hop; both 17
   // edges, 13 crossings, 8 hops. Its crossings count table and relationship paths together; table paths alone give 0
-  // under both. The panel's values below are at or below the gallery's: declared 0 and 0, both 10 and 5.
+  // under both. The panel's values below: declared 0 and 0, both 12 and 7.
   it("counts the crossings and hops of declared relationships only", () => {
     const flow = layout("declared");
     expect({ crossings: flow.crossings, hops: flow.hops }).toEqual({
@@ -254,8 +258,8 @@ describe("lineage-layers fixture, declared and both", () => {
   it("counts the crossings and hops with dbt and declared drawn together", () => {
     const flow = layout("both");
     expect({ crossings: flow.crossings, hops: flow.hops }).toEqual({
-      crossings: 10,
-      hops: 5,
+      crossings: 12,
+      hops: 7,
     });
   });
 
@@ -263,8 +267,8 @@ describe("lineage-layers fixture, declared and both", () => {
     // The gallery draws this edge as well, so these are the counts to set against its 13 crossings and 8 hops.
     const flow = layout("both", lineageLayersEdges);
     expect({ crossings: flow.crossings, hops: flow.hops }).toEqual({
-      crossings: 12,
-      hops: 6,
+      crossings: 13,
+      hops: 8,
     });
   });
 
@@ -395,4 +399,44 @@ describe("lineage-layers fixture, the layered fit", () => {
       expect(right(id)).toBeLessThanOrEqual(width - padding.right + 1e-6);
     }
   });
+});
+
+describe("lineage-layers fixture, edges and cards", () => {
+  /** The paths' vertical runs that pass through a card other than the two the path joins. */
+  function edgesUnderCards(flow: LayeredFlow): string[] {
+    const size = new Map(nodes.map((node) => [node.id, node]));
+    const ends = (id: string): string[] => {
+      const route = drawnDbtEdges.find(([p, c]) => id === `t:${p}->${c}`);
+      const ref = lineageLayersRefs.find((r) => id === `r:${r.id}`);
+      return route ? [...route] : ref ? [ref.from.table, ref.to.table] : [];
+    };
+    const hits: string[] = [];
+    for (const [id, path] of flow.paths) {
+      const points = (path.d.match(/[MLQA][^MLQA]*/g) ?? []).map((command) => {
+        const n = [...command.matchAll(/-?[\d.]+/g)].map((m) => Number(m[0]));
+        return { x: n.at(-2) ?? 0, y: n.at(-1) ?? 0 };
+      });
+      for (let i = 1; i < points.length; i++) {
+        const a = points[i - 1]!;
+        const b = points[i]!;
+        if (Math.abs(a.x - b.x) > 0.01) continue;
+        for (const [card, at] of flow.positions) {
+          const box = size.get(card);
+          if (!box || ends(id).includes(card)) continue;
+          const inX = a.x > at.x && a.x < at.x + box.width;
+          const inY =
+            Math.min(a.y, b.y) < at.y + box.height && Math.max(a.y, b.y) > at.y;
+          if (inX && inY) hits.push(`${id} under ${card}`);
+        }
+      }
+    }
+    return hits;
+  }
+
+  it.each(["dbt", "declared", "both"] as const)(
+    "draws no %s edge under a card it does not join",
+    (connections) => {
+      expect(edgesUnderCards(layout(connections))).toEqual([]);
+    },
+  );
 });

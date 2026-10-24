@@ -1,5 +1,3 @@
-import { realpathSync } from "node:fs";
-import * as path from "node:path";
 import type { CancellationToken, Disposable, LogOutputChannel } from "vscode";
 import { CodeLens, Uri } from "vscode";
 import type {
@@ -10,6 +8,7 @@ import type {
 } from "vscode-languageclient/node";
 import { fusionCteFromLens, type FusionCte } from "../core/cte/ctePreview";
 import type { LspLaunch } from "../core/lsp";
+import { clientErrorHandler, inactiveGate } from "./clientLifecycle";
 import type { FusionProjectRef } from "./fusionClient";
 import type { ProjectDiagnosticsFilter } from "./fusionDiagnostics";
 import {
@@ -25,61 +24,6 @@ import type {
 
 /** Client command in Fusion's CTE code lenses; not advertised by initialize, and no command here handles it. */
 const FUSION_LSP_PREVIEW_CTE = "dbt.previewCte" as const;
-
-/**
- * Fusion canonicalizes `--project-dir` but matches document URIs literally, so a project opened through a
- * symlink loads no documents. Returns the realpath to launch Fusion on and converters that move URIs between
- * the opened root and that realpath; converters are undefined when the two are the same.
- */
-export function canonicalProjectRoot(
-  root: string,
-  realpath: (fsPath: string) => string = realpathSync.native,
-): {
-  launchRoot: string;
-  uriConverters?: LanguageClientOptions["uriConverters"];
-} {
-  let launchRoot: string;
-  try {
-    launchRoot = realpath(root);
-  } catch {
-    return { launchRoot: root };
-  }
-  if (launchRoot === root) {
-    return { launchRoot };
-  }
-  const remap = (
-    fsPath: string,
-    from: string,
-    to: string,
-  ): string | undefined => {
-    if (fsPath === from) {
-      return to;
-    }
-    return fsPath.startsWith(from + path.sep)
-      ? to + fsPath.slice(from.length)
-      : undefined;
-  };
-  return {
-    launchRoot,
-    uriConverters: {
-      code2Protocol: (uri) => {
-        const mapped =
-          uri.scheme === "file"
-            ? remap(uri.fsPath, root, launchRoot)
-            : undefined;
-        return (mapped ? Uri.file(mapped) : uri).toString();
-      },
-      protocol2Code: (value) => {
-        const uri = Uri.parse(value);
-        const mapped =
-          uri.scheme === "file"
-            ? remap(uri.fsPath, launchRoot, root)
-            : undefined;
-        return mapped ? Uri.file(mapped) : uri;
-      },
-    },
-  };
-}
 
 /**
  * Maps Fusion's `dbt.previewCte` lenses, which carry a client command this extension does not register, to the
@@ -326,11 +270,62 @@ export function languageClientOptions(input: {
   nestedRoots?:
     | { guard: NestedRootGuard; openDocuments: OpenDocuments }
     | undefined;
+  /**
+   * Whether the client is stopping or stopped. Its notifications are then dropped, and a connection error on it is
+   * not reported; see {@link clientErrorHandler}. Defaults to a client that is never inactive.
+   */
+  isInactive?: () => boolean;
 }): LanguageClientOptions {
-  const compiled = input.compiled ?? new CompileSignal();
+  const { project, nestedRoots } = input;
+  const isInactive = input.isInactive ?? (() => false);
+  const middleware = fusionMiddleware({
+    compiled: input.compiled ?? new CompileSignal(),
+    outputChannel: input.outputChannel,
+    diagnosticsFilter: input.diagnosticsFilter,
+    config: input.config,
+    dropInactive: inactiveGate(isInactive, input.outputChannel),
+  });
+  return {
+    ...(input.selector ? { documentSelector: input.selector } : {}),
+    ...(input.uriConverters ? { uriConverters: input.uriConverters } : {}),
+    connectionOptions: { maxRestartCount: 0 },
+    errorHandler: clientErrorHandler({
+      project,
+      outputChannel: input.outputChannel,
+      isInactive,
+    }),
+    outputChannel: input.outputChannel,
+    traceOutputChannel: input.outputChannel,
+    workspaceFolder: {
+      uri: project.folder.uri,
+      name: project.folder.name,
+      index: project.folder.index,
+    },
+    middleware: nestedRoots
+      ? guardMiddleware(
+          nestedRoots.guard,
+          middleware,
+          nestedRoots.openDocuments,
+        )
+      : middleware,
+  };
+}
+
+/**
+ * The middleware of one Declared Project's client: it maps code lenses and compile requests, filters diagnostics to
+ * the project, answers workspace configuration, and drops document and watched-file notifications while the client is
+ * inactive.
+ */
+function fusionMiddleware(input: {
+  compiled: CompileSignal;
+  outputChannel: LogOutputChannel;
+  diagnosticsFilter: ProjectDiagnosticsFilter;
+  config: Pick<LspLaunch, "lintEnabled" | "maxErrorReporting">;
+  dropInactive: (method: string) => boolean;
+}): Middleware {
+  const { compiled, diagnosticsFilter, dropInactive } = input;
   const log = (message: string) => input.outputChannel.info(message);
-  const { project, diagnosticsFilter, nestedRoots } = input;
-  const middleware: Middleware = {
+  return {
     provideCodeLenses: async (document, token, next) =>
       mapCteLenses(await next(document, token), document.uri),
     sendRequest: (type, param, token, next) => {
@@ -349,7 +344,31 @@ export function languageClientOptions(input: {
         next(uri, diagnostics);
       }
     },
+    didOpen: async (document, next) => {
+      if (!dropInactive("textDocument/didOpen")) {
+        await next(document);
+      }
+    },
+    didChange: async (event, next) => {
+      if (!dropInactive("textDocument/didChange")) {
+        await next(event);
+      }
+    },
+    didSave: async (document, next) => {
+      if (!dropInactive("textDocument/didSave")) {
+        await next(document);
+      }
+    },
+    didClose: async (document, next) => {
+      if (!dropInactive("textDocument/didClose")) {
+        await next(document);
+      }
+    },
     workspace: {
+      didChangeWatchedFile: (event, next) =>
+        dropInactive("workspace/didChangeWatchedFiles")
+          ? Promise.resolve()
+          : next(event),
       configuration: async (params) =>
         params.items.map((item) =>
           buildWorkspaceConfigurationResponse(
@@ -359,25 +378,6 @@ export function languageClientOptions(input: {
           ),
         ),
     },
-  };
-  return {
-    ...(input.selector ? { documentSelector: input.selector } : {}),
-    ...(input.uriConverters ? { uriConverters: input.uriConverters } : {}),
-    connectionOptions: { maxRestartCount: 0 },
-    outputChannel: input.outputChannel,
-    traceOutputChannel: input.outputChannel,
-    workspaceFolder: {
-      uri: project.folder.uri,
-      name: project.folder.name,
-      index: project.folder.index,
-    },
-    middleware: nestedRoots
-      ? guardMiddleware(
-          nestedRoots.guard,
-          middleware,
-          nestedRoots.openDocuments,
-        )
-      : middleware,
   };
 }
 
@@ -397,6 +397,8 @@ export type FusionLanguageClientDependencies = {
     clientOptions: LanguageClientOptions,
   ) => Promise<ClientHandle>;
   sleep?: (ms: number) => Promise<void>;
+  /** Whether a project root still has its project file; defaults to the file system. Tests stand in for it. */
+  rootExists?: (root: Uri) => boolean;
 };
 
 export type ClientHandle = Pick<

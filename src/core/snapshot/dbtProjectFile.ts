@@ -6,8 +6,6 @@ export const DBT_PROJECT_FILE = "dbt_project.yml";
 const DBT_PROJECT_FILE_YAML = "dbt_project.yaml";
 /** Accepted project-file names, in order of preference. */
 const DBT_PROJECT_FILES = [DBT_PROJECT_FILE, DBT_PROJECT_FILE_YAML] as const;
-/** Glob matching either project-file name. */
-export const DBT_PROJECT_FILE_GLOB = "dbt_project.{yml,yaml}";
 
 /** The top-level mapping of a parsed `dbt_project.yml`; values are unvalidated. */
 export type DbtProjectConfig = Readonly<Record<string, unknown>>;

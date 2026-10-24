@@ -3,7 +3,10 @@ import { EventEmitter } from "vscode";
 import type { Log } from "../../core/log";
 import type { LspLaunch } from "../../core/lsp/index";
 import { sameLspLaunch, toLspLaunch } from "../../core/lsp/index";
-import type { ProjectSnapshot } from "../../core/snapshot/index";
+import {
+  hasDbtProjectFile,
+  type ProjectSnapshot,
+} from "../../core/snapshot/index";
 import { FailedFusionClient } from "../../fusion/failedFusionClient";
 import type {
   FusionExecutable,
@@ -28,6 +31,9 @@ import type { FusionClientFactory } from "./fusionClientFactory";
 import type { ProjectEnvironments } from "./projectEnvironments";
 import { sameEnv } from "./projectEnvironments";
 import { PROJECT_SNAPSHOT_SETTINGS } from "./readProjectSnapshot";
+
+/** Registry changes that arrive within this window reconcile once, so a burst of folder changes starts no extra client. */
+const RECONCILE_DEBOUNCE_MS = 500;
 
 export interface FusionClientPool extends Disposable {
   /** One client per Declared Project, created and torn down with the registry. */
@@ -73,6 +79,8 @@ export interface FusionLaunchSources {
   reportCompileErrors?:
     | ((project: DeclaredProject, messages: string[]) => void)
     | undefined;
+  /** Whether the root still holds a project file; a root without one gets no client. Defaults to the file system. */
+  rootExists?: ((root: Uri) => boolean) | undefined;
 }
 
 export class FusionClientPoolImpl implements FusionClientPool {
@@ -90,6 +98,8 @@ export class FusionClientPoolImpl implements FusionClientPool {
   ) => LogOutputChannel;
   private readonly launchEnv: FusionLaunchEnvironment | undefined;
   private readonly reportCompileErrors: FusionLaunchSources["reportCompileErrors"];
+  private readonly rootExists: (root: Uri) => boolean;
+  private reconcileTimer: ReturnType<typeof setTimeout> | undefined;
   private readonly registry: ProjectRegistry;
   private readonly terminal: Log;
   private readonly resolver: FusionExecutableResolver;
@@ -111,9 +121,11 @@ export class FusionClientPoolImpl implements FusionClientPool {
     this.environments = sources.environments;
     this.launchEnv = sources.launchEnv;
     this.reportCompileErrors = sources.reportCompileErrors;
+    this.rootExists =
+      sources.rootExists ?? ((root) => hasDbtProjectFile(root.fsPath));
     this.subscriptions.push(
       this.registry.onDidChangeProjects(() => {
-        void this.enqueue(() => this.reconcile());
+        this.scheduleReconcile();
       }),
       onDidChangeSettings(PROJECT_SNAPSHOT_SETTINGS, (change) => {
         void this.enqueue(() => this.handleConfigurationChange(change));
@@ -164,6 +176,8 @@ export class FusionClientPoolImpl implements FusionClientPool {
   }
 
   private async doStop(): Promise<void> {
+    clearTimeout(this.reconcileTimer);
+    this.reconcileTimer = undefined;
     while (this.subscriptions.length) {
       this.subscriptions.pop()?.dispose();
     }
@@ -178,6 +192,18 @@ export class FusionClientPoolImpl implements FusionClientPool {
     this._onDidChangeClients.dispose();
   }
 
+  /** Runs one reconcile after registry changes stop for {@link RECONCILE_DEBOUNCE_MS}. */
+  private scheduleReconcile(): void {
+    if (this.disposed) {
+      return;
+    }
+    clearTimeout(this.reconcileTimer);
+    this.reconcileTimer = setTimeout(() => {
+      this.reconcileTimer = undefined;
+      void this.enqueue(() => this.reconcile());
+    }, RECONCILE_DEBOUNCE_MS);
+  }
+
   private enqueue(task: () => Promise<void>): Promise<void> {
     const run = this.operationChain.then(task).catch((error: unknown) => {
       this.terminal.error(
@@ -190,9 +216,10 @@ export class FusionClientPoolImpl implements FusionClientPool {
     return run;
   }
 
+  /** The registry's project for `key`, unless its root no longer holds a project file. */
   private findDesiredProject(key: string): DeclaredProject | undefined {
     return this.registry.projects.find(
-      (project) => projectKey(project) === key,
+      (project) => projectKey(project) === key && this.rootExists(project.root),
     );
   }
 
@@ -297,7 +324,9 @@ export class FusionClientPoolImpl implements FusionClientPool {
     }
 
     const nextProjects = new Map(
-      this.registry.projects.map((project) => [projectKey(project), project]),
+      this.registry.projects
+        .filter((project) => this.rootExists(project.root))
+        .map((project) => [projectKey(project), project]),
     );
     let changed = false;
 
@@ -421,6 +450,7 @@ export function createFusionClientPool(
       outputChannel: deps.outputChannel,
       launchEnv: deps.launchEnv,
       reportCompileErrors: deps.reportCompileErrors,
+      rootExists: deps.rootExists,
     },
   );
 }

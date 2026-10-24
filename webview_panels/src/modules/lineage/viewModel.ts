@@ -4,6 +4,7 @@ import { MAX_VIEW_STATE_STRING } from "@modules/app/viewState";
 import { createContext } from "react";
 import { groupChips } from "./expansionGroups";
 import type { Direction, GraphState } from "./graph";
+import { savedGroupKey } from "./grouping";
 
 type Settings = lineage.LineageSettings;
 type RefSource = lineage.RefSource;
@@ -31,13 +32,19 @@ const resolveUserSettings = (
   settings: Partial<Settings> | undefined,
 ): Pick<
   ResolvedSettings,
-  "maxNeighbours" | "groupBy" | "semanticZoom" | "title" | "layout"
+  | "maxNeighbours"
+  | "groupBy"
+  | "semanticZoom"
+  | "title"
+  | "layout"
+  | "layerColors"
 > => ({
   maxNeighbours: settings?.maxNeighbours ?? 20,
   groupBy: settings?.groupBy ?? "folder",
   semanticZoom: settings?.semanticZoom ?? true,
   title: settings?.title ?? "alias",
   layout: settings?.layout ?? "layered",
+  layerColors: settings?.layerColors ?? {},
 });
 
 export const resolveSettings = (
@@ -84,8 +91,8 @@ export const visibleRefs = (
 /**
  * The persisted view state of `graph`; `undefined` until a start table is drawn. An expansion still being fetched is
  * saved too, so hiding the view mid-fetch keeps it; a replay applies it like any other saved expansion. An open group
- * whose ID is longer than a view state string is left out, since the whole state would be refused; that group comes
- * back closed.
+ * is saved by its group node ID, or by its short key (`savedGroupKey`) when that ID is longer than a view state string.
+ * An open group whose short key is still too long is left out; that group comes back closed.
  */
 export const viewStateOf = (
   graph: GraphState,
@@ -104,8 +111,8 @@ export const viewStateOf = (
         selectedTable: graph.selectedTable,
         selectedColumn: graph.selectedColumn,
         openGroups: groupChips(graph)
-          .map((chip) => chip.id)
-          .filter((id) => id.length <= MAX_VIEW_STATE_STRING),
+          .map((chip) => savedGroupKey(chip.id, MAX_VIEW_STATE_STRING))
+          .filter((id): id is string => id !== undefined),
       }
     : undefined;
 

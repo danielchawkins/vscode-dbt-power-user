@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { workspace } from "vscode";
 import { readLineageSettings } from "../../features/lineage/lineageSettings";
 
 /** A global-state store holding `stored` under the lineage settings key. */
@@ -40,5 +41,37 @@ describe("readLineageSettings connections", () => {
     expect(
       readLineageSettings(storeWith({ showRefs: true })),
     ).not.toHaveProperty("showRefs");
+  });
+});
+
+describe("readLineageSettings layerColors", () => {
+  const defaultConfiguration = workspace.getConfiguration();
+  afterEach(() => {
+    vi.mocked(workspace.getConfiguration).mockReturnValue(defaultConfiguration);
+  });
+
+  const withLayerColors = (value: unknown) =>
+    vi.mocked(workspace.getConfiguration).mockReturnValue({
+      get: vi.fn((key: string) =>
+        key === "lineage.layerColors" ? value : undefined,
+      ),
+      has: vi.fn(),
+      inspect: vi.fn(),
+      update: vi.fn(),
+    } as never);
+
+  it("passes the string entries through for the panel to check", () => {
+    withLayerColors({ staging: "charts.red", marts: "#00ff00" });
+    expect(readLineageSettings(storeWith(undefined)).layerColors).toEqual({
+      staging: "charts.red",
+      marts: "#00ff00",
+    });
+  });
+
+  it("drops empty and non-string entries, and reads a non-object as empty", () => {
+    withLayerColors({ staging: "", marts: 3, "": "charts.red" });
+    expect(readLineageSettings(storeWith(undefined)).layerColors).toEqual({});
+    withLayerColors("charts.red");
+    expect(readLineageSettings(storeWith(undefined)).layerColors).toEqual({});
   });
 });

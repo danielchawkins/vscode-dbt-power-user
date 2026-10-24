@@ -183,16 +183,26 @@ export interface LineageSettings {
   title?: "alias" | "name" | undefined;
   /** The card placement; absent means `layered`. A user setting, read-only here. */
   layout?: LineageLayout | undefined;
+  /**
+   * A colour per layer tag (`source`, `staging`, `intermediate`, `marts`, `other`, or any custom layer) for its band
+   * and card stripe: a theme colour id such as `charts.red`, or a CSS hex or colour function. A user setting.
+   */
+  layerColors?: Readonly<Record<string, string>> | undefined;
 }
 
 /**
- * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom`, `title` and `layout` are
- * user settings the panel only reads.
+ * The settings `persistLineageSettings` may change. `maxNeighbours`, `groupBy`, `semanticZoom`, `title`, `layout` and
+ * `layerColors` are user settings the panel only reads.
  */
 export type PersistedLineageSettings = Partial<
   Omit<
     LineageSettings,
-    "maxNeighbours" | "groupBy" | "semanticZoom" | "title" | "layout"
+    | "maxNeighbours"
+    | "groupBy"
+    | "semanticZoom"
+    | "title"
+    | "layout"
+    | "layerColors"
   >
 >;
 

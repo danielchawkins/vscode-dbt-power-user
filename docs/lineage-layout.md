@@ -8,11 +8,13 @@ The gallery's counts were measured in a live browser run of `designs.html?round=
 
 | Connections | Gallery (measured)             | Extension, as drawn            |
 | ----------- | ------------------------------ | ------------------------------ |
-| `dbt`       | 12 edges, 0 crossings, 0 hops  | 11 edges, 0 crossings, 0 hops  |
+| `dbt`       | 12 edges, 0 crossings, 0 hops  | 11 edges, 3 crossings, 3 hops  |
 | `declared`  | 5 edges, 1 crossing, 1 hop     | 5 edges, 0 crossings, 0 hops   |
-| `both`      | 17 edges, 13 crossings, 8 hops | 16 edges, 10 crossings, 5 hops |
+| `both`      | 17 edges, 13 crossings, 8 hops | 16 edges, 12 crossings, 7 hops |
 
-The gallery's 12 `dbt` edges include the edge from `int_orders__enriched` to the hidden `audit_log`, which the panel does not draw (next section). With that edge added to the panel's input, `both` gives 17 edges, 12 crossings and 6 hops, so the hidden edge accounts for two crossings and one hop of the difference; the rest comes from the layout (see "Layout order and router").
+The gallery's 12 `dbt` edges include the edge from `int_orders__enriched` to the hidden `audit_log`, which the panel does not draw (next section). With that edge added to the panel's input, `both` gives 17 edges, 13 crossings and 8 hops.
+
+The panel's `dbt` crossings are not zero because three edges skip a row whose card sits over the start card's corridor: the seed and the shop source into `int_orders__enriched` pass `stg_shop__orders`, and `int_orders__enriched` into `fct_orders` passes `dim_customers`. Through the corridor each would run under that card, so `spine` in `gutterRouter.ts` routes it through the nearest clear gap between the cards in the rows it skips, and it crosses other edges there. The parity test asserts that no edge runs under a card it does not join, under every Connections setting.
 
 ## Hidden tables keep their card and lose their edges
 
@@ -40,7 +42,7 @@ Design M's cards are 220px (`--w: 220px` from the M node function, and an unscal
 
 ## Layout order and router
 
-Design M lays out its cards with the corridor layout in `designs.html` (`v.corridor`): a card's row is its generation from the focus, split into sub-rows by dbt layer, and its side is left or right of the corridor. The dagre call that runs first is overwritten for this design. The panel's `layered.ts` makes the same row and corridor choices, and `gutterRouter.ts` routes the edges. The two order a row's cards by different rules and count crossings differently, so the counts differ: on the same fixture the gallery draws 13 crossings and 8 hops under `both` and 1 crossing and 1 hop under `declared`, while the panel draws 10 and 5 under `both` and 0 and 0 under `declared`, so the panel's counts are lower or equal. The gallery's side placement also reads the declared edges (`LAYOUT_EDGES`), while `layeredFlow` receives only the rank edges, so under `both` the panel's sides do not see the relationships. The parity test asserts the panel's own values and does not assert the gallery's.
+Design M lays out its cards with the corridor layout in `designs.html` (`v.corridor`): a card's row is its generation from the focus, split into sub-rows by dbt layer, and its side is left or right of the corridor. The dagre call that runs first is overwritten for this design. The panel's `layered.ts` makes the same row and corridor choices, and `gutterRouter.ts` routes the edges. The two order a row's cards by different rules and count crossings differently, so the counts differ: on the same fixture the gallery draws 13 crossings and 8 hops under `both` and 1 crossing and 1 hop under `declared`, while the panel draws 12 and 7 under `both` and 0 and 0 under `declared`. Under `dbt` the panel routes three skip edges round the cards over the corridor (see "Counts"), which adds crossings the gallery does not draw; I have not checked how the gallery routes those edges. The gallery's side placement also reads the declared edges (`LAYOUT_EDGES`), while `layeredFlow` receives only the rank edges, so under `both` the panel's sides do not see the relationships. The parity test asserts the panel's own values and does not assert the gallery's.
 
 ## Card sides
 

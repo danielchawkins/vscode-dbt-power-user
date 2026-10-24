@@ -52,10 +52,12 @@ describe("layeredFlow on a mixed-layer fixture", () => {
     ["start", "fct_2"],
   ];
 
-  it("routes without crossings and without hops", () => {
+  it("routes the seed's skip edge round stg_a, which sits over the corridor, at the cost of one crossing", () => {
+    // seed -> start skips the staging row, and stg_a is centred over the corridor; through the corridor the edge
+    // would run under stg_a. It takes the gap beside stg_a instead and crosses one gutter run.
     const result = flow("start", nodes, pairs);
-    expect(result.crossings).toBe(0);
-    expect(result.hops).toBe(0);
+    expect(result.crossings).toBe(1);
+    expect(result.hops).toBe(1);
   });
 
   it("draws one path per table edge, each a rounded orthogonal path", () => {

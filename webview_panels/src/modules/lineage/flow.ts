@@ -43,6 +43,8 @@ interface TableNodeData extends Record<string, unknown> {
   columnsNeedStrict?: boolean | undefined;
   /** The layered layout: table edges enter on the top bubble and leave by the bottom one. */
   layered?: boolean | undefined;
+  /** The colour of the card's layer stripe: its band's colour. */
+  layerColour: string;
 }
 
 export type TableNode = Node<TableNodeData, "table">;
@@ -102,6 +104,8 @@ export interface FlowInput {
   columnsNeedStrict?: boolean | undefined;
   /** Card placement; absent means `layered`. */
   layout?: lineage.LineageLayout | undefined;
+  /** `lineage.layerColors`: a colour per layer tag over the theme palette. */
+  layerColors?: Readonly<Record<string, string>> | undefined;
 }
 
 /** Lower-cased column names per table that `columnEdges` touch. */
@@ -132,6 +136,9 @@ function rankingEdges(input: FlowInput): [string, string][] {
     ? [...input.data.edges, ...(input.groupEdges ?? [])]
     : input.refs.map((ref) => [ref.to.table, ref.from.table]);
 }
+
+/** The ID prefix of column edges. */
+const COLUMN_EDGE = "c:";
 
 /** React Flow edges: table edges, column edges anchored to listed columns, and relationships. */
 function toEdges(
@@ -169,7 +176,7 @@ function toEdges(
       className: "lineage-table-edge",
     })),
     ...data.columnEdges.map((e) => ({
-      id: `c:${e.source.join(".")}->${e.target.join(".")}`,
+      id: `${COLUMN_EDGE}${e.source.join(".")}->${e.target.join(".")}`,
       source: e.source[0],
       target: e.target[0],
       sourceHandle: handle("out", e.source),
@@ -300,7 +307,7 @@ function placeLayered(
     focusable: false,
     // React Flow sets pointer events on a node that has a click handler; a band must let clicks reach the pane.
     style: { pointerEvents: "none" },
-    data: { tag: band.tag, colour: bandColour(band.tag) },
+    data: { tag: band.tag, colour: bandColour(band.tag, input.layerColors) },
   }));
   const paths = new Map<string, RoutedEdgeData>();
   for (const [id, path] of flow.paths) {
@@ -404,6 +411,10 @@ export function toFlow(input: FlowInput): {
       errors: errors[t.table],
       columnsNeedStrict: input.columnsNeedStrict,
       layered,
+      layerColour: bandColour(
+        layerTagOf(t.nodeType, t.layer),
+        input.layerColors,
+      ),
     },
   }));
   const groupNodes: GroupNode[] = groups.map((g) => ({
@@ -452,4 +463,9 @@ export function toFlow(input: FlowInput): {
     nodes: [...placed.bands, ...tableNodes, ...groupNodes],
     edges: routed,
   };
+}
+
+/** The edges React Flow draws: below the semantic-zoom threshold, column edges are left out; the layout still routes them. */
+export function drawnEdges(edges: Edge[], zoomedOut: boolean): Edge[] {
+  return zoomedOut ? edges.filter((e) => !e.id.startsWith(COLUMN_EDGE)) : edges;
 }

@@ -11,8 +11,8 @@ import type {
 import { EventEmitter, RelativePattern, workspace } from "vscode";
 import type { Log } from "../../core/log";
 import {
-  DBT_PROJECT_FILE_GLOB,
   declaredProjectName,
+  hasDbtProjectFile,
   readDbtProjectFile,
 } from "../../core/snapshot/index";
 import { onDidChangeSettings, readSetting } from "../../settings/index";
@@ -26,6 +26,9 @@ import { findProjectRootForFile } from "./projectDiscovery";
 
 /** How a Declared Project came to be declared. */
 export type DeclaredProjectOrigin = "explicit" | "folderRoot" | "openedFile";
+
+/** Both project file names; a simple, non-recursive glob, so VS Code does not filter it with `files.watcherExclude`. */
+const PROJECT_FILE_GLOB = "dbt_project.{yml,yaml}";
 
 /** Languages whose open documents can declare a project. */
 const DECLARING_LANGUAGES: ReadonlySet<string> = new Set([
@@ -199,7 +202,6 @@ export class ProjectRegistry implements Disposable {
     }
 
     const next: DeclaredProjectImpl[] = [];
-    const nextWatchers = new Map<string, FileSystemWatcher>();
     for (const d of byRealpath.values()) {
       const existing = this._projects.find(
         (p) =>
@@ -215,18 +217,11 @@ export class ProjectRegistry implements Disposable {
       } else {
         next.push(new DeclaredProjectImpl(d));
       }
-      let watcher = this.watchers.get(d.realpathKey);
-      if (!watcher) {
-        watcher = workspace.createFileSystemWatcher(
-          new RelativePattern(d.root, DBT_PROJECT_FILE_GLOB),
-        );
-        watcher.onDidCreate(() => this.reconcile());
-        watcher.onDidChange(() => this.reconcile());
-        watcher.onDidDelete(() => this.reconcile());
-      }
-      nextWatchers.set(d.realpathKey, watcher);
     }
 
+    const nextWatchers = this.watchRoots(
+      Array.from(byRealpath.values(), (d) => d.root.fsPath),
+    );
     for (const p of this._projects) {
       if (!next.includes(p)) {
         p.dispose();
@@ -254,6 +249,48 @@ export class ProjectRegistry implements Disposable {
     }
   }
 
+  /**
+   * Watches each root's project file and every ancestor folder of each root, up to the filesystem root. Each
+   * watcher is a simple, non-recursive pattern, which VS Code does not filter with `files.watcherExclude`, so a
+   * window that hides `.strands-*` still reports a checkout's delete. The delete arrives as one event for the
+   * topmost folder removed, which is one of these ancestors, and reconciling on any of them is enough.
+   * Roots outside their workspace folder (an absolute `projects` entry) are covered the same way.
+   */
+  private watchRoots(roots: string[]): Map<string, FileSystemWatcher> {
+    const targets = new Map<string, RelativePattern>();
+    for (const root of roots) {
+      targets.set(
+        `${root}${path.sep}${PROJECT_FILE_GLOB}`,
+        new RelativePattern(root, PROJECT_FILE_GLOB),
+      );
+      for (let dir = root; path.dirname(dir) !== dir; dir = path.dirname(dir)) {
+        targets.set(
+          dir,
+          new RelativePattern(path.dirname(dir), path.basename(dir)),
+        );
+      }
+    }
+    const watchers = new Map<string, FileSystemWatcher>();
+    for (const [key, pattern] of targets) {
+      watchers.set(
+        key,
+        this.watchers.get(key) ?? this.createReconcilingWatcher(pattern),
+      );
+    }
+    return watchers;
+  }
+
+  private createReconcilingWatcher(
+    pattern: RelativePattern,
+  ): FileSystemWatcher {
+    const watcher = workspace.createFileSystemWatcher(pattern);
+    const reconcile = () => this.reconcile();
+    watcher.onDidCreate(reconcile);
+    watcher.onDidChange(reconcile);
+    watcher.onDidDelete(reconcile);
+    return watcher;
+  }
+
   /** Adds the root as a candidate unless its project file cannot be parsed. */
   private addCandidate(
     candidates: Candidate[],
@@ -278,15 +315,19 @@ export class ProjectRegistry implements Disposable {
     });
   }
 
-  /** Drops opened-file roots whose folder left the workspace or was disabled; re-enabling does not restore them. */
+  /**
+   * Drops opened-file roots whose folder left the workspace, was disabled, or lost its project file. Re-enabling
+   * does not restore them, and a root whose file returns is declared again by an opened document.
+   */
   private pruneOpenedRoots(): void {
     const folders = new Set(
       (workspace.workspaceFolders ?? []).map((folder) => folder.uri.fsPath),
     );
-    for (const [key, { folder }] of this.openedRoots) {
+    for (const [key, { folder, root }] of this.openedRoots) {
       if (
         !folders.has(folder.uri.fsPath) ||
-        readSetting(ENABLED_SETTING, folder.uri) === false
+        readSetting(ENABLED_SETTING, folder.uri) === false ||
+        !hasDbtProjectFile(root.fsPath)
       ) {
         this.openedRoots.delete(key);
       }

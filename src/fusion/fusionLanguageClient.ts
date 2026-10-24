@@ -14,6 +14,8 @@ import {
 import { DBT_LSP_USE_TARGET_LSP, toLspArgs } from "../core/lsp";
 import { type StaticAnalysisMode } from "../core/snapshot";
 import { errorText } from "../core/text";
+import { canonicalProjectRoot } from "./canonicalProjectRoot";
+import { projectFileAvailable } from "./clientLifecycle";
 import { documentSelectorForProject } from "./documentSelector";
 import {
   DISPOSAL_GRACE_MS,
@@ -31,7 +33,6 @@ import {
 } from "./fusionDiagnostics";
 import { FusionRequests } from "./fusionRequests";
 import {
-  canonicalProjectRoot,
   CompileSignal,
   defaultCreateLanguageClient,
   defaultSpawn,
@@ -84,6 +85,9 @@ class FusionLanguageClientImpl implements FusionClient {
   private restartChain: Promise<void> = Promise.resolve();
   private stopPromise: Promise<void> | undefined;
   private disposed = false;
+  /** Whether the client is stopping or stopped; its notifications are then dropped. */
+  private readonly isInactive = (): boolean =>
+    this.stopPromise !== undefined || this._state === "stopped";
   private stateListener: Disposable | undefined;
   private processExitListener: (() => void) | undefined;
   private transportGeneration = 0;
@@ -214,6 +218,11 @@ class FusionLanguageClientImpl implements FusionClient {
         return;
       }
     }
+    // After the backoff, since the checkout may have gone during it.
+    if (!projectFileAvailable(this.options, this.deps.rootExists)) {
+      this.setState("stopped");
+      return;
+    }
 
     try {
       await this.startTransport();
@@ -246,9 +255,8 @@ class FusionLanguageClientImpl implements FusionClient {
       this.options.project.root.fsPath,
     );
     this.uriConverters = uriConverters;
-    const root = this.options.project.root;
     const diagnosticsFilter = new ProjectDiagnosticsFilter([
-      root.fsPath,
+      this.options.project.root.fsPath,
       launchRoot,
     ]);
 
@@ -297,12 +305,13 @@ class FusionLanguageClientImpl implements FusionClient {
           config: launch,
           compiled: this.compiled,
           nestedRoots: this.nestedRoots,
+          isInactive: this.isInactive,
         }),
       );
 
       this.languageClient = client;
       this.deletionWatcher = clearDiagnosticsOnDelete(
-        root,
+        this.options.project.root,
         () => client.diagnostics,
       );
       const { onCompileErrors } = this.options;

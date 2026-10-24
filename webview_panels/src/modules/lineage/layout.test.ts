@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { focusedViewport, geometry, tableHeight } from "./layout";
+import { focusedViewport, geometry, inlineChips, tableHeight } from "./layout";
 
 const padding = { top: 16, right: 216, bottom: 40, left: 56 };
 const limits = { minZoom: 0.05, maxZoom: 1 };
@@ -182,5 +182,29 @@ describe("tableHeight", () => {
         geometry.relationHeight +
         geometry.actionsHeight,
     );
+  });
+});
+
+describe("inlineChips", () => {
+  it("draws every chip up to four, then three to leave room for +N", () => {
+    expect([0, 1, 2, 3, 4, 5, 6].map(inlineChips)).toEqual([
+      0, 1, 2, 3, 4, 3, 3,
+    ]);
+  });
+});
+
+describe("tableHeight chip rows", () => {
+  const base = tableHeight(undefined, 0);
+
+  it("takes no chip row for no chips and two chips to a row", () => {
+    expect(tableHeight(undefined, 1)).toBe(base + geometry.chipRowHeight);
+    expect(tableHeight(undefined, 2)).toBe(base + geometry.chipRowHeight);
+    expect(tableHeight(undefined, 3)).toBe(base + 2 * geometry.chipRowHeight);
+  });
+
+  it("caps chip rows at two, so 5 and 10 chips are no taller than 4", () => {
+    expect(tableHeight(undefined, 4)).toBe(base + 2 * geometry.chipRowHeight);
+    expect(tableHeight(undefined, 5)).toBe(tableHeight(undefined, 4));
+    expect(tableHeight(undefined, 10)).toBe(tableHeight(undefined, 4));
   });
 });

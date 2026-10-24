@@ -158,6 +158,14 @@
             ],
             "description": "How lineage cards are titled.",
             "default": "alias"
+          },
+          "fusionPowerUser.lineage.layerColors": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "default": {},
+            "markdownDescription": "A colour for a layer's band and card stripe, by layer tag: `source`, `staging`, `intermediate`, `marts`, `other`, or a custom layer. Use a theme colour id, such as `charts.red` or `terminal.ansiCyan`, so the colour follows the theme, or a CSS colour such as `#e06c75` or `oklch(70% 0.15 250)`. Layers left out use the theme's charts palette: source orange, staging blue, intermediate purple, marts green, other layers yellow."
           }
         }
       },
@@ -1136,7 +1144,8 @@
     "shell-quote": "^1.12.0",
     "@vscode/test-cli": {
       "mocha": "$mocha"
-    }
+    },
+    "@azure/msal-node": "^7.1.1"
   },
   "packageManager": "npm@11.19.0",
   "allowScripts": {

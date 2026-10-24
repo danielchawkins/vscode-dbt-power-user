@@ -79,7 +79,8 @@ const FRAME_HELPERS = `
   };
 `;
 
-function cdpPort(): string {
+/** The CDP port the smoke host exposed, which every webview read needs. Fails when the harness did not set it. */
+export function cdpPort(): string {
   const port = process.env.FPU_CDP_PORT;
   assert.ok(port, "smoke requires CDP port");
   return port;
@@ -277,6 +278,84 @@ export async function isWebviewChecked(
     `no checkbox "${name}" in ${panel.entry}`,
   );
   return checked as boolean;
+}
+
+/**
+ * The canvas zoom and, per table card, its unscaled size, the title font size, the layer stripe's width (0 where the
+ * card has no layer), the subtitle's visibility (or "absent" where the card draws none), and the visibility of every
+ * other row under the header.
+ */
+export interface ZoomState {
+  entry: string;
+  zoom: number;
+  cards: {
+    width: number;
+    height: number;
+    stripe: number;
+    title: number;
+    subtitle: string;
+    rows: string[];
+  }[];
+}
+
+const ZOOM_STATE = `(() => document.body.dataset.entry === "lineage" ? {
+  entry: "lineage",
+  zoom: Number(
+    /scale\\(([\\d.]+)\\)/.exec(document.querySelector(".react-flow__viewport")?.style.transform ?? "")?.[1],
+  ),
+  cards: [...document.querySelectorAll("[data-table]")].map((card) => {
+    const title = card.querySelector("[class*=label]");
+    const subtitle = card.querySelector(":scope > div:first-child > [class*=subtitle]");
+    return {
+      width: card.offsetWidth,
+      height: card.offsetHeight,
+      stripe: card.dataset.layer ? parseFloat(getComputedStyle(card, "::before").width) : 0,
+      title: parseFloat(getComputedStyle(title).fontSize),
+      subtitle: subtitle ? getComputedStyle(subtitle).visibility : "absent",
+      rows: [
+        ...card.querySelectorAll(
+          ":scope > :not(:first-child):not(.react-flow__handle)",
+        ),
+      ].map((row) => getComputedStyle(row).visibility),
+    };
+  }),
+} : null)()`;
+
+/** Reads the lineage canvas's zoom and card state from the panel. */
+export async function zoomState(panel: PanelEntry): Promise<ZoomState> {
+  const match = await evaluatePanel<ZoomState>(
+    cdpPort(),
+    panel.entry,
+    ZOOM_STATE,
+  );
+  assert.ok(match, `the ${panel.entry} webview is not showing`);
+  return match.value;
+}
+
+/**
+ * Presses Zoom Out (`"out"`) or Zoom In (`"in"`) until the canvas zoom is across 50%: below it when zooming out, at
+ * or above it when zooming in. Returns the zoom state once it is across, and fails if that takes more than 20 seconds.
+ */
+export async function zoomPastHalf(
+  panel: PanelEntry,
+  direction: "in" | "out",
+): Promise<ZoomState> {
+  const deadline = Date.now() + 20_000;
+  const across = (zoom: number) =>
+    direction === "out" ? zoom < 0.5 : zoom >= 0.5;
+  let last = await zoomState(panel);
+  while (!across(last.zoom)) {
+    if (Date.now() >= deadline) {
+      throw new Error(`the zoom stayed at ${last.zoom}`);
+    }
+    await clickInWebview(panel, {
+      role: "button",
+      name: direction === "out" ? "Zoom Out" : "Zoom In",
+    });
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    last = await zoomState(panel);
+  }
+  return last;
 }
 
 /** Polls until the webview's DOM satisfies `query`, and fails with the matching element's outerHTML otherwise. */

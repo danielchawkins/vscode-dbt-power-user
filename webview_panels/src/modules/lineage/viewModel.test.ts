@@ -3,7 +3,7 @@ import type { LineageViewState } from "@modules/app/viewState";
 import { MAX_VIEW_STATE_STRING } from "@modules/app/viewState";
 import { describe, expect, it } from "vitest";
 import { addNeighbours, emptyGraph } from "./graph";
-import { groupNodeId } from "./grouping";
+import { groupNodeId, shortGroupKey } from "./grouping";
 import {
   planRender,
   resolveSettings,
@@ -117,7 +117,7 @@ describe("lineage view model", () => {
     expect(viewStateOf(emptyGraph(), "s:1")).toBeUndefined();
   });
 
-  it("persists the open groups, leaving out an ID too long to keep", () => {
+  it("persists an open group whose ID is too long by its short key", () => {
     const drawn = addNeighbours(emptyGraph(table("a")), "children", "a", [
       table("b"),
       table("c"),
@@ -143,7 +143,30 @@ describe("lineage view model", () => {
       },
       "s:1",
     );
-    expect(state?.openGroups).toEqual([kept]);
+    expect(state?.openGroups).toEqual([shortGroupKey("c:a", longKey), kept]);
+  });
+
+  it("leaves out an open group whose short key is too long to keep", () => {
+    // The expansion key alone is 197 characters, so the group's short key is over 200 too.
+    const start = "e".repeat(195);
+    const key = "pkg:models/marts";
+    const drawn = addNeighbours(emptyGraph(table(start)), "children", start, [
+      table("b"),
+    ]);
+    const state = viewStateOf(
+      {
+        ...drawn,
+        groups: {
+          [`c:${start}`]: {
+            buckets: [{ key, members: ["b"] }],
+            loose: [],
+            open: { [key]: 1 },
+          },
+        },
+      },
+      "s:1",
+    );
+    expect(state?.openGroups).toEqual([]);
   });
 
   it("filters relationships by source, confidence and drawn ends", () => {
