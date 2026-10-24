@@ -8,7 +8,7 @@
 const LINEAGE_PURE =
   "^src/modules/lineage/(card|channels|columnTrace|edgeIds|expansionBatch|expansionCap|expansionGroups|graph|" +
   "groupEdges|grouping|gutterPlan|gutterRouter|hiddenNodes|layerTags|layered|layeredFlow|layeredInput|" +
-  "layeredMetrics|layeredRanks|layeredRows|layout|routeDrawing|routeGeometry|routeTypes)\\.ts$";
+  "layeredMetrics|layeredRanks|layeredRows|layout|minimap|routeDrawing|routeGeometry|routeTypes)\\.ts$";
 
 module.exports = {
   forbidden: [
