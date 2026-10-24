@@ -1,6 +1,5 @@
 import { commands, Uri, workspace } from "vscode";
-
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
+import { EXTENSION_ID } from "./panels";
 
 export interface ActivationMetric {
   eager: boolean;

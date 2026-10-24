@@ -7,6 +7,9 @@ import {
   waitForPanelGone,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import type { ColumnState } from "./lineageProbes";
+import { clickFirstColumn, clickOnCard, readColumns } from "./lineageProbes";
+import { EXTENSION_ID, PANELS } from "./panels";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -19,12 +22,7 @@ import {
   zoomState,
 } from "./webviewInteractions";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
-const LINEAGE: PanelEntry = {
-  container: "workbench.view.extension.lineage_view",
-  command: "fusionPowerUser.Lineage.focus",
-  entry: "lineage",
-};
+const LINEAGE: PanelEntry = PANELS.lineage;
 const HUB = "hub";
 const HUB_CHILDREN = 7;
 
@@ -234,57 +232,7 @@ async function waitForFanoutCard(
   return last;
 }
 
-/** The hub card's column list, the column edges traced from it, and the table edges' paths. */
-interface ColumnState {
-  entry: string;
-  columnTables: string[];
-  hubColumns: number;
-  traced: string[];
-  tableD: string[];
-}
-
-const COLUMN_STATE = `(() => document.body.dataset.entry === "lineage" ? {
-  entry: "lineage",
-  columnTables: [...document.querySelectorAll("[data-table]")]
-    .filter((n) => n.querySelector("[data-testid=lineage-columns]"))
-    .map((n) => n.dataset.table.split(".").at(-1)),
-  hubColumns: document.querySelectorAll("[data-table$='.${HUB}'] [data-column]").length,
-  traced: [...document.querySelectorAll(".react-flow__edge.lineage-column-edge")]
-    .map((e) => e.getAttribute("data-id"))
-    .sort(),
-  tableD: [...document.querySelectorAll(".react-flow__edge.lineage-table-edge path")]
-    .map((p) => p.getAttribute("d"))
-    .sort(),
-} : null)()`;
-
-/** Clicks the hub card's "Columns" button. */
-const CLICK_HUB_COLUMNS = `(() => {
-  if (document.body.dataset.entry !== "lineage") return null;
-  const node = document.querySelector("[data-table$='.${HUB}']");
-  const button = [...(node?.querySelectorAll("button") ?? [])].find(
-    (b) => b.textContent.trim() === "Columns" || b.getAttribute("aria-label") === "Columns",
-  );
-  button?.click();
-  return { entry: "lineage", clicked: Boolean(button) };
-})()`;
-
-/** Clicks the hub card's first column row. */
-const CLICK_HUB_COLUMN = `(() => {
-  if (document.body.dataset.entry !== "lineage") return null;
-  const column = document.querySelector("[data-table$='.${HUB}'] [data-column]");
-  column?.click();
-  return { entry: "lineage", clicked: Boolean(column) };
-})()`;
-
-async function readColumns(): Promise<ColumnState> {
-  const match = await evaluatePanel<ColumnState>(
-    process.env.FPU_CDP_PORT!,
-    LINEAGE.entry,
-    COLUMN_STATE,
-  );
-  assert.ok(match, "the lineage webview is not showing");
-  return match.value;
-}
+const readHub = () => readColumns(HUB);
 
 /** Polls the column state until `done` holds, and fails with the last state otherwise. */
 async function waitForColumns(
@@ -292,13 +240,13 @@ async function waitForColumns(
   done: (current: ColumnState) => boolean,
 ): Promise<ColumnState> {
   const deadline = Date.now() + 10_000;
-  let last = await readColumns();
+  let last = await readHub();
   while (!done(last)) {
     if (Date.now() >= deadline) {
       throw new Error(`${what}; the last state was ${JSON.stringify(last)}`);
     }
     await new Promise((resolve) => setTimeout(resolve, 250));
-    last = await readColumns();
+    last = await readHub();
   }
   return last;
 }
@@ -309,7 +257,7 @@ async function waitForColumns(
  */
 async function traceHubColumn(): Promise<ColumnState> {
   const deadline = Date.now() + 10_000;
-  let state = await readColumns();
+  let state = await readHub();
   while (!state.columnTables.includes(HUB)) {
     if (Date.now() >= deadline) {
       throw new Error(
@@ -319,19 +267,19 @@ async function traceHubColumn(): Promise<ColumnState> {
     await evaluatePanel(
       process.env.FPU_CDP_PORT!,
       LINEAGE.entry,
-      CLICK_HUB_COLUMNS,
+      clickOnCard(HUB, "Columns"),
     );
     await new Promise((resolve) => setTimeout(resolve, 500));
-    state = await readColumns();
+    state = await readHub();
   }
   await waitForColumns(
     "the hub card should list its columns",
-    (current) => current.hubColumns > 0,
+    (current) => current.cardColumns > 0,
   );
   const clicked = await evaluatePanel<{ entry: string; clicked: boolean }>(
     process.env.FPU_CDP_PORT!,
     LINEAGE.entry,
-    CLICK_HUB_COLUMN,
+    clickFirstColumn(HUB),
   );
   assert.ok(clicked?.value.clicked, "the hub card has a column row to click");
   // Edges arrive in parts and the cards relayout after them, so the first traced read is not a baseline: wait until
@@ -631,7 +579,7 @@ suite("Lineage grouping", function () {
       });
 
       await zoomPastHalf(LINEAGE, "out");
-      const zoomedOut = await readColumns();
+      const zoomedOut = await readHub();
       assert.strictEqual(
         zoomedOut.traced.length,
         0,

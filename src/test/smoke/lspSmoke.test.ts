@@ -12,8 +12,8 @@ import {
   waitForWorkbenchNotificationsToSettle,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { EXTENSION_ID } from "./panels";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const EXPECTED_PROJECT_NAMES = ["general", "sox"];
 const LSP_WAIT_TIMEOUT_MS = 45_000;
 const LSP_WAIT_POLL_MS = 100;

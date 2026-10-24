@@ -3,6 +3,9 @@ import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import type { ColumnState } from "./lineageProbes";
+import { clickFirstColumn, clickOnCard, readColumns } from "./lineageProbes";
+import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
 import type { PanelEntry } from "./webviewInteractions";
 import {
@@ -15,12 +18,7 @@ import {
   zoomPastHalf,
 } from "./webviewInteractions";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
-const LINEAGE: PanelEntry = {
-  container: "workbench.view.extension.lineage_view",
-  command: "fusionPowerUser.Lineage.focus",
-  entry: "lineage",
-};
+const LINEAGE: PanelEntry = PANELS.lineage;
 /** The start model and its direct neighbours: sources and seeds, staging, marts, and the hidden audit_log card. */
 const START = "int_orders__enriched";
 const CARD_IDS = [
@@ -113,65 +111,14 @@ function waitForSnapshot(
   return waitFor(what, snapshot, { until: done, attempts: 40 });
 }
 
-/** The start card's column list, the column edges traced from it, and the table edges' paths. */
-interface ColumnState {
-  entry: string;
-  columnTables: string[];
-  startColumns: number;
-  traced: string[];
-  tableD: string[];
-}
-
-const COLUMN_STATE = `(() => document.body.dataset.entry === "lineage" ? {
-  entry: "lineage",
-  columnTables: [...document.querySelectorAll("[data-table]")]
-    .filter((n) => n.querySelector("[data-testid=lineage-columns]"))
-    .map((n) => n.dataset.table.split(".").at(-1)),
-  startColumns: document.querySelectorAll("[data-table$='.${START}'] [data-column]").length,
-  traced: [...document.querySelectorAll(".react-flow__edge.lineage-column-edge")]
-    .map((e) => e.getAttribute("data-id"))
-    .sort(),
-  tableD: [...document.querySelectorAll(".react-flow__edge.lineage-table-edge path")]
-    .map((p) => p.getAttribute("d"))
-    .sort(),
-} : null)()`;
-
-/** Clicks the button labelled `label` (text or aria-label) on the start card. */
-const clickOnStart = (label: string) => `(() => {
-  if (document.body.dataset.entry !== "lineage") return null;
-  const node = document.querySelector("[data-table$='.${START}']");
-  const want = ${JSON.stringify(label)};
-  const button = [...(node?.querySelectorAll("button") ?? [])].find(
-    (b) => b.textContent.trim() === want || b.getAttribute("aria-label") === want,
-  );
-  button?.click();
-  return { entry: "lineage", clicked: Boolean(button) };
-})()`;
-
-/** Clicks the first column row of the start card. */
-const CLICK_START_COLUMN = `(() => {
-  if (document.body.dataset.entry !== "lineage") return null;
-  const column = document.querySelector("[data-table$='.${START}'] [data-column]");
-  column?.click();
-  return { entry: "lineage", clicked: Boolean(column) };
-})()`;
-
-async function readColumns(): Promise<ColumnState> {
-  const match = await evaluatePanel<ColumnState>(
-    cdpPort(),
-    LINEAGE.entry,
-    COLUMN_STATE,
-  );
-  assert.ok(match, "the lineage webview is not showing");
-  return match.value;
-}
+const readStart = () => readColumns(START);
 
 /** Polls the column state until `done` holds, and fails with the last state otherwise. */
 function waitForColumns(
   what: string,
   done: (current: ColumnState) => boolean,
 ): Promise<ColumnState> {
-  return waitFor(what, readColumns, { until: done, attempts: 40 });
+  return waitFor(what, readStart, { until: done, attempts: 40 });
 }
 
 /**
@@ -180,7 +127,7 @@ function waitForColumns(
  */
 function waitForStableColumns(what: string): Promise<ColumnState> {
   let previous: string | undefined;
-  return waitFor(what, readColumns, {
+  return waitFor(what, readStart, {
     until: (current) => {
       const key = JSON.stringify([current.traced, current.tableD]);
       const stable = current.traced.length > 0 && key === previous;
@@ -197,25 +144,29 @@ function waitForStableColumns(what: string): Promise<ColumnState> {
  */
 async function traceStartColumn(): Promise<ColumnState> {
   const deadline = Date.now() + 10_000;
-  let state = await readColumns();
+  let state = await readStart();
   while (!state.columnTables.includes(START)) {
     if (Date.now() >= deadline) {
       throw new Error(
         `the start card's column list did not open; the last state was ${JSON.stringify(state)}`,
       );
     }
-    await evaluatePanel(cdpPort(), LINEAGE.entry, clickOnStart("Columns"));
+    await evaluatePanel(
+      cdpPort(),
+      LINEAGE.entry,
+      clickOnCard(START, "Columns"),
+    );
     await new Promise((resolve) => setTimeout(resolve, 500));
-    state = await readColumns();
+    state = await readStart();
   }
   await waitForColumns(
     "the start card should list its columns",
-    (current) => current.startColumns > 0,
+    (current) => current.cardColumns > 0,
   );
   const clicked = await evaluatePanel<{ entry: string; clicked: boolean }>(
     cdpPort(),
     LINEAGE.entry,
-    CLICK_START_COLUMN,
+    clickFirstColumn(START),
   );
   assert.ok(clicked?.value.clicked, "the start card has a column row to click");
   return waitForStableColumns(

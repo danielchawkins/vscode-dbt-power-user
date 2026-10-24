@@ -23,6 +23,7 @@ import {
   waitForWorkbenchNotificationsToSettle,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { DBT_VIEW_CONTAINER, EXTENSION_ID, PANELS } from "./panels";
 import type { VisualCheckpoint } from "./visualEvidence";
 import {
   checkpointCount,
@@ -35,7 +36,6 @@ import {
   webviewSize,
 } from "./webviewInteractions";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RUNTIME_TIMINGS_COMMAND = "fusionPowerUser.test.getRuntimeTimings";
 
 interface HostRuntimeTiming {
@@ -160,7 +160,7 @@ suite("Pinned-host VSIX smoke", function () {
     );
     await vscode.commands.executeCommand(contributedCommand);
 
-    const panels = PANELS;
+    const panels = PANEL_ORDER;
     const webviews: MeasuredWebview[] = [];
 
     for (const panel of panels) {
@@ -307,7 +307,7 @@ suite("Pinned-host VSIX smoke", function () {
           vscode.ConfigurationTarget.Global,
         );
         const activeKind = await waitForColorThemeKind(theme.kind);
-        for (const panel of PANELS) {
+        for (const panel of PANEL_ORDER) {
           await openPanel(panel);
           if (evidence && panel.entry === "lineage") {
             await maximizePanelFor(panel.entry);
@@ -371,23 +371,7 @@ suite("Pinned-host VSIX smoke", function () {
   });
 });
 
-const PANELS = [
-  {
-    container: "workbench.view.extension.docs_edit_view",
-    command: "fusionPowerUser.DocsEdit.focus",
-    entry: "documentationEditor",
-  },
-  {
-    container: "workbench.view.extension.dbt_preview_results",
-    command: "fusionPowerUser.PreviewResults.focus",
-    entry: "queryResults",
-  },
-  {
-    container: "workbench.view.extension.lineage_view",
-    command: "fusionPowerUser.Lineage.focus",
-    entry: "lineage",
-  },
-];
+const PANEL_ORDER = [PANELS.docsEdit, PANELS.queryResults, PANELS.lineage];
 
 const THEMES = [
   {
@@ -829,7 +813,7 @@ async function captureModelTrees(
       vscode.Uri.joinPath(folder.uri, "models/child.sql"),
     ),
   );
-  await vscode.commands.executeCommand("workbench.view.extension.dbt_view");
+  await vscode.commands.executeCommand(DBT_VIEW_CONTAINER);
   await sleep(1_500);
   await evidence.capture({
     name: "model trees",
