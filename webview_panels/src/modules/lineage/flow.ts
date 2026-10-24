@@ -43,6 +43,8 @@ interface TableNodeData extends Record<string, unknown> {
   columnsNeedStrict?: boolean | undefined;
   /** The layered layout: table edges enter on the top bubble and leave by the bottom one. */
   layered?: boolean | undefined;
+  /** The colour of the card's layer stripe: its band's colour. */
+  layerColour: string;
 }
 
 export type TableNode = Node<TableNodeData, "table">;
@@ -102,6 +104,8 @@ export interface FlowInput {
   columnsNeedStrict?: boolean | undefined;
   /** Card placement; absent means `layered`. */
   layout?: lineage.LineageLayout | undefined;
+  /** `lineage.layerColors`: a colour per layer tag over the theme palette. */
+  layerColors?: Readonly<Record<string, string>> | undefined;
 }
 
 /** Lower-cased column names per table that `columnEdges` touch. */
@@ -303,7 +307,7 @@ function placeLayered(
     focusable: false,
     // React Flow sets pointer events on a node that has a click handler; a band must let clicks reach the pane.
     style: { pointerEvents: "none" },
-    data: { tag: band.tag, colour: bandColour(band.tag) },
+    data: { tag: band.tag, colour: bandColour(band.tag, input.layerColors) },
   }));
   const paths = new Map<string, RoutedEdgeData>();
   for (const [id, path] of flow.paths) {
@@ -407,6 +411,10 @@ export function toFlow(input: FlowInput): {
       errors: errors[t.table],
       columnsNeedStrict: input.columnsNeedStrict,
       layered,
+      layerColour: bandColour(
+        layerTagOf(t.nodeType, t.layer),
+        input.layerColors,
+      ),
     },
   }));
   const groupNodes: GroupNode[] = groups.map((g) => ({

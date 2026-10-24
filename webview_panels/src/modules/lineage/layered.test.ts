@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   BAND_PAD,
+  bandColour,
   CARD_GAP,
   CORRIDOR,
   GUTTER,
@@ -39,6 +40,49 @@ describe("layerTagOf", () => {
     expect(layerTagOf("model", "staging")).toBe("staging");
     expect(layerTagOf("model", undefined)).toBe("other");
     expect(layerTagOf("model", "")).toBe("other");
+  });
+});
+
+describe("bandColour overrides", () => {
+  const as = (value: string) => bandColour("marts", { marts: value });
+  const palette = "var(--vscode-charts-green)";
+
+  it("maps a theme colour id to its VS Code variable, so it follows the theme", () => {
+    expect(as("charts.red")).toBe("var(--vscode-charts-red)");
+    expect(as(" terminal.ansiCyan ")).toBe("var(--vscode-terminal-ansiCyan)");
+  });
+
+  it("keeps a hex or colour function as written", () => {
+    expect(as("#e06c75")).toBe("#e06c75");
+    expect(as("oklch(70% 0.15 250)")).toBe("oklch(70% 0.15 250)");
+  });
+
+  it("rejects anything else, including text that could escape the declaration", () => {
+    expect(as("red")).toBe(palette);
+    expect(as("#zzz")).toBe(palette);
+    expect(as("rgb(0,0,0); color: red")).toBe(palette);
+    expect(as("url(x)")).toBe(palette);
+  });
+});
+
+describe("bandColour", () => {
+  it("uses the theme charts palette by default", () => {
+    expect(bandColour("source")).toBe("var(--vscode-charts-orange)");
+    expect(bandColour("staging")).toBe("var(--vscode-charts-blue)");
+    expect(bandColour("finance")).toBe("var(--vscode-charts-yellow)");
+  });
+
+  it("lets an override replace a layer's colour, matching the tag case-insensitively", () => {
+    expect(bandColour("staging", { Staging: "charts.red" })).toBe(
+      "var(--vscode-charts-red)",
+    );
+    expect(bandColour("finance", { finance: "#112233" })).toBe("#112233");
+  });
+
+  it("falls back to the palette when the override is not a usable colour", () => {
+    expect(bandColour("marts", { marts: "not a colour" })).toBe(
+      "var(--vscode-charts-green)",
+    );
   });
 });
 

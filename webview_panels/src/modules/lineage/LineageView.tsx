@@ -474,6 +474,7 @@ const Graph = (): React.JSX.Element => {
       connections: settings.connections,
       refs: visibleRefs(refs, settings, drawn),
       layout: settings.layout,
+      layerColors: settings.layerColors,
     });
   }, [graph, settings, refs, columnsNeedStrict]);
   const details = detailsTable ? graph.known[detailsTable] : undefined;

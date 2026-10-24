@@ -3,7 +3,6 @@ import type { NodeProps } from "@xyflow/react";
 import { Handle, Position } from "@xyflow/react";
 import { memo, use } from "react";
 import {
-  cardBadge,
   cardFile,
   cardSubtitle,
   cardTooltip,
@@ -67,7 +66,10 @@ const Header = ({
   layered: boolean;
 }) => (
   <div
-    className={`${styles.header} ${showRelation ? styles.headerRelation : ""}`}
+    className={`${styles.header} ${showRelation ? styles.headerRelation : ""} ${
+      table.layer ? styles.noBadge : ""
+    }`}
+    title={table.layer ? `${table.layer} layer` : undefined}
   >
     <Handle
       type="target"
@@ -76,14 +78,8 @@ const Header = ({
       className={`${styles.handle} ${styles.headerHandle}`}
       isConnectable={false}
     />
-    <span
-      className={table.layer ? styles.layer : styles.type}
-      title={
-        table.layer ? `${table.nodeType}, ${table.layer} layer` : undefined
-      }
-    >
-      {cardBadge(table)}
-    </span>
+    {/* A card with a layer shows it as the stripe on its left edge; the others keep their type badge. */}
+    {table.layer ? null : <span className={styles.type}>{table.nodeType}</span>}
     <NameBlock table={table} mode={mode} file={file} zoomedOut={zoomedOut} />
     {errors?.length || hiddenFromLineage ? (
       <span className={styles.flags}>
@@ -330,7 +326,9 @@ const TableNodeView = ({
       } ${zoomedOut ? styles.zoomedOut : ""} ${
         data.columns === undefined ? styles.noColumns : ""
       } ${layered ? styles.layered : ""} ${pinned ? styles.pinned : ""}`}
+      style={{ "--layer-colour": data.layerColour } as React.CSSProperties}
       data-table={data.table.table}
+      data-layer={data.table.layer}
     >
       <Header
         table={data.table}

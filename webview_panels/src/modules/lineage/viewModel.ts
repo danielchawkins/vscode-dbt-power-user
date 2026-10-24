@@ -32,13 +32,19 @@ const resolveUserSettings = (
   settings: Partial<Settings> | undefined,
 ): Pick<
   ResolvedSettings,
-  "maxNeighbours" | "groupBy" | "semanticZoom" | "title" | "layout"
+  | "maxNeighbours"
+  | "groupBy"
+  | "semanticZoom"
+  | "title"
+  | "layout"
+  | "layerColors"
 > => ({
   maxNeighbours: settings?.maxNeighbours ?? 20,
   groupBy: settings?.groupBy ?? "folder",
   semanticZoom: settings?.semanticZoom ?? true,
   title: settings?.title ?? "alias",
   layout: settings?.layout ?? "layered",
+  layerColors: settings?.layerColors ?? {},
 });
 
 export const resolveSettings = (
