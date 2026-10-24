@@ -47,11 +47,11 @@ function printEnvironment(out: Output) {
 }
 
 function projectPaths(project: Project) {
-  const targetPath = project.getTargetPath();
+  const targetPath = project.paths()?.targetPath;
   return [
     { pathType: "DBT Project File", path: project.getDBTProjectFilePath() },
     { pathType: "Target", path: targetPath },
-    { pathType: "PackageInstall", path: project.getPackageInstallPath() },
+    { pathType: "PackageInstall", path: project.paths()?.packagesInstallPath },
     {
       pathType: "Manifest",
       path: targetPath ? join(targetPath, MANIFEST_FILE) : undefined,
@@ -60,15 +60,15 @@ function projectPaths(project: Project) {
       pathType: "Catalog",
       path: targetPath ? join(targetPath, CATALOG_FILE) : undefined,
     },
-    ...(project.getModelPaths() ?? []).map((path) => ({
+    ...(project.paths()?.modelPaths ?? []).map((path) => ({
       pathType: "Model",
       path,
     })),
-    ...(project.getSeedPaths() ?? []).map((path) => ({
+    ...(project.paths()?.seedPaths ?? []).map((path) => ({
       pathType: "Seed",
       path,
     })),
-    ...(project.getMacroPaths() ?? []).map((path) => ({
+    ...(project.paths()?.macroPaths ?? []).map((path) => ({
       pathType: "Macro",
       path,
     })),

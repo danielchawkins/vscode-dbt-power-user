@@ -32,7 +32,7 @@ import {
   UnitTestParser,
 } from "../../core/manifest";
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
-import { DBT_PROJECT_FILE } from "../../core/snapshot";
+import { DBT_PROJECT_FILE, type ProjectPaths } from "../../core/snapshot";
 import type { FusionCli } from "../../fusion/fusionCli";
 import type { ManifestParsers } from "../../projects/manifest/manifest";
 import { ParseDemand } from "../../projects/manifest/parseDemand";
@@ -176,11 +176,13 @@ describe("Project Test Suite", () => {
       getColumnsOfSource: vi.fn(() => Promise.resolve([])),
       compileInline: vi.fn(),
       executeSQL: vi.fn(),
-      getTargetPath: vi.fn().mockReturnValue("/project/target"),
-      getPackageInstallPath: vi.fn().mockReturnValue("/project/dbt_packages"),
-      getModelPaths: vi.fn().mockReturnValue(["/project/models"]),
-      getSeedPaths: vi.fn().mockReturnValue(["/project/seeds"]),
-      getMacroPaths: vi.fn().mockReturnValue(["/project/macros"]),
+      paths: vi.fn().mockReturnValue({
+        targetPath: "/project/target",
+        packagesInstallPath: "/project/dbt_packages",
+        modelPaths: ["/project/models"],
+        seedPaths: ["/project/seeds"],
+        macroPaths: ["/project/macros"],
+      }),
       getDiagnostics: vi.fn().mockReturnValue({
         rebuildManifestDiagnostics: [],
         projectConfigDiagnostics: [],
@@ -530,7 +532,10 @@ describe("Project Test Suite", () => {
 
     beforeEach(() => {
       targetDir = fs.mkdtempSync(path.join(os.tmpdir(), "dbt-project-run-"));
-      mockFusionCli.getTargetPath.mockReturnValue(targetDir);
+      mockFusionCli.paths.mockReturnValue({
+        ...mockFusionCli.paths(),
+        targetPath: targetDir,
+      });
     });
 
     afterEach(() => {
@@ -1027,6 +1032,20 @@ describe("Project Test Suite", () => {
   });
 });
 
+/** The paths a stub delegate reports; `overrides` replace individual fields. */
+function stubPaths(
+  projectRoot: string,
+  overrides: Partial<ProjectPaths> = {},
+): ProjectPaths {
+  return {
+    modelPaths: [path.join(projectRoot, "models")],
+    macroPaths: [path.join(projectRoot, "macros")],
+    seedPaths: [path.join(projectRoot, "seeds")],
+    targetPath: path.join(projectRoot, "target"),
+    ...overrides,
+  } as ProjectPaths;
+}
+
 function stubDelegate(
   projectRoot: string,
   overrides: Partial<FusionCli> = {},
@@ -1040,10 +1059,7 @@ function stubDelegate(
       rebuildManifestDiagnostics: [],
     }),
     getProjectName: () => "single_project",
-    getModelPaths: () => [path.join(projectRoot, "models")],
-    getMacroPaths: () => [path.join(projectRoot, "macros")],
-    getSeedPaths: () => [path.join(projectRoot, "seeds")],
-    getTargetPath: () => path.join(projectRoot, "target"),
+    paths: () => stubPaths(projectRoot),
     ...overrides,
   };
   return stub as FusionCli;
@@ -1090,8 +1106,11 @@ describe("Project manifest", () => {
     const project = await buildProject(
       root,
       stubDelegate(root, {
-        getTargetPath: () => targetDir,
-        getPackageInstallPath: () => path.join(root, "dbt_packages"),
+        paths: () =>
+          stubPaths(root, {
+            targetPath: targetDir,
+            packagesInstallPath: path.join(root, "dbt_packages"),
+          }),
       }),
     );
     const parses: ParsedManifest[] = [];
@@ -1136,8 +1155,11 @@ describe("Project manifest", () => {
     const project = await buildProject(
       root,
       stubDelegate(root, {
-        getTargetPath: () => targetDir,
-        getPackageInstallPath: () => path.join(root, "dbt_packages"),
+        paths: () =>
+          stubPaths(root, {
+            targetPath: targetDir,
+            packagesInstallPath: path.join(root, "dbt_packages"),
+          }),
       }),
     );
     const parsed = vi.fn();
@@ -1160,8 +1182,11 @@ describe("Project manifest", () => {
     const project = await buildProject(
       root,
       stubDelegate(root, {
-        getTargetPath: () => targetDir,
-        getPackageInstallPath: () => path.join(root, "dbt_packages"),
+        paths: () =>
+          stubPaths(root, {
+            targetPath: targetDir,
+            packagesInstallPath: path.join(root, "dbt_packages"),
+          }),
       }),
     );
     expect(project.getAdapterType()).toBe("unknown");
@@ -1432,8 +1457,11 @@ describe("Project manifest trigger", () => {
         dir,
         stubDelegate(dir, {
           rebuildManifest: slowRebuild,
-          getTargetPath: () => targetDir,
-          getPackageInstallPath: () => path.join(dir, "dbt_packages"),
+          paths: () =>
+            stubPaths(dir, {
+              targetPath: targetDir,
+              packagesInstallPath: path.join(dir, "dbt_packages"),
+            }),
         }),
         { parseDemand },
       );
@@ -1476,8 +1504,11 @@ describe("Project manifest trigger", () => {
         dir,
         stubDelegate(dir, {
           rebuildManifest: rebuild,
-          getTargetPath: () => targetDir,
-          getPackageInstallPath: () => path.join(dir, "dbt_packages"),
+          paths: () =>
+            stubPaths(dir, {
+              targetPath: targetDir,
+              packagesInstallPath: path.join(dir, "dbt_packages"),
+            }),
         }),
         { parseDemand: new ParseDemand() },
       );

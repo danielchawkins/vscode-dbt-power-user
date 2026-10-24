@@ -17,7 +17,9 @@ const makeService = (root: string, setup: Setup = {}) => {
     ? undefined
     : {
         projectRoot: Uri.file(root),
-        getModelPaths: () => setup.modelPaths ?? [path.join(root, "models")],
+        paths: () => ({
+          modelPaths: setup.modelPaths ?? [path.join(root, "models")],
+        }),
         log: { error: vi.fn() },
       };
   const projects = { get: () => project };

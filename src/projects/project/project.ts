@@ -3,7 +3,7 @@ import { Disposable, EventEmitter, Uri } from "vscode";
 import type { ParsedManifest } from "../../core/dbt/domain";
 import type { Log } from "../../core/log";
 import { type ManifestProject } from "../../core/manifest/index";
-import type { ResolvedDefer } from "../../core/snapshot/index";
+import type { ProjectPaths, ResolvedDefer } from "../../core/snapshot/index";
 import { dbtProjectFilePath } from "../../core/snapshot/index";
 import type { FusionCommandIntegrationFactory } from "../../fusion/executableLifecycle";
 import { ExecutableLifecycle } from "../../fusion/executableLifecycle";
@@ -164,14 +164,14 @@ export class Project implements Disposable, ManifestProject {
     this.queries = new ProjectQueries(this, this.terminal, this.sharedState);
     this.commands = new ProjectDbtCommands(this, this.tasks);
     this.runResultsReader = new RunResultsReader(
-      () => this.getTargetPath(),
+      () => this.paths()?.targetPath,
       () => this.getProjectName(),
       this.terminal,
     );
     this.scheduler = this.createScheduler(options.parseDemand);
     this.disposables.push(this.scheduler);
     this.trigger = new ManifestTrigger(root, this.terminal, {
-      sourcePaths: () => sourcePathsOf(this),
+      sourcePaths: () => sourcePathsOf(this.paths()),
       onProjectFileChanged: () => this.scheduler.projectFileChanged(),
       onSourceFileChanged: () => this.scheduler.sourceFileChanged(),
     });
@@ -307,20 +307,9 @@ export class Project implements Disposable, ManifestProject {
     return projectOptIns(this.projectRoot.fsPath, this.manifest);
   }
 
-  getTargetPath(): string | undefined {
-    return this.currentIntegration?.getTargetPath();
-  }
-  getPackageInstallPath(): string | undefined {
-    return this.currentIntegration?.getPackageInstallPath();
-  }
-  getModelPaths(): string[] | undefined {
-    return this.currentIntegration?.getModelPaths();
-  }
-  getSeedPaths(): string[] | undefined {
-    return this.currentIntegration?.getSeedPaths();
-  }
-  getMacroPaths(): string[] | undefined {
-    return this.currentIntegration?.getMacroPaths();
+  /** The resource paths of the attached Fusion CLI; undefined until one is attached. */
+  paths(): ProjectPaths | undefined {
+    return this.currentIntegration?.paths();
   }
 
   getAllDiagnostic(): Diagnostic[] {
@@ -372,7 +361,9 @@ export class Project implements Disposable, ManifestProject {
     reportPaths: boolean,
   ): Promise<void> {
     const label = `"${this.getProjectName()}" at ${this.projectRoot.fsPath}`;
-    const sourcePaths = reportPaths ? () => sourcePathsOf(this) : undefined;
+    const sourcePaths = reportPaths
+      ? () => sourcePathsOf(this.paths())
+      : undefined;
     if (await refreshCliConfig(delegate, this.terminal, label, sourcePaths)) {
       this.diagnostics.clearConfig();
       this.updateDiagnosticsInProblemsPanel();
@@ -429,7 +420,7 @@ export class Project implements Disposable, ManifestProject {
   findPackageName(uri: Uri): string | undefined {
     return packageNameOf(
       this.projectRoot.toString(),
-      this.getPackageInstallPath(),
+      this.paths()?.packagesInstallPath,
       uri,
     );
   }

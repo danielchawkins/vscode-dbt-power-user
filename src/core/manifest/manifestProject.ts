@@ -1,7 +1,8 @@
+import type { ProjectPaths } from "../snapshot/index";
+
 /** Project facts the manifest parsers read. */
 export interface ManifestProject {
   getProjectRoot(): string;
   getProjectName(): string;
-  getPackageInstallPath(): string | undefined;
-  getTargetPath(): string | undefined;
+  paths(): Pick<ProjectPaths, "targetPath" | "packagesInstallPath"> | undefined;
 }

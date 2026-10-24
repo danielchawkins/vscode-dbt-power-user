@@ -29,7 +29,7 @@ export class SourceParser {
         resolve(sourceMetaMap);
       }
       // TODO: these things can change so we should recreate them if project config changes
-      const packagePath = project.getPackageInstallPath();
+      const packagePath = project.paths()?.packagesInstallPath;
       if (packagePath === undefined) {
         throw new Error("packagePath is not defined in " + projectRoot);
       }

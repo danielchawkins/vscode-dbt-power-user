@@ -127,7 +127,7 @@ export class NodeParser {
     const nodesMaps = Object.values(nodesMap).filter((model) =>
       isResourceNode(model.resource_type),
     );
-    const packagePath = project.getPackageInstallPath();
+    const packagePath = project.paths()?.packagesInstallPath;
     if (packagePath === undefined) {
       throw new Error("packagePath is not defined " + projectRoot);
     }
@@ -160,7 +160,7 @@ export class NodeParser {
         packagePath,
         original_file_path,
       );
-      const targetPath = project.getTargetPath();
+      const targetPath = project.paths()?.targetPath;
       if (fullPath) {
         const nodeResourceType = resource_type as NodeResourceType;
         let nameMap = nameLookupMapsByType.get(nodeResourceType);

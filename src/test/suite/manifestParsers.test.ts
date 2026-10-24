@@ -9,6 +9,7 @@ import {
   SourceParser,
 } from "../../core/manifest";
 import { RelationshipParser } from "../../core/manifest/relationshipParser";
+import type { ProjectPaths } from "../../core/snapshot";
 
 const logger = { debug: () => undefined } as unknown as Pick<Log, "debug">;
 
@@ -16,8 +17,11 @@ function project(packagePath: string | undefined): ManifestProject {
   return {
     getProjectRoot: () => "/p",
     getProjectName: () => "p",
-    getPackageInstallPath: () => packagePath,
-    getTargetPath: () => "/p/target",
+    paths: () =>
+      ({
+        packagesInstallPath: packagePath,
+        targetPath: "/p/target",
+      }) as Pick<ProjectPaths, "targetPath" | "packagesInstallPath">,
   };
 }
 

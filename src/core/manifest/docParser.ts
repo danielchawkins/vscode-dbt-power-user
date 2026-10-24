@@ -30,7 +30,7 @@ export class DocParser {
     for (const doc of Object.values(docs)) {
       const { package_name, name, original_file_path } = doc;
       const packageName = package_name;
-      const packagePath = project.getPackageInstallPath();
+      const packagePath = project.paths()?.packagesInstallPath;
       if (packagePath === undefined) {
         throw new Error("packagePath is not defined in " + projectRoot);
       }
