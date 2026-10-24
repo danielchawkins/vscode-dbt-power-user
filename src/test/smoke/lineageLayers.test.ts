@@ -3,6 +3,12 @@ import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import {
+  CARD_IDS,
+  DRAWN_TABLE_EDGES,
+  LAYER_BANDS,
+  START,
+} from "./lineageLayersExpected";
 import type { ColumnState } from "./lineageProbes";
 import { clickFirstColumn, clickOnCard, readColumns } from "./lineageProbes";
 import { EXTENSION_ID, PANELS } from "./panels";
@@ -19,21 +25,6 @@ import {
 } from "./webviewInteractions";
 
 const LINEAGE: PanelEntry = PANELS.lineage;
-/** The start model and its direct neighbours: sources and seeds, staging, marts, and the hidden audit_log card. */
-const START = "int_orders__enriched";
-const CARD_IDS = [
-  "orders",
-  "country_codes",
-  "stg_shop__orders",
-  "stg_backend__accounts",
-  "stg_backend__users",
-  "int_orders__enriched",
-  "fct_orders",
-  "dim_customers",
-  "fct_finance__daily_revenue_by_region_and_channel",
-  "audit_log",
-];
-const LAYER_BANDS = ["source", "staging", "intermediate", "marts", "other"];
 
 const runsHere = () => currentFixtureName() === "lineage-layers";
 const host = () =>
@@ -263,7 +254,7 @@ suite("Lineage layers", function () {
     // The hidden audit_log card is drawn, but its edge is not.
     assert.strictEqual(
       drawn.edges.table,
-      11,
+      DRAWN_TABLE_EDGES,
       `table edges: ${JSON.stringify(drawn.edges)}`,
     );
     assert.deepStrictEqual(drawn.chips, []);
