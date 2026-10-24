@@ -81,17 +81,6 @@
       "count": 2
     }
   },
-  "src/modules/lineage/gutterRouter.ts": {
-    "max-lines": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 7
-    },
-    "no-param-reassign": {
-      "count": 5
-    }
-  },
   "src/modules/lineage/layered.ts": {
     "max-params": {
       "count": 1
