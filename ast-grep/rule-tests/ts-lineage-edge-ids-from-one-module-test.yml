@@ -1,0 +1,11 @@
+id: ts-lineage-edge-ids-from-one-module
+valid:
+  - 'const id = tableEdgeId(parent, child);'
+  - 'const key = `${direction === "children" ? "c" : "p"}:${table}`;'
+  - 'expect(paths.get("t:s->d")).toBeDefined();'
+  - 'const label = `t: ${count}`;'
+invalid:
+  - 'const id = `t:${parent}->${child}`;'
+  - 'const id = `g:${parent}->${child}`;'
+  - 'const id = `c:${e.source.join(".")}->${e.target.join(".")}`;'
+  - 'const route = { id: `r:${ref.id}`, from, to };'

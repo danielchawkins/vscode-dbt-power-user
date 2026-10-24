@@ -6,8 +6,8 @@
 // layouts with the gutter router. Their tests run without React, so they import no React, React Flow, CSS, UI kit,
 // panel messaging, or a lineage module outside this list.
 const LINEAGE_PURE =
-  "^src/modules/lineage/(card|columnTrace|expansionBatch|expansionCap|expansionGroups|graph|groupEdges|grouping|" +
-  "gutterRouter|hiddenNodes|layerTags|layered|layeredFlow|layeredMetrics|layeredRanks|layeredRows|layout)\\.ts$";
+  "^src/modules/lineage/(card|columnTrace|edgeIds|expansionBatch|expansionCap|expansionGroups|graph|groupEdges|grouping|" +
+  "gutterRouter|hiddenNodes|layerTags|layered|layeredFlow|layeredInput|layeredMetrics|layeredRanks|layeredRows|layout)\\.ts$";
 
 module.exports = {
   forbidden: [

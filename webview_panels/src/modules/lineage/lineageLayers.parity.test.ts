@@ -6,11 +6,12 @@ import {
   lineageLayersRefs,
   lineageLayersTables,
 } from "../../test/fixtures/lineageLayers";
+import { relationshipEdgeId, tableEdgeId } from "./edgeIds";
 import { fitGraph, fitPadding } from "./fit";
-import type { TableRoute } from "./gutterRouter";
 import { hiddenTables } from "./hiddenNodes";
-import { type LayeredNode, layerTagOf, OTHER_TAG } from "./layered";
+import { OTHER_TAG } from "./layered";
 import { layeredFlow, type LayeredFlow } from "./layeredFlow";
+import { type FlowInput, layeredInput } from "./layeredInput";
 import { geometry, tableHeight } from "./layout";
 import { ZOOM_OUT_BELOW } from "./semanticZoom";
 
@@ -31,12 +32,33 @@ type Connections = "dbt" | "declared" | "both";
 
 type Placement = { row: number; side: "left" | "right" | "centre" };
 
-const nodes: LayeredNode[] = lineageLayersTables.map((table) => ({
-  id: table.table,
-  width: geometry.tableWidth,
-  height: tableHeight(undefined, 0, table.table === INT_ORDERS),
-  tag: layerTagOf(table.nodeType, table.layer),
-}));
+/**
+ * The input `placeLayered` gets for the fixture: every fixture table as a card, the dbt edges given, and the
+ * relationships when the connections draw them. Under `declared` the relationships rank the cards, the referenced
+ * table upstream of the declaring one; the gallery ranks by its dbt edges under every setting, so its `declared` rows
+ * differ; see docs/lineage-layout.md.
+ */
+const heightOf = (id: string) => tableHeight(undefined, 0, id === INT_ORDERS);
+
+function flowInput(
+  connections: Connections,
+  dbtEdges = drawnDbtEdges,
+): FlowInput {
+  return {
+    data: {
+      start: INT_ORDERS,
+      tables: lineageLayersTables,
+      edges: dbtEdges,
+      columnEdges: [],
+    },
+    columns: {},
+    columnTables: [],
+    expansions: [],
+    errors: {},
+    connections,
+    refs: connections !== "dbt" ? lineageLayersRefs : [],
+  };
+}
 
 /**
  * The dbt edges the panel draws: the panel leaves out the edges of hidden tables (`edgesAmong` in graph.ts), so the
@@ -46,41 +68,16 @@ const hidden = hiddenTables({ known: lineageLayersKnown, start: INT_ORDERS });
 const drawnDbtEdges = lineageLayersEdges.filter(
   ([parent, child]) => !hidden.has(parent) && !hidden.has(child),
 );
+const nodes = layeredInput(flowInput("both"), () => undefined, heightOf).nodes;
 
-/** Runs the real layered layout and gutter router, with the inputs `placeLayered` gives them. */
+/** Runs the real layered layout and gutter router, on the input `layeredInput` builds from the fixture. */
 function layout(
   connections: Connections,
   dbtEdges = drawnDbtEdges,
 ): LayeredFlow {
-  const dbt = connections !== "declared";
-  const declared = connections !== "dbt";
-  const tableRoutes: TableRoute[] = dbt
-    ? dbtEdges.map(([parent, child]) => ({
-        id: `t:${parent}->${child}`,
-        parent,
-        child,
-      }))
-    : [];
-  return layeredFlow({
-    start: INT_ORDERS,
-    nodes,
-    tableRoutes,
-    // As `rankingEdges` in flow.ts: the dbt edges rank the cards when they are drawn. Under `declared` alone the
-    // relationships rank them, the referenced table upstream of the declaring one. The gallery ranks by its dbt
-    // edges under every setting, so its `declared` rows differ; see docs/lineage-layout.md.
-    rankEdges: dbt
-      ? dbtEdges
-      : lineageLayersRefs.map((ref) => [ref.to.table, ref.from.table] as const),
-    columnRoutes: [],
-    relationshipRoutes: declared
-      ? lineageLayersRefs.map((ref) => ({
-          id: `r:${ref.id}`,
-          from: ref.from.table,
-          to: ref.to.table,
-        }))
-      : [],
-    traceOn: false,
-  });
+  return layeredFlow(
+    layeredInput(flowInput(connections, dbtEdges), () => undefined, heightOf),
+  );
 }
 
 /**
@@ -406,8 +403,10 @@ describe("lineage-layers fixture, edges and cards", () => {
   function edgesUnderCards(flow: LayeredFlow): string[] {
     const size = new Map(nodes.map((node) => [node.id, node]));
     const ends = (id: string): string[] => {
-      const route = drawnDbtEdges.find(([p, c]) => id === `t:${p}->${c}`);
-      const ref = lineageLayersRefs.find((r) => id === `r:${r.id}`);
+      const route = drawnDbtEdges.find(([p, c]) => id === tableEdgeId(p, c));
+      const ref = lineageLayersRefs.find(
+        (r) => id === relationshipEdgeId(r.id),
+      );
       return route ? [...route] : ref ? [ref.from.table, ref.to.table] : [];
     };
     const hits: string[] = [];

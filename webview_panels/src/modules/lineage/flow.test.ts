@@ -3,11 +3,11 @@ import { Position } from "@xyflow/react";
 import { describe, expect, it } from "vitest";
 import type { GroupChip } from "./expansionGroups";
 import { collapsedGroups } from "./expansionGroups";
-import type { FlowInput } from "./flow";
 import { drawnEdges, toFlow } from "./flow";
 import { addNeighbours, emptyGraph, lineageData } from "./graph";
 import { combinedEdges } from "./groupEdges";
 import { groupNodeId } from "./grouping";
+import type { FlowInput } from "./layeredInput";
 import { geometry, tableHeight } from "./layout";
 import type { RoutedRelationshipData } from "./relationshipRoute";
 
