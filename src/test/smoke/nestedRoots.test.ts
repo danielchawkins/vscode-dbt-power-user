@@ -13,13 +13,13 @@ import {
   waitForWorkbenchNotificationsToSettle,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { EXTENSION_ID } from "./panels";
 import {
   checkpointCount,
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const OUTER = "outer";
 const INNER = "inner";
 const OUTER_MODEL = "models/outer_model.sql";

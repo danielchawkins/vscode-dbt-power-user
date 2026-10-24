@@ -14,13 +14,13 @@ import {
   waitForWorkbenchNotificationsToSettle,
 } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { EXTENSION_ID } from "./panels";
 import {
   checkpointCount,
   screenshotDirectory,
   writeCheckpoint,
 } from "./visualEvidence";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
 /** The project's dbt name; the folder is `projects/analytics`. */
 const PROJECT_NAME = "nested_analytics";
 const OPENED_MODEL = "projects/analytics/models/nested_model.sql";

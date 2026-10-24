@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { EXTENSION_ID, PANELS } from "./panels";
 import { waitFor } from "./probeLog";
 import type { PanelEntry } from "./webviewInteractions";
 import {
@@ -15,12 +16,7 @@ import {
   waitForDocsClean,
 } from "./webviewInteractions";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
-const DOCS: PanelEntry = {
-  container: "workbench.view.extension.docs_edit_view",
-  command: "fusionPowerUser.DocsEdit.focus",
-  entry: "documentationEditor",
-};
+const DOCS: PanelEntry = PANELS.docsEdit;
 /**
  * The Save chevron: the popover trigger right after the Save button in SaveDocumentation's DropdownButton. The
  * doc-block inserter renders its own aria-haspopup=dialog trigger when a model has doc blocks, so the selector is

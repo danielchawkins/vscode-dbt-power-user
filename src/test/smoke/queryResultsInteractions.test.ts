@@ -2,6 +2,7 @@ import * as vscode from "vscode";
 import { HARNESS_SWITCHES } from "../../settings/environment";
 import { evaluatePanel, validateSmokeHost } from "./cdpClient";
 import { currentFixtureName } from "./fixtureContext";
+import { EXTENSION_ID, PANELS } from "./panels";
 import type { PanelEntry } from "./webviewInteractions";
 import {
   clickInWebview,
@@ -12,13 +13,8 @@ import {
   showPanel,
 } from "./webviewInteractions";
 
-const EXTENSION_ID = "danielchawkins.fusion-power-user";
 const RENDER_TEST_RESULT = "fusionPowerUser.test.renderQueryResult";
-const RESULTS: PanelEntry = {
-  container: "workbench.view.extension.dbt_preview_results",
-  command: "fusionPowerUser.PreviewResults.focus",
-  entry: "queryResults",
-};
+const RESULTS: PanelEntry = PANELS.queryResults;
 /** The Preview tab's label carries the row count and elapsed time, so it has no stable name to search for. */
 const PREVIEW_TAB = "ul.nav > li:first-child > button";
 /**

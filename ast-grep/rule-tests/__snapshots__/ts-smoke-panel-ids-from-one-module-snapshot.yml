@@ -1,0 +1,26 @@
+id: ts-smoke-panel-ids-from-one-module
+snapshots:
+  const EXTENSION_ID = "danielchawkins.fusion-power-user";:
+    labels:
+    - source: '"danielchawkins.fusion-power-user"'
+      style: primary
+      start: 21
+      end: 55
+  'const LINEAGE: PanelEntry = { container: "workbench.view.extension.lineage_view", command: "c", entry: "l" };':
+    labels:
+    - source: '"workbench.view.extension.lineage_view"'
+      style: primary
+      start: 41
+      end: 80
+  'const LINEAGE: PanelEntry = { container: "workbench.view.extension.lineage_view", command: "c", entry: "lineage" };':
+    labels:
+    - source: '"workbench.view.extension.lineage_view"'
+      style: primary
+      start: 41
+      end: 80
+  const ext = vscode.extensions.getExtension("danielchawkins.fusion-power-user");:
+    labels:
+    - source: '"danielchawkins.fusion-power-user"'
+      style: primary
+      start: 43
+      end: 77
