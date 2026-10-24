@@ -1,522 +1,57 @@
-import type { lineage } from "@fusion-power-user/webview-contract";
-import { panelLogger } from "@modules/logger";
 import type { DrawerRef } from "@uicore";
 import { Drawer } from "@uicore";
-import type { FitViewOptions } from "@xyflow/react";
-import {
-  Background,
-  ControlButton,
-  Controls,
-  MiniMap,
-  type Node,
-  ReactFlow,
-  ReactFlowProvider,
-  useReactFlow,
-  useStoreApi,
-} from "@xyflow/react";
-import "@xyflow/react/dist/style.css";
-import {
-  type RefObject,
-  use,
-  useCallback,
-  useEffect,
-  useLayoutEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
-import { hiddenCounts } from "./expansionCap";
-import { collapsedGroups, groupChips } from "./expansionGroups";
-import type { Fitted } from "./fit";
-import {
-  fitGraph,
-  fitOptions,
-  fitPadding,
-  MIN_ZOOM,
-  noticeOverlap,
-  refitsGraph,
-} from "./fit";
-import { toFlow } from "./flow";
-import { lineageData } from "./graph";
-import { combinedEdges } from "./groupEdges";
-import { GroupNode } from "./GroupNode";
-import { LayerBand } from "./LayerBand";
+import { ReactFlowProvider } from "@xyflow/react";
+import { useRef } from "react";
+import { Canvas } from "./Canvas";
 import styles from "./lineageGraph.module.css";
 import MissingLineageMessage from "./MissingLineageMessage";
-import { RelationshipEdgeView } from "./RelationshipEdge";
-import relationStyles from "./relationshipEdges.module.css";
-import { fetchRelationships, fetchSettings, persistSettings } from "./requests";
-import { RoutedEdge } from "./RoutedEdge";
-import {
-  isZoomedOut,
-  SemanticZoomContext,
-  useDrawnEdges,
-} from "./semanticZoom";
+import { SemanticZoomContext } from "./semanticZoom";
 import TableDetails from "./TableDetails";
-import { TableNode } from "./TableNode";
 import Toolbar from "./Toolbar";
-import { useHandleMeasurement } from "./useHandleMeasurement";
-import type { ExpansionOptions } from "./useLineageGraph";
-import { useLineageGraph } from "./useLineageGraph";
-import type { ResolvedSettings } from "./viewModel";
-import { resolveSettings, TableActionsContext, visibleRefs } from "./viewModel";
-
-const nodeTypes = { table: TableNode, folderGroup: GroupNode, band: LayerBand };
-const edgeTypes = {
-  routed: RoutedEdge,
-  relationship: RelationshipEdgeView,
-};
-
-/** Logs React Flow's warnings to the webview devtools console. */
-const onError = (code: string, message: string) => {
-  panelLogger.warn(`[React Flow] ${code}: ${message}`);
-};
-
-/**
- * Selects the table a click lands on, and opens its Details while zoomed out hides the card's own button. A group
- * card has no table to select.
- */
-const useNodeClick = (
-  select: (table: string | undefined) => void,
-  openDetails: (table: string) => void,
-) => {
-  const enabled = use(SemanticZoomContext);
-  const store = useStoreApi();
-  return (_event: unknown, node: { id: string; type?: string }) => {
-    if (node.type === "table") {
-      select(node.id);
-      if (isZoomedOut(store.getState().transform[2], enabled)) {
-        openDetails(node.id);
-      }
-    }
-  };
-};
-
-/** The host's view settings, with `loaded` false until they arrive; a change is applied at once and persisted. */
-const useSettings = () => {
-  const [settings, setSettings] = useState<ResolvedSettings>(() =>
-    resolveSettings(undefined),
-  );
-  const [loaded, setLoaded] = useState(false);
-  useEffect(() => {
-    fetchSettings()
-      .then((s) => setSettings(resolveSettings(s)))
-      .catch((error) => panelLogger.error("lineage settings", error))
-      .finally(() => setLoaded(true));
-  }, []);
-  const change = (part: Partial<lineage.LineageSettings>) => {
-    setSettings((s) => resolveSettings({ ...s, ...part }));
-    persistSettings(part).catch((error) =>
-      panelLogger.error("lineage settings", error),
-    );
-  };
-  return { settings, loaded, change };
-};
-
-/**
- * The relationships of the Current Project, fetched while declared relationships are drawn and
- * again after each redraw.
- */
-const useRefs = (settings: ResolvedSettings, drawnKey: number) => {
-  const [refs, setRefs] = useState<lineage.LineageRef[]>([]);
-  const declared = settings.connections !== "dbt";
-  useEffect(() => {
-    if (!declared) {
-      return;
-    }
-    let live = true;
-    fetchRelationships(settings.includeSourcesInInference)
-      .then((r) => live && setRefs(r))
-      .catch((error) => panelLogger.error("lineage relationships", error));
-    return () => {
-      live = false;
-    };
-  }, [declared, settings.includeSourcesInInference, drawnKey]);
-  return refs;
-};
-
-const Legend = () => (
-  <div className={styles.legend}>
-    <span>
-      <span className={styles.swatch} />
-      Select
-    </span>
-    <span>
-      <span className={`${styles.swatch} ${styles.indirect}`} />
-      Non-select
-    </span>
-    <span>
-      <span className={relationStyles.legendLine} />
-      Relationship
-    </span>
-  </div>
-);
-
-/** Below this canvas size the minimap starts hidden; it would cover most of the graph. */
-const MINIMAP_MIN = { width: 720, height: 360 };
-
-/** Band nodes are the layer backdrop rather than cards, so the minimap leaves them out. */
-const minimapColour = (node: Node): string =>
-  node.type === "band"
-    ? "transparent"
-    : "var(--vscode-editorWidget-border, var(--vscode-disabledForeground))";
-const minimapStroke = (node: Node): string =>
-  node.type === "band" ? "transparent" : "var(--vscode-focusBorder)";
-
-/** The canvas size, tracked with a `ResizeObserver`. */
-const useSize = () => {
-  const ref = useRef<HTMLDivElement>(null);
-  const [size, setSize] = useState({ width: 0, height: 0 });
-  useEffect(() => {
-    const element = ref.current;
-    if (!element) {
-      return;
-    }
-    const observer = new ResizeObserver(
-      ([entry]) =>
-        entry &&
-        setSize({
-          width: entry.contentRect.width,
-          height: entry.contentRect.height,
-        }),
-    );
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, []);
-  return { ref, size };
-};
-
-/**
- * How far the notice above the canvas reaches over the canvas's top edge, in pixels: zero when it sits above the
- * canvas, as it does in the top bar. Both elements are tracked with a `ResizeObserver`, as the canvas size is.
- */
-const useNoticeOverlap = (
-  topBar: RefObject<HTMLElement | null>,
-  canvas: RefObject<HTMLElement | null>,
-  shown: boolean,
-): number => {
-  const [overlap, setOverlap] = useState(0);
-  useLayoutEffect(() => {
-    const notice = shown
-      ? topBar.current?.querySelector<HTMLElement>('[role="alert"]')
-      : null;
-    const element = canvas.current;
-    if (!notice || !element) {
-      setOverlap(0);
-      return;
-    }
-    const measure = () =>
-      setOverlap(
-        noticeOverlap(
-          notice.getBoundingClientRect(),
-          element.getBoundingClientRect(),
-        ),
-      );
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(notice);
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [topBar, canvas, shown]);
-  return overlap;
-};
-
-/** The minimap's visibility: the user's choice once made, otherwise whether the canvas has room for it. */
-const useMinimap = (size: { width: number; height: number }) => {
-  const [choice, setChoice] = useState<boolean>();
-  const roomy =
-    size.width >= MINIMAP_MIN.width && size.height >= MINIMAP_MIN.height;
-  const shown = (choice ?? roomy) && size.width > 0;
-  return { shown, toggle: () => setChoice(!shown) };
-};
-
-/** Minimap dimensions: a fifth of the canvas, kept between 120x80 and 200x150. */
-const minimapStyle = (size: { width: number; height: number }) => ({
-  width: Math.round(Math.min(200, Math.max(120, size.width / 5))),
-  height: Math.round(Math.min(150, Math.max(80, size.height / 5))),
-});
-
-/**
- * The fit options for the canvas, and the fits that frame the graph. The canvas is fitted when it is resized or its
- * padding changes, and on each redraw. A change of the drawn nodes, the layout or Connections refits too, unless the
- * user has panned or zoomed since the last fit and the nodes are the same (see `refitsGraph`).
- */
-const useFit = ({
-  size,
-  minimapShown,
-  notice,
-  drawnKey,
-  layered,
-  focusId,
-  nodeKey,
-  shapeKey,
-}: {
-  size: { width: number; height: number };
-  minimapShown: boolean;
-  notice: number;
-  drawnKey: number;
-  layered: boolean;
-  focusId: string | undefined;
-  /** The drawn nodes, by id: a change of them is a change of the graph. */
-  nodeKey: string;
-  /** The layout and Connections: a change of either is a change of the graph's shape. */
-  shapeKey: string;
-}): { options: FitViewOptions; refit: () => void } => {
-  const flow = useReactFlow();
-  const { width, height } = size;
-  const ready = width > 0 && height > 0;
-  const map = minimapStyle(size);
-  const minimap = useMemo(
-    () => (minimapShown ? { width: map.width, height: map.height } : undefined),
-    [minimapShown, map.width, map.height],
-  );
-  const options = useMemo(() => fitOptions(minimap, notice), [minimap, notice]);
-  const padding = useMemo(() => fitPadding(minimap, notice), [minimap, notice]);
-  const fittedRef = useRef<Fitted | undefined>(undefined);
-  const fit = useCallback(
-    async (key: string) => {
-      await fitGraph({
-        flow,
-        options,
-        padding,
-        width,
-        height,
-        layered,
-        focusId,
-      });
-      fittedRef.current = { nodeKey: key, viewport: flow.getViewport() };
-    },
-    [flow, options, padding, width, height, layered, focusId],
-  );
-  // The effects below read the latest fit and node key through these refs, so that only their own changes run them.
-  const fitRef = useRef(fit);
-  const keyRef = useRef(nodeKey);
-  useLayoutEffect(() => {
-    fitRef.current = fit;
-    keyRef.current = nodeKey;
-  });
-  useEffect(() => {
-    if (ready) {
-      void fitRef.current(keyRef.current);
-    }
-  }, [ready, width, height, options, padding]);
-  useEffect(() => {
-    if (!ready) {
-      return;
-    }
-    // Waits a frame, so React Flow has measured the nodes that were just drawn.
-    requestAnimationFrame(() => {
-      if (refitsGraph(fittedRef.current, nodeKey, flow.getViewport())) {
-        void fitRef.current(nodeKey);
-      }
-    });
-  }, [flow, ready, nodeKey, shapeKey]);
-  useEffect(() => {
-    if (drawnKey > 0) {
-      requestAnimationFrame(() => void fitRef.current(keyRef.current));
-    }
-  }, [drawnKey]);
-  // The Fit View control runs the same fit as the automatic one, with the same focus and padding.
-  const refit = useCallback(() => void fitRef.current(keyRef.current), []);
-  return { options, refit };
-};
-
-type FlowGraph = ReturnType<typeof toFlow>;
-
-/** The graph canvas with its zoom controls, a minimap that fits the canvas, and the edge legend. */
-const Canvas = ({
-  nodes,
-  edges,
-  select,
-  openDetails,
-  drawnKey,
-  layered,
-  nodeKey,
-  shapeKey,
-  overlap,
-  canvasRef,
-  size,
-}: FlowGraph & {
-  select: (table: string | undefined) => void;
-  openDetails: (table: string) => void;
-  drawnKey: number;
-  /** The layered layout draws its bands instead of the dotted background. */
-  layered: boolean;
-  nodeKey: string;
-  shapeKey: string;
-  /** How far the notice covers the canvas's top edge, which the fit keeps clear of. */
-  overlap: number;
-  canvasRef: RefObject<HTMLDivElement | null>;
-  size: { width: number; height: number };
-}) => {
-  const minimap = useMinimap(size);
-  const onNodeClick = useNodeClick(select, openDetails);
-  useHandleMeasurement(nodes);
-  const mapSize = minimapStyle(size);
-  const focusId = nodes.find((n) => n.type === "table" && n.data.isStart)?.id;
-  const { options, refit } = useFit({
-    size,
-    minimapShown: minimap.shown,
-    notice: overlap,
-    drawnKey,
-    layered,
-    focusId,
-    nodeKey,
-    shapeKey,
-  });
-  const drawn = useDrawnEdges(edges);
-  const label = minimap.shown ? "Hide minimap" : "Show minimap";
-  return (
-    <div className={styles.canvas} ref={canvasRef}>
-      <ReactFlow
-        nodes={nodes}
-        edges={drawn}
-        nodeTypes={nodeTypes}
-        edgeTypes={edgeTypes}
-        nodesConnectable={false}
-        nodesDraggable={false}
-        minZoom={MIN_ZOOM}
-        fitView
-        fitViewOptions={options}
-        proOptions={{ hideAttribution: true }}
-        onError={onError}
-        onNodeClick={onNodeClick}
-        onPaneClick={() => select(undefined)}
-      >
-        {layered ? null : <Background />}
-        <Controls
-          showInteractive={false}
-          fitViewOptions={options}
-          onFitView={refit}
-        >
-          <ControlButton
-            onClick={minimap.toggle}
-            title={label}
-            aria-label={label}
-            aria-pressed={minimap.shown}
-          >
-            <span className="codicon codicon-map" />
-          </ControlButton>
-        </Controls>
-        {minimap.shown ? (
-          <MiniMap
-            pannable
-            zoomable
-            position="bottom-right"
-            style={mapSize}
-            nodeColor={minimapColour}
-            nodeStrokeColor={minimapStroke}
-            nodeStrokeWidth={2}
-            nodeBorderRadius={4}
-          />
-        ) : null}
-      </ReactFlow>
-      <Legend />
-    </div>
-  );
-};
+import { useNoticeOverlap, useSize } from "./useCanvasFit";
+import { useGraphModel } from "./useGraphModel";
+import { TableActionsContext } from "./viewModel";
 
 const Graph = (): React.JSX.Element => {
   const drawerRef = useRef<DrawerRef>(null);
-  const [detailsTable, setDetailsTable] = useState<string>();
-  const { settings, loaded, change } = useSettings();
-  const openDetails = useCallback((table: string) => {
-    setDetailsTable(table);
-    drawerRef.current?.open();
-  }, []);
-  // Read when a rebuild starts, so it follows the latest settings without re-creating the graph store. A layout
-  // effect runs before the graph's effects, so a render held until the settings load is drawn with them.
-  const expansionRef = useRef(settings.defaultExpansion);
-  const optionsRef = useRef<ExpansionOptions>({
-    cap: settings.maxNeighbours,
-    groupBy: settings.groupBy,
-  });
-  useLayoutEffect(() => {
-    expansionRef.current = settings.defaultExpansion;
-    optionsRef.current = {
-      cap: settings.maxNeighbours,
-      groupBy: settings.groupBy,
-    };
-  }, [settings.defaultExpansion, settings.maxNeighbours, settings.groupBy]);
-  const defaultExpansion = useCallback(() => expansionRef.current, []);
-  const expansionOptions = useCallback(() => optionsRef.current, []);
-  const { graph, rendered, drawnKey, actions, select, reset } = useLineageGraph(
-    defaultExpansion,
-    openDetails,
-    { expansionOptions, ready: loaded },
-  );
-  const notice = rendered?.missingLineageMessage;
-  const columnsNeedStrict = rendered?.columnsNeedStrict === true;
-  const refs = useRefs(settings, drawnKey);
-
-  const { nodes, edges } = useMemo(() => {
-    const data = lineageData(graph, {
-      direct: settings.showSelectEdges,
-      indirect: settings.showNonSelectEdges,
-    });
-    const drawn = new Set(data.tables.map((t) => t.table));
-    const groups = collapsedGroups(graph);
-    return toFlow({
-      data,
-      title: settings.title,
-      columns: graph.columns,
-      columnTables: graph.columnTables,
-      expansions: graph.expansions,
-      pending: graph.pending,
-      hidden: hiddenCounts(graph),
-      groups,
-      groupEdges: combinedEdges(graph, groups),
-      chips: groupChips(graph),
-      errors: graph.errors,
-      selectedTable: graph.selectedTable,
-      selectedColumn: graph.selectedColumn,
-      columnsNeedStrict,
-      connections: settings.connections,
-      refs: visibleRefs(refs, settings, drawn),
-      layout: settings.layout,
-      layerColors: settings.layerColors,
-    });
-  }, [graph, settings, refs, columnsNeedStrict]);
-  const details = detailsTable ? graph.known[detailsTable] : undefined;
-  // The drawn nodes by id, and the layout and Connections: the fit refits when either changes.
-  const nodeKey = useMemo(
-    () =>
-      nodes
-        .filter((node) => node.type !== "band")
-        .map((node) => node.id)
-        .sort()
-        .join("\n"),
-    [nodes],
-  );
-  const shapeKey = `${settings.layout}|${settings.connections}`;
+  const model = useGraphModel(drawerRef);
   const topBarRef = useRef<HTMLDivElement>(null);
   const { ref: canvasRef, size } = useSize();
-  const overlap = useNoticeOverlap(topBarRef, canvasRef, notice !== undefined);
+  const overlap = useNoticeOverlap(
+    topBarRef,
+    canvasRef,
+    model.notice !== undefined,
+  );
+  const { settings } = model;
 
   return (
-    <TableActionsContext value={actions}>
+    <TableActionsContext value={model.actions}>
       <div className={`${styles.view} lineage-view`}>
         <div className={styles.topBar} ref={topBarRef}>
-          <MissingLineageMessage missingLineageMessage={notice} />
-          <Toolbar settings={settings} change={change} reset={reset} />
+          <MissingLineageMessage missingLineageMessage={model.notice} />
+          <Toolbar
+            settings={settings}
+            change={model.change}
+            reset={model.reset}
+          />
         </div>
         <SemanticZoomContext value={settings.semanticZoom}>
           <Canvas
-            nodes={nodes}
-            edges={edges}
-            select={select}
-            openDetails={openDetails}
-            drawnKey={drawnKey}
+            nodes={model.nodes}
+            edges={model.edges}
+            select={model.select}
+            openDetails={model.openDetails}
+            drawnKey={model.drawnKey}
             layered={settings.layout === "layered"}
-            nodeKey={nodeKey}
-            shapeKey={shapeKey}
+            nodeKey={model.nodeKey}
+            shapeKey={model.shapeKey}
             overlap={overlap}
             canvasRef={canvasRef}
             size={size}
           />
         </SemanticZoomContext>
         <Drawer ref={drawerRef} title="Details">
-          {details ? <TableDetails table={details} /> : null}
+          {model.details ? <TableDetails table={model.details} /> : null}
         </Drawer>
       </div>
     </TableActionsContext>

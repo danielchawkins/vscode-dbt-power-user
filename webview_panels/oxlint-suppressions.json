@@ -60,17 +60,6 @@
       "count": 1
     }
   },
-  "src/modules/lineage/LineageView.tsx": {
-    "max-lines": {
-      "count": 1
-    },
-    "max-lines-per-function": {
-      "count": 2
-    },
-    "react/set-state-in-effect": {
-      "count": 1
-    }
-  },
   "src/modules/lineage/TableNode.tsx": {
     "jsx-a11y/prefer-tag-over-role": {
       "count": 1
