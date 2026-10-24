@@ -1,0 +1,50 @@
+id: ts-no-import-from-test-file
+snapshots:
+  const m = await import("./graph.test.ts");:
+    labels:
+    - source: import("./graph.test.ts")
+      style: primary
+      start: 16
+      end: 41
+    - source: import
+      style: secondary
+      start: 16
+      end: 22
+    - source: '"./graph.test.ts"'
+      style: secondary
+      start: 23
+      end: 40
+    - source: '"./graph.test.ts"'
+      style: secondary
+      start: 23
+      end: 40
+  export { RESULTS } from "./QueryPanel.controls.test";:
+    labels:
+    - source: export { RESULTS } from "./QueryPanel.controls.test";
+      style: primary
+      start: 0
+      end: 53
+    - source: '"./QueryPanel.controls.test"'
+      style: secondary
+      start: 24
+      end: 52
+  import type { X } from "../a.test";:
+    labels:
+    - source: import type { X } from "../a.test";
+      style: primary
+      start: 0
+      end: 35
+    - source: '"../a.test"'
+      style: secondary
+      start: 23
+      end: 34
+  import { TESTED_CONTROLS } from "./Lineage.controls.test";:
+    labels:
+    - source: import { TESTED_CONTROLS } from "./Lineage.controls.test";
+      style: primary
+      start: 0
+      end: 58
+    - source: '"./Lineage.controls.test"'
+      style: secondary
+      start: 32
+      end: 57

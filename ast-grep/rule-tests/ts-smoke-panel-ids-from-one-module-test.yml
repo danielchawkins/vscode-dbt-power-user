@@ -1,0 +1,10 @@
+id: ts-smoke-panel-ids-from-one-module
+valid:
+  - 'import { EXTENSION_ID, PANELS } from "./panels";'
+  - 'await revealPanel(PANELS.lineage);'
+  - 'const command = "fusionPowerUser.Lineage.focus";'
+  - 'const label = "danielchawkins.fusion-power-user is active";'
+invalid:
+  - 'const EXTENSION_ID = "danielchawkins.fusion-power-user";'
+  - 'const LINEAGE: PanelEntry = { container: "workbench.view.extension.lineage_view", command: "c", entry: "l" };'
+  - 'const ext = vscode.extensions.getExtension("danielchawkins.fusion-power-user");'
