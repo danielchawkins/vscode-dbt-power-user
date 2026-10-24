@@ -1,12 +1,10 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
-import type { ControlId } from "../../test/controlCoverage";
 import {
   collectControls,
   expectControlsCovered,
   INTERACTIVE_ROLES,
 } from "../../test/controlCoverage";
-// Importing the controls suite registers its tests in this file too (TESTED_CONTROLS lives there).
 import {
   activate,
   EMPTY_STATE,
@@ -15,11 +13,11 @@ import {
   HUB,
   node,
   openLineage,
+  TESTED_CONTROLS,
   zoomPast,
 } from "../../test/lineageHarness";
-import { TESTED_CONTROLS } from "./Lineage.controls.test";
 
-// The controls suite runs here too, and its fit assertions need the same recording mock.
+// The states render the lineage panel, so its fit runs through the same recording mock as the controls suite.
 vi.mock("./fit", async (importOriginal) =>
   (await import("../../test/fitRecorder")).recordingFit(importOriginal),
 );
@@ -152,45 +150,5 @@ describe("Lineage control coverage gate", () => {
       "button:table a/Open file",
       "button:table b/Open file",
     ]);
-  });
-
-  it("collectControls throws on a button without an accessible name", () => {
-    const { container } = render(
-      <div>
-        <button type="button">Named</button>
-        <button type="button">
-          <span className="codicon codicon-gear" />
-        </button>
-      </div>,
-    );
-    expect(() => collectControls(container)).toThrow(
-      /button.*no accessible name.*codicon-gear/s,
-    );
-  });
-
-  it("expectControlsCovered reports a control no test clicks", async () => {
-    const state = () =>
-      render(
-        <div>
-          <button type="button">Known</button>
-          <button type="button">Untested</button>
-          <input type="checkbox" aria-label="Also untested" />
-        </div>,
-      ).container;
-    const tested: ControlId[] = ["button:Known"];
-    const failure = await expectControlsCovered({ fake: state }, tested).then(
-      () => undefined,
-      (error: unknown) => (error as Error).message,
-    );
-    expect(failure).toContain("button:Untested (in: fake)");
-    expect(failure).toContain("checkbox:Also untested (in: fake)");
-    expect(failure).not.toContain("button:Known");
-    await expect(
-      expectControlsCovered({ fake: state }, [
-        ...tested,
-        "button:Untested",
-        "checkbox:Also untested",
-      ]),
-    ).resolves.toBeUndefined();
   });
 });

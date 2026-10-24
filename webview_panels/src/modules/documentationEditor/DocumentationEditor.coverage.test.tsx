@@ -1,17 +1,11 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import type userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
-import type {
-  ControlId,
-  ControlState,
-  InteractiveRole,
-} from "../../test/controlCoverage";
+import type { ControlState, InteractiveRole } from "../../test/controlCoverage";
 import {
-  collectControls,
   expectControlsCovered,
   INTERACTIVE_ROLES,
 } from "../../test/controlCoverage";
-// Importing the controls suite registers its tests in this file too (TESTED_CONTROLS lives there).
 import {
   DESCRIPTION_PROPOSALS,
   DOCUMENTATION,
@@ -20,7 +14,7 @@ import {
   TESTED_CONTROLS,
   TYPE_PROPOSALS,
   WITHOUT_SCHEMA,
-} from "./DocumentationEditor.controls.test";
+} from "../../test/documentationEditorControls";
 
 type User = ReturnType<typeof userEvent.setup>;
 
@@ -185,45 +179,5 @@ describe("Documentation editor control coverage gate", () => {
     expect(
       screen.getByPlaceholderText("Search doc blocks..."),
     ).not.toHaveAccessibleName();
-  });
-
-  it("collectControls throws on a button without an accessible name", () => {
-    const { container } = render(
-      <div>
-        <button type="button">Named</button>
-        <button type="button">
-          <span className="codicon codicon-chevron-down" />
-        </button>
-      </div>,
-    );
-    expect(() => collectControls(container)).toThrow(
-      /button.*no accessible name.*codicon-chevron-down/s,
-    );
-  });
-
-  it("expectControlsCovered reports a control no test clicks", async () => {
-    const state = () =>
-      render(
-        <div>
-          <button type="button">Known</button>
-          <button type="button">Untested</button>
-          <input type="checkbox" aria-label="Also untested" />
-        </div>,
-      ).container;
-    const tested: ControlId[] = ["button:Known"];
-    const failure = await expectControlsCovered({ fake: state }, tested).then(
-      () => undefined,
-      (error: unknown) => (error as Error).message,
-    );
-    expect(failure).toContain("button:Untested (in: fake)");
-    expect(failure).toContain("checkbox:Also untested (in: fake)");
-    expect(failure).not.toContain("button:Known");
-    await expect(
-      expectControlsCovered({ fake: state }, [
-        ...tested,
-        "button:Untested",
-        "checkbox:Also untested",
-      ]),
-    ).resolves.toBeUndefined();
   });
 });

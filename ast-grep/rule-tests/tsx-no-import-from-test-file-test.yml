@@ -1,0 +1,13 @@
+id: tsx-no-import-from-test-file
+valid:
+  - 'import { HUB } from "../../test/lineageHarness";'
+  - 'import { contestant } from "./contest";'
+  - 'import { describe } from "vitest";'
+  - 'const m = await import("./latest");'
+  - 'const s = "./a.test";'
+invalid:
+  - 'import { TESTED_CONTROLS } from "./Lineage.controls.test";'
+  - 'import type { X } from "../a.test";'
+  - 'export { RESULTS } from "./QueryPanel.controls.test";'
+  - 'const m = await import("./graph.test.ts");'
+  - 'import { HUB } from "./Lineage.controls.test.tsx";'
