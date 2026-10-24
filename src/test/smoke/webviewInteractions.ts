@@ -541,9 +541,17 @@ let panelMaximized = false;
 /** Maximizes the bottom panel unless the panel already fills most of the workbench. */
 export async function maximizePanelFor(entry: string): Promise<void> {
   // The side bar and the secondary side bar (chat) share the window's width with the panel; closing them gives the
-  // graph the full width. The smoke host is a throwaway window, so they are not restored.
-  await vscode.commands.executeCommand("workbench.action.closeSidebar");
-  await vscode.commands.executeCommand("workbench.action.closeAuxiliaryBar");
+  // graph the full width. The smoke host is a throwaway window, so they are not restored. Cursor 3.23 has no
+  // closeAuxiliaryBar command, so each runs only where the host registers it.
+  const registered = new Set(await vscode.commands.getCommands(true));
+  for (const command of [
+    "workbench.action.closeSidebar",
+    "workbench.action.closeAuxiliaryBar",
+  ]) {
+    if (registered.has(command)) {
+      await vscode.commands.executeCommand(command);
+    }
+  }
   const windowHeight = async () =>
     (await evaluateWorkbench<number>(
       cdpPort(),
