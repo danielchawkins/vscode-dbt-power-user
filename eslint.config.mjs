@@ -33,6 +33,7 @@ export default defineConfig(
       "src/test/fixtures/**",
       "**/*.d.ts",
       "scripts/spikes/**",
+      "spike/**",
     ],
   },
   {

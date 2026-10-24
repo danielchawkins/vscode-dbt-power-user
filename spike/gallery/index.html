@@ -1,0 +1,158 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lineage designs</title>
+<script src="themes.js"></script>
+<style>
+:root { color-scheme: light dark; }
+html, body { height: 100%; margin: 0; }
+body { display: grid; grid-template-rows: auto 1fr; font: 13px system-ui, sans-serif; background: #1e1e1e; color: #ddd; }
+header { position: relative; z-index: 2; display: flex; flex-wrap: wrap; gap: 14px; align-items: center; padding: 8px 12px; border-bottom: 1px solid #444; background: #252526; }
+header h1 { margin: 0 6px 0 0; font-size: 14px; }
+.group { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.group > span { margin-right: 2px; color: #999; }
+button, select { font: inherit; color: inherit; background: #333; border: 1px solid #555; border-radius: 3px; padding: 3px 8px; cursor: pointer; }
+button[aria-pressed="true"] { background: #0e639c; border-color: #1177bb; color: #fff; }
+button.r1 { opacity: .8; }
+label { display: inline-flex; gap: 4px; align-items: center; color: #bbb; }
+#about { flex-basis: 100%; color: #aaa; }
+#score { color: #bbb; }
+main { position: relative; z-index: 1; display: grid; min-height: 0; overflow: auto; }
+main.grid { grid-template-columns: 1fr 1fr; grid-auto-rows: 560px; }
+iframe { width: 100%; height: 100%; border: 0; border-right: 1px solid #444; border-bottom: 1px solid #444; }
+.cell { position: relative; min-height: 0; }
+.cell > span { position: absolute; top: 6px; left: 8px; z-index: 1; padding: 1px 6px; border-radius: 3px; background: #000a; color: #fff; font-size: 12px; }
+kbd { padding: 0 4px; border: 1px solid #555; border-radius: 3px; font-size: 11px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Lineage designs</h1>
+  <div class="group" id="designs"><span>Design</span></div>
+  <div class="group"><span>Theme</span><select id="theme"></select></div>
+  <div class="group"><span>View</span>
+    <button id="single" aria-pressed="true">One theme</button>
+    <button id="grid" aria-pressed="false">Compare themes</button>
+  </div>
+  <div class="group"><span>Connections</span>
+    <button data-deps="dbt">dbt dependencies</button><button data-deps="declared">Declared relationships</button><button data-deps="both">Both</button>
+  </div>
+  <div class="group"><span>Lineage</span>
+    <button data-mode="table">Tables</button><button data-mode="column">Column orders_enriched.amount</button>
+  </div>
+  <div class="group"><span>Other edges</span>
+    <button data-others="dim">Dim</button><button data-others="hide">Hide</button><button data-others="show">Show</button>
+  </div>
+  <label><input type="checkbox" id="metrics" checked> contrast checks</label>
+  <span id="score"></span>
+  <span style="margin-left:auto;color:#888"><kbd>←</kbd><kbd>→</kbd> design · <kbd>↑</kbd><kbd>↓</kbd> theme</span>
+  <div id="about"></div>
+</header>
+<main id="main"></main>
+<script>
+// A fresh frame URL per page load, so editing designs.html and reloading this page shows the change.
+const LOADED = Date.now();
+const reports = new Map();
+// The design under review. Earlier explorations (A-L) are still in designs.html; add `#all` to the URL to list them.
+const ALL = [
+  ["A", 1, "Today"], ["B", 1, "Compact"], ["C", 1, "Detailed"], ["D", 1, "Layer lanes"], ["E", 1, "Top-down overview"],
+  ["F", 2, "C, quieter"], ["G", 2, "F in layer lanes"], ["H", 2, "Pills that open"], ["I", 2, "Top band"],
+  ["J", 2, "Top-down with layer bands"], ["K", 2, "One line, grows on focus"], ["L", 2, "Monochrome, coloured icon"],
+  ["M", 2, "Top-down, bands, corridor"],
+];
+const DESIGNS = location.hash.includes("all") ? ALL : ALL.filter(([id]) => id === "M");
+// Compare view: one theme of each kind plus the two that fail most, so a design is checked where it is weakest.
+const COMPARE = ["Default Dark Modern", "Default Light Modern", "Default High Contrast", "Solarized Light", "One Dark Pro", "Cursor Light"];
+const themes = Object.keys(window.THEMES);
+const q = new URLSearchParams(location.hash.slice(1));
+const state = {
+  design: DESIGNS.some(([id]) => id === q.get("design")) ? q.get("design") : "M",
+  theme: q.get("theme") ?? "Default Dark Modern",
+  view: q.get("view") ?? "single",
+  metrics: q.get("metrics") !== "0",
+  others: q.get("others") ?? "dim",
+  mode: q.get("mode") ?? "table",
+  deps: q.get("deps") ?? "dbt",
+};
+const sel = document.getElementById("theme");
+for (const t of themes) sel.add(new Option(`${t} (${window.THEMES[t].bodyClass.replace("vscode-", "")})`, t));
+const bar = document.getElementById("designs");
+for (const [id, round, name] of DESIGNS) {
+  const b = document.createElement("button");
+  b.textContent = `${id} · ${name}`;
+  b.dataset.id = id;
+  if (round === 1) b.classList.add("r1");
+  b.title = round === 1 ? "Round 1" : "Round 2";
+  b.onclick = () => { state.design = id; render(); };
+  bar.append(b);
+}
+sel.onchange = () => { state.theme = sel.value; render(); };
+document.getElementById("single").onclick = () => { state.view = "single"; render(); };
+document.getElementById("grid").onclick = () => { state.view = "grid"; render(); };
+document.getElementById("metrics").onchange = (e) => { state.metrics = e.target.checked; render(); };
+for (const b of document.querySelectorAll("[data-others]")) b.onclick = () => { state.others = b.dataset.others; render(); };
+for (const b of document.querySelectorAll("[data-deps]")) b.onclick = () => { state.deps = b.dataset.deps; render(); };
+for (const b of document.querySelectorAll("[data-mode]")) b.onclick = () => { state.mode = b.dataset.mode; render(); };
+addEventListener("keydown", (e) => {
+  if (e.target.tagName === "SELECT") return;
+  const di = DESIGNS.findIndex(([id]) => id === state.design), ti = themes.indexOf(state.theme);
+  if (e.key === "ArrowRight") state.design = DESIGNS[(di + 1) % DESIGNS.length][0];
+  else if (e.key === "ArrowLeft") state.design = DESIGNS[(di + DESIGNS.length - 1) % DESIGNS.length][0];
+  else if (e.key === "ArrowDown") state.theme = themes[(ti + 1) % themes.length];
+  else if (e.key === "ArrowUp") state.theme = themes[(ti + themes.length - 1) % themes.length];
+  else return;
+  e.preventDefault();
+  render();
+});
+
+const frameUrl = (theme) => {
+  const round = DESIGNS.find(([id]) => id === state.design)[1];
+  return `designs.html?round=${round}&variant=${state.design}&theme=${encodeURIComponent(theme)}&embed=1${state.metrics ? "" : "&nometrics=1"}&others=${state.others}&mode=${state.mode}&deps=${state.deps}&t=${LOADED}`;
+};
+function render() {
+  location.hash = new URLSearchParams({ design: state.design, theme: state.theme, view: state.view, metrics: state.metrics ? "1" : "0", others: state.others, mode: state.mode, deps: state.deps });
+  for (const b of document.querySelectorAll("[data-deps]")) b.setAttribute("aria-pressed", String(b.dataset.deps === state.deps));
+  for (const b of document.querySelectorAll("[data-mode]")) b.setAttribute("aria-pressed", String(b.dataset.mode === state.mode));
+  for (const b of document.querySelectorAll("[data-others]")) b.setAttribute("aria-pressed", String(b.dataset.others === state.others));
+  for (const b of bar.querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.id === state.design));
+  document.getElementById("single").setAttribute("aria-pressed", String(state.view === "single"));
+  document.getElementById("grid").setAttribute("aria-pressed", String(state.view === "grid"));
+  sel.value = state.theme;
+  sel.disabled = state.view === "grid";
+  const main = document.getElementById("main");
+  main.className = state.view === "grid" ? "grid" : "";
+  const list = state.view === "grid" ? COMPARE : [state.theme];
+  main.replaceChildren(...list.map((t) => {
+    const f = document.createElement("iframe");
+    f.src = frameUrl(t);
+    f.title = t;
+    if (state.view !== "grid") return f;
+    const cell = document.createElement("div");
+    cell.className = "cell";
+    const label = document.createElement("span");
+    label.textContent = t;
+    cell.append(label, f);
+    return cell;
+  }));
+  document.getElementById("about").textContent = "";
+  document.getElementById("score").textContent = "";
+  reports.clear();
+}
+// Each frame posts its design's description and contrast report once drawn.
+addEventListener("message", ({ data }) => {
+  if (data?.type !== "lineage-report" || data.report?.id !== state.design) return;
+  reports.set(data.theme, data.report);
+  if (data.about) document.getElementById("about").textContent = data.about;
+  const checks = [...reports.values()].flatMap((r) => r.results);
+  const fail = checks.filter((c) => !c.ok);
+  const where = [...reports].filter(([, r]) => r.results.some((c) => !c.ok)).map(([t]) => t);
+  document.getElementById("score").textContent =
+    `${checks.length - fail.length}/${checks.length} contrast checks pass` +
+    (fail.length ? ` — failing: ${[...new Set(fail.map((c) => c.label))].join(", ")}` +
+      (state.view === "grid" ? ` (in ${where.join(", ")})` : "") : "");
+});
+render();
+</script>
+</body>
+</html>

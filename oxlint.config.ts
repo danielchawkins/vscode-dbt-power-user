@@ -22,6 +22,8 @@ export default {
     "src/test/fixtures/**",
     "**/*.d.ts",
     "scripts/spikes/**",
+    // The lineage design gallery: vendored assets and a one-page prototype, kept as a design reference.
+    "spike/**",
     // One-off experiments that regenerate docs/research/evidence; not maintained code.
     "scripts/evidence/**",
   ],

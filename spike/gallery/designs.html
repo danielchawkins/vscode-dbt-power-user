@@ -1,0 +1,1695 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Lineage card designs</title>
+<link rel="stylesheet" href="codicon.css">
+<script src="themes.js"></script>
+<script src="dagre.js"></script>
+<style>
+/* Page chrome: only the theme's own variables, as the webview gets them. */
+html, body { margin: 0; }
+body {
+  background: var(--vscode-editor-background);
+  color: var(--vscode-foreground);
+  font-family: var(--vscode-font-family, system-ui, sans-serif);
+  font-size: var(--vscode-font-size, 13px);
+}
+.page-head { display: flex; gap: 16px; align-items: baseline; padding: 12px 20px 4px; }
+.page-head h1 { margin: 0; font-size: 18px; }
+.page-head span { color: var(--vscode-descriptionForeground); }
+.panel { margin: 12px 20px 24px; }
+.panel h2 { margin: 0 0 2px; font-size: 14px; }
+.panel p { margin: 0 0 6px; color: var(--vscode-descriptionForeground); max-width: 1500px; }
+.canvas {
+  position: relative; width: 1800px; height: 720px; overflow: hidden;
+  border: 1px solid var(--vscode-panel-border, var(--vscode-contrastBorder, transparent));
+  background: var(--vscode-editor-background);
+}
+.layer { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.layer > .n { position: absolute; }
+.layer > svg { position: absolute; left: 0; top: 0; z-index: 2; overflow: visible; pointer-events: none; }
+.layer > .n { z-index: 1; }
+.layer > svg.gutters { z-index: 1; } /* above the bands, below the cards that follow it */
+/* Gutters: the channels connections run in. A faint wash of the foreground over the canvas, so they read as lanes
+   without competing with the cards; high contrast themes get an outline instead, since washes vanish there. */
+.gutter { fill: var(--vscode-editor-background); stroke: none; }
+.metrics { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; font-size: 12px; }
+.metric { padding: 1px 6px; border-radius: 3px; border: 1px solid var(--vscode-contrastBorder, transparent); }
+.metric.ok { background: var(--vscode-testing-iconPassed, #3a3); color: var(--vscode-editor-background); }
+.metric.low { background: var(--vscode-errorForeground, #c33); color: var(--vscode-editor-background); }
+.metric.na { color: var(--vscode-descriptionForeground); }
+/* Embedded in index.html: no page heading, and the one panel fills the frame. */
+.embed .page-head, .embed .panel > h2, .embed .panel > p { display: none; }
+.embed .panel { display: flex; flex-direction: column; height: 100vh; margin: 0; box-sizing: border-box; }
+.embed .canvas { flex: 1; width: auto; height: auto; border: 0; }
+.embed .metrics { margin: 0; padding: 4px 8px; }
+.nometrics .metrics { display: none; }
+/* Shared chrome inside every canvas: zoom controls, minimap and legend stand-ins. */
+.chrome { position: absolute; z-index: 3; display: flex; gap: 4px; align-items: center; }
+.chrome button, .n button {
+  display: inline-flex; gap: 4px; align-items: center; justify-content: center;
+  border: 1px solid var(--vscode-button-border, transparent); border-radius: 2px;
+  background: var(--vscode-button-secondaryBackground); color: var(--vscode-button-secondaryForeground);
+  font: inherit; font-size: 12px; line-height: 18px; padding: 2px 8px; cursor: pointer;
+}
+.chrome .primary { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+.minimap {
+  position: absolute; right: 12px; bottom: 12px; z-index: 3; width: 200px; height: 130px;
+  border: 1px solid var(--vscode-widget-border, var(--vscode-contrastBorder, transparent));
+  background: var(--vscode-editorWidget-background);
+}
+.minimap i { position: absolute; background: var(--vscode-disabledForeground); border-radius: 2px; }
+.minimap .view { position: absolute; border: 1px solid var(--vscode-focusBorder); }
+.legend {
+  position: absolute; left: 56px; bottom: 12px; z-index: 3; display: flex; gap: 12px; padding: 4px 8px;
+  background: var(--vscode-editorWidget-background); color: var(--vscode-descriptionForeground); font-size: 11px;
+  border-radius: 2px;
+}
+.sw { display: inline-block; width: 18px; border-top: 2px solid; vertical-align: middle; margin-right: 4px; }
+.codicon { font-size: 14px; }
+
+/* Layer accents come from the charts palette, which every theme defines, high contrast included. */
+.n { --accent: var(--vscode-descriptionForeground); }
+.n[data-layer="staging"] { --accent: var(--vscode-charts-blue); }
+.n[data-layer="intermediate"] { --accent: var(--vscode-charts-purple); }
+.n[data-layer="marts"] { --accent: var(--vscode-charts-green); }
+.n[data-kind="source"] { --accent: var(--vscode-charts-orange); }
+.n[data-kind="seed"] { --accent: var(--vscode-charts-yellow); }
+
+.names { display: flex; flex-direction: column; min-width: 0; line-height: 1.25; }
+.names .ttl { overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.names .nm { overflow: hidden; color: var(--vscode-descriptionForeground); font-family: var(--vscode-editor-font-family);
+  font-size: 10.5px; text-overflow: ellipsis; white-space: nowrap; }
+.r2 .names .nm { color: var(--muted); }
+.pill .names { flex: 1; }
+.pill:has(.nm) { height: 42px !important; border-radius: 21px !important; }
+.edge { fill: none; stroke-width: 1.5; }
+.arrowhead { fill: var(--vscode-descriptionForeground); }
+.colhead { fill: var(--vscode-charts-blue, var(--vscode-focusBorder)); }
+/* An edge off the focused model's lineage: kept for context, but faint and thin, with its arrowhead hidden. */
+.edge.off { stroke-opacity: .22; stroke-width: 1 !important; stroke-dasharray: 3 4; }
+.edge.off[marker-end] { marker-end: none; }
+/* While a column is traced, table edges recede to a hint of structure and the trace carries the eye. */
+.edge.faint { stroke-opacity: .14; }
+.edge.faint[marker-end] { marker-end: none; }
+.edge.faint[marker-start] { marker-start: none; }
+/* Declared relationships: dotted, in their own hue, hoverable for the columns and the file that declares them. */
+.edge.rel, .relmark { stroke: color-mix(in srgb, var(--vscode-charts-yellow) 70%, var(--vscode-foreground)); }
+.edge.rel { stroke-width: 1.75; stroke-dasharray: 1 3.5; stroke-linecap: round; pointer-events: visibleStroke; }
+.relmark { fill: none; stroke-width: 1.5; }
+.edge.col[data-trace="1"] { stroke-width: 2.25; }
+.edge.col { stroke: var(--vscode-charts-blue, var(--vscode-focusBorder)); }
+.edge.col.indirect { stroke: var(--vscode-charts-purple, var(--vscode-descriptionForeground)); stroke-dasharray: 6 4; }
+
+/* ---------- A: today's card ---------- */
+.vA .edge.table { stroke: var(--vscode-editorWidget-border, var(--vscode-disabledForeground)); }
+.vA .card {
+  width: 280px; box-sizing: border-box; font-size: 12px; color: var(--vscode-foreground);
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent));
+  border-radius: 4px; background: var(--vscode-editorWidget-background);
+}
+.vA .card.start { border-color: var(--vscode-focusBorder); }
+.vA .card.sel { outline: 2px solid var(--vscode-focusBorder); }
+.vA .card.hidden { border-style: dashed; opacity: .6; }
+.vA .hd {
+  position: relative; display: grid; grid-template-columns: auto 1fr auto; gap: 2px 6px; align-items: center;
+  height: 56px; box-sizing: border-box; padding: 6px 8px;
+  border-bottom: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent));
+}
+.vA .type { padding: 0 4px; border-radius: 2px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); font-size: 10px; text-transform: uppercase; }
+.vA .lay { padding: 0 4px; border: 1px solid var(--vscode-badge-background); border-radius: 2px; font-size: 10px; text-transform: uppercase; }
+.vA .ttl { overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.vA .sub { grid-column: 1 / -1; overflow: hidden; color: var(--vscode-descriptionForeground); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.vA .err { color: var(--vscode-errorForeground); }
+.vA .act { display: flex; justify-content: space-between; align-items: center; gap: 4px; height: 28px; box-sizing: border-box; padding: 2px 4px; }
+.vA .act button { padding: 2px 6px; }
+.vA .chips { display: grid; grid-template-columns: 1fr 1fr; grid-auto-rows: 24px; gap: 0 4px; padding: 0 4px; }
+.vA .chip { display: flex; gap: 4px; align-items: center; height: 20px; padding: 0 2px 0 6px; border-radius: 10px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); font-size: 11px; }
+.vA .chip button { padding: 0 2px; border: 0; background: transparent; color: inherit; }
+.vA .cols { padding: 4px 0; border-top: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); }
+.vA .col { position: relative; display: flex; justify-content: space-between; height: 24px; align-items: center; padding: 0 10px; }
+.vA .col.traced { background: var(--vscode-editor-findMatchHighlightBackground, var(--vscode-list-inactiveSelectionBackground)); }
+.vA .col.selcol { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
+.vA .dt { color: var(--vscode-descriptionForeground); font-family: var(--vscode-editor-font-family); font-size: 11px; }
+.vA .col.selcol .dt { color: inherit; }
+.vA .grp {
+  width: 280px; height: 56px; box-sizing: border-box; display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 12px;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); border-radius: 4px;
+  background: var(--vscode-editorWidget-background); font-size: 12px;
+  box-shadow: 4px 4px 0 -1px var(--vscode-editorWidget-background), 4px 4px 0 0 var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)),
+    8px 8px 0 -2px var(--vscode-editorWidget-background), 8px 8px 0 -1px var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent));
+}
+.vA .grp b { font-weight: 600; } .vA .grp span { color: var(--vscode-descriptionForeground); }
+
+/* ---------- B: compact, actions on selection ---------- */
+.vB .edge.table { stroke: var(--vscode-editorLineNumber-foreground, var(--vscode-descriptionForeground)); }
+.vB .card {
+  position: relative; width: 220px; box-sizing: border-box; font-size: 12px;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); border-radius: 6px;
+  background: var(--vscode-editorWidget-background);
+}
+.vB .card.start { box-shadow: 0 0 0 2px var(--vscode-focusBorder); }
+.vB .card.sel { outline: 2px solid var(--vscode-focusBorder); outline-offset: 1px; }
+.vB .card.hidden { border-style: dashed; opacity: .6; }
+.vB .hd { display: flex; gap: 6px; align-items: center; height: 30px; padding: 0 8px; }
+.vB .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); }
+.vB .ttl { flex: 1; overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.vB .mat { color: var(--vscode-descriptionForeground); font-size: 11px; }
+.vB .err { color: var(--vscode-errorForeground); }
+.vB .exp {
+  position: absolute; top: 5px; width: 20px; height: 20px; padding: 0 !important; border-radius: 10px !important; font-size: 10px !important;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder)) !important;
+}
+.vB .exp.l { left: -11px; } .vB .exp.r { right: -11px; }
+.vB .exp.on { background: var(--vscode-button-background) !important; color: var(--vscode-button-foreground) !important; }
+.vB .tools {
+  position: absolute; top: -30px; right: 0; display: flex; gap: 2px; padding: 2px; border-radius: 4px;
+  background: var(--vscode-editorWidget-background); box-shadow: 0 2px 6px var(--vscode-widget-shadow);
+  border: 1px solid var(--vscode-widget-border, var(--vscode-contrastBorder, transparent));
+}
+.vB .tools button { padding: 1px 4px; background: transparent; color: var(--vscode-foreground); }
+.vB .chip { display: flex; gap: 4px; align-items: center; height: 20px; margin: 0 6px 4px; padding: 0 4px 0 8px; border-radius: 10px; font-size: 11px;
+  border: 1px solid var(--vscode-badge-background); }
+.vB .chip b { flex: 1; } .vB .chip button { padding: 0 2px; border: 0; background: transparent; color: inherit; }
+.vB .cols { border-top: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); padding: 2px 0; }
+.vB .col { display: flex; justify-content: space-between; height: 20px; align-items: center; padding: 0 8px; font-size: 11px; }
+.vB .col.traced { background: var(--vscode-editor-findMatchHighlightBackground, var(--vscode-list-inactiveSelectionBackground)); }
+.vB .col.selcol { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
+.vB .dt { color: var(--vscode-descriptionForeground); font-family: var(--vscode-editor-font-family); }
+.vB .col.selcol .dt { color: inherit; }
+.vB .grp { width: 220px; height: 30px; box-sizing: border-box; display: flex; gap: 6px; align-items: center; padding: 0 8px; font-size: 12px;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); border-radius: 6px; background: var(--vscode-editorWidget-background);
+  box-shadow: 3px 3px 0 -1px var(--vscode-editorWidget-background), 3px 3px 0 0 var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); }
+.vB .grp b { flex: 1; font-weight: 600; }
+.vB .count { padding: 0 6px; border-radius: 8px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); font-size: 11px; }
+
+/* ---------- C: detailed, accent stripe and meta row ---------- */
+.vC .edge.table { stroke: var(--vscode-descriptionForeground); stroke-opacity: .7; }
+.vC .card {
+  position: relative; width: 300px; box-sizing: border-box; font-size: 12px; overflow: visible;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); border-left: 4px solid var(--accent);
+  border-radius: 4px; background: var(--vscode-editorWidget-background);
+}
+.vC .card.start { box-shadow: 0 0 0 1px var(--vscode-focusBorder); }
+.vC .card.sel { outline: 2px solid var(--vscode-focusBorder); }
+.vC .card.hidden { border-style: dashed; opacity: .6; }
+.vC .hd { display: grid; grid-template-columns: auto 1fr auto; gap: 3px 6px; align-items: center; padding: 6px 8px 6px 8px; }
+.vC .ico { color: var(--accent); }
+.vC .ttl { overflow: hidden; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.vC .tools { display: flex; gap: 0; }
+.vC .tools button { padding: 0 3px; background: transparent; color: var(--vscode-icon-foreground, var(--vscode-foreground)); border: 0; }
+.vC .rel { grid-column: 1 / -1; overflow: hidden; color: var(--vscode-descriptionForeground); font-family: var(--vscode-editor-font-family); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.vC .meta { grid-column: 1 / -1; display: flex; gap: 6px; flex-wrap: nowrap; font-size: 11px; color: var(--vscode-descriptionForeground); }
+.vC .meta span { display: inline-flex; gap: 3px; align-items: center; }
+.vC .meta .codicon { font-size: 12px; }
+.vC .err { color: var(--vscode-errorForeground); }
+.vC .exp { position: absolute; top: 8px; padding: 0 6px !important; border-radius: 9px !important; font-size: 11px !important; }
+.vC .exp.l { left: -26px; } .vC .exp.r { right: -26px; }
+.vC .exp.on { background: var(--vscode-button-background) !important; color: var(--vscode-button-foreground) !important; }
+.vC .chips { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 8px 6px; }
+.vC .chip { display: flex; gap: 4px; align-items: center; height: 20px; padding: 0 2px 0 6px; border-radius: 3px; font-size: 11px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
+.vC .chip button { padding: 0 2px; border: 0; background: transparent; color: inherit; }
+.vC .cols { border-top: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); padding: 2px 0; }
+.vC .col { display: grid; grid-template-columns: 1fr auto; height: 22px; align-items: center; padding: 0 10px; }
+.vC .col.traced { background: var(--vscode-editor-findMatchHighlightBackground, var(--vscode-list-inactiveSelectionBackground)); }
+.vC .col.selcol { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
+.vC .dt { color: var(--vscode-descriptionForeground); font-family: var(--vscode-editor-font-family); font-size: 11px; }
+.vC .col.selcol .dt { color: inherit; }
+.vC .grp { width: 300px; box-sizing: border-box; padding: 8px 10px; font-size: 12px; display: grid; grid-template-columns: auto 1fr auto; gap: 4px 6px; align-items: center;
+  border: 1px dashed var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); border-radius: 4px; background: var(--vscode-editorWidget-background); }
+.vC .grp b { font-weight: 600; } .vC .grp .k { color: var(--vscode-descriptionForeground); font-family: var(--vscode-editor-font-family); font-size: 11px; }
+.vC .bar { grid-column: 1 / -1; display: flex; height: 6px; border-radius: 3px; overflow: hidden; }
+.vC .bar i { display: block; }
+
+/* ---------- D: layer lanes ---------- */
+.vD .edge.table { stroke: var(--vscode-descriptionForeground); }
+.vD .lane { position: absolute; top: 0; box-sizing: border-box; border-right: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); }
+.vD .lane:nth-child(odd) { background: var(--vscode-sideBar-background, transparent); }
+.vD .lane h3 { margin: 0; padding: 6px 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: var(--vscode-descriptionForeground); }
+.vD .card { width: 240px; box-sizing: border-box; font-size: 12px; border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent));
+  border-radius: 4px; background: var(--vscode-editorWidget-background); }
+.vD .card.start { border-color: var(--vscode-focusBorder); border-width: 2px; }
+.vD .card.sel { outline: 2px solid var(--vscode-focusBorder); }
+.vD .card.hidden { border-style: dashed; opacity: .6; }
+.vD .hd { display: grid; grid-template-columns: 1fr auto auto; gap: 1px 6px; padding: 5px 8px; align-items: center; }
+.vD .ttl { overflow: hidden; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.vD .type { color: var(--vscode-descriptionForeground); font-size: 10px; text-transform: uppercase; }
+.vD .sub { grid-column: 1 / -1; overflow: hidden; color: var(--vscode-descriptionForeground); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.vD .err { color: var(--vscode-errorForeground); }
+.vD .act { display: flex; gap: 4px; padding: 0 6px 6px; } .vD .act button { padding: 0 6px; }
+.vD .chip { margin: 0 6px 6px; padding: 1px 6px; border-radius: 3px; font-size: 11px; background: var(--vscode-badge-background); color: var(--vscode-badge-foreground); }
+.vD .cols { border-top: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); padding: 2px 0; }
+.vD .col { display: flex; justify-content: space-between; height: 22px; align-items: center; padding: 0 8px; }
+.vD .col.traced { background: var(--vscode-editor-findMatchHighlightBackground, var(--vscode-list-inactiveSelectionBackground)); }
+.vD .col.selcol { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
+.vD .dt { color: var(--vscode-descriptionForeground); font-family: var(--vscode-editor-font-family); font-size: 11px; }
+.vD .col.selcol .dt { color: inherit; }
+.vD .grp { width: 240px; box-sizing: border-box; display: flex; gap: 6px; align-items: center; padding: 6px 8px; font-size: 12px;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); border-radius: 4px; background: var(--vscode-editorWidget-background); }
+.vD .grp b { flex: 1; font-weight: 600; } .vD .grp span { color: var(--vscode-descriptionForeground); }
+
+/* ---------- E: top-down overview pills ---------- */
+.vE .edge.table { stroke: var(--vscode-descriptionForeground); }
+.vE .pill { position: relative; width: 190px; height: 34px; box-sizing: border-box; display: flex; gap: 6px; align-items: center; padding: 0 10px 0 8px;
+  border: 1px solid var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); border-radius: 17px; background: var(--vscode-editorWidget-background); font-size: 12px; }
+.vE .pill .ico { color: var(--accent); }
+.vE .pill .ttl { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.vE .pill.start { border: 2px solid var(--vscode-focusBorder); font-weight: 600; }
+.vE .pill.sel { outline: 2px solid var(--vscode-focusBorder); outline-offset: 2px; }
+.vE .pill.hidden { border-style: dashed; opacity: .6; }
+.vE .pill .n2 { color: var(--vscode-descriptionForeground); font-size: 11px; }
+.vE .pill.grp { box-shadow: 3px 3px 0 -1px var(--vscode-editorWidget-background), 3px 3px 0 0 var(--vscode-editorWidget-border, var(--vscode-contrastBorder, transparent)); }
+.vE .pop { position: absolute; left: 0; top: 42px; z-index: 2; width: 260px; box-sizing: border-box; padding: 8px 10px; font-size: 12px; font-weight: normal;
+  border: 1px solid var(--vscode-editorHoverWidget-border, var(--vscode-widget-border, var(--vscode-contrastBorder))); border-radius: 4px;
+  background: var(--vscode-editorHoverWidget-background, var(--vscode-editorWidget-background)); color: var(--vscode-editorHoverWidget-foreground, var(--vscode-foreground));
+  box-shadow: 0 2px 8px var(--vscode-widget-shadow); }
+.vE .pop .sub { color: var(--vscode-descriptionForeground); font-family: var(--vscode-editor-font-family); font-size: 11px; margin: 2px 0 6px; }
+.vE .pop .row { display: flex; gap: 4px; margin-top: 6px; } .vE .pop .row button { padding: 0 6px; }
+.vE .err { color: var(--vscode-errorForeground); }
+
+/* ---------- Round 2: C's colour and lines, quieter, with D's lanes and E's minimal nodes ---------- */
+/* Contrast fixes over round 1: outlines mix foreground into the background, selection mixes focus into foreground,
+   layer hues mix chart colours toward foreground, so each clears 3:1 in themes whose own tokens are faint. */
+.r2 {
+  --line: color-mix(in srgb, var(--vscode-foreground) 55%, var(--vscode-editor-background));
+  --muted: color-mix(in srgb, var(--vscode-descriptionForeground) 70%, var(--vscode-foreground));
+  --sel: color-mix(in srgb, var(--vscode-focusBorder) 55%, var(--vscode-foreground));
+}
+.r2 .n, .r2 .lane { --hue: var(--vscode-descriptionForeground); }
+.r2 [data-layer="staging"] { --hue: var(--vscode-charts-blue); }
+.r2 [data-layer="intermediate"] { --hue: var(--vscode-charts-purple); }
+.r2 [data-layer="marts"] { --hue: var(--vscode-charts-green); }
+.r2 [data-kind="source"] { --hue: var(--vscode-charts-orange); }
+.r2 [data-kind="seed"] { --hue: var(--vscode-charts-yellow); }
+.r2 .n, .r2 .lane { --accent: color-mix(in srgb, var(--hue) 55%, var(--vscode-foreground)); }
+.r2 .edge.table { stroke: var(--vscode-descriptionForeground); }
+.r2 .card {
+  position: relative; box-sizing: border-box; width: var(--w, 270px); font-size: 12px; color: var(--vscode-foreground);
+  border: 1px solid var(--line); border-radius: 6px; background: var(--vscode-editorWidget-background);
+}
+.r2 .card.start { border: 2px solid var(--sel); }
+.r2 .card.sel, .r2 .pill.sel { outline: 2px solid var(--sel); outline-offset: 2px; }
+.r2 .card.hidden, .r2 .pill.hidden { border-style: dashed; opacity: .65; }
+.r2 .stripe { border-left: 4px solid var(--accent) !important; }
+.r2 .band { border-top: 3px solid var(--accent) !important; }
+.r2 .hd { display: grid; grid-template-columns: auto 1fr auto; gap: 2px 6px; align-items: center; padding: 6px 8px; }
+.r2 .ico { color: var(--accent); }
+.r2 .ttl { overflow: hidden; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.r2 .rel { grid-column: 1 / -1; min-width: 0; overflow: hidden; color: var(--muted); font-family: var(--vscode-editor-font-family);
+  font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.r2 .err { color: var(--vscode-errorForeground); }
+.r2 .flags { display: flex; gap: 2px; align-items: center; }
+.r2 .tools { display: flex; }
+.r2 .tools button { padding: 0 3px; border: 0; background: transparent; color: var(--vscode-icon-foreground, var(--vscode-foreground)); }
+.r2 .exp { position: absolute; top: 7px; padding: 0 6px !important; border: 1px solid var(--line) !important; border-radius: 9px !important;
+  font-size: 11px !important; }
+.r2 .exp.l { left: -26px; } .r2 .exp.r { right: -26px; }
+.r2 .exp.on { background: var(--vscode-button-background); color: var(--vscode-button-foreground); }
+.r2 .chips { display: flex; flex-wrap: wrap; gap: 4px; padding: 0 8px 6px; }
+.r2 .chip { display: flex; gap: 4px; align-items: center; height: 20px; padding: 0 2px 0 6px; border: 1px solid var(--line);
+  border-radius: 10px; font-size: 11px; }
+.r2 .chip button { padding: 0 2px; border: 0; background: transparent; color: inherit; }
+.r2 .chip { padding: 0 2px 0 6px; border-radius: 4px; }
+.r2 .chip .codicon { font-size: 12px; color: var(--muted); }
+.r2 .chip .of { color: var(--muted); }
+.r2 .chip .more { color: var(--vscode-textLink-foreground); text-decoration: underline; text-underline-offset: 2px; }
+.r2 .lane .genrule { position: absolute; left: 0; right: 0; border-top: 1px dashed var(--line); opacity: .35; }
+.r2 .cols { padding: 2px 0; border-top: 1px solid var(--line); }
+.r2 .col { display: grid; grid-template-columns: 1fr auto; align-items: center; height: 22px; padding: 0 10px; }
+.r2 .col.traced { background: var(--vscode-editor-findMatchHighlightBackground, var(--vscode-list-inactiveSelectionBackground)); }
+.r2 .col.selcol { background: var(--vscode-list-activeSelectionBackground); color: var(--vscode-list-activeSelectionForeground); }
+/* Column bubbles: hidden unless a column is traced (body.trace-on), then centred on the row's left and right edges. */
+.r2 .col { position: relative; }
+.r2 .cb { position: absolute; top: 50%; display: none; min-width: 14px; height: 14px; padding: 0 3px;
+  border: 1px solid var(--vscode-charts-blue, var(--vscode-focusBorder)); border-radius: 7px;
+  background: var(--vscode-editorWidget-background); color: var(--vscode-foreground);
+  font-size: 10px; line-height: 12px; text-align: center; transform: translateY(-50%); box-sizing: border-box; z-index: 1; }
+.r2 .cb.in { left: -8px; } .r2 .cb.out { right: -8px; }
+.trace-on .r2 .cb { display: block; }
+.r2 .dt { color: var(--muted); font-family: var(--vscode-editor-font-family); font-size: 11px; }
+.r2 .col.selcol .dt { color: inherit; }
+.r2 .meta { grid-column: 1 / -1; display: flex; gap: 8px; color: var(--muted); font-size: 11px; }
+.r2 .meta span, .r2 .counts span { display: inline-flex; gap: 3px; align-items: center; }
+.r2 .meta .codicon, .r2 .counts .codicon { font-size: 12px; }
+.r2 .grp { position: relative; box-sizing: border-box; width: var(--w, 270px); display: grid; grid-template-columns: auto 1fr auto;
+  gap: 4px 6px; align-items: center; padding: 7px 10px; border: 1px dashed var(--line); border-radius: 6px;
+  background: var(--vscode-editorWidget-background); font-size: 12px; }
+.r2 .grp b { font-weight: 600; }
+.r2 .grp .k { grid-column: 1 / -1; color: var(--muted); font-family: var(--vscode-editor-font-family); font-size: 11px; }
+.r2 .count { color: var(--muted); }
+.r2 .bar { grid-column: 1 / -1; display: flex; gap: 1px; height: 4px; border-radius: 2px; overflow: hidden; }
+.r2 .bar i { display: block; }
+.r2 .pill { position: relative; box-sizing: border-box; width: 200px; height: 32px; display: flex; gap: 6px; align-items: center;
+  padding: 0 10px 0 9px; border: 1px solid var(--line); border-radius: 16px; background: var(--vscode-editorWidget-background); font-size: 12px; }
+.r2 .pill .ttl { flex: 1; font-size: 12px; font-weight: normal; }
+.r2 .pill .n2 { color: var(--muted); font-size: 11px; }
+.r2 .pill.grp-pill { border-style: dashed; }
+.r2 .pill .bar { position: absolute; right: 16px; bottom: 3px; left: 16px; height: 3px; }
+.r2 .lane { position: absolute; box-sizing: border-box; }
+.r2 .lane.cols { border-right: 1px dashed var(--line); }
+.r2 .lane.rows { border-bottom: 1px dashed var(--line); }
+.r2 .lane.alt { background: color-mix(in srgb, var(--vscode-foreground) 4%, transparent); }
+.r2 .lane h3 { margin: 0; padding: 6px 10px; color: var(--muted); font-size: 11px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; }
+.r2 .lane h3::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 6px; border-radius: 2px; background: var(--accent); }
+.r2 .kind { color: var(--muted); font-size: 10px; letter-spacing: .03em; text-transform: uppercase; }
+.r2 .relrow { grid-column: 1 / -1; display: flex; gap: 8px; align-items: center; min-width: 0; }
+.r2 .relrow .rel { flex: 1; }
+.r2 .counts { display: flex; flex: none; gap: 6px; color: var(--muted); font-size: 11px; }
+.r2 .toolrow { display: flex; gap: 4px; padding: 0 8px 6px; }
+.r2 .toolrow button { padding: 0 6px; }
+.vJ .exp.l { top: -10px; left: 12px; } .vJ .exp.r { top: auto; right: 12px; bottom: -10px; }
+/* Top-down: the parents bubble sits centred on the card's top edge, the children bubble on its bottom edge, where
+   the edges arrive and leave. The arrow says which way each one expands. */
+.vM .exp { display: inline-flex; gap: 1px; align-items: center; height: 18px; line-height: 16px; z-index: 1;
+  background: var(--vscode-editorWidget-background); }
+.vM .exp .codicon { font-size: 11px; }
+.vM .exp.l { top: -10px; left: 50%; transform: translateX(-50%); }
+.vM .exp.r { top: auto; right: auto; bottom: -10px; left: 50%; transform: translateX(-50%); }
+.vM .card.start .exp { min-width: 52px; justify-content: center; }
+.r2 .exp .codicon { font-size: 11px; }
+/* Layer bands: each band is washed with its layer's colour; the gutters cut through them in the editor background. */
+.vM .lane h3 { position: relative; z-index: 2; padding-top: 4px; padding-bottom: 0; font-size: 10px; }
+/* Project and resource type: quiet chips under the names, so they read as metadata rather than a third name. */
+.vM .tags { display: flex; gap: 4px; margin-top: 3px; }
+.vM .tag { padding: 0 5px; border: 1px solid color-mix(in srgb, var(--vscode-foreground) 22%, transparent); border-radius: 3px;
+  color: var(--muted); font-size: 10px; line-height: 14px; }
+.vM .tag:last-child { text-transform: uppercase; letter-spacing: .03em; font-size: 9px; }
+/* The children bubble straddles the bottom edge; keep the last name line clear of it. */
+.vM .card:not(:has(.cols)) .hd { padding-bottom: 11px; }
+.vM .lane.rows, .vM .lane.cols, .vM .lane.alt { border: 0; background: color-mix(in srgb, var(--hue) 10%, transparent); }
+.vscode-high-contrast .vM .lane, .vscode-high-contrast-light .vM .lane { outline: 1px dashed var(--accent); outline-offset: -1px; }
+</style>
+</head>
+<body>
+<div class="page-head"><h1>Lineage card designs</h1><span id="theme-name"></span></div>
+<div id="panels"></div>
+<script>
+const params = new URLSearchParams(location.search);
+const themeName = params.get("theme") ?? "Default Dark Modern";
+const theme = window.THEMES[themeName];
+for (const [k, v] of Object.entries(theme.vars)) document.documentElement.style.setProperty(k, v);
+document.body.className = theme.bodyClass;
+if (params.has("embed")) document.documentElement.classList.add("embed");
+if (params.has("nometrics")) document.documentElement.classList.add("nometrics");
+document.getElementById("theme-name").textContent = `${themeName} (${theme.bodyClass})`;
+
+// One sample neighbourhood, drawn by every design: a source and seed upstream, the start model, its children,
+// two closed groups and one open group, a model with an error, one from another package and a hidden one.
+const NODES = {
+  src_orders: { kind: "source", title: "orders", name: "shop.orders", ref: "shop.orders", rel: "RAW.shop.ORDERS", tests: 2, parents: 0, children: 1 },
+  seed_cc: { kind: "seed", title: "country_codes", rel: "DEV.seeds.country_codes", mat: "seed", parents: 0, children: 1 },
+  stg_orders: { kind: "model", layer: "staging", title: "orders", name: "stg_shop__orders", rel: "DEV_STAGING.shop", mat: "view", tests: 4, parents: 1, children: 1,
+    columns: [["order_id", "varchar"], ["amount", "number(38,2)"]] },
+  int_orders: { kind: "model", layer: "intermediate", title: "orders_enriched", name: "int_orders__enriched", rel: "DEV_INTERMEDIATE.orders", mat: "table", tests: 3,
+    parents: 5, children: 4, start: true, expanded: [true, true], chips: [["backend", 2, 5]],
+    columns: [["order_id", "varchar"], ["customer_id", "varchar"], ["amount", "number(38,2)"]], selcol: "amount" },
+  fct_orders: { kind: "model", layer: "marts", title: "fct_orders", rel: "DEV.marts", mat: "incremental", tests: 6, parents: 3, children: 2, selected: true,
+    columns: [["order_id", "varchar"], ["customer_id", "varchar"], ["amount_usd", "number(38,2)"], ["ordered_at", "timestamp_ntz"]],
+    traced: "amount_usd" },
+  dim_customers: { kind: "model", layer: "marts", title: "dim_customers", rel: "DEV.marts", mat: "table", tests: 5, parents: 2, children: 4,
+    error: "Column email is not in the model's contract" },
+  rev_daily: { kind: "model", layer: "marts", title: "daily_revenue", name: "fct_finance__daily_revenue_by_region_and_channel", rel: "DEV_FINANCE.reporting", mat: "incremental",
+    pkg: "finance_pkg", parents: 4, children: 0, columns: [["region", "varchar"], ["revenue_usd", "number(38,2)"]] },
+  be_accounts: { kind: "model", layer: "staging", title: "accounts", name: "stg_backend__accounts", rel: "DEV_STAGING.backend", mat: "view", parents: 2, children: 3 },
+  be_users: { kind: "model", layer: "staging", title: "users", name: "stg_backend__users", rel: "DEV_STAGING.backend", mat: "view", parents: 1, children: 6 },
+  audit_log: { kind: "model", title: "audit_log", rel: "DEV.ops", mat: "view", hidden: true, parents: 1, children: 0 },
+  "g:finance": { group: true, title: "finance", key: "models/marts/finance", count: 12, mix: { marts: 9, intermediate: 3 } },
+  "g:payments": { group: true, title: "payments", key: "models/staging/payments", count: 7, mix: { staging: 7 } },
+};
+// A neighbourhood that flows source -> staging -> intermediate -> marts: the start model's parents include an opened
+// backend group (two cards and a chip) and a closed payments group; its children are marts, one closed finance group
+// and a hidden model.
+const EDGES = [
+  ["src_orders", "stg_orders"], ["stg_orders", "int_orders"], ["seed_cc", "int_orders"],
+  ["be_accounts", "int_orders"], ["be_users", "int_orders"], ["g:payments", "int_orders"],
+  ["int_orders", "fct_orders"], ["int_orders", "dim_customers"], ["int_orders", "rev_daily"],
+  ["int_orders", "g:finance"], ["int_orders", "audit_log"], ["dim_customers", "fct_orders"],
+  // Legacy shortcuts: the start model also reads the raw source directly, and a mart reads staging directly.
+  ["src_orders", "int_orders"], ["be_users", "rev_daily"],
+];
+const ALL_NODES = NODES, ALL_EDGES = EDGES;
+// Names as M shows them: the alias when the model sets one, the file that defines the node, and project.type.
+const FILES = {
+  src_orders: { name: "shop.orders", file: "models/11_sources/shop/src__shop__orders.yml", ref: "source('shop', 'orders')" },
+  seed_cc: { file: "seeds/country_codes.csv" },
+  stg_orders: { alias: "orders", file: "models/13_staging/shop/stg_shop__orders.sql" },
+  int_orders: { alias: "orders_enriched", file: "models/21_intermediate/int_orders__enriched.sql" },
+  fct_orders: { file: "models/31_marts/fct_orders.sql" },
+  dim_customers: { file: "models/31_marts/dim_customers.sql" },
+  rev_daily: { alias: "daily_revenue", file: "models/31_marts/finance/fct_finance__daily_revenue_by_region_and_channel.sql", project: "finance_pkg" },
+  be_accounts: { alias: "accounts", file: "models/13_staging/backend/stg_backend__accounts.sql" },
+  be_users: { alias: "users", file: "models/13_staging/backend/stg_backend__users.sql" },
+  audit_log: { file: "models/41_ops/audit_log.sql" },
+};
+// Declared relationships, in the two forms finance-pipelines uses: `config.meta.relationships` on a source table in
+// its src__*.yml, and a `relationships:` block in a src__*.sql registration (`to: ref(...)` or `to: source(...)`).
+// Each says the declaring table's from_columns reference another table's to_columns. They are keys, not data flow.
+const DECLARED = [
+  { from: "src_orders", cols: ["customer_id"], to: "be_users", toCols: ["user_id"], in: "src__shop__orders.yml" },
+  { from: "be_accounts", cols: ["user_id"], to: "be_users", toCols: ["user_id"], in: "stg_backend__accounts.yml" },
+  { from: "int_orders", cols: ["customer_id"], to: "dim_customers", toCols: ["customer_id"], in: "int_orders__enriched.yml" },
+  { from: "fct_orders", cols: ["customer_id"], to: "dim_customers", toCols: ["customer_id"], in: "fct_orders.yml" },
+  { from: "rev_daily", cols: ["region"], to: "seed_cc", toCols: ["code"], in: "fct_finance__daily_revenue_by_region_and_channel.yml" },
+];
+// Column lineage among listed columns. The selected column is orders_enriched.amount: upstream it comes from
+// staging orders.amount; downstream it becomes fct_orders.amount_usd and daily_revenue.revenue_usd. The id columns
+// are lineage too, but not part of that trace.
+const COL_EDGES = [
+  ["stg_orders", "order_id", "int_orders", "order_id", "direct"],
+  ["stg_orders", "amount", "int_orders", "amount", "direct"],
+  ["int_orders", "order_id", "fct_orders", "order_id", "direct"],
+  ["int_orders", "customer_id", "fct_orders", "customer_id", "direct"],
+  ["int_orders", "amount", "fct_orders", "amount_usd", "indirect"],
+  ["int_orders", "amount", "rev_daily", "revenue_usd", "indirect"],
+];
+const TRACE = { table: "int_orders", column: "amount" };
+// The trace is everything upstream and downstream of the selected column.
+const TRACED = (() => {
+  const key = (t, c) => `${t}.${c}`, seen = new Set([key(TRACE.table, TRACE.column)]);
+  for (const dir of [0, 1]) {
+    const stack = [key(TRACE.table, TRACE.column)];
+    while (stack.length) {
+      const k = stack.pop();
+      for (const [a, ac, b, bc] of COL_EDGES) {
+        const [from, to] = dir ? [key(b, bc), key(a, ac)] : [key(a, ac), key(b, bc)];
+        if (from === k && !seen.has(to)) { seen.add(to); stack.push(to); }
+      }
+    }
+  }
+  return seen;
+})();
+const LAYER_ORDER = ["source", "staging", "intermediate", "marts", "other"];
+const laneOf = (n) => n.group ? Object.keys(n.mix)[0] : n.kind === "source" || n.kind === "seed" ? "source" : n.layer ?? "other";
+
+const ICON = { source: "database", seed: "file", model: "table" };
+const badge = (n) => n.layer ?? n.kind;
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const mid = (s, max) => s.length <= max ? s : s.slice(0, Math.ceil((max - 1) / 3)) + "…" + s.slice(s.length - Math.floor((max - 1) * 2 / 3));
+const attrs = (id, n) => `data-id="${id}" data-kind="${n.kind ?? "group"}" data-layer="${n.layer ?? Object.keys(n.mix ?? {})[0] ?? ""}"`;
+const cls = (n, base) => [base, n.start && "start", n.selected && "sel", n.hidden && "hidden"].filter(Boolean).join(" ");
+const subOf = (n) => [n.rel, n.mat, n.pkg].filter(Boolean).join(" · ");
+const colRows = (n, h) => n.columns ? n.columns.map(([c, t]) => [c, t,
+  n.traced === c || (TRACED.has(`${Object.keys(NODES).find((id) => NODES[id] === n)}.${c}`) && n.selcol !== c) ? c : n.traced]).map(([c, t, tr]) =>
+  `<div class="col ${c === n.selcol ? "selcol" : c === tr ? "traced" : ""}" data-col="${c}" ${c === n.selcol ? 'data-m="selcol"' : ""}>` +
+  `<span>${c}</span><span class="dt">${t}</span>${colBubbles(n, c)}</div>`).join("") : "";
+// Count bubbles on a traced column row: upstream columns on the left edge, downstream columns on the right edge.
+const colBubbles = (n, c) => {
+  const id = Object.keys(NODES).find((k) => NODES[k] === n), key = `${id}.${c}`;
+  if (!TRACED.has(key)) return "";
+  const ins = COL_EDGES.filter(([a, ac, b, bc]) => `${b}.${bc}` === key).length;
+  const outs = COL_EDGES.filter(([a, ac]) => `${a}.${ac}` === key).length;
+  return (ins ? `<span class="cb in" title="${ins} upstream column${ins === 1 ? "" : "s"}">${ins}</span>` : "") +
+    (outs ? `<span class="cb out" title="${outs} downstream column${outs === 1 ? "" : "s"}">${outs}</span>` : "");
+};
+const sign = (on) => on ? "−" : "+";
+// Title block: the alias on top, bold; the dbt name underneath, muted, only when it differs. Both are cut at the
+// end by CSS, so the start that says what a node is always shows; the full text is in the tooltip.
+const names = (n, max = 99) => `<span class="names" title="${esc([n.title, n.name].filter(Boolean).join("\n"))}">` +
+  `<span class="ttl" data-m="title">${n.title.length > max ? mid(n.title, max) : n.title}</span>` +
+  (n.name && n.name !== n.title ? `<span class="nm" data-m="name">${n.name}</span>` : "") + "</span>";
+
+// M's title block: the alias if the model sets one (bold), then the file it is defined in, then project.type. With no
+// alias the file name leads; a source leads with source_name.table_name, since its file holds many tables. Each line is cut at the end; the tooltip has the path, the relation and the ref.
+const stem = (f) => f.split("/").pop().replace(/\.[^.]+$/, "");
+const names3 = (id, n) => {
+  const f = FILES[id] ?? { file: n.title }, kind = `${f.project ?? "jaffle_shop"}.${n.kind}`;
+  const tip = [f.alias && `alias: ${f.alias}`, f.file, kind, f.ref, n.rel && `relation: ${n.rel}`].filter(Boolean).join("\n");
+  const lead = f.alias ?? f.name;
+  return `<span class="names" title="${esc(tip)}"><span class="ttl" data-m="title">${esc(lead ?? stem(f.file))}</span>` +
+    (lead ? `<span class="nm" data-m="name">${esc(stem(f.file))}</span>` : "") +
+    `<span class="tags"><span class="tag">${esc(f.project ?? "jaffle_shop")}</span><span class="tag">${esc(n.kind)}</span></span></span>`;
+};
+
+const VARIANTS = [
+  {
+    id: "A", name: "A · Today", rankdir: "LR", ranksep: 160, nodesep: 40, curve: "bezier",
+    about: "The card as shipped: 280px, badge and alias, relation line, an always-visible actions row with expanders at each end, chips two to a row, 24px columns.",
+    node(id, n) {
+      if (n.group) return `<div class="grp" ${attrs(id, n)} data-m="card"><b data-m="title">${n.title}</b><span>${n.count}</span><span>${mid(n.key, 16)}</span></div>`;
+      const [p, c] = n.expanded ?? [false, false];
+      return `<div class="${cls(n, "card")}" ${attrs(id, n)} data-m="card">
+        <div class="hd" data-port="1"><span class="${n.layer ? "lay" : "type"}" data-m="badge">${badge(n)}</span>
+        ${names(n)}
+        <span>${n.error ? '<i class="codicon codicon-warning err"></i>' : n.hidden ? '<i class="codicon codicon-eye-closed"></i>' : ""}</span>
+        <span class="sub" data-m="sub">${subOf(n)}</span></div>
+        <div class="act"><button>${sign(p)}${n.parents}</button><button>Columns</button><button>Details</button>
+        <button><i class="codicon codicon-go-to-file"></i></button><button>${n.children}${sign(c)}</button></div>
+        ${n.chips ? `<div class="chips">${n.chips.map(([l, d, t]) => `<span class="chip"><b>${l}</b> ${d}/${t}<button>+${t - d}</button><button>✕</button></span>`).join("")}</div>` : ""}
+        ${n.columns ? `<div class="cols">${colRows(n)}</div>` : ""}</div>`;
+    },
+  },
+  {
+    id: "B", name: "B · Compact", rankdir: "LR", ranksep: 110, nodesep: 18, curve: "step",
+    about: "220px, one line: a layer dot, the title and the materialization. Relation and tests in the tooltip. Expanders are round count buttons on the card's edges; Columns, Details and Open file appear as a toolbar on the selected card only.",
+    node(id, n) {
+      if (n.group) return `<div class="grp" ${attrs(id, n)} data-m="card"><i class="codicon codicon-folder"></i><b data-m="title">${n.title}</b><span class="count" data-m="badge">${n.count}</span></div>`;
+      const [p, c] = n.expanded ?? [false, false];
+      return `<div class="${cls(n, "card")}" ${attrs(id, n)} data-m="card" title="${esc(subOf(n))}">
+        ${n.selected ? `<div class="tools"><button title="Columns"><i class="codicon codicon-list-unordered"></i></button><button title="Details"><i class="codicon codicon-info"></i></button><button title="Open file"><i class="codicon codicon-go-to-file"></i></button></div>` : ""}
+        ${n.parents ? `<button class="exp l ${p ? "on" : ""}">${n.parents}</button>` : ""}
+        <div class="hd" data-port="1"><span class="dot" data-m="accent"></span>${names(n)}
+        ${n.error ? '<i class="codicon codicon-warning err"></i>' : n.hidden ? '<i class="codicon codicon-eye-closed"></i>' : `<span class="mat" data-m="sub">${n.mat ?? n.kind}</span>`}</div>
+        ${n.children ? `<button class="exp r ${c ? "on" : ""}">${n.children}</button>` : ""}
+        ${(n.chips ?? []).map(([l, d, t]) => `<div class="chip"><b>${l}</b>${d}/${t}<button>+${t - d}</button><button>✕</button></div>`).join("")}
+        ${n.columns ? `<div class="cols">${colRows(n)}</div>` : ""}</div>`;
+    },
+  },
+  {
+    id: "C", name: "C · Detailed", rankdir: "LR", ranksep: 150, nodesep: 30, curve: "bezier",
+    about: "300px with a layer-coloured edge and a type icon. Line 2 is the full relation in the editor font; line 3 shows materialization, test count, column count and package. Actions are icon buttons in the header; expanders are count pills outside the card. Groups show a layer mix bar.",
+    node(id, n) {
+      if (n.group) return `<div class="grp" ${attrs(id, n)} data-m="card"><i class="codicon codicon-folder"></i><b data-m="title">${n.title}</b><span>${n.count}</span>
+        <span class="k" data-m="sub" style="grid-column:1/-1">${n.key}</span>
+        <span class="bar">${Object.entries(n.mix).map(([l, k]) => `<i style="flex:${k};background:var(--vscode-charts-${{ staging: "blue", intermediate: "purple", marts: "green" }[l]})"></i>`).join("")}</span></div>`;
+      const [p, c] = n.expanded ?? [false, false];
+      return `<div class="${cls(n, "card")}" ${attrs(id, n)} data-m="card">
+        ${n.parents ? `<button class="exp l ${p ? "on" : ""}">${n.parents}</button>` : ""}
+        <div class="hd" data-port="1"><i class="codicon codicon-${ICON[n.kind]} ico" data-m="accent"></i>
+        ${names(n)}
+        <span class="tools">${n.error ? '<i class="codicon codicon-warning err"></i>' : n.hidden ? '<i class="codicon codicon-eye-closed"></i>' : ""}<button title="Columns"><i class="codicon codicon-list-unordered"></i></button><button title="Details"><i class="codicon codicon-info"></i></button><button title="Open file"><i class="codicon codicon-go-to-file"></i></button></span>
+        <span class="rel" data-m="sub">${n.rel}</span>
+        <span class="meta"><span>${n.layer ?? n.kind}</span>${n.mat ? `<span>${n.mat}</span>` : ""}${n.tests ? `<span><i class="codicon codicon-beaker"></i>${n.tests}</span>` : ""}${n.columns ? `<span><i class="codicon codicon-symbol-field"></i>${n.columns.length}</span>` : ""}${n.pkg ? `<span><i class="codicon codicon-package"></i>${n.pkg}</span>` : ""}</span></div>
+        ${n.children ? `<button class="exp r ${c ? "on" : ""}">${n.children}</button>` : ""}
+        ${n.chips ? `<div class="chips">${n.chips.map(([l, d, t]) => `<span class="chip" data-m="badge"><b>${l}</b> ${d}/${t}<button>+${t - d}</button><button>✕</button></span>`).join("")}</div>` : ""}
+        ${n.columns ? `<div class="cols">${colRows(n)}</div>` : ""}</div>`;
+    },
+  },
+  {
+    id: "D", name: "D · Layer lanes", lanes: true, curve: "step",
+    about: "Columns are dbt layers (source, staging, intermediate, marts) instead of graph depth, so a card's position says its layer and the badge goes. 240px cards; within a lane, cards keep dagre's order to limit crossings. Edges are orthogonal.",
+    node(id, n) {
+      if (n.group) return `<div class="grp" ${attrs(id, n)} data-m="card"><i class="codicon codicon-folder"></i><b data-m="title">${n.title}</b><span>${n.count}</span></div>`;
+      const [p, c] = n.expanded ?? [false, false];
+      return `<div class="${cls(n, "card")}" ${attrs(id, n)} data-m="card">
+        <div class="hd" data-port="1">${names(n)}
+        ${n.error ? '<i class="codicon codicon-warning err"></i>' : n.hidden ? '<i class="codicon codicon-eye-closed"></i>' : "<span></span>"}
+        <span class="type" data-m="badge">${n.kind === "model" ? n.mat : n.kind}</span>
+        <span class="sub" data-m="sub">${[n.rel, n.pkg].filter(Boolean).join(" · ")}</span></div>
+        ${n.selected || n.start ? `<div class="act"><button>${sign(p)}${n.parents}</button><button>Columns</button><button>Details</button><button>${n.children}${sign(c)}</button></div>` : ""}
+        ${(n.chips ?? []).map(([l, d, t]) => `<div class="chip">${l} ${d}/${t} · +${t - d} · ✕</div>`).join("")}
+        ${n.columns ? `<div class="cols">${colRows(n)}</div>` : ""}</div>`;
+    },
+  },
+  {
+    id: "E", name: "E · Top-down overview", rankdir: "TB", ranksep: 70, nodesep: 24, curve: "bezier",
+    about: "Graph runs top to bottom, like dbt docs. Nodes are 190px pills with a type icon and title only; details, relation and actions open in a popover on the selected node. Columns are not drawn on the graph; groups are stacked pills.",
+    node(id, n) {
+      if (n.group) return `<div class="pill grp" ${attrs(id, n)} data-m="card" data-port="1"><i class="codicon codicon-folder ico"></i><span class="ttl" data-m="title">${n.title}</span><span class="n2">×${n.count}</span></div>`;
+      return `<div class="${cls(n, "pill")}" ${attrs(id, n)} data-m="card" data-port="1"><i class="codicon codicon-${ICON[n.kind]} ico" data-m="accent"></i>
+        ${names(n)}${n.error ? '<i class="codicon codicon-warning err"></i>' : n.hidden ? '<i class="codicon codicon-eye-closed"></i>' : `<span class="n2">${n.children || ""}</span>`}
+        ${n.selected ? `<div class="pop"><b>${n.title}</b><div class="sub" data-m="sub">${subOf(n)}</div>${n.tests} tests · ${n.columns?.length ?? 0} columns<div class="row"><button>Columns</button><button>Details</button><button><i class="codicon codicon-go-to-file"></i></button></div></div>` : ""}</div>`;
+    },
+  },
+];
+
+// ---- Round 2: shared pieces ----
+const HUE = { staging: "blue", intermediate: "purple", marts: "green" };
+const active = (n) => n.start || n.selected;
+const P = {
+  flag: (n) => n.error ? `<i class="codicon codicon-warning err" title="${esc(n.error)}"></i>`
+    : n.hidden ? '<i class="codicon codicon-eye-closed" title="Hidden from lineage"></i>' : "",
+  tools: () => '<span class="tools"><button title="Columns"><i class="codicon codicon-list-unordered"></i></button>' +
+    '<button title="Details"><i class="codicon codicon-info"></i></button><button title="Open file"><i class="codicon codicon-go-to-file"></i></button></span>',
+  exps: (n) => {
+    const [p, c] = n.expanded ?? [false, false];
+    const label = (k, w) => `${k} ${w}${k === 1 ? "" : w === "parent" ? "s" : "ren"}`;
+    return (n.parents ? `<button class="exp l ${p ? "on" : ""}" title="${p ? "Hide" : "Show"} ${label(n.parents, "parent")}">` +
+        `<i class="codicon codicon-arrow-up"></i>${n.parents}</button>` : "") +
+      (n.children ? `<button class="exp r ${c ? "on" : ""}" title="${p ? "Hide" : "Show"} ${label(n.children, "child")}">` +
+        `${n.children}<i class="codicon codicon-arrow-down"></i></button>` : "");
+  },
+  // An opened group: its folder, how many of its members are drawn, a link for the rest, and a fold button that
+  // closes it back into one group card.
+  chips: (n) => n.chips ? `<div class="chips">${n.chips.map(([l, d, t]) =>
+    `<span class="chip" title="Group ${l}: ${d} of ${t} members shown"><i class="codicon codicon-folder-opened"></i>` +
+    `<b>${l}</b><span class="of">${d} of ${t}</span>` +
+    (t > d ? `<button class="more" title="Show the other ${t - d} members">show all</button>` : "") +
+    `<button class="fold" title="Collapse ${l} back into one card"><i class="codicon codicon-fold-up"></i></button></span>`).join("")}</div>` : "",
+  cols: (n) => n.columns ? `<div class="cols">${colRows(n)}</div>` : "",
+  rel: (n) => [n.rel, n.pkg].filter(Boolean).join(" · "),
+  meta: (n) => `<span class="meta"><span>${n.mat ?? n.kind}</span>` +
+    (n.tests ? `<span title="tests"><i class="codicon codicon-beaker"></i>${n.tests}</span>` : "") +
+    (n.columns ? `<span title="columns"><i class="codicon codicon-symbol-field"></i>${n.columns.length}</span>` : "") +
+    (n.pkg ? `<span><i class="codicon codicon-package"></i>${n.pkg}</span>` : "") + "</span>",
+  bar: (n) => `<span class="bar">${Object.entries(n.mix).map(([l, k]) =>
+    `<i style="flex:${k};background:color-mix(in srgb, var(--vscode-charts-${HUE[l]}) 55%, var(--vscode-foreground))"></i>`).join("")}</span>`,
+  grp: (id, n, { key = true, bar = true } = {}) => `<div class="grp" ${attrs(id, n)} data-m="card" data-port="1">` +
+    `<i class="codicon codicon-folder ico"></i><b data-m="title">${n.title}</b><span class="count">${n.count}</span>` +
+    (key ? `<span class="k" data-m="sub">${n.key}</span>` : "") + (bar ? P.bar(n) : "") + "</div>",
+  icon: (n, accent) => `<i class="codicon codicon-${ICON[n.kind]} ico" ${accent ? 'data-accent="color"' : ""}></i>`,
+  // F's card: stripe, icon, title, flags, relation; tools only on the selected card.
+  card: (id, n, { w, title = 28, meta = false, icon = true, tools = n.selected, extra = "", chips = true,
+    nm = (_, x) => names(x), rel = true } = {}) =>
+    `<div class="${cls(n, "card stripe")}" ${attrs(id, n)} data-m="card" data-accent="border-left-color" ${w ? `style="--w:${w}px"` : ""}>` +
+    P.exps(n) + `<div class="hd" data-port="1">${icon ? P.icon(n) : "<span></span>"}${nm(id, n)}` +
+    `<span class="flags">${P.flag(n)}${tools ? P.tools() : ""}</span>${rel ? `<span class="rel" data-m="sub">${P.rel(n)}</span>` : ""}` +
+    `${meta ? P.meta(n) : ""}</div>${extra}${chips ? P.chips(n) : ""}${P.cols(n)}</div>`,
+};
+
+const VARIANTS2 = [
+  {
+    id: "F", name: "F · C, quieter", rankdir: "LR", ranksep: 150, nodesep: 26, curve: "bezier", round2: true,
+    about: "C without the meta row and header buttons: layer stripe, type icon, title, and the relation on line 2. Tests, columns and package move to the tooltip and Details. Icon buttons appear on the selected (or hovered) card only. Expanders stay as count pills outside the card; groups keep the folder key and layer mix bar.",
+    node: (id, n) => n.group ? P.grp(id, n) : P.card(id, n),
+  },
+  {
+    id: "G", name: "G · F in layer lanes", lanes: "cols", curve: "bezier", round2: true,
+    about: "F's card inside D's layer lanes. The lane says the layer, so the stripe repeats it as a cue for cards seen out of context; the type icon tells a source from a seed in the same lane. Lanes are lightly banded with an accent swatch in each heading.",
+    node: (id, n) => n.group ? P.grp(id, n, { key: false }) : P.card(id, n, { w: 250, title: 25 }),
+  },
+  {
+    id: "H", name: "H · Pills that open", rankdir: "LR", ranksep: 120, nodesep: 18, curve: "bezier", round2: true,
+    about: "E's pills for every node, with the type icon in the layer colour and the child count; the start and selected nodes open in place into C's full card (relation, meta row, tools, chips, columns). Groups are dashed pills with a member count and a thin layer mix bar.",
+    node(id, n) {
+      if (n.group) return `<div class="pill grp-pill" ${attrs(id, n)} data-m="card" data-port="1"><i class="codicon codicon-folder ico"></i>` +
+        `<span class="ttl" data-m="title">${n.title}</span><span class="n2">×${n.count}</span>${P.bar(n)}</div>`;
+      if (active(n)) return P.card(id, n, { w: 300, meta: true, tools: true });
+      return `<div class="${cls(n, "pill")}" ${attrs(id, n)} data-m="card" data-port="1">${P.icon(n, true)}` +
+        `${names(n)}${P.flag(n) || `<span class="n2" data-m="sub">${n.children || ""}</span>`}</div>`;
+    },
+  },
+  {
+    id: "I", name: "I · Top band", rankdir: "LR", ranksep: 150, nodesep: 26, curve: "bezier", round2: true,
+    about: "The layer colour as a 3px band along the top instead of a side stripe. Line 1 is the title with the materialization as small caps on the right; line 2 is the relation with test and column counts right-aligned, so C's meta row folds into it. A text action row appears on the selected card only.",
+    node(id, n) {
+      if (n.group) return P.grp(id, n);
+      const counts = (n.tests ? `<span title="tests"><i class="codicon codicon-beaker"></i>${n.tests}</span>` : "") +
+        (n.columns ? `<span title="columns"><i class="codicon codicon-symbol-field"></i>${n.columns.length}</span>` : "");
+      return `<div class="${cls(n, "card band")}" ${attrs(id, n)} data-m="card" data-accent="border-top-color" style="--w:280px">${P.exps(n)}` +
+        `<div class="hd" data-port="1" style="grid-template-columns:1fr auto auto">${names(n)}` +
+        `<span class="flags">${P.flag(n)}</span><span class="kind" data-m="badge">${n.mat ?? n.kind}</span>` +
+        `<span class="relrow"><span class="rel" data-m="sub">${P.rel(n)}</span><span class="counts">${counts}</span></span></div>` +
+        (n.selected ? '<div class="toolrow"><button>Columns</button><button>Details</button><button title="Open file"><i class="codicon codicon-go-to-file"></i></button></div>' : "") +
+        `${P.chips(n)}${P.cols(n)}</div>`;
+    },
+  },
+  {
+    id: "J", name: "J · Top-down with layer bands", rankdir: "TB", ranksep: 90, nodesep: 44, lanes: "rows", curve: "bezier", round2: true,
+    about: "E's top-to-bottom flow with D's layers as horizontal bands, so reading down the page follows the dbt layers. F's card at 220px; expanders sit on the top and bottom edges, where the edges arrive and leave.",
+    node: (id, n) => n.group ? P.grp(id, n, { key: false, bar: true }) : P.card(id, n, { w: 220, title: 22 }),
+  },
+  {
+    id: "K", name: "K · One line, grows on focus", rankdir: "LR", ranksep: 140, nodesep: 18, curve: "bezier", round2: true,
+    about: "Every card is one line (stripe, icon, title, flags) at 240px. The start and selected cards grow into C's full card: relation, meta row and tools. A middle ground between F's two-line cards and H's pills, with no shape change on selection.",
+    node(id, n) {
+      if (n.group) return P.grp(id, n, { key: false, bar: true });
+      if (active(n)) return P.card(id, n, { w: 300, meta: true, tools: true });
+      return `<div class="${cls(n, "card stripe")}" ${attrs(id, n)} data-m="card" data-accent="border-left-color" style="--w:240px">` +
+        `${P.exps(n)}<div class="hd" data-port="1">${P.icon(n)}${names(n)}` +
+        `<span class="flags">${P.flag(n)}</span></div></div>`;
+    },
+  },
+  {
+    id: "L", name: "L · Monochrome, coloured icon", rankdir: "LR", ranksep: 150, nodesep: 26, curve: "bezier", round2: true,
+    about: "The quietest option: no stripe or band. The layer colour appears only on the type icon; cards are F's two lines with a stronger outline. Groups keep the key and mix bar, the only other colour on the canvas.",
+    node(id, n) {
+      if (n.group) return P.grp(id, n);
+      return `<div class="${cls(n, "card")}" ${attrs(id, n)} data-m="card" style="--w:260px">${P.exps(n)}` +
+        `<div class="hd" data-port="1">${P.icon(n, true)}${names(n)}` +
+        `<span class="flags">${P.flag(n)}${n.selected ? P.tools() : ""}</span><span class="rel" data-m="sub">${P.rel(n)}</span></div>` +
+        `${P.chips(n)}${P.cols(n)}</div>`;
+    },
+  },
+  {
+    id: "M", name: "M \u00b7 Top-down, layer bands, central corridor", rankdir: "TB", lanes: "rows", corridor: true,
+    ranksep: 90, nodesep: 48, curve: "bezier", round2: true,
+    about: "Connections show dbt dependencies by default, or the relationships declared in YAML and registrations (dotted, crow's foot at the declaring end), or both. Unselected cards show the alias, the file and project.type; hover for the path and relation. Top-down, centred on the focused model. Each layer (source, staging, intermediate, marts) is a coloured band; untagged models sit in an Other column to one side. Within a band, cards are ordered by generation from the focused model. Connections run in uncoloured gutters: one between every two rows, and a corridor straight above and below the focused model. An edge one generation long drops straight; only an edge that skips a generation takes the corridor.",
+    // Unselected cards drop the relation line; the start and selected cards keep it.
+    node: (id, n) => n.group ? P.grp(id, n, { key: false, bar: true })
+      : P.card(id, n, { w: 220, title: 22, chips: false, nm: names3, rel: !!active(n) }),
+  },
+];
+
+// ---- WCAG contrast of what each design draws, under this theme ----
+const parse = (c) => {
+  let m = c.match(/rgba?\(([^)]+)\)/);
+  if (m) {
+    const p = m[1].split(/[ ,/]+/).filter(Boolean).map(Number);
+    return { r: p[0], g: p[1], b: p[2], a: p.length > 3 ? p[3] : 1 };
+  }
+  m = c.match(/color\(srgb ([^)]+)\)/);
+  if (m) {
+    const p = m[1].replace("/", " ").split(/\s+/).filter(Boolean).map(Number);
+    return { r: p[0] * 255, g: p[1] * 255, b: p[2] * 255, a: p.length > 3 ? p[3] : 1 };
+  }
+  return null;
+};
+const over = (top, bottom) => ({
+  r: top.r * top.a + bottom.r * (1 - top.a), g: top.g * top.a + bottom.g * (1 - top.a), b: top.b * top.a + bottom.b * (1 - top.a), a: 1,
+});
+const lum = ({ r, g, b }) => [r, g, b].map((v) => { v /= 255; return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4; })
+  .reduce((s, v, i) => s + v * [0.2126, 0.7152, 0.0722][i], 0);
+const ratio = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+function bgOf(el) {
+  const chain = [];
+  for (let e = el; e; e = e.parentElement) chain.push(e);
+  let bg = parse(getComputedStyle(document.body).backgroundColor) ?? { r: 255, g: 255, b: 255, a: 1 };
+  for (const e of chain.reverse()) {
+    const c = parse(getComputedStyle(e).backgroundColor);
+    if (c && c.a > 0) bg = over(c, bg);
+  }
+  return bg;
+}
+function measure(panel, canvas) {
+  const out = [];
+  const canvasBg = bgOf(canvas);
+  const text = (sel, label) => {
+    const el = panel.querySelector(sel);
+    if (!el) return out.push([label, null, 4.5]);
+    const fg = parse(getComputedStyle(el).color);
+    out.push([label, ratio(over(fg, bgOf(el)), bgOf(el)), 4.5]);
+  };
+  text('[data-m="title"]', "title");
+  text('[data-m="sub"]', "line 2");
+  text('[data-m="badge"]', "badge");
+  text('[data-m="selcol"]', "selected column");
+  const card = panel.querySelector('.n:not(.hidden) [data-m="card"]:not(.start):not(.sel), [data-m="card"]');
+  const st = getComputedStyle(card);
+  const border = parse(st.borderTopColor);
+  const borderRatio = border && parseFloat(st.borderTopWidth) > 0 ? ratio(over(border, canvasBg), canvasBg) : 1;
+  const fillRatio = ratio(bgOf(card), canvasBg);
+  out.push(["card edge", Math.max(borderRatio, fillRatio), 3]);
+  const stripe = panel.querySelector("[data-accent]");
+  const accent = panel.querySelector('[data-m="accent"]');
+  if (stripe) {
+    const c = parse(getComputedStyle(stripe).getPropertyValue(stripe.dataset.accent));
+    out.push(["layer accent", ratio(over(c, bgOf(stripe)), bgOf(stripe)), 3]);
+  } else if (accent) {
+    const s = getComputedStyle(accent);
+    const c = parse(s.backgroundColor)?.a ? parse(s.backgroundColor) : parse(s.color);
+    out.push(["layer accent", ratio(over(c, bgOf(accent)), bgOf(accent)), 3]);
+  }
+  const edge = (sel, label) => {
+    const el = panel.querySelector(sel);
+    if (!el) return;
+    const s = getComputedStyle(el);
+    const c = parse(s.stroke);
+    c.a *= parseFloat(s.strokeOpacity || "1");
+    out.push([label, ratio(over(c, canvasBg), canvasBg), 3]);
+  };
+  edge("path.edge.table:not(.faint):not(.off)", "table edge");
+  edge("path.edge.col:not(.indirect)", "column edge");
+  edge("path.edge.col.indirect", "indirect edge");
+  // The selection ring as drawn: the selected card's outline, or its border when it has no outline.
+  const sel = panel.querySelector('[data-m="card"].sel');
+  if (sel) {
+    const s = getComputedStyle(sel);
+    const c = parse(s.outlineStyle !== "none" ? s.outlineColor : s.borderTopColor);
+    if (c) out.push(["selection outline", ratio(over(c, canvasBg), canvasBg), 3]);
+  }
+  return out;
+}
+function hexToRgb(h) {
+  const x = h.replace("#", "");
+  const full = x.length <= 4 ? [...x].map((c) => c + c).join("") : x;
+  const [r, g, b, a] = [0, 2, 4, 6].map((i) => parseInt(full.slice(i, i + 2) || "ff", 16));
+  return `rgba(${r}, ${g}, ${b}, ${a / 255})`;
+}
+
+// ---- layout and drawing ----
+function draw(v) {
+  // Column bubbles are part of the trace: shown before layout, so edges can meet them.
+  document.documentElement.classList.toggle("trace-on", (params.get("mode") ?? "column") === "column");
+  // Focus mode draws the focused model's lineage as real models only; folder groups are for free exploration.
+  const NODES = v.corridor ? Object.fromEntries(Object.entries(ALL_NODES).filter(([, n]) => !n.group)) : ALL_NODES;
+  const EDGES = ALL_EDGES.filter(([a, b]) => a in NODES && b in NODES);
+  // Edges the layout places cards by: the dbt dependencies, plus the declared relationships when they are shown.
+  const LAYOUT_EDGES = (params.get("deps") ?? "dbt") === "dbt" ? EDGES
+    : [...EDGES, ...DECLARED.filter((r) => r.from in NODES && r.to in NODES).map((r) => [r.from, r.to])];
+  const panel = document.createElement("section");
+  panel.className = `panel v${v.id}${v.round2 ? " r2" : ""}`;
+  panel.innerHTML = `<h2>${v.name}</h2><p>${v.about}</p><div class="canvas"><div class="layer"></div></div><div class="metrics"></div>`;
+  document.getElementById("panels").append(panel);
+  const canvas = panel.querySelector(".canvas");
+  const layer = panel.querySelector(".layer");
+  const els = {};
+  for (const [id, n] of Object.entries(NODES)) {
+    const wrap = document.createElement("div");
+    wrap.className = "n";
+    wrap.dataset.kind = n.kind ?? "group";
+    wrap.dataset.layer = n.layer ?? Object.keys(n.mix ?? {})[0] ?? "";
+    if (n.hidden) wrap.classList.add("hidden");
+    wrap.innerHTML = v.node(id, n);
+    layer.append(wrap);
+    els[id] = wrap;
+  }
+  const size = (id) => ({ w: els[id].firstElementChild.offsetWidth, h: els[id].firstElementChild.offsetHeight });
+  const pos = {};
+  // Layout. Every design draws data flowing one way: an edge leaves its upstream card on the downstream side and
+  // enters the downstream card on the upstream side. Lane designs force each node's rank to its dbt layer, so a
+  // layer is one row (top-down) or one column (left to right) and edges never point back up the layers.
+  const vertical = v.rankdir === "TB";
+  const laneIds = v.lanes ? LAYER_ORDER.filter((l) => Object.values(NODES).some((n) => laneOf(n) === l)) : [];
+  const g = new dagre.graphlib.Graph({ multigraph: false });
+  g.setGraph({ rankdir: v.rankdir ?? "LR", ranksep: v.ranksep ?? 120, nodesep: v.nodesep ?? 30, edgesep: 14,
+    ranker: "network-simplex" });
+  g.setDefaultEdgeLabel(() => ({}));
+  for (const id of Object.keys(NODES)) g.setNode(id, { width: size(id).w, height: size(id).h });
+  for (const [a, b] of EDGES) {
+    // An edge spanning k layers gets minlen k, so each layer tends to its own rank; same-layer edges keep minlen 1.
+    const span = v.lanes ? laneIds.indexOf(laneOf(NODES[b])) - laneIds.indexOf(laneOf(NODES[a])) : 1;
+    g.setEdge(a, b, { minlen: Math.max(span, 1), weight: 1 });
+  }
+  dagre.layout(g);
+  for (const id of Object.keys(NODES)) {
+    const n = g.node(id);
+    pos[id] = { x: n.x - n.width / 2, y: n.y - n.height / 2 };
+  }
+  // Corridor layout. Rows are generations from the focused model: its parents one row up, their parents two rows up,
+  // its children below. A node's generation is its longest path to or from the focus, so every edge points down.
+  // Each row is split in two around a gap of CORRIDOR px down the middle; the focus sits alone, centred on the gap.
+  // An edge between adjacent rows goes straight; one that skips a row runs down the corridor.
+  const CORRIDOR = 64;
+  // Spacing: a band reaches BAND_PAD past its cards on every side; rows in one band are SAME_ROW apart, and two
+  // bands are separated by GUTTER of bare canvas, which is also where most edges turn.
+  const BAND_PAD = 22, SAME_ROW = 58, GUTTER = 36;
+  let shiftX = 0, corridorPad = 0, rowInfo = [], gutterRects = "", otherCol = null, bandX = null;
+  // A node's generation from the focus; `gen` holds its sub-row once generations are split by layer tag.
+  const generation = {};
+  const gen = {};
+  if (v.corridor) {
+    const focus = Object.keys(NODES).find((id) => NODES[id].start);
+    // Upstream rows: a node's distance above the focus is its longest path to it, so a grandparent that is also a
+    // parent sits two rows up and its direct edge skips a row. Downstream rows likewise, by longest path from it.
+    const ids = Object.keys(NODES);
+    const longest = (from, next) => {
+      const d = { [from]: 0 }, stack = [from];
+      while (stack.length) {
+        const id = stack.pop();
+        for (const n of next(id)) if ((d[n] ?? -1) < d[id] + 1) { d[n] = d[id] + 1; stack.push(n); }
+      }
+      return d;
+    };
+    const ups = longest(focus, (id) => EDGES.filter(([, b]) => b === id).map(([a]) => a));
+    const downs = longest(focus, (id) => EDGES.filter(([a]) => a === id).map(([, b]) => b));
+    for (const id of ids) gen[id] = id === focus ? 0 : id in ups ? -ups[id] : id in downs ? downs[id] : undefined;
+    // Nodes neither above nor below the focus (a sibling's input, say) sit just above their first placed child.
+    for (let pass = 0; pass < 4; pass++) for (const [a, b] of EDGES) if (gen[a] === undefined && gen[b] !== undefined) gen[a] = gen[b] - 1;
+    for (const id of ids) if (gen[id] === undefined) gen[id] = 1;
+    // Keep every edge pointing down: a parent always sits at least one row above its child.
+    for (let pass = 0; pass < ids.length; pass++) for (const [a, b] of EDGES) if (gen[a] >= gen[b]) {
+      if (b === focus || gen[a] < 0) gen[a] = gen[b] - 1; else gen[b] = gen[a] + 1;
+    }
+    // Bands are the layers: sources (and seeds), then the dbt layer tags. Generations order the cards within a band;
+    // each generation is split into one sub-row per layer, the layer that continues the band above first, then the
+    // rest in layer order, so a band's sub-rows stay together. Untagged nodes ("other") sit in a column to one side,
+    // level with the first sub-row of their generation.
+    const tagOf = (n) => n.group ? Object.keys(n.mix)[0] : n.kind === "source" || n.kind === "seed" ? "source" : n.layer ?? "other";
+    const TAGS = ["source", "staging", "intermediate", "marts"];
+    const isOther = (id) => tagOf(NODES[id]) === "other";
+    const subRows = [];
+    for (const g0 of [...new Set(Object.values(gen))].sort((p, q) => p - q)) {
+      const here = Object.keys(NODES).filter((id) => gen[id] === g0);
+      const others = here.filter(isOther), tagged = here.filter((id) => !isOther(id));
+      const prev = subRows.at(-1)?.tag;
+      const tags = [...new Set(tagged.map((id) => tagOf(NODES[id])))]
+        .sort((p, q) => (q === prev) - (p === prev) || TAGS.indexOf(p) - TAGS.indexOf(q));
+      if (!tags.length) { subRows.push({ gen: g0, tag: "other", ids: others }); continue; }
+      tags.forEach((tag, k) => subRows.push({ gen: g0, tag, ids: [...tagged.filter((id) => tagOf(NODES[id]) === tag), ...(k ? [] : others)] }));
+    }
+    // Adjacent sub-rows of one layer share a row when no edge joins them and neither holds the focus: a source two
+    // generations up and a seed one generation up sit side by side, so the band is no taller than its chains need.
+    const linked = (x, y) => EDGES.some(([p, q]) => (x.includes(p) && y.includes(q)) || (y.includes(p) && x.includes(q)));
+    for (let i = 0; i + 1 < subRows.length;) {
+      const a = subRows[i], b = subRows[i + 1];
+      if (a.tag === b.tag && ![...a.ids, ...b.ids].includes(focus) && !linked(a.ids, b.ids)) {
+        a.ids.push(...b.ids);
+        subRows.splice(i + 1, 1);
+      } else i++;
+    }
+    const focusRow = subRows.findIndex((r) => r.ids.includes(focus));
+    for (const id of Object.keys(NODES)) generation[id] = gen[id];
+    subRows.forEach((r, i) => { for (const id of r.ids) gen[id] = i - focusRow; });
+    rowInfo = subRows.map((r, i) => ({ row: i - focusRow, gen: r.gen, tag: r.tag }));
+    const rows = [...new Set(Object.values(gen))].sort((p, q) => p - q);
+    // Each row keeps the corridor clear: its cards are split into a left and a right side of the centre gap. A card's
+    // side, and its order on that side, follow its neighbours in the row nearer the focus, so edges between adjacent
+    // rows stay on one side and run parallel. Rows are placed outward from the focus, which sits alone on the gap.
+    const byRow = new Map(rows.map((r) => [r, Object.keys(NODES).filter((id) => gen[id] === r)]));
+    const rowOrder = [...rows.filter((r) => r > 0), ...rows.filter((r) => r < 0).reverse()];
+    const gap = v.nodesep ?? 28;
+    const xc = {};
+    xc[focus] = 0;
+    pos[focus] = { x: -size(focus).w / 2, y: 0 };
+    // x of a card's centre once placed; unplaced neighbours count as the centre line.
+    // Target x for a card: the mean x of its neighbours one row nearer the focus, plus, for a card whose edge
+    // runs past the focus to the far side, that far card's x, so the card sits on the corridor side nearer it.
+    const near = (id, r) => {
+      const closer = (o) => Math.abs(gen[o]) < Math.abs(r) && Math.sign(gen[o]) !== -Math.sign(r);
+      const ns = LAYOUT_EDGES.filter(([p, q]) => (p === id && closer(q)) || (q === id && closer(p)))
+        .map(([p, q]) => p === id ? q : p);
+      const past = EDGES.filter(([p, q]) => (p === id && gen[q] > 0 && r < 0) || (q === id && gen[p] < 0 && r > 0))
+        .map(([p, q]) => p === id ? q : p).filter((o) => o in xc);
+      const xs = [...ns.map((o) => xc[o] ?? 0), ...past.flatMap((o) => [xc[o], xc[o], xc[o]])];
+      return xs.length ? xs.reduce((t, x) => t + x, 0) / xs.length : 0;
+    };
+    for (const r of rowOrder) {
+      // A card in the way of an edge that passes through its row, from a farther row to a nearer one, moves to the
+      // far side of the corridor, so that edge drops straight and this card's own edge crosses over instead. Edges
+      // into the focus are exempt: they run down the corridor, which every row keeps clear.
+      const out = (o) => Math.abs(gen[o]) > Math.abs(r) && Math.sign(gen[o]) === Math.sign(r);
+      const nearer = (o) => o in xc && o !== focus && Math.abs(gen[o]) < Math.abs(r);
+      const through = LAYOUT_EDGES.filter(([p, q]) => (out(p) && nearer(q)) || (out(q) && nearer(p)))
+        .map(([p, q]) => xc[nearer(p) ? p : q]);
+      const clear = (id, x) => {
+        const t = through.find((t) => Math.abs(t - x) < size(id).w / 2 + gap);
+        return t === undefined ? x : t >= 0 ? -Math.max(Math.abs(x), 1) : Math.max(Math.abs(x), 1);
+      };
+      const ids = byRow.get(r).filter((id) => !isOther(id)).map((id) => [id, clear(id, near(id, r))]).sort((p, q) => p[1] - q[1] || (p[0] < q[0] ? -1 : 1));
+      // Split by sign of the target x, then balance so neither side holds more than one extra card.
+      let left = ids.filter(([, x]) => x < 0), right = ids.filter(([, x]) => x >= 0);
+      while (left.length > right.length + 1) right.unshift(left.pop());
+      while (right.length > left.length + 1) left.push(right.shift());
+      let x = -CORRIDOR / 2;
+      for (const [id] of [...left].reverse()) { x -= size(id).w; pos[id] = { x, y: 0 }; xc[id] = x + size(id).w / 2; x -= gap; }
+      x = CORRIDOR / 2;
+      for (const [id] of right) { pos[id] = { x, y: 0 }; xc[id] = x + size(id).w / 2; x += size(id).w + gap; }
+    }
+    // The Other column: beyond the main area, with a gutter between. drawBest lays out both sides and keeps the one
+    // with fewer crossings.
+    const otherIds = Object.keys(NODES).filter(isOther);
+    if (otherIds.length) {
+      const main = Object.keys(NODES).filter((id) => !isOther(id));
+      const side = v.otherSide ?? 1;
+      const edge = side > 0 ? Math.max(...main.map((id) => pos[id].x + size(id).w)) : Math.min(...main.map((id) => pos[id].x));
+      const start = edge + side * (2 * BAND_PAD + GUTTER);
+      let far = start;
+      for (const r of rows) {
+        let x = start;
+        for (const id of byRow.get(r).filter(isOther)) {
+          const w = size(id).w;
+          pos[id] = { x: side > 0 ? x : x - w, y: 0 };
+          xc[id] = pos[id].x + w / 2;
+          x += side * (w + gap);
+          far = side > 0 ? Math.max(far, x - gap) : Math.min(far, x + gap);
+        }
+      }
+      const a1 = edge + side * BAND_PAD, a2 = start - side * BAND_PAD;
+      otherCol = { gut: [Math.min(a1, a2), Math.max(a1, a2)], band: side > 0 ? [a2, far + BAND_PAD] : [far - BAND_PAD, a2], side };
+    }
+    let y = 0;
+    rows.forEach((r, i) => {
+      const ids = byRow.get(r);
+      const h = Math.max(...ids.map((id) => size(id).h));
+      if (i) y += rowInfo[i].tag === rowInfo[i - 1].tag ? SAME_ROW : 2 * BAND_PAD + GUTTER;
+      for (const id of ids) pos[id].y = y + (h - size(id).h) / 2;
+      y += h;
+    });
+    // Pad the narrower side so the focus is centred on the canvas, not just in its row.
+    const lefts = Object.keys(NODES).map((id) => pos[id].x), rights = Object.keys(NODES).map((id) => pos[id].x + size(id).w);
+    const reach = Math.max(-Math.min(...lefts), Math.max(...rights));
+    corridorPad = reach;
+  }
+  // Lane designs then snap each node to its layer's row (top-down) or column, keeping dagre's order across it.
+  if (v.lanes && !v.corridor) {
+    let offset = 0;
+    const across = vertical ? "x" : "y", dim = vertical ? "w" : "h";
+    for (const lane of laneIds) {
+      const ids = Object.keys(NODES).filter((id) => laneOf(NODES[id]) === lane);
+      const thick = Math.max(...ids.map((id) => vertical ? size(id).h : size(id).w));
+      for (const id of ids) {
+        if (vertical) pos[id].y = offset + (thick - size(id).h) / 2;
+        else pos[id].x = offset + (thick - size(id).w) / 2;
+      }
+      offset += thick + (v.ranksep ?? 120);
+    }
+    // Order each layer to limit crossings: a few sweeps down then up, sorting each layer's cards by the mean position
+    // of their neighbours in the layer just placed (the barycentre method), then packing them side by side.
+    const layerOf = (id) => laneIds.indexOf(laneOf(NODES[id]));
+    const lanesIds = laneIds.map((lane) => Object.keys(NODES).filter((id) => laneOf(NODES[id]) === lane)
+      .sort((p, q) => pos[p][across] - pos[q][across]));
+    const centreAcross = (id) => pos[id][across] + size(id)[dim] / 2;
+    const pack = (ids) => {
+      let at = 0;
+      for (const id of ids) { pos[id][across] = at; at += size(id)[dim] + (v.nodesep ?? 30); }
+    };
+    lanesIds.forEach(pack);
+    const neighbours = (id, dir) => EDGES.filter(([a, b]) => dir > 0 ? b === id : a === id).map(([a, b]) => dir > 0 ? a : b)
+      .filter((o) => dir > 0 ? layerOf(o) < layerOf(id) : layerOf(o) > layerOf(id));
+    for (let sweep = 0; sweep < 6; sweep++) {
+      const dir = sweep % 2 === 0 ? 1 : -1;
+      const order = dir > 0 ? lanesIds.keys() : [...lanesIds.keys()].reverse();
+      for (const i of order) {
+        const ids = lanesIds[i];
+        const bary = new Map(ids.map((id) => {
+          const ns = neighbours(id, dir);
+          return [id, ns.length ? ns.reduce((sum, o) => sum + centreAcross(o), 0) / ns.length : centreAcross(id)];
+        }));
+        ids.sort((p, q) => bary.get(p) - bary.get(q));
+        pack(ids);
+        // Keep the packed layer centred on its neighbours' mean, so the next layer's barycentres line up with it.
+        const want = ids.reduce((sum, id) => sum + bary.get(id), 0) / ids.length;
+        const have = ids.reduce((sum, id) => sum + centreAcross(id), 0) / ids.length;
+        for (const id of ids) pos[id][across] += want - have;
+      }
+    }
+  }
+  // Lane designs centre each layer's cards on one axis, keeping dagre's order within the layer.
+  const shift = {};
+  if (v.lanes && !v.corridor) {
+    const axis = (fn) => (Math.min(...Object.keys(NODES).map((id) => fn(id, 0))) + Math.max(...Object.keys(NODES).map((id) => fn(id, 1)))) / 2;
+    const mid = vertical ? axis((id, e) => pos[id].x + e * size(id).w) : axis((id, e) => pos[id].y + e * size(id).h);
+    for (const lane of laneIds) {
+      const ids = Object.keys(NODES).filter((id) => laneOf(NODES[id]) === lane);
+      const lo = Math.min(...ids.map((id) => vertical ? pos[id].x : pos[id].y));
+      const hi = Math.max(...ids.map((id) => vertical ? pos[id].x + size(id).w : pos[id].y + size(id).h));
+      const d = mid - (lo + hi) / 2;
+      for (const id of ids) { if (vertical) pos[id].x += d; else pos[id].y += d; shift[id] = d; }
+    }
+  }
+  // Shift everything so the top-left card sits at the origin; the fit and the minimap read positions from there.
+  {
+    const minX = v.corridor ? -corridorPad : Math.min(...Object.keys(NODES).map((id) => pos[id].x));
+    const minY = Math.min(...Object.keys(NODES).map((id) => pos[id].y));
+    const margin = v.corridor ? BAND_PAD + GUTTER + 8 : 40;
+    for (const id of Object.keys(NODES)) { pos[id].x -= minX - margin; pos[id].y -= minY - 40; }
+    shiftX = margin - minX;
+  }
+  if (v.corridor) {
+    const span = (r) => {
+      const ids = Object.keys(NODES).filter((id) => gen[id] === r.row);
+      return [Math.min(...ids.map((id) => pos[id].y)), Math.max(...ids.map((id) => pos[id].y + size(id).h))];
+    };
+    // A band reaches BAND_PAD past its first and last rows; between two bands the canvas shows through.
+    const spans = rowInfo.map(span);
+    const above = (i) => spans[i][0] - BAND_PAD;
+    const below = (i) => spans[i][1] + BAND_PAD;
+    // The layer bands stop where the outer channels begin, so an edge routed round the outside runs on the plain
+    // background, as does the gap between the bands and the Other column.
+    const oc = otherCol && { gut: otherCol.gut.map((x) => x + shiftX), band: otherCol.band.map((x) => x + shiftX) };
+    const layered = Object.keys(NODES).filter((id) => laneOf(NODES[id]) !== "other");
+    const bl = Math.min(...layered.map((id) => pos[id].x)) - BAND_PAD, br = Math.max(...layered.map((id) => pos[id].x + size(id).w)) + BAND_PAD;
+    bandX = [bl, br];
+    const bands = [];
+    rowInfo.forEach((r, i) => {
+      if (r.tag === "other") return;
+      const last = bands.at(-1);
+      if (last && last.tag === r.tag && last.end === i - 1) last.end = i; else bands.push({ tag: r.tag, start: i, end: i });
+    });
+    // A band's label sits in its coloured part, just below the gutter painted over the band's top edge.
+    const band = (cls, tag, l, t, w, h, pad, top = 0) => {
+      const el = document.createElement("div");
+      el.className = `lane ${cls}`;
+      if (tag === "source") el.dataset.kind = "source"; else if (tag !== "other") el.dataset.layer = tag;
+      el.style.cssText = `left:${l}px;top:${t}px;width:${w}px;height:${h}px`;
+      el.innerHTML = `<h3 style="padding-left:${pad}px;margin-top:${top}px">${tag}</h3>`;
+      layer.prepend(el);
+    };
+    for (const b of bands) band("rows", b.tag, bl, above(b.start), br - bl, below(b.end) - above(b.start), 8);
+    if (oc) band("cols", "other", oc.band[0], above(0), oc.band[1] - oc.band[0], below(spans.length - 1) - above(0), 8);
+  }
+  if (v.lanes && !v.corridor) {
+    // Each lane band spans its cards' extent on the flow axis, padded, and the whole canvas across it.
+    const cols = !vertical;
+    laneIds.forEach((lane, i) => {
+      const ids = Object.keys(NODES).filter((id) => laneOf(NODES[id]) === lane);
+      const lo = Math.min(...ids.map((id) => cols ? pos[id].x : pos[id].y)) - (cols ? 24 : 30);
+      const hi = Math.max(...ids.map((id) => (cols ? pos[id].x + size(id).w : pos[id].y + size(id).h))) + (cols ? 24 : 14);
+      const el = document.createElement("div");
+      el.className = `lane ${cols ? "cols" : "rows"}${i % 2 ? " alt" : ""}`;
+      if (lane === "source") el.dataset.kind = "source"; else el.dataset.layer = lane;
+      el.style.cssText = cols ? `left:${lo}px;top:-34px;width:${hi - lo}px;height:calc(100% + 34px)`
+        : `left:-400px;top:${lo}px;width:calc(100% + 800px);height:${hi - lo}px`;
+      el.innerHTML = `<h3 style="${cols ? "" : "padding-left:410px"}">${lane}</h3>`;
+      layer.prepend(el);
+    });
+  }
+  for (const [id, p] of Object.entries(pos)) { els[id].style.left = `${p.x}px`; els[id].style.top = `${p.y}px`; }
+  const layerBox = layer.getBoundingClientRect();
+  const rel = (el) => { const r = el.getBoundingClientRect(); return { l: r.left - layerBox.left, t: r.top - layerBox.top, w: r.width, h: r.height }; };
+  const portOf = (id) => rel(els[id].querySelector("[data-port]") ?? els[id].firstElementChild);
+  const cardOf = (id) => rel(els[id].firstElementChild);
+  const paths = [];
+  // Flow sides: out of the downstream side of the upstream card, into the upstream side of the downstream card.
+  const [OUT, IN] = vertical ? ["b", "t"] : ["r", "l"];
+  const NORMAL = { l: [-1, 0], r: [1, 0], t: [0, -1], b: [0, 1] };
+  const centre = (id) => { const c = cardOf(id); return [c.l + c.w / 2, c.t + c.h / 2]; };
+  // An expander on a side is that side's port: its edges meet at the expander's outer edge.
+  const expanderOn = (id, side) => {
+    const c = cardOf(id);
+    for (const b of els[id].querySelectorAll(".exp")) {
+      const r = rel(b), cx = r.l + r.w / 2, cy = r.t + r.h / 2;
+      const near = { l: Math.abs(cx - c.l), r: Math.abs(cx - (c.l + c.w)), t: Math.abs(cy - c.t), b: Math.abs(cy - (c.t + c.h)) };
+      if (Object.entries(near).sort((x, y) => x[1] - y[1])[0][0] === side) return r;
+    }
+    return null;
+  };
+  // Ports: edges sharing a side are spread along it in the order of their other ends, so they leave side by side.
+  const slots = new Map();
+  for (const [a, b] of EDGES) {
+    for (const [id, side, other] of [[a, OUT, b], [b, IN, a]]) {
+      // A corridor edge's end on the focus is ordered as if its other end were at the corridor, the card's centre.
+
+      const key = `${id}|${side}`;
+      if (!slots.has(key)) slots.set(key, []);
+      slots.get(key).push({ key: `${a}>${b}`, other });
+    }
+  }
+  const anchor = new Map();
+  for (const [key, list] of slots) {
+    const [id, side] = key.split("|");
+    const c = cardOf(id), p = portOf(id);
+    const alongX = side === "t" || side === "b";
+    const exp = expanderOn(id, side);
+    if (exp) {
+      // Edges meet the bubble's outer edge, spread across its width in the order of their other ends.
+      const at = (s) => alongX ? centre(s.other)[0] : centre(s.other)[1];
+      list.sort((x, y) => at(x) - at(y) || (x.key < y.key ? -1 : 1));
+      list.forEach((s, i) => {
+        const f = list.length === 1 ? 0.5 : 0.2 + 0.6 * (i / (list.length - 1));
+        const pt = { l: [exp.l, exp.t + exp.h * f], r: [exp.l + exp.w, exp.t + exp.h * f],
+          t: [exp.l + exp.w * f, exp.t], b: [exp.l + exp.w * f, exp.t + exp.h] }[side];
+        anchor.set(`${s.key}|${side}`, pt);
+      });
+      continue;
+    }
+    // Order by where the other end sits, then by the other end's own spread, so edges that share both sides stay
+    // parallel. Ties (two edges to one card) break by that card's port order.
+    const at = (s) => alongX ? centre(s.other)[0] : centre(s.other)[1];
+    list.sort((x, y) => at(x) - at(y) || (x.key < y.key ? -1 : 1));
+    // Left and right ports stay within the header, so table edges never land on a column row.
+    const [lo, hi] = alongX ? [c.l + 18, c.l + c.w - 18] : [p.t + 6, p.t + Math.min(p.h, 56) - 6];
+    list.forEach((s, i) => {
+      const along = list.length === 1 ? (lo + hi) / 2 : lo + (hi - lo) * (0.15 + 0.7 * (i / (list.length - 1)));
+      anchor.set(`${s.key}|${side}`, alongX ? [along, side === "t" ? c.t : c.t + c.h] : [side === "l" ? c.l : c.l + c.w, along]);
+    });
+  }
+  // A path through points that only moves forward along the flow: each segment is a cubic whose control points sit
+  // halfway along the flow axis, so it leaves and arrives parallel to the flow and can never loop or turn back.
+  const smooth = (pts, s1) => {
+    const flowX = s1 === "l" || s1 === "r";
+    let d = `M${pts[0][0]},${pts[0][1]}`;
+    for (let i = 1; i < pts.length; i++) {
+      const [x1, y1] = pts[i - 1], [x2, y2] = pts[i];
+      if (v.curve === "step") {
+        d += flowX ? ` H${(x1 + x2) / 2} V${y2} H${x2}` : ` V${(y1 + y2) / 2} H${x2} V${y2}`;
+      } else if (flowX) {
+        const m = (x1 + x2) / 2;
+        d += ` C${m},${y1} ${m},${y2} ${x2},${y2}`;
+      } else {
+        const m = (y1 + y2) / 2;
+        d += ` C${x1},${m} ${x2},${m} ${x2},${y2}`;
+      }
+    }
+    return d;
+  };
+  // Routing. An edge between layers runs with the flow; at each layer it crosses, it passes through the gap between
+  // that layer's cards nearest its straight line, so it never runs under a card. An edge within one layer runs sideways
+  // between the facing sides, in the direction the data moves.
+  const box = (id) => cardOf(id);
+  const flowOf = (r) => vertical ? [r.t, r.t + r.h] : [r.l, r.l + r.w];
+  const acrossOf = (r) => vertical ? [r.l, r.l + r.w] : [r.t, r.t + r.h];
+  const P = (along, acr) => vertical ? [acr, along] : [along, acr];
+  const bandsBetween = (y1, y2) => {
+    // Card groups whose flow-axis extent lies strictly between y1 and y2, merged into bands.
+    const ids = Object.keys(NODES).filter((id) => { const [lo, hi] = flowOf(box(id)); return lo > y1 + 4 && hi < y2 - 4; });
+    const bands = [];
+    for (const id of ids.sort((p, q) => flowOf(box(p))[0] - flowOf(box(q))[0])) {
+      const [lo, hi] = flowOf(box(id)), last = bands.at(-1);
+      if (last && lo <= last.hi + 8) { last.hi = Math.max(last.hi, hi); last.ids.push(id); } else bands.push({ lo, hi, ids: [id] });
+    }
+    return bands;
+  };
+  const gapNear = (ids, want) => {
+    // The free interval across the band closest to `want`: before the first card, between cards, or after the last.
+    const spans = ids.map((id) => acrossOf(box(id))).sort((p, q) => p[0] - q[0]);
+    const free = [[-Infinity, spans[0][0] - 14]];
+    for (let i = 1; i < spans.length; i++) if (spans[i][0] - spans[i - 1][1] > 24) free.push([spans[i - 1][1] + 12, spans[i][0] - 12]);
+    free.push([spans.at(-1)[1] + 14, Infinity]);
+    let best = want, dist = Infinity;
+    for (const [lo, hi] of free) {
+      const c = Math.min(Math.max(want, lo), hi), d = Math.abs(c - want);
+      if (d < dist) { dist = d; best = c; }
+    }
+    return best;
+  };
+  // Corridor tracks, left to right, in the order of where each skip's far end is: an edge whose far card lies to the
+  // left takes a left track, so it peels off without crossing the others.
+  const farX = ([a, b]) => NODES[b].start ? centre(a)[0] : centre(b)[0];
+  // A skip crosses at least one sub-row of cards between its ends, so it would run under them without the corridor.
+  // Only an edge that skips a generation uses the corridor. One that just steps past another band's sub-row in the
+  // same generation step routes through the nearest gap between cards, like any adjacent edge.
+  const skipping = ([a, b]) => v.corridor && Math.abs(generation[b] - generation[a]) > 1;
+  const skips = v.corridor ? EDGES.filter(skipping)
+    .sort((p, q) => farX(p) - farX(q)) : [];
+  const corridorX = (a, b) => {
+    const i = skips.findIndex(([p, q]) => p === a && q === b), n = skips.length;
+    return shiftX + (n === 1 ? 0 : -CORRIDOR / 2 + 14 + (CORRIDOR - 28) * (i / (n - 1)));
+  };
+  for (const [a, b] of EDGES) {
+    const A = box(a), B = box(b);
+    if (skipping([a, b])) {
+      // A generation-skipping edge. It leaves the upstream card's bottom, runs in the gutter under that row to the
+      // corridor, down the corridor (which every row keeps clear), and along the gutter above the downstream row into
+      // the card's top. The end on the focus sits on the corridor itself, so the edge drops straight in.
+      const cx = corridorX(a, b);
+      const bubble = (id, side) => { const e = expanderOn(id, side); return e && (side === "t" ? [cx, e.t] : [cx, e.t + e.h]); };
+      const start = NODES[a].start ? bubble(a, "b") ?? [cx, A.t + A.h] : anchor.get(`${a}>${b}|${OUT}`);
+      const end = NODES[b].start ? bubble(b, "t") ?? [cx, B.t] : anchor.get(`${a}>${b}|${IN}`);
+      // Gutters are the bands between rows; each skip gets its own height in them, so two skips never overlap.
+      const k = skips.findIndex(([p, q]) => p === a && q === b);
+      const y1 = A.t + A.h + 14 + 8 * k, y2 = B.t - 14 - 8 * k;
+      const r = 10;
+      const pts = [start];
+      if (Math.abs(start[0] - cx) > 1) pts.push([start[0], y1], [cx, y1]);
+      // An edge that passes the focus row without ending at the focus steps around it, on the side nearer its target,
+      // in the gutters just above and below that row, then returns to the corridor.
+      const F = box(Object.keys(NODES).find((id) => NODES[id].start));
+      if (generation[a] < 0 && generation[b] > 0) {
+        // Passing the focus without touching it. The corridor is the focus's own; an edge that goes past it runs
+        // round the outside of the graph on the side of its source, so it never cuts the fan into or out of the focus.
+        const all = Object.keys(NODES).map(box);
+        // The outside nearer the target, so the edge only crosses the target's own row.
+        const left = end[0] < cx;
+        const outer = left ? Math.min(...all.map((c) => c.l)) - 30 - 8 * k : Math.max(...all.map((c) => c.l + c.w)) + 30 + 8 * k;
+        pts.length = 0;
+        pts.push(start, [start[0], y1], [outer, y1], [outer, y2], [end[0], y2], end);
+        let d = `M${pts[0][0]},${pts[0][1]}`;
+        for (let i = 1; i < pts.length - 1; i++) {
+          const [px, py] = pts[i - 1], [x, y] = pts[i], [nx, ny] = pts[i + 1];
+          const ix = Math.sign(x - px), iy = Math.sign(y - py), ox = Math.sign(nx - x), oy = Math.sign(ny - y);
+          d += ` L${x - ix * r},${y - iy * r} Q${x},${y} ${x + ox * r},${y + oy * r}`;
+        }
+        d += ` L${end[0]},${end[1]}`;
+        paths.push(`<path class="edge table corridor" data-a="${a}" data-b="${b}" d="${d}" marker-end="url(#arrow-${v.id})"/>`);
+        continue;
+      }
+      if (Math.abs(end[0] - cx) > 1) pts.push([cx, y2], [end[0], y2]);
+      pts.push(end);
+      // Rounded orthogonal path through the points.
+      let d = `M${pts[0][0]},${pts[0][1]}`;
+      for (let i = 1; i < pts.length - 1; i++) {
+        const [px, py] = pts[i - 1], [x, y] = pts[i], [nx, ny] = pts[i + 1];
+        const ix = Math.sign(x - px), iy = Math.sign(y - py), ox = Math.sign(nx - x), oy = Math.sign(ny - y);
+        d += ` L${x - ix * r},${y - iy * r} Q${x},${y} ${x + ox * r},${y + oy * r}`;
+      }
+      d += ` L${end[0]},${end[1]}`;
+      paths.push(`<path class="edge table corridor" data-a="${a}" data-b="${b}" d="${d}" marker-end="url(#arrow-${v.id})"/>`);
+      continue;
+    }
+    // Same layer: in lane designs, the same dbt layer; otherwise, cards that overlap on the flow axis.
+    const sameLayer = v.corridor ? gen[a] === gen[b] : v.lanes ? laneOf(NODES[a]) === laneOf(NODES[b]) : flowOf(B)[0] < flowOf(A)[1] - 4;
+    if (sameLayer) {
+      // Within one layer: if the cards are side by side, a short straight join between the facing sides; otherwise
+      // an arc that leaves the downstream side of the upstream card and comes round into the near end of the other,
+      // so it stays clear of the row and never turns back against the flow.
+      const toward = acrossOf(B)[0] > acrossOf(A)[0];
+      const gap = toward ? acrossOf(B)[0] - acrossOf(A)[1] : acrossOf(A)[0] - acrossOf(B)[1];
+      const hd = (r) => vertical ? r.t + Math.min(r.h, 56) / 2 : r.l + r.w / 2;
+      if (gap > 0) {
+        const pa = vertical ? [toward ? A.l + A.w : A.l, hd(A)] : [hd(A), toward ? A.t + A.h : A.t];
+        const pb = vertical ? [toward ? B.l : B.l + B.w, hd(B)] : [hd(B), toward ? B.t : B.t + B.h];
+        const [mx, my] = [(pa[0] + pb[0]) / 2, (pa[1] + pb[1]) / 2];
+        paths.push(`<path class="edge table" data-a="${a}" data-b="${b}" data-same="1" d="M${pa[0]},${pa[1]} ` +
+          `C${vertical ? `${mx},${pa[1]} ${mx},${pb[1]}` : `${pa[0]},${my} ${pb[0]},${my}`} ${pb[0]},${pb[1]}" marker-end="url(#arrow-${v.id})"/>`);
+      }
+      continue;
+    }
+    const start = anchor.get(`${a}>${b}|${OUT}`), end = anchor.get(`${a}>${b}|${IN}`);
+    const [s0, e0] = vertical ? [start[1], end[1]] : [start[0], end[0]];
+    const [sa, ea] = vertical ? [start[0], end[0]] : [start[1], end[1]];
+    const via = bandsBetween(s0, e0).map((band) => {
+      const t = ((band.lo + band.hi) / 2 - s0) / (e0 - s0);
+      const acr = gapNear(band.ids, sa + (ea - sa) * t);
+      return [P(band.lo - 10, acr), P(band.hi + 10, acr)];
+    }).flat();
+    paths.push(`<path class="edge table" data-a="${a}" data-b="${b}" d="${smooth([start, ...via, end], OUT, IN)}" marker-end="url(#arrow-${v.id})"/>`);
+  }
+  // Column edges always leave a column on its right and arrive on the left: data flows left to right through a
+  // row. When a column's bubbles are shown, the edge meets the bubble's outer edge.
+  const traceOn = (params.get("mode") ?? "column") === "column";
+  for (const [a, ac, b, bc, kind] of COL_EDGES) {
+    const ra = els[a].querySelector(`[data-col="${ac}"]`), rb = els[b].querySelector(`[data-col="${bc}"]`);
+    if (!ra || !rb) continue;
+    const x = rel(ra), y = rel(rb);
+    const ob = traceOn && ra.querySelector(".cb.out"), ib = traceOn && rb.querySelector(".cb.in");
+    const pa = ob ? (() => { const r = rel(ob); return [r.l + r.w, r.t + r.h / 2]; })() : [x.l + x.w, x.t + x.h / 2];
+    const pb = ib ? (() => { const r = rel(ib); return [r.l, r.t + r.h / 2]; })() : [y.l, y.t + y.h / 2];
+    // Forward (target to the right): an S-curve. Backward: out right, round, and in from the left.
+    const dx = pb[0] - pa[0];
+    const k = dx > 40 ? Math.max(30, dx / 2) : 60 + Math.min(120, Math.abs(dx) / 3);
+    const onTrace = TRACED.has(`${a}.${ac}`) && TRACED.has(`${b}.${bc}`);
+    paths.push(`<path class="edge col ${kind === "indirect" ? "indirect" : ""}" data-trace="${onTrace ? 1 : 0}" ` +
+      `d="M${pa[0]},${pa[1]} C${pa[0] + k},${pa[1]} ${pb[0] - k},${pb[1]} ${pb[0]},${pb[1]}" ` +
+      `marker-end="url(#colarrow-${v.id})"/>`);
+  }
+  // ---- Gutter router (focus mode). ----------------------------------------------------------------------------
+  // Connections run only in channels: a horizontal gutter between every two rows, the corridor straight above and
+  // below the focused model, a narrow lane beside each card for column edges, and an outer gutter on each side for an
+  // edge that has to pass the focused model without touching it. Each channel hands out one track per edge. The order
+  // of edges in every channel (and across every bubble) is optimised to remove crossings; any that remain are drawn
+  // with a hop, the horizontal line jumping over the vertical one.
+  if (v.corridor) {
+    const all = Object.keys(NODES);
+    const rowIds = [...new Set(all.map((id) => gen[id]))].sort((p, q) => p - q);
+    const idx = (id) => rowIds.indexOf(gen[id]);
+    const rb = rowIds.map((r) => {
+      const ids = all.filter((id) => gen[id] === r);
+      return { t: Math.min(...ids.map((id) => box(id).t)), b: Math.max(...ids.map((id) => box(id).t + box(id).h)) };
+    });
+    const focus = all.find((id) => NODES[id].start), F = box(focus), fx = F.l + F.w / 2, focusRow = idx(focus);
+    // Outer gutters hug the layered area; the Other column sits beyond, with its own gutter that doubles as one.
+    const layered = all.filter((id) => NODES[id].layer || NODES[id].kind === "source" || NODES[id].kind === "seed");
+    const minL = Math.min(...layered.map((id) => box(id).l)), maxR = Math.max(...layered.map((id) => box(id).l + box(id).w));
+    const chans = new Map();
+    const chan = (name, lo, hi) => { if (!chans.has(name)) chans.set(name, { name, lo, hi, list: [] }); return name; };
+    // Gutter i runs between row i and row i + 1, clear of the bubbles that stick out of the cards.
+    const gutter = (i) => chan(`h${i}`, rb[i].b + 18, rb[i + 1].t - 20);
+    const fb = expanderOn(focus, "t") ?? expanderOn(focus, "b");
+    const corridor = fb ? chan("corridor", fb.l + 4, fb.l + fb.w - 4) : chan("corridor", fx - CORRIDOR / 2 + 8, fx + CORRIDOR / 2 - 8);
+    const outerL = chan("outerL", minL - BAND_PAD - GUTTER + 6, minL - BAND_PAD - 6), outerR = chan("outerR", maxR + BAND_PAD + 6, maxR + BAND_PAD + GUTTER - 6);
+    const portOf2 = (id, side) => {
+      const e = expanderOn(id, side), c = box(id);
+      if (id === focus && e) return { name: corridor, y: side === "t" ? e.t : e.t + e.h };
+      const r = e ?? { l: c.l + c.w / 2 - 14, w: 28, t: side === "t" ? c.t : c.t + c.h, h: 0 };
+      return { name: chan(`p${id}${side}`, r.l + r.w * 0.12, r.l + r.w * 0.88), y: side === "t" ? r.t : r.t + r.h };
+    };
+    const gap = v.nodesep ?? 28;
+    const lane = (id, side) => {
+      const c = box(id);
+      return side === "r" ? chan(`l${id}r`, c.l + c.w + 16, c.l + c.w + gap - 6) : chan(`l${id}l`, c.l - gap + 6, c.l - 16);
+    };
+    // The vertical channel for a span: the corridor, unless the span would pass through the focused model's row.
+    const spine = (i1, i2, ex) => focusRow > Math.min(i1, i2) && focusRow < Math.max(i1, i2) ? (ex < fx ? outerL : outerR) : corridor;
+    const C = (name) => ({ c: name });
+    const routes = [];
+    const add = (rt, pts) => {
+      rt.pts = pts;
+      for (const p of pts) for (const k of p) if (k?.c && !chans.get(k.c).list.includes(rt)) chans.get(k.c).list.push(rt);
+      routes.push(rt);
+    };
+    const deps = params.get("deps") ?? "dbt";
+    for (const [a, b] of deps === "declared" ? [] : EDGES) {
+      const ia = idx(a), ib = idx(b);
+      if (ia >= ib) continue; // same-row joins keep their short curve
+      const ps = portOf2(a, "b"), pe = portOf2(b, "t"), g1 = gutter(ia), g2 = gutter(ib - 1);
+      // An edge one generation long that steps past another layer's sub-row drops straight, beside the source or
+      // the target, when that drop is clear of cards; only a longer edge takes the corridor.
+      const clearOf = (name) => {
+        const ch = chans.get(name);
+        return all.every((id) => idx(id) <= ia || idx(id) >= ib || box(id).l + box(id).w + 10 < ch.lo || box(id).l - 10 > ch.hi);
+      };
+      const direct = ib - ia > 1 && Math.abs(generation[b] - generation[a]) === 1;
+      let pts;
+      if (direct && clearOf(pe.name)) pts = [[C(ps.name), ps.y], [C(ps.name), C(g1)], [C(pe.name), C(g1)], [C(pe.name), pe.y]];
+      else if (direct && clearOf(ps.name)) pts = [[C(ps.name), ps.y], [C(ps.name), C(g2)], [C(pe.name), C(g2)], [C(pe.name), pe.y]];
+      else {
+        pts = [[C(ps.name), ps.y], [C(ps.name), C(g1)]];
+        if (ib - ia > 1) { const sp = spine(ia, ib, box(b).l + box(b).w / 2); pts.push([C(sp), C(g1)], [C(sp), C(g2)]); }
+        pts.push([C(pe.name), C(g2)], [C(pe.name), pe.y]);
+      }
+      add({ kind: "table", a, b, other: box(b).l + box(b).w / 2 }, pts);
+    }
+    // Declared relationships attach to the left part of a card's top or bottom edge, clear of the dbt bubbles, and
+    // run from the upper card down to the lower one; two cards in one row join through the gutter below them.
+    const relPort = (id, side) => {
+      const c = box(id);
+      return { name: chan(`q${id}${side}`, c.l + 12, c.l + Math.min(64, c.w * 0.3)), y: side === "t" ? c.t : c.t + c.h };
+    };
+    const clearIn = (name, ia, ib) => {
+      const ch = chans.get(name);
+      return all.every((id) => idx(id) <= ia || idx(id) >= ib || box(id).l + box(id).w + 10 < ch.lo || box(id).l - 10 > ch.hi);
+    };
+    if (deps !== "dbt") for (const r of DECLARED) {
+      if (!(r.from in NODES && r.to in NODES)) continue;
+      const [u, l] = idx(r.from) <= idx(r.to) ? [r.from, r.to] : [r.to, r.from], iu = idx(u), il = idx(l);
+      let pts;
+      if (iu === il) {
+        const below = iu < rowIds.length - 1, side = below ? "b" : "t", g = below ? gutter(iu) : gutter(iu - 1);
+        const pa = relPort(u, side), pb = relPort(l, side);
+        pts = [[C(pa.name), pa.y], [C(pa.name), C(g)], [C(pb.name), C(g)], [C(pb.name), pb.y]];
+      } else {
+        const ps = relPort(u, "b"), pe = relPort(l, "t"), g1 = gutter(iu), g2 = gutter(il - 1);
+        if (il - iu === 1 || clearIn(pe.name, iu, il)) pts = [[C(ps.name), ps.y], [C(ps.name), C(g1)], [C(pe.name), C(g1)], [C(pe.name), pe.y]];
+        else if (clearIn(ps.name, iu, il)) pts = [[C(ps.name), ps.y], [C(ps.name), C(g2)], [C(pe.name), C(g2)], [C(pe.name), pe.y]];
+        else {
+          const sp = spine(iu, il, box(l).l);
+          pts = [[C(ps.name), ps.y], [C(ps.name), C(g1)], [C(sp), C(g1)], [C(sp), C(g2)], [C(pe.name), C(g2)], [C(pe.name), pe.y]];
+        }
+      }
+      add({ kind: "rel", a: u, b: l, rel: r, other: box(l).l }, pts);
+    }
+    const traceOn = (params.get("mode") ?? "column") === "column";
+    if (traceOn) for (const [a, ac, b, bc, kind] of COL_EDGES) {
+      if (!(TRACED.has(`${a}.${ac}`) && TRACED.has(`${b}.${bc}`))) continue;
+      const ra = els[a].querySelector(`[data-col="${ac}"]`), rbEl = els[b].querySelector(`[data-col="${bc}"]`);
+      if (!ra || !rbEl) continue;
+      const x = rel(ra), y = rel(rbEl), ia = idx(a), ib = idx(b);
+      if (ib <= ia || ia >= rowIds.length - 1) continue;
+      const ob = ra.querySelector(".cb.out"), ib2 = rbEl.querySelector(".cb.in");
+      const s = ob ? (() => { const r = rel(ob); return [r.l + r.w, r.t + r.h / 2]; })() : [x.l + x.w, x.t + x.h / 2];
+      const e = ib2 ? (() => { const r = rel(ib2); return [r.l, r.t + r.h / 2]; })() : [y.l, y.t + y.h / 2];
+      const lr = lane(a, "r"), ll = lane(b, "l"), g1 = gutter(ia), g2 = gutter(ib - 1);
+      const pts = [s, [C(lr), s[1]], [C(lr), C(g1)]];
+      if (ib - ia > 1) { const sp = spine(ia, ib, e[0]); pts.push([C(sp), C(g1)], [C(sp), C(g2)]); }
+      pts.push([C(ll), C(g2)], [C(ll), e[1]], e);
+      add({ kind: "col", a, b, ac, bc, indirect: kind === "indirect", other: e[0],
+        onTrace: TRACED.has(`${a}.${ac}`) && TRACED.has(`${b}.${bc}`) }, pts);
+    }
+    // Positions: a channel spreads its edges evenly, in list order.
+    const at = (name, rt) => {
+      const ch = chans.get(name), n = ch.list.length, i = ch.list.indexOf(rt);
+      return n === 1 ? (ch.lo + ch.hi) / 2 : ch.lo + ((ch.hi - ch.lo) * (i + 0.5)) / n;
+    };
+    const resolve = (rt) => rt.pts.map(([x, y]) => [x?.c ? at(x.c, rt) : x, y?.c ? at(y.c, rt) : y])
+      .filter((p, i, arr) => i === 0 || p[0] !== arr[i - 1][0] || p[1] !== arr[i - 1][1]);
+    const segsOf = (pts) => pts.slice(1).map((p, i) => [pts[i], p]);
+    const crossingsNow = () => {
+      const S = routes.map((rt) => segsOf(resolve(rt)));
+      const w = (i, j) => traceOn && routes[i].kind !== routes[j].kind ? 0.1 : 1;
+      let n = 0;
+      for (let i = 0; i < S.length; i++) for (let j = 0; j < S.length; j++) {
+        if (i === j) continue;
+        for (const [h0, h1] of S[i]) {
+          if (h0[1] !== h1[1]) continue;
+          for (const [v0, v1] of S[j]) {
+            if (v0[0] !== v1[0]) continue;
+            const x = v0[0], y = h0[1];
+            if (x > Math.min(h0[0], h1[0]) + 0.5 && x < Math.max(h0[0], h1[0]) - 0.5 &&
+              y > Math.min(v0[1], v1[1]) + 0.5 && y < Math.max(v0[1], v1[1]) - 0.5) n += w(i, j);
+          }
+        }
+      }
+      return n;
+    };
+    // Start every channel in the order of where its edges end, then improve by moving one edge at a time.
+    for (const ch of chans.values()) ch.list.sort((p, q) => p.other - q.other);
+    let best = crossingsNow();
+    for (let pass = 0; pass < 12 && best > 0; pass++) {
+      let improved = false;
+      for (const ch of chans.values()) {
+        for (let i = 0; i < ch.list.length; i++) for (let j = 0; j < ch.list.length; j++) {
+          if (i === j) continue;
+          const [rt] = ch.list.splice(i, 1);
+          ch.list.splice(j, 0, rt);
+          const c = crossingsNow();
+          if (c < best) { best = c; improved = true; } else { ch.list.splice(j, 1); ch.list.splice(i, 0, rt); }
+        }
+      }
+      if (!improved && params.has("pairs")) {
+        for (const rt of routes) {
+          const mine = [...chans.values()].filter((ch) => ch.list.length > 1 && ch.list.includes(rt));
+          for (let u = 0; u < mine.length; u++) for (let w = u + 1; w < mine.length; w++) {
+            const A = mine[u].list, B = mine[w].list, ia = A.indexOf(rt), ib = B.indexOf(rt);
+            for (let i = 0; i < A.length; i++) for (let j = 0; j < B.length; j++) {
+              A.splice(ia, 1); A.splice(i, 0, rt); B.splice(ib, 1); B.splice(j, 0, rt);
+              const c = crossingsNow();
+              if (c < best) { best = c; improved = true; break; }
+              A.splice(i, 1); A.splice(ia, 0, rt); B.splice(j, 1); B.splice(ib, 0, rt);
+            }
+            if (improved) break;
+          }
+          if (improved) break;
+        }
+        if (!improved) break;
+      }
+    }
+    // Draw: rounded corners, and a hop wherever a horizontal run crosses another edge's vertical run.
+    const R = 7, HOP = 4.5;
+    const res = routes.map(resolve);
+    const vSegs = res.map((pts) => segsOf(pts).filter(([p, q]) => p[0] === q[0]));
+    let hops = 0;
+    const len = (p, q) => Math.hypot(q[0] - p[0], q[1] - p[1]);
+    const pathOf = (k) => {
+      const pts = res[k], n = pts.length;
+      const rad = (i) => i <= 0 || i >= n - 1 ? 0 : Math.min(R, len(pts[i - 1], pts[i]) / 2, len(pts[i], pts[i + 1]) / 2);
+      let d = `M${pts[0][0]},${pts[0][1]}`;
+      for (let i = 1; i < n; i++) {
+        const p0 = pts[i - 1], p1 = pts[i], L = len(p0, p1) || 1;
+        const ux = (p1[0] - p0[0]) / L, uy = (p1[1] - p0[1]) / L, r0 = rad(i - 1), r1 = rad(i);
+        if (p0[1] === p1[1]) {
+          const dir = Math.sign(ux), y = p0[1], hits = [];
+          vSegs.forEach((vs, j) => {
+            if (j === k) return;
+            // A traced column edge hops over faint table edges; a table edge never hops while a trace is shown.
+            if (traceOn && routes[k].kind === "table") return;
+            for (const [q0, q1] of vs) {
+              const x = q0[0];
+              if ((x - p0[0]) * dir > r0 + HOP + 1 && (p1[0] - x) * dir > r1 + HOP + 1 &&
+                y > Math.min(q0[1], q1[1]) + 0.5 && y < Math.max(q0[1], q1[1]) - 0.5) hits.push(x);
+            }
+          });
+          hits.sort((u, w) => (u - w) * dir);
+          const runs = [];
+          for (const x of hits) {
+            const last = runs.at(-1);
+            if (last && Math.abs(x - last[1]) < 4 * HOP) last[1] = x; else runs.push([x, x]);
+          }
+          for (const [xa, xb] of runs) {
+            const r = HOP + Math.abs(xb - xa) / 2;
+            d += ` L${xa - dir * HOP},${y} A${r},${Math.min(r, HOP + 1.5)} 0 0 ${dir > 0 ? 1 : 0} ${xb + dir * HOP},${y}`;
+            hops++;
+          }
+        }
+        d += ` L${p1[0] - ux * r1},${p1[1] - uy * r1}`;
+        if (r1) {
+          const p2 = pts[i + 1], L2 = len(p1, p2) || 1;
+          d += ` Q${p1[0]},${p1[1]} ${p1[0] + ((p2[0] - p1[0]) / L2) * r1},${p1[1] + ((p2[1] - p1[1]) / L2) * r1}`;
+        }
+      }
+      return d;
+    };
+    // A declared relationship has no arrow: a crow's foot at the declaring (many) end, a bar at the referenced end.
+    const relPath = (rt, k) => {
+      const r = rt.rel, [ms, me] = r.from === rt.a ? ["relmany", "relone"] : ["relone", "relmany"];
+      const tip = `${r.from}.${r.cols.join(", ")} → ${r.to}.${r.toCols.join(", ")}\ndeclared in ${r.in}`;
+      return `<path class="edge rel${traceOn ? " faint" : ""}" data-from="${r.from}" data-to="${r.to}" d="${pathOf(k)}" ` +
+        `marker-start="url(#${ms}-${v.id})" marker-end="url(#${me}-${v.id})"><title>${esc(tip)}</title></path>`;
+    };
+    const out = routes.map((rt, k) => rt.kind === "rel" ? relPath(rt, k) : rt.kind === "table"
+      ? `<path class="edge table" data-a="${rt.a}" data-b="${rt.b}" d="${pathOf(k)}" marker-end="url(#arrow-${v.id})"/>`
+      : `<path class="edge col ${rt.indirect ? "indirect" : ""}" data-trace="${rt.onTrace ? 1 : 0}" d="${pathOf(k)}" marker-end="url(#colarrow-${v.id})"/>`);
+    // Replace what the general router drew, keeping its same-row joins; column edges paint above table edges.
+    for (let i = paths.length - 1; i >= 0; i--) if (/class="edge (table|col)/.test(paths[i]) && !paths[i].includes('data-same="1"')) paths.splice(i, 1);
+    paths.push(...out.filter((p) => p.includes("edge table")), ...out.filter((p) => p.includes("edge rel")),
+      ...out.filter((p) => p.includes("edge col")));
+    layer.dataset.crossings = String(best);
+    // Debug aid for the spike: each remaining crossing as "horizontal edge x vertical edge @ x,y".
+    {
+      const S = routes.map((rt) => segsOf(resolve(rt))), list = [];
+      S.forEach((hs, i) => S.forEach((vs, j) => { if (i === j) return;
+        for (const [h0, h1] of hs) { if (h0[1] !== h1[1]) continue;
+          for (const [v0, v1] of vs) { if (v0[0] !== v1[0]) continue;
+            const x = v0[0], y = h0[1];
+            if (x > Math.min(h0[0], h1[0]) + 0.5 && x < Math.max(h0[0], h1[0]) - 0.5 && y > Math.min(v0[1], v1[1]) + 0.5 && y < Math.max(v0[1], v1[1]) - 0.5)
+              list.push(`${routes[i].a}>${routes[i].b}${routes[i].ac ? "." + routes[i].ac : ""} x ${routes[j].a}>${routes[j].b}${routes[j].ac ? "." + routes[j].ac : ""} @${Math.round(x)},${Math.round(y)} hx[${Math.round(h0[0])},${Math.round(h1[0])}]`);
+          } } }));
+      layer.dataset.crossList = list.join("\n");
+    }
+    layer.dataset.hops = String(hops);
+    // Gutter tints: every gutter between rows, the corridor above and below the focused model, and any outer gutter
+    // an edge uses.
+    const x0 = -400, x1 = maxR + 400, top = rb[0].t - 40, bot = rb.at(-1).b + 40;
+    const rect = (x, y, w, h) => h > 0 && w > 0 ? `<rect class="gutter" x="${x}" y="${y}" width="${w}" height="${h}"/>` : "";
+    const g = [];
+    // Every gutter routes edges, but only those between two layers are painted, so a layer reads as one block.
+    // The horizontal ones stop at the Other column, which is cut off from the layers by its vertical gutter alone.
+
+    gutterRects = g.join("");
+  }
+  paths.unshift(`<defs><marker id="arrow-${v.id}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto-start-reverse">` +
+    `<path d="M0,0 L8,4 L0,8 z" class="arrowhead"/></marker>` +
+    `<marker id="colarrow-${v.id}" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="6" markerHeight="6" orient="auto">` +
+    `<path d="M0,0 L8,4 L0,8 z" class="colhead"/></marker>` +
+    `<marker id="relmany-${v.id}" viewBox="0 0 12 12" refX="12" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">` +
+    `<path d="M0,6 L12,0 M0,6 L12,6 M0,6 L12,12" class="relmark"/></marker>` +
+    `<marker id="relone-${v.id}" viewBox="0 0 12 12" refX="12" refY="6" markerWidth="12" markerHeight="12" markerUnits="userSpaceOnUse" orient="auto-start-reverse">` +
+    `<path d="M7,0 L7,12" class="relmark"/></marker></defs>`);
+  let bw = 0, bh = 0;
+  const pad = v.lanes ? 40 : 0;
+  for (const id of Object.keys(NODES)) { const c = cardOf(id); bw = Math.max(bw, c.l + c.w + 40 + pad); bh = Math.max(bh, c.t + c.h + (NODES[id].selected && v.id === "E" ? 180 : 40) + pad); }
+  // The corridor layout is symmetric about the focus, so its width is twice the reach either side of it.
+  if (v.corridor) bw = Math.max(bw, 2 * (corridorPad + BAND_PAD + GUTTER + 8) + pad);
+  // Lineage of the focus: its ancestors and descendants. An edge is on it when both ends are ancestors (or the focus),
+  // or both are descendants (or the focus); every other edge, such as a sibling feeding a mart, is off it.
+  const focusId = Object.keys(NODES).find((id) => NODES[id].start);
+  const reach = (next) => {
+    const seen = new Set([focusId]), stack = [focusId];
+    while (stack.length) for (const n of next(stack.pop())) if (!seen.has(n)) { seen.add(n); stack.push(n); }
+    return seen;
+  };
+  const ancestors = reach((id) => EDGES.filter(([, b]) => b === id).map(([a]) => a));
+  const descendants = reach((id) => EDGES.filter(([a]) => a === id).map(([, b]) => b));
+  const onLineage = (a, b) => (ancestors.has(a) && ancestors.has(b)) || (descendants.has(a) && descendants.has(b));
+  const others = params.get("others") ?? "dim";
+  const mode = params.get("mode") ?? "column";
+  const deps = params.get("deps") ?? "dbt";
+  const marked = paths.map((p) => {
+    if (deps === "declared" && p.includes('class="edge table')) return "";
+    if (p.includes('class="edge col')) {
+      if (mode === "table") return "";
+      if (p.includes('data-trace="1"')) return p;
+      return others === "show" ? p.replace('class="edge col', 'class="edge col off') : "";
+    }
+    const m = p.match(/data-a="([^"]+)" data-b="([^"]+)"/);
+    if (!m) return p;
+    const on = onLineage(m[1], m[2]);
+    if (mode === "column") return on ? p.replace('class="edge table', 'class="edge table faint') : others === "show" ? p.replace('class="edge table', 'class="edge table faint') : "";
+    if (on) return p;
+    return others === "hide" ? "" : others === "dim" ? p.replace('class="edge table', 'class="edge table off') : p;
+  });
+  // In table mode no column is selected, so no row shows a trace.
+  if (mode === "table") for (const el of layer.querySelectorAll(".col.selcol, .col.traced")) el.classList.remove("selcol", "traced");
+  const svg = `<svg width="${bw}" height="${bh}">${marked.join("")}</svg>`;
+  // Edges sit above the cards, so a line that has to cross a card (a column trace, say) stays visible over it.
+  layer.insertAdjacentHTML("beforeend", svg);
+  if (gutterRects) layer.insertAdjacentHTML("afterbegin", `<svg class="gutters" width="${bw}" height="${bh}">${gutterRects}</svg>`);
+  layer.style.width = `${bw}px`;
+  layer.style.height = `${bh}px`;
+  const W0 = canvas.clientWidth, H = canvas.clientHeight;
+  const embed = params.has("embed");
+  const mapW = embed ? Math.round(Math.min(200, Math.max(120, W0 / 5))) : 200;
+  const mapH = embed ? Math.round(Math.min(130, Math.max(80, H / 5))) : 130;
+  // Embedded, the graph fits the area left of the minimap, so the minimap never covers a card.
+  const W = embed ? W0 - mapW - 24 : W0;
+  const scale = Math.min(1, (W - 60) / (bw + pad * 3), (H - 60) / (bh + pad));
+  layer.style.transform = `translate(${(W - bw * scale) / 2 + pad * scale}px, ${(H - bh * scale) / 2 + pad * scale}px) scale(${scale})`;
+  canvas.insertAdjacentHTML("beforeend", `
+    <div class="chrome" style="top:10px;right:10px"><button><i class="codicon codicon-settings-gear"></i> Settings</button><button><i class="codicon codicon-refresh"></i> Reset</button></div>
+    <div class="chrome" style="left:10px;bottom:12px;flex-direction:column"><button>+</button><button>−</button><button><i class="codicon codicon-screen-full"></i></button></div>
+    <div class="legend"><span><span class="sw" style="border-color:var(--vscode-charts-blue)"></span>Select</span><span><span class="sw" style="border-top-style:dashed;border-color:var(--vscode-charts-purple)"></span>Non-select</span><span>zoom ${Math.round(scale * 100)}%</span></div>
+    <div class="minimap" style="width:${mapW}px;height:${mapH}px">${Object.keys(NODES).map((id) => { const c = cardOf(id); return `<i style="left:${(c.l / bw) * mapW}px;top:${(c.t / bh) * mapH}px;width:${Math.max(3, (c.w / bw) * mapW)}px;height:${Math.max(2, (c.h / bh) * mapH)}px"></i>`; }).join("")}<span class="view" style="inset:4px"></span></div>`);
+  const results = measure(panel, canvas);
+  panel.querySelector(".metrics").innerHTML = results.map(([label, r, min]) =>
+    r == null ? `<span class="metric na">${label} –</span>` :
+      `<span class="metric ${r >= min ? "ok" : "low"}" data-ratio="${r.toFixed(2)}">${label} ${r.toFixed(1)}${r >= min ? "" : ` < ${min}`}</span>`).join("");
+  return { id: v.id, results: results.filter(([, r]) => r != null).map(([label, r, min]) => ({ label, ratio: +r.toFixed(2), min, ok: r >= min })) };
+}
+// The corridor layout puts Other on whichever side gives fewer crossings: draw both, keep the better.
+function drawBest(v) {
+  if (!v.corridor) return draw(v);
+  const tries = [-1, 1].map((otherSide) => {
+    const r = draw({ ...v, otherSide });
+    const el = document.getElementById("panels").lastElementChild;
+    return { r, el, n: +el.querySelector(".layer").dataset.crossings };
+  });
+  const [keep, drop] = tries[0].n <= tries[1].n ? tries : [tries[1], tries[0]];
+  drop.el.remove();
+  return keep.r;
+}
+const only = params.get("variant");
+const round = params.get("round") === "2" ? VARIANTS2 : VARIANTS;
+window.REPORT = { theme: themeName, variants: round.filter((v) => !only || v.id === only).map(drawBest) };
+// Embedded pages are opaque origins under file://, so the toggle page gets the report by message.
+const post = () => parent !== window && parent.postMessage({ type: "lineage-report", theme: themeName,
+  about: document.querySelector(".panel p")?.textContent ?? "", report: window.REPORT.variants[0] }, "*");
+post();
+// Embedded, the frame can change size after the first draw; draw again so the graph fits beside the minimap.
+if (params.has("embed")) {
+  let last = innerWidth + "x" + innerHeight, timer;
+  addEventListener("resize", () => {
+    clearTimeout(timer);
+    timer = setTimeout(() => {
+      if (innerWidth + "x" + innerHeight === last) return;
+      last = innerWidth + "x" + innerHeight;
+      document.getElementById("panels").replaceChildren();
+      window.REPORT = { theme: themeName, variants: round.filter((v) => !only || v.id === only).map(drawBest) };
+      post();
+    }, 150);
+  });
+}
+document.title = "ready";
+</script>
+</body>
+</html>

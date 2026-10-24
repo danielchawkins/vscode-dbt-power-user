@@ -41,6 +41,7 @@
     "webview_panels/dist",
     "webview_panels/src/lib",
     "scripts/spikes",
+    "spike",
     "src/test/suite/fixtures",
     "test-fixtures/lint",
     "docs/research/evidence",

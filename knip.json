@@ -11,7 +11,7 @@
         ".vscode-test.mjs"
       ],
       "project": ["src/**/*.ts!", "scripts/**/*.{mjs,ts}", "!src/test/**!"],
-      "ignore": ["scripts/spikes/**"],
+      "ignore": ["scripts/spikes/**", "spike/**"],
       "ignoreBinaries": ["dbt", "sample"]
     },
     "packages/webview-contract": {
