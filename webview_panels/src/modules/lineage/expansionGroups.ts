@@ -1,12 +1,12 @@
-import { drawnGraph, drawnIds, parseExpansion, prune } from "./graph";
 import type { GraphState } from "./graph";
+import { drawnGraph, drawnIds, parseExpansion, prune } from "./graph";
 import {
   groupLabel,
   groupNodeId,
   parseGroupNodeId,
   shortGroupKey,
 } from "./grouping";
-import { layerTagOf } from "./layered";
+import { layerTagOf } from "./layerTags";
 
 /**
  * Opens the closed group `id`, so that its first `cap` members are drawn as ordinary cards (all of them when `cap`
