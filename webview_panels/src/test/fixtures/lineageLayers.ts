@@ -1,7 +1,7 @@
 /**
  * The lineage-layers dbt fixture (src/test/fixtures/lineage-layers) as the webview receives it: the tables, the dbt
  * dependency edges and the declared relationships around `int_orders__enriched`. The dbt project is the source of
- * truth; keep this file in step with its models.
+ * truth; keep this file in step with its models. `src/test/suite/lineageLayersFixture.test.ts` fails when they differ.
  */
 import type { lineage } from "@fusion-power-user/webview-contract";
 
@@ -30,6 +30,9 @@ export const lineageLayersIds = {
   REV_DAILY,
   AUDIT_LOG,
 } as const;
+
+/** The card ID a table is drawn under: the last segment of its dbt ID. */
+const cardId = (id: string): string => id.split(".").at(-1) ?? id;
 
 const DATABASE = "lineage_layers";
 
@@ -79,7 +82,7 @@ interface ModelFacts {
 
 /** A model card as `nodeTable` builds it: `refName` is the dbt name, set only when the alias differs from it. */
 const model = (id: string, path: string, facts: ModelFacts): FixtureTable => {
-  const name = id.split(".").at(-1) ?? id;
+  const name = cardId(id);
   return {
     table: id,
     nodeType: "model",
@@ -323,3 +326,32 @@ export const lineageLayersRefs: lineage.LineageRef[] = [
 /** The table map `hiddenTables` reads, keyed by table ID. */
 export const lineageLayersKnown: Record<string, lineage.LineageTable> =
   Object.fromEntries(lineageLayersTables.map((table) => [table.table, table]));
+
+/** The card ID of the start model, which the panel opens on. */
+export const lineageLayersStart = cardId(INT_ORDERS);
+
+/** The card ID of every table the fixture draws, the hidden audit_log card included. */
+export const lineageLayersCardIds: string[] = lineageLayersTables.map((table) =>
+  cardId(table.table),
+);
+
+/** The layer bands in draw order: the sources and seeds, then the layers, then the untagged models in `other`. */
+export const lineageLayersBands: string[] = [
+  "source",
+  "staging",
+  "intermediate",
+  "marts",
+  "other",
+];
+
+const HIDDEN_IDS = new Set(
+  lineageLayersTables
+    .filter((table) => table.hidden)
+    .map((table) => table.table),
+);
+
+/** The dbt edges the panel draws: those that touch no hidden table. */
+export const lineageLayersDrawnEdges: [string, string][] =
+  lineageLayersEdges.filter(
+    ([parent, child]) => !HIDDEN_IDS.has(parent) && !HIDDEN_IDS.has(child),
+  );
