@@ -4,7 +4,7 @@
  * @type {import("dependency-cruiser").IConfiguration}
  */
 const ENTRY_ROOTS =
-  "^src/(extension|compositionRoot|composeFusionCli|dbtPowerUserExtension)\\.ts$";
+  "^src/(extension|compositionRoot|dbtPowerUserExtension)\\.ts$|^src/composition/";
 const SUPPORT =
   "^src/(commandRegistry|startupGate|extensionContext|extensionRoot)\\.ts$";
 const layer = (from, to) => ({
@@ -102,9 +102,19 @@ module.exports = {
       comment: "Only the roots import features/.",
       from: {
         pathNot:
-          "^src/(features/|extension\\.ts$|compositionRoot\\.ts$|dbtPowerUserExtension\\.ts$)",
+          "^src/(features/|extension\\.ts$|compositionRoot\\.ts$|dbtPowerUserExtension\\.ts$|composition/)",
       },
       to: { path: "^src/features/" },
+    },
+    {
+      name: "only-roots-import-composition",
+      severity: "error",
+      comment:
+        "Only compositionRoot.ts and src/composition/ wire the graph; nothing else imports it.",
+      from: {
+        pathNot: "^src/(composition/|compositionRoot\\.ts$)",
+      },
+      to: { path: "^src/composition/" },
     },
     {
       name: "features-are-independent",
