@@ -10,6 +10,7 @@ import {
   workspace,
 } from "vscode";
 import type { Log } from "../core/log";
+import type { ProjectPaths } from "../core/snapshot";
 import type {
   CommandProcessExecution,
   CommandProcessExecutionFactory,
@@ -203,10 +204,13 @@ export function stubFusionCli(
       rebuildManifestDiagnostics: [],
     }),
     getProjectName: () => "cli_test",
-    getModelPaths: () => [path.join(root, "models")],
-    getMacroPaths: () => [path.join(root, "macros")],
-    getSeedPaths: () => [path.join(root, "seeds")],
-    getTargetPath: () => path.join(root, "target"),
+    paths: () =>
+      ({
+        modelPaths: [path.join(root, "models")],
+        macroPaths: [path.join(root, "macros")],
+        seedPaths: [path.join(root, "seeds")],
+        targetPath: path.join(root, "target"),
+      }) as ProjectPaths,
     run: vi.fn(async () => ({ stdout: "", stderr: "", fullOutput: "" })),
     ...hooks,
   };

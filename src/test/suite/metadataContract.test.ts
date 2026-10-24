@@ -145,8 +145,10 @@ describe("Metadata contract — shape and key set snapshot", () => {
     const adapter = {
       getProjectRoot: () => fixtureRoot,
       getProjectName: () => "single_project",
-      getPackageInstallPath: () => path.join(fixtureRoot, "dbt_packages"),
-      getTargetPath: () => path.join(fixtureRoot, "target"),
+      paths: () => ({
+        packagesInstallPath: path.join(fixtureRoot, "dbt_packages"),
+        targetPath: path.join(fixtureRoot, "target"),
+      }),
     } as unknown as ManifestProject;
     const nodeMetaMap = await new NodeParser(terminal).createNodeMetaMap(
       manifest.nodes,

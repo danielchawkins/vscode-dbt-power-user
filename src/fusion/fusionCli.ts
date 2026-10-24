@@ -28,7 +28,7 @@ import type {
   DBTDiagnosticResult,
 } from "../core/diagnostics";
 import type { Log } from "../core/log";
-import type { ProjectSnapshot } from "../core/snapshot";
+import type { ProjectPaths, ProjectSnapshot } from "../core/snapshot";
 import { dbtProjectFilePath, deferSettingsKey } from "../core/snapshot";
 import type { CommandProcessResult, DBColumn } from "../core/types";
 import type { CommandProcessExecutionFactory } from "./commandProcessExecution";
@@ -119,7 +119,7 @@ const REBUILD_RANGE = {
 };
 
 /**
- * Runs dbt Fusion commands for one project. Every command reads the snapshot afresh; the name and path getters read
+ * Runs dbt Fusion commands for one project. Every command reads the snapshot afresh; `name` and `paths()` read
  * one cached snapshot that `refreshProjectConfig` replaces.
  */
 export class FusionCli {
@@ -224,7 +224,7 @@ export class FusionCli {
     return deferState(this.snapshot().invocation.defer, diskProbe);
   }
 
-  /** Rereads the snapshot behind the name and path getters. */
+  /** Rereads the snapshot behind the name and paths accessors. */
   async refreshProjectConfig(): Promise<void> {
     this.config = this.snapshot();
   }
@@ -234,24 +234,8 @@ export class FusionCli {
     return this.config;
   }
 
-  getTargetPath(): string {
-    return this.projectConfig().paths.targetPath;
-  }
-
-  getModelPaths(): string[] {
-    return this.projectConfig().paths.modelPaths;
-  }
-
-  getSeedPaths(): string[] {
-    return this.projectConfig().paths.seedPaths;
-  }
-
-  getMacroPaths(): string[] {
-    return this.projectConfig().paths.macroPaths;
-  }
-
-  getPackageInstallPath(): string {
-    return this.projectConfig().paths.packagesInstallPath;
+  paths(): ProjectPaths {
+    return this.projectConfig().paths;
   }
 
   getProjectName(): string {
