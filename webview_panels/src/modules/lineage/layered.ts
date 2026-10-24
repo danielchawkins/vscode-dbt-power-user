@@ -21,6 +21,7 @@ import {
   clearOf,
   nearCentre,
   otherColumn,
+  type RowContext,
   sideXs,
   splitSides,
   type SubRow,
@@ -55,6 +56,20 @@ export interface LayeredPlan {
   otherBand: LayerBand | undefined;
   /** Horizontal extent of the cards outside the Other column. */
   layeredBounds: { left: number; right: number };
+}
+
+/** Where the layered cards sit: each sub-row's vertical span, and the horizontal extent outside the Other column. */
+interface BandSpan {
+  spanOf: (index: number) => [number, number];
+  left: number;
+  right: number;
+}
+
+/** Where the Other column's band starts and ends, after the shift to the margins. */
+interface OtherBandEdges {
+  side: Side;
+  start: number;
+  far: number;
 }
 
 /** Rows stack top to bottom; a change of tag costs a gutter, a repeat of the tag costs SAME_ROW. */
@@ -118,12 +133,8 @@ function layerRuns(
 }
 
 /** One band per layer run, spanning the layered cards from `left` to `right`. */
-function layerBands(
-  rows: readonly SubRow[],
-  spanOf: (index: number) => [number, number],
-  left: number,
-  right: number,
-): LayerBand[] {
+function layerBands(rows: readonly SubRow[], span: BandSpan): LayerBand[] {
+  const { spanOf, left, right } = span;
   return layerRuns(rows).map((run) => {
     const [top] = spanOf(run.first);
     const [, bottom] = spanOf(run.last);
@@ -141,10 +152,9 @@ function layerBands(
 function otherBandOf(
   spanOf: (index: number) => [number, number],
   rowCount: number,
-  otherSide: Side,
-  shiftedStart: number,
-  shiftedFar: number,
+  edges: OtherBandEdges,
 ): LayerBand {
+  const { side: otherSide, start: shiftedStart, far: shiftedFar } = edges;
   const [top] = spanOf(0);
   const [, bottom] = spanOf(rowCount - 1);
   const bandLeft =
@@ -158,6 +168,93 @@ function otherBandOf(
     width: bandRight - bandLeft,
     height: bottom - top + 2 * BAND_PAD,
   };
+}
+
+/** The vertical span of each sub-row: from its highest card's top to its lowest card's bottom. */
+function rowSpans(
+  rows: readonly SubRow[],
+  byId: ReadonlyMap<string, LayeredNode>,
+  positions: ReadonlyMap<string, Point>,
+): (index: number) => [number, number] {
+  return (index: number): [number, number] => {
+    const members = rows[index]?.ids ?? [];
+    const tops = members.map((id) => positions.get(id)?.y ?? 0);
+    const bottoms = members.map(
+      (id) => (positions.get(id)?.y ?? 0) + (byId.get(id)?.height ?? 0),
+    );
+    return [Math.min(...tops), Math.max(...bottoms)];
+  };
+}
+
+/** Puts a card at left x `x` on its row, and records its centre for the rows placed after it. */
+function place(ctx: RowContext, id: string, x: number): void {
+  ctx.positions.set(id, { x, y: 0 });
+  ctx.centres.set(id, x + ctx.width(id) / 2);
+}
+
+/**
+ * Places the start node on the centre line, then each other sub-row outwards from it, splitting either side of the
+ * corridor. The start node is centred over its row last.
+ */
+function placeLayeredRows(
+  ctx: RowContext,
+  rows: readonly SubRow[],
+  focusRow: number,
+): void {
+  // The start node sits alone on the centre line; every other row splits either side of the corridor.
+  place(ctx, ctx.focus, -ctx.width(ctx.focus) / 2);
+  const rowOrder = [
+    ...rows.map((_, index) => index).filter((index) => index > focusRow),
+    ...rows
+      .map((_, index) => index)
+      .filter((index) => index < focusRow)
+      .reverse(),
+  ];
+
+  for (const index of rowOrder) {
+    const r = index - focusRow;
+    const crossed = throughCentres(r, ctx);
+    const sorted = (rows[index]?.ids ?? [])
+      .filter((id) => !ctx.isOtherNode(id))
+      .map(
+        (id) =>
+          [
+            id,
+            clearOf(nearCentre(id, r, ctx), ctx.width(id), crossed),
+          ] as const,
+      )
+      .sort(([p, px], [q, qx]) => px - qx || (p < q ? -1 : 1));
+    for (const [id, x] of sideXs(splitSides(sorted), ctx.width)) {
+      place(ctx, id, x);
+    }
+  }
+
+  centreFocus(rows[focusRow]?.ids ?? [], ctx);
+}
+
+/**
+ * The Other column: a side stack per sub-row, beyond the layered cards on the chosen side. Returns where the column
+ * starts and the outer edge of its stacks.
+ */
+function placeOtherColumn(
+  ctx: RowContext,
+  rows: readonly SubRow[],
+  otherSide: Side,
+): { start: number; far: number } {
+  const { positions, width, isOtherNode } = ctx;
+  const layeredIds = [...positions.keys()].filter((id) => !isOtherNode(id));
+  const edgeX =
+    otherSide > 0
+      ? Math.max(
+          ...layeredIds.map((id) => (positions.get(id)?.x ?? 0) + width(id)),
+        )
+      : Math.min(...layeredIds.map((id) => positions.get(id)?.x ?? 0));
+  const start = edgeX + otherSide * (2 * BAND_PAD + GUTTER);
+  const stacks = otherColumn(rows, { start, side: otherSide }, ctx);
+  for (const [id, x] of stacks.slots) {
+    place(ctx, id, x);
+  }
+  return { start, far: stacks.far };
 }
 
 /**
@@ -188,7 +285,7 @@ export function layoutLayered(
     nodes.map((node) => node.id),
     edges,
   );
-  const rowsInfo = subRows(focus, nodes, generation, edges);
+  const rowsInfo = subRows(nodes, generation, { start: focus, edges });
   const focusRow = Math.max(
     0,
     rowsInfo.findIndex((row) => row.ids.includes(focus)),
@@ -201,99 +298,38 @@ export function layoutLayered(
   const isOtherNode = (id: string): boolean =>
     byId.get(id)?.tag === OTHER_TAG && id !== focus;
   const width = (id: string): number => byId.get(id)?.width ?? 0;
-
-  const positions = new Map<string, Point>();
-  const centres = new Map<string, number>();
-  const place = (id: string, x: number): void => {
-    positions.set(id, { x, y: 0 });
-    centres.set(id, x + width(id) / 2);
-  };
-
-  // The start node sits alone on the centre line; every other row splits either side of the corridor.
-  place(focus, -width(focus) / 2);
-  const rowOrder = [
-    ...rowsInfo.map((_, index) => index).filter((index) => index > focusRow),
-    ...rowsInfo
-      .map((_, index) => index)
-      .filter((index) => index < focusRow)
-      .reverse(),
-  ];
-
-  for (const index of rowOrder) {
-    const r = index - focusRow;
-    const crossed = throughCentres(r, edges, rel, centres, focus);
-    const sorted = (rowsInfo[index]?.ids ?? [])
-      .filter((id) => !isOtherNode(id))
-      .map(
-        (id) =>
-          [
-            id,
-            clearOf(nearCentre(id, r, edges, rel, centres), width(id), crossed),
-          ] as const,
-      )
-      .sort(([p, px], [q, qx]) => px - qx || (p < q ? -1 : 1));
-    for (const [id, x] of sideXs(splitSides(sorted), width)) {
-      place(id, x);
-    }
-  }
-
-  centreFocus(
+  const ctx: RowContext = {
     focus,
-    rowsInfo[focusRow]?.ids ?? [],
-    positions,
+    edges,
+    rel,
     width,
     isOtherNode,
-  );
+    positions: new Map(),
+    centres: new Map(),
+  };
+  const { positions } = ctx;
 
-  // The Other column: a side stack per sub-row, beyond the layered cards on the chosen side.
-  const layeredIds = [...positions.keys()].filter((id) => !isOtherNode(id));
-  const edgeX =
-    otherSide > 0
-      ? Math.max(
-          ...layeredIds.map((id) => (positions.get(id)?.x ?? 0) + width(id)),
-        )
-      : Math.min(...layeredIds.map((id) => positions.get(id)?.x ?? 0));
-  const columnStart = edgeX + otherSide * (2 * BAND_PAD + GUTTER);
-  const otherStacks = otherColumn(
-    rowsInfo,
-    columnStart,
-    otherSide,
-    isOtherNode,
-    width,
-  );
-  for (const [id, x] of otherStacks.slots) {
-    place(id, x);
-  }
+  placeLayeredRows(ctx, rowsInfo, focusRow);
+  const other = placeOtherColumn(ctx, rowsInfo, otherSide);
 
   stackRows(rowsInfo, byId, positions);
   const shiftX = shiftToMargins(positions, width);
 
-  const spanOf = (index: number): [number, number] => {
-    const members = rowsInfo[index]?.ids ?? [];
-    const tops = members.map((id) => positions.get(id)?.y ?? 0);
-    const bottoms = members.map(
-      (id) => (positions.get(id)?.y ?? 0) + (byId.get(id)?.height ?? 0),
-    );
-    return [Math.min(...tops), Math.max(...bottoms)];
-  };
+  const spanOf = rowSpans(rowsInfo, byId, positions);
   const layered = [...positions.keys()].filter((id) => !isOtherNode(id));
   const left = Math.min(...layered.map((id) => positions.get(id)?.x ?? 0));
   const right = Math.max(
     ...layered.map((id) => (positions.get(id)?.x ?? 0) + width(id)),
   );
 
-  const bands = layerBands(rowsInfo, spanOf, left, right);
-
   let otherBand: LayerBand | undefined;
   const otherIds = [...positions.keys()].filter(isOtherNode);
   if (otherIds.length > 0 && rowsInfo.length > 0) {
-    otherBand = otherBandOf(
-      spanOf,
-      rowsInfo.length,
-      otherSide,
-      columnStart + shiftX,
-      otherStacks.far + shiftX,
-    );
+    otherBand = otherBandOf(spanOf, rowsInfo.length, {
+      side: otherSide,
+      start: other.start + shiftX,
+      far: other.far + shiftX,
+    });
   }
 
   return {
@@ -301,7 +337,7 @@ export function layoutLayered(
     rowOf,
     focusRow,
     generation,
-    bands,
+    bands: layerBands(rowsInfo, { spanOf, left, right }),
     otherBand,
     layeredBounds: { left, right },
   };

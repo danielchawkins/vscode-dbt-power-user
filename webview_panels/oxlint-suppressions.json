@@ -98,21 +98,8 @@
     }
   },
   "src/modules/lineage/layered.ts": {
-    "max-lines-per-function": {
-      "count": 1
-    },
-    "max-params": {
-      "count": 3
-    }
-  },
-  "src/modules/lineage/layeredRanks.ts": {
     "max-params": {
       "count": 1
-    }
-  },
-  "src/modules/lineage/layeredRows.ts": {
-    "max-params": {
-      "count": 9
     }
   },
   "src/modules/lineage/relationshipMarks.ts": {
