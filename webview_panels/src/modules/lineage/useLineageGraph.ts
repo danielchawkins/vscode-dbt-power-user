@@ -11,11 +11,11 @@ import type { ColumnRef, Direction, GraphState, GraphStore } from "./graph";
 import {
   clearColumn,
   collapse,
+  columnClick,
   emptyGraph,
   expand,
+  expansionClick,
   hideColumns,
-  isExpanded,
-  isPending,
   linkDrawn,
   selectTable,
   showColumns,
@@ -74,10 +74,7 @@ const actionsFor = (
   toggleExpansion: (table: string, direction: Direction) => {
     const s = store();
     // A click on an expander that is still loading cancels it, as a click on an open one closes it.
-    if (
-      isExpanded(s.get(), direction, table) ||
-      isPending(s.get(), direction, table)
-    ) {
+    if (expansionClick(s.get(), direction, table) === "collapse") {
       s.update((g) => collapse(g, direction, table));
       return;
     }
@@ -114,15 +111,11 @@ const actionsFor = (
   },
   selectColumn: (table: string, column: string) => {
     const s = store();
-    const selected = s.get().selectedColumn;
-    if (
-      selected?.[0] === table &&
-      selected[1].toLowerCase() === column.toLowerCase()
-    ) {
+    const ref: ColumnRef = [table, column];
+    if (columnClick(s.get(), ref) === "clear") {
       s.update(clearColumn);
       return;
     }
-    const ref: ColumnRef = [table, column];
     traceColumn(s, ref, fetchConnected)
       .then((touched) => showColumns(s, touched, fetchColumns))
       .catch(logError("column trace"));

@@ -34,6 +34,6 @@ export const isColumnEdgeId = (id: string): boolean =>
 
 /** Whether a listed column is named `name`, ignoring case. */
 export const sameColumnName = (
-  column: lineage.LineageColumn,
+  column: Pick<lineage.LineageColumn, "name">,
   name: string,
 ): boolean => column.name.toLowerCase() === name.toLowerCase();
