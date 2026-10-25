@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, window } from "vscode";
+import { DocsDrafts } from "../../features/docs/docsDrafts";
 import type { DocsHarnessDeps } from "../../features/docs/docsHarnessCommands";
 import { registerDocsHarnessCommands } from "../../features/docs/docsHarnessCommands";
 
@@ -29,22 +30,16 @@ function harness({ draft }: { draft?: boolean } = {}) {
     ],
     notFound: [],
   };
-  const drafts = new Map(
-    draft
-      ? [
-          [
-            FILE,
-            {
-              docs: {
-                ...documentation,
-                columns: [{ name: "customer_id", type: "varchar" }],
-              },
-              tests: DRAFT_TESTS,
-            },
-          ],
-        ]
-      : [],
-  );
+  const drafts = new DocsDrafts();
+  if (draft) {
+    drafts.set(FILE, {
+      docs: {
+        ...documentation,
+        columns: [{ name: "customer_id", type: "varchar" }],
+      },
+      tests: DRAFT_TESTS as never,
+    });
+  }
   const deps = {
     columnProposals: { propose: vi.fn(async () => payload) },
     docGenService: {

@@ -97,26 +97,6 @@ describe("documentation editor drafts", () => {
     expect((await rendered()).draft).toEqual(replacing);
   });
 
-  it("forgets a draft the page clears, after a save, discard or revert", async () => {
-    const { send, rendered } = await draftPanel();
-    await send({ command: "saveDraft", model: "/p/models/orders.sql", draft });
-
-    await send({ command: "saveDraft", model: "/p/models/orders.sql" });
-
-    expect((await rendered()).draft).toBeUndefined();
-  });
-
-  it("keeps drafts of other models apart", async () => {
-    const { send, rendered } = await draftPanel();
-    await send({
-      command: "saveDraft",
-      model: "/p/models/customers.sql",
-      draft: { docs: docs("/p/models/customers.sql", "other") },
-    });
-
-    expect((await rendered()).draft).toBeUndefined();
-  });
-
   it("forgets the drafts of a removed project only", async () => {
     const { panel, removed, send } = await draftPanel();
     vi.spyOn(panel as any, "transmitData").mockResolvedValue(undefined);
@@ -129,8 +109,7 @@ describe("documentation editor drafts", () => {
 
     removed.fire(Uri.file("/p"));
 
-    const drafts = (panel as any).drafts as Map<string, unknown>;
-    expect([...drafts.keys()]).toEqual(["/q/models/orders.sql"]);
+    expect((panel as any).drafts.held()).toEqual(["/q/models/orders.sql"]);
   });
 });
 

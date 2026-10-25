@@ -3,7 +3,6 @@ import * as path from "node:path";
 import type {
   CancellationToken,
   TextEditor,
-  Uri,
   WebviewPanel,
   WebviewView,
   WebviewViewResolveContext,
@@ -33,6 +32,7 @@ import type { TypeSourceProject } from "./columnTypeSource";
 import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
 import type { DBTDocumentation } from "./docGenTypes";
+import { DocsDrafts } from "./docsDrafts";
 import {
   type DocsProject,
   DocsEditRequests,
@@ -61,11 +61,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
   protected readonly guard = documentationEditor.isPanelMessage;
   protected override panelDescription = "Edit model documentation";
   private documentation: DBTDocumentation | undefined;
-  /** Unsaved drafts by model file path; host memory only, never webview state. */
-  private readonly drafts = new Map<
-    string,
-    documentationEditor.DocumentationDraft
-  >();
+  private readonly drafts = new DocsDrafts();
   private readonly docGenService: DocGenService;
   private readonly dbtTestService: DbtTestService;
   private readonly columnProposals: ColumnProposalService;
@@ -110,7 +106,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     this._disposables.push(
       projects.onDidChangeManifest(() => this.onManifestChanged()),
       projects.onDidRemoveProject((root) => {
-        this.forgetDrafts(root);
+        this.drafts.forgetProject(root.fsPath);
         void this.onManifestChanged();
       }),
       services.columnProposalRequests.onDidRequest(
@@ -144,28 +140,12 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     await this.post({ command: "renderError" });
   }
 
-  private forgetDrafts(root: Uri) {
-    const prefix = root.fsPath.endsWith(path.sep)
-      ? root.fsPath
-      : root.fsPath + path.sep;
-    for (const model of this.drafts.keys()) {
-      if (model.startsWith(prefix)) {
-        this.drafts.delete(model);
-      }
-    }
-  }
-
   private saveDraft({ model, draft }: MessageOf<PanelMessage, "saveDraft">) {
-    if (draft) {
-      this.drafts.set(model, draft);
-    } else {
-      this.drafts.delete(model);
-    }
+    this.drafts.set(model, draft);
   }
 
-  /** Model paths with an unsaved draft in host memory; the smoke suites check that none leak between them. */
   heldDrafts(): string[] {
-    return [...this.drafts.keys()];
+    return this.drafts.held();
   }
 
   /** The active model's columns for a proposal: the draft's and the YAML's, with the project that answers. */
@@ -179,7 +159,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     }
     return proposalTargetOf({
       documentation,
-      draft: this.drafts.get(documentation.filePath)?.docs.columns,
+      draft: this.drafts.columnsFor(documentation),
       project,
       manifest: this.queryManifestService.manifestFor(),
     });
@@ -286,7 +266,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
       }
       return;
     }
-    this.drafts.delete(message.filePath);
+    this.drafts.forget(message.filePath);
     await this.reloadDocumentationFromManifest();
     if (!syncRequestId) {
       return;
