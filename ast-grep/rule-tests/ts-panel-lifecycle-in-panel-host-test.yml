@@ -1,0 +1,11 @@
+id: ts-panel-lifecycle-in-panel-host
+valid:
+  - 'class DocsEditViewPanel extends PanelHost<HostMessage> { protected readonly guard = documentationEditor.isPanelMessage; }'
+  - 'class P extends PanelHost<H> { async load() { if (!(await this.whenReady(this.page, 10_000))) { return; } } }'
+  - 'const timer = setInterval(tick, 1000);'
+  - 'const ready = this.isWebviewReady;'
+invalid:
+  - 'this.onMessageDisposable = this._panel!.webview.onDidReceiveMessage((message: unknown) => this.handleCommand(message), null, this._disposables);'
+  - 'const subscription = panel.webview.onDidReceiveMessage((message: unknown) => this.handleCommand(message, panel));'
+  - 'class Q extends PanelHost<H> { reset() { this.isWebviewReady = false; } }'
+  - 'class R extends PanelHost<H> { wait() { const interval = setInterval(() => { if (this.ready) { done(); } }, 500); } }'

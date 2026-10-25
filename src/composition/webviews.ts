@@ -29,6 +29,7 @@ export function composeWebviews(
     dbtLineageService,
     sharedState,
     queryManifestService,
+    graph.parseDemand,
   );
   if (graph.clients.pool) {
     lineagePanel.renderOn(
@@ -60,6 +61,6 @@ export function composeWebviews(
       terminal,
       graph.parseDemand,
     ),
-    new LineageViewProvider(lineagePanel, projects, graph.parseDemand),
+    new LineageViewProvider(lineagePanel, projects),
   );
 }

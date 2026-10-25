@@ -7,47 +7,57 @@ import {
   type Mock,
   vi,
 } from "vitest";
-import { commands, window, workspace } from "vscode";
-import { LineagePanel } from "../../features/lineage/lineagePanel";
+import { commands, Uri, window, workspace } from "vscode";
+import type { LineagePanel } from "../../features/lineage/lineagePanel";
 import { resolveSourceStartingNode } from "../../features/lineage/lineageSources";
+import type * as panelHtmlModule from "../../webview/panelHtml";
+import { fakeView, lineagePanel, openPage } from "../panelHarness";
+import { silentLog } from "../testLog";
+
+vi.mock("../../webview/panelHtml", async (importOriginal) => ({
+  ...(await importOriginal<typeof panelHtmlModule>()),
+  panelHtml: () => "<html>lineage</html>",
+}));
 
 describe("LineagePanel", () => {
   let panel: LineagePanel;
   let mockPostMessage: Mock;
+  let queryManifestService: Record<string, Mock>;
+  let send: (message: unknown) => Promise<unknown>;
+
+  /** Sends a request as the page does, and returns the body the panel answered with. */
+  const ask = async (message: Record<string, unknown>) => {
+    await send({ syncRequestId: "ask", ...message });
+    return mockPostMessage.mock.calls.findLast(
+      ([response]) => response.command === "response",
+    )?.[0].args.body;
+  };
 
   beforeEach(() => {
     mockPostMessage = vi.fn();
 
-    // Create a minimal instance by bypassing the constructor DI.
-    // We only need the methods under test and the _panel webview stub.
-    panel = Object.create(LineagePanel.prototype);
-
-    // Stub the internal webview panel so postMessage is captured.
-    (panel as any)._panel = {
-      webview: { postMessage: mockPostMessage },
-    };
-
-    // Stub dependencies used by getStartingNode / renderStartingNode
-    (panel as any).queryManifestService = {
+    queryManifestService = {
       getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
       getProject: vi.fn().mockReturnValue(undefined),
       manifestFor: vi.fn().mockReturnValue(undefined),
     };
-    (panel as any).dbtTerminal = {
-      info: vi.fn(),
-      debug: vi.fn(),
-      warn: vi.fn(),
-      error: vi.fn(),
-    };
-    (panel as any).dbtLineageService = {
-      columnsNeedStrict: vi.fn().mockReturnValue(undefined),
-    };
     const globalState = new Map<string, unknown>();
-    (panel as any).extensionContext = {
+    const extensionContext = {
+      extensionUri: Uri.file("/ext"),
       getFromGlobalState: (key: string) => globalState.get(key),
       setToGlobalState: (key: string, value: unknown) =>
         globalState.set(key, value),
     };
+    panel = lineagePanel(silentLog(), {
+      extensionContext,
+      dbtLineageService: {
+        columnsNeedStrict: vi.fn().mockReturnValue(undefined),
+      },
+      queryManifestService,
+    });
+    const page = openPage(panel, fakeView(), false);
+    mockPostMessage = page.page.webview.postMessage;
+    send = page.send;
   });
 
   describe("manifestChanged", () => {
@@ -103,7 +113,7 @@ describe("LineagePanel", () => {
     it("runs the strict-analysis command for the current project's root", async () => {
       const projectRoot = { fsPath: "/w/p" };
       (panel as any).queryManifestService.getProject = () => ({ projectRoot });
-      await (panel as any).handleCommand({
+      await send({
         command: "runNoticeAction",
         action: "useStrictAnalysis",
       });
@@ -138,9 +148,9 @@ describe("LineagePanel", () => {
     });
 
     it("should not throw when panel is not visible", () => {
-      (panel as any)._panel = undefined;
+      const unresolved = lineagePanel(silentLog(), { queryManifestService });
 
-      expect(() => panel.manifestChanged(undefined)).not.toThrow();
+      expect(() => unresolved.manifestChanged(undefined)).not.toThrow();
     });
   });
 
@@ -155,8 +165,8 @@ describe("LineagePanel", () => {
       };
       (workspace.getConfiguration as Mock).mockReturnValue(mockConfig);
 
-      // Call handleCommand with getLineageSettings
-      await (panel as any).handleCommand({
+      // Ask for the settings, as the page does
+      await send({
         command: "getLineageSettings",
         args: {},
         syncRequestId: "test-sync-1",
@@ -184,7 +194,7 @@ describe("LineagePanel", () => {
       };
       (workspace.getConfiguration as Mock).mockReturnValue(mockConfig);
 
-      await (panel as any).handleCommand({
+      await send({
         command: "getLineageSettings",
         args: {},
         syncRequestId: "test-sync-2",
@@ -226,9 +236,14 @@ describe("LineagePanel", () => {
       ]);
     (panel as any).dbtLineageService = { getInferredColumns };
 
-    const body = await (panel as any).getColumns({
-      table: "model.p.a",
-      refresh: false,
+    const body = await ask({
+      command: "getColumns",
+      args: {
+        params: {
+          table: "model.p.a",
+          refresh: false,
+        },
+      },
     });
 
     expect(getInferredColumns).toHaveBeenCalledWith("/p", "/p/models/a.sql");
@@ -268,9 +283,14 @@ describe("LineagePanel", () => {
     };
     (window.withProgress as Mock).mockClear();
 
-    const body = await (panel as any).getColumns({
-      table: "model.p.a",
-      refresh: true,
+    const body = await ask({
+      command: "getColumns",
+      args: {
+        params: {
+          table: "model.p.a",
+          refresh: true,
+        },
+      },
     });
 
     expect(getColumnsOfModel).not.toHaveBeenCalled();
@@ -308,9 +328,14 @@ describe("LineagePanel", () => {
       async (_opts: any, task: any) => task(),
     );
 
-    const body = await (panel as any).getColumns({
-      table: "source.p.raw.orders",
-      refresh: true,
+    const body = await ask({
+      command: "getColumns",
+      args: {
+        params: {
+          table: "source.p.raw.orders",
+          refresh: true,
+        },
+      },
     });
 
     expect(getColumnsOfSource).toHaveBeenCalledWith("raw", "orders");
@@ -328,12 +353,12 @@ describe("LineagePanel", () => {
       update: vi.fn(),
     });
 
-    await (panel as any).handleCommand({
+    await send({
       command: "persistLineageSettings",
       args: { params: { showSelectEdges: false, showNonSelectEdges: true } },
       syncRequestId: "p",
     });
-    await (panel as any).handleCommand({
+    await send({
       command: "getLineageSettings",
       args: {},
       syncRequestId: "g",
@@ -366,12 +391,12 @@ describe("LineagePanel", () => {
       get: (key: string) => values[key] ?? 3,
       update: vi.fn(),
     });
-    await (panel as any).handleCommand({
+    await send({
       command: "persistLineageSettings",
       args: { params: { layout: "layered" } },
       syncRequestId: "p",
     });
-    await (panel as any).handleCommand({
+    await send({
       command: "getLineageSettings",
       syncRequestId: "g",
     });
@@ -380,7 +405,7 @@ describe("LineagePanel", () => {
     );
 
     values["lineage.layout"] = "typo";
-    await (panel as any).handleCommand({
+    await send({
       command: "getLineageSettings",
       syncRequestId: "g2",
     });
@@ -393,19 +418,19 @@ describe("LineagePanel", () => {
       get: (key: string) => values[key] ?? 3,
       update: vi.fn(),
     });
-    await (panel as any).handleCommand({
+    await send({
       command: "persistLineageSettings",
       args: { params: { groupBy: "folder" } },
       syncRequestId: "p",
     });
-    await (panel as any).handleCommand({
+    await send({
       command: "getLineageSettings",
       syncRequestId: "g",
     });
     expect(mockPostMessage.mock.lastCall![0].args.body.groupBy).toBe("none");
 
     values["lineage.groupBy"] = "typo";
-    await (panel as any).handleCommand({
+    await send({
       command: "getLineageSettings",
       syncRequestId: "g2",
     });
@@ -418,12 +443,12 @@ describe("LineagePanel", () => {
       get: (key: string) => values[key] ?? 3,
       update: vi.fn(),
     });
-    await (panel as any).handleCommand({
+    await send({
       command: "persistLineageSettings",
       args: { params: { semanticZoom: true } },
       syncRequestId: "p",
     });
-    await (panel as any).handleCommand({
+    await send({
       command: "getLineageSettings",
       syncRequestId: "g",
     });
@@ -432,7 +457,7 @@ describe("LineagePanel", () => {
     );
 
     values["lineage.semanticZoom"] = "typo";
-    await (panel as any).handleCommand({
+    await send({
       command: "getLineageSettings",
       syncRequestId: "g2",
     });
@@ -445,19 +470,19 @@ describe("LineagePanel", () => {
       get: (key: string) => values[key] ?? 3,
       update: vi.fn(),
     });
-    await (panel as any).handleCommand({
+    await send({
       command: "persistLineageSettings",
       args: { params: { title: "alias" } },
       syncRequestId: "p",
     });
-    await (panel as any).handleCommand({
+    await send({
       command: "getLineageSettings",
       syncRequestId: "g",
     });
     expect(mockPostMessage.mock.lastCall![0].args.body.title).toBe("name");
 
     values["lineage.title"] = "typo";
-    await (panel as any).handleCommand({
+    await send({
       command: "getLineageSettings",
       syncRequestId: "g2",
     });
@@ -474,7 +499,7 @@ describe("LineagePanel", () => {
       ["hi", 7],
       ["lo", -2],
     ] as const) {
-      await (panel as any).handleCommand({
+      await send({
         command: "persistLineageSettings",
         args: {
           params: {
@@ -485,7 +510,7 @@ describe("LineagePanel", () => {
         },
         syncRequestId,
       });
-      await (panel as any).handleCommand({
+      await send({
         command: "getLineageSettings",
         syncRequestId: "g",
       });
@@ -506,7 +531,7 @@ describe("LineagePanel", () => {
   });
 
   it("answers a malformed request with a failed response the component matches by id", async () => {
-    await (panel as any).handleCommand({
+    await send({
       command: "childTables",
       args: { params: { table: 1 } },
       syncRequestId: "bad",
@@ -533,12 +558,12 @@ describe("LineagePanel", () => {
     (panel as any).dbtLineageService = { getChildTables, getParentTables };
     const params = { table: "model.p.a" };
 
-    await (panel as any).handleCommand({
+    await send({
       command: "childTables",
       args: { params },
       syncRequestId: "up",
     });
-    await (panel as any).handleCommand({
+    await send({
       command: "parentTables",
       args: { params },
       syncRequestId: "down",
@@ -578,7 +603,7 @@ describe("LineagePanel", () => {
       .mockResolvedValue({ kind: "lineage", columnLineage: lineage });
     (panel as any).dbtLineageService = { getConnectedColumns };
 
-    await (panel as any).handleCommand({
+    await send({
       command: "getConnectedColumns",
       args: {
         params: { targets: [["model.p.b", "id"]], upstreamExpansion: true },
@@ -618,7 +643,7 @@ describe("LineagePanel", () => {
         .mockResolvedValue({ kind: "noLineage", reason }),
     };
 
-    await (panel as any).handleCommand({
+    await send({
       command: "getConnectedColumns",
       args: {
         params: { targets: [["model.p.a", "id"]], upstreamExpansion: true },
@@ -643,7 +668,7 @@ describe("LineagePanel", () => {
         }),
     };
 
-    await (panel as any).handleCommand({
+    await send({
       command: "getConnectedColumns",
       args: {
         params: { targets: [["model.p.x", "y"]], upstreamExpansion: false },
@@ -658,12 +683,16 @@ describe("LineagePanel", () => {
   });
 });
 
+/** A lineage panel resolved on a fake view, with the postMessage of that view's page. */
+function resolvedLineage() {
+  const built = lineagePanel(silentLog()) as any;
+  const page = openPage(built, fakeView(), false);
+  return { panel: built, postMessage: page.page.webview.postMessage as Mock };
+}
+
 describe("LineagePanel — after a save", () => {
   it("tells the webview when the current project's manifest is replaced", () => {
-    const panel = Object.create(LineagePanel.prototype);
-    const postMessage = vi.fn();
-    panel._panel = { webview: { postMessage } };
-    panel.dbtTerminal = { info: vi.fn(), debug: vi.fn(), error: vi.fn() };
+    const { panel, postMessage } = resolvedLineage();
     panel.dbtLineageService = { columnsNeedStrict: () => undefined };
     const current = {
       projectRoot: { fsPath: "/p" },
@@ -698,10 +727,7 @@ describe("LineagePanel — after a save", () => {
   ])(
     "re-renders on a project switch with %s epochs",
     (_label, epochA, epochB) => {
-      const panel = Object.create(LineagePanel.prototype);
-      const postMessage = vi.fn();
-      panel._panel = { webview: { postMessage } };
-      panel.dbtTerminal = { info: vi.fn(), debug: vi.fn(), error: vi.fn() };
+      const { panel, postMessage } = resolvedLineage();
       panel.dbtLineageService = { columnsNeedStrict: () => undefined };
       const project = (root: string, publicationEpoch: number) => ({
         projectRoot: { fsPath: root },
@@ -733,6 +759,7 @@ describe("LineagePanel — after a save", () => {
 
 describe("LineagePanel — source YAML rooting", () => {
   let panel: LineagePanel;
+  let postMessage: Mock;
 
   // Build a fake TextEditor over a source YAML body.
   const makeEditor = (filePath: string, body: string, cursorLine = 0) => {
@@ -767,19 +794,15 @@ describe("LineagePanel — source YAML rooting", () => {
   });
 
   beforeEach(() => {
-    panel = Object.create(LineagePanel.prototype);
-    (panel as any)._panel = { webview: { postMessage: vi.fn() } };
-    (panel as any).dbtTerminal = {
-      info: vi.fn(),
-      debug: vi.fn(),
-      error: vi.fn(),
-    };
-    (panel as any).dbtLineageService = {
-      columnsNeedStrict: () => undefined,
-      createTable: vi.fn((_e: unknown, _u: unknown, key: string) => ({
-        table: key,
-      })),
-    };
+    panel = lineagePanel(silentLog(), {
+      dbtLineageService: {
+        columnsNeedStrict: () => undefined,
+        createTable: vi.fn((_e: unknown, _u: unknown, key: string) => ({
+          table: key,
+        })),
+      },
+    });
+    postMessage = openPage(panel, fakeView(), false).page.webview.postMessage;
     (window as any).activeTextEditor = undefined;
   });
 
@@ -1119,7 +1142,7 @@ describe("LineagePanel — source YAML rooting", () => {
     // threading this is 2 (guard + getStartingNode), iterating
     // sourceMetaMap twice per cursor move.
     expect(lookups).toHaveBeenCalledTimes(1);
-    expect((panel as any)._panel.webview.postMessage).toHaveBeenCalledWith(
+    expect(postMessage).toHaveBeenCalledWith(
       expect.objectContaining({
         command: "render",
         args: expect.objectContaining({

@@ -5,27 +5,27 @@ import {
   registerQueryResultTestCommand,
   RENDER_TEST_RESULT_COMMAND,
 } from "../../features/queryResults/queryResultTestCommand";
+import type * as panelHtmlModule from "../../webview/panelHtml";
+import { fakeTab, fakeView, listenTo } from "../panelHarness";
 import { spyLog } from "../testLog";
 
-/** A results tab: a `WebviewPanel` double whose dispose listeners run on `close`. */
-function resultsTab() {
-  const onDispose: (() => void)[] = [];
-  const subscription = { dispose: vi.fn() };
-  return {
-    subscription,
-    close: () => onDispose.forEach((listener) => listener()),
-    value: {
-      webview: {
-        postMessage: vi.fn(),
-        onDidReceiveMessage: vi.fn(() => subscription),
-      },
-      onDidDispose: vi.fn((listener: () => void) => {
-        onDispose.push(listener);
-        return { dispose: vi.fn() };
-      }),
-    },
-  };
+vi.mock("../../webview/panelHtml", async (importOriginal) => ({
+  ...(await importOriginal<typeof panelHtmlModule>()),
+  panelHtml: () => "<html>query results</html>",
+}));
+
+/** A panel built as the extension builds it; the removal event is the one a test fires. */
+function realPanel(removed = new EventEmitter<Uri>()) {
+  return new QueryResultPanel(
+    { extensionUri: Uri.file("/ext") } as any,
+    { eventEmitter: new EventEmitter<unknown>() } as any,
+    spyLog(),
+    {} as any,
+    removed.event,
+  );
 }
+
+const token = () => ({ onCancellationRequested: vi.fn() }) as never;
 
 const bottomView = () => ({
   show: vi.fn(),
@@ -48,48 +48,38 @@ describe("query results pages", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("answers a request on the page that sent it", async () => {
-    const panel = Object.create(QueryResultPanel.prototype);
-    const bottom = bottomView();
-    const tab = resultsTab();
-    panel._panel = bottom;
-    panel.dbtTerminal = spyLog();
+    const panel = realPanel();
+    const bottom = fakeView();
+    const tab = fakeTab();
+    await panel.resolveWebviewView(bottom.page, {} as never, token());
+    listenTo(panel, tab.page);
 
-    await panel.handleCommand(
-      { command: "executeQuery", syncRequestId: "r" },
-      tab.value,
-    );
+    await tab.send({ command: "executeQuery", syncRequestId: "r" });
 
-    expect(tab.value.webview.postMessage).toHaveBeenCalledWith(
+    expect(tab.posted()).toContainEqual(
       expect.objectContaining({
         command: "response",
         args: expect.objectContaining({ status: false }),
       }),
     );
-    expect(bottom.webview.postMessage).not.toHaveBeenCalled();
+    expect(bottom.posted()).toEqual([]);
   });
 
   it("ends a results tab's message subscription with the tab, not the panel", () => {
-    const panel = Object.create(QueryResultPanel.prototype);
-    const tab = resultsTab();
-    panel._panel = tab.value;
-    panel._disposables = [];
+    const panel = realPanel();
+    const tab = fakeTab();
+    const panelDisposables = (panel as any)._disposables.length;
 
-    panel.setupWebviewHooks();
+    listenTo(panel, tab.page);
 
-    expect(panel._disposables).toEqual([]);
+    expect((panel as any)._disposables).toHaveLength(panelDisposables);
     tab.close();
-    expect(tab.subscription.dispose).toHaveBeenCalledOnce();
+    expect(tab.messageSubscription.dispose).toHaveBeenCalledOnce();
   });
 
   it("forgets every page's last result when a project is removed", () => {
     const removed = new EventEmitter<Uri>();
-    const panel = new QueryResultPanel(
-      {} as any,
-      { eventEmitter: new EventEmitter<unknown>() } as any,
-      spyLog(),
-      {} as any,
-      removed.event,
-    );
+    const panel = realPanel(removed);
     const bottom = bottomView();
     (panel as any).postTo(bottom, result);
     expect((panel as any).replay.messagesFor("bottom")).toEqual([result]);
