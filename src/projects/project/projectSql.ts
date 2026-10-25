@@ -40,6 +40,9 @@ export type QueryPanelRun = {
   preview?: queryResults.ModelPreview | undefined;
 };
 
+/** One query to run: the SQL, the model it is named after, and the row limit. */
+type SqlRequest = Pick<QueryPanelRun, "query" | "modelName" | "limit">;
+
 /**
  * `dbt show --output json` reports no column types; the published integration fabricates
  * the literal string "string" for every column regardless of its real type. Report every
@@ -82,47 +85,34 @@ export function normalizeQueryLimit(
 }
 
 /**
- * Runs `query` against `modelName`; `immediate` awaits and row-shapes the result.
+ * Starts `req` on the CLI; the caller runs or cancels the returned execution.
  * @internal
  */
-export async function executeSql(
+export async function startSql(
   cli: SqlExecutor,
-  query: string,
-  modelName: string,
-  limit: number,
-  immediate: true,
-): Promise<QueryExecutionResult>;
-export async function executeSql(
-  cli: SqlExecutor,
-  query: string,
-  modelName: string,
-  limit: number,
-  immediate: false,
-): Promise<QueryExecution>;
-export async function executeSql(
-  cli: SqlExecutor,
-  query: string,
-  modelName: string,
-  limit: number,
-  immediate: boolean,
-): Promise<QueryExecution | QueryExecutionResult> {
-  const normalized = normalizeQueryLimit(query, limit);
+  req: SqlRequest,
+): Promise<QueryExecution> {
+  const normalized = normalizeQueryLimit(req.query, req.limit);
   if (normalized.limit <= 0) {
     throw new Error("Limit must be greater than 0");
   }
   const rawExecution = await cli.executeSQL(
     normalized.query,
     normalized.limit,
-    modelName,
+    req.modelName,
   );
-  const execution = new QueryExecution(
+  return new QueryExecution(
     () => rawExecution.cancel(),
     async () => markColumnTypesUnknown(await rawExecution.executeQuery()),
   );
-  if (!immediate) {
-    return execution;
-  }
-  const result = await execution.executeQuery();
+}
+
+/** Runs `req` now and row-shapes the result. */
+export async function runSqlNow(
+  cli: SqlExecutor,
+  req: SqlRequest,
+): Promise<QueryExecutionResult> {
+  const result = await (await startSql(cli, req)).executeQuery();
   const rows: Record<string, unknown>[] = [];
   for (const sourceRow of result.table.rows) {
     const row: Record<string, unknown> = {};
@@ -135,7 +125,7 @@ export async function executeSql(
     columnNames: result.table.column_names,
     columnTypes: result.table.column_types,
     data: rows,
-    rawSql: normalized.query,
+    rawSql: normalizeQueryLimit(req.query, req.limit).query,
     compiledSql: result.compiled_sql,
   };
 }
@@ -146,10 +136,11 @@ async function queryExecution(
   modelName: string,
   limit: number,
 ): Promise<QueryExecution> {
-  return executeSql(project.getFusionCli(), query, modelName, limit, false);
+  return startSql(project.getFusionCli(), { query, modelName, limit });
 }
 
-function logQuery(deps: SqlDeps, query: string, limit: number): void {
+/** Logs `query` and its limit to the terminal, tagged with the adapter. */
+export function logQuery(deps: SqlDeps, query: string, limit: number): void {
   deps.terminal.info("executeSQL", "Executed query: " + query, {
     adapter: deps.project.getAdapterType(),
     limit: limit.toString(),
@@ -175,35 +166,6 @@ export function queryPanelPayload(
     projectName: deps.project.getProjectName(),
     preview,
   };
-}
-
-/** Runs `query` after checking project diagnostics; `immediate` awaits and row-shapes the result. */
-export async function executeWithLimit(
-  deps: SqlDeps,
-  query: string,
-  modelName: string,
-  limit: number,
-  immediate: true,
-): Promise<QueryExecutionResult>;
-export async function executeWithLimit(
-  deps: SqlDeps,
-  query: string,
-  modelName: string,
-  limit: number,
-  immediate: false,
-): Promise<QueryExecution>;
-export async function executeWithLimit(
-  deps: SqlDeps,
-  query: string,
-  modelName: string,
-  limit: number,
-  immediate: boolean,
-): Promise<QueryExecution | QueryExecutionResult> {
-  deps.project.throwDiagnosticsErrorIfAvailable();
-  logQuery(deps, query, limit);
-  return immediate
-    ? executeSql(deps.project.getFusionCli(), query, modelName, limit, true)
-    : queryExecution(deps.project, query, modelName, limit);
 }
 
 /** Compiles `query`, showing an error message and returning undefined when compilation fails. */
@@ -237,6 +199,6 @@ export async function getColumnValues(
     },
   );
   const query = `SELECT DISTINCT ${column} FROM {{ ref('${model}') }}`;
-  const result = await executeSql(cli, query, model, 100, true);
+  const result = await runSqlNow(cli, { query, modelName: model, limit: 100 });
   return result.data.map((row) => Object.values(row)[0]);
 }

@@ -1235,27 +1235,6 @@ describe("Project manifest", () => {
       );
     }
 
-    it("reports every column type as unknown for executeSQLWithLimit", async () => {
-      tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-show-"));
-      const executeSQL = fabricatedExecuteSQL();
-      const project = await buildProject(
-        tempRoot,
-        stubDelegate(tempRoot, { executeSQL }),
-      );
-
-      const execution = await project.queries.executeSQLWithLimit(
-        "select 1 as a, 'x' as b",
-        "my_model",
-        500,
-      );
-      const result = await execution.executeQuery();
-
-      expect(executeSQL).toHaveBeenCalled();
-      expect(result.table.column_types).toEqual([null, null]);
-      expect(result.table.column_names).toEqual(["a", "b"]);
-      await project.dispose();
-    });
-
     it("reports every column type as unknown for immediatelyExecuteSQLWithLimit", async () => {
       tempRoot = fs.mkdtempSync(
         path.join(os.tmpdir(), "fusion-show-immediate-"),
@@ -1272,32 +1251,6 @@ describe("Project manifest", () => {
       );
 
       expect(result.columnTypes).toEqual([null, null]);
-      await project.dispose();
-    });
-
-    it("forwards cancellation to the underlying query execution", async () => {
-      tempRoot = fs.mkdtempSync(path.join(os.tmpdir(), "fusion-show-cancel-"));
-      const cancel = vi.fn(async () => undefined);
-      const project = await buildProject(
-        tempRoot,
-        stubDelegate(tempRoot, {
-          executeSQL: vi.fn(
-            async () =>
-              new QueryExecution(cancel, async () => {
-                throw new Error("should not execute after cancel in this test");
-              }),
-          ),
-        }),
-      );
-
-      const execution = await project.queries.executeSQLWithLimit(
-        "select 1",
-        "my_model",
-        500,
-      );
-      await execution.cancel();
-
-      expect(cancel).toHaveBeenCalled();
       await project.dispose();
     });
   });

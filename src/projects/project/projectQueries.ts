@@ -1,7 +1,6 @@
 import type { queryResults } from "@fusion-power-user/webview-contract";
 import type { Uri } from "vscode";
 import type { QueryExecutionResult } from "../../core/dbt/domain";
-import type { QueryExecution } from "../../core/dbtCommand";
 import type { ModelNode } from "../../core/lineage/modelNode";
 import type { Log } from "../../core/log";
 import type { ProjectPaths } from "../../core/snapshot/index";
@@ -21,7 +20,6 @@ import {
   compileInline,
   compileQuery,
   runNow,
-  startRun,
   type WarehouseProject,
 } from "./projectWarehouse";
 import type { SharedStateService } from "./sharedStateService";
@@ -130,14 +128,6 @@ export class ProjectQueries {
     limit: number,
   ): Promise<QueryExecutionResult> {
     return runNow(this.sqlDeps, query, modelName, limit);
-  }
-
-  executeSQLWithLimit(
-    query: string,
-    modelName: string,
-    limit: number,
-  ): Promise<QueryExecution> {
-    return startRun(this.sqlDeps, query, modelName, limit);
   }
 
   mergeColumnsFromDB(
