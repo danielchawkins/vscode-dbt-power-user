@@ -346,7 +346,7 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     );
     const sent = {
       columnNames,
-      // executeSql already reports every column type as unknown.
+      // startSql already reports every column type as unknown.
       columnTypes,
       rows,
       raw_sql: query,

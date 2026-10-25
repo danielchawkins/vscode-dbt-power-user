@@ -1,7 +1,6 @@
 import { relative as relativePath, sep } from "node:path";
 import type { Uri } from "vscode";
 import type { QueryExecutionResult } from "../../core/dbt/domain";
-import type { QueryExecution } from "../../core/dbtCommand";
 import type { Log } from "../../core/log";
 import { dbColumnsFrom } from "../../core/lsp/index";
 import type { DBColumn } from "../../core/types";
@@ -10,7 +9,7 @@ import type { FusionCommands } from "../../fusion/fusionCommands";
 import type { Manifest } from "../manifest/manifestTypes";
 import { compiledModelSql } from "./compiledModel";
 import type { SqlDeps, SqlProject } from "./projectSql";
-import { compileOrReport, executeWithLimit } from "./projectSql";
+import { compileOrReport, logQuery, runSqlNow } from "./projectSql";
 
 /** What a project's warehouse and compile operations read from the project. */
 export interface WarehouseProject extends SqlProject {
@@ -73,22 +72,14 @@ export async function columnsOfModel(
   return project.getFusionCli().getColumnsOfModel(modelName);
 }
 
-/** Runs `query` now, with a row limit. */
-export function runNow(
+/** Runs `query` now, with a row limit, after checking project diagnostics. */
+export async function runNow(
   deps: SqlDeps,
   query: string,
   modelName: string,
   limit: number,
 ): Promise<QueryExecutionResult> {
-  return executeWithLimit(deps, query, modelName, limit, true);
-}
-
-/** Starts `query` with a row limit; the caller runs or cancels the returned execution. */
-export function startRun(
-  deps: SqlDeps,
-  query: string,
-  modelName: string,
-  limit: number,
-): Promise<QueryExecution> {
-  return executeWithLimit(deps, query, modelName, limit, false);
+  deps.project.throwDiagnosticsErrorIfAvailable();
+  logQuery(deps, query, limit);
+  return runSqlNow(deps.project.getFusionCli(), { query, modelName, limit });
 }

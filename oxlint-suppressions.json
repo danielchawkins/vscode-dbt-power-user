@@ -278,12 +278,12 @@
   },
   "src/projects/project/projectSql.ts": {
     "max-params": {
-      "count": 8
+      "count": 2
     }
   },
   "src/projects/project/projectWarehouse.ts": {
     "max-params": {
-      "count": 2
+      "count": 1
     }
   },
   "src/projects/registry/projectRegistry.ts": {
