@@ -2,6 +2,7 @@ import * as columnProposals from "@fusion-power-user/webview-contract/columnProp
 import { typedReducer } from "@modules/app/typedReducer";
 import type { ProposalChoices } from "../proposals/proposalsReducer";
 import { fromHostColumn, isStateDirty } from "../utils";
+import type { RenderMessage } from "./incomingDocs";
 import type {
   DBTDocumentation,
   DBTModelTest,
@@ -90,17 +91,37 @@ const withColumns = (
       }
     : state;
 
+// The same steps, in the same order, as the separate updates a render used to dispatch.
+const takeRendered = (state: S, message: RenderMessage): S => {
+  const taken = takeIncomingDocs(state, {
+    docs: message.docs,
+    tests: message.tests,
+    unitTests: message.unitTests,
+  });
+  const next: S = {
+    ...taken,
+    project: message.project,
+    missingDocumentationMessage: message.missingDocumentationMessage,
+    docBlocks: message.docBlocks,
+    publication: message.publication,
+  };
+  if (!message.draft) {
+    return next;
+  }
+  return {
+    ...mergeCurrentDocs(next, message.draft.docs),
+    currentDocsTests: message.draft.tests,
+  };
+};
+
 const documentation = typedReducer<
   S,
   {
     setSearchQuery: S["searchQuery"];
-    setMissingDocumentationMessage: S["missingDocumentationMessage"];
-    setProject: S["project"];
-    setDocBlocks: S["docBlocks"];
-    setPublication: S["publication"];
     updateCurrentDocsTests: S["currentDocsTests"];
     updateCurrentUnitTests: S["currentUnitTests"];
     setIncomingDocsData: Parameters<typeof takeIncomingDocs>[1];
+    rendered: RenderMessage;
     updateCurrentDocsData: Parameters<typeof mergeCurrentDocs>[1];
     updateColumnsInCurrentDocsData: {
       columns: Partial<MetadataColumn & { description?: string }>[];
@@ -115,13 +136,10 @@ const documentation = typedReducer<
   }
 >({
   setSearchQuery: set("searchQuery"),
-  setMissingDocumentationMessage: set("missingDocumentationMessage"),
-  setProject: (state, project) => ({ ...state, project, docBlocks: [] }),
-  setDocBlocks: set("docBlocks"),
-  setPublication: set("publication"),
   updateCurrentDocsTests: set("currentDocsTests"),
   updateCurrentUnitTests: set("currentUnitTests"),
   setIncomingDocsData: takeIncomingDocs,
+  rendered: takeRendered,
   updateCurrentDocsData: mergeCurrentDocs,
   updateColumnsInCurrentDocsData: (state, { columns }) =>
     withColumns(state, (current) =>
@@ -151,14 +169,11 @@ export const documentationReducer = documentation.reducer;
 export type DocumentationAction = Parameters<typeof documentationReducer>[1];
 export const {
   setIncomingDocsData,
+  rendered,
   updateCurrentDocsData,
   updateColumnsInCurrentDocsData,
   applyColumnProposals,
-  setProject,
-  setDocBlocks,
-  setPublication,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
-  setMissingDocumentationMessage,
   setSearchQuery,
 } = documentation.actions;

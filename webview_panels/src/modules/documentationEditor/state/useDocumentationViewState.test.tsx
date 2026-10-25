@@ -6,8 +6,7 @@ import { DocumentationContext } from "../context";
 import {
   documentationReducer,
   initialState,
-  setIncomingDocsData,
-  setPublication,
+  rendered,
 } from "./documentationReducer";
 import { Source } from "./types";
 import useDocumentationViewState from "./useDocumentationViewState";
@@ -47,8 +46,14 @@ const Harness = (): React.JSX.Element => {
 
 const renderModel = (publication: string) =>
   act(() => {
-    dispatchRef(setPublication(publication));
-    dispatchRef(setIncomingDocsData({ docs }));
+    dispatchRef(
+      rendered({
+        command: "renderDocumentation",
+        docs,
+        docBlocks: [],
+        publication,
+      }),
+    );
   });
 
 describe("useDocumentationViewState", () => {

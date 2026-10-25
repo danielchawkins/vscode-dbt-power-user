@@ -6,9 +6,8 @@ import {
   applyColumnProposals,
   documentationReducer,
   initialState,
-  setDocBlocks,
+  rendered,
   setIncomingDocsData,
-  setProject,
   updateColumnsInCurrentDocsData,
   updateCurrentDocsData,
 } from "./documentationReducer";
@@ -93,14 +92,82 @@ describe("documentationReducer", () => {
     expect(loaded.currentDocsData?.columns[0].description).toBe("key");
   });
 
-  it("clears doc blocks when the project changes", () => {
+  it("replaces the project and clears doc blocks on a render without blocks", () => {
     const withBlocks = documentationReducer(
       loaded,
-      setDocBlocks([{ name: "b", path: "p" }]),
+      rendered({
+        command: "renderDocumentation",
+        docBlocks: [{ name: "b", path: "p" }],
+        project: "first",
+      }),
     );
-    const next = documentationReducer(withBlocks, setProject("other"));
+    const next = documentationReducer(
+      withBlocks,
+      rendered({
+        command: "renderDocumentation",
+        docBlocks: [],
+        project: "other",
+      }),
+    );
     expect(next.project).toBe("other");
     expect(next.docBlocks).toEqual([]);
+  });
+
+  it("takes a rendered message's documentation and project", () => {
+    const next = documentationReducer(
+      loaded,
+      rendered({
+        command: "renderDocumentation",
+        docs: docs("second"),
+        project: "jaffle",
+        docBlocks: [{ name: "d", path: "/d.md" }],
+        publication: "pub",
+      }),
+    );
+    expect(next.currentDocsData?.description).toBe("second");
+    expect(next.incomingDocsData?.docs?.description).toBe("second");
+    expect(next.project).toBe("jaffle");
+    expect(next.docBlocks).toEqual([{ name: "d", path: "/d.md" }]);
+    expect(next.publication).toBe("pub");
+  });
+
+  it("keeps unsaved edits when a message renders", () => {
+    const edited = documentationReducer(
+      loaded,
+      updateCurrentDocsData({ name: "orders", description: "edited" }),
+    );
+    const next = documentationReducer(
+      edited,
+      rendered({
+        command: "renderDocumentation",
+        docs: docs("second"),
+        docBlocks: [],
+      }),
+    );
+    expect(next.currentDocsData?.description).toBe("edited");
+    expect(next.incomingDocsData?.docs?.description).toBe("second");
+  });
+
+  it("applies the draft over the rendered documentation and tests", () => {
+    const draftTests = [
+      {
+        key: "k",
+        column_name: "id",
+        test_metadata: { name: "not_null", kwargs: { column_name: "id" } },
+      },
+    ];
+    const next = documentationReducer(
+      loaded,
+      rendered({
+        command: "renderDocumentation",
+        docs: docs("second"),
+        docBlocks: [],
+        draft: { docs: docs("draft"), tests: draftTests },
+      }),
+    );
+    expect(next.currentDocsData?.description).toBe("draft");
+    expect(next.currentDocsTests).toEqual(draftTests);
+    expect(next.incomingDocsData?.docs?.description).toBe("second");
   });
 });
 
