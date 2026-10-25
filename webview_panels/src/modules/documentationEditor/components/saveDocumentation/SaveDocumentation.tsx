@@ -2,10 +2,6 @@ import { useProposals } from "@modules/documentationEditor/proposals/ProposalsCo
 import { cleared } from "@modules/documentationEditor/proposals/proposalsReducer";
 import { executeRequestInSync } from "@modules/documentationEditor/requests";
 import { setIncomingDocsData } from "@modules/documentationEditor/state/documentationReducer";
-import type {
-  DBTDocumentation,
-  DBTModelTest,
-} from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { isStateDirty } from "@modules/documentationEditor/utils";
 import type { PopoverWithButtonRef } from "@uicore";
@@ -35,16 +31,12 @@ const SaveDocumentation = (): React.JSX.Element | null => {
     if (!currentDocsData) {
       return;
     }
-    const result = (await executeRequestInSync("saveDocumentation", {
+    const result = await executeRequestInSync("saveDocumentation", {
       ...currentDocsData,
       updatedTests: currentDocsTests,
       patchPath,
       dialogType,
-    })) as {
-      saved: boolean;
-      documentation: DBTDocumentation;
-      tests: DBTModelTest[];
-    };
+    });
     if (result.saved) {
       dispatch(
         setIncomingDocsData({

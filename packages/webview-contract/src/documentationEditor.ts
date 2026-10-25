@@ -161,6 +161,31 @@ export type PanelMessage =
       syncRequestId?: string | undefined;
     });
 
+/** The body the host answers each request with, by request command. */
+export interface ResponseBodies {
+  getTestCode: { sql?: string | undefined; config?: string | null | undefined };
+  getUnitTestCode: { yaml: string } | { error: string };
+  getDistinctColumnValues: unknown[];
+  getColumnsOfSources: { columns: string[] };
+  getColumnsOfModel: { columns: string[] };
+  /** Absent when the active file has no manifest. */
+  getSourcesInProject: {
+    sources: { name: string; tables: string[] }[] | undefined;
+  };
+  /** Absent when the active file has no manifest. */
+  getModelsInProject: { models: string[] | undefined };
+  showWarningMessage: string | undefined;
+  showInformationMessage: string | undefined;
+  saveDocumentation:
+    | { saved: false }
+    | {
+        saved: true;
+        tests?: ModelTest[] | undefined;
+        unitTests?: UnitTest[] | undefined;
+        documentation?: Documentation | undefined;
+      };
+}
+
 const isColumn = shape<DocumentationColumn>({
   name: isString,
   type: nullish(isString),

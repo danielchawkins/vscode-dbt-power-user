@@ -7,7 +7,7 @@ import { useEffect, useEffectEvent, useState } from "react";
 
 interface GetTestCodeResponse {
   sql?: string | undefined;
-  config?: string | undefined;
+  config?: string | null | undefined;
 }
 const DbtTestCode = ({
   test,
@@ -22,12 +22,11 @@ const DbtTestCode = ({
   >(null);
 
   panelLogger.info(testCode);
-  const requestTestCode = useEffectEvent(
-    async (model: string) =>
-      (await executeRequestInSync("getTestCode", {
-        test: { ...test },
-        model,
-      })) as GetTestCodeResponse,
+  const requestTestCode = useEffectEvent(async (model: string) =>
+    executeRequestInSync("getTestCode", {
+      test: { ...test },
+      model,
+    }),
   );
 
   const model = currentDocsData?.name;

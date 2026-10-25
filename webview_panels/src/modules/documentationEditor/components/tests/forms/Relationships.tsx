@@ -24,15 +24,36 @@ async function fetchColumnOptions(
     panelLogger.info("No model name parsed", matches);
     return undefined;
   }
-  const columnsResult = (
+  const columnsResult =
     matches.length === 1
       ? await executeRequestInSync("getColumnsOfModel", { model: first })
       : await executeRequestInSync("getColumnsOfSources", {
           source: first,
           table: second,
-        })
-  ) as { columns: string[] };
+        });
   return columnsResult.columns.map((m) => ({ label: m, value: m }));
+}
+
+/**
+ * The `ref` and `source` target options. With no manifest the host sends no lists; this throws then, and the caller
+ * logs it, as it always has.
+ */
+function targetOptions(
+  models: string[] | undefined,
+  sources: { name: string; tables: string[] }[] | undefined,
+): { models: OptionType[]; sources: OptionType[] } {
+  return {
+    models: models!.map((m) => ({
+      label: `ref('${m}')`,
+      value: `ref('${m}')`,
+    })),
+    sources: sources!.flatMap(({ name, tables }) =>
+      tables.map((t) => ({
+        label: `source('${name}', '${t}')`,
+        value: `source('${name}', '${t}')`,
+      })),
+    ),
+  };
 }
 
 const Relationships = ({
@@ -50,24 +71,12 @@ const Relationships = ({
       executeRequestInSync("getSourcesInProject"),
     ])
       .then(([modelsResponse, sourcesResponse]) => {
-        setToModelOptions(
-          (modelsResponse as { models: string[] }).models.map((m) => ({
-            label: `ref('${m}')`,
-            value: `ref('${m}')`,
-          })),
+        const options = targetOptions(
+          modelsResponse.models,
+          sourcesResponse.sources,
         );
-        setToSourceOptions(
-          (
-            sourcesResponse as {
-              sources: { name: string; tables: string[] }[];
-            }
-          ).sources.flatMap(({ name, tables }) =>
-            tables.map((t) => ({
-              label: `source('${name}', '${t}')`,
-              value: `source('${name}', '${t}')`,
-            })),
-          ),
-        );
+        setToModelOptions(options.models);
+        setToSourceOptions(options.sources);
       })
       .catch((err) => panelLogger.error("error while getting models", err));
   }, []);

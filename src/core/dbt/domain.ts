@@ -96,7 +96,11 @@ export type Table = {
   nodeType: string;
   materialization?: string | undefined;
   description?: string;
-  tests: unknown[];
+  tests: {
+    key: string;
+    raw_sql?: string | null | undefined;
+    column_name?: string | null | undefined;
+  }[];
   meta?: Record<string, unknown> | undefined;
   columns: { [columnName: string]: ColumnMetaData };
   patchPath?: string;

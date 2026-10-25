@@ -45,23 +45,47 @@ export interface MessageSink {
   reply: Reply;
 }
 
+/**
+ * Answers request `syncRequestId` with `body`; the panel's request executor resolves with it. Takes only the
+ * `reply` of a sink, so a caller that answers outside `dispatchMessage` passes `{ reply }`.
+ */
+export function reply(
+  sink: Pick<MessageSink, "reply">,
+  syncRequestId: string | undefined,
+  body: unknown,
+): unknown {
+  return sink.reply({
+    command: "response",
+    args: { syncRequestId, body, status: true },
+  });
+}
+
 /** Answers request `syncRequestId` with `status: false`, the shape the panel's request executor rejects on. */
+export function replyError(
+  sink: Pick<MessageSink, "reply">,
+  syncRequestId: string | undefined,
+  error: string,
+): unknown {
+  return sink.reply({
+    command: "response",
+    args: { syncRequestId, body: undefined, status: false, error },
+  });
+}
+
+/** Answers `syncRequestId` with an error, and logs a failure to deliver that answer. */
 const settle = async (
   source: string,
-  { log, reply }: MessageSink,
+  sink: MessageSink,
   syncRequestId: string,
   error: string,
 ) => {
   try {
-    await reply({
-      command: "response",
-      args: { syncRequestId, body: undefined, status: false, error },
-    });
-  } catch (replyError) {
-    log.error(
+    await replyError(sink, syncRequestId, error);
+  } catch (replyFailure) {
+    sink.log.error(
       `${source}:reply`,
       "Could not answer a webview request",
-      replyError,
+      replyFailure,
     );
   }
 };

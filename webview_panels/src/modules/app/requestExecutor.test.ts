@@ -119,8 +119,10 @@ describe("panelRequests", () => {
   type Message =
     | { command: "ping" }
     | { command: "fetch"; id: number; syncRequestId?: string };
-  const { executeRequestInAsync, executeRequestInSync } =
-    panelRequests<Message>();
+  const { executeRequestInAsync, executeRequestInSync } = panelRequests<
+    Message,
+    { fetch: string }
+  >();
 
   it("posts the command with its payload", () => {
     executeRequestInAsync("ping");

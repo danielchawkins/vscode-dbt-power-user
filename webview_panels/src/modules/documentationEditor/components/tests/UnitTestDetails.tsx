@@ -23,7 +23,7 @@ const UnitTestDetails = ({ test, modelName }: Props): React.JSX.Element => {
       model: modelName,
       name: test.name,
     })
-      .then((result) => setContent(result as GetUnitTestCodeResponse))
+      .then((result) => setContent(result))
       .catch((err) => {
         panelLogger.error("error loading unit test code", err);
         setContent({ error: (err as Error).message });

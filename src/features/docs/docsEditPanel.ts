@@ -20,6 +20,7 @@ import type { SharedStateService } from "../../projects/project/sharedStateServi
 import { activeModelUri } from "../../projects/registry/previewUri";
 import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
+import { reply } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import type {
   ColumnProposalRequests,
@@ -275,10 +276,13 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     if (!saved) {
       // The panel keeps its edits dirty until a save is confirmed.
       if (syncRequestId) {
-        await this.post({
-          command: "response",
-          args: { syncRequestId, body: { saved: false }, status: true },
-        });
+        await reply(
+          { reply: (response) => this.post(response) },
+          syncRequestId,
+          {
+            saved: false,
+          } satisfies documentationEditor.ResponseBodies["saveDocumentation"],
+        );
       }
       return;
     }
@@ -287,19 +291,12 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     if (!syncRequestId) {
       return;
     }
-    await this.post({
-      command: "response",
-      args: {
-        syncRequestId,
-        body: {
-          saved: true,
-          tests: await this.dbtTestService.getTestsForCurrentModel(),
-          unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
-          documentation: this.documentation,
-        },
-        status: true,
-      },
-    });
+    await reply({ reply: (response) => this.post(response) }, syncRequestId, {
+      saved: true,
+      tests: await this.dbtTestService.getTestsForCurrentModel(),
+      unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
+      documentation: this.documentation,
+    } satisfies documentationEditor.ResponseBodies["saveDocumentation"]);
   }
 
   /** Posts the proposals of `kind` for the active model; a superseded or cancelled request posts nothing. */

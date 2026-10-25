@@ -19,7 +19,7 @@
     "vsix": 800000,
     "webview_panels/dist/assets/chunk-shared.js": 282300,
     "webview_panels/dist/assets/documentationEditor.css": 8760,
-    "webview_panels/dist/assets/documentationEditor.js": 39572,
+    "webview_panels/dist/assets/documentationEditor.js": 39642,
     "webview_panels/dist/assets/lineage.css": 36000,
     "webview_panels/dist/assets/lineage.js": 295637,
     "webview_panels/dist/assets/queryResults.css": 9800,
@@ -27,6 +27,6 @@
     "webview_panels/dist/assets/shared.css": 12200
   },
   "oxlintSuppressions.host": 132,
-  "oxlintSuppressions.webview": 30,
+  "oxlintSuppressions.webview": 29,
   "plannedTags": 0
 }

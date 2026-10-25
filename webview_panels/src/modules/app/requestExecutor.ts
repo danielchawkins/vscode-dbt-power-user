@@ -61,13 +61,13 @@ const pending = new Map<
   { resolve: (body: unknown) => void; reject: (error: Error) => void }
 >();
 
-/** The request functions `panelRequests` returns for the union `M`. */
-export interface PanelRequests<M extends Message> {
-  /** Posts `command` and resolves with the host's `response` body; rejects when the host reports a failure. */
-  executeRequestInSync: <C extends RequestCommand<M>>(
+/** The request functions `panelRequests` returns for the union `M`; `R` maps each sync command to the body it resolves with. */
+export interface PanelRequests<M extends Message, R> {
+  /** Posts `command` and resolves with the body the host answers with; rejects when the host reports a failure. */
+  executeRequestInSync: <C extends keyof R & RequestCommand<M>>(
     command: C,
     ...payload: PayloadArg<Payload<M, C>>
-  ) => Promise<unknown>;
+  ) => Promise<R[C]>;
   /** Posts `command` without waiting for an answer. */
   executeRequestInAsync: <C extends M["command"]>(
     command: C,
@@ -77,13 +77,21 @@ export interface PanelRequests<M extends Message> {
 
 /**
  * The request functions for one panel; `M` is that panel's `PanelMessage` union, so a command outside it, or a
- * payload that does not match its command, is a compile error.
+ * payload that does not match its command, is a compile error. `R` is that panel's `ResponseBodies`, so a sync
+ * command without a body type is a compile error too.
  */
-export const panelRequests = <M extends Message>(): PanelRequests<M> => ({
+export const panelRequests = <
+  M extends Message,
+  R extends object = Record<never, never>,
+>(): PanelRequests<M, R> => ({
   executeRequestInSync: (command, ...[payload]) =>
     new Promise((resolve, reject) => {
       const syncRequestId = crypto.randomUUID();
-      pending.set(syncRequestId, { resolve, reject });
+      // The wire carries the body as `unknown`; the panel's `ResponseBodies` is the type it is held to.
+      pending.set(syncRequestId, {
+        resolve: resolve as (body: unknown) => void,
+        reject,
+      });
       vscode.postMessage({ ...payload, command, syncRequestId });
     }),
   executeRequestInAsync: (command, ...[payload]) => {
