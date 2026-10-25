@@ -4,6 +4,7 @@ import { EventEmitter, Uri } from "vscode";
 import { ColumnProposalRequests } from "../../features/docs/columnProposals";
 import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
 import type * as panelHtmlModule from "../../webview/panelHtml";
+import { fakeView, isPageReady } from "../panelHarness";
 
 vi.mock("../../webview/panelHtml", async (importOriginal) => ({
   ...(await importOriginal<typeof panelHtmlModule>()),
@@ -19,7 +20,7 @@ const docs = (filePath: string, description: string) => ({
 });
 
 /** A documentation editor whose active model is `/p/models/orders.sql`; `posted` collects host messages. */
-function draftPanel() {
+async function draftPanel() {
   const removed = new EventEmitter<Uri>();
   const projects = {
     onDidChangeManifest: new EventEmitter<unknown>().event,
@@ -37,7 +38,7 @@ function draftPanel() {
   };
   const panel = new DocsEditViewPanel(
     projects,
-    {} as any,
+    { extensionUri: Uri.file("/ext") } as any,
     {
       docGenService,
       dbtTestService,
@@ -47,14 +48,12 @@ function draftPanel() {
     } as any,
     terminal,
   );
-  const postMessage = vi.fn();
-  (panel as any)._panel = { webview: { postMessage } };
-  const send = (message: unknown) =>
-    (panel as any).handleCommand(message) as Promise<void>;
+  const view = fakeView();
+  await panel.resolveWebviewView(view.page, {} as any, {} as any);
+  const { send } = view;
   const rendered = async () => {
-    postMessage.mockClear();
     await send({ command: "getCurrentModelDocumentation" });
-    const message = postMessage.mock.calls[0][0];
+    const message = view.posted().at(-1) as any;
     expect(documentationEditor.isHostMessage(message)).toBe(true);
     return message;
   };
@@ -70,7 +69,7 @@ describe("documentation editor drafts", () => {
   };
 
   it("sends a rebuilt page the draft it held for the model", async () => {
-    const { send, rendered } = draftPanel();
+    const { send, rendered } = await draftPanel();
     expect((await rendered()).draft).toBeUndefined();
 
     await send({ command: "saveDraft", model: "/p/models/orders.sql", draft });
@@ -81,7 +80,7 @@ describe("documentation editor drafts", () => {
   });
 
   it("keeps a column's replaceType in the draft unchanged", async () => {
-    const { send, rendered } = draftPanel();
+    const { send, rendered } = await draftPanel();
     const replacing = {
       docs: {
         ...docs("/p/models/orders.sql", "unsaved edit"),
@@ -99,7 +98,7 @@ describe("documentation editor drafts", () => {
   });
 
   it("forgets a draft the page clears, after a save, discard or revert", async () => {
-    const { send, rendered } = draftPanel();
+    const { send, rendered } = await draftPanel();
     await send({ command: "saveDraft", model: "/p/models/orders.sql", draft });
 
     await send({ command: "saveDraft", model: "/p/models/orders.sql" });
@@ -108,7 +107,7 @@ describe("documentation editor drafts", () => {
   });
 
   it("keeps drafts of other models apart", async () => {
-    const { send, rendered } = draftPanel();
+    const { send, rendered } = await draftPanel();
     await send({
       command: "saveDraft",
       model: "/p/models/customers.sql",
@@ -119,7 +118,7 @@ describe("documentation editor drafts", () => {
   });
 
   it("forgets the drafts of a removed project only", async () => {
-    const { panel, removed, send } = draftPanel();
+    const { panel, removed, send } = await draftPanel();
     vi.spyOn(panel as any, "transmitData").mockResolvedValue(undefined);
     await send({ command: "saveDraft", model: "/p/models/orders.sql", draft });
     await send({
@@ -136,7 +135,7 @@ describe("documentation editor drafts", () => {
 });
 
 describe("documentation editor view resolution", () => {
-  function resolved() {
+  async function resolved() {
     const panel = new DocsEditViewPanel(
       {
         onDidChangeManifest: new EventEmitter<unknown>().event,
@@ -156,52 +155,35 @@ describe("documentation editor view resolution", () => {
     const transmit = vi
       .spyOn(panel as any, "transmitData")
       .mockResolvedValue(undefined);
-    let onMessage: (message: unknown) => unknown = () => undefined;
-    const view = {
-      title: "x",
-      description: undefined as string | undefined,
-      visible: true,
-      show: vi.fn(),
-      onDidChangeVisibility: vi.fn(),
-      onDidDispose: vi.fn(),
-      webview: {
-        options: {} as any,
-        html: "",
-        postMessage: vi.fn(),
-        onDidReceiveMessage: vi.fn((listener) => {
-          onMessage = listener;
-          return { dispose: vi.fn() };
-        }),
-      },
-    };
-    void panel.resolveWebviewView(view as any, {} as any, {} as any);
-    return { panel, view, transmit, send: (m: unknown) => onMessage(m) };
+    const view = fakeView();
+    await panel.resolveWebviewView(view.page, {} as any, {} as any);
+    return { panel, view: view.page, transmit, send: view.send };
   }
 
-  it("sets scripts on and limits local resources to the built assets", () => {
-    const { view } = resolved();
+  it("sets scripts on and limits local resources to the built assets", async () => {
+    const { view } = await resolved();
     expect(view.webview.options.enableScripts).toBe(true);
     expect(
-      view.webview.options.localResourceRoots.map((u: Uri) => u.path),
+      view.webview.options.localResourceRoots?.map((u: Uri) => u.path),
     ).toEqual(["/ext/webview_panels/dist/assets"]);
   });
 
-  it("titles the view, describes it and renders the page", () => {
-    const { view } = resolved();
+  it("titles the view, describes it and renders the page", async () => {
+    const { view } = await resolved();
     expect(view.title).toBe("");
     expect(view.description).toBe("Edit model documentation");
     expect(view.webview.html).toBe("<html>docs</html>");
   });
 
-  it("sends the documentation when the view resolves", () => {
-    expect(resolved().transmit).toHaveBeenCalledTimes(1);
+  it("sends the documentation when the view resolves", async () => {
+    expect((await resolved()).transmit).toHaveBeenCalledTimes(1);
   });
 
   it("marks the page ready on webview:ready and replays on request", async () => {
-    const { panel, send, transmit } = resolved();
-    expect((panel as any).isWebviewReady).toBe(false);
+    const { panel, send, transmit, view } = await resolved();
+    expect(isPageReady(panel, view)).toBe(false);
     await send({ command: "webview:ready" });
-    expect((panel as any).isWebviewReady).toBe(true);
+    expect(isPageReady(panel, view)).toBe(true);
 
     transmit.mockClear();
     await send({ command: "getCurrentModelDocumentation" });

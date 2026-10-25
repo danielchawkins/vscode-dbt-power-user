@@ -1,11 +1,20 @@
 import type { PanelNotice } from "@fusion-power-user/webview-contract";
 import { lineage } from "@fusion-power-user/webview-contract";
 import * as path from "node:path";
-import type { Event, TextEditor, WebviewViewProvider } from "vscode";
+import type {
+  CancellationToken,
+  Event,
+  TextEditor,
+  WebviewPanel,
+  WebviewView,
+  WebviewViewProvider,
+  WebviewViewResolveContext,
+} from "vscode";
 import { commands, Uri, window } from "vscode";
 import type { Log } from "../../core/log";
 import type { ExtensionContextStore } from "../../extensionContext";
 import { publicationId } from "../../projects/manifest/manifest";
+import type { ParseDemand } from "../../projects/manifest/parseDemand";
 import type { Project } from "../../projects/project/project";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import type { SharedStateService } from "../../projects/project/sharedStateService";
@@ -13,7 +22,6 @@ import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigi
 import type { NeedsStrict } from "../../projects/registry/strictNeeded";
 import { strictNeededMessage } from "../../projects/registry/strictNeeded";
 import type { Handlers } from "../../webview/messageRouter";
-import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import { registerLineageColumnsCommand } from "./connectedColumnsCommand";
 import type { DbtLineageService } from "./dbtLineageService";
@@ -52,21 +60,23 @@ interface LineagePanelView extends WebviewViewProvider {
   manifestChanged(project: Project | undefined): void;
   changedActiveTextEditor(event: TextEditor | undefined): void;
   changedTextEditorSelection(editor: TextEditor): void;
-  handleCommand(message: unknown): Promise<void>;
 }
 
 export class LineagePanel
-  extends PanelHost<HostMessage>
+  extends PanelHost<HostMessage, PanelMessage>
   implements LineagePanelView
 {
+  public override viewType = LINEAGE_VIEW_TYPE;
   protected readonly entry = "lineage";
   protected readonly csp = {};
+  protected readonly guard = lineage.isPanelMessage;
   protected override panelDescription = "Lineage panel";
   // The source unique_id the panel last rooted at when a source YAML is the
   // active file. Used to avoid redundant re-renders on every cursor move; the
   declare protected extensionContext: ExtensionContextStore;
   private terminal: Log;
   private dbtLineageService: DbtLineageService;
+  private parseDemand: ParseDemand | undefined;
   declare protected queryManifestService: QueryManifestService;
   // panel only re-roots when the cursor moves onto a different source table.
   private lastRenderedSourceKey: string | undefined;
@@ -81,6 +91,7 @@ export class LineagePanel
     dbtLineageService: DbtLineageService,
     eventEmitterService: SharedStateService,
     queryManifestService: QueryManifestService,
+    parseDemand?: ParseDemand,
   ) {
     super(
       extensionContext,
@@ -90,12 +101,26 @@ export class LineagePanel
     );
     this.terminal = terminal;
     this.dbtLineageService = dbtLineageService;
+    this.parseDemand = parseDemand;
     const columnsCommand = registerLineageColumnsCommand((params) =>
       this.getColumns(params),
     );
     if (columnsCommand) {
       this._disposables.push(columnsCommand);
     }
+  }
+
+  /**
+   * The lineage drawer reads descriptions, tests and meta, which only the parse supplies, so a visible view keeps
+   * the parse demand; then the base renders the page and listens to it.
+   */
+  public override resolveWebviewView(
+    panel: WebviewView,
+    context: WebviewViewResolveContext<unknown>,
+    token: CancellationToken,
+  ): void | Thenable<void> {
+    this.followDemand(panel, this.parseDemand);
+    return super.resolveWebviewView(panel, context, token);
   }
 
   /** Re-renders the starting node on every `event`, so the static-analysis notice follows the client. */
@@ -173,8 +198,8 @@ export class LineagePanel
     this.renderStartingNode();
   }
 
-  protected override onWebviewReady() {
-    super.onWebviewReady();
+  protected override onWebviewReady(page: WebviewView | WebviewPanel) {
+    super.onWebviewReady(page);
     this.renderStartingNode();
   }
 
@@ -213,9 +238,11 @@ export class LineagePanel
   }
 
   /** One handler per lineage panel command. */
-  private handlers(): Handlers<PanelMessage> {
+  protected override handlers(
+    page: WebviewView | WebviewPanel,
+  ): Handlers<PanelMessage> {
     return {
-      ...this.commonHandlers(),
+      ...this.commonHandlers(page),
       init: () => this.init(),
       openProblemsTab: () =>
         commands.executeCommand("workbench.action.problems.focus"),
@@ -279,16 +306,6 @@ export class LineagePanel
         this.respond(syncRequestId, { ok: true });
       },
     };
-  }
-
-  async handleCommand(message: unknown): Promise<void> {
-    await dispatchMessage(
-      LINEAGE_VIEW_TYPE,
-      message,
-      lineage.isPanelMessage,
-      this.handlers(),
-      { log: this.dbtTerminal, reply: (response) => this.post(response) },
-    );
   }
 
   private static readonly DBT_FILE_EXTENSIONS = [".sql", ".py", ".csv"];

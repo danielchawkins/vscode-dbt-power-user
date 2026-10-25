@@ -27,7 +27,6 @@ import type {
 } from "../../projects/project/sharedStateService";
 import { readSetting } from "../../settings";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
-import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost, postToWebview } from "../../webview/panelHost";
 import { panelWebviewOptions } from "../../webview/panelHtml";
 import { executeActiveEditorQuery } from "./activeEditorQuery";
@@ -57,15 +56,18 @@ const QueryPanelViewType = {
 type QueryPanelViewType =
   (typeof QueryPanelViewType)[keyof typeof QueryPanelViewType];
 
-export class QueryResultPanel extends PanelHost<HostMessage> {
+export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
   public static readonly viewType = "fusionPowerUser.PreviewResults";
+  public override viewType = QueryResultPanel.viewType;
   protected readonly entry = "queryResults";
   protected readonly csp = QUERY_RESULTS_CSP;
-  protected override panelDescription = "Query results panel";
+  protected readonly guard = queryResults.isPanelMessage;
+  protected override panelDescription = "Preview dbt SQL Results";
   private _queryTabData: queryResults.QueryTabData | undefined;
   private _bottomPanel: WebviewView | undefined;
 
   private queryExecution: QueryExecution | undefined;
+  /** Loading messages queued while the page is not ready; flushed when it reports ready. */
   private pendingMessages: HostMessage[] = [];
 
   protected override replayRules() {
@@ -113,7 +115,6 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   }
 
   private async createQueryResultsPanelVirtualDocument(editorName: string) {
-    this.isWebviewReady = false;
     const webviewPanel = window.createWebviewPanel(
       QueryResultPanel.viewType,
       editorName + "_" + getFormattedDateTime(),
@@ -125,14 +126,13 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
       },
     );
     this._panel = webviewPanel;
-    this._webview = webviewPanel.webview;
     const subscription = webviewPanel.onDidDispose(() => {
       subscription.dispose();
       this.replay.delete(webviewPanel);
     });
     this.renderWebviewView(webviewPanel.webview);
-    this.setupWebviewHooks();
-    await this.checkIfWebviewReady();
+    this.listen(webviewPanel);
+    await this.whenReady(webviewPanel);
   }
 
   private updateViewTypeToWebview(viewType: QueryPanelViewType) {
@@ -166,31 +166,13 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     _context: WebviewViewResolveContext,
     _token: CancellationToken,
   ) {
-    this.beginWebviewResolve();
     this.updateViewTypeToWebview(QueryPanelViewType.DEFAULT);
-    this._panel = panel;
+    super.resolveWebviewView(panel, _context, _token);
     this._bottomPanel = panel;
-    this._webview = panel.webview;
-    this.bindWebviewOptions();
-    this.renderWebviewView(panel.webview);
-    this.setupWebviewHooks();
+    panel.title = "Query Results";
     _token.onCancellationRequested(async () => {
       await this.post({ command: "resetState" });
     });
-  }
-
-  /** Sets the page's title, description and webview options. */
-  private bindWebviewOptions() {
-    if (!this._panel) {
-      return;
-    }
-    this._panel.title = "Query Results";
-    if (this.isWebviewView(this._panel)) {
-      this._panel.description = "Preview dbt SQL Results";
-    }
-    this._panel.webview.options = panelWebviewOptions(
-      this.extensionContext.extensionUri,
-    );
   }
 
   private getProject(projectName?: string) {
@@ -252,9 +234,11 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   }
 
   /** One handler per query-results panel command sent by the page in `panel`. */
-  private handlers(panel: WebviewView | WebviewPanel): Handlers<PanelMessage> {
+  protected override handlers(
+    panel: WebviewView | WebviewPanel,
+  ): Handlers<PanelMessage> {
     return {
-      ...this.commonHandlers(),
+      ...this.commonHandlers(panel),
       "webview:ready": () => this.onPageReady(panel),
       // The panel clears its history after a rendering error, then retries.
       clearQueryHistory: ({ syncRequestId }) => {
@@ -295,38 +279,9 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
     };
   }
 
-  protected async handleCommand(
-    message: unknown,
-    panel: WebviewView | WebviewPanel = this._panel!,
-  ): Promise<void> {
-    await dispatchMessage(
-      QueryResultPanel.viewType,
-      message,
-      queryResults.isPanelMessage,
-      this.handlers(panel),
-      {
-        log: this.dbtTerminal,
-        reply: (response) => this.postTo(panel, response),
-      },
-    );
-  }
-
-  /** Primary interface for WebviewView inbound communication; a results tab's subscription ends with the tab. */
-  private setupWebviewHooks() {
-    const panel = this._panel!;
-    const subscription = panel.webview.onDidReceiveMessage((message: unknown) =>
-      this.handleCommand(message, panel),
-    );
-    if (this.isWebviewView(panel)) {
-      this._disposables.push(subscription);
-    } else {
-      panel.onDidDispose(() => subscription.dispose());
-    }
-  }
-
   /** Sends VSCode render loading command to webview */
   private async transmitLoading() {
-    if (this._panel && this.isWebviewReady) {
+    if (this._panel && this.isReady(this.pageOf(this._panel))) {
       await this.post({ command: "renderLoading" });
       return;
     }
@@ -409,14 +364,14 @@ export class QueryResultPanel extends PanelHost<HostMessage> {
   /** A page reports ready on first load and after VS Code rebuilds it; it gets back its last result. */
   private onPageReady(panel: WebviewView | WebviewPanel) {
     const replay = this.replay.messagesFor(this.pageOf(panel));
-    this.onWebviewReady();
+    this.onWebviewReady(panel);
     for (const message of replay) {
       void postToWebview(panel, message, this.dbtTerminal);
     }
   }
 
-  protected override onWebviewReady() {
-    super.onWebviewReady();
+  protected override onWebviewReady(panel: WebviewView | WebviewPanel) {
+    super.onWebviewReady(panel);
 
     if (!this._panel) {
       return;

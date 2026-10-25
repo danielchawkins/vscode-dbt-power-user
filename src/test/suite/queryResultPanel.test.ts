@@ -1,16 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { commands, window } from "vscode";
+import { commands, Uri, window } from "vscode";
 import { ExecuteSQLError } from "../../core/dbtCommand";
 import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
+import type * as panelHtmlModule from "../../webview/panelHtml";
+import { flushAsync } from "../async";
+import { fakeView } from "../panelHarness";
 import { silentLog } from "../testLog";
 
-const bottomView = () => ({
-  show: vi.fn(),
-  webview: {
-    postMessage: vi.fn(),
-    onDidReceiveMessage: vi.fn(() => ({ dispose: vi.fn() })),
-  },
-});
+vi.mock("../../webview/panelHtml", async (importOriginal) => ({
+  ...(await importOriginal<typeof panelHtmlModule>()),
+  panelHtml: () => "<html>query results</html>",
+}));
 
 const project = (over: Record<string, unknown> = {}) => ({
   getAdapterType: () => "duckdb",
@@ -27,6 +27,7 @@ function makePanel(
     project?: ReturnType<typeof project> | undefined;
     picked?: ReturnType<typeof project> | undefined;
   } = {},
+  ready = true,
 ) {
   const service = {
     manifestFor: () => undefined,
@@ -35,20 +36,26 @@ function makePanel(
     getOrPickProjectFromWorkspace: async () => manifest.picked,
   };
   const panel = new QueryResultPanel(
-    {} as never,
+    { extensionUri: Uri.file("/ext") } as never,
     { eventEmitter: { event: () => ({ dispose: vi.fn() }) } } as never,
     silentLog(),
     service as never,
     () => ({ dispose: vi.fn() }),
-  ) as any;
-  const view = bottomView();
-  panel._panel = view;
-  panel._bottomPanel = view;
-  panel.isWebviewReady = true;
+  );
+  const view = fakeView();
+  void panel.resolveWebviewView(
+    view.page,
+    {} as never,
+    { onCancellationRequested: vi.fn() } as never,
+  );
+  if (ready) {
+    void view.send({ command: "webview:ready" });
+  }
   return {
     panel,
     view,
-    posted: () => view.webview.postMessage.mock.calls.map((c) => c[0]),
+    posted: () => view.posted(),
+    send: view.send,
   };
 }
 
@@ -73,8 +80,8 @@ describe("QueryResultPanel", () => {
     const model = "/project/models/orders.sql";
 
     it("re-runs the model materialized through its materialized preview command", async () => {
-      const { panel } = makePanel({ project: project() });
-      await panel.handleCommand({
+      const { send } = makePanel({ project: project() });
+      await send({
         command: "switchPreview",
         mode: "materialized",
         model,
@@ -86,8 +93,8 @@ describe("QueryResultPanel", () => {
     });
 
     it("re-runs the model computed through its computed preview command", async () => {
-      const { panel } = makePanel({ project: project() });
-      await panel.handleCommand({
+      const { send } = makePanel({ project: project() });
+      await send({
         command: "switchPreview",
         mode: "computed",
         model,
@@ -104,13 +111,13 @@ describe("QueryResultPanel", () => {
       const { panel, posted } = makePanel({ project: project() });
       const result = await panel.executeQuery({
         query: "select 1",
-        fn: Promise.resolve({ executeQuery: async () => output(2) }),
+        fn: Promise.resolve({ executeQuery: async () => output(2) } as never),
         projectName: "jaffle",
       });
       expect(commands.executeCommand).toHaveBeenCalledWith(
         "fusionPowerUser.PreviewResults.focus",
       );
-      expect(posted().map((m) => m.command)).toEqual([
+      expect(posted().map((m) => (m as { command: string }).command)).toEqual([
         "renderLoading",
         "renderQuery",
       ]);
@@ -120,8 +127,8 @@ describe("QueryResultPanel", () => {
         raw_sql: "select 1",
         compiled_sql: "select compiled",
       });
-      expect(panel.history.all()).toHaveLength(1);
-      expect(panel.history.all()[0]).toMatchObject({
+      expect((panel as any).history.all()).toHaveLength(1);
+      expect((panel as any).history.all()[0]).toMatchObject({
         rawSql: "select 1",
         adapter: "duckdb",
         projectName: "jaffle",
@@ -137,7 +144,7 @@ describe("QueryResultPanel", () => {
       };
       await panel.executeQuery({
         query: "select 1",
-        fn: Promise.resolve({ executeQuery: async () => output() }),
+        fn: Promise.resolve({ executeQuery: async () => output() } as never),
         projectName: "jaffle",
         preview,
       });
@@ -147,10 +154,18 @@ describe("QueryResultPanel", () => {
         projectName: "jaffle",
         preview,
       });
-      expect(posted().find((m) => m.command === "renderQuery")).toMatchObject({
+      expect(
+        posted().find(
+          (m) => (m as { command: string }).command === "renderQuery",
+        ),
+      ).toMatchObject({
         preview,
       });
-      expect(posted().find((m) => m.command === "renderError")).toMatchObject({
+      expect(
+        posted().find(
+          (m) => (m as { command: string }).command === "renderError",
+        ),
+      ).toMatchObject({
         preview,
       });
     });
@@ -160,22 +175,22 @@ describe("QueryResultPanel", () => {
       for (let i = 0; i < 12; i++) {
         await panel.executeQuery({
           query: `select ${i}`,
-          fn: Promise.resolve({ executeQuery: async () => output() }),
+          fn: Promise.resolve({ executeQuery: async () => output() } as never),
           projectName: "jaffle",
         });
       }
-      expect(panel.history.all()).toHaveLength(10);
-      expect(panel.history.all()[0].rawSql).toBe("select 11");
+      expect((panel as any).history.all()).toHaveLength(10);
+      expect((panel as any).history.all()[0].rawSql).toBe("select 11");
     });
 
     it("skips history when no project is found", async () => {
       const { panel } = makePanel();
       await panel.executeQuery({
         query: "select 1",
-        fn: Promise.resolve({ executeQuery: async () => output() }),
+        fn: Promise.resolve({ executeQuery: async () => output() } as never),
         projectName: "",
       });
-      expect(panel.history.all()).toEqual([]);
+      expect((panel as any).history.all()).toEqual([]);
     });
 
     it("renders a server error and notifies", async () => {
@@ -186,14 +201,16 @@ describe("QueryResultPanel", () => {
           executeQuery: async () => {
             throw new ExecuteSQLError("bad column", "select compiled nope");
           },
-        }),
+        } as never),
         projectName: "jaffle",
       });
       expect(window.showErrorMessage).toHaveBeenCalledWith(
         expect.stringContaining("bad column"),
         "Show output",
       );
-      const error = posted().find((m) => m.command === "renderError");
+      const error = posted().find(
+        (m) => (m as { command: string }).command === "renderError",
+      );
       expect(error).toMatchObject({
         error: { code: -1, message: "bad column" },
         raw_sql: "select nope",
@@ -209,7 +226,11 @@ describe("QueryResultPanel", () => {
         projectName: "",
       });
       expect(window.showErrorMessage).not.toHaveBeenCalled();
-      expect(posted().find((m) => m.command === "renderError")).toMatchObject({
+      expect(
+        posted().find(
+          (m) => (m as { command: string }).command === "renderError",
+        ),
+      ).toMatchObject({
         error: { message: "boom" },
       });
     });
@@ -217,28 +238,28 @@ describe("QueryResultPanel", () => {
 
   describe("messages", () => {
     it("ignores messages the contract does not define", async () => {
-      const { panel, posted } = makePanel();
-      await panel.handleCommand({ command: "nonsense" });
+      const { send, posted } = makePanel();
+      await send({ command: "nonsense" });
       expect(posted()).toEqual([]);
     });
 
     it("returns and clears the query history", async () => {
-      const { panel, posted } = makePanel({ project: project() });
+      const { panel, posted, send } = makePanel({ project: project() });
       await panel.executeQuery({
         query: "select 1",
-        fn: Promise.resolve({ executeQuery: async () => output() }),
+        fn: Promise.resolve({ executeQuery: async () => output() } as never),
         projectName: "jaffle",
       });
-      await panel.handleCommand({ command: "getQueryHistory" });
+      await send({ command: "getQueryHistory" });
       expect(posted().at(-1)).toMatchObject({
         command: "queryHistory",
         args: { body: [expect.objectContaining({ rawSql: "select 1" })] },
       });
-      await panel.handleCommand({
+      await send({
         command: "clearQueryHistory",
         syncRequestId: "s1",
       });
-      expect(panel.history.all()).toEqual([]);
+      expect((panel as any).history.all()).toEqual([]);
       expect(posted().at(-1)).toMatchObject({
         command: "response",
         args: { syncRequestId: "s1", status: true },
@@ -246,18 +267,18 @@ describe("QueryResultPanel", () => {
     });
 
     it("cancels the running query and resets the page", async () => {
-      const { panel, posted } = makePanel();
+      const { panel, posted, send } = makePanel();
       const cancel = vi.fn();
-      panel.queryExecution = { cancel };
-      await panel.handleCommand({ command: "cancelQuery" });
+      (panel as any).queryExecution = { cancel };
+      await send({ command: "cancelQuery" });
       expect(cancel).toHaveBeenCalled();
       expect(posted().at(-1)).toMatchObject({ command: "resetState" });
     });
 
     it("runs a history query on the named project with its limit", async () => {
       const target = project();
-      const { panel } = makePanel({ project: target });
-      await panel.handleCommand({
+      const { send } = makePanel({ project: target });
+      await send({
         command: "executeQuery",
         query: "select 2",
         projectName: "jaffle",
@@ -266,7 +287,7 @@ describe("QueryResultPanel", () => {
       expect(
         target.queries.executeSQLWithLimitOnQueryPanel,
       ).toHaveBeenCalledWith("select 2", "", 50);
-      await panel.handleCommand({
+      await send({
         command: "executeQuery",
         query: "select 3",
         projectName: "jaffle",
@@ -278,8 +299,8 @@ describe("QueryResultPanel", () => {
     });
 
     it("reports a history query whose project is gone", async () => {
-      const { panel } = makePanel();
-      await panel.handleCommand({
+      const { send } = makePanel();
+      await send({
         command: "executeQuery",
         query: "select 2",
         projectName: "gone",
@@ -292,7 +313,7 @@ describe("QueryResultPanel", () => {
 
     it("runs the active editor's selection with the page limit", async () => {
       const target = project();
-      const { panel } = makePanel({ picked: target });
+      const { send } = makePanel({ picked: target });
       (window as any).activeTextEditor = {
         document: {
           uri: { fsPath: "/p/models/orders.sql" },
@@ -304,7 +325,7 @@ describe("QueryResultPanel", () => {
           end: { line: 0, character: 3 },
         },
       };
-      await panel.handleCommand({
+      await send({
         command: "executeQueryFromActiveWindow",
         limit: 7,
       });
@@ -314,8 +335,8 @@ describe("QueryResultPanel", () => {
     });
 
     it("reports a missing editor or project", async () => {
-      const { panel } = makePanel();
-      await panel.handleCommand({
+      const { send } = makePanel();
+      await send({
         command: "executeQueryFromActiveWindow",
         limit: 1,
       });
@@ -326,7 +347,7 @@ describe("QueryResultPanel", () => {
       (window as any).activeTextEditor = {
         document: { uri: { fsPath: "/p/a.sql" }, getText: () => "" },
       };
-      await panel.handleCommand({
+      await send({
         command: "executeQueryFromActiveWindow",
         limit: 1,
       });
@@ -337,25 +358,59 @@ describe("QueryResultPanel", () => {
     });
 
     it("queues the loading message until the page is ready", async () => {
-      const { panel, posted } = makePanel();
-      panel.isWebviewReady = false;
-      await panel.transmitLoading();
+      const { panel, posted, view, send } = makePanel({}, false);
+      void panel.executeQuery({
+        query: "select 1",
+        fn: new Promise(() => undefined),
+        projectName: "",
+      });
+      await flushAsync();
       expect(posted()).toEqual([]);
-      panel.onWebviewReady();
-      expect(posted()).toEqual([{ command: "renderLoading" }]);
+      await send({
+        command: "webview:ready",
+      });
+      expect(view.posted()).toEqual([{ command: "renderLoading" }]);
+    });
+
+    it("flushes each queued loading message last-in first-out once the page is ready", async () => {
+      const { panel, posted, view, send } = makePanel({}, false);
+      const queue = (panel as any).pendingMessages as unknown[];
+      const pop = vi.spyOn(queue, "pop");
+      const shift = vi.spyOn(queue, "shift");
+      void panel.executeQuery({
+        query: "select 1",
+        fn: new Promise(() => undefined),
+        projectName: "",
+      });
+      void panel.executeQuery({
+        query: "select 2",
+        fn: new Promise(() => undefined),
+        projectName: "",
+      });
+      await flushAsync();
+      expect(posted()).toEqual([]);
+      await send({ command: "webview:ready" });
+      expect(pop).toHaveBeenCalledTimes(2);
+      // The queued messages are identical, so the order is pinned by the pop() flush itself, not by the posts.
+      expect(shift).not.toHaveBeenCalled();
+      expect(queue).toEqual([]);
+      expect(view.posted()).toEqual([
+        { command: "renderLoading" },
+        { command: "renderLoading" },
+      ]);
     });
   });
 
   describe("disposed view", () => {
     it("ignores a context update posted to a view VS Code has disposed", async () => {
-      const { panel } = makePanel();
-      panel._panel = {
-        get webview(): never {
+      const { panel, view } = makePanel();
+      Object.defineProperty(view.page, "webview", {
+        get(): never {
           throw new Error("Webview is disposed");
         },
-      };
+      });
       await expect(
-        panel.sendUpdatedContextToWebview(),
+        (panel as any).sendUpdatedContextToWebview(),
       ).resolves.toBeUndefined();
     });
   });

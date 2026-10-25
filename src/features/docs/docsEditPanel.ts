@@ -2,9 +2,9 @@ import { documentationEditor } from "@fusion-power-user/webview-contract";
 import * as path from "node:path";
 import type {
   CancellationToken,
-  Disposable,
   TextEditor,
   Uri,
+  WebviewPanel,
   WebviewView,
   WebviewViewResolveContext,
 } from "vscode";
@@ -20,7 +20,6 @@ import type { SharedStateService } from "../../projects/project/sharedStateServi
 import { activeModelUri } from "../../projects/registry/previewUri";
 import { USE_STRICT_ANALYSIS_COMMAND } from "../../projects/registry/schemaOrigin";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
-import { dispatchMessage } from "../../webview/messageRouter";
 import { PanelHost } from "../../webview/panelHost";
 import type {
   ColumnProposalRequests,
@@ -53,10 +52,12 @@ type HostMessage = documentationEditor.HostMessage;
 type PanelMessage = documentationEditor.PanelMessage;
 type SaveMessage = MessageOf<PanelMessage, "saveDocumentation">;
 
-export class DocsEditViewPanel extends PanelHost<HostMessage> {
+export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
   public static readonly viewType = "fusionPowerUser.DocsEdit";
+  public override viewType = DocsEditViewPanel.viewType;
   protected readonly entry = "documentationEditor";
   protected readonly csp = {};
+  protected readonly guard = documentationEditor.isPanelMessage;
   protected override panelDescription = "Edit model documentation";
   private documentation: DBTDocumentation | undefined;
   /** Unsaved drafts by model file path; host memory only, never webview state. */
@@ -68,8 +69,6 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
   private readonly dbtTestService: DbtTestService;
   private readonly columnProposals: ColumnProposalService;
   private loadedFromManifest = false;
-  private onMessageDisposable: Disposable | undefined;
-  private demandSubscription: Disposable | undefined;
   private projects: PanelProjects;
   private parseDemand: ParseDemand | undefined;
 
@@ -128,12 +127,6 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
         },
       ),
     );
-  }
-
-  override dispose() {
-    this.onMessageDisposable?.dispose();
-    this.onMessageDisposable = undefined;
-    super.dispose();
   }
 
   private getProject(): PanelProject | undefined {
@@ -235,56 +228,10 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
     context: WebviewViewResolveContext,
     token: CancellationToken,
   ) {
-    // A rebuilt page has not reported ready yet, so a request waits for its webview:ready.
-    this.isWebviewReady = false;
     super.resolveWebviewView(panel, context, token);
     panel.title = "";
-    this.setupWebviewHooks();
-    this.followVisibility(panel);
+    this.followDemand(panel, this.parseDemand);
     void this.transmitData();
-  }
-
-  /** The documentation editor reads parse-owned fields, so a visible editor keeps the parse current. */
-  private followVisibility(panel: WebviewView) {
-    this.demandSubscription?.dispose();
-    this.demandSubscription = this.parseDemand?.follow(
-      () => panel.visible,
-      panel.onDidChangeVisibility,
-    );
-    panel.onDidDispose(() => this.demandSubscription?.dispose());
-    this._disposables.push(
-      panel.onDidChangeVisibility(() => {
-        if (!panel.visible) {
-          // A hidden view's page is discarded, so the page shown next must report ready again.
-          this.isWebviewReady = false;
-        }
-      }),
-    );
-  }
-
-  private setupWebviewHooks() {
-    this.onMessageDisposable?.dispose();
-    this.onMessageDisposable = this._panel!.webview.onDidReceiveMessage(
-      (message: unknown) => this.handleCommand(message),
-      null,
-      this._disposables,
-    );
-  }
-
-  /** Routes an inbound message through the documentation-editor guard and handler map. */
-  private async handleCommand(message: unknown): Promise<void> {
-    this.dbtTerminal.debug(
-      "docsEditPanel:handleCommand",
-      "onDidReceiveMessage",
-      message,
-    );
-    await dispatchMessage(
-      DocsEditViewPanel.viewType,
-      message,
-      documentationEditor.isPanelMessage,
-      this.handlers(),
-      { log: this.dbtTerminal, reply: (response) => this.post(response) },
-    );
   }
 
   private get requests(): DocsEditRequests {
@@ -298,11 +245,13 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
   }
 
   /** One handler per documentation-editor panel command. */
-  private handlers(): Handlers<PanelMessage> {
+  protected override handlers(
+    page: WebviewView | WebviewPanel,
+  ): Handlers<PanelMessage> {
     const { requests } = this;
     return {
       ...requests.handlers(),
-      ...this.commonHandlers(),
+      ...this.commonHandlers(page),
       getCurrentModelDocumentation: () => this.transmitData(),
       saveDraft: (message) => this.saveDraft(message),
       openProblemsTab: () =>
@@ -365,7 +314,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage> {
 
   /** A command asked for proposals: waits for the page, makes the active model's documentation current, then proposes. */
   private async onProposalRequest(kind: ProposalKind) {
-    if (!(await this.checkIfWebviewReady(10_000))) {
+    if (!(await this.whenReady("bottom", 10_000))) {
       void window.showWarningMessage(
         "The documentation editor did not load; try again",
       );
