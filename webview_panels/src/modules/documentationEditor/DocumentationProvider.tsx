@@ -1,5 +1,4 @@
 import type { documentationEditor } from "@fusion-power-user/webview-contract";
-import type { MessageOf } from "@modules/app/requestExecutor";
 import {
   executeRequestInAsync,
   executeRequestInSync,
@@ -18,36 +17,16 @@ import {
 import {
   documentationReducer,
   initialState,
-  setDocBlocks,
-  setIncomingDocsData,
-  setMissingDocumentationMessage,
-  setProject,
-  setPublication,
+  rendered,
   updateCurrentDocsData,
   updateCurrentDocsTests,
   updateCurrentUnitTests,
 } from "./state/documentationReducer";
-import type {
-  DBTDocumentation,
-  DBTModelTest,
-  DBTUnitTest,
-} from "./state/types";
+import { incomingDecision, type RenderMessage } from "./state/incomingDocs";
 import useDraftSync from "./state/useDraftSync";
-import { fromHostDocumentation, isStateDirty } from "./utils";
+import { fromHostDocumentation } from "./utils";
 
 type HostMessage = documentationEditor.HostMessage;
-/** `renderDocumentation` with `docs` mapped by `fromHostDocumentation`; the test types are the contract's own. */
-type RenderMessage = Omit<
-  MessageOf<HostMessage, "renderDocumentation">,
-  "docs" | "tests" | "unitTests" | "draft"
-> & {
-  docs?: DBTDocumentation | undefined;
-  tests?: DBTModelTest[] | undefined;
-  unitTests?: DBTUnitTest[] | undefined;
-  draft?:
-    | { docs: DBTDocumentation; tests?: DBTModelTest[] | undefined }
-    | undefined;
-};
 
 const ActionState = {
   CANCEL_STAY: "Stay",
@@ -63,26 +42,6 @@ const DocumentationProvider = (): React.JSX.Element => {
     initialProposalsState,
   );
 
-  const renderDocumentation = (message: RenderMessage) => {
-    dispatch(
-      setIncomingDocsData({
-        docs: message.docs,
-        tests: message.tests,
-        unitTests: message.unitTests,
-      }),
-    );
-    dispatch(setProject(message.project));
-    dispatch(
-      setMissingDocumentationMessage(message.missingDocumentationMessage),
-    );
-    dispatch(setDocBlocks(message.docBlocks));
-    dispatch(setPublication(message.publication));
-    if (message.draft) {
-      dispatch(updateCurrentDocsData(message.draft.docs));
-      dispatch(updateCurrentDocsTests(message.draft.tests));
-    }
-  };
-
   const onMessage = useCallback((event: MessageEvent<HostMessage>) => {
     switch (event.data.command) {
       case "renderDocumentation": {
@@ -95,43 +54,44 @@ const DocumentationProvider = (): React.JSX.Element => {
           },
         };
         const { currentDocsData } = stateRef.current;
-        if (!isStateDirty(stateRef.current)) {
-          renderDocumentation(message);
-          break;
-        }
-        // The page's own edits are newer than the draft the host holds for the same model.
-        if (currentDocsData?.filePath === message.draft?.docs.filePath) {
-          renderDocumentation({ ...message, draft: undefined });
-          break;
-        }
-        executeRequestInSync("showWarningMessage", {
-          infoMessage: `You have unsaved changes in model: ‘${currentDocsData?.name}’. Would you
+        switch (incomingDecision(stateRef.current, message)) {
+          case "render":
+            dispatch(rendered(message));
+            break;
+          case "renderWithoutDraft":
+            dispatch(rendered({ ...message, draft: undefined }));
+            break;
+          case "ask":
+            executeRequestInSync("showWarningMessage", {
+              infoMessage: `You have unsaved changes in model: ‘${currentDocsData?.name}’. Would you
           like to discard the changes or remain in the current state?`,
-          items: [ActionState.DISCARD_PROCEED, ActionState.CANCEL_STAY],
-        })
-          .then((action) => {
-            switch (action) {
-              case ActionState.DISCARD_PROCEED: {
-                dispatch(updateCurrentDocsData(message.docs));
-                dispatch(updateCurrentDocsTests(message.tests));
-                dispatch(updateCurrentUnitTests(message.unitTests));
-                renderDocumentation(message);
-                break;
-              }
-              case ActionState.CANCEL_STAY:
-              case undefined: {
-                break;
-              }
-              default:
-                break;
-            }
-          })
-          .catch((err) => {
-            panelLogger.error(
-              "error while showing unsaved changes dialog",
-              err,
-            );
-          });
+              items: [ActionState.DISCARD_PROCEED, ActionState.CANCEL_STAY],
+            })
+              .then((action) => {
+                switch (action) {
+                  case ActionState.DISCARD_PROCEED: {
+                    dispatch(updateCurrentDocsData(message.docs));
+                    dispatch(updateCurrentDocsTests(message.tests));
+                    dispatch(updateCurrentUnitTests(message.unitTests));
+                    dispatch(rendered(message));
+                    break;
+                  }
+                  case ActionState.CANCEL_STAY:
+                  case undefined: {
+                    break;
+                  }
+                  default:
+                    break;
+                }
+              })
+              .catch((err) => {
+                panelLogger.error(
+                  "error while showing unsaved changes dialog",
+                  err,
+                );
+              });
+            break;
+        }
         break;
       }
       // The app listener settles responses; this panel shows no error state.
