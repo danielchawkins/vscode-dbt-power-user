@@ -269,7 +269,7 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     };
   }
 
-  /** Saves, then answers the request with the reloaded documentation and tests. */
+  /** Saves, then answers the request with whether the save was confirmed. */
   private async saveAndReply(message: SaveMessage): Promise<void> {
     const { syncRequestId } = message;
     const saved = await this.saveDocumentation(message);
@@ -293,9 +293,6 @@ export class DocsEditViewPanel extends PanelHost<HostMessage, PanelMessage> {
     }
     await reply({ reply: (response) => this.post(response) }, syncRequestId, {
       saved: true,
-      tests: await this.dbtTestService.getTestsForCurrentModel(),
-      unitTests: await this.dbtTestService.getUnitTestsForCurrentModel(),
-      documentation: this.documentation,
     } satisfies documentationEditor.ResponseBodies["saveDocumentation"]);
   }
 
