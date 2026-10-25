@@ -109,7 +109,8 @@ describe("Lineage control coverage", () => {
       },
       TESTED_CONTROLS,
     );
-  });
+    // Eleven renders of the whole panel: 1-3 s alone, past the 5 s default when the suite runs in parallel.
+  }, 20_000);
 });
 
 describe("Lineage control coverage gate", () => {
