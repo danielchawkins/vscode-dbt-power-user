@@ -14,7 +14,7 @@ import { Themes } from "./types";
 const { executeRequestInAsync } = panelRequests<WebviewReady>();
 
 const useListeners = (dispatch: Dispatch<AppAction>): void => {
-  const onMesssage = useCallback(
+  const onMessage = useCallback(
     (event: MessageEvent<Response | { command?: undefined }>) => {
       if (event.data.command === "response") {
         handleIncomingResponse(event.data.args);
@@ -44,7 +44,7 @@ const useListeners = (dispatch: Dispatch<AppAction>): void => {
   });
 
   useEffect(() => {
-    window.addEventListener("message", onMesssage);
+    window.addEventListener("message", onMessage);
     executeRequestInAsync("webview:ready");
 
     const themeObserver = new MutationObserver((mutations) => {
@@ -61,10 +61,10 @@ const useListeners = (dispatch: Dispatch<AppAction>): void => {
     setTheme(document.body);
 
     return () => {
-      window.removeEventListener("message", onMesssage);
+      window.removeEventListener("message", onMessage);
       themeObserver.disconnect();
     };
-  }, [onMesssage]);
+  }, [onMessage]);
 };
 
 export default useListeners;

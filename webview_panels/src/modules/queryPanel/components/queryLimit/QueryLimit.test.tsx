@@ -9,9 +9,9 @@ vi.mock("@modules/queryPanel/requests", () => ({
 
 import { QueryPanelContext } from "@modules/queryPanel/context/queryPanelContext";
 import {
+  hostMessage,
   initialState,
   queryPanelReducer,
-  setActiveEditor,
 } from "@modules/queryPanel/context/queryPanelReducer";
 import { executeRequestInAsync } from "@modules/queryPanel/requests";
 import QueryLimit from "./QueryLimit";
@@ -100,7 +100,14 @@ describe("QueryLimit", () => {
     render(<Harness />);
     type("100");
     act(() => {
-      dispatchRef(setActiveEditor({ filepath: "/p/a.sql", query: "" }));
+      // The host posts getContext when the active file changes.
+      dispatchRef(
+        hostMessage({
+          command: "getContext",
+          limit: initialState.limit ?? 500,
+          activeEditor: { filepath: "/p/a.sql", query: "" },
+        }),
+      );
     });
     expect(input().value).toBe("500");
     expect(screen.queryByText("Save")).toBeNull();
