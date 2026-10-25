@@ -11,6 +11,7 @@ import type {
 } from "./columnProposals";
 import type { DbtTestService } from "./dbtTestService";
 import type { DocGenService } from "./docGenService";
+import type { DocsDrafts } from "./docsDrafts";
 
 /** Test-only: answers with the column proposals for the active documentation after opening `file`. */
 const DOCS_COLUMN_PROPOSALS_COMMAND = "fusionPowerUser.test.columnProposals";
@@ -32,7 +33,7 @@ export interface DocsHarnessDeps {
     "getUncompiledDocumentationForCurrentActiveFile"
   >;
   dbtTestService: Pick<DbtTestService, "getTestsForCurrentModel">;
-  drafts: ReadonlyMap<string, documentationEditor.DocumentationDraft>;
+  drafts: DocsDrafts;
   proposalTarget(): Promise<ProposalTarget | undefined>;
   save(message: SaveMessage): Promise<void>;
 }
@@ -60,7 +61,7 @@ async function acceptAllProposals(
     return "noPayload";
   }
   const draft = deps.drafts.get(documentation.filePath);
-  const columns = draft?.docs.columns ?? documentation.columns;
+  const columns = deps.drafts.columnsFor(documentation);
   await deps.save({
     ...(draft?.docs ?? documentation),
     command: "saveDocumentation",
