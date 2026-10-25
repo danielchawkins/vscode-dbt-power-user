@@ -1,6 +1,7 @@
 import { act, renderHook } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import useTestFormSave, { TestOperation } from "./useTestFormSave";
+import { TestOperation } from "../testEdits";
+import useTestFormSave from "./useTestFormSave";
 
 describe("useTestFormSave", () => {
   it("is not saving after a request that names no test", async () => {

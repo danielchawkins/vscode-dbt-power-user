@@ -1,22 +1,10 @@
 import { updateCurrentDocsTests } from "@modules/documentationEditor/state/documentationReducer";
-import type {
-  DBTModelTest,
-  TestMetadataAcceptedValuesKwArgs,
-  TestMetadataRelationshipsKwArgs,
-} from "@modules/documentationEditor/state/types";
-import { DbtGenericTests } from "@modules/documentationEditor/state/types";
 import useDocumentationContext from "@modules/documentationEditor/state/useDocumentationContext";
 import { panelLogger } from "@modules/logger";
 import { useState } from "react";
+import { editTests, TestOperation } from "../testEdits";
 import type { SaveRequest } from "../types";
 import { generateHash } from "../utils";
-
-export const TestOperation = {
-  CREATE: 0,
-  UPDATE: 1,
-  DELETE: 2,
-} as const;
-export type TestOperation = (typeof TestOperation)[keyof typeof TestOperation];
 
 const useTestFormSave = (): {
   handleSave: (
@@ -32,97 +20,6 @@ const useTestFormSave = (): {
     dispatch,
   } = useDocumentationContext();
 
-  const updateTests = (
-    testsData: DBTModelTest[],
-    data:
-      | Partial<TestMetadataAcceptedValuesKwArgs>
-      | Partial<TestMetadataRelationshipsKwArgs>,
-    type: DbtGenericTests,
-    column: string,
-  ) => {
-    const temp = [...testsData];
-    const currentIndex = temp.findIndex(
-      (test: DBTModelTest) =>
-        test.test_metadata?.name === type &&
-        test.test_metadata.kwargs.column_name === column,
-    );
-    const existing = temp[currentIndex];
-    if (existing) {
-      temp[currentIndex] = {
-        ...existing,
-        test_metadata: {
-          ...existing.test_metadata,
-          name: existing.test_metadata?.name ?? "",
-          kwargs: {
-            ...existing.test_metadata?.kwargs,
-            ...data,
-          },
-        },
-      };
-      return temp;
-    }
-
-    return temp;
-  };
-
-  const getUpdatedTestsData = async (
-    data: SaveRequest,
-    column: string,
-    operation: TestOperation,
-  ) => {
-    const testsData = [...(currentDocsTests ?? [])];
-    const newValues = data.accepted_values?.map((s) => s.trim());
-    if (operation === TestOperation.DELETE) {
-      return testsData.filter((test: DBTModelTest) => {
-        if (test.test_metadata?.kwargs.column_name !== column) {
-          return true;
-        }
-
-        return test.test_metadata?.name !== data.test?.toString();
-      });
-    }
-    if (operation === TestOperation.CREATE) {
-      const hashKey = await generateHash(JSON.stringify({ ...data, column }));
-      testsData.push({
-        column_name: column,
-        key: hashKey,
-        test_metadata: {
-          name: data.test!,
-          kwargs: {
-            column_name: column,
-            model: currentDocsData?.name ?? "",
-            ...(newValues && { values: newValues }),
-            ...(data.to && { to: data.to }),
-            ...(data.field && { field: data.field }),
-          },
-        },
-      });
-      return testsData;
-    }
-
-    if (data.test === DbtGenericTests.ACCEPTED_VALUES) {
-      return updateTests(
-        testsData,
-        { values: newValues ?? [] },
-        DbtGenericTests.ACCEPTED_VALUES,
-        column,
-      );
-    }
-
-    if (data.test === DbtGenericTests.RELATIONSHIPS) {
-      return updateTests(
-        testsData,
-        {
-          to: data.to ?? undefined,
-          field: data.field,
-        },
-        DbtGenericTests.RELATIONSHIPS,
-        column,
-      );
-    }
-    return testsData;
-  };
-
   const handleSave = async (
     data: SaveRequest,
     column: string,
@@ -133,7 +30,19 @@ const useTestFormSave = (): {
     }
     setIsSaving(true);
 
-    const testsData = await getUpdatedTestsData(data, column, operation);
+    // Only a created test is keyed by the hash of its request.
+    const key =
+      operation === TestOperation.CREATE
+        ? await generateHash(JSON.stringify({ ...data, column }))
+        : "";
+    const testsData = editTests({
+      tests: currentDocsTests ?? [],
+      column,
+      model: currentDocsData?.name ?? "",
+      request: data,
+      operation,
+      key,
+    });
     panelLogger.info("add/update test data", testsData);
     dispatch(updateCurrentDocsTests(testsData));
   };
