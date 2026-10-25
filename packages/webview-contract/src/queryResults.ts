@@ -81,6 +81,24 @@ export interface QueryHistoryEntry {
   modelName: string;
 }
 
+/**
+ * What a results tab renders. The host sends it for a history entry; "Open in Tab" sends the panel's whole state.
+ * Both senders may leave any field out, and the tab reads each one only when it is there.
+ */
+export interface QueryTabData {
+  queryResults?:
+    | {
+        data?: Record<string, unknown>[] | undefined;
+        columnNames: string[];
+        columnTypes: (string | null)[];
+      }
+    | undefined;
+  compiledCodeMarkup?: string | undefined;
+  rawSql?: string | undefined;
+  queryExecutionInfo?: { elapsedTime: number } | undefined;
+  preview?: ModelPreview | undefined;
+}
+
 /** Query-results messages from the panel to the extension host. */
 export type PanelMessage =
   | WebviewReady
@@ -116,7 +134,7 @@ export type PanelMessage =
       error?: unknown;
     }
   /** Opens the current results in an editor tab; `queryTabData` is the panel's result state. */
-  | { command: "queryResultTab:render"; queryTabData: Record<string, unknown> };
+  | { command: "queryResultTab:render"; queryTabData: QueryTabData };
 
 const columnTypes = arrayOf(nullable(isString));
 
@@ -137,6 +155,22 @@ const isHistoryEntry = shape<QueryHistoryEntry>({
   columnNames: arrayOf(isString),
   columnTypes,
   modelName: isString,
+});
+
+const isQueryTabData = shape<QueryTabData>({
+  queryResults: optional(
+    shape<NonNullable<QueryTabData["queryResults"]>>({
+      data: optional(arrayOf(isRecord)),
+      columnNames: arrayOf(isString),
+      columnTypes,
+    }),
+  ),
+  compiledCodeMarkup: optional(isString),
+  rawSql: optional(isString),
+  queryExecutionInfo: optional(
+    shape<{ elapsedTime: number }>({ elapsedTime: isNumber }),
+  ),
+  preview,
 });
 
 const hostFields: CommandFields<HostMessage> = {
@@ -194,7 +228,7 @@ const panelFields: CommandFields<PanelMessage> = {
   },
   openCodeInEditor: { code: optional(isString) },
   clearQueryHistory: { syncRequestId, error: isAnything },
-  "queryResultTab:render": { queryTabData: isRecord },
+  "queryResultTab:render": { queryTabData: isQueryTabData },
 };
 
 export const isHostMessage = messageGuard<HostMessage>(hostFields);

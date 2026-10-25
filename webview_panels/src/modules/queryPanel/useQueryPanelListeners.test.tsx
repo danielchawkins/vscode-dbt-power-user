@@ -1,3 +1,4 @@
+import { executeRequestInSync } from "@modules/queryPanel/requests";
 import { render, waitFor } from "@testing-library/react";
 import { useReducer } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,6 +14,7 @@ vi.mock("./QueryPanel", () => ({
 
 import { QueryPanelContext } from "./context/queryPanelContext";
 import { initialState, queryPanelReducer } from "./context/queryPanelReducer";
+import type { QueryPanelStateProps } from "./context/types";
 import useQueryPanelListeners from "./useQueryPanelListeners";
 import useQueryPanelState from "./useQueryPanelState";
 
@@ -118,5 +120,84 @@ describe("useQueryPanelListeners", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(latestHistory).toEqual(initialState.queryHistory);
+  });
+
+  describe("a results tab opened from history", () => {
+    const ElapsedProbe = ({
+      onState,
+    }: {
+      onState: (state: QueryPanelStateProps) => void;
+    }): null => {
+      onState(useQueryPanelState());
+      useQueryPanelListeners();
+      return null;
+    };
+
+    const ElapsedHarness = ({
+      onState,
+    }: {
+      onState: (state: QueryPanelStateProps) => void;
+    }): React.JSX.Element => {
+      const [state, dispatch] = useReducer(queryPanelReducer, initialState);
+
+      return (
+        <QueryPanelContext value={{ state, dispatch }}>
+          <ElapsedProbe onState={onState} />
+        </QueryPanelContext>
+      );
+    };
+
+    it("shows the rows and the elapsed time from the tab data", async () => {
+      // The body tabDataOf sends for a history entry (src/features/queryResults/queryPanelSupport.ts).
+      vi.mocked(executeRequestInSync).mockResolvedValueOnce({
+        queryResults: {
+          data: [{ id: 1 }],
+          columnNames: ["id"],
+          columnTypes: ["NUMBER"],
+        },
+        compiledCodeMarkup: "select * from analytics.orders",
+        rawSql: "select * from orders",
+        queryExecutionInfo: { elapsedTime: 2.5 },
+      });
+      let latest: QueryPanelStateProps | undefined;
+
+      render(
+        <ElapsedHarness
+          onState={(state) => {
+            latest = state;
+          }}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(latest?.queryExecutionInfo?.elapsedTime).toBe(2.5);
+      });
+      expect(latest?.queryResults?.data).toEqual([{ id: 1 }]);
+    });
+
+    it("renders the rows and leaves the time unset when the tab data has none", async () => {
+      vi.mocked(executeRequestInSync).mockResolvedValueOnce({
+        queryResults: {
+          data: [{ id: 1 }],
+          columnNames: ["id"],
+          columnTypes: ["NUMBER"],
+        },
+        compiledCodeMarkup: "select * from analytics.orders",
+      });
+      let latest: QueryPanelStateProps | undefined;
+
+      render(
+        <ElapsedHarness
+          onState={(state) => {
+            latest = state;
+          }}
+        />,
+      );
+
+      await waitFor(() => {
+        expect(latest?.queryResults?.data).toEqual([{ id: 1 }]);
+      });
+      expect(latest?.queryExecutionInfo).toBeUndefined();
+    });
   });
 });

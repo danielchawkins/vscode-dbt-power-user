@@ -192,7 +192,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
   useEffect(() => {
     void executeRequestInSync("getQueryTabData").then((data) => {
       if (data) {
-        const typedData = data as QueryPanelStateProps;
+        const typedData = data as queryResults.QueryTabData;
         handleQueryResults({
           rows: typedData?.queryResults?.data,
           columnNames: typedData?.queryResults?.columnNames,
@@ -200,11 +200,7 @@ const useQueryPanelListeners = (): { loading: boolean } => {
           compiled_sql: typedData.compiledCodeMarkup,
           preview: typedData.preview,
         });
-        dispatch(
-          setQueryExecutionInfo({
-            elapsedTime: typedData.queryExecutionInfo!.elapsedTime,
-          }),
-        );
+        dispatch(setQueryExecutionInfo(typedData.queryExecutionInfo));
       }
     });
   }, [dispatch, handleQueryResults]);
