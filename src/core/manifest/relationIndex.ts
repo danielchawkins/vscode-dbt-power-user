@@ -1,4 +1,47 @@
-import type { NodeMetaMap, SourceMetaMap } from "./types";
+import type { ColumnMetaData, Meta, NodeMetaMap, SourceMetaMap } from "./types";
+
+/** A node or source table, seen as a relation: what the ERD, inference and declared relationships read. */
+export interface RelationTable {
+  unique_id: string;
+  name: string;
+  /** Set on a source table to its `source_name`; undefined on a node. */
+  source_name?: string | undefined;
+  columns: { [columnName: string]: ColumnMetaData };
+  meta: Meta;
+  /** `config.meta`, which Fusion may place instead of `meta`. */
+  configMeta: Meta;
+  package_name: string;
+}
+
+/** Every node, then every source table, as a {@link RelationTable}. */
+export function* relationTables(
+  nodeMetaMap: NodeMetaMap,
+  sourceMetaMap?: SourceMetaMap,
+): Generator<RelationTable> {
+  for (const node of nodeMetaMap.nodes()) {
+    yield {
+      unique_id: node.unique_id,
+      name: node.name,
+      columns: node.columns ?? {},
+      meta: node.meta,
+      configMeta: node.config?.meta,
+      package_name: node.package_name,
+    };
+  }
+  for (const source of sourceMetaMap?.values() ?? []) {
+    for (const tbl of source.tables ?? []) {
+      yield {
+        unique_id: tbl.unique_id,
+        name: tbl.name,
+        source_name: source.name,
+        columns: tbl.columns ?? {},
+        meta: tbl.meta,
+        configMeta: tbl.configMeta,
+        package_name: source.package_name,
+      };
+    }
+  }
+}
 
 /** One node that claims a model name, with what picks among claimants. */
 interface NameClaimant {
@@ -14,8 +57,7 @@ export interface RelationIndex {
   /** Every node claiming each model name, for `resolveBaseName`. */
   claimantsByBaseName: Map<string, NameClaimant[]>;
   byRelationName: Map<string, string>;
-  bySourceKey: Map<string, string>;
-  /** Table-level unique_ids by `source_name.table`, for `meta.relationships`. */
+  /** Table-level unique_ids by `source_name.table`, for `source()` targets. */
   bySourceTable: Map<string, string>;
   /** `source_name.table` keys that more than one source table claims. */
   ambiguousSourceTables: Set<string>;
@@ -70,7 +112,6 @@ export function buildRelationIndex(
     byBaseName: new Map<string, string>(),
     claimantsByBaseName: new Map<string, NameClaimant[]>(),
     byRelationName: new Map<string, string>(),
-    bySourceKey: new Map<string, string>(),
     bySourceTable: sourceTables.ids,
     ambiguousSourceTables: sourceTables.ambiguous,
   };
@@ -96,11 +137,9 @@ export function buildRelationIndex(
       );
     }
   }
-  for (const source of sourceMetaMap?.values() ?? []) {
-    for (const tbl of source.tables ?? []) {
-      const key = `${source.name}.${tbl.name}`;
-      index.bySourceKey.set(key, source.unique_id);
-      claim(sourceTables, key, tbl.unique_id);
+  for (const tbl of relationTables(nodeMetaMap, sourceMetaMap)) {
+    if (tbl.source_name !== undefined) {
+      claim(sourceTables, `${tbl.source_name}.${tbl.name}`, tbl.unique_id);
     }
   }
   return index;

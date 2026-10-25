@@ -67,9 +67,6 @@
     }
   },
   "src/core/manifest/relationshipInference.ts": {
-    "complexity": {
-      "count": 1
-    },
     "max-params": {
       "count": 1
     }

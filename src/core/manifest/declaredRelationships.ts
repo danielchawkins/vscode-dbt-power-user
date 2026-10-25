@@ -1,6 +1,6 @@
 import type { Log } from "../log";
 import type { RelationIndex } from "./relationIndex";
-import { resolveBaseName } from "./relationIndex";
+import { relationTables, resolveBaseName } from "./relationIndex";
 import { isIgnoredByMeta } from "./relationshipInference";
 import type { Meta, NodeMetaMap, Ref, SourceMetaMap } from "./types";
 
@@ -25,25 +25,14 @@ export function declaredRefs(
   context: DeclaredContext,
 ): Ref[] {
   const refs: Ref[] = [];
-  for (const node of nodeMetaMap.nodes()) {
+  for (const table of relationTables(nodeMetaMap, sourceMetaMap)) {
     refs.push(
       ...refsOf(
-        { owner: node.unique_id, package_name: node.package_name },
-        declaredValue(node.meta, node.config?.meta),
+        { owner: table.unique_id, package_name: table.package_name },
+        declaredValue(table.meta, table.configMeta),
         context,
       ),
     );
-  }
-  for (const source of sourceMetaMap?.values() ?? []) {
-    for (const table of source.tables ?? []) {
-      refs.push(
-        ...refsOf(
-          { owner: table.unique_id, package_name: source.package_name },
-          declaredValue(table.meta, table.configMeta),
-          context,
-        ),
-      );
-    }
   }
   context.terminal.debug(
     "RelationshipParser",
