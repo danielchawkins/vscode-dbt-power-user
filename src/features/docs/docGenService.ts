@@ -6,6 +6,7 @@ import { parse as parseYaml } from "yaml";
 import type { NodeMetaData } from "../../core/manifest/types";
 import { RESOURCE_TYPE_MODEL } from "../../core/manifest/types";
 import { errorText, removeProtocol } from "../../core/text";
+import type { Project } from "../../projects/project/project";
 import type { Projects } from "../../projects/project/projects";
 import type { QueryManifestService } from "../../projects/project/queryManifestService";
 import { activeModelUri } from "../../projects/registry/previewUri";
@@ -35,6 +36,14 @@ interface DocumentationSchemaModel {
 export interface DocumentationSchema {
   version: number;
   models: DocumentationSchemaModel[];
+}
+
+/** A model whose documentation can be read: its node, and the project that holds it. */
+interface OpenModel {
+  filePath: string;
+  modelName: string;
+  project: Project;
+  node: NodeMetaData;
 }
 
 export class DocGenService {
@@ -137,21 +146,26 @@ export class DocGenService {
     };
   }
 
-  private async getDocumentation(
+  /**
+   * Checks that `filePath` is a model whose documentation can be read, or says why not. Only an error or a missing path
+   * stops the check: a non-`.sql` file gets a warning here and goes on to the later checks.
+   */
+  private documentationGate(
     filePath?: string,
-    compiled = true,
-  ): Promise<DBTDocumentationMessage> {
+  ): { stop: DBTDocumentationMessage } | { model: OpenModel } {
     const initialValidation = this.getDocumentationValidationMessage(filePath);
     if (initialValidation.type === "error" || !filePath) {
-      return { documentation: undefined, message: initialValidation };
+      return { stop: { documentation: undefined, message: initialValidation } };
     }
 
     const modelName = path.basename(filePath, ".sql");
     const project = this.projects.get(Uri.file(filePath));
     if (!project?.projectRoot) {
       return {
-        documentation: undefined,
-        message: this.getDocumentationValidationMessage(filePath, "project"),
+        stop: {
+          documentation: undefined,
+          message: this.getDocumentationValidationMessage(filePath, "project"),
+        },
       };
     }
 
@@ -164,34 +178,57 @@ export class DocGenService {
       )
     ) {
       return {
-        documentation: undefined,
-        message: this.getDocumentationValidationMessage(filePath, "model_path"),
+        stop: {
+          documentation: undefined,
+          message: this.getDocumentationValidationMessage(
+            filePath,
+            "model_path",
+          ),
+        },
       };
     }
 
     const currentNode = this.getCurrentNode(modelName);
     if (!currentNode) {
       return {
-        documentation: undefined,
-        message: this.getDocumentationValidationMessage(filePath, "node"),
+        stop: {
+          documentation: undefined,
+          message: this.getDocumentationValidationMessage(filePath, "node"),
+        },
       };
     }
     if (currentNode.resource_type !== RESOURCE_TYPE_MODEL) {
       return {
-        documentation: undefined,
-        message: this.getDocumentationValidationMessage(
-          filePath,
-          "resource_type",
-        ),
+        stop: {
+          documentation: undefined,
+          message: this.getDocumentationValidationMessage(
+            filePath,
+            "resource_type",
+          ),
+        },
       };
     }
+    return {
+      model: { filePath, modelName, project, node: currentNode },
+    };
+  }
 
+  private async getDocumentation(
+    filePath?: string,
+    compiled = true,
+  ): Promise<DBTDocumentationMessage> {
+    const gate = this.documentationGate(filePath);
+    if ("stop" in gate) {
+      return gate.stop;
+    }
+    const { model } = gate;
+    const { node, modelName, project } = model;
     if (compiled) {
       return {
         documentation: this.getCompiledDocumentationFromNode(
-          currentNode,
+          node,
           modelName,
-          filePath,
+          model.filePath,
         ),
       };
     }
@@ -199,42 +236,32 @@ export class DocGenService {
     const emptyDocumentation: DBTDocumentation = {
       name: modelName,
       description: "",
-      uniqueId: currentNode.unique_id,
-      resource_type: currentNode.resource_type,
+      uniqueId: node.unique_id,
+      resource_type: node.resource_type,
       generated: false,
-      filePath,
+      filePath: model.filePath,
       columns: [],
     };
-    if (!currentNode.patch_path) {
+    if (!node.patch_path) {
       return { documentation: emptyDocumentation };
     }
 
     try {
       const yamlPath = path.join(
         project.projectRoot.fsPath,
-        removeProtocol(currentNode.patch_path),
+        removeProtocol(node.patch_path),
       );
       const content = await readFile(yamlPath, "utf8");
       const parsedDoc = parseYaml(content) as DocumentationSchema;
       const modelDef = parsedDoc.models?.find(
-        (model) => model.name === modelName,
+        (entry) => entry.name === modelName,
       );
-      if (!modelDef) {
-        return { documentation: emptyDocumentation };
-      }
       return {
-        documentation: {
-          ...emptyDocumentation,
-          patchPath: currentNode.patch_path ?? "",
-          description: modelDef.description || "",
-          columns: (modelDef.columns || []).map((column) => ({
-            name: column.name,
-            description: column.description ?? "",
-            generated: false,
-            source: Source.YAML,
-            type: column.data_type?.toLowerCase(),
-          })),
-        },
+        documentation: fromYamlModel(
+          emptyDocumentation,
+          node.patch_path ?? "",
+          modelDef,
+        ),
       };
     } catch (error) {
       project.log.error(
@@ -242,7 +269,7 @@ export class DocGenService {
         `Error reading YAML documentation: ${errorText(error)}`,
         error,
       );
-      return this.getDocumentation(filePath, true);
+      return this.getDocumentation(model.filePath, true);
     }
   }
 
@@ -257,6 +284,32 @@ export class DocGenService {
   ): Promise<DBTDocumentationMessage> {
     return this.getDocumentation(filePath, false);
   }
+}
+
+/**
+ * The documentation a model's YAML entry gives it, over `empty`: its description and columns, with `patchPath`. A model
+ * with no entry keeps `empty`.
+ */
+function fromYamlModel(
+  empty: DBTDocumentation,
+  patchPath: string,
+  modelDef: DocumentationSchemaModel | undefined,
+): DBTDocumentation {
+  if (!modelDef) {
+    return empty;
+  }
+  return {
+    ...empty,
+    patchPath,
+    description: modelDef.description || "",
+    columns: (modelDef.columns || []).map((column) => ({
+      name: column.name,
+      description: column.description ?? "",
+      generated: false,
+      source: Source.YAML,
+      type: column.data_type?.toLowerCase(),
+    })),
+  };
 }
 
 /** The active editor model path; a focused compiled preview resolves to its model. */
