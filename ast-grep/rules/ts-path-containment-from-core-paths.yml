@@ -1,0 +1,19 @@
+# Whether a path is at or below a root is answered by src/core/paths.ts (`isAtOrBelow`, `isStrictlyBelow`). Hand-written
+# `relative(...).startsWith("..")` checks disagree on the root itself and on a child named `..x`.
+id: ts-path-containment-from-core-paths
+language: typescript
+# Drafted at `hint` (reported, not failing) because current code still matches; set `error` in the change that
+# removes the last match.
+severity: hint
+message: >-
+  Use `isAtOrBelow` or `isStrictlyBelow` from src/core/paths.ts instead of testing a relative path for "..".
+files:
+  - src/**
+ignores:
+  - src/core/paths.ts
+  - src/test/**
+rule:
+  pattern: $R.startsWith($P)
+constraints:
+  P:
+    regex: '^["''`]\.\.'

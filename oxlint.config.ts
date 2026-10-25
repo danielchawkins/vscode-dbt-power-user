@@ -169,5 +169,21 @@ export default {
         "typescript/unbound-method": "off",
       },
     },
+    {
+      // Harness libraries (the CDP client, the LSP protocol client, the vscode mock) are code that suites import,
+      // not suites, so they keep a size cap; a looser one than src/ because each wraps one protocol.
+      files: ["src/test/**/*.ts"],
+      rules: {
+        "eslint/max-lines": [
+          "error",
+          { max: 600, skipBlankLines: true, skipComments: true },
+        ],
+      },
+    },
+    {
+      // Suites stay uncapped: a suite's length is its cases.
+      files: ["src/test/**/*.test.ts"],
+      rules: { "eslint/max-lines": "off" },
+    },
   ],
 };

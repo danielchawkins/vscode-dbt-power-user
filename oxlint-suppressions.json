@@ -303,6 +303,9 @@
     }
   },
   "src/test/integration/lspProtocolClient.ts": {
+    "max-lines": {
+      "count": 1
+    },
     "max-params": {
       "count": 2
     },
@@ -324,6 +327,9 @@
     }
   },
   "src/test/smoke/cdpClient.ts": {
+    "max-lines": {
+      "count": 1
+    },
     "max-params": {
       "count": 2
     }

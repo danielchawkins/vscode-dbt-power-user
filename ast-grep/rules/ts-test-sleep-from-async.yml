@@ -1,0 +1,33 @@
+# Harness waits come from src/test/async.ts (`sleep`, `pollUntil`, `waitFor`), so a timeout, an interval or a
+# failure message changes in one module and a fixed sleep is easy to find. Lands with the shared-wait refactor.
+id: ts-test-sleep-from-async
+language: typescript
+# Drafted at `hint` (reported, not failing) because current code still matches; set `error` in the change that
+# removes the last match.
+severity: hint
+message: >-
+  Import `sleep` or `pollUntil` from src/test/async.ts instead of declaring a local sleep or wrapping setTimeout in a
+  promise.
+files:
+  - src/test/**
+ignores:
+  - src/test/async.ts
+rule:
+  any:
+    - all:
+        - kind: function_declaration
+        - has:
+            field: name
+            regex: '^(sleep|delay|wait|pause)$'
+    - all:
+        - kind: variable_declarator
+        - has:
+            field: name
+            regex: '^(sleep|delay|wait|pause)$'
+        - has:
+            field: value
+            kind: arrow_function
+    - pattern: new Promise(($R) => setTimeout($R, $$$))
+    - pattern: new Promise($R => setTimeout($R, $$$))
+    - pattern: 'new Promise<void>(($R) => setTimeout($R, $$$))'
+    - pattern: 'new Promise(($R) => { setTimeout($R, $$$); })'

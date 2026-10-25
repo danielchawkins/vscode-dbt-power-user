@@ -150,6 +150,19 @@ module.exports = {
       to: { path: "^src/webview/" },
     },
     {
+      // Drafted at `warn` while the fusionLanguageClient.ts re-export barrel still serves these imports; set
+      // `error` in the change that points them at fusionClient.ts and deletes the barrel.
+      name: "fusion-language-client-is-adapter",
+      severity: "warn",
+      comment:
+        "fusion/fusionLanguageClient.ts is the vscode-languageclient adapter; only languageClient/ and fusion/ import it. Import the port types from fusion/fusionClient.ts.",
+      from: {
+        path: "^src/",
+        pathNot: "^src/(languageClient|fusion)/|^src/test/",
+      },
+      to: { path: "^src/fusion/fusionLanguageClient\\.ts$" },
+    },
+    {
       name: "contract-is-pure",
       severity: "error",
       comment:

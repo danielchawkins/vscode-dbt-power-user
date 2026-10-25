@@ -1,0 +1,44 @@
+id: ts-test-sleep-from-async
+snapshots:
+  await new Promise((resolve) => setTimeout(resolve, 2000));:
+    labels:
+    - source: new Promise((resolve) => setTimeout(resolve, 2000))
+      style: primary
+      start: 6
+      end: 57
+  await new Promise((resolve) => { setTimeout(resolve, 1500); });:
+    labels:
+    - source: new Promise((resolve) => { setTimeout(resolve, 1500); })
+      style: primary
+      start: 6
+      end: 62
+  await new Promise(r => setTimeout(r, 500));:
+    labels:
+    - source: new Promise(r => setTimeout(r, 500))
+      style: primary
+      start: 6
+      end: 42
+  'const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));':
+    labels:
+    - source: 'sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))'
+      style: primary
+      start: 6
+      end: 73
+    - source: sleep
+      style: secondary
+      start: 6
+      end: 11
+    - source: '(ms: number) => new Promise<void>((r) => setTimeout(r, ms))'
+      style: secondary
+      start: 14
+      end: 73
+  'function sleep(ms: number) { return new Promise((resolve) => setTimeout(resolve, ms)); }':
+    labels:
+    - source: 'function sleep(ms: number) { return new Promise((resolve) => setTimeout(resolve, ms)); }'
+      style: primary
+      start: 0
+      end: 88
+    - source: sleep
+      style: secondary
+      start: 9
+      end: 14

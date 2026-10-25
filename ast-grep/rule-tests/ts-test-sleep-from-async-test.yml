@@ -1,0 +1,12 @@
+id: ts-test-sleep-from-async
+valid:
+  - 'import { sleep, pollUntil } from "../async";'
+  - 'await sleep(500);'
+  - 'const timer = setTimeout(() => controller.abort(), 1000);'
+  - 'function sleepiness() { return 1; }'
+invalid:
+  - 'function sleep(ms: number) { return new Promise((resolve) => setTimeout(resolve, ms)); }'
+  - 'const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));'
+  - 'await new Promise((resolve) => setTimeout(resolve, 2000));'
+  - 'await new Promise(r => setTimeout(r, 500));'
+  - 'await new Promise((resolve) => { setTimeout(resolve, 1500); });'

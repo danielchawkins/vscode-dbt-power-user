@@ -10,6 +10,16 @@ const LINEAGE_PURE =
   "groupEdges|grouping|gutterPlan|gutterRouter|hiddenNodes|layerTags|layered|layeredFlow|layeredInput|" +
   "layeredMetrics|layeredRanks|layeredRows|layout|minimap|routeDrawing|routeGeometry|routeTypes)\\.ts$";
 
+// The documentation-editor and query-results state: reducers, their types and the pure helpers they call. Their
+// tests run without React, so they import no React, CSS, UI kit or panel messaging, and no module outside this list.
+// documentationEditor/state/incomingDocs.ts and components/tests/testEdits.ts are named ahead of the refactors that
+// add them.
+const PANEL_STATE_PURE =
+  "^src/modules/(app/typedReducer|" +
+  "documentationEditor/(state/(documentationReducer|entityType|types|incomingDocs)|proposals/proposalsReducer|utils|" +
+  "types|components/tests/testEdits)|" +
+  "queryPanel/(context/(queryPanelReducer|types)|components/QueryPanelContents/types))\\.ts$";
+
 module.exports = {
   forbidden: [
     {
@@ -40,6 +50,17 @@ module.exports = {
       to: {
         path: "^src/|node_modules/(react|react-dom|@xyflow/react)/|\\.css$",
         pathNot: LINEAGE_PURE,
+      },
+    },
+    {
+      name: "panel-state-is-pure",
+      severity: "error",
+      comment:
+        "Panel state (PANEL_STATE_PURE) imports only itself, the contract and plain packages; never React or CSS.",
+      from: { path: PANEL_STATE_PURE },
+      to: {
+        path: "^src/|node_modules/(react|react-dom)/|\\.css$",
+        pathNot: PANEL_STATE_PURE,
       },
     },
   ],

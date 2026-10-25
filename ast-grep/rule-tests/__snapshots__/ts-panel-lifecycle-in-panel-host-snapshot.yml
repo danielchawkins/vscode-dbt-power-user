@@ -1,0 +1,34 @@
+id: ts-panel-lifecycle-in-panel-host
+snapshots:
+  class Q extends PanelHost<H> { reset() { this.isWebviewReady = false; } }:
+    labels:
+    - source: this.isWebviewReady = false
+      style: primary
+      start: 41
+      end: 68
+  class R extends PanelHost<H> { wait() { const interval = setInterval(() => { if (this.ready) { done(); } }, 500); } }:
+    labels:
+    - source: setInterval(() => { if (this.ready) { done(); } }, 500)
+      style: primary
+      start: 57
+      end: 112
+    - source: extends PanelHost<H>
+      style: secondary
+      start: 8
+      end: 28
+    - source: class R extends PanelHost<H> { wait() { const interval = setInterval(() => { if (this.ready) { done(); } }, 500); } }
+      style: secondary
+      start: 0
+      end: 117
+  'const subscription = panel.webview.onDidReceiveMessage((message: unknown) => this.handleCommand(message, panel));':
+    labels:
+    - source: 'panel.webview.onDidReceiveMessage((message: unknown) => this.handleCommand(message, panel))'
+      style: primary
+      start: 21
+      end: 112
+  ? 'this.onMessageDisposable = this._panel!.webview.onDidReceiveMessage((message: unknown) => this.handleCommand(message), null, this._disposables);'
+  : labels:
+    - source: 'this._panel!.webview.onDidReceiveMessage((message: unknown) => this.handleCommand(message), null, this._disposables)'
+      style: primary
+      start: 27
+      end: 143

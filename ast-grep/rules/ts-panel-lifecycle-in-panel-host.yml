@@ -1,0 +1,30 @@
+# A panel's page lifecycle (subscribing to its messages, tracking whether its page is ready, waiting for it) lives in
+# PanelHost (src/webview/panelHost.ts). Each panel supplies its guard and handler map; it does not re-implement the
+# subscription, flip the readiness flag or poll for readiness itself. Lands with the PanelHost lifecycle refactor.
+id: ts-panel-lifecycle-in-panel-host
+language: typescript
+# Drafted at `hint` (reported, not failing) because current code still matches; set `error` in the change that
+# removes the last match.
+severity: hint
+message: >-
+  Subscribe, track readiness and wait for the page through PanelHost (src/webview/panelHost.ts): override `guard` and
+  `handlers()` and call `this.whenReady(page)`, instead of `onDidReceiveMessage`, `isWebviewReady =` or `setInterval`.
+files:
+  - src/features/**
+  - src/webview/**
+ignores:
+  - src/webview/panelHost.ts
+  - src/webview/pageReadiness.ts
+rule:
+  any:
+    - pattern: $W.onDidReceiveMessage($$$)
+    - pattern: this.isWebviewReady = $V
+    - all:
+        - pattern: setInterval($$$)
+        - inside:
+            stopBy: end
+            kind: class_declaration
+            has:
+              stopBy: end
+              kind: extends_clause
+              regex: PanelHost

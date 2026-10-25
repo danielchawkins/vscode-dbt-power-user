@@ -1,0 +1,9 @@
+id: ts-response-envelope-from-router
+valid:
+  - 'await reply(sink, syncRequestId, { saved: true });'
+  - 'await this.post({ command: "renderQuery", args: payload });'
+  - 'const kind = { command: "responses" };'
+invalid:
+  - 'await this.post({ command: "response", args: { syncRequestId, body: { saved }, status: true } });'
+  - 'deps.post({ command: "response", args: { syncRequestId, status: false, error } });'
+  - 'const message = { "command": "response", args };'

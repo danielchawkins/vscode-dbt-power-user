@@ -1,0 +1,28 @@
+# `ref(...)` and `source(...)` strings (contract `to:` fields, semantic-model `model:` fields, model bodies) are
+# parsed by src/core/manifest/refExpression.ts, which knows the one- and two-argument forms, `v=` and whitespace.
+# A second regex drifts: the two-argument ref was read as the package name in two parsers.
+id: ts-ref-expression-from-one-module
+language: typescript
+# Drafted at `hint` (reported, not failing) because current code still matches; set `error` in the change that
+# removes the last match.
+severity: hint
+message: >-
+  Parse ref()/source() expressions with `parseRefExpression` from src/core/manifest/refExpression.ts instead of a
+  local regex.
+files:
+  - src/**
+ignores:
+  - src/core/manifest/refExpression.ts
+  - src/test/**
+rule:
+  any:
+    - kind: regex
+      regex: '(ref|source)(\\s\*)?\\\('
+    - all:
+        - pattern: new RegExp($$$)
+        - has:
+            stopBy: end
+            any:
+              - kind: template_string
+              - kind: string
+            regex: '(ref|source)(\\\\s\*)?\\\\\('
