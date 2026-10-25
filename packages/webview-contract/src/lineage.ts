@@ -74,8 +74,8 @@ export interface LineageTable {
   /** The node's data tests; `raw_sql` is the test's SQL. */
   tests: {
     key: string;
-    raw_sql?: string | undefined;
-    column_name?: string | undefined;
+    raw_sql?: string | null | undefined;
+    column_name?: string | null | undefined;
   }[];
   meta?: Record<string, unknown> | undefined;
 }
@@ -93,7 +93,7 @@ export interface TableColumns {
   id: string;
   purpose?: string | undefined;
   columns: LineageColumn[];
-  returns?: { datatype: string; description: string };
+  returns?: { datatype: string; description: string } | undefined;
   meta?: Record<string, unknown> | undefined;
 }
 
@@ -238,6 +238,23 @@ export type PanelMessage =
   | Request<"getConnectedColumns", ConnectedColumnsParams>
   | OptionalRequest<"getLineageSettings">
   | Request<"persistLineageSettings", PersistedLineageSettings>;
+
+/**
+ * The body the host answers each request with, by request command. `getExposureDetails` and `getFunctionDetails`
+ * answer with manifest metadata this contract does not model, so they stay `unknown`.
+ */
+export interface ResponseBodies {
+  childTables: { tables?: LineageTable[] | undefined };
+  parentTables: { tables?: LineageTable[] | undefined };
+  tableEdges: { edges: [string, string][] };
+  getColumns: TableColumns | undefined;
+  getExposureDetails: unknown;
+  getFunctionDetails: unknown;
+  getRelationships: { refs: LineageRef[] };
+  getConnectedColumns: ConnectedColumns;
+  getLineageSettings: LineageSettings;
+  persistLineageSettings: { ok: true };
+}
 
 const request = <P>(params: Fields<NoInfer<P>>) => ({
   args: shape<{ params: P }>({ params: shape<P>(params) }),

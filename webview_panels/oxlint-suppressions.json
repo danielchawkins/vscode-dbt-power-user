@@ -47,11 +47,6 @@
       "count": 1
     }
   },
-  "src/modules/documentationEditor/components/tests/forms/Relationships.tsx": {
-    "max-lines-per-function": {
-      "count": 1
-    }
-  },
   "src/modules/documentationEditor/components/tests/hooks/useTestFormSave.ts": {
     "max-lines-per-function": {
       "count": 1

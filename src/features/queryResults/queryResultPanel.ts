@@ -27,6 +27,7 @@ import type {
 } from "../../projects/project/sharedStateService";
 import { readSetting } from "../../settings";
 import type { Handlers, MessageOf } from "../../webview/messageRouter";
+import { reply } from "../../webview/messageRouter";
 import { PanelHost, postToWebview } from "../../webview/panelHost";
 import { panelWebviewOptions } from "../../webview/panelHtml";
 import { executeActiveEditorQuery } from "./activeEditorQuery";
@@ -221,11 +222,16 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
     if (this._queryTabData && page !== "bottom") {
       this.replay.setTabData(page, this._queryTabData);
     }
-    const body = this._queryTabData ?? this.replay.tabDataFor(page);
-    void this.postTo(panel, {
-      command: "response",
-      args: { syncRequestId, body, status: true },
-    });
+    const body =
+      this._queryTabData ??
+      (this.replay.tabDataFor(
+        page,
+      ) as queryResults.ResponseBodies["getQueryTabData"]);
+    void reply(
+      { reply: (response) => this.postTo(panel, response) },
+      syncRequestId,
+      body satisfies queryResults.ResponseBodies["getQueryTabData"],
+    );
     // A tab opened through "Open in Tab" reads its data once; later messages target the bottom panel.
     if (this._queryTabData) {
       this._panel = this._bottomPanel;
@@ -243,10 +249,11 @@ export class QueryResultPanel extends PanelHost<HostMessage, PanelMessage> {
       // The panel clears its history after a rendering error, then retries.
       clearQueryHistory: ({ syncRequestId }) => {
         this.history.clear();
-        return this.post({
-          command: "response",
-          args: { syncRequestId, body: {}, status: true },
-        });
+        return reply(
+          { reply: (response) => this.post(response) },
+          syncRequestId,
+          {} satisfies queryResults.ResponseBodies["clearQueryHistory"],
+        );
       },
       openCodeInEditor: ({ code }) => openSqlInEditor(code),
       viewResultSet: (message) => this.viewResultSet(message),

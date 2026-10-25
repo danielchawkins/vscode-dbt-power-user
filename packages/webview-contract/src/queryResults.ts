@@ -136,6 +136,13 @@ export type PanelMessage =
   /** Opens the current results in an editor tab; `queryTabData` is the panel's result state. */
   | { command: "queryResultTab:render"; queryTabData: QueryTabData };
 
+/** The body the host answers each request with, by request command. */
+export interface ResponseBodies {
+  /** The results tab's data; absent before any query has run. */
+  getQueryTabData: QueryTabData | undefined;
+  clearQueryHistory: Record<string, never>;
+}
+
 const columnTypes = arrayOf(nullable(isString));
 
 const previewFields = {

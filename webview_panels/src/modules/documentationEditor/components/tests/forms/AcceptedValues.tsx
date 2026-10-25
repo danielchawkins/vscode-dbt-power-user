@@ -22,10 +22,10 @@ const AcceptedValues = ({
   const getDistinctColumnValues = async () => {
     setIsLoading(true);
     try {
-      const result = (await executeRequestInSync("getDistinctColumnValues", {
+      const result = await executeRequestInSync("getDistinctColumnValues", {
         model: currentDocsData?.name,
         column,
-      })) as string[] | undefined;
+      });
 
       if (result?.length && values?.length) {
         const items = ["Yes, overwrite", "Cancel"];
@@ -37,7 +37,8 @@ const AcceptedValues = ({
           return;
         }
       }
-      setValue("accepted_values", result);
+      // Numeric columns send numbers; the form has always stored the values as sent.
+      setValue("accepted_values", result as string[]);
     } catch (e) {
       panelLogger.error("Unable to get distinct values", e);
     } finally {

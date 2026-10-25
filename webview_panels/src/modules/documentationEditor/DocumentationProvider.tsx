@@ -118,7 +118,8 @@ const DocumentationProvider = (): React.JSX.Element => {
                 renderDocumentation(message);
                 break;
               }
-              case ActionState.CANCEL_STAY: {
+              case ActionState.CANCEL_STAY:
+              case undefined: {
                 break;
               }
               default:

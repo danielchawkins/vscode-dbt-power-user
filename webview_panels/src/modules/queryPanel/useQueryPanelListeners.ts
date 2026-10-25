@@ -204,15 +204,14 @@ const useQueryPanelListeners = (): { loading: boolean } => {
   useEffect(() => {
     void executeRequestInSync("getQueryTabData").then((data) => {
       if (data) {
-        const typedData = data as queryResults.QueryTabData;
         handleQueryResults({
-          rows: typedData?.queryResults?.data,
-          columnNames: typedData?.queryResults?.columnNames,
-          columnTypes: typedData?.queryResults?.columnTypes,
-          compiled_sql: typedData.compiledCodeMarkup,
-          preview: typedData.preview,
+          rows: data.queryResults?.data,
+          columnNames: data.queryResults?.columnNames,
+          columnTypes: data.queryResults?.columnTypes,
+          compiled_sql: data.compiledCodeMarkup,
+          preview: data.preview,
         });
-        dispatch(setQueryExecutionInfo(typedData.queryExecutionInfo));
+        dispatch(setQueryExecutionInfo(data.queryExecutionInfo));
       }
     });
   }, [dispatch, handleQueryResults]);

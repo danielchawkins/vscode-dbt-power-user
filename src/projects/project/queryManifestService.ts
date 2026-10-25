@@ -112,9 +112,7 @@ export class QueryManifestService {
     return items;
   }
 
-  public getModelsInProject(
-    currentFilePath?: Uri,
-  ): Iterable<string> | undefined {
+  public getModelsInProject(currentFilePath?: Uri): string[] | undefined {
     const event = currentFilePath && this.manifestFor(currentFilePath);
     if (!event) {
       return;

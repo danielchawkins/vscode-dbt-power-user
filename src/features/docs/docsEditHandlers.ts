@@ -22,7 +22,8 @@ export type DocsProject = Pick<Project, "projectRoot" | "getProjectName"> & {
   >;
 };
 import { activeModelUri } from "../../projects/registry/previewUri";
-import type { Handlers } from "../../webview/messageRouter";
+import type { Handlers, MessageSink } from "../../webview/messageRouter";
+import { reply, replyError } from "../../webview/messageRouter";
 import type { DbtTestService } from "./dbtTestService";
 
 type HostMessage = documentationEditor.HostMessage;
@@ -86,19 +87,23 @@ export class DocsEditRequests {
     this.host = host;
   }
 
-  /** Answers a panel request. */
+  /** Answers a panel request: with `error` as a failure, otherwise with `data` as the body. */
   sendResponse({ data, error, syncRequestId }: Reply): void {
-    void this.host.post({
-      command: "response",
-      args: { syncRequestId, body: data, status: !error, error },
-    });
+    const sink: Pick<MessageSink, "reply"> = {
+      reply: (response) => this.host.post(response),
+    };
+    void (error
+      ? replyError(sink, syncRequestId, error)
+      : reply(sink, syncRequestId, data));
   }
 
   /** Runs `callback` and answers `syncRequestId` with its result or its error. */
-  async handleSyncRequest(
+  async handleSyncRequest<C extends RequestCommand>(
     syncRequestId: string | undefined,
-    callback: () => unknown,
-    command: string,
+    callback: () =>
+      | documentationEditor.ResponseBodies[C]
+      | PromiseLike<documentationEditor.ResponseBodies[C]>,
+    command: C,
     showErrorNotification?: boolean,
   ): Promise<void> {
     try {
@@ -171,7 +176,10 @@ export class DocsEditRequests {
   }
 
   /** Answers with `read` of the active editor's URI. */
-  private inProject(command: string, read: (uri: Uri | undefined) => unknown) {
+  private inProject<C extends RequestCommand>(
+    command: C,
+    read: (uri: Uri | undefined) => documentationEditor.ResponseBodies[C],
+  ) {
     return this.withProject(
       ({ syncRequestId }: { syncRequestId?: string | undefined }) =>
         this.handleSyncRequest(
