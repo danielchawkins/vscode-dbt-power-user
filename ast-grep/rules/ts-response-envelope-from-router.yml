@@ -1,0 +1,24 @@
+# A reply to a webview request has one shape, `{ command: "response", args: { syncRequestId, body, status } }`, built
+# by `reply`/`replyError` in src/webview/messageRouter.ts. Panels and handlers call those instead of writing the
+# envelope, so the shape and its typed body change in one place.
+id: ts-response-envelope-from-router
+language: typescript
+# Error: no production code outside src/webview/messageRouter.ts writes the envelope by hand.
+severity: error
+message: >-
+  Build a request reply with `reply`/`replyError` from src/webview/messageRouter.ts instead of writing
+  `{ command: "response", ... }` here.
+files:
+  - src/**
+ignores:
+  - src/webview/messageRouter.ts
+  - src/test/**
+rule:
+  kind: pair
+  all:
+    - has:
+        field: key
+        regex: '^"?command"?$'
+    - has:
+        field: value
+        regex: '^["''`]response["''`]$'
