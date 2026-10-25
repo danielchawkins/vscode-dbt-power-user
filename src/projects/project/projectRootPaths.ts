@@ -1,4 +1,3 @@
-import * as path from "node:path";
 import type { Uri } from "vscode";
 import {
   declaredProjectName,
@@ -13,11 +12,6 @@ export function projectNameAt(root: string): string {
     root.split(/[/\\]/).pop() ??
     root
   );
-}
-
-/** True when `fsPath` is `root` or under it. */
-export function isWithinRoot(root: string, fsPath: string): boolean {
-  return fsPath === root || fsPath.startsWith(root + path.sep);
 }
 
 /** Model, macro and seed paths together; undefined when the project has no paths yet. */

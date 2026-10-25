@@ -6,11 +6,21 @@ import {
 import fc from "fast-check";
 import { describe, expect, it, vi } from "vitest";
 import { Uri, window } from "vscode";
-import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
-import { LineagePanel } from "../../features/lineage/lineagePanel";
-import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
+import type * as panelHtmlModule from "../../webview/panelHtml";
 import { NUM_RUNS } from "../arbitraries";
+import {
+  docsEditPanel,
+  fakeView,
+  lineagePanel,
+  listenTo,
+  queryResultPanel,
+} from "../panelHarness";
 import { spyLog } from "../testLog";
+
+vi.mock("../../webview/panelHtml", async (importOriginal) => ({
+  ...(await importOriginal<typeof panelHtmlModule>()),
+  panelHtml: () => "<html>docs</html>",
+}));
 
 interface Panel {
   name: string;
@@ -22,28 +32,24 @@ interface Panel {
   malformed: readonly unknown[];
   /** A panel whose handler map is one spy per command, and its log. */
   withSpies: () => {
-    send: (message: unknown) => Promise<void>;
+    send: (message: unknown) => Promise<unknown>;
     spies: Record<string, ReturnType<typeof vi.fn>>;
     log: { warn: ReturnType<typeof vi.fn> };
   };
 }
 
-/** An instance of `ctor` with no constructor run, its handler map replaced by spies. */
+/** A panel built by `make` with its handler map replaced by spies; messages reach it through a fake view. */
 function spiedPanel(
-  ctor: { prototype: object },
+  make: (log: ReturnType<typeof spyLog>) => object,
   commands: readonly string[],
-  logField: string,
 ) {
-  const panel = Object.create(ctor.prototype);
   const log = spyLog();
+  const panel = make(log) as { handlers: () => unknown };
   const spies = Object.fromEntries(commands.map((c) => [c, vi.fn()]));
-  panel[logField] = log;
   panel.handlers = () => spies;
-  return {
-    send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
-    spies,
-    log,
-  };
+  const view = fakeView();
+  listenTo(panel, view.page);
+  return { send: view.send, spies, log };
 }
 
 const panels: Panel[] = [
@@ -73,7 +79,7 @@ const panels: Panel[] = [
       { command: "queryResultTab:render", queryTabData: [] },
     ],
     withSpies: () =>
-      spiedPanel(QueryResultPanel, queryResults.panelCommands, "dbtTerminal"),
+      spiedPanel((log) => queryResultPanel(log), queryResults.panelCommands),
   },
   {
     name: "documentation editor",
@@ -123,9 +129,8 @@ const panels: Panel[] = [
     ],
     withSpies: () =>
       spiedPanel(
-        DocsEditViewPanel,
+        (log) => docsEditPanel(log),
         documentationEditor.panelCommands,
-        "dbtTerminal",
       ),
   },
   {
@@ -158,7 +163,7 @@ const panels: Panel[] = [
       { command: "init", args: { params: 1 } },
     ],
     withSpies: () =>
-      spiedPanel(LineagePanel, lineage.panelCommands, "dbtTerminal"),
+      spiedPanel((log) => lineagePanel(log), lineage.panelCommands),
   },
 ];
 
@@ -229,42 +234,47 @@ describe.each(panels)("$name host messages", (panel) => {
 
 describe("query results handlers", () => {
   it("clears the session history and answers the request", async () => {
-    const panel = Object.create(QueryResultPanel.prototype);
-    const postMessage = vi.fn();
-    panel._panel = { webview: { postMessage } };
-    panel.history = { all: () => entries, clear: () => entries.splice(0) };
+    const panel = queryResultPanel();
+    const view = fakeView();
+    await panel.resolveWebviewView(
+      view.page,
+      {} as never,
+      { onCancellationRequested: vi.fn() } as never,
+    );
+    await view.send({ command: "webview:ready" });
     const entries: unknown[] = [{}];
-    panel.dbtTerminal = spyLog();
+    Object.assign(panel, {
+      history: { all: () => entries, clear: () => entries.splice(0) },
+    });
 
-    await panel.handleCommand({
+    await view.send({
       command: "clearQueryHistory",
       syncRequestId: "r",
     });
 
     expect(entries).toEqual([]);
-    expect(postMessage).toHaveBeenCalledWith({
+    expect(view.posted()).toContainEqual({
       command: "response",
       args: { syncRequestId: "r", body: {}, status: true },
     });
-    for (const [message] of postMessage.mock.calls) {
+    for (const message of view.posted()) {
       expect(queryResults.isHostMessage(message)).toBe(true);
     }
   });
 
   it("answers a malformed request so the panel's promise settles", async () => {
-    const panel = Object.create(QueryResultPanel.prototype);
-    const postMessage = vi.fn();
-    panel._panel = { webview: { postMessage } };
-    panel.dbtTerminal = spyLog();
+    const panel = queryResultPanel();
+    const view = fakeView();
+    listenTo(panel, view.page);
 
-    await panel.handleCommand({
+    await view.send({
       command: "executeQuery",
       query: 1,
       syncRequestId: "r",
     });
-    await panel.handleCommand({ command: "nope", syncRequestId: "s" });
+    await view.send({ command: "nope", syncRequestId: "s" });
 
-    expect(postMessage.mock.calls.map(([m]) => m)).toEqual(
+    expect(view.posted()).toEqual(
       ["r", "s"].map((syncRequestId) => ({
         command: "response",
         args: {
@@ -275,24 +285,29 @@ describe("query results handlers", () => {
         },
       })),
     );
-    expect(queryResults.isHostMessage(postMessage.mock.calls[0][0])).toBe(true);
+    expect(queryResults.isHostMessage(view.posted()[0])).toBe(true);
   });
 });
 
 describe("documentation editor handlers", () => {
-  it("answers a project request without an active editor with an error response", async () => {
-    const panel = Object.create(DocsEditViewPanel.prototype);
-    const postMessage = vi.fn();
-    panel._panel = { webview: { postMessage } };
-    panel.dbtTerminal = spyLog();
+  /** A documentation editor resolved into a fake view, as VS Code resolves it, and reporting ready as its page does. */
+  async function resolvedDocs(panel = docsEditPanel()) {
+    const view = fakeView();
+    await panel.resolveWebviewView(view.page, {} as never, {} as never);
+    await view.send({ command: "webview:ready" });
+    return { panel, view };
+  }
 
-    await panel.handleCommand({
+  it("answers a project request without an active editor with an error response", async () => {
+    const { view } = await resolvedDocs();
+
+    await view.send({
       command: "getColumnsOfModel",
       model: "orders",
       syncRequestId: "r",
     });
 
-    expect(postMessage).toHaveBeenCalledWith({
+    expect(view.posted()).toContainEqual({
       command: "response",
       args: {
         syncRequestId: "r",
@@ -301,9 +316,7 @@ describe("documentation editor handlers", () => {
         error: "No active editor",
       },
     });
-    expect(
-      documentationEditor.isHostMessage(postMessage.mock.calls[0][0]),
-    ).toBe(true);
+    expect(documentationEditor.isHostMessage(view.posted()[0])).toBe(true);
   });
 
   it("accepts a save whose column carries a boolean replaceType", () => {
@@ -317,27 +330,27 @@ describe("documentation editor handlers", () => {
     ).toBe(true);
   });
 
-  /** A panel with an active model editor and a project; `post` captures replies. */
-  const docsPanel = () => {
-    const panel = Object.create(DocsEditViewPanel.prototype);
-    const postMessage = vi.fn();
+  /** A panel with an active model editor and a project; the view's posts are the replies. */
+  const docsPanel = async () => {
+    const { panel, view } = await resolvedDocs();
     const project = {
       projectRoot: { fsPath: "/p" },
       getProjectName: () => "p",
       getColumnValues: vi.fn(),
     };
-    panel._panel = { webview: { postMessage } };
-    panel.dbtTerminal = spyLog();
-    panel.projects = { get: () => project };
-    panel.dbtTestService = {
-      getTestsForCurrentModel: vi.fn(),
-      getUnitTestsForCurrentModel: vi.fn(),
-    };
-    panel.reloadDocumentationFromManifest = vi.fn();
-    return { panel, postMessage, project };
+    const reloadDocumentationFromManifest = vi.fn();
+    Object.assign(panel, {
+      projects: { get: () => project },
+      dbtTestService: {
+        getTestsForCurrentModel: vi.fn(),
+        getUnitTestsForCurrentModel: vi.fn(),
+      },
+      reloadDocumentationFromManifest,
+    });
+    return { panel, view, project, reloadDocumentationFromManifest };
   };
 
-  const withEditor = async (run: () => Promise<void>) => {
+  const withEditor = async (run: () => Promise<unknown>) => {
     const editor = { document: { uri: Uri.file("/p/models/orders.sql") } };
     const mockWindow = window as unknown as Record<string, unknown>;
     const previous = mockWindow.activeTextEditor;
@@ -352,9 +365,10 @@ describe("documentation editor handlers", () => {
   };
 
   it("answers saved: false when the save dialog is cancelled, so the panel stays dirty", async () => {
-    const { panel, postMessage } = docsPanel();
+    const { view, reloadDocumentationFromManifest } = await docsPanel();
+    const rendered = view.posted().length;
     await withEditor(() =>
-      panel.handleCommand({
+      view.send({
         command: "saveDocumentation",
         name: "orders",
         columns: [],
@@ -365,8 +379,9 @@ describe("documentation editor handlers", () => {
       }),
     );
 
-    expect(panel.reloadDocumentationFromManifest).not.toHaveBeenCalled();
-    expect(postMessage.mock.calls.map(([m]) => m)).toEqual([
+    expect(reloadDocumentationFromManifest).not.toHaveBeenCalled();
+    // Only what the save posted: resolving the page posts its first render before the save.
+    expect(view.posted().slice(rendered)).toEqual([
       {
         command: "response",
         args: { syncRequestId: "s", body: { saved: false }, status: true },
@@ -375,9 +390,9 @@ describe("documentation editor handlers", () => {
   });
 
   it("answers getDistinctColumnValues without a model with an error", async () => {
-    const { panel, postMessage, project } = docsPanel();
+    const { view, project } = await docsPanel();
     await withEditor(() =>
-      panel.handleCommand({
+      view.send({
         command: "getDistinctColumnValues",
         model: null,
         column: "id",
@@ -386,7 +401,7 @@ describe("documentation editor handlers", () => {
     );
 
     expect(project.getColumnValues).not.toHaveBeenCalled();
-    expect(postMessage).toHaveBeenCalledWith(
+    expect(view.posted()).toContainEqual(
       expect.objectContaining({
         args: expect.objectContaining({ syncRequestId: "d", status: false }),
       }),
@@ -394,20 +409,22 @@ describe("documentation editor handlers", () => {
   });
 
   it("answers a request whose handler throws with the error", async () => {
-    const { panel, postMessage } = docsPanel();
-    panel.projects = {
-      get: () => {
-        throw new Error("registry gone");
+    const { panel, view } = await docsPanel();
+    Object.assign(panel, {
+      projects: {
+        get: () => {
+          throw new Error("registry gone");
+        },
       },
-    };
+    });
     await withEditor(() =>
-      panel.handleCommand({
+      view.send({
         command: "getModelsInProject",
         syncRequestId: "m",
       }),
     );
 
-    expect(postMessage).toHaveBeenCalledWith({
+    expect(view.posted()).toContainEqual({
       command: "response",
       args: {
         syncRequestId: "m",

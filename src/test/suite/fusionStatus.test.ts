@@ -13,7 +13,7 @@ import { failureSummary } from "../../core/text";
 import type {
   FusionClient,
   FusionClientState,
-} from "../../fusion/fusionLanguageClient";
+} from "../../fusion/fusionClient";
 import type { FusionClientPool } from "../../projects/clients/fusionClientPool";
 import type { ProjectOptIns } from "../../projects/clients/fusionStatus";
 import {

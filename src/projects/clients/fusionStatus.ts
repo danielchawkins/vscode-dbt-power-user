@@ -12,7 +12,7 @@ import { vscodeDocumentSelectorForProject } from "../../fusion/documentSelector"
 import type {
   FusionClient,
   FusionClientState,
-} from "../../fusion/fusionLanguageClient";
+} from "../../fusion/fusionClient";
 import { addDeclaredProjectRoot } from "../registry/projectConfiguration";
 import type { DeclaredProject } from "../registry/projectRegistry";
 import type { FolderScope, SchemaOriginStatus } from "../registry/schemaOrigin";

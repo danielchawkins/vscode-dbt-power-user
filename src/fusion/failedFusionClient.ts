@@ -5,7 +5,7 @@ import type {
   FusionClient,
   FusionClientState,
   FusionProjectRef,
-} from "./fusionLanguageClient";
+} from "./fusionClient";
 
 /** A client for a project whose server could not be launched; it never runs. */
 export class FailedFusionClient implements FusionClient {

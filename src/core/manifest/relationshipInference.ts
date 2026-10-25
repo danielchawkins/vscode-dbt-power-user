@@ -1,4 +1,5 @@
 import type { Log } from "../log";
+import { relationTables } from "./relationIndex";
 import type {
   Cardinality,
   Meta,
@@ -62,22 +63,13 @@ export function inferRefs(
 
   // Index candidate targets by their base name (singular and plural variants).
   const targets = new Map<string, InferenceTarget>();
-  for (const node of nodeMetaMap.nodes()) {
-    indexTarget(targets, node.name, {
-      unique_id: node.unique_id,
-      baseName: node.name,
-      columns: Object.keys(node.columns ?? {}),
-    });
-  }
-  if (includeSources && sourceMetaMap) {
-    for (const source of sourceMetaMap.values()) {
-      for (const tbl of source.tables ?? []) {
-        indexTarget(targets, tbl.name, {
-          unique_id: source.unique_id,
-          baseName: tbl.name,
-          columns: Object.keys(tbl.columns ?? {}),
-        });
-      }
+  for (const table of relationTables(nodeMetaMap, sourceMetaMap)) {
+    if (table.source_name === undefined || includeSources) {
+      indexTarget(targets, table.name, {
+        unique_id: table.unique_id,
+        baseName: table.name,
+        columns: Object.keys(table.columns),
+      });
     }
   }
 

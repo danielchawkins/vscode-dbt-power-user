@@ -133,7 +133,10 @@ describe("RelationshipParser.fromContracts", () => {
         {
           unique_id: "source.raw",
           name: "raw",
-          tables: [{ name: "payments" }],
+          tables: [
+            { unique_id: "source.raw.payments", name: "payments" },
+            { unique_id: "source.raw.refunds", name: "refunds" },
+          ],
         },
       ],
     ]),
@@ -142,7 +145,7 @@ describe("RelationshipParser.fromContracts", () => {
   it("resolves ref, source and relation-name targets", () => {
     const refs = parser.fromContracts(nodes, sources);
     expect(refs.map((r) => r.id).sort()).toEqual([
-      "contract:model.orders.[a,b]->source.raw",
+      "contract:model.orders.[a,b]->source.raw.payments",
       "contract:model.orders.customer_id->model.customers",
       "contract:model.self.other_id->model.orders",
     ]);
@@ -150,6 +153,32 @@ describe("RelationshipParser.fromContracts", () => {
     expect(column?.to).toEqual({ table: "model.customers", columns: ["id"] });
     const modelLevel = refs.find((r) => r.id.includes("[a,b]"));
     expect(modelLevel?.to.columns).toEqual(["a", "b"]);
+  });
+
+  it("points an FK at the source table it names, not the group's first table", () => {
+    const refs = parser.fromContracts(
+      nodeMap([
+        {
+          unique_id: "model.returns",
+          name: "returns",
+          columns: {},
+          constraints: [
+            {
+              type: "foreign_key",
+              columns: ["refund_id"],
+              to: "source('raw', 'refunds')",
+              to_columns: ["id"],
+            },
+          ],
+        },
+      ]),
+      sources,
+    );
+    expect(refs).toHaveLength(1);
+    expect(refs[0]?.to).toEqual({
+      table: "source.raw.refunds",
+      columns: ["id"],
+    });
   });
 
   it("drops constraints whose target cannot be resolved", () => {
@@ -194,6 +223,44 @@ describe("RelationshipParser.fromInference", () => {
     expect(
       parser.fromInference(nodes, undefined, { allowSelfReference: true }),
     ).toHaveLength(2);
+  });
+
+  it("links to a source table's own id when includeSources is set", () => {
+    const sources = loose<SourceMetaMap>(
+      new Map([
+        [
+          "source.raw",
+          {
+            unique_id: "source.raw",
+            name: "raw",
+            tables: [
+              {
+                unique_id: "source.raw.payments",
+                name: "payments",
+                columns: { id: {} },
+              },
+              {
+                unique_id: "source.raw.customer",
+                name: "customer",
+                columns: { id: {} },
+              },
+            ],
+          },
+        ],
+      ]),
+    );
+    const orders = nodeMap([
+      { unique_id: "model.order", name: "order", columns: { customer_id: {} } },
+    ]);
+    expect(parser.fromInference(orders, sources)).toEqual([]);
+    expect(
+      parser.fromInference(orders, sources, { includeSources: true }),
+    ).toMatchObject([
+      {
+        from: { table: "model.order", columns: ["customer_id"] },
+        to: { table: "source.raw.customer", columns: ["id"] },
+      },
+    ]);
   });
 
   it("respects the confidence floor", () => {

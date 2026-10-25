@@ -9,10 +9,21 @@ import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { commands, EventEmitter, Uri, window, workspace } from "vscode";
 import { ColumnProposalRequests } from "../../features/docs/columnProposals";
-import { DocsEditViewPanel } from "../../features/docs/docsEditPanel";
-import { LineagePanel } from "../../features/lineage/lineagePanel";
-import { QueryResultPanel } from "../../features/queryResults/queryResultPanel";
+import type * as panelHtmlModule from "../../webview/panelHtml";
+import {
+  docsEditPanel,
+  fakeView,
+  isPageReady,
+  lineagePanel,
+  openPage,
+  queryResultPanel,
+} from "../panelHarness";
 import { silentLog } from "../testLog";
+
+vi.mock("../../webview/panelHtml", async (importOriginal) => ({
+  ...(await importOriginal<typeof panelHtmlModule>()),
+  panelHtml: () => "<html>panel</html>",
+}));
 
 /** One row: sends a valid message to a fresh panel and asserts its effect. */
 type Row = () => Promise<void>;
@@ -36,19 +47,9 @@ afterEach(() => {
   window.activeTextEditor = undefined;
 });
 
-/** A lineage panel with stubbed services; `postMessage` collects what it posts. */
+/** A lineage panel built as the extension builds it, with stubbed services; `postMessage` collects what it posts. */
 function lineageHarness() {
-  const panel = Object.create(LineagePanel.prototype);
-  const postMessage = vi.fn();
-  panel._panel = { webview: { postMessage } };
-  panel.terminal = silentLog();
-  panel.dbtTerminal = silentLog();
-  panel.queryManifestService = {
-    getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
-    getProject: vi.fn().mockReturnValue(undefined),
-    manifestFor: vi.fn().mockReturnValue(undefined),
-  };
-  panel.dbtLineageService = {
+  const dbtLineageService = {
     columnsNeedStrict: vi.fn().mockReturnValue(undefined),
     getChildTables: vi.fn().mockReturnValue([{ table: "model.p.b" }]),
     getParentTables: vi.fn().mockReturnValue([{ table: "model.p.z" }]),
@@ -59,6 +60,23 @@ function lineageHarness() {
       .fn()
       .mockResolvedValue({ kind: "lineage", columnLineage: [] }),
   };
+  const queryManifestService = {
+    getEventByCurrentProject: vi.fn().mockReturnValue(undefined),
+    getProject: vi.fn().mockReturnValue(undefined),
+    manifestFor: vi.fn().mockReturnValue(undefined),
+  };
+  const globalState = new Map<string, unknown>();
+  const extensionContext = {
+    extensionUri: Uri.file("/ext"),
+    getFromGlobalState: (key: string) => globalState.get(key),
+    setToGlobalState: (key: string, value: unknown) =>
+      globalState.set(key, value),
+  };
+  const panel = lineagePanel(silentLog(), {
+    extensionContext,
+    dbtLineageService,
+    queryManifestService,
+  }) as any;
   // `details` is a getter that builds a LineageDetails on each read; shadow it with one stub.
   Object.defineProperty(panel, "details", {
     value: {
@@ -68,17 +86,13 @@ function lineageHarness() {
       getRelationships: vi.fn().mockReturnValue({ parents: [] }),
     },
   });
-  const globalState = new Map<string, unknown>();
-  panel.extensionContext = {
-    getFromGlobalState: (key: string) => globalState.get(key),
-    setToGlobalState: (key: string, value: unknown) =>
-      globalState.set(key, value),
-  };
+  const page = openPage(panel, fakeView(), false);
   return {
     panel,
-    postMessage,
+    view: page.page,
+    postMessage: page.page.webview.postMessage,
     globalState,
-    send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
+    send: page.send,
   };
 }
 
@@ -87,7 +101,7 @@ describe("lineage panel messages", () => {
     "webview:ready": async () => {
       const h = lineageHarness();
       await h.send({ command: "webview:ready" });
-      expect(h.panel.isWebviewReady).toBe(true);
+      expect(isPageReady(h.panel, h.view)).toBe(true);
       expect(h.postMessage).toHaveBeenCalledWith(
         expect.objectContaining({ command: "render" }),
       );
@@ -282,8 +296,8 @@ describe("lineage panel messages", () => {
   });
 });
 
-/** A query results panel on its bottom view; `view` collects what it posts. */
-function queryHarness() {
+/** A query results panel resolved on its bottom view and, unless `ready` is false, reporting ready; `view` is that page. */
+function queryHarness(ready = true) {
   const project = {
     getAdapterType: () => "duckdb",
     getProjectName: () => "jaffle",
@@ -298,28 +312,13 @@ function queryHarness() {
     getProjectByName: () => project,
     getOrPickProjectFromWorkspace: async () => project,
   };
-  const panel = new QueryResultPanel(
-    {} as never,
-    { eventEmitter: { event: () => ({ dispose: vi.fn() }) } } as never,
-    silentLog(),
-    service as never,
-    () => ({ dispose: vi.fn() }),
-  ) as any;
-  const view = {
-    show: vi.fn(),
-    webview: {
-      postMessage: vi.fn(),
-      onDidReceiveMessage: vi.fn(() => ({ dispose: vi.fn() })),
-    },
-  };
-  panel._panel = view;
-  panel._bottomPanel = view;
-  panel.isWebviewReady = true;
+  const panel = queryResultPanel(silentLog(), service) as any;
+  const page = openPage(panel, fakeView(), ready);
   return {
     panel,
-    view,
+    view: page.page,
     project,
-    send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
+    send: page.send,
   };
 }
 
@@ -350,10 +349,9 @@ describe("query results panel messages", () => {
 
   const rows: Record<string, Row> = {
     "webview:ready": async () => {
-      const h = queryHarness();
-      h.panel.isWebviewReady = false;
+      const h = queryHarness(false);
       await h.send({ command: "webview:ready" });
-      expect(h.panel.isWebviewReady).toBe(true);
+      expect(isPageReady(h.panel, h.view)).toBe(true);
     },
     error: async () => {
       const h = queryHarness();
@@ -578,9 +576,8 @@ function docsHarness() {
     getModelsInProject: vi.fn(() => ["orders"]),
   };
   const columnProposalRequests = new ColumnProposalRequests();
-  const panel = new DocsEditViewPanel(
-    projects,
-    {} as any,
+  const panel = docsEditPanel(
+    silentLog(),
     {
       docGenService,
       dbtTestService,
@@ -588,20 +585,18 @@ function docsHarness() {
       emitterService: { eventEmitter: { event: vi.fn() } },
       columnProposals,
       columnProposalRequests,
-    } as any,
-    silentLog(),
+    },
+    projects,
   ) as any;
-  const postMessage = vi.fn();
-  panel._panel = { webview: { postMessage } };
-  // The page setup needs a real extension URI, which these tests do not depend on.
-  panel.setupWebviewOptions = vi.fn();
-  panel.renderWebviewView = vi.fn();
   window.activeTextEditor = {
     document: { uri: Uri.file("/p/models/orders.sql") },
   } as never;
+  const page = openPage(panel, fakeView(), false);
   return {
     panel,
-    postMessage,
+    fake: page.fake,
+    view: page.page,
+    postMessage: page.page.webview.postMessage,
     project,
     projects,
     docs,
@@ -609,35 +604,9 @@ function docsHarness() {
     columnProposals,
     columnProposalRequests,
     dbtTestService,
+    docGenService,
     queryManifestService,
-    send: (message: unknown) => panel.handleCommand(message) as Promise<void>,
-  };
-}
-
-/** A WebviewView whose visibility the test flips; its webview posts to `postMessage`. */
-function fakeWebviewView(postMessage: ReturnType<typeof vi.fn>) {
-  const visibility = new EventEmitter<void>();
-  const view = {
-    title: "",
-    description: "",
-    visible: true,
-    webview: {
-      options: {},
-      html: "",
-      postMessage,
-      cspSource: "",
-      asWebviewUri: (uri: unknown) => uri,
-      onDidReceiveMessage: new EventEmitter<unknown>().event,
-    },
-    onDidChangeVisibility: visibility.event,
-    onDidDispose: new EventEmitter<void>().event,
-  };
-  return {
-    view: view as never,
-    setVisible(visible: boolean) {
-      view.visible = visible;
-      visibility.fire();
-    },
+    send: page.send,
   };
 }
 
@@ -651,7 +620,7 @@ describe("documentation editor messages", () => {
     "webview:ready": async () => {
       const h = docsHarness();
       await h.send({ command: "webview:ready" });
-      expect(h.panel.isWebviewReady).toBe(true);
+      expect(isPageReady(h.panel, h.view)).toBe(true);
     },
     openProblemsTab: async () => {
       const h = docsHarness();
@@ -861,6 +830,22 @@ describe("column proposal requests", () => {
   it("waits for the page, then posts the documentation and the proposals in that order", async () => {
     vi.useFakeTimers();
     const h = docsHarness();
+    // Resolving the view rendered orders; the editor then moves to customers, so that render is stale.
+    await vi.advanceTimersByTimeAsync(0);
+    const customers = {
+      ...h.docs,
+      name: "customers",
+      filePath: "/p/models/customers.sql",
+    };
+    window.activeTextEditor = {
+      document: { uri: Uri.file(customers.filePath) },
+    } as never;
+    h.docGenService.getUncompiledDocumentationForCurrentActiveFile.mockResolvedValue(
+      {
+        documentation: customers,
+      },
+    );
+    h.postMessage.mockClear();
     h.columnProposalRequests.request("types");
     await vi.advanceTimersByTimeAsync(1_000);
     expect(h.postMessage).not.toHaveBeenCalled();
@@ -870,6 +855,10 @@ describe("column proposal requests", () => {
     expect(
       h.postMessage.mock.calls.map(([message]) => message.command),
     ).toEqual(["renderDocumentation", "renderColumnProposals"]);
+    expect(h.postMessage.mock.calls[0][0]).toMatchObject({
+      command: "renderDocumentation",
+      docs: { name: "customers" },
+    });
     expect(h.postMessage).toHaveBeenCalledWith({
       command: "renderColumnProposals",
       payload: h.payload,
@@ -899,11 +888,9 @@ describe("column proposal requests", () => {
   it("waits for the new page's webview:ready after the view is hidden", async () => {
     vi.useFakeTimers();
     const h = docsHarness();
-    const view = fakeWebviewView(h.postMessage);
-    await h.panel.resolveWebviewView(view.view, {}, cancellation());
     await h.send({ command: "webview:ready" });
 
-    view.setVisible(false);
+    h.fake.hide();
     h.columnProposalRequests.request("types");
     await vi.advanceTimersByTimeAsync(1_000);
     expect(
@@ -912,7 +899,7 @@ describe("column proposal requests", () => {
       ),
     ).toBe(false);
 
-    view.setVisible(true);
+    h.fake.show();
     await h.send({ command: "webview:ready" });
     await vi.advanceTimersByTimeAsync(500);
     expect(h.postMessage).toHaveBeenCalledWith({
@@ -925,17 +912,18 @@ describe("column proposal requests", () => {
   it("waits for webview:ready again when the view is resolved again", async () => {
     vi.useFakeTimers();
     const h = docsHarness();
-    const view = fakeWebviewView(h.postMessage);
-    await h.panel.resolveWebviewView(view.view, {}, cancellation());
     await h.send({ command: "webview:ready" });
 
-    await h.panel.resolveWebviewView(view.view, {}, cancellation());
-    expect(h.panel.isWebviewReady).toBe(false);
+    await h.panel.resolveWebviewView(h.view, {}, cancellation());
+    expect(isPageReady(h.panel, h.view)).toBe(false);
   });
 
   it("shows a warning and posts nothing when the page does not load by the deadline", async () => {
     vi.useFakeTimers();
     const h = docsHarness();
+    // Resolving the view posts its own renderDocumentation; the assertions below are about the request's posts.
+    await vi.advanceTimersByTimeAsync(0);
+    h.postMessage.mockClear();
     h.columnProposalRequests.request("descriptions");
     await vi.advanceTimersByTimeAsync(10_000);
     expect(window.showWarningMessage).toHaveBeenCalledWith(

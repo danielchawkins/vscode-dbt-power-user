@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { isAbsolute, join, relative, resolve, sep } from "node:path";
+import { isAbsolute, join, resolve } from "node:path";
 import type { Disposable, FileSystemWatcher, Uri } from "vscode";
 import { RelativePattern, workspace } from "vscode";
 import type { ParsedManifest } from "../../core/dbt/domain";
@@ -28,6 +28,7 @@ import type {
   ManifestResources,
   SemanticModelResource,
 } from "../../core/manifest/types";
+import { isStrictlyBelow } from "../../core/paths";
 import {
   DBT_PROJECT_FILE,
   isDbtProjectFilePath,
@@ -378,18 +379,9 @@ export class ManifestTrigger implements Disposable {
   }
 
   private isUnderSourcePath(fsPath: string): boolean {
-    return (this.handlers.sourcePaths() ?? []).some((sourcePath) => {
-      const fromSource = relative(
-        resolve(this.projectRoot, sourcePath),
-        fsPath,
-      );
-      return (
-        fromSource !== "" &&
-        fromSource !== ".." &&
-        !fromSource.startsWith(`..${sep}`) &&
-        !isAbsolute(fromSource)
-      );
-    });
+    return (this.handlers.sourcePaths() ?? []).some((sourcePath) =>
+      isStrictlyBelow(resolve(this.projectRoot, sourcePath), fsPath),
+    );
   }
 
   private async run(label: string, handler: () => Promise<void>) {

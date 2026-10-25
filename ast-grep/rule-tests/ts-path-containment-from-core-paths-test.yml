@@ -1,0 +1,8 @@
+id: ts-path-containment-from-core-paths
+valid:
+  - 'return isAtOrBelow(root, file);'
+  - 'if (name.startsWith(".")) { return; }'
+  - 'const hidden = rel.startsWith(".git");'
+invalid:
+  - 'return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);'
+  - 'return !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);'

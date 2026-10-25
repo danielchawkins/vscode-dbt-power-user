@@ -85,6 +85,17 @@ describe("findProjectRootForFile", () => {
     expect(find(touch(other, "a.sql"), d)).toBeUndefined();
   });
 
+  it("does not treat a sibling whose name extends the folder's as inside it", () => {
+    const d = tmp();
+    const folder = path.join(d, "proj");
+    touch(folder, "dbt_project.yml");
+    touch(d, "projects", "dbt_project.yml");
+    expect(find(touch(folder, "models", "a.sql"), folder)).toBe(folder);
+    expect(
+      find(touch(d, "projects", "models", "a.sql"), folder),
+    ).toBeUndefined();
+  });
+
   it("uses the injected existence check", () => {
     const d = tmp();
     const file = touch(d, "p", "a.sql");
